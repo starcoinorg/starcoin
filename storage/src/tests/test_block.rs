@@ -155,9 +155,9 @@ fn test_old_failed_block_decode() {
     let block = Block::new(block_header, block_body);
 
     let old_failed_block: OldFailedBlock = (block, None, "test decode".to_string()).into();
-    let encode_str = old_failed_block.encode();
-    assert!(encode_str.is_ok());
-    let result = FailedBlock::decode(encode_str.unwrap().as_slice());
+    let encoded = old_failed_block.encode();
+    assert!(encoded.is_ok());
+    let result = FailedBlock::decode(encoded.unwrap().as_slice());
     assert!(result.is_err());
 }
 

@@ -815,11 +815,11 @@ impl RpcClient {
             raw_txn,
             public_key,
         } = txn;
-        let raw_txn_str = hex::encode(raw_txn.encode()?);
+        let raw_txn = hex::encode(raw_txn.encode()?);
         self.call_rpc_blocking(|inner| {
             inner
                 .contract_client
-                .dry_run_raw(raw_txn_str, StrView(public_key))
+                .dry_run_raw(raw_txn, StrView(public_key))
         })
         .map_err(map_err)
     }

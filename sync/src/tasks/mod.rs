@@ -478,9 +478,9 @@ where
     F: SyncFetcher + 'static,
 {
     fn handle(&self, error: Error) {
-        let peer_str = error.to_string();
-        debug!("[sync]sync task peer_str: {:?}", peer_str);
-        if let Ok(peer_id) = PeerId::from_str(&peer_str) {
+        let peer = error.to_string();
+        debug!("[sync]sync task peer_str: {:?}", peer);
+        if let Ok(peer_id) = PeerId::from_str(&peer) {
             if let Ok(prc_error) = error.downcast::<NetRpcError>() {
                 match &prc_error.error_code() {
                     RpcErrorCode::Forbidden

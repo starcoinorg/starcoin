@@ -231,18 +231,18 @@ impl Inner {
                     request_id+=1;
                     match req {
                         Request::LoginRequest(login_req, s)=>{
-                            let req_str = build_request_string("login", &login_req, request_id).expect("build stratum login request failed never happen");
-                            debug!("stratum client send request:{}",req_str);
-                            if let Err(err) = self.sink.send(req_str).await{
+                            let message = build_request_string("login", &login_req, request_id).expect("build stratum login request failed never happen");
+                            debug!("stratum client send request:{}",message);
+                            if let Err(err) = self.sink.send(message).await{
                                 error!("stratum send request failed: {}", err);
                                 continue
                             }
                             self.pending_requests.insert(request_id, PendingRequest::LoginRequest(s));
                         }
                         Request::SubmitSealRequest(seal_req)=>{
-                            let req_str = build_request_string("submit", &seal_req, request_id).expect("build stratum login request failed never happen");
-                            debug!("stratum send request:{}",req_str);
-                            if let Err(err) = self.sink.send(req_str).await{
+                            let message = build_request_string("submit", &seal_req, request_id).expect("build stratum login request failed never happen");
+                            debug!("stratum send request:{}",message);
+                            if let Err(err) = self.sink.send(message).await{
                                 error!("stratum send request failed: {}", err);
                                 continue
                             }

@@ -72,11 +72,11 @@ fn test_example_config_compact() -> Result<()> {
         if net.is_dev() || net.is_test() || net.is_halley() || !net.genesis_config().is_ready() {
             continue;
         }
-        let net_str = net.to_string();
+        let net = net.to_string();
         let args = vec![
             "starcoin",
             "-n",
-            net_str.as_str(),
+            net.as_str(),
             "-d",
             example_dir.to_str().unwrap(),
             //Network

@@ -17,10 +17,10 @@ fn test_transaction_argument_to_json() {
             TransactionArgument::U8Vector(vec![0u8]),
         ]),
     );
-    let json_str = serde_json::to_string(&script).expect("json to_string should success.");
-    let script2 = serde_json::from_str(json_str.as_str()).expect("json from_str should success.");
-    assert_eq!(script, script2);
-    let json_value = serde_json::to_value(&script).expect("json to_value should success.");
-    let script3 = serde_json::from_value(json_value).expect("json from_value should success.");
-    assert_eq!(script, script3);
+    let raw_json = serde_json::to_string(&script).expect("json to_string should success.");
+    let value = serde_json::from_str(raw_json.as_str()).expect("json from_str should success.");
+    assert_eq!(script, value);
+    let serialized = serde_json::to_value(&script).expect("json to_value should success.");
+    let deserialized = serde_json::from_value(serialized).expect("json from_value should success.");
+    assert_eq!(script, deserialized);
 }
