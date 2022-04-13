@@ -6,7 +6,7 @@ spec:
   template:
     spec:
       nodeSelector:
-        node-pool: ci-pool
+        node-pool: ci-pool-200g
       image: starcoin/starcoin-builder:sha-cbd4ad4
       repository: starcoinorg/starcoin
       ephemeral: true
@@ -22,9 +22,9 @@ spec:
           #memory: "64Gi"
           cpu: "15.0"
           memory: "32Gi"
-          ephemeral-storage: "40Gi"
+          ephemeral-storage: "80Gi"
         limits:
-          ephemeral-storage: "50Gi"
+          ephemeral-storage: "100Gi"
       # If set to false, there are no privileged container and you cannot use docker.
       dockerEnabled: true
       # If set to true, runner pod container only 1 container that's expected to be able to run docker, too.
@@ -37,9 +37,9 @@ spec:
           #memory: "64Gi"
           cpu: "15.0"
           memory: "32Gi"
-          ephemeral-storage: "40Gi"
+          ephemeral-storage: "80Gi"
         limits:
-          ephemeral-storage: "50Gi"
+          ephemeral-storage: "100Gi"
 
 ---
 apiVersion: actions.summerwind.dev/v1alpha1
