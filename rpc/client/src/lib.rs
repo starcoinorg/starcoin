@@ -363,7 +363,7 @@ impl RpcClient {
         self.call_rpc_blocking(|inner| inner.account_client.sign_txn_request(txn_request))
             .map_err(map_err)
             .and_then(|d: String| {
-                hex::decode(d.as_str().strip_prefix("0x").unwrap_or_else(|| d.as_str()))
+                hex::decode(d.as_str().strip_prefix("0x").unwrap_or(d.as_str()))
                     .map_err(anyhow::Error::new)
                     .and_then(|d| bcs_ext::from_bytes::<SignedUserTransaction>(d.as_slice()))
             })

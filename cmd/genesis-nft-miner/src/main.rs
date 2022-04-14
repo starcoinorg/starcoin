@@ -50,9 +50,7 @@ fn get_index_proofs(address: AccountAddress) -> Result<(Vec<u8>, Vec<u8>)> {
         mint_proof
             .proof
             .iter()
-            .map(|p| {
-                hex::decode(p.as_str().strip_prefix("0x").unwrap_or_else(|| p.as_str())).unwrap()
-            })
+            .map(|p| hex::decode(p.as_str().strip_prefix("0x").unwrap_or(p.as_str())).unwrap())
             .map(MoveValue::vector_u8)
             .collect(),
     )
