@@ -370,6 +370,7 @@ pub struct PruneOptions {
     #[clap(long, short = 'n')]
     /// Chain Network
     pub net: BuiltinNetworkID,
+    #[clap(long, short = 'o', parse(from_os_str))]
     /// starcoin node db path. like ~/.starcoin/main
     pub to_path: PathBuf,
 }
@@ -1497,25 +1498,23 @@ fn prune(to_dir: PathBuf, network: BuiltinNetworkID) -> anyhow::Result<()> {
     } else {
         block_num - BLOCK_GAP
     };
-
     let end_block = cur_chain
         .get_block_by_number(end_block_num)?
         .ok_or_else(|| format_err!("get block by number {} error", end_block_num))?;
     let mut chain = BlockChain::new(net.time_service(), end_block.id(), storage.clone(), None)?;
     let end_epoch_num = chain.epoch().number();
-
     let prune_info = storage.get_prune_info()?;
     let mut start_num = if let Some(prune_info) = prune_info {
         prune_info.num + 1
     } else {
         let snapshot_range = storage.get_snapshot_range()?;
-        if let Some(snapshot_range) = snapshot_range {
+        let num = if let Some(snapshot_range) = snapshot_range {
             snapshot_range.get_end() + 1
         } else {
             1
-        }
+        };
+        num
     };
-
     let mut start_block = cur_chain
         .get_block_by_number(start_num)?
         .ok_or_else(|| format_err!("get block by number {} error", start_num))?;
@@ -1527,7 +1526,6 @@ fn prune(to_dir: PathBuf, network: BuiltinNetworkID) -> anyhow::Result<()> {
         ProgressStyle::default_bar()
             .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
     );
-
     loop {
         if chain.epoch().end_block_number() > end_block_num {
             break;
@@ -1556,6 +1554,7 @@ fn prune(to_dir: PathBuf, network: BuiltinNetworkID) -> anyhow::Result<()> {
             {
                 let hash = cur_chain.get_hash_by_number(block_header.number())?;
                 if hash.is_none() || hash != Some(id) {
+                    println!("prune block number {}", block_header.number());
                     storage.delete_block(id)?;
                     storage.delete_block_info(id)?;
                 }
@@ -1566,7 +1565,7 @@ fn prune(to_dir: PathBuf, network: BuiltinNetworkID) -> anyhow::Result<()> {
         };
         storage.save_prune_info(prune_info)?;
         start_num = chain.epoch().end_block_number() + 1;
-        bar.set_message(format!("prune epoch number {}", chain.epoch().number()).as_str());
+        bar.set_message(format!("process epoch number {}", chain.epoch().number()).as_str());
         bar.inc(1);
 
         start_block = cur_chain

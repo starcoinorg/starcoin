@@ -98,7 +98,7 @@ impl ChainInfoStorage {
     }
 
     pub fn get_prune_info(&self) -> Result<Option<PruneInfo>> {
-        self.get(Self::STARTUP_INFO_KEY.as_bytes())
+        self.get(Self::PRUNE_INFO_KEY.as_bytes())
             .and_then(|bytes| match bytes {
                 Some(bytes) => Ok(Some(bytes.try_into()?)),
                 None => Ok(None),
