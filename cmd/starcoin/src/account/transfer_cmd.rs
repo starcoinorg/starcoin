@@ -8,7 +8,7 @@ use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_types::account_address::AccountAddress;
-use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
+use starcoin_vm_types::token::stc::G_STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::TransactionPayload;
 
@@ -56,7 +56,7 @@ impl CommandAction for TransferCommand {
         let token_code = opt
             .token_code
             .clone()
-            .unwrap_or_else(|| STC_TOKEN_CODE.clone());
+            .unwrap_or_else(|| G_STC_TOKEN_CODE.clone());
         let script_function = starcoin_executor::encode_transfer_script_by_token_code(
             receiver_address,
             opt.amount,

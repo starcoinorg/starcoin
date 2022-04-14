@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_logger::prelude::*;
-use starcoin_vm_types::account_config::ACCOUNT_MODULE;
+use starcoin_vm_types::account_config::G_ACCOUNT_MODULE;
 use starcoin_vm_types::errors::VMError;
 use starcoin_vm_types::vm_status::{AbortLocation, StatusCode, VMStatus};
 
@@ -136,5 +136,5 @@ pub fn convert_normal_success_epilogue_error(error: VMError) -> Result<(), VMSta
 }
 
 fn account_module_abort() -> AbortLocation {
-    AbortLocation::Module(ACCOUNT_MODULE.clone())
+    AbortLocation::Module(G_ACCOUNT_MODULE.clone())
 }

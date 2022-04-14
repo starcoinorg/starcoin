@@ -94,7 +94,7 @@ impl std::fmt::Display for LogPattern {
 }
 
 /// set some third party module's default log level for reduce debug log.
-static THIRD_PARTY_MODULES: Lazy<Vec<(&str, LevelFilter)>> = Lazy::new(|| {
+static G_THIRD_PARTY_MODULES: Lazy<Vec<(&str, LevelFilter)>> = Lazy::new(|| {
     vec![
         // ("tokio_reactor", LevelFilter::Info),
         // ("yamux", LevelFilter::Info),
@@ -141,7 +141,7 @@ impl LoggerConfigArg {
         module_levels: Vec<(String, LevelFilter)>,
         pattern: Option<LogPattern>,
     ) -> Self {
-        let mut default_module_levels = THIRD_PARTY_MODULES
+        let mut default_module_levels = G_THIRD_PARTY_MODULES
             .iter()
             .map(|(m, m_level)| {
                 (
@@ -325,7 +325,7 @@ fn env_log_level(default_level: &str) -> (LevelFilter, Vec<(String, LevelFilter)
     (default_level, level_filters.module_levels)
 }
 
-static LOGGER_HANDLE: Lazy<Mutex<Option<Arc<LoggerHandle>>>> = Lazy::new(|| Mutex::new(None));
+static G_LOGGER_HANDLE: Lazy<Mutex<Option<Arc<LoggerHandle>>>> = Lazy::new(|| Mutex::new(None));
 
 pub fn init() -> Arc<LoggerHandle> {
     init_with_default_level("info", None)
@@ -336,7 +336,7 @@ pub fn init_with_default_level(
     pattern: Option<LogPattern>,
 ) -> Arc<LoggerHandle> {
     let (global_level, module_levels) = env_log_level(default_level);
-    LOG_INIT.call_once(|| {
+    G_LOG_INIT.call_once(|| {
         let arg = LoggerConfigArg::new(true, global_level, module_levels, pattern);
         let config = build_config(arg.clone()).expect("build log config fail.");
         let handle = match log4rs::init_config(config) {
@@ -344,9 +344,9 @@ pub fn init_with_default_level(
             Err(e) => panic!("{}", e.to_string()),
         };
         let logger_handle = LoggerHandle::new(arg, handle);
-        *LOGGER_HANDLE.lock() = Some(Arc::new(logger_handle));
+        *G_LOGGER_HANDLE.lock() = Some(Arc::new(logger_handle));
     });
-    let logger_handle = LOGGER_HANDLE
+    let logger_handle = G_LOGGER_HANDLE
         .lock()
         .as_ref()
         .expect("logger handle must has been set.")
@@ -357,7 +357,7 @@ pub fn init_with_default_level(
     logger_handle
 }
 
-static LOG_INIT: Once = Once::new();
+static G_LOG_INIT: Once = Once::new();
 
 pub fn init_for_test() -> Arc<LoggerHandle> {
     init_with_default_level("debug", Some(LogPattern::WithLine))

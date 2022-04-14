@@ -101,7 +101,7 @@ pub fn build_network_worker(
         request_response_protocols: rpc_protocols,
         transport: transport_config,
         node_name,
-        client_version: starcoin_config::APP_NAME_WITH_VERSION.clone(),
+        client_version: starcoin_config::G_APP_NAME_WITH_VERSION.clone(),
         allow_non_globals_in_dht,
         ..NetworkConfiguration::default()
     };

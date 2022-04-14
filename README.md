@@ -104,6 +104,7 @@ Reach out to the maintainer at one of the following places:
 
 - [GitHub discussions](https://github.com/starcoinorg/starcoin/discussions)
 - [Starcoin Discord](https://discord.gg/starcoin)
+- [Starcoin&Move Contributor Telegram Group](https://t.me/starcoin_contributor)
 
 ## License
 

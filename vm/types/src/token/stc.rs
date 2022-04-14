@@ -15,17 +15,17 @@ use std::str::FromStr;
 pub const STC_NAME: &str = "STC";
 pub const STC_TOKEN_CODE_STR: &str = "0x1::STC::STC";
 
-pub static STC_TOKEN_CODE: Lazy<TokenCode> = Lazy::new(|| {
+pub static G_STC_TOKEN_CODE: Lazy<TokenCode> = Lazy::new(|| {
     TokenCode::from_str(STC_TOKEN_CODE_STR).expect("Parse STC token code should success.")
 });
 
-static STC_IDENTIFIER: Lazy<Identifier> = Lazy::new(|| Identifier::new(STC_NAME).unwrap());
+static G_STC_IDENTIFIER: Lazy<Identifier> = Lazy::new(|| Identifier::new(STC_NAME).unwrap());
 
 pub fn stc_type_tag() -> TypeTag {
     TypeTag::Struct(StructTag {
         address: CORE_CODE_ADDRESS,
-        module: STC_IDENTIFIER.clone(),
-        name: STC_IDENTIFIER.clone(),
+        module: G_STC_IDENTIFIER.clone(),
+        name: G_STC_IDENTIFIER.clone(),
         type_params: vec![],
     })
 }
@@ -40,10 +40,10 @@ pub const SYMBOL_MICROSTC_LOWER: &str = "microstc";
 pub const SYMBOL_MILLISTC_LOWER: &str = "millistc";
 pub const SYMBOL_STC_LOWER: &str = "stc";
 
-pub static SCALE_NANOSTC: u32 = 0;
-pub static SCALE_MICROSTC: u32 = 3;
-pub static SCALE_MILLISTC: u32 = 6;
-pub static SCALE_STC: u32 = 9;
+pub static G_SCALE_NANOSTC: u32 = 0;
+pub static G_SCALE_MICROSTC: u32 = 3;
+pub static G_SCALE_MILLISTC: u32 = 6;
+pub static G_SCALE_STC: u32 = 9;
 
 #[derive(Clone, Copy, Debug)]
 #[allow(clippy::upper_case_acronyms)]
@@ -110,10 +110,10 @@ impl TokenUnit for STCUnit {
 
     fn scale(&self) -> u32 {
         match self {
-            Self::NanoSTC => SCALE_NANOSTC,
-            Self::MicroSTC => SCALE_MICROSTC,
-            Self::MilliSTC => SCALE_MILLISTC,
-            Self::STC => SCALE_STC,
+            Self::NanoSTC => G_SCALE_NANOSTC,
+            Self::MicroSTC => G_SCALE_MICROSTC,
+            Self::MilliSTC => G_SCALE_MILLISTC,
+            Self::STC => G_SCALE_STC,
         }
     }
 }

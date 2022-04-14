@@ -10,7 +10,7 @@ use starcoin_crypto::ValidCryptoMaterial;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::mocker::MockHandler;
 use starcoin_service_registry::{ActorService, ServiceContext, ServiceFactory, ServiceHandler};
-use starcoin_types::account_config::{association_address, STC_TOKEN_CODE};
+use starcoin_types::account_config::{association_address, G_STC_TOKEN_CODE};
 use starcoin_types::genesis_config::ChainId;
 use std::any::Any;
 use std::sync::Arc;
@@ -177,8 +177,8 @@ impl ServiceHandler<AccountService, AccountRequest> for AccountService {
             AccountRequest::AccountAcceptedTokens { address } => {
                 let mut tokens = self.manager.accepted_tokens(address)?;
                 //auto add STC to accepted tokens.
-                if !tokens.contains(&STC_TOKEN_CODE) {
-                    tokens.push(STC_TOKEN_CODE.clone())
+                if !tokens.contains(&G_STC_TOKEN_CODE) {
+                    tokens.push(G_STC_TOKEN_CODE.clone())
                 }
                 AccountResponse::AcceptedTokens(tokens)
             }

@@ -55,8 +55,8 @@ pub use available_port::{
 pub use genesis_config::{
     BuiltinNetworkID, ChainNetwork, ChainNetworkID, FutureBlockParameter,
     FutureBlockParameterResolver, GenesisBlockParameter, GenesisBlockParameterConfig,
-    GenesisConfig, DEV_CONFIG, HALLEY_CONFIG, LATEST_GAS_SCHEDULE, MAIN_CONFIG, PROXIMA_CONFIG,
-    TEST_CONFIG,
+    GenesisConfig, G_DEV_CONFIG, G_HALLEY_CONFIG, G_LATEST_GAS_SCHEDULE, G_MAIN_CONFIG,
+    G_PROXIMA_CONFIG, G_TEST_CONFIG,
 };
 pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;
@@ -71,32 +71,32 @@ pub use starcoin_vm_types::time::{MockTimeService, RealTimeService, TimeService}
 pub use storage_config::{RocksdbConfig, StorageConfig, DEFAULT_CACHE_SIZE};
 pub use txpool_config::TxPoolConfig;
 
-pub static CRATE_VERSION: &str = clap::crate_version!();
-pub static GIT_VERSION: &str = git_version!(
+pub static G_CRATE_VERSION: &str = clap::crate_version!();
+pub static G_GIT_VERSION: &str = git_version!(
     args = ["--tags", "--dirty", "--always"],
     fallback = "unknown"
 );
 
-pub static APP_NAME: &str = "starcoin";
-pub static APP_VERSION: Lazy<String> = Lazy::new(|| {
-    if GIT_VERSION != "unknown" {
-        format!("{} (build:{})", CRATE_VERSION, GIT_VERSION)
+pub static G_APP_NAME: &str = "starcoin";
+pub static G_APP_VERSION: Lazy<String> = Lazy::new(|| {
+    if G_GIT_VERSION != "unknown" {
+        format!("{} (build:{})", G_CRATE_VERSION, G_GIT_VERSION)
     } else {
-        CRATE_VERSION.to_string()
+        G_CRATE_VERSION.to_string()
     }
 });
 
-pub static APP_NAME_WITH_VERSION: Lazy<String> =
-    Lazy::new(|| format!("{}/{}", APP_NAME, APP_VERSION.clone()));
+pub static G_APP_NAME_WITH_VERSION: Lazy<String> =
+    Lazy::new(|| format!("{}/{}", G_APP_NAME, G_APP_VERSION.clone()));
 
 /// Default data dir
-pub static DEFAULT_BASE_DATA_DIR: Lazy<PathBuf> = Lazy::new(|| {
+pub static G_DEFAULT_BASE_DATA_DIR: Lazy<PathBuf> = Lazy::new(|| {
     dirs_next::home_dir()
         .expect("read home dir should ok")
         .join(".starcoin")
 });
-pub static CONFIG_FILE_PATH: &str = "config.toml";
-pub static GENESIS_CONFIG_FILE_NAME: &str = "genesis_config.json";
+pub static G_CONFIG_FILE_PATH: &str = "config.toml";
+pub static G_GENESIS_CONFIG_FILE_NAME: &str = "genesis_config.json";
 
 pub fn load_config_with_opt(opt: &StarcoinOpt) -> Result<NodeConfig> {
     NodeConfig::load_with_opt(opt)
@@ -165,11 +165,11 @@ impl FromStr for Connect {
     }
 }
 
-static OPT_NET_HELP: &str = r#"Chain Network 
+static G_OPT_NET_HELP: &str = r#"Chain Network
     Builtin network: test,dev,halley,proxima,barnard,main
     Custom network format: chain_name:chain_id
-    Such as:  
-    my_chain:123 will init a new chain with id `123`. 
+    Such as:
+    my_chain:123 will init a new chain with id `123`.
     Custom network first start should also set the `genesis-config` option.
     Use starcoin_generator command to generate a genesis config."#;
 
@@ -187,7 +187,7 @@ pub struct StarcoinOpt {
     pub base_data_dir: Option<PathBuf>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long, short = 'n', help = OPT_NET_HELP)]
+    #[clap(long, short = 'n', help = G_OPT_NET_HELP)]
     pub net: Option<ChainNetworkID>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -274,7 +274,7 @@ impl AsRef<Path> for DataDirPath {
 
 impl Default for DataDirPath {
     fn default() -> Self {
-        DataDirPath::PathBuf(DEFAULT_BASE_DATA_DIR.to_path_buf())
+        DataDirPath::PathBuf(G_DEFAULT_BASE_DATA_DIR.to_path_buf())
     }
 }
 
@@ -295,7 +295,7 @@ impl BaseConfig {
                 if id.is_dev() || id.is_test() {
                     temp_dir()
                 } else {
-                    DataDirPath::PathBuf(DEFAULT_BASE_DATA_DIR.to_path_buf())
+                    DataDirPath::PathBuf(G_DEFAULT_BASE_DATA_DIR.to_path_buf())
                 }
             }
         };
@@ -321,7 +321,7 @@ impl BaseConfig {
         data_dir: &Path,
         genesis_config_name: Option<String>,
     ) -> Result<GenesisConfig> {
-        let config_path = data_dir.join(GENESIS_CONFIG_FILE_NAME);
+        let config_path = data_dir.join(G_GENESIS_CONFIG_FILE_NAME);
         let config_in_file = if config_path.exists() {
             Some(GenesisConfig::load(config_path.as_path())?)
         } else {
@@ -378,7 +378,7 @@ impl BaseConfig {
     }
 
     fn genesis_config_path(&self) -> PathBuf {
-        self.data_dir.join(GENESIS_CONFIG_FILE_NAME)
+        self.data_dir.join(G_GENESIS_CONFIG_FILE_NAME)
     }
 
     pub fn net(&self) -> &ChainNetwork {
@@ -396,7 +396,7 @@ impl BaseConfig {
         let data_dir = base.data_dir();
         ensure!(data_dir.is_dir(), "please pass in a dir as data_dir");
 
-        let config_file_path = data_dir.join(CONFIG_FILE_PATH);
+        let config_file_path = data_dir.join(G_CONFIG_FILE_PATH);
         let config = if !config_file_path.exists() {
             info!(
                 "Config file not exist, generate default config to: {:?}",
@@ -483,7 +483,7 @@ impl NodeConfig {
     }
 
     pub fn config_path(&self) -> PathBuf {
-        self.base().data_dir().join(CONFIG_FILE_PATH)
+        self.base().data_dir().join(G_CONFIG_FILE_PATH)
     }
 
     pub fn load_with_opt(opt: &StarcoinOpt) -> Result<Self> {

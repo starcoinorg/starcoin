@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
 
-static DEFAULT_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("account_vaults"));
+static G_DEFAULT_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("account_vaults"));
 
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
@@ -31,7 +31,7 @@ impl AccountVaultConfig {
     }
 
     pub fn dir(&self) -> PathBuf {
-        let path = self.dir.as_ref().unwrap_or(&DEFAULT_DIR);
+        let path = self.dir.as_ref().unwrap_or(&G_DEFAULT_DIR);
         if path.is_absolute() {
             path.clone()
         } else {

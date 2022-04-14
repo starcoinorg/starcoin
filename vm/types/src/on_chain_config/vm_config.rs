@@ -14,13 +14,13 @@ use starcoin_crypto::HashValue;
 
 pub const SCRIPT_HASH_LENGTH: usize = HashValue::LENGTH;
 const VM_CONFIG_MODULE_NAME: &str = "VMConfig";
-pub static VM_CONFIG_IDENTIFIER: Lazy<Identifier> =
+pub static G_VM_CONFIG_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new(VM_CONFIG_MODULE_NAME).unwrap());
-pub static INSTRUCTION_SCHEDULE_IDENTIFIER: Lazy<Identifier> =
+pub static G_INSTRUCTION_SCHEDULE_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("instruction_schedule").unwrap());
-pub static NATIVE_SCHEDULE_IDENTIFIER: Lazy<Identifier> =
+pub static G_NATIVE_SCHEDULE_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("native_schedule").unwrap());
-pub static GAS_CONSTANTS_IDENTIFIER: Lazy<Identifier> =
+pub static G_GAS_CONSTANTS_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("gas_constants").unwrap());
 
 /// Defines and holds the publishing policies for the VM. There are three possible configurations:
@@ -133,8 +133,8 @@ impl OnChainConfig for VMConfig {
 pub fn vm_config_type_tag() -> TypeTag {
     TypeTag::Struct(StructTag {
         address: CORE_CODE_ADDRESS,
-        module: VM_CONFIG_IDENTIFIER.clone(),
-        name: VM_CONFIG_IDENTIFIER.clone(),
+        module: G_VM_CONFIG_IDENTIFIER.clone(),
+        name: G_VM_CONFIG_IDENTIFIER.clone(),
         type_params: vec![],
     })
 }

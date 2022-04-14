@@ -35,7 +35,7 @@ mod inner {
 #[cfg(feature = "metered")]
 mod inner {
     //tracing implementation
-    use crate::metrics::UNBOUNDED_CHANNELS_COUNTER;
+    use crate::metrics::G_UNBOUNDED_CHANNELS_COUNTER;
     use futures::channel::mpsc::{
         self, SendError, TryRecvError, TrySendError, UnboundedReceiver, UnboundedSender,
     };
@@ -105,7 +105,7 @@ mod inner {
         /// Proxy function to mpsc::UnboundedSender
         pub fn unbounded_send(&self, msg: T) -> Result<(), TrySendError<T>> {
             self.1.unbounded_send(msg).map(|s| {
-                UNBOUNDED_CHANNELS_COUNTER
+                G_UNBOUNDED_CHANNELS_COUNTER
                     .with_label_values(&[self.0, "send"])
                     .inc();
                 s
@@ -134,7 +134,7 @@ mod inner {
             }
             // and discount the messages
             if count > 0 {
-                UNBOUNDED_CHANNELS_COUNTER
+                G_UNBOUNDED_CHANNELS_COUNTER
                     .with_label_values(&[self.0, "dropped"])
                     .inc_by(count);
             }
@@ -152,7 +152,7 @@ mod inner {
         pub fn try_next(&mut self) -> Result<Option<T>, TryRecvError> {
             self.1.try_next().map(|s| {
                 if s.is_some() {
-                    UNBOUNDED_CHANNELS_COUNTER
+                    G_UNBOUNDED_CHANNELS_COUNTER
                         .with_label_values(&[self.0, "received"])
                         .inc();
                 }
@@ -177,7 +177,7 @@ mod inner {
             match Pin::new(&mut s.1).poll_next(cx) {
                 Poll::Ready(msg) => {
                     if msg.is_some() {
-                        UNBOUNDED_CHANNELS_COUNTER
+                        G_UNBOUNDED_CHANNELS_COUNTER
                             .with_label_values(&[s.0, "received"])
                             .inc();
                     }

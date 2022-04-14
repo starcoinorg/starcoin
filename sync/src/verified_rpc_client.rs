@@ -87,16 +87,16 @@ where
     }
 }
 
-static BLOCK_NUMBER_VERIFIER: fn(&BlockNumber, &BlockHeader) -> bool =
+static G_BLOCK_NUMBER_VERIFIER: fn(&BlockNumber, &BlockHeader) -> bool =
     |block_number, block_header| -> bool { *block_number == block_header.number() };
 
-static BLOCK_ID_VERIFIER: fn(&HashValue, &BlockHeader) -> bool =
+static G_BLOCK_ID_VERIFIER: fn(&HashValue, &BlockHeader) -> bool =
     |block_hash, block_header| -> bool { *block_hash == block_header.id() };
 
-static BLOCK_BODY_VERIFIER: fn(&HashValue, &BlockBody) -> bool =
+static G_BLOCK_BODY_VERIFIER: fn(&HashValue, &BlockBody) -> bool =
     |body_hash, block_body| -> bool { *body_hash == block_body.hash() };
 
-static BLOCK_INFO_VERIFIER: fn(&HashValue, &BlockInfo) -> bool =
+static G_BLOCK_INFO_VERIFIER: fn(&HashValue, &BlockInfo) -> bool =
     |block_id, block_info| -> bool { *block_id == block_info.block_id };
 
 /// Enhancement RpcClient, for verify rpc response by request and auto select peer.
@@ -258,7 +258,7 @@ impl VerifiedRpcClient {
             .client
             .get_headers_by_number(peer_id.clone(), req.clone())
             .await?;
-        let resp = BLOCK_NUMBER_VERIFIER.verify(peer_id, req, resp)?;
+        let resp = G_BLOCK_NUMBER_VERIFIER.verify(peer_id, req, resp)?;
         Ok(resp)
     }
 
@@ -271,7 +271,7 @@ impl VerifiedRpcClient {
             .client
             .get_headers_by_hash(peer_id.clone(), req.clone())
             .await?;
-        let resp = BLOCK_ID_VERIFIER.verify(peer_id, req, resp)?;
+        let resp = G_BLOCK_ID_VERIFIER.verify(peer_id, req, resp)?;
         Ok(resp)
     }
 
@@ -285,7 +285,7 @@ impl VerifiedRpcClient {
             .client
             .get_bodies_by_hash(peer_id.clone(), req.clone())
             .await?;
-        let resp = BLOCK_BODY_VERIFIER.verify(peer_id.clone(), req, resp)?;
+        let resp = G_BLOCK_BODY_VERIFIER.verify(peer_id.clone(), req, resp)?;
         Ok((resp, peer_id))
     }
 
@@ -306,7 +306,7 @@ impl VerifiedRpcClient {
             .client
             .get_block_infos(peer_id.clone(), req.clone())
             .await?;
-        let resp = BLOCK_INFO_VERIFIER.verify(peer_id, req, resp)?;
+        let resp = G_BLOCK_INFO_VERIFIER.verify(peer_id, req, resp)?;
         Ok(resp)
     }
 

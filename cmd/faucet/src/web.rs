@@ -54,7 +54,7 @@ fn response(result: Result<serde_json::Value>) -> Response<Cursor<String>> {
     }
 }
 
-static CONTENT_TYPE: Lazy<Header> = Lazy::new(|| Header {
+static G_CONTENT_TYPE: Lazy<Header> = Lazy::new(|| Header {
     field: "Content-Type".parse().unwrap(),
     value: AsciiString::from_ascii("text/html; charset=utf8").unwrap(),
 });
@@ -69,12 +69,13 @@ pub async fn run(server: Server, faucet: Faucet) {
         match url {
             "/" => {
                 let response =
-                    Response::from_string(index_html()).with_header(CONTENT_TYPE.clone());
+                    Response::from_string(index_html()).with_header(G_CONTENT_TYPE.clone());
                 let _err = request.respond(response);
             }
             "/api/fund" => {
                 let resp = handle_fund(&faucet, &mut request).await;
-                if let Err(err) = request.respond(response(resp).with_header(CONTENT_TYPE.clone()))
+                if let Err(err) =
+                    request.respond(response(resp).with_header(G_CONTENT_TYPE.clone()))
                 {
                     error!("response err: {}", err)
                 }

@@ -49,7 +49,7 @@ fn test_genesis_config_save_and_load() -> Result<()> {
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
     genesis_config.consensus_config.base_block_time_target = 10000000;
     let temp_path = temp_dir();
-    let file_path = temp_path.path().join(GENESIS_CONFIG_FILE_NAME);
+    let file_path = temp_path.path().join(G_GENESIS_CONFIG_FILE_NAME);
     genesis_config.save(file_path.as_path())?;
     let genesis_config2 = GenesisConfig::load(file_path.as_path())?;
     assert_eq!(genesis_config, genesis_config2);

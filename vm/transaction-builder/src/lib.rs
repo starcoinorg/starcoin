@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use starcoin_config::{genesis_config::TOTAL_STC_AMOUNT, ChainNetwork};
+use starcoin_config::{genesis_config::G_TOTAL_STC_AMOUNT, ChainNetwork};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_vm_types::access::ModuleAccess;
@@ -17,7 +17,7 @@ use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::language_storage::{StructTag, TypeTag};
 use starcoin_vm_types::on_chain_config::VMConfig;
 use starcoin_vm_types::on_chain_resource::nft::NFTUUID;
-use starcoin_vm_types::token::stc::{stc_type_tag, STC_TOKEN_CODE};
+use starcoin_vm_types::token::stc::{stc_type_tag, G_STC_TOKEN_CODE};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::authenticator::{AccountPrivateKey, AuthenticationKey};
 use starcoin_vm_types::transaction::{
@@ -65,7 +65,7 @@ pub fn build_transfer_txn(
         amount,
         gas_price,
         max_gas,
-        STC_TOKEN_CODE.clone(),
+        G_STC_TOKEN_CODE.clone(),
         expiration_timestamp_secs,
         chain_id,
     )
@@ -241,7 +241,7 @@ pub fn encode_create_account_script_function(
 }
 
 pub fn encode_transfer_script_function(recipient: AccountAddress, amount: u128) -> ScriptFunction {
-    encode_transfer_script_by_token_code(recipient, amount, STC_TOKEN_CODE.clone())
+    encode_transfer_script_by_token_code(recipient, amount, G_STC_TOKEN_CODE.clone())
 }
 
 pub fn encode_transfer_script_by_token_code(
@@ -525,7 +525,7 @@ pub fn build_init_script_v2(net: &ChainNetwork) -> ScriptFunction {
         vec![
             bcs_ext::to_bytes(&net.genesis_config().stdlib_version.version()).unwrap(),
             bcs_ext::to_bytes(&genesis_config.reward_delay).unwrap(),
-            bcs_ext::to_bytes(&TOTAL_STC_AMOUNT.scaling()).unwrap(),
+            bcs_ext::to_bytes(&G_TOTAL_STC_AMOUNT.scaling()).unwrap(),
             bcs_ext::to_bytes(&genesis_config.pre_mine_amount).unwrap(),
             bcs_ext::to_bytes(&genesis_config.time_mint_amount).unwrap(),
             bcs_ext::to_bytes(&genesis_config.time_mint_period).unwrap(),

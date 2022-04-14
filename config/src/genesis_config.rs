@@ -24,7 +24,7 @@ use starcoin_vm_types::gas_schedule::{
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy, StdlibVersion};
 use starcoin_vm_types::on_chain_config::{
     instruction_table_v1, native_table_v1, native_table_v2, ConsensusConfig, DaoConfig,
-    TransactionPublishOption, VMConfig, Version, LATEST_INSTRUCTION_TABLE, LATEST_NATIVE_TABLE,
+    TransactionPublishOption, VMConfig, Version, G_LATEST_INSTRUCTION_TABLE, G_LATEST_NATIVE_TABLE,
 };
 use starcoin_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::time::{TimeService, TimeServiceType};
@@ -169,23 +169,23 @@ impl BuiltinNetworkID {
 
     pub fn genesis_config(self) -> &'static GenesisConfig {
         match self {
-            BuiltinNetworkID::Test => &TEST_CONFIG,
-            BuiltinNetworkID::Dev => &DEV_CONFIG,
-            BuiltinNetworkID::Halley => &HALLEY_CONFIG,
-            BuiltinNetworkID::Proxima => &PROXIMA_CONFIG,
-            BuiltinNetworkID::Barnard => &BARNARD_CONFIG,
-            BuiltinNetworkID::Main => &MAIN_CONFIG,
+            BuiltinNetworkID::Test => &G_TEST_CONFIG,
+            BuiltinNetworkID::Dev => &G_DEV_CONFIG,
+            BuiltinNetworkID::Halley => &G_HALLEY_CONFIG,
+            BuiltinNetworkID::Proxima => &G_PROXIMA_CONFIG,
+            BuiltinNetworkID::Barnard => &G_BARNARD_CONFIG,
+            BuiltinNetworkID::Main => &G_MAIN_CONFIG,
         }
     }
 
     pub fn boot_nodes(self) -> &'static [MultiaddrWithPeerId] {
         match self {
-            BuiltinNetworkID::Test => EMPTY_BOOT_NODES.as_slice(),
-            BuiltinNetworkID::Dev => EMPTY_BOOT_NODES.as_slice(),
-            BuiltinNetworkID::Halley => HALLEY_BOOT_NODES.as_slice(),
-            BuiltinNetworkID::Proxima => PROXIMA_BOOT_NODES.as_slice(),
-            BuiltinNetworkID::Barnard => BARNARD_BOOT_NODES.as_slice(),
-            BuiltinNetworkID::Main => MAIN_BOOT_NODES.as_slice(),
+            BuiltinNetworkID::Test => G_EMPTY_BOOT_NODES.as_slice(),
+            BuiltinNetworkID::Dev => G_EMPTY_BOOT_NODES.as_slice(),
+            BuiltinNetworkID::Halley => G_HALLEY_BOOT_NODES.as_slice(),
+            BuiltinNetworkID::Proxima => G_PROXIMA_BOOT_NODES.as_slice(),
+            BuiltinNetworkID::Barnard => G_BARNARD_BOOT_NODES.as_slice(),
+            BuiltinNetworkID::Main => G_MAIN_BOOT_NODES.as_slice(),
         }
     }
 
@@ -685,126 +685,126 @@ impl GenesisConfig {
     }
 }
 
-static UNCLE_RATE_TARGET: u64 = 240;
-static DEFAULT_BASE_BLOCK_TIME_TARGET: u64 = 10000;
-static DEFAULT_BASE_BLOCK_DIFF_WINDOW: u64 = 24;
-static BASE_REWARD_PER_UNCLE_PERCENT: u64 = 10;
-static MIN_BLOCK_TIME_TARGET: u64 = 5000;
-static MAX_BLOCK_TIME_TARGET: u64 = 60000;
-static BASE_MAX_UNCLES_PER_BLOCK: u64 = 2;
+static G_UNCLE_RATE_TARGET: u64 = 240;
+static G_DEFAULT_BASE_BLOCK_TIME_TARGET: u64 = 10000;
+static G_DEFAULT_BASE_BLOCK_DIFF_WINDOW: u64 = 24;
+static G_BASE_REWARD_PER_UNCLE_PERCENT: u64 = 10;
+static G_MIN_BLOCK_TIME_TARGET: u64 = 5000;
+static G_MAX_BLOCK_TIME_TARGET: u64 = 60000;
+static G_BASE_MAX_UNCLES_PER_BLOCK: u64 = 2;
 
-pub static TOTAL_STC_AMOUNT: Lazy<TokenValue<STCUnit>> =
+pub static G_TOTAL_STC_AMOUNT: Lazy<TokenValue<STCUnit>> =
     Lazy::new(|| STCUnit::STC.value_of(3185136000));
 
 //for Private funding
-static DEFAULT_PRE_MINT_AMOUNT: Lazy<TokenValue<STCUnit>> =
+static G_DEFAULT_PRE_MINT_AMOUNT: Lazy<TokenValue<STCUnit>> =
     Lazy::new(|| STCUnit::STC.value_of(159256800));
 
 //for Starcoin Foundation + DevTeam time lock release.
-static DEFAULT_TIME_LOCKED_AMOUNT: Lazy<TokenValue<STCUnit>> =
+static G_DEFAULT_TIME_LOCKED_AMOUNT: Lazy<TokenValue<STCUnit>> =
     Lazy::new(|| STCUnit::STC.value_of(85043130 * 3 + 74213670 * 3));
 
 //three years.
-static DEFAULT_TIME_LOCKED_PERIOD: u64 = 3600 * 24 * 365 * 3;
+static G_DEFAULT_TIME_LOCKED_PERIOD: u64 = 3600 * 24 * 365 * 3;
 
-static DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
+static G_DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
     Lazy::new(|| STCUnit::STC.value_of(10));
 
-pub static BASE_BLOCK_GAS_LIMIT: u64 = 50_000_000; //must big than maximum_number_of_gas_units
+pub static G_BASE_BLOCK_GAS_LIMIT: u64 = 50_000_000; //must big than maximum_number_of_gas_units
 
-static MAX_TRANSACTION_SIZE_IN_BYTES_V1: u64 = 4096 * 10;
-static MAX_TRANSACTION_SIZE_IN_BYTES_V2: u64 = 60000;
-static MAX_TRANSACTION_SIZE_IN_BYTES_V3: u64 = 128 * 1024;
+static G_MAX_TRANSACTION_SIZE_IN_BYTES_V1: u64 = 4096 * 10;
+static G_MAX_TRANSACTION_SIZE_IN_BYTES_V2: u64 = 60000;
+static G_MAX_TRANSACTION_SIZE_IN_BYTES_V3: u64 = 128 * 1024;
 
 /// For V1 all accounts will be ~800 bytes
-static DEFAULT_ACCOUNT_SIZE: Lazy<AbstractMemorySize<GasCarrier>> =
+static G_DEFAULT_ACCOUNT_SIZE: Lazy<AbstractMemorySize<GasCarrier>> =
     Lazy::new(|| AbstractMemorySize::new(800));
 
 /// Any transaction over this size will be charged `INTRINSIC_GAS_PER_BYTE` per byte
-static LARGE_TRANSACTION_CUTOFF: Lazy<AbstractMemorySize<GasCarrier>> =
+static G_LARGE_TRANSACTION_CUTOFF: Lazy<AbstractMemorySize<GasCarrier>> =
     Lazy::new(|| AbstractMemorySize::new(600));
 
-static GAS_CONSTANTS_V1: Lazy<GasConstants> = Lazy::new(|| {
+static G_GAS_CONSTANTS_V1: Lazy<GasConstants> = Lazy::new(|| {
     GasConstants {
         global_memory_per_byte_cost: InternalGasUnits::new(4),
         global_memory_per_byte_write_cost: InternalGasUnits::new(9),
         min_transaction_gas_units: InternalGasUnits::new(600),
-        large_transaction_cutoff: *LARGE_TRANSACTION_CUTOFF,
+        large_transaction_cutoff: *G_LARGE_TRANSACTION_CUTOFF,
         intrinsic_gas_per_byte: InternalGasUnits::new(8),
         maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
         min_price_per_gas_unit: GasPrice::new(1),
         max_price_per_gas_unit: GasPrice::new(10_000),
-        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES_V1, // to pass stdlib_upgrade
+        max_transaction_size_in_bytes: G_MAX_TRANSACTION_SIZE_IN_BYTES_V1, // to pass stdlib_upgrade
         gas_unit_scaling_factor: 1,
-        default_account_size: *DEFAULT_ACCOUNT_SIZE,
+        default_account_size: *G_DEFAULT_ACCOUNT_SIZE,
     }
 });
 
-static GAS_CONSTANTS_V2: Lazy<GasConstants> = Lazy::new(|| {
+static G_GAS_CONSTANTS_V2: Lazy<GasConstants> = Lazy::new(|| {
     GasConstants {
         global_memory_per_byte_cost: InternalGasUnits::new(4),
         global_memory_per_byte_write_cost: InternalGasUnits::new(9),
         min_transaction_gas_units: InternalGasUnits::new(600),
-        large_transaction_cutoff: *LARGE_TRANSACTION_CUTOFF,
+        large_transaction_cutoff: *G_LARGE_TRANSACTION_CUTOFF,
         intrinsic_gas_per_byte: InternalGasUnits::new(8),
         maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
         min_price_per_gas_unit: GasPrice::new(1),
         max_price_per_gas_unit: GasPrice::new(10_000),
-        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES_V2, // to pass stdlib_upgrade
+        max_transaction_size_in_bytes: G_MAX_TRANSACTION_SIZE_IN_BYTES_V2, // to pass stdlib_upgrade
         gas_unit_scaling_factor: 1,
-        default_account_size: *DEFAULT_ACCOUNT_SIZE,
+        default_account_size: *G_DEFAULT_ACCOUNT_SIZE,
     }
 });
-pub static GAS_CONSTANTS_V3: Lazy<GasConstants> = Lazy::new(|| {
+pub static G_GAS_CONSTANTS_V3: Lazy<GasConstants> = Lazy::new(|| {
     GasConstants {
         global_memory_per_byte_cost: InternalGasUnits::new(4),
         global_memory_per_byte_write_cost: InternalGasUnits::new(9),
         min_transaction_gas_units: InternalGasUnits::new(600),
-        large_transaction_cutoff: *LARGE_TRANSACTION_CUTOFF,
+        large_transaction_cutoff: *G_LARGE_TRANSACTION_CUTOFF,
         intrinsic_gas_per_byte: InternalGasUnits::new(8),
         maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
         min_price_per_gas_unit: GasPrice::new(1),
         max_price_per_gas_unit: GasPrice::new(10_000),
-        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES_V3,
+        max_transaction_size_in_bytes: G_MAX_TRANSACTION_SIZE_IN_BYTES_V3,
         gas_unit_scaling_factor: 1,
-        default_account_size: *DEFAULT_ACCOUNT_SIZE,
+        default_account_size: *G_DEFAULT_ACCOUNT_SIZE,
     }
 });
 
-pub static TEST_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
+pub static G_TEST_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
     GasConstants {
         global_memory_per_byte_cost: InternalGasUnits::new(4),
         global_memory_per_byte_write_cost: InternalGasUnits::new(9),
         min_transaction_gas_units: InternalGasUnits::new(600),
-        large_transaction_cutoff: *LARGE_TRANSACTION_CUTOFF,
+        large_transaction_cutoff: *G_LARGE_TRANSACTION_CUTOFF,
         intrinsic_gas_per_byte: InternalGasUnits::new(8),
         maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
         min_price_per_gas_unit: GasPrice::new(0),
         max_price_per_gas_unit: GasPrice::new(10_000),
-        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES_V3,
+        max_transaction_size_in_bytes: G_MAX_TRANSACTION_SIZE_IN_BYTES_V3,
         gas_unit_scaling_factor: 1,
-        default_account_size: *DEFAULT_ACCOUNT_SIZE,
+        default_account_size: *G_DEFAULT_ACCOUNT_SIZE,
     }
 });
 
-pub static LATEST_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| GAS_CONSTANTS_V3.clone());
+pub static G_LATEST_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| G_GAS_CONSTANTS_V3.clone());
 
 pub fn latest_cost_table(gas_constants: GasConstants) -> CostTable {
     CostTable {
-        instruction_table: LATEST_INSTRUCTION_TABLE.clone(),
-        native_table: LATEST_NATIVE_TABLE.clone(),
+        instruction_table: G_LATEST_INSTRUCTION_TABLE.clone(),
+        native_table: G_LATEST_NATIVE_TABLE.clone(),
         gas_constants,
     }
 }
 
 /// only used in starcoin vm when init genesis
-pub static LATEST_GAS_SCHEDULE: Lazy<CostTable> =
-    Lazy::new(|| latest_cost_table(LATEST_GAS_CONSTANTS.clone()));
+pub static G_LATEST_GAS_SCHEDULE: Lazy<CostTable> =
+    Lazy::new(|| latest_cost_table(G_LATEST_GAS_CONSTANTS.clone()));
 
-static EMPTY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(Vec::new);
+static G_EMPTY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(Vec::new);
 const ONE_DAY: u64 = 86400;
 
-pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
+pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_multi_key_pair();
     let (genesis_private_key, genesis_public_key) = genesis_key_pair();
 
@@ -817,24 +817,24 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         }),
         version: Version { major: 1 },
         reward_delay: 1,
-        pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
-        time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
-        time_mint_period: DEFAULT_TIME_LOCKED_PERIOD,
+        pre_mine_amount: G_DEFAULT_PRE_MINT_AMOUNT.scaling(),
+        time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
+        time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
-            gas_schedule: latest_cost_table(TEST_GAS_CONSTANTS.clone()),
+            gas_schedule: latest_cost_table(G_TEST_GAS_CONSTANTS.clone()),
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
-            uncle_rate_target: UNCLE_RATE_TARGET,
-            base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
-            base_reward_per_block: DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
-            epoch_block_count: DEFAULT_BASE_BLOCK_DIFF_WINDOW * 2,
-            base_block_difficulty_window: DEFAULT_BASE_BLOCK_DIFF_WINDOW,
-            base_reward_per_uncle_percent: BASE_REWARD_PER_UNCLE_PERCENT,
-            min_block_time_target: MIN_BLOCK_TIME_TARGET,
-            max_block_time_target: MAX_BLOCK_TIME_TARGET,
-            base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
-            base_block_gas_limit: BASE_BLOCK_GAS_LIMIT * 10,
+            uncle_rate_target: G_UNCLE_RATE_TARGET,
+            base_block_time_target: G_DEFAULT_BASE_BLOCK_TIME_TARGET,
+            base_reward_per_block: G_DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
+            epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 2,
+            base_block_difficulty_window: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW,
+            base_reward_per_uncle_percent: G_BASE_REWARD_PER_UNCLE_PERCENT,
+            min_block_time_target: G_MIN_BLOCK_TIME_TARGET,
+            max_block_time_target: G_MAX_BLOCK_TIME_TARGET,
+            base_max_uncles_per_block: G_BASE_MAX_UNCLES_PER_BLOCK,
+            base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT * 10,
             strategy: ConsensusStrategy::Dummy.value(),
         },
         association_key_pair: (
@@ -854,7 +854,7 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
+pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_multi_key_pair();
     let (genesis_private_key, genesis_public_key) = genesis_key_pair();
 
@@ -866,24 +866,24 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         }),
         version: Version { major: 1 },
         reward_delay: 1,
-        pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
-        time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
+        pre_mine_amount: G_DEFAULT_PRE_MINT_AMOUNT.scaling(),
+        time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: 3600 * 24,
         vm_config: VMConfig {
-            gas_schedule: latest_cost_table(TEST_GAS_CONSTANTS.clone()),
+            gas_schedule: latest_cost_table(G_TEST_GAS_CONSTANTS.clone()),
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
-            uncle_rate_target: UNCLE_RATE_TARGET,
-            base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
-            base_reward_per_block: DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
-            epoch_block_count: DEFAULT_BASE_BLOCK_DIFF_WINDOW * 2,
-            base_block_difficulty_window: DEFAULT_BASE_BLOCK_DIFF_WINDOW,
-            base_reward_per_uncle_percent: BASE_REWARD_PER_UNCLE_PERCENT,
-            min_block_time_target: MIN_BLOCK_TIME_TARGET,
-            max_block_time_target: MAX_BLOCK_TIME_TARGET,
-            base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
-            base_block_gas_limit: BASE_BLOCK_GAS_LIMIT * 10,
+            uncle_rate_target: G_UNCLE_RATE_TARGET,
+            base_block_time_target: G_DEFAULT_BASE_BLOCK_TIME_TARGET,
+            base_reward_per_block: G_DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
+            epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 2,
+            base_block_difficulty_window: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW,
+            base_reward_per_uncle_percent: G_BASE_REWARD_PER_UNCLE_PERCENT,
+            min_block_time_target: G_MIN_BLOCK_TIME_TARGET,
+            max_block_time_target: G_MAX_BLOCK_TIME_TARGET,
+            base_max_uncles_per_block: G_BASE_MAX_UNCLES_PER_BLOCK,
+            base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT * 10,
             strategy: ConsensusStrategy::Dummy.value(),
         },
         association_key_pair: (
@@ -903,13 +903,13 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-pub static HALLEY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
+pub static G_HALLEY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
     vec!["/dns4/halley1.seed.starcoin.org/tcp/9840/p2p/12D3KooW9yQoKZrByqrUjmmPHXtR23qCXRQvF5KowYgoqypuhuCn".parse().expect("parse multi addr should be ok"),
          "/dns4/halley2.seed.starcoin.org/tcp/9840/p2p/12D3KooWCqWbB2Abp6co6vMGG7VcEC9yYJU3yB1VhVYvpRQAr3sv".parse().expect("parse multi addr should be ok"),
          "/dns4/halley3.seed.starcoin.org/tcp/9840/p2p/12D3KooWRiF6ZtUouCHgrgoCJ2jL4LCzzTEwopPbzVvTTRY3c2mf".parse().expect("parse multi addr should be ok"), ]
 });
 
-pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
+pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let stdlib_version = StdlibVersion::Latest;
     let association_public_key = "068b8493d8c533fd08568429274e49639518a8517f6ab03a0f0cc37edcbdfdd0071855fd941dbcefeb9e4da9f417c7b0f39f73226c9310d39881ae13b45017fa67cc9cb01386e9f5e321b078d4d3a2925b520f955cf7dfd9f6891de366c186ce6ec4a3d5a1c6c795126e5ee1222e23f9a28266c07ecce3e2cd19c6e123b465c091bc45a1fa7f778c66c37af15f3e81ff511e69ff0481bcfaab7b4673f469a3d29760cacf5dd0105a541b5f50720b9577a4c3ff7475554afedbf6a884777f9db4c461fe9aca18df90ed31ee967fe49ed47756311eaa2a6042b7aff1422e48643dc7a0004e0ca3e6b8e548c80d76eeb88e84a82f6b863a1346eabadfe4d5d9be86f98fa72c63f1e1a3f193d4ff71e10dbf364200b221e1a7f71cfab55cc7f7ad2a05";
 
@@ -921,24 +921,24 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         }),
         version: Version { major: 1 },
         reward_delay: 3,
-        pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
-        time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
+        pre_mine_amount: G_DEFAULT_PRE_MINT_AMOUNT.scaling(),
+        time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: 3600 * 24 * 31,
         vm_config: VMConfig {
-            gas_schedule: LATEST_GAS_SCHEDULE.clone(),
+            gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
-            uncle_rate_target: UNCLE_RATE_TARGET,
-            base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
-            base_reward_per_block: DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
-            epoch_block_count: DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
-            base_block_difficulty_window: DEFAULT_BASE_BLOCK_DIFF_WINDOW,
-            base_reward_per_uncle_percent: BASE_REWARD_PER_UNCLE_PERCENT,
-            min_block_time_target: MIN_BLOCK_TIME_TARGET,
-            max_block_time_target: MAX_BLOCK_TIME_TARGET,
-            base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
-            base_block_gas_limit: BASE_BLOCK_GAS_LIMIT * 10,
+            uncle_rate_target: G_UNCLE_RATE_TARGET,
+            base_block_time_target: G_DEFAULT_BASE_BLOCK_TIME_TARGET,
+            base_reward_per_block: G_DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
+            epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
+            base_block_difficulty_window: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW,
+            base_reward_per_uncle_percent: G_BASE_REWARD_PER_UNCLE_PERCENT,
+            min_block_time_target: G_MIN_BLOCK_TIME_TARGET,
+            max_block_time_target: G_MAX_BLOCK_TIME_TARGET,
+            base_max_uncles_per_block: G_BASE_MAX_UNCLES_PER_BLOCK,
+            base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT * 10,
             strategy: ConsensusStrategy::CryptoNight.value(),
         },
         association_key_pair: (
@@ -959,14 +959,14 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-pub static PROXIMA_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
+pub static G_PROXIMA_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
     vec!["/dns4/proxima1.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"),
          "/dns4/proxima2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
          "/dns4/proxima3.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"),
       ]
 });
 
-pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
+pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let stdlib_version = StdlibVersion::Version(10);
     let association_public_key = "068b8493d8c533fd08568429274e49639518a8517f6ab03a0f0cc37edcbdfdd0071855fd941dbcefeb9e4da9f417c7b0f39f73226c9310d39881ae13b45017fa67cc9cb01386e9f5e321b078d4d3a2925b520f955cf7dfd9f6891de366c186ce6ec4a3d5a1c6c795126e5ee1222e23f9a28266c07ecce3e2cd19c6e123b465c091bc45a1fa7f778c66c37af15f3e81ff511e69ff0481bcfaab7b4673f469a3d29760cacf5dd0105a541b5f50720b9577a4c3ff7475554afedbf6a884777f9db4c461fe9aca18df90ed31ee967fe49ed47756311eaa2a6042b7aff1422e48643dc7a0004e0ca3e6b8e548c80d76eeb88e84a82f6b863a1346eabadfe4d5d9be86f98fa72c63f1e1a3f193d4ff71e10dbf364200b221e1a7f71cfab55cc7f7ad2a05";
     GenesisConfig {
@@ -977,28 +977,28 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         }),
         version: Version { major: 1 },
         reward_delay: 7,
-        pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
-        time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
-        time_mint_period: DEFAULT_TIME_LOCKED_PERIOD / 12,
+        pre_mine_amount: G_DEFAULT_PRE_MINT_AMOUNT.scaling(),
+        time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
+        time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD / 12,
         vm_config: VMConfig {
             gas_schedule: CostTable {
                 instruction_table: instruction_table_v1(),
                 native_table: native_table_v2(),
-                gas_constants: GAS_CONSTANTS_V3.clone(),
+                gas_constants: G_GAS_CONSTANTS_V3.clone(),
             },
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
-            uncle_rate_target: UNCLE_RATE_TARGET,
-            base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
-            base_reward_per_block: DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
-            epoch_block_count: DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
-            base_block_difficulty_window: DEFAULT_BASE_BLOCK_DIFF_WINDOW,
-            base_reward_per_uncle_percent: BASE_REWARD_PER_UNCLE_PERCENT,
-            min_block_time_target: MIN_BLOCK_TIME_TARGET,
-            max_block_time_target: MAX_BLOCK_TIME_TARGET,
-            base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
-            base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
+            uncle_rate_target: G_UNCLE_RATE_TARGET,
+            base_block_time_target: G_DEFAULT_BASE_BLOCK_TIME_TARGET,
+            base_reward_per_block: G_DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
+            epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
+            base_block_difficulty_window: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW,
+            base_reward_per_uncle_percent: G_BASE_REWARD_PER_UNCLE_PERCENT,
+            min_block_time_target: G_MIN_BLOCK_TIME_TARGET,
+            max_block_time_target: G_MAX_BLOCK_TIME_TARGET,
+            base_max_uncles_per_block: G_BASE_MAX_UNCLES_PER_BLOCK,
+            base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT,
             strategy: ConsensusStrategy::CryptoNight.value(),
         },
         association_key_pair: (
@@ -1019,7 +1019,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-pub static BARNARD_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
+pub static G_BARNARD_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
     vec![
         "/dns4/barnard1.seed.starcoin.org/tcp/9840/p2p/12D3KooWJcsd9JQngZFsHgYgkHymk7anN8fKqBtD1x8jEbq64QET".parse().expect("parse multi addr should be ok"),
         "/dns4/barnard2.seed.starcoin.org/tcp/9840/p2p/12D3KooWMKgVbWRQain4Sbw4DUnAJMykjdFanAcePn5xsTZihGTo".parse().expect("parse multi addr should be ok"),
@@ -1030,7 +1030,7 @@ pub static BARNARD_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
     ]
 });
 
-pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
+pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     // This is a test config,
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter{
@@ -1042,26 +1042,26 @@ pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         reward_delay: 7,
         pre_mine_amount: STCUnit::STC.value_of(15925680).scaling(),
         time_mint_amount: STCUnit::STC.value_of(47777040).scaling(),
-        time_mint_period: DEFAULT_TIME_LOCKED_PERIOD,
+        time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
             gas_schedule: CostTable {
                 instruction_table: instruction_table_v1(),
                 native_table: native_table_v1(),
-                gas_constants: GAS_CONSTANTS_V1.clone(),
+                gas_constants: G_GAS_CONSTANTS_V1.clone(),
             },
         },
         publishing_option: TransactionPublishOption::locked(),
         consensus_config: ConsensusConfig {
             uncle_rate_target: 500,
-            base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
+            base_block_time_target: G_DEFAULT_BASE_BLOCK_TIME_TARGET,
             base_reward_per_block: STCUnit::STC.value_of(1).scaling(),
-            epoch_block_count: DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
-            base_block_difficulty_window: DEFAULT_BASE_BLOCK_DIFF_WINDOW,
-            base_reward_per_uncle_percent: BASE_REWARD_PER_UNCLE_PERCENT,
-            min_block_time_target: MIN_BLOCK_TIME_TARGET,
-            max_block_time_target: MAX_BLOCK_TIME_TARGET,
-            base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
-            base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
+            epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
+            base_block_difficulty_window: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW,
+            base_reward_per_uncle_percent: G_BASE_REWARD_PER_UNCLE_PERCENT,
+            min_block_time_target: G_MIN_BLOCK_TIME_TARGET,
+            max_block_time_target: G_MAX_BLOCK_TIME_TARGET,
+            base_max_uncles_per_block: G_BASE_MAX_UNCLES_PER_BLOCK,
+            base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT,
             strategy: ConsensusStrategy::CryptoNight.value(),
         },
         association_key_pair: (None,  MultiEd25519PublicKey::from_encoded_string("3e6c08fb7f265a35ffd121c809bfa233041d92165c2fdd13f8b85be0814243ba2d616c5105dc8baa39ff764bbcd072e44fcb8bfe5a2f773636285c40d1af15087b00e16ec03438e99858127374c3c148b57a5e10068ca956eff06240c8199f46e4746a6fac58d7d65cfd3ccad4331d071a9ff1a0a29c3bc3896b86c0a7f4ce79e75fbc8422501f5a6bb50ae39e7656949f76d24ce4b677ea224254d8661e509d839e3222ea576580b965d94920765aa1ec62047b7536b0ae57fbdffef968f09e3a5847fb627a9a7909961b21c50c868e26797e2a406879f5cf1d80f4035a448a32fa70d239907d561e116d03dfd9fcba8ab1095117b36b188bf277cc977fc4af87c071e8106a551f0bfe57e9aa2b03d037afd3aaab5c8f0eb56d725f598deada04")
@@ -1079,7 +1079,7 @@ pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-pub static MAIN_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
+pub static G_MAIN_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
     vec![
     "/dns4/main1.seed.starcoin.org/tcp/9840/p2p/12D3KooWSW8t32L6VyjPZxxe3VSD7H6Ffgh69eCaDnDyab2M6tfK".parse().expect("parse multi addr should be ok"),
     "/dns4/main2.seed.starcoin.org/tcp/9840/p2p/12D3KooWBWsibdKdogDpFUfSVejPdK6t4s1eEvcqjuPVJ3gSpypx".parse().expect("parse multi addr should be ok"),
@@ -1093,7 +1093,7 @@ pub static MAIN_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 ]
 });
 
-pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
+pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let stdlib_version = StdlibVersion::Version(4);
     let publishing_option = TransactionPublishOption::locked();
     GenesisConfig {
@@ -1104,28 +1104,28 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         }),
         version: Version { major: 1 },
         reward_delay: 7,
-        pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
-        time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
-        time_mint_period: DEFAULT_TIME_LOCKED_PERIOD,
+        pre_mine_amount: G_DEFAULT_PRE_MINT_AMOUNT.scaling(),
+        time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
+        time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
             gas_schedule: CostTable {
                 instruction_table: instruction_table_v1(),
                 native_table: native_table_v2(),
-                gas_constants: GAS_CONSTANTS_V2.clone(),
+                gas_constants: G_GAS_CONSTANTS_V2.clone(),
             },
         },
         publishing_option,
         consensus_config: ConsensusConfig {
-            uncle_rate_target: UNCLE_RATE_TARGET,
-            base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
-            base_reward_per_block: DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
-            epoch_block_count: DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
-            base_block_difficulty_window: DEFAULT_BASE_BLOCK_DIFF_WINDOW,
-            base_reward_per_uncle_percent: BASE_REWARD_PER_UNCLE_PERCENT,
-            min_block_time_target: MIN_BLOCK_TIME_TARGET,
-            max_block_time_target: MAX_BLOCK_TIME_TARGET,
-            base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
-            base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
+            uncle_rate_target: G_UNCLE_RATE_TARGET,
+            base_block_time_target: G_DEFAULT_BASE_BLOCK_TIME_TARGET,
+            base_reward_per_block: G_DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
+            epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
+            base_block_difficulty_window: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW,
+            base_reward_per_uncle_percent: G_BASE_REWARD_PER_UNCLE_PERCENT,
+            min_block_time_target: G_MIN_BLOCK_TIME_TARGET,
+            max_block_time_target: G_MAX_BLOCK_TIME_TARGET,
+            base_max_uncles_per_block: G_BASE_MAX_UNCLES_PER_BLOCK,
+            base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT,
             strategy: ConsensusStrategy::CryptoNight.value(),
         },
         association_key_pair: (None,  MultiEd25519PublicKey::from_encoded_string("810a82a896a4f8fd065bcab8b06588fe1afdbb3d3830693c65a73d31ee1e482d85a40286b624b8481b05d9ed748e7c051b63ed36ce952cbc48bb0de4bfc6ec5888feded087075af9585a83c777ba52da1ab3aef139764a0de5fbc2d8aa8d380b02")

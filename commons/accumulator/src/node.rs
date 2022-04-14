@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::node_index::{NodeIndex, NODE_ERROR_INDEX};
+use crate::node_index::{NodeIndex, G_NODE_ERROR_INDEX};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{
@@ -48,7 +48,7 @@ impl AccumulatorNode {
             AccumulatorNode::Leaf(leaf) => leaf.index(),
             AccumulatorNode::Empty => {
                 // bail!("error for get index");
-                *NODE_ERROR_INDEX
+                *G_NODE_ERROR_INDEX
             }
         }
     }

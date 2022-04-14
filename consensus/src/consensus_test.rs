@@ -5,7 +5,7 @@
 
 use crate::consensus::Consensus;
 use crate::difficulty::{get_next_target_helper, BlockDiffInfo};
-use crate::{difficult_to_target, target_to_difficulty, CRYPTONIGHT};
+use crate::{difficult_to_target, target_to_difficulty, G_CRYPTONIGHT};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_types::block::{BlockHeader, BlockHeaderBuilder, RawBlockHeader};
 use starcoin_types::U256;
@@ -36,13 +36,13 @@ fn verify_header_test() {
         .build();
     let raw_header: RawBlockHeader = header.clone().into();
     let time_service = TimeServiceType::RealTimeService.new_time_service();
-    let nonce = CRYPTONIGHT.solve_consensus_nonce(
+    let nonce = G_CRYPTONIGHT.solve_consensus_nonce(
         &header.as_pow_header_blob(),
         raw_header.difficulty,
         time_service.as_ref(),
     );
     let header = header.as_builder().with_nonce(nonce).build();
-    CRYPTONIGHT
+    G_CRYPTONIGHT
         .verify_header_difficulty(header.difficulty(), &header)
         .unwrap()
 }
