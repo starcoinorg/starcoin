@@ -91,7 +91,7 @@ impl ChainInfoStorage {
     }
 
     pub fn save_snapshot_range(&self, snapshot_range: SnapshotRange) -> Result<()> {
-        self.put_sync(
+        self.put(
             Self::SNAPSHOT_RANGE_KEY.as_bytes().to_vec(),
             snapshot_range.try_into()?,
         )
@@ -106,6 +106,9 @@ impl ChainInfoStorage {
     }
 
     pub fn save_prune_info(&self, prune_info: PruneInfo) -> Result<()> {
-
+        self.put(
+            Self::PRUNE_INFO_KEY.as_bytes().to_vec(),
+            prune_info.try_into()?,
+        )
     }
 }

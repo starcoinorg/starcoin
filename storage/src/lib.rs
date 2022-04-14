@@ -213,6 +213,9 @@ pub trait BlockStore {
 
     fn get_snapshot_range(&self) -> Result<Option<SnapshotRange>>;
     fn save_snapshot_range(&self, snapshot_height: SnapshotRange) -> Result<()>;
+
+    fn get_prune_info(&self) -> Result<Option<PruneInfo>>;
+    fn save_prune_info(&self, prune_info: PruneInfo) -> Result<()>;
 }
 
 pub trait BlockTransactionInfoStore {
@@ -453,6 +456,10 @@ impl BlockStore for Storage {
 
     fn save_prune_info(&self, prune_info: PruneInfo) -> Result<()> {
         self.chain_info_storage.save_prune_info(prune_info)
+    }
+
+    fn get_prune_info(&self) -> Result<Option<PruneInfo>> {
+        self.chain_info_storage.get_prune_info()
     }
 }
 

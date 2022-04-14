@@ -36,11 +36,11 @@ use starcoin_transaction_builder::build_signed_empty_txn;
 use starcoin_types::account::Account;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
-use starcoin_types::startup_info::{SnapshotRange, StartupInfo};
+use starcoin_types::startup_info::{PruneInfo, SnapshotRange, StartupInfo};
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 use starcoin_types::transaction::Transaction;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Formatter};
 use std::fs::File;
 use std::fs::OpenOptions;
@@ -51,6 +51,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::SystemTime;
+
 const BLOCK_GAP: u64 = 1000;
 const BACK_SIZE: u64 = 10000;
 const SNAP_GAP: u64 = 128;
@@ -1496,21 +1497,38 @@ fn prune(to_dir: PathBuf, network: BuiltinNetworkID) -> anyhow::Result<()> {
     } else {
         block_num - BLOCK_GAP
     };
-    // XXX FIXME get prune info
 
-    let snapshot_range = storage.get_snapshot_range()?;
-    let mut cur_num = if snapshot_range.is_none() {
-        1
+    let end_block = cur_chain
+        .get_block_by_number(end_block_num)?
+        .ok_or_else(|| format_err!("get block by number {} error", end_block_num))?;
+    let mut chain = BlockChain::new(net.time_service(), end_block.id(), storage.clone(), None)?;
+    let end_epoch_num = chain.epoch().number();
+
+    let prune_info = storage.get_prune_info()?;
+    let mut start_num = if let Some(prune_info) = prune_info {
+        prune_info.num + 1
     } else {
-        snapshot_range.unwrap().get_end() + 1
+        let snapshot_range = storage.get_snapshot_range()?;
+        if let Some(snapshot_range) = snapshot_range {
+            snapshot_range.get_end() + 1
+        } else {
+            1
+        }
     };
 
-    loop {
-        let cur_block = cur_chain
-            .get_block_by_number(cur_num)?
-            .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
+    let mut start_block = cur_chain
+        .get_block_by_number(start_num)?
+        .ok_or_else(|| format_err!("get block by number {} error", start_num))?;
+    chain = BlockChain::new(net.time_service(), start_block.id(), storage.clone(), None)?;
+    let cur_epoch_num = chain.epoch().number();
 
-        let chain = BlockChain::new(net.time_service(), cur_block.id(), storage.clone(), None)?;
+    let bar = ProgressBar::new(end_epoch_num - cur_epoch_num);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
+
+    loop {
         if chain.epoch().end_block_number() > end_block_num {
             break;
         }
@@ -1518,12 +1536,24 @@ fn prune(to_dir: PathBuf, network: BuiltinNetworkID) -> anyhow::Result<()> {
         let block_header_storage = BlockHeaderStorage::new(instance.clone());
         let mut iter = block_header_storage.iter()?;
         iter.seek_to_first();
+
+        let mut uncle_ids = HashSet::new();
+        for i in chain.epoch().start_block_number() + 1..=chain.epoch().end_block_number() {
+            let block = cur_chain
+                .get_block_by_number(i)?
+                .ok_or_else(|| format_err!("get block by number {} error", i))?;
+            if let Some(uncles) = block.body.uncles {
+                for uncle in uncles {
+                    uncle_ids.insert(uncle.id());
+                }
+            }
+        }
         for item in iter {
             let (id, block_header) = item?;
             if block_header.number() >= chain.epoch().start_block_number()
                 && block_header.number() <= chain.epoch().end_block_number()
+                && !uncle_ids.contains(&id)
             {
-                // XXX FIXME verify uncles
                 let hash = cur_chain.get_hash_by_number(block_header.number())?;
                 if hash.is_none() || hash != Some(id) {
                     storage.delete_block(id)?;
@@ -1531,9 +1561,19 @@ fn prune(to_dir: PathBuf, network: BuiltinNetworkID) -> anyhow::Result<()> {
                 }
             }
         }
-        // XXX FIXME SAVE epoch
-        storage.save_prun
-        cur_num = chain.epoch().end_block_number() + 1;
+        let prune_info = PruneInfo {
+            num: chain.epoch().end_block_number(),
+        };
+        storage.save_prune_info(prune_info)?;
+        start_num = chain.epoch().end_block_number() + 1;
+        bar.set_message(format!("prune epoch number {}", chain.epoch().number()).as_str());
+        bar.inc(1);
+
+        start_block = cur_chain
+            .get_block_by_number(start_num)?
+            .ok_or_else(|| format_err!("get block by number {} error", start_num))?;
+        chain = BlockChain::new(net.time_service(), start_block.id(), storage.clone(), None)?;
     }
+    bar.finish();
     Ok(())
 }
