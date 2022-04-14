@@ -21,7 +21,7 @@ use starcoin_accumulator::AccumulatorTreeStore;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::peer_info::PeerId;
-use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
+use starcoin_types::startup_info::{ChainInfo, ChainStatus, PruneInfo, SnapshotRange};
 use starcoin_types::transaction::{RichTransactionInfo, Transaction};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
@@ -449,6 +449,10 @@ impl BlockStore for Storage {
 
     fn save_snapshot_range(&self, snapshot_range: SnapshotRange) -> Result<()> {
         self.chain_info_storage.save_snapshot_range(snapshot_range)
+    }
+
+    fn save_prune_info(&self, prune_info: PruneInfo) -> Result<()> {
+        self.chain_info_storage.save_prune_info(prune_info)
     }
 }
 

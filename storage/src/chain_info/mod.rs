@@ -5,7 +5,7 @@ use crate::storage::{ColumnFamily, InnerStorage, KVStore};
 use crate::{StorageVersion, CHAIN_INFO_PREFIX_NAME};
 use anyhow::Result;
 use crypto::HashValue;
-use starcoin_types::startup_info::{SnapshotRange, StartupInfo};
+use starcoin_types::startup_info::{PruneInfo, SnapshotRange, StartupInfo};
 use std::convert::{TryFrom, TryInto};
 
 #[derive(Clone)]
@@ -27,6 +27,7 @@ impl ChainInfoStorage {
     const GENESIS_KEY: &'static str = "genesis";
     const STORAGE_VERSION_KEY: &'static str = "storage_version";
     const SNAPSHOT_RANGE_KEY: &'static str = "snapshot_height";
+    const PRUNE_INFO_KEY: &'static str = "prune_info";
 
     pub fn get_startup_info(&self) -> Result<Option<StartupInfo>> {
         self.get(Self::STARTUP_INFO_KEY.as_bytes())
@@ -94,5 +95,17 @@ impl ChainInfoStorage {
             Self::SNAPSHOT_RANGE_KEY.as_bytes().to_vec(),
             snapshot_range.try_into()?,
         )
+    }
+
+    pub fn get_prune_info(&self) -> Result<Option<PruneInfo>> {
+        self.get(Self::STARTUP_INFO_KEY.as_bytes())
+            .and_then(|bytes| match bytes {
+                Some(bytes) => Ok(Some(bytes.try_into()?)),
+                None => Ok(None),
+            })
+    }
+
+    pub fn save_prune_info(&self, prune_info: PruneInfo) -> Result<()> {
+
     }
 }

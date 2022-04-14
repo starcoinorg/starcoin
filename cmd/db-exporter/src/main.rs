@@ -1532,6 +1532,7 @@ fn prune(to_dir: PathBuf, network: BuiltinNetworkID) -> anyhow::Result<()> {
             }
         }
         // XXX FIXME SAVE epoch
+        storage.save_prun
         cur_num = chain.epoch().end_block_number() + 1;
     }
     Ok(())
