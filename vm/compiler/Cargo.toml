@@ -16,7 +16,7 @@ move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "
 move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "0b4655469084eb2fb6b8a6a7690342d767f05e5b"  }
 petgraph = "0.5.1"
 walkdir = "2.3"
-rayon = "1.5.1"
+rayon = "1.5.2"
 itertools = "0.10.3"
 starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 starcoin-vm-types = { path = "../types"}

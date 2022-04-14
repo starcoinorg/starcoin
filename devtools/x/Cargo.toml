@@ -21,7 +21,7 @@ log = "0.4.16"
 chrono = "0.4.19"
 globset = "0.4.8"
 regex = "1.5.4"
-rayon = "1.5.1"
+rayon = "1.5.2"
 indexmap = "1.6.2"
 camino = { version = "1" }
 x-core = { package="x-core", git = "https://github.com/starcoinorg/move", rev = "0b4655469084eb2fb6b8a6a7690342d767f05e5b"  }
