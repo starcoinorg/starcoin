@@ -64,7 +64,7 @@ jobs:
 
       - name: upload mpm release asset
         if: ${{ github.event_name == 'release'}}
-        id: upload-release-asset
+        id: upload-mpm-release-asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
