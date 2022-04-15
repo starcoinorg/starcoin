@@ -140,7 +140,7 @@ impl RpcClient {
             let _sys = System::with_tokio_rt(|| {
                 tokio::runtime::Builder::new_multi_thread()
                     .enable_all()
-                    .on_thread_stop(|| println!("client-actix-system thread stopped"))
+                    .on_thread_stop(|| debug!("client-actix-system thread stopped"))
                     .thread_name("client-actix-system")
                     .build()
                     .expect("failed to create tokio runtime for client-actix-system")

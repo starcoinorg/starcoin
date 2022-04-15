@@ -31,12 +31,12 @@ function download() {
 }
 
 function usage() {
-  echo -e "usage: import_net_block.sh net to_dir"
+  echo -e "usage: import_block.sh net to_dir"
   echo -e "net is main, barnard, proxima, halley"
   echo -e "to_dir like ~/.starcoin/main，~/.starcoin/barnard"
 }
 
-function import_net_block() {
+function import_block() {
   net=$1
   block_list=$2
   to_dir=$3
@@ -70,7 +70,7 @@ net=$1
 to_dir=$2
 case $net in
 "main" | "barnard" | "proxima" |"halley")
-  import_net_block "$net" block_list.csv "$to_dir"
+  import_block "$net" block_list.csv "$to_dir"
   ;;
 *)
   echo "$net not supported"
