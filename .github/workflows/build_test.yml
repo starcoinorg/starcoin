@@ -50,7 +50,7 @@ jobs:
           command: test
           args: -p starcoin-move-prover
       - name: check changed files
-        run: bash ./scripts/changed-files.sh
+        run: bash ./scripts/changed_files.sh
       - name: integration test dev environment
         env:
           RUST_LOG: info
