@@ -99,7 +99,7 @@ pub fn handle_release(
     };
 
     let p = Package::new(ms, init_script)?;
-    let package_bytes = bcs_ext::to_bytes(&p)?;
+    let blob = bcs_ext::to_bytes(&p)?;
     let release_path = {
         std::fs::create_dir_all(&release_dir)?;
         release_dir.push(format!(
@@ -108,7 +108,7 @@ pub fn handle_release(
         ));
         release_dir
     };
-    std::fs::write(&release_path, package_bytes)?;
+    std::fs::write(&release_path, blob)?;
     println!(
         "Release done: {}, package hash: {}",
         release_path.display(),

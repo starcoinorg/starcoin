@@ -102,24 +102,24 @@ fn get_features() -> &'static [Feature] {
         ]
     })
 }
-fn cvc4_deny_listed(path_str: &str) -> bool {
-    if path_str == "../stdlib/transaction_scripts/queue_proposal_action.move"
-        || path_str == "../stdlib/transaction_scripts/destroy_terminated_proposal.move"
-        || path_str == "../stdlib/transaction_scripts/execute_modify_dao_config_proposal.move"
-        || path_str == "../stdlib/transaction_scripts/propose_modify_dao_config.move"
-        || path_str == "../stdlib/transaction_scripts/submit_module_upgrade_plan.move"
-        || path_str == "../stdlib/transaction_scripts/propose_module_upgrade.move"
-        || path_str == "../stdlib/transaction_scripts/cast_vote.move"
-        || path_str == "../stdlib/transaction_scripts/unstake_vote.move"
-        || path_str == "../stdlib/transaction_scripts/revoke_vote.move"
-        || path_str == "../stdlib/sources/TransactionPublishOption.move"
-        || path_str == "../stdlib/sources/OnChainConfigDao.move"
-        || path_str == "../stdlib/sources/Authenticator.move"
-        || path_str == "../stdlib/sources/MintDaoProposal.move"
-        || path_str == "../stdlib/sources/Dao.move"
-        || path_str == "../stdlib/sources/ConsensusConfig.move"
-        || path_str == "../stdlib/sources/UpgradeModuleDaoProposal.move"
-        || path_str == "../stdlib/sources/ModifyDaoConfigProposal.move"
+fn cvc4_deny_listed(path: &str) -> bool {
+    if path == "../stdlib/transaction_scripts/queue_proposal_action.move"
+        || path == "../stdlib/transaction_scripts/destroy_terminated_proposal.move"
+        || path == "../stdlib/transaction_scripts/execute_modify_dao_config_proposal.move"
+        || path == "../stdlib/transaction_scripts/propose_modify_dao_config.move"
+        || path == "../stdlib/transaction_scripts/submit_module_upgrade_plan.move"
+        || path == "../stdlib/transaction_scripts/propose_module_upgrade.move"
+        || path == "../stdlib/transaction_scripts/cast_vote.move"
+        || path == "../stdlib/transaction_scripts/unstake_vote.move"
+        || path == "../stdlib/transaction_scripts/revoke_vote.move"
+        || path == "../stdlib/sources/TransactionPublishOption.move"
+        || path == "../stdlib/sources/OnChainConfigDao.move"
+        || path == "../stdlib/sources/Authenticator.move"
+        || path == "../stdlib/sources/MintDaoProposal.move"
+        || path == "../stdlib/sources/Dao.move"
+        || path == "../stdlib/sources/ConsensusConfig.move"
+        || path == "../stdlib/sources/UpgradeModuleDaoProposal.move"
+        || path == "../stdlib/sources/ModifyDaoConfigProposal.move"
         || false
     {
         return true;
@@ -210,9 +210,9 @@ fn get_flags_and_baseline(
     feature: &Feature,
 ) -> anyhow::Result<(Vec<String>, Option<PathBuf>)> {
     // Determine the way how to configure tests based on directory of the path.
-    let path_str = path.to_string_lossy();
+    let dir_path = path.to_string_lossy();
 
-    let (base_flags, baseline_path) = if path_str.contains("stdlib/") {
+    let (base_flags, baseline_path) = if dir_path.contains("stdlib/") {
         (REGULAR_TEST_FLAGS, None)
     } else {
         let feature_name = feature.name.to_string();
@@ -285,17 +285,17 @@ fn collect_enabled_tests(reqs: &mut Vec<Requirements>, group: &str, feature: &Fe
                     .unwrap_or_default()
                     .is_empty();
         }
-        let root_str = p.to_string_lossy().to_string();
-        let path_str = path.to_string_lossy().to_string();
+        let root = p.to_string_lossy().to_string();
+        let path = path.to_string_lossy().to_string();
         if included {
-            included = (feature.enabling_condition)(group, &path_str);
+            included = (feature.enabling_condition)(group, &path);
         }
         if included {
             reqs.push(Requirements::new(
                 feature.runner,
                 format!("prover {}[{}]", group, feature.name),
-                root_str,
-                path_str,
+                root,
+                path,
             ));
         }
     }

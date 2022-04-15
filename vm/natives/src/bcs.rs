@@ -26,17 +26,17 @@ pub fn native_to_address(
     debug_assert!(_ty_args.is_empty());
     debug_assert!(args.len() == 1);
 
-    let key_bytes = pop_arg!(args, Vec<u8>);
+    let key = pop_arg!(args, Vec<u8>);
     let cost = native_gas(
         context.cost_table(),
         NativeCostIndex::BCS_TO_ADDRESS as u8,
-        key_bytes.len(),
+        key.len(),
     );
-    if key_bytes.len() != AccountAddress::LENGTH {
+    if key.len() != AccountAddress::LENGTH {
         return Ok(NativeResult::err(cost, NFE_BCS_TO_ADDRESS_FAILURE));
     }
 
-    let address = match AccountAddress::try_from(&key_bytes[..AccountAddress::LENGTH]) {
+    let address = match AccountAddress::try_from(&key[..AccountAddress::LENGTH]) {
         Ok(addr) => addr,
         Err(_) => return Ok(NativeResult::err(cost, NFE_BCS_TO_ADDRESS_FAILURE)),
     };

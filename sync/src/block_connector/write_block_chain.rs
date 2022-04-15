@@ -75,7 +75,7 @@ where
         let result = self.connect_inner(block);
 
         if let Some(metrics) = self.metrics.as_ref() {
-            let result_str = match result.as_ref() {
+            let result = match result.as_ref() {
                 Ok(connect) => format!("Ok_{}", connect),
                 Err(err) => {
                     if let Some(connect_err) = err.downcast_ref::<ConnectBlockError>() {
@@ -87,7 +87,7 @@ where
             };
             metrics
                 .chain_block_connect_total
-                .with_label_values(&[result_str.as_str()])
+                .with_label_values(&[result.as_str()])
                 .inc();
         }
         result.map(|_| ())

@@ -63,16 +63,14 @@ fn test_access_path_str_invalid() {
 
 #[test]
 fn test_bad_case_from_protest() {
-    let access_path_str =
-        "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::a::A_";
-    let access_path = AccessPath::from_str(access_path_str);
+    let raw_path = "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::a::A_";
+    let access_path = AccessPath::from_str(raw_path);
     assert!(access_path.is_ok());
 
     //The module name start with '_' will will encounter parse error
     //This may be the parser error, or the identity's arbitrary error
-    let access_path_str =
-        "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::_a::A";
-    let access_path = AccessPath::from_str(access_path_str);
+    let raw_path = "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::_a::A";
+    let access_path = AccessPath::from_str(raw_path);
     assert!(access_path.is_err());
 }
 
@@ -80,15 +78,15 @@ proptest! {
         //TODO enable this test, when test_bad_case_from_protest is fixed.
         #[ignore]
         #[test]
-        fn test_access_path(access_path in any::<AccessPath>()){
-           let bytes = bcs_ext::to_bytes(&access_path).expect("access_path serialize should ok.");
-           let access_path2 = bcs_ext::from_bytes::<AccessPath>(bytes.as_slice()).expect("access_path deserialize should ok.");
-           prop_assert_eq!(&access_path, &access_path2);
-           let access_path_str = access_path.to_string();
-           let access_path3 = AccessPath::from_str(access_path_str.as_str()).expect("access_path from str should ok");
-           prop_assert_eq!(&access_path, &access_path3);
-           let json_str = serde_json::to_string(&access_path).expect("access_path to json str should ok");
-           let access_path4 = serde_json::from_str::<AccessPath>(json_str.as_str()).expect("access_path from json str should ok");
-            prop_assert_eq!(&access_path, &access_path4);
+        fn test_access_path(raw_access_path in any::<AccessPath>()){
+           let bytes = bcs_ext::to_bytes(&raw_access_path).expect("access_path serialize should ok.");
+           let access_path = bcs_ext::from_bytes::<AccessPath>(bytes.as_slice()).expect("access_path deserialize should ok.");
+           prop_assert_eq!(&raw_access_path, &access_path);
+           let access_path = raw_access_path.to_string();
+           let access_path = AccessPath::from_str(access_path.as_str()).expect("access_path from str should ok");
+           prop_assert_eq!(&raw_access_path, &access_path);
+           let raw_json = serde_json::to_string(&raw_access_path).expect("access_path to json str should ok");
+           let access_path = serde_json::from_str::<AccessPath>(raw_json.as_str()).expect("access_path from json str should ok");
+            prop_assert_eq!(&raw_access_path, &access_path);
         }
 }

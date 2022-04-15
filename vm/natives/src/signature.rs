@@ -22,16 +22,16 @@ pub fn native_ed25519_publickey_validation(
     debug_assert!(_ty_args.is_empty());
     debug_assert!(arguments.len() == 1);
 
-    let key_bytes = pop_arg!(arguments, Vec<u8>);
+    let key = pop_arg!(arguments, Vec<u8>);
 
     let cost = native_gas(
         context.cost_table(),
         NativeCostIndex::ED25519_VALIDATE_KEY as u8,
-        key_bytes.len(),
+        key.len(),
     );
 
     // This deserialization performs point-on-curve and small subgroup checks
-    let valid = ed25519::Ed25519PublicKey::try_from(&key_bytes[..]).is_ok();
+    let valid = ed25519::Ed25519PublicKey::try_from(&key[..]).is_ok();
     Ok(NativeResult::ok(cost, smallvec![Value::bool(valid)]))
 }
 

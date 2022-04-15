@@ -60,8 +60,8 @@ impl TryFrom<TypeTag> for TokenCode {
 }
 impl From<StructTag> for TokenCode {
     fn from(struct_tag: StructTag) -> Self {
-        let tag_str = struct_tag.to_string();
-        let s: Vec<_> = tag_str.splitn(3, "::").collect();
+        let tag = struct_tag.to_string();
+        let s: Vec<_> = tag.splitn(3, "::").collect();
         //this should not happen
         assert_eq!(s.len(), 3, "invalid struct tag format");
         Self::new(

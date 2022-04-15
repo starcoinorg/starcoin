@@ -88,9 +88,9 @@ where
         if p2 == 0 {
             write!(f, "{}{}", p1, self.unit.symbol())
         } else {
-            let p2_str = padding_zero(p2.to_string().as_str(), self.unit.scale(), true);
-            let p2_str = p2_str.trim_end_matches('0');
-            write!(f, "{}.{}{}", p1, p2_str, self.unit.symbol())
+            let p2 = padding_zero(p2.to_string().as_str(), self.unit.scale(), true);
+            let p2 = p2.trim_end_matches('0');
+            write!(f, "{}.{}{}", p1, p2, self.unit.symbol())
         }
     }
 }
