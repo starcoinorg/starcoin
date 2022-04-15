@@ -1,21 +1,12 @@
-<h1 align="center">
-  <a href="https://starcoin.org">
-    <img src="https://starcoin.org/img/stc.svg" alt="Logo" width="125" height="125">
-  </a>
-</h1>
+![starcoin logo](https://starcoin.org/img/stc.svg | width=125px)
 
-<div align="center">
-  Starcoin - a smart contract blockchain network that scales by layering
-  <br />
-  <br />
-  <a href="https://github.com/starcoinorg/starcoin/issues/new?assignees=&labels=bug&template=01_BUG_REPORT.md&title=bug%3A+">Report a Bug</a>
-  ·
-  <a href="https://github.com/starcoinorg/starcoin/issues/new?assignees=&labels=enhancement&template=02_FEATURE_REQUEST.md&title=feat%3A+">Request a Feature</a>
-  .
-  <a href="https://github.com/starcoinorg/starcoin/discussions">Ask a Question</a>
-<br />
-<br />
-</div>
+Starcoin - a smart contract blockchain network that scales by layering
+
+[Report a Bug](https://github.com/starcoinorg/starcoin/issues/new?assignees=&labels=bug&template=01_BUG_REPORT.md&title=bug%3A+")
+·
+[Request a Feature](https://github.com/starcoinorg/starcoin/issues/new?assignees=&labels=enhancement&template=02_FEATURE_REQUEST.md&title=feat%3A+")
+.
+[Ask a Question](https://github.com/starcoinorg/starcoin-cookbook/issues/new?assignees=&labels=question&template=02_QUESTION.md&title=%5Bquestion%5D")
 
 
 [![Build and Test](https://github.com/starcoinorg/starcoin/workflows/Build%20and%20Test/badge.svg)](https://github.com/starcoinorg/starcoin/actions?query=workflow%3A%22Build+and+Test%22+branch%3Amaster)
@@ -23,6 +14,26 @@
 [![codecov](https://codecov.io/gh/starcoinorg/starcoin/branch/master/graph/badge.svg)](https://codecov.io/gh/starcoinorg/starcoin)
 [![LoC](https://tokei.rs/b1/github/starcoinorg/starcoin?category=lines)](https://github.com/starcoinorg/starcoin)
 
+## Binary file description
+
+The starcoin project comes with several wrappers/executables, `release` indicates whether the binary is included in the release archive.
+
+|         Command         | SRC Directory           | Release | Description                                                                                                                                                                                                                                                                                                  |
+|:-----------------------:|-------------------------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|     **`starcoin`**      | cmd/starcoin            | true    | Our main Starcoin CLI client. It is the entry point into the Starcoin network. We can use it to run a node, or connect to a another node as an interactive console. `starcoin --help` and the [CLI reference](https://starcoinorg.github.io/starcoin-cookbook/docs/reference/cli/) for command line options. |
+|        **`mpm`**        | vm/move-package-manager | true    | Move Package Manager(mpm) is a command line tool to develop move projects, like Cargo for Rust, or NPM for NodeJS.                                                                                                                                                                                           |
+|    `starcoin_miner`     | cmd/miner_client        | true    | A CPU miner client for starcoin.                                                                                                                                                                                                                                                                             |             
+| `starcoin_db_exporter`  | cmd/db-exporter         | true    | A tool for exporting or importing data from or to the starcoin database.                                                                                                                                                                                                                                     |                                                                                                                                                                                                                                                                   
+|  `starcoin_generator`   | cmd/generator           | true    | A tool for generate genesis file or mock data.                                                                                                                                                                                                                                                               |
+|        `airdrop`        | cmd/airdrop             | false   | A tool for batch transfer Token based on a csv file.                                                                                                                                                                                                                                                         |                                                                                                                                                                                                                                                        |
+|   `genesis-nft-miner`   | cmd/genesis-nft-miner   | false   | A tool for claim the GenesisNFT, All address in the file [contrib-contracts/src/genesis-nft-address.json](contrib-contracts/src/genesis-nft-address.json).                                                                                                                                                   |
+|    `starcoin-faucet`    | cmd/faucet              | false   | A tool for providing a simple faucet web service                                                                                                                                                                                                                                                             |                                                                                                                                                                                                                                                                                                     
+|   `starcoin-indexer`    | cmd/indexer             | false   | A tool for creating index on Elasticsearch for starcoin's block and transaction, etc.                                                                                                                                                                                                                        |
+|   `merkle-generator`    | cmd/merkle-generator    | false   | A tool for generating merkle data from a detail csv file of a distribution, for airdrop by merkle tree.                                                                                                                                                                                                      |
+|   `resource-exporter`   | cmd/resource-exporter   | false   | A tool for export `resource` from starcoin state database.                                                                                                                                                                                                                                                   |                                                                                                                                                                                                                                                                                                      
+|      `tx-factory`       | cmd/tx-factory          | false   | A tool used to generate transactions, generally for testing or benchmark.                                                                                                                                                                                                                                    |
+|    `starcoin-replay`    | cmd/replay              | false   | A tool for replay block data from a database to a new database.                                                                                                                                                                                                                                              |
+| `starcoin-peer-watcher` | cmd/peer-watcher        | false   | A sample app for join starcoin p2p network and print the discovered peer info.                                                                                                                                                                                                                               |
 
 ## Build from source
 
@@ -34,7 +45,7 @@ For prerequisites and detailed build instructions please read [Build from source
 
 ## Install binary
 
-Download binary release from github [releases](https://github.com/starcoinorg/starcoin/releases) page.
+Download binary release from GitHub [releases](https://github.com/starcoinorg/starcoin/releases) page.
 
 
 ## Run dev node:
