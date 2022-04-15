@@ -1,4 +1,4 @@
-![starcoin logo](https://starcoin.org/img/stc.svg | width=125px)
+![starcoin logo](https://starcoin.org/img/stc.svg|width=125px)
 
 Starcoin - a smart contract blockchain network that scales by layering
 
