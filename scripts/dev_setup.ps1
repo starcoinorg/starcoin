@@ -96,7 +96,7 @@ function install_build_tools {
         $exePath = "$env:temp\LLVM-$llvmVersion-win64.exe"
         Invoke-WebRequest -Uri "https://github.com/llvm/llvm-project/releases/download/llvmorg-$llvmVersion/LLVM-$llvmVersion-win64.exe" -OutFile $exePath
         Write-Host "Installing..."
-        cmd /c start /wait $exePath /S
+        cmd /c start $exePath
         Write-Host "Installed" -ForegroundColor Green
         [Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\Program Files\LLVM\bin", 'User')
     }
@@ -107,7 +107,7 @@ function install_build_tools {
         $exePath = "$env:temp\dotnet-sdk-6.0.202-win-x64.exe"
         Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/e4f4bbac-5660-45a9-8316-0ffc10765179/8ade57de09ce7f12d6411ed664f74eca/dotnet-sdk-6.0.202-win-x64.exe" -OutFile $exePath
         Write-Host "Installing..."
-        cmd /c start /wait $exePath /S
+        cmd /c start $exePath
         Write-Host "Installed" -ForegroundColor Green
     }
     try {
