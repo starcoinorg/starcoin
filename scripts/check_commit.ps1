@@ -1,10 +1,4 @@
-#!/bin/bash
-
-# Provide a script for fast check the commit.
-
-set -eo pipefail
-
-STARCOIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
+$STARCOIN_DIR = (get-item $PSScriptRoot).parent.FullName
 
 # cargo fmt check
 cargo fmt -- --check
@@ -19,4 +13,4 @@ cargo run -p starcoin-rpc-api -- -d ./rpc/generated_rpc_schema
 # test config file
 cargo test -p starcoin-config  test_example_config_compact
 # check changed files
-"${STARCOIN_DIR}"/scripts/changed_files.sh
+. "${STARCOIN_DIR}/scripts/changed_files.ps1"
