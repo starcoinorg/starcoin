@@ -14,7 +14,7 @@ starcoin-types = { path = "../../types"}
 move-core-types = { git = "https://github.com/starcoinorg/move", rev = "0b4655469084eb2fb6b8a6a7690342d767f05e5b" }
 move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "0b4655469084eb2fb6b8a6a7690342d767f05e5b" }
 move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "0b4655469084eb2fb6b8a6a7690342d767f05e5b" }
-tracing = "0.1.32"
+tracing = "0.1.33"
 starcoin-config = { path = "../../config"}
 starcoin-logger = {path = "../../commons/logger"}
 num_enum = "0.5.7"
