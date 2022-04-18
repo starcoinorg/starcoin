@@ -36,7 +36,9 @@ pub fn handle_compatibility_check(
     let rpc = cmd.rpc.unwrap_or_else(|| {
         format!(
             "http://{}:{}",
-            cmd.network.unwrap().boot_nodes_domain(),
+            cmd.network
+                .unwrap_or(BuiltinNetworkID::Main)
+                .boot_nodes_domain(),
             9850
         )
     });
@@ -69,6 +71,11 @@ pub fn handle_compatibility_check(
                 ))
                 .join(","),
             &rpc
+        );
+    } else {
+        eprintln!(
+            "All modules in {} is full compatible with remote chain: {}!",
+            pkg.compiled_package_info.package_name, &rpc
         );
     }
     Ok(())

@@ -47,24 +47,21 @@ pub struct OpMetrics {
 
 impl OpMetrics {
     pub fn new<S: Into<String>>(name: S) -> Result<OpMetrics> {
-        let name_str = name.into();
+        let name = name.into();
         Ok(OpMetrics {
-            module: name_str.clone(),
+            module: name.clone(),
             counters: IntCounterVec::new(
-                Opts::new(name_str.clone(), format!("Counters for {}", name_str)),
+                Opts::new(name.clone(), format!("Counters for {}", name)),
                 &["op"],
             )?,
             gauges: IntGaugeVec::new(
-                Opts::new(
-                    format!("{}_gauge", name_str),
-                    format!("Gauges for {}", name_str),
-                ),
+                Opts::new(format!("{}_gauge", name), format!("Gauges for {}", name)),
                 &["op"],
             )?,
             duration_histograms: HistogramVec::new(
                 HistogramOpts::new(
-                    format!("{}_duration", name_str),
-                    format!("Histogram values for {}", name_str),
+                    format!("{}_duration", name),
+                    format!("Histogram values for {}", name),
                 ),
                 &["op"],
             )?,

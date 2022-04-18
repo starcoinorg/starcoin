@@ -187,15 +187,15 @@ pub fn test_wallet_account() -> Result<()> {
     let hash_value = HashValue::sha3_256_of(&public_key.to_bytes());
     let key = AuthenticationKey::new(*HashValue::sha3_256_of(&public_key.to_bytes()).as_ref());
 
-    let sign_bytes = vec![
+    let sign = vec![
         227, 94, 250, 168, 43, 200, 137, 74, 61, 254, 197, 71, 245, 135, 201, 43, 222, 190, 56,
         235, 247, 254, 56, 247, 108, 36, 250, 192, 143, 236, 101, 153, 61, 241, 129, 47, 38, 146,
         213, 9, 79, 56, 90, 210, 179, 53, 73, 208, 248, 231, 22, 9, 55, 177, 154, 212, 248, 2, 66,
         221, 67, 101, 152, 6,
     ];
-    let _sign = Ed25519Signature::try_from(&sign_bytes[..])?;
+    let _sign = Ed25519Signature::try_from(&sign[..])?;
 
-    let raw_txn_bytes = vec![
+    let raw_txn = vec![
         125, 67, 213, 38, 157, 219, 137, 205, 183, 247, 184, 18, 104, 155, 241, 53, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 161, 1, 161, 28, 235, 11, 1, 0, 0, 0, 6, 1, 0, 2, 3, 2, 17, 4, 19, 4, 5, 23,
         24, 7, 47, 42, 8, 89, 16, 0, 0, 0, 1, 0, 1, 1, 1, 0, 2, 2, 3, 0, 0, 3, 4, 1, 1, 1, 0, 6, 2,
@@ -210,7 +210,7 @@ pub fn test_wallet_account() -> Result<()> {
         0, 32, 78, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 13, 48, 120, 49, 58, 58, 83, 84, 67,
         58, 58, 83, 84, 67, 159, 150, 87, 95, 0, 0, 0, 0, 254,
     ];
-    let raw_txn = RawUserTransaction::decode(&raw_txn_bytes)?;
+    let raw_txn = RawUserTransaction::decode(&raw_txn)?;
 
     println!("raw txn hash is {:?}", raw_txn.hash());
 
@@ -243,7 +243,7 @@ pub fn test_wallet_account() -> Result<()> {
     };
     let access_path = AccessPath::resource_access_path(address, struct_tag);
     println!("access path is {:?}", access_path);
-    let stxn_bytes = vec![
+    let stxn = vec![
         125, 67, 213, 38, 157, 219, 137, 205, 183, 247, 184, 18, 104, 155, 241, 53, 7, 0, 0, 0, 0,
         0, 0, 0, 0, 161, 1, 161, 28, 235, 11, 1, 0, 0, 0, 6, 1, 0, 2, 3, 2, 17, 4, 19, 4, 5, 23,
         24, 7, 47, 42, 8, 89, 16, 0, 0, 0, 1, 0, 1, 1, 1, 0, 2, 2, 3, 0, 0, 3, 4, 1, 1, 1, 0, 6, 2,
@@ -263,7 +263,7 @@ pub fn test_wallet_account() -> Result<()> {
         253, 28, 178, 254, 244, 28, 94, 129, 152, 49, 111, 118, 238, 236, 36, 49, 239, 179, 197,
         211, 150, 199, 7, 37, 161, 6, 202, 7,
     ];
-    let stxn = SignedUserTransaction::decode(&stxn_bytes)?;
+    let stxn = SignedUserTransaction::decode(&stxn)?;
     println!("txn hash is {:?}", stxn.id());
     Ok(())
 }

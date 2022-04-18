@@ -30,7 +30,7 @@ fn test_merkle_distributor() -> Result<()> {
     let merkle_data = include_str!("merkle-test.json");
     let merkle_data: serde_json::Value = serde_json::from_str(merkle_data)?;
     let root = merkle_data["root"].as_str().unwrap();
-    let root_in_bytes = hex::decode(root.strip_prefix("0x").unwrap_or(root))?;
+    let raw_root = hex::decode(root.strip_prefix("0x").unwrap_or(root))?;
     let proofs: Vec<DataProof> = serde_json::from_value(merkle_data["proofs"].clone())?;
 
     // deploy the module
@@ -48,7 +48,7 @@ fn test_merkle_distributor() -> Result<()> {
 
     // association: create the merkle distributor.
     {
-        let merkle_root = MoveValue::vector_u8(root_in_bytes);
+        let merkle_root = MoveValue::vector_u8(raw_root);
 
         let rewards_total = MoveValue::U128(proofs.iter().map(|p| p.amount).sum());
         let leafs = MoveValue::U64(proofs.len() as u64);

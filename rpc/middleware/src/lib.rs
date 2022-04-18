@@ -23,12 +23,12 @@ enum CallType {
 
 impl fmt::Display for CallType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let type_str = match self {
+        let call_type = match self {
             CallType::MethodCall => "method",
             CallType::Notification => "notification",
             CallType::Invalid => "invalid",
         };
-        write!(f, "{}", type_str)
+        write!(f, "{}", call_type)
     }
 }
 

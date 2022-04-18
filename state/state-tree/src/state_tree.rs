@@ -419,8 +419,8 @@ impl Iterator for AccountStateSetIterator {
         if let Some(item) = item {
             let item = item.ok()?;
             let account_address = item.0;
-            let account_state_bytes = Vec::from(item.1);
-            let account_state: AccountState = account_state_bytes.as_slice().try_into().ok()?;
+            let account_state = Vec::from(item.1);
+            let account_state: AccountState = account_state.as_slice().try_into().ok()?;
             let mut state_sets = vec![];
             for (idx, storage_root) in account_state.storage_roots().iter().enumerate() {
                 let state_set = match storage_root {

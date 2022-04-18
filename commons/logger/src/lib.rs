@@ -84,12 +84,12 @@ impl LogPattern {
 
 impl std::fmt::Display for LogPattern {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let display_str = match self {
+        let log_pattern = match self {
             LogPattern::Default => "default".to_owned(),
             LogPattern::WithLine => "withline".to_owned(),
             LogPattern::Custom(p) => format!("custom({})", p),
         };
-        write!(f, "{}", display_str)
+        write!(f, "{}", log_pattern)
     }
 }
 
@@ -315,8 +315,8 @@ fn rolling_file_append(
 /// read log level filters from `RUST_LOG` env.
 /// return global level filter and specified level filters.
 fn env_log_level(default_level: &str) -> (LevelFilter, Vec<(String, LevelFilter)>) {
-    let level_str = std::env::var("RUST_LOG").unwrap_or_default();
-    let level_filters = parse_spec(level_str.as_str());
+    let level = std::env::var("RUST_LOG").unwrap_or_default();
+    let level_filters = parse_spec(level.as_str());
     let default_level = level_filters.global_level.unwrap_or_else(|| {
         default_level
             .parse()
