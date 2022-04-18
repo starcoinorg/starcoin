@@ -23,6 +23,9 @@ use std::sync::Mutex;
 pub mod compatibility_check_cmd;
 pub mod releasement;
 
+// use `integration-tests` rather than `tests`, for avoid conflict with `mpm package test`
+pub const INTEGRATION_TESTS_DIR: &str = "integration-tests";
+
 #[derive(Debug, Args)]
 pub struct TestOpts {
     /// The FILTER string is tested against the name of all tests, and only those tests whose names
@@ -232,17 +235,17 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
     let tests_dir = if spectests_dir.exists() && spectests_dir.is_dir() {
         eprintln!(
             r#"
-            Note: The new version of mpm changes the `spectests` to `integration-test`, and use the `tests` dir.
-            You can just move the `spectests` to `tests`.
+            Note: The new version of mpm changes the `spectest` to `integration-test`, and use the `integration-tests` dir.
+            You can just move the `spectests` to `integration-tests`.
             "#
         );
         spectests_dir
     } else {
-        rerooted_path.join("tests")
+        rerooted_path.join(INTEGRATION_TESTS_DIR)
     };
 
     if !tests_dir.exists() || !tests_dir.is_dir() {
-        eprintln!("No integration tests file in the dir `tests`.");
+        eprintln!("No integration tests file in the dir `integration-tests`.");
         return Ok(());
     }
 
