@@ -36,37 +36,6 @@ impl<C: JobClient> MinerClient<C> {
             current_task: None,
         })
     }
-    fn submit_seal(&self, seal: SealEvent) {
-        if let Err(err) = self.job_client.submit_seal(seal) {
-            error!("Submit seal to failed: {}", err);
-            return;
-        }
-        {
-            *self.num_seals_found.lock() += 1;
-            let msg = format!(
-                "Miner client Total seals found: {:>3}",
-                *self.num_seals_found.lock()
-            );
-            info!("{}", msg)
-        }
-    }
-
-    fn start_mint_work(&mut self, event: MintBlockEvent) {
-        let (stop_tx, stop_rx) = unbounded();
-        if let Some(mut task) = self.current_task.take() {
-            if let Err(e) = block_on(task.send(true)) {
-                debug!(
-                    "Failed to send stop event to current task, may be finished:{:?}",
-                    e
-                );
-            };
-        }
-        self.current_task = Some(stop_tx);
-        let nonce_tx = self.nonce_tx.clone();
-        let mut solver = dyn_clone::clone_box(&*self.solver);
-        //this will block on handle Sealevent if use actix spawn
-        thread::spawn(move || solver.solve(event, nonce_tx, stop_rx));
-    }
 }
 
 pub struct MinerClientService<C: JobClient> {
@@ -75,7 +44,8 @@ pub struct MinerClientService<C: JobClient> {
 
 impl<C: JobClient> ActorService for MinerClientService<C> {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        let jobs = self.inner.job_client.subscribe()?;
+        let job_client = self.inner.job_client.clone();
+        let jobs = block_on(job_client.subscribe())?;
         ctx.add_stream(jobs);
         let seals = self
             .inner
@@ -101,14 +71,43 @@ impl<C: JobClient> EventHandler<Self, MintBlockEvent> for MinerClientService<C> 
     fn handle_event(
         &mut self,
         event: MintBlockEvent,
-        _ctx: &mut ServiceContext<MinerClientService<C>>,
+        ctx: &mut ServiceContext<MinerClientService<C>>,
     ) {
-        self.inner.start_mint_work(event);
+        let (stop_tx, stop_rx) = unbounded();
+        if let Some(mut task) = self.inner.current_task.take() {
+            ctx.wait(async move {
+                if let Err(e) = task.send(true).await {
+                    error!(
+                        "Failed to send stop event to current task, may be finished:{:?}",
+                        e
+                    );
+                }
+            });
+        }
+        self.inner.current_task = Some(stop_tx);
+        let nonce_tx = self.inner.nonce_tx.clone();
+        let mut solver = dyn_clone::clone_box(&*self.inner.solver);
+        //this will block on handle Sealevent if use ctx spawn
+        thread::spawn(move || solver.solve(event, nonce_tx, stop_rx));
     }
 }
 
 impl<C: JobClient> EventHandler<Self, SealEvent> for MinerClientService<C> {
-    fn handle_event(&mut self, event: SealEvent, _ctx: &mut ServiceContext<MinerClientService<C>>) {
-        self.inner.submit_seal(event)
+    fn handle_event(&mut self, event: SealEvent, ctx: &mut ServiceContext<MinerClientService<C>>) {
+        {
+            *self.inner.num_seals_found.lock() += 1;
+            let msg = format!(
+                "Miner client Total seals found: {:>3}",
+                *self.inner.num_seals_found.lock()
+            );
+            info!("{}", msg)
+        }
+        let job_client = self.inner.job_client.clone();
+        let fut = async move {
+            if let Err(err) = job_client.submit_seal(event).await {
+                error!("Submit seal to failed: {}", err);
+            }
+        };
+        ctx.spawn(fut);
     }
 }

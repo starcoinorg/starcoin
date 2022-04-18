@@ -254,7 +254,6 @@ impl Inner {
                     if let Err(err) = self.process_output(resp).await{
                         debug!("process output error:{:?}", err);
                     }
-
                 },
             }
         }
@@ -299,6 +298,7 @@ impl ServiceHandler<StratumClientService, SubmitSealRequest> for StratumClientSe
         msg: SubmitSealRequest,
         _ctx: &mut ServiceContext<StratumClientService>,
     ) -> <SubmitSealRequest as ServiceRequest>::Response {
+        //FIXME: Failed to receive this msg since upgrade actix to 0.13.
         if let Some(sender) = self.sender.clone().take() {
             if let Err(e) = sender.unbounded_send(Request::SubmitSealRequest(msg)) {
                 error!("stratum handle submit seal request failed:{}", e);

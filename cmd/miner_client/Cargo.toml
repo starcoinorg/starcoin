@@ -41,6 +41,8 @@ starcoin-miner = { path = "../../miner" }
 starcoin-miner-client-api = { path = "./api" }
 stest = { path = "../../commons/stest" }
 clap = { version = "3", features = ["derive"] }
+async-trait = "0.1.53"
+
 [[bin]]
 name = "starcoin_miner"
 path = "src/main.rs"

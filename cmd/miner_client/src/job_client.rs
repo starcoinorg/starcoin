@@ -3,6 +3,7 @@
 
 use crate::{JobClient, SealEvent};
 use anyhow::Result;
+use async_trait::async_trait;
 use futures::stream::BoxStream;
 use futures::{stream::StreamExt, Future, TryStreamExt};
 use futures_channel::mpsc::{unbounded, UnboundedSender};
@@ -14,7 +15,6 @@ use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::system_events::MintBlockEvent;
 use std::sync::Arc;
 use std::time::Duration;
-
 #[derive(Clone)]
 pub struct JobRpcClient {
     rpc_client: Arc<RpcClient>,
@@ -96,12 +96,13 @@ impl JobRpcClient {
     }
 }
 
+#[async_trait]
 impl JobClient for JobRpcClient {
-    fn subscribe(&self) -> Result<BoxStream<'static, MintBlockEvent>> {
+    async fn subscribe(&self) -> Result<BoxStream<'static, MintBlockEvent>> {
         Ok(self.forward_mint_block_stream())
     }
 
-    fn submit_seal(&self, seal: SealEvent) -> Result<()> {
+    async fn submit_seal(&self, seal: SealEvent) -> Result<()> {
         let extra = match &seal.extra {
             None => BlockHeaderExtra::default(),
             Some(extra) => extra.extra,
