@@ -1,6 +1,9 @@
 name: Sync Blocks Cron
 
 on:
+  pull_request:
+    branches:
+      - feat/ci_sync_block
   schedule:
     - cron: '0 18 * * *'
 
