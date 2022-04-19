@@ -2,10 +2,11 @@ use crate::stratum_client_service::{ShareRequest, StratumClientService, SubmitSe
 use crate::{JobClient, SealEvent};
 use anyhow::Result;
 use async_std::sync::Arc;
+use async_trait::async_trait;
 use byteorder::{LittleEndian, WriteBytesExt};
-use futures::executor::block_on;
 use futures::future;
 use futures::stream::{BoxStream, StreamExt};
+use logger::prelude::error;
 use starcoin_service_registry::ServiceRef;
 use starcoin_stratum::rpc::LoginRequest;
 use starcoin_stratum::target_hex_to_difficulty;
@@ -34,8 +35,9 @@ impl StratumJobClient {
     }
 }
 
+#[async_trait]
 impl JobClient for StratumJobClient {
-    fn subscribe(&self) -> Result<BoxStream<'static, MintBlockEvent>> {
+    async fn subscribe(&self) -> Result<BoxStream<'static, MintBlockEvent>> {
         let srv = self.stratum_cli_srv.clone();
         let login = self.login.clone();
         let fut = async move {
@@ -59,7 +61,6 @@ impl JobClient for StratumJobClient {
                                 extra: Some(MintEventExtra {
                                     worker_id: job.id,
                                     job_id: job.job_id,
-
                                     extra,
                                 }),
                             })
@@ -72,31 +73,27 @@ impl JobClient for StratumJobClient {
                 })?;
             Ok::<BoxStream<MintBlockEvent>, anyhow::Error>(stream.boxed())
         };
-        block_on(fut)
+        fut.await
     }
 
     #[allow(clippy::unit_arg)]
-    fn submit_seal(&self, seal: SealEvent) -> Result<()> {
+    async fn submit_seal(&self, seal: SealEvent) -> Result<()> {
         let srv = self.stratum_cli_srv.clone();
-        let fut = async move {
-            let mut n = Vec::new();
-            n.write_u32::<LittleEndian>(seal.nonce)?;
-            let nonce = hex::encode(n);
-            let mint_extra = seal
-                .extra
-                .ok_or_else(|| anyhow::anyhow!("submit missing field"))?;
-            let r = srv
-                .send(SubmitSealRequest(ShareRequest {
-                    id: mint_extra.worker_id,
-                    job_id: mint_extra.job_id,
-                    nonce,
-                    result: seal.hash_result,
-                }))
-                .await?;
-            Ok::<(), anyhow::Error>(r)
-        };
-
-        block_on(fut)
+        let mut n = Vec::new();
+        n.write_u32::<LittleEndian>(seal.nonce)?;
+        let nonce = hex::encode(n);
+        let mint_extra = seal
+            .extra
+            .ok_or_else(|| anyhow::anyhow!("submit missing field"))?;
+        if let Err(e) = srv.try_send(SubmitSealRequest(ShareRequest {
+            id: mint_extra.worker_id,
+            job_id: mint_extra.job_id,
+            nonce,
+            result: seal.hash_result,
+        })) {
+            error!("failed to submit seal request {:?}", e);
+        }
+        Ok(())
     }
 
     fn time_service(&self) -> Arc<dyn TimeService> {

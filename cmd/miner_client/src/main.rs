@@ -42,7 +42,7 @@ fn main() {
     let system = System::with_tokio_rt(|| {
         tokio::runtime::Builder::new_multi_thread()
             .enable_all()
-            .on_thread_stop(|| println!("starcoin-miner thread stopped"))
+            .on_thread_stop(|| info!("starcoin-miner thread stopped"))
             .thread_name("starcoin-miner")
             .build()
             .expect("failed to create tokio runtime for starcoin-miner")

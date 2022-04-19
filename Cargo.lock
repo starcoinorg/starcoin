@@ -9638,6 +9638,7 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "async-std",
+ "async-trait",
  "byteorder 1.4.3",
  "clap 3.1.6",
  "dyn-clone",
@@ -9676,6 +9677,7 @@ name = "starcoin-miner-client-api"
 version = "1.11.1-alpha"
 dependencies = [
  "anyhow",
+ "async-trait",
  "dyn-clone",
  "futures 0.3.21",
  "starcoin-types",
