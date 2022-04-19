@@ -1,0 +1,21 @@
+on:
+  schedule:
+    - cron: '0 18 * * *'
+
+name: sync blocks
+jobs:
+  syncBlocks:
+    name: sync blocks
+    runs-on: self-hosted
+    steps:
+      - name: checkout
+        uses: actions/checkout@v1
+        with:
+          submodules: recursive
+      - name: setup environment
+        run: bash ./scripts/dev_setup.sh  -b -t -y
+      - name: run sync script
+        run: python3 ./scripts/sync_block_main.py
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
