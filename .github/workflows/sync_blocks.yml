@@ -1,11 +1,9 @@
 name: Sync Blocks Cron
 
 on:
-  pull_request:
-    branches:
-      - feat/ci_sync_block
-  schedule:
-    - cron: '0 18 * * *'
+  workflow_dispatch:
+  # schedule:
+  #   - cron: '0 18 * * *'
 
 jobs:
   syncBlocks:
@@ -18,6 +16,11 @@ jobs:
           submodules: recursive
       - name: setup environment
         run: bash ./scripts/dev_setup.sh  -b -t -y
+      - name: install skbn
+        run : |
+          wget https://github.com/nuvo/skbn/releases/download/0.4.2/skbn-0.4.2-linux.tar.gz
+          tar -xzf skbn-0.4.2-linux.tar.gz
+          cp ./skbn-0.4.2-linux/skbn /usr/local/bin/
       - name: run sync script
         run: python3 ./scripts/sync_block_main.py
         env:
