@@ -1,8 +1,9 @@
+name: Sync Blocks Cron
+
 on:
   schedule:
     - cron: '0 18 * * *'
 
-name: sync blocks
 jobs:
   syncBlocks:
     name: sync blocks
