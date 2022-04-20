@@ -1,9 +1,9 @@
 name: Sync Blocks Cron
 
 on:
-  workflow_dispatch:
-  # schedule:
-  #   - cron: '0 18 * * *'
+  # workflow_dispatch:
+  schedule:
+    - cron: '0 17 * * *'
 
 jobs:
   syncBlocks:
@@ -20,9 +20,19 @@ jobs:
         run : |
           wget https://github.com/nuvo/skbn/releases/download/0.4.2/skbn-0.4.2-linux.tar.gz
           tar -xzf skbn-0.4.2-linux.tar.gz
-          cp ./skbn-0.4.2-linux/skbn /usr/local/bin/
-      - name: run sync script
-        run: python3 ./scripts/sync_block_main.py
+          sudo cp ./skbn-0.4.2-linux/skbn /usr/local/bin/
+      - name: run sync main
+        run: python3 ./scripts/sync_block.py --net main
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: run sync proxima
+        run: python3 ./scripts/sync_block.py --net proxima
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: run sync barnard
+        run: python3 ./scripts/sync_block.py --net barnard
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
