@@ -1,0 +1,28 @@
+name: Sync Blocks Cron
+
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: '0 18 * * *'
+
+jobs:
+  syncBlocks:
+    name: sync blocks
+    runs-on: self-hosted
+    steps:
+      - name: checkout
+        uses: actions/checkout@v1
+        with:
+          submodules: recursive
+      - name: setup environment
+        run: bash ./scripts/dev_setup.sh  -b -t -y
+      - name: install skbn
+        run : |
+          wget https://github.com/nuvo/skbn/releases/download/0.4.2/skbn-0.4.2-linux.tar.gz
+          tar -xzf skbn-0.4.2-linux.tar.gz
+          cp ./skbn-0.4.2-linux/skbn /usr/local/bin/
+      - name: run sync script
+        run: python3 ./scripts/sync_block_main.py
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
