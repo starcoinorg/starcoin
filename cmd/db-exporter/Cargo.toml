@@ -33,7 +33,7 @@ logger = {path = "../../commons/logger",package="starcoin-logger"}
 clap = { version = "3", features = ["derive"] }
 
 [target."cfg(target_os=\"linux\")".dependencies]
-pprof = { version = "0.7", features = ["flamegraph"] }
+pprof = { version = "0.8", features = ["flamegraph"] }
 
 [[bin]]
 name = "starcoin_db_exporter"
