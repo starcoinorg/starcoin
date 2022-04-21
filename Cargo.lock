@@ -245,12 +245,6 @@ dependencies = [
 
 [[package]]
 name = "arc-swap"
-version = "0.4.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dabe5a181f83789739c194cbe5a897dde195078fac08568d09221fd6137a7ba8"
-
-[[package]]
-name = "arc-swap"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c5d78ce20460b82d3fa150275ed9d55e21064fc7951177baacf86a145c4a4b1f"
@@ -275,6 +269,18 @@ name = "arrayvec"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23b62fc65de8e4e7f52534fb52b0f3ed04746ae267519eef2a83941e8085068b"
+
+[[package]]
+name = "as-slice"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45403b49e3954a4b8428a0ac21a4b7afadccf92bfd96273f1a58cd4812496ae0"
+dependencies = [
+ "generic-array 0.12.4",
+ "generic-array 0.13.3",
+ "generic-array 0.14.5",
+ "stable_deref_trait",
+]
 
 [[package]]
 name = "ascii"
@@ -2744,6 +2750,15 @@ dependencies = [
 
 [[package]]
 name = "generic-array"
+version = "0.13.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f797e67af32588215eaaab8327027ee8e71b9dd0b2b26996aedf20c030fce309"
+dependencies = [
+ "typenum",
+]
+
+[[package]]
+name = "generic-array"
 version = "0.14.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd48d33ec7f05fbfa152300fdad764757cbded343c1aa1cff2fbaf4134851803"
@@ -3082,6 +3097,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eabb4a44450da02c90444cf74558da904edde8fb4e9035a9a6a4e15445af0bd7"
 
 [[package]]
+name = "hash32"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d4041af86e63ac4298ce40e5cca669066e75b6f1aa3390fe2561ffa5e1d9f4cc"
+dependencies = [
+ "byteorder 1.4.3",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3097,6 +3121,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c21d40587b92fa6a6c6e3c1bdbf87d75511db5672f9c93175574b3a00df1758"
 dependencies = [
  "ahash",
+]
+
+[[package]]
+name = "heapless"
+version = "0.5.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74911a68a1658cfcfb61bc0ccfbd536e3b6e906f8c2f7883ee50157e3e2184f1"
+dependencies = [
+ "as-slice",
+ "generic-array 0.13.3",
+ "hash32",
+ "stable_deref_trait",
 ]
 
 [[package]]
@@ -4682,12 +4718,12 @@ checksum = "a94d21414c1f4a51209ad204c1776a3d0765002c76c6abcb602a6f09f1e881c7"
 
 [[package]]
 name = "log4rs"
-version = "1.0.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1572a880d1115ff867396eee7ae2bc924554225e67a0d3c85c745b3e60ca211"
+checksum = "e4938855505d062af68430b345bf11e26228542cd823bad77533bb39c5c32266"
 dependencies = [
  "anyhow",
- "arc-swap 0.4.8",
+ "arc-swap",
  "chrono",
  "derivative",
  "flate2",
@@ -4696,8 +4732,8 @@ dependencies = [
  "libc",
  "log 0.4.16",
  "log-mdc",
+ "palaver",
  "parking_lot 0.11.2",
- "regex",
  "serde 1.0.136",
  "serde-value",
  "serde_json",
@@ -6084,6 +6120,19 @@ dependencies = [
 
 [[package]]
 name = "nix"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b2e0b4f3320ed72aaedb9a5ac838690a8047c7b275da22711fddff4f8a14229"
+dependencies = [
+ "bitflags",
+ "cc",
+ "cfg-if 0.1.10",
+ "libc",
+ "void",
+]
+
+[[package]]
+name = "nix"
 version = "0.22.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e4916f159ed8e5de0082076562152a76b7a1f64a01fd9d1e0fea002c37624faf"
@@ -6125,6 +6174,12 @@ name = "nohash-hasher"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2bf50223579dc7cdcfb3bfcacf7069ff68243f8c363f62ffa99cf000a6b9c451"
+
+[[package]]
+name = "nom"
+version = "2.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf51a729ecf40266a2368ad335a5fdde43471f545a967109cd62146ecf8b66ff"
 
 [[package]]
 name = "nom"
@@ -6488,6 +6543,23 @@ name = "owo-colors"
 version = "3.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e72e30578e0d0993c8ae20823dd9cff2bc5517d2f586a8aef462a581e8a03eb"
+
+[[package]]
+name = "palaver"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "49dfc200733ac34dcd9a1e4a7e454b521723936010bef3710e2d8024a32d685f"
+dependencies = [
+ "bitflags",
+ "heapless",
+ "lazy_static 1.4.0",
+ "libc",
+ "mach",
+ "nix 0.15.0",
+ "procinfo",
+ "typenum",
+ "winapi 0.3.9",
+]
 
 [[package]]
 name = "parity-scale-codec"
@@ -7125,6 +7197,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c7342d5883fbccae1cc37a2353b09c87c9b0f3afd73f5fb9bba687a1f733b029"
 dependencies = [
  "unicode-xid 0.2.2",
+]
+
+[[package]]
+name = "procinfo"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ab1427f3d2635891f842892dda177883dca0639e05fe66796a62c9d2f23b49c"
+dependencies = [
+ "byteorder 1.4.3",
+ "libc",
+ "nom 2.2.1",
+ "rustc_version 0.2.3",
 ]
 
 [[package]]
@@ -9557,7 +9641,7 @@ name = "starcoin-logger"
 version = "1.11.1-alpha"
 dependencies = [
  "anyhow",
- "arc-swap 1.5.0",
+ "arc-swap",
  "chrono",
  "lazy_static 1.4.0",
  "log 0.4.16",
@@ -11297,12 +11381,12 @@ dependencies = [
 
 [[package]]
 name = "thread-id"
-version = "3.3.0"
+version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7fbf4c9d56b320106cd64fd024dadfa0be7cb4706725fc44a7d7ce952d820c1"
+checksum = "5fdfe0627923f7411a43ec9ec9c39c3a9b4151be313e0922042581fb6c9b717f"
 dependencies = [
  "libc",
- "redox_syscall 0.1.57",
+ "redox_syscall 0.2.13",
  "winapi 0.3.9",
 ]
 
