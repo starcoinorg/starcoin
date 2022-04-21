@@ -16,6 +16,7 @@ use starcoin_vm_runtime::natives::starcoin_natives;
 use std::path::PathBuf;
 
 #[derive(Parser)]
+#[clap(author, version, about, long_about = None)]
 pub struct CliOptions {
     #[clap(flatten)]
     move_args: Move,
@@ -69,6 +70,7 @@ fn main() -> Result<()> {
     let error_descriptions: ErrorMapping =
         bcs_ext::from_bytes(stdlib::ERROR_DESCRIPTIONS).expect("Decode err map failed");
     let args: CliOptions = CliOptions::parse();
+
     let move_args = &args.move_args;
     let natives = starcoin_natives();
     match args.cmd {
