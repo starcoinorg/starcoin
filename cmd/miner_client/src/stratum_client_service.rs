@@ -153,9 +153,9 @@ pub struct StratumClientService {
 struct Inner {
     request_channel: mpsc::UnboundedReceiver<Request>,
     connections: HashMap<String, mpsc::UnboundedSender<StratumJob>>,
-    stream: Option<Pin<Box<dyn Stream<Item = String>>>>,
+    stream: Option<Pin<Box<dyn Stream<Item = String> + Send>>>,
     pending_requests: HashMap<u32, PendingRequest>,
-    sink: Pin<Box<dyn Sink<String, Error = anyhow::Error>>>,
+    sink: Pin<Box<dyn Sink<String, Error = anyhow::Error> + Send>>,
 }
 
 impl Inner {
@@ -261,7 +261,7 @@ impl Inner {
 }
 
 impl ActorService for StratumClientService {
-    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+    fn started(&mut self, _ctx: &mut ServiceContext<Self>) -> Result<()> {
         let tcp_stream = TcpStream::from_std(
             self.tcp_stream
                 .take()
@@ -269,7 +269,7 @@ impl ActorService for StratumClientService {
         )?;
         let (inner, sender) = Inner::new(tcp_stream);
         self.sender = Some(sender);
-        ctx.spawn(inner.start());
+        std::thread::spawn(move || futures::executor::block_on(inner.start()));
         Ok(())
     }
 }
