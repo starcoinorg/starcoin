@@ -42,6 +42,9 @@ jobs:
         with:
           command: build
           args: --all
+      - name: import blocks
+        run: |
+          bash ./scripts/import_net_block.sh main ~/.starcoin/main
       - name: test
         run: bash ./scripts/auto_rerun_test.sh
       - name: move-prover-test
