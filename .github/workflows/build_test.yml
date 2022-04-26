@@ -8,7 +8,7 @@ jobs:
   build-and-test:
     name: build and test
     runs-on: self-hosted
-    timeout-minutes: 120
+    timeout-minutes: 300
     steps:
       - name: checkout
         uses: actions/checkout@v1
@@ -47,6 +47,8 @@ jobs:
           cp ./target/debug/starcoin_db_exporter .
           cp ./target/debug/starcoin .
           bash ./scripts/import_block.sh proxima /home/runner/.starcoin/proxima
+      - name: run proxima node
+        run: nohup ./starcoin -n proxima &
       - name: test
         run: bash ./scripts/auto_rerun_test.sh
       - name: move-prover-test
