@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-move-prover"
-version = "1.11.1-alpha"
+version = "1.11.7-rc"
 authors = ["Diem Association <opensource@diem.com>"]
 publish = false
 edition = "2021"
