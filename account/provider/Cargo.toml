@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-account-provider"
-version = "1.11.1-alpha"
+version = "1.11.7-rc"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

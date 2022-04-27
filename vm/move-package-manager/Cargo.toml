@@ -1,6 +1,6 @@
 [package]
 name = "move-package-manager"
-version = "1.11.1-alpha"
+version = "1.11.7-rc"
 description = "CLI frontend for the Move compiler and VM"
 repository = "https://github.com/starcoinorg/starcion"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
