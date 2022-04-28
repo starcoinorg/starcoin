@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-resource-viewer"
-version = "1.11.1-alpha"
+version = "1.11.7-rc"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -8,8 +8,8 @@ edition = "2021"
 
 [dependencies]
 starcoin-vm-types = { path = "../types" }
-move-binary-format = {git = "https://github.com/starcoinorg/move", rev = "0b4655469084eb2fb6b8a6a7690342d767f05e5b"  }
-move-core-types = {git = "https://github.com/starcoinorg/move", rev = "0b4655469084eb2fb6b8a6a7690342d767f05e5b"  }
+move-binary-format = {git = "https://github.com/starcoinorg/move", rev = "8d559a83d5372d633fc7d85e8ae29c80d9d45dc1"  }
+move-core-types = {git = "https://github.com/starcoinorg/move", rev = "8d559a83d5372d633fc7d85e8ae29c80d9d45dc1"  }
 serde_json = "1.0"
 serde = { version = "1.0.130", features = ["derive", "rc"] }
 anyhow = "1.0.41"

@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-transactional-test-harness"
-version = "1.11.1-alpha"
+version = "1.11.7-rc"
 edition = "2018"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
@@ -22,11 +22,11 @@ dashmap = "~5"
 serde = { version = "1" }
 serde_json = { version = "1" }
 log = { version = "0.4.16" }
-move-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "0b4655469084eb2fb6b8a6a7690342d767f05e5b" }
-move-compiler = { git = "https://github.com/starcoinorg/move", rev = "0b4655469084eb2fb6b8a6a7690342d767f05e5b" }
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "0b4655469084eb2fb6b8a6a7690342d767f05e5b" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "0b4655469084eb2fb6b8a6a7690342d767f05e5b" }
-move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "0b4655469084eb2fb6b8a6a7690342d767f05e5b" }
+move-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "8d559a83d5372d633fc7d85e8ae29c80d9d45dc1" }
+move-compiler = { git = "https://github.com/starcoinorg/move", rev = "8d559a83d5372d633fc7d85e8ae29c80d9d45dc1" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "8d559a83d5372d633fc7d85e8ae29c80d9d45dc1" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "8d559a83d5372d633fc7d85e8ae29c80d9d45dc1" }
+move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "8d559a83d5372d633fc7d85e8ae29c80d9d45dc1" }
 
 bcs-ext = {path = "../../commons/bcs_ext"}
 starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
@@ -41,7 +41,7 @@ starcoin-rpc-api = {path = "../../rpc/api"}
 starcoin-vm-runtime = {path = "../../vm/vm-runtime"}
 starcoin-dev = {path = "../dev"}
 starcoin-resource-viewer = {path = "../resource-viewer"}
-move-resource-viewer = {git = "https://github.com/starcoinorg/move", rev = "0b4655469084eb2fb6b8a6a7690342d767f05e5b"}
+move-resource-viewer = {git = "https://github.com/starcoinorg/move", rev = "8d559a83d5372d633fc7d85e8ae29c80d9d45dc1"}
 
 [dev-dependencies]
 datatest-stable = "0.1.1"

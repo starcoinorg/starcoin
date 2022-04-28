@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-abi-resolver"
-version = "1.11.1-alpha"
+version = "1.11.7-rc"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
 
@@ -11,7 +11,7 @@ starcoin-vm-types = {path = "../../vm/types"}
 starcoin-abi-types = {path = "../types"}
 anyhow="~1"
 starcoin-resource-viewer = {path = "../../vm/resource-viewer"}
-move-model = { git = "https://github.com/starcoinorg/move", rev = "0b4655469084eb2fb6b8a6a7690342d767f05e5b"  }
+move-model = { git = "https://github.com/starcoinorg/move", rev = "8d559a83d5372d633fc7d85e8ae29c80d9d45dc1"  }
 [dev-dependencies]
 stdlib = {path = "../../vm/stdlib"}
 serde_json = "1"

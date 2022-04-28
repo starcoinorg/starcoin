@@ -116,6 +116,10 @@ Please try to create bug reports that are:
 
 You can learn more about contributing to the Starcoin project by reading our [Contribution Guide](./CONTRIBUTING.md) and by viewing our [Code of Conduct](./CODE_OF_CONDUCT.md).
 
+### Code Layout
+
+You could find the introduction of each code directory [here](code_layout.md) for helping to understand the organization of codes.
+
 ## Support
 
 Reach out to the maintainer at one of the following places:
