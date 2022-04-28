@@ -83,6 +83,20 @@ def check_or_do(network):
             network, block_list_file_tar_name, network, block_list_file_tar_name)
         os.system(cp_blocklist_tar_cmd)
 
+        # export snapshot
+        export_snapshot_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- /starcoin/starcoin_db_exporter export-snapshot --db-path /sc-data/%s -n %s -o /sc-data/snapshot -t true" % (network, network, network)
+        os.system(export_snapshot_cmd)
+
+        # tar snapshot
+        tar_snapshot_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- tar -czvf /sc-data/%s -C /sc-data/ %s " % (
+            network, "snapshot.tar.gz", "snapshot")
+        os.system(tar_snapshot_cmd)
+
+        # cp snapshot.tar.gz to s3
+        cp_snapshot_tar_cmd = "timeout 30 bash -c 'export AWS_REGION=ap-northeast-1;skbn cp --src k8s://starcoin-%s/starcoin-1/starcoin/sc-data/%s --dst s3://main.starcoin.org/%s/%s '" % (
+            network, "snapshot.tar.gz", network, "snapshot.tar.gz")
+        os.system(cp_snapshot_tar_cmd)
+
         # update the last_export_height
         os.system("echo %s > ./last_export_height.txt" % end)
         os.system("aws s3api put-object --bucket main.starcoin.org --key %s/last_export_height.txt --body ./last_export_height.txt" % network)
