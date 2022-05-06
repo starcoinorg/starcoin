@@ -3,7 +3,7 @@ name: Sync Blocks Cron
 on:
   # workflow_dispatch:
   schedule:
-    - cron: '0 17 * * *'
+    - cron: '0 5,17 * * *'
 
 jobs:
   syncBlocks:
