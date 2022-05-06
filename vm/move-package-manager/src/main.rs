@@ -61,7 +61,7 @@ pub enum Commands {
     #[clap(name = "integration-test", alias = "spectest")]
     IntegrationTest(IntegrationTestCommand),
 
-    /// Check compatibility of modules comparing with remote chain chate.
+    /// Check compatibility of modules comparing with remote chain state.
     #[clap(name = "check-compatibility")]
     CompatibilityCheck(CompatibilityCheckCommand),
 }
