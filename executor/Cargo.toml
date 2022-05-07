@@ -27,7 +27,7 @@ stest = {path = "../commons/stest"}
 stdlib = { package="stdlib", path = "../vm/stdlib"}
 starcoin-move-compiler = { path = "../vm/compiler"}
 starcoin-dev = {path = "../vm/dev"}
-log = "0.4.16"
+log = "0.4.17"
 
 [dev-dependencies]
 hex = "0.4"

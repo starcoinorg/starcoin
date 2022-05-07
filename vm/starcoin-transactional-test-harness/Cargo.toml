@@ -21,7 +21,7 @@ tokio = {version = "^1", features = ["full"]}
 dashmap = "~5"
 serde = { version = "1" }
 serde_json = { version = "1" }
-log = { version = "0.4.16" }
+log = { version = "0.4.17" }
 move-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "c524c6f96ca90365c177be8f1f15982ee4a9410b" }
 move-compiler = { git = "https://github.com/starcoinorg/move", rev = "c524c6f96ca90365c177be8f1f15982ee4a9410b" }
 move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "c524c6f96ca90365c177be8f1f15982ee4a9410b" }
