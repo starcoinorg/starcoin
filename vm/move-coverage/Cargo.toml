@@ -16,10 +16,10 @@ codespan = { version = "0.8.0", features = ["serialization"] }
 colored = "2.0.0"
 bcs = "0.1.2"
 
-move-bytecode-source-map = { git = "https://github.com/starcoinorg/move", rev = "8d559a83d5372d633fc7d85e8ae29c80d9d45dc1"  }
-move-coverage = { git = "https://github.com/starcoinorg/move", rev = "8d559a83d5372d633fc7d85e8ae29c80d9d45dc1"  }
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "8d559a83d5372d633fc7d85e8ae29c80d9d45dc1"  }
-move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "8d559a83d5372d633fc7d85e8ae29c80d9d45dc1"  }
+move-bytecode-source-map = { git = "https://github.com/starcoinorg/move", rev = "c524c6f96ca90365c177be8f1f15982ee4a9410b"  }
+move-coverage = { git = "https://github.com/starcoinorg/move", rev = "c524c6f96ca90365c177be8f1f15982ee4a9410b"  }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "c524c6f96ca90365c177be8f1f15982ee4a9410b"  }
+move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "c524c6f96ca90365c177be8f1f15982ee4a9410b"  }
 [features]
 default = []
 
