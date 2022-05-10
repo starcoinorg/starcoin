@@ -129,7 +129,11 @@ pub struct ExtraInitArgs {
     /// genesis with the network
     network: Option<BuiltinNetworkID>,
 
-    #[clap(long = "public-keys", parse(try_from_str = parse_named_key))]
+    #[clap(long = "public-keys",
+    parse(try_from_str = parse_named_key),
+    takes_value(true),
+    multiple_values(true),
+    multiple_occurrences(true))]
     public_keys: Option<Vec<(Identifier, Ed25519PublicKey)>>,
     // #[clap(long = "private-keys", parse(try_from_str = parse_named_private_key))]
     // private_keys: Option<Vec<(Identifier, Ed25519PrivateKey)>>,

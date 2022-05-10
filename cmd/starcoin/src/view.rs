@@ -54,7 +54,7 @@ pub struct TransactionOptions {
     pub expiration_time_secs: Option<u64>,
 
     #[clap(short = 'b', name = "blocking-mode", long = "blocking")]
-    /// blocking wait txn mined
+    /// blocking wait transaction(txn) mined
     pub blocking: bool,
 
     #[clap(long = "dry-run")]

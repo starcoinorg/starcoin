@@ -171,7 +171,7 @@ pub struct NetworkConfig {
 
     #[serde(skip)]
     #[clap(long = "node-key")]
-    /// Node network private key string
+    /// Node network private key string.
     /// This option is skip for config file, only support cli option, after init will write the key to node_key_file
     pub node_key: Option<String>,
 
