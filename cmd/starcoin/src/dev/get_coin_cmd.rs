@@ -28,7 +28,7 @@ pub struct GetCoinOpt {
     #[clap(
         name = "no-blocking-mode",
         long = "no-blocking",
-        help = "not blocking wait txn mined"
+        help = "not blocking wait transaction(txn) mined"
     )]
     no_blocking: bool,
 
