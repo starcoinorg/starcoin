@@ -80,7 +80,7 @@ pub enum ChainResponse {
     TransactionOption(Option<Box<Transaction>>),
     BlockVec(Vec<Block>),
     BlockOptionVec(Vec<Option<Block>>),
-    BlockHeaderVec(Vec<BlockHeader>),
+    BlockHeaderVec(Vec<Option<BlockHeader>>),
     TransactionInfos(Vec<RichTransactionInfo>),
     TransactionInfo(Option<RichTransactionInfo>),
     Events(Vec<ContractEventInfo>),

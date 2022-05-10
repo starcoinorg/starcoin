@@ -153,12 +153,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
                 ))
                 .into());
             }
-            let heads = chain_reader.clone().get_headers(hashes).await?;
-            let mut headers = vec![];
-            for header in heads {
-                headers.push(Some(header));
-            }
-            Ok(headers)
+            Ok(chain_reader.clone().get_headers(hashes).await?)
         };
         Box::pin(fut)
     }

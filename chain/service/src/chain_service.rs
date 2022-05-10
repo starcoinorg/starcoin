@@ -302,14 +302,12 @@ impl ReadableChainService for ChainReaderServiceInner {
     }
 
     // XXX FIXME different get_blocks
-    fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
-        let mut headers = Vec::new();
-        self.get_blocks(ids)?.into_iter().for_each(|block| {
-            if let Some(b) = block {
-                headers.push(b.header)
-            }
-        });
-        Ok(headers)
+    fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockHeader>>> {
+        Ok(self
+            .get_blocks(ids)?
+            .into_iter()
+            .map(|block| block.map(|b| b.header))
+            .collect())
     }
 
     fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>> {
