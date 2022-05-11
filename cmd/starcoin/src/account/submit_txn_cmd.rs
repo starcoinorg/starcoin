@@ -23,7 +23,7 @@ pub struct SubmitTxnOpt {
         short = 'b',
         name = "blocking-mode",
         long = "blocking",
-        help = "blocking wait txn mined"
+        help = "blocking wait tansaction(txn) mined"
     )]
     blocking: bool,
 }
