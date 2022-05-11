@@ -377,11 +377,7 @@ where
         let service = self.service.clone();
         let fut = async move {
             let headers = service.get_headers(block_hashes).await?;
-            Ok(headers
-                .into_iter()
-                .flatten()
-                .map(Into::into)
-                .collect())
+            Ok(headers.into_iter().flatten().map(Into::into).collect())
         }
         .map_err(map_err);
 
