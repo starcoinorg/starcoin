@@ -547,7 +547,7 @@ function install_mold {
           cp "${TMPFILE}/mold-1.2.1-x86_64-linux/bin/mold" "$(pwd)/mold"
           # rm -rf "$TMPFILE"
           chmod +x "$(pwd)/mold"
-          printf $"[target.x86_64-unknown-linux-gnu]\nlinker = \"/usr/bin/clang\"\nrustflags = [\"-C\", \"link-arg=--ld-path=$(pwd)/mold\"]\n" >> ./.cargo/config
+          printf $"[target.x86_64-unknown-linux-gnu]\nlinker = \"/usr/bin/clang\"\nrustflags = [\"-C\", \"link-arg=-fuse-ld=$(pwd)/mold\"]\n" >> ./.cargo/config
       else
           echo "Mold is only supported on x86_64"
       fi
