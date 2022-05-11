@@ -379,8 +379,7 @@ where
             let headers = service.get_headers(block_hashes).await?;
             Ok(headers
                 .into_iter()
-                .filter(|header| header.is_some())
-                .map(Option::unwrap)
+                .flatten()
                 .map(Into::into)
                 .collect())
         }
