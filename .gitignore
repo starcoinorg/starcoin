@@ -44,3 +44,6 @@ examples/*.mv
 # Move Build Output
 build/
 *.bak
+
+# CI experimental mold binary
+mold

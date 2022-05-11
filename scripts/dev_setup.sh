@@ -49,6 +49,7 @@ function usage {
   echo "-v verbose mode"
   echo "-i installs an individual tool by name"
   echo "-n will target the /opt/ dir rather than the $HOME dir.  /opt/bin/, /opt/rustup/, and /opt/dotnet/ rather than $HOME/bin/, $HOME/.rustup/, and $HOME/.dotnet/"
+  echo "-m will install mold linker and use mold linker to link rust binaries"
   echo "If no toolchain component is selected with -t, -o, -y, or -p, the behavior is as if -t had been provided."
   echo "This command must be called from the root folder of the Starcoin project."
 }
@@ -530,6 +531,29 @@ function install_cvc5 {
   rm -rf "$TMPFILE"
 }
 
+function install_mold {
+    # only support x86_64 Linux
+    if [[ "$(uname)" != "Linux" ]]; then
+        echo "Mold only supports Linux"
+    else
+      MACHINE=$(uname -m);
+      if [[ $MACHINE == "x86_64" ]]; then
+          TMPFILE=$(mktemp)
+          rm "$TMPFILE"
+          mkdir -p "$TMPFILE"/
+          curl -sL -o "$TMPFILE"/out.tar.gz "https://github.com/rui314/mold/releases/download/v1.2.1/mold-1.2.1-x86_64-linux.tar.gz"
+          tar -zxvf "$TMPFILE"/out.tar.gz -C "$TMPFILE"/
+          echo "copy mold to $(pwd)/mold"
+          cp "${TMPFILE}/mold-1.2.1-x86_64-linux/bin/mold" "$(pwd)/mold"
+          # rm -rf "$TMPFILE"
+          chmod +x "$(pwd)/mold"
+          printf $"[target.x86_64-unknown-linux-gnu]\nlinker = \"/usr/bin/clang\"\nrustflags = [\"-C\", \"link-arg=--ld-path=$(pwd)/mold\"]\n" >> ./.cargo/config
+      else
+          echo "Mold is only supported on x86_64"
+      fi
+    fi
+}
+
 function install_golang {
     if [[ $(go version | grep -c "go1.14" || true) == "0" ]]; then
       if [[ "$PACKAGE_MANAGER" == "apt-get" ]]; then
@@ -724,7 +748,7 @@ INSTALL_DIR="${HOME}/bin/"
 OPT_DIR="false"
 
 #parse args
-while getopts "btopvysah:i:n" arg; do
+while getopts "btopvysamh:i:n" arg; do
   case "$arg" in
     b)
       BATCH_MODE="true"
@@ -749,6 +773,10 @@ while getopts "btopvysah:i:n" arg; do
       ;;
     a)
       INSTALL_API_BUILD_TOOLS="true"
+      ;;
+    m)
+      echo "!! mold linker is an experimental feature !!"
+      install_mold
       ;;
     i)
       INSTALL_INDIVIDUAL="true"
