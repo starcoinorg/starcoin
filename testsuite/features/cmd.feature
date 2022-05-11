@@ -1,4 +1,5 @@
 Feature: cmd integration test
+
   Background:
     Given a dev node config
     And node handle
@@ -61,8 +62,8 @@ Feature: cmd integration test
     Then stop
 
     Examples:
-      | para |
-      | x@$.auth_key@  |
+      | para          |
+      | x@$.auth_key@ |
 
  #dev
   Scenario Outline: [cmd] dev resolve test
@@ -128,6 +129,25 @@ Feature: cmd integration test
     Then cmd: "account generate-keypair"
     Then cmd: "account import -i @$[0].private_key@"
     Then cmd: "account remove @$.address@"
+    Then cmd: "account list"
+    Then cmd: "account unlock @$[0].address@"
+    Then cmd: "account import -i 0x6afe92b85f5fd61b099d1bd805aa54b9737ad73522f490c47872cd028ea338f3"
+    Then cmd: "account transfer --blocking -v 100000000 -r 0x809c795045105a7b1efbcca4510d2034"
+    Then cmd: "account unlock 0x809c795045105a7b1efbcca4510d2034"
+    # using a temporal private key as import
+    Then cmd: "account rotate-authentication-key 0x809c795045105a7b1efbcca4510d2034 -i 0x3885e7dde8381046849d64d28b675f1c668dc36eaa9be11cbcaadb24c3917554"
+    # rotate-authentication-key twice for:
+      # 1. auth key will be verified on chain, so do it again for checking last rotation.
+      # 2. ensuring it's idempotent
+    Then cmd: "account unlock 0x809c795045105a7b1efbcca4510d2034"
+    Then cmd: "account rotate-authentication-key 0x809c795045105a7b1efbcca4510d2034 -i 0x3885e7dde8381046849d64d28b675f1c668dc36eaa9be11cbcaadb24c3917554"
+    Then cmd: "account unlock 0x809c795045105a7b1efbcca4510d2034"
+    Then cmd: "account create -p rotate-transfer"
+    # transfer after rotation
+    Then cmd: "account transfer --blocking -v 10000000 -s 0x809c795045105a7b1efbcca4510d2034 -r @$.address@"
+    Then cmd: "chain get-txn @$.execute_output.txn_hash@"
+    Then cmd: "chain get-events @$.transaction_hash@"
+    Then cmd: "account remove 0x809c795045105a7b1efbcca4510d2034"
     Then cmd: "account list"
     Then cmd: "account show"
     Then cmd: "account accept-token 0x1::DummyToken::DummyToken"
