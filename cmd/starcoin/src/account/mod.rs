@@ -35,6 +35,7 @@ mod lock_cmd;
 pub mod nft_cmd;
 pub mod receipt_identifier_cmd;
 pub mod remove_cmd;
+pub mod rotate_auth_key_cmd;
 mod show_cmd;
 mod sign_cmd;
 pub mod sign_multisig_txn_cmd;

@@ -47,6 +47,7 @@ pub fn add_command(
                 .subcommand(account::DeriveAddressCommand)
                 .subcommand(account::receipt_identifier_cmd::ReceiptIdentifierCommand)
                 .subcommand(account::generate_keypair::GenerateKeypairCommand)
+                .subcommand(account::rotate_auth_key_cmd::RotateAuthenticationKeyCommand)
                 .subcommand(account::nft_cmd::NFTCommand),
         )
         .command(
