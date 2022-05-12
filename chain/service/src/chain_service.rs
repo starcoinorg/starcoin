@@ -301,7 +301,6 @@ impl ReadableChainService for ChainReaderServiceInner {
         self.storage.get_blocks(ids)
     }
 
-    // XXX FIXME different get_blocks
     fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockHeader>>> {
         Ok(self
             .get_blocks(ids)?
