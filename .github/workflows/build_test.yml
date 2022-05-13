@@ -44,13 +44,8 @@ jobs:
           args: --all
       - name: test
         run: bash ./scripts/auto_rerun_test.sh
-      - name: move-prover-test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p starcoin-move-prover
-      - name: check changed files
-        run: bash ./scripts/changed_files.sh
+#       - name: check changed files
+#         run: bash ./scripts/changed_files.sh
       - name: integration test dev environment
         env:
           RUST_LOG: info
