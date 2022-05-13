@@ -1,6 +1,6 @@
 [package]
 name = "transaction-builder-generator"
-version = "1.11.7-rc"
+version = "1.11.9"
 authors = ["Diem Association <opensource@diem.org>"]
 description = "Diem transaction-builder"
 repository = "https://github.com/diem/diem"
