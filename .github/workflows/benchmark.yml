@@ -18,7 +18,7 @@ jobs:
         with:
           components: rustfmt,clippy
       - name: setup environment
-        run: bash ./scripts/dev_setup.sh  -b -t -y
+        run: bash ./scripts/dev_setup.sh  -b -t -y -m
       - name: add commit short sha
         run: echo "SHORT_SHA=`git rev-parse --short=7 HEAD`" >> $GITHUB_ENV
       - name: run flamegraph

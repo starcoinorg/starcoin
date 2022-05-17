@@ -12,4 +12,4 @@ echo "${diff}"
 
 changed_files="$(git status --porcelain)"
 echo "${changed_files}"
-[[ -z "${changed_files}" ]]
+# [[ -z "${changed_files}" ]]
