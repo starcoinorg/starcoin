@@ -48,12 +48,11 @@ The starcoin project comes with several wrappers/executables, `release` indicate
 cargo build --release 
 ```
 
-For prerequisites and detailed build instructions please read [Build from source](https://developer.starcoin.org/en/setup/build/) document.
+For prerequisites and detailed build instructions please read [Build from source](https://starcoinorg.github.io/starcoin-cookbook/docs/getting-started/install/build) document.
 
 ## Install binary
 
 Download binary release from GitHub [releases](https://github.com/starcoinorg/starcoin/releases) page.
-
 
 ## Run dev node:
 
