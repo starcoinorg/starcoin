@@ -40,7 +40,7 @@ async-trait = "0.1.51"
 stest = { path = "../commons/stest" }
 async-std = "1.11"
 
-prometheus = "0.13.0"
+prometheus = "0.13.1"
 
 network-api = { package = "network-api", path = "../network/api" }
 starcoin-metrics = {path = "../commons/metrics"}

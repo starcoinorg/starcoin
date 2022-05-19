@@ -42,7 +42,7 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 starcoin-metrics = {path = "../commons/metrics"}
 starcoin-types = {path = "../types"}
 network-p2p-types = {path = "./types"}
-prometheus = "0.13.0"
+prometheus = "0.13.1"
 ip_network = "0.3.4"
 bs58 = "0.3.1"
 async-std = "1.11.0"
