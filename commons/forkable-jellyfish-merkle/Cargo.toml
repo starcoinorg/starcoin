@@ -29,6 +29,7 @@ proptest = "1.0.0"
 proptest-derive = "0.3.0"
 criterion = "0.3"
 starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+bcs = "0.1.3"
 
 [features]
 default = []

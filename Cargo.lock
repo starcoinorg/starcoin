@@ -2484,6 +2484,7 @@ name = "forkable-jellyfish-merkle"
 version = "1.11.7-rc"
 dependencies = [
  "anyhow",
+ "bcs",
  "bcs-ext",
  "byteorder 1.4.3",
  "criterion",
