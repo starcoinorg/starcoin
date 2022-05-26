@@ -10,7 +10,7 @@ edition = "2021"
 anyhow = "1.0.41"
 thiserror = "1.0"
 parking_lot = "0.12.0"
-lru = "0.7.5"
+lru = "0.7.6"
 starcoin-types = {path = "../../types"}
 starcoin-vm-types = {path = "../../vm/types"}
 starcoin-state-api = {path = "../api"}
