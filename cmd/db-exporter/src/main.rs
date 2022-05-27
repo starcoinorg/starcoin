@@ -347,7 +347,7 @@ pub struct ExportSnapshotOptions {
     /// enable increment export snapshot
     pub increment: Option<bool>,
     #[clap(long, short = 'b')]
-    /// special block_num
+    /// special block_num for debug usage
     pub special_block_num: Option<BlockNumber>,
 }
 
@@ -482,7 +482,13 @@ fn main() -> anyhow::Result<()> {
     }
 
     if let Cmd::ExportSnapshot(option) = cmd {
-        let result = export_snapshot(option.db_path, option.output, option.net, option.increment, option.special_block_num);
+        let result = export_snapshot(
+            option.db_path,
+            option.output,
+            option.net,
+            option.increment,
+            option.special_block_num,
+        );
         return result;
     }
 
