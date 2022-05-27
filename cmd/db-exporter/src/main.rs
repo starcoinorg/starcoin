@@ -1090,7 +1090,6 @@ pub fn export_snapshot(
     let chain = BlockChain::new(net.time_service(), cur_block.id(), storage.clone(), None)
         .expect("create block chain should success.");
     let cur_num = chain.epoch().start_block_number();
-    println!("snapshot cur_num {}", cur_num);
 
     // increment export read num
     let inc_export = increment.unwrap_or(false);
