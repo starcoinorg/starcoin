@@ -458,45 +458,21 @@ impl ChainStateWriter for ChainStateDB {
 
     fn apply(&self, chain_state_set: ChainStateSet) -> Result<()> {
         for (address, account_state_set) in chain_state_set.state_sets() {
-            let (code_root, resource_root) = match self.get_account_state(address)? {
-                Some(account_state) => (
-                    account_state.code_root(),
-                    Some(account_state.resource_root()),
-                ),
-                None => (None, None),
+            let code_root = if let Some(state_set) = account_state_set.code_set() {
+                let state_tree = StateTree::<ModuleName>::new(self.store.clone(), None);
+                state_tree.apply(state_set.clone())?;
+                state_tree.flush()?;
+                Some(state_tree.root_hash())
+            } else {
+                None
             };
-            let code_root = match (code_root, account_state_set.code_set()) {
-                (Some(storage_root), Some(state_set)) => {
-                    let state_tree = self.new_state_tree::<ModuleName>(storage_root);
-                    state_tree.apply(state_set.clone())?;
-                    state_tree.flush()?;
-                    Some(state_tree.root_hash())
-                }
-                (Some(storage_root), None) => Some(storage_root),
-                (None, Some(state_set)) => {
-                    let state_tree = StateTree::<ModuleName>::new(self.store.clone(), None);
-                    state_tree.apply(state_set.clone())?;
-                    state_tree.flush()?;
-                    Some(state_tree.root_hash())
-                }
-                (None, None) => None,
-            };
-
-            let resource_root = match (resource_root, account_state_set.resource_set()) {
-                (Some(storage_root), Some(state_set)) => {
-                    let state_tree = self.new_state_tree::<StructTag>(storage_root);
-                    state_tree.apply(state_set.clone())?;
-                    state_tree.flush()?;
-                    state_tree.root_hash()
-                }
-                (Some(storage_root), None) => storage_root,
-                (None, Some(state_set)) => {
-                    let state_tree = StateTree::<StructTag>::new(self.store.clone(), None);
-                    state_tree.apply(state_set.clone())?;
-                    state_tree.flush()?;
-                    state_tree.root_hash()
-                }
-                (None, None) => unreachable!("this should never happened"),
+            let resource_root = if let Some(state_set) = account_state_set.resource_set() {
+                let state_tree = StateTree::<StructTag>::new(self.store.clone(), None);
+                state_tree.apply(state_set.clone())?;
+                state_tree.flush()?;
+                state_tree.root_hash()
+            } else {
+                unreachable!("this should never happened")
             };
             let new_account_state = AccountState::new(code_root, resource_root);
             self.state_tree.put(*address, new_account_state.try_into()?);

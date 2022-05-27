@@ -346,6 +346,9 @@ pub struct ExportSnapshotOptions {
     #[clap(long, short = 't')]
     /// enable increment export snapshot
     pub increment: Option<bool>,
+    #[clap(long, short = 'b')]
+    /// special block_num for debug usage
+    pub special_block_num: Option<BlockNumber>,
 }
 
 #[derive(Debug, Parser)]
@@ -479,7 +482,13 @@ fn main() -> anyhow::Result<()> {
     }
 
     if let Cmd::ExportSnapshot(option) = cmd {
-        let result = export_snapshot(option.db_path, option.output, option.net, option.increment);
+        let result = export_snapshot(
+            option.db_path,
+            option.output,
+            option.net,
+            option.increment,
+            option.special_block_num,
+        );
         return result;
     }
 
@@ -1038,6 +1047,7 @@ pub fn export_snapshot(
     output: PathBuf,
     network: BuiltinNetworkID,
     increment: Option<bool>,
+    special_block_num: Option<BlockNumber>,
 ) -> anyhow::Result<()> {
     let start_time = SystemTime::now();
     let net = ChainNetwork::new_builtin(network);
@@ -1064,11 +1074,16 @@ pub fn export_snapshot(
     )
     .expect("create block chain should success.");
     let block_num = chain.status().head().number();
-    let cur_num = if block_num <= SNAP_GAP {
+    let mut cur_num = if block_num <= SNAP_GAP {
         block_num
     } else {
         block_num - SNAP_GAP
     };
+    if let Some(special_num) = special_block_num {
+        if special_num <= cur_num {
+            cur_num = special_num;
+        }
+    }
     let cur_block = chain
         .get_block_by_number(cur_num)?
         .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
