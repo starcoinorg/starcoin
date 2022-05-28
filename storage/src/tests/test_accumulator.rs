@@ -6,7 +6,7 @@ use crate::storage::StorageInstance;
 use crate::Storage;
 use crypto::HashValue;
 use starcoin_accumulator::node_index::NodeIndex;
-use starcoin_accumulator::{AccumulatorNode, AccumulatorTreeStore};
+use starcoin_accumulator::{AccumulatorNode, AccumulatorTreeStore, AccumulatorTreeStore_tmp};
 use starcoin_config::RocksdbConfig;
 
 #[test]
@@ -43,4 +43,42 @@ fn test_storage() {
         .unwrap()
         .unwrap();
     assert_eq!(acc_node, acc_node3);
+}
+
+
+#[test]
+fn test_storage_tmp() {
+    let storage = Storage::new(StorageInstance::new_db_instance(
+        DBStorage::new(
+            starcoin_config::temp_dir().as_ref(),
+            RocksdbConfig::default(),
+            None,
+        )
+        .unwrap(),
+    ))
+    .unwrap();
+
+    let index = NodeIndex::from_inorder_index(1);
+    let acc_node = AccumulatorNode::new_leaf(index, HashValue::random());
+    let node_hash = acc_node.hash();
+    storage
+        .transaction_accumulator_storage_tmp
+        .save_node(acc_node.clone())
+        .unwrap();
+    let acc_node2 = storage
+        .transaction_accumulator_storage_tmp
+        .get_node(index)
+        .unwrap()
+        .unwrap();
+    assert_eq!(node_hash, acc_node2);
+    storage
+        .block_accumulator_storage_tmp
+        .save_node(acc_node.clone())
+        .unwrap();
+    let acc_node3 = storage
+        .block_accumulator_storage_tmp
+        .get_node(index)
+        .unwrap()
+        .unwrap();
+    assert_eq!(node_hash, acc_node3);
 }

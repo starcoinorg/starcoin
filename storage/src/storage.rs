@@ -12,6 +12,7 @@ use std::convert::TryInto;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::Arc;
+use starcoin_accumulator::node_index;
 
 /// Type alias to improve readability.
 pub type ColumnFamilyName = &'static str;
@@ -508,6 +509,16 @@ impl KeyCodec for HashValue {
 
     fn decode_key(data: &[u8]) -> Result<Self> {
         Ok(HashValue::from_slice(data)?)
+    }
+}
+
+impl KeyCodec for node_index::NodeIndex {
+    fn encode_key(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+
+    fn decode_key(data: &[u8]) -> Result<Self> {
+        Ok(Self::decode(data))
     }
 }
 

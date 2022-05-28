@@ -11,6 +11,7 @@ use parking_lot::Mutex;
 use starcoin_crypto::HashValue;
 use std::sync::Arc;
 pub use tree_store::AccumulatorTreeStore;
+pub use tree_store::AccumulatorTreeStore_tmp;
 
 pub mod accumulator_info;
 #[cfg(test)]

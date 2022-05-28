@@ -5,6 +5,8 @@ use crate::{LeafCount, MAX_ACCUMULATOR_LEAVES};
 use mirai_annotations::*;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use anyhow::Result;
+use byteorder::{BigEndian, ReadBytesExt};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct NodeIndex(u64);
@@ -19,6 +21,15 @@ pub enum NodeDirection {
 }
 
 impl NodeIndex {
+    pub fn encode(self) -> Result<Vec<u8>> {
+        Ok(self.0.to_be_bytes().to_vec())
+    }
+
+    #[allow(clippy::redundant_slicing)]
+    pub fn decode(data: &[u8]) -> Self {
+        Self((&data[..]).read_u64::<BigEndian>().unwrap())
+    }
+
     pub fn is_freezable(self, leaf_index: u64) -> bool {
         let leaf = Self::from_leaf_index(leaf_index);
         let right_most_child = self.right_most_child();

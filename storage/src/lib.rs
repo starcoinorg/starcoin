@@ -3,6 +3,7 @@
 
 use crate::accumulator::{
     AccumulatorStorage, BlockAccumulatorStorage, TransactionAccumulatorStorage,
+    AccumulatorStorage_tmp, BlockAccumulatorStorage_tmp, TransactionAccumulatorStorage_tmp
 };
 use crate::block::BlockStorage;
 use crate::block_info::{BlockInfoStorage, BlockInfoStore};
@@ -54,6 +55,8 @@ pub mod storage_macros;
 pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
 pub const BLOCK_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_block";
 pub const TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_transaction";
+pub const BLOCK_ACCUMULATOR_NODE_PREFIX_NAME_tmp: ColumnFamilyName = "acc_node_block_tmp";
+pub const TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME_tmp: ColumnFamilyName = "acc_node_transaction_tmp";
 pub const BLOCK_PREFIX_NAME: ColumnFamilyName = "block";
 pub const BLOCK_HEADER_PREFIX_NAME: ColumnFamilyName = "block_header";
 pub const BLOCK_BODY_PREFIX_NAME: ColumnFamilyName = "block_body";
@@ -132,17 +135,42 @@ static VEC_PREFIX_NAME_V3: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         FAILED_BLOCK_PREFIX_NAME,
     ]
 });
+
+static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
+    vec![
+        BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
+        TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
+        BLOCK_ACCUMULATOR_NODE_PREFIX_NAME_tmp,
+        TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME_tmp,
+        BLOCK_PREFIX_NAME,
+        BLOCK_HEADER_PREFIX_NAME,
+        BLOCK_BODY_PREFIX_NAME, // unused column
+        BLOCK_INFO_PREFIX_NAME,
+        BLOCK_TRANSACTIONS_PREFIX_NAME,
+        BLOCK_TRANSACTION_INFOS_PREFIX_NAME,
+        STATE_NODE_PREFIX_NAME,
+        CHAIN_INFO_PREFIX_NAME,
+        TRANSACTION_PREFIX_NAME,
+        TRANSACTION_INFO_PREFIX_NAME, // unused column
+        TRANSACTION_INFO_PREFIX_NAME_V2,
+        TRANSACTION_INFO_HASH_PREFIX_NAME,
+        CONTRACT_EVENT_PREFIX_NAME,
+        FAILED_BLOCK_PREFIX_NAME,
+    ]
+});
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, IntoPrimitive, TryFromPrimitive)]
 #[repr(u8)]
 pub enum StorageVersion {
     V1 = 1,
     V2 = 2,
     V3 = 3,
+    V4 = 4,
 }
 
 impl StorageVersion {
     pub fn current_version() -> StorageVersion {
-        StorageVersion::V3
+        StorageVersion::V4
     }
 
     pub fn get_column_family_names(&self) -> &'static [ColumnFamilyName] {
@@ -150,6 +178,7 @@ impl StorageVersion {
             StorageVersion::V1 => &VEC_PREFIX_NAME_V1,
             StorageVersion::V2 => &VEC_PREFIX_NAME_V2,
             StorageVersion::V3 => &VEC_PREFIX_NAME_V3,
+            StorageVersion::V4 => &VEC_PREFIX_NAME_V4,
         }
     }
 }
@@ -262,6 +291,8 @@ pub struct Storage {
     state_node_storage: StateStorage,
     block_accumulator_storage: AccumulatorStorage<BlockAccumulatorStorage>,
     transaction_accumulator_storage: AccumulatorStorage<TransactionAccumulatorStorage>,
+    block_accumulator_storage_tmp: AccumulatorStorage_tmp<BlockAccumulatorStorage_tmp>,
+    transaction_accumulator_storage_tmp: AccumulatorStorage_tmp<TransactionAccumulatorStorage_tmp>,
     block_info_storage: BlockInfoStorage,
     event_storage: ContractEventStorage,
     chain_info_storage: ChainInfoStorage,
@@ -281,6 +312,11 @@ impl Storage {
             ),
             transaction_accumulator_storage:
                 AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
+            block_accumulator_storage_tmp: AccumulatorStorage_tmp::new_block_accumulator_storage(
+                instance.clone(),
+            ),
+            transaction_accumulator_storage_tmp:
+                AccumulatorStorage_tmp::new_transaction_accumulator_storage(instance.clone()),
             block_info_storage: BlockInfoStorage::new(instance.clone()),
             event_storage: ContractEventStorage::new(instance.clone()),
             chain_info_storage: ChainInfoStorage::new(instance),
