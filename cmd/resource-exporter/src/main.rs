@@ -64,11 +64,10 @@ pub fn export(
         csv_writer.write_record(None::<&[u8]>)?;
     }
 
-    let global_states = state_tree.dump()?;
-
-    for (address_bytes, account_state_bytes) in global_states.iter() {
-        let account: AccountAddress = bcs_ext::from_bytes(address_bytes)?;
-        let account_state: AccountState = account_state_bytes.as_slice().try_into()?;
+    for item in state_tree.dump_iter()? {
+        let (account, state) = item?;
+        let state: Vec<u8> = state.into();
+        let account_state: AccountState = state.as_slice().try_into()?;
         let resource_root = account_state.storage_roots()[DataType::RESOURCE.storage_index()];
         let resource = match resource_root {
             None => None,
