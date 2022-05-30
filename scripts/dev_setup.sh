@@ -377,7 +377,11 @@ function install_gcc_powerpc_linux_gnu {
   PACKAGE_MANAGER=$1
   #Differently named packages for gcc-powerpc-linux-gnu
   if [[ "$PACKAGE_MANAGER" == "apt-get" ]] || [[ "$PACKAGE_MANAGER" == "yum" ]]; then
-    install_pkg gcc-powerpc-linux-gnu "$PACKAGE_MANAGER"
+    if [[ "$(getconf LONG_BIT)" == "64" ]]; then
+        install_pkg gcc-powerpc64-linux-gnu "$PACKAGE_MANAGER"
+    else
+        install_pkg gcc-powerpc-linux-gnu "$PACKAGE_MANAGER"
+    fi
   fi
   #if [[ "$PACKAGE_MANAGER" == "pacman" ]]; then
   #  install_pkg powerpc-linux-gnu-gcc "$PACKAGE_MANAGER"
