@@ -839,10 +839,10 @@ impl crate::SourceInstaller for Installer {
             r#"[package]
 name = "{}"
 version = "{}"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-once_cell = "1.4.0"
+once_cell = "1.12.0"
 serde = {{ version = "1.0", features = ["derive"] }}
 serde_bytes = "0.11"
 starcoin-types = {{ path = "../starcoin-types", version = "{}" }}
