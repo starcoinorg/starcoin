@@ -135,14 +135,14 @@ fn test_that_rust_code_compiles() {
         r#"[package]
 name = "starcoin-stdlib"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 serde_bytes = "0.11"
-serde = {{ version = "1.0.114", features = ["derive"] }}
+serde = {{ version = "1.0", features = ["derive"] }}
 bcs_ext = {{ package="bcs-ext", git = "https://github.com/starcoinorg/starcoin"}}
 starcoin-types = {{ path = "../starcoin-types", version = "0.1.0" }}
-once_cell = "1.4.0"
+once_cell = "1.12.0"
 
 [[bin]]
 name = "stdlib_demo"
