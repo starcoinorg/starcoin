@@ -26,8 +26,8 @@ impl NodeIndex {
     }
 
     #[allow(clippy::redundant_slicing)]
-    pub fn decode(data: &[u8]) -> Self {
-        Self((&data[..]).read_u64::<BigEndian>().unwrap())
+    pub fn decode(data: &[u8]) -> Result<Self> {
+        Ok(Self((&data[..]).read_u64::<BigEndian>().unwrap()))
     }
 
     pub fn is_freezable(self, leaf_index: u64) -> bool {

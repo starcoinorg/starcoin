@@ -7,6 +7,10 @@ use crate::chain_info::ChainInfoStorage;
 use crate::transaction::TransactionStorage;
 use crate::transaction_info::OldTransactionInfoStorage;
 use crate::transaction_info::TransactionInfoStorage;
+use crate::accumulator::{
+    BlockAccumulatorStorage, BlockAccumulatorStorage_tmp,
+    TransactionAccumulatorStorage, TransactionAccumulatorStorage_tmp
+};
 use crate::{
     CodecKVStore, RichTransactionInfo, StorageInstance, StorageVersion, TransactionStore,
     BLOCK_BODY_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
@@ -151,6 +155,37 @@ impl DBUpgrade {
         Ok(())
     }
 
+    fn db_upgrade_v3_v4(instance: &mut StorageInstance) -> Result<()> {
+        let old_block_acc_storage = BlockAccumulatorStorage::new(instance.clone());
+        let block_acc_storage = BlockAccumulatorStorage_tmp::new(instance.clone());
+        let mut iter = old_block_acc_storage.iter()?;
+        iter.seek_to_first();
+        let mut processed_count = 0;
+        for item in iter {
+            let (hash, node) = item?;
+            block_acc_storage.put(node.index(), hash)?; 
+            processed_count += 1;
+            if processed_count % 10000 == 0 {
+                info!("processed items: {}", processed_count);
+            }       
+        };
+
+        let old_txn_acc_storage = TransactionAccumulatorStorage::new(instance.clone());
+        let txn_acc_storage = TransactionAccumulatorStorage_tmp::new(instance.clone());
+        let mut iter = old_txn_acc_storage.iter()?;
+        iter.seek_to_first();
+        let mut processed_count = 0;
+        for item in iter {
+            let (hash, node) = item?;
+            txn_acc_storage.put(node.index(), hash)?;
+            processed_count += 1;
+            if processed_count % 10000 == 0 {
+                info!("processed items: {}", processed_count);
+            }
+        }
+        Ok(())
+    }
+
     pub fn do_upgrade(
         version_in_db: StorageVersion,
         version_in_code: StorageVersion,
@@ -172,6 +207,21 @@ impl DBUpgrade {
 
             (StorageVersion::V2, StorageVersion::V3) => {
                 Self::db_upgrade_v2_v3(instance)?;
+            }
+
+            (StorageVersion::V3, StorageVersion::V4) => {
+                Self::db_upgrade_v3_v4(instance)?;
+            }
+
+            (StorageVersion::V2, StorageVersion::V4) => {
+                Self::db_upgrade_v2_v3(instance)?;
+                Self::db_upgrade_v3_v4(instance)?;
+            }
+
+            (StorageVersion::V1, StorageVersion::V4) => {
+                Self::db_upgrade_v1_v2(instance)?;
+                Self::db_upgrade_v2_v3(instance)?;
+                Self::db_upgrade_v3_v4(instance)?;
             }
             _ => bail!(
                 "Can not upgrade db from {:?} to {:?}",

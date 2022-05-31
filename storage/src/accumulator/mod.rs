@@ -5,12 +5,13 @@ use crate::define_storage;
 use crate::storage::{CodecKVStore, ValueCodec};
 use crate::StorageInstance;
 use crate::{BLOCK_ACCUMULATOR_NODE_PREFIX_NAME, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME};
-use crate::{BLOCK_ACCUMULATOR_NODE_PREFIX_NAME_tmp, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME_tmp};
+use crate::{BLOCK_ACCUMULATOR_NODE_PREFIX_NAME_V2, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME_V2};
 use anyhow::Result;
 use bcs_ext::BCSCodec;
 use crypto::hash::HashValue;
 use starcoin_accumulator::{node_index, AccumulatorNode, AccumulatorTreeStore, AccumulatorTreeStore_tmp};
 
+// This column family is deprecated
 define_storage!(
     BlockAccumulatorStorage,
     HashValue,
@@ -18,6 +19,7 @@ define_storage!(
     BLOCK_ACCUMULATOR_NODE_PREFIX_NAME
 );
 
+// This column family is deprecated
 define_storage!(
     TransactionAccumulatorStorage,
     HashValue,
@@ -29,14 +31,14 @@ define_storage!(
     BlockAccumulatorStorage_tmp,
     node_index::NodeIndex,
     HashValue,
-    BLOCK_ACCUMULATOR_NODE_PREFIX_NAME_tmp
+    BLOCK_ACCUMULATOR_NODE_PREFIX_NAME_V2
 );
 
 define_storage!(
     TransactionAccumulatorStorage_tmp,
     node_index::NodeIndex,
     HashValue,
-    TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME_tmp
+    TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME_V2
 );
 
 impl ValueCodec for AccumulatorNode {

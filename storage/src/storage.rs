@@ -518,7 +518,7 @@ impl KeyCodec for node_index::NodeIndex {
     }
 
     fn decode_key(data: &[u8]) -> Result<Self> {
-        Ok(Self::decode(data))
+        Self::decode(data)
     }
 }
 
