@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use accumulator::AccumulatorNode;
 use anyhow::Result;
 use crypto::HashValue;
 use futures::future::BoxFuture;
@@ -9,7 +8,7 @@ use futures::FutureExt;
 use network_rpc_core::NetRpcError;
 use starcoin_chain_service::{ChainAsyncService, ChainReaderService};
 use starcoin_network_rpc_api::{
-    gen_server, BlockBody, GetAccountState, GetAccumulatorNodeByNodeHash, GetBlockHeadersByNumber,
+    gen_server, BlockBody, GetAccountState, GetBlockHeadersByNumber,
     GetBlockIds, GetStateWithProof, GetTxnsWithHash, GetTxnsWithSize, Ping, RpcRequest,
     MAX_BLOCK_HEADER_REQUEST_SIZE, MAX_BLOCK_INFO_REQUEST_SIZE, MAX_BLOCK_REQUEST_SIZE,
     MAX_TXN_REQUEST_SIZE,
@@ -209,17 +208,6 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
     ) -> BoxFuture<Result<Option<StateNode>>> {
         let storage = self.storage.clone();
         let fut = async move { storage.get(&state_node_key) };
-        Box::pin(fut)
-    }
-
-    fn get_accumulator_node_by_node_hash(
-        &self,
-        _peer_id: PeerId,
-        request: GetAccumulatorNodeByNodeHash,
-    ) -> BoxFuture<Result<Option<AccumulatorNode>>> {
-        let storage = self.storage.clone();
-        let acc_store = storage.get_accumulator_store(request.accumulator_storage_type);
-        let fut = async move { acc_store.get_node(request.node_hash) };
         Box::pin(fut)
     }
 

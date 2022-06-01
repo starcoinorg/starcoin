@@ -7,8 +7,6 @@ use network_rpc_core::{NetRpcError, RpcErrorCode};
 use network_rpc_derive::*;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use starcoin_accumulator::node::AccumulatorStoreType;
-use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::StateWithProof;
 use starcoin_state_tree::StateNode;
@@ -97,12 +95,6 @@ impl IntoIterator for GetBlockHeadersByNumber {
         let vec: Vec<BlockNumber> = self.into();
         vec.into_iter()
     }
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
-pub struct GetAccumulatorNodeByNodeHash {
-    pub node_hash: HashValue,
-    pub accumulator_storage_type: AccumulatorStoreType,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -251,12 +243,6 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         peer_id: PeerId,
         node_key: HashValue,
     ) -> BoxFuture<Result<Option<StateNode>>>;
-
-    fn get_accumulator_node_by_node_hash(
-        &self,
-        peer_id: PeerId,
-        request: GetAccumulatorNodeByNodeHash,
-    ) -> BoxFuture<Result<Option<AccumulatorNode>>>;
 
     fn get_state_with_proof(
         &self,

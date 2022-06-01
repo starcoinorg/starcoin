@@ -8,8 +8,8 @@ use crate::transaction::TransactionStorage;
 use crate::transaction_info::OldTransactionInfoStorage;
 use crate::transaction_info::TransactionInfoStorage;
 use crate::accumulator::{
-    BlockAccumulatorStorage, BlockAccumulatorStorage_tmp,
-    TransactionAccumulatorStorage, TransactionAccumulatorStorage_tmp
+    BlockAccumulatorStorage, OldBlockAccumulatorStorage,
+    TransactionAccumulatorStorage, OldTransactionAccumulatorStorage
 };
 use crate::{
     CodecKVStore, RichTransactionInfo, StorageInstance, StorageVersion, TransactionStore,
@@ -156,8 +156,8 @@ impl DBUpgrade {
     }
 
     fn db_upgrade_v3_v4(instance: &mut StorageInstance) -> Result<()> {
-        let old_block_acc_storage = BlockAccumulatorStorage::new(instance.clone());
-        let block_acc_storage = BlockAccumulatorStorage_tmp::new(instance.clone());
+        let old_block_acc_storage = OldBlockAccumulatorStorage::new(instance.clone());
+        let block_acc_storage = BlockAccumulatorStorage::new(instance.clone());
         let mut iter = old_block_acc_storage.iter()?;
         iter.seek_to_first();
         let mut processed_count = 0;
@@ -170,8 +170,8 @@ impl DBUpgrade {
             }       
         };
 
-        let old_txn_acc_storage = TransactionAccumulatorStorage::new(instance.clone());
-        let txn_acc_storage = TransactionAccumulatorStorage_tmp::new(instance.clone());
+        let old_txn_acc_storage = OldTransactionAccumulatorStorage::new(instance.clone());
+        let txn_acc_storage = TransactionAccumulatorStorage::new(instance.clone());
         let mut iter = old_txn_acc_storage.iter()?;
         iter.seek_to_first();
         let mut processed_count = 0;

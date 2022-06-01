@@ -5,11 +5,9 @@ use anyhow::{format_err, Result};
 use logger::prelude::*;
 use network_api::peer_score::{InverseScore, Score};
 use network_api::PeerSelector;
-use starcoin_accumulator::node::AccumulatorStoreType;
-use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::hash::HashValue;
 use starcoin_network_rpc_api::{
-    gen_client::NetworkRpcClient, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeadersByNumber,
+    gen_client::NetworkRpcClient, BlockBody, GetBlockHeadersByNumber,
     GetBlockIds, GetTxnsWithHash, RawRpcClient,
 };
 use starcoin_state_tree::StateNode;
@@ -321,41 +319,6 @@ impl VerifiedRpcClient {
                 .get_state_node_by_node_hash(peer_id, node_key)
                 .await?,
         ))
-    }
-
-    pub async fn get_accumulator_node_by_node_hash(
-        &self,
-        node_key: HashValue,
-        accumulator_type: AccumulatorStoreType,
-    ) -> Result<(PeerId, AccumulatorNode)> {
-        let peer_id = self.select_a_peer()?;
-        if let Some(accumulator_node) = self
-            .client
-            .get_accumulator_node_by_node_hash(
-                peer_id.clone(),
-                GetAccumulatorNodeByNodeHash {
-                    node_hash: node_key,
-                    accumulator_storage_type: accumulator_type,
-                },
-            )
-            .await?
-        {
-            let accumulator_node_id = accumulator_node.hash();
-            if node_key == accumulator_node_id {
-                Ok((peer_id, accumulator_node))
-            } else {
-                Err(format_err!(
-                    "Accumulator node hash {:?} and node key {:?} mismatch.",
-                    accumulator_node_id,
-                    node_key
-                ))
-            }
-        } else {
-            Err(format_err!(
-                "Accumulator node is none by node key {:?}.",
-                node_key
-            ))
-        }
     }
 
     pub async fn get_block_ids(

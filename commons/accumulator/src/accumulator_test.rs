@@ -97,18 +97,6 @@ fn test_multiple_chain() {
     accumulator.flush().unwrap();
     proof_verify(&accumulator, root_hash, &leaves, 0);
     let frozen_node = accumulator.get_frozen_subtree_roots();
-    for node in frozen_node.clone() {
-        let acc = mock_store
-            .get_node(node)
-            .expect("get accumulator node by hash should success")
-            .unwrap();
-        if let AccumulatorNode::Internal(internal) = acc {
-            let left = mock_store.get_node(internal.left()).unwrap().unwrap();
-            assert!(left.is_frozen());
-            let right = mock_store.get_node(internal.right()).unwrap().unwrap();
-            assert!(right.is_frozen());
-        }
-    }
     let accumulator2 = MerkleAccumulator::new(root_hash, frozen_node, 2, 3, mock_store);
     assert_eq!(accumulator.root_hash(), accumulator2.root_hash());
     let leaves2 = create_leaves(54..58);
@@ -252,8 +240,9 @@ fn test_flush() {
     let _root_hash = accumulator.append(&leaves).unwrap();
     accumulator.flush().unwrap();
     //get from storage
-    for node_hash in leaves {
-        let node = mock_store.get_node(node_hash).unwrap();
+    for leaf_index in 1000..1020 {
+        let index = NodeIndex::from_leaf_index(leaf_index);
+        let node = mock_store.get_node(index).unwrap();
         assert!(node.is_some());
     }
 }

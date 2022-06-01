@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{NodeIndex, AccumulatorNode};
-use crate::tree_store::AccumulatorTreeStore_tmp;
+use crate::AccumulatorTreeStore;
 use anyhow::{bail, Result};
 use parking_lot::Mutex;
 use starcoin_crypto::HashValue;
@@ -31,7 +31,7 @@ impl Default for MockAccumulatorStore {
     }
 }
 
-impl AccumulatorTreeStore_tmp for MockAccumulatorStore {
+impl AccumulatorTreeStore for MockAccumulatorStore {
     fn get_node(&self, index: NodeIndex) -> Result<Option<HashValue>> {
         let map = self.node_store.lock();
         match map.get(&index) {
