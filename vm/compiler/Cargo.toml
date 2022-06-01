@@ -11,9 +11,9 @@ anyhow = "1.0.41"
 once_cell = "1.12.0"
 tempfile = "3.1.0"
 regex = { version = "1.5.4", default-features = false, features = ["std", "perf"] }
-move-compiler = { package="move-compiler", git = "https://github.com/starcoinorg/move", rev = "4735fa59b63e1b30622411d8af65129e4c80b3bc"  }
-move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "4735fa59b63e1b30622411d8af65129e4c80b3bc"}
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "4735fa59b63e1b30622411d8af65129e4c80b3bc"  }
+move-compiler = { package="move-compiler", git = "https://github.com/starcoinorg/move", rev = "4b14536a31a0c37db77e631988831bb54953d13c"  }
+move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "4b14536a31a0c37db77e631988831bb54953d13c"}
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "4b14536a31a0c37db77e631988831bb54953d13c"  }
 petgraph = "0.5.1"
 walkdir = "2.3"
 rayon = "1.5.1"

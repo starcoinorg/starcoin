@@ -24,6 +24,6 @@ regex = "1.5.4"
 rayon = "1.5.1"
 indexmap = "1.6.2"
 camino = { version = "1" }
-x-core = { package="x-core", git = "https://github.com/starcoinorg/move", rev = "4735fa59b63e1b30622411d8af65129e4c80b3bc"  }
-x-lint = { package="x-lint", git = "https://github.com/starcoinorg/move", rev = "4735fa59b63e1b30622411d8af65129e4c80b3bc"  }
-x = { package="x", git = "https://github.com/starcoinorg/move", rev = "4735fa59b63e1b30622411d8af65129e4c80b3bc"  }
+x-core = { package="x-core", git = "https://github.com/starcoinorg/move", rev = "4b14536a31a0c37db77e631988831bb54953d13c"  }
+x-lint = { package="x-lint", git = "https://github.com/starcoinorg/move", rev = "4b14536a31a0c37db77e631988831bb54953d13c"  }
+x = { package="x", git = "https://github.com/starcoinorg/move", rev = "4b14536a31a0c37db77e631988831bb54953d13c"  }

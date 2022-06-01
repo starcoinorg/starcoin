@@ -8,7 +8,7 @@ license = "Apache-2.0"
 
 [dependencies]
 ## move dependencies
-move-prover = { git = "https://github.com/starcoinorg/move", rev = "4735fa59b63e1b30622411d8af65129e4c80b3bc"  }
+move-prover = { git = "https://github.com/starcoinorg/move", rev = "4b14536a31a0c37db77e631988831bb54953d13c"  }
 
 # external dependencies
 tempfile = "3.2.0"
@@ -18,8 +18,8 @@ anyhow = "1.0.41"
 
 [dev-dependencies]
 datatest-stable = "0.1.1"
-move-prover-test-utils = {git = "https://github.com/starcoinorg/move", rev = "4735fa59b63e1b30622411d8af65129e4c80b3bc"  }
-move-command-line-common= {git = "https://github.com/starcoinorg/move", rev = "4735fa59b63e1b30622411d8af65129e4c80b3bc" }
+move-prover-test-utils = {git = "https://github.com/starcoinorg/move", rev = "4b14536a31a0c37db77e631988831bb54953d13c"  }
+move-command-line-common= {git = "https://github.com/starcoinorg/move", rev = "4b14536a31a0c37db77e631988831bb54953d13c" }
 shell-words = "1.0.0"
 walkdir = "2.3"
 once_cell = "1.12.0"

@@ -6,7 +6,7 @@ use starcoin_vm_types::account_config::G_ACCOUNT_MODULE;
 use starcoin_vm_types::errors::VMError;
 use starcoin_vm_types::vm_status::{AbortLocation, StatusCode, VMStatus};
 
-//should be consistent with ErrorCode.move
+// should be consistent with https://github.com/starcoinorg/starcoin-framework/blob/v11/sources/Errors.move#L44
 const PROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0;
 const PROLOGUE_INVALID_ACCOUNT_AUTH_KEY: u64 = 1;
 const PROLOGUE_SEQUENCE_NUMBER_TOO_OLD: u64 = 2;
@@ -28,6 +28,16 @@ const ECOIN_DEPOSIT_IS_ZERO: u64 = 15;
 const EDESTROY_TOKEN_NON_ZERO: u64 = 16;
 const EBLOCK_NUMBER_MISMATCH: u64 = 17;
 const EBAD_TRANSACTION_FEE_TOKEN: u64 = 18;
+
+// https://github.com/starcoinorg/starcoin-framework/blob/main/sources/PackageTxnManager.move
+const EUPGRADE_PLAN_IS_NONE: u64 = 102;
+const EPACKAGE_HASH_INCORRECT: u64 = 103;
+const EACTIVE_TIME_INCORRECT: u64 = 104;
+const ESTRATEGY_FREEZED: u64 = 105;
+const ESTRATEGY_INCORRECT: u64 = 106;
+const ESTRATEGY_NOT_TWO_PHASE: u64 = 107;
+const EUNKNOWN_STRATEGY: u64 = 108;
+const ESENDER_AND_PACKAGE_ADDRESS_MISMATCH: u64 = 109;
 
 const INVALID_STATE: u8 = 1;
 const REQUIRES_ADDRESS: u8 = 2;
@@ -85,6 +95,16 @@ pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
                 (INVALID_ARGUMENT, EBLOCK_NUMBER_MISMATCH) => StatusCode::BLOCK_NUMBER_MISMATCH,
                 (INVALID_ARGUMENT, EBAD_TRANSACTION_FEE_TOKEN) => {
                     StatusCode::BAD_TRANSACTION_FEE_CURRENCY
+                }
+                (INVALID_ARGUMENT, EUPGRADE_PLAN_IS_NONE) => StatusCode::UPGRADE_PLAN_IS_NONE,
+                (INVALID_ARGUMENT, EPACKAGE_HASH_INCORRECT) => StatusCode::PACKAGE_HASH_INCORRECT,
+                (INVALID_ARGUMENT, EACTIVE_TIME_INCORRECT) => StatusCode::ACTIVE_TIME_INCORRECT,
+                (INVALID_ARGUMENT, ESTRATEGY_FREEZED) => StatusCode::STRATEGY_FREEZED,
+                (INVALID_ARGUMENT, ESTRATEGY_INCORRECT) => StatusCode::STRATEGY_INCORRECT,
+                (INVALID_ARGUMENT, ESTRATEGY_NOT_TWO_PHASE) => StatusCode::STRATEGY_NOT_TWO_PHASE,
+                (INVALID_ARGUMENT, EUNKNOWN_STRATEGY) => StatusCode::UNKNOWN_STRATEGY,
+                (INVALID_STATE, ESENDER_AND_PACKAGE_ADDRESS_MISMATCH) => {
+                    StatusCode::SENDER_AND_PACKAGE_ADDRESS_MISMATCH
                 }
                 (category, reason) => {
                     warn!(
