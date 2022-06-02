@@ -311,9 +311,9 @@ fn test_wrong_package_address() -> Result<()> {
             &chain_state,
             TransactionPayload::Package(package),
         )?;
-        // MODULE_ADDRESS_DOES_NOT_MATCH_SENDER is converted to UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
+        // MODULE_ADDRESS_DOES_NOT_MATCH_SENDER is converted to SENDER_AND_PACKAGE_ADDRESS_MISMATCH
         assert_eq!(
-            &TransactionStatus::Discard(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION),
+            &TransactionStatus::Discard(StatusCode::SENDER_AND_PACKAGE_ADDRESS_MISMATCH),
             output.status()
         );
     }
