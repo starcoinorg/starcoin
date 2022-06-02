@@ -256,8 +256,8 @@ impl AccumulatorTree {
             return Ok(node_hash);
         }
         Ok(self.store.get_node(index)
-            .expect(&format!("node hash not found:{:?}", index)[..])
-            .expect(&format!("node hash not found:{:?}", index)[..]))
+            .unwrap_or(Some(*ACCUMULATOR_PLACEHOLDER_HASH))
+            .unwrap())
     }
 
     fn save_node_indexes(&mut self, nodes: Vec<AccumulatorNode>) {

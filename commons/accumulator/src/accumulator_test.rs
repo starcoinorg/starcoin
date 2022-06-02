@@ -240,7 +240,7 @@ fn test_flush() {
     let _root_hash = accumulator.append(&leaves).unwrap();
     accumulator.flush().unwrap();
     //get from storage
-    for leaf_index in 1000..1020 {
+    for leaf_index in 0..20 {
         let index = NodeIndex::from_leaf_index(leaf_index);
         let node = mock_store.get_node(index).unwrap();
         assert!(node.is_some());
