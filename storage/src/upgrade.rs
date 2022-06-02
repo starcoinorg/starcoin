@@ -14,6 +14,7 @@ use crate::accumulator::{
 use crate::{
     CodecKVStore, RichTransactionInfo, StorageInstance, StorageVersion, TransactionStore,
     BLOCK_BODY_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
+    BLOCK_ACCUMULATOR_NODE_PREFIX_NAME, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME
 };
 use anyhow::{bail, ensure, format_err, Result};
 use logger::prelude::{debug, info, warn};
@@ -156,33 +157,43 @@ impl DBUpgrade {
     }
 
     fn db_upgrade_v3_v4(instance: &mut StorageInstance) -> Result<()> {
-        let old_block_acc_storage = OldBlockAccumulatorStorage::new(instance.clone());
-        let block_acc_storage = BlockAccumulatorStorage::new(instance.clone());
-        let mut iter = old_block_acc_storage.iter()?;
-        iter.seek_to_first();
-        let mut processed_count = 0;
-        for item in iter {
-            let (hash, node) = item?;
-            block_acc_storage.put(node.index(), hash)?; 
-            processed_count += 1;
-            if processed_count % 10000 == 0 {
-                info!("processed items: {}", processed_count);
-            }       
-        };
+        {
+            let old_block_acc_storage = OldBlockAccumulatorStorage::new(instance.clone());
+            let block_acc_storage = BlockAccumulatorStorage::new(instance.clone());
+            let mut iter = old_block_acc_storage.iter()?;
+            iter.seek_to_first();
+            let mut processed_count = 0;
+            for item in iter {
+                let (hash, node) = item?;
+                block_acc_storage.put(node.index(), hash)?; 
+                processed_count += 1;
+                if processed_count % 10000 == 0 {
+                    info!("processed items: {}", processed_count);
+                }       
+            };
 
-        let old_txn_acc_storage = OldTransactionAccumulatorStorage::new(instance.clone());
-        let txn_acc_storage = TransactionAccumulatorStorage::new(instance.clone());
-        let mut iter = old_txn_acc_storage.iter()?;
-        iter.seek_to_first();
-        let mut processed_count = 0;
-        for item in iter {
-            let (hash, node) = item?;
-            txn_acc_storage.put(node.index(), hash)?;
-            processed_count += 1;
-            if processed_count % 10000 == 0 {
-                info!("processed items: {}", processed_count);
+            let old_txn_acc_storage = OldTransactionAccumulatorStorage::new(instance.clone());
+            let txn_acc_storage = TransactionAccumulatorStorage::new(instance.clone());
+            let mut iter = old_txn_acc_storage.iter()?;
+            iter.seek_to_first();
+            let mut processed_count = 0;
+            for item in iter {
+                let (hash, node) = item?;
+                txn_acc_storage.put(node.index(), hash)?;
+                processed_count += 1;
+                if processed_count % 10000 == 0 {
+                    info!("processed items: {}", processed_count);
+                }
             }
         }
+        instance
+            .db_mut()
+            .unwrap()
+            .drop_unused_cfs(vec![BLOCK_ACCUMULATOR_NODE_PREFIX_NAME, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME])?;
+        info!(
+            "remove unused column {}, column {}",
+            BLOCK_ACCUMULATOR_NODE_PREFIX_NAME, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME
+        );
         Ok(())
     }
 

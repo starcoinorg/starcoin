@@ -7,6 +7,7 @@ use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::{CodecKVStore, InnerStore, StorageInstance, ValueCodec};
 use crate::transaction_info::{BlockTransactionInfo, OldTransactionInfoStorage};
+use crate::accumulator::OldBlockAccumulatorStorage;
 use crate::{
     BlockInfoStore, BlockStore, BlockTransactionInfoStore, Storage, StorageVersion,
     TransactionStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
@@ -14,7 +15,10 @@ use crate::{
 };
 use anyhow::Result;
 use crypto::HashValue;
-use starcoin_accumulator::accumulator_info::AccumulatorInfo;
+use starcoin_accumulator::{
+    accumulator_info::AccumulatorInfo,
+    node_index::NodeIndex, AccumulatorNode, AccumulatorTreeStore
+};
 use starcoin_config::RocksdbConfig;
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockInfo};
 use starcoin_types::startup_info::SnapshotRange;
@@ -363,6 +367,50 @@ pub fn test_db_upgrade() -> Result<()> {
             storage.get_transaction_info(txn_info_id)?.is_some(),
             "expect RichTransactionInfo is some"
         );
+    }
+    Ok(())
+}
+
+fn generate_v3_db(path: &Path) -> Result<Vec<AccumulatorNode>> {
+    let instance = StorageInstance::new_db_instance(
+        DBStorage::new(path, RocksdbConfig::default(), None)?,
+    );
+    // let storage = Storage::new(instance.clone())?;
+
+    let old_block_acc_storage = OldBlockAccumulatorStorage::new(instance);
+
+    let mut nodes = vec![];
+    for i in 0..10 {
+        let index = NodeIndex::from_inorder_index(i);
+        let node = AccumulatorNode::new_leaf(index, HashValue::random());
+        
+        nodes.push(node.clone());
+        old_block_acc_storage.put(node.hash(), node)?;
+    }
+
+    Ok(nodes)
+}
+
+#[stest::test]
+pub fn test_db_upgrade_v3_v4() -> Result<()> {
+    let tmpdir = starcoin_config::temp_dir();
+    let nodes = generate_v3_db(tmpdir.path())?;
+    let mut instance = StorageInstance::new_db_instance(
+        DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None)?,
+    );
+
+    instance.check_upgrade()?;
+
+    let storage = Storage::new(instance.clone())?;
+    let old_block_acc_storage = OldBlockAccumulatorStorage::new(instance);
+
+    for node in nodes {
+        let hash = storage.get_block_accumulator_storage().get_node(node.index())?;
+        assert!(hash.is_some(), "expect node hash is some");
+        assert!(hash.unwrap() == node.hash(), "expect same hash value");
+
+        let old_node = old_block_acc_storage.get(node.hash())?;
+        assert!(old_node.is_none(), "expect node is none");
     }
     Ok(())
 }
