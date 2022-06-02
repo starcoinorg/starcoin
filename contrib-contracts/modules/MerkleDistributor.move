@@ -115,11 +115,11 @@ module MerkleDistributor {
 
     fun internal_claim<T: store>(distribution: &mut MerkleDistribution<T>, index: u64, account: address, amount: u128, merkle_proof: vector<vector<u8>>): Token<T> {
         let claimed =  is_claimed_(distribution, index);
-        assert(!claimed, Errors::custom(ALREADY_CLAIMED));
+        assert!(!claimed, Errors::custom(ALREADY_CLAIMED));
 
         let leaf_data = encode_leaf(&index, &account, &amount);
         let verified = MerkleProof::verify(&merkle_proof, &distribution.merkle_root, Hash::sha3_256(leaf_data));
-        assert(verified, Errors::custom(INVALID_PROOF));
+        assert!(verified, Errors::custom(INVALID_PROOF));
 
         set_claimed_(distribution, index);
 

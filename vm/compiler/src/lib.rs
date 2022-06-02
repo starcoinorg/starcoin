@@ -187,9 +187,12 @@ pub fn compile_source_string_no_report(
     for dep in deps {
         windows_line_ending_to_unix_in_file(dep)?;
     }
-    let compiler = move_compiler::Compiler::new(&targets, deps)
-        .set_named_address_values(starcoin_framework_named_addresses())
-        .set_flags(Flags::empty().set_sources_shadow_deps(true));
+    let compiler = move_compiler::Compiler::from_files(
+        targets,
+        deps.to_vec(),
+        starcoin_framework_named_addresses(),
+    )
+    .set_flags(Flags::empty().set_sources_shadow_deps(true));
     compiler.build()
 }
 
@@ -353,7 +356,7 @@ mod tests {
             .pop()
             .unwrap()
             .into_compiled_unit()
-            .serialize();
+            .serialize(None);
         let new_code = compile_source_string_no_report(new_source_code, &[], CORE_CODE_ADDRESS)
             .unwrap()
             .1
@@ -362,7 +365,7 @@ mod tests {
             .pop()
             .unwrap()
             .into_compiled_unit()
-            .serialize();
+            .serialize(None);
         let compatible = check_module_compat(pre_code.as_slice(), new_code.as_slice()).unwrap();
         assert_eq!(compatible, expect);
     }

@@ -566,6 +566,6 @@ pub fn check_open_fds_limit(max_files: u64) -> Result<(), ConfigError> {
 }
 
 #[cfg(not(unix))]
-pub fn check_open_fds_limit(max_files: u64) -> Result<(), ConfigError> {
+pub fn check_open_fds_limit(_max_files: u64) -> Result<(), ConfigError> {
     Ok(())
 }

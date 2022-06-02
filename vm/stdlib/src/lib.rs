@@ -7,7 +7,8 @@ use anyhow::{bail, ensure, format_err, Result};
 use include_dir::{include_dir, Dir};
 use log::{info, LevelFilter};
 use move_bytecode_verifier::{dependencies, verify_module};
-use move_compiler::command_line::compiler::construct_pre_compiled_lib_from_compiler;
+use move_compiler::command_line::compiler::construct_pre_compiled_lib;
+use move_compiler::shared::PackagePaths;
 use move_compiler::FullyCompiledProgram;
 use once_cell::sync::Lazy;
 use sha2::{Digest, Sha256};
@@ -17,7 +18,6 @@ use starcoin_move_compiler::compiled_unit::{CompiledUnit, NamedCompiledModule};
 use starcoin_move_compiler::diagnostics::{
     report_diagnostics_to_color_buffer, unwrap_or_report_diagnostics,
 };
-use starcoin_move_compiler::shared::Flags;
 pub use starcoin_move_compiler::{starcoin_framework_named_addresses, Compiler};
 use starcoin_vm_types::file_format::CompiledModule;
 pub use starcoin_vm_types::genesis_config::StdlibVersion;
@@ -107,27 +107,24 @@ pub const SCRIPT_HASH_LENGTH: usize = HashValue::LENGTH;
 
 pub static G_PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<FullyCompiledProgram> = Lazy::new(|| {
     let sources = stdlib_files();
-    let compiler = Compiler::new(&sources, &[])
-        .set_flags(Flags::empty().set_sources_shadow_deps(false))
-        .set_named_address_values(starcoin_framework_named_addresses());
-    let program_res = construct_pre_compiled_lib_from_compiler(compiler).unwrap();
+    let program_res = construct_pre_compiled_lib(
+        vec![PackagePaths {
+            name: None,
+            paths: sources,
+            named_address_map: starcoin_framework_named_addresses(),
+        }],
+        None,
+        move_compiler::Flags::empty(),
+    );
     match program_res {
-        Ok(df) => {
-            let compiled = df.compiled;
-            {
-                let compiler = Compiler::new(&[], &sources)
-                    .set_flags(Flags::empty().set_sources_shadow_deps(false))
-                    .set_named_address_values(starcoin_framework_named_addresses());
-                let mut program_as_lib = construct_pre_compiled_lib_from_compiler(compiler)
-                    .unwrap()
-                    .unwrap();
-                program_as_lib.compiled = compiled;
-                program_as_lib
-            }
-        }
-        Err((files, errors)) => {
+        Ok(Ok(df)) => df,
+        Ok(Err((files, errors))) => {
             eprintln!("!!!Starcoin Framework failed to compile!!!");
             move_compiler::diagnostics::report_diagnostics(&files, errors)
+        }
+        Err(e) => {
+            eprintln!("!!!Starcoin Framework failed to compile {:?}!!!", e);
+            panic!()
         }
     }
 });
@@ -189,10 +186,13 @@ pub fn stdlib_files() -> Vec<String> {
 
 pub fn build_stdlib(targets: &[String]) -> BTreeMap<String, CompiledModule> {
     let compiled_units = {
-        let (files, units_res) = Compiler::new(targets, &[])
-            .set_named_address_values(starcoin_framework_named_addresses())
-            .build()
-            .unwrap();
+        let (files, units_res) = Compiler::from_files(
+            targets.to_vec(),
+            vec![],
+            starcoin_framework_named_addresses(),
+        )
+        .build()
+        .unwrap();
         let (units, warnings) = unwrap_or_report_diagnostics(&files, units_res);
         println!(
             "{}",

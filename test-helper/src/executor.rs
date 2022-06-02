@@ -112,7 +112,7 @@ pub fn compile_modules_with_address(address: AccountAddress, code: &str) -> Vec<
 
     compiled_result
         .into_iter()
-        .map(|m| Module::new(m.serialize()))
+        .map(|m| Module::new(m.serialize(None)))
         .collect()
 }
 #[allow(unused)]
@@ -130,7 +130,7 @@ pub fn compile_script(code: impl AsRef<str>) -> Vec<u8> {
         .pop()
         .expect("at least contain one script")
         .into_compiled_unit()
-        .serialize()
+        .serialize(None)
 }
 
 pub fn association_execute(

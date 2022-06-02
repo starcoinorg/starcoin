@@ -6,6 +6,7 @@ pub mod metrics;
 pub mod natives;
 pub mod starcoin_vm;
 pub use move_vm_runtime::move_vm;
+pub use move_vm_runtime::session;
 mod access_path_cache;
 mod errors;
 use starcoin_vm_types::access_path::AccessPath;

@@ -10,54 +10,54 @@ edition = "2021"
 anyhow = "1.0.41"
 rand = "0.8.5"
 serde = { version = "1.0.130" }
-serde_json = { version="1.0", features = ["arbitrary_precision"]}
+serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 crossbeam-channel = "0.5.5"
-tokio = {version = "^1", features = ["full"] }
+tokio = { version = "^1", features = ["full"] }
 futures = "0.3.12"
-bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
+bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 itertools = "0.10.3"
 clap = { version = "3", features = ["derive"] }
 starcoin-logger = { path = "../../commons/logger" }
-starcoin-config = { path = "../../config"}
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-types = { path = "../../types"}
-starcoin-rpc-api = { path = "../../rpc/api"}
+starcoin-config = { path = "../../config" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
+starcoin-types = { path = "../../types" }
+starcoin-rpc-api = { path = "../../rpc/api" }
 starcoin-rpc-client = { path = "../../rpc/client" }
 starcoin-node-api = { path = "../../node/api" }
 starcoin-node = { path = "../../node" }
-starcoin-consensus = {path = "../../consensus"}
-starcoin-executor = {path = "../../executor"}
-starcoin-state-api = {path = "../../state/api"}
-starcoin-sync-api = {path = "../../sync/api"}
-starcoin-account-api = {path = "../../account/api"}
-starcoin-account-provider={path = "../../account/provider"}
-starcoin-chain-api = {path = "../../chain/api"}
-network-p2p-types = {path = "../../network-p2p/types"}
+starcoin-consensus = { path = "../../consensus" }
+starcoin-executor = { path = "../../executor" }
+starcoin-state-api = { path = "../../state/api" }
+starcoin-sync-api = { path = "../../sync/api" }
+starcoin-account-api = { path = "../../account/api" }
+starcoin-account-provider = { path = "../../account/provider" }
+starcoin-chain-api = { path = "../../chain/api" }
+network-p2p-types = { path = "../../network-p2p/types" }
 scmd = { path = "../../commons/scmd" }
-stdlib = {path = "../../vm/stdlib"}
-starcoin-vm-types = {path = "../../vm/types"}
-starcoin-vm-runtime = {path = "../../vm/vm-runtime"}
-starcoin-transaction-builder = {path = "../../vm/transaction-builder"}
-forkable-jellyfish-merkle = { path = "../../commons/forkable-jellyfish-merkle"}
+stdlib = { path = "../../vm/stdlib" }
+starcoin-vm-types = { path = "../../vm/types" }
+starcoin-vm-runtime = { path = "../../vm/vm-runtime" }
+starcoin-transaction-builder = { path = "../../vm/transaction-builder" }
+forkable-jellyfish-merkle = { path = "../../commons/forkable-jellyfish-merkle" }
 hex = { version = "0.4.3", default-features = false }
-starcoin-move-compiler = { path = "../../vm/compiler"}
-starcoin-dev= {path = "../../vm/dev"}
+starcoin-move-compiler = { path = "../../vm/compiler" }
+starcoin-dev = { path = "../../vm/dev" }
 starcoin-txpool-api = { path = "../../txpool/api" }
 starcoin-genesis = { path = "../../genesis" }
 starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-move-explain = { path = "../../vm/move-explain" }
-vm-status-translator = {path = "../../vm/vm-status-translator"}
-move-errmapgen = { git = "https://github.com/starcoinorg/move", rev = "69db2858761045f19935f3aaf43f04a1910ae74d"  }
-network-api = {path = "../../network/api", package="network-api"}
-starcoin-network-rpc-api = {path = "../../network-rpc/api"}
-starcoin-abi-decoder = {path = "../../abi/decoder"}
-starcoin-abi-resolver = {path = "../../abi/resolver"}
-starcoin-abi-types = {path = "../../abi/types"}
-move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "69db2858761045f19935f3aaf43f04a1910ae74d" }
+vm-status-translator = { path = "../../vm/vm-status-translator" }
+move-errmapgen = { git = "https://github.com/lemonhx/move", rev = "b9e63765e7bf6a722f6660339173460bacea04e2" }
+network-api = { path = "../../network/api", package = "network-api" }
+starcoin-network-rpc-api = { path = "../../network-rpc/api" }
+starcoin-abi-decoder = { path = "../../abi/decoder" }
+starcoin-abi-resolver = { path = "../../abi/resolver" }
+starcoin-abi-types = { path = "../../abi/types" }
+move-command-line-common = { git = "https://github.com/lemonhx/move", rev = "b9e63765e7bf6a722f6660339173460bacea04e2" }
 
 [dev-dependencies]
-test-helper= {path = "../../test-helper"}
+test-helper = { path = "../../test-helper" }
 stest = { path = "../../commons/stest" }
 
 [[bin]]

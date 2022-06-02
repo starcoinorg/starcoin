@@ -162,15 +162,10 @@ root-members = [
 # ---
 
 [[determinator.path-rule]]
-globs = [".github/**/*", ".circleci/**/*", "codecov.yml"]
+globs = [".github/**/*", ".circleci/**/*", "devtools/**/*", "codecov.yml"]
 mark-changed = "all"
 
 # Core devtools files.
 [[determinator.path-rule]]
-globs = ["cargo-toolchain", "cargo-flags", "scripts/dev_setup.sh", "x.toml"]
-mark-changed = "all"
-
-[[determinator.package-rule]]
-# x controls the build process, so if it changes, build everything.
-on-affected = ["x"]
+globs = ["cargo-toolchain", "cargo-flags", "scripts/dev_setup.sh", "scripts/dev_setup.ps1", "x.toml"]
 mark-changed = "all"

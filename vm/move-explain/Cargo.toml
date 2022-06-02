@@ -11,9 +11,9 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "3", features = ["derive"] }
-stdlib = { package="stdlib", path = "../stdlib"}
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "69db2858761045f19935f3aaf43f04a1910ae74d" }
-bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
+stdlib = { package = "stdlib", path = "../stdlib" }
+move-core-types = { git = "https://github.com/lemonhx/move", rev = "b9e63765e7bf6a722f6660339173460bacea04e2" }
+bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 
 [features]
 default = []

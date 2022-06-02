@@ -46,7 +46,7 @@ pub fn handle_compatibility_check(
     let remote_view = RemoteStateView::from_url(&rpc, cmd.block_number)?;
 
     let mut incompatible_module_ids = vec![];
-    for m in pkg.modules()? {
+    for m in pkg.root_compiled_units.as_slice() {
         let m = module(&m.unit)?;
         let old_module = remote_view
             .get_module(&m.self_id())

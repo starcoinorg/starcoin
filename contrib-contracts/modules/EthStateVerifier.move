@@ -28,35 +28,35 @@ module RLP {
     /// Nested arrays are not supported.
     public fun decode_list(data: &vector<u8>): vector<vector<u8>> {
         let (decoded, consumed) = decode(data, 0);
-        assert(consumed == Vector::length(data), INVALID_RLP_DATA);
+        assert!(consumed == Vector::length(data), INVALID_RLP_DATA);
         decoded
     }
 
     fun decode(data: &vector<u8>, offset: u64): (vector<vector<u8>>, u64) {
         let data_len = Vector::length(data);
-        assert(offset < data_len, DATA_TOO_SHORT);
+        assert!(offset < data_len, DATA_TOO_SHORT);
         let first_byte = *Vector::borrow(data, offset);
         if (first_byte >= 248u8) { // 0xf8
             let length_of_length = ((first_byte - 247u8) as u64);
-            assert(offset + length_of_length < data_len, DATA_TOO_SHORT);
+            assert!(offset + length_of_length < data_len, DATA_TOO_SHORT);
             let length = unarrayify_integer(data, offset + 1, (length_of_length as u8));
-            assert(offset + length_of_length + length < data_len, DATA_TOO_SHORT);
+            assert!(offset + length_of_length + length < data_len, DATA_TOO_SHORT);
             decode_children(data, offset, offset + 1 + length_of_length, length_of_length + length)
         } else if (first_byte >= 192u8) { // 0xc0
             let length = ((first_byte - 192u8) as u64);
-            assert(offset + length < data_len, DATA_TOO_SHORT);
+            assert!(offset + length < data_len, DATA_TOO_SHORT);
             decode_children(data, offset, offset + 1, length)
         } else if (first_byte >= 184u8) { // 0xb8
             let length_of_length = ((first_byte - 183u8) as u64);
-            assert(offset + length_of_length < data_len, DATA_TOO_SHORT);
+            assert!(offset + length_of_length < data_len, DATA_TOO_SHORT);
             let length = unarrayify_integer(data, offset + 1, (length_of_length as u8));
-            assert(offset + length_of_length + length < data_len, DATA_TOO_SHORT);
+            assert!(offset + length_of_length + length < data_len, DATA_TOO_SHORT);
 
             let bytes = Bytes::slice(data, offset + 1 + length_of_length, offset + 1 + length_of_length + length);
             (Vector::singleton(bytes), 1+length_of_length+length)
         } else if (first_byte >= 128u8) { // 0x80
             let length = ((first_byte - 128u8) as u64);
-            assert(offset + length < data_len, DATA_TOO_SHORT);
+            assert!(offset + length < data_len, DATA_TOO_SHORT);
             let bytes = Bytes::slice(data, offset + 1, offset + 1 + length);
             (Vector::singleton(bytes), 1+length)
         } else {
@@ -72,7 +72,7 @@ module RLP {
             let (decoded, consumed) = decode(data, child_offset);
             Vector::append(&mut result, decoded);
             child_offset = child_offset + consumed;
-            assert(child_offset <= offset + 1 + length, DATA_TOO_SHORT);
+            assert!(child_offset <= offset + 1 + length, DATA_TOO_SHORT);
         };
         (result, 1 + length)
     }

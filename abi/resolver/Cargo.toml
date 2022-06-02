@@ -7,12 +7,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-starcoin-vm-types = {path = "../../vm/types"}
-starcoin-abi-types = {path = "../types"}
-anyhow="~1"
-starcoin-resource-viewer = {path = "../../vm/resource-viewer"}
-move-model = { git = "https://github.com/starcoinorg/move", rev = "69db2858761045f19935f3aaf43f04a1910ae74d"  }
+starcoin-vm-types = { path = "../../vm/types" }
+starcoin-abi-types = { path = "../types" }
+anyhow = "~1"
+starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
+move-model = { git = "https://github.com/lemonhx/move", rev = "b9e63765e7bf6a722f6660339173460bacea04e2" }
 [dev-dependencies]
-stdlib = {path = "../../vm/stdlib"}
+stdlib = { path = "../../vm/stdlib" }
 serde_json = "1"
-test-helper= {path = "../../test-helper"}
+test-helper = { path = "../../test-helper" }

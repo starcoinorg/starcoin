@@ -71,7 +71,7 @@ pub fn handle_release(
         .version;
     let pkg_name = pkg.compiled_package_info.package_name.as_str();
     println!("Packaging Modules:");
-    for m in pkg.modules()? {
+    for m in pkg.root_compiled_units.as_slice() {
         let m = module(&m.unit)?;
         println!("\t {}", m.self_id());
         let code = if language_version as u32 == VERSION_3 {

@@ -360,7 +360,7 @@ impl StarcoinVM {
                         s.code().to_vec(),
                         s.ty_args().to_vec(),
                         s.args().to_vec(),
-                        vec![txn_data.sender()],
+                        txn_data.sender(),
                     )
                     .map_err(|e| e.into_vm_status())?;
             }
@@ -371,7 +371,7 @@ impl StarcoinVM {
                         s.function(),
                         s.ty_args().to_vec(),
                         s.args().to_vec(),
-                        vec![txn_data.sender()],
+                        txn_data.sender(),
                     )
                     .map_err(|e| e.into_vm_status())?;
             }
@@ -520,12 +520,11 @@ impl StarcoinVM {
                 );
                 session
                     .as_mut()
-                    .execute_script_function(
+                    .execute_function_bypass_visibility(
                         init_script.module(),
                         init_script.function(),
                         init_script.ty_args().to_vec(),
                         init_script.args().to_vec(),
-                        vec![sender],
                         cost_strategy,
                     )
                     .map_err(|e| e.into_vm_status())?;
@@ -578,17 +577,15 @@ impl StarcoinVM {
                         script.code().to_vec(),
                         script.ty_args().to_vec(),
                         script.args().to_vec(),
-                        vec![txn_data.sender()],
                         cost_strategy,
                     )
                 }
                 TransactionPayload::ScriptFunction(script_function) => {
-                    session.as_mut().execute_script_function(
+                    session.as_mut().execute_function_bypass_visibility(
                         script_function.module(),
                         script_function.function(),
                         script_function.ty_args().to_vec(),
                         script_function.args().to_vec(),
-                        vec![txn_data.sender()],
                         cost_strategy,
                     )
                 }
@@ -648,7 +645,7 @@ impl StarcoinVM {
         // Run prologue by genesis account
         session
             .as_mut()
-            .execute_function(
+            .execute_function_bypass_visibility(
                 &account_config::G_TRANSACTION_MANAGER_MODULE,
                 &G_PROLOGUE_NAME,
                 vec![gas_token_ty],
@@ -744,7 +741,7 @@ impl StarcoinVM {
         };
         session
             .as_mut()
-            .execute_function(
+            .execute_function_bypass_visibility(
                 &account_config::G_TRANSACTION_MANAGER_MODULE,
                 function_name,
                 vec![gas_token_ty],
@@ -797,7 +794,7 @@ impl StarcoinVM {
         let mut session: SessionAdapter<_> = self.move_vm.new_session(remote_cache).into();
         session
             .as_mut()
-            .execute_function(
+            .execute_function_bypass_visibility(
                 &account_config::G_TRANSACTION_MANAGER_MODULE,
                 &account_config::G_BLOCK_PROLOGUE_NAME,
                 vec![],
@@ -1112,8 +1109,18 @@ impl StarcoinVM {
         };
         let mut session = self.move_vm.new_session(&data_cache);
         let result = session
-            .execute_function(module, function_name, type_params, args, &mut gas_status)
-            .map_err(|e| e.into_vm_status())?;
+            .execute_function_bypass_visibility(
+                module,
+                function_name,
+                type_params,
+                args,
+                &mut gas_status,
+            )
+            .map_err(|e| e.into_vm_status())?
+            .return_values
+            .into_iter()
+            .map(|(a, _)| a)
+            .collect();
 
         let (changeset, events) = session.finish().map_err(|e| e.into_vm_status())?;
         let (writeset, _events) = convert_changeset_and_events(changeset, events)?;

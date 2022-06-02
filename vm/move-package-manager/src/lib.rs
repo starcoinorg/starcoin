@@ -8,6 +8,7 @@ use move_command_line_common::testing::UPDATE_BASELINE;
 use move_compiler::command_line::compiler::construct_pre_compiled_lib_from_compiler;
 use move_compiler::diagnostics::report_diagnostics;
 use move_compiler::shared::unique_map::UniqueMap;
+use move_compiler::shared::NamedAddressMaps;
 use move_compiler::{
     cfgir, expansion, hlir, naming, parser, typing, Compiler, FullyCompiledProgram,
 };
@@ -125,6 +126,7 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
         let mut pre_compiled_lib = FullyCompiledProgram {
             files: Default::default(),
             parser: parser::ast::Program {
+                named_address_maps: NamedAddressMaps::new(),
                 source_definitions: vec![],
                 lib_definitions: vec![],
             },
@@ -150,78 +152,75 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
             },
             compiled: vec![],
         };
-        let compiled = BuildPlan::create(resolved_graph)?
-            .compile_with_driver(
-                &mut std::io::stdout(),
-                |compiler: Compiler, _is_root: bool| {
-                    let full_program = match construct_pre_compiled_lib_from_compiler(compiler)? {
-                        Ok(full_program) => full_program,
-                        Err((file, s)) => report_diagnostics(&file, s),
-                    };
-                    pre_compiled_lib.files.extend(full_program.files.clone());
-                    pre_compiled_lib
-                        .parser
-                        .lib_definitions
-                        .extend(full_program.parser.source_definitions);
-                    pre_compiled_lib.expansion.modules =
-                        pre_compiled_lib.expansion.modules.union_with(
-                            &full_program.expansion.modules.filter_map(|_k, v| {
-                                if v.is_source_module {
-                                    Some(v)
-                                } else {
-                                    None
-                                }
-                            }),
-                            |_k, v1, _v2| v1.clone(),
-                        );
-                    pre_compiled_lib.naming.modules = pre_compiled_lib.naming.modules.union_with(
-                        &full_program.naming.modules.filter_map(|_k, v| {
-                            if v.is_source_module {
-                                Some(v)
-                            } else {
-                                None
-                            }
-                        }),
-                        |_k, v1, _v2| v1.clone(),
-                    );
-                    pre_compiled_lib.typing.modules = pre_compiled_lib.typing.modules.union_with(
-                        &full_program.typing.modules.filter_map(|_k, v| {
-                            if v.is_source_module {
-                                Some(v)
-                            } else {
-                                None
-                            }
-                        }),
-                        |_k, v1, _v2| v1.clone(),
-                    );
-                    pre_compiled_lib.hlir.modules = pre_compiled_lib.hlir.modules.union_with(
-                        &full_program.hlir.modules.filter_map(|_k, v| {
-                            if v.is_source_module {
-                                Some(v)
-                            } else {
-                                None
-                            }
-                        }),
-                        |_k, v1, _v2| v1.clone(),
-                    );
-                    pre_compiled_lib.cfgir.modules = pre_compiled_lib.cfgir.modules.union_with(
-                        &full_program.cfgir.modules.filter_map(|_k, v| {
-                            if v.is_source_module {
-                                Some(v)
-                            } else {
-                                None
-                            }
-                        }),
-                        |_k, v1, _v2| v1.clone(),
-                    );
-                    pre_compiled_lib
-                        .compiled
-                        .extend(full_program.compiled.clone());
+        let compiled = BuildPlan::create(resolved_graph)?.compile_with_driver(
+            &mut std::io::stdout(),
+            |compiler: Compiler| {
+                let full_program = match construct_pre_compiled_lib_from_compiler(compiler)? {
+                    Ok(full_program) => full_program,
+                    Err((file, s)) => report_diagnostics(&file, s),
+                };
+                pre_compiled_lib.files.extend(full_program.files.clone());
+                pre_compiled_lib
+                    .parser
+                    .lib_definitions
+                    .extend(full_program.parser.source_definitions);
+                pre_compiled_lib.expansion.modules = pre_compiled_lib.expansion.modules.union_with(
+                    &full_program.expansion.modules.filter_map(|_k, v| {
+                        if v.is_source_module {
+                            Some(v)
+                        } else {
+                            None
+                        }
+                    }),
+                    |_k, v1, _v2| v1.clone(),
+                );
+                pre_compiled_lib.naming.modules = pre_compiled_lib.naming.modules.union_with(
+                    &full_program.naming.modules.filter_map(|_k, v| {
+                        if v.is_source_module {
+                            Some(v)
+                        } else {
+                            None
+                        }
+                    }),
+                    |_k, v1, _v2| v1.clone(),
+                );
+                pre_compiled_lib.typing.modules = pre_compiled_lib.typing.modules.union_with(
+                    &full_program.typing.modules.filter_map(|_k, v| {
+                        if v.is_source_module {
+                            Some(v)
+                        } else {
+                            None
+                        }
+                    }),
+                    |_k, v1, _v2| v1.clone(),
+                );
+                pre_compiled_lib.hlir.modules = pre_compiled_lib.hlir.modules.union_with(
+                    &full_program.hlir.modules.filter_map(|_k, v| {
+                        if v.is_source_module {
+                            Some(v)
+                        } else {
+                            None
+                        }
+                    }),
+                    |_k, v1, _v2| v1.clone(),
+                );
+                pre_compiled_lib.cfgir.modules = pre_compiled_lib.cfgir.modules.union_with(
+                    &full_program.cfgir.modules.filter_map(|_k, v| {
+                        if v.is_source_module {
+                            Some(v)
+                        } else {
+                            None
+                        }
+                    }),
+                    |_k, v1, _v2| v1.clone(),
+                );
+                pre_compiled_lib
+                    .compiled
+                    .extend(full_program.compiled.clone());
 
-                    Ok((full_program.files, full_program.compiled))
-                },
-            )?
-            .0;
+                Ok((full_program.files, full_program.compiled))
+            },
+        )?;
         (pre_compiled_lib, compiled)
     };
 
