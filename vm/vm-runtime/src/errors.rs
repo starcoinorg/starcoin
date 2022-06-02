@@ -96,14 +96,14 @@ pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
                 (INVALID_ARGUMENT, EBAD_TRANSACTION_FEE_TOKEN) => {
                     StatusCode::BAD_TRANSACTION_FEE_CURRENCY
                 }
-                (INVALID_ARGUMENT, EUPGRADE_PLAN_IS_NONE) => StatusCode::UPGRADE_PLAN_IS_NONE,
+                (INVALID_STATE, EUPGRADE_PLAN_IS_NONE) => StatusCode::UPGRADE_PLAN_IS_NONE,
                 (INVALID_ARGUMENT, EPACKAGE_HASH_INCORRECT) => StatusCode::PACKAGE_HASH_INCORRECT,
                 (INVALID_ARGUMENT, EACTIVE_TIME_INCORRECT) => StatusCode::ACTIVE_TIME_INCORRECT,
                 (INVALID_ARGUMENT, ESTRATEGY_FREEZED) => StatusCode::STRATEGY_FREEZED,
                 (INVALID_ARGUMENT, ESTRATEGY_INCORRECT) => StatusCode::STRATEGY_INCORRECT,
                 (INVALID_ARGUMENT, ESTRATEGY_NOT_TWO_PHASE) => StatusCode::STRATEGY_NOT_TWO_PHASE,
                 (INVALID_ARGUMENT, EUNKNOWN_STRATEGY) => StatusCode::UNKNOWN_STRATEGY,
-                (INVALID_STATE, ESENDER_AND_PACKAGE_ADDRESS_MISMATCH) => {
+                (REQUIRES_ADDRESS, ESENDER_AND_PACKAGE_ADDRESS_MISMATCH) => {
                     StatusCode::SENDER_AND_PACKAGE_ADDRESS_MISMATCH
                 }
                 (category, reason) => {
