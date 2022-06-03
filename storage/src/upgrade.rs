@@ -165,7 +165,15 @@ impl DBUpgrade {
             let mut processed_count = 0;
             for item in iter {
                 let (hash, node) = item?;
-                block_acc_storage.put(node.index(), hash)?; 
+                if block_acc_storage.get(node.index())?.is_some() {
+                    if node.is_frozen() { 
+                        block_acc_storage.put(node.index(), hash)?;  
+                    } 
+                    else {};
+                } 
+                else {
+                    block_acc_storage.put(node.index(), hash)?; 
+                }
                 processed_count += 1;
                 if processed_count % 10000 == 0 {
                     info!("processed items: {}", processed_count);
@@ -179,7 +187,12 @@ impl DBUpgrade {
             let mut processed_count = 0;
             for item in iter {
                 let (hash, node) = item?;
-                txn_acc_storage.put(node.index(), hash)?;
+                if txn_acc_storage.get(node.index())?.is_some() {
+                    if node.is_frozen() { txn_acc_storage.put(node.index(), hash)?;  } else {};
+                } 
+                else {
+                    txn_acc_storage.put(node.index(), hash)?; 
+                }
                 processed_count += 1;
                 if processed_count % 10000 == 0 {
                     info!("processed items: {}", processed_count);
