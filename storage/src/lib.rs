@@ -288,7 +288,7 @@ pub struct Storage {
     transaction_storage: TransactionStorage,
     block_storage: BlockStorage,
     state_node_storage: StateStorage,
-    block_accumulator_storage: AccumulatorStorage<BlockAccumulatorStorage>,    
+    block_accumulator_storage: AccumulatorStorage<BlockAccumulatorStorage>,
     transaction_accumulator_storage: AccumulatorStorage<TransactionAccumulatorStorage>,
     block_info_storage: BlockInfoStorage,
     event_storage: ContractEventStorage,
@@ -308,7 +308,7 @@ impl Storage {
                 instance.clone(),
             ),
             transaction_accumulator_storage:
-                AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),            
+                AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
             block_info_storage: BlockInfoStorage::new(instance.clone()),
             event_storage: ContractEventStorage::new(instance.clone()),
             chain_info_storage: ChainInfoStorage::new(instance),

@@ -3,21 +3,20 @@
 
 extern crate chrono;
 
+use crate::accumulator::OldBlockAccumulatorStorage;
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::{CodecKVStore, InnerStore, StorageInstance, ValueCodec};
 use crate::transaction_info::{BlockTransactionInfo, OldTransactionInfoStorage};
-use crate::accumulator::OldBlockAccumulatorStorage;
 use crate::{
     BlockInfoStore, BlockStore, BlockTransactionInfoStore, Storage, StorageVersion,
     TransactionStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
     TRANSACTION_INFO_PREFIX_NAME_V2,
 };
 use anyhow::Result;
-use crypto::{HashValue, hash::ACCUMULATOR_PLACEHOLDER_HASH};
+use crypto::{hash::ACCUMULATOR_PLACEHOLDER_HASH, HashValue};
 use starcoin_accumulator::{
-    accumulator_info::AccumulatorInfo,
-    node_index::NodeIndex, AccumulatorNode, AccumulatorTreeStore
+    accumulator_info::AccumulatorInfo, node_index::NodeIndex, AccumulatorNode, AccumulatorTreeStore,
 };
 use starcoin_config::RocksdbConfig;
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockInfo};
@@ -372,9 +371,8 @@ pub fn test_db_upgrade() -> Result<()> {
 }
 
 fn generate_v3_db(path: &Path) -> Result<(Vec<AccumulatorNode>, Vec<AccumulatorNode>)> {
-    let instance = StorageInstance::new_db_instance(
-        DBStorage::new(path, RocksdbConfig::default(), None)?,
-    );
+    let instance =
+        StorageInstance::new_db_instance(DBStorage::new(path, RocksdbConfig::default(), None)?);
     // let storage = Storage::new(instance.clone())?;
 
     let old_block_acc_storage = OldBlockAccumulatorStorage::new(instance);
@@ -385,15 +383,14 @@ fn generate_v3_db(path: &Path) -> Result<(Vec<AccumulatorNode>, Vec<AccumulatorN
         // put frozen nodes
         let index = NodeIndex::from_inorder_index(i);
         if i % 2 == 0 {
-            let node = AccumulatorNode::new_leaf(index, HashValue::random());    
-            frozen_nodes.push(node.clone());        
+            let node = AccumulatorNode::new_leaf(index, HashValue::random());
+            frozen_nodes.push(node.clone());
             old_block_acc_storage.put(node.hash(), node)?;
-        }
-        else {            
+        } else {
             let left = HashValue::random();
             let right = HashValue::random();
             let placeholder = *ACCUMULATOR_PLACEHOLDER_HASH;
-            // put frozen nodes 
+            // put frozen nodes
             let node = AccumulatorNode::new_internal(index, left, right);
             frozen_nodes.push(node.clone());
             old_block_acc_storage.put(node.hash(), node)?;
@@ -412,9 +409,11 @@ fn generate_v3_db(path: &Path) -> Result<(Vec<AccumulatorNode>, Vec<AccumulatorN
 pub fn test_db_upgrade_v3_v4() -> Result<()> {
     let tmpdir = starcoin_config::temp_dir();
     let (frozen_nodes, unfrozen_nodes) = generate_v3_db(tmpdir.path())?;
-    let mut instance = StorageInstance::new_db_instance(
-        DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None)?,
-    );
+    let mut instance = StorageInstance::new_db_instance(DBStorage::new(
+        tmpdir.path(),
+        RocksdbConfig::default(),
+        None,
+    )?);
 
     instance.check_upgrade()?;
 
@@ -422,7 +421,9 @@ pub fn test_db_upgrade_v3_v4() -> Result<()> {
     let old_block_acc_storage = OldBlockAccumulatorStorage::new(instance);
 
     for node in frozen_nodes {
-        let hash = storage.get_block_accumulator_storage().get_node(node.index())?;
+        let hash = storage
+            .get_block_accumulator_storage()
+            .get_node(node.index())?;
         assert!(hash.is_some(), "expect node hash is some");
         assert!(hash.unwrap() == node.hash(), "expect same hash value");
 
@@ -431,9 +432,14 @@ pub fn test_db_upgrade_v3_v4() -> Result<()> {
     }
 
     for node in unfrozen_nodes {
-        let hash = storage.get_block_accumulator_storage().get_node(node.index())?;
+        let hash = storage
+            .get_block_accumulator_storage()
+            .get_node(node.index())?;
         assert!(hash.is_some(), "expect node hash is some");
-        assert!(hash.unwrap() != node.hash(), "unfrozen nodes should be covered");
+        assert!(
+            hash.unwrap() != node.hash(),
+            "unfrozen nodes should be covered"
+        );
 
         let old_node = old_block_acc_storage.get(node.hash())?;
         assert!(old_node.is_none(), "expect node is none");

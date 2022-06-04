@@ -7,8 +7,8 @@ use network_api::peer_score::{InverseScore, Score};
 use network_api::PeerSelector;
 use starcoin_crypto::hash::HashValue;
 use starcoin_network_rpc_api::{
-    gen_client::NetworkRpcClient, BlockBody, GetBlockHeadersByNumber,
-    GetBlockIds, GetTxnsWithHash, RawRpcClient,
+    gen_client::NetworkRpcClient, BlockBody, GetBlockHeadersByNumber, GetBlockIds, GetTxnsWithHash,
+    RawRpcClient,
 };
 use starcoin_state_tree::StateNode;
 use starcoin_types::block::Block;

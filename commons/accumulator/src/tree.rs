@@ -255,7 +255,9 @@ impl AccumulatorTree {
         if let Some(node_hash) = self.get_node_index(index) {
             return Ok(node_hash);
         }
-        Ok(self.store.get_node(index)
+        Ok(self
+            .store
+            .get_node(index)
             .unwrap_or(Some(*ACCUMULATOR_PLACEHOLDER_HASH))
             .unwrap())
     }

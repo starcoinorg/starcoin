@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{LeafCount, MAX_ACCUMULATOR_LEAVES};
+use anyhow::Result;
+use byteorder::{BigEndian, ReadBytesExt};
 use mirai_annotations::*;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use anyhow::Result;
-use byteorder::{BigEndian, ReadBytesExt};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct NodeIndex(u64);

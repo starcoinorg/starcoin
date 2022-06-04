@@ -8,8 +8,8 @@ use futures::FutureExt;
 use network_rpc_core::NetRpcError;
 use starcoin_chain_service::{ChainAsyncService, ChainReaderService};
 use starcoin_network_rpc_api::{
-    gen_server, BlockBody, GetAccountState, GetBlockHeadersByNumber,
-    GetBlockIds, GetStateWithProof, GetTxnsWithHash, GetTxnsWithSize, Ping, RpcRequest,
+    gen_server, BlockBody, GetAccountState, GetBlockHeadersByNumber, GetBlockIds,
+    GetStateWithProof, GetTxnsWithHash, GetTxnsWithSize, Ping, RpcRequest,
     MAX_BLOCK_HEADER_REQUEST_SIZE, MAX_BLOCK_INFO_REQUEST_SIZE, MAX_BLOCK_REQUEST_SIZE,
     MAX_TXN_REQUEST_SIZE,
 };

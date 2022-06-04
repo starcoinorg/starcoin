@@ -8,11 +8,11 @@ use crate::upgrade::DBUpgrade;
 use anyhow::{bail, format_err, Result};
 use byteorder::{BigEndian, ReadBytesExt};
 use crypto::HashValue;
+use starcoin_accumulator::node_index;
 use std::convert::TryInto;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use starcoin_accumulator::node_index;
 
 /// Type alias to improve readability.
 pub type ColumnFamilyName = &'static str;

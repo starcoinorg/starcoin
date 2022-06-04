@@ -96,8 +96,12 @@ where
     }
 
     fn save_nodes(&self, nodes: Vec<AccumulatorNode>) -> Result<()> {
-        self.store
-            .put_all(nodes.into_iter().map(|node| (node.index(), node.hash())).collect())
+        self.store.put_all(
+            nodes
+                .into_iter()
+                .map(|node| (node.index(), node.hash()))
+                .collect(),
+        )
     }
 
     fn delete_nodes(&self, node_index_vec: Vec<node_index::NodeIndex>) -> Result<()> {

@@ -36,7 +36,7 @@ fn test_storage() {
     assert_eq!(node_hash, acc_node2);
     storage
         .block_accumulator_storage
-        .save_node(acc_node.clone())
+        .save_node(acc_node)
         .unwrap();
     let acc_node3 = storage
         .block_accumulator_storage

@@ -1,20 +1,20 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::accumulator::{
+    BlockAccumulatorStorage, OldBlockAccumulatorStorage, OldTransactionAccumulatorStorage,
+    TransactionAccumulatorStorage,
+};
 use crate::block::BlockStorage;
 use crate::block_info::BlockInfoStorage;
 use crate::chain_info::ChainInfoStorage;
 use crate::transaction::TransactionStorage;
 use crate::transaction_info::OldTransactionInfoStorage;
 use crate::transaction_info::TransactionInfoStorage;
-use crate::accumulator::{
-    BlockAccumulatorStorage, OldBlockAccumulatorStorage,
-    TransactionAccumulatorStorage, OldTransactionAccumulatorStorage
-};
 use crate::{
     CodecKVStore, RichTransactionInfo, StorageInstance, StorageVersion, TransactionStore,
-    BLOCK_BODY_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
-    BLOCK_ACCUMULATOR_NODE_PREFIX_NAME, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME
+    BLOCK_ACCUMULATOR_NODE_PREFIX_NAME, BLOCK_BODY_PREFIX_NAME,
+    TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
 };
 use anyhow::{bail, ensure, format_err, Result};
 use logger::prelude::{debug, info, warn};
@@ -166,19 +166,19 @@ impl DBUpgrade {
             for item in iter {
                 let (hash, node) = item?;
                 if block_acc_storage.get(node.index())?.is_some() {
-                    if node.is_frozen() { 
-                        block_acc_storage.put(node.index(), hash)?;  
-                    } 
-                    else {};
-                } 
-                else {
-                    block_acc_storage.put(node.index(), hash)?; 
+                    if node.is_frozen() {
+                        block_acc_storage.put(node.index(), hash)?;
+                    } else {
+                        // Do nothing;
+                    };
+                } else {
+                    block_acc_storage.put(node.index(), hash)?;
                 }
                 processed_count += 1;
                 if processed_count % 10000 == 0 {
                     info!("processed items: {}", processed_count);
-                }       
-            };
+                }
+            }
 
             let old_txn_acc_storage = OldTransactionAccumulatorStorage::new(instance.clone());
             let txn_acc_storage = TransactionAccumulatorStorage::new(instance.clone());
@@ -188,10 +188,13 @@ impl DBUpgrade {
             for item in iter {
                 let (hash, node) = item?;
                 if txn_acc_storage.get(node.index())?.is_some() {
-                    if node.is_frozen() { txn_acc_storage.put(node.index(), hash)?;  } else {};
-                } 
-                else {
-                    txn_acc_storage.put(node.index(), hash)?; 
+                    if node.is_frozen() {
+                        txn_acc_storage.put(node.index(), hash)?;
+                    } else {
+                        // Do nothing;
+                    }
+                } else {
+                    txn_acc_storage.put(node.index(), hash)?;
                 }
                 processed_count += 1;
                 if processed_count % 10000 == 0 {
@@ -199,10 +202,10 @@ impl DBUpgrade {
                 }
             }
         }
-        instance
-            .db_mut()
-            .unwrap()
-            .drop_unused_cfs(vec![BLOCK_ACCUMULATOR_NODE_PREFIX_NAME, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME])?;
+        instance.db_mut().unwrap().drop_unused_cfs(vec![
+            BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
+            TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
+        ])?;
         info!(
             "remove unused column {}, column {}",
             BLOCK_ACCUMULATOR_NODE_PREFIX_NAME, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME

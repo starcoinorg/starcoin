@@ -1,8 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{NodeIndex, AccumulatorNode};
 use crate::AccumulatorTreeStore;
+use crate::{AccumulatorNode, NodeIndex};
 use anyhow::{bail, Result};
 use parking_lot::Mutex;
 use starcoin_crypto::HashValue;
@@ -35,7 +35,7 @@ impl AccumulatorTreeStore for MockAccumulatorStore {
     fn get_node(&self, index: NodeIndex) -> Result<Option<HashValue>> {
         let map = self.node_store.lock();
         match map.get(&index) {
-            Some(node) => Ok(Some(node.clone())),
+            Some(node) => Ok(Some(*node)),
             None => bail!("get node is null: {:?}", index),
         }
     }
