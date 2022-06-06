@@ -26,7 +26,7 @@ clap = { version = "3", features = ["derive"] }
 serde = { version = "1.0.130", default-features = false }
 itertools = "0.10.3"
 tempfile = "3.2.0"
-starcoin-framework = { git = "https://github.com/lemonhx/starcoin-framework", rev = "f4381d8fa4316c192686dcfef2a1b26b19f465e2" }
+starcoin-framework = { git = "https://github.com/lemonhx/starcoin-framework", rev = "4eea98d99a85b4375892884e596c4b7e5b789efd" }
 
 [dev-dependencies]
 datatest-stable = "0.1.1"
