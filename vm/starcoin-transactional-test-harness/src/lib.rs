@@ -858,7 +858,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             (Some(public_key), _) => self.resolve_public_key(&public_key),
             (None, RawAddress::Named(named_addr)) => {
                 match self.public_key_mapping.get(named_addr) {
-                    Some(private_key) => private_key.clone(),
+                    Some(public_key) => public_key.clone(),
                     None => panic_missing_public_key_named("run", named_addr),
                 }
             }
