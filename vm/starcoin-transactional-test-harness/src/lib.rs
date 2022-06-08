@@ -306,7 +306,7 @@ impl<'a> StarcoinTestAdapter<'a> {
     /// Resolve a raw public key into a numeric one.
     fn resolve_public_key(&self, private_key: &RawPublicKey) -> AccountPublicKey {
         match private_key {
-            RawPublicKey::Anonymous(public_key) => public_key.clone().into(),
+            RawPublicKey::Anonymous(public_key) => public_key.clone(),
             RawPublicKey::Named(name) => self.resolve_named_public_key(name),
         }
     }
