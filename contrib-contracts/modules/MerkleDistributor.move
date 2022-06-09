@@ -63,7 +63,7 @@ module MerkleDistributor {
     use StarcoinFramework::Errors;
     use StarcoinFramework::Hash;
 
-    struct MerkleDistribution<T: store> has key {
+    struct MerkleDistribution<phantom T: store> has key {
         merkle_root: vector<u8>,
         tokens: Token<T>,
         claimed_bitmap: vector<u128>,
