@@ -5,7 +5,7 @@ use crate::node_index::FrozenSubTreeIterator;
 use crate::node_index::{NodeIndex, MAX_ACCUMULATOR_PROOF_DEPTH};
 use crate::tree_store::NodeCacheKey;
 use crate::{AccumulatorNode, AccumulatorTreeStore, LeafCount, NodeCount, MAC_CACHE_SIZE};
-use anyhow::{format_err, Result};
+use anyhow::{bail, format_err, Result};
 use logger::prelude::*;
 use lru::LruCache;
 use mirai_annotations::*;
@@ -28,7 +28,7 @@ pub struct AccumulatorTree {
     /// The storage of accumulator.
     pub(crate) store: Arc<dyn AccumulatorTreeStore>,
     /// The temp update nodes
-    update_nodes: HashMap<HashValue, AccumulatorNode>,
+    update_nodes: HashMap<NodeIndex, AccumulatorNode>,
 }
 
 impl AccumulatorTree {
@@ -103,7 +103,7 @@ impl AccumulatorTree {
                         hash,
                     ),
                 };
-                hash = internal_node.hash();
+                hash = internal_node.hash();                
                 pos = pos.parent();
                 to_freeze.push(internal_node);
                 new_num_nodes += 1;
@@ -180,9 +180,13 @@ impl AccumulatorTree {
         if !nodes.is_empty() {
             let nodes_vec = nodes
                 .iter()
-                .map(|(_, node)| node.clone())
+                .map(|(_, node)| {
+                    println!("MYLOG: Node index {:?}, hash {:?}", node.index(), node.hash());
+                    node.clone()
+                })
                 .collect::<Vec<AccumulatorNode>>();
             let nodes_len = nodes_vec.len();
+            // println!("flush nodes: {:?}", nodes_vec);
             self.store.save_nodes(nodes_vec)?;
             nodes.clear();
             trace!("flush {} acc node to storage.", nodes_len);
@@ -241,7 +245,7 @@ impl AccumulatorTree {
 
     fn update_temp_nodes(&mut self, nodes: Vec<AccumulatorNode>) {
         for node in nodes {
-            self.update_nodes.insert(node.hash(), node);
+            self.update_nodes.insert(node.index(), node);
         }
     }
 
@@ -255,11 +259,19 @@ impl AccumulatorTree {
         if let Some(node_hash) = self.get_node_index(index) {
             return Ok(node_hash);
         }
-        Ok(self
-            .store
-            .get_node(index)
-            .unwrap_or(Some(*ACCUMULATOR_PLACEHOLDER_HASH))
-            .unwrap())
+        match self.store.get_node(index) {
+            Ok(Some(node_hash)) => {
+                return Ok(node_hash);
+            },
+            _ => {
+                let sibling = index.sibling();
+                if self.get_node_index(sibling).is_some() || self.store.get_node(sibling)?.is_some() {
+                    return Ok(*ACCUMULATOR_PLACEHOLDER_HASH);
+                } else {
+                    bail!("node hash not found:{:?} in store {:?}", index, self.store.store_type()); 
+                }
+            }
+        }
     }
 
     fn save_node_indexes(&mut self, nodes: Vec<AccumulatorNode>) {

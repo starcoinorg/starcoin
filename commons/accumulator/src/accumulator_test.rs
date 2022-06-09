@@ -97,7 +97,16 @@ fn test_multiple_chain() {
     accumulator.flush().unwrap();
     proof_verify(&accumulator, root_hash, &leaves, 0);
     let frozen_node = accumulator.get_frozen_subtree_roots();
-    let accumulator2 = MerkleAccumulator::new(root_hash, frozen_node, 2, 3, mock_store);
+
+    let mock_store2 = Arc::new(MockAccumulatorStore::copy_from(&mock_store));
+    let accumulator2 = MerkleAccumulator::new(
+        root_hash, 
+        frozen_node, 
+        2, 
+        3, 
+        mock_store2
+    );
+    accumulator2.flush().unwrap();
     assert_eq!(accumulator.root_hash(), accumulator2.root_hash());
     let leaves2 = create_leaves(54..58);
     let leaves3 = create_leaves(60..64);

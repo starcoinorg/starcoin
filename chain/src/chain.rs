@@ -38,11 +38,14 @@ use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::time::TimeService;
+use storage::storage::{StorageInstance, CodecKVStore};
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::{collections::HashMap, sync::Arc};
-use storage::Store;
+use storage::{Store, AccumulatorStorage, BlockAccumulatorStorage, TransactionAccumulatorStorage};
+use starcoin_accumulator::node_index::NodeIndex;
+use crypto::{hash::ACCUMULATOR_PLACEHOLDER_HASH};
 
 pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
@@ -123,6 +126,90 @@ impl BlockChain {
             Some(data) => chain.uncles = data,
             None => chain.update_uncle_cache()?,
         }
+        watch(CHAIN_WATCH_NAME, "n1252");
+        Ok(chain)
+    }
+
+    
+    pub fn new_for_test(
+        time_service: Arc<dyn TimeService>,
+        head_block_hash: HashValue,
+        storage: Arc<dyn Store>,
+        new_instance: StorageInstance,
+        vm_metrics: Option<VMMetrics>,
+    ) -> Result<Self> {
+        let head_block = storage
+            .get_block_by_hash(head_block_hash)?
+            .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
+        let block_info = storage
+            .get_block_info(head_block.id())?
+            .ok_or_else(|| format_err!("Can not find block info by hash {:?}", head_block.id()))?;
+        debug!("Init chain with block_info: {:?}", block_info);
+        let state_root = head_block.header().state_root();
+        let txn_accumulator_info = block_info.get_txn_accumulator_info();
+        let block_accumulator_info = block_info.get_block_accumulator_info();
+        let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root));
+        let epoch = get_epoch_from_statedb(&chain_state)?;
+        let genesis = storage
+            .get_genesis()?
+            .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
+
+        println!("MYLOG: block acc info: {:?}", block_accumulator_info);
+        let block_accumulator_storage = AccumulatorStorage::new_block_accumulator_storage(
+            new_instance.clone(),
+        );
+        let transaction_accumulator_storage = 
+            AccumulatorStorage::new_transaction_accumulator_storage(new_instance);
+        let old_block_acc_storage = storage.get_accumulator_store(AccumulatorStoreType::Block);
+        let block_accumulator = MerkleAccumulator::new(
+            *ACCUMULATOR_PLACEHOLDER_HASH,
+            vec![],
+            0,
+            0,
+            Arc::new(block_accumulator_storage),
+        );
+        let num_leaves = block_accumulator_info.get_num_leaves();
+        for i in 0..num_leaves {
+            let index = NodeIndex::from_leaf_index(i);
+            let hash = old_block_acc_storage.get_node(index)?.unwrap();
+            let root_hash = block_accumulator.append(&(vec![hash]))?;
+            println!("MYLOG: block acc, leaf {}, node index {:?}, root hash {:?}", i, index, root_hash);
+        }
+        block_accumulator.flush().unwrap();
+        let old_txn_acc_storage = storage.get_accumulator_store(AccumulatorStoreType::Transaction);
+        let txn_accumulator = MerkleAccumulator::new(
+            *ACCUMULATOR_PLACEHOLDER_HASH,
+            vec![],
+            0,
+            0,
+            Arc::new(transaction_accumulator_storage),
+        );
+        let num_leaves = txn_accumulator_info.get_num_leaves();
+        for i in 0..num_leaves {
+            let index = NodeIndex::from_leaf_index(i);
+            let hash = old_txn_acc_storage.get_node(index)?.unwrap();
+            let root_hash = txn_accumulator.append(&(vec![hash]));
+            println!("MYLOG: txn acc, leaf {}, node index {:?}, root hash {:?}", i, index, root_hash);
+        }
+        txn_accumulator.flush().unwrap();
+        watch(CHAIN_WATCH_NAME, "n1253");
+        let mut chain = Self {
+            genesis_hash: genesis,
+            time_service,
+            txn_accumulator,
+            block_accumulator,
+            status: ChainStatusWithBlock {
+                status: ChainStatus::new(head_block.header.clone(), block_info),
+                head: head_block,
+            },
+            statedb: chain_state,
+            storage,
+            uncles: HashMap::new(),
+            epoch,
+            vm_metrics,
+        };
+        watch(CHAIN_WATCH_NAME, "n1251");
+        chain.update_uncle_cache()?;
         watch(CHAIN_WATCH_NAME, "n1252");
         Ok(chain)
     }

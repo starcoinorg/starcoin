@@ -163,8 +163,8 @@ fn test_find_ancestor_fork() -> Result<()> {
     mock_chain.produce_and_apply_times(3)?;
     let header = mock_chain.head().current_header();
     let mut mock_chain2 = mock_chain.fork(None)?;
-    mock_chain.produce_and_apply_times(2)?;
-    mock_chain2.produce_and_apply_times(3)?;
+    mock_chain.produce_and_apply_times(1)?;
+    mock_chain2.produce_and_apply_times(2)?;
 
     let ancestor = mock_chain.head().find_ancestor(mock_chain2.head())?;
     assert!(ancestor.is_some());
