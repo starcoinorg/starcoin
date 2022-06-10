@@ -6,8 +6,8 @@ use crate::{
     print_action_result, CommandAction, CommandExec, CustomCommand, HistoryOp, OutputFormat,
 };
 use anyhow::Result;
-use clap::Parser;
 use clap::{Arg, Command};
+use clap::{ErrorKind, Parser};
 use once_cell::sync::Lazy;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -199,9 +199,18 @@ where
         T: Into<OsString> + Clone,
     {
         let mut app = self.app;
-        let matches = app
-            .try_get_matches_from_mut(iter)
-            .map_err(CmdError::ClapError)?;
+        let matches = match app.try_get_matches_from_mut(iter) {
+            Ok(matches) => matches,
+            Err(err) => {
+                return match err.kind() {
+                    ErrorKind::DisplayVersion | ErrorKind::DisplayHelp => {
+                        Ok((OutputFormat::TABLE, Ok(Value::String(err.to_string()))))
+                    }
+                    _ => Err(CmdError::ClapError(err).into()),
+                };
+            }
+        };
+
         let output_format = matches
             .value_of(G_OUTPUT_FORMAT_ARG)
             .expect("output-format arg must exist")
