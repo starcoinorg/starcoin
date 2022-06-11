@@ -35,7 +35,7 @@ fn run() -> Result<()> {
                     } else {
                         info!("Start starcoin node...");
                         // check and do some clean work
-                        let config = NodeConfig::load_with_opt(&opt)
+                        let config = NodeConfig::load_with_opt(opt)
                             .expect("load config with opt should success.");
                         let ipc_file = config.rpc.get_ipc_file();
                         if ipc_file.exists() {
@@ -44,7 +44,7 @@ fn run() -> Result<()> {
                                 "ipc_file: {:?} already exists, try to check if it's connectable",
                                 ipc_file
                             );
-                            if let Err(_) = RpcClient::connect_ipc(&ipc_file) {
+                            if RpcClient::connect_ipc(&ipc_file).is_err() {
                                 info!("ipc_file: {:?} is not usable, just to remove it.", ipc_file);
                                 _ = fs::remove_file(ipc_file);
                             }
