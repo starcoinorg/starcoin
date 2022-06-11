@@ -10,9 +10,9 @@ use starcoin_config::{Connect, NodeConfig, G_APP_VERSION, G_CRATE_VERSION};
 use starcoin_logger::prelude::*;
 use starcoin_node_api::errors::NodeStartError;
 use starcoin_rpc_client::RpcClient;
+use std::fs;
 use std::sync::Arc;
 use std::time::Duration;
-use std::fs;
 
 /// This exit code means is that the node failed to start and required human intervention.
 /// Node start script can do auto task when meet this exist code.
@@ -35,11 +35,15 @@ fn run() -> Result<()> {
                     } else {
                         info!("Start starcoin node...");
                         // check and do some clean work
-                        let config = NodeConfig::load_with_opt(&opt).expect("load config with opt should success.");
+                        let config = NodeConfig::load_with_opt(&opt)
+                            .expect("load config with opt should success.");
                         let ipc_file = config.rpc.get_ipc_file();
                         if ipc_file.exists() {
                             // check if ipc is connectable
-                            info!("ipc_file: {:?} already exists, try to check if it's connectable", ipc_file);
+                            info!(
+                                "ipc_file: {:?} already exists, try to check if it's connectable",
+                                ipc_file
+                            );
                             if let Err(_) = RpcClient::connect_ipc(&ipc_file) {
                                 info!("ipc_file: {:?} is not usable, just to remove it.", ipc_file);
                                 _ = fs::remove_file(ipc_file);
