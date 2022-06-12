@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-abi-resolver"
-version = "1.11.10"
+version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
 

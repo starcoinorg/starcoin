@@ -14,7 +14,7 @@ use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::core_code_address;
-use starcoin_vm_types::transaction::authenticator::AccountPrivateKey;
+use starcoin_vm_types::transaction::authenticator::{AccountPrivateKey, AccountPublicKey};
 use starcoin_vm_types::transaction::{ScriptFunction, TransactionArgument, TransactionPayload};
 use starcoin_vm_types::value::MoveValue;
 
@@ -67,6 +67,7 @@ impl CommandAction for RotateAuthenticationKeyCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().account_client();
         let opt: &RotateAuthKeyOpt = ctx.opt();
+
         let private_key = match (opt.from_input.as_ref(), opt.from_file.as_ref()) {
             (Some(p), _) => AccountPrivateKey::from_encoded_string(p)?,
             (None, Some(p)) => {
@@ -77,7 +78,18 @@ impl CommandAction for RotateAuthenticationKeyCommand {
                 bail!("private key should be specified, use <input>, <from-file>")
             }
         };
-        let auth_key = private_key.public_key().authentication_key();
+
+        let account_public_key = match &private_key.public_key() {
+            AccountPublicKey::Multi(_) => {
+                bail!(
+                    "{} is multisig address, you could use execute-function to rotate it step by step",
+                    opt.account_address
+                );
+            }
+            m => m.clone(),
+        };
+
+        let auth_key = account_public_key.authentication_key();
         let mut txn_opt = opt.transaction_opts.clone();
         txn_opt.blocking = true;
         txn_opt.sender = Option::from(opt.account_address);
