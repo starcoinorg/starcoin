@@ -361,8 +361,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         .consensus()
         .create_block(template_b1, config.net().time_service().as_ref())?;
     block_chain.apply(block_b1.clone())?;
-
-    let mut block_chain2 = block_chain.fork(block_b1.id()).unwrap();
+    let mut block_chain2 = block_chain.fork_for_test(block_b1.id()).unwrap();
 
     // create transaction
     let pri_key = Ed25519PrivateKey::genesis();
@@ -390,7 +389,6 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let block_b2 = block_chain
         .consensus()
         .create_block(template_b2, config.net().time_service().as_ref())?;
-
     block_chain.apply(block_b2.clone())?;
     let (template_b3, excluded) = block_chain2.create_block_template(
         *miner_account.address(),
@@ -404,7 +402,6 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         .consensus()
         .create_block(template_b3, config.net().time_service().as_ref())?;
     block_chain2.apply(block_b3.clone())?;
-
     assert_ne!(
         block_chain.get_txn_accumulator().root_hash(),
         block_chain2.get_txn_accumulator().root_hash()

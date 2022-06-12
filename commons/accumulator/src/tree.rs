@@ -5,7 +5,7 @@ use crate::node_index::FrozenSubTreeIterator;
 use crate::node_index::{NodeIndex, MAX_ACCUMULATOR_PROOF_DEPTH};
 use crate::tree_store::NodeCacheKey;
 use crate::{AccumulatorNode, AccumulatorTreeStore, LeafCount, NodeCount, MAC_CACHE_SIZE};
-use anyhow::{bail, format_err, Result};
+use anyhow::{format_err, Result};
 use logger::prelude::*;
 use lru::LruCache;
 use mirai_annotations::*;
@@ -103,7 +103,7 @@ impl AccumulatorTree {
                         hash,
                     ),
                 };
-                hash = internal_node.hash();                
+                hash = internal_node.hash();
                 pos = pos.parent();
                 to_freeze.push(internal_node);
                 new_num_nodes += 1;
@@ -180,13 +180,9 @@ impl AccumulatorTree {
         if !nodes.is_empty() {
             let nodes_vec = nodes
                 .iter()
-                .map(|(_, node)| {
-                    println!("MYLOG: Node index {:?}, hash {:?}", node.index(), node.hash());
-                    node.clone()
-                })
+                .map(|(_, node)| node.clone())
                 .collect::<Vec<AccumulatorNode>>();
             let nodes_len = nodes_vec.len();
-            // println!("flush nodes: {:?}", nodes_vec);
             self.store.save_nodes(nodes_vec)?;
             nodes.clear();
             trace!("flush {} acc node to storage.", nodes_len);
@@ -260,17 +256,8 @@ impl AccumulatorTree {
             return Ok(node_hash);
         }
         match self.store.get_node(index) {
-            Ok(Some(node_hash)) => {
-                return Ok(node_hash);
-            },
-            _ => {
-                let sibling = index.sibling();
-                if self.get_node_index(sibling).is_some() || self.store.get_node(sibling)?.is_some() {
-                    return Ok(*ACCUMULATOR_PLACEHOLDER_HASH);
-                } else {
-                    bail!("node hash not found:{:?} in store {:?}", index, self.store.store_type()); 
-                }
-            }
+            Ok(Some(node_hash)) => Ok(node_hash),
+            _ => Ok(*ACCUMULATOR_PLACEHOLDER_HASH),
         }
     }
 

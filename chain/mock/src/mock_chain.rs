@@ -10,15 +10,10 @@ use starcoin_config::ChainNetwork;
 use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
 use starcoin_storage::Storage;
-use starcoin_storage::storage::StorageInstance;
 use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
 use std::sync::Arc;
-use starcoin_accumulator::{
-    accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator, MerkleAccumulator,
-};
-use starcoin_storage::{Store, AccumulatorStorage, BlockAccumulatorStorage, TransactionAccumulatorStorage};
 
 pub struct MockChain {
     net: ChainNetwork,
@@ -74,13 +69,10 @@ impl MockChain {
         };
         assert!(self.head.exist_block(block_id)?);
 
-        let new_instance = StorageInstance::new_cache_instance();
-
         BlockChain::new_for_test(
             self.head.time_service(),
             block_id,
             self.head.get_storage(),
-            new_instance,
             None,
         )
     }

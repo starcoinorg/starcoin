@@ -5,10 +5,12 @@ use crate::verifier::{BlockVerifier, FullVerifier};
 use anyhow::{bail, ensure, format_err, Result};
 use consensus::Consensus;
 use crypto::hash::PlainCryptoHash;
+use crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
 use crypto::HashValue;
 use logger::prelude::*;
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
+use starcoin_accumulator::node_index::NodeIndex;
 use starcoin_accumulator::{
     accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator, MerkleAccumulator,
 };
@@ -38,14 +40,12 @@ use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::time::TimeService;
-use storage::storage::{StorageInstance, CodecKVStore};
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::{collections::HashMap, sync::Arc};
-use storage::{Store, AccumulatorStorage, BlockAccumulatorStorage, TransactionAccumulatorStorage};
-use starcoin_accumulator::node_index::NodeIndex;
-use crypto::{hash::ACCUMULATOR_PLACEHOLDER_HASH};
+use storage::storage::StorageInstance;
+use storage::{AccumulatorStorage, Store};
 
 pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
@@ -130,17 +130,25 @@ impl BlockChain {
         Ok(chain)
     }
 
-    
     pub fn new_for_test(
         time_service: Arc<dyn TimeService>,
         head_block_hash: HashValue,
         storage: Arc<dyn Store>,
-        new_instance: StorageInstance,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
-        let head_block = storage
+        let head = storage
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
+        Self::new_with_uncles_for_test(time_service, head, None, storage, vm_metrics)
+    }
+
+    pub fn new_with_uncles_for_test(
+        time_service: Arc<dyn TimeService>,
+        head_block: Block,
+        uncles: Option<HashMap<HashValue, MintedUncleNumber>>,
+        storage: Arc<dyn Store>,
+        vm_metrics: Option<VMMetrics>,
+    ) -> Result<Self> {
         let block_info = storage
             .get_block_info(head_block.id())?
             .ok_or_else(|| format_err!("Can not find block info by hash {:?}", head_block.id()))?;
@@ -154,11 +162,10 @@ impl BlockChain {
             .get_genesis()?
             .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
 
-        println!("MYLOG: block acc info: {:?}", block_accumulator_info);
-        let block_accumulator_storage = AccumulatorStorage::new_block_accumulator_storage(
-            new_instance.clone(),
-        );
-        let transaction_accumulator_storage = 
+        let new_instance = StorageInstance::new_cache_instance();
+        let block_accumulator_storage =
+            AccumulatorStorage::new_block_accumulator_storage(new_instance.clone());
+        let transaction_accumulator_storage =
             AccumulatorStorage::new_transaction_accumulator_storage(new_instance);
         let old_block_acc_storage = storage.get_accumulator_store(AccumulatorStoreType::Block);
         let block_accumulator = MerkleAccumulator::new(
@@ -172,8 +179,7 @@ impl BlockChain {
         for i in 0..num_leaves {
             let index = NodeIndex::from_leaf_index(i);
             let hash = old_block_acc_storage.get_node(index)?.unwrap();
-            let root_hash = block_accumulator.append(&(vec![hash]))?;
-            println!("MYLOG: block acc, leaf {}, node index {:?}, root hash {:?}", i, index, root_hash);
+            let _root_hash = block_accumulator.append(&[hash])?;
         }
         block_accumulator.flush().unwrap();
         let old_txn_acc_storage = storage.get_accumulator_store(AccumulatorStoreType::Transaction);
@@ -188,8 +194,7 @@ impl BlockChain {
         for i in 0..num_leaves {
             let index = NodeIndex::from_leaf_index(i);
             let hash = old_txn_acc_storage.get_node(index)?.unwrap();
-            let root_hash = txn_accumulator.append(&(vec![hash]));
-            println!("MYLOG: txn acc, leaf {}, node index {:?}, root hash {:?}", i, index, root_hash);
+            let _root_hash = txn_accumulator.append(&[hash]);
         }
         txn_accumulator.flush().unwrap();
         watch(CHAIN_WATCH_NAME, "n1253");
@@ -209,7 +214,10 @@ impl BlockChain {
             vm_metrics,
         };
         watch(CHAIN_WATCH_NAME, "n1251");
-        chain.update_uncle_cache()?;
+        match uncles {
+            Some(data) => chain.uncles = data,
+            None => chain.update_uncle_cache()?,
+        }
         watch(CHAIN_WATCH_NAME, "n1252");
         Ok(chain)
     }
@@ -784,6 +792,37 @@ impl ChainReader for BlockChain {
             None
         };
         BlockChain::new_with_uncles(
+            self.time_service.clone(),
+            head,
+            uncles,
+            self.storage.clone(),
+            self.vm_metrics.clone(),
+        )
+    }
+
+    fn fork_for_test(&self, block_id: HashValue) -> Result<Self> {
+        ensure!(
+            self.exist_block(block_id)?,
+            "Block with id{} do not exists in current chain.",
+            block_id
+        );
+        let head = self
+            .storage
+            .get_block_by_hash(block_id)?
+            .ok_or_else(|| format_err!("Can not find block by hash {:?}", block_id))?;
+        // if fork block_id is at same epoch, try to reuse uncles cache.
+        let uncles = if head.header().number() >= self.epoch.start_block_number() {
+            Some(
+                self.uncles
+                    .iter()
+                    .filter(|(_uncle_id, uncle_number)| **uncle_number <= head.header().number())
+                    .map(|(uncle_id, uncle_number)| (*uncle_id, *uncle_number))
+                    .collect::<HashMap<HashValue, MintedUncleNumber>>(),
+            )
+        } else {
+            None
+        };
+        BlockChain::new_with_uncles_for_test(
             self.time_service.clone(),
             head,
             uncles,

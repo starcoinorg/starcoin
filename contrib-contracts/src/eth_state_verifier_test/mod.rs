@@ -134,16 +134,17 @@ fn test_eth_state_proof_verify() -> Result<()> {
     // verify storage proof
     {
         for storage_proof in &account_proof.storage_proof {
-            println!("proof: {:?}", storage_proof);
             let key = H256::from_uint(&storage_proof.key).as_bytes().to_vec();
             let value = storage_proof.value.rlp_bytes();
+            println!("key: {:?}", key);
+            println!("value: {:?}", value);
 
             let proofs: Vec<_> = storage_proof
                 .proof
                 .iter()
                 .map(|p| hex::decode(&p.as_str()[2..]).unwrap())
                 .collect();
-
+            println!("proofs: {:?}", proofs);
             let expected_state_root = account_proof.storage_hash;
             let expected_state_root = MoveValue::vector_u8(expected_state_root.as_bytes().to_vec());
             let key = { MoveValue::vector_u8(key) };
