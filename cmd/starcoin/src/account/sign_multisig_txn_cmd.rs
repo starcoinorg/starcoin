@@ -1,14 +1,18 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::StarcoinOpt;
+use std::convert::TryInto;
+use std::env::current_dir;
+use std::fs::File;
+use std::path::PathBuf;
+
 use anyhow::{bail, Result};
 use clap::Parser;
-use scmd::{CommandAction, ExecContext};
-use starcoin_account_api::AccountPublicKey;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519SignatureShard;
+
+use scmd::{CommandAction, ExecContext};
+use starcoin_account_api::AccountPublicKey;
 use starcoin_rpc_api::types::{FunctionIdView, RawUserTransactionView, TransactionStatusView};
 use starcoin_rpc_client::StateRootOption;
 use starcoin_state_api::StateReaderExt;
@@ -22,10 +26,9 @@ use starcoin_vm_types::token::stc::STC_TOKEN_CODE_STR;
 use starcoin_vm_types::transaction::{ScriptFunction, TransactionPayload};
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
-use std::convert::TryInto;
-use std::env::current_dir;
-use std::fs::File;
-use std::path::PathBuf;
+
+use crate::cli_state::CliState;
+use crate::StarcoinOpt;
 
 #[derive(Debug, Parser)]
 #[clap(name = "sign-multisig-txn")]
@@ -56,7 +59,7 @@ pub struct GenerateMultisigTxnOpt {
     )]
     type_tags: Option<Vec<TypeTag>>,
 
-    #[clap(long = "arg", name = "transaction-arg",  parse(try_from_str = parse_transaction_argument))]
+    #[clap(long = "arg", name = "transaction-arg", parse(try_from_str = parse_transaction_argument))]
     /// transaction arguments
     args: Option<Vec<TransactionArgument>>,
 
@@ -111,7 +114,7 @@ impl CommandAction for GenerateMultisigTxnCommand {
         // gen multisig txn or read from file sent by other participants.
         let (raw_txn, existing_signatures) =
             if let Some(function_id) = opt.script_function.clone().map(|t| t.0) {
-                let sender = ctx.opt().sender.expect("sender adress should be provided");
+                let sender = ctx.opt().sender.expect("sender address should be provided");
                 let script_function = ScriptFunction::new(
                     function_id.module,
                     function_id.function,
