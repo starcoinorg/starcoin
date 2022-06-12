@@ -3,15 +3,12 @@
 
 use std::convert::TryInto;
 use std::env::current_dir;
-use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{bail, format_err, Result};
 use serde::de::DeserializeOwned;
-use starcoin_crypto::hash::PlainCryptoHash;
-use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519SignatureShard;
 use starcoin_crypto::HashValue;
 
 use bcs_ext::BCSCodec;
@@ -28,11 +25,10 @@ use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::association_address;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE_STR;
-use starcoin_vm_types::transaction::authenticator::{AccountPublicKey, TransactionAuthenticator};
-use starcoin_vm_types::transaction::{
-    DryRunTransaction, RawUserTransaction, SignedUserTransaction, TransactionPayload,
-};
+use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
+use starcoin_vm_types::transaction::{DryRunTransaction, RawUserTransaction, TransactionPayload};
 
+use crate::mutlisig_transaction::sign_multisig_txn_to_file;
 use crate::view::{ExecuteResultView, ExecutionOutputView, TransactionOptions};
 
 static G_HISTORY_FILE_NAME: &str = "history";
@@ -281,6 +277,7 @@ impl CliState {
             eprintln!("txn dry run failed");
             return Ok(execute_result);
         }
+
         let signed_txn = self.account_client.sign_txn(raw_txn, sender.address)?;
 
         let multisig_public_key = match &public_key {
@@ -300,56 +297,13 @@ impl CliState {
             AccountPublicKey::Multi(m) => m.clone(),
         };
 
-        // It's multisig account, try to sign it.
-        let my_signatures = if let TransactionAuthenticator::MultiEd25519 { signature, .. } =
-            signed_txn.authenticator()
-        {
-            MultiEd25519SignatureShard::new(signature, *multisig_public_key.threshold())
-        } else {
-            unreachable!()
-        };
-
-        // merge my signatures with existing signatures of other participants.
-        let merged_signatures = {
-            let signatures = vec![my_signatures];
-            MultiEd25519SignatureShard::merge(signatures)?
-        };
-        eprintln!(
-            "mutlisig txn(address: {}, threshold: {}): {} signatures collected",
+        let _ = sign_multisig_txn_to_file(
             sender.address,
-            merged_signatures.threshold(),
-            merged_signatures.signatures().len()
+            multisig_public_key,
+            None,
+            signed_txn,
+            current_dir()?,
         );
-        if !merged_signatures.is_enough() {
-            eprintln!(
-                "still require {} signatures",
-                merged_signatures.threshold() as usize - merged_signatures.signatures().len()
-            );
-        } else {
-            eprintln!("enough signatures collected for the multisig txn, txn can be submitted now");
-        }
-
-        // construct the signed txn with merged signatures.
-        let signed_txn = {
-            let authenticator = TransactionAuthenticator::MultiEd25519 {
-                public_key: multisig_public_key,
-                signature: merged_signatures.into(),
-            };
-            SignedUserTransaction::new(signed_txn.into_raw_transaction(), authenticator)
-        };
-
-        // output the txn, send this to other participants to sign, or just submit it.
-        let output_file = {
-            let mut output_dir = current_dir()?;
-            // use hash's as output file name
-            let file_name = signed_txn.crypto_hash().to_hex();
-            output_dir.push(file_name);
-            output_dir.set_extension("multisig-txn");
-            output_dir
-        };
-        let mut file = File::create(output_file)?;
-        // write txn to file
-        bcs_ext::serialize_into(&mut file, &signed_txn)?;
 
         Ok(execute_result)
     }
