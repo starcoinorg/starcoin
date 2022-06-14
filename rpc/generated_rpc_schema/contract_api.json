@@ -3866,6 +3866,588 @@
       }
     },
     {
+      "name": "contract.resolve_module_function_index",
+      "params": [
+        {
+          "name": "module_id",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "move_core_types::language_storage::ModuleId",
+            "type": "string"
+          }
+        },
+        {
+          "name": "function_index",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "uint16",
+            "type": "integer",
+            "format": "uint16",
+            "minimum": 0.0
+          }
+        }
+      ],
+      "result": {
+        "name": "FunctionABI",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "FunctionABI",
+          "type": "object",
+          "required": [
+            "args",
+            "doc",
+            "module_name",
+            "name",
+            "returns",
+            "ty_args"
+          ],
+          "properties": {
+            "args": {
+              "description": "The description of regular arguments.",
+              "type": "array",
+              "items": {
+                "description": "The description of a (regular) argument in a script.",
+                "type": "object",
+                "required": [
+                  "doc",
+                  "name",
+                  "type_tag"
+                ],
+                "properties": {
+                  "doc": {
+                    "description": "The doc of the arg.",
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "The name of the argument.",
+                    "type": "string"
+                  },
+                  "type_tag": {
+                    "description": "The expected type. In Move scripts, this does contain generics type parameters.",
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "Bool",
+                          "U8",
+                          "U64",
+                          "U128",
+                          "Address",
+                          "Signer"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "Vector"
+                        ],
+                        "properties": {
+                          "Vector": {
+                            "$ref": "#/definitions/TypeInstantiation"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "Struct"
+                        ],
+                        "properties": {
+                          "Struct": {
+                            "type": "object",
+                            "required": [
+                              "abilities",
+                              "doc",
+                              "fields",
+                              "module_name",
+                              "name",
+                              "ty_args"
+                            ],
+                            "properties": {
+                              "abilities": {
+                                "type": "string"
+                              },
+                              "doc": {
+                                "description": "The doc of the struct",
+                                "type": "string"
+                              },
+                              "fields": {
+                                "description": "fields of the structs.",
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "required": [
+                                    "doc",
+                                    "name",
+                                    "type_abi"
+                                  ],
+                                  "properties": {
+                                    "doc": {
+                                      "description": "doc of the field",
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "description": "field name",
+                                      "type": "string"
+                                    },
+                                    "type_abi": {
+                                      "description": "type of the field",
+                                      "allOf": [
+                                        {
+                                          "$ref": "#/definitions/TypeInstantiation"
+                                        }
+                                      ]
+                                    }
+                                  }
+                                }
+                              },
+                              "module_name": {
+                                "description": "module contains the struct",
+                                "type": "string"
+                              },
+                              "name": {
+                                "description": "name of the struct",
+                                "type": "string"
+                              },
+                              "ty_args": {
+                                "type": "array",
+                                "items": {
+                                  "description": "The description of a type argument in a script.",
+                                  "type": "object",
+                                  "required": [
+                                    "abilities",
+                                    "name",
+                                    "phantom",
+                                    "ty"
+                                  ],
+                                  "properties": {
+                                    "abilities": {
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "description": "The name of the argument.",
+                                      "type": "string"
+                                    },
+                                    "phantom": {
+                                      "type": "boolean"
+                                    },
+                                    "ty": {
+                                      "$ref": "#/definitions/TypeInstantiation"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "TypeParameter"
+                        ],
+                        "properties": {
+                          "TypeParameter": {
+                            "type": "integer",
+                            "format": "uint",
+                            "minimum": 0.0
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "Reference"
+                        ],
+                        "properties": {
+                          "Reference": {
+                            "type": "array",
+                            "items": [
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "$ref": "#/definitions/TypeInstantiation"
+                              }
+                            ],
+                            "maxItems": 2,
+                            "minItems": 2
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "doc": {
+              "description": "Some text comment.",
+              "type": "string"
+            },
+            "module_name": {
+              "description": "The module name where the script lives.",
+              "type": "string"
+            },
+            "name": {
+              "description": "The public name of the script.",
+              "type": "string"
+            },
+            "returns": {
+              "description": "return types",
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "Bool",
+                      "U8",
+                      "U64",
+                      "U128",
+                      "Address",
+                      "Signer"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "Vector"
+                    ],
+                    "properties": {
+                      "Vector": {
+                        "$ref": "#/definitions/TypeInstantiation"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "Struct"
+                    ],
+                    "properties": {
+                      "Struct": {
+                        "type": "object",
+                        "required": [
+                          "abilities",
+                          "doc",
+                          "fields",
+                          "module_name",
+                          "name",
+                          "ty_args"
+                        ],
+                        "properties": {
+                          "abilities": {
+                            "type": "string"
+                          },
+                          "doc": {
+                            "description": "The doc of the struct",
+                            "type": "string"
+                          },
+                          "fields": {
+                            "description": "fields of the structs.",
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "doc",
+                                "name",
+                                "type_abi"
+                              ],
+                              "properties": {
+                                "doc": {
+                                  "description": "doc of the field",
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "description": "field name",
+                                  "type": "string"
+                                },
+                                "type_abi": {
+                                  "description": "type of the field",
+                                  "allOf": [
+                                    {
+                                      "$ref": "#/definitions/TypeInstantiation"
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          },
+                          "module_name": {
+                            "description": "module contains the struct",
+                            "type": "string"
+                          },
+                          "name": {
+                            "description": "name of the struct",
+                            "type": "string"
+                          },
+                          "ty_args": {
+                            "type": "array",
+                            "items": {
+                              "description": "The description of a type argument in a script.",
+                              "type": "object",
+                              "required": [
+                                "abilities",
+                                "name",
+                                "phantom",
+                                "ty"
+                              ],
+                              "properties": {
+                                "abilities": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "description": "The name of the argument.",
+                                  "type": "string"
+                                },
+                                "phantom": {
+                                  "type": "boolean"
+                                },
+                                "ty": {
+                                  "$ref": "#/definitions/TypeInstantiation"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "TypeParameter"
+                    ],
+                    "properties": {
+                      "TypeParameter": {
+                        "type": "integer",
+                        "format": "uint",
+                        "minimum": 0.0
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "Reference"
+                    ],
+                    "properties": {
+                      "Reference": {
+                        "type": "array",
+                        "items": [
+                          {
+                            "type": "boolean"
+                          },
+                          {
+                            "$ref": "#/definitions/TypeInstantiation"
+                          }
+                        ],
+                        "maxItems": 2,
+                        "minItems": 2
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "ty_args": {
+              "description": "The names of the type arguments.",
+              "type": "array",
+              "items": {
+                "description": "The description of a type argument in a script.",
+                "type": "object",
+                "required": [
+                  "abilities",
+                  "name",
+                  "phantom"
+                ],
+                "properties": {
+                  "abilities": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "The name of the argument.",
+                    "type": "string"
+                  },
+                  "phantom": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          },
+          "definitions": {
+            "TypeInstantiation": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "Bool",
+                    "U8",
+                    "U64",
+                    "U128",
+                    "Address",
+                    "Signer"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Vector"
+                  ],
+                  "properties": {
+                    "Vector": {
+                      "$ref": "#/definitions/TypeInstantiation"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Struct"
+                  ],
+                  "properties": {
+                    "Struct": {
+                      "type": "object",
+                      "required": [
+                        "abilities",
+                        "doc",
+                        "fields",
+                        "module_name",
+                        "name",
+                        "ty_args"
+                      ],
+                      "properties": {
+                        "abilities": {
+                          "type": "string"
+                        },
+                        "doc": {
+                          "description": "The doc of the struct",
+                          "type": "string"
+                        },
+                        "fields": {
+                          "description": "fields of the structs.",
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "doc",
+                              "name",
+                              "type_abi"
+                            ],
+                            "properties": {
+                              "doc": {
+                                "description": "doc of the field",
+                                "type": "string"
+                              },
+                              "name": {
+                                "description": "field name",
+                                "type": "string"
+                              },
+                              "type_abi": {
+                                "description": "type of the field",
+                                "allOf": [
+                                  {
+                                    "$ref": "#/definitions/TypeInstantiation"
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "module_name": {
+                          "description": "module contains the struct",
+                          "type": "string"
+                        },
+                        "name": {
+                          "description": "name of the struct",
+                          "type": "string"
+                        },
+                        "ty_args": {
+                          "type": "array",
+                          "items": {
+                            "description": "The description of a type argument in a script.",
+                            "type": "object",
+                            "required": [
+                              "abilities",
+                              "name",
+                              "phantom",
+                              "ty"
+                            ],
+                            "properties": {
+                              "abilities": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "description": "The name of the argument.",
+                                "type": "string"
+                              },
+                              "phantom": {
+                                "type": "boolean"
+                              },
+                              "ty": {
+                                "$ref": "#/definitions/TypeInstantiation"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "TypeParameter"
+                  ],
+                  "properties": {
+                    "TypeParameter": {
+                      "type": "integer",
+                      "format": "uint",
+                      "minimum": 0.0
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Reference"
+                  ],
+                  "properties": {
+                    "Reference": {
+                      "type": "array",
+                      "items": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "$ref": "#/definitions/TypeInstantiation"
+                        }
+                      ],
+                      "maxItems": 2,
+                      "minItems": 2
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
       "name": "contract.resolve_struct",
       "params": [
         {

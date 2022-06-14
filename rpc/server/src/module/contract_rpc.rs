@@ -236,6 +236,21 @@ where
         Box::pin(fut.boxed())
     }
 
+    fn resolve_module_function_index(
+        &self,
+        module_id: ModuleIdView,
+        function_idx: u16,
+    ) -> FutureResult<FunctionABI> {
+        let service = self.chain_state.clone();
+        let storage = self.storage.clone();
+        let fut = async move {
+            let state = ChainStateDB::new(storage, Some(service.state_root().await?));
+            ABIResolver::new(&state).resolve_module_function_index(&module_id.0, function_idx)
+        }
+        .map_err(map_err);
+        Box::pin(fut.boxed())
+    }
+
     fn resolve_struct(&self, struct_tag: StructTagView) -> FutureResult<StructInstantiation> {
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
