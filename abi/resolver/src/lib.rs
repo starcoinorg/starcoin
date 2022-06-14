@@ -419,6 +419,19 @@ mod tests {
             let func_abi = r.resolve_struct(&m, s.as_ident_str()).unwrap();
             println!("{}", serde_json::to_string_pretty(&func_abi).unwrap());
         }
+
+        // test resolve module function index
+        {
+            let m = ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap());
+            let f = r.resolve_module_function_index(&m, 0).unwrap();
+            assert_eq!(f.name(), "cast_vote");
+        }
+
+        // test resolve module function index overflow
+        {
+            let m = ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap());
+            assert!(r.resolve_module_function_index(&m, 31).is_err())
+        }
     }
 
     #[test]
