@@ -17,7 +17,9 @@ use starcoin_account_api::{AccountInfo, AccountProvider};
 use starcoin_config::{ChainNetworkID, DataDirPath};
 use starcoin_node::NodeHandle;
 use starcoin_rpc_api::chain::GetEventOption;
-use starcoin_rpc_api::types::{RawUserTransactionView, TransactionStatusView};
+use starcoin_rpc_api::types::{
+    RawUserTransactionView, SignedUserTransactionView, TransactionStatusView,
+};
 use starcoin_rpc_client::{RpcClient, StateRootOption};
 use starcoin_state_api::StateReaderExt;
 use starcoin_types::account_config::AccountResource;
@@ -26,7 +28,9 @@ use starcoin_vm_types::account_config::association_address;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE_STR;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
-use starcoin_vm_types::transaction::{DryRunTransaction, RawUserTransaction, TransactionPayload};
+use starcoin_vm_types::transaction::{
+    DryRunTransaction, RawUserTransaction, SignedUserTransaction, TransactionPayload,
+};
 
 use crate::mutlisig_transaction::sign_multisig_txn_to_file;
 use crate::view::{ExecuteResultView, ExecutionOutputView, TransactionOptions};
@@ -318,5 +322,30 @@ impl CliState {
 
     pub fn into_inner(self) -> (ChainNetworkID, Arc<RpcClient>, Option<NodeHandle>) {
         (self.net, self.client, self.node_handle)
+    }
+
+    pub fn submit_txn(
+        &self,
+        signed_txn: SignedUserTransaction,
+        blocking: bool,
+    ) -> Result<ExecutionOutputView> {
+        let mut signed_txn_view: SignedUserTransactionView = signed_txn.clone().try_into()?;
+        signed_txn_view.raw_txn.decoded_payload =
+            Some(self.decode_txn_payload(signed_txn.payload())?.into());
+
+        eprintln!(
+            "Prepare to submit the transaction: \n {}",
+            serde_json::to_string_pretty(&signed_txn_view)?
+        );
+        let txn_hash = signed_txn.id();
+        self.client().submit_transaction(signed_txn)?;
+
+        eprintln!("txn {:#x} submitted.", txn_hash);
+
+        if blocking {
+            self.watch_txn(txn_hash)
+        } else {
+            Ok(ExecutionOutputView::new(txn_hash))
+        }
     }
 }
