@@ -11,7 +11,7 @@ futures-timer = "3.0"
 hex = { version = "0.4.3" }
 thiserror = "1.0"
 once_cell = "1.12.0"
-parking_lot = "0.12.0"
+parking_lot = "0.12.1"
 
 starcoin-config = { path = "../config" }
 starcoin-chain = { path = "../chain" }
