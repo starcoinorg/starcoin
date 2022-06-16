@@ -1,15 +1,12 @@
 use std::collections::HashMap;
-use std::fs::File;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
-use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519SignatureShard;
 use starcoin_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature};
 
-use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::transaction::authenticator::TransactionAuthenticator;
 use starcoin_vm_types::transaction::{RawUserTransaction, SignedUserTransaction};
 
@@ -113,67 +110,4 @@ pub fn read_multisig_existing_signatures(file_input: &Path) -> Result<RawTxnMult
         txn: txn.raw_txn().clone(),
         signatures: Some(existing_signatures),
     })
-}
-
-pub fn sign_multisig_txn_to_file(
-    sender: AccountAddress,
-    multisig_public_key: MultiEd25519PublicKey,
-    existing_signatures: Option<MultiEd25519SignatureShard>,
-    partial_signed_txn: SignedUserTransaction,
-    output_dir: PathBuf,
-) -> Result<PathBuf> {
-    let my_signatures = if let TransactionAuthenticator::MultiEd25519 { signature, .. } =
-        partial_signed_txn.authenticator()
-    {
-        MultiEd25519SignatureShard::new(signature, *multisig_public_key.threshold())
-    } else {
-        unreachable!()
-    };
-
-    // merge my signatures with existing signatures of other participants.
-    let merged_signatures = {
-        let mut signatures = vec![];
-        if let Some(s) = existing_signatures {
-            signatures.push(s);
-        }
-        signatures.push(my_signatures);
-        MultiEd25519SignatureShard::merge(signatures)?
-    };
-    eprintln!(
-        "mutlisig txn(address: {}, threshold: {}): {} signatures collected",
-        sender,
-        merged_signatures.threshold(),
-        merged_signatures.signatures().len()
-    );
-    if !merged_signatures.is_enough() {
-        eprintln!(
-            "still require {} signatures",
-            merged_signatures.threshold() as usize - merged_signatures.signatures().len()
-        );
-    } else {
-        eprintln!("enough signatures collected for the multisig txn, txn can be submitted now");
-    }
-
-    // construct the signed txn with merged signatures.
-    let signed_txn = {
-        let authenticator = TransactionAuthenticator::MultiEd25519 {
-            public_key: multisig_public_key,
-            signature: merged_signatures.into(),
-        };
-        SignedUserTransaction::new(partial_signed_txn.into_raw_transaction(), authenticator)
-    };
-
-    // output the txn, send this to other participants to sign, or just submit it.
-    let output_file = {
-        let mut output_dir = output_dir;
-        // use hash's as output file name
-        let file_name = signed_txn.crypto_hash().to_hex();
-        output_dir.push(file_name);
-        output_dir.set_extension("multisig-txn");
-        output_dir
-    };
-    let mut file = File::create(output_file.clone())?;
-    // write txn to file
-    bcs_ext::serialize_into(&mut file, &signed_txn)?;
-    Ok(output_file)
 }

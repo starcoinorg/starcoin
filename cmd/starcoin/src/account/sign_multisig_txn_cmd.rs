@@ -23,7 +23,7 @@ use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 
 use crate::cli_state::CliState;
-use crate::mutlisig_transaction::{read_multisig_existing_signatures, sign_multisig_txn_to_file};
+use crate::mutlisig_transaction::read_multisig_existing_signatures;
 use crate::StarcoinOpt;
 
 #[derive(Debug, Parser)]
@@ -197,12 +197,14 @@ impl CommandAction for GenerateMultisigTxnCommand {
         }
 
         let output_dir = opt.output_dir.clone().unwrap_or(current_dir()?);
-        sign_multisig_txn_to_file(
+        ctx.state().sign_multisig_txn_to_file_or_submit(
             raw_txn.sender(),
             account_public_key,
             existing_signatures,
             account_client.sign_txn(raw_txn, sender)?,
             output_dir,
+            false,
+            false,
         )
     }
 }
