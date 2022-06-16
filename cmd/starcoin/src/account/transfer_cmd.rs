@@ -1,16 +1,18 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::view::{ExecuteResultView, TransactionOptions};
-use crate::StarcoinOpt;
 use anyhow::Result;
 use clap::Parser;
+
 use scmd::{CommandAction, ExecContext};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::token::stc::G_STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::TransactionPayload;
+
+use crate::cli_state::CliState;
+use crate::view::{ExecuteResultView, TransactionOptions};
+use crate::StarcoinOpt;
 
 /// Transfer token's command, this command will send a transaction to the chain.
 #[derive(Debug, Parser)]
