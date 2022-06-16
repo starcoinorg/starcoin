@@ -24,10 +24,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
-use starcoin_crypto::{
-    ed25519::Ed25519PublicKey, HashValue, PrivateKey, ValidCryptoMaterial,
-    ValidCryptoMaterialStringExt,
-};
+use starcoin_crypto::{HashValue, PrivateKey, ValidCryptoMaterial, ValidCryptoMaterialStringExt};
 use starcoin_dev::playground::call_contract;
 use starcoin_genesis::Genesis;
 use starcoin_rpc_api::types::{
@@ -96,7 +93,7 @@ fn parse_named_key<T: ValidCryptoMaterial>(s: &str) -> Result<(Identifier, T)> {
 #[derive(Debug)]
 enum RawPublicKey {
     Named(Identifier),
-    Anonymous(Ed25519PublicKey),
+    Anonymous(AccountPublicKey),
 }
 impl RawPublicKey {
     fn parse(s: &str) -> Result<Self> {
@@ -134,7 +131,7 @@ pub struct ExtraInitArgs {
     takes_value(true),
     multiple_values(true),
     multiple_occurrences(true))]
-    public_keys: Option<Vec<(Identifier, Ed25519PublicKey)>>,
+    public_keys: Option<Vec<(Identifier, AccountPublicKey)>>,
     // #[clap(long = "private-keys", parse(try_from_str = parse_named_private_key))]
     // private_keys: Option<Vec<(Identifier, Ed25519PrivateKey)>>,
 }
@@ -164,8 +161,8 @@ struct FaucetSub {
     address: RawAddress,
     #[clap(long = "amount", default_value = "100000000000")]
     initial_balance: u128,
-    #[clap(long = "public-key", parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
-    public_key: Option<Ed25519PublicKey>,
+    #[clap(long = "public-key", parse(try_from_str=AccountPublicKey::from_encoded_string))]
+    public_key: Option<AccountPublicKey>,
 }
 
 #[derive(clap::Args, Debug)]
@@ -199,8 +196,8 @@ pub enum StarcoinSubcommands {
         address: RawAddress,
         #[clap(long = "amount", default_value = "100000000000")]
         initial_balance: u128,
-        #[clap(long = "public-key", parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
-        public_key: Option<Ed25519PublicKey>,
+        #[clap(long = "public-key", parse(try_from_str=AccountPublicKey::from_encoded_string))]
+        public_key: Option<AccountPublicKey>,
     },
 
     #[clap(name = "block")]
@@ -300,8 +297,8 @@ struct TransactionParameters {
 impl<'a> StarcoinTestAdapter<'a> {
     /// Look up the named private key in the mapping.
     fn resolve_named_public_key(&self, s: &IdentStr) -> AccountPublicKey {
-        if let Some(private_key) = self.public_key_mapping.get(s) {
-            return private_key.clone();
+        if let Some(public_key) = self.public_key_mapping.get(s) {
+            return public_key.clone();
         }
         panic!("Failed to resolve private key '{}'", s)
     }
@@ -309,7 +306,7 @@ impl<'a> StarcoinTestAdapter<'a> {
     /// Resolve a raw public key into a numeric one.
     fn resolve_public_key(&self, private_key: &RawPublicKey) -> AccountPublicKey {
         match private_key {
-            RawPublicKey::Anonymous(public_key) => public_key.clone().into(),
+            RawPublicKey::Anonymous(public_key) => public_key.clone(),
             RawPublicKey::Named(name) => self.resolve_named_public_key(name),
         }
     }
@@ -517,7 +514,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         &mut self,
         addr: RawAddress,
         initial_balance: u128,
-        public_key: Option<Ed25519PublicKey>,
+        public_key: Option<AccountPublicKey>,
     ) -> Result<Option<String>> {
         let sender = association_address();
 
@@ -704,14 +701,14 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         {
             // Private key mapping
             if let Some(additional_public_key_mapping) = init_args.public_keys {
-                for (name, private_key) in additional_public_key_mapping {
+                for (name, public_key) in additional_public_key_mapping {
                     if public_key_mapping.contains_key(&name) {
                         panic!(
                             "Invalid init. The named public key '{}' already exists.",
                             name
                         )
                     }
-                    public_key_mapping.insert(name, private_key.into());
+                    public_key_mapping.insert(name, public_key);
                 }
             }
         }
@@ -861,7 +858,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             (Some(public_key), _) => self.resolve_public_key(&public_key),
             (None, RawAddress::Named(named_addr)) => {
                 match self.public_key_mapping.get(named_addr) {
-                    Some(private_key) => private_key.clone(),
+                    Some(public_key) => public_key.clone(),
                     None => panic_missing_public_key_named("run", named_addr),
                 }
             }
