@@ -1153,6 +1153,7 @@ pub struct PeerInfoView {
     pub chain_info: ChainInfoView,
     pub notif_protocols: String,
     pub rpc_protocols: String,
+    pub version_string: Option<String>,
 }
 
 impl From<PeerInfo> for PeerInfoView {
@@ -1162,6 +1163,7 @@ impl From<PeerInfo> for PeerInfoView {
             chain_info: info.chain_info.into(),
             notif_protocols: info.notif_protocols.join(","),
             rpc_protocols: info.rpc_protocols.join(","),
+            version_string: info.version_string,
         }
     }
 }
