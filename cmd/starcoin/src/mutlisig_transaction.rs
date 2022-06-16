@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::fs::File;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use starcoin_crypto::hash::PlainCryptoHash;
@@ -89,6 +89,30 @@ impl MultisigTransaction {
             multi_sig,
         ))
     }
+}
+
+pub struct RawTxnMultiSign {
+    pub txn: RawUserTransaction,
+    pub signatures: Option<MultiEd25519SignatureShard>,
+}
+
+pub fn read_multisig_existing_signatures(file_input: &Path) -> Result<RawTxnMultiSign> {
+    let txn: SignedUserTransaction = bcs_ext::from_bytes(&std::fs::read(file_input)?)?;
+
+    let existing_signatures = match txn.authenticator() {
+        TransactionAuthenticator::Ed25519 { .. } => {
+            bail!("expect a multisig txn in file {}", file_input.display());
+        }
+        TransactionAuthenticator::MultiEd25519 {
+            public_key,
+            signature,
+        } => MultiEd25519SignatureShard::new(signature, *public_key.threshold()),
+    };
+
+    Ok(RawTxnMultiSign {
+        txn: txn.raw_txn().clone(),
+        signatures: Some(existing_signatures),
+    })
 }
 
 pub fn sign_multisig_txn_to_file(
