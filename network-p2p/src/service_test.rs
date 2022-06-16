@@ -570,6 +570,7 @@ fn test_support_protocol() {
         info: _,
         notif_protocols,
         rpc_protocols,
+        version_string: _,
     } = open_event1
     {
         assert_eq!(&remote, service2.peer_id());
@@ -594,6 +595,7 @@ fn test_support_protocol() {
         info: _,
         notif_protocols,
         rpc_protocols,
+        version_string: _,
     } = open_event2
     {
         assert_eq!(&remote, service1.peer_id());

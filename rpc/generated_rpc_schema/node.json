@@ -375,6 +375,12 @@
                 },
                 "rpc_protocols": {
                   "type": "string"
+                },
+                "version_string": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 }
               }
             },
@@ -611,6 +617,12 @@
               },
               "rpc_protocols": {
                 "type": "string"
+              },
+              "version_string": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             }
           }
