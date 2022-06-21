@@ -39,6 +39,18 @@ impl GenerateBlockEvent {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct GenerateSleepBlockEvent {
+    /// Force break current minting, and Generate new block.
+    pub force: bool,
+}
+
+impl GenerateSleepBlockEvent {
+    pub fn new(force: bool) -> Self {
+        Self { force }
+    }
+}
+
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct MintBlockEvent {
     pub parent_hash: HashValue,
