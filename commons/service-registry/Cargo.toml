@@ -23,4 +23,4 @@ schemars = {git = "https://github.com/starcoinorg/schemars", rev = "6972da92f436
 
 [dev-dependencies]
 stest = { path = "../../commons/stest" }
-async-std = "1.11"
+async-std = "1.12"

@@ -34,7 +34,7 @@ starcoin-logger = { path = "../../commons/logger"}
 starcoin-account-api = { path = "../../account/api"}
 starcoin-state-api = { path = "../../state/api"}
 starcoin-state-tree = { path = "../../state/state-tree"}
-async-std = "1.11"
+async-std = "1.12"
 starcoin-txpool-api = {path = "../../txpool/api"}
 starcoin-sync-api = {path = "../../sync/api"}
 starcoin-service-registry = { path = "../../commons/service-registry" }
