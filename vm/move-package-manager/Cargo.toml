@@ -35,19 +35,19 @@ futures = "0.3"
 tokio = { version = "^1", features = ["full"] }
 tempfile = "~3"
 
-move-cli = { git = "https://github.com/lemonhx/move", rev = "b9e63765e7bf6a722f6660339173460bacea04e2" }
-move-package = { git = "https://github.com/lemonhx/move", rev = "b9e63765e7bf6a722f6660339173460bacea04e2" }
-move-bytecode-verifier = { git = "https://github.com/lemonhx/move", rev = "b9e63765e7bf6a722f6660339173460bacea04e2" }
-move-disassembler = { git = "https://github.com/lemonhx/move", rev = "b9e63765e7bf6a722f6660339173460bacea04e2" }
-move-errmapgen = { git = "https://github.com/lemonhx/move", rev = "b9e63765e7bf6a722f6660339173460bacea04e2" }
-move-coverage = { git = "https://github.com/lemonhx/move", rev = "b9e63765e7bf6a722f6660339173460bacea04e2" }
-move-binary-format = { git = "https://github.com/lemonhx/move", rev = "b9e63765e7bf6a722f6660339173460bacea04e2" }
-move-compiler = { git = "https://github.com/lemonhx/move", rev = "b9e63765e7bf6a722f6660339173460bacea04e2" }
-move-core-types = { git = "https://github.com/lemonhx/move", rev = "b9e63765e7bf6a722f6660339173460bacea04e2" }
-move-vm-runtime = { git = "https://github.com/lemonhx/move", rev = "b9e63765e7bf6a722f6660339173460bacea04e2" }
+move-cli = { git = "https://github.com/lemonhx/move", rev = "8c35a0faec98961a090e95655cac20c041cfa0ef" }
+move-package = { git = "https://github.com/lemonhx/move", rev = "8c35a0faec98961a090e95655cac20c041cfa0ef" }
+move-bytecode-verifier = { git = "https://github.com/lemonhx/move", rev = "8c35a0faec98961a090e95655cac20c041cfa0ef" }
+move-disassembler = { git = "https://github.com/lemonhx/move", rev = "8c35a0faec98961a090e95655cac20c041cfa0ef" }
+move-errmapgen = { git = "https://github.com/lemonhx/move", rev = "8c35a0faec98961a090e95655cac20c041cfa0ef" }
+move-coverage = { git = "https://github.com/lemonhx/move", rev = "8c35a0faec98961a090e95655cac20c041cfa0ef" }
+move-binary-format = { git = "https://github.com/lemonhx/move", rev = "8c35a0faec98961a090e95655cac20c041cfa0ef" }
+move-compiler = { git = "https://github.com/lemonhx/move", rev = "8c35a0faec98961a090e95655cac20c041cfa0ef" }
+move-core-types = { git = "https://github.com/lemonhx/move", rev = "8c35a0faec98961a090e95655cac20c041cfa0ef" }
+move-vm-runtime = { git = "https://github.com/lemonhx/move", rev = "8c35a0faec98961a090e95655cac20c041cfa0ef" }
 resource-viewer = { path = "../resource-viewer", package = "starcoin-resource-viewer" }
-move-unit-test = { git = "https://github.com/lemonhx/move", rev = "b9e63765e7bf6a722f6660339173460bacea04e2" }
-move-command-line-common = { git = "https://github.com/lemonhx/move", rev = "b9e63765e7bf6a722f6660339173460bacea04e2" }
+move-unit-test = { git = "https://github.com/lemonhx/move", rev = "8c35a0faec98961a090e95655cac20c041cfa0ef" }
+move-command-line-common = { git = "https://github.com/lemonhx/move", rev = "8c35a0faec98961a090e95655cac20c041cfa0ef" }
 datatest-stable = { git = "https://github.com/starcoinorg/diem-devtools", branch = "feature/pub-test-opts" }
 starcoin-vm-types = { path = "../../vm/types" }
 starcoin-logger = { path = "../../commons/logger" }

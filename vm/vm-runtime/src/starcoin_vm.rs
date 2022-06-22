@@ -519,13 +519,13 @@ impl StarcoinVM {
                     sender
                 );
                 session
-                    .as_mut()
-                    .execute_function_bypass_visibility(
+                    .execute_entry_function(
                         init_script.module(),
                         init_script.function(),
                         init_script.ty_args().to_vec(),
                         init_script.args().to_vec(),
                         cost_strategy,
+                        sender,
                     )
                     .map_err(|e| e.into_vm_status())?;
             }
@@ -580,15 +580,15 @@ impl StarcoinVM {
                         cost_strategy,
                     )
                 }
-                TransactionPayload::ScriptFunction(script_function) => {
-                    session.as_mut().execute_function_bypass_visibility(
+                TransactionPayload::ScriptFunction(script_function) => session
+                    .execute_entry_function(
                         script_function.module(),
                         script_function.function(),
                         script_function.ty_args().to_vec(),
                         script_function.args().to_vec(),
                         cost_strategy,
-                    )
-                }
+                        txn_data.sender(),
+                    ),
                 TransactionPayload::Package(_) => {
                     return Err(VMStatus::Error(StatusCode::UNREACHABLE));
                 }

@@ -24,6 +24,6 @@ regex = "1.5.4"
 rayon = "1.5.1"
 indexmap = "1.6.2"
 camino = { version = "1" }
-x-core = { package = "x-core", git = "https://github.com/lemonhx/move", rev = "b9e63765e7bf6a722f6660339173460bacea04e2" }
-x-lint = { package = "x-lint", git = "https://github.com/lemonhx/move", rev = "b9e63765e7bf6a722f6660339173460bacea04e2" }
-x = { package = "x", git = "https://github.com/lemonhx/move", rev = "b9e63765e7bf6a722f6660339173460bacea04e2" }
+x-core = { package = "x-core", git = "https://github.com/lemonhx/move", rev = "8c35a0faec98961a090e95655cac20c041cfa0ef" }
+x-lint = { package = "x-lint", git = "https://github.com/lemonhx/move", rev = "8c35a0faec98961a090e95655cac20c041cfa0ef" }
+x = { package = "x", git = "https://github.com/lemonhx/move", rev = "8c35a0faec98961a090e95655cac20c041cfa0ef" }
