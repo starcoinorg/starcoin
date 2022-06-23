@@ -74,7 +74,7 @@ fn parse_ed25519_key<T: ValidCryptoMaterial>(s: &str) -> Result<T> {
     Ok(T::from_encoded_string(s)?)
 }
 
-fn parse_named_key<T: ValidCryptoMaterial>(s: &str) -> Result<(String, T)> {
+fn parse_named_key<T: ValidCryptoMaterial>(s: &str) -> Result<(Identifier, T)> {
     let before_after = s.split('=').collect::<Vec<_>>();
 
     if before_after.len() != 2 {
@@ -84,10 +84,10 @@ fn parse_named_key<T: ValidCryptoMaterial>(s: &str) -> Result<(String, T)> {
         );
     }
 
-    let name = before_after[0].to_string();
+    let name = before_after[0];
     let key = parse_ed25519_key(before_after[1])?;
 
-    Ok((name, key))
+    Ok((Identifier::new(name.to_string().into_boxed_str())?, key))
 }
 
 /// A raw private key -- either a literal or an unresolved name.
@@ -282,7 +282,7 @@ pub struct StarcoinTestAdapter<'a> {
     compiled_state: CompiledState<'a>,
     storage: SelectableStateView<ChainStateDB, InMemoryStateCache<RemoteStateView>>,
     default_syntax: SyntaxChoice,
-    public_key_mapping: BTreeMap<String, AccountPublicKey>,
+    public_key_mapping: BTreeMap<Identifier, AccountPublicKey>,
     association_public_key: AccountPublicKey,
 }
 
@@ -298,7 +298,10 @@ struct TransactionParameters {
 impl<'a> StarcoinTestAdapter<'a> {
     /// Look up the named private key in the mapping.
     fn resolve_named_public_key(&self, s: &IdentStr) -> AccountPublicKey {
-        if let Some(public_key) = self.public_key_mapping.get(s) {
+        if let Some(public_key) = self
+            .public_key_mapping
+            .get(&Identifier::from_str(s.as_str()).expect("invalid identifier"))
+        {
             return public_key.clone();
         }
         panic!("Failed to resolve private key '{}'", s)
@@ -540,7 +543,8 @@ impl<'a> StarcoinTestAdapter<'a> {
                         name.clone(),
                         NumericalAddress::new(addr.into_bytes(), NumberFormat::Hex),
                     );
-                    self.public_key_mapping.insert(name.clone(), key.into());
+                    self.public_key_mapping
+                        .insert(Identifier::from_str(name.as_str())?, key.into());
                 } else if public_key.is_some() {
                     bail!(
                         "name address {} = {} already exists, should not provide public key",
@@ -718,7 +722,11 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         } else {
             let net = ChainNetwork::new_builtin(init_args.network.unwrap());
             if let Some(k) = &net.genesis_config().genesis_key_pair {
-                public_key_mapping.insert("Genesis".to_string(), k.1.clone().into());
+                public_key_mapping.insert(
+                    Identifier::new("Genesis".to_string().into_boxed_str())
+                        .expect("Invalid identifier"),
+                    k.1.clone().into(),
+                );
             }
             let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
             let data_store = ChainStateDB::mock();
@@ -735,7 +743,8 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                 .clone()
                 .into();
         public_key_mapping.insert(
-            "StarcoinAssociation".to_string(),
+            Identifier::new("StarcoinAssociation".to_string().into_boxed_str())
+                .expect("Invalid identifier"),
             association_public_key.clone(),
         );
 
@@ -810,7 +819,10 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
 
         let public_key = match (extra.public_key, named_addr_opt) {
             (Some(key), _) => self.resolve_public_key(&key),
-            (None, Some(named_addr)) => match self.public_key_mapping.get(named_addr.as_str()) {
+            (None, Some(named_addr)) => match self
+                .public_key_mapping
+                .get(&Identifier::from_str(named_addr.as_str())?)
+            {
                 Some(key) => key.clone(),
                 None => panic_missing_public_key_named("publish", named_addr.as_str()),
             },
@@ -857,7 +869,10 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         let public_key = match (extra_args.public_key, &signers[0]) {
             (Some(public_key), _) => self.resolve_public_key(&public_key),
             (None, ParsedAddress::Named(named_addr)) => {
-                match self.public_key_mapping.get(named_addr) {
+                match self
+                    .public_key_mapping
+                    .get(&Identifier::from_str(named_addr.as_str())?)
+                {
                     Some(public_key) => public_key.clone(),
                     None => panic_missing_public_key_named("run", named_addr),
                 }
@@ -930,7 +945,10 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         let public_key = match (extra_args.public_key, &signers[0]) {
             (Some(public_key), _) => self.resolve_public_key(&public_key),
             (None, ParsedAddress::Named(named_addr)) => {
-                match self.public_key_mapping.get(named_addr) {
+                match self
+                    .public_key_mapping
+                    .get(&Identifier::from_str(named_addr.as_str())?)
+                {
                     Some(private_key) => private_key.clone(),
                     None => panic_missing_public_key_named("run", named_addr),
                 }
