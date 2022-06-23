@@ -304,7 +304,7 @@ impl CliState {
             AccountPublicKey::Multi(m) => m.clone(),
         };
 
-        let _ = self.sign_multisig_txn_to_file_or_submit(
+        let multisig_txn_path = self.sign_multisig_txn_to_file_or_submit(
             sender.address,
             multisig_public_key,
             None,
@@ -312,6 +312,11 @@ impl CliState {
             current_dir()?,
             true,
             blocking,
+        );
+
+        eprintln!(
+            "multisig-txn: {}",
+            multisig_txn_path.unwrap().as_path().to_str().unwrap()
         );
 
         Ok(execute_result)
@@ -365,7 +370,10 @@ impl CliState {
             merged_signatures.threshold(),
             merged_signatures.signatures().len()
         );
-        if !merged_signatures.is_enough() {
+
+        let signatures_is_enough = merged_signatures.is_enough();
+
+        if !signatures_is_enough {
             eprintln!(
                 "still require {} signatures",
                 merged_signatures.threshold() as usize - merged_signatures.signatures().len()
@@ -383,7 +391,7 @@ impl CliState {
             SignedUserTransaction::new(partial_signed_txn.into_raw_transaction(), authenticator)
         };
 
-        if submit {
+        if submit && signatures_is_enough {
             let _ = self.submit_txn(signed_txn, blocking);
             return Ok(PathBuf::new());
         }
