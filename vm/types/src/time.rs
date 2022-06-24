@@ -76,7 +76,7 @@ impl TimeService for RealTimeService {
         let now = self.now_millis();
         if value.milliseconds > now && value.milliseconds - now > 150000 {
             warn!(
-                "Local time {} is behind on chain time {} too match.",
+                "Local time {} is behind on chain time {} too much.",
                 now / 1000,
                 value.seconds()
             );
