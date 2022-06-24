@@ -196,15 +196,17 @@ impl CommandAction for GenerateMultisigTxnCommand {
             }
         }
 
-        let output_dir = opt.output_dir.clone().unwrap_or(current_dir()?);
-        ctx.state().sign_multisig_txn_to_file_or_submit(
+        let mut output_dir = opt.output_dir.clone().unwrap_or(current_dir()?);
+        let _ = ctx.state().sign_multisig_txn_to_file_or_submit(
             raw_txn.sender(),
             account_public_key,
             existing_signatures,
             account_client.sign_txn(raw_txn, sender)?,
-            output_dir,
+            &mut output_dir,
             false,
             false,
-        )
+        )?;
+
+        Ok(output_dir)
     }
 }
