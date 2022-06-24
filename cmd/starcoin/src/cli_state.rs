@@ -316,7 +316,7 @@ impl CliState {
             blocking,
         )?;
 
-        let cur_dir = current_dir().unwrap().to_str().unwrap().to_string();
+        let cur_dir = current_dir()?.to_str().unwrap().to_string();
         if output_dir.to_str().unwrap() != cur_dir {
             // There is signature file, print the file path.
             eprintln!(
@@ -325,10 +325,9 @@ impl CliState {
             )
         }
 
-        match execute_output_view {
-            Some(o) => execute_result.execute_output = Some(o),
-            _ => {}
-        }
+        if let Some(o) = execute_output_view {
+            execute_result.execute_output = Some(o)
+        };
 
         Ok(execute_result)
     }
