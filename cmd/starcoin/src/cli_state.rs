@@ -304,20 +304,31 @@ impl CliState {
             AccountPublicKey::Multi(m) => m.clone(),
         };
 
-        let multisig_txn_path = self.sign_multisig_txn_to_file_or_submit(
+        let mut output_dir = current_dir()?;
+
+        let execute_output_view = self.sign_multisig_txn_to_file_or_submit(
             sender.address,
             multisig_public_key,
             None,
             signed_txn,
-            current_dir()?,
+            &mut output_dir,
             true,
             blocking,
-        );
+        )?;
 
-        eprintln!(
-            "multisig-txn: {}",
-            multisig_txn_path.unwrap().as_path().to_str().unwrap()
-        );
+        let cur_dir = current_dir().unwrap().to_str().unwrap().to_string();
+        if output_dir.to_str().unwrap() != cur_dir {
+            // There is signature file, print the file path.
+            eprintln!(
+                "multisig txn signatures filepath: {}",
+                output_dir.to_str().unwrap()
+            )
+        }
+
+        match execute_output_view {
+            Some(o) => execute_result.execute_output = Some(o),
+            _ => {}
+        }
 
         Ok(execute_result)
     }
@@ -343,10 +354,10 @@ impl CliState {
         multisig_public_key: MultiEd25519PublicKey,
         existing_signatures: Option<MultiEd25519SignatureShard>,
         partial_signed_txn: SignedUserTransaction,
-        output_dir: PathBuf,
+        output_dir: &mut PathBuf,
         submit: bool,
         blocking: bool,
-    ) -> Result<PathBuf> {
+    ) -> Result<Option<ExecutionOutputView>> {
         let my_signatures = if let TransactionAuthenticator::MultiEd25519 { signature, .. } =
             partial_signed_txn.authenticator()
         {
@@ -392,23 +403,22 @@ impl CliState {
         };
 
         if submit && signatures_is_enough {
-            let _ = self.submit_txn(signed_txn, blocking);
-            return Ok(PathBuf::new());
+            let execute_output = self.submit_txn(signed_txn, blocking)?;
+            return Ok(Some(execute_output));
         }
 
         // output the txn, send this to other participants to sign, or just submit it.
         let output_file = {
-            let mut output_dir = output_dir;
             // use hash's as output file name
             let file_name = signed_txn.crypto_hash().to_hex();
             output_dir.push(file_name);
             output_dir.set_extension("multisig-txn");
-            output_dir
+            output_dir.clone()
         };
-        let mut file = File::create(output_file.clone())?;
+        let mut file = File::create(output_file)?;
         // write txn to file
         bcs_ext::serialize_into(&mut file, &signed_txn)?;
-        Ok(output_file)
+        Ok(None)
     }
 
     pub fn submit_txn(
