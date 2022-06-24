@@ -68,9 +68,8 @@ pub fn add_command(
                         .subcommand(node::service::ListCommand)
                         .subcommand(node::service::StartCommand)
                         .subcommand(node::service::CheckCommand)
-                        .subcommand(node::service::StopCommand)
-                    //TODO support shutdown by command    
-                    //.subcommand(node::service::ShutdownSystemCommand),
+                        .subcommand(node::service::StopCommand), //TODO support shutdown by command
+                                                                 //.subcommand(node::service::ShutdownSystemCommand),
                 )
                 .subcommand(
                     CustomCommand::with_name("sync")
@@ -78,19 +77,18 @@ pub fn add_command(
                         .subcommand(node::sync::StatusCommand)
                         .subcommand(node::sync::ProgressCommand)
                         .subcommand(node::sync::CancelCommand)
-                        .subcommand(node::sync::PeerScoreCommand)
+                        .subcommand(node::sync::PeerScoreCommand),
                 )
                 .subcommand(
-                CustomCommand::with_name("network")
-                    .subcommand(node::network::StateCommand)
-                    .subcommand(node::network::KnownPeersCommand)
-                    .subcommand(node::network::GetAddressCommand)
-                    .subcommand(node::network::AddPeerCommand)
-                    .subcommand(node::network::CallPeerCommand)
-                    .subcommand(node::network::SetPeerReputation)
-                    .subcommand(node::network::BanPeerCommand)
-
-            ),
+                    CustomCommand::with_name("network")
+                        .subcommand(node::network::StateCommand)
+                        .subcommand(node::network::KnownPeersCommand)
+                        .subcommand(node::network::GetAddressCommand)
+                        .subcommand(node::network::AddPeerCommand)
+                        .subcommand(node::network::CallPeerCommand)
+                        .subcommand(node::network::SetPeerReputation)
+                        .subcommand(node::network::BanPeerCommand),
+                ),
         )
         .command(
             CustomCommand::with_name("chain")
