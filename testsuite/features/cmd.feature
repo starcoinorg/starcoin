@@ -69,7 +69,7 @@ Feature: cmd integration test
     Then cmd: "account unlock 0x056d9bed868f8e8c74cf19109a2b375a"
     # sign to file first
     Then cmd: "account sign-multisig-txn -s 0x056d9bed868f8e8c74cf19109a2b375a --function 0x1::TransferScripts::peer_to_peer_v2 -t 0x1::STC::STC --arg 0x991c2f856a1e32985d9793b449c0f9d3 --arg 1000000u128 --output-dir /tmp"
-    Then cmd: "account submit-txn /tmp/417f79dd7e1be305a0db57ca731a2ed68ff06a5ca8567748c76f3793718fea63.multisig-txn -b"
+    Then cmd: "account submit-txn @$ -b"
     Then stop
 
     Examples:
