@@ -59,6 +59,17 @@ Feature: cmd integration test
     Then cmd: "account generate-keypair -c 3"
     Then cmd: "account derive-address -t 2 -p @$[0].public_key@ -p @$[1].public_key@ -p @$[2].public_key@"
     Then cmd: "account transfer --blocking -r @$.receipt_identifier@ -t 0x1::STC::STC -v 10000000"
+    # account for testing only
+    Then cmd: "account import-multisig --pubkey 0x934e8a5a557229f90be7c95ec17fab84e64dcc3cf2dc934ff83ffc0915fad13e --pubkey 0x28358c05692e6758ba1398835525687c16d65abc9e1dc89023b46298ed2c575a --prikey 0x0c84a983ff0bfab39570c2ceed3e1c1feb645e84eccf9fd6baf4f49351a52329 --prikey 0x3695d6e08e3ad41962cba8c55ebb0552827807ae4cd6236d35195c769437272e -t 2"
+    Then cmd: "account unlock"
+    Then cmd: "account transfer --blocking -r 0x056d9bed868f8e8c74cf19109a2b375a -v 200000000"
+    Then cmd: "account unlock 0x056d9bed868f8e8c74cf19109a2b375a"
+    # enough signatures, submit directly
+    Then cmd: "account transfer -s 0x056d9bed868f8e8c74cf19109a2b375a -r 0x056d9bed868f8e8c74cf19109a2b375b -v 10000000 -b"
+    Then cmd: "account unlock 0x056d9bed868f8e8c74cf19109a2b375a"
+    # sign to file first
+    Then cmd: "account sign-multisig-txn -s 0x056d9bed868f8e8c74cf19109a2b375a --function 0x1::TransferScripts::peer_to_peer_v2 -t 0x1::STC::STC --arg 0x991c2f856a1e32985d9793b449c0f9d3 --arg 1000000u128 --output-dir /tmp"
+    Then cmd: "account submit-txn @$@ -b"
     Then stop
 
     Examples:
