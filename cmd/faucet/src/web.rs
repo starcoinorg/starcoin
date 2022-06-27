@@ -22,7 +22,7 @@ struct Asset;
 
 fn index_html() -> String {
     let index_html = Asset::get("index.html").unwrap();
-    std::str::from_utf8(index_html.as_ref())
+    std::str::from_utf8(index_html.data.as_ref())
         .unwrap()
         .to_string()
 }
