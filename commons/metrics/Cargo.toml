@@ -10,7 +10,7 @@ description = "Starcoin metrics"
 [dependencies]
 anyhow = "1.0.41"
 futures = "0.3.12"
-hyper = { version = "0.14", features = ["full"]}
+hyper = { version = "0.14.12", features = ["full"]}
 starcoin-logger = { path = "../logger" }
 prometheus = { version = "0.13.0", default-features = false, features =["push"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
