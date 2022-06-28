@@ -77,8 +77,8 @@ impl PlaygroudService {
     }
 }
 
-pub fn view_resource(
-    state_view: &dyn StateView,
+pub fn view_resource<S: StateView>(
+    state_view: &S,
     struct_tag: StructTag,
     data: &[u8],
 ) -> Result<AnnotatedMoveStruct> {
@@ -87,8 +87,8 @@ pub fn view_resource(
     Ok(value)
 }
 
-pub fn dry_run(
-    state_view: &dyn StateView,
+pub fn dry_run<S: StateView>(
+    state_view: &S,
     txn: DryRunTransaction,
     metrics: Option<VMMetrics>,
 ) -> Result<(VMStatus, TransactionOutput)> {
@@ -96,8 +96,8 @@ pub fn dry_run(
     vm.dry_run_transaction(state_view, txn)
 }
 
-pub fn call_contract(
-    state_view: &dyn StateView,
+pub fn call_contract<S: StateView>(
+    state_view: &S,
     module_id: ModuleId,
     func: &str,
     type_args: Vec<TypeTag>,

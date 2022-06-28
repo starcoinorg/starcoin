@@ -35,8 +35,8 @@ pub const QUEUED: u8 = 5;
 pub const EXECUTABLE: u8 = 6;
 pub const EXTRACTED: u8 = 7;
 
-pub fn proposal_state(
-    state_view: &dyn StateView,
+pub fn proposal_state<S: StateView>(
+    state_view: &S,
     token: TypeTag,
     action_ty: TypeTag,
     proposer_address: AccountAddress,
@@ -63,8 +63,8 @@ pub fn proposal_state(
     bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
 
-pub fn proposal_exist(
-    state_view: &dyn StateView,
+pub fn proposal_exist<S: StateView>(
+    state_view: &S,
     token: TypeTag,
     action_ty: TypeTag,
     proposer_address: AccountAddress,
@@ -165,7 +165,7 @@ fn execute_create_account(
         Ok(())
     }
 }
-pub fn quorum_vote(state_view: &dyn StateView, token: TypeTag) -> u128 {
+pub fn quorum_vote<S: StateView>(state_view: &S, token: TypeTag) -> u128 {
     let mut ret = execute_readonly_function(
         state_view,
         &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
@@ -179,7 +179,7 @@ pub fn quorum_vote(state_view: &dyn StateView, token: TypeTag) -> u128 {
     bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
 
-pub fn voting_delay(state_view: &dyn StateView, token: TypeTag) -> u64 {
+pub fn voting_delay<S: StateView>(state_view: &S, token: TypeTag) -> u64 {
     let mut ret = execute_readonly_function(
         state_view,
         &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
@@ -192,7 +192,7 @@ pub fn voting_delay(state_view: &dyn StateView, token: TypeTag) -> u64 {
     assert_eq!(ret.len(), 1);
     bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
-pub fn voting_period(state_view: &dyn StateView, token: TypeTag) -> u64 {
+pub fn voting_period<S: StateView>(state_view: &S, token: TypeTag) -> u64 {
     let mut ret = execute_readonly_function(
         state_view,
         &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
@@ -206,7 +206,7 @@ pub fn voting_period(state_view: &dyn StateView, token: TypeTag) -> u64 {
     bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
 
-pub fn min_action_delay(state_view: &dyn StateView, token: TypeTag) -> u64 {
+pub fn min_action_delay<S: StateView>(state_view: &S, token: TypeTag) -> u64 {
     let mut ret = execute_readonly_function(
         state_view,
         &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),

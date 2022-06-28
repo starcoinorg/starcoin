@@ -647,7 +647,7 @@ where
         .unwrap_or(false))
 }
 
-fn read_foo(state_view: &dyn StateView) -> u8 {
+fn read_foo<S: StateView>(state_view: &S) -> u8 {
     let mut ret = execute_readonly_function(
         state_view,
         &ModuleId::new(genesis_address(), Identifier::new("M").unwrap()),

@@ -55,8 +55,8 @@ pub fn validate_transaction<S: StateView>(
     vm.verify_transaction(chain_state, txn)
 }
 
-pub fn execute_readonly_function(
-    chain_state: &dyn StateView,
+pub fn execute_readonly_function<S: StateView>(
+    chain_state: &S,
     module: &ModuleId,
     function_name: &Identifier,
     type_params: Vec<TypeTag>,

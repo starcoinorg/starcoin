@@ -21,7 +21,7 @@ starcoin-vm-types = { path = "../../vm/types" }
 starcoin-state-api = { path = "../../state/api" }
 network-api = {package="network-api", path="../../network/api"}
 starcoin-accumulator = { path = "../../commons/accumulator"}
-
+starcoin-statedb = { path = "../../state/statedb"}
 [dev-dependencies]
 
 [features]

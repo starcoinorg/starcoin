@@ -8,7 +8,7 @@ use serde::de::DeserializeOwned;
 use starcoin_account_api::AccountPrivateKey;
 use starcoin_config::ChainNetwork;
 use starcoin_executor::{execute_readonly_function, execute_transactions, DEFAULT_MAX_GAS_AMOUNT};
-use starcoin_state_api::{ChainState, StateReaderExt, StateView};
+use starcoin_state_api::{ChainStateReader, StateReaderExt, StateView};
 use starcoin_statedb::{ChainStateDB, ChainStateWriter};
 use starcoin_types::account_config::{association_address, genesis_address};
 use starcoin_types::block_metadata::BlockMetadata;
@@ -76,7 +76,7 @@ pub fn execute_and_apply(chain_state: &ChainStateDB, txn: Transaction) -> Transa
 
     output
 }
-pub fn current_block_number(state_view: &dyn StateView) -> u64 {
+pub fn current_block_number<S: StateView>(state_view: &S) -> u64 {
     let mut ret = execute_readonly_function(
         state_view,
         &ModuleId::new(genesis_address(), Identifier::new("Block").unwrap()),
@@ -90,7 +90,10 @@ pub fn current_block_number(state_view: &dyn StateView) -> u64 {
     bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
 
-pub fn get_sequence_number(addr: AccountAddress, chain_state: &dyn ChainState) -> u64 {
+pub fn get_sequence_number<S: ChainStateReader + StateView>(
+    addr: AccountAddress,
+    chain_state: &S,
+) -> u64 {
     chain_state
         .get_account_resource(addr)
         .expect("read account state should ok")
@@ -98,7 +101,10 @@ pub fn get_sequence_number(addr: AccountAddress, chain_state: &dyn ChainState) -
         .unwrap_or_default()
 }
 
-pub fn get_balance(address: AccountAddress, chain_state: &dyn ChainState) -> u128 {
+pub fn get_balance<S: ChainStateReader + StateView>(
+    address: AccountAddress,
+    chain_state: &S,
+) -> u128 {
     chain_state
         .get_balance(address)
         .expect("read balance resource should ok")
