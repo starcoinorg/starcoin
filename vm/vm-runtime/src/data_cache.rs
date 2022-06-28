@@ -16,6 +16,7 @@ use starcoin_vm_types::{
     write_set::{WriteOp, WriteSet},
 };
 use std::collections::btree_map::BTreeMap;
+use std::ops::Deref;
 
 /// A local cache for a given a `StateView`. The cache is private to the Diem layer
 /// but can be used as a one shot cache for systems that need a simple `RemoteCache`
@@ -103,10 +104,10 @@ impl<'block> ResourceResolver for StateViewCache<'block> {
 }
 
 // Adapter to convert a `StateView` into a `RemoteCache`.
-pub struct RemoteStorage<'a>(&'a dyn StateView);
+pub struct RemoteStorage<'a, S>(&'a S);
 
-impl<'a> RemoteStorage<'a> {
-    pub fn new(state_store: &'a dyn StateView) -> Self {
+impl<'a, S: StateView> RemoteStorage<'a, S> {
+    pub fn new(state_store: &'a S) -> Self {
         Self(state_store)
     }
 
@@ -117,7 +118,7 @@ impl<'a> RemoteStorage<'a> {
     }
 }
 
-impl<'a> ModuleResolver for RemoteStorage<'a> {
+impl<'a, S: StateView> ModuleResolver for RemoteStorage<'a, S> {
     type Error = VMError;
     fn get_module(&self, module_id: &ModuleId) -> VMResult<Option<Vec<u8>>> {
         // REVIEW: cache this?
@@ -125,7 +126,7 @@ impl<'a> ModuleResolver for RemoteStorage<'a> {
         self.get(&ap).map_err(|e| e.finish(Location::Undefined))
     }
 }
-impl<'a> ResourceResolver for RemoteStorage<'a> {
+impl<'a, S: StateView> ResourceResolver for RemoteStorage<'a, S> {
     type Error = VMError;
     fn get_resource(
         &self,
@@ -137,8 +138,16 @@ impl<'a> ResourceResolver for RemoteStorage<'a> {
     }
 }
 
-impl<'a> ConfigStorage for RemoteStorage<'a> {
+impl<'a, S: StateView> ConfigStorage for RemoteStorage<'a, S> {
     fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>> {
         self.get(&access_path).ok()?
+    }
+}
+
+impl<'a, S> Deref for RemoteStorage<'a, S> {
+    type Target = S;
+
+    fn deref(&self) -> &Self::Target {
+        self.0
     }
 }

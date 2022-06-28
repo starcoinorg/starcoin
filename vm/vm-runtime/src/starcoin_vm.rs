@@ -97,7 +97,7 @@ impl StarcoinVM {
         }
     }
 
-    pub fn load_configs(&mut self, state: &dyn StateView) -> Result<(), Error> {
+    pub fn load_configs<S: StateView>(&mut self, state: &S) -> Result<(), Error> {
         if state.is_genesis() {
             self.vm_config = Some(VMConfig {
                 gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
@@ -109,7 +109,7 @@ impl StarcoinVM {
         }
     }
 
-    fn load_configs_impl(&mut self, state: &dyn StateView) -> Result<(), Error> {
+    fn load_configs_impl<S: StateView>(&mut self, state: &S) -> Result<(), Error> {
         let remote_storage = RemoteStorage::new(state);
         self.version = Some(
             Version::fetch_config(&remote_storage)?
@@ -379,9 +379,9 @@ impl StarcoinVM {
         self.run_prologue(&mut session, &mut gas_status, &txn_data)
     }
 
-    pub fn verify_transaction(
+    pub fn verify_transaction<S: StateView>(
         &mut self,
-        state_view: &dyn StateView,
+        state_view: &S,
         txn: SignedUserTransaction,
     ) -> Option<VMStatus> {
         let _timer = self.metrics.as_ref().map(|metrics| {
@@ -965,9 +965,9 @@ impl StarcoinVM {
         })
     }
 
-    fn check_reconfigure(
+    fn check_reconfigure<S: StateView>(
         &mut self,
-        state_view: &dyn StateView,
+        state_view: &S,
         output: &TransactionOutput,
     ) -> Result<(), Error> {
         for event in output.events() {
