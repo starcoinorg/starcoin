@@ -8,7 +8,6 @@ use starcoin_types::error::ExecutorResult;
 use starcoin_types::transaction::TransactionStatus;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_vm_types::contract_event::ContractEvent;
-use starcoin_vm_types::state_view::StateView;
 use vm_runtime::metrics::VMMetrics;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -28,7 +27,7 @@ impl Default for BlockExecutedData {
     }
 }
 
-pub fn block_execute<S: ChainStateReader + ChainStateWriter + StateView>(
+pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
     chain_state: &S,
     txns: Vec<Transaction>,
     block_gas_limit: u64,

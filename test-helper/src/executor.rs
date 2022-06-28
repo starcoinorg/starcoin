@@ -90,10 +90,7 @@ pub fn current_block_number<S: StateView>(state_view: &S) -> u64 {
     bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
 
-pub fn get_sequence_number<S: ChainStateReader + StateView>(
-    addr: AccountAddress,
-    chain_state: &S,
-) -> u64 {
+pub fn get_sequence_number<S: ChainStateReader>(addr: AccountAddress, chain_state: &S) -> u64 {
     chain_state
         .get_account_resource(addr)
         .expect("read account state should ok")
@@ -101,10 +98,7 @@ pub fn get_sequence_number<S: ChainStateReader + StateView>(
         .unwrap_or_default()
 }
 
-pub fn get_balance<S: ChainStateReader + StateView>(
-    address: AccountAddress,
-    chain_state: &S,
-) -> u128 {
+pub fn get_balance<S: ChainStateReader>(address: AccountAddress, chain_state: &S) -> u128 {
     chain_state
         .get_balance(address)
         .expect("read balance resource should ok")

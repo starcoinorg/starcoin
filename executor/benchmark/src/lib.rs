@@ -13,7 +13,6 @@ use starcoin_config::ChainNetwork;
 use starcoin_genesis::Genesis;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_vm_types::genesis_config::StdlibVersion;
-use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::token::stc;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::ScriptFunction;
@@ -205,7 +204,7 @@ struct TxnExecutor<'test, S> {
     block_receiver: mpsc::Receiver<Vec<Transaction>>,
 }
 
-impl<'test, S: ChainStateReader + ChainStateWriter + StateView> TxnExecutor<'test, S> {
+impl<'test, S: ChainStateReader + ChainStateWriter> TxnExecutor<'test, S> {
     fn new(chain_state: &'test S, block_receiver: mpsc::Receiver<Vec<Transaction>>) -> Self {
         Self {
             chain_state,
