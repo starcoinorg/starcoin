@@ -293,6 +293,7 @@ impl Display for AnnotatedAccountStateBlob {
 #[derive(Default)]
 pub struct NullStateView;
 
+//
 impl StateView for NullStateView {
     fn get(&self, _access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
         Ok(None)
