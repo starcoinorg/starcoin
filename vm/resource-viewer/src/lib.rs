@@ -298,10 +298,6 @@ impl StateView for NullStateView {
         Ok(None)
     }
 
-    fn multi_get(&self, access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
-        Ok(access_paths.iter().map(|_| None).collect())
-    }
-
     fn is_genesis(&self) -> bool {
         false
     }

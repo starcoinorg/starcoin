@@ -385,10 +385,6 @@ mod tests {
             }))
         }
 
-        fn multi_get(&self, _access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
-            todo!()
-        }
-
         fn is_genesis(&self) -> bool {
             todo!()
         }

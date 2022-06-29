@@ -319,14 +319,6 @@ impl StateView for ChainStateDB {
             })
     }
 
-    /// Gets state data for a list of access paths.
-    fn multi_get(&self, access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
-        access_paths
-            .iter()
-            .map(|access_path| self.get(access_path))
-            .collect()
-    }
-
     fn is_genesis(&self) -> bool {
         self.state_tree.is_genesis()
     }

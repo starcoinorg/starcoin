@@ -101,10 +101,6 @@ impl StateView for RemoteChainStateReader {
         Ok(state_proof.state)
     }
 
-    fn multi_get(&self, _access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
-        unimplemented!()
-    }
-
     fn is_genesis(&self) -> bool {
         false
     }

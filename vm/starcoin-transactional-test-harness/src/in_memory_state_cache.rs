@@ -85,10 +85,6 @@ impl<V: StateView> StateView for InMemoryStateCache<V> {
         }
     }
 
-    fn multi_get(&self, _access_paths: &[AccessPath]) -> anyhow::Result<Vec<Option<Vec<u8>>>> {
-        unimplemented!()
-    }
-
     fn is_genesis(&self) -> bool {
         self.data_view.is_genesis()
     }

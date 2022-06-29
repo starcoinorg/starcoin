@@ -216,10 +216,6 @@ impl StateView for Inner {
         self.state_db.get(access_path)
     }
 
-    fn multi_get(&self, _access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
-        unimplemented!()
-    }
-
     fn is_genesis(&self) -> bool {
         false
     }
