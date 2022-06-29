@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_crypto::HashValue;
-use starcoin_state_api::ChainState;
+use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_types::error::BlockExecutorError;
 use starcoin_types::error::ExecutorResult;
 use starcoin_types::transaction::TransactionStatus;
@@ -27,19 +27,15 @@ impl Default for BlockExecutedData {
     }
 }
 
-pub fn block_execute(
-    chain_state: &dyn ChainState,
+pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
+    chain_state: &S,
     txns: Vec<Transaction>,
     block_gas_limit: u64,
     vm_metrics: Option<VMMetrics>,
 ) -> ExecutorResult<BlockExecutedData> {
-    let txn_outputs = crate::execute_block_transactions(
-        chain_state.as_super(),
-        txns.clone(),
-        block_gas_limit,
-        vm_metrics,
-    )
-    .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
+    let txn_outputs =
+        crate::execute_block_transactions(chain_state, txns.clone(), block_gas_limit, vm_metrics)
+            .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
 
     let mut executed_data = BlockExecutedData::default();
     for (txn, output) in txns

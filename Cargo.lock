@@ -9022,6 +9022,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-service-registry",
  "starcoin-state-api",
+ "starcoin-statedb",
  "starcoin-types",
  "starcoin-vm-types",
  "thiserror",

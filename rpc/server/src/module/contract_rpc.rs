@@ -274,8 +274,8 @@ where
     }
 }
 
-pub fn dry_run(
-    state_view: &dyn StateView,
+pub fn dry_run<S: StateView>(
+    state_view: &S,
     txn: DryRunTransaction,
     metrics: Option<VMMetrics>,
 ) -> anyhow::Result<DryRunOutputView> {
