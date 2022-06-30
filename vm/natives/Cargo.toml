@@ -19,8 +19,8 @@ move-core-types = { git = "https://github.com/starcoinorg/move", rev = "1c51b0fc
 starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
 log = "0.4.14"
 walkdir = "2.3.1"
-smallvec = "1.8.0"
-tiny-keccak = { version = "2", features = ["keccak"] }
+smallvec = "1.8.1"
+tiny-keccak={version="2", features = ["keccak"]}
 libsecp256k1 = "0.7.0"
 arrayref = "0.3"
 ripemd160 = "0.9.1"

@@ -83,10 +83,13 @@ where
     ) -> FutureResult<Option<BlockView>> {
         let service = self.service.clone();
         let decode = option.unwrap_or_default().decode;
+        let raw = option.unwrap_or_default().raw;
         let storage = self.storage.clone();
         let fut = async move {
             let result = service.get_block_by_hash(hash).await?;
-            let mut block: Option<BlockView> = result.map(|b| b.try_into()).transpose()?;
+            let mut block: Option<BlockView> = result
+                .map(|b| BlockView::try_from_block(b, false, raw))
+                .transpose()?;
             if decode {
                 let state = ChainStateDB::new(
                     storage,
@@ -110,11 +113,14 @@ where
     ) -> FutureResult<Option<BlockView>> {
         let service = self.service.clone();
         let decode = option.unwrap_or_default().decode;
+        let raw = option.unwrap_or_default().raw;
         let storage = self.storage.clone();
 
         let fut = async move {
             let result = service.main_block_by_number(number).await?;
-            let mut block: Option<BlockView> = result.map(|b| b.try_into()).transpose()?;
+            let mut block: Option<BlockView> = result
+                .map(|b| BlockView::try_from_block(b, false, raw))
+                .transpose()?;
             if decode {
                 let state = ChainStateDB::new(
                     storage,
@@ -153,7 +159,7 @@ where
 
             block
                 .into_iter()
-                .map(|blk| BlockView::try_from_block(blk, true))
+                .map(|blk| BlockView::try_from_block(blk, true, false))
                 .collect::<Result<Vec<_>, _>>()
         }
         .map_err(map_err);

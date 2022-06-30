@@ -21,6 +21,7 @@ use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_genesis::Genesis;
 use starcoin_statedb::ChainStateDB;
 use starcoin_statedb::ChainStateReader;
+use starcoin_statedb::ChainStateWriter;
 use starcoin_storage::block::FailedBlock;
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::cache_storage::CacheStorage;

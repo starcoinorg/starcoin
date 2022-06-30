@@ -68,10 +68,6 @@ where
         }
     }
 
-    fn multi_get(&self, _access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
-        todo!()
-    }
-
     fn is_genesis(&self) -> bool {
         false
     }
@@ -176,10 +172,6 @@ where
             None => self.b.get(access_path),
             Some(d) => Ok(Some(d)),
         }
-    }
-
-    fn multi_get(&self, _access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
-        todo!()
     }
 
     fn is_genesis(&self) -> bool {
@@ -338,10 +330,6 @@ impl StateView for RemoteStateView {
                 .get_resource(&access_path.address, s)
                 .map_err(|err| err.finish(Location::Undefined).into_vm_status())?),
         }
-    }
-
-    fn multi_get(&self, _access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
-        unimplemented!()
     }
 
     fn is_genesis(&self) -> bool {

@@ -123,6 +123,9 @@ pub struct GetTransactionOption {
 pub struct GetBlockOption {
     #[serde(default)]
     pub decode: bool,
+
+    #[serde(default)]
+    pub raw: bool,
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]

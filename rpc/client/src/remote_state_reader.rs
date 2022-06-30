@@ -108,10 +108,6 @@ impl<'a> StateView for RemoteStateReader<'a> {
             .map(|v| v.0))
     }
 
-    fn multi_get(&self, _access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
-        unimplemented!()
-    }
-
     fn is_genesis(&self) -> bool {
         false
     }

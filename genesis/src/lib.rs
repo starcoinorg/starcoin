@@ -13,7 +13,7 @@ use starcoin_config::{
     genesis_key_pair, BuiltinNetworkID, ChainNetwork, ChainNetworkID, GenesisBlockParameter,
 };
 use starcoin_logger::prelude::*;
-use starcoin_state_api::ChainState;
+use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{BlockStore, Storage, Store};
@@ -34,6 +34,7 @@ use std::sync::Arc;
 
 mod errors;
 pub use errors::GenesisError;
+use starcoin_vm_types::state_view::StateView;
 
 pub static G_GENESIS_GENERATED_DIR: &str = "generated";
 pub const GENESIS_DIR: Dir = include_dir!("generated");
@@ -156,17 +157,16 @@ impl Genesis {
         Ok(sign_txn.into_inner())
     }
 
-    pub fn execute_genesis_txn(
-        chain_state: &dyn ChainState,
+    pub fn execute_genesis_txn<S: ChainStateWriter + StateView>(
+        chain_state: &S,
         txn: SignedUserTransaction,
     ) -> Result<TransactionInfo> {
         let txn = Transaction::UserTransaction(txn);
         let txn_hash = txn.id();
 
-        let output =
-            starcoin_executor::execute_transactions(chain_state.as_super(), vec![txn], None)?
-                .pop()
-                .expect("Execute output must exist.");
+        let output = starcoin_executor::execute_transactions(chain_state, vec![txn], None)?
+            .pop()
+            .expect("Execute output must exist.");
         let (write_set, events, gas_used, status) = output.into_inner();
         assert_eq!(gas_used, 0, "Genesis txn output's gas_used must be zero");
         let keep_status = status
