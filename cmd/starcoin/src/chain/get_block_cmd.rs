@@ -23,6 +23,9 @@ pub enum HashOrNumber {
 pub struct GetBlockOpt {
     #[clap(name = "hash-or-number")]
     hash_or_number: HashOrNumber,
+
+    #[clap(name = "contains-raw-block")]
+    raw: bool,
 }
 
 impl FromStr for HashOrNumber {
@@ -52,10 +55,22 @@ impl CommandAction for GetBlockCommand {
         let opt = ctx.opt();
         let block = match opt.hash_or_number {
             HashOrNumber::Hash(hash) => client
-                .chain_get_block_by_hash(hash, Some(GetBlockOption { decode: true }))?
+                .chain_get_block_by_hash(
+                    hash,
+                    Some(GetBlockOption {
+                        decode: true,
+                        raw: opt.raw,
+                    }),
+                )?
                 .ok_or_else(|| anyhow::format_err!("block of hash {} not found", hash))?,
             HashOrNumber::Number(number) => client
-                .chain_get_block_by_number(number, Some(GetBlockOption { decode: true }))?
+                .chain_get_block_by_number(
+                    number,
+                    Some(GetBlockOption {
+                        decode: true,
+                        raw: opt.raw,
+                    }),
+                )?
                 .ok_or_else(|| anyhow::format_err!("block of height {} not found", number))?,
         };
         Ok(block)

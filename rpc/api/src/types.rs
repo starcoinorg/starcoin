@@ -745,14 +745,41 @@ impl From<Vec<HashValue>> for BlockTransactionsView {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct RawBlockView {
+    /// Raw block header that encoded in hex format.
+    pub header: String,
+
+    /// Raw block body that encoded in hex format.
+    pub body: String,
+}
+
+impl TryFrom<&Block> for RawBlockView {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &Block) -> Result<Self, Self::Error> {
+        let header = hex::encode(bcs_ext::to_bytes(value.header())?);
+        let body = hex::encode(bcs_ext::to_bytes(&value.body)?);
+        Ok(Self { header, body })
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct BlockView {
     pub header: BlockHeaderView,
     pub body: BlockTransactionsView,
     pub uncles: Vec<BlockHeaderView>,
+
+    /// Raw block data that can be verified by block_hash and body_hash.
+    pub raw: Option<RawBlockView>,
 }
 
 impl BlockView {
-    pub fn try_from_block(block: Block, thin: bool) -> Result<Self, anyhow::Error> {
+    pub fn try_from_block(block: Block, thin: bool, raw: bool) -> Result<Self, anyhow::Error> {
+        let raw_block: Option<RawBlockView> = if raw {
+            Some(RawBlockView::try_from(&block)?)
+        } else {
+            None
+        };
         let (header, body) = block.into_inner();
         let BlockBody {
             transactions,
@@ -771,6 +798,7 @@ impl BlockView {
                 .map(|h| h.into())
                 .collect(),
             body: txns_view,
+            raw: raw_block,
         })
     }
 }
@@ -779,7 +807,7 @@ impl TryFrom<Block> for BlockView {
     type Error = anyhow::Error;
 
     fn try_from(block: Block) -> Result<Self, Self::Error> {
-        Self::try_from_block(block, false)
+        Self::try_from_block(block, false, false)
     }
 }
 
