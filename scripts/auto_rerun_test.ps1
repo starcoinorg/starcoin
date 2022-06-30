@@ -8,7 +8,17 @@ $env:RUSTC_BOOTSTRAP=1
 $env:RUST_MIN_STACK=8*1024*1024
 $env:RUST_LOG="OFF"
 $env:RUST_BACKTRACE=0
-cargo xtest --exclude starcoin-move-prover -j 15 -- --test-threads=10 --color never --format pretty | Tee-Object "$TEST_RESULT_FILE"
+
+$memory_size = (Get-WmiObject -class "cim_physicalmemory" | Measure-Object -Property Capacity -Sum).Sum
+
+# if memory is less than 32G
+if ($memory_size -lt 35000000000) {
+    Write-Host "Memory is less than 32G, is not suggested to run test"
+    cargo xtest --exclude starcoin-move-prover -j 4 -- --test-threads=4 --color never --format pretty | Tee-Object "$TEST_RESULT_FILE"
+} else {
+    cargo xtest --exclude starcoin-move-prover -j 15 -- --test-threads=10 --color never --format pretty | Tee-Object "$TEST_RESULT_FILE"
+}
+
 
 $failed_tests=Select-String -Pattern 'test .* \.\.\. FAILED' -Path "./target/debug/test_result.txt" -AllMatche
 Write-Host "All failed tests are redirected to file: $TEST_RESULT_FAILED_FILE" -ForegroundColor Green
@@ -22,7 +32,15 @@ $failed_tests | ForEach-Object {
     $test=$_ -split ' '
     $test=$test[1]
     Write-Host "Rerunning test failed case: $test" -ForegroundColor Red
-    cargo xtest -j 15 "$test" -- --test-threads=1 --nocapture
+
+    # if memory is less than 32G
+    if ($memory_size -lt 35000000000) {
+        Write-Host "Memory is less than 32G, is not suggested to run test"
+        cargo xtest -j 4 "$test" -- --test-threads=1 --nocapture
+    } else {
+        cargo xtest -j 15 "$test" -- --test-threads=1 --nocapture
+    }
+
     if ($LASTEXITCODE -ne 0) {
         $case_status=$LASTEXITCODE
         Write-Host "Test case $test failed with $case_status" -ForegroundColor Red
