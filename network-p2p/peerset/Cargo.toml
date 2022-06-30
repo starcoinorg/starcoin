@@ -15,7 +15,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 futures = "0.3.12"
-libp2p = { version = "0.42.2", default-features = false }
+libp2p = { version = "0.45.1", default-features = false }
 sp-utils = { path = "../../commons/utils" }
 log = "0.4.16"
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
