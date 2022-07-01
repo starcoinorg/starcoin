@@ -21,6 +21,7 @@ use std::str::FromStr;
 use std::sync::Mutex;
 
 pub mod compatibility_check_cmd;
+pub mod deployment;
 pub mod releasement;
 
 // use `integration-tests` rather than `tests`, for avoid conflict with `mpm package test`

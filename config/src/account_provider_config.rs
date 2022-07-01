@@ -32,6 +32,12 @@ impl ConfigModule for AccountProviderConfig {
 }
 
 impl AccountProviderConfig {
+    pub fn new_local_provider_config(account_dir: PathBuf) -> Self {
+        Self {
+            account_dir: Some(account_dir),
+            provider_strategy: AccountProviderStrategy::Local,
+        }
+    }
     pub fn get_strategy(&self) -> AccountProviderStrategy {
         if self.account_dir.is_some() {
             AccountProviderStrategy::Local
