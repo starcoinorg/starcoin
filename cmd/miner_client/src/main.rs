@@ -49,7 +49,7 @@ fn main() {
     });
     if let Err(err) = system.block_on(async move {
         let registry = RegistryService::launch();
-        let _ = registry.put_shared(config).await?;
+        registry.put_shared(config).await?;
         let stratum_cli_srv = registry
             .register_by_factory::<StratumClientService, StratumClientServiceServiceFactory>()
             .await?;
