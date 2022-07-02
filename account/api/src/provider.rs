@@ -9,6 +9,7 @@ use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 pub enum AccountProviderStrategy {
     RPC,
     Local,
+    PrivateKey,
 }
 
 impl Default for AccountProviderStrategy {

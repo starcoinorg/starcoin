@@ -1,4 +1,4 @@
-use crate::local_provider::AccountLocalProvider;
+use crate::{local_provider::AccountLocalProvider, private_key_provider::AccountPrivateKeyProvider};
 use crate::rpc_provider::AccountRpcProvider;
 use anyhow::{anyhow, Result};
 use starcoin_account_api::{AccountProvider, AccountProviderStrategy};
@@ -22,6 +22,18 @@ impl ProviderFactory {
                     .account_dir
                     .as_ref()
                     .ok_or_else(|| anyhow!("expect dir for local account"))?,
+                chain_id,
+            ) {
+                Ok(p) => Ok(Box::new(p)),
+                Err(e) => Err(e),
+            },
+            AccountProviderStrategy::PrivateKey => match AccountPrivateKeyProvider::create(
+                config
+                    .secret_file
+                    .as_ref()
+                    .ok_or_else(|| anyhow!("expect secret file for private key account"))?,
+                config
+                    .account_address,
                 chain_id,
             ) {
                 Ok(p) => Ok(Box::new(p)),
