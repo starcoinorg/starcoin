@@ -72,10 +72,10 @@ pub fn handle_deployment(_move_args: &Move, cmd: DeploymentCommand) -> anyhow::R
     let provider = if cmd.account_provider.account_dir.is_some() {
         let local_provider = ProviderFactory::create_provider(
             client.clone(),
-            node_info.net.chain_id(),    
+            node_info.net.chain_id(),
             &AccountProviderConfig::new_local_provider_config(
-                cmd.account_provider.account_dir.clone().unwrap()
-            )
+                cmd.account_provider.account_dir.clone().unwrap(),
+            ),
         )?;
         if cmd.account_provider.account_dir.is_some() {
             local_provider.unlock_account(
@@ -92,9 +92,12 @@ pub fn handle_deployment(_move_args: &Move, cmd: DeploymentCommand) -> anyhow::R
             &AccountProviderConfig::new_private_key_provider_config(
                 cmd.account_provider.secret_file.clone().unwrap(),
                 cmd.account_provider.account_address,
-            )
+            ),
         )?;
-        let sender = cmd.account_provider.account_address.unwrap_or(package_address);
+        let sender = cmd
+            .account_provider
+            .account_address
+            .unwrap_or(package_address);
         ensure!(
             sender == package_address,
             "please use package address({}) account to deploy package, currently sender is {}.",
@@ -109,13 +112,7 @@ pub fn handle_deployment(_move_args: &Move, cmd: DeploymentCommand) -> anyhow::R
         private_key_provider
     };
 
-    let state = CliState::new(
-        node_info.net,
-        client,
-        None,
-        node_handle,
-        provider,
-    );
+    let state = CliState::new(node_info.net, client, None, node_handle, provider);
 
     let transaction_opts = TransactionOptions {
         sender: Some(package_address),
@@ -134,7 +131,7 @@ pub fn handle_deployment(_move_args: &Move, cmd: DeploymentCommand) -> anyhow::R
         Err(e) => {
             println!("The deployment is failed. Reason: ");
             println!("{:?}", e);
-        },
+        }
     }
     Ok(())
 }

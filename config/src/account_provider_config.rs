@@ -14,9 +14,10 @@ pub struct AccountProviderConfig {
     #[clap(long = "local-account-dir", parse(from_os_str))]
     pub account_dir: Option<PathBuf>,
 
-    #[clap(long = "secret-file",
+    #[clap(
+        long = "secret-file",
         help = "file path of private key",
-        parse(from_os_str),
+        parse(from_os_str)
     )]
     pub secret_file: Option<PathBuf>,
 
@@ -35,7 +36,7 @@ impl ConfigModule for AccountProviderConfig {
         }
         if opt.account_provider.secret_file.is_some() {
             self.secret_file = opt.account_provider.secret_file.clone();
-            self.account_address = opt.account_provider.account_address.clone();
+            self.account_address = opt.account_provider.account_address;
         }
         assert!(
             !(self.account_dir.is_some() && self.secret_file.is_some()),
@@ -62,13 +63,16 @@ impl AccountProviderConfig {
         }
     }
 
-    pub fn new_private_key_provider_config(secret_file: PathBuf, account_address: Option<AccountAddress>) -> Self {
+    pub fn new_private_key_provider_config(
+        secret_file: PathBuf,
+        account_address: Option<AccountAddress>,
+    ) -> Self {
         Self {
             account_dir: None,
             secret_file: Some(secret_file),
             account_address,
             provider_strategy: AccountProviderStrategy::PrivateKey,
-        }    
+        }
     }
 
     pub fn get_strategy(&self) -> AccountProviderStrategy {

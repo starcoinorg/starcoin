@@ -1,13 +1,13 @@
 use anyhow::Result;
 use starcoin_account::{account_storage::AccountStorage, AccountManager};
-use starcoin_account_api::{AccountInfo, AccountProvider, AccountPrivateKey};
+use starcoin_account_api::{AccountInfo, AccountPrivateKey, AccountProvider};
 use starcoin_crypto::{ValidCryptoMaterial, ValidCryptoMaterialStringExt};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_types::genesis_config::ChainId;
 use starcoin_types::sign_message::{SignedMessage, SigningMessage};
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use std::path::{Path};
+use std::path::Path;
 use std::time::Duration;
 
 pub struct AccountPrivateKeyProvider {
@@ -18,16 +18,15 @@ impl AccountPrivateKeyProvider {
     pub fn create(
         secret_file: &Path,
         address: Option<AccountAddress>,
-        chain_id: ChainId
+        chain_id: ChainId,
     ) -> Result<Self> {
         let storage = AccountStorage::mock();
         let manager = AccountManager::new(storage, chain_id)?;
 
-        let data = std::fs::read_to_string(secret_file)?.replace("\n", "");
+        let data = std::fs::read_to_string(secret_file)?.replace('\n', "");
         let private_key = AccountPrivateKey::from_encoded_string(data.as_str())?;
         let address = address.unwrap_or_else(|| private_key.public_key().derived_address());
-        let _account = manager
-            .import_account(address, private_key.to_bytes().to_vec(), "")?;
+        let _account = manager.import_account(address, private_key.to_bytes().to_vec(), "")?;
         Ok(Self { manager })
     }
 }
@@ -79,7 +78,7 @@ impl AccountProvider for AccountPrivateKeyProvider {
         duration: Duration,
     ) -> anyhow::Result<AccountInfo> {
         self.manager
-            .unlock_account(address, &"", duration)
+            .unlock_account(address, "", duration)
             .map_err(|e| e.into())
     }
 
@@ -104,7 +103,11 @@ impl AccountProvider for AccountPrivateKeyProvider {
         unimplemented!()
     }
 
-    fn export_account(&self, _address: AccountAddress, _password: String) -> anyhow::Result<Vec<u8>> {
+    fn export_account(
+        &self,
+        _address: AccountAddress,
+        _password: String,
+    ) -> anyhow::Result<Vec<u8>> {
         unimplemented!()
     }
 
