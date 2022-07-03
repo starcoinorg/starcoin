@@ -10,7 +10,7 @@ def trigger_scale():
     get_last_scaler_pod_cmd = "wget https://s3.ap-northeast-1.amazonaws.com/main.starcoin.org/main/last_scaler_pod.txt -O ./last_scaler_pod.txt"
     os.system(get_last_scaler_pod_cmd)
     with open('./last_scaler_pod.txt', 'r') as f:
-        last_pod = int(f.readline())
+        last_pod = f.read().strip()
 
     os.system(
         "kubectl get pods -n kube-system | grep auto | awk -F ' ' '{print$1}' > tmp")
