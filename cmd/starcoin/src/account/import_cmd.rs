@@ -51,7 +51,9 @@ impl CommandAction for ImportCommand {
         let private_key = match (opt.from_input.as_ref(), opt.from_file.as_ref()) {
             (Some(p), _) => AccountPrivateKey::from_encoded_string(p)?,
             (None, Some(p)) => {
-                let data = std::fs::read_to_string(p)?.replace('\n', "");
+                let data = std::fs::read_to_string(p)?
+                    .replace('\n', "")
+                    .replace('\r', "");
                 AccountPrivateKey::from_encoded_string(data.as_str())?
             }
             (None, None) => {

@@ -30,11 +30,9 @@ impl ProviderFactory {
                 Err(e) => Err(e),
             },
             AccountProviderStrategy::PrivateKey => match AccountPrivateKeyProvider::create(
-                config
-                    .secret_file
-                    .as_ref()
-                    .ok_or_else(|| anyhow!("expect secret file for private key account"))?,
+                config.secret_file.clone(),
                 config.account_address,
+                config.from_env,
                 chain_id,
             ) {
                 Ok(p) => Ok(Box::new(p)),

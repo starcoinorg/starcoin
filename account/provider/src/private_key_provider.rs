@@ -1,13 +1,15 @@
-use anyhow::Result;
+use anyhow::{bail, Result};
 use starcoin_account::{account_storage::AccountStorage, AccountManager};
 use starcoin_account_api::{AccountInfo, AccountPrivateKey, AccountProvider};
+use starcoin_config::account_provider_config::G_ENV_PRIVATE_KEY;
 use starcoin_crypto::{ValidCryptoMaterial, ValidCryptoMaterialStringExt};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_types::genesis_config::ChainId;
 use starcoin_types::sign_message::{SignedMessage, SigningMessage};
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use std::path::Path;
+use std::env;
+use std::path::PathBuf;
 use std::time::Duration;
 
 pub struct AccountPrivateKeyProvider {
@@ -16,15 +18,31 @@ pub struct AccountPrivateKeyProvider {
 
 impl AccountPrivateKeyProvider {
     pub fn create(
-        secret_file: &Path,
+        secret_file: Option<PathBuf>,
         address: Option<AccountAddress>,
+        from_env: bool,
         chain_id: ChainId,
     ) -> Result<Self> {
+        if !(secret_file.is_some() ^ from_env) {
+            bail!("Please input one and only one in args [secret_file, from_env].")
+        }
         let storage = AccountStorage::mock();
         let manager = AccountManager::new(storage, chain_id)?;
 
-        let data = std::fs::read_to_string(secret_file)?.replace('\n', "");
-        let private_key = AccountPrivateKey::from_encoded_string(data.as_str())?;
+        let data = if secret_file.is_some() {
+            std::fs::read_to_string(secret_file.unwrap())?
+        } else {
+            match env::var_os(G_ENV_PRIVATE_KEY) {
+                Some(value) => value.into_string().unwrap_or_else(|_| String::from("")),
+                None => String::from(""),
+            }
+        };
+        let data = data.trim_end_matches('\n').trim_end_matches('\r');
+        if data.is_empty() {
+            bail!("Invalid private key.")
+        };
+
+        let private_key = AccountPrivateKey::from_encoded_string(data)?;
         let address = address.unwrap_or_else(|| private_key.public_key().derived_address());
         let _account = manager.import_account(address, private_key.to_bytes().to_vec(), "")?;
         Ok(Self { manager })
@@ -32,7 +50,7 @@ impl AccountPrivateKeyProvider {
 }
 impl AccountProvider for AccountPrivateKeyProvider {
     fn create_account(&self, _password: String) -> anyhow::Result<AccountInfo> {
-        unimplemented!()
+        bail!("Unsupported")
     }
 
     fn get_default_account(&self) -> anyhow::Result<Option<AccountInfo>> {
@@ -40,7 +58,7 @@ impl AccountProvider for AccountPrivateKeyProvider {
     }
 
     fn set_default_account(&self, _address: AccountAddress) -> anyhow::Result<AccountInfo> {
-        unimplemented!()
+        bail!("Unsupported")
     }
 
     fn get_accounts(&self) -> anyhow::Result<Vec<AccountInfo>> {
@@ -83,7 +101,7 @@ impl AccountProvider for AccountPrivateKeyProvider {
     }
 
     fn lock_account(&self, _address: AccountAddress) -> anyhow::Result<AccountInfo> {
-        unimplemented!()
+        bail!("Unsupported")
     }
 
     fn import_account(
@@ -92,7 +110,7 @@ impl AccountProvider for AccountPrivateKeyProvider {
         _private_key: Vec<u8>,
         _password: String,
     ) -> anyhow::Result<AccountInfo> {
-        unimplemented!()
+        bail!("Unsupported")
     }
 
     fn import_readonly_account(
@@ -100,7 +118,7 @@ impl AccountProvider for AccountPrivateKeyProvider {
         _address: AccountAddress,
         _public_key: Vec<u8>,
     ) -> anyhow::Result<AccountInfo> {
-        unimplemented!()
+        bail!("Unsupported")
     }
 
     fn export_account(
@@ -108,7 +126,7 @@ impl AccountProvider for AccountPrivateKeyProvider {
         _address: AccountAddress,
         _password: String,
     ) -> anyhow::Result<Vec<u8>> {
-        unimplemented!()
+        bail!("Unsupported")
     }
 
     fn accepted_tokens(&self, address: AccountAddress) -> anyhow::Result<Vec<TokenCode>> {
@@ -120,7 +138,7 @@ impl AccountProvider for AccountPrivateKeyProvider {
         _address: AccountAddress,
         _new_password: String,
     ) -> anyhow::Result<AccountInfo> {
-        unimplemented!()
+        bail!("Unsupported")
     }
 
     fn remove_account(
@@ -128,6 +146,6 @@ impl AccountProvider for AccountPrivateKeyProvider {
         _address: AccountAddress,
         _password: Option<String>,
     ) -> anyhow::Result<AccountInfo> {
-        unimplemented!()
+        bail!("Unsupported")
     }
 }
