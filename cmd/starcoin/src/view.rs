@@ -36,12 +36,11 @@ pub struct TransactionOptions {
     /// otherwise please let cli to auto get sequence_number from onchain and txpool.
     pub sequence_number: Option<u64>,
 
-    #[clap(short = 'g', name = "max-gas-amount")]
+    #[clap(long = "max-gas-amount")]
     /// max gas used to deploy the module
     pub max_gas_amount: Option<u64>,
 
     #[clap(
-        short = 'p',
         long = "gas-unit-price",
         alias = "gas-price",
         name = "price of gas unit"
