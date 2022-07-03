@@ -43,7 +43,9 @@ pub fn handle_deployment(_move_args: &Move, cmd: DeploymentCommand) -> anyhow::R
     let node_handle = None;
 
     assert!(
-        cmd.account_provider.account_dir.is_some() || cmd.account_provider.secret_file.is_some(),
+        cmd.account_provider.account_dir.is_some()
+            || cmd.account_provider.secret_file.is_some()
+            || cmd.account_provider.from_env,
         "Please provide an account provider."
     );
     let package = dev_helper::load_package_from_file(cmd.mv_or_package_file.as_path())?;
@@ -51,7 +53,7 @@ pub fn handle_deployment(_move_args: &Move, cmd: DeploymentCommand) -> anyhow::R
 
     let mut txn_opts = cmd.txn_opts.clone();
     if txn_opts.sender.is_none() {
-        eprintln!(
+        println!(
             "Use package address ({}) as transaction sender",
             package_address
         );
@@ -69,7 +71,10 @@ pub fn handle_deployment(_move_args: &Move, cmd: DeploymentCommand) -> anyhow::R
         if cmd.account_provider.account_dir.is_some() {
             local_provider.unlock_account(
                 package_address,
-                cmd.account_passwd.unwrap(),
+                cmd.account_passwd.unwrap_or_else(|| {
+                    println!("No password given, use empty String.");
+                    String::from("")
+                }),
                 Duration::from_secs(300),
             )?;
         }
