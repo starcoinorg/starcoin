@@ -1,0 +1,23 @@
+name: Monitor CI Scaler
+
+on:
+  # workflow_dispatch:
+  schedule:
+    - cron: '0 5,17 * * *'
+
+jobs:
+  MonitorCI:
+    name: monitor ci scaler
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v1
+        with:
+          submodules: recursive
+      - name: setup environment
+        run: bash ./scripts/dev_setup.sh  -b -t -y
+      - name: check scaler
+        run: python3 ./scripts/monitor_autoscaler_recreate.py
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
