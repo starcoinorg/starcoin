@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-cmd"
-version = "1.11.10"
+version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -11,7 +11,7 @@ anyhow = "1.0.41"
 rand = "0.8.5"
 serde = { version = "1.0.130" }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
-crossbeam-channel = "0.5.4"
+crossbeam-channel = "0.5.5"
 tokio = {version = "^1", features = ["full"] }
 futures = "0.3.12"
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
@@ -48,13 +48,13 @@ starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-move-explain = { path = "../../vm/move-explain" }
 vm-status-translator = {path = "../../vm/vm-status-translator"}
-move-errmapgen = { git = "https://github.com/starcoinorg/move", rev = "4735fa59b63e1b30622411d8af65129e4c80b3bc"  }
+move-errmapgen = { git = "https://github.com/starcoinorg/move", rev = "69db2858761045f19935f3aaf43f04a1910ae74d"  }
 network-api = {path = "../../network/api", package="network-api"}
 starcoin-network-rpc-api = {path = "../../network-rpc/api"}
 starcoin-abi-decoder = {path = "../../abi/decoder"}
 starcoin-abi-resolver = {path = "../../abi/resolver"}
 starcoin-abi-types = {path = "../../abi/types"}
-move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "4735fa59b63e1b30622411d8af65129e4c80b3bc" }
+move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "69db2858761045f19935f3aaf43f04a1910ae74d" }
 
 [dev-dependencies]
 test-helper= {path = "../../test-helper"}

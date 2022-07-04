@@ -1,17 +1,29 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::view::{ExecuteResultView, ExecutionOutputView, TransactionOptions};
+use std::convert::TryInto;
+use std::env::current_dir;
+use std::fs::File;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::time::Duration;
+
 use anyhow::{bail, format_err, Result};
-use bcs_ext::BCSCodec;
 use serde::de::DeserializeOwned;
+use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519SignatureShard;
+use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;
+use starcoin_crypto::HashValue;
+
+use bcs_ext::BCSCodec;
 use starcoin_abi_decoder::{decode_txn_payload, DecodedTransactionPayload};
 use starcoin_account_api::{AccountInfo, AccountProvider};
 use starcoin_config::{ChainNetworkID, DataDirPath};
-use starcoin_crypto::HashValue;
 use starcoin_node::NodeHandle;
 use starcoin_rpc_api::chain::GetEventOption;
-use starcoin_rpc_api::types::{RawUserTransactionView, TransactionStatusView};
+use starcoin_rpc_api::types::{
+    RawUserTransactionView, SignedUserTransactionView, TransactionStatusView,
+};
 use starcoin_rpc_client::{RpcClient, StateRootOption};
 use starcoin_state_api::StateReaderExt;
 use starcoin_types::account_config::AccountResource;
@@ -19,11 +31,12 @@ use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::association_address;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE_STR;
-use starcoin_vm_types::transaction::{DryRunTransaction, RawUserTransaction, TransactionPayload};
-use std::convert::TryInto;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
-use std::time::Duration;
+use starcoin_vm_types::transaction::authenticator::{AccountPublicKey, TransactionAuthenticator};
+use starcoin_vm_types::transaction::{
+    DryRunTransaction, RawUserTransaction, SignedUserTransaction, TransactionPayload,
+};
+
+use crate::view::{ExecuteResultView, ExecutionOutputView, TransactionOptions};
 
 static G_HISTORY_FILE_NAME: &str = "history";
 
@@ -252,8 +265,9 @@ impl CliState {
         blocking: bool,
     ) -> Result<ExecuteResultView> {
         let sender = self.get_account(raw_txn.sender())?;
+        let public_key = sender.public_key;
         let dry_output = self.client.dry_run_raw(DryRunTransaction {
-            public_key: sender.public_key,
+            public_key: public_key.clone(),
             raw_txn: raw_txn.clone(),
         })?;
         let mut raw_txn_view: RawUserTransactionView = raw_txn.clone().try_into()?;
@@ -270,16 +284,51 @@ impl CliState {
             eprintln!("txn dry run failed");
             return Ok(execute_result);
         }
+
         let signed_txn = self.account_client.sign_txn(raw_txn, sender.address)?;
-        let signed_txn_hex = hex::encode(signed_txn.encode()?);
-        let txn_hash = self.client.submit_hex_transaction(signed_txn_hex)?;
-        eprintln!("txn {} submitted.", txn_hash);
-        let execute_output = if blocking {
-            self.watch_txn(txn_hash)?
-        } else {
-            ExecutionOutputView::new(txn_hash)
+
+        let multisig_public_key = match &public_key {
+            AccountPublicKey::Single(_) => {
+                let signed_txn_hex = hex::encode(signed_txn.encode()?);
+                let txn_hash = self.client.submit_hex_transaction(signed_txn_hex)?;
+                eprintln!("txn {} submitted.", txn_hash);
+                let execute_output = if blocking {
+                    self.watch_txn(txn_hash)?
+                } else {
+                    ExecutionOutputView::new(txn_hash)
+                };
+                execute_result.execute_output = Some(execute_output);
+                return Ok(execute_result);
+            }
+
+            AccountPublicKey::Multi(m) => m.clone(),
         };
-        execute_result.execute_output = Some(execute_output);
+
+        let mut output_dir = current_dir()?;
+
+        let execute_output_view = self.sign_multisig_txn_to_file_or_submit(
+            sender.address,
+            multisig_public_key,
+            None,
+            signed_txn,
+            &mut output_dir,
+            true,
+            blocking,
+        )?;
+
+        let cur_dir = current_dir()?.to_str().unwrap().to_string();
+        if output_dir.to_str().unwrap() != cur_dir {
+            // There is signature file, print the file path.
+            eprintln!(
+                "multisig txn signatures filepath: {}",
+                output_dir.to_str().unwrap()
+            )
+        }
+
+        if let Some(o) = execute_output_view {
+            execute_result.execute_output = Some(o)
+        };
+
         Ok(execute_result)
     }
 
@@ -293,5 +342,106 @@ impl CliState {
 
     pub fn into_inner(self) -> (ChainNetworkID, Arc<RpcClient>, Option<NodeHandle>) {
         (self.net, self.client, self.node_handle)
+    }
+
+    // Sign multisig transaction, if enough signatures collected & submit is true,
+    // try to submit txn directly.
+    // Otherwise, keep signatures into file.
+    pub fn sign_multisig_txn_to_file_or_submit(
+        &self,
+        sender: AccountAddress,
+        multisig_public_key: MultiEd25519PublicKey,
+        existing_signatures: Option<MultiEd25519SignatureShard>,
+        partial_signed_txn: SignedUserTransaction,
+        output_dir: &mut PathBuf,
+        submit: bool,
+        blocking: bool,
+    ) -> Result<Option<ExecutionOutputView>> {
+        let my_signatures = if let TransactionAuthenticator::MultiEd25519 { signature, .. } =
+            partial_signed_txn.authenticator()
+        {
+            MultiEd25519SignatureShard::new(signature, *multisig_public_key.threshold())
+        } else {
+            unreachable!()
+        };
+
+        // merge my signatures with existing signatures of other participants.
+        let merged_signatures = {
+            let mut signatures = vec![];
+            if let Some(s) = existing_signatures {
+                signatures.push(s);
+            }
+            signatures.push(my_signatures);
+            MultiEd25519SignatureShard::merge(signatures)?
+        };
+        eprintln!(
+            "mutlisig txn(address: {}, threshold: {}): {} signatures collected",
+            sender,
+            merged_signatures.threshold(),
+            merged_signatures.signatures().len()
+        );
+
+        let signatures_is_enough = merged_signatures.is_enough();
+
+        if !signatures_is_enough {
+            eprintln!(
+                "still require {} signatures",
+                merged_signatures.threshold() as usize - merged_signatures.signatures().len()
+            );
+        } else {
+            eprintln!("enough signatures collected for the multisig txn, txn can be submitted now");
+        }
+
+        // construct the signed txn with merged signatures.
+        let signed_txn = {
+            let authenticator = TransactionAuthenticator::MultiEd25519 {
+                public_key: multisig_public_key,
+                signature: merged_signatures.into(),
+            };
+            SignedUserTransaction::new(partial_signed_txn.into_raw_transaction(), authenticator)
+        };
+
+        if submit && signatures_is_enough {
+            let execute_output = self.submit_txn(signed_txn, blocking)?;
+            return Ok(Some(execute_output));
+        }
+
+        // output the txn, send this to other participants to sign, or just submit it.
+        let output_file = {
+            // use hash's as output file name
+            let file_name = signed_txn.crypto_hash().to_hex();
+            output_dir.push(file_name);
+            output_dir.set_extension("multisig-txn");
+            output_dir.clone()
+        };
+        let mut file = File::create(output_file)?;
+        // write txn to file
+        bcs_ext::serialize_into(&mut file, &signed_txn)?;
+        Ok(None)
+    }
+
+    pub fn submit_txn(
+        &self,
+        signed_txn: SignedUserTransaction,
+        blocking: bool,
+    ) -> Result<ExecutionOutputView> {
+        let mut signed_txn_view: SignedUserTransactionView = signed_txn.clone().try_into()?;
+        signed_txn_view.raw_txn.decoded_payload =
+            Some(self.decode_txn_payload(signed_txn.payload())?.into());
+
+        eprintln!(
+            "Prepare to submit the transaction: \n {}",
+            serde_json::to_string_pretty(&signed_txn_view)?
+        );
+        let txn_hash = signed_txn.id();
+        self.client().submit_transaction(signed_txn)?;
+
+        eprintln!("txn {:#x} submitted.", txn_hash);
+
+        if blocking {
+            self.watch_txn(txn_hash)
+        } else {
+            Ok(ExecutionOutputView::new(txn_hash))
+        }
     }
 }

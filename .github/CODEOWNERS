@@ -1,0 +1,31 @@
+/.github/ @yourmoonlight @jolestar
+/abi @lerencao
+/account @templexxx @jolestar
+/cmd @templexxx @jolestar
+/chain @nkysg
+
+/commons @nkysg
+/commons/scmd @jolestar
+/commons/accumulator @nkysg
+/commons/service-registry @LemonHX
+
+/consensus @sanlee42
+/executor @nkysg
+/genesis @jolestar
+/kube @yourmoonlight
+/miner @sanlee42
+/network @sanlee42
+/network-p2p @sanlee42
+/network-rpc @sanlee42
+/node @jolestar
+/rpc @sanlee42
+/state @nkysg
+/storage @nkysg
+/stratum @sanlee42
+/sync @sanlee42
+/testsuite @yourmoonlight
+/txpool @jolestar
+/types @jolestar
+/vm @lerencao
+/vm/stdlib @jolestar
+/vm/move-prover @whst

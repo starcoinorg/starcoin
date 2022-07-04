@@ -16,6 +16,7 @@ use starcoin_vm_types::{
     write_set::{WriteOp, WriteSet},
 };
 use std::collections::btree_map::BTreeMap;
+use std::ops::Deref;
 
 /// A local cache for a given a `StateView`. The cache is private to the Diem layer
 /// but can be used as a one shot cache for systems that need a simple `RemoteCache`
@@ -30,15 +31,15 @@ use std::collections::btree_map::BTreeMap;
 ///
 /// If a system wishes to execute a block of transaction on a given view, a cache that keeps
 /// track of incremental changes is vital to the consistency of the data store and the system.
-pub struct StateViewCache<'a> {
-    data_view: &'a dyn StateView,
+pub struct StateViewCache<'a, S> {
+    data_view: &'a S,
     data_map: BTreeMap<AccessPath, Option<Vec<u8>>>,
 }
 
-impl<'a> StateViewCache<'a> {
+impl<'a, S: StateView> StateViewCache<'a, S> {
     /// Create a `StateViewCache` give a `StateView`. Hold updates to the data store and
     /// forward data request to the `StateView` if not in the local cache.
-    pub fn new(data_view: &'a dyn StateView) -> Self {
+    pub fn new(data_view: &'a S) -> Self {
         StateViewCache {
             data_view,
             data_map: BTreeMap::new(),
@@ -63,7 +64,7 @@ impl<'a> StateViewCache<'a> {
     }
 }
 
-impl<'block> StateView for StateViewCache<'block> {
+impl<'block, S: StateView> StateView for StateViewCache<'block, S> {
     // Get some data either through the cache or the `StateView` on a cache miss.
     fn get(&self, access_path: &AccessPath) -> anyhow::Result<Option<Vec<u8>>> {
         match self.data_map.get(access_path) {
@@ -79,23 +80,19 @@ impl<'block> StateView for StateViewCache<'block> {
         }
     }
 
-    fn multi_get(&self, _access_paths: &[AccessPath]) -> anyhow::Result<Vec<Option<Vec<u8>>>> {
-        unimplemented!()
-    }
-
     fn is_genesis(&self) -> bool {
         self.data_view.is_genesis()
     }
 }
 
-impl<'block> ModuleResolver for StateViewCache<'block> {
+impl<'block, S: StateView> ModuleResolver for StateViewCache<'block, S> {
     type Error = VMError;
 
     fn get_module(&self, module_id: &ModuleId) -> VMResult<Option<Vec<u8>>> {
         RemoteStorage::new(self).get_module(module_id)
     }
 }
-impl<'block> ResourceResolver for StateViewCache<'block> {
+impl<'block, S: StateView> ResourceResolver for StateViewCache<'block, S> {
     type Error = VMError;
     fn get_resource(&self, address: &AccountAddress, tag: &StructTag) -> VMResult<Option<Vec<u8>>> {
         RemoteStorage::new(self).get_resource(address, tag)
@@ -103,10 +100,10 @@ impl<'block> ResourceResolver for StateViewCache<'block> {
 }
 
 // Adapter to convert a `StateView` into a `RemoteCache`.
-pub struct RemoteStorage<'a>(&'a dyn StateView);
+pub struct RemoteStorage<'a, S>(&'a S);
 
-impl<'a> RemoteStorage<'a> {
-    pub fn new(state_store: &'a dyn StateView) -> Self {
+impl<'a, S: StateView> RemoteStorage<'a, S> {
+    pub fn new(state_store: &'a S) -> Self {
         Self(state_store)
     }
 
@@ -117,7 +114,7 @@ impl<'a> RemoteStorage<'a> {
     }
 }
 
-impl<'a> ModuleResolver for RemoteStorage<'a> {
+impl<'a, S: StateView> ModuleResolver for RemoteStorage<'a, S> {
     type Error = VMError;
     fn get_module(&self, module_id: &ModuleId) -> VMResult<Option<Vec<u8>>> {
         // REVIEW: cache this?
@@ -125,7 +122,7 @@ impl<'a> ModuleResolver for RemoteStorage<'a> {
         self.get(&ap).map_err(|e| e.finish(Location::Undefined))
     }
 }
-impl<'a> ResourceResolver for RemoteStorage<'a> {
+impl<'a, S: StateView> ResourceResolver for RemoteStorage<'a, S> {
     type Error = VMError;
     fn get_resource(
         &self,
@@ -137,8 +134,16 @@ impl<'a> ResourceResolver for RemoteStorage<'a> {
     }
 }
 
-impl<'a> ConfigStorage for RemoteStorage<'a> {
+impl<'a, S: StateView> ConfigStorage for RemoteStorage<'a, S> {
     fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>> {
         self.get(&access_path).ok()?
+    }
+}
+
+impl<'a, S> Deref for RemoteStorage<'a, S> {
+    type Target = S;
+
+    fn deref(&self) -> &Self::Target {
+        self.0
     }
 }

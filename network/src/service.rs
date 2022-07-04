@@ -126,6 +126,7 @@ impl EventHandler<Self, Event> for NetworkActorService {
                 info,
                 notif_protocols,
                 rpc_protocols,
+                version_string,
             } => {
                 //TODO Refactor PeerEvent for handle protocol and substream.
                 // Currently, every notification stream open will trigger a PeerEvent, so it will trigger repeat event.
@@ -134,8 +135,13 @@ impl EventHandler<Self, Event> for NetworkActorService {
                     remote, protocol, notif_protocols, rpc_protocols
                 );
                 let peer_event = PeerEvent::Open(remote.into(), info.clone());
-                self.inner
-                    .on_peer_connected(remote.into(), *info, notif_protocols, rpc_protocols);
+                self.inner.on_peer_connected(
+                    remote.into(),
+                    *info,
+                    notif_protocols,
+                    rpc_protocols,
+                    version_string,
+                );
                 ctx.broadcast(peer_event);
             }
             Event::NotificationStreamClosed { remote, .. } => {
@@ -542,6 +548,7 @@ impl Inner {
         chain_info: ChainInfo,
         notif_protocols: Vec<Cow<'static, str>>,
         rpc_protocols: Vec<Cow<'static, str>>,
+        version_string: Option<String>,
     ) {
         self.peers
             .entry(peer_id.clone())
@@ -562,6 +569,7 @@ impl Inner {
                     chain_info,
                     notif_protocols,
                     rpc_protocols,
+                    version_string,
                 ))
             });
     }

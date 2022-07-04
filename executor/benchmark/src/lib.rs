@@ -11,7 +11,7 @@ use logger::prelude::*;
 use rand::{rngs::StdRng, SeedableRng};
 use starcoin_config::ChainNetwork;
 use starcoin_genesis::Genesis;
-use starcoin_state_api::ChainState;
+use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::token::stc;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
@@ -199,16 +199,13 @@ impl TransactionGenerator {
     }
 }
 
-struct TxnExecutor<'test> {
-    chain_state: &'test dyn ChainState,
+struct TxnExecutor<'test, S> {
+    chain_state: &'test S,
     block_receiver: mpsc::Receiver<Vec<Transaction>>,
 }
 
-impl<'test> TxnExecutor<'test> {
-    fn new(
-        chain_state: &'test dyn ChainState,
-        block_receiver: mpsc::Receiver<Vec<Transaction>>,
-    ) -> Self {
+impl<'test, S: ChainStateReader + ChainStateWriter> TxnExecutor<'test, S> {
+    fn new(chain_state: &'test S, block_receiver: mpsc::Receiver<Vec<Transaction>>) -> Self {
         Self {
             chain_state,
             block_receiver,

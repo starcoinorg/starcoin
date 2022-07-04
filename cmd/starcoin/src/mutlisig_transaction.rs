@@ -1,9 +1,15 @@
-use anyhow::Result;
+use std::collections::HashMap;
+use std::path::Path;
+
+use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
+use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519SignatureShard;
 use starcoin_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature};
+
+use starcoin_vm_types::transaction::authenticator::TransactionAuthenticator;
 use starcoin_vm_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use std::collections::HashMap;
+
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct MultisigTransaction {
     raw_txn: RawUserTransaction,
@@ -80,4 +86,28 @@ impl MultisigTransaction {
             multi_sig,
         ))
     }
+}
+
+pub struct RawTxnMultiSign {
+    pub txn: RawUserTransaction,
+    pub signatures: Option<MultiEd25519SignatureShard>,
+}
+
+pub fn read_multisig_existing_signatures(file_input: &Path) -> Result<RawTxnMultiSign> {
+    let txn: SignedUserTransaction = bcs_ext::from_bytes(&std::fs::read(file_input)?)?;
+
+    let existing_signatures = match txn.authenticator() {
+        TransactionAuthenticator::Ed25519 { .. } => {
+            bail!("expect a multisig txn in file {}", file_input.display());
+        }
+        TransactionAuthenticator::MultiEd25519 {
+            public_key,
+            signature,
+        } => MultiEd25519SignatureShard::new(signature, *public_key.threshold()),
+    };
+
+    Ok(RawTxnMultiSign {
+        txn: txn.raw_txn().clone(),
+        signatures: Some(existing_signatures),
+    })
 }

@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-x"
-version = "1.11.10"
+version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -24,6 +24,6 @@ regex = "1.5.4"
 rayon = "1.5.1"
 indexmap = "1.6.2"
 camino = { version = "1" }
-x-core = { package="x-core", git = "https://github.com/starcoinorg/move", rev = "4735fa59b63e1b30622411d8af65129e4c80b3bc"  }
-x-lint = { package="x-lint", git = "https://github.com/starcoinorg/move", rev = "4735fa59b63e1b30622411d8af65129e4c80b3bc"  }
-x = { package="x", git = "https://github.com/starcoinorg/move", rev = "4735fa59b63e1b30622411d8af65129e4c80b3bc"  }
+x-core = { package="x-core", git = "https://github.com/starcoinorg/move", rev = "69db2858761045f19935f3aaf43f04a1910ae74d"  }
+x-lint = { package="x-lint", git = "https://github.com/starcoinorg/move", rev = "69db2858761045f19935f3aaf43f04a1910ae74d"  }
+x = { package="x", git = "https://github.com/starcoinorg/move", rev = "69db2858761045f19935f3aaf43f04a1910ae74d"  }

@@ -499,6 +499,7 @@ impl EventHandler<Notification<ThinBlock>> for NewHeadHandler {
             header: block.header.into(),
             body: block.body.into(),
             uncles: vec![],
+            raw: None,
         })))]
     }
 }

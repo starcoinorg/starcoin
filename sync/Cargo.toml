@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-sync"
-version = "1.11.10"
+version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
 
@@ -9,7 +9,7 @@ anyhow = "1.0.41"
 thiserror = "1.0"
 rand = "0.8.5"
 pin-utils = "0.1.0"
-async-std = "1.11"
+async-std = "1.12"
 futures = "0.3.12"
 futures-retry = "0.6"
 itertools = { version = "0.10.3", default-features = false }

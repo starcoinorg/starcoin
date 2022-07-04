@@ -157,6 +157,7 @@ pub struct PeerInfo {
     pub chain_info: ChainInfo,
     pub notif_protocols: Vec<Cow<'static, str>>,
     pub rpc_protocols: Vec<Cow<'static, str>>,
+    pub version_string: Option<String>,
 }
 
 impl PeerInfo {
@@ -165,12 +166,14 @@ impl PeerInfo {
         chain_info: ChainInfo,
         notif_protocols: Vec<Cow<'static, str>>,
         rpc_protocols: Vec<Cow<'static, str>>,
+        version_string: Option<String>,
     ) -> Self {
         Self {
             peer_id,
             chain_info,
             notif_protocols,
             rpc_protocols,
+            version_string,
         }
     }
 
@@ -234,6 +237,7 @@ impl PeerInfo {
             chain_info: ChainInfo::random(),
             notif_protocols: vec![],
             rpc_protocols: vec![],
+            version_string: None,
         }
     }
 }

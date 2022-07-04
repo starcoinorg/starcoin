@@ -349,7 +349,7 @@ where
         let excluded_txns = opened_block.push_txns(txns)?;
         let template = opened_block.finalize()?;
         for invalid_txn in excluded_txns.discarded_txns {
-            let _ = self.tx_provider.remove_invalid_txn(invalid_txn.id());
+            self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
 
         Ok(BlockTemplateResponse {

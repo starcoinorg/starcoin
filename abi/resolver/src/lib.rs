@@ -165,6 +165,27 @@ impl<'a> ABIResolver<'a> {
             }
         })
     }
+
+    pub fn resolve_module_function_index(
+        &self,
+        module_id: &ModuleId,
+        function_idx: u16,
+    ) -> Result<FunctionABI> {
+        let module = self
+            .resolver
+            .get_module(module_id.address(), module_id.name())?;
+        if function_idx as usize >= module.function_defs.len() {
+            return Err(anyhow!(
+                "Function index {} out of range in {:?}",
+                function_idx,
+                module.self_id(),
+            ));
+        }
+        let function_def = module.function_def_at(FunctionDefinitionIndex::new(function_idx));
+        let (func_name, func) = Function::new(&module, function_def);
+        self.function_to_abi(module_id, &func_name, &func)
+    }
+
     pub fn resolve_function(
         &self,
         module_id: &ModuleId,
@@ -364,10 +385,6 @@ mod tests {
             }))
         }
 
-        fn multi_get(&self, _access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
-            todo!()
-        }
-
         fn is_genesis(&self) -> bool {
             todo!()
         }
@@ -398,6 +415,19 @@ mod tests {
             let func_abi = r.resolve_struct(&m, s.as_ident_str()).unwrap();
             println!("{}", serde_json::to_string_pretty(&func_abi).unwrap());
         }
+
+        // test resolve module function index
+        {
+            let m = ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap());
+            let f = r.resolve_module_function_index(&m, 0).unwrap();
+            assert_eq!(f.name(), "cast_vote");
+        }
+
+        // test resolve module function index overflow
+        {
+            let m = ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap());
+            assert!(r.resolve_module_function_index(&m, 31).is_err())
+        }
     }
 
     #[test]
@@ -417,7 +447,7 @@ mod tests {
         let test_source = r#"
         module {{sender}}::TestModule {
             struct A has copy, store{
-            } 
+            }
             struct B has key{
                 a: vector<A>,
             }

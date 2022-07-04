@@ -233,7 +233,7 @@ pub fn modify_on_chain_config_by_dao_block(
 
         let chain_state = chain.chain_state();
         let state = proposal_state(
-            chain_state.as_super(),
+            chain_state,
             stc_type_tag(),
             action_type_tag.clone(),
             *alice.address(),
@@ -247,8 +247,7 @@ pub fn modify_on_chain_config_by_dao_block(
     let chain_state = chain.chain_state();
     let voting_power = get_balance(*alice.address(), chain_state);
     let alice_seq = get_sequence_number(*alice.address(), chain_state);
-    let block_timestamp =
-        block_timestamp + voting_delay(chain_state.as_super(), stc_type_tag()) + 10000;
+    let block_timestamp = block_timestamp + voting_delay(chain_state, stc_type_tag()) + 10000;
     {
         chain.time_service().adjust(GlobalTimeOnChain {
             milliseconds: block_timestamp,
@@ -268,8 +267,7 @@ pub fn modify_on_chain_config_by_dao_block(
     }
     // block 4
     let chain_state = chain.chain_state();
-    let block_timestamp =
-        block_timestamp + voting_period(chain_state.as_super(), stc_type_tag()) - 10000;
+    let block_timestamp = block_timestamp + voting_period(chain_state, stc_type_tag()) - 10000;
     {
         chain.time_service().adjust(GlobalTimeOnChain {
             milliseconds: block_timestamp,
@@ -277,11 +275,11 @@ pub fn modify_on_chain_config_by_dao_block(
         let block4 = create_new_block(&chain, &alice, vec![])?;
         chain.apply(block4)?;
         let chain_state = chain.chain_state();
-        let quorum = quorum_vote(chain_state.as_super(), stc_type_tag());
+        let quorum = quorum_vote(chain_state, stc_type_tag());
         println!("quorum: {}", quorum);
 
         let state = proposal_state(
-            chain_state.as_super(),
+            chain_state,
             stc_type_tag(),
             action_type_tag.clone(),
             *alice.address(),
@@ -299,7 +297,7 @@ pub fn modify_on_chain_config_by_dao_block(
         chain.apply(create_new_block(&chain, &alice, vec![])?)?;
         let chain_state = chain.chain_state();
         let state = proposal_state(
-            chain_state.as_super(),
+            chain_state,
             stc_type_tag(),
             action_type_tag.clone(),
             *alice.address(),
@@ -330,7 +328,7 @@ pub fn modify_on_chain_config_by_dao_block(
         chain.apply(block6)?;
         let chain_state = chain.chain_state();
         let state = proposal_state(
-            chain_state.as_super(),
+            chain_state,
             stc_type_tag(),
             action_type_tag.clone(),
             *alice.address(),
@@ -341,8 +339,7 @@ pub fn modify_on_chain_config_by_dao_block(
 
     // block 7
     let chain_state = chain.chain_state();
-    let block_timestamp =
-        block_timestamp + min_action_delay(chain_state.as_super(), stc_type_tag());
+    let block_timestamp = block_timestamp + min_action_delay(chain_state, stc_type_tag());
     {
         chain.time_service().adjust(GlobalTimeOnChain {
             milliseconds: block_timestamp,
@@ -350,7 +347,7 @@ pub fn modify_on_chain_config_by_dao_block(
         chain.apply(create_new_block(&chain, &alice, vec![])?)?;
         let chain_state = chain.chain_state();
         let state = proposal_state(
-            chain_state.as_super(),
+            chain_state,
             stc_type_tag(),
             action_type_tag.clone(),
             *alice.address(),
@@ -385,7 +382,7 @@ pub fn modify_on_chain_config_by_dao_block(
         chain.apply(create_new_block(&chain, &alice, vec![])?)?;
         let chain_state = chain.chain_state();
         let state = proposal_state(
-            chain_state.as_super(),
+            chain_state,
             stc_type_tag(),
             action_type_tag,
             *alice.address(),

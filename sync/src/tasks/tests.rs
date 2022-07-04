@@ -944,6 +944,7 @@ async fn test_sync_target() {
         low_chain_info.clone(),
         vec![],
         vec![],
+        None,
     ));
     node1.produce_block(10).unwrap();
     let high_chain_info = node1.peer_info().chain_info().clone();
@@ -952,6 +953,7 @@ async fn test_sync_target() {
         high_chain_info.clone(),
         vec![],
         vec![],
+        None,
     ));
 
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);

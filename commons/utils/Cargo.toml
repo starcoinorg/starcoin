@@ -1,7 +1,7 @@
 [package]
 name = "sp-utils"
 #for unify version with project.
-version = "1.11.10"
+version = "1.11.11"
 authors = ["Parity Technologies <admin@parity.io>", "Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
 license = "Apache-2.0"
@@ -16,7 +16,7 @@ lazy_static = "1.4.0"
 prometheus = "0.13.0"
 simple-stopwatch="0.1.4"
 once_cell = "1.12.0"
-parking_lot = "0.12.0"
+parking_lot = "0.12.1"
 
 [features]
 default = ["metered"]

@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-vm-runtime"
-version = "1.11.10"
+version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -11,9 +11,9 @@ anyhow = "1.0.41"
 once_cell = "1.12.0"
 
 starcoin-types = { path = "../../types"}
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "4735fa59b63e1b30622411d8af65129e4c80b3bc" }
-move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "4735fa59b63e1b30622411d8af65129e4c80b3bc" }
-move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "4735fa59b63e1b30622411d8af65129e4c80b3bc" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "69db2858761045f19935f3aaf43f04a1910ae74d" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "69db2858761045f19935f3aaf43f04a1910ae74d" }
+move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "69db2858761045f19935f3aaf43f04a1910ae74d" }
 tracing = "0.1.34"
 starcoin-config = { path = "../../config"}
 starcoin-logger = {path = "../../commons/logger"}

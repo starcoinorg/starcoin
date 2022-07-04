@@ -1,11 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::view::{ExecuteResultView, TransactionOptions};
-use crate::StarcoinOpt;
+use std::path::PathBuf;
+
 use anyhow::{bail, Result};
 use clap::Parser;
+
 use scmd::{CommandAction, ExecContext};
 use starcoin_move_compiler::load_bytecode_file;
 use starcoin_types::transaction::{
@@ -13,7 +13,10 @@ use starcoin_types::transaction::{
 };
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
-use std::path::PathBuf;
+
+use crate::cli_state::CliState;
+use crate::view::{ExecuteResultView, TransactionOptions};
+use crate::StarcoinOpt;
 
 /// Execute a script
 #[derive(Debug, Parser)]

@@ -14,6 +14,8 @@ use starcoin_service_registry::{
 };
 use std::sync::Arc;
 use std::time::Duration;
+use types::block::BlockTemplate;
+use types::system_events::GenerateSleepBlockEvent;
 
 mod create_block_template;
 pub mod generate_block_event_pacemaker;
@@ -126,11 +128,13 @@ impl ServiceFactory<MinerService> for MinerService {
 impl ActorService for MinerService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<GenerateBlockEvent>();
+        ctx.subscribe::<GenerateSleepBlockEvent>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<GenerateBlockEvent>();
+        ctx.unsubscribe::<GenerateSleepBlockEvent>();
         Ok(())
     }
 }
@@ -172,30 +176,48 @@ impl MinerService {
             debug!("The flag disable_mint_empty_block is true and no txn in pool, so skip mint empty block.");
             Ok(())
         } else {
-            debug!("Mint block template: {:?}", block_template);
-            let difficulty = block_template.difficulty;
-            let strategy = block_template.strategy;
-            let number = block_template.number;
-            let parent_hash = block_template.parent_hash;
-            let task = MintTask::new(block_template, self.metrics.clone());
-            let mining_blob = task.minting_blob.clone();
-            if let Some(current_task) = self.current_task.as_ref() {
-                debug!(
-                    "force set mint task, current_task: {:?}, new_task: {:?}",
-                    current_task, task
-                );
-            }
-            self.current_task = Some(task);
-            ctx.broadcast(MintBlockEvent::new(
-                parent_hash,
-                strategy,
-                mining_blob,
-                difficulty,
-                number,
-                None,
-            ));
-            Ok(())
+            self.dispatch_mint_block_event(ctx, block_template)
         }
+    }
+
+    pub fn dispatch_sleep_task(&mut self, ctx: &mut ServiceContext<MinerService>) -> Result<()> {
+        //create block template should block_on for avoid mint same block template.
+        let response = block_on(async {
+            self.create_block_template_service
+                .send(BlockTemplateRequest)
+                .await?
+        })?;
+        self.dispatch_mint_block_event(ctx, response.template)
+    }
+
+    fn dispatch_mint_block_event(
+        &mut self,
+        ctx: &mut ServiceContext<MinerService>,
+        block_template: BlockTemplate,
+    ) -> Result<()> {
+        debug!("Mint block template: {:?}", block_template);
+        let difficulty = block_template.difficulty;
+        let strategy = block_template.strategy;
+        let number = block_template.number;
+        let parent_hash = block_template.parent_hash;
+        let task = MintTask::new(block_template, self.metrics.clone());
+        let mining_blob = task.minting_blob.clone();
+        if let Some(current_task) = self.current_task.as_ref() {
+            debug!(
+                "force set mint task, current_task: {:?}, new_task: {:?}",
+                current_task, task
+            );
+        }
+        self.current_task = Some(task);
+        ctx.broadcast(MintBlockEvent::new(
+            parent_hash,
+            strategy,
+            mining_blob,
+            difficulty,
+            number,
+            None,
+        ));
+        Ok(())
     }
 
     pub fn finish_task(
@@ -267,6 +289,37 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
             );
             ctx.run_later(Duration::from_secs(2), |ctx| {
                 ctx.notify(GenerateBlockEvent::new(false));
+            });
+        }
+    }
+}
+
+impl EventHandler<Self, GenerateSleepBlockEvent> for MinerService {
+    fn handle_event(
+        &mut self,
+        event: GenerateSleepBlockEvent,
+        ctx: &mut ServiceContext<MinerService>,
+    ) {
+        debug!("Handle GenerateSleepBlockEvent:{:?}", event);
+        if !event.force && self.is_minting() {
+            debug!("Miner has mint job so just ignore this event.");
+            return;
+        }
+        if self.config.miner.disable_miner_client() && self.client_subscribers_num == 0 {
+            debug!("No miner client connected, ignore GenerateSleepBlockEvent.");
+            // Once Miner client connect, we should dispatch task.
+            ctx.run_later(Duration::from_secs(2), |ctx| {
+                ctx.notify(GenerateSleepBlockEvent::new(false));
+            });
+            return;
+        }
+        if let Err(err) = self.dispatch_sleep_task(ctx) {
+            warn!(
+                "Failed to process generate sleep block event:{}, delay to trigger a new event.",
+                err
+            );
+            ctx.run_later(Duration::from_secs(2), |ctx| {
+                ctx.notify(GenerateSleepBlockEvent::new(false));
             });
         }
     }

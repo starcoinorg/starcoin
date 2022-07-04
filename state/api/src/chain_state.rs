@@ -31,7 +31,6 @@ use starcoin_vm_types::{
     move_resource::MoveResource, on_chain_config::OnChainConfig, state_view::StateView,
 };
 use std::convert::{TryFrom, TryInto};
-use std::sync::Arc;
 
 #[derive(Debug, Default, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct StateProof {
@@ -153,72 +152,6 @@ pub trait ChainStateWriter {
     fn commit(&self) -> Result<HashValue>;
 
     fn flush(&self) -> Result<()>;
-}
-
-//This code is repeat with storage IntoSuper
-//But can not share IntoSuper between different crate.
-//only traits defined in the current crate can be implemented for a type parameter
-pub trait IntoSuper<Super: ?Sized> {
-    fn as_super(&self) -> &Super;
-    fn as_super_mut(&mut self) -> &mut Super;
-    fn into_super(self: Box<Self>) -> Box<Super>;
-    fn into_super_arc(self: Arc<Self>) -> Arc<Super>;
-}
-
-/// `ChainState` is a trait that defines chain's global state.
-pub trait ChainState:
-    ChainStateReader
-    + ChainStateWriter
-    + StateView
-    + IntoSuper<dyn StateView>
-    + IntoSuper<dyn ChainStateReader>
-    + IntoSuper<dyn ChainStateWriter>
-{
-}
-
-impl<'a, T: 'a + ChainStateReader> IntoSuper<dyn ChainStateReader + 'a> for T {
-    fn as_super(&self) -> &(dyn ChainStateReader + 'a) {
-        self
-    }
-    fn as_super_mut(&mut self) -> &mut (dyn ChainStateReader + 'a) {
-        self
-    }
-    fn into_super(self: Box<Self>) -> Box<dyn ChainStateReader + 'a> {
-        self
-    }
-    fn into_super_arc(self: Arc<Self>) -> Arc<dyn ChainStateReader + 'a> {
-        self
-    }
-}
-
-impl<'a, T: 'a + ChainStateWriter> IntoSuper<dyn ChainStateWriter + 'a> for T {
-    fn as_super(&self) -> &(dyn ChainStateWriter + 'a) {
-        self
-    }
-    fn as_super_mut(&mut self) -> &mut (dyn ChainStateWriter + 'a) {
-        self
-    }
-    fn into_super(self: Box<Self>) -> Box<dyn ChainStateWriter + 'a> {
-        self
-    }
-    fn into_super_arc(self: Arc<Self>) -> Arc<dyn ChainStateWriter + 'a> {
-        self
-    }
-}
-
-impl<'a, T: 'a + StateView> IntoSuper<dyn StateView + 'a> for T {
-    fn as_super(&self) -> &(dyn StateView + 'a) {
-        self
-    }
-    fn as_super_mut(&mut self) -> &mut (dyn StateView + 'a) {
-        self
-    }
-    fn into_super(self: Box<Self>) -> Box<dyn StateView + 'a> {
-        self
-    }
-    fn into_super_arc(self: Arc<Self>) -> Arc<dyn StateView + 'a> {
-        self
-    }
 }
 
 impl<T: ?Sized> StateReaderExt for T where T: StateView {}

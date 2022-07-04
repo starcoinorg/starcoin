@@ -1234,6 +1234,11 @@ impl Future for NetworkWorker {
                         info,
                         notif_protocols,
                         rpc_protocols,
+                        version_string: this
+                            .network_service
+                            .behaviour_mut()
+                            .node(&remote)
+                            .and_then(|i| i.client_version().map(|s| s.to_owned())),
                     });
                 }
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::NotificationStreamReplaced {

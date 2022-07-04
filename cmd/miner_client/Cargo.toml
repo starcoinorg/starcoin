@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-miner-client"
-version = "1.11.10"
+version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
 
@@ -8,7 +8,7 @@ edition = "2021"
 anyhow = "1.0.41"
 actix = "0.13"
 actix-rt = "2.6"
-async-std = "1.10"
+async-std = "1.12"
 futures = "0.3.12"
 starcoin-config = { path = "../../config" }
 starcoin-types = { path = "../../types" }
@@ -34,8 +34,8 @@ starcoin-rpc-client = { path = "../../rpc/client" }
 starcoin-rpc-api = { path = "../../rpc/api" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 libloading = "0.7.2"
-dyn-clone = "1.0.5"
-parking_lot = "0.12.0"
+dyn-clone = "1.0.6"
+parking_lot = "0.12.1"
 starcoin-stratum = { path = "../../stratum" }
 starcoin-miner = { path = "../../miner" }
 starcoin-miner-client-api = { path = "./api" }
