@@ -1,9 +1,9 @@
 name: Monitor CI Scaler
 
 on:
-  # workflow_dispatch:
-  schedule:
-    - cron: '0 5,17 * * *'
+  workflow_dispatch:
+  # schedule:
+  #   - cron: '0 5,17 * * *'
 
 jobs:
   MonitorCI:
@@ -15,7 +15,7 @@ jobs:
         with:
           submodules: recursive
       - name: setup environment
-        run: bash ./scripts/dev_setup.sh  -b -t -y
+        run: bash ./scripts/dev_setup.sh  -b -t -y -o -p
       - name: check scaler
         run: python3 ./scripts/monitor_autoscaler_recreate.py
         env:
