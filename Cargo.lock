@@ -5344,6 +5344,8 @@ dependencies = [
  "move-unit-test",
  "move-vm-runtime",
  "once_cell",
+ "starcoin-account-provider",
+ "starcoin-cmd",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
@@ -8893,6 +8895,7 @@ dependencies = [
  "starcoin-account",
  "starcoin-account-api",
  "starcoin-config",
+ "starcoin-crypto",
  "starcoin-rpc-client",
  "starcoin-types",
 ]

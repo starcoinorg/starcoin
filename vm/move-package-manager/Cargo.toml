@@ -50,6 +50,8 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 starcoin-rpc-client = {path = "../../rpc/client"}
 starcoin-rpc-api = {path = "../../rpc/api"}
 starcoin-transactional-test-harness = {path = "../starcoin-transactional-test-harness"}
+starcoin-account-provider = {path = "../../account/provider"}
+starcoin-cmd = {path = "../../cmd/starcoin"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 
 [dev-dependencies]
