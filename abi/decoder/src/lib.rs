@@ -139,7 +139,7 @@ pub fn decode_script(state: &dyn StateView, s: &Script) -> Result<DecodedScript>
             arg_abis
         }
     };
-    let mut args = Vec::<DecodedMoveValue>::new();
+    let mut args = Vec::new();
     for (i, (abi, arg)) in arg_abis.iter().zip(s.args()).enumerate() {
         let decoded_value = decode_move_value(abi.type_abi(), arg);
         match decoded_value {
@@ -211,7 +211,7 @@ fn decode_script_function_inner(
             arg_abis
         }
     };
-    let mut args = Vec::<DecodedMoveValue>::new();
+    let mut args = Vec::new();
     for (i, (abi, arg)) in arg_abis.iter().zip(sf.args()).enumerate() {
         let decoded_value = decode_move_value(abi.type_abi(), arg);
         match decoded_value {
