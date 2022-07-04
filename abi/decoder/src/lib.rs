@@ -146,7 +146,7 @@ pub fn decode_script(state: &dyn StateView, s: &Script) -> Result<DecodedScript>
             Err(_) => {
                 return Err(Error::msg(format!(
                     "error occurred when decoding {} paramater , the type should be {:?}",
-                    Ordinal(i + 1).to_string(),
+                    Ordinal(i + 1),
                     abi.type_abi()
                 )));
             }
@@ -218,7 +218,7 @@ fn decode_script_function_inner(
             Err(_) => {
                 return Err(Error::msg(format!(
                     "error occurred when decoding {} paramater , the type should be {:?}",
-                    Ordinal(i + 1).to_string(),
+                    Ordinal(i + 1),
                     abi.type_abi()
                 )));
             }
