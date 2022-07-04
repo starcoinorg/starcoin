@@ -1,8 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-
-use anyhow::Result;
+use anyhow::{Error, Result};
 use move_binary_format::CompiledModule;
+use ordinal::Ordinal;
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_abi_resolver::ABIResolver;
@@ -139,11 +139,21 @@ pub fn decode_script(state: &dyn StateView, s: &Script) -> Result<DecodedScript>
             arg_abis
         }
     };
-    let args = arg_abis
-        .iter()
-        .zip(s.args())
-        .map(|(ty, arg)| decode_move_value(ty.type_abi(), arg))
-        .collect::<Result<Vec<_>, _>>()?;
+    let mut args = Vec::<DecodedMoveValue>::new();
+    for (i, (abi, arg)) in arg_abis.iter().zip(s.args()).enumerate() {
+        let decoded_value = decode_move_value(abi.type_abi(), arg);
+        match decoded_value {
+            Err(_) => {
+                return Err(Error::msg(format!(
+                    "error occurred when decoding {} paramater , the type should be {:?}",
+                    Ordinal(i + 1).to_string(),
+                    abi.type_abi()
+                )));
+            }
+            Ok(value) => args.push(value),
+        }
+    }
+
     Ok(DecodedScript {
         code: s.code().to_vec(),
         ty_args: s.ty_args().to_vec(),
@@ -201,11 +211,20 @@ fn decode_script_function_inner(
             arg_abis
         }
     };
-    let args = arg_abis
-        .iter()
-        .zip(sf.args())
-        .map(|(abi, arg)| decode_move_value(abi.type_abi(), arg))
-        .collect::<Result<Vec<_>, _>>()?;
+    let mut args = Vec::<DecodedMoveValue>::new();
+    for (i, (abi, arg)) in arg_abis.iter().zip(sf.args()).enumerate() {
+        let decoded_value = decode_move_value(abi.type_abi(), arg);
+        match decoded_value {
+            Err(_) => {
+                return Err(Error::msg(format!(
+                    "error occurred when decoding {} paramater , the type should be {:?}",
+                    Ordinal(i + 1).to_string(),
+                    abi.type_abi()
+                )));
+            }
+            Ok(value) => args.push(value),
+        }
+    }
     Ok(DecodedScriptFunction {
         module: sf.module().clone(),
         function: sf.function().to_owned(),
