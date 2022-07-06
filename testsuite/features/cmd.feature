@@ -5,7 +5,7 @@ Feature: cmd integration test
     And node handle
     And ipc rpc client
 
-# chain
+  # chain
   Scenario Outline: [cmd] cli chain test
     Then cmd: "chain epoch-info"
     Then cmd: "chain list-block"
@@ -18,12 +18,16 @@ Feature: cmd integration test
     Then cmd: "chain get-txn-info-list -s 0 -c 5"
     Then cmd: "chain list-block"
     Then cmd: "chain get-block-info @$[0].number@"
+    Then cmd: "chain list-block"
+    Then cmd: "chain get-txn-proof --block-hash @$[0].block_hash@ --transaction-global-index 0"
+    Then cmd: "chain list-block"
+    Then cmd: "chain get-txn-proof --block-hash @$[0].block_hash@ --transaction-global-index 0 --raw"
     Then stop
 
     Examples:
       |  |
 
-# node
+  # node
   Scenario Outline: [cmd] node test
     Then cmd: "node metrics"
     Then cmd: "node info"
@@ -33,7 +37,7 @@ Feature: cmd integration test
     Examples:
       |  |
 
-# node service
+  # node service
   Scenario Outline: [cmd] node service test
     Then cmd: "node service list"
     Then cmd: "node service stop starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker"
@@ -52,7 +56,7 @@ Feature: cmd integration test
     Examples:
       |  |
 
-# multisig account
+  # multisig account
   Scenario Outline: [cmd] multisig account
     Then cmd: "account unlock"
     Then cmd: "dev get-coin"
@@ -76,7 +80,7 @@ Feature: cmd integration test
       | para          |
       | x@$.auth_key@ |
 
- #dev
+  #dev
   Scenario Outline: [cmd] dev resolve test
     Then cmd: "dev resolve function 0x1::TransferScripts::peer_to_peer_v2"
     Then cmd: "dev resolve struct 0x1::Account::Account"
@@ -95,12 +99,14 @@ Feature: cmd integration test
     Examples:
       |  |
 
-#state
+  #state
   Scenario Outline: [cmd] state test
     Then cmd: "state get-root"
     Then cmd: "dev get-coin"
     Then cmd: "account show"
     Then cmd: "state get-proof @$.account.address@/1/0x1::Account::Account"
+    Then cmd: "account show"
+    Then cmd: "state get-proof @$.account.address@/1/0x1::Account::Account --raw"
     Then cmd: "account show"
     Then cmd: "state get resource @$.account.address@ 0x1::Account::Account"
     Then assert: "$.json.sequence_number 0 "
@@ -113,7 +119,7 @@ Feature: cmd integration test
     Examples:
       |  |
 
-#account
+  #account
   Scenario Outline: [cmd] account test
     Then cmd: "account show"
     Then cmd: "account unlock"
@@ -148,8 +154,8 @@ Feature: cmd integration test
     # using a temporal private key as import
     Then cmd: "account rotate-authentication-key 0x809c795045105a7b1efbcca4510d2034 -i 0x3885e7dde8381046849d64d28b675f1c668dc36eaa9be11cbcaadb24c3917554"
     # rotate-authentication-key twice for:
-      # 1. auth key will be verified on chain, so do it again for checking last rotation.
-      # 2. ensuring it's idempotent
+    # 1. auth key will be verified on chain, so do it again for checking last rotation.
+    # 2. ensuring it's idempotent
     Then cmd: "account unlock 0x809c795045105a7b1efbcca4510d2034"
     Then cmd: "account rotate-authentication-key 0x809c795045105a7b1efbcca4510d2034 -i 0x3885e7dde8381046849d64d28b675f1c668dc36eaa9be11cbcaadb24c3917554"
     Then cmd: "account unlock 0x809c795045105a7b1efbcca4510d2034"
@@ -168,7 +174,7 @@ Feature: cmd integration test
     Examples:
       |  |
 
-#account sign message
+  #account sign message
   Scenario Outline: [cmd] account sign message
     # test the account do not exist on chain
     Then cmd: "account unlock"

@@ -522,6 +522,19 @@ impl RpcClient {
         .map_err(map_err)
     }
 
+    pub fn state_get_with_proof_by_root_raw(
+        &self,
+        access_path: AccessPath,
+        state_root: HashValue,
+    ) -> anyhow::Result<StrView<Vec<u8>>> {
+        self.call_rpc_blocking(|inner| {
+            inner
+                .state_client
+                .get_with_proof_by_root_raw(access_path, state_root)
+        })
+        .map_err(map_err)
+    }
+
     pub fn state_get_state_root(&self) -> anyhow::Result<HashValue> {
         self.call_rpc_blocking(|inner| inner.state_client.get_state_root())
             .map_err(map_err)
@@ -797,6 +810,24 @@ impl RpcClient {
     ) -> anyhow::Result<Option<TransactionInfoWithProofView>> {
         self.call_rpc_blocking(|inner| {
             inner.chain_client.get_transaction_proof(
+                block_hash,
+                transaction_global_index,
+                event_index,
+                access_path.map(Into::into),
+            )
+        })
+        .map_err(map_err)
+    }
+
+    pub fn chain_get_transaction_proof_raw(
+        &self,
+        block_hash: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath>,
+    ) -> anyhow::Result<Option<StrView<Vec<u8>>>> {
+        self.call_rpc_blocking(|inner| {
+            inner.chain_client.get_transaction_proof_raw(
                 block_hash,
                 transaction_global_index,
                 event_index,

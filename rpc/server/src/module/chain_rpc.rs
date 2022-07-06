@@ -435,6 +435,36 @@ where
 
         Box::pin(fut.boxed())
     }
+
+    fn get_transaction_proof_raw(
+        &self,
+        block_hash: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<StrView<AccessPath>>,
+    ) -> FutureResult<Option<StrView<Vec<u8>>>> {
+        let service = self.service.clone();
+        let fut = async move {
+            let proof = service
+                .get_transaction_proof(
+                    block_hash,
+                    transaction_global_index,
+                    event_index,
+                    access_path.map(Into::into),
+                )
+                .await?
+                .map(|proof| {
+                    StrView(
+                        bcs_ext::to_bytes(&proof)
+                            .expect("serialize TransactionInfoWithProof to bcs should success."),
+                    )
+                });
+            Ok(proof)
+        }
+        .map_err(map_err);
+
+        Box::pin(fut.boxed())
+    }
 }
 
 fn try_decode_block_txns(state: &dyn StateView, block: &mut BlockView) -> anyhow::Result<()> {
