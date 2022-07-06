@@ -3810,6 +3810,65 @@
           }
         }
       }
+    },
+    {
+      "name": "chain.get_transaction_proof_raw",
+      "params": [
+        {
+          "name": "block_hash",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "type": "string",
+            "format": "HashValue"
+          }
+        },
+        {
+          "name": "transaction_global_index",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "uint64",
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        },
+        {
+          "name": "event_index",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Nullable_uint64",
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        },
+        {
+          "name": "access_path",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Nullable_starcoin_vm_types::access_path::AccessPath",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < StrView < Vec < u8 > > >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_alloc::vec::Vec<u8>",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
     }
   ]
 }

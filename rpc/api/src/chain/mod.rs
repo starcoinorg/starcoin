@@ -111,6 +111,16 @@ pub trait ChainApi {
         event_index: Option<u64>,
         access_path: Option<StrView<AccessPath>>,
     ) -> FutureResult<Option<TransactionInfoWithProofView>>;
+
+    /// Get TransactionInfoWithProof, same as `chain.get_transaction_proof`, but return result is TransactionInfoWithProof's BCS serialize bytes.
+    #[rpc(name = "chain.get_transaction_proof_raw")]
+    fn get_transaction_proof_raw(
+        &self,
+        block_hash: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<StrView<AccessPath>>,
+    ) -> FutureResult<Option<StrView<Vec<u8>>>>;
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]
