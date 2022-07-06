@@ -173,7 +173,7 @@ where
     /// Commit current modification into state tree's local cache,
     /// and return new root hash.
     /// NOTICE: this method will not flush the changes into disk.
-    /// It'just commit the changes into local state-tree, and cache it there.
+    /// It just commit the changes into local state-tree, and cache it there.
     pub fn commit(&self) -> Result<HashValue> {
         let mut guard = self.updates.write();
         let updates = guard
