@@ -322,8 +322,8 @@ where
 
     /// get last changes root_hash
     pub fn last_change_sets(&self) -> Option<(HashValue, TreeUpdateBatch<K>)> {
-        let cache_gurad = self.cache.lock();
-        cache_gurad.change_set_list.last().cloned()
+        let cache_guard = self.cache.lock();
+        cache_guard.change_set_list.last().cloned()
     }
 
     // TODO: to keep atomic with other commit.
