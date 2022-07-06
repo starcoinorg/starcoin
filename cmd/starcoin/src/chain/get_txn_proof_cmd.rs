@@ -67,7 +67,7 @@ impl CommandAction for GetTransactionProofCommand {
         let block = client
             .chain_get_block_by_hash(opt.block_hash, None)?
             .ok_or_else(|| format_err!("Can not find block by hash: {}", opt.block_hash))?;
-        if opt.raw {
+        let (txn_proof, result) = if opt.raw {
             let txn_proof_hex = client
                 .chain_get_transaction_proof_raw(
                     opt.block_hash,
@@ -83,16 +83,8 @@ impl CommandAction for GetTransactionProofCommand {
                 })?;
             let txn_proof =
                 bcs_ext::from_bytes::<TransactionInfoWithProof>(txn_proof_hex.0.as_slice())?;
-            ensure!(txn_proof.transaction_info.transaction_global_index == opt.transaction_global_index,
-            "response transaction_info.transaction_global_index({}) do not match with opt transaction_global_index({}).",
-            opt.transaction_global_index, txn_proof.transaction_info.transaction_global_index);
-            txn_proof.verify(
-                block.header.txn_accumulator_root,
-                opt.transaction_global_index,
-                opt.event_index,
-                opt.access_path.clone(),
-            )?;
-            Ok(ViewOrRaw::Raw(txn_proof_hex))
+
+            (txn_proof, ViewOrRaw::Raw(txn_proof_hex))
         } else {
             let txn_proof_view = client
                 .chain_get_transaction_proof(
@@ -107,17 +99,18 @@ impl CommandAction for GetTransactionProofCommand {
                         opt.transaction_global_index
                     )
                 })?;
-            ensure!(txn_proof_view.transaction_info.transaction_global_index.0 == opt.transaction_global_index,
-            "response transaction_info.transaction_global_index({}) do not match with opt transaction_global_index({}).",
-            opt.transaction_global_index, txn_proof_view.transaction_info.transaction_global_index.0);
             let txn_proof: TransactionInfoWithProof = txn_proof_view.clone().try_into()?;
-            txn_proof.verify(
-                block.header.txn_accumulator_root,
-                opt.transaction_global_index,
-                opt.event_index,
-                opt.access_path.clone(),
-            )?;
-            Ok(ViewOrRaw::View(txn_proof_view))
-        }
+            (txn_proof, ViewOrRaw::View(txn_proof_view))
+        };
+        ensure!(txn_proof.transaction_info.transaction_global_index == opt.transaction_global_index,
+            "response transaction_info.transaction_global_index({}) do not match with opt transaction_global_index({}).",
+            opt.transaction_global_index, txn_proof.transaction_info.transaction_global_index);
+        txn_proof.verify(
+            block.header.txn_accumulator_root,
+            opt.transaction_global_index,
+            opt.event_index,
+            opt.access_path.clone(),
+        )?;
+        Ok(result)
     }
 }
