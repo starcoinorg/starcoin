@@ -1157,56 +1157,93 @@
               "items": {
                 "type": "object",
                 "required": [
-                  "access_path",
-                  "action"
+                  "action",
+                  "state_key"
                 ],
                 "properties": {
-                  "access_path": {
-                    "type": "object",
-                    "required": [
-                      "address",
-                      "path"
-                    ],
-                    "properties": {
-                      "address": {
-                        "type": "string",
-                        "format": "AccountAddress"
-                      },
-                      "path": {
-                        "oneOf": [
-                          {
-                            "type": "object",
-                            "required": [
-                              "Code"
-                            ],
-                            "properties": {
-                              "Code": {
-                                "type": "string"
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "Resource"
-                            ],
-                            "properties": {
-                              "Resource": {
-                                "type": "string"
-                              }
-                            },
-                            "additionalProperties": false
-                          }
-                        ]
-                      }
-                    }
-                  },
                   "action": {
                     "type": "string",
                     "enum": [
                       "Deletion",
                       "Value"
+                    ]
+                  },
+                  "state_key": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "AccessPath"
+                        ],
+                        "properties": {
+                          "AccessPath": {
+                            "type": "object",
+                            "required": [
+                              "address",
+                              "path"
+                            ],
+                            "properties": {
+                              "address": {
+                                "type": "string",
+                                "format": "AccountAddress"
+                              },
+                              "path": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "Code"
+                                    ],
+                                    "properties": {
+                                      "Code": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "Resource"
+                                    ],
+                                    "properties": {
+                                      "Resource": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "TableItem"
+                        ],
+                        "properties": {
+                          "TableItem": {
+                            "type": "object",
+                            "required": [
+                              "handle",
+                              "key"
+                            ],
+                            "properties": {
+                              "handle": {
+                                "type": "string"
+                              },
+                              "key": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      }
                     ]
                   },
                   "value": {
@@ -2393,56 +2430,93 @@
               "items": {
                 "type": "object",
                 "required": [
-                  "access_path",
-                  "action"
+                  "action",
+                  "state_key"
                 ],
                 "properties": {
-                  "access_path": {
-                    "type": "object",
-                    "required": [
-                      "address",
-                      "path"
-                    ],
-                    "properties": {
-                      "address": {
-                        "type": "string",
-                        "format": "AccountAddress"
-                      },
-                      "path": {
-                        "oneOf": [
-                          {
-                            "type": "object",
-                            "required": [
-                              "Code"
-                            ],
-                            "properties": {
-                              "Code": {
-                                "type": "string"
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "Resource"
-                            ],
-                            "properties": {
-                              "Resource": {
-                                "type": "string"
-                              }
-                            },
-                            "additionalProperties": false
-                          }
-                        ]
-                      }
-                    }
-                  },
                   "action": {
                     "type": "string",
                     "enum": [
                       "Deletion",
                       "Value"
+                    ]
+                  },
+                  "state_key": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "AccessPath"
+                        ],
+                        "properties": {
+                          "AccessPath": {
+                            "type": "object",
+                            "required": [
+                              "address",
+                              "path"
+                            ],
+                            "properties": {
+                              "address": {
+                                "type": "string",
+                                "format": "AccountAddress"
+                              },
+                              "path": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "Code"
+                                    ],
+                                    "properties": {
+                                      "Code": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "Resource"
+                                    ],
+                                    "properties": {
+                                      "Resource": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "TableItem"
+                        ],
+                        "properties": {
+                          "TableItem": {
+                            "type": "object",
+                            "required": [
+                              "handle",
+                              "key"
+                            ],
+                            "properties": {
+                              "handle": {
+                                "type": "string"
+                              },
+                              "key": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      }
                     ]
                   },
                   "value": {
