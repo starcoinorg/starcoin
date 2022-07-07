@@ -21,8 +21,8 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 #[derive(Parser, Debug, Clone)]
 #[clap(version = "0.1.0", author = "Starcoin Core Dev <dev@starcoin.org>")]
 pub struct Options {
-    #[clap(long, default_value = "http://main.seed.starcoin.org")]
-    /// starcoin node http rpc url
+    #[clap(long, default_value = "https://main.seed.starcoin.org")]
+    /// starcoin node https rpc url
     node_url: String,
 }
 
