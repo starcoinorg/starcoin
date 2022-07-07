@@ -24,6 +24,10 @@ pub struct CompatibilityCheckCommand {
     #[clap(long = "network", short, conflicts_with("rpc"))]
     /// genesis with the network
     network: Option<BuiltinNetworkID>,
+
+    #[clap(name = "rpc", long)]
+    /// use to check pre-version compatibility.
+    pre_version: Option<String>,
 }
 
 pub fn handle_compatibility_check(
@@ -79,4 +83,9 @@ pub fn handle_compatibility_check(
         );
     }
     Ok(())
+}
+
+fn handle_pre_version_compatibility_check(pre_version: &str) -> anyhow::Result<()> {
+    // referece: vm/stdlib/src/main.rs line 302
+    unimplemented!()
 }
