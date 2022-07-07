@@ -48,11 +48,19 @@ pub mod gas_schedule {
         VEC_APPEND = 30,
         VEC_REMOVE = 31,
         VEC_REVERSE = 32,
+        TABLE_NEW = 33,
+        TABLE_INSERT = 34,
+        TABLE_BORROW = 35,
+        TABLE_BORROW_MUT = 36,
+        TABLE_REMOVE = 37,
+        TABLE_CONTAINS = 38,
+        TABLE_DESTROY = 39,
+        TABLE_DROP = 40,
     }
 
     impl NativeCostIndex {
         //note: should change this value when add new native function.
-        pub const NUMBER_OF_NATIVE_FUNCTIONS: usize = 33;
+        pub const NUMBER_OF_NATIVE_FUNCTIONS: usize = 41;
     }
 }
 pub mod location {

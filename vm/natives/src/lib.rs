@@ -135,5 +135,8 @@ pub fn starcoin_natives() -> NativeFunctionTable {
                 func,
             )
         })
+        .collect::<Vec<_>>()
+        .into_iter()
+        .chain(move_table_extension::table_natives(CORE_CODE_ADDRESS))
         .collect()
 }

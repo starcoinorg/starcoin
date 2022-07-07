@@ -9420,7 +9420,7 @@ dependencies = [
 [[package]]
 name = "starcoin-framework"
 version = "11.0.0"
-source = "git+https://github.com/lemonhx/starcoin-framework?rev=4eea98d99a85b4375892884e596c4b7e5b789efd#4eea98d99a85b4375892884e596c4b7e5b789efd"
+source = "git+https://github.com/starcoinorg/starcoin-framework?rev=525e7a0f06803c521af47957b4598797c754a8df#525e7a0f06803c521af47957b4598797c754a8df"
 dependencies = [
  "anyhow",
  "include_dir",
@@ -9707,6 +9707,7 @@ dependencies = [
  "move-errmapgen",
  "move-prover",
  "move-stdlib",
+ "move-table-extension",
  "move-vm-runtime",
  "move-vm-types",
  "num_enum",
