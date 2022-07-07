@@ -20,7 +20,7 @@ use starcoin_vm_types::transaction::Transaction;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
 use test_helper::dao::{
     dao_vote_test, empty_txn_payload, execute_script_on_chain_config, on_chain_config_type_tag,
-    reward_config_type_tag, transasction_timeout_type_tag, txn_publish_config_type_tag,
+    reward_config_type_tag, transaction_timeout_type_tag, txn_publish_config_type_tag,
     vote_reward_scripts, vote_script_consensus, vote_txn_publish_option_script,
     vote_txn_timeout_script, vote_vm_config_script,
 };
@@ -107,7 +107,7 @@ fn test_modify_on_chain_config_txn_timeout() -> Result<()> {
     let alice = Account::new();
     let (chain_state, net) = prepare_genesis();
 
-    let action_type_tag = transasction_timeout_type_tag();
+    let action_type_tag = transaction_timeout_type_tag();
     let new_timeout_config_seconds: u64 = 40000;
 
     dao_vote_test(

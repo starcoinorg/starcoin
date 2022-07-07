@@ -102,7 +102,7 @@ pub fn reward_config_type_tag() -> TypeTag {
         type_params: vec![],
     })
 }
-pub fn transasction_timeout_type_tag() -> TypeTag {
+pub fn transaction_timeout_type_tag() -> TypeTag {
     TypeTag::Struct(StructTag {
         address: genesis_address(),
         module: Identifier::new("TransactionTimeoutConfig").unwrap(),
@@ -637,7 +637,7 @@ pub fn dao_vote_test(
         assert_eq!(state, EXTRACTED);
     }
     {
-        //Unstack
+        // Unstake
         let script_function = ScriptFunction::new(
             ModuleId::new(
                 core_code_address(),
@@ -657,7 +657,7 @@ pub fn dao_vote_test(
         )?;
     }
     {
-        //Unstack
+        // Destroy terminated proposal
         let script_function = ScriptFunction::new(
             ModuleId::new(core_code_address(), Identifier::new("Dao").unwrap()),
             Identifier::new("destroy_terminated_proposal").unwrap(),

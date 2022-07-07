@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 type CreateSolver = extern "C" fn() -> Box<dyn Solver>;
 
-const SOLVER_CREATER: &[u8] = b"create_solver";
+const SOLVER_CREATOR: &[u8] = b"create_solver";
 
 pub fn create_solver(
     config: MinerClientConfig,
@@ -23,7 +23,7 @@ pub fn create_solver(
             let lib = libloading::os::unix::Library::open(Some(path), 0x2 | 0x1000)?;
             #[cfg(not(target_os = "linux"))]
             let lib = libloading::Library::new(path)?;
-            let call_ref = lib.get::<CreateSolver>(SOLVER_CREATER)?;
+            let call_ref = lib.get::<CreateSolver>(SOLVER_CREATOR)?;
 
             Ok(call_ref())
         },

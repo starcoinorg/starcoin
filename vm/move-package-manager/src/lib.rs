@@ -22,7 +22,7 @@ use std::sync::Mutex;
 
 pub mod compatibility_check_cmd;
 pub mod deployment;
-pub mod releasement;
+pub mod release;
 
 // use `integration-tests` rather than `tests`, for avoid conflict with `mpm package test`
 pub const INTEGRATION_TESTS_DIR: &str = "integration-tests";

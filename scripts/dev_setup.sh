@@ -982,7 +982,7 @@ if [[ "$INSTALL_CODEGEN" == "true" ]]; then
   if [[ "$PACKAGE_MANAGER" == "apt-get" ]]; then
     # Only looked at this for a little while, but depends on glibc so alpine
     # support isn't easily added. On Mac it requires XCode to be installed,
-    # which is quite largs, so probably something we don't want to download in
+    # which is quite large, so probably something we don't want to download in
     # this script.
     install_swift
   fi

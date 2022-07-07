@@ -1005,7 +1005,7 @@
                   "additionalProperties": false
                 },
                 {
-                  "description": "Indicates an failure from inside Move code, where the VM could not continue exection, e.g. dividing by zero or a missing resource",
+                  "description": "Indicates an failure from inside Move code, where the VM could not continue execution, e.g. dividing by zero or a missing resource",
                   "type": "object",
                   "required": [
                     "ExecutionFailure"
@@ -2241,7 +2241,7 @@
                   "additionalProperties": false
                 },
                 {
-                  "description": "Indicates an failure from inside Move code, where the VM could not continue exection, e.g. dividing by zero or a missing resource",
+                  "description": "Indicates an failure from inside Move code, where the VM could not continue execution, e.g. dividing by zero or a missing resource",
                   "type": "object",
                   "required": [
                     "ExecutionFailure"

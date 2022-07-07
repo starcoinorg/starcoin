@@ -93,7 +93,7 @@ pub enum VmStatusExplainView {
         explain: MoveAbortExplain,
     },
 
-    /// Indicates an failure from inside Move code, where the VM could not continue exection, e.g.
+    /// Indicates an failure from inside Move code, where the VM could not continue execution, e.g.
     /// dividing by zero or a missing resource
     ExecutionFailure {
         /// status_code in str.

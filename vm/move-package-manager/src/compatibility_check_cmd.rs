@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::releasement::module;
+use crate::release::module;
 use clap::Parser;
 use itertools::Itertools;
 use move_binary_format::CompiledModule;

@@ -15,7 +15,7 @@ use starcoin_crypto::hash::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_network::build_network_worker;
 use starcoin_types::block::{AccumulatorInfo, Block, BlockBody, BlockHeader, BlockInfo};
-use starcoin_types::cmpact_block::CompactBlock;
+use starcoin_types::compact_block::CompactBlock;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_types::U256;
