@@ -68,7 +68,7 @@ OPTIONS:
 ARGS:
     <verifier>    Verify type:  Basic, Consensus, Full, None, eg [possible values: Basic, Consensus, Full, None]
 ```
-starcoin_db_export export_snapshot
+starcoin_db_exporter export_snapshot
 ```shell
 ./starcoin_db_exporter export-snapshot -i ~/.starcoin/main -n main -o ~/snapshot
 USAGE:
