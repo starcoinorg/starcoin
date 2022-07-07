@@ -9,7 +9,8 @@ use move_core_types::errmap::ErrorMapping;
 use move_package_manager::compatibility_check_cmd::{
     handle_compatibility_check, CompatibilityCheckCommand,
 };
-use move_package_manager::releasement::{handle_release, Releasement};
+use move_package_manager::deployment::{handle_deployment, DeploymentCommand};
+use move_package_manager::release::{handle_release, Release};
 use move_package_manager::{run_integration_test, IntegrationTestCommand};
 use starcoin_config::genesis_config;
 use starcoin_vm_runtime::natives::starcoin_natives;
@@ -36,7 +37,7 @@ pub enum Commands {
     },
     /// Release the package.
     #[clap(name = "release")]
-    Release(Releasement),
+    Release(Release),
     /// Execute a sandbox command.
     #[clap(name = "sandbox")]
     Sandbox {
@@ -64,6 +65,10 @@ pub enum Commands {
     /// Check compatibility of modules comparing with remote chain state.
     #[clap(name = "check-compatibility")]
     CompatibilityCheck(CompatibilityCheckCommand),
+
+    /// Deploy package to chain
+    #[clap(name = "deploy")]
+    Deploy(DeploymentCommand),
 }
 
 fn main() -> Result<()> {
@@ -89,7 +94,8 @@ fn main() -> Result<()> {
             &storage_dir,
         ),
         Commands::Experimental { storage_dir, cmd } => cmd.handle_command(move_args, &storage_dir),
-        Commands::Release(releasement) => handle_release(move_args, releasement),
+        Commands::Release(release) => handle_release(move_args, release),
         Commands::CompatibilityCheck(cmd) => handle_compatibility_check(move_args, cmd),
+        Commands::Deploy(cmd) => handle_deployment(move_args, cmd),
     }
 }

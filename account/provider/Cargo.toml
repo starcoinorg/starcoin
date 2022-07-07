@@ -12,3 +12,4 @@ starcoin-account-api = { path = "../api", features = ["mock"] }
 starcoin-types = { path = "../../types" }
 starcoin-rpc-client = { path = "../../rpc/client" }
 starcoin-config = { path = "../../config" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}

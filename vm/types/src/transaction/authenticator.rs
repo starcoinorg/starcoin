@@ -27,7 +27,7 @@ use std::{convert::TryFrom, fmt, str::FromStr};
 /// A `TransactionAuthenticator` is an an abstraction of a signature scheme. It must know:
 /// (1) How to check its signature against a message and public key
 /// (2) How to convert its public key into an `AuthenticationKeyPreimage` structured as
-/// (public_key | signaure_scheme_id).
+/// (public_key | signature_scheme_id).
 /// Each on-chain `DiemAccount` must store an `AuthenticationKey` (computed via a sha3 hash of an
 /// `AuthenticationKeyPreimage`).
 /// Each transaction submitted to the Diem blockchain contains a `TransactionAuthenticator`. During

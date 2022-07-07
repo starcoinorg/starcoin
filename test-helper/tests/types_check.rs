@@ -10,7 +10,7 @@ use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_types::block::{Block, BlockHeader, BlockInfo};
-use starcoin_types::cmpact_block::CompactBlock;
+use starcoin_types::compact_block::CompactBlock;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::transaction::{

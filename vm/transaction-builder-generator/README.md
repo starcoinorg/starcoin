@@ -19,7 +19,7 @@ pub fn encode_peer_to_peer_with_metadata_script(
 ) -> Script;
 ```
 
-This crate provide a binary tool `generate-transaction-builders` to generate and install transaction builders in several programming languages.
+This crate provides a binary tool `generate-transaction-builders` to generate and install transaction builders in several programming languages.
 
 The tool will also generate and install type definitions for Diem types such as `TypeTag`, `AccountAddress`, and `Script`.
 

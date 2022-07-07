@@ -58,7 +58,7 @@ pub fn output(out: &mut dyn Write, abis: &[ScriptABI], local_types: bool) -> Res
 struct RustEmitter<T> {
     /// Writer.
     out: IndentedWriter<T>,
-    /// Whether we are targetting the Diem repository itself (as opposed to generated Diem types).
+    /// Whether we are targeting the Diem repository itself (as opposed to generated Diem types).
     local_types: bool,
 }
 

@@ -84,7 +84,7 @@ fn substitute_variable<S: ::std::hash::BuildHasher>(
         .to_string()
 }
 
-/// perform Windows style line ending (CRLF) to Unix stype (LF) conversion in given file
+/// perform Windows style line ending (CRLF) to Unix style (LF) conversion in given file
 fn windows_line_ending_to_unix_in_file(file_path: &str) -> Result<&str> {
     let content = std::fs::read_to_string(file_path)?;
     let converted = content.replace("\r\n", "\n");

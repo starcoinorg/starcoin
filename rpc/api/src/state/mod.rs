@@ -21,8 +21,13 @@ pub trait StateApi {
     #[rpc(name = "state.get")]
     fn get(&self, access_path: AccessPath) -> FutureResult<Option<Vec<u8>>>;
 
+    /// Return the Resource Or Code at the `access_path`, and provide a State Proof.
     #[rpc(name = "state.get_with_proof")]
     fn get_with_proof(&self, access_path: AccessPath) -> FutureResult<StateWithProofView>;
+
+    /// Same as `state.get_with_proof` but return `StateWithProof` in BCS serialize bytes.
+    #[rpc(name = "state.get_with_proof_raw")]
+    fn get_with_proof_raw(&self, access_path: AccessPath) -> FutureResult<StrView<Vec<u8>>>;
 
     #[rpc(name = "state.get_account_state")]
     fn get_account_state(&self, address: AccountAddress) -> FutureResult<Option<AccountState>>;
@@ -37,12 +42,21 @@ pub trait StateApi {
     #[rpc(name = "state.get_state_root")]
     fn get_state_root(&self) -> FutureResult<HashValue>;
 
+    /// Return the Resource Or Code at the `access_path` and provide a State Proof at `state_root`
     #[rpc(name = "state.get_with_proof_by_root")]
     fn get_with_proof_by_root(
         &self,
         access_path: AccessPath,
         state_root: HashValue,
     ) -> FutureResult<StateWithProofView>;
+
+    /// Same as `state.get_with_proof_by_root` but return `StateWithProof` in BCS serialize bytes.
+    #[rpc(name = "state.get_with_proof_by_root_raw")]
+    fn get_with_proof_by_root_raw(
+        &self,
+        access_path: AccessPath,
+        state_root: HashValue,
+    ) -> FutureResult<StrView<Vec<u8>>>;
 
     /// get code of module
     #[rpc(name = "state.get_code")]

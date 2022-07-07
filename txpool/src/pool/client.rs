@@ -3,7 +3,7 @@
 
 //! Transaction Pool state client.
 //!
-//! `Client` encapsulates all external data required for the verifaction and readiness.
+//! `Client` encapsulates all external data required for the verification and readiness.
 //! It includes any Ethereum state parts required for checking the transaction and
 //! any consensus-required structure of the transaction.
 

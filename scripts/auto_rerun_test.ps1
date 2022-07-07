@@ -20,11 +20,11 @@ if ($memory_size -lt 35000000000) {
 }
 
 
-$failed_tests=Select-String -Pattern 'test .* \.\.\. FAILED' -Path "./target/debug/test_result.txt" -AllMatche
+$failed_tests=Select-String -Pattern 'test .* \.\.\. FAILED' -Path "./target/debug/test_result.txt" -AllMatches
 Write-Host "All failed tests are redirected to file: $TEST_RESULT_FAILED_FILE" -ForegroundColor Green
 $failed_tests > "$TEST_RESULT_FAILED_FILE"
 
-Write-Host "Retring failed test cases" -ForegroundColor Green
+Write-Host "Retrying failed test cases" -ForegroundColor Green
 $env:RUST_LOG="DEBUG"
 $env:RUST_BACKTRACE="FULL"
 $case_status=0

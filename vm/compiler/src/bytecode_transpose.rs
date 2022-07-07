@@ -4,8 +4,8 @@ use move_binary_format::file_format::{Bytecode, CompiledScript};
 use move_binary_format::file_format_common::{VERSION_3, VERSION_4};
 use move_binary_format::CompiledModule;
 
-pub struct ModuleBytecodeDowgrader;
-impl ModuleBytecodeDowgrader {
+pub struct ModuleBytecodeDowngrader;
+impl ModuleBytecodeDowngrader {
     pub fn to_v3(m: &CompiledModule) -> Result<Vec<u8>> {
         match m.version {
             VERSION_4 => Self::from_v4_to_v3(m),

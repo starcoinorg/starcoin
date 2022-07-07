@@ -48,7 +48,7 @@ warn = [
 
 [hakari]
 resolver = "2"
-# temp hack to work arounf on hakari. We need to revisit the hakari part.
+# temp hack to work around on hakari. We need to revisit the hakari part.
 hakari-package = "starcoin-x"
 #exact-versions = true
 platforms = [

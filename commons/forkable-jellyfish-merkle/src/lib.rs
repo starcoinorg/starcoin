@@ -556,8 +556,8 @@ where
         }
 
         // 2.2. both are unfinished(They have keys with same length so it's impossible to have one
-        // finished and ther other not). This means the incoming key forks at some point between the
-        // position where step 1 ends and the last nibble, inclusive. Then create a seris of
+        // finished and the other not). This means the incoming key forks at some point between the
+        // position where step 1 ends and the last nibble, inclusive. Then create a series of
         // internal nodes the number of which equals to the length of the extra part of the
         // common prefix in step 2, a new leaf node for the incoming key, and update the
         // [`NodeKey`] of existing leaf node. We create new internal nodes in a bottom-up

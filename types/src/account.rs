@@ -235,7 +235,7 @@ impl Default for Account {
 }
 
 //---------------------------------------------------------------------------
-// Balance resource represenation
+// Balance resource representation
 //---------------------------------------------------------------------------
 
 /// Struct that represents an account balance resource for tests.
@@ -267,7 +267,7 @@ impl Balance {
 }
 
 //---------------------------------------------------------------------------
-// Event generator resource represenation
+// Event generator resource representation
 //---------------------------------------------------------------------------
 
 /// Struct that represents the event generator resource stored under accounts
