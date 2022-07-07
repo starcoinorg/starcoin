@@ -26,6 +26,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::StructTag;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -159,7 +160,8 @@ where
                 .state_root
                 .unwrap_or(service.clone().state_root().await?);
             let chain_state = ChainStateDB::new(state_store, Some(state_root));
-            let code = chain_state.get(&AccessPath::from(&module_id.0))?;
+            let code = chain_state
+                .get_state_value(&StateKey::AccessPath(AccessPath::from(&module_id.0)))?;
             Ok(match code {
                 None => None,
                 Some(c) => {
@@ -193,9 +195,8 @@ where
                 .state_root
                 .unwrap_or(service.clone().state_root().await?);
             let chain_state = ChainStateDB::new(state_store, Some(state_root));
-            let data = chain_state.get(&AccessPath::resource_access_path(
-                addr,
-                resource_type.0.clone(),
+            let data = chain_state.get_state_value(&StateKey::AccessPath(
+                AccessPath::resource_access_path(addr, resource_type.0.clone()),
             ))?;
             Ok(match data {
                 None => None,

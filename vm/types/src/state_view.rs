@@ -8,7 +8,7 @@
 
 //! This crate defines [`trait StateView`](StateView).
 
-use crate::access_path::AccessPath;
+use crate::state_store::state_key::StateKey;
 use anyhow::Result;
 
 /// `StateView` is a trait that defines a read-only snapshot of the global state. It is passed to
@@ -16,7 +16,7 @@ use anyhow::Result;
 /// given state.
 pub trait StateView {
     /// Gets the state for a single access path.
-    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>>;
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>>;
 
     /// VM needs this method to know whether the current state view is for genesis state creation.
     /// Currently TransactionPayload::WriteSet is only valid for genesis state creation.

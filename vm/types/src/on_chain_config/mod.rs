@@ -31,6 +31,7 @@ pub use self::{
     vm_config::*,
 };
 pub use crate::on_chain_resource::GlobalTimeOnChain;
+use crate::state_store::state_key::StateKey;
 
 /// To register an on-chain config in Rust:
 /// 1. Implement the `OnChainConfig` trait for the Rust representation of the config
@@ -106,7 +107,9 @@ where
     V: StateView,
 {
     fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>> {
-        self.get(&access_path).ok().flatten()
+        self.get_state_value(&StateKey::AccessPath(access_path))
+            .ok()
+            .flatten()
     }
 }
 

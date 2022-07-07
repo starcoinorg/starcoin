@@ -14,6 +14,7 @@ use starcoin_types::language_storage::{ModuleId, StructTag};
 use starcoin_types::state_set::ChainStateSet;
 use starcoin_types::vm_error::StatusCode;
 use starcoin_vm_types::errors::{Location, PartialVMError, PartialVMResult, VMResult};
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::write_set::WriteSet;
 use std::collections::BTreeMap;
@@ -61,10 +62,10 @@ where
     A: StateView,
     B: StateView,
 {
-    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
         match self {
-            SelectableStateView::A(a) => a.get(access_path),
-            SelectableStateView::B(b) => b.get(access_path),
+            SelectableStateView::A(a) => a.get_state_value(state_key),
+            SelectableStateView::B(b) => b.get_state_value(state_key),
         }
     }
 
@@ -167,9 +168,9 @@ where
     A: StateView,
     B: StateView,
 {
-    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        match self.a.get(access_path)? {
-            None => self.b.get(access_path),
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+        match self.a.get_state_value(state_key)? {
+            None => self.b.get_state_value(state_key),
             Some(d) => Ok(Some(d)),
         }
     }
@@ -321,14 +322,19 @@ impl ResourceResolver for RemoteStateView {
 }
 
 impl StateView for RemoteStateView {
-    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        match &access_path.path {
-            DataPath::Code(m) => Ok(self
-                .get_module(&ModuleId::new(access_path.address, m.clone()))
-                .map_err(|err| err.into_vm_status())?),
-            DataPath::Resource(s) => Ok(self
-                .get_resource(&access_path.address, s)
-                .map_err(|err| err.finish(Location::Undefined).into_vm_status())?),
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+        match state_key {
+            StateKey::AccessPath(access_path) => match &access_path.path {
+                DataPath::Code(m) => Ok(self
+                    .get_module(&ModuleId::new(access_path.address, m.clone()))
+                    .map_err(|err| err.into_vm_status())?),
+                DataPath::Resource(s) => Ok(self
+                    .get_resource(&access_path.address, s)
+                    .map_err(|err| err.finish(Location::Undefined).into_vm_status())?),
+            },
+            StateKey::TableItem { handle: _, key: _ } => {
+                unimplemented!()
+            }
         }
     }
 

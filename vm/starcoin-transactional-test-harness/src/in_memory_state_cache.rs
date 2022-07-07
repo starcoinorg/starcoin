@@ -3,11 +3,12 @@ use dashmap::DashMap;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_types::state_set::ChainStateSet;
 use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 
 pub struct InMemoryStateCache<V> {
-    data_map: DashMap<AccessPath, Option<Vec<u8>>>,
+    data_map: DashMap<StateKey, Option<Vec<u8>>>,
     data_view: V,
 }
 
@@ -42,13 +43,21 @@ impl<V> InMemoryStateCache<V> {
 impl<V> ChainStateWriter for InMemoryStateCache<V> {
     fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> anyhow::Result<()> {
         self.apply_write_set(
-            WriteSetMut::new(vec![(access_path.clone(), WriteOp::Value(value))]).freeze()?,
+            WriteSetMut::new(vec![(
+                StateKey::AccessPath(access_path.clone()),
+                WriteOp::Value(value),
+            )])
+            .freeze()?,
         )
     }
 
     fn remove(&self, access_path: &AccessPath) -> anyhow::Result<()> {
         self.apply_write_set(
-            WriteSetMut::new(vec![(access_path.clone(), WriteOp::Deletion)]).freeze()?,
+            WriteSetMut::new(vec![(
+                StateKey::AccessPath(access_path.clone()),
+                WriteOp::Deletion,
+            )])
+            .freeze()?,
         )
     }
 
@@ -71,10 +80,10 @@ impl<V> ChainStateWriter for InMemoryStateCache<V> {
 }
 impl<V: StateView> StateView for InMemoryStateCache<V> {
     // Get some data either through the cache or the `StateView` on a cache miss.
-    fn get(&self, access_path: &AccessPath) -> anyhow::Result<Option<Vec<u8>>> {
-        match self.data_map.get(access_path) {
+    fn get_state_value(&self, state_key: &StateKey) -> anyhow::Result<Option<Vec<u8>>> {
+        match self.data_map.get(state_key) {
             Some(opt_data) => Ok(opt_data.clone()),
-            None => match self.data_view.get(access_path) {
+            None => match self.data_view.get_state_value(state_key) {
                 Ok(remote_data) => Ok(remote_data),
                 // TODO: should we forward some error info?
                 Err(e) => {

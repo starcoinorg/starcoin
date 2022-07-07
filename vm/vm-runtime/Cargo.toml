@@ -14,11 +14,12 @@ starcoin-types = { path = "../../types" }
 move-core-types = { git = "https://github.com/starcoinorg/move", rev = "1c51b0fcf076efef5890ea7e251f2e871a728cb6" }
 move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "1c51b0fcf076efef5890ea7e251f2e871a728cb6" }
 move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "1c51b0fcf076efef5890ea7e251f2e871a728cb6" }
+move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "1c51b0fcf076efef5890ea7e251f2e871a728cb6" }
 tracing = "0.1.34"
 starcoin-config = { path = "../../config" }
 starcoin-logger = { path = "../../commons/logger" }
 num_enum = "0.5.7"
-crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
+starcoin-crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
 rand = "0.8.5"
 rand_core = { version = "0.6.3", default-features = false }
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
@@ -27,6 +28,9 @@ starcoin-vm-types = { path = "../types" }
 starcoin-move-compiler = { path = "../compiler" }
 starcoin-natives = { path = "../natives" }
 starcoin-metrics = { path = "../../commons/metrics" }
+serde = { version = "1.0.130", default-features = false }
+serde_bytes = "0.11.5"
+serde-helpers = {path = "../../commons/serde-helpers"}
 
 [dev-dependencies]
 

@@ -311,6 +311,16 @@ WithdrawCapabilityResource:
   STRUCT:
     - account_address:
         TYPENAME: AccountAddress
+WriteAccessPathSet:
+  NEWTYPESTRUCT:
+    TYPENAME: WriteAccessPathSetMut
+WriteAccessPathSetMut:
+  STRUCT:
+    - write_set:
+        SEQ:
+          TUPLE:
+            - TYPENAME: AccessPath
+            - TYPENAME: WriteOp
 WriteOp:
   ENUM:
     0:
@@ -318,13 +328,3 @@ WriteOp:
     1:
       Value:
         NEWTYPE: BYTES
-WriteSet:
-  NEWTYPESTRUCT:
-    TYPENAME: WriteSetMut
-WriteSetMut:
-  STRUCT:
-    - write_set:
-        SEQ:
-          TUPLE:
-            - TYPENAME: AccessPath
-            - TYPENAME: WriteOp

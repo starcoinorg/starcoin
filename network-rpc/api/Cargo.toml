@@ -21,3 +21,4 @@ starcoin-logger = {path = "../../commons/logger"}
 serde = { version = "1.0.130", features = ["derive"] }
 anyhow = "1.0.41"
 futures = "0.3.12"
+starcoin-vm-types = {path = "../../vm/types"}

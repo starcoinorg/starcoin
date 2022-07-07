@@ -21,6 +21,7 @@ use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
     state_set::ChainStateSet,
 };
+use starcoin_vm_types::state_store::state_key::StateKey;
 use std::sync::Arc;
 
 pub struct ChainStateService {
@@ -77,7 +78,10 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
         _ctx: &mut ServiceContext<ChainStateService>,
     ) -> Result<StateResponse> {
         let response = match msg {
-            StateRequest::Get(access_path) => StateResponse::State(self.service.get(&access_path)?),
+            StateRequest::Get(access_path) => StateResponse::State(
+                self.service
+                    .get_state_value(&StateKey::AccessPath(access_path))?,
+            ),
             StateRequest::GetWithProof(access_path) => {
                 StateResponse::StateWithProof(Box::new(self.service.get_with_proof(&access_path)?))
             }
@@ -212,8 +216,8 @@ impl ChainStateReader for Inner {
 }
 
 impl StateView for Inner {
-    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        self.state_db.get(access_path)
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+        self.state_db.get_state_value(state_key)
     }
 
     fn is_genesis(&self) -> bool {

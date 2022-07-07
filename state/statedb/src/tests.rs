@@ -3,6 +3,7 @@ use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 use starcoin_vm_types::account_config::AccountResource;
 use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use std::collections::HashMap;
 
 fn random_bytes() -> Vec<u8> {
@@ -10,9 +11,12 @@ fn random_bytes() -> Vec<u8> {
 }
 
 fn to_write_set(access_path: AccessPath, value: Vec<u8>) -> WriteSet {
-    WriteSetMut::new(vec![(access_path, WriteOp::Value(value))])
-        .freeze()
-        .expect("freeze write_set must success.")
+    WriteSetMut::new(vec![(
+        StateKey::AccessPath(access_path),
+        WriteOp::Value(value),
+    )])
+    .freeze()
+    .expect("freeze write_set must success.")
 }
 
 #[test]
@@ -24,7 +28,7 @@ fn test_state_proof() -> Result<()> {
     chain_state_db.apply_write_set(to_write_set(access_path.clone(), state0.clone()))?;
 
     let state_root = chain_state_db.commit()?;
-    let state1 = chain_state_db.get(&access_path)?;
+    let state1 = chain_state_db.get_state_value(&StateKey::AccessPath(access_path.clone()))?;
     assert!(state1.is_some());
     assert_eq!(state0, state1.unwrap());
     println!("{}", access_path.address.key_hash());
@@ -97,7 +101,9 @@ fn test_state_version() -> Result<()> {
     chain_state_db.apply_write_set(to_write_set(access_path.clone(), new_state))?;
 
     let chain_state_db_ori = ChainStateDB::new(storage, Some(old_root));
-    let old_state2 = chain_state_db_ori.get(&access_path)?.unwrap();
+    let old_state2 = chain_state_db_ori
+        .get_state_value(&StateKey::AccessPath(access_path))?
+        .unwrap();
     assert_eq!(old_state, old_state2);
 
     Ok(())

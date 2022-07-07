@@ -23,6 +23,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::access_path::{DataPath, ModuleName};
 use starcoin_vm_types::language_storage::StructTag;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateView;
 use std::collections::HashSet;
 use std::convert::TryInto;
@@ -309,14 +310,23 @@ impl ChainStateDB {
 }
 
 impl StateView for ChainStateDB {
-    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        let account_address = &access_path.address;
-        let data_path = &access_path.path;
-        self.get_account_state_object_option(account_address)
-            .and_then(|account_state| match account_state {
-                Some(account_state) => account_state.get(data_path),
-                None => Ok(None),
-            })
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+        match state_key {
+            StateKey::AccessPath(access_path) => {
+                let account_address = &access_path.address;
+                let data_path = &access_path.path;
+                self.get_account_state_object_option(account_address)
+                    .and_then(|account_state| match account_state {
+                        Some(account_state) => account_state.get(data_path),
+                        None => Ok(None),
+                    })
+            }
+            StateKey::TableItem { handle: _, key: _ } => {
+                // XXX FIXME YSG
+                // unimplemented!()
+                Ok(None)
+            }
+        }
     }
 
     fn is_genesis(&self) -> bool {
@@ -430,17 +440,23 @@ impl ChainStateReader for ChainStateDB {
 impl ChainStateWriter for ChainStateDB {
     fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()> {
         self.apply_write_set(
-            WriteSetMut::new(vec![(access_path.clone(), WriteOp::Value(value))])
-                .freeze()
-                .expect("freeze write_set must success."),
+            WriteSetMut::new(vec![(
+                StateKey::AccessPath(access_path.clone()),
+                WriteOp::Value(value),
+            )])
+            .freeze()
+            .expect("freeze write_set must success."),
         )
     }
 
     fn remove(&self, access_path: &AccessPath) -> Result<()> {
         self.apply_write_set(
-            WriteSetMut::new(vec![(access_path.clone(), WriteOp::Deletion)])
-                .freeze()
-                .expect("freeze write_set must success."),
+            WriteSetMut::new(vec![(
+                StateKey::AccessPath(access_path.clone()),
+                WriteOp::Deletion,
+            )])
+            .freeze()
+            .expect("freeze write_set must success."),
         )
     }
 
@@ -471,21 +487,30 @@ impl ChainStateWriter for ChainStateDB {
     }
 
     fn apply_write_set(&self, write_set: WriteSet) -> Result<()> {
+        // XXX FIXME YSG
         let mut locks = self.updates.write();
-        for (access_path, write_op) in write_set {
+        for (state_key, write_op) in write_set {
             //update self updates record
-            locks.insert(access_path.address);
-            let (account_address, data_path) = access_path.into_inner();
-            match write_op {
-                WriteOp::Value(value) => {
-                    let account_state_object =
-                        self.get_account_state_object(&account_address, true)?;
-                    account_state_object.set(data_path, value);
+            match state_key {
+                StateKey::AccessPath(access_path) => {
+                    locks.insert(access_path.address);
+                    let (account_address, data_path) = access_path.into_inner();
+                    match write_op {
+                        WriteOp::Value(value) => {
+                            let account_state_object =
+                                self.get_account_state_object(&account_address, true)?;
+                            account_state_object.set(data_path, value);
+                        }
+                        WriteOp::Deletion => {
+                            let account_state_object =
+                                self.get_account_state_object(&account_address, false)?;
+                            account_state_object.remove(&data_path)?;
+                        }
+                    }
                 }
-                WriteOp::Deletion => {
-                    let account_state_object =
-                        self.get_account_state_object(&account_address, false)?;
-                    account_state_object.remove(&data_path)?;
+                StateKey::TableItem { handle: _, key: _ } => {
+                    // XXX FIXME YSG
+                    // unimplemented!()
                 }
             }
         }

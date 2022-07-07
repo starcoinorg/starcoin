@@ -20,6 +20,7 @@ use starcoin_vm_types::genesis_config::{ChainId, StdlibVersion};
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::on_chain_config::{MoveLanguageVersion, TransactionPublishOption, Version};
 use starcoin_vm_types::on_chain_resource::LinearWithdrawCapability;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::token::stc::G_STC_TOKEN_CODE;
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
 use statedb::ChainStateDB;
@@ -491,7 +492,7 @@ fn ext_execute_after_upgrade(
             )?;
         }
         StdlibVersion::Version(6) => {
-            let resource = chain_state.get(&AccessPath::new(
+            let resource = chain_state.get_state_value(&StateKey::AccessPath(AccessPath::new(
                 genesis_address(),
                 DataPath::Resource(StructTag {
                     address: genesis_address(),
@@ -499,7 +500,7 @@ fn ext_execute_after_upgrade(
                     name: Identifier::new("SignerDelegated").unwrap(),
                     type_params: vec![],
                 }),
-            ))?;
+            )))?;
             assert!(resource.is_some());
             let genesis_account = chain_state
                 .get_account_resource(genesis_address())?
@@ -519,15 +520,16 @@ fn ext_execute_after_upgrade(
             assert!(version_resource.is_some());
             let version = version_resource.unwrap();
             assert_eq!(version.major, 2, "expect language version is 2");
-            let genesis_nft_info = chain_state.get(&AccessPath::new(
-                genesis_address(),
-                DataPath::Resource(StructTag {
-                    address: genesis_address(),
-                    module: Identifier::new("GenesisNFT").unwrap(),
-                    name: Identifier::new("GenesisNFTInfo").unwrap(),
-                    type_params: vec![],
-                }),
-            ))?;
+            let genesis_nft_info =
+                chain_state.get_state_value(&StateKey::AccessPath(AccessPath::new(
+                    genesis_address(),
+                    DataPath::Resource(StructTag {
+                        address: genesis_address(),
+                        module: Identifier::new("GenesisNFT").unwrap(),
+                        name: Identifier::new("GenesisNFTInfo").unwrap(),
+                        type_params: vec![],
+                    }),
+                )))?;
             assert!(
                 genesis_nft_info.is_some(),
                 "expect 0x1::GenesisNFT::GenesisNFTInfo in global storage, but go none."

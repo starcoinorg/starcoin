@@ -25,7 +25,7 @@ use starcoin_types::transaction::{
     Module, Package, Script, ScriptABI, SignedUserTransaction, Transaction, TransactionArgument,
     TransactionPayload,
 };
-use starcoin_types::write_set::{WriteOp, WriteSet};
+use starcoin_types::write_set::{WriteAccessPathSet, WriteOp};
 
 fn main() {
     generate().unwrap();
@@ -72,7 +72,8 @@ fn generate() -> Result<(), Error> {
     )?;
     tracer.trace_type::<ContractEventV0>(&samples)?;
     tracer.trace_type::<ContractEvent>(&samples)?;
-    tracer.trace_type::<WriteSet>(&samples)?;
+    // XXX FIXME YSG why use WriteSet crash
+    tracer.trace_type::<WriteAccessPathSet>(&samples)?;
 
     tracer.trace_type::<TransactionArgument>(&samples)?;
     tracer.trace_type::<TransactionAuthenticator>(&samples)?;

@@ -48,6 +48,7 @@ use clap::Parser;
 use move_command_line_common::address::ParsedAddress;
 use move_core_types::value::MoveValue;
 use starcoin_vm_runtime::session::SerializedReturnValues;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 use starcoin_vm_types::transaction::{DryRunTransaction, TransactionOutput};
 use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
@@ -320,12 +321,15 @@ impl<'a> StarcoinTestAdapter<'a> {
     fn fetch_account_resource(&self, signer_addr: &AccountAddress) -> Result<AccountResource> {
         let account_access_path =
             AccessPath::resource_access_path(*signer_addr, AccountResource::struct_tag());
-        let account_blob = self.storage.get(&account_access_path)?.ok_or_else(|| {
-            anyhow::anyhow!(
+        let account_blob = self
+            .storage
+            .get_state_value(&StateKey::AccessPath(account_access_path))?
+            .ok_or_else(|| {
+                anyhow::anyhow!(
                 "Failed to fetch account resource under address {}. Has the account been created?",
                 signer_addr
             )
-        })?;
+            })?;
         Ok(bcs::from_bytes(&account_blob).unwrap())
     }
 
@@ -341,12 +345,15 @@ impl<'a> StarcoinTestAdapter<'a> {
         let balance_access_path =
             AccessPath::resource_access_path(*signer_addr, balance_resource_tag);
 
-        let balance_blob = self.storage.get(&balance_access_path)?.ok_or_else(|| {
-            anyhow::anyhow!(
-                "Failed to fetch balance resource under address {}.",
-                signer_addr
-            )
-        })?;
+        let balance_blob = self
+            .storage
+            .get_state_value(&StateKey::AccessPath(balance_access_path))?
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Failed to fetch balance resource under address {}.",
+                    signer_addr
+                )
+            })?;
 
         Ok(bcs::from_bytes(&balance_blob).unwrap())
     }
@@ -373,7 +380,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         {
             let mut writes = WriteSetMut::default();
             writes.push((
-                AccessPath::resource_access_path(
+                StateKey::AccessPath(AccessPath::resource_access_path(
                     genesis_address(),
                     StructTag {
                         address: genesis_address(),
@@ -381,7 +388,7 @@ impl<'a> StarcoinTestAdapter<'a> {
                         name: Identifier::new("SignerDelegated")?,
                         type_params: vec![],
                     },
-                ),
+                )),
                 WriteOp::Deletion,
             ));
             self.storage.apply_write_set(writes.freeze().unwrap())?;
@@ -773,10 +780,10 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                     }
 
                     writes.push((
-                        AccessPath::code_access_path(
+                        StateKey::AccessPath(AccessPath::code_access_path(
                             m.named_module.address.into_inner(),
                             Identifier::new(m.named_module.name.as_str()).unwrap(),
-                        ),
+                        )),
                         WriteOp::Value({
                             let mut bytes = vec![];
                             m.named_module.module.serialize(&mut bytes).unwrap();

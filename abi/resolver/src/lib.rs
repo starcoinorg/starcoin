@@ -351,7 +351,7 @@ fn find_struct_def_in_module(
 mod tests {
     use crate::ABIResolver;
     use anyhow::Result;
-    use starcoin_vm_types::access_path::{AccessPath, DataPath};
+    use starcoin_vm_types::access_path::DataPath;
     use starcoin_vm_types::account_address::AccountAddress;
     use starcoin_vm_types::account_config::genesis_address;
     use starcoin_vm_types::file_format::CompiledModule;
@@ -359,6 +359,7 @@ mod tests {
     use starcoin_vm_types::language_storage::ModuleId;
     use starcoin_vm_types::normalized::Module;
     use starcoin_vm_types::parser::parse_struct_tag;
+    use starcoin_vm_types::state_store::state_key::StateKey;
     use starcoin_vm_types::state_view::StateView;
     use std::collections::BTreeMap;
 
@@ -373,16 +374,24 @@ mod tests {
         }
     }
     impl StateView for InMemoryStateView {
-        fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-            let module_id = match &access_path.path {
-                DataPath::Code(name) => ModuleId::new(access_path.address, name.clone()),
-                _ => anyhow::bail!("no data"),
-            };
-            Ok(self.modules.get(&module_id).map(|m| {
-                let mut data = vec![];
-                m.serialize(&mut data).unwrap();
-                data
-            }))
+        fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+            match state_key {
+                StateKey::AccessPath(access_path) => {
+                    let module_id = match &access_path.path {
+                        DataPath::Code(name) => ModuleId::new(access_path.address, name.clone()),
+                        _ => anyhow::bail!("no data"),
+                    };
+                    Ok(self.modules.get(&module_id).map(|m| {
+                        let mut data = vec![];
+                        m.serialize(&mut data).unwrap();
+                        data
+                    }))
+                }
+                StateKey::TableItem { handle: _, key: _ } => {
+                    // XXX FIXME YSG
+                    unimplemented!()
+                }
+            }
         }
 
         fn is_genesis(&self) -> bool {

@@ -7,6 +7,7 @@ use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::file_format::{CompiledModule, FunctionDefinitionIndex};
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::vm_status::{AbortLocation, StatusCode, VMStatus};
 use std::convert::TryFrom;
@@ -22,7 +23,7 @@ pub fn locate_execution_failure(
             let ap =
                 AccessPath::code_access_path(*module_id.address(), module_id.name().to_owned());
 
-            match state.get(&ap)? {
+            match state.get_state_value(&StateKey::AccessPath(ap))? {
                 Some(bytes) => CompiledModule::deserialize(&bytes).ok(),
                 None => None,
             }

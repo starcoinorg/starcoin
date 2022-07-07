@@ -21,6 +21,7 @@ starcoin-storage = { path = "../../storage" }
 starcoin-state-tree = { path = "../state-tree"}
 starcoin-service-registry = { path = "../../commons/service-registry" }
 tokio = "1"
+starcoin-vm-types = {path = "../../vm/types"}
 
 [dev-dependencies]
 test-helper = { path = "../../test-helper" }

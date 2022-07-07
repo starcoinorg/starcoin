@@ -9827,6 +9827,7 @@ dependencies = [
  "starcoin-state-api",
  "starcoin-state-tree",
  "starcoin-types",
+ "starcoin-vm-types",
 ]
 
 [[package]]
@@ -10204,6 +10205,7 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-types",
+ "starcoin-vm-types",
  "stest",
  "test-helper",
  "tokio 1.19.2",
@@ -10585,11 +10587,15 @@ dependencies = [
  "bcs-ext",
  "move-core-types",
  "move-stdlib",
+ "move-table-extension",
  "move-vm-runtime",
  "num_enum",
  "once_cell",
  "rand 0.8.5",
  "rand_core 0.6.3",
+ "serde 1.0.137",
+ "serde-helpers",
+ "serde_bytes",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",

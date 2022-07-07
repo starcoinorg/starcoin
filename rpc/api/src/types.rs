@@ -1081,6 +1081,7 @@ use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_chain_api::{EventWithProof, TransactionInfoWithProof};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::state_store::state_key::StateKey;
 pub use vm_status_translator::VmStatusExplainView;
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
@@ -1112,22 +1113,32 @@ impl From<TransactionOutput> for TransactionOutputView {
         }
     }
 }
-impl From<(AccessPath, WriteOp)> for TransactionOutputAction {
-    fn from((access_path, op): (AccessPath, WriteOp)) -> Self {
+impl From<(StateKey, WriteOp)> for TransactionOutputAction {
+    fn from((state_key, op): (StateKey, WriteOp)) -> Self {
         let (action, value) = match op {
             WriteOp::Deletion => (WriteOpView::Deletion, None),
             WriteOp::Value(v) => (
                 WriteOpView::Value,
-                Some(if access_path.path.is_resource() {
-                    WriteOpValueView::Resource(v.into())
-                } else {
-                    WriteOpValueView::Code(v.into())
-                }),
+                match &state_key {
+                    StateKey::AccessPath(access_path) => Some(if access_path.path.is_resource() {
+                        WriteOpValueView::Resource(v.into())
+                    } else {
+                        WriteOpValueView::Code(v.into())
+                    }),
+                    StateKey::TableItem { handle: _, key: _ } => {
+                        // XXX FIXME YSG
+                        println!("YSG DEBUG {:?}", v.as_slice());
+                        Some(WriteOpValueView::Code(CodeView {
+                            code: StrView(v),
+                            abi: None,
+                        }))
+                    }
+                },
             ),
         };
 
         TransactionOutputAction {
-            access_path,
+            state_key: state_key.into(),
             action,
             value,
         }
@@ -1135,7 +1146,8 @@ impl From<(AccessPath, WriteOp)> for TransactionOutputAction {
 }
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionOutputAction {
-    pub access_path: AccessPath,
+    // pub access_path: AccessPath,
+    pub state_key: StateKeyView,
     pub action: WriteOpView,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub value: Option<WriteOpValueView>,
@@ -1682,6 +1694,28 @@ impl From<BlockInfo> for BlockInfoView {
             total_difficulty: block_info.total_difficulty,
             txn_accumulator_info: block_info.txn_accumulator_info.into(),
             block_accumulator_info: block_info.block_accumulator_info.into(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub enum StateKeyView {
+    AccessPath(AccessPath),
+    TableItem {
+        handle: StrView<u128>,
+        #[schemars(with = "String")]
+        key: Vec<u8>,
+    },
+}
+
+impl From<StateKey> for StateKeyView {
+    fn from(state_key: StateKey) -> Self {
+        match state_key {
+            StateKey::AccessPath(access_path) => Self::AccessPath(access_path),
+            StateKey::TableItem { handle, key } => Self::TableItem {
+                handle: handle.into(),
+                key,
+            },
         }
     }
 }

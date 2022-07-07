@@ -2,19 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::access_path_cache::AccessPathCache;
-use crate::data_cache::{RemoteStorage, StateViewCache};
+use crate::data_cache::{AsMoveResolver, RemoteStorage, StateViewCache};
 use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
 use crate::metrics::VMMetrics;
+use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
 use anyhow::{format_err, Error, Result};
-use crypto::HashValue;
-use move_core_types::resolver::MoveResolver;
-use move_vm_runtime::move_vm::MoveVM;
+use move_table_extension::NativeTableContext;
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
 use move_vm_runtime::session::Session;
 use once_cell::sync::Lazy;
 use starcoin_config::G_LATEST_GAS_SCHEDULE;
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::account_config::{
@@ -47,11 +47,12 @@ use starcoin_vm_types::on_chain_config::{
     MoveLanguageVersion, G_GAS_CONSTANTS_IDENTIFIER, G_INSTRUCTION_SCHEDULE_IDENTIFIER,
     G_NATIVE_SCHEDULE_IDENTIFIER, G_VM_CONFIG_IDENTIFIER,
 };
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::transaction::{DryRunTransaction, Package, TransactionPayloadType};
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::vm_status::KeptVMStatus;
-use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
+use starcoin_vm_types::write_set::{WriteAccessPathSet, WriteAccessPathSetMut, WriteOp};
 use starcoin_vm_types::{
     effects::{ChangeSet as MoveChangeSet, Event as MoveEvent},
     errors::Location,
@@ -74,7 +75,7 @@ static G_ZERO_COST_SCHEDULE: Lazy<CostTable> =
 #[allow(clippy::upper_case_acronyms)]
 /// Wrapper of MoveVM
 pub struct StarcoinVM {
-    move_vm: Arc<MoveVM>,
+    move_vm: Arc<MoveVmExt>,
     vm_config: Option<VMConfig>,
     version: Option<Version>,
     move_version: Option<MoveLanguageVersion>,
@@ -86,7 +87,7 @@ const VMCONFIG_UPGRADE_VERSION_MARK: u64 = 10;
 
 impl StarcoinVM {
     pub fn new(metrics: Option<VMMetrics>) -> Self {
-        let inner = MoveVM::new(super::natives::starcoin_natives())
+        let inner = MoveVmExt::new()
             .expect("should be able to create Move VM; check if there are duplicated natives");
         Self {
             move_vm: Arc::new(inner),
@@ -305,7 +306,11 @@ impl StarcoinVM {
         remote_cache: &StateViewCache<S>,
     ) -> Result<(), VMStatus> {
         let txn_data = TransactionMetadata::new(transaction)?;
-        let mut session: SessionAdapter<_> = self.move_vm.new_session(remote_cache).into();
+        let data_cache = remote_cache.as_move_resolver();
+        let mut session: SessionAdapter<_> = self
+            .move_vm
+            .new_session(&data_cache, SessionId::txn(transaction))
+            .into();
         let mut gas_status = {
             let mut gas_status = GasStatus::new(self.get_gas_schedule()?, GasUnits::new(0));
             gas_status.set_metering(false);
@@ -416,7 +421,9 @@ impl StarcoinVM {
         package_address: AccountAddress,
     ) -> Result<bool> {
         let strategy_access_path = access_path_for_module_upgrade_strategy(package_address);
-        if let Some(data) = remote_cache.get(&strategy_access_path)? {
+        if let Some(data) =
+            remote_cache.get_state_value(&StateKey::AccessPath(strategy_access_path))?
+        {
             Ok(bcs_ext::from_bytes::<ModuleUpgradeStrategy>(&data)?.only_new_module())
         } else {
             Ok(false)
@@ -428,7 +435,9 @@ impl StarcoinVM {
         package_address: AccountAddress,
     ) -> Result<bool> {
         let two_phase_upgrade_v2_path = access_path_for_two_phase_upgrade_v2(package_address);
-        if let Some(data) = remote_cache.get(&two_phase_upgrade_v2_path)? {
+        if let Some(data) =
+            remote_cache.get_state_value(&StateKey::AccessPath(two_phase_upgrade_v2_path))?
+        {
             Ok(bcs_ext::from_bytes::<TwoPhaseUpgradeV2Resource>(&data)?.enforced())
         } else {
             Ok(false)
@@ -443,7 +452,11 @@ impl StarcoinVM {
         txn_data: &TransactionMetadata,
         package: &Package,
     ) -> Result<(VMStatus, TransactionOutput), VMStatus> {
-        let mut session: SessionAdapter<_> = self.move_vm.new_session(remote_cache).into();
+        let data_cache = remote_cache.as_move_resolver();
+        let mut session: SessionAdapter<_> = self
+            .move_vm
+            .new_session(&data_cache, SessionId::txn_meta(txn_data))
+            .into();
 
         {
             // Run the validation logic
@@ -552,7 +565,11 @@ impl StarcoinVM {
         txn_data: &TransactionMetadata,
         payload: &TransactionPayload,
     ) -> Result<(VMStatus, TransactionOutput), VMStatus> {
-        let mut session: SessionAdapter<_> = self.move_vm.new_session(remote_cache).into();
+        let data_cache = remote_cache.as_move_resolver();
+        let mut session: SessionAdapter<_> = self
+            .move_vm
+            .new_session(&data_cache, SessionId::txn_meta(txn_data))
+            .into();
 
         // Run the validation logic
         {
@@ -575,7 +592,7 @@ impl StarcoinVM {
                     if let Ok(s) = CompiledScript::deserialize(script.code()) {
                         self.check_move_version(s.version() as u64)?;
                     };
-
+                    debug!("TransactionPayload::Script script {:?}", script);
                     session.as_mut().execute_script(
                         script.code().to_vec(),
                         script.ty_args().to_vec(),
@@ -583,20 +600,30 @@ impl StarcoinVM {
                         cost_strategy,
                     )
                 }
-                TransactionPayload::ScriptFunction(script_function) => session
-                    .execute_entry_function(
+                TransactionPayload::ScriptFunction(script_function) => {
+                    debug!(
+                        "TransactionPayload::Script script_function {:?}",
+                        script_function
+                    );
+                    session.execute_entry_function(
                         script_function.module(),
                         script_function.function(),
                         script_function.ty_args().to_vec(),
                         script_function.args().to_vec(),
                         cost_strategy,
                         txn_data.sender(),
-                    ),
+                    )
+                }
                 TransactionPayload::Package(_) => {
                     return Err(VMStatus::Error(StatusCode::UNREACHABLE));
                 }
             }
-            .map_err(|e| e.into_vm_status())?;
+            .map_err(|e| {
+                if let Some(msg) = e.message() {
+                    debug!("transaction execute error msg {}", msg);
+                }
+                e.into_vm_status()
+            })?;
 
             charge_global_write_gas_usage(cost_strategy, &session, &txn_data.sender())?;
 
@@ -612,7 +639,7 @@ impl StarcoinVM {
 
     /// Run the prologue of a transaction by calling into `PROLOGUE_NAME` function stored
     /// in the `ACCOUNT_MODULE` on chain.
-    fn run_prologue<R: MoveResolver>(
+    fn run_prologue<R: MoveResolverExt>(
         &self,
         session: &mut SessionAdapter<R>,
         gas_status: &mut GasStatus,
@@ -673,7 +700,7 @@ impl StarcoinVM {
 
     /// Run the epilogue of a transaction by calling into `EPILOGUE_NAME` function stored
     /// in the `ACCOUNT_MODULE` on chain.
-    fn run_epilogue<R: MoveResolver>(
+    fn run_epilogue<R: MoveResolverExt>(
         &self,
         session: &mut SessionAdapter<R>,
         gas_status: &mut GasStatus,
@@ -769,7 +796,7 @@ impl StarcoinVM {
             gas_status.set_metering(false);
             gas_status
         };
-
+        let session_id = SessionId::block_meta(&block_metadata);
         let (
             parent_id,
             timestamp,
@@ -794,7 +821,9 @@ impl StarcoinVM {
             MoveValue::U8(chain_id.id()),
             MoveValue::U64(parent_gas_used),
         ]);
-        let mut session: SessionAdapter<_> = self.move_vm.new_session(remote_cache).into();
+        let data_cache = remote_cache.as_move_resolver();
+        let mut session: SessionAdapter<_> =
+            self.move_vm.new_session(&data_cache, session_id).into();
         session
             .as_mut()
             .execute_function_bypass_visibility(
@@ -1102,7 +1131,7 @@ impl StarcoinVM {
                 .with_label_values(&["execute_readonly_function"])
                 .start_timer()
         });
-        let data_cache = StateViewCache::new(state_view);
+        let data_cache = state_view.as_move_resolver();
 
         let cost_table = &G_ZERO_COST_SCHEDULE;
         let mut gas_status = {
@@ -1110,7 +1139,7 @@ impl StarcoinVM {
             gas_status.set_metering(false);
             gas_status
         };
-        let mut session = self.move_vm.new_session(&data_cache);
+        let mut session = self.move_vm.new_session(&data_cache, SessionId::void());
         let result = session
             .execute_function_bypass_visibility(
                 module,
@@ -1125,16 +1154,27 @@ impl StarcoinVM {
             .map(|(a, _)| a)
             .collect();
 
-        let (changeset, events) = session.finish().map_err(|e| e.into_vm_status())?;
-        let (writeset, _events) = convert_changeset_and_events(changeset, events)?;
-        if !writeset.is_empty() {
+        let (change_set, events, mut extensions) = session
+            .finish_with_extensions()
+            .map_err(|e| e.into_vm_status())?;
+        let table_context: NativeTableContext = extensions.remove();
+        let table_change_set = table_context
+            .into_change_set()
+            .map_err(|e| e.finish(Location::Undefined))?;
+        let (write_set, _events) = SessionOutput {
+            change_set,
+            events,
+            table_change_set,
+        }
+        .into_change_set(&mut ())?;
+        if !write_set.is_empty() {
             warn!("Readonly function {} changes state", function_name);
             return Err(VMStatus::Error(StatusCode::REJECTED_WRITE_SET));
         }
         Ok(result)
     }
 
-    fn success_transaction_cleanup<R: MoveResolver>(
+    fn success_transaction_cleanup<R: MoveResolverExt>(
         &self,
         mut session: SessionAdapter<R>,
         gas_schedule: &CostTable,
@@ -1173,7 +1213,11 @@ impl StarcoinVM {
             gas_status.set_metering(false);
             gas_status
         };
-        let mut session: SessionAdapter<_> = self.move_vm.new_session(remote_cache).into();
+        let data_cache = remote_cache.as_move_resolver();
+        let mut session: SessionAdapter<_> = self
+            .move_vm
+            .new_session(&data_cache, SessionId::txn_meta(txn_data))
+            .into();
 
         // init_script doesn't need run epilogue
         if remote_cache.is_genesis() {
@@ -1240,7 +1284,7 @@ pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock>
     blocks
 }
 
-pub(crate) fn charge_global_write_gas_usage<R: MoveResolver>(
+pub(crate) fn charge_global_write_gas_usage<R: MoveResolverExt>(
     cost_strategy: &mut GasStatus,
     session: &SessionAdapter<R>,
     sender: &AccountAddress,
@@ -1290,7 +1334,7 @@ pub fn convert_changeset_and_events_cached<C: AccessPathCache>(
     ap_cache: &mut C,
     changeset: MoveChangeSet,
     events: Vec<MoveEvent>,
-) -> Result<(WriteSet, Vec<ContractEvent>), VMStatus> {
+) -> Result<(WriteAccessPathSet, Vec<ContractEvent>), VMStatus> {
     // TODO: Cache access path computations if necessary.
     let mut ops = vec![];
 
@@ -1316,7 +1360,7 @@ pub fn convert_changeset_and_events_cached<C: AccessPathCache>(
         }
     }
 
-    let ws = WriteSetMut::new(ops)
+    let ws = WriteAccessPathSetMut::new(ops)
         .freeze()
         .map_err(|_| VMStatus::Error(StatusCode::DATA_FORMAT_ERROR))?;
 
@@ -1335,11 +1379,11 @@ pub fn convert_changeset_and_events_cached<C: AccessPathCache>(
 pub fn convert_changeset_and_events(
     changeset: MoveChangeSet,
     events: Vec<MoveEvent>,
-) -> Result<(WriteSet, Vec<ContractEvent>), VMStatus> {
+) -> Result<(WriteAccessPathSet, Vec<ContractEvent>), VMStatus> {
     convert_changeset_and_events_cached(&mut (), changeset, events)
 }
 
-pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolver>(
+pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolverExt>(
     ap_cache: &mut A,
     session: SessionAdapter<R>,
     cost_strategy: &GasStatus,
@@ -1348,10 +1392,18 @@ pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolver>(
 ) -> Result<TransactionOutput, VMStatus> {
     let gas_used: u64 = max_gas_amount.sub(cost_strategy.remaining_gas()).get();
 
-    let (changeset, events) = Into::<Session<R>>::into(session)
-        .finish()
-        .map_err(|e| e.into_vm_status())?;
-    let (write_set, events) = convert_changeset_and_events_cached(ap_cache, changeset, events)?;
+    let (change_set, events, mut extensions) =
+        Into::<Session<R>>::into(session).finish_with_extensions()?;
+    let table_context: NativeTableContext = extensions.remove();
+    let table_change_set = table_context
+        .into_change_set()
+        .map_err(|e| e.finish(Location::Undefined))?;
+    let (write_set, events) = SessionOutput {
+        change_set,
+        events,
+        table_change_set,
+    }
+    .into_change_set(ap_cache)?;
     Ok(TransactionOutput::new(
         write_set,
         events,

@@ -77,7 +77,9 @@ pub mod identifier {
 }
 
 pub mod write_set {
-    pub use starcoin_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
+    pub use starcoin_vm_types::write_set::{
+        WriteAccessPathSet, WriteAccessPathSetMut, WriteOp, WriteSet, WriteSetMut,
+    };
 }
 
 pub mod genesis_config {

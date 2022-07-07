@@ -11,6 +11,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
+use starcoin_vm_types::state_store::state_key::StateKey;
 use std::str::FromStr;
 
 #[derive(Debug, Clone, Copy)]
@@ -100,12 +101,17 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
 }
 
 impl<'a> StateView for RemoteStateReader<'a> {
-    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        Ok(self
-            .client
-            .state_get_with_proof_by_root(access_path.clone(), self.state_root())?
-            .state
-            .map(|v| v.0))
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+        match state_key {
+            StateKey::AccessPath(access_path) => Ok(self
+                .client
+                .state_get_with_proof_by_root(access_path.clone(), self.state_root())?
+                .state
+                .map(|v| v.0)),
+            StateKey::TableItem { handle: _, key: _ } => {
+                unimplemented!()
+            }
+        }
     }
 
     fn is_genesis(&self) -> bool {

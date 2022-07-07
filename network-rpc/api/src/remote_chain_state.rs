@@ -11,6 +11,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
+use starcoin_vm_types::state_store::state_key::StateKey;
 
 #[derive(Clone)]
 pub struct RemoteChainStateReader {
@@ -96,9 +97,17 @@ impl ChainStateReader for RemoteChainStateReader {
 }
 
 impl StateView for RemoteChainStateReader {
-    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        let state_proof = self.get_with_proof(access_path)?;
-        Ok(state_proof.state)
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+        match state_key {
+            StateKey::AccessPath(access_path) => {
+                let state_proof = self.get_with_proof(access_path)?;
+                Ok(state_proof.state)
+            }
+            StateKey::TableItem { handle: _, key: _ } => {
+                // XXX FIXME YSG
+                unimplemented!()
+            }
+        }
     }
 
     fn is_genesis(&self) -> bool {

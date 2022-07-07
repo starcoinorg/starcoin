@@ -10,10 +10,10 @@ use crate::{
 };
 use anyhow::{anyhow, Result};
 use starcoin_vm_types::language_storage::TypeTag;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::value::MoveTypeLayout;
 use starcoin_vm_types::{
-    access_path::AccessPath,
     account_address::AccountAddress,
     contract_event::ContractEvent,
     errors::{Location, PartialVMError},
@@ -295,7 +295,7 @@ pub struct NullStateView;
 
 //
 impl StateView for NullStateView {
-    fn get(&self, _access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
+    fn get_state_value(&self, _state_key: &StateKey) -> Result<Option<Vec<u8>>> {
         Ok(None)
     }
 
