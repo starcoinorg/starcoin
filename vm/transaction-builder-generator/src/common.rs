@@ -17,7 +17,7 @@ pub(crate) fn type_not_allowed(type_tag: &TypeTag) -> ! {
     );
 }
 
-/// Clean up doc comments extracter by the Move prover.
+/// Clean up doc comments extractor by the Move prover.
 pub(crate) fn prepare_doc_string(doc: &str) -> String {
     doc.replace("\n ", "\n").trim().to_string()
 }

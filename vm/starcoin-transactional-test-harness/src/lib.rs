@@ -143,7 +143,7 @@ pub struct StarcoinPublishArgs {
     public_key: Option<RawPublicKey>,
 }
 
-/// Starcoin-specifc arguments for the run command,
+/// Starcoin-specific arguments for the run command,
 #[derive(Parser, Debug)]
 pub struct StarcoinRunArgs {
     #[clap(short = 'k', long = "public-key")]
@@ -679,7 +679,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             None => (BTreeMap::new(), None),
         };
 
-        // TODO: replace it with pacakge's named address mapping.
+        // TODO: replace it with package's named address mapping.
 
         let mut named_address_mapping = starcoin_framework_named_addresses();
         for (name, addr) in additional_mapping {

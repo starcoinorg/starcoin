@@ -53,7 +53,7 @@ pub enum Error {
     //    InvalidGasLimit(OutOfBounds<Gas>),
     /// Transaction sender is banned.
     SenderBanned,
-    /// Transaction receipient is banned.
+    /// Transaction recipient is banned.
     RecipientBanned,
     /// Contract creation code is banned.
     CodeBanned,

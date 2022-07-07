@@ -10,7 +10,7 @@ use move_compiler::compiled_unit::{CompiledUnit, NamedCompiledModule};
 use move_core_types::language_storage::TypeTag;
 use move_core_types::transaction_argument::{convert_txn_args, TransactionArgument};
 use starcoin_crypto::hash::PlainCryptoHash;
-use starcoin_move_compiler::bytecode_transpose::ModuleBytecodeDowgrader;
+use starcoin_move_compiler::bytecode_transpose::ModuleBytecodeDowngrader;
 use starcoin_types::transaction::parse_transaction_argument;
 use starcoin_vm_types::language_storage::FunctionId;
 use starcoin_vm_types::parser::parse_type_tag;
@@ -20,7 +20,7 @@ use std::path::PathBuf;
 pub const DEFAULT_RELEASE_DIR: &str = "release";
 
 #[derive(Parser)]
-pub struct Releasement {
+pub struct Release {
     #[clap(name = "move-version", long = "move-version", default_value="4", possible_values=&["3", "4"])]
     /// specify the move lang version for the release.
     /// currently, only v3, v4 are supported.
@@ -50,13 +50,13 @@ pub struct Releasement {
 
 pub fn handle_release(
     move_args: &Move,
-    Releasement {
+    Release {
         language_version,
         mut release_dir,
         init_script,
         type_tags,
         args,
-    }: Releasement,
+    }: Release,
 ) -> anyhow::Result<()> {
     let mut ms = vec![];
     let pkg_ctx = PackageContext::new(&move_args.package_path, &move_args.build_config)?;
@@ -75,7 +75,7 @@ pub fn handle_release(
         let m = module(&m.unit)?;
         println!("\t {}", m.self_id());
         let code = if language_version as u32 == VERSION_3 {
-            ModuleBytecodeDowgrader::to_v3(m)?
+            ModuleBytecodeDowngrader::to_v3(m)?
         } else {
             let mut data = vec![];
             m.serialize(&mut data)?;

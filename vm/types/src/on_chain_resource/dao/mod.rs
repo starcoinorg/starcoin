@@ -60,7 +60,7 @@ pub struct Proposal<A: ProposalAction> {
     pub end_time: u64,
     /// count of votes for agree.
     pub for_votes: u128,
-    /// count of votes for againest.
+    /// count of votes for against.
     pub against_votes: u128,
     /// executable after this time.
     pub eta: u64,

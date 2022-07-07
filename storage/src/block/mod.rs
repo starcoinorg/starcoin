@@ -70,7 +70,7 @@ impl Sample for FailedBlock {
             block: Block::sample(),
             peer_id: Some(PeerId::random()),
             failed: "Unknown reason".to_string(),
-            version: "Unknow version".to_string(),
+            version: "Unknown version".to_string(),
         }
     }
 }
