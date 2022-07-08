@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use std::sync::Arc;
+
 use crate::releasement::module;
 use clap::Parser;
 use itertools::Itertools;
@@ -11,6 +13,8 @@ use move_core_types::resolver::ModuleResolver;
 use starcoin_config::BuiltinNetworkID;
 use starcoin_move_compiler::check_compiled_module_compat;
 use starcoin_transactional_test_harness::remote_state::RemoteStateView;
+use std::collections::BTreeMap;
+use stdlib::{load_compiled_modules, load_latest_stable_compiled_modules, StdlibVersion};
 
 #[derive(Parser)]
 pub struct CompatibilityCheckCommand {
@@ -25,9 +29,9 @@ pub struct CompatibilityCheckCommand {
     /// genesis with the network
     network: Option<BuiltinNetworkID>,
 
-    #[clap(name = "rpc", long)]
+    #[clap(long = "pre-version", short)]
     /// use to check pre-version compatibility.
-    pre_version: Option<String>,
+    pre_version: Option<u64>,
 }
 
 pub fn handle_compatibility_check(
@@ -82,10 +86,59 @@ pub fn handle_compatibility_check(
             pkg.compiled_package_info.package_name, &rpc
         );
     }
+
+    println!("pre_version number: {}", cmd.pre_version.unwrap());
+    handle_pre_version_compatibility_check(cmd.pre_version);
     Ok(())
 }
 
-fn handle_pre_version_compatibility_check(pre_version: &str) -> anyhow::Result<()> {
-    // referece: vm/stdlib/src/main.rs line 302
-    unimplemented!()
+fn handle_pre_version_compatibility_check(pre_version: Option<u64>) {
+    // referece: vm/stdlib/src/main.rs line 302, test later.
+    let sources = &stdlib::STARCOIN_FRAMEWORK_SOURCES;
+    let new_modules = stdlib::build_stdlib(&sources.files);
+
+    if let Some((pre_stable_version, pre_stable_modules)) = pre_version
+        .map(StdlibVersion::Version)
+        .map(|v| (v, load_compiled_modules(v)))
+        .or_else(load_latest_stable_compiled_modules)
+    {
+        println!(
+            "Check compat with pre stable version: {}",
+            pre_stable_version
+        );
+        let pre_stable_modules = pre_stable_modules
+            .into_iter()
+            .map(|module| (module.self_id(), module))
+            .collect::<BTreeMap<_, _>>();
+        let incompatible_module_ids = new_modules
+            .values()
+            .into_iter()
+            .filter_map(|module| {
+                let module_id = module.self_id();
+                if let Some(old_module) = pre_stable_modules.get(&module_id) {
+                    let compatibility =
+                        check_compiled_module_compat(old_module, module).is_fully_compatible();
+                    if !compatibility {
+                        Some(module_id)
+                    } else {
+                        None
+                    }
+                } else {
+                    println!("Module {:?} is new module.", module_id);
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        if !incompatible_module_ids.is_empty() {
+            eprintln!(
+                "Modules {} is incompatible with version: {}!",
+                incompatible_module_ids
+                    .into_iter()
+                    .map(|module_id| module_id.to_string())
+                    .join(","),
+                pre_stable_version
+            );
+            std::process::exit(1);
+        }
+    }
 }
