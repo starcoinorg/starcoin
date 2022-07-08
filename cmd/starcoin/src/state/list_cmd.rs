@@ -122,7 +122,7 @@ impl CommandAction for ListCmd {
     }
 }
 
-fn decode_resource(state_view: &dyn StateView, mut list: ListResourceView) -> ListResourceView {
+fn decode_resource<S: StateView>(state_view: &S, mut list: ListResourceView) -> ListResourceView {
     list.resources
         .iter_mut()
         .for_each(|(tag_view, resource_view)| {

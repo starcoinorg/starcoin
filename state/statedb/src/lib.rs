@@ -10,9 +10,7 @@ use lru::LruCache;
 use parking_lot::{Mutex, RwLock};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-pub use starcoin_state_api::{
-    ChainState, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,
-};
+pub use starcoin_state_api::{ChainStateReader, ChainStateWriter, StateProof, StateWithProof};
 use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_state_tree::{StateNodeStore, StateTree};
@@ -310,8 +308,6 @@ impl ChainStateDB {
     }
 }
 
-impl ChainState for ChainStateDB {}
-
 impl StateView for ChainStateDB {
     fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
         let account_address = &access_path.address;
@@ -321,14 +317,6 @@ impl StateView for ChainStateDB {
                 Some(account_state) => account_state.get(data_path),
                 None => Ok(None),
             })
-    }
-
-    /// Gets state data for a list of access paths.
-    fn multi_get(&self, access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
-        access_paths
-            .iter()
-            .map(|access_path| self.get(access_path))
-            .collect()
     }
 
     fn is_genesis(&self) -> bool {

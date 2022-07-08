@@ -97,7 +97,7 @@ impl StarcoinVM {
         }
     }
 
-    pub fn load_configs(&mut self, state: &dyn StateView) -> Result<(), Error> {
+    pub fn load_configs<S: StateView>(&mut self, state: &S) -> Result<(), Error> {
         if state.is_genesis() {
             self.vm_config = Some(VMConfig {
                 gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
@@ -109,7 +109,7 @@ impl StarcoinVM {
         }
     }
 
-    fn load_configs_impl(&mut self, state: &dyn StateView) -> Result<(), Error> {
+    fn load_configs_impl<S: StateView>(&mut self, state: &S) -> Result<(), Error> {
         let remote_storage = RemoteStorage::new(state);
         self.version = Some(
             Version::fetch_config(&remote_storage)?
@@ -299,10 +299,10 @@ impl StarcoinVM {
         Ok(())
     }
 
-    fn verify_transaction_impl(
+    fn verify_transaction_impl<S: StateView>(
         &mut self,
         transaction: &SignatureCheckedTransaction,
-        remote_cache: &StateViewCache,
+        remote_cache: &StateViewCache<S>,
     ) -> Result<(), VMStatus> {
         let txn_data = TransactionMetadata::new(transaction)?;
         let mut session: SessionAdapter<_> = self.move_vm.new_session(remote_cache).into();
@@ -379,9 +379,9 @@ impl StarcoinVM {
         self.run_prologue(&mut session, &mut gas_status, &txn_data)
     }
 
-    pub fn verify_transaction(
+    pub fn verify_transaction<S: StateView>(
         &mut self,
-        state_view: &dyn StateView,
+        state_view: &S,
         txn: SignedUserTransaction,
     ) -> Option<VMStatus> {
         let _timer = self.metrics.as_ref().map(|metrics| {
@@ -411,8 +411,8 @@ impl StarcoinVM {
         }
     }
 
-    fn only_new_module_strategy(
-        remote_cache: &StateViewCache,
+    fn only_new_module_strategy<S: StateView>(
+        remote_cache: &StateViewCache<S>,
         package_address: AccountAddress,
     ) -> Result<bool> {
         let strategy_access_path = access_path_for_module_upgrade_strategy(package_address);
@@ -423,7 +423,10 @@ impl StarcoinVM {
         }
     }
 
-    fn is_enforced(remote_cache: &StateViewCache, package_address: AccountAddress) -> Result<bool> {
+    fn is_enforced<S: StateView>(
+        remote_cache: &StateViewCache<S>,
+        package_address: AccountAddress,
+    ) -> Result<bool> {
         let two_phase_upgrade_v2_path = access_path_for_two_phase_upgrade_v2(package_address);
         if let Some(data) = remote_cache.get(&two_phase_upgrade_v2_path)? {
             Ok(bcs_ext::from_bytes::<TwoPhaseUpgradeV2Resource>(&data)?.enforced())
@@ -432,9 +435,9 @@ impl StarcoinVM {
         }
     }
 
-    fn execute_package(
+    fn execute_package<S: StateView>(
         &self,
-        remote_cache: &StateViewCache<'_>,
+        remote_cache: &StateViewCache<'_, S>,
         gas_schedule: &CostTable,
         cost_strategy: &mut GasStatus,
         txn_data: &TransactionMetadata,
@@ -542,9 +545,9 @@ impl StarcoinVM {
         }
     }
 
-    fn execute_script_or_script_function(
+    fn execute_script_or_script_function<S: StateView>(
         &self,
-        remote_cache: &StateViewCache<'_>,
+        remote_cache: &StateViewCache<'_, S>,
         gas_schedule: &CostTable,
         cost_strategy: &mut GasStatus,
         txn_data: &TransactionMetadata,
@@ -755,9 +758,9 @@ impl StarcoinVM {
             .or_else(convert_normal_success_epilogue_error)
     }
 
-    fn process_block_metadata(
+    fn process_block_metadata<S: StateView>(
         &self,
-        remote_cache: &mut StateViewCache<'_>,
+        remote_cache: &mut StateViewCache<'_, S>,
         block_metadata: BlockMetadata,
     ) -> Result<TransactionOutput, VMStatus> {
         let txn_sender = account_config::genesis_address();
@@ -815,10 +818,10 @@ impl StarcoinVM {
         )
     }
 
-    fn execute_user_transaction(
+    fn execute_user_transaction<S: StateView>(
         &mut self,
         txn: SignedUserTransaction,
-        remote_cache: &mut StateViewCache<'_>,
+        remote_cache: &mut StateViewCache<'_, S>,
     ) -> (VMStatus, TransactionOutput) {
         let gas_schedule = match self.get_gas_schedule() {
             Ok(gas_schedule) => gas_schedule,
@@ -900,10 +903,10 @@ impl StarcoinVM {
         }
     }
 
-    pub fn dry_run_transaction(
+    pub fn dry_run_transaction<S: StateView>(
         &mut self,
 
-        state_view: &dyn StateView,
+        state_view: &S,
         txn: DryRunTransaction,
     ) -> Result<(VMStatus, TransactionOutput)> {
         let remote_cache = StateViewCache::new(state_view);
@@ -965,9 +968,9 @@ impl StarcoinVM {
         })
     }
 
-    fn check_reconfigure(
+    fn check_reconfigure<S: StateView>(
         &mut self,
-        state_view: &dyn StateView,
+        state_view: &S,
         output: &TransactionOutput,
     ) -> Result<(), Error> {
         for event in output.events() {
@@ -983,9 +986,9 @@ impl StarcoinVM {
 
     /// Execute a block transactions with gas_limit,
     /// if gas is used up when executing some txn, only return the outputs of previous succeed txns.
-    pub fn execute_block_transactions(
+    pub fn execute_block_transactions<S: StateView>(
         &mut self,
-        state_view: &dyn StateView,
+        state_view: &S,
         transactions: Vec<Transaction>,
         block_gas_limit: Option<u64>,
     ) -> Result<Vec<(VMStatus, TransactionOutput)>> {
@@ -1088,9 +1091,9 @@ impl StarcoinVM {
         Ok(result)
     }
 
-    pub fn execute_readonly_function(
+    pub fn execute_readonly_function<S: StateView>(
         &mut self,
-        state_view: &dyn StateView,
+        state_view: &S,
         module: &ModuleId,
         function_name: &IdentStr,
         type_params: Vec<TypeTag>,
@@ -1150,13 +1153,13 @@ impl StarcoinVM {
         ))
     }
 
-    fn failed_transaction_cleanup(
+    fn failed_transaction_cleanup<S: StateView>(
         &self,
         error_code: VMStatus,
         gas_schedule: &CostTable,
         gas_left: GasUnits<GasCarrier>,
         txn_data: &TransactionMetadata,
-        remote_cache: &StateViewCache<'_>,
+        remote_cache: &StateViewCache<'_, S>,
     ) -> (VMStatus, TransactionOutput) {
         let mut gas_status = {
             let mut gas_status = GasStatus::new(gas_schedule, gas_left);

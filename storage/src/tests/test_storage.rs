@@ -174,8 +174,8 @@ fn test_two_level_storage() {
         .get(TRANSACTION_INFO_PREFIX_NAME_V2, id.to_vec())
         .unwrap()
         .unwrap();
-    let transation_info3 = RichTransactionInfo::decode_value(&value3).unwrap();
-    assert_eq!(transation_info3, transaction_info1);
+    let transaction_info3 = RichTransactionInfo::decode_value(&value3).unwrap();
+    assert_eq!(transaction_info3, transaction_info1);
     // // verify db storage
     let value4 = db_storage
         .get(TRANSACTION_INFO_PREFIX_NAME_V2, id.to_vec())

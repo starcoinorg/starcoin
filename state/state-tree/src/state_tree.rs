@@ -173,7 +173,7 @@ where
     /// Commit current modification into state tree's local cache,
     /// and return new root hash.
     /// NOTICE: this method will not flush the changes into disk.
-    /// It'just commit the changes into local state-tree, and cache it there.
+    /// It just commit the changes into local state-tree, and cache it there.
     pub fn commit(&self) -> Result<HashValue> {
         let mut guard = self.updates.write();
         let updates = guard
@@ -322,8 +322,8 @@ where
 
     /// get last changes root_hash
     pub fn last_change_sets(&self) -> Option<(HashValue, TreeUpdateBatch<K>)> {
-        let cache_gurad = self.cache.lock();
-        cache_gurad.change_set_list.last().cloned()
+        let cache_guard = self.cache.lock();
+        cache_guard.change_set_list.last().cloned()
     }
 
     // TODO: to keep atomic with other commit.

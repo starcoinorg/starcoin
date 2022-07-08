@@ -13,7 +13,7 @@ edition = "2021"
 anyhow = "1.0.41"
 difference = "2.0.0"
 include_dir = { version = "0.6.2", features = ["search"] }
-once_cell = "1.12.0"
+once_cell = "1.13.0"
 clap = { version = "3", features = ["derive"] }
 bcs = "0.1.2"
 walkdir = "2.3.1"
@@ -50,6 +50,8 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 starcoin-rpc-client = {path = "../../rpc/client"}
 starcoin-rpc-api = {path = "../../rpc/api"}
 starcoin-transactional-test-harness = {path = "../starcoin-transactional-test-harness"}
+starcoin-account-provider = {path = "../../account/provider"}
+starcoin-cmd = {path = "../../cmd/starcoin"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 
 [dev-dependencies]

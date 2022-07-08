@@ -24,8 +24,8 @@ struct DataProof {
 
 #[stest::test]
 fn test_merkle_distributor() -> Result<()> {
-    let assocation = Account::new_association();
-    println!("{}", assocation.address());
+    let association = Account::new_association();
+    println!("{}", association.address());
     let (chain_state, net) = prepare_genesis();
     let merkle_data = include_str!("merkle-test.json");
     let merkle_data: serde_json::Value = serde_json::from_str(merkle_data)?;
@@ -76,7 +76,7 @@ fn test_merkle_distributor() -> Result<()> {
 
     // check I'm not claimed.
     {
-        let distribution_address = MoveValue::Address(*assocation.address());
+        let distribution_address = MoveValue::Address(*association.address());
         let index = MoveValue::U64(0);
 
         let ret = execute_readonly_function(
@@ -101,12 +101,12 @@ fn test_merkle_distributor() -> Result<()> {
     {
         let association_proof = proofs
             .iter()
-            .find(|p| p.address == *assocation.address())
+            .find(|p| p.address == *association.address())
             .unwrap();
 
-        let distribution_address = MoveValue::Address(*assocation.address());
+        let distribution_address = MoveValue::Address(*association.address());
         let index = MoveValue::U64(association_proof.index);
-        let account = MoveValue::Address(*assocation.address());
+        let account = MoveValue::Address(*association.address());
         let amount = MoveValue::U128(association_proof.amount + 1);
         let proofs = MoveValue::Vector(
             association_proof
@@ -146,12 +146,12 @@ fn test_merkle_distributor() -> Result<()> {
     {
         let association_proof = proofs
             .iter()
-            .find(|p| p.address == *assocation.address())
+            .find(|p| p.address == *association.address())
             .unwrap();
 
-        let distribution_address = MoveValue::Address(*assocation.address());
+        let distribution_address = MoveValue::Address(*association.address());
         let index = MoveValue::U64(association_proof.index);
-        let account = MoveValue::Address(*assocation.address());
+        let account = MoveValue::Address(*association.address());
         let amount = MoveValue::U128(association_proof.amount);
         let proofs = MoveValue::Vector(
             association_proof
@@ -185,7 +185,7 @@ fn test_merkle_distributor() -> Result<()> {
 
     // after claim, you cannot claim twice.
     {
-        let distribution_address = MoveValue::Address(*assocation.address());
+        let distribution_address = MoveValue::Address(*association.address());
         let index = MoveValue::U64(0);
 
         let ret = execute_readonly_function(

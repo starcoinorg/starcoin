@@ -25,7 +25,7 @@ use starcoin_types::system_events::{NewBranch, SyncStatusChangeEvent};
 use starcoin_types::time::TimeService;
 use starcoin_types::{
     block::{Block, BlockBody},
-    cmpact_block::{CompactBlock, ShortId},
+    compact_block::{CompactBlock, ShortId},
     peer_info::PeerId,
     system_events::NewHeadBlock,
     transaction::SignedUserTransaction,

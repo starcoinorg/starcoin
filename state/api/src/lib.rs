@@ -10,7 +10,7 @@ use starcoin_types::{
 };
 
 pub use chain_state::{
-    AccountStateReader, ChainState, ChainStateReader, ChainStateWriter, StateProof, StateReaderExt,
+    AccountStateReader, ChainStateReader, ChainStateWriter, StateProof, StateReaderExt,
     StateWithProof,
 };
 use serde::de::DeserializeOwned;

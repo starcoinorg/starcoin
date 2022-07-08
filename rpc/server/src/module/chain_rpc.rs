@@ -83,10 +83,13 @@ where
     ) -> FutureResult<Option<BlockView>> {
         let service = self.service.clone();
         let decode = option.unwrap_or_default().decode;
+        let raw = option.unwrap_or_default().raw;
         let storage = self.storage.clone();
         let fut = async move {
             let result = service.get_block_by_hash(hash).await?;
-            let mut block: Option<BlockView> = result.map(|b| b.try_into()).transpose()?;
+            let mut block: Option<BlockView> = result
+                .map(|b| BlockView::try_from_block(b, false, raw))
+                .transpose()?;
             if decode {
                 let state = ChainStateDB::new(
                     storage,
@@ -110,11 +113,14 @@ where
     ) -> FutureResult<Option<BlockView>> {
         let service = self.service.clone();
         let decode = option.unwrap_or_default().decode;
+        let raw = option.unwrap_or_default().raw;
         let storage = self.storage.clone();
 
         let fut = async move {
             let result = service.main_block_by_number(number).await?;
-            let mut block: Option<BlockView> = result.map(|b| b.try_into()).transpose()?;
+            let mut block: Option<BlockView> = result
+                .map(|b| BlockView::try_from_block(b, false, raw))
+                .transpose()?;
             if decode {
                 let state = ChainStateDB::new(
                     storage,
@@ -153,7 +159,7 @@ where
 
             block
                 .into_iter()
-                .map(|blk| BlockView::try_from_block(blk, true))
+                .map(|blk| BlockView::try_from_block(blk, true, false))
                 .collect::<Result<Vec<_>, _>>()
         }
         .map_err(map_err);
@@ -424,6 +430,36 @@ where
                 )
                 .await?
                 .map(Into::into))
+        }
+        .map_err(map_err);
+
+        Box::pin(fut.boxed())
+    }
+
+    fn get_transaction_proof_raw(
+        &self,
+        block_hash: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<StrView<AccessPath>>,
+    ) -> FutureResult<Option<StrView<Vec<u8>>>> {
+        let service = self.service.clone();
+        let fut = async move {
+            let proof = service
+                .get_transaction_proof(
+                    block_hash,
+                    transaction_global_index,
+                    event_index,
+                    access_path.map(Into::into),
+                )
+                .await?
+                .map(|proof| {
+                    StrView(
+                        bcs_ext::to_bytes(&proof)
+                            .expect("serialize TransactionInfoWithProof to bcs should success."),
+                    )
+                });
+            Ok(proof)
         }
         .map_err(map_err);
 

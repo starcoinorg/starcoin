@@ -220,6 +220,65 @@
       }
     },
     {
+      "name": "state.get_with_proof_raw",
+      "params": [
+        {
+          "name": "access_path",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccessPath",
+            "type": "object",
+            "required": [
+              "address",
+              "path"
+            ],
+            "properties": {
+              "address": {
+                "type": "string",
+                "format": "AccountAddress"
+              },
+              "path": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "Code"
+                    ],
+                    "properties": {
+                      "Code": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "Resource"
+                    ],
+                    "properties": {
+                      "Resource": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "StrView < Vec < u8 > >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "alloc::vec::Vec<u8>",
+          "type": "string"
+        }
+      }
+    },
+    {
       "name": "state.get_account_state",
       "params": [
         {
@@ -753,6 +812,74 @@
               ]
             }
           }
+        }
+      }
+    },
+    {
+      "name": "state.get_with_proof_by_root_raw",
+      "params": [
+        {
+          "name": "access_path",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccessPath",
+            "type": "object",
+            "required": [
+              "address",
+              "path"
+            ],
+            "properties": {
+              "address": {
+                "type": "string",
+                "format": "AccountAddress"
+              },
+              "path": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "Code"
+                    ],
+                    "properties": {
+                      "Code": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "Resource"
+                    ],
+                    "properties": {
+                      "Resource": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "name": "state_root",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "type": "string",
+            "format": "HashValue"
+          }
+        }
+      ],
+      "result": {
+        "name": "StrView < Vec < u8 > >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "alloc::vec::Vec<u8>",
+          "type": "string"
         }
       }
     },

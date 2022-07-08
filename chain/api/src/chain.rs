@@ -3,7 +3,8 @@
 
 use anyhow::Result;
 use starcoin_crypto::HashValue;
-use starcoin_state_api::{ChainState, ChainStateReader};
+use starcoin_state_api::ChainStateReader;
+use starcoin_statedb::ChainStateDB;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::RichTransactionInfo;
@@ -103,7 +104,7 @@ pub trait ChainWriter {
     /// Verify, Execute and Connect block to current chain.
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock>;
 
-    fn chain_state(&mut self) -> &dyn ChainState;
+    fn chain_state(&mut self) -> &ChainStateDB;
 }
 
 /// `Chain` is a trait that defines a single Chain.

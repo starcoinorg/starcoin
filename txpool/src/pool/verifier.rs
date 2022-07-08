@@ -4,7 +4,7 @@
 //! Transaction Verifier
 //!
 //! Responsible for verifying a transaction before importing to the pool.
-//! Should make sure that the transaction is structuraly valid.
+//! Should make sure that the transaction is structurally valid.
 //!
 //! May have some overlap with `Readiness` since we don't want to keep around
 //! stalled transactions.

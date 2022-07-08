@@ -293,13 +293,10 @@ impl Display for AnnotatedAccountStateBlob {
 #[derive(Default)]
 pub struct NullStateView;
 
+//
 impl StateView for NullStateView {
     fn get(&self, _access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
         Ok(None)
-    }
-
-    fn multi_get(&self, access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
-        Ok(access_paths.iter().map(|_| None).collect())
     }
 
     fn is_genesis(&self) -> bool {

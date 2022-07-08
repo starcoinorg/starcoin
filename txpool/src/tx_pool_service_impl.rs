@@ -256,7 +256,7 @@ impl Inner {
     }
 
     pub(crate) fn cull(&self) {
-        // NOTICE: as the new head block event is sepeated with chain_new_block event,
+        // NOTICE: as the new head block event is repeated with chain_new_block event,
         // we need to remove invalid txn here.
         // In fact, it would be better if caller can make it into one.
         // In this situation, we don't need to reimport invalid txn on chain_new_block.

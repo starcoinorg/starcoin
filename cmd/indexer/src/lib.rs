@@ -74,7 +74,7 @@ pub struct TransactionInfoEsView {
     pub gas_used: StrView<u64>,
 
     /// The vm status. If it is not `Executed`, this will provide the general error class. Execution
-    /// failures and Move abort's receive more detailed information. But other errors are generally
+    /// failures and Move aborts receive more detailed information. But other errors are generally
     /// categorized with no status code or other information
     #[serde(flatten)]
     pub status: TransactionVMStatusEsView,

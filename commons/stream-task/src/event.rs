@@ -227,14 +227,14 @@ impl TaskEventCounterHandle {
             .iter()
             .map(|counter| counter.get_report())
             .collect::<Vec<_>>();
-        if let Some(counter) = self.current_counter.lock().as_ref().take() {
+        if let Some(counter) = self.current_counter.lock().as_ref() {
             reports.push(counter.get_report());
         }
         reports
     }
 
     pub fn total_report(&self) -> Option<TaskProgressReport> {
-        if let Some(current_counter) = self.current_counter.lock().as_ref().take() {
+        if let Some(current_counter) = self.current_counter.lock().as_ref() {
             let task_name = current_counter.task_name.clone();
             let mut reports = self
                 .previous_counters

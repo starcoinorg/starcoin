@@ -68,6 +68,18 @@ where
         Box::pin(fut)
     }
 
+    fn get_with_proof_raw(&self, access_path: AccessPath) -> FutureResult<StrView<Vec<u8>>> {
+        let fut = self
+            .service
+            .clone()
+            .get_with_proof(access_path)
+            .map_ok(|p| {
+                StrView(bcs_ext::to_bytes(&p).expect("Serialize StateWithProof should success."))
+            })
+            .map_err(map_err);
+        Box::pin(fut)
+    }
+
     fn get_account_state(&self, address: AccountAddress) -> FutureResult<Option<AccountState>> {
         let fut = self
             .service
@@ -142,6 +154,22 @@ where
             .clone()
             .get_with_proof_by_root(access_path, state_root)
             .map_ok(|p| p.into())
+            .map_err(map_err);
+        Box::pin(fut)
+    }
+
+    fn get_with_proof_by_root_raw(
+        &self,
+        access_path: AccessPath,
+        state_root: HashValue,
+    ) -> FutureResult<StrView<Vec<u8>>> {
+        let fut = self
+            .service
+            .clone()
+            .get_with_proof_by_root(access_path, state_root)
+            .map_ok(|p| {
+                StrView(bcs_ext::to_bytes(&p).expect("Serialize StateWithProof should success."))
+            })
             .map_err(map_err);
         Box::pin(fut)
     }

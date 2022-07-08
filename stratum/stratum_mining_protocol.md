@@ -30,7 +30,7 @@ Miner send `login` request after connection successfully established for authori
       "job_id": "q7PLUPL25UV0z5Ij14IyMk8htXbj",
 	  "id": "1be0b7b6-b15a-47be-a17d-46b2911cf7d0", //the id of the working miner
       "target": "b88d0600",
-	  "height": 0, // height must always be 0
+	  "height": 0 // height must always be 0
     },
     "status": "OK"
   }
@@ -60,7 +60,7 @@ Pool send new job to miner. Miner should switch to new job as fast as possible.
   "params": {
     "blob": "0707d5efb9d6057e95a35f868231780b3a8649c4e57f3c77eaf437329243eef0b9f4b6987d05b900000000cae7754cb85a0ad8eebf3e0bf55f3ec5e754a1d6b05d46e5c358f907dbcbb72b01",
     "job_id": "4BiGm3/RgGQzgkTI/xV0smdA+EGZ",
-    "target": "b88d0600"
+    "target": "b88d0600",
 	"height": 0
   }
 }

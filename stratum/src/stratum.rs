@@ -154,7 +154,7 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
             let mut seal: MinerSubmitSealRequest = msg.0.try_into()?;
 
             seal.minting_blob = current_mint_event.minting_blob;
-            let _ = self.miner_service.try_send(seal)?;
+            self.miner_service.try_send(seal)?;
         }
         Ok(())
     }

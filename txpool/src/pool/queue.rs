@@ -416,7 +416,7 @@ impl TransactionQueue {
     pub fn cull<C: client::AccountSeqNumberClient>(&self, client: C, now: u64) {
         trace_time!("pool::cull");
         // We want to clear stale transactions from the queue as well.
-        // (Transactions that are occuping the queue for a long time without being included)
+        // (Transactions that are occupying the queue for a long time without being included)
         let stale_id = {
             let current_id = self.insertion_id.load(atomic::Ordering::Relaxed);
             // wait at least for half of the queue to be replaced

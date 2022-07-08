@@ -232,7 +232,7 @@ impl InnerStore for StorageInstance {
                 * if use multi_get from CacheStorage, cache may evict some records
                     should check every Option<Vec<u8>> is not none, if have none
                     we need multi_get these from db
-                    test db multi_get performence is better than  CacheStorage
+                    test db multi_get performance is better than CacheStorage
                  */
 
                 /*

@@ -18,7 +18,7 @@ use starcoin_chain_api::{
 };
 use starcoin_executor::VMMetrics;
 use starcoin_open_block::OpenedBlock;
-use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
+use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
@@ -995,7 +995,7 @@ impl ChainWriter for BlockChain {
         self.apply_with_verifier::<FullVerifier>(block)
     }
 
-    fn chain_state(&mut self) -> &dyn ChainState {
+    fn chain_state(&mut self) -> &ChainStateDB {
         &self.statedb
     }
 }
