@@ -3,7 +3,8 @@
 
 use crate::error::CmdError;
 use crate::{
-    print_action_result, CommandAction, CommandExec, CustomCommand, HistoryOp, OutputFormat,
+    init_helper, print_action_result, CommandAction, CommandExec, CustomCommand, HistoryOp,
+    OutputFormat, RLHelper,
 };
 use anyhow::Result;
 use clap::{Arg, Command};
@@ -20,7 +21,7 @@ use std::sync::Arc;
 
 pub use rustyline::{
     config::CompletionType, error::ReadlineError, ColorMode, Config as ConsoleConfig, EditMode,
-    Editor,
+    Editor, OutputStreamType,
 };
 
 pub static G_DEFAULT_CONSOLE_CONFIG: Lazy<ConsoleConfig> = Lazy::new(|| {
@@ -32,6 +33,7 @@ pub static G_DEFAULT_CONSOLE_CONFIG: Lazy<ConsoleConfig> = Lazy::new(|| {
         .auto_add_history(false)
         .edit_mode(EditMode::Emacs)
         .color_mode(ColorMode::Enabled)
+        .output_stream(OutputStreamType::Stdout)
         .build()
 });
 
@@ -306,7 +308,8 @@ where
         let global_opt = Arc::new(global_opt);
         let state = Arc::new(state);
         let (config, history_file) = init_action(&app, global_opt.clone(), state.clone());
-        let mut rl = Editor::<()>::with_config(config);
+        let mut rl = Editor::with_config(config);
+        rl.set_helper(Some(init_helper()));
         if let Some(history_file) = history_file.as_ref() {
             if !history_file.exists() {
                 if let Err(e) = File::create(history_file.as_path()) {
@@ -464,7 +467,7 @@ where
         global_opt: Arc<GlobalOpt>,
         state: Arc<State>,
         quit_action: Box<dyn FnOnce(Command, GlobalOpt, State)>,
-        mut rl: Editor<()>,
+        mut rl: Editor<RLHelper>,
         history_file: Option<PathBuf>,
     ) {
         let global_opt = Arc::try_unwrap(global_opt)

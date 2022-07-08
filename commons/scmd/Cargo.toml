@@ -10,7 +10,8 @@ edition = "2021"
 anyhow = "1.0.41"
 thiserror = "1.0"
 serde = { version = "1.0.130", features = ["derive"] }
-rustyline = "9.0.0"
+rustyline = "9.1.2"
+rustyline-derive = "0.6.0"
 clap = { version = "3", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 rust-flatten-json = "0.2.0"
