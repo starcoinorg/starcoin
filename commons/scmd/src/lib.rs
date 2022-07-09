@@ -10,6 +10,5 @@ mod result;
 
 pub use action::*;
 pub use command::*;
-pub(crate) use console::*;
 pub use context::*;
 pub use result::*;

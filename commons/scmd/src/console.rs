@@ -1,8 +1,10 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use std::borrow::Cow::{self, Borrowed, Owned};
 
-// use rustyline::Result;
+use once_cell::sync::Lazy;
 use rustyline::completion::{extract_word, Completer, FilenameCompleter, Pair};
-use rustyline::error::ReadlineError;
 use rustyline::highlight::{Highlighter, MatchingBracketHighlighter};
 use rustyline::hint::Hinter;
 use rustyline::validate::{self, MatchingBracketValidator, Validator};
@@ -10,16 +12,34 @@ use rustyline::Context;
 use rustyline_derive::Helper;
 use std::collections::HashSet;
 
+use rustyline::{
+    config::CompletionType, error::ReadlineError, ColorMode, Config as ConsoleConfig, EditMode,
+    OutputStreamType,
+};
+
+pub static G_DEFAULT_CONSOLE_CONFIG: Lazy<ConsoleConfig> = Lazy::new(|| {
+    ConsoleConfig::builder()
+        .max_history_size(1000)
+        .history_ignore_space(true)
+        .history_ignore_dups(true)
+        .completion_type(CompletionType::List)
+        .auto_add_history(false)
+        .edit_mode(EditMode::Emacs)
+        .color_mode(ColorMode::Enabled)
+        .output_stream(OutputStreamType::Stdout)
+        .build()
+});
+
 const DEFAULT_BREAK_CHARS: [u8; 3] = [b' ', b'\t', b'\n'];
 
 #[derive(Hash, Debug, PartialEq, Eq)]
-struct Command {
+pub(crate) struct CommandName {
     cmd: String,
     pre_cmd: String,
 }
 
-impl Command {
-    fn new(cmd: &str, pre_cmd: &str) -> Self {
+impl CommandName {
+    pub(crate) fn new(cmd: &str, pre_cmd: &str) -> Self {
         Self {
             cmd: cmd.into(),
             pre_cmd: pre_cmd.into(),
@@ -27,7 +47,7 @@ impl Command {
     }
 }
 struct CommandCompleter {
-    cmds: HashSet<Command>,
+    cmds: HashSet<CommandName>,
 }
 
 impl CommandCompleter {
@@ -148,125 +168,10 @@ impl Validator for RLHelper {
     }
 }
 
-// Commands need to be auto-completed
-// TODO: auto fetch commands from Clap
-fn cmd_sets() -> HashSet<Command> {
-    let mut set = HashSet::new();
-    set.insert(Command::new("account", ""));
-    set.insert(Command::new("state", ""));
-    set.insert(Command::new("node", ""));
-    set.insert(Command::new("chain", ""));
-    set.insert(Command::new("txpool", ""));
-    set.insert(Command::new("dev", ""));
-    set.insert(Command::new("contract", ""));
-    set.insert(Command::new("version", ""));
-    set.insert(Command::new("output", ""));
-    set.insert(Command::new("history", ""));
-    set.insert(Command::new("quit", ""));
-    set.insert(Command::new("console", ""));
-    set.insert(Command::new("help", ""));
-
-    // Subcommand of account
-    set.insert(Command::new("create", "account"));
-    set.insert(Command::new("show", "account"));
-    set.insert(Command::new("transfer", "account"));
-    set.insert(Command::new("accept-token", "account"));
-    set.insert(Command::new("list", "account"));
-    set.insert(Command::new("import-multisig", "account"));
-    set.insert(Command::new("change-password", "account"));
-    set.insert(Command::new("default", "account"));
-    set.insert(Command::new("remove", "account"));
-    set.insert(Command::new("lock", "account"));
-    set.insert(Command::new("unlock", "account"));
-    set.insert(Command::new("export", "account"));
-    set.insert(Command::new("import", "account"));
-    set.insert(Command::new("import-readonly", "account"));
-    set.insert(Command::new("execute-function", "account"));
-    set.insert(Command::new("execute-script", "account"));
-    set.insert(Command::new("sign-multisig-txn", "account"));
-    set.insert(Command::new("submit-txn", "account"));
-    set.insert(Command::new("sign-message", "account"));
-    set.insert(Command::new("verify-sign-message", "account"));
-    set.insert(Command::new("derive-address", "account"));
-    set.insert(Command::new("receipt-identifier", "account"));
-    set.insert(Command::new("generate-keypair", "account"));
-    set.insert(Command::new("rotate-authentication-key", "account"));
-    set.insert(Command::new("nft", "account"));
-    set.insert(Command::new("help", "account"));
-
-    // Subcommad of state
-    set.insert(Command::new("list", "state"));
-    set.insert(Command::new("get", "state"));
-    set.insert(Command::new("get-proof", "state"));
-    set.insert(Command::new("get-root", "state"));
-    set.insert(Command::new("help", "state"));
-
-    // Subcommad of node
-    set.insert(Command::new("info", "node"));
-    set.insert(Command::new("peers", "node"));
-    set.insert(Command::new("metrics", "node"));
-    set.insert(Command::new("manager", "node"));
-    set.insert(Command::new("service", "node"));
-    set.insert(Command::new("sync", "node"));
-    set.insert(Command::new("network", "node"));
-    set.insert(Command::new("help", "node"));
-
-    // Subcommad of chain
-    set.insert(Command::new("info", "chain"));
-    set.insert(Command::new("get-block", "chain"));
-    set.insert(Command::new("list-block", "chain"));
-    set.insert(Command::new("get-txn", "chain"));
-    set.insert(Command::new("get-txn-infos", "chain"));
-    set.insert(Command::new("get-txn-info", "chain"));
-    set.insert(Command::new("get-events", "chain"));
-    set.insert(Command::new("epoch-info", "chain"));
-    set.insert(Command::new("get-txn-info-list", "chain"));
-    set.insert(Command::new("get-txn-proof", "chain"));
-    set.insert(Command::new("get-block-info", "chain"));
-    set.insert(Command::new("help", "chain"));
-
-    // Subcommad of txpool
-    set.insert(Command::new("pending-txn", "txpool"));
-    set.insert(Command::new("pending-txns", "txpool"));
-    set.insert(Command::new("status", "txpool"));
-    set.insert(Command::new("help", "txpool"));
-
-    // Subcommad of dev
-    set.insert(Command::new("get-coin", "dev"));
-    set.insert(Command::new("move-explain", "dev"));
-    set.insert(Command::new("compile", "dev"));
-    set.insert(Command::new("deploy", "dev"));
-    set.insert(Command::new("module-proposal", "dev"));
-    set.insert(Command::new("module-plan", "dev"));
-    set.insert(Command::new("module-queue", "dev"));
-    set.insert(Command::new("module-exe", "dev"));
-    set.insert(Command::new("vm-config-proposal", "dev"));
-    set.insert(Command::new("package", "dev"));
-    set.insert(Command::new("call", "dev"));
-    set.insert(Command::new("resolve", "dev"));
-    set.insert(Command::new("call-api", "dev"));
-    set.insert(Command::new("subscribe", "dev"));
-    set.insert(Command::new("log", "dev"));
-    set.insert(Command::new("panic", "dev"));
-    set.insert(Command::new("sleep", "dev"));
-    set.insert(Command::new("gen-block", "dev"));
-    set.insert(Command::new("help", "dev"));
-
-    // Subcommad of contract
-    set.insert(Command::new("get", "contract"));
-    set.insert(Command::new("help", "contract"));
-    // Subcommad of version
-    // Subcommad of output
-    // Subcommad of history
-    // Subcommad of quit
-    // Subcommad of console
-    set
-}
-
-pub(crate) fn init_helper() -> RLHelper {
+pub(crate) fn init_helper(cmds: HashSet<CommandName>) -> RLHelper {
     RLHelper {
         file_completer: FilenameCompleter::new(),
-        cmd_completer: CommandCompleter { cmds: cmd_sets() },
+        cmd_completer: CommandCompleter { cmds },
         highlighter: MatchingBracketHighlighter::new(),
         validator: MatchingBracketValidator::new(),
     }

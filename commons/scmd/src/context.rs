@@ -1,17 +1,19 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+pub use crate::console::G_DEFAULT_CONSOLE_CONFIG;
+use crate::console::{init_helper, CommandName, RLHelper};
 use crate::error::CmdError;
 use crate::{
-    init_helper, print_action_result, CommandAction, CommandExec, CustomCommand, HistoryOp,
-    OutputFormat, RLHelper,
+    print_action_result, CommandAction, CommandExec, CustomCommand, HistoryOp, OutputFormat,
 };
 use anyhow::Result;
 use clap::{Arg, Command};
 use clap::{ErrorKind, Parser};
-use once_cell::sync::Lazy;
+use rustyline::{error::ReadlineError, Config as ConsoleConfig, Editor};
 use serde_json::Value;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::ffi::OsString;
 use std::fs::File;
 use std::io::prelude::*;
@@ -19,25 +21,122 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 
-pub use rustyline::{
-    config::CompletionType, error::ReadlineError, ColorMode, Config as ConsoleConfig, EditMode,
-    Editor, OutputStreamType,
-};
-
-pub static G_DEFAULT_CONSOLE_CONFIG: Lazy<ConsoleConfig> = Lazy::new(|| {
-    ConsoleConfig::builder()
-        .max_history_size(1000)
-        .history_ignore_space(true)
-        .history_ignore_dups(true)
-        .completion_type(CompletionType::List)
-        .auto_add_history(false)
-        .edit_mode(EditMode::Emacs)
-        .color_mode(ColorMode::Enabled)
-        .output_stream(OutputStreamType::Stdout)
-        .build()
-});
-
 static G_OUTPUT_FORMAT_ARG: &str = "output-format";
+
+// Commands need to be auto-completed
+// TODO: auto fetch commands from Clap
+fn cmd_sets() -> HashSet<CommandName> {
+    let mut set = HashSet::new();
+    set.insert(CommandName::new("account", ""));
+    set.insert(CommandName::new("state", ""));
+    set.insert(CommandName::new("node", ""));
+    set.insert(CommandName::new("chain", ""));
+    set.insert(CommandName::new("txpool", ""));
+    set.insert(CommandName::new("dev", ""));
+    set.insert(CommandName::new("contract", ""));
+    set.insert(CommandName::new("version", ""));
+    set.insert(CommandName::new("output", ""));
+    set.insert(CommandName::new("history", ""));
+    set.insert(CommandName::new("quit", ""));
+    set.insert(CommandName::new("console", ""));
+    set.insert(CommandName::new("help", ""));
+
+    // Subcommand of account
+    set.insert(CommandName::new("create", "account"));
+    set.insert(CommandName::new("show", "account"));
+    set.insert(CommandName::new("transfer", "account"));
+    set.insert(CommandName::new("accept-token", "account"));
+    set.insert(CommandName::new("list", "account"));
+    set.insert(CommandName::new("import-multisig", "account"));
+    set.insert(CommandName::new("change-password", "account"));
+    set.insert(CommandName::new("default", "account"));
+    set.insert(CommandName::new("remove", "account"));
+    set.insert(CommandName::new("lock", "account"));
+    set.insert(CommandName::new("unlock", "account"));
+    set.insert(CommandName::new("export", "account"));
+    set.insert(CommandName::new("import", "account"));
+    set.insert(CommandName::new("import-readonly", "account"));
+    set.insert(CommandName::new("execute-function", "account"));
+    set.insert(CommandName::new("execute-script", "account"));
+    set.insert(CommandName::new("sign-multisig-txn", "account"));
+    set.insert(CommandName::new("submit-txn", "account"));
+    set.insert(CommandName::new("sign-message", "account"));
+    set.insert(CommandName::new("verify-sign-message", "account"));
+    set.insert(CommandName::new("derive-address", "account"));
+    set.insert(CommandName::new("receipt-identifier", "account"));
+    set.insert(CommandName::new("generate-keypair", "account"));
+    set.insert(CommandName::new("rotate-authentication-key", "account"));
+    set.insert(CommandName::new("nft", "account"));
+    set.insert(CommandName::new("help", "account"));
+
+    // Subcommad of state
+    set.insert(CommandName::new("list", "state"));
+    set.insert(CommandName::new("get", "state"));
+    set.insert(CommandName::new("get-proof", "state"));
+    set.insert(CommandName::new("get-root", "state"));
+    set.insert(CommandName::new("help", "state"));
+
+    // Subcommad of node
+    set.insert(CommandName::new("info", "node"));
+    set.insert(CommandName::new("peers", "node"));
+    set.insert(CommandName::new("metrics", "node"));
+    set.insert(CommandName::new("manager", "node"));
+    set.insert(CommandName::new("service", "node"));
+    set.insert(CommandName::new("sync", "node"));
+    set.insert(CommandName::new("network", "node"));
+    set.insert(CommandName::new("help", "node"));
+
+    // Subcommad of chain
+    set.insert(CommandName::new("info", "chain"));
+    set.insert(CommandName::new("get-block", "chain"));
+    set.insert(CommandName::new("list-block", "chain"));
+    set.insert(CommandName::new("get-txn", "chain"));
+    set.insert(CommandName::new("get-txn-infos", "chain"));
+    set.insert(CommandName::new("get-txn-info", "chain"));
+    set.insert(CommandName::new("get-events", "chain"));
+    set.insert(CommandName::new("epoch-info", "chain"));
+    set.insert(CommandName::new("get-txn-info-list", "chain"));
+    set.insert(CommandName::new("get-txn-proof", "chain"));
+    set.insert(CommandName::new("get-block-info", "chain"));
+    set.insert(CommandName::new("help", "chain"));
+
+    // Subcommad of txpool
+    set.insert(CommandName::new("pending-txn", "txpool"));
+    set.insert(CommandName::new("pending-txns", "txpool"));
+    set.insert(CommandName::new("status", "txpool"));
+    set.insert(CommandName::new("help", "txpool"));
+
+    // Subcommad of dev
+    set.insert(CommandName::new("get-coin", "dev"));
+    set.insert(CommandName::new("move-explain", "dev"));
+    set.insert(CommandName::new("compile", "dev"));
+    set.insert(CommandName::new("deploy", "dev"));
+    set.insert(CommandName::new("module-proposal", "dev"));
+    set.insert(CommandName::new("module-plan", "dev"));
+    set.insert(CommandName::new("module-queue", "dev"));
+    set.insert(CommandName::new("module-exe", "dev"));
+    set.insert(CommandName::new("vm-config-proposal", "dev"));
+    set.insert(CommandName::new("package", "dev"));
+    set.insert(CommandName::new("call", "dev"));
+    set.insert(CommandName::new("resolve", "dev"));
+    set.insert(CommandName::new("call-api", "dev"));
+    set.insert(CommandName::new("subscribe", "dev"));
+    set.insert(CommandName::new("log", "dev"));
+    set.insert(CommandName::new("panic", "dev"));
+    set.insert(CommandName::new("sleep", "dev"));
+    set.insert(CommandName::new("gen-block", "dev"));
+    set.insert(CommandName::new("help", "dev"));
+
+    // Subcommad of contract
+    set.insert(CommandName::new("get", "contract"));
+    set.insert(CommandName::new("help", "contract"));
+    // Subcommad of version
+    // Subcommad of output
+    // Subcommad of history
+    // Subcommad of quit
+    // Subcommad of console
+    set
+}
 
 pub struct CmdContext<State, GlobalOpt>
 where
@@ -308,8 +407,8 @@ where
         let global_opt = Arc::new(global_opt);
         let state = Arc::new(state);
         let (config, history_file) = init_action(&app, global_opt.clone(), state.clone());
-        let mut rl = Editor::with_config(config);
-        rl.set_helper(Some(init_helper()));
+        let mut rl = Editor::<RLHelper>::with_config(config);
+        rl.set_helper(Some(init_helper(cmd_sets())));
         if let Some(history_file) = history_file.as_ref() {
             if !history_file.exists() {
                 if let Err(e) = File::create(history_file.as_path()) {
