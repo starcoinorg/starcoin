@@ -23,121 +23,6 @@ use std::sync::Arc;
 
 static G_OUTPUT_FORMAT_ARG: &str = "output-format";
 
-// Commands need to be auto-completed
-// TODO: auto fetch commands from Clap
-fn cmd_sets() -> HashSet<CommandName> {
-    let mut set = HashSet::new();
-    set.insert(CommandName::new("account", ""));
-    set.insert(CommandName::new("state", ""));
-    set.insert(CommandName::new("node", ""));
-    set.insert(CommandName::new("chain", ""));
-    set.insert(CommandName::new("txpool", ""));
-    set.insert(CommandName::new("dev", ""));
-    set.insert(CommandName::new("contract", ""));
-    set.insert(CommandName::new("version", ""));
-    set.insert(CommandName::new("output", ""));
-    set.insert(CommandName::new("history", ""));
-    set.insert(CommandName::new("quit", ""));
-    set.insert(CommandName::new("console", ""));
-    set.insert(CommandName::new("help", ""));
-
-    // Subcommand of account
-    set.insert(CommandName::new("create", "account"));
-    set.insert(CommandName::new("show", "account"));
-    set.insert(CommandName::new("transfer", "account"));
-    set.insert(CommandName::new("accept-token", "account"));
-    set.insert(CommandName::new("list", "account"));
-    set.insert(CommandName::new("import-multisig", "account"));
-    set.insert(CommandName::new("change-password", "account"));
-    set.insert(CommandName::new("default", "account"));
-    set.insert(CommandName::new("remove", "account"));
-    set.insert(CommandName::new("lock", "account"));
-    set.insert(CommandName::new("unlock", "account"));
-    set.insert(CommandName::new("export", "account"));
-    set.insert(CommandName::new("import", "account"));
-    set.insert(CommandName::new("import-readonly", "account"));
-    set.insert(CommandName::new("execute-function", "account"));
-    set.insert(CommandName::new("execute-script", "account"));
-    set.insert(CommandName::new("sign-multisig-txn", "account"));
-    set.insert(CommandName::new("submit-txn", "account"));
-    set.insert(CommandName::new("sign-message", "account"));
-    set.insert(CommandName::new("verify-sign-message", "account"));
-    set.insert(CommandName::new("derive-address", "account"));
-    set.insert(CommandName::new("receipt-identifier", "account"));
-    set.insert(CommandName::new("generate-keypair", "account"));
-    set.insert(CommandName::new("rotate-authentication-key", "account"));
-    set.insert(CommandName::new("nft", "account"));
-    set.insert(CommandName::new("help", "account"));
-
-    // Subcommad of state
-    set.insert(CommandName::new("list", "state"));
-    set.insert(CommandName::new("get", "state"));
-    set.insert(CommandName::new("get-proof", "state"));
-    set.insert(CommandName::new("get-root", "state"));
-    set.insert(CommandName::new("help", "state"));
-
-    // Subcommad of node
-    set.insert(CommandName::new("info", "node"));
-    set.insert(CommandName::new("peers", "node"));
-    set.insert(CommandName::new("metrics", "node"));
-    set.insert(CommandName::new("manager", "node"));
-    set.insert(CommandName::new("service", "node"));
-    set.insert(CommandName::new("sync", "node"));
-    set.insert(CommandName::new("network", "node"));
-    set.insert(CommandName::new("help", "node"));
-
-    // Subcommad of chain
-    set.insert(CommandName::new("info", "chain"));
-    set.insert(CommandName::new("get-block", "chain"));
-    set.insert(CommandName::new("list-block", "chain"));
-    set.insert(CommandName::new("get-txn", "chain"));
-    set.insert(CommandName::new("get-txn-infos", "chain"));
-    set.insert(CommandName::new("get-txn-info", "chain"));
-    set.insert(CommandName::new("get-events", "chain"));
-    set.insert(CommandName::new("epoch-info", "chain"));
-    set.insert(CommandName::new("get-txn-info-list", "chain"));
-    set.insert(CommandName::new("get-txn-proof", "chain"));
-    set.insert(CommandName::new("get-block-info", "chain"));
-    set.insert(CommandName::new("help", "chain"));
-
-    // Subcommad of txpool
-    set.insert(CommandName::new("pending-txn", "txpool"));
-    set.insert(CommandName::new("pending-txns", "txpool"));
-    set.insert(CommandName::new("status", "txpool"));
-    set.insert(CommandName::new("help", "txpool"));
-
-    // Subcommad of dev
-    set.insert(CommandName::new("get-coin", "dev"));
-    set.insert(CommandName::new("move-explain", "dev"));
-    set.insert(CommandName::new("compile", "dev"));
-    set.insert(CommandName::new("deploy", "dev"));
-    set.insert(CommandName::new("module-proposal", "dev"));
-    set.insert(CommandName::new("module-plan", "dev"));
-    set.insert(CommandName::new("module-queue", "dev"));
-    set.insert(CommandName::new("module-exe", "dev"));
-    set.insert(CommandName::new("vm-config-proposal", "dev"));
-    set.insert(CommandName::new("package", "dev"));
-    set.insert(CommandName::new("call", "dev"));
-    set.insert(CommandName::new("resolve", "dev"));
-    set.insert(CommandName::new("call-api", "dev"));
-    set.insert(CommandName::new("subscribe", "dev"));
-    set.insert(CommandName::new("log", "dev"));
-    set.insert(CommandName::new("panic", "dev"));
-    set.insert(CommandName::new("sleep", "dev"));
-    set.insert(CommandName::new("gen-block", "dev"));
-    set.insert(CommandName::new("help", "dev"));
-
-    // Subcommad of contract
-    set.insert(CommandName::new("get", "contract"));
-    set.insert(CommandName::new("help", "contract"));
-    // Subcommad of version
-    // Subcommad of output
-    // Subcommad of history
-    // Subcommad of quit
-    // Subcommad of console
-    set
-}
-
 pub struct CmdContext<State, GlobalOpt>
 where
     State: 'static,
@@ -408,7 +293,17 @@ where
         let state = Arc::new(state);
         let (config, history_file) = init_action(&app, global_opt.clone(), state.clone());
         let mut rl = Editor::<RLHelper>::with_config(config);
-        rl.set_helper(Some(init_helper(cmd_sets())));
+        let cmd_sets = Self::get_command_names_recursively(&app, "".to_string(), 3)
+            .iter()
+            .map(|(a, b)| {
+                CommandName::new(
+                    a.to_string(),
+                    b.replace(&app_name[..], "").trim().to_string(),
+                )
+            })
+            .collect();
+
+        rl.set_helper(Some(init_helper(cmd_sets)));
         if let Some(history_file) = history_file.as_ref() {
             if !history_file.exists() {
                 if let Err(e) = File::create(history_file.as_path()) {
@@ -581,5 +476,29 @@ where
             }
         }
         quit_action(app, global_opt, state);
+    }
+
+    fn get_command_names_recursively(
+        app: &Command,
+        prepositive: String,
+        max_depth: u32,
+    ) -> HashSet<(String, String)> {
+        if max_depth == 0 {
+            return HashSet::<(String, String)>::new();
+        }
+        let name = app.get_name();
+        let mut pre = prepositive;
+        if !pre.is_empty() {
+            pre.push(' ');
+        }
+        pre.push_str(name);
+
+        let mut set = HashSet::new();
+        for sub_app in app.get_subcommands() {
+            set.insert((sub_app.get_name().to_owned(), pre.clone()));
+            let sub_set = Self::get_command_names_recursively(sub_app, pre.clone(), max_depth - 1);
+            set.extend(sub_set);
+        }
+        set
     }
 }

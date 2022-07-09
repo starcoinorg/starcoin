@@ -39,11 +39,8 @@ pub(crate) struct CommandName {
 }
 
 impl CommandName {
-    pub(crate) fn new(cmd: &str, pre_cmd: &str) -> Self {
-        Self {
-            cmd: cmd.into(),
-            pre_cmd: pre_cmd.into(),
-        }
+    pub(crate) fn new(cmd: String, pre_cmd: String) -> Self {
+        Self { cmd, pre_cmd }
     }
 }
 struct CommandCompleter {
