@@ -8095,8 +8095,8 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bb35a55ab810b5c0fe31606fe9b47d1354e4dc519bec0a102655f78ea2b38057"
 dependencies = [
- "quote 1.0.17",
- "syn 1.0.90",
+ "quote 1.0.20",
+ "syn 1.0.98",
 ]
 
 [[package]]
@@ -8222,6 +8222,7 @@ dependencies = [
  "rand 0.8.5",
  "rust-flatten-json",
  "rustyline",
+ "rustyline-derive",
  "serde 1.0.137",
  "serde_json",
  "thiserror",
