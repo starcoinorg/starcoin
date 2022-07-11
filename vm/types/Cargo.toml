@@ -23,11 +23,12 @@ bech32 = "0.9"
 
 proptest = { version = "1.0.0", default-features = false, optional = true }
 proptest-derive = { version = "0.3.0", default-features = false, optional = true }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "1c51b0fcf076efef5890ea7e251f2e871a728cb6" }
-move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "1c51b0fcf076efef5890ea7e251f2e871a728cb6" }
-move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "1c51b0fcf076efef5890ea7e251f2e871a728cb6" }
-vm = { package = "move-binary-format", git = "https://github.com/starcoinorg/move", rev = "1c51b0fcf076efef5890ea7e251f2e871a728cb6" }
-move-ir-types = { git = "https://github.com/starcoinorg/move", rev = "1c51b0fcf076efef5890ea7e251f2e871a728cb6" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "e2af6705af1f036a4b8ad2e9431ed58c3ed08c72" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "e2af6705af1f036a4b8ad2e9431ed58c3ed08c72" }
+move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "e2af6705af1f036a4b8ad2e9431ed58c3ed08c72" }
+vm = { package = "move-binary-format", git = "https://github.com/starcoinorg/move", rev = "e2af6705af1f036a4b8ad2e9431ed58c3ed08c72" }
+move-ir-types = { git = "https://github.com/starcoinorg/move", rev = "e2af6705af1f036a4b8ad2e9431ed58c3ed08c72" }
+move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "e2af6705af1f036a4b8ad2e9431ed58c3ed08c72" }
 
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 #starcoin-proptest-helpers = { path = "../../commons/proptest-helpers", optional = true }
@@ -39,7 +40,7 @@ schemars = { git = "https://github.com/starcoinorg/schemars", rev = "6972da92f43
 
 proptest = "1.0.0"
 proptest-derive = "0.3.0"
-vm = { package = "move-binary-format", git = "https://github.com/starcoinorg/move", rev = "1c51b0fcf076efef5890ea7e251f2e871a728cb6", features = [
+vm = { package = "move-binary-format", git = "https://github.com/starcoinorg/move", rev = "e2af6705af1f036a4b8ad2e9431ed58c3ed08c72", features = [
     "fuzzing",
 ] }
 starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
