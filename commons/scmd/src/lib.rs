@@ -3,6 +3,7 @@
 
 mod action;
 mod command;
+mod console;
 mod context;
 pub mod error;
 mod result;

@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+pub use crate::console::G_DEFAULT_CONSOLE_CONFIG;
+use crate::console::{init_helper, CommandName, RLHelper};
 use crate::error::CmdError;
 use crate::{
     print_action_result, CommandAction, CommandExec, CustomCommand, HistoryOp, OutputFormat,
@@ -8,32 +10,16 @@ use crate::{
 use anyhow::Result;
 use clap::{Arg, Command};
 use clap::{ErrorKind, Parser};
-use once_cell::sync::Lazy;
+use rustyline::{error::ReadlineError, Config as ConsoleConfig, Editor};
 use serde_json::Value;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::ffi::OsString;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
-
-pub use rustyline::{
-    config::CompletionType, error::ReadlineError, ColorMode, Config as ConsoleConfig, EditMode,
-    Editor,
-};
-
-pub static G_DEFAULT_CONSOLE_CONFIG: Lazy<ConsoleConfig> = Lazy::new(|| {
-    ConsoleConfig::builder()
-        .max_history_size(1000)
-        .history_ignore_space(true)
-        .history_ignore_dups(true)
-        .completion_type(CompletionType::List)
-        .auto_add_history(false)
-        .edit_mode(EditMode::Emacs)
-        .color_mode(ColorMode::Enabled)
-        .build()
-});
 
 static G_OUTPUT_FORMAT_ARG: &str = "output-format";
 
@@ -306,7 +292,18 @@ where
         let global_opt = Arc::new(global_opt);
         let state = Arc::new(state);
         let (config, history_file) = init_action(&app, global_opt.clone(), state.clone());
-        let mut rl = Editor::<()>::with_config(config);
+        let mut rl = Editor::<RLHelper>::with_config(config);
+        let cmd_sets = Self::get_command_names_recursively(&app, "".to_string(), 3)
+            .iter()
+            .map(|(a, b)| {
+                CommandName::new(
+                    a.to_string(),
+                    b.replace(&app_name[..], "").trim().to_string(),
+                )
+            })
+            .collect();
+
+        rl.set_helper(Some(init_helper(cmd_sets)));
         if let Some(history_file) = history_file.as_ref() {
             if !history_file.exists() {
                 if let Err(e) = File::create(history_file.as_path()) {
@@ -464,7 +461,7 @@ where
         global_opt: Arc<GlobalOpt>,
         state: Arc<State>,
         quit_action: Box<dyn FnOnce(Command, GlobalOpt, State)>,
-        mut rl: Editor<()>,
+        mut rl: Editor<RLHelper>,
         history_file: Option<PathBuf>,
     ) {
         let global_opt = Arc::try_unwrap(global_opt)
@@ -479,5 +476,29 @@ where
             }
         }
         quit_action(app, global_opt, state);
+    }
+
+    fn get_command_names_recursively(
+        app: &Command,
+        prepositive: String,
+        max_depth: u32,
+    ) -> HashSet<(String, String)> {
+        if max_depth == 0 {
+            return HashSet::<(String, String)>::new();
+        }
+        let name = app.get_name();
+        let mut pre = prepositive;
+        if !pre.is_empty() {
+            pre.push(' ');
+        }
+        pre.push_str(name);
+
+        let mut set = HashSet::new();
+        for sub_app in app.get_subcommands() {
+            set.insert((sub_app.get_name().to_owned(), pre.clone()));
+            let sub_set = Self::get_command_names_recursively(sub_app, pre.clone(), max_depth - 1);
+            set.extend(sub_set);
+        }
+        set
     }
 }
