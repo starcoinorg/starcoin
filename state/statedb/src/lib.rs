@@ -7,7 +7,11 @@ use bcs_ext::BCSCodec;
 use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::RawKey;
 use lru::LruCache;
+use move_table_extension::{TableChangeSet, TableHandle};
+use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock};
+use serde::{Deserialize, Serialize};
+use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 pub use starcoin_state_api::{ChainStateReader, ChainStateWriter, StateProof, StateWithProof};
@@ -22,11 +26,13 @@ use starcoin_types::{
     state_set::{AccountStateSet, ChainStateSet},
 };
 use starcoin_vm_types::access_path::{DataPath, ModuleName};
+use starcoin_vm_types::account_config::table_handle_address;
 use starcoin_vm_types::language_storage::StructTag;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateView;
 use std::collections::HashSet;
 use std::convert::TryInto;
+use std::str::FromStr;
 use std::sync::Arc;
 use thiserror::Error;
 
@@ -205,6 +211,9 @@ impl AccountStateObject {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct TableHandleKey(pub u128);
+
 #[allow(clippy::upper_case_acronyms)]
 pub struct ChainStateDB {
     store: Arc<dyn StateNodeStore>,
@@ -212,9 +221,21 @@ pub struct ChainStateDB {
     state_tree: StateTree<AccountAddress>,
     cache: Mutex<LruCache<AccountAddress, CacheItem>>,
     updates: RwLock<HashSet<AccountAddress>>,
+    updates_table_handle: RwLock<HashSet<TableHandle>>,
+    cache_table_handle: Mutex<LruCache<TableHandle, Arc<TableHandleStateObject>>>,
+    state_tree_table_handle: StateTree<TableHandleKey>,
 }
 
 static G_DEFAULT_CACHE_SIZE: usize = 10240;
+
+static TABLE_PATH: Lazy<DataPath> = Lazy::new(|| {
+    let str = format!(
+        "{}/1/{}::TableHandle::TableHandle",
+        table_handle_address(),
+        table_handle_address()
+    );
+    AccessPath::from_str(str.as_str()).unwrap().path
+});
 
 impl ChainStateDB {
     pub fn mock() -> Self {
@@ -222,12 +243,25 @@ impl ChainStateDB {
     }
 
     pub fn new(store: Arc<dyn StateNodeStore>, root_hash: Option<HashValue>) -> Self {
-        Self {
+        let mut chain_statedb = ChainStateDB {
             store: store.clone(),
-            state_tree: StateTree::new(store, root_hash),
+            state_tree: StateTree::new(store.clone(), root_hash),
             cache: Mutex::new(LruCache::new(G_DEFAULT_CACHE_SIZE)),
             updates: RwLock::new(HashSet::new()),
+            updates_table_handle: RwLock::new(HashSet::new()),
+            cache_table_handle: Mutex::new(LruCache::new(G_DEFAULT_CACHE_SIZE)),
+            state_tree_table_handle: StateTree::new(store.clone(), None),
+        };
+        let account_state_object = chain_statedb
+            .get_account_state_object(&table_handle_address(), true)
+            .unwrap();
+        let state_root = account_state_object.get(&*TABLE_PATH).unwrap();
+        // XXX FIXME YSG
+        if let Some(state_root) = state_root {
+            let hash = HashValue::from_slice(state_root.as_slice()).unwrap();
+            chain_statedb.state_tree_table_handle = StateTree::new(store, Some(hash));
         }
+        chain_statedb
     }
 
     /// Fork a new statedb base current statedb
@@ -237,12 +271,7 @@ impl ChainStateDB {
 
     /// Fork a new statedb at `root_hash`
     pub fn fork_at(&self, state_root: HashValue) -> Self {
-        Self {
-            store: self.store.clone(),
-            state_tree: StateTree::new(self.store.clone(), Some(state_root)),
-            cache: Mutex::new(LruCache::new(G_DEFAULT_CACHE_SIZE)),
-            updates: RwLock::new(HashSet::new()),
-        }
+        Self::new(self.store.clone(), Some(state_root))
     }
 
     fn new_state_tree<K: RawKey>(&self, root_hash: HashValue) -> StateTree<K> {
@@ -306,6 +335,30 @@ impl ChainStateDB {
                 Some(v) => Ok(Some(AccountState::decode(v.as_slice())?)),
                 None => Ok(None),
             })
+    }
+
+    fn get_table_handle_state_object(
+        &self,
+        handle: &TableHandle,
+    ) -> Result<Arc<TableHandleStateObject>> {
+        let mut cache = self.cache_table_handle.lock();
+        let item = cache.get(handle);
+        let object = match item {
+            Some(item) => item.clone(),
+            None => {
+                let val = self
+                    .state_tree_table_handle
+                    .get(&TableHandleKey(handle.0))?;
+                let hash = match val {
+                    Some(val) => HashValue::from_slice(val)?,
+                    None => *SPARSE_MERKLE_PLACEHOLDER_HASH,
+                };
+                let obj = Arc::new(TableHandleStateObject::new(hash, self.store.clone()));
+                cache.put(*handle, obj.clone());
+                obj
+            }
+        };
+        Ok(object)
     }
 }
 
@@ -519,6 +572,7 @@ impl ChainStateWriter for ChainStateDB {
     /// Commit
     fn commit(&self) -> Result<HashValue> {
         // cache commit
+        // XXX FIXME YSG
         for address in self.updates.read().iter() {
             let account_state_object = self.get_account_state_object(address, false)?;
             let state = account_state_object.commit()?;
@@ -536,8 +590,97 @@ impl ChainStateWriter for ChainStateDB {
             account_state_object.flush()?;
         }
         locks.clear();
+        let mut locks_table_handle = self.updates_table_handle.write();
+        for h in locks_table_handle.iter() {
+            let table_handle_state_object = self.get_table_handle_state_object(h)?;
+            table_handle_state_object.flush()?;
+            let _root_hash = table_handle_state_object.root_hash();
+            // self.state_tree_table_handle.lock().
+        }
+        locks_table_handle.clear();
         // self tree flush
+        // self.state_tree.update state_tree_table_handle_root
         self.state_tree.flush()
+        // XXX FIXME STATE_ROOT
+    }
+
+    fn apply_write_set_and_change_set(
+        &self,
+        write_set: WriteSet,
+        table_change_set: TableChangeSet,
+    ) -> Result<()> {
+        let TableChangeSet {
+            new_tables,
+            removed_tables,
+            changes,
+        } = table_change_set;
+        let mut lock_table_handle = self.updates_table_handle.write();
+        for (h, c) in changes {
+            lock_table_handle.insert(h);
+            let table_handle_state_object = self.get_table_handle_state_object(&h)?;
+            for (key, val) in c.entries {
+                if let Some(v) = val {
+                    table_handle_state_object.set(key, v);
+                } else {
+                    table_handle_state_object.remove(&key);
+                }
+            }
+        }
+        self.apply_write_set(write_set)
+
+        /*
+        let mut table_updates = self.tables.write();
+        table_updates.extend(new_tables.into_iter().map(|h|(h, BTreeMap::default())));
+        let state_root = self.state_root();
+        for (h, c) in changes {
+            assert!(table_updates.contains_key(&h), "inconsistent table change set: stale table handle");
+            let table = table_updates.get_mut(&h).unwrap();
+            for (key, val) in c.entries {
+                table.insert(key, val);
+            }
+        } */
+    }
+}
+
+/// represent TableHandleState in runtime memory.
+struct TableHandleStateObject {
+    state_tree: Mutex<StateTree<Vec<u8>>>,
+    // store: Arc<dyn StateNodeStore>,
+}
+
+impl TableHandleStateObject {
+    pub fn new(root: HashValue, store: Arc<dyn StateNodeStore>) -> Self {
+        let state_tree = StateTree::<Vec<u8>>::new(store.clone(), Some(root));
+        Self {
+            state_tree: Mutex::new(state_tree),
+            //store,
+        }
+    }
+
+    pub fn set(&self, key: Vec<u8>, value: Vec<u8>) {
+        self.state_tree.lock().put(key, value)
+    }
+
+    pub fn remove(&self, key: &Vec<u8>) {
+        self.state_tree.lock().remove(key)
+    }
+
+    pub fn commit(&self) -> Result<()> {
+        // XXX FIXME YSG
+        let state_tree = self.state_tree.lock();
+        if state_tree.is_dirty() {
+            state_tree.commit()?;
+        }
+        Ok(())
+    }
+
+    pub fn flush(&self) -> Result<()> {
+        self.state_tree.lock().flush()?;
+        Ok(())
+    }
+
+    pub fn root_hash(&self) -> HashValue {
+        self.state_tree.lock().root_hash()
     }
 }
 

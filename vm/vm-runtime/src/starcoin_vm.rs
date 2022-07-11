@@ -9,7 +9,7 @@ use crate::errors::{
 use crate::metrics::VMMetrics;
 use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
 use anyhow::{format_err, Error, Result};
-use move_table_extension::NativeTableContext;
+use move_table_extension::{NativeTableContext, TableChangeSet};
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
 use move_vm_runtime::session::Session;
 use once_cell::sync::Lazy;
@@ -1327,6 +1327,7 @@ pub(crate) fn discard_error_output(err: StatusCode) -> TransactionOutput {
         vec![],
         0,
         TransactionStatus::Discard(err),
+        TableChangeSet::default(),
     )
 }
 
@@ -1401,7 +1402,7 @@ pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolverExt>(
     let (write_set, events) = SessionOutput {
         change_set,
         events,
-        table_change_set,
+        table_change_set: table_change_set.clone(),
     }
     .into_change_set(ap_cache)?;
     Ok(TransactionOutput::new(
@@ -1409,6 +1410,7 @@ pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolverExt>(
         events,
         gas_used,
         TransactionStatus::Keep(status),
+        table_change_set,
     ))
 }
 

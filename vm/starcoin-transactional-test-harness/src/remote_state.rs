@@ -4,6 +4,7 @@ use move_binary_format::errors::VMError;
 use move_core_types::resolver::{ModuleResolver, ResourceResolver};
 use starcoin_crypto::HashValue;
 
+use move_table_extension::TableChangeSet;
 use starcoin_rpc_api::state::StateApiClient;
 use starcoin_rpc_api::types::{BlockView, StateWithProofView};
 use starcoin_state_api::ChainStateWriter;
@@ -118,6 +119,15 @@ where
             SelectableStateView::A(a) => a.flush(),
             SelectableStateView::B(b) => b.flush(),
         }
+    }
+
+    fn apply_write_set_and_change_set(
+        &self,
+        write_set: WriteSet,
+        _table_change_set: TableChangeSet,
+    ) -> Result<()> {
+        // XXX FIXME YSG
+        self.apply_write_set(write_set)
     }
 }
 

@@ -16,3 +16,8 @@ pub fn core_code_address() -> AccountAddress {
 pub fn genesis_address() -> AccountAddress {
     CORE_CODE_ADDRESS
 }
+
+pub fn table_handle_address() -> AccountAddress {
+    AccountAddress::from_hex_literal("0xA550C68")
+        .expect("Parsing valid hex literal should always succeed")
+}

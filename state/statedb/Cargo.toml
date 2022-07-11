@@ -21,3 +21,4 @@ bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 serde = { version = "1.0.130" }
 forkable-jellyfish-merkle = {path = "../../commons/forkable-jellyfish-merkle"}
 move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "e2af6705af1f036a4b8ad2e9431ed58c3ed08c72" }
+once_cell = "1.12.0"

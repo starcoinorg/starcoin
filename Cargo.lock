@@ -10279,6 +10279,7 @@ dependencies = [
  "forkable-jellyfish-merkle",
  "lru",
  "move-table-extension",
+ "once_cell",
  "parking_lot 0.12.1",
  "serde 1.0.137",
  "starcoin-crypto",

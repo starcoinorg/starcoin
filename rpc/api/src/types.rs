@@ -1101,7 +1101,7 @@ pub struct TransactionOutputView {
 
 impl From<TransactionOutput> for TransactionOutputView {
     fn from(txn_output: TransactionOutput) -> Self {
-        let (write_set, events, gas_used, status) = txn_output.into_inner();
+        let (write_set, events, gas_used, status, _) = txn_output.into_inner();
         Self {
             events: events.into_iter().map(Into::into).collect(),
             gas_used: gas_used.into(),
