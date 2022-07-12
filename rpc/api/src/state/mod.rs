@@ -106,15 +106,26 @@ pub struct GetCodeOption {
     pub state_root: Option<HashValue>,
 }
 
-#[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq, JsonSchema)]
+#[derive(Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq, JsonSchema)]
 #[serde(default)]
 pub struct ListResourceOption {
     pub decode: bool,
     /// The state tree root, default is the latest block state root
     pub state_root: Option<HashValue>,
+    pub current_page: usize,
     pub page_size: usize,
-    pub current_page: usize
     //TODO support filter by type
+}
+
+impl Default for ListResourceOption {
+    fn default() -> Self {
+        ListResourceOption {
+            decode: false,
+            state_root: None,
+            current_page: 0,
+            page_size: std::usize::MAX,
+        }
+    }
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq, JsonSchema)]
