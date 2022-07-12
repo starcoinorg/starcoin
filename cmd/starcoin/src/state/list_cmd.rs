@@ -112,9 +112,13 @@ impl CommandAction for ListCmd {
                 )?;
                 ListDataResult::Resource(decode_resource(
                     &state_reader,
-                    ctx.state()
-                        .client()
-                        .state_list_resource(*address, false, state_root, 0, std::usize::MAX)?,
+                    ctx.state().client().state_list_resource(
+                        *address,
+                        false,
+                        state_root,
+                        0,
+                        std::usize::MAX,
+                    )?,
                 ))
             }
         };

@@ -88,10 +88,13 @@ impl CommandAction for NFTCommand {
                     .state()
                     .get_account_or_default(*address)
                     .map(|account| account.address)?;
-                let all_resources = ctx
-                    .state()
-                    .client()
-                    .state_list_resource(address, true, None, 0, std::usize::MAX)?;
+                let all_resources = ctx.state().client().state_list_resource(
+                    address,
+                    true,
+                    None,
+                    0,
+                    std::usize::MAX,
+                )?;
                 let galleries: Result<Vec<NFTGallery>> = all_resources
                     .resources
                     .into_iter()
@@ -119,10 +122,13 @@ impl CommandAction for NFTCommand {
                     .get_account_or_default(*address)
                     .map(|account| account.address)?;
 
-                let all_resources = ctx
-                    .state()
-                    .client()
-                    .state_list_resource(address, true, None, 0, std::usize::MAX)?;
+                let all_resources = ctx.state().client().state_list_resource(
+                    address,
+                    true,
+                    None,
+                    0,
+                    std::usize::MAX,
+                )?;
                 let ident_nfts: Result<Vec<IdentifierNFT>> = all_resources
                     .resources
                     .into_iter()
