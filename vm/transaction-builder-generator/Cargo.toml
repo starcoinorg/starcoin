@@ -14,9 +14,9 @@ heck = "0.3.3"
 regex = "1.6.0"
 clap = { version = "3", features = ["derive"] }
 textwrap = "0.14.0"
-serde_yaml = "0.8.21"
-serde-generate = { git = "https://github.com/starcoinorg/serde-reflection", rev = "694048797338ff7385006d968e786b6d9dbdeb8b" }
-serde-reflection = { git = "https://github.com/starcoinorg/serde-reflection", rev = "694048797338ff7385006d968e786b6d9dbdeb8b" }
+serde_yaml = "0.8.25"
+serde-generate = {git="https://github.com/starcoinorg/serde-reflection" , rev="694048797338ff7385006d968e786b6d9dbdeb8b"}
+serde-reflection = {git="https://github.com/starcoinorg/serde-reflection" , rev="694048797338ff7385006d968e786b6d9dbdeb8b"}
 starcoin-vm-types = { path = "../types"}
 move-core-types = {git = "https://github.com/starcoinorg/move", rev = "e2af6705af1f036a4b8ad2e9431ed58c3ed08c72"  }
 bcs = "0.1.3"
