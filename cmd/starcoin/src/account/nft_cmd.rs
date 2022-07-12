@@ -91,7 +91,7 @@ impl CommandAction for NFTCommand {
                 let all_resources = ctx
                     .state()
                     .client()
-                    .state_list_resource(address, true, None)?;
+                    .state_list_resource(address, true, None, 0, std::usize::MAX)?;
                 let galleries: Result<Vec<NFTGallery>> = all_resources
                     .resources
                     .into_iter()
@@ -122,7 +122,7 @@ impl CommandAction for NFTCommand {
                 let all_resources = ctx
                     .state()
                     .client()
-                    .state_list_resource(address, true, None)?;
+                    .state_list_resource(address, true, None, 0, std::usize::MAX)?;
                 let ident_nfts: Result<Vec<IdentifierNFT>> = all_resources
                     .resources
                     .into_iter()

@@ -268,6 +268,8 @@ where
                         .cloned()
                         .unwrap_or_default()
                         .iter()
+                        .skip(option.current_page * option.page_size)
+                        .take(option.page_size)
                         .map(|(k, v)| {
                             let struct_tag = StructTag::decode(k.as_slice())?;
                             let decoded = if option.decode {

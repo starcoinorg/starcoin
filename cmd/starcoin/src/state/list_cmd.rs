@@ -114,7 +114,7 @@ impl CommandAction for ListCmd {
                     &state_reader,
                     ctx.state()
                         .client()
-                        .state_list_resource(*address, false, state_root)?,
+                        .state_list_resource(*address, false, state_root, 0, std::usize::MAX)?,
                 ))
             }
         };

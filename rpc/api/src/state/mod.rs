@@ -112,7 +112,9 @@ pub struct ListResourceOption {
     pub decode: bool,
     /// The state tree root, default is the latest block state root
     pub state_root: Option<HashValue>,
-    //TODO support filter by type and pagination
+    pub page_size: usize,
+    pub current_page: usize
+    //TODO support filter by type
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq, JsonSchema)]
