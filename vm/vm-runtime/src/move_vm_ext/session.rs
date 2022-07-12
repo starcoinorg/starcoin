@@ -3,7 +3,7 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::{ChangeSet as MoveChangeSet, Event as MoveEvent};
 use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::{StatusCode, VMStatus};
-use move_table_extension::{TableChange, TableChangeSet};
+use move_table_extension::TableChangeSet;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, CryptoHasher, PlainCryptoHash};
 use starcoin_crypto::HashValue;
@@ -134,38 +134,5 @@ impl SessionOutput {
             .collect::<Result<Vec<_>, VMStatus>>()?;
 
         Ok((write_set, events))
-    }
-
-    pub fn squash(&mut self, other: Self) -> Result<(), VMStatus> {
-        self.change_set
-            .squash(other.change_set)
-            .map_err(|_| VMStatus::Error(StatusCode::DATA_FORMAT_ERROR))?;
-        self.events.extend(other.events.into_iter());
-
-        // Squash the table changes
-        self.table_change_set
-            .new_tables
-            .extend(other.table_change_set.new_tables);
-        for removed_table in &self.table_change_set.removed_tables {
-            self.table_change_set.new_tables.remove(removed_table);
-        }
-        // There's chance that a table is added in `self`, and an item is added to that table in
-        // `self`, and later the item is deleted in `other`, netting to a NOOP for that item,
-        // but this is an tricky edge case that we don't expect to happen too much, it doesn't hurt
-        // too much to just keep the deletion. It's safe as long as we do it that way consistently.
-        self.table_change_set
-            .removed_tables
-            .extend(other.table_change_set.removed_tables.into_iter());
-        for (handle, changes) in other.table_change_set.changes.into_iter() {
-            let my_changes = self
-                .table_change_set
-                .changes
-                .entry(handle)
-                .or_insert(TableChange {
-                    entries: Default::default(),
-                });
-            my_changes.entries.extend(changes.entries.into_iter());
-        }
-        Ok(())
     }
 }
