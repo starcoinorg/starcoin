@@ -137,6 +137,8 @@ pub trait ChainStateReader: StateView {
     fn dump(&self) -> Result<ChainStateSet>;
 
     fn dump_iter(&self) -> Result<AccountStateSetIterator>;
+
+    fn get_table_item_with_proof(&self, _handle: u128, _key: &[u8]) -> Result<StateWithProof>;
 }
 
 pub trait ChainStateWriter {

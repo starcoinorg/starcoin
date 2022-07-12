@@ -124,10 +124,16 @@ where
     fn apply_write_set_and_change_set(
         &self,
         write_set: WriteSet,
-        _table_change_set: TableChangeSet,
+        table_change_set: TableChangeSet,
     ) -> Result<()> {
-        // XXX FIXME YSG
-        self.apply_write_set(write_set)
+        match self {
+            SelectableStateView::A(a) => {
+                a.apply_write_set_and_change_set(write_set, table_change_set)
+            }
+            SelectableStateView::B(b) => {
+                b.apply_write_set_and_change_set(write_set, table_change_set)
+            }
+        }
     }
 }
 

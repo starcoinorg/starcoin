@@ -1,6 +1,5 @@
 use crate::access_path::{AccessPath, DataType};
 use crate::account_address::AccountAddress;
-use crate::account_config::table_handle_address;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::prelude::*;
 use std::str::FromStr;
@@ -18,8 +17,7 @@ fn test_data_type() {
 fn test_access_path_str_valid() {
     let r1 = format!(
         "{}/1/0x00000000000000000000000000000001::Account::Account",
-        //AccountAddress::random()
-        table_handle_address()
+        AccountAddress::random()
     );
     let test_cases = vec!["0x00000000000000000000000000000000/0/Account",
                           "0x00000000000000000000000000000001/0/Account",
@@ -28,7 +26,6 @@ fn test_access_path_str_valid() {
                           r1.as_str()];
     for case in test_cases {
         let access_path = AccessPath::from_str(case).unwrap();
-        println!("{:?} {}", access_path.path.data_type(), access_path);
         assert_eq!(case.to_owned(), access_path.to_string())
     }
 }

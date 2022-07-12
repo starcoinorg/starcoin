@@ -98,6 +98,11 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
     fn dump_iter(&self) -> Result<AccountStateSetIterator> {
         unimplemented!()
     }
+
+    fn get_table_item_with_proof(&self, _handle: u128, _key: &[u8]) -> Result<StateWithProof> {
+        // XXX FIXME YSG
+        todo!()
+    }
 }
 
 impl<'a> StateView for RemoteStateReader<'a> {

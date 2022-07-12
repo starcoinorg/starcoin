@@ -213,6 +213,10 @@ impl ChainStateReader for Inner {
     fn dump_iter(&self) -> Result<AccountStateSetIterator> {
         unimplemented!()
     }
+
+    fn get_table_item_with_proof(&self, handle: u128, key: &[u8]) -> Result<StateWithProof> {
+        self.state_db.get_table_item_with_proof(handle, key)
+    }
 }
 
 impl StateView for Inner {

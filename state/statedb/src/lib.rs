@@ -223,14 +223,15 @@ pub struct ChainStateDB {
     updates: RwLock<HashSet<AccountAddress>>,
     updates_table_handle: RwLock<HashSet<TableHandle>>,
     cache_table_handle: Mutex<LruCache<TableHandle, Arc<TableHandleStateObject>>>,
-    state_tree_table_handle: StateTree<TableHandleKey>,
+    // SMT save TableHandle -> TableHandleState.root_hash
+    state_tree_table_handles: StateTree<TableHandleKey>,
 }
 
 static G_DEFAULT_CACHE_SIZE: usize = 10240;
 
 static TABLE_PATH: Lazy<DataPath> = Lazy::new(|| {
     let str = format!(
-        "{}/1/{}::TableHandle::TableHandle",
+        "{}/1/{}::TableHandles::TableHandles",
         table_handle_address(),
         table_handle_address()
     );
@@ -250,7 +251,7 @@ impl ChainStateDB {
             updates: RwLock::new(HashSet::new()),
             updates_table_handle: RwLock::new(HashSet::new()),
             cache_table_handle: Mutex::new(LruCache::new(G_DEFAULT_CACHE_SIZE)),
-            state_tree_table_handle: StateTree::new(store.clone(), None),
+            state_tree_table_handles: StateTree::new(store.clone(), None),
         };
         let account_state_object = chain_statedb
             .get_account_state_object(&table_handle_address(), true)
@@ -259,7 +260,7 @@ impl ChainStateDB {
         // XXX FIXME YSG
         if let Some(state_root) = state_root {
             let hash = HashValue::from_slice(state_root.as_slice()).unwrap();
-            chain_statedb.state_tree_table_handle = StateTree::new(store, Some(hash));
+            chain_statedb.state_tree_table_handles = StateTree::new(store, Some(hash));
         }
         chain_statedb
     }
@@ -347,13 +348,17 @@ impl ChainStateDB {
             Some(item) => item.clone(),
             None => {
                 let val = self
-                    .state_tree_table_handle
+                    .state_tree_table_handles
                     .get(&TableHandleKey(handle.0))?;
                 let hash = match val {
                     Some(val) => HashValue::from_slice(val)?,
                     None => *SPARSE_MERKLE_PLACEHOLDER_HASH,
                 };
-                let obj = Arc::new(TableHandleStateObject::new(hash, self.store.clone()));
+                let obj = Arc::new(TableHandleStateObject::new(
+                    *handle,
+                    hash,
+                    self.store.clone(),
+                ));
                 cache.put(*handle, obj.clone());
                 obj
             }
@@ -374,10 +379,10 @@ impl StateView for ChainStateDB {
                         None => Ok(None),
                     })
             }
-            StateKey::TableItem { handle: _, key: _ } => {
-                // XXX FIXME YSG
-                // unimplemented!()
-                Ok(None)
+            StateKey::TableItem { handle, key } => {
+                let table_handle_state_object =
+                    self.get_table_handle_state_object(&TableHandle(*handle))?;
+                table_handle_state_object.get(key)
             }
         }
     }
@@ -488,6 +493,11 @@ impl ChainStateReader for ChainStateDB {
         let iter = AccountStateSetIterator::new(self.store.clone(), jmt_into_iter);
         Ok(iter)
     }
+
+    fn get_table_item_with_proof(&self, _handle: u128, _key: &[u8]) -> Result<StateWithProof> {
+        // XXX FIXME YSG
+        todo!()
+    }
 }
 
 impl ChainStateWriter for ChainStateDB {
@@ -540,7 +550,6 @@ impl ChainStateWriter for ChainStateDB {
     }
 
     fn apply_write_set(&self, write_set: WriteSet) -> Result<()> {
-        // XXX FIXME YSG
         let mut locks = self.updates.write();
         for (state_key, write_op) in write_set {
             //update self updates record
@@ -561,10 +570,7 @@ impl ChainStateWriter for ChainStateDB {
                         }
                     }
                 }
-                StateKey::TableItem { handle: _, key: _ } => {
-                    // XXX FIXME YSG
-                    // unimplemented!()
-                }
+                StateKey::TableItem { handle: _, key: _ } => {}
             }
         }
         Ok(())
@@ -572,7 +578,28 @@ impl ChainStateWriter for ChainStateDB {
     /// Commit
     fn commit(&self) -> Result<HashValue> {
         // cache commit
-        // XXX FIXME YSG
+        for handle in self.updates_table_handle.read().iter() {
+            let table_handle_state_object = self.get_table_handle_state_object(handle)?;
+            table_handle_state_object.commit()?;
+            // put table_handle_state_object commit
+            self.state_tree_table_handles.put(
+                TableHandleKey(handle.0),
+                table_handle_state_object.root_hash().to_vec(),
+            );
+        }
+        self.state_tree_table_handles.commit()?;
+
+        // update table_handle_address state
+        let mut locks = self.updates.write();
+        locks.insert(table_handle_address());
+        let table_handle_account_state_object =
+            self.get_account_state_object(&table_handle_address(), true)?;
+        table_handle_account_state_object.set(
+            TABLE_PATH.clone(),
+            self.state_tree_table_handles.root_hash().to_vec(),
+        );
+        locks.clear();
+
         for address in self.updates.read().iter() {
             let account_state_object = self.get_account_state_object(address, false)?;
             let state = account_state_object.commit()?;
@@ -584,24 +611,24 @@ impl ChainStateWriter for ChainStateDB {
     /// flush data to db.
     fn flush(&self) -> Result<()> {
         //cache flush
+        let mut locks_table_handle = self.updates_table_handle.write();
+        for h in locks_table_handle.iter() {
+            let table_handle_state_object = self.get_table_handle_state_object(h)?;
+            table_handle_state_object.flush()?;
+        }
+        locks_table_handle.clear();
+
+        self.state_tree_table_handles.flush()?;
+
         let mut locks = self.updates.write();
         for address in locks.iter() {
             let account_state_object = self.get_account_state_object(address, false)?;
             account_state_object.flush()?;
         }
         locks.clear();
-        let mut locks_table_handle = self.updates_table_handle.write();
-        for h in locks_table_handle.iter() {
-            let table_handle_state_object = self.get_table_handle_state_object(h)?;
-            table_handle_state_object.flush()?;
-            let _root_hash = table_handle_state_object.root_hash();
-            // self.state_tree_table_handle.lock().
-        }
-        locks_table_handle.clear();
+
         // self tree flush
-        // self.state_tree.update state_tree_table_handle_root
         self.state_tree.flush()
-        // XXX FIXME STATE_ROOT
     }
 
     fn apply_write_set_and_change_set(
@@ -610,8 +637,8 @@ impl ChainStateWriter for ChainStateDB {
         table_change_set: TableChangeSet,
     ) -> Result<()> {
         let TableChangeSet {
-            new_tables,
-            removed_tables,
+            new_tables: _,
+            removed_tables: _,
             changes,
         } = table_change_set;
         let mut lock_table_handle = self.updates_table_handle.write();
@@ -627,33 +654,22 @@ impl ChainStateWriter for ChainStateDB {
             }
         }
         self.apply_write_set(write_set)
-
-        /*
-        let mut table_updates = self.tables.write();
-        table_updates.extend(new_tables.into_iter().map(|h|(h, BTreeMap::default())));
-        let state_root = self.state_root();
-        for (h, c) in changes {
-            assert!(table_updates.contains_key(&h), "inconsistent table change set: stale table handle");
-            let table = table_updates.get_mut(&h).unwrap();
-            for (key, val) in c.entries {
-                table.insert(key, val);
-            }
-        } */
     }
 }
 
 /// represent TableHandleState in runtime memory.
+/// TableHandle's SMT Save (table.key, table.value)
 struct TableHandleStateObject {
+    _handle: TableHandle,
     state_tree: Mutex<StateTree<Vec<u8>>>,
-    // store: Arc<dyn StateNodeStore>,
 }
 
 impl TableHandleStateObject {
-    pub fn new(root: HashValue, store: Arc<dyn StateNodeStore>) -> Self {
+    pub fn new(_handle: TableHandle, root: HashValue, store: Arc<dyn StateNodeStore>) -> Self {
         let state_tree = StateTree::<Vec<u8>>::new(store.clone(), Some(root));
         Self {
+            _handle,
             state_tree: Mutex::new(state_tree),
-            //store,
         }
     }
 
@@ -666,7 +682,6 @@ impl TableHandleStateObject {
     }
 
     pub fn commit(&self) -> Result<()> {
-        // XXX FIXME YSG
         let state_tree = self.state_tree.lock();
         if state_tree.is_dirty() {
             state_tree.commit()?;
@@ -681,6 +696,10 @@ impl TableHandleStateObject {
 
     pub fn root_hash(&self) -> HashValue {
         self.state_tree.lock().root_hash()
+    }
+
+    pub fn get(&self, key: &Vec<u8>) -> Result<Option<Vec<u8>>> {
+        self.state_tree.lock().get(key)
     }
 }
 

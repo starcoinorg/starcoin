@@ -279,3 +279,11 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         ids: Vec<HashValue>,
     ) -> BoxFuture<Result<Vec<Option<Block>>>>;
 }
+
+/// XXX FIXME YSG
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetTableItemStateWithProof {
+    pub state_root: HashValue,
+    pub table_item: u128,
+    pub key: Vec<u8>,
+}
