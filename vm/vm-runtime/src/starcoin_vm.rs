@@ -9,7 +9,7 @@ use crate::errors::{
 use crate::metrics::VMMetrics;
 use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
 use anyhow::{format_err, Error, Result};
-use move_table_extension::{NativeTableContext, TableChangeSet};
+use move_table_extension::NativeTableContext;
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
 use move_vm_runtime::session::Session;
 use once_cell::sync::Lazy;
@@ -36,7 +36,6 @@ use starcoin_vm_types::account_config::{
     core_code_address, genesis_address, ModuleUpgradeStrategy, TwoPhaseUpgradeV2Resource,
     G_EPILOGUE_NAME, G_EPILOGUE_V2_NAME, G_PROLOGUE_NAME,
 };
-use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::file_format::{CompiledModule, CompiledScript};
 use starcoin_vm_types::gas_schedule::NativeCostIndex;
 use starcoin_vm_types::gas_schedule::{zero_cost_schedule, GasConstants, GasCost, GasStatus};
@@ -52,11 +51,8 @@ use starcoin_vm_types::transaction::{DryRunTransaction, Package, TransactionPayl
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::vm_status::KeptVMStatus;
-use starcoin_vm_types::write_set::{WriteAccessPathSet, WriteAccessPathSetMut, WriteOp};
 use starcoin_vm_types::{
-    effects::{ChangeSet as MoveChangeSet, Event as MoveEvent},
     errors::Location,
-    event::EventKey,
     gas_schedule::{self, CostTable, GasAlgebra, GasCarrier, GasUnits, InternalGasUnits},
     language_storage::TypeTag,
     on_chain_config::{OnChainConfig, VMConfig, Version},
@@ -65,7 +61,6 @@ use starcoin_vm_types::{
     values::Value,
     vm_status::{StatusCode, VMStatus},
 };
-use std::convert::{TryFrom, TryInto};
 use std::sync::Arc;
 
 static G_ZERO_COST_SCHEDULE: Lazy<CostTable> =
@@ -1327,61 +1322,7 @@ pub(crate) fn discard_error_output(err: StatusCode) -> TransactionOutput {
         vec![],
         0,
         TransactionStatus::Discard(err),
-        TableChangeSet::default(),
     )
-}
-
-pub fn convert_changeset_and_events_cached<C: AccessPathCache>(
-    ap_cache: &mut C,
-    changeset: MoveChangeSet,
-    events: Vec<MoveEvent>,
-) -> Result<(WriteAccessPathSet, Vec<ContractEvent>), VMStatus> {
-    // TODO: Cache access path computations if necessary.
-    let mut ops = vec![];
-
-    for (addr, account_changeset) in changeset.into_inner() {
-        let (modules, resources) = account_changeset.into_inner();
-        for (struct_tag, blob_opt) in resources {
-            let ap = ap_cache.get_resource_path(addr, struct_tag);
-            let op = match blob_opt {
-                None => WriteOp::Deletion,
-                Some(blob) => WriteOp::Value(blob),
-            };
-            ops.push((ap, op))
-        }
-
-        for (name, blob_opt) in modules {
-            let ap = ap_cache.get_module_path(ModuleId::new(addr, name));
-            let op = match blob_opt {
-                None => WriteOp::Deletion,
-                Some(blob) => WriteOp::Value(blob),
-            };
-
-            ops.push((ap, op))
-        }
-    }
-
-    let ws = WriteAccessPathSetMut::new(ops)
-        .freeze()
-        .map_err(|_| VMStatus::Error(StatusCode::DATA_FORMAT_ERROR))?;
-
-    let events = events
-        .into_iter()
-        .map(|(guid, seq_num, ty_tag, blob)| {
-            let key = EventKey::try_from(guid.as_slice())
-                .map_err(|_| VMStatus::Error(StatusCode::EVENT_KEY_MISMATCH))?;
-            Ok(ContractEvent::new(key, seq_num, ty_tag, blob))
-        })
-        .collect::<Result<Vec<_>, VMStatus>>()?;
-
-    Ok((ws, events))
-}
-
-pub fn convert_changeset_and_events(
-    changeset: MoveChangeSet,
-    events: Vec<MoveEvent>,
-) -> Result<(WriteAccessPathSet, Vec<ContractEvent>), VMStatus> {
-    convert_changeset_and_events_cached(&mut (), changeset, events)
 }
 
 pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolverExt>(
@@ -1402,7 +1343,7 @@ pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolverExt>(
     let (write_set, events) = SessionOutput {
         change_set,
         events,
-        table_change_set: table_change_set.clone(),
+        table_change_set,
     }
     .into_change_set(ap_cache)?;
     Ok(TransactionOutput::new(
@@ -1410,7 +1351,6 @@ pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolverExt>(
         events,
         gas_used,
         TransactionStatus::Keep(status),
-        table_change_set,
     ))
 }
 

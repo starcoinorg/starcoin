@@ -167,7 +167,7 @@ impl Genesis {
         let output = starcoin_executor::execute_transactions(chain_state, vec![txn], None)?
             .pop()
             .expect("Execute output must exist.");
-        let (write_set, events, gas_used, status, table_change_set) = output.into_inner();
+        let (write_set, events, gas_used, status) = output.into_inner();
         assert_eq!(gas_used, 0, "Genesis txn output's gas_used must be zero");
         let keep_status = status
             .status()
@@ -177,7 +177,7 @@ impl Genesis {
             "Genesis txn execute fail for: {:?}",
             keep_status
         );
-        chain_state.apply_write_set_and_change_set(write_set, table_change_set)?;
+        chain_state.apply_write_set(write_set)?;
         let state_root = chain_state.commit()?;
         chain_state.flush()?;
         Ok(TransactionInfo::new(

@@ -44,7 +44,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
         .zip(txn_outputs.into_iter())
     {
         let txn_hash = txn.id();
-        let (write_set, events, gas_used, status, table_change_set) = output.into_inner();
+        let (write_set, events, gas_used, status) = output.into_inner();
         match status {
             TransactionStatus::Discard(status) => {
                 return Err(BlockExecutorError::BlockTransactionDiscard(
@@ -53,7 +53,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
             }
             TransactionStatus::Keep(status) => {
                 chain_state
-                    .apply_write_set_and_change_set(write_set, table_change_set)
+                    .apply_write_set(write_set)
                     .map_err(BlockExecutorError::BlockChainStateErr)?;
 
                 let txn_state_root = chain_state

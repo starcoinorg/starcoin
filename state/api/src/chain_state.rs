@@ -3,7 +3,6 @@
 
 use anyhow::{ensure, format_err, Result};
 use merkle_tree::{blob::Blob, proof::SparseMerkleProof, RawKey};
-use move_table_extension::TableChangeSet;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
@@ -156,12 +155,6 @@ pub trait ChainStateWriter {
     fn commit(&self) -> Result<HashValue>;
 
     fn flush(&self) -> Result<()>;
-
-    fn apply_write_set_and_change_set(
-        &self,
-        write_set: WriteSet,
-        table_change_set: TableChangeSet,
-    ) -> Result<()>;
 }
 
 impl<T: ?Sized> StateReaderExt for T where T: StateView {}

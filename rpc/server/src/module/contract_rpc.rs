@@ -317,22 +317,11 @@ pub fn dry_run<S: StateView>(
                                 view.raw.0.as_slice(),
                             )?)
                         }
+                        _ => unreachable!(),
                     }
                 }
             }
-            StateKeyView::TableItem { handle: _, key: _ } => {
-                if let Some(value) = &mut action.value {
-                    // XXX FIXME YSG
-                    match value {
-                        WriteOpValueView::Code(view) => {
-                            view.abi = None;
-                        }
-                        WriteOpValueView::Resource(_view) => {
-                            unimplemented!()
-                        }
-                    }
-                }
-            }
+            StateKeyView::TableItem { handle: _, key: _ } => {}
         }
     }
     Ok(DryRunOutputView {

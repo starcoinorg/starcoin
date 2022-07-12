@@ -452,9 +452,8 @@ impl<'a> StarcoinTestAdapter<'a> {
         match output.status() {
             TransactionStatus::Keep(kept_vm_status) => match kept_vm_status {
                 KeptVMStatus::Executed => {
-                    let (write_set, _, _, _, table_change_set) = output.clone().into_inner();
-                    self.storage
-                        .apply_write_set_and_change_set(write_set, table_change_set)?;
+                    let (write_set, _, _, _) = output.clone().into_inner();
+                    self.storage.apply_write_set(write_set)?;
                 }
                 _ => {
                     bail!("Failed to execute transaction. VMStatus: {}", status)
@@ -487,9 +486,8 @@ impl<'a> StarcoinTestAdapter<'a> {
         )?;
         match output.status() {
             TransactionStatus::Keep(_kept_vm_status) => {
-                let (write_set, _, _, _, table_change_set) = output.clone().into_inner();
-                self.storage
-                    .apply_write_set_and_change_set(write_set, table_change_set)?;
+                let (write_set, _, _, _) = output.clone().into_inner();
+                self.storage.apply_write_set(write_set)?;
             }
             TransactionStatus::Discard(_) => {}
         }

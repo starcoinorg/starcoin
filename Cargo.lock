@@ -9326,6 +9326,7 @@ dependencies = [
  "serde_yaml",
  "starcoin-crypto",
  "starcoin-types",
+ "starcoin-vm-types",
 ]
 
 [[package]]

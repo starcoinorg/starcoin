@@ -225,13 +225,13 @@ impl OpenedBlock {
         txn_hash: HashValue,
         output: TransactionOutput,
     ) -> Result<(HashValue, HashValue)> {
-        let (write_set, events, gas_used, status, table_change_set) = output.into_inner();
+        let (write_set, events, gas_used, status) = output.into_inner();
         debug_assert!(matches!(status, TransactionStatus::Keep(_)));
         let status = status
             .status()
             .expect("TransactionStatus at here must been KeptVMStatus");
         self.state
-            .apply_write_set_and_change_set(write_set, table_change_set)
+            .apply_write_set(write_set)
             .map_err(BlockExecutorError::BlockChainStateErr)?;
         let txn_state_root = self
             .state

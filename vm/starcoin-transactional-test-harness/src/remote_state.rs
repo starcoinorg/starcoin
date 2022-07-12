@@ -4,7 +4,6 @@ use move_binary_format::errors::VMError;
 use move_core_types::resolver::{ModuleResolver, ResourceResolver};
 use starcoin_crypto::HashValue;
 
-use move_table_extension::TableChangeSet;
 use starcoin_rpc_api::state::StateApiClient;
 use starcoin_rpc_api::types::{BlockView, StateWithProofView};
 use starcoin_state_api::ChainStateWriter;
@@ -118,21 +117,6 @@ where
         match self {
             SelectableStateView::A(a) => a.flush(),
             SelectableStateView::B(b) => b.flush(),
-        }
-    }
-
-    fn apply_write_set_and_change_set(
-        &self,
-        write_set: WriteSet,
-        table_change_set: TableChangeSet,
-    ) -> Result<()> {
-        match self {
-            SelectableStateView::A(a) => {
-                a.apply_write_set_and_change_set(write_set, table_change_set)
-            }
-            SelectableStateView::B(b) => {
-                b.apply_write_set_and_change_set(write_set, table_change_set)
-            }
         }
     }
 }

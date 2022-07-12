@@ -32,7 +32,6 @@ use std::{convert::TryFrom, fmt};
 pub use error::CallError;
 pub use error::Error as TransactionError;
 pub use module::Module;
-use move_table_extension::TableChangeSet;
 pub use package::Package;
 pub use pending_transaction::{Condition, PendingTransaction};
 use schemars::{self, JsonSchema};
@@ -655,10 +654,6 @@ pub struct TransactionOutput {
 
     /// The execution status.
     status: TransactionStatus,
-
-    #[serde(skip_serializing)]
-    #[serde(skip_deserializing)]
-    table_change_set: TableChangeSet,
 }
 
 impl TransactionOutput {
@@ -667,14 +662,12 @@ impl TransactionOutput {
         events: Vec<ContractEvent>,
         gas_used: u64,
         status: TransactionStatus,
-        table_change_set: TableChangeSet,
     ) -> Self {
         TransactionOutput {
             write_set,
             events,
             gas_used,
             status,
-            table_change_set,
         }
     }
 
@@ -694,22 +687,8 @@ impl TransactionOutput {
         &self.status
     }
 
-    pub fn into_inner(
-        self,
-    ) -> (
-        WriteSet,
-        Vec<ContractEvent>,
-        u64,
-        TransactionStatus,
-        TableChangeSet,
-    ) {
-        (
-            self.write_set,
-            self.events,
-            self.gas_used,
-            self.status,
-            self.table_change_set,
-        )
+    pub fn into_inner(self) -> (WriteSet, Vec<ContractEvent>, u64, TransactionStatus) {
+        (self.write_set, self.events, self.gas_used, self.status)
     }
 }
 

@@ -7,7 +7,7 @@ use bcs_ext::BCSCodec;
 use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::RawKey;
 use lru::LruCache;
-use move_table_extension::{TableChangeSet, TableHandle};
+use move_table_extension::TableHandle;
 use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
@@ -550,6 +550,7 @@ impl ChainStateWriter for ChainStateDB {
     }
 
     fn apply_write_set(&self, write_set: WriteSet) -> Result<()> {
+        let mut lock_table_handle = self.updates_table_handle.write();
         let mut locks = self.updates.write();
         for (state_key, write_op) in write_set {
             //update self updates record
@@ -570,7 +571,19 @@ impl ChainStateWriter for ChainStateDB {
                         }
                     }
                 }
-                StateKey::TableItem { handle: _, key: _ } => {}
+                StateKey::TableItem { handle, key } => {
+                    lock_table_handle.insert(TableHandle(handle));
+                    let table_handle_state_object =
+                        self.get_table_handle_state_object(&TableHandle(handle))?;
+                    match write_op {
+                        WriteOp::Value(value) => {
+                            table_handle_state_object.set(key, value);
+                        }
+                        WriteOp::Deletion => {
+                            table_handle_state_object.remove(&key);
+                        }
+                    }
+                }
             }
         }
         Ok(())
@@ -590,15 +603,16 @@ impl ChainStateWriter for ChainStateDB {
         self.state_tree_table_handles.commit()?;
 
         // update table_handle_address state
-        let mut locks = self.updates.write();
-        locks.insert(table_handle_address());
-        let table_handle_account_state_object =
-            self.get_account_state_object(&table_handle_address(), true)?;
-        table_handle_account_state_object.set(
-            TABLE_PATH.clone(),
-            self.state_tree_table_handles.root_hash().to_vec(),
-        );
-        locks.clear();
+        {
+            let mut locks = self.updates.write();
+            locks.insert(table_handle_address());
+            let table_handle_account_state_object =
+                self.get_account_state_object(&table_handle_address(), true)?;
+            table_handle_account_state_object.set(
+                TABLE_PATH.clone(),
+                self.state_tree_table_handles.root_hash().to_vec(),
+            );
+        }
 
         for address in self.updates.read().iter() {
             let account_state_object = self.get_account_state_object(address, false)?;
@@ -629,31 +643,6 @@ impl ChainStateWriter for ChainStateDB {
 
         // self tree flush
         self.state_tree.flush()
-    }
-
-    fn apply_write_set_and_change_set(
-        &self,
-        write_set: WriteSet,
-        table_change_set: TableChangeSet,
-    ) -> Result<()> {
-        let TableChangeSet {
-            new_tables: _,
-            removed_tables: _,
-            changes,
-        } = table_change_set;
-        let mut lock_table_handle = self.updates_table_handle.write();
-        for (h, c) in changes {
-            lock_table_handle.insert(h);
-            let table_handle_state_object = self.get_table_handle_state_object(&h)?;
-            for (key, val) in c.entries {
-                if let Some(v) = val {
-                    table_handle_state_object.set(key, v);
-                } else {
-                    table_handle_state_object.remove(&key);
-                }
-            }
-        }
-        self.apply_write_set(write_set)
     }
 }
 

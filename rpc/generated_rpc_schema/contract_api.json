@@ -1916,6 +1916,18 @@
                               }
                             },
                             "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "Str"
+                            ],
+                            "properties": {
+                              "Str": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false
                           }
                         ]
                       },
@@ -3186,6 +3198,18 @@
                                     "type": "string"
                                   }
                                 }
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "Str"
+                            ],
+                            "properties": {
+                              "Str": {
+                                "type": "string"
                               }
                             },
                             "additionalProperties": false

@@ -1,6 +1,5 @@
 use crate::HashValue;
 use dashmap::DashMap;
-use move_table_extension::TableChangeSet;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_types::state_set::ChainStateSet;
 use starcoin_vm_types::access_path::AccessPath;
@@ -77,15 +76,6 @@ impl<V> ChainStateWriter for InMemoryStateCache<V> {
 
     fn flush(&self) -> anyhow::Result<()> {
         Ok(())
-    }
-
-    fn apply_write_set_and_change_set(
-        &self,
-        write_set: WriteSet,
-        _table_change_set: TableChangeSet,
-    ) -> anyhow::Result<()> {
-        // XXX FIXME YSG
-        self.apply_write_set(write_set)
     }
 }
 impl<V: StateView> StateView for InMemoryStateCache<V> {

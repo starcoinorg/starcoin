@@ -1101,7 +1101,7 @@ pub struct TransactionOutputView {
 
 impl From<TransactionOutput> for TransactionOutputView {
     fn from(txn_output: TransactionOutput) -> Self {
-        let (write_set, events, gas_used, status, _) = txn_output.into_inner();
+        let (write_set, events, gas_used, status) = txn_output.into_inner();
         Self {
             events: events.into_iter().map(Into::into).collect(),
             gas_used: gas_used.into(),
@@ -1126,12 +1126,7 @@ impl From<(StateKey, WriteOp)> for TransactionOutputAction {
                         WriteOpValueView::Code(v.into())
                     }),
                     StateKey::TableItem { handle: _, key: _ } => {
-                        // XXX FIXME YSG
-                        println!("YSG DEBUG {:?}", v.as_slice());
-                        Some(WriteOpValueView::Code(CodeView {
-                            code: StrView(v),
-                            abi: None,
-                        }))
+                        Some(WriteOpValueView::Str(StrView(v)))
                     }
                 },
             ),
@@ -1157,6 +1152,7 @@ pub struct TransactionOutputAction {
 pub enum WriteOpValueView {
     Code(CodeView),
     Resource(ResourceView),
+    Str(StrView<Vec<u8>>),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]

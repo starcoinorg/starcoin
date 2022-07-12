@@ -1,10 +1,9 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-//! For each transaction the VM executes, the VM will output a `WriteAccessPathSet` that contains each access
+//! For each transaction the VM executes, the VM will output a `WriteSet` that contains each access
 //! path it updates. For each access path, the VM can either give its new value or delete it.
 
-use crate::access_path::AccessPath;
 use crate::state_store::state_key::StateKey;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -38,85 +37,6 @@ impl std::fmt::Debug for WriteOp {
             ),
             WriteOp::Deletion => write!(f, "Deletion"),
         }
-    }
-}
-
-/// `WriteAccessPathSet` contains all access paths that one transaction modifies. Each of them is a `WriteOp`
-/// where `Value(val)` means that serialized representation should be updated to `val`, and
-/// `Deletion` means that we are going to delete this access path.
-#[derive(Clone, Debug, Default, Eq, Hash, PartialEq, Serialize, Deserialize)]
-pub struct WriteAccessPathSet(WriteAccessPathSetMut);
-
-impl WriteAccessPathSet {
-    #[inline]
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
-    #[inline]
-    pub fn iter(&self) -> ::std::slice::Iter<'_, (AccessPath, WriteOp)> {
-        self.into_iter()
-    }
-
-    #[inline]
-    pub fn into_mut(self) -> WriteAccessPathSetMut {
-        self.0
-    }
-}
-
-/// A mutable version of `WriteAccessPathSet`.
-///
-/// This is separate because it goes through validation before becoming an immutable `WriteAccessPathSet`.
-#[derive(Clone, Debug, Default, Eq, Hash, PartialEq, Serialize, Deserialize)]
-pub struct WriteAccessPathSetMut {
-    write_set: Vec<(AccessPath, WriteOp)>,
-}
-
-impl WriteAccessPathSetMut {
-    pub fn new(write_set: Vec<(AccessPath, WriteOp)>) -> Self {
-        Self { write_set }
-    }
-
-    pub fn push(&mut self, item: (AccessPath, WriteOp)) {
-        self.write_set.push(item);
-    }
-
-    #[inline]
-    pub fn is_empty(&self) -> bool {
-        self.write_set.is_empty()
-    }
-
-    pub fn freeze(self) -> Result<WriteAccessPathSet> {
-        // TODO: add structural validation
-        Ok(WriteAccessPathSet(self))
-    }
-}
-
-impl ::std::iter::FromIterator<(AccessPath, WriteOp)> for WriteAccessPathSetMut {
-    fn from_iter<I: IntoIterator<Item = (AccessPath, WriteOp)>>(iter: I) -> Self {
-        let mut ws = WriteAccessPathSetMut::default();
-        for write in iter {
-            ws.push((write.0, write.1));
-        }
-        ws
-    }
-}
-
-impl<'a> IntoIterator for &'a WriteAccessPathSet {
-    type Item = &'a (AccessPath, WriteOp);
-    type IntoIter = ::std::slice::Iter<'a, (AccessPath, WriteOp)>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.write_set.iter()
-    }
-}
-
-impl ::std::iter::IntoIterator for WriteAccessPathSet {
-    type Item = (AccessPath, WriteOp);
-    type IntoIter = ::std::vec::IntoIter<(AccessPath, WriteOp)>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.write_set.into_iter()
     }
 }
 
