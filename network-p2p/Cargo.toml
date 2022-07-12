@@ -17,7 +17,7 @@ asynchronous-codec = "0.5"
 bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }
 
 derive_more = "0.99.14"
-either = "1.6.1"
+either = "1.7.0"
 fnv = "1.0.6"
 futures = "0.3.12"
 futures-timer = "3.0"
