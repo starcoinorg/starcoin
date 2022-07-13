@@ -5,7 +5,7 @@ use crate::cli_state::CliState;
 use crate::dev::dev_helper;
 use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
-use anyhow::{ensure, Result};
+use anyhow::{ Result};
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_vm_types::transaction::TransactionPayload;
@@ -41,7 +41,7 @@ impl CommandAction for DeployCommand {
         let package_address = package.package_address();
         let mut transaction_opts = opt.transaction_opts.clone();
         match transaction_opts.sender.as_ref() {
-            Some(sender) => {}
+            Some(_sender) => {}
             None => {
                 eprintln!(
                     "Use package address ({}) as transaction sender",
