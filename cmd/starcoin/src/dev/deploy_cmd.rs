@@ -41,9 +41,7 @@ impl CommandAction for DeployCommand {
         let package_address = package.package_address();
         let mut transaction_opts = opt.transaction_opts.clone();
         match transaction_opts.sender.as_ref() {
-            Some(sender) => {
-                ensure!(*sender == package_address, "please use package address({}) account to deploy package, currently sender is {}.", package_address,sender);
-            }
+            Some(sender) => {}
             None => {
                 eprintln!(
                     "Use package address ({}) as transaction sender",
