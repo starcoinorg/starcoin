@@ -236,10 +236,10 @@ fn test_state_db_with_table_item_once() -> Result<()> {
         *SPARSE_MERKLE_PLACEHOLDER_HASH,
     );
 
-    table_handle_state1.set(key2.clone(), val2.clone());
-    table_handle_state1.set(key3.clone(), val3.clone());
-    table_handle_state2.set(key4.clone(), val4.clone());
-    table_handle_state2.set(key5.clone(), val5.clone());
+    table_handle_state1.set(key2, val2);
+    table_handle_state1.set(key3, val3);
+    table_handle_state2.set(key4, val4);
+    table_handle_state2.set(key5, val5);
     table_handle_state1.commit()?;
     table_handle_state1.flush()?;
     table_handle_state2.commit()?;
