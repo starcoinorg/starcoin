@@ -1818,7 +1818,7 @@
               "null"
             ],
             "properties": {
-              "current_page": {
+              "start_index": {
                 "default": 0,
                 "type": "integer",
                 "format": "uint",
