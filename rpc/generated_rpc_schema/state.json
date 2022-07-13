@@ -1818,15 +1818,15 @@
               "null"
             ],
             "properties": {
-              "decode": {
-                "default": false,
-                "type": "boolean"
-              },
               "count": {
                 "default": 18446744073709551615,
                 "type": "integer",
                 "format": "uint",
                 "minimum": 0.0
+              },
+              "decode": {
+                "default": false,
+                "type": "boolean"
               },
               "start_index": {
                 "default": 0,
