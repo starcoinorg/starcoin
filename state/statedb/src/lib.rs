@@ -358,14 +358,30 @@ impl ChainStateDB {
                 };
                 let obj = Arc::new(TableHandleStateObject::new(
                     *handle,
-                    hash,
                     self.store.clone(),
+                    hash,
                 ));
                 cache.put(*handle, obj.clone());
                 obj
             }
         };
         Ok(object)
+    }
+
+    #[cfg(test)]
+    fn table_handles_root_hash(&self) -> HashValue {
+        self.state_tree_table_handles.root_hash()
+    }
+
+    #[cfg(test)]
+    fn table_handle_address_root_hash(&self) -> HashValue {
+        let account_state_object = self
+            .get_account_state_object(&table_handle_address(), true)
+            .expect("get account state success");
+        let state_root = account_state_object
+            .get(&*TABLE_PATH)
+            .expect("get state_root success");
+        HashValue::from_slice(state_root.unwrap()).unwrap()
     }
 }
 
@@ -574,7 +590,7 @@ impl ChainStateWriter for ChainStateDB {
                     }
                 }
                 StateKey::TableItem { handle, key } => {
-                    println!("YSG DEBUG TableItem {} {:?}", handle, key);
+                    debug!("TableItem {} {:?}", handle, key);
                     lock_table_handle.insert(TableHandle(handle));
                     let table_handle_state_object =
                         self.get_table_handle_state_object(&TableHandle(handle))?;
@@ -659,7 +675,7 @@ struct TableHandleStateObject {
 }
 
 impl TableHandleStateObject {
-    pub fn new(_handle: TableHandle, root: HashValue, store: Arc<dyn StateNodeStore>) -> Self {
+    pub fn new(_handle: TableHandle, store: Arc<dyn StateNodeStore>, root: HashValue) -> Self {
         let state_tree = StateTree::<Vec<u8>>::new(store.clone(), Some(root));
         Self {
             _handle,
