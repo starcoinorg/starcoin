@@ -1818,18 +1818,18 @@
               "null"
             ],
             "properties": {
-              "start_index": {
-                "default": 0,
-                "type": "integer",
-                "format": "uint",
-                "minimum": 0.0
-              },
               "decode": {
                 "default": false,
                 "type": "boolean"
               },
               "page_size": {
                 "default": 18446744073709551615,
+                "type": "integer",
+                "format": "uint",
+                "minimum": 0.0
+              },
+              "start_index": {
+                "default": 0,
                 "type": "integer",
                 "format": "uint",
                 "minimum": 0.0
