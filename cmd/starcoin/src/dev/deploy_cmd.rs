@@ -5,7 +5,7 @@ use crate::cli_state::CliState;
 use crate::dev::dev_helper;
 use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
-use anyhow::{ Result};
+use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_vm_types::transaction::TransactionPayload;
