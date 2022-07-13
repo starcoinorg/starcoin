@@ -584,7 +584,7 @@ impl RpcClient {
         decode: bool,
         state_root: Option<HashValue>,
         start_index: usize,
-        page_size: usize,
+        count: usize,
     ) -> anyhow::Result<ListResourceView> {
         self.call_rpc_blocking(|inner| {
             inner.state_client.list_resource(
@@ -593,7 +593,7 @@ impl RpcClient {
                     decode,
                     state_root,
                     start_index,
-                    page_size,
+                    count,
                 }),
             )
         })

@@ -1822,7 +1822,7 @@
                 "default": false,
                 "type": "boolean"
               },
-              "page_size": {
+              "count": {
                 "default": 18446744073709551615,
                 "type": "integer",
                 "format": "uint",
