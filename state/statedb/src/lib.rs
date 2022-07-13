@@ -255,11 +255,12 @@ impl ChainStateDB {
         };
         let account_state_object = chain_statedb
             .get_account_state_object(&table_handle_address(), true)
-            .unwrap();
-        let state_root = account_state_object.get(&*TABLE_PATH).unwrap();
-        // XXX FIXME YSG
+            .expect("get account state success");
+        let state_root = account_state_object
+            .get(&*TABLE_PATH)
+            .expect("get state_root success");
         if let Some(state_root) = state_root {
-            let hash = HashValue::from_slice(state_root.as_slice()).unwrap();
+            let hash = HashValue::from_slice(state_root.as_slice()).expect("hash value success");
             chain_statedb.state_tree_table_handles = StateTree::new(store, Some(hash));
         }
         chain_statedb
@@ -572,6 +573,7 @@ impl ChainStateWriter for ChainStateDB {
                     }
                 }
                 StateKey::TableItem { handle, key } => {
+                    println!("YSG DEBUG TableItem {} {:?}", handle, key);
                     lock_table_handle.insert(TableHandle(handle));
                     let table_handle_state_object =
                         self.get_table_handle_state_object(&TableHandle(handle))?;
@@ -591,6 +593,8 @@ impl ChainStateWriter for ChainStateDB {
     /// Commit
     fn commit(&self) -> Result<HashValue> {
         // cache commit
+        let len = self.updates_table_handle.read().len();
+
         for handle in self.updates_table_handle.read().iter() {
             let table_handle_state_object = self.get_table_handle_state_object(handle)?;
             table_handle_state_object.commit()?;
@@ -600,10 +604,10 @@ impl ChainStateWriter for ChainStateDB {
                 table_handle_state_object.root_hash().to_vec(),
             );
         }
-        self.state_tree_table_handles.commit()?;
+        if len > 0 {
+            self.state_tree_table_handles.commit()?;
+            // update table_handle_address state
 
-        // update table_handle_address state
-        {
             let mut locks = self.updates.write();
             locks.insert(table_handle_address());
             let table_handle_account_state_object =
