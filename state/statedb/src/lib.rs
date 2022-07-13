@@ -223,7 +223,8 @@ pub struct ChainStateDB {
     updates: RwLock<HashSet<AccountAddress>>,
     updates_table_handle: RwLock<HashSet<TableHandle>>,
     cache_table_handle: Mutex<LruCache<TableHandle, Arc<TableHandleStateObject>>>,
-    // SMT save TableHandle -> TableHandleState.root_hash
+    /// state_tree_table_handles root_hash save in table_handle_address() TABLE_PATH
+    /// state_tree_table_handles SMT save TableHandle -> TableHandleState.root_hash
     state_tree_table_handles: StateTree<TableHandleKey>,
 }
 
