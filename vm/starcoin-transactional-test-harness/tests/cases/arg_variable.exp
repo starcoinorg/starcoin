@@ -1,0 +1,217 @@
+processed 6 tasks
+
+task 1 'faucet'. lines 3-3:
+{
+  "txn": {
+    "sender": "0x0000000000000000000000000a550c18",
+    "sequence_number": "0",
+    "payload": "0x02000000000000000000000000000000010f5472616e73666572536372697074730f706565725f746f5f706565725f763201070000000000000000000000000000000103535443035354430002107567401b56a6f7d91e4aac3f33e90cbe1000e87648170000000000000000000000",
+    "max_gas_amount": "40000000",
+    "gas_unit_price": "1",
+    "gas_token_code": "0x1::STC::STC",
+    "expiration_timestamp_secs": "3610",
+    "chain_id": 254
+  },
+  "output": {
+    "status": "Executed",
+    "gas_used": "284531",
+    "write_set": [
+      {
+        "access_path": "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::TransactionFee::TransactionFee<0x00000000000000000000000000000001::STC::STC>",
+        "action": "Value",
+        "value": {
+          "Resource": {
+            "raw": "0x73570400000000000000000000000000"
+          }
+        }
+      },
+      {
+        "access_path": "0x0000000000000000000000000a550c18/1/0x00000000000000000000000000000001::Account::Account",
+        "action": "Value",
+        "value": {
+          "Resource": {
+            "raw": "0x209889fcf34113121da598787fa760cd1dba995e71204ea751dba23c2aceae446f010000000000000000000000000a550c18010000000000000000000000000a550c1801000000000000001800000000000000000000000000000000000000000a550c1801000000000000001801000000000000000000000000000000000000000a550c1801000000000000001802000000000000000000000000000000000000000a550c180100000000000000"
+          }
+        }
+      },
+      {
+        "access_path": "0x0000000000000000000000000a550c18/1/0x00000000000000000000000000000001::Account::Balance<0x00000000000000000000000000000001::STC::STC>",
+        "action": "Value",
+        "value": {
+          "Resource": {
+            "raw": "0x8d8095f71fcb35020000000000000000"
+          }
+        }
+      },
+      {
+        "access_path": "0x7567401b56a6f7d91e4aac3f33e90cbe/1/0x00000000000000000000000000000001::Account::Account",
+        "action": "Value",
+        "value": {
+          "Resource": {
+            "raw": "0x200000000000000000000000000000000000000000000000000000000000000000017567401b56a6f7d91e4aac3f33e90cbe017567401b56a6f7d91e4aac3f33e90cbe00000000000000001800000000000000007567401b56a6f7d91e4aac3f33e90cbe01000000000000001801000000000000007567401b56a6f7d91e4aac3f33e90cbe01000000000000001802000000000000007567401b56a6f7d91e4aac3f33e90cbe0000000000000000"
+          }
+        }
+      },
+      {
+        "access_path": "0x7567401b56a6f7d91e4aac3f33e90cbe/1/0x00000000000000000000000000000001::Account::AutoAcceptToken",
+        "action": "Value",
+        "value": {
+          "Resource": {
+            "raw": "0x01"
+          }
+        }
+      },
+      {
+        "access_path": "0x7567401b56a6f7d91e4aac3f33e90cbe/1/0x00000000000000000000000000000001::Account::Balance<0x00000000000000000000000000000001::STC::STC>",
+        "action": "Value",
+        "value": {
+          "Resource": {
+            "raw": "0x00e87648170000000000000000000000"
+          }
+        }
+      },
+      {
+        "access_path": "0x7567401b56a6f7d91e4aac3f33e90cbe/1/0x00000000000000000000000000000001::Event::EventHandleGenerator",
+        "action": "Value",
+        "value": {
+          "Resource": {
+            "raw": "0x03000000000000007567401b56a6f7d91e4aac3f33e90cbe"
+          }
+        }
+      }
+    ],
+    "events": [
+      {
+        "data": "0x000000000000000000000000000000010353544303535443",
+        "type_tag": "0x00000000000000000000000000000001::Account::AcceptTokenEvent",
+        "event_key": "0x02000000000000007567401b56a6f7d91e4aac3f33e90cbe",
+        "event_seq_number": "0"
+      },
+      {
+        "data": "0x00e8764817000000000000000000000000000000000000000000000000000001035354430353544300",
+        "type_tag": "0x00000000000000000000000000000001::Account::WithdrawEvent",
+        "event_key": "0x00000000000000000000000000000000000000000a550c18",
+        "event_seq_number": "0"
+      },
+      {
+        "data": "0x00e8764817000000000000000000000000000000000000000000000000000001035354430353544300",
+        "type_tag": "0x00000000000000000000000000000001::Account::DepositEvent",
+        "event_key": "0x01000000000000007567401b56a6f7d91e4aac3f33e90cbe",
+        "event_seq_number": "0"
+      }
+    ]
+  }
+}
+
+task 2 'block'. lines 5-5:
+{
+  "parent_hash": "0x9be97e678afa8a0a4cf9ca612be6f64810a6f7d5f8b4b4ddf5e4971ef4b5eb48",
+  "timestamp": 20000,
+  "author": "0x7567401b56a6f7d91e4aac3f33e90cbe",
+  "author_auth_key": null,
+  "uncles": 0,
+  "number": 2,
+  "chain_id": {
+    "id": 254
+  },
+  "parent_gas_used": 0
+}
+
+task 3 'run'. lines 7-7:
+{
+  "txn": {
+    "sender": "0x7567401b56a6f7d91e4aac3f33e90cbe",
+    "sequence_number": "0",
+    "payload": "0x02000000000000000000000000000000010c456d707479536372697074730c656d7074795f7363726970740000",
+    "max_gas_amount": "40000000",
+    "gas_unit_price": "1",
+    "gas_token_code": "0x1::STC::STC",
+    "expiration_timestamp_secs": "3620",
+    "chain_id": 254
+  },
+  "output": {
+    "status": "Executed",
+    "gas_used": "8439",
+    "write_set": [
+      {
+        "access_path": "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::TransactionFee::TransactionFee<0x00000000000000000000000000000001::STC::STC>",
+        "action": "Value",
+        "value": {
+          "Resource": {
+            "raw": "0xf7200000000000000000000000000000"
+          }
+        }
+      },
+      {
+        "access_path": "0x7567401b56a6f7d91e4aac3f33e90cbe/1/0x00000000000000000000000000000001::Account::Account",
+        "action": "Value",
+        "value": {
+          "Resource": {
+            "raw": "0x201b2a498ae79af7ed7cf5de317898fcee7567401b56a6f7d91e4aac3f33e90cbe017567401b56a6f7d91e4aac3f33e90cbe017567401b56a6f7d91e4aac3f33e90cbe00000000000000001800000000000000007567401b56a6f7d91e4aac3f33e90cbe01000000000000001801000000000000007567401b56a6f7d91e4aac3f33e90cbe01000000000000001802000000000000007567401b56a6f7d91e4aac3f33e90cbe0100000000000000"
+          }
+        }
+      },
+      {
+        "access_path": "0x7567401b56a6f7d91e4aac3f33e90cbe/1/0x00000000000000000000000000000001::Account::Balance<0x00000000000000000000000000000001::STC::STC>",
+        "action": "Value",
+        "value": {
+          "Resource": {
+            "raw": "0x09c77648170000000000000000000000"
+          }
+        }
+      }
+    ],
+    "events": []
+  }
+}
+
+task 4 'view'. lines 9-9:
+{"authentication_key":"1b2a498ae79af7ed7cf5de317898fcee7567401b56a6f7d91e4aac3f33e90cbe","withdrawal_capability":{"vec":[{"account_address":"7567401b56a6f7d91e4aac3f33e90cbe"}]},"key_rotation_capability":{"vec":[{"account_address":"7567401b56a6f7d91e4aac3f33e90cbe"}]},"withdraw_events":{"counter":0,"guid":"00000000000000007567401b56a6f7d91e4aac3f33e90cbe"},"deposit_events":{"counter":1,"guid":"01000000000000007567401b56a6f7d91e4aac3f33e90cbe"},"accept_token_events":{"counter":1,"guid":"02000000000000007567401b56a6f7d91e4aac3f33e90cbe"},"sequence_number":1}
+
+task 5 'run'. lines 11-17:
+{
+  "txn": {
+    "sender": "0x7567401b56a6f7d91e4aac3f33e90cbe",
+    "sequence_number": "1",
+    "payload": "0x0046a11ceb0b0400000001050005030c0303000000010d0a0106020000000000000021030606e803000000000000270a0206010000000000000021030c06e90300000000000027020002080200000000000000080100000000000000",
+    "max_gas_amount": "40000000",
+    "gas_unit_price": "1",
+    "gas_token_code": "0x1::STC::STC",
+    "expiration_timestamp_secs": "3620",
+    "chain_id": 254
+  },
+  "output": {
+    "status": "Executed",
+    "gas_used": "8639",
+    "write_set": [
+      {
+        "access_path": "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::TransactionFee::TransactionFee<0x00000000000000000000000000000001::STC::STC>",
+        "action": "Value",
+        "value": {
+          "Resource": {
+            "raw": "0xb6420000000000000000000000000000"
+          }
+        }
+      },
+      {
+        "access_path": "0x7567401b56a6f7d91e4aac3f33e90cbe/1/0x00000000000000000000000000000001::Account::Account",
+        "action": "Value",
+        "value": {
+          "Resource": {
+            "raw": "0x201b2a498ae79af7ed7cf5de317898fcee7567401b56a6f7d91e4aac3f33e90cbe017567401b56a6f7d91e4aac3f33e90cbe017567401b56a6f7d91e4aac3f33e90cbe00000000000000001800000000000000007567401b56a6f7d91e4aac3f33e90cbe01000000000000001801000000000000007567401b56a6f7d91e4aac3f33e90cbe01000000000000001802000000000000007567401b56a6f7d91e4aac3f33e90cbe0200000000000000"
+          }
+        }
+      },
+      {
+        "access_path": "0x7567401b56a6f7d91e4aac3f33e90cbe/1/0x00000000000000000000000000000001::Account::Balance<0x00000000000000000000000000000001::STC::STC>",
+        "action": "Value",
+        "value": {
+          "Resource": {
+            "raw": "0x4aa57648170000000000000000000000"
+          }
+        }
+      }
+    ],
+    "events": []
+  }
+}

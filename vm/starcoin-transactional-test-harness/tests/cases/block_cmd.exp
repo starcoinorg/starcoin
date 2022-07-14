@@ -1,4 +1,18 @@
 processed 3 tasks
 
+task 1 'block'. lines 3-3:
+{
+  "parent_hash": "0x9be97e678afa8a0a4cf9ca612be6f64810a6f7d5f8b4b4ddf5e4971ef4b5eb48",
+  "timestamp": 20000,
+  "author": "0x00000000000000000000000000000002",
+  "author_auth_key": null,
+  "uncles": 0,
+  "number": 2,
+  "chain_id": {
+    "id": 254
+  },
+  "parent_gas_used": 0
+}
+
 task 2 'call'. lines 5-5:
 2

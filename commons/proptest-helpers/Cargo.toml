@@ -1,14 +1,14 @@
 [package]
-name = "starcoin-proptest-helpers"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-proptest-helpers"
+publish = false
+version = "1.11.11"
 
 [dependencies]
 crossbeam = "0.7.3"
-diem-proptest-helpers = { package="diem-proptest-helpers",  git = "https://github.com/starcoinorg/move", rev = "69db2858761045f19935f3aaf43f04a1910ae74d"  }
+diem-proptest-helpers = {package = "diem-proptest-helpers", git = "https://github.com/starcoinorg/move", rev = "09d7628149323aa36d1312ac186fa4469d8b19e5"}
 
 proptest = "1.0.0"
 proptest-derive = "0.3.0"

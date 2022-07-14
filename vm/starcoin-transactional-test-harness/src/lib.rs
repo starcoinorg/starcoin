@@ -1,7 +1,6 @@
 use crate::in_memory_state_cache::InMemoryStateCache;
 use crate::remote_state::{RemoteStateView, SelectableStateView};
 use anyhow::{bail, Result};
-use itertools::Itertools;
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
 use move_compiler::compiled_unit::CompiledUnitEnum;
 use move_compiler::shared::{NumberFormat, NumericalAddress};
@@ -28,8 +27,8 @@ use starcoin_crypto::{HashValue, PrivateKey, ValidCryptoMaterial, ValidCryptoMat
 use starcoin_dev::playground::call_contract;
 use starcoin_genesis::Genesis;
 use starcoin_rpc_api::types::{
-    ContractCall, FunctionIdView, TransactionArgumentView, TransactionEventView,
-    TransactionOutputAction, TypeTagView,
+    ContractCall, FunctionIdView, RawUserTransactionView, TransactionArgumentView,
+    TransactionOutputView, TypeTagView,
 };
 use starcoin_state_api::{ChainStateWriter, StateReaderExt};
 use starcoin_statedb::ChainStateDB;
@@ -46,7 +45,7 @@ use starcoin_vm_types::account_config::{
 
 use clap::Parser;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
-use starcoin_vm_types::transaction::{DryRunTransaction, TransactionOutput};
+use starcoin_vm_types::transaction::DryRunTransaction;
 use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_vm_types::{
     account_config::BalanceResource,
@@ -268,13 +267,9 @@ impl clap::Args for StarcoinSubcommands {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct TransactionResult {
-    gas_used: u64,
-    status: TransactionStatus,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    write_set: Option<Vec<TransactionOutputAction>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    events: Option<Vec<TransactionEventView>>,
+struct TransactionWithOutput {
+    pub txn: RawUserTransactionView,
+    pub output: TransactionOutputView,
 }
 
 pub struct StarcoinTestAdapter<'a> {
@@ -463,12 +458,12 @@ impl<'a> StarcoinTestAdapter<'a> {
         &mut self,
         txn: RawUserTransaction,
         public_key: AccountPublicKey,
-    ) -> Result<TransactionOutput> {
+    ) -> Result<TransactionWithOutput> {
         let mut vm = StarcoinVM::new(None);
         let (_status, output) = vm.dry_run_transaction(
             &self.storage,
             DryRunTransaction {
-                raw_txn: txn,
+                raw_txn: txn.clone(),
                 public_key,
             },
         )?;
@@ -479,7 +474,10 @@ impl<'a> StarcoinTestAdapter<'a> {
             }
             TransactionStatus::Discard(_) => {}
         }
-        Ok(output)
+        Ok(TransactionWithOutput {
+            txn: txn.try_into()?,
+            output: output.into(),
+        })
     }
 
     fn handle_contract_call(&self, call: ContractCall) -> Result<Option<String>> {
@@ -505,8 +503,10 @@ impl<'a> StarcoinTestAdapter<'a> {
             .collect::<Result<Vec<_>>>()?;
         if rets.is_empty() {
             Ok(None)
+        } else if rets.len() == 1 {
+            Ok(Some(format!("{}", serde_json::to_value(&rets[0])?)))
         } else {
-            Ok(Some(rets.iter().map(|t| format!("{}", t)).join("\n")))
+            Ok(Some(format!("{}", serde_json::to_value(rets)?)))
         }
     }
 
@@ -583,18 +583,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         );
         let output = self.run_transaction(txn, self.association_public_key.clone())?;
 
-        match output.status().status() {
-            Ok(kept) if kept.is_success() => Ok(None),
-            _ => {
-                let result = TransactionResult {
-                    gas_used: output.gas_used(),
-                    status: output.status().clone(),
-                    write_set: None,
-                    events: None,
-                };
-                Ok(Some(serde_json::to_string_pretty(&result)?))
-            }
-        }
+        Ok(Some(serde_json::to_string_pretty(&output)?))
     }
     fn handle_new_block(
         &mut self,
@@ -620,8 +609,17 @@ impl<'a> StarcoinTestAdapter<'a> {
             .or_else(|| last_blockmeta.as_ref().map(|b| b.uncles))
             .unwrap_or(0);
         let timestamp = timestamp.unwrap_or(self.storage.get_timestamp()?.milliseconds + 10 * 1000);
+        //TODO find a better way to get parent hash, we should keep to local storage.
+        let parent_hash = last_blockmeta
+            .as_ref()
+            .map(|b| {
+                let mut parent_hash = b.parent_hash.to_vec();
+                parent_hash.extend(bcs_ext::to_bytes(&b.number).expect("bcs should success"));
+                HashValue::sha3_256_of(parent_hash.as_slice())
+            })
+            .unwrap_or_else(HashValue::zero);
         let new_block_meta = BlockMetadata::new(
-            HashValue::random(),
+            parent_hash,
             timestamp,
             author,
             None,
@@ -630,8 +628,9 @@ impl<'a> StarcoinTestAdapter<'a> {
             self.storage.get_chain_id()?,
             0,
         );
-        self.run_blockmeta(new_block_meta)?;
-        Ok(None)
+        self.run_blockmeta(new_block_meta.clone())?;
+
+        Ok(Some(serde_json::to_string_pretty(&new_block_meta)?))
     }
 }
 fn panic_missing_public_key_named(cmd_name: &str, name: &IdentStr) -> ! {
@@ -800,7 +799,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         named_addr_opt: Option<Identifier>,
         gas_budget: Option<u64>,
         extra: Self::ExtraPublishArgs,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Option<String>> {
         let module_id = module.self_id();
         let signer = module_id.address();
         let params = self.fetch_default_transaction_parameters(signer)?;
@@ -828,10 +827,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         );
 
         let output = self.run_transaction(txn, public_key)?;
-        match output.status().status() {
-            Ok(k) if k.is_success() => Ok(()),
-            _ => bail!("Publish failure: {:?}", output.status()),
-        }
+        Ok(Some(serde_json::to_string_pretty(&output)?))
     }
 
     fn execute_script(
@@ -876,31 +872,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         );
 
         let output = self.run_transaction(txn, public_key)?;
-        let mut result = TransactionResult {
-            gas_used: output.gas_used(),
-            status: output.status().clone(),
-            write_set: None,
-            events: None,
-        };
-        if extra_args.verbose {
-            result.write_set = Some(
-                output
-                    .write_set()
-                    .clone()
-                    .into_iter()
-                    .map(TransactionOutputAction::from)
-                    .collect(),
-            );
-            result.events = Some(
-                output
-                    .events()
-                    .iter()
-                    .cloned()
-                    .map(TransactionEventView::from)
-                    .collect(),
-            );
-        }
-        Ok(Some(serde_json::to_string_pretty(&result)?))
+        Ok(Some(serde_json::to_string_pretty(&output)?))
     }
 
     fn call_function(
@@ -950,32 +922,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         );
 
         let output = self.run_transaction(txn, public_key)?;
-
-        let mut result = TransactionResult {
-            gas_used: output.gas_used(),
-            status: output.status().clone(),
-            write_set: None,
-            events: None,
-        };
-        if extra_args.verbose {
-            result.write_set = Some(
-                output
-                    .write_set()
-                    .clone()
-                    .into_iter()
-                    .map(TransactionOutputAction::from)
-                    .collect(),
-            );
-            result.events = Some(
-                output
-                    .events()
-                    .iter()
-                    .cloned()
-                    .map(TransactionEventView::from)
-                    .collect(),
-            );
-        }
-        Ok(Some(serde_json::to_string_pretty(&result)?))
+        Ok(Some(serde_json::to_string_pretty(&output)?))
     }
 
     fn view_data(
