@@ -126,13 +126,52 @@ async fn main() -> Result<()> {
         .try_into()?;
     let is_stc = stc_type_tag().eq(&TypeTag::Struct(token_type.clone()));
 
+    let mut total_amount = 0u128;
     let airdrop_infos: Vec<AirdropInfo> = {
         let mut csv_reader = csv::ReaderBuilder::default()
             .has_headers(false)
             .from_path(airdrop_file.as_path())?;
         let mut leafs = Vec::with_capacity(4096);
-        for record in csv_reader.deserialize() {
-            let data: AirdropInfo = record?;
+        for (idx, record) in csv_reader.records().enumerate() {
+            let record = record?;
+            if record.iter().all(|part| part.trim().is_empty()) {
+                //just skip empty line
+                continue;
+            }
+            if record.len() < 2 {
+                println!("[WARN] invalid record: line {}, {:?}, skip.", idx, record);
+                continue;
+            } else if record.len() > 2 {
+                println!(
+                    "[WARN] invalid record: line {}, {:?}, ignore extra field.",
+                    idx, record
+                );
+            }
+            let address = match AccountAddress::from_str(record[0].trim()) {
+                Ok(address) => address,
+                Err(err) => {
+                    if idx == 0 {
+                        println!("[INFO] skip header line: {}", record.as_slice());
+                    } else {
+                        println!(
+                            "[WARN] invalid record: line {}, {:?}, skip. {}",
+                            idx, record, err
+                        );
+                    }
+                    continue;
+                }
+            };
+            let amount = match u128::from_str(record[1].trim()) {
+                Ok(amount) => amount,
+                Err(err) => {
+                    println!(
+                        "[WARN] invalid record: line {}, {:?}, skip. {}",
+                        idx, record, err
+                    );
+                    continue;
+                }
+            };
+            let data = AirdropInfo { address, amount };
             if !is_stc && !is_accept_token(data.address, token_type.clone(), &state_client).await? {
                 println!(
                     "{} does not accepted the token {}, skip.",
@@ -140,10 +179,19 @@ async fn main() -> Result<()> {
                 );
                 continue;
             }
+            total_amount += data.amount;
             leafs.push(data);
         }
         leafs
     };
+
+    println!(
+        "airdrop {} token {} to {} addresses, total amount: {}",
+        token_type,
+        batch_size,
+        airdrop_infos.len(),
+        total_amount
+    );
 
     let private_key: AccountPrivateKey = {
         let pass = rpassword::prompt_password_stdout("Please Input Private Key: ")?;
@@ -239,7 +287,7 @@ async fn main() -> Result<()> {
             }
         };
         if txn_info.status != TransactionStatusView::Executed {
-            eprintln!(
+            println!(
                 "txn {:?} error: {:?}, please resume from user: {}",
                 txn_hash,
                 txn_info,
