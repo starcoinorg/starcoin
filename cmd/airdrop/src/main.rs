@@ -138,14 +138,18 @@ async fn main() -> Result<()> {
                 //just skip empty line
                 continue;
             }
-            if record.len() < 2 {
-                println!("[WARN] invalid record: line {}, {:?}, skip.", idx, record);
-                continue;
-            } else if record.len() > 2 {
-                println!(
-                    "[WARN] invalid record: line {}, {:?}, ignore extra field.",
-                    idx, record
-                );
+            match record.len().cmp(&2) {
+                std::cmp::Ordering::Equal => {}
+                std::cmp::Ordering::Greater => {
+                    println!(
+                        "[WARN] invalid record: line {}, {:?}, ignore extra field.",
+                        idx, record
+                    );
+                }
+                std::cmp::Ordering::Less => {
+                    println!("[WARN] invalid record: line {}, {:?}, skip.", idx, record);
+                    continue;
+                }
             }
             let address = match AccountAddress::from_str(record[0].trim()) {
                 Ok(address) => address,
