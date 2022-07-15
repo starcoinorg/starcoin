@@ -42,12 +42,12 @@ function import_snapshot() {
 
   download "$net" "$from_dir"
 
-    ./starcoin_db_exporter apply-snapshot -i "$from_dir" -n "$net" -o "$to_dir"
-    case_status=$?
-    if [ $case_status -ne 0 ]; then
-      echo -e "apply-snapshot $net $from_dir fail"
-      exit $case_status
-    fi
+  ./starcoin_db_exporter apply-snapshot -i "$from_dir"/snapshot -n "$net" -o "$to_dir"
+  case_status=$?
+  if [ $case_status -ne 0 ]; then
+    echo -e "apply-snapshot $net $from_dir fail"
+    exit $case_status
+  fi
   echo -e "$net apply-snapshot succ"
 }
 
