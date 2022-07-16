@@ -201,6 +201,11 @@ pub struct StarcoinOpt {
     /// This option only work for node init start.
     pub genesis_config: Option<String>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long, short = 'f')]
+    /// Start a fork node from the given RPC address.
+    pub fork: Option<String>,
+
     #[clap(flatten)]
     pub rpc: RpcConfig,
     #[clap(flatten)]

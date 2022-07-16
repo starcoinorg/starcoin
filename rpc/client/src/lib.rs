@@ -84,6 +84,12 @@ impl std::fmt::Debug for ConnSource {
     }
 }
 
+// TODO: make RpcClient to be a trait. 
+// Rename the current RpcClient to FullNodeRpcClient, and 
+// implement trait RpcClient for FullNodeRpcClient.
+//
+// Add a ForkNodeRpcClient, and implement train RpcClient for it.
+
 pub struct RpcClient {
     inner: Mutex<Option<RpcClientInner>>,
     provider: ConnectionProvider,

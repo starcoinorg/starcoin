@@ -227,14 +227,19 @@ pub fn run_node_by_opt(
             .into_node_config(opt)
             .map_err(NodeStartError::LoadConfigError)?,
     );
-    let ipc_file = config.rpc.get_ipc_file();
-    let node_handle = if !ipc_file.exists() {
-        let node_handle = run_node(config.clone())?;
+    if opt.fork.is_some() {
+        let node_handle = run_fork_node(opt.fork.unwrap(), config.clone())?;
         Some(node_handle)
     } else {
-        //TODO check ipc file is available.
-        info!("Node has started at {:?}", ipc_file);
-        None
+        let ipc_file = config.rpc.get_ipc_file();
+        let node_handle = if !ipc_file.exists() {
+            let node_handle = run_node(config.clone())?;
+            Some(node_handle)
+        } else {
+            //TODO check ipc file is available.
+            info!("Node has started at {:?}", ipc_file);
+            None
+        };
     };
     Ok((node_handle, config))
 }
@@ -244,4 +249,9 @@ pub fn run_node(config: Arc<NodeConfig>) -> Result<NodeHandle, NodeStartError> {
     crash_handler::setup_panic_handler();
     let logger_handle = starcoin_logger::init();
     NodeService::launch(config, logger_handle)
+}
+
+/// Run a fork node from given RPC provider in a new Thread, and return a NodeHandle.
+pub fn run_fork_node(rpc: String, config: Arc<NodeConfig>) -> Result<NodeHandle, NodeStartError> {
+    // Start a ForkNodeService
 }
