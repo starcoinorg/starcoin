@@ -1,10 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{ensure, format_err, Result};
+use anyhow::{ensure, format_err, Ok, Result};
 use starcoin_move_compiler::move_command_line_common::files::MOVE_COMPILED_EXTENSION;
 use starcoin_vm_types::transaction::{Module, Package};
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::Read;
 use std::path::Path;
 
@@ -28,5 +28,24 @@ pub fn load_package_from_file(mv_or_package_file: &Path) -> Result<Package> {
             )
         })?
     };
+    Ok(package)
+}
+
+pub fn load_package_from_dir(path: &Path) -> Result<Package> {
+    ensure!(path.is_dir(), "path need to be a dir");
+
+    let mut modules = vec![];
+    for entry in fs::read_dir(path)? {
+        let file = entry?.path();
+        if file.extension().unwrap_or_default() != MOVE_COMPILED_EXTENSION {
+            continue;
+        }
+        let mut bytes = vec![];
+        File::open(file)?.read_to_end(&mut bytes)?;
+        modules.push(Module::new(bytes));
+    }
+
+    ensure!(!modules.is_empty(), "Modules is empty under {:?}", path);
+    let package = Package::new_with_modules(modules)?;
     Ok(package)
 }
