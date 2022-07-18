@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 pub struct AccumulatorTree {
-    /// forzen subtree roots hashes.
+    /// frozen subtree roots hashes.
     frozen_subtree_roots: Vec<HashValue>,
     /// The total number of leaves in this accumulator.
     pub(crate) num_leaves: LeafCount,
@@ -163,7 +163,7 @@ impl AccumulatorTree {
         //aggregator all nodes
         not_frozen_nodes.extend_from_slice(&to_freeze);
         self.update_temp_nodes(not_frozen_nodes.clone());
-        // udpate to cache
+        // update to cache
         self.update_cache(not_frozen_nodes);
         // update self properties
         self.root_hash = hash;
