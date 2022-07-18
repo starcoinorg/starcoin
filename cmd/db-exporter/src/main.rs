@@ -509,7 +509,7 @@ pub fn export_block_range(
     end: BlockNumber,
 ) -> anyhow::Result<()> {
     let net = ChainNetwork::new_builtin(network);
-    let db_stoarge = DBStorage::open_with_cfs(
+    let db_storage = DBStorage::open_with_cfs(
         from_dir.join("starcoindb/db/starcoindb"),
         StorageVersion::current_version()
             .get_column_family_names()
@@ -520,7 +520,7 @@ pub fn export_block_range(
     )?;
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
-        db_stoarge,
+        db_storage,
     ))?);
     let (chain_info, _) =
         Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
@@ -554,7 +554,7 @@ pub fn export_block_range(
         .collect::<Vec<BlockNumber>>()
         .into_iter()
         .map(|num| {
-            load_bar.set_message(format!("load block {}", num).as_str());
+            load_bar.set_message(format!("load block {}", num));
             load_bar.inc(1);
             chain
                 .get_block_by_number(num)?
@@ -572,7 +572,7 @@ pub fn export_block_range(
     );
     for block in block_list {
         writeln!(file, "{}", serde_json::to_string(&block)?)?;
-        bar.set_message(format!("write block {}", block.header().number()).as_str());
+        bar.set_message(format!("write block {}", block.header().number()));
         bar.inc(1);
     }
     file.flush()?;
@@ -594,10 +594,10 @@ pub fn apply_block(
     verifier: Verifier,
 ) -> anyhow::Result<()> {
     let net = ChainNetwork::new_builtin(network);
-    let db_stoarge = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
+    let db_storage = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
-        db_stoarge,
+        db_storage,
     ))?);
     let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
     let mut chain = BlockChain::new(
@@ -653,7 +653,7 @@ pub fn apply_block(
         // apply block then flush startup_info for breakpoint resume
         let startup_info = StartupInfo::new(block_hash);
         storage.save_startup_info(startup_info)?;
-        bar.set_message(format!("apply block {}", block_number).as_str());
+        bar.set_message(format!("apply block {}", block_number));
         bar.inc(1);
     }
     bar.finish();
@@ -672,10 +672,10 @@ pub fn startup_info_back(
     network: BuiltinNetworkID,
 ) -> anyhow::Result<()> {
     let net = ChainNetwork::new_builtin(network);
-    let db_stoarge = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
+    let db_storage = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
-        db_stoarge,
+        db_storage,
     ))?);
     let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
     let chain = BlockChain::new(
@@ -723,10 +723,10 @@ pub fn gen_block_transactions(
 ) -> anyhow::Result<()> {
     ::logger::init();
     let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
-    let db_stoarge = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
+    let db_storage = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
-        db_stoarge,
+        db_storage,
     ))?);
     let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
     let mut chain = BlockChain::new(
@@ -1028,7 +1028,7 @@ fn export_column(
             }
         };
         start_index += max_size;
-        bar.set_message(format!("export {} {}", column, index).as_str());
+        bar.set_message(format!("export {} {}", column, index));
         bar.inc(1);
         index += 1;
     }
@@ -1052,7 +1052,7 @@ pub fn export_snapshot(
 ) -> anyhow::Result<()> {
     let start_time = SystemTime::now();
     let net = ChainNetwork::new_builtin(network);
-    let db_stoarge = DBStorage::open_with_cfs(
+    let db_storage = DBStorage::open_with_cfs(
         from_dir.join("starcoindb/db/starcoindb"),
         StorageVersion::current_version()
             .get_column_family_names()
@@ -1063,7 +1063,7 @@ pub fn export_snapshot(
     )?;
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
-        db_stoarge,
+        db_storage,
     ))?);
     let (chain_info, _) =
         Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
@@ -1143,24 +1143,24 @@ pub fn export_snapshot(
         .get_block_info(Some(block.id()))?
         .ok_or_else(|| format_err!("get block info by hash {} error", block.id()))?;
     let block_accumulator_info = block_info.get_block_accumulator_info();
-    let mut mainfest_list = vec![];
+    let mut manifest_list = vec![];
     let mut handles = Vec::with_capacity(5);
 
-    mainfest_list.push((
+    manifest_list.push((
         BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
         cur_num,
         block_accumulator_info.accumulator_root,
     ));
-    mainfest_list.push((BLOCK_PREFIX_NAME, cur_num, block.header.id()));
-    mainfest_list.push((BLOCK_INFO_PREFIX_NAME, cur_num, block.header.id()));
+    manifest_list.push((BLOCK_PREFIX_NAME, cur_num, block.header.id()));
+    manifest_list.push((BLOCK_INFO_PREFIX_NAME, cur_num, block.header.id()));
     let txn_accumulator_info = block_info.get_txn_accumulator_info();
-    mainfest_list.push((
+    manifest_list.push((
         TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
         txn_accumulator_info.get_num_leaves() - 1,
         txn_accumulator_info.accumulator_root,
     ));
     let mbar = MultiProgress::new();
-    for (column, num_record, _hash) in mainfest_list.clone() {
+    for (column, num_record, _hash) in manifest_list.clone() {
         let accumulator = match column {
             BLOCK_ACCUMULATOR_NODE_PREFIX_NAME | BLOCK_PREFIX_NAME | BLOCK_INFO_PREFIX_NAME => {
                 MerkleAccumulator::new_with_info(
@@ -1214,7 +1214,7 @@ pub fn export_snapshot(
             )?;
 
             if index % BATCH_SIZE == 0 {
-                bar.set_message(format!("export state {}", index / BATCH_SIZE).as_str());
+                bar.set_message(format!("export state {}", index / BATCH_SIZE));
                 bar.inc(1);
             }
             index += 1;
@@ -1230,7 +1230,7 @@ pub fn export_snapshot(
         handle.join().unwrap().unwrap();
     }
 
-    mainfest_list.push((
+    manifest_list.push((
         STATE_NODE_PREFIX_NAME,
         nums.load(Ordering::Relaxed),
         state_root,
@@ -1244,7 +1244,7 @@ pub fn export_snapshot(
     // save manifest
     let name_manifest = "manifest.csv".to_string();
     let mut file_manifest = File::create(output.join(name_manifest))?;
-    for (path, num, hash) in mainfest_list {
+    for (path, num, hash) in manifest_list {
         writeln!(file_manifest, "{} {} {}", path, num, hash)?;
     }
     file_manifest.flush()?;
@@ -1297,7 +1297,7 @@ fn import_column(
             }
         }
         if index % BATCH_SIZE == 0 {
-            bar.set_message(format!("import {} {}", column, index / BATCH_SIZE).as_str());
+            bar.set_message(format!("import {} {}", column, index / BATCH_SIZE));
             bar.inc(1);
         }
         index += 1;
@@ -1347,10 +1347,10 @@ pub fn apply_snapshot(
 ) -> anyhow::Result<()> {
     let start_time = SystemTime::now();
     let net = ChainNetwork::new_builtin(network);
-    let db_stoarge = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
+    let db_storage = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
-        db_stoarge,
+        db_storage,
     ))?);
     let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
     let mut chain = BlockChain::new(
@@ -1433,14 +1433,11 @@ pub fn apply_snapshot(
                 account_states.push((account_address, account_state_set));
                 index += 1;
                 if index % BATCH_SIZE == 0 {
-                    bar.set_message(
-                        format!(
-                            "import {} index {}",
-                            STATE_NODE_PREFIX_NAME,
-                            index / BATCH_SIZE
-                        )
-                        .as_str(),
-                    );
+                    bar.set_message(format!(
+                        "import {} index {}",
+                        STATE_NODE_PREFIX_NAME,
+                        index / BATCH_SIZE
+                    ));
                     bar.inc(1);
                 }
             }
