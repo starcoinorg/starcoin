@@ -1,5 +1,5 @@
 use crate::in_memory_state_cache::InMemoryStateCache;
-use crate::remote_state::{RemoteStateView, SelectableStateView};
+use crate::remote_state::{RemoteViewer, SelectableStateView};
 use anyhow::{bail, Result};
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
 use move_compiler::compiled_unit::CompiledUnitEnum;
@@ -21,6 +21,8 @@ use move_transactional_test_runner::{
 };
 use serde::Deserialize;
 use serde::Serialize;
+use serde_json::Value;
+use starcoin_abi_decoder::decode_txn_payload;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
 use starcoin_crypto::{HashValue, PrivateKey, ValidCryptoMaterial, ValidCryptoMaterialStringExt};
@@ -28,8 +30,9 @@ use starcoin_dev::playground::call_contract;
 use starcoin_genesis::Genesis;
 use starcoin_rpc_api::types::{
     ContractCall, FunctionIdView, RawUserTransactionView, TransactionArgumentView,
-    TransactionOutputView, TypeTagView,
+    TransactionOutputView, TransactionStatusView, TypeTagView,
 };
+use starcoin_rpc_api::Params;
 use starcoin_state_api::{ChainStateWriter, StateReaderExt};
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::account::{Account, AccountData};
@@ -133,6 +136,9 @@ pub struct ExtraInitArgs {
     public_keys: Option<Vec<(Identifier, AccountPublicKey)>>,
     // #[clap(long = "private-keys", parse(try_from_str = parse_named_private_key))]
     // private_keys: Option<Vec<(Identifier, Ed25519PrivateKey)>>,
+    #[clap(long = "debug")]
+    /// enable debug mode, output more info to stderr.
+    debug: bool,
 }
 
 /// Starcoin-specific arguments for the publish command.
@@ -147,10 +153,6 @@ pub struct StarcoinPublishArgs {
 pub struct StarcoinRunArgs {
     #[clap(short = 'k', long = "public-key")]
     public_key: Option<RawPublicKey>,
-
-    #[clap(short, long)]
-    /// print detailed outputs
-    verbose: bool,
 }
 
 #[derive(clap::Args, Debug)]
@@ -187,6 +189,17 @@ struct CallSub {
     type_args: Vec<TypeTagView>,
 }
 
+#[derive(Debug, Parser)]
+#[clap(name = "call-api")]
+pub struct CallAPISub {
+    #[clap(name = "method")]
+    /// api method to call, example: node.info
+    method: String,
+    #[clap(name = "params", default_value = "", parse(try_from_str=parse_params))]
+    /// api params, should be a json array string
+    params: Params,
+}
+
 #[derive(Parser, Debug)]
 pub enum StarcoinSubcommands {
     #[clap(name = "faucet")]
@@ -219,6 +232,23 @@ pub enum StarcoinSubcommands {
         #[clap(long = "type-args", short = 't')]
         type_args: Vec<TypeTagView>,
     },
+    #[clap(name = "call-api")]
+    CallAPI {
+        #[clap(name = "method")]
+        /// api name to call, example: node.info
+        method: String,
+        #[clap(name = "params", default_value = "", parse(try_from_str=parse_params))]
+        /// api params, should be a json array string
+        params: Params,
+    },
+}
+
+fn parse_params(params: &str) -> Result<Params> {
+    let params = match params.trim() {
+        "" => Params::None,
+        param => serde_json::from_str(param)?,
+    };
+    Ok(params)
 }
 
 impl From<FaucetSub> for StarcoinSubcommands {
@@ -252,13 +282,25 @@ impl From<CallSub> for StarcoinSubcommands {
     }
 }
 
+impl From<CallAPISub> for StarcoinSubcommands {
+    fn from(sub: CallAPISub) -> Self {
+        Self::CallAPI {
+            method: sub.method,
+            params: sub.params,
+        }
+    }
+}
+
 impl clap::Args for StarcoinSubcommands {
     fn augment_args(cmd: clap::Command<'_>) -> clap::Command<'_> {
         let faucet = FaucetSub::augment_args(clap::Command::new("faucet"));
         let block = BlockSub::augment_args(clap::Command::new("block"));
         let call = CallSub::augment_args(clap::Command::new("call"));
-
-        cmd.subcommand(faucet).subcommand(block).subcommand(call)
+        let call_api = CallAPISub::augment_args(clap::Command::new("call-api"));
+        cmd.subcommand(faucet)
+            .subcommand(block)
+            .subcommand(call)
+            .subcommand(call_api)
     }
 
     fn augment_args_for_update(_cmd: clap::Command<'_>) -> clap::Command<'_> {
@@ -272,12 +314,20 @@ struct TransactionWithOutput {
     pub output: TransactionOutputView,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct SimpleTransactionResult {
+    gas_used: u64,
+    status: TransactionStatusView,
+}
+
 pub struct StarcoinTestAdapter<'a> {
     compiled_state: CompiledState<'a>,
-    storage: SelectableStateView<ChainStateDB, InMemoryStateCache<RemoteStateView>>,
+    storage: SelectableStateView<ChainStateDB, InMemoryStateCache<RemoteViewer>>,
     default_syntax: SyntaxChoice,
     public_key_mapping: BTreeMap<Identifier, AccountPublicKey>,
     association_public_key: AccountPublicKey,
+    remote_viewer: Option<RemoteViewer>,
+    debug: bool,
 }
 
 /// Parameters *required* to create a Starcoin transaction.
@@ -474,13 +524,16 @@ impl<'a> StarcoinTestAdapter<'a> {
             }
             TransactionStatus::Discard(_) => {}
         }
+        let payload = decode_txn_payload(&self.storage, txn.payload())?;
+        let mut txn_view: RawUserTransactionView = txn.try_into()?;
+        txn_view.decoded_payload = Some(payload.into());
         Ok(TransactionWithOutput {
-            txn: txn.try_into()?,
+            txn: txn_view,
             output: output.into(),
         })
     }
 
-    fn handle_contract_call(&self, call: ContractCall) -> Result<Option<String>> {
+    fn handle_contract_call(&self, call: ContractCall) -> Result<(Option<String>, Option<Value>)> {
         let ContractCall {
             function_id,
             type_args,
@@ -502,11 +555,17 @@ impl<'a> StarcoinTestAdapter<'a> {
             .map(|(ty, v)| annotator.view_value(&ty, &v))
             .collect::<Result<Vec<_>>>()?;
         if rets.is_empty() {
-            Ok(None)
+            Ok((None, None))
         } else if rets.len() == 1 {
-            Ok(Some(format!("{}", serde_json::to_value(&rets[0])?)))
+            Ok((
+                Some(serde_json::to_string_pretty(&rets[0])?),
+                Some(serde_json::to_value(&rets[0])?),
+            ))
         } else {
-            Ok(Some(format!("{}", serde_json::to_value(rets)?)))
+            Ok((
+                Some(serde_json::to_string_pretty(&rets)?),
+                Some(serde_json::to_value(&rets)?),
+            ))
         }
     }
 
@@ -515,7 +574,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         addr: RawAddress,
         initial_balance: u128,
         public_key: Option<AccountPublicKey>,
-    ) -> Result<Option<String>> {
+    ) -> Result<(Option<String>, Option<Value>)> {
         let sender = association_address();
 
         let params = self.fetch_default_transaction_parameters(&sender)?;
@@ -583,7 +642,16 @@ impl<'a> StarcoinTestAdapter<'a> {
         );
         let output = self.run_transaction(txn, self.association_public_key.clone())?;
 
-        Ok(Some(serde_json::to_string_pretty(&output)?))
+        match output.output.status {
+            TransactionStatusView::Executed => Ok((None, None)),
+            _ => {
+                bail!(
+                    "Failed to faucet {}, status: {:?}",
+                    addr,
+                    output.output.status
+                );
+            }
+        }
     }
     fn handle_new_block(
         &mut self,
@@ -591,7 +659,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         timestamp: Option<u64>,
         number: Option<u64>,
         uncles: Option<u64>,
-    ) -> Result<Option<String>> {
+    ) -> Result<(Option<String>, Option<Value>)> {
         let last_blockmeta = self
             .storage
             .get_resource::<on_chain_resource::BlockMetadata>(genesis_address())?;
@@ -630,7 +698,20 @@ impl<'a> StarcoinTestAdapter<'a> {
         );
         self.run_blockmeta(new_block_meta.clone())?;
 
-        Ok(Some(serde_json::to_string_pretty(&new_block_meta)?))
+        Ok((None, Some(serde_json::to_value(&new_block_meta)?)))
+    }
+
+    fn handle_call_api(
+        &mut self,
+        method: String,
+        params: Params,
+    ) -> Result<(Option<String>, Option<Value>)> {
+        let remote_viewer = match self.remote_viewer.as_ref() {
+            Some(c) => c,
+            None => bail!("please set RPC url at init argument"),
+        };
+        let output = remote_viewer.call_api(method.as_str(), params)?;
+        Ok((None, Some(serde_json::to_value(&output)?)))
     }
 }
 fn panic_missing_public_key_named(cmd_name: &str, name: &IdentStr) -> ! {
@@ -711,8 +792,11 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                 }
             }
         }
+        let mut remote_viewer: Option<RemoteViewer> = None;
+
         let store = if let Some(rpc) = init_args.rpc {
-            let remote_view = RemoteStateView::from_url(&rpc, init_args.block_number).unwrap();
+            let remote_view = RemoteViewer::from_url(&rpc, init_args.block_number).unwrap();
+            remote_viewer = Some(remote_view.clone());
             SelectableStateView::B(InMemoryStateCache::new(remote_view))
         } else {
             let net = ChainNetwork::new_builtin(init_args.network.unwrap());
@@ -784,6 +868,8 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             public_key_mapping,
             storage: store,
             association_public_key,
+            remote_viewer,
+            debug: init_args.debug,
         };
         me.hack_genesis_account()
             .expect("hack genesis account failure");
@@ -799,7 +885,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         named_addr_opt: Option<Identifier>,
         gas_budget: Option<u64>,
         extra: Self::ExtraPublishArgs,
-    ) -> anyhow::Result<Option<String>> {
+    ) -> anyhow::Result<(Option<String>, Option<Value>)> {
         let module_id = module.self_id();
         let signer = module_id.address();
         let params = self.fetch_default_transaction_parameters(signer)?;
@@ -827,7 +913,14 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         );
 
         let output = self.run_transaction(txn, public_key)?;
-        Ok(Some(serde_json::to_string_pretty(&output)?))
+
+        match output.output.status {
+            TransactionStatusView::Executed => Ok((None, None)),
+            _ => Ok((
+                Some(format!("Publish failure: {:?}", output.output.status)),
+                Some(serde_json::to_value(&output)?),
+            )),
+        }
     }
 
     fn execute_script(
@@ -838,7 +931,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         args: Vec<TransactionArgument>,
         gas_budget: Option<u64>,
         extra_args: Self::ExtraRunArgs,
-    ) -> anyhow::Result<Option<String>> {
+    ) -> anyhow::Result<(Option<String>, Option<Value>)> {
         assert!(!signers.is_empty());
         if signers.len() != 1 {
             panic!("Expected 1 signer, got {}.", signers.len());
@@ -872,7 +965,14 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         );
 
         let output = self.run_transaction(txn, public_key)?;
-        Ok(Some(serde_json::to_string_pretty(&output)?))
+        let result = SimpleTransactionResult {
+            gas_used: output.output.gas_used.0,
+            status: output.output.status.clone(),
+        };
+        Ok((
+            Some(serde_json::to_string_pretty(&result)?),
+            Some(serde_json::to_value(&output)?),
+        ))
     }
 
     fn call_function(
@@ -884,7 +984,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         args: Vec<TransactionArgument>,
         gas_budget: Option<u64>,
         extra_args: Self::ExtraRunArgs,
-    ) -> anyhow::Result<Option<String>> {
+    ) -> anyhow::Result<(Option<String>, Option<Value>)> {
         {
             assert!(!signers.is_empty());
             if signers.len() != 1 {
@@ -922,7 +1022,14 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         );
 
         let output = self.run_transaction(txn, public_key)?;
-        Ok(Some(serde_json::to_string_pretty(&output)?))
+        let result = SimpleTransactionResult {
+            gas_used: output.output.gas_used.0,
+            status: output.output.status.clone(),
+        };
+        Ok((
+            Some(serde_json::to_string_pretty(&result)?),
+            Some(serde_json::to_value(&output)?),
+        ))
     }
 
     fn view_data(
@@ -931,7 +1038,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         module: &ModuleId,
         resource: &IdentStr,
         type_args: Vec<TypeTag>,
-    ) -> anyhow::Result<String> {
+    ) -> anyhow::Result<(String, Value)> {
         let s = RemoteStorage::new(&self.storage);
         view_resource_in_move_storage(&s, address, module, resource, type_args)
     }
@@ -939,8 +1046,8 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
     fn handle_subcommand(
         &mut self,
         subcommand: TaskInput<Self::Subcommand>,
-    ) -> anyhow::Result<Option<String>> {
-        match subcommand.command {
+    ) -> anyhow::Result<(Option<String>, Option<Value>)> {
+        let (result_str, cmd_var_ctx) = match subcommand.command {
             StarcoinSubcommands::Faucet {
                 address,
                 initial_balance,
@@ -961,7 +1068,14 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                 args,
                 type_args,
             }),
+            StarcoinSubcommands::CallAPI { method, params } => self.handle_call_api(method, params),
+        }?;
+        if self.debug {
+            if let Some(cmd_var_ctx) = cmd_var_ctx.as_ref() {
+                eprintln!("{}: {}", subcommand.name, cmd_var_ctx);
+            }
         }
+        Ok((result_str, cmd_var_ctx))
     }
 }
 

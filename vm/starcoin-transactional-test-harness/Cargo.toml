@@ -18,18 +18,19 @@ itertools = "~0.10"
 jsonrpc-client-transports = {version = "18", features = ["http", "ipc", "ws", "arbitrary_precision"]}
 jsonrpc-core-client = {version = "18", features = ["http", "ipc", "ws", "arbitrary_precision"]}
 log = {version = "0.4.16"}
-move-binary-format = {git = "https://github.com/starcoinorg/move", rev = "09d7628149323aa36d1312ac186fa4469d8b19e5"}
-move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "09d7628149323aa36d1312ac186fa4469d8b19e5"}
-move-compiler = {git = "https://github.com/starcoinorg/move", rev = "09d7628149323aa36d1312ac186fa4469d8b19e5"}
-move-core-types = {git = "https://github.com/starcoinorg/move", rev = "09d7628149323aa36d1312ac186fa4469d8b19e5"}
-move-transactional-test-runner = {git = "https://github.com/starcoinorg/move", rev = "09d7628149323aa36d1312ac186fa4469d8b19e5"}
+move-binary-format = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
+move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
+move-compiler = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
+move-core-types = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
+move-transactional-test-runner = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
 once_cell = "~1"
 serde = {version = "1"}
 serde_json = {version = "1"}
 tokio = {version = "^1", features = ["full"]}
 
 bcs-ext = {path = "../../commons/bcs_ext"}
-move-resource-viewer = {git = "https://github.com/starcoinorg/move", rev = "09d7628149323aa36d1312ac186fa4469d8b19e5"}
+move-resource-viewer = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
+starcoin-abi-decoder = {path = "../../abi/decoder"}
 starcoin-config = {path = "../../config"}
 starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 starcoin-dev = {path = "../dev"}
