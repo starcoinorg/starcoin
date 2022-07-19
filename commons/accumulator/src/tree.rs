@@ -29,11 +29,11 @@ pub struct AccumulatorTree {
     pub(crate) store: Arc<dyn AccumulatorTreeStore>,
     /// The temp update nodes
     update_nodes: HashMap<HashValue, AccumulatorNode>,
-    /// index_frozen_subtree_roots NodeIndex => HashValue
+    /// index of frozen_subtree_roots
     /// max size will be 64
     index_frozen_subtrees: HashMap<NodeIndex, HashValue>,
-    /// index_to_frozen_subtree_roots NodeIndex => HashValue
-    /// max size will be 64
+    /// index_to_freeze NodeIndex => HashValue
+    /// left than max_to_freeze
     index_to_freeze: HashMap<NodeIndex, HashValue>,
 }
 
