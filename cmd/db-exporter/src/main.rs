@@ -1387,6 +1387,16 @@ pub fn apply_snapshot(
         }
         file_list.push((column, nums, verify_hash));
     }
+
+    for (file_name, nums, _) in file_list.iter() {
+        let file = BufReader::new(File::open(input_path.join(file_name))?);
+        let cnt = file.lines().count();
+        if cnt as BlockNumber != *nums {
+            println!("file {} line nums {} not equal {}", file_name, cnt, *nums);
+            std::process::exit(2);
+        }
+    }
+
     let mbar = MultiProgress::new();
     for item in file_list.iter().take(file_list.len() - 1) {
         let (column, nums, verify_hash) = item.clone();
