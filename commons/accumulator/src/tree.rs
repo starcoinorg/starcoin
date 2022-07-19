@@ -29,9 +29,12 @@ pub struct AccumulatorTree {
     pub(crate) store: Arc<dyn AccumulatorTreeStore>,
     /// The temp update nodes
     update_nodes: HashMap<HashValue, AccumulatorNode>,
-
-    frozen_subtrees: HashMap<NodeIndex, HashValue>,
-    to_frozen_nodes: HashMap<NodeIndex, HashValue>,
+    /// index_frozen_subtree_roots NodeIndex => HashValue
+    /// max size will be 64
+    index_frozen_subtrees: HashMap<NodeIndex, HashValue>,
+    /// index_to_frozen_subtree_roots NodeIndex => HashValue
+    /// max size will be 64
+    index_to_freeze: HashMap<NodeIndex, HashValue>,
 }
 
 impl AccumulatorTree {
@@ -42,13 +45,13 @@ impl AccumulatorTree {
         root_hash: HashValue,
         store: Arc<dyn AccumulatorTreeStore>,
     ) -> Self {
-        let mut frozen_subtrees = HashMap::new();
-        let nodes = store
-            .multiple_get(frozen_subtree_roots.clone())
-            .expect("get node value");
-        for (node, value) in nodes.into_iter().zip(frozen_subtree_roots.clone()) {
-            frozen_subtrees.insert(node.expect("get node success").index(), value);
-        }
+        let frozen_subtrees = if !frozen_subtree_roots.is_empty() {
+            FrozenSubTreeIterator::new(num_leaves)
+                .zip(frozen_subtree_roots.clone())
+                .collect()
+        } else {
+            HashMap::new()
+        };
         let s = Self {
             frozen_subtree_roots,
             index_cache: LruCache::new(MAC_CACHE_SIZE),
@@ -57,8 +60,8 @@ impl AccumulatorTree {
             root_hash,
             store,
             update_nodes: HashMap::new(),
-            frozen_subtrees,
-            to_frozen_nodes: HashMap::new(),
+            index_frozen_subtrees: frozen_subtrees,
+            index_to_freeze: HashMap::new(),
         };
         trace!("new accumulator tree: {:p}", &s);
         s
@@ -96,7 +99,7 @@ impl AccumulatorTree {
             let leaf_pos = NodeIndex::from_leaf_index(self.num_leaves + leaf_offset as LeafCount);
             let mut hash = *leaf;
             to_freeze.push(AccumulatorNode::new_leaf(leaf_pos, hash));
-            self.to_frozen_nodes.insert(leaf_pos, hash);
+            self.index_to_freeze.insert(leaf_pos, hash);
 
             new_num_nodes += 1;
             let mut pos = leaf_pos;
@@ -111,7 +114,8 @@ impl AccumulatorTree {
                     }
                     None => AccumulatorNode::new_internal(
                         pos.parent(),
-                        self.get_append_node_hash(sibling)?
+                        // because left must be frozen and it must be in index_frozen_subtrees or index_to_frozen
+                        self.get_node_frozen_hash(sibling)?
                             .unwrap_or(*ACCUMULATOR_PLACEHOLDER_HASH),
                         hash,
                     ),
@@ -119,7 +123,7 @@ impl AccumulatorTree {
                 hash = internal_node.hash();
                 pos = pos.parent();
                 to_freeze.push(internal_node.clone());
-                self.to_frozen_nodes.insert(internal_node.index(), hash);
+                self.index_to_freeze.insert(internal_node.index(), hash);
 
                 new_num_nodes += 1;
             }
@@ -154,7 +158,7 @@ impl AccumulatorTree {
                     None => {
                         let not_frozen = AccumulatorNode::new_internal(
                             pos.parent(),
-                            self.get_append_node_hash(sibling)?
+                            self.get_node_frozen_hash(sibling)?
                                 .unwrap_or(*ACCUMULATOR_PLACEHOLDER_HASH),
                             hash,
                         );
@@ -184,6 +188,10 @@ impl AccumulatorTree {
         self.root_hash = hash;
         self.num_leaves = last_new_leaf_count;
         self.frozen_subtree_roots = self.scan_frozen_subtree_roots()?;
+        self.index_frozen_subtrees = FrozenSubTreeIterator::new(self.num_leaves)
+            .zip(self.frozen_subtree_roots.clone())
+            .collect();
+        self.index_to_freeze.clear();
         self.num_nodes = new_num_nodes;
         trace!("acc append_leaves ok: {:?}", new_leaves);
         Ok(hash)
@@ -219,7 +227,7 @@ impl AccumulatorTree {
     fn scan_frozen_subtree_roots(&mut self) -> Result<Vec<HashValue>> {
         FrozenSubTreeIterator::new(self.num_leaves)
             .map(|p| {
-                self.get_append_node_hash(p)?
+                self.get_node_frozen_hash(p)?
                     .ok_or_else(|| format_err!("frozen root {:?} must have value, but get none", p))
             })
             .collect()
@@ -260,21 +268,12 @@ impl AccumulatorTree {
         }
     }
 
-    fn get_append_node_hash(&mut self, node_index: NodeIndex) -> Result<Option<HashValue>> {
-        let idx = self.rightmost_leaf_index();
-        if node_index.is_placeholder(idx) {
-            Ok(None)
-        } else {
-            self.get_node_frozen_hash(node_index)
-        }
-    }
-
     fn get_node_frozen_hash(&mut self, node_index: NodeIndex) -> Result<Option<HashValue>> {
-        let value = self.frozen_subtrees.get(&node_index);
+        let value = self.index_frozen_subtrees.get(&node_index);
         if value.is_some() {
             return Ok(value.cloned());
         }
-        Ok(self.to_frozen_nodes.get(&node_index).cloned())
+        Ok(self.index_to_freeze.get(&node_index).cloned())
     }
 
     /// Update node to cache.
@@ -297,14 +296,11 @@ impl AccumulatorTree {
         // get hash from cache
         let mut temp_index = index;
         let mut index_key = temp_index;
+        if let Some(node_hash) = self.index_frozen_subtrees.get(&index_key) {
+            return Ok(*node_hash);
+        }
         if let Some(node_hash) = self.get_node_index(index_key) {
             return Ok(node_hash);
-        }
-        if let Some(node_hash) = self.frozen_subtrees.get(&index_key) {
-            return Ok(*node_hash);
-        }
-        if let Some(node_hash) = self.to_frozen_nodes.get(&index_key) {
-            return Ok(*node_hash);
         }
         // find parent hash,then get node by parent hash
         let root_index = NodeIndex::root_from_leaf_count(self.num_leaves);
@@ -396,5 +392,10 @@ impl AccumulatorTree {
         precondition!(num_new_leaves < (usize::max_value() / 2));
         precondition!(num_new_leaves * 2 <= usize::max_value() - root_level as usize);
         num_new_leaves * 2 + root_level as usize
+    }
+
+    #[cfg(test)]
+    pub fn get_index_frozen_subtrees(&self) -> HashMap<NodeIndex, HashValue> {
+        self.index_frozen_subtrees.clone()
     }
 }

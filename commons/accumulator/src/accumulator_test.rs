@@ -141,7 +141,15 @@ fn test_one_leaf() {
         0,
         Arc::new(mock_store),
     );
+    assert_eq!(accumulator.get_index_frozen_subtrees().len(), 0);
     let root_hash = accumulator.append(&[hash]).unwrap();
+    let frozen_subtrees = accumulator.get_index_frozen_subtrees();
+    assert_eq!(frozen_subtrees.len(), 1);
+    assert_eq!(
+        frozen_subtrees.get(&NodeIndex::from_leaf_index(0u64)),
+        Some(&hash)
+    );
+
     assert_eq!(hash, root_hash);
     proof_verify(&accumulator, root_hash, &[hash], 0);
     let new_hash = HashValue::random();
@@ -315,6 +323,9 @@ fn test_get_leaves_overflow() {
         .unwrap();
     assert_eq!(leaves1.len(), 100);
 }
+
+#[test]
+fn test_get_frozen_subtrees() {}
 
 fn proof_verify(
     accumulator: &MerkleAccumulator,
