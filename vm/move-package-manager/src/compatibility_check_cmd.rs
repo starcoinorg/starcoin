@@ -2,15 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::release::module;
+use anyhow::{ensure, Ok};
 use clap::Parser;
 use itertools::Itertools;
 use move_binary_format::CompiledModule;
 use move_cli::sandbox::utils::PackageContext;
 use move_cli::Move;
 use move_core_types::resolver::ModuleResolver;
+use move_package::compilation::compiled_package::CompiledUnitWithSource;
+use starcoin_cmd::dev::dev_helper::{self};
 use starcoin_config::BuiltinNetworkID;
 use starcoin_move_compiler::check_compiled_module_compat;
 use starcoin_transactional_test_harness::remote_state::RemoteStateView;
+use starcoin_types::transaction::Package;
+
+use std::{collections::BTreeMap, path::PathBuf};
 
 #[derive(Parser)]
 pub struct CompatibilityCheckCommand {
@@ -24,6 +30,10 @@ pub struct CompatibilityCheckCommand {
     #[clap(long = "network", short, conflicts_with("rpc"))]
     /// genesis with the network
     network: Option<BuiltinNetworkID>,
+
+    #[clap(long = "pre-modules")]
+    /// use to check pre modules compatibility.
+    pre_modules: Option<PathBuf>,
 }
 
 pub fn handle_compatibility_check(
@@ -78,5 +88,75 @@ pub fn handle_compatibility_check(
             pkg.compiled_package_info.package_name, &rpc
         );
     }
+
+    if cmd.pre_modules.is_none() || !cmd.pre_modules.clone().unwrap().as_path().exists() {
+        return Ok(());
+    }
+
+    handle_pre_version_compatibility_check(cmd.pre_modules.unwrap(), pkg.all_modules().collect_vec())?;
+    Ok(())
+}
+
+fn handle_pre_version_compatibility_check(
+    pre_modules: PathBuf,
+    new_modules: Vec<&CompiledUnitWithSource>,
+) -> anyhow::Result<()> {
+    ensure!(
+        pre_modules.as_path().exists(),
+        "pre modules path: {} not exists",
+        pre_modules.as_path().to_str().unwrap()
+    );
+
+    let mut pre_stable_modules = vec![];
+    let pkg: Package = if pre_modules.as_path().is_dir() {
+        dev_helper::load_package_from_dir(pre_modules.as_path())?
+    } else {
+        dev_helper::load_package_from_file(pre_modules.as_path())?
+    };
+
+    for module in pkg.modules() {
+        let pre_stable_module = CompiledModule::deserialize(module.code())?;
+        pre_stable_modules.push(pre_stable_module);
+    }
+
+    let pre_stable_modules = pre_stable_modules
+        .into_iter()
+        .map(|module| (module.self_id(), module))
+        .collect::<BTreeMap<_, _>>();
+
+    let incompatible_module_ids = new_modules
+        .into_iter()
+        .filter_map(|m| {
+            let new_module = module(&m.unit).unwrap();
+            let module_id = new_module.self_id();
+            if let Some(old_module) = pre_stable_modules.get(&module_id) {
+                let compatibility =
+                    check_compiled_module_compat(old_module, new_module).is_fully_compatible();
+                if !compatibility {
+                    Some(module_id)
+                } else {
+                    None
+                }
+            } else {
+                println!("Module {:?} is new module.", module_id);
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+
+    if !incompatible_module_ids.is_empty() {
+        eprintln!(
+            "Modules {} is incompatible with previous version: {}!",
+            incompatible_module_ids
+                .into_iter()
+                .map(|module_id| module_id.to_string())
+                .join(","),
+            pre_modules.to_str().unwrap()
+        );
+        std::process::exit(1);
+    } else {
+        eprintln!("All previous modules is full compatible with current modules!",);
+    }
+
     Ok(())
 }

@@ -28,7 +28,7 @@ serde = "~1"
 serde_json = {version="~1", features=["arbitrary_precision"]}
 anyhow="~1"
 hex="~0.4"
-indicatif = "0.15.0"
+indicatif = "0.16.2"
 logger = {path = "../../commons/logger",package="starcoin-logger"}
 clap = { version = "3", features = ["derive"] }
 
