@@ -93,7 +93,10 @@ pub fn handle_compatibility_check(
         return Ok(());
     }
 
-    handle_pre_version_compatibility_check(cmd.pre_modules.unwrap(), pkg.all_modules().collect_vec())?;
+    handle_pre_version_compatibility_check(
+        cmd.pre_modules.unwrap(),
+        pkg.all_modules().collect_vec(),
+    )?;
     Ok(())
 }
 
