@@ -33,7 +33,7 @@ pub struct AccumulatorTree {
     /// max size will be 64
     index_frozen_subtrees: HashMap<NodeIndex, HashValue>,
     /// index_to_freeze NodeIndex => HashValue
-    /// left than max_to_freeze
+    /// less than max_to_freeze
     index_to_freeze: HashMap<NodeIndex, HashValue>,
 }
 
