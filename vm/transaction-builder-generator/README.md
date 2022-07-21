@@ -1,12 +1,12 @@
 ---
 id: transaction-builder-generator
 title: Transaction Builder Generator
-custom_edit_url: https://github.com/diem/diem/edit/master/language/transaction-builder-generator/README.md
+custom_edit_url: https://github.com/starcoinorg/starcoin/edit/master/vm/transaction-builder-generator/README.md
 ---
 
 # Transaction Builder Generator
 
-A *transaction builder* is a helper function that converts its arguments into the payload of a Diem transaction calling a particular Move script.
+A *transaction builder* is a helper function that converts its arguments into the payload of a Starcoin transaction calling a particular Move script.
 
 In Rust, the signature of such a function typically looks like this:
 ```rust
@@ -21,10 +21,10 @@ pub fn encode_peer_to_peer_with_metadata_script(
 
 This crate provides a binary tool `generate-transaction-builders` to generate and install transaction builders in several programming languages.
 
-The tool will also generate and install type definitions for Diem types such as `TypeTag`, `AccountAddress`, and `Script`.
+The tool will also generate and install type definitions for Starcoin types such as `TypeTag`, `AccountAddress`, and `Script`.
 
-In practice, hashing and signing Diem transactions additionally requires a runtime library for Diem Canonical Serialization ("LCS").
-Such a library will be installed together with the Diem types.
+In practice, hashing and signing Starcoin transactions additionally requires a runtime library for Binary Canonical Serialization ("BCS").
+Such a library will be installed together with the Starcoin types.
 
 
 ## Supported Languages
@@ -37,12 +37,12 @@ The following languages are currently supported:
 
 * Java 8
 
-* Rust (NOTE: Code generation of dependency-free Rust is experimental. Consider using the libraries of the Diem repository instead.)
+* Rust (NOTE: Code generation of dependency-free Rust is experimental. Consider using the libraries of the Starcoin repository instead.)
 
 
 ## Quick Start
 
-From the root of the Diem repository, run `cargo build -p transaction-builder-generator`.
+From the root of the Starcoin repository, run `cargo build -p transaction-builder-generator`.
 
 You may browse command line options with `target/debug/generate-transaction-builders --help`.
 
@@ -53,7 +53,7 @@ To install Python3 modules `serde`, `lcs`, `libra_types`, and `libra_stdlib` int
 target/debug/generate-transaction-builders \
     --language python3 \
     --module-name starcoin_stdlib \
-    --with-diem-types "etc/starcoin_types.yml" \
+    --with-starcoin-types "etc/starcoin_types.yml" \
     --diem-package-name "starcoin" \
     --serde-package-name "starcoin" \
     --target-source-dir "target/python" \
@@ -72,7 +72,7 @@ To install C++ files `serde.hpp`, `lcs.hpp`, `libra_types.hpp`, `libra_stdlib.hp
 target/debug/generate-transaction-builders \
     --language cpp \
     --module-name libra_stdlib \
-    --with-diem-types "etc/starcoin_types.yml" \
+    --with-starcoin-types "etc/starcoin_types.yml" \
     --target-source-dir "target/cpp" \
     "vm/stdlib/compiled/latest/transaction_scripts/abi"
 ```
@@ -90,7 +90,7 @@ To install Java source packages `com.novi.serde`, `com.novi.bcs`, `org.starcoin.
 target/debug/generate-transaction-builders \
     --language java \
     --module-name org.starcoin.stdlib.Stdlib \
-    --with-diem-types "etc/starcoin_types.yml" \
+    --with-starcoin-types "etc/starcoin_types.yml" \
     --target-source-dir "target/java" \
     "vm/stdlib/compiled/latest/transaction_scripts/abi"
 ```
@@ -108,7 +108,7 @@ To install dependency-free Rust crates `diem-types` and `diem-stdlib` into a tar
 target/debug/generate-transaction-builders \
     --language rust \
     --module-name diem-stdlib \
-    --with-diem-types "etc/starcoin_types.yml" \
+    --with-starcoin-types "etc/starcoin_types.yml" \
     --target-source-dir "target/rust" \
     "vm/stdlib/compiled/latest/transaction_scripts/abi"
 ```
