@@ -4,10 +4,10 @@
 import java.util.Arrays;
 import java.util.ArrayList;
 
-import com.facebook.serde.Bytes;
-import com.facebook.serde.Serializer;
-import com.facebook.serde.Unsigned; // used as documentation.
-import com.facebook.lcs.LcsSerializer;
+import com.novi.serde.Bytes;
+import com.novi.serde.Serializer;
+import com.novi.serde.Unsigned; // used as documentation.
+import com.novi.bcs.BcsSerializer;
 import org.starcoin.stdlib.Stdlib;
 import org.starcoin.types.AccountAddress;
 import org.starcoin.types.Identifier;
@@ -43,7 +43,7 @@ public class StdlibDemo {
         Script script =
             Stdlib.encode_peer_to_peer_with_metadata_script(token, payee, new Bytes(new byte[]{}),java.math.BigInteger.valueOf(amount), new Bytes(new byte[]{}));
 
-        Serializer serializer = new LcsSerializer();
+        Serializer serializer = new BcsSerializer();
         script.serialize(serializer);
         byte[] output = serializer.get_bytes();
 

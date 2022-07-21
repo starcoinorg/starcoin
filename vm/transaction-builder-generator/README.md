@@ -61,7 +61,7 @@ target/debug/generate-transaction-builders \
 ```
 Next, you may copy and execute the [Python demo file](examples/python3/stdlib_demo.py) with:
 ```
-cp language/transaction-builder-generator/examples/python3/stdlib_demo.py "$DEST"
+cp vm/transaction-builder-generator/examples/python3/stdlib_demo.py "$DEST"
 PYTHONPATH="$PYTHONPATH:$DEST" python3 "$DEST/stdlib_demo.py"
 ```
 
@@ -85,7 +85,7 @@ clang++ --std=c++17 -I "$DEST" "$DEST/libra_stdlib.cpp" "$DEST/stdlib_demo.cpp" 
 
 ### Java
 
-To install Java source packages `com.facebook.serde`, `com.facebook.lcs`, `org.diem.types`, and a class `org.diem.stdlib.Stdlib` into a target directory `$DEST`, run:
+To install Java source packages `com.novi.serde`, `com.novi.bcs`, `org.starcoin.types`, and a class `org.starcoin.stdlib.Stdlib` into a target directory `$DEST`, run:
 ```bash
 target/debug/generate-transaction-builders \
     --language java \
