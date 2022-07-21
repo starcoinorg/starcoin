@@ -54,7 +54,7 @@ target/debug/generate-transaction-builders \
     --language python3 \
     --module-name starcoin_stdlib \
     --with-starcoin-types "etc/starcoin_types.yml" \
-    --diem-package-name "starcoin" \
+    --starcoin-package-name "starcoin" \
     --serde-package-name "starcoin" \
     --target-source-dir "target/python" \
     "vm/stdlib/compiled/latest/transaction_scripts/abi"
@@ -103,11 +103,11 @@ java -cp "$DEST" StdlibDemo
 
 ### Rust (experimental)
 
-To install dependency-free Rust crates `diem-types` and `diem-stdlib` into a target directory `$DEST`, run:
+To install dependency-free Rust crates `starcoin-types` and `starcoin-stdlib` into a target directory `$DEST`, run:
 ```bash
 target/debug/generate-transaction-builders \
     --language rust \
-    --module-name diem-stdlib \
+    --module-name starcoin-stdlib \
     --with-starcoin-types "etc/starcoin_types.yml" \
     --target-source-dir "target/rust" \
     "vm/stdlib/compiled/latest/transaction_scripts/abi"
@@ -119,7 +119,7 @@ Next, you may copy and execute the [Rust demo file](examples/rust/stdlib_demo.rs
 
 Supporting transaction builders in an additional programming language boils down to providing the following items:
 
-1. Code generation for Diem types (Rust library and tool),
+1. Code generation for Starcoin types (Rust library and tool),
 
 2. LCS runtime (library in target language),
 
@@ -128,9 +128,9 @@ Supporting transaction builders in an additional programming language boils down
 
 Items (1) and (2) are provided by the Rust library `serde-generate` which is developed in a separate [github repository](https://github.com/facebookincubator/serde-reflection).
 
-Item (3) --- this tool --- is currently developed in the Diem repository.
+Item (3) --- this tool --- is currently developed in the Starcoin repository.
 
-Items (2) and (3) are mostly independent. Both crucially depend on (1) to be sufficiently stable, therefore our suggestion for adding a new language is first to open a new github issue in `serde-generate` and contact the Diem maintainers.
+Items (2) and (3) are mostly independent. Both crucially depend on (1) to be sufficiently stable, therefore our suggestion for adding a new language is first to open a new github issue in `serde-generate` and contact the Starcoin maintainers.
 
 
 The new issue created on `serde-generate` should include:
