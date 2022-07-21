@@ -480,10 +480,10 @@ fn test_table_info_storage() -> Result<()> {
         CacheStorage::new(None),
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None)?,
     );
-    let storage = Storage::new(instance.clone())?;
+    let storage = Storage::new(instance)?;
     let key1 = TableHandleKey(1u128);
     let table_info1 = TableInfoValue::new(TypeTag::U8, TypeTag::U8);
-    storage.save_table_info(key1.clone(), table_info1.clone())?;
+    storage.save_table_info(key1, table_info1.clone())?;
     let val = storage.get_table_info(key1);
     assert!(val.is_ok());
     assert_eq!(val.unwrap().unwrap(), table_info1);
