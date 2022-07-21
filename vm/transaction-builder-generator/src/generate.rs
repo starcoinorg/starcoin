@@ -61,7 +61,7 @@ struct Options {
 
     /// Also install the diem types described by the given YAML file, along with the BCS runtime.
     #[clap(long)]
-    with_diem_types: Option<PathBuf>,
+    with_starcoin_types: Option<PathBuf>,
 
     /// Module name for the transaction builders installed in the `target_source_dir`.
     /// * Rust crates may contain a version number, e.g. "test:1.2.0".
@@ -137,8 +137,8 @@ fn main() {
         Some(dir) => dir,
     };
 
-    // Diem types
-    if let Some(registry_file) = options.with_diem_types {
+    // Starcoin types
+    if let Some(registry_file) = options.with_starcoin_types {
         let installer: Box<dyn serdegen::SourceInstaller<Error = Box<dyn std::error::Error>>> =
             match options.language {
                 Language::Python3 => Box::new(serdegen::python3::Installer::new(
