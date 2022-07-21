@@ -86,6 +86,7 @@ pub mod genesis_config {
 
 pub mod stress_test;
 pub mod sync_status;
+pub mod table;
 
 pub mod proof {
     pub use forkable_jellyfish_merkle::proof::SparseMerkleProof;

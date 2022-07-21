@@ -8,7 +8,7 @@ use crate::db_storage::DBStorage;
 use crate::storage::{CodecKVStore, InnerStore, StorageInstance, ValueCodec};
 use crate::transaction_info::{BlockTransactionInfo, OldTransactionInfoStorage};
 use crate::{
-    BlockInfoStore, BlockStore, BlockTransactionInfoStore, Storage, StorageVersion,
+    BlockInfoStore, BlockStore, BlockTransactionInfoStore, Storage, StorageVersion, TableInfoStore,
     TransactionStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
     TRANSACTION_INFO_PREFIX_NAME_V2,
 };
@@ -17,7 +17,9 @@ use crypto::HashValue;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_config::RocksdbConfig;
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockInfo};
+use starcoin_types::language_storage::TypeTag;
 use starcoin_types::startup_info::SnapshotRange;
+use starcoin_types::table::{TableHandleKey, TableInfoValue};
 use starcoin_types::transaction::{
     RichTransactionInfo, SignedUserTransaction, Transaction, TransactionInfo,
 };
@@ -468,5 +470,33 @@ pub fn test_cache_evict_multi_get() -> Result<()> {
     assert_eq!(infos.get(0).unwrap().clone().unwrap(), transaction_info1);
     assert_eq!(infos.get(1).unwrap().clone().unwrap(), transaction_info2);
     assert_eq!(infos.get(2).unwrap().clone().unwrap(), transaction_info3);
+    Ok(())
+}
+
+#[test]
+fn test_table_info_storage() -> Result<()> {
+    let tmpdir = starcoin_config::temp_dir();
+    let instance = StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None)?,
+    );
+    let storage = Storage::new(instance.clone())?;
+    let key1 = TableHandleKey(1u128);
+    let table_info1 = TableInfoValue::new(TypeTag::U8, TypeTag::U8);
+    storage.save_table_info(key1.clone(), table_info1.clone())?;
+    let val = storage.get_table_info(key1);
+    assert!(val.is_ok());
+    assert_eq!(val.unwrap().unwrap(), table_info1);
+    let key2 = TableHandleKey(2u128);
+    let val = storage.get_table_info(key2);
+    assert!(val.is_ok());
+    assert_eq!(val.unwrap(), None);
+    let keys = vec![TableHandleKey(2u128), TableHandleKey(3u128)];
+    let vals = vec![TableInfoValue::new(TypeTag::U8, TypeTag::Address), TableInfoValue::new(TypeTag::Address, TypeTag::U128)];
+    storage.save_table_infos(keys.clone(), vals.clone())?;
+    let vals2 =  storage.get_table_infos(keys);
+    assert!(vals2.is_ok());
+    let vals2 = vals2.unwrap().into_iter().map(|x| x.unwrap()).collect::<Vec<TableInfoValue>>();
+    assert_eq!(vals, vals2);
     Ok(())
 }

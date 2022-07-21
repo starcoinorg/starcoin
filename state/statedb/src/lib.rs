@@ -10,7 +10,6 @@ use lru::LruCache;
 use move_table_extension::TableHandle;
 use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock};
-use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
@@ -18,6 +17,7 @@ pub use starcoin_state_api::{ChainStateReader, ChainStateWriter, StateProof, Sta
 use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_state_tree::{StateNodeStore, StateTree};
+use starcoin_types::table::TableHandleKey;
 use starcoin_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 use starcoin_types::{
     access_path::{AccessPath, DataType},
@@ -210,9 +210,6 @@ impl AccountStateObject {
         AccountState::new(code_root, resource_root)
     }
 }
-
-#[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct TableHandleKey(pub u128);
 
 #[allow(clippy::upper_case_acronyms)]
 pub struct ChainStateDB {
