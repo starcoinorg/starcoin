@@ -24,7 +24,7 @@ int main() {
     auto script =
         encode_peer_to_peer_with_metadata_script(token, payee, {},amount, {});
 
-    auto serializer = LcsSerializer();
+    auto serializer = BcsSerializer();
     Serializable<Script>::serialize(script, serializer);
     auto output = std::move(serializer).bytes();
     for (uint8_t o : output) {
