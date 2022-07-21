@@ -7,7 +7,6 @@ import urllib.parse
 import argparse
 
 
-
 def get_height(method, url, post_data, headers):
 
     parsed_url = urllib.parse.urlparse(url)
@@ -44,8 +43,9 @@ def check_or_do(network):
     current_height = get_height(method, url, post_data, headers)
     print("main current_height is %s, last_export_height is %s" %
           (current_height, last_export_height))
+    export_height = int(current_height) - 1000
 
-    if int(current_height) - int(last_export_height) > 10000:
+    if export_height - int(last_export_height) > 10000:
 
         # export block, kubectl exec
         export_tmp = "kubectl exec -it -n starcoin-%s starcoin-1 -- /starcoin/starcoin_db_exporter export-block-range --db-path /sc-data/%s -s %s -e %s -n %s -o /sc-data/."
@@ -54,7 +54,6 @@ def check_or_do(network):
         export_cmd = export_tmp % (network, network, start, end, network)
         print(export_cmd)
         os.system(export_cmd)
-
 
         # tar block csv file
         filename = "block_%s_%s.csv" % (start, end)
