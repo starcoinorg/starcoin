@@ -492,11 +492,18 @@ fn test_table_info_storage() -> Result<()> {
     assert!(val.is_ok());
     assert_eq!(val.unwrap(), None);
     let keys = vec![TableHandleKey(2u128), TableHandleKey(3u128)];
-    let vals = vec![TableInfoValue::new(TypeTag::U8, TypeTag::Address), TableInfoValue::new(TypeTag::Address, TypeTag::U128)];
+    let vals = vec![
+        TableInfoValue::new(TypeTag::U8, TypeTag::Address),
+        TableInfoValue::new(TypeTag::Address, TypeTag::U128),
+    ];
     storage.save_table_infos(keys.clone(), vals.clone())?;
-    let vals2 =  storage.get_table_infos(keys);
+    let vals2 = storage.get_table_infos(keys);
     assert!(vals2.is_ok());
-    let vals2 = vals2.unwrap().into_iter().map(|x| x.unwrap()).collect::<Vec<TableInfoValue>>();
+    let vals2 = vals2
+        .unwrap()
+        .into_iter()
+        .map(|x| x.unwrap())
+        .collect::<Vec<TableInfoValue>>();
     assert_eq!(vals, vals2);
     Ok(())
 }
