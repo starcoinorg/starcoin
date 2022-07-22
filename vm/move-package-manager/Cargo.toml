@@ -27,18 +27,18 @@ tokio = {version = "^1", features = ["full"]}
 
 bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
 datatest-stable = {git = "https://github.com/starcoinorg/diem-devtools", branch = "feature/pub-test-opts"}
-move-binary-format = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
-move-bytecode-verifier = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
-move-cli = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
-move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
-move-compiler = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
-move-core-types = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
-move-coverage = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
-move-disassembler = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
-move-errmapgen = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
-move-package = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
-move-unit-test = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
-move-vm-runtime = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
+move-binary-format = {git = "https://github.com/starcoinorg/move", rev = "04b173c834732ac8acf3bea49342c02520925dc6"}
+move-bytecode-verifier = {git = "https://github.com/starcoinorg/move", rev = "04b173c834732ac8acf3bea49342c02520925dc6"}
+move-cli = {git = "https://github.com/starcoinorg/move", rev = "04b173c834732ac8acf3bea49342c02520925dc6"}
+move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "04b173c834732ac8acf3bea49342c02520925dc6"}
+move-compiler = {git = "https://github.com/starcoinorg/move", rev = "04b173c834732ac8acf3bea49342c02520925dc6"}
+move-core-types = {git = "https://github.com/starcoinorg/move", rev = "04b173c834732ac8acf3bea49342c02520925dc6"}
+move-coverage = {git = "https://github.com/starcoinorg/move", rev = "04b173c834732ac8acf3bea49342c02520925dc6"}
+move-disassembler = {git = "https://github.com/starcoinorg/move", rev = "04b173c834732ac8acf3bea49342c02520925dc6"}
+move-errmapgen = {git = "https://github.com/starcoinorg/move", rev = "04b173c834732ac8acf3bea49342c02520925dc6"}
+move-package = {git = "https://github.com/starcoinorg/move", rev = "04b173c834732ac8acf3bea49342c02520925dc6"}
+move-unit-test = {git = "https://github.com/starcoinorg/move", rev = "04b173c834732ac8acf3bea49342c02520925dc6"}
+move-vm-runtime = {git = "https://github.com/starcoinorg/move", rev = "04b173c834732ac8acf3bea49342c02520925dc6"}
 resource-viewer = {path = "../resource-viewer", package = "starcoin-resource-viewer"}
 starcoin-account-provider = {path = "../../account/provider"}
 starcoin-cmd = {path = "../../cmd/starcoin"}

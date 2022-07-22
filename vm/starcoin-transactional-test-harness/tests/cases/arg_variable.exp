@@ -8,32 +8,32 @@ task 3 'run'. lines 7-7:
 
 task 4 'view'. lines 9-9:
 key 0x00000000000000000000000000000001::Account::Account {
-    authentication_key: 1b2a498ae79af7ed7cf5de317898fcee7567401b56a6f7d91e4aac3f33e90cbe
+    authentication_key: f90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16
     withdrawal_capability: copy drop store 0x00000000000000000000000000000001::Option::Option<0x00000000000000000000000000000001::Account::WithdrawCapability> {
         vec: [
             store 0x00000000000000000000000000000001::Account::WithdrawCapability {
-                account_address: 7567401b56a6f7d91e4aac3f33e90cbe
+                account_address: 662ba5a1a1da0f1c70a9762c7eeb7aaf
             },
         ]
     }
     key_rotation_capability: copy drop store 0x00000000000000000000000000000001::Option::Option<0x00000000000000000000000000000001::Account::KeyRotationCapability> {
         vec: [
             store 0x00000000000000000000000000000001::Account::KeyRotationCapability {
-                account_address: 7567401b56a6f7d91e4aac3f33e90cbe
+                account_address: 662ba5a1a1da0f1c70a9762c7eeb7aaf
             },
         ]
     }
     withdraw_events: store 0x00000000000000000000000000000001::Event::EventHandle<0x00000000000000000000000000000001::Account::WithdrawEvent> {
         counter: 0
-        guid: 00000000000000007567401b56a6f7d91e4aac3f33e90cbe
+        guid: 0000000000000000662ba5a1a1da0f1c70a9762c7eeb7aaf
     }
     deposit_events: store 0x00000000000000000000000000000001::Event::EventHandle<0x00000000000000000000000000000001::Account::DepositEvent> {
-        counter: 1
-        guid: 01000000000000007567401b56a6f7d91e4aac3f33e90cbe
+        counter: 0
+        guid: 0100000000000000662ba5a1a1da0f1c70a9762c7eeb7aaf
     }
     accept_token_events: store 0x00000000000000000000000000000001::Event::EventHandle<0x00000000000000000000000000000001::Account::AcceptTokenEvent> {
-        counter: 1
-        guid: 02000000000000007567401b56a6f7d91e4aac3f33e90cbe
+        counter: 0
+        guid: 0100000000000000662ba5a1a1da0f1c70a9762c7eeb7aaf
     }
     sequence_number: 1
 }

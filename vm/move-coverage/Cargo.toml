@@ -16,9 +16,9 @@ colored = "2.0.0"
 petgraph = "0.5.1"
 serde = {version = "1.0.130", default-features = false}
 
-move-binary-format = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
-move-bytecode-source-map = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
-move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
-move-coverage = {git = "https://github.com/starcoinorg/move", rev = "09e1a360c9749c8c58fe33ec6f312adab0541e9b"}
+move-binary-format = {git = "https://github.com/starcoinorg/move", rev = "04b173c834732ac8acf3bea49342c02520925dc6"}
+move-bytecode-source-map = {git = "https://github.com/starcoinorg/move", rev = "04b173c834732ac8acf3bea49342c02520925dc6"}
+move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "04b173c834732ac8acf3bea49342c02520925dc6"}
+move-coverage = {git = "https://github.com/starcoinorg/move", rev = "04b173c834732ac8acf3bea49342c02520925dc6"}
 [features]
 default = []
