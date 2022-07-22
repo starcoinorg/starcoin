@@ -113,7 +113,7 @@ pub struct ListResourceOption {
     /// The state tree root, default is the latest block state root
     pub state_root: Option<HashValue>,
     pub start_index: usize,
-    pub count: usize,
+    pub max_size: usize,
     //TODO support filter by type
 }
 
@@ -123,7 +123,7 @@ impl Default for ListResourceOption {
             decode: false,
             state_root: None,
             start_index: 0,
-            count: std::usize::MAX,
+            max_size: std::usize::MAX,
         }
     }
 }
