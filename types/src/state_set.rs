@@ -66,7 +66,9 @@ impl AccountStateSet {
     }
 
     pub fn resource_set(&self) -> Option<&StateSet> {
-        self.data_set(DataType::RESOURCE)
+        let ds = self.data_set(DataType::RESOURCE);
+        println!("resource_set: {:?}", ds);
+        ds
     }
 
     pub fn code_set(&self) -> Option<&StateSet> {
