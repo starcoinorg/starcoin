@@ -23,7 +23,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
 use starcoin_abi_decoder::decode_txn_payload;
-use starcoin_config::{BuiltinNetworkID, ChainNetwork};
+use starcoin_config::{genesis_key_pair, BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
 use starcoin_crypto::{HashValue, PrivateKey, ValidCryptoMaterial, ValidCryptoMaterialStringExt};
 use starcoin_dev::playground::call_contract;
@@ -349,8 +349,8 @@ impl<'a> StarcoinTestAdapter<'a> {
     }
 
     /// Resolve a raw public key into a numeric one.
-    fn resolve_public_key(&self, private_key: &RawPublicKey) -> AccountPublicKey {
-        match private_key {
+    fn resolve_public_key(&self, public_key: &RawPublicKey) -> AccountPublicKey {
+        match public_key {
             RawPublicKey::Anonymous(public_key) => public_key.clone(),
             RawPublicKey::Named(name) => self.resolve_named_public_key(name),
         }
@@ -429,6 +429,27 @@ impl<'a> StarcoinTestAdapter<'a> {
         }
         Ok(())
     }
+
+    /// Hack the account, and set account's auth key to genesis keypair
+    fn hack_account(&self, address: AccountAddress) -> Result<()> {
+        let account = self.fetch_account_resource(&address)?;
+
+        let balance = self.fetch_balance_resource(&address, STC_TOKEN_CODE_STR.to_string())?;
+        let account_data = AccountData::with_account_and_event_counts(
+            Account::new_genesis_account(address),
+            balance.token(),
+            STC_TOKEN_CODE_STR,
+            account.sequence_number(),
+            account.withdraw_events().count(),
+            account.deposit_events().count(),
+            account.accept_token_events().count(),
+            account.has_delegated_key_rotation_capability(),
+            account.has_delegated_withdrawal_capability(),
+        );
+        self.storage.apply_write_set(account_data.to_writeset())?;
+        Ok(())
+    }
+
     /// Derive the default transaction parameters from the account and balance resources fetched
     /// from storage. In the future, we are planning to allow the user to override these using
     /// command arguments.
@@ -779,7 +800,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
 
         let init_args = extra_arg.unwrap_or_default();
         {
-            // Private key mapping
+            // Public key mapping
             if let Some(additional_public_key_mapping) = init_args.public_keys {
                 for (name, public_key) in additional_public_key_mapping {
                     if public_key_mapping.contains_key(&name) {
@@ -800,27 +821,11 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             SelectableStateView::B(InMemoryStateCache::new(remote_view))
         } else {
             let net = ChainNetwork::new_builtin(init_args.network.unwrap());
-            if let Some(k) = &net.genesis_config().genesis_key_pair {
-                public_key_mapping.insert(Identifier::new("Genesis").unwrap(), k.1.clone().into());
-            }
             let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
             let data_store = ChainStateDB::mock();
             Genesis::execute_genesis_txn(&data_store, genesis_txn).unwrap();
             SelectableStateView::A(data_store)
         };
-
-        let association_public_key: AccountPublicKey =
-            BuiltinNetworkID::try_from(store.get_chain_id().unwrap())
-                .unwrap()
-                .genesis_config()
-                .association_key_pair
-                .1
-                .clone()
-                .into();
-        public_key_mapping.insert(
-            Identifier::new("StarcoinAssociation").unwrap(),
-            association_public_key.clone(),
-        );
 
         // add pre compiled modules
         if let Some(pre_compiled_lib) = pre_compiled_deps {
@@ -862,17 +867,30 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             store.apply_write_set(writes.freeze().unwrap()).unwrap();
         }
 
+        let genesis_key_pair = genesis_key_pair();
+
         let mut me = Self {
             compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps),
             default_syntax,
             public_key_mapping,
             storage: store,
-            association_public_key,
             remote_viewer,
             debug: init_args.debug,
+            association_public_key: genesis_key_pair.1.clone().into(),
         };
         me.hack_genesis_account()
             .expect("hack genesis account failure");
+
+        me.public_key_mapping.insert(
+            Identifier::new("Genesis").unwrap(),
+            genesis_key_pair.1.clone().into(),
+        );
+
+        me.hack_account(association_address()).unwrap();
+        me.public_key_mapping.insert(
+            Identifier::new("StarcoinAssociation").unwrap(),
+            genesis_key_pair.1.clone().into(),
+        );
         // auto start from a new block based on existed state.
         me.handle_new_block(None, None, None, None)
             .expect("init test adapter failed");
