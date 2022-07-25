@@ -583,11 +583,19 @@ impl RpcClient {
         address: AccountAddress,
         decode: bool,
         state_root: Option<HashValue>,
+        start_index: usize,
+        max_size: usize,
     ) -> anyhow::Result<ListResourceView> {
         self.call_rpc_blocking(|inner| {
-            inner
-                .state_client
-                .list_resource(address, Some(ListResourceOption { decode, state_root }))
+            inner.state_client.list_resource(
+                address,
+                Some(ListResourceOption {
+                    decode,
+                    state_root,
+                    start_index,
+                    max_size,
+                }),
+            )
         })
         .map_err(map_err)
     }
