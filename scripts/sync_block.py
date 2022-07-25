@@ -96,9 +96,18 @@ def check_or_do(network):
         export_snapshot_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- /starcoin/starcoin_db_exporter export-snapshot --db-path /sc-data/%s -n %s -o /sc-data/snapshot -t true" % (
             network, network, network)
         os.system(export_snapshot_cmd)
-        export_status = os.system(
+        export_state_node_status = os.system(
             "bash -c \"if [ $(less /sc-data/snapshot/manifest.csv| grep state_node | awk -F ' ' '{print$2}') -eq $(less /sc-data/snapshot/state_node | wc -l) ]; then exit 0; else exit 1;fi\"")
-        if export_status != 0:
+        export_acc_node_transaction_status = os.system(
+            "bash -c \"if [ $(less /sc-data/snapshot/manifest.csv| grep acc_node_transaction | awk -F ' ' '{print$2}') -eq $(less /sc-data/snapshot/acc_node_transaction | wc -l) ]; then exit 0; else exit 1;fi\"")
+        export_acc_node_block_status = os.system(
+            "bash -c \"if [ $(less /sc-data/snapshot/manifest.csv| grep acc_node_block | awk -F ' ' '{print$2}') -eq $(less /sc-data/snapshot/acc_node_block | wc -l) ]; then exit 0; else exit 1;fi\"")
+        export_block_status = os.system(
+            "bash -c \"if [ $(less /sc-data/snapshot/manifest.csv| grep -w block | awk -F ' ' '{print$2}') -eq $(less /sc-data/snapshot/block | wc -l) ]; then exit 0; else exit 1;fi\"")
+        export_block_info_status = os.system(
+            "bash -c \"if [ $(less /sc-data/snapshot/manifest.csv| grep block_info | awk -F ' ' '{print$2}') -eq $(less /sc-data/snapshot/block_info | wc -l) ]; then exit 0; else exit 1;fi\"")
+
+        if export_state_node_status != 0 or export_acc_node_transaction_status != 0 or export_acc_node_block_status != 0 or export_block_status != 0 or export_block_info_status != 0:
             os.system("rm -rf /sc-data/snapshot")
             os.system("mv /sc-data/snapshotbak /sc-data/snapshot")
             sys.exit(1)
