@@ -82,10 +82,23 @@ def check_or_do(network):
             network, block_list_file_tar_name, network, block_list_file_tar_name)
         os.system(cp_blocklist_tar_cmd)
 
+        # back up last snapshot cp to backdir
+        # do the increment snapshot export
+        # check the snapshot is ok or not with the manifest file
+        # if not, recover the backdir, then exit.
+        # if ok, rm backup dir, and do the next step
+        os.system("cp -r /sc-data/snapshot /sc-data/snapshotbak")
         # export snapshot
         export_snapshot_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- /starcoin/starcoin_db_exporter export-snapshot --db-path /sc-data/%s -n %s -o /sc-data/snapshot -t true" % (
             network, network, network)
         os.system(export_snapshot_cmd)
+        export_status = os.system(
+            "bash -c \"if [ $(less /sc-data/snapshot/manifest.csv| grep state_node | awk -F ' ' '{print$2}') -eq $(less /sc-data/snapshot/state_node | wc -l) ]; then exit 0; else exit 1;fi\"")
+        if export_status != 0:
+            os.system("rm -rf /sc-data/snapshot")
+            os.system("mv /sc-data/snapshotbak /sc-data/snapshot")
+            sys.exit(1)
+        os.system("rm -rf /sc-data/snapshotbak")
 
         # tar snapshot
         tar_snapshot_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- tar -czvf /sc-data/%s -C /sc-data/ %s " % (
