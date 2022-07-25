@@ -7,7 +7,6 @@ import urllib.parse
 import argparse
 
 
-
 def get_height(method, url, post_data, headers):
 
     parsed_url = urllib.parse.urlparse(url)
@@ -55,7 +54,6 @@ def check_or_do(network):
         print(export_cmd)
         os.system(export_cmd)
 
-
         # tar block csv file
         filename = "block_%s_%s.csv" % (start, end)
         file_compress_name = "%s.tar.gz" % filename
@@ -66,7 +64,8 @@ def check_or_do(network):
 
         # append and tar the block list csv file
         block_list_file_name = "block_list.csv"
-        append_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c 'echo %s >> /sc-data/%s' " % (network, filename, block_list_file_name)
+        append_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c 'echo %s >> /sc-data/%s' " % (
+            network, filename, block_list_file_name)
         block_list_file_tar_name = "%s.tar.gz" % block_list_file_name
         tar_block_list_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- tar -czvf /sc-data/%s -C /sc-data/ %s " % (
             network, block_list_file_tar_name, block_list_file_name)
@@ -84,7 +83,8 @@ def check_or_do(network):
         os.system(cp_blocklist_tar_cmd)
 
         # export snapshot
-        export_snapshot_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- /starcoin/starcoin_db_exporter export-snapshot --db-path /sc-data/%s -n %s -o /sc-data/snapshot -t true" % (network, network, network)
+        export_snapshot_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- /starcoin/starcoin_db_exporter export-snapshot --db-path /sc-data/%s -n %s -o /sc-data/snapshot -t true" % (
+            network, network, network)
         os.system(export_snapshot_cmd)
 
         # tar snapshot
@@ -103,7 +103,8 @@ def check_or_do(network):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='sync blocks for main, proxima, barnard')
+    parser = argparse.ArgumentParser(
+        description='sync blocks for main, proxima, barnard')
     parser.add_argument(
         '--net',
         metavar='net',
