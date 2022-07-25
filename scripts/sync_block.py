@@ -65,7 +65,8 @@ def check_or_do(network):
 
         # append and tar the block list csv file
         block_list_file_name = "block_list.csv"
-        append_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c 'echo %s >> /sc-data/%s' " % (network, filename, block_list_file_name)
+        append_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c 'echo %s >> /sc-data/%s' " % (
+            network, filename, block_list_file_name)
         block_list_file_tar_name = "%s.tar.gz" % block_list_file_name
         tar_block_list_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- tar -czvf /sc-data/%s -C /sc-data/ %s " % (
             network, block_list_file_tar_name, block_list_file_name)
@@ -82,9 +83,36 @@ def check_or_do(network):
             network, block_list_file_tar_name, network, block_list_file_tar_name)
         os.system(cp_blocklist_tar_cmd)
 
+        # update the last_export_height
+        os.system("echo %s > ./last_export_height.txt" % end)
+        os.system("aws s3api put-object --bucket main.starcoin.org --key %s/last_export_height.txt --body ./last_export_height.txt" % network)
+
+        # back up last snapshot cp to backdir
+        # do the increment snapshot export
+        # check the snapshot is ok or not with the manifest file
+        # if not, recover the backdir, then exit.
+        # if ok, rm backup dir, and do the next step
+        os.system("cp -r /sc-data/snapshot /sc-data/snapshotbak")
         # export snapshot
-        export_snapshot_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- /starcoin/starcoin_db_exporter export-snapshot --db-path /sc-data/%s -n %s -o /sc-data/snapshot -t true" % (network, network, network)
+        export_snapshot_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- /starcoin/starcoin_db_exporter export-snapshot --db-path /sc-data/%s -n %s -o /sc-data/snapshot -t true" % (
+            network, network, network)
         os.system(export_snapshot_cmd)
+        export_state_node_status = os.system(
+            "bash -c \"if [ $(less /sc-data/snapshot/manifest.csv| grep state_node | awk -F ' ' '{print$2}') -eq $(less /sc-data/snapshot/state_node | wc -l) ]; then exit 0; else exit 1;fi\"")
+        export_acc_node_transaction_status = os.system(
+            "bash -c \"if [ $(less /sc-data/snapshot/manifest.csv| grep acc_node_transaction | awk -F ' ' '{print$2}') -eq $(less /sc-data/snapshot/acc_node_transaction | wc -l) ]; then exit 0; else exit 1;fi\"")
+        export_acc_node_block_status = os.system(
+            "bash -c \"if [ $(less /sc-data/snapshot/manifest.csv| grep acc_node_block | awk -F ' ' '{print$2}') -eq $(less /sc-data/snapshot/acc_node_block | wc -l) ]; then exit 0; else exit 1;fi\"")
+        export_block_status = os.system(
+            "bash -c \"if [ $(less /sc-data/snapshot/manifest.csv| grep -w block | awk -F ' ' '{print$2}') -eq $(less /sc-data/snapshot/block | wc -l) ]; then exit 0; else exit 1;fi\"")
+        export_block_info_status = os.system(
+            "bash -c \"if [ $(less /sc-data/snapshot/manifest.csv| grep block_info | awk -F ' ' '{print$2}') -eq $(less /sc-data/snapshot/block_info | wc -l) ]; then exit 0; else exit 1;fi\"")
+
+        if export_state_node_status != 0 or export_acc_node_transaction_status != 0 or export_acc_node_block_status != 0 or export_block_status != 0 or export_block_info_status != 0:
+            os.system("rm -rf /sc-data/snapshot")
+            os.system("mv /sc-data/snapshotbak /sc-data/snapshot")
+            sys.exit(1)
+        os.system("rm -rf /sc-data/snapshotbak")
 
         # tar snapshot
         tar_snapshot_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- tar -czvf /sc-data/%s -C /sc-data/ %s " % (
@@ -96,13 +124,10 @@ def check_or_do(network):
             network, "snapshot.tar.gz", network, "snapshot.tar.gz")
         os.system(cp_snapshot_tar_cmd)
 
-        # update the last_export_height
-        os.system("echo %s > ./last_export_height.txt" % end)
-        os.system("aws s3api put-object --bucket main.starcoin.org --key %s/last_export_height.txt --body ./last_export_height.txt" % network)
-
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='sync blocks for main, proxima, barnard')
+    parser = argparse.ArgumentParser(
+        description='sync blocks for main, proxima, barnard')
     parser.add_argument(
         '--net',
         metavar='net',
