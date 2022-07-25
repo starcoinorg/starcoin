@@ -82,6 +82,10 @@ def check_or_do(network):
             network, block_list_file_tar_name, network, block_list_file_tar_name)
         os.system(cp_blocklist_tar_cmd)
 
+        # update the last_export_height
+        os.system("echo %s > ./last_export_height.txt" % end)
+        os.system("aws s3api put-object --bucket main.starcoin.org --key %s/last_export_height.txt --body ./last_export_height.txt" % network)
+
         # back up last snapshot cp to backdir
         # do the increment snapshot export
         # check the snapshot is ok or not with the manifest file
@@ -109,10 +113,6 @@ def check_or_do(network):
         cp_snapshot_tar_cmd = "timeout 30 bash -c 'export AWS_REGION=ap-northeast-1;skbn cp --src k8s://starcoin-%s/starcoin-1/starcoin/sc-data/%s --dst s3://main.starcoin.org/%s/%s '" % (
             network, "snapshot.tar.gz", network, "snapshot.tar.gz")
         os.system(cp_snapshot_tar_cmd)
-
-        # update the last_export_height
-        os.system("echo %s > ./last_export_height.txt" % end)
-        os.system("aws s3api put-object --bucket main.starcoin.org --key %s/last_export_height.txt --body ./last_export_height.txt" % network)
 
 
 if __name__ == "__main__":
