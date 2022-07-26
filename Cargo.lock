@@ -1855,6 +1855,8 @@ dependencies = [
  "starcoin-executor",
  "starcoin-genesis",
  "starcoin-logger",
+ "starcoin-resource-viewer",
+ "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-transaction-builder",

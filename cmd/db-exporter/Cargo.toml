@@ -22,6 +22,8 @@ starcoin-consensus = { path = "../../consensus" }
 starcoin-transaction-builder = { path = "../../vm/transaction-builder"}
 starcoin-account-api = { path = "../../account/api"}
 starcoin-accumulator = { path = "../../commons/accumulator", package = "starcoin-accumulator" }
+starcoin-resource-viewer = {path = "../../vm/resource-viewer"}
+starcoin-state-tree = {path = "../../state/state-tree"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 csv = "~1"
 serde = "~1"
