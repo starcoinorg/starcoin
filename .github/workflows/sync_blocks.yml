@@ -1,7 +1,7 @@
 name: Sync Blocks Cron
 
 on:
-  # workflow_dispatch:
+  workflow_dispatch:
   schedule:
     - cron: '0 5,17 * * *'
 
