@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, format_err, Result};
+use bcs_ext::BCSCodec;
 use bcs_ext::Sample;
 use clap::IntoApp;
 use clap::Parser;
-use bcs_ext::BCSCodec;
 use csv::Writer;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use serde::ser::SerializeMap;
@@ -25,7 +25,6 @@ use starcoin_executor::account::{create_account_txn_sent_as_association, peer_to
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_genesis::Genesis;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
-use starcoin_state_tree::StateTree;
 use starcoin_statedb::ChainStateDB;
 use starcoin_statedb::ChainStateReader;
 use starcoin_statedb::ChainStateWriter;
@@ -42,10 +41,8 @@ use starcoin_storage::{
     STATE_NODE_PREFIX_NAME, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
 };
 use starcoin_transaction_builder::build_signed_empty_txn;
-use starcoin_types::access_path::DataType;
 use starcoin_types::account::Account;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::account_state::AccountState;
 use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::language_storage::{StructTag, TypeTag};
 use starcoin_types::startup_info::{SnapshotRange, StartupInfo};
@@ -54,12 +51,10 @@ use starcoin_types::transaction::Transaction;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::parser::parse_type_tag;
 use std::collections::HashMap;
-use std::convert::TryInto;
 use std::fmt::Debug;
 use std::fmt::Formatter;
 use std::fs::File;
 use std::fs::OpenOptions;
-use std::io::Read;
 use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
 use std::path::PathBuf;
@@ -1573,10 +1568,10 @@ pub fn export_resource(
         .ok_or_else(|| anyhow::anyhow!("block {} not exist", block_id))?;
 
     let root = block.header.state_root();
-    let statedb = ChainStateDB::new(storage.clone(), Some(root));
+    let statedb = ChainStateDB::new(storage, Some(root));
     let value_annotator = MoveValueAnnotator::new(&statedb);
 
-    let state_tree = StateTree::<AccountAddress>::new(storage.clone(), Some(root));
+    // let state_tree = StateTree::<AccountAddress>::new(storage.clone(), Some(root));
 
     let mut csv_writer = csv::WriterBuilder::new().from_path(output)?;
 
@@ -1640,10 +1635,12 @@ pub fn export_resource(
         // let annotated_struct = value_annotator.view_struct(resource_struct_tag.clone(), d.as_slice())?;
         // resource_set.
         let mut resource: Option<Value>;
-        // resource_set.into_iter()
 
-        println!("resource_struct_tag.to_string(): {:?}", resource_struct_tag.to_string());
-        println!("account_address: {:?}", account_address);
+        // println!("resource_struct_tag.to_string(): {:?}", resource_struct_tag.to_string());
+        // println!(
+        //     "account_address: {:?}", account_address
+        //    );
+
         for (k, v) in resource_set.iter() {
             let struct_tag = StructTag::decode(k.as_slice())?;
             if struct_tag == resource_struct_tag {
@@ -1651,7 +1648,7 @@ pub fn export_resource(
                 //     annotator.view_struct(struct_tag.clone(), v.as_slice())?;
                 let annotated_struct =
                     value_annotator.view_struct(resource_struct_tag.clone(), v.as_slice())?;
-                    // value_annotator.view_struct(resource_struct_tag.clone(), x.1.as_slice())?;
+                // value_annotator.view_struct(resource_struct_tag.clone(), x.1.as_slice())?;
                 let resource_struct = annotated_struct;
                 let resource_json_value = serde_json::to_value(MoveStruct(resource_struct))?;
                 resource = Some(resource_json_value);
