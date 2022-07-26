@@ -52,7 +52,7 @@ impl Account {
     /// This function returns distinct values upon every call.
     pub fn new() -> Self {
         let (privkey, pubkey) = KeyGen::from_os_rng().generate_keypair();
-        Self::with_keypair(privkey, pubkey, None)
+        Self::with_keypair(privkey.into(), pubkey.into(), None)
     }
 
     /// Creates a new account with the given keypair.
@@ -60,14 +60,14 @@ impl Account {
     /// Like with [`Account::new`], the account returned by this constructor is a purely logical
     /// entity.
     pub fn with_keypair(
-        privkey: Ed25519PrivateKey,
-        pubkey: Ed25519PublicKey,
+        privkey: AccountPrivateKey,
+        pubkey: AccountPublicKey,
         addr: Option<AccountAddress>,
     ) -> Self {
-        let addr = addr.unwrap_or_else(|| crate::account_address::from_public_key(&pubkey));
+        let addr = addr.unwrap_or_else(|| pubkey.derived_address());
         Account {
             addr,
-            private_key: Arc::new(AccountPrivateKey::Single(privkey)),
+            private_key: Arc::new(privkey),
         }
     }
 
@@ -354,7 +354,7 @@ impl AccountData {
         balance_token_code: &str,
         sequence_number: u64,
     ) -> Self {
-        let account = Account::with_keypair(privkey, pubkey, addr);
+        let account = Account::with_keypair(privkey.into(), pubkey.into(), addr);
         Self::with_account(account, balance, balance_token_code, sequence_number)
     }
 

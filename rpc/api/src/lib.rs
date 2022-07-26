@@ -4,6 +4,7 @@
 use jsonrpc_core::{BoxFuture, Error};
 
 pub type FutureResult<T> = BoxFuture<Result<T, Error>>;
+pub use jsonrpc_core::Params;
 
 pub mod account;
 pub mod chain;
