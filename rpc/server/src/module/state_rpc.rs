@@ -269,6 +269,8 @@ where
                         .cloned()
                         .unwrap_or_default()
                         .iter()
+                        .skip(option.start_index)
+                        .take(option.max_size)
                         .map(|(k, v)| {
                             let struct_tag = StructTag::decode(k.as_slice())?;
                             let decoded = if option.decode {

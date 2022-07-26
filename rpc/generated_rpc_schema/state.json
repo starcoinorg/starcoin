@@ -1822,6 +1822,18 @@
                 "default": false,
                 "type": "boolean"
               },
+              "max_size": {
+                "default": 18446744073709551615,
+                "type": "integer",
+                "format": "uint",
+                "minimum": 0.0
+              },
+              "start_index": {
+                "default": 0,
+                "type": "integer",
+                "format": "uint",
+                "minimum": 0.0
+              },
               "state_root": {
                 "description": "The state tree root, default is the latest block state root",
                 "default": null,

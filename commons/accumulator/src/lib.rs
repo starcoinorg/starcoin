@@ -1,6 +1,5 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-
 use crate::accumulator_info::AccumulatorInfo;
 use crate::node_index::NodeIndex;
 use crate::proof::AccumulatorProof;
@@ -9,6 +8,8 @@ use anyhow::{format_err, Result};
 pub use node::AccumulatorNode;
 use parking_lot::Mutex;
 use starcoin_crypto::HashValue;
+#[cfg(test)]
+use std::collections::HashMap;
 use std::sync::Arc;
 pub use tree_store::AccumulatorTreeStore;
 
@@ -106,6 +107,11 @@ impl MerkleAccumulator {
             info.unwrap_or_else(|| self.get_info()),
             self.tree.lock().store.clone(),
         )
+    }
+
+    #[cfg(test)]
+    fn get_index_frozen_subtrees(&self) -> HashMap<NodeIndex, HashValue> {
+        self.tree.lock().get_index_frozen_subtrees()
     }
 }
 
