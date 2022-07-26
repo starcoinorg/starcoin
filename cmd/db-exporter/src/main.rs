@@ -1570,8 +1570,6 @@ pub fn export_resource(
     let statedb = ChainStateDB::new(storage, Some(root));
     let value_annotator = MoveValueAnnotator::new(&statedb);
 
-    // let state_tree = StateTree::<AccountAddress>::new(storage.clone(), Some(root));
-
     let mut csv_writer = csv::WriterBuilder::new().from_path(output)?;
 
     // write csv header.
@@ -1583,10 +1581,8 @@ pub fn export_resource(
         csv_writer.write_record(None::<&[u8]>)?;
     }
 
-    let global_states_iter = statedb.dump_iter()?;
-    for (account_address, account_state_set) in global_states_iter {
+    for (account_address, account_state_set) in statedb.dump_iter()? {
         let resource_set = account_state_set.resource_set().unwrap();
-
         for (k, v) in resource_set.iter() {
             let struct_tag = StructTag::decode(k.as_slice())?;
             if struct_tag == resource_struct_tag {
