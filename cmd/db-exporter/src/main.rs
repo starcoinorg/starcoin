@@ -10,7 +10,6 @@ use csv::Writer;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
-use serde_json::Value;
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
@@ -1585,74 +1584,17 @@ pub fn export_resource(
     }
 
     let global_states_iter = statedb.dump_iter()?;
-
-    // for (address_bytes, account_state_bytes) in state_tree.dump()?.iter() {
-    //     let a = address_bytes;
-    //     let b = account_state_bytes;
-    // }
-    // let global_states = state_tree.dump()?;
-
-    // for (address_bytes, account_state_bytes) in global_states.iter() {
-    //     let account: AccountAddress = bcs_ext::from_bytes(address_bytes)?;
-    //     let account_state: AccountState = account_state_bytes.as_slice().try_into()?;
-    //     let resource_root = account_state.storage_roots()[DataType::RESOURCE.storage_index()];
-    //     let resource = match resource_root {
-    //         None => None,
-    //         Some(root) => {
-    //             let account_tree = StateTree::<StructTag>::new(storage.clone(), Some(root));
-    //             let data = account_tree.get(&resource_struct_tag)?;
-
-    //             if let Some(d) = data {
-    //                 let annotated_struct =
-    //                     value_annotator.view_struct(resource_struct_tag.clone(), d.as_slice())?;
-    //                 let resource = annotated_struct;
-    //                 let resource_json_value = serde_json::to_value(MoveStruct(resource))?;
-    //                 Some(resource_json_value)
-    //             } else {
-    //                 None
-    //             }
-    //         }
-    //     };
-    // }
-    // for (account_address, account_state_set) in global_states_iter {
     for (account_address, account_state_set) in global_states_iter {
-        // for (address_bytes, account_state_bytes) in global_states_iter {
-        // let account: AccountAddress = bcs_ext::from_bytes(address_bytes)?;
-        // let account: AccountAddress = bcs_ext::from_bytes(address_bytes)?;
-        // let account_state: AccountState = account_state_bytes.as_slice().try_into()?;
-        // account_stat
-        // let account_state: AccountState = account_state_set.try_into()?;
-        // let resource_root = account_state.storage_roots()[DataType::RESOURCE.storage_index()];
-        // account_state_set.;
-        // let resource = account_state_set.resource_set().unwrap(); //.filter(|x| x.0 == resource_struct_tag);
-        // for x in resource.iter() {
-
-        // }
-        // account_state_bytes.
-        // account_state_set.resource_set();
-        // let address_bytes = account_address.into_bytes();
         let resource_set = account_state_set.resource_set().unwrap();
-        // let annotated_struct = value_annotator.view_struct(resource_struct_tag.clone(), d.as_slice())?;
-        // resource_set.
-        let mut resource: Option<Value>;
-
-        // println!("resource_struct_tag.to_string(): {:?}", resource_struct_tag.to_string());
-        // println!(
-        //     "account_address: {:?}", account_address
-        //    );
 
         for (k, v) in resource_set.iter() {
             let struct_tag = StructTag::decode(k.as_slice())?;
             if struct_tag == resource_struct_tag {
-                // let struct_data =
-                //     annotator.view_struct(struct_tag.clone(), v.as_slice())?;
                 let annotated_struct =
                     value_annotator.view_struct(resource_struct_tag.clone(), v.as_slice())?;
-                // value_annotator.view_struct(resource_struct_tag.clone(), x.1.as_slice())?;
                 let resource_struct = annotated_struct;
                 let resource_json_value = serde_json::to_value(MoveStruct(resource_struct))?;
-                resource = Some(resource_json_value);
-                // Some(serde_json::to_value(MoveStruct(&x.1)))
+                let resource = Some(resource_json_value);
                 let record: Option<Vec<_>> = resource
                     .as_ref()
                     .map(|v| fields.iter().map(|f| v.pointer(f.as_str())).collect());
@@ -1661,77 +1603,9 @@ pub fn export_resource(
                     record.insert(0, Some(&account_value));
                     csv_writer.serialize(record)?;
                 }
+                break;
             }
-            // x.0.bytes()
-            // println!("x0: {:?}", x.0);
-            // println!("x1: {:?}", x.1);
-            // x.0
-            // println!("x2: {:?}", serde_json::to_string(&x.0)?);
-            // let str = std::str::from_utf8(&x.0).unwrap_or("");
-            // let str = String::from_utf8(x.0.clone()).unwrap(); //.unwrap_or("");
-
-            // println!("x3: {:?}", bcs_ext::from_bytes(&x.0)?);
-            // println!("x4: {:?}", bcs_ext::from_bytes<char>(&x.0));
-            // let u1: &str = x.0.into_iter().map(|x| x as char).collect();
-            // let u1: &str = x.0.into_iter().fold(String::new(), |x, y| x as char as String + y as char as String);
-            // .fold(String::new(), |r, c| r + c.as_str() + ".");
-
-            // let str = String::from(x.0.clone()).unwrap(); //.unwrap_or("");
-            // println!("get str: {:?}", str);
-            // if std::str::from_utf8(&x.0).unwrap_or("") == resource_struct_tag.to_string() {
-            // if str == resource_struct_tag.to_string() {
-
-            // }
         }
-        // account_state_set.try_into().sto;
-        // account_address.
-        // let resource_set = account_state_set.data_set(DataType::RESOURCE);
-        // let account_state: AccountState = account_state_set.into(); // .into();
-        // account_state_set.into()
-
-        // account_address.
-
-        // let record: Option<Vec<_>> = resource
-        //     .as_ref()
-        //     .map(|v| fields.iter().map(|f| v.pointer(f.as_str())).collect());
-        // if let Some(mut record) = record {
-        //     let account_value = serde_json::to_value(account).unwrap();
-        //     record.insert(0, Some(&account_value));
-        //     csv_writer.serialize(record)?;
-        // }
-        // println!("resource set: {:?}", resource_set);
-        // let resource_root = account_state.storage_roots()[DataType::RESOURCE.storage_index()];
-        // let resource_root = account_state_set.try_into().storage_roots()[DataType::RESOURCE.storage_index()];
-        // let resource = match resource_root {
-        //     None => None,
-        //     Some(root) => {
-        //         let account_tree = StateTree::<StructTag>::new(storage.clone(), Some(root));
-        //         let data = account_tree.get(&resource_struct_tag)?;
-
-        //         if let Some(d) = data {
-        //             let annotated_struct =
-        //                 value_annotator.view_struct(resource_struct_tag.clone(), d.as_slice())?;
-        //             let resource = annotated_struct;
-        //             let resource_json_value = serde_json::to_value(MoveStruct(resource))?;
-        //             Some(resource_json_value)
-        //         } else {
-        //             None
-        //         }
-        //     }
-        // };
-
-        // println!("resource: {:?}", resource);
-
-        // write csv record.
-        // let record: Option<Vec<_>> = resource
-        //     // .as_ref()
-        //     .map(|v| fields.iter().map(|f| v.pointer(f.as_str())).collect());
-        // if let Some(mut record) = record {
-        //     // let account_value = serde_json::to_value(account).unwrap();
-        //     let account_value = serde_json::to_value(account_address).unwrap();
-        //     record.insert(0, Some(&account_value));
-        //     csv_writer.serialize(record)?;
-        // }
     }
     csv_writer.flush()?;
     Ok(())
