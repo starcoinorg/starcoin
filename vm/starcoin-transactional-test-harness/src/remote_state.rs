@@ -1,11 +1,13 @@
 use anyhow::{anyhow, Result};
-use jsonrpc_client_transports::RpcChannel;
+use jsonrpc_client_transports::{RawClient, RpcChannel};
 use move_binary_format::errors::VMError;
 use move_core_types::resolver::{ModuleResolver, ResourceResolver};
+use serde_json::Value;
 use starcoin_crypto::HashValue;
 
 use starcoin_rpc_api::state::StateApiClient;
 use starcoin_rpc_api::types::{BlockView, StateWithProofView};
+use starcoin_rpc_api::Params;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_types::access_path::{AccessPath, DataPath};
 use starcoin_types::account_address::AccountAddress;
@@ -179,13 +181,15 @@ where
     }
 }
 
+//TODO migrate this to rpc client crate.
 #[derive(Clone)]
-pub struct RemoteStateAsyncView {
+pub struct RemoteRpcAsyncClient {
     state_client: StateApiClient,
+    raw_client: RawClient,
     state_root: HashValue,
 }
 
-impl RemoteStateAsyncView {
+impl RemoteRpcAsyncClient {
     pub async fn from_url(rpc_url: &str, block_number: Option<u64>) -> Result<Self> {
         let rpc_channel: RpcChannel = jsonrpc_client_transports::transports::http::connect(rpc_url)
             .await
@@ -209,8 +213,10 @@ impl RemoteStateAsyncView {
             }
         };
         let state_client: starcoin_rpc_api::state::StateApiClient = rpc_channel.clone().into();
+        let raw_client = rpc_channel.clone().into();
         Ok(Self {
             state_client,
+            raw_client,
             state_root,
         })
     }
@@ -266,15 +272,22 @@ impl RemoteStateAsyncView {
             .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))?;
         Ok(state_with_proof.state.map(|v| v.0))
     }
+
+    pub async fn call_api(&self, method: &str, params: Params) -> Result<Value> {
+        self.raw_client
+            .call_method(method, params)
+            .await
+            .map_err(|e| anyhow!(format!("{}", e)))
+    }
 }
 
 #[derive(Clone)]
-pub struct RemoteStateView {
-    svc: RemoteStateAsyncView,
+pub struct RemoteViewer {
+    svc: RemoteRpcAsyncClient,
     rt: Arc<Runtime>,
 }
 
-impl RemoteStateView {
+impl RemoteViewer {
     pub fn from_url(rpc_url: &str, block_number: Option<u64>) -> Result<Self> {
         let rt = tokio::runtime::Builder::new_multi_thread()
             .thread_name("remote-state-worker")
@@ -282,7 +295,7 @@ impl RemoteStateView {
             .build()?;
 
         let v =
-            rt.block_on(async { RemoteStateAsyncView::from_url(rpc_url, block_number).await })?;
+            rt.block_on(async { RemoteRpcAsyncClient::from_url(rpc_url, block_number).await })?;
 
         Ok(Self {
             svc: v,
@@ -297,9 +310,14 @@ impl RemoteStateView {
         let handle = self.rt.handle().clone();
         handle.block_on(self.svc.get_modules_async(addr))
     }
+
+    pub fn call_api(&self, method: &str, params: Params) -> Result<Value> {
+        let handle = self.rt.handle().clone();
+        handle.block_on(self.svc.call_api(method, params))
+    }
 }
 
-impl ModuleResolver for RemoteStateView {
+impl ModuleResolver for RemoteViewer {
     type Error = VMError;
 
     fn get_module(&self, module_id: &ModuleId) -> VMResult<Option<Vec<u8>>> {
@@ -308,7 +326,7 @@ impl ModuleResolver for RemoteStateView {
     }
 }
 
-impl ResourceResolver for RemoteStateView {
+impl ResourceResolver for RemoteViewer {
     type Error = PartialVMError;
     fn get_resource(
         &self,
@@ -320,7 +338,7 @@ impl ResourceResolver for RemoteStateView {
     }
 }
 
-impl StateView for RemoteStateView {
+impl StateView for RemoteViewer {
     fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
         match &access_path.path {
             DataPath::Code(m) => Ok(self

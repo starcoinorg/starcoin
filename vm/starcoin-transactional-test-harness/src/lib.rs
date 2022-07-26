@@ -1,7 +1,6 @@
 use crate::in_memory_state_cache::InMemoryStateCache;
-use crate::remote_state::{RemoteStateView, SelectableStateView};
+use crate::remote_state::{RemoteViewer, SelectableStateView};
 use anyhow::{bail, Result};
-use itertools::Itertools;
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
 use move_compiler::compiled_unit::CompiledUnitEnum;
 use move_compiler::shared::{NumberFormat, NumericalAddress};
@@ -22,15 +21,17 @@ use move_transactional_test_runner::{
 };
 use serde::Deserialize;
 use serde::Serialize;
-use starcoin_config::{BuiltinNetworkID, ChainNetwork};
-use starcoin_crypto::ed25519::Ed25519PrivateKey;
-use starcoin_crypto::{HashValue, PrivateKey, ValidCryptoMaterial, ValidCryptoMaterialStringExt};
+use serde_json::Value;
+use starcoin_abi_decoder::decode_txn_payload;
+use starcoin_config::{genesis_key_pair, BuiltinNetworkID, ChainNetwork};
+use starcoin_crypto::HashValue;
 use starcoin_dev::playground::call_contract;
 use starcoin_genesis::Genesis;
 use starcoin_rpc_api::types::{
-    ContractCall, FunctionIdView, TransactionArgumentView, TransactionEventView,
-    TransactionOutputAction, TypeTagView,
+    ContractCall, FunctionIdView, SignedUserTransactionView, TransactionArgumentView,
+    TransactionOutputView, TransactionStatusView, TypeTagView,
 };
+use starcoin_rpc_api::Params;
 use starcoin_state_api::{ChainStateWriter, StateReaderExt};
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::account::{Account, AccountData};
@@ -45,8 +46,8 @@ use starcoin_vm_types::account_config::{
 };
 
 use clap::Parser;
-use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
-use starcoin_vm_types::transaction::{DryRunTransaction, TransactionOutput};
+use starcoin_vm_types::transaction::authenticator::AccountPrivateKey;
+use starcoin_vm_types::transaction::SignedUserTransaction;
 use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_vm_types::{
     account_config::BalanceResource,
@@ -61,57 +62,11 @@ use starcoin_vm_types::{
     transaction_argument::convert_txn_args,
     vm_status::KeptVMStatus,
 };
-use std::convert::TryFrom;
 use std::{collections::BTreeMap, convert::TryInto, path::Path, str::FromStr};
 use stdlib::{starcoin_framework_named_addresses, G_PRECOMPILED_STARCOIN_FRAMEWORK};
 
 mod in_memory_state_cache;
 pub mod remote_state;
-
-fn parse_ed25519_key<T: ValidCryptoMaterial>(s: &str) -> Result<T> {
-    Ok(T::from_encoded_string(s)?)
-}
-
-fn parse_named_key<T: ValidCryptoMaterial>(s: &str) -> Result<(Identifier, T)> {
-    let before_after = s.split('=').collect::<Vec<_>>();
-
-    if before_after.len() != 2 {
-        bail!(
-            "Invalid named key assignment. Must be of the form <key_name>=<key>, but found '{}'",
-            s
-        );
-    }
-
-    let name = Identifier::new(before_after[0])
-        .map_err(|_| anyhow::format_err!("Invalid key name '{}'", s))?;
-    let key = parse_ed25519_key(before_after[1])?;
-
-    Ok((name, key))
-}
-
-/// A raw private key -- either a literal or an unresolved name.
-#[derive(Debug)]
-enum RawPublicKey {
-    Named(Identifier),
-    Anonymous(AccountPublicKey),
-}
-impl RawPublicKey {
-    fn parse(s: &str) -> Result<Self> {
-        if let Ok(private_key) = parse_ed25519_key(s) {
-            return Ok(Self::Anonymous(private_key));
-        }
-        let name = Identifier::new(s)
-            .map_err(|_| anyhow::format_err!("Failed to parse '{}' as private key.", s))?;
-        Ok(Self::Named(name))
-    }
-}
-impl FromStr for RawPublicKey {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::parse(s)
-    }
-}
 
 #[derive(Parser, Debug, Default)]
 pub struct ExtraInitArgs {
@@ -126,33 +81,27 @@ pub struct ExtraInitArgs {
     /// genesis with the network
     network: Option<BuiltinNetworkID>,
 
-    #[clap(long = "public-keys",
-    parse(try_from_str = parse_named_key),
-    takes_value(true),
-    multiple_values(true),
-    multiple_occurrences(true))]
-    public_keys: Option<Vec<(Identifier, AccountPublicKey)>>,
-    // #[clap(long = "private-keys", parse(try_from_str = parse_named_private_key))]
-    // private_keys: Option<Vec<(Identifier, Ed25519PrivateKey)>>,
+    #[clap(
+        long = "public-keys",
+        takes_value(true),
+        multiple_values(true),
+        multiple_occurrences(true)
+    )]
+    /// the `public-keys` option is deprecated, please remove it.
+    public_keys: Option<Vec<String>>,
+
+    #[clap(long = "debug")]
+    /// enable debug mode, output more info to stderr.
+    debug: bool,
 }
 
 /// Starcoin-specific arguments for the publish command.
 #[derive(Parser, Debug)]
-pub struct StarcoinPublishArgs {
-    #[clap(short = 'k', long = "public-key")]
-    public_key: Option<RawPublicKey>,
-}
+pub struct StarcoinPublishArgs {}
 
 /// Starcoin-specific arguments for the run command,
 #[derive(Parser, Debug)]
-pub struct StarcoinRunArgs {
-    #[clap(short = 'k', long = "public-key")]
-    public_key: Option<RawPublicKey>,
-
-    #[clap(short, long)]
-    /// print detailed outputs
-    verbose: bool,
-}
+pub struct StarcoinRunArgs {}
 
 #[derive(clap::Args, Debug)]
 #[clap(name = "faucet")]
@@ -161,8 +110,6 @@ struct FaucetSub {
     address: RawAddress,
     #[clap(long = "amount", default_value = "100000000000")]
     initial_balance: u128,
-    #[clap(long = "public-key", parse(try_from_str=AccountPublicKey::from_encoded_string))]
-    public_key: Option<AccountPublicKey>,
 }
 
 #[derive(clap::Args, Debug)]
@@ -188,6 +135,17 @@ struct CallSub {
     type_args: Vec<TypeTagView>,
 }
 
+#[derive(Debug, Parser)]
+#[clap(name = "call-api")]
+pub struct CallAPISub {
+    #[clap(name = "method")]
+    /// api method to call, example: node.info
+    method: String,
+    #[clap(name = "params", default_value = "", parse(try_from_str=parse_params))]
+    /// api params, should be a json array string
+    params: Params,
+}
+
 #[derive(Parser, Debug)]
 pub enum StarcoinSubcommands {
     #[clap(name = "faucet")]
@@ -196,8 +154,6 @@ pub enum StarcoinSubcommands {
         address: RawAddress,
         #[clap(long = "amount", default_value = "100000000000")]
         initial_balance: u128,
-        #[clap(long = "public-key", parse(try_from_str=AccountPublicKey::from_encoded_string))]
-        public_key: Option<AccountPublicKey>,
     },
 
     #[clap(name = "block")]
@@ -220,6 +176,23 @@ pub enum StarcoinSubcommands {
         #[clap(long = "type-args", short = 't')]
         type_args: Vec<TypeTagView>,
     },
+    #[clap(name = "call-api")]
+    CallAPI {
+        #[clap(name = "method")]
+        /// api name to call, example: node.info
+        method: String,
+        #[clap(name = "params", default_value = "", parse(try_from_str=parse_params))]
+        /// api params, should be a json array string
+        params: Params,
+    },
+}
+
+fn parse_params(params: &str) -> Result<Params> {
+    let params = match params.trim() {
+        "" => Params::None,
+        param => serde_json::from_str(param)?,
+    };
+    Ok(params)
 }
 
 impl From<FaucetSub> for StarcoinSubcommands {
@@ -227,7 +200,6 @@ impl From<FaucetSub> for StarcoinSubcommands {
         Self::Faucet {
             address: sub.address,
             initial_balance: sub.initial_balance,
-            public_key: sub.public_key,
         }
     }
 }
@@ -253,13 +225,25 @@ impl From<CallSub> for StarcoinSubcommands {
     }
 }
 
+impl From<CallAPISub> for StarcoinSubcommands {
+    fn from(sub: CallAPISub) -> Self {
+        Self::CallAPI {
+            method: sub.method,
+            params: sub.params,
+        }
+    }
+}
+
 impl clap::Args for StarcoinSubcommands {
     fn augment_args(cmd: clap::Command<'_>) -> clap::Command<'_> {
         let faucet = FaucetSub::augment_args(clap::Command::new("faucet"));
         let block = BlockSub::augment_args(clap::Command::new("block"));
         let call = CallSub::augment_args(clap::Command::new("call"));
-
-        cmd.subcommand(faucet).subcommand(block).subcommand(call)
+        let call_api = CallAPISub::augment_args(clap::Command::new("call-api"));
+        cmd.subcommand(faucet)
+            .subcommand(block)
+            .subcommand(call)
+            .subcommand(call_api)
     }
 
     fn augment_args_for_update(_cmd: clap::Command<'_>) -> clap::Command<'_> {
@@ -268,21 +252,23 @@ impl clap::Args for StarcoinSubcommands {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct TransactionResult {
+struct TransactionWithOutput {
+    pub txn: SignedUserTransactionView,
+    pub output: TransactionOutputView,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct SimpleTransactionResult {
     gas_used: u64,
-    status: TransactionStatus,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    write_set: Option<Vec<TransactionOutputAction>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    events: Option<Vec<TransactionEventView>>,
+    status: TransactionStatusView,
 }
 
 pub struct StarcoinTestAdapter<'a> {
     compiled_state: CompiledState<'a>,
-    storage: SelectableStateView<ChainStateDB, InMemoryStateCache<RemoteStateView>>,
+    storage: SelectableStateView<ChainStateDB, InMemoryStateCache<RemoteViewer>>,
     default_syntax: SyntaxChoice,
-    public_key_mapping: BTreeMap<Identifier, AccountPublicKey>,
-    association_public_key: AccountPublicKey,
+    remote_viewer: Option<RemoteViewer>,
+    debug: bool,
 }
 
 /// Parameters *required* to create a Starcoin transaction.
@@ -295,20 +281,11 @@ struct TransactionParameters {
 }
 
 impl<'a> StarcoinTestAdapter<'a> {
-    /// Look up the named private key in the mapping.
-    fn resolve_named_public_key(&self, s: &IdentStr) -> AccountPublicKey {
-        if let Some(public_key) = self.public_key_mapping.get(s) {
-            return public_key.clone();
-        }
-        panic!("Failed to resolve private key '{}'", s)
-    }
-
-    /// Resolve a raw public key into a numeric one.
-    fn resolve_public_key(&self, private_key: &RawPublicKey) -> AccountPublicKey {
-        match private_key {
-            RawPublicKey::Anonymous(public_key) => public_key.clone(),
-            RawPublicKey::Named(name) => self.resolve_named_public_key(name),
-        }
+    fn sign(&self, raw_txn: RawUserTransaction) -> SignedUserTransaction {
+        let keypair = genesis_key_pair();
+        let account_private_key: AccountPrivateKey = keypair.0.into();
+        let auth = account_private_key.sign(&raw_txn);
+        SignedUserTransaction::new(raw_txn, auth)
     }
 
     /// Obtain a Rust representation of the account resource from storage, which is used to derive
@@ -384,6 +361,30 @@ impl<'a> StarcoinTestAdapter<'a> {
         }
         Ok(())
     }
+
+    /// Hack the account, and set account's auth key to genesis keypair
+    fn hack_account(&self, address: AccountAddress) -> Result<()> {
+        if self.debug {
+            eprintln!("Hack account {}", address);
+        }
+        let account = self.fetch_account_resource(&address)?;
+
+        let balance = self.fetch_balance_resource(&address, STC_TOKEN_CODE_STR.to_string())?;
+        let account_data = AccountData::with_account_and_event_counts(
+            Account::new_genesis_account(address),
+            balance.token(),
+            STC_TOKEN_CODE_STR,
+            account.sequence_number(),
+            account.withdraw_events().count(),
+            account.deposit_events().count(),
+            account.accept_token_events().count(),
+            account.has_delegated_key_rotation_capability(),
+            account.has_delegated_withdrawal_capability(),
+        );
+        self.storage.apply_write_set(account_data.to_writeset())?;
+        Ok(())
+    }
+
     /// Derive the default transaction parameters from the account and balance resources fetched
     /// from storage. In the future, we are planning to allow the user to override these using
     /// command arguments.
@@ -459,19 +460,18 @@ impl<'a> StarcoinTestAdapter<'a> {
     ///
     /// Should error if the transaction ends up being discarded, or having a status other than
     /// EXECUTED.
-    fn run_transaction(
-        &mut self,
-        txn: RawUserTransaction,
-        public_key: AccountPublicKey,
-    ) -> Result<TransactionOutput> {
+    fn run_transaction(&mut self, txn: RawUserTransaction) -> Result<TransactionWithOutput> {
         let mut vm = StarcoinVM::new(None);
-        let (_status, output) = vm.dry_run_transaction(
-            &self.storage,
-            DryRunTransaction {
-                raw_txn: txn,
-                public_key,
-            },
-        )?;
+        let signed_txn = self.sign(txn);
+
+        let (_status, output) = vm
+            .execute_block_transactions(
+                &self.storage,
+                vec![Transaction::UserTransaction(signed_txn.clone())],
+                None,
+            )?
+            .pop()
+            .unwrap();
         match output.status() {
             TransactionStatus::Keep(_kept_vm_status) => {
                 self.storage
@@ -479,10 +479,16 @@ impl<'a> StarcoinTestAdapter<'a> {
             }
             TransactionStatus::Discard(_) => {}
         }
-        Ok(output)
+        let payload = decode_txn_payload(&self.storage, signed_txn.payload())?;
+        let mut txn_view: SignedUserTransactionView = signed_txn.try_into()?;
+        txn_view.raw_txn.decoded_payload = Some(payload.into());
+        Ok(TransactionWithOutput {
+            txn: txn_view,
+            output: output.into(),
+        })
     }
 
-    fn handle_contract_call(&self, call: ContractCall) -> Result<Option<String>> {
+    fn handle_contract_call(&self, call: ContractCall) -> Result<(Option<String>, Option<Value>)> {
         let ContractCall {
             function_id,
             type_args,
@@ -504,9 +510,17 @@ impl<'a> StarcoinTestAdapter<'a> {
             .map(|(ty, v)| annotator.view_value(&ty, &v))
             .collect::<Result<Vec<_>>>()?;
         if rets.is_empty() {
-            Ok(None)
+            Ok((None, None))
+        } else if rets.len() == 1 {
+            Ok((
+                Some(serde_json::to_string_pretty(&rets[0])?),
+                Some(serde_json::to_value(&rets[0])?),
+            ))
         } else {
-            Ok(Some(rets.iter().map(|t| format!("{}", t)).join("\n")))
+            Ok((
+                Some(serde_json::to_string_pretty(&rets)?),
+                Some(serde_json::to_value(&rets)?),
+            ))
         }
     }
 
@@ -514,8 +528,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         &mut self,
         addr: RawAddress,
         initial_balance: u128,
-        public_key: Option<AccountPublicKey>,
-    ) -> Result<Option<String>> {
+    ) -> Result<(Option<String>, Option<Value>)> {
         let sender = association_address();
 
         let params = self.fetch_default_transaction_parameters(&sender)?;
@@ -524,13 +537,12 @@ impl<'a> StarcoinTestAdapter<'a> {
             RawAddress::Named(name) => {
                 if !self.compiled_state.contain_name_address(name.as_str()) {
                     // make it deterministic.
-                    let key = Ed25519PrivateKey::try_from(
-                        HashValue::sha3_256_of(name.as_bytes()).as_slice(),
-                    )
-                    .unwrap()
-                    .public_key();
 
-                    let addr = AccountPublicKey::Single(key.clone()).derived_address();
+                    let addr = AccountAddress::from_bytes(
+                        &HashValue::sha3_256_of(name.as_bytes()).as_slice()
+                            [0..AccountAddress::LENGTH],
+                    )?;
+
                     self.compiled_state
                         .add_named_addresses({
                             let mut addrs = BTreeMap::default();
@@ -541,23 +553,9 @@ impl<'a> StarcoinTestAdapter<'a> {
                             addrs
                         })
                         .unwrap();
-                    self.public_key_mapping.insert(name.clone(), key.into());
-                } else if public_key.is_some() {
-                    bail!(
-                        "name address {} = {} already exists, should not provide public key",
-                        name,
-                        self.compiled_state.resolve_address(&addr)
-                    );
                 }
             }
-            RawAddress::Anonymous(addr) => {
-                if let Some(_public_key) = public_key {
-                    bail!(
-                        "create anonymous address {} cannot provide public key",
-                        addr
-                    );
-                }
-            }
+            RawAddress::Anonymous(_addr) => {}
         }
 
         let addr = self.compiled_state.resolve_address(&addr);
@@ -581,18 +579,19 @@ impl<'a> StarcoinTestAdapter<'a> {
             params.expiration_timestamp_secs,
             params.chainid,
         );
-        let output = self.run_transaction(txn, self.association_public_key.clone())?;
+        let output = self.run_transaction(txn)?;
 
-        match output.status().status() {
-            Ok(kept) if kept.is_success() => Ok(None),
+        match output.output.status {
+            TransactionStatusView::Executed => {
+                self.hack_account(addr)?;
+                Ok((None, None))
+            }
             _ => {
-                let result = TransactionResult {
-                    gas_used: output.gas_used(),
-                    status: output.status().clone(),
-                    write_set: None,
-                    events: None,
-                };
-                Ok(Some(serde_json::to_string_pretty(&result)?))
+                bail!(
+                    "Failed to faucet {}, status: {:?}",
+                    addr,
+                    output.output.status
+                );
             }
         }
     }
@@ -602,7 +601,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         timestamp: Option<u64>,
         number: Option<u64>,
         uncles: Option<u64>,
-    ) -> Result<Option<String>> {
+    ) -> Result<(Option<String>, Option<Value>)> {
         let last_blockmeta = self
             .storage
             .get_resource::<on_chain_resource::BlockMetadata>(genesis_address())?;
@@ -620,8 +619,17 @@ impl<'a> StarcoinTestAdapter<'a> {
             .or_else(|| last_blockmeta.as_ref().map(|b| b.uncles))
             .unwrap_or(0);
         let timestamp = timestamp.unwrap_or(self.storage.get_timestamp()?.milliseconds + 10 * 1000);
+        //TODO find a better way to get parent hash, we should keep to local storage.
+        let parent_hash = last_blockmeta
+            .as_ref()
+            .map(|b| {
+                let mut parent_hash = b.parent_hash.to_vec();
+                parent_hash.extend(bcs_ext::to_bytes(&b.number).expect("bcs should success"));
+                HashValue::sha3_256_of(parent_hash.as_slice())
+            })
+            .unwrap_or_else(HashValue::zero);
         let new_block_meta = BlockMetadata::new(
-            HashValue::random(),
+            parent_hash,
             timestamp,
             author,
             None,
@@ -630,25 +638,23 @@ impl<'a> StarcoinTestAdapter<'a> {
             self.storage.get_chain_id()?,
             0,
         );
-        self.run_blockmeta(new_block_meta)?;
-        Ok(None)
-    }
-}
-fn panic_missing_public_key_named(cmd_name: &str, name: &IdentStr) -> ! {
-    panic!(
-        "Missing public key. Either add a `--public-key <priv_key>` argument \
-            to the {} command, or associate an address to the \
-            name '{}' in the init command.",
-        cmd_name, name,
-    )
-}
+        self.run_blockmeta(new_block_meta.clone())?;
 
-fn panic_missing_public_key(cmd_name: &str) -> ! {
-    panic!(
-        "Missing public key. Try adding a `--public-key <priv_key>` \
-            argument to the {} command.",
-        cmd_name
-    )
+        Ok((None, Some(serde_json::to_value(&new_block_meta)?)))
+    }
+
+    fn handle_call_api(
+        &mut self,
+        method: String,
+        params: Params,
+    ) -> Result<(Option<String>, Option<Value>)> {
+        let remote_viewer = match self.remote_viewer.as_ref() {
+            Some(c) => c,
+            None => bail!("please set RPC url at init argument"),
+        };
+        let output = remote_viewer.call_api(method.as_str(), params)?;
+        Ok((None, Some(serde_json::to_value(&output)?)))
+    }
 }
 
 impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
@@ -695,49 +701,26 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             "Std".to_string(),
             NumericalAddress::parse_str("0x1").unwrap(),
         );
-        let mut public_key_mapping = BTreeMap::default();
 
         let init_args = extra_arg.unwrap_or_default();
-        {
-            // Private key mapping
-            if let Some(additional_public_key_mapping) = init_args.public_keys {
-                for (name, public_key) in additional_public_key_mapping {
-                    if public_key_mapping.contains_key(&name) {
-                        panic!(
-                            "Invalid init. The named public key '{}' already exists.",
-                            name
-                        )
-                    }
-                    public_key_mapping.insert(name, public_key);
-                }
-            }
+
+        if init_args.public_keys.is_some() {
+            eprintln!("[WARN] the `public_keys` option is deprecated, and is no longer working, please remove it.");
         }
+
+        let mut remote_viewer: Option<RemoteViewer> = None;
+
         let store = if let Some(rpc) = init_args.rpc {
-            let remote_view = RemoteStateView::from_url(&rpc, init_args.block_number).unwrap();
+            let remote_view = RemoteViewer::from_url(&rpc, init_args.block_number).unwrap();
+            remote_viewer = Some(remote_view.clone());
             SelectableStateView::B(InMemoryStateCache::new(remote_view))
         } else {
             let net = ChainNetwork::new_builtin(init_args.network.unwrap());
-            if let Some(k) = &net.genesis_config().genesis_key_pair {
-                public_key_mapping.insert(Identifier::new("Genesis").unwrap(), k.1.clone().into());
-            }
             let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
             let data_store = ChainStateDB::mock();
             Genesis::execute_genesis_txn(&data_store, genesis_txn).unwrap();
             SelectableStateView::A(data_store)
         };
-
-        let association_public_key: AccountPublicKey =
-            BuiltinNetworkID::try_from(store.get_chain_id().unwrap())
-                .unwrap()
-                .genesis_config()
-                .association_key_pair
-                .1
-                .clone()
-                .into();
-        public_key_mapping.insert(
-            Identifier::new("StarcoinAssociation").unwrap(),
-            association_public_key.clone(),
-        );
 
         // add pre compiled modules
         if let Some(pre_compiled_lib) = pre_compiled_deps {
@@ -782,12 +765,15 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         let mut me = Self {
             compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps),
             default_syntax,
-            public_key_mapping,
             storage: store,
-            association_public_key,
+            remote_viewer,
+            debug: init_args.debug,
         };
         me.hack_genesis_account()
             .expect("hack genesis account failure");
+
+        me.hack_account(association_address()).unwrap();
+
         // auto start from a new block based on existed state.
         me.handle_new_block(None, None, None, None)
             .expect("init test adapter failed");
@@ -799,26 +785,20 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         module: CompiledModule,
         named_addr_opt: Option<Identifier>,
         gas_budget: Option<u64>,
-        extra: Self::ExtraPublishArgs,
-    ) -> anyhow::Result<()> {
+        _extra: Self::ExtraPublishArgs,
+    ) -> anyhow::Result<(Option<String>, Option<Value>)> {
         let module_id = module.self_id();
-        let signer = module_id.address();
-        let params = self.fetch_default_transaction_parameters(signer)?;
+        let signer = match named_addr_opt {
+            Some(name) => self.compiled_state.resolve_named_address(name.as_str()),
+            None => *module_id.address(),
+        };
+        let params = self.fetch_default_transaction_parameters(&signer)?;
 
         let mut module_blob = vec![];
         module.serialize(&mut module_blob).unwrap();
 
-        let public_key = match (extra.public_key, named_addr_opt) {
-            (Some(key), _) => self.resolve_public_key(&key),
-            (None, Some(named_addr)) => match self.public_key_mapping.get(&named_addr) {
-                Some(key) => key.clone(),
-                None => panic_missing_public_key_named("publish", &named_addr),
-            },
-            (None, None) => panic_missing_public_key("publish"),
-        };
-
         let txn = RawUserTransaction::new_module(
-            *signer,
+            signer,
             params.sequence_number,
             Module::new(module_blob),
             gas_budget.unwrap_or(params.max_gas_amount),
@@ -827,10 +807,14 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             params.chainid,
         );
 
-        let output = self.run_transaction(txn, public_key)?;
-        match output.status().status() {
-            Ok(k) if k.is_success() => Ok(()),
-            _ => bail!("Publish failure: {:?}", output.status()),
+        let output = self.run_transaction(txn)?;
+
+        match output.output.status {
+            TransactionStatusView::Executed => Ok((None, None)),
+            _ => Ok((
+                Some(format!("Publish failure: {:?}", output.output.status)),
+                Some(serde_json::to_value(&output)?),
+            )),
         }
     }
 
@@ -841,8 +825,8 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         signers: Vec<RawAddress>,
         args: Vec<TransactionArgument>,
         gas_budget: Option<u64>,
-        extra_args: Self::ExtraRunArgs,
-    ) -> anyhow::Result<Option<String>> {
+        _extra_args: Self::ExtraRunArgs,
+    ) -> anyhow::Result<(Option<String>, Option<Value>)> {
         assert!(!signers.is_empty());
         if signers.len() != 1 {
             panic!("Expected 1 signer, got {}.", signers.len());
@@ -854,17 +838,6 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
 
         let params = self.fetch_default_transaction_parameters(&sender)?;
 
-        let public_key = match (extra_args.public_key, &signers[0]) {
-            (Some(public_key), _) => self.resolve_public_key(&public_key),
-            (None, RawAddress::Named(named_addr)) => {
-                match self.public_key_mapping.get(named_addr) {
-                    Some(public_key) => public_key.clone(),
-                    None => panic_missing_public_key_named("run", named_addr),
-                }
-            }
-            (None, RawAddress::Anonymous(_)) => panic_missing_public_key("run"),
-        };
-
         let txn = RawUserTransaction::new_script(
             sender,
             params.sequence_number,
@@ -875,32 +848,15 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             params.chainid,
         );
 
-        let output = self.run_transaction(txn, public_key)?;
-        let mut result = TransactionResult {
-            gas_used: output.gas_used(),
-            status: output.status().clone(),
-            write_set: None,
-            events: None,
+        let output = self.run_transaction(txn)?;
+        let result = SimpleTransactionResult {
+            gas_used: output.output.gas_used.0,
+            status: output.output.status.clone(),
         };
-        if extra_args.verbose {
-            result.write_set = Some(
-                output
-                    .write_set()
-                    .clone()
-                    .into_iter()
-                    .map(TransactionOutputAction::from)
-                    .collect(),
-            );
-            result.events = Some(
-                output
-                    .events()
-                    .iter()
-                    .cloned()
-                    .map(TransactionEventView::from)
-                    .collect(),
-            );
-        }
-        Ok(Some(serde_json::to_string_pretty(&result)?))
+        Ok((
+            Some(serde_json::to_string_pretty(&result)?),
+            Some(serde_json::to_value(&output)?),
+        ))
     }
 
     fn call_function(
@@ -911,8 +867,8 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         signers: Vec<RawAddress>,
         args: Vec<TransactionArgument>,
         gas_budget: Option<u64>,
-        extra_args: Self::ExtraRunArgs,
-    ) -> anyhow::Result<Option<String>> {
+        _extra_args: Self::ExtraRunArgs,
+    ) -> anyhow::Result<(Option<String>, Option<Value>)> {
         {
             assert!(!signers.is_empty());
             if signers.len() != 1 {
@@ -922,17 +878,6 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         let sender = self.compiled_state().resolve_address(&signers[0]);
 
         let params = self.fetch_default_transaction_parameters(&sender)?;
-
-        let public_key = match (extra_args.public_key, &signers[0]) {
-            (Some(public_key), _) => self.resolve_public_key(&public_key),
-            (None, RawAddress::Named(named_addr)) => {
-                match self.public_key_mapping.get(named_addr) {
-                    Some(private_key) => private_key.clone(),
-                    None => panic_missing_public_key_named("run", named_addr),
-                }
-            }
-            (None, RawAddress::Anonymous(_)) => panic_missing_public_key("run"),
-        };
 
         let txn = RawUserTransaction::new_script_function(
             sender,
@@ -949,33 +894,15 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             params.chainid,
         );
 
-        let output = self.run_transaction(txn, public_key)?;
-
-        let mut result = TransactionResult {
-            gas_used: output.gas_used(),
-            status: output.status().clone(),
-            write_set: None,
-            events: None,
+        let output = self.run_transaction(txn)?;
+        let result = SimpleTransactionResult {
+            gas_used: output.output.gas_used.0,
+            status: output.output.status.clone(),
         };
-        if extra_args.verbose {
-            result.write_set = Some(
-                output
-                    .write_set()
-                    .clone()
-                    .into_iter()
-                    .map(TransactionOutputAction::from)
-                    .collect(),
-            );
-            result.events = Some(
-                output
-                    .events()
-                    .iter()
-                    .cloned()
-                    .map(TransactionEventView::from)
-                    .collect(),
-            );
-        }
-        Ok(Some(serde_json::to_string_pretty(&result)?))
+        Ok((
+            Some(serde_json::to_string_pretty(&result)?),
+            Some(serde_json::to_value(&output)?),
+        ))
     }
 
     fn view_data(
@@ -984,7 +911,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         module: &ModuleId,
         resource: &IdentStr,
         type_args: Vec<TypeTag>,
-    ) -> anyhow::Result<String> {
+    ) -> anyhow::Result<(String, Value)> {
         let s = RemoteStorage::new(&self.storage);
         view_resource_in_move_storage(&s, address, module, resource, type_args)
     }
@@ -992,13 +919,12 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
     fn handle_subcommand(
         &mut self,
         subcommand: TaskInput<Self::Subcommand>,
-    ) -> anyhow::Result<Option<String>> {
-        match subcommand.command {
+    ) -> anyhow::Result<(Option<String>, Option<Value>)> {
+        let (result_str, cmd_var_ctx) = match subcommand.command {
             StarcoinSubcommands::Faucet {
                 address,
                 initial_balance,
-                public_key,
-            } => self.handle_faucet(address, initial_balance, public_key),
+            } => self.handle_faucet(address, initial_balance),
             StarcoinSubcommands::NewBlock {
                 author,
                 timestamp,
@@ -1014,7 +940,14 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                 args,
                 type_args,
             }),
+            StarcoinSubcommands::CallAPI { method, params } => self.handle_call_api(method, params),
+        }?;
+        if self.debug {
+            if let Some(cmd_var_ctx) = cmd_var_ctx.as_ref() {
+                eprintln!("{}: {}", subcommand.name, cmd_var_ctx);
+            }
         }
+        Ok((result_str, cmd_var_ctx))
     }
 }
 
