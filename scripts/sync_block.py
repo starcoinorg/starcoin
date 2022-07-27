@@ -99,15 +99,15 @@ def check_or_do(network):
             network, network, network)
         os.system(export_snapshot_cmd)
         export_state_node_status = os.system(
-            "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(less /sc-data/snapshot/manifest.csv| grep state_node | awk -F ' ' '{print\$2}') -eq \$(less /sc-data/snapshot/state_node | wc -l) ]; then exit 0; else exit 1;fi\"" % network)
+            "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(more /sc-data/snapshot/manifest.csv| grep state_node | awk -F ' ' '{print\$2}') -eq \$(more /sc-data/snapshot/state_node | wc -l) ]; then exit 0; else exit 1;fi\"" % network)
         export_acc_node_transaction_status = os.system(
-            "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(less /sc-data/snapshot/manifest.csv| grep acc_node_transaction | awk -F ' ' '{print\$2}') -eq \$(less /sc-data/snapshot/acc_node_transaction | wc -l) ]; then exit 0; else exit 1;fi\"" % network)
+            "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(more /sc-data/snapshot/manifest.csv| grep acc_node_transaction | awk -F ' ' '{print\$2}') -eq \$(more /sc-data/snapshot/acc_node_transaction | wc -l) ]; then exit 0; else exit 1;fi\"" % network)
         export_acc_node_block_status = os.system(
-            "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(less /sc-data/snapshot/manifest.csv| grep acc_node_block | awk -F ' ' '{print\$2}') -eq \$(less /sc-data/snapshot/acc_node_block | wc -l) ]; then exit 0; else exit 1;fi\"" % network)
+            "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(more /sc-data/snapshot/manifest.csv| grep acc_node_block | awk -F ' ' '{print\$2}') -eq \$(more /sc-data/snapshot/acc_node_block | wc -l) ]; then exit 0; else exit 1;fi\"" % network)
         export_block_status = os.system(
-            "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(less /sc-data/snapshot/manifest.csv| grep -w block | awk -F ' ' '{print\$2}') -eq \$(less /sc-data/snapshot/block | wc -l) ]; then exit 0; else exit 1;fi\"" % network)
+            "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(more /sc-data/snapshot/manifest.csv| grep -w block | awk -F ' ' '{print\$2}') -eq \$(more /sc-data/snapshot/block | wc -l) ]; then exit 0; else exit 1;fi\"" % network)
         export_block_info_status = os.system(
-            "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(less /sc-data/snapshot/manifest.csv| grep block_info | awk -F ' ' '{print\$2}') -eq \$(less /sc-data/snapshot/block_info | wc -l) ]; then exit 0; else exit 1;fi\"" % network)
+            "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(more /sc-data/snapshot/manifest.csv| grep block_info | awk -F ' ' '{print\$2}') -eq \$(more /sc-data/snapshot/block_info | wc -l) ]; then exit 0; else exit 1;fi\"" % network)
 
         if export_state_node_status != 0 or export_acc_node_transaction_status != 0 or export_acc_node_block_status != 0 or export_block_status != 0 or export_block_info_status != 0:
             os.system("kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c 'rm -rf /sc-data/snapshot'" % network)
