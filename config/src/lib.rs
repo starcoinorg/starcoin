@@ -297,7 +297,7 @@ impl BaseConfig {
         if !data_dir.exists() {
             create_dir_all(data_dir.as_path())?;
         } else {
-            let data_dir_with_ipc = data_dir.clone().join(DEFAULT_IPC_FILE);
+            let data_dir_with_ipc = data_dir.join(DEFAULT_IPC_FILE);
             if data_dir_with_ipc.exists() {
                 if id.is_dev() || id.is_test() {
                     data_dir = temp_dir().as_ref().join(id.dir_name());
