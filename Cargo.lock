@@ -7781,6 +7781,7 @@ dependencies = [
  "csv",
  "hex",
  "serde 1.0.140",
+ "pprof",
  "serde_json",
  "starcoin-crypto",
  "starcoin-resource-viewer",

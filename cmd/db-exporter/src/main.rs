@@ -389,8 +389,8 @@ pub struct ExportResourceOptions {
     pub db_path: PathBuf,
 
     #[clap(long)]
-    /// block id (block hash) which snapshot at.
-    pub block_id: HashValue,
+    /// block hash of the snapshot.
+    pub block_hash: HashValue,
 
     #[clap(
         short='r',
@@ -402,7 +402,7 @@ pub struct ExportResourceOptions {
 
     #[clap(min_values = 1, required = true)]
     /// fields of the struct to output. it use pointer syntax of serde_json.
-    /// like: /authentication_key /sequence_number /deposit_events/counter
+    /// like: /authentication_key /sequence_number /deposit_events/counter /token/value
     pub fields: Vec<String>,
 }
 
@@ -539,9 +539,12 @@ fn main() -> anyhow::Result<()> {
     }
 
     if let Cmd::ExportResource(option) = cmd {
+        #[cfg(target_os = "linux")]
+        let guard = pprof::ProfilerGuard::new(100).unwrap();
         let output = option.output.as_path();
-        let block_id = option.block_id;
+        let block_id = option.block_hash;
         let resource = option.resource_type.clone();
+        // let result = apply_block(option.to_path, option.input_path, option.net, verifier);
         export_resource(
             option.db_path.display().to_string().as_str(),
             output,
@@ -549,6 +552,11 @@ fn main() -> anyhow::Result<()> {
             resource,
             option.fields.as_slice(),
         )?;
+        #[cfg(target_os = "linux")]
+        if let Ok(report) = guard.report().build() {
+            let file = File::create("/tmp/flamegraph.svg").unwrap();
+            report.flamegraph(file).unwrap();
+        }
     }
 
     Ok(())
@@ -1544,6 +1552,7 @@ pub struct AccountData<R: Serialize> {
     resource: Option<R>,
 }
 
+#[cfg(target_os = "linux")]
 pub fn export_resource(
     db: &str,
     output: &Path,
@@ -1581,7 +1590,15 @@ pub fn export_resource(
         csv_writer.write_record(None::<&[u8]>)?;
     }
 
-    for (account_address, account_state_set) in statedb.dump_iter()? {
+    use std::time::{Duration, Instant};
+
+    let now = Instant::now();
+
+    let global_states_iter = statedb.dump_iter()?;
+    println!("t1: {}", now.elapsed().as_millis());
+
+    let now = Instant::now();
+    for (account_address, account_state_set) in global_states_iter {
         let resource_set = account_state_set.resource_set().unwrap();
         for (k, v) in resource_set.iter() {
             let struct_tag = StructTag::decode(k.as_slice())?;
@@ -1603,6 +1620,8 @@ pub fn export_resource(
             }
         }
     }
+
+    println!("t2: {}", now.elapsed().as_millis());
     csv_writer.flush()?;
     Ok(())
 }
