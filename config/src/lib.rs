@@ -4,7 +4,7 @@
 use crate::account_vault_config::AccountVaultConfig;
 use crate::helper::{load_config, save_config};
 use crate::sync_config::SyncConfig;
-use anyhow::{ensure, format_err, Result};
+use anyhow::{ensure, format_err, Result,anyhow};
 use clap::Parser;
 use git_version::git_version;
 use once_cell::sync::Lazy;
@@ -64,7 +64,7 @@ pub use miner_config::{MinerClientConfig, MinerConfig};
 pub use network_config::{NetworkConfig, NetworkRpcQuotaConfiguration};
 pub use rpc_config::{
     ApiQuotaConfiguration, HttpConfiguration, IpcConfiguration, RpcConfig, TcpConfiguration,
-    WsConfiguration,
+    WsConfiguration,DEFAULT_IPC_FILE,
 };
 pub use starcoin_crypto::ed25519::genesis_key_pair;
 pub use starcoin_vm_types::time::{MockTimeService, RealTimeService, TimeService};
@@ -291,18 +291,23 @@ impl BaseConfig {
         let base_data_dir = opt.base_data_dir.clone();
         let base_data_dir = match base_data_dir {
             Some(base_data_dir) => DataDirPath::PathBuf(base_data_dir),
-            None => {
-                if id.is_dev() || id.is_test() {
-                    temp_dir()
-                } else {
-                    DataDirPath::PathBuf(G_DEFAULT_BASE_DATA_DIR.to_path_buf())
-                }
-            }
+            None => DataDirPath::PathBuf(G_DEFAULT_BASE_DATA_DIR.to_path_buf())
         };
-        let data_dir = base_data_dir.as_ref().join(id.dir_name());
+        let mut data_dir = base_data_dir.as_ref().join(id.dir_name());
         if !data_dir.exists() {
             create_dir_all(data_dir.as_path())?;
+        } else {
+            let data_dir_with_ipc = data_dir.clone().join(DEFAULT_IPC_FILE);
+            if data_dir_with_ipc.exists() {
+                if id.is_dev() || id.is_test() {
+                    data_dir = temp_dir().as_ref().join(id.dir_name());
+                    create_dir_all(data_dir.as_path())?;
+                } else {
+                    return Err(anyhow!("starcoin has been activated"));                    
+                }
+            }
         }
+
         let genesis_config = Self::load_genesis_config_by_opt(
             id.clone(),
             data_dir.as_path(),
