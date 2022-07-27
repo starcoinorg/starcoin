@@ -424,7 +424,8 @@ fn main() -> anyhow::Result<()> {
             Some(output) => {
                 let writer = writer_builder.from_path(output)?;
                 export(
-                    option.db_path.display().to_string().as_str(),
+                    // option.db_path.display().to_string().as_str(),
+                    option.db_path.to_str().unwrap(),
                     writer,
                     option.schema,
                 )
@@ -554,7 +555,7 @@ fn main() -> anyhow::Result<()> {
         )?;
         #[cfg(target_os = "linux")]
         if let Ok(report) = guard.report().build() {
-            let file = File::create("/tmp/flamegraph.svg").unwrap();
+            let file = File::create("/tmp/db-export-resource-flamegraph-freq-100.svg").unwrap();
             report.flamegraph(file).unwrap();
         }
     }
@@ -1598,8 +1599,23 @@ pub fn export_resource(
     println!("t1: {}", now.elapsed().as_millis());
 
     let now = Instant::now();
+    let mut t1_sum = 0;
+    let mut t2_sum = 0;
+    let mut loop_count = 0;
+    let mut now3 = Instant::now();
+    let mut iter_time = 0;
     for (account_address, account_state_set) in global_states_iter {
+        iter_time += now3.elapsed().as_nanos();
+
+        loop_count += 1;
+
+        let now1 = Instant::now();
         let resource_set = account_state_set.resource_set().unwrap();
+        // t1_sum += now1.elapsed().as_micros();
+        t1_sum += now1.elapsed().as_nanos();
+        // println!("t1 sum in loop: {}", t1_sum);
+
+        let now2 = Instant::now();
         for (k, v) in resource_set.iter() {
             let struct_tag = StructTag::decode(k.as_slice())?;
             if struct_tag == resource_struct_tag {
@@ -1619,7 +1635,17 @@ pub fn export_resource(
                 break;
             }
         }
+        // let d = now2.elapsed().as_micros();
+        let d = now2.elapsed().as_nanos();
+        // println!("d is: {}", d);
+        t2_sum += d;
+        // println!("t2 sum in loop: {}", t2_sum);
+        now3 = Instant::now();
     }
+    println!("iter time: {}, {}", iter_time, iter_time / 1000_000);
+    println!("loop count: {}", loop_count);
+    println!("t1_sum: {}, {}", t1_sum, t1_sum / 1000000);
+    println!("t2_sum: {}, {}", t2_sum, t2_sum / 1000000);
 
     println!("t2: {}", now.elapsed().as_millis());
     csv_writer.flush()?;
