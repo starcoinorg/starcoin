@@ -33,7 +33,7 @@ starcoin-uint = { path = "../types/uint"}
 coarsetime = "0.1.22"
 
 [dependencies.rocksdb]
-version = "0.17"
+version = "0.18"
 default-features = false
 features = ["lz4"]
 
