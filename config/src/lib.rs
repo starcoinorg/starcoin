@@ -4,7 +4,7 @@
 use crate::account_vault_config::AccountVaultConfig;
 use crate::helper::{load_config, save_config};
 use crate::sync_config::SyncConfig;
-use anyhow::{anyhow, ensure, format_err, Result};
+use anyhow::{ensure, format_err, Result};
 use clap::Parser;
 use git_version::git_version;
 use once_cell::sync::Lazy;
@@ -64,7 +64,7 @@ pub use miner_config::{MinerClientConfig, MinerConfig};
 pub use network_config::{NetworkConfig, NetworkRpcQuotaConfiguration};
 pub use rpc_config::{
     ApiQuotaConfiguration, HttpConfiguration, IpcConfiguration, RpcConfig, TcpConfiguration,
-    WsConfiguration, DEFAULT_IPC_FILE,
+    WsConfiguration,
 };
 pub use starcoin_crypto::ed25519::genesis_key_pair;
 pub use starcoin_vm_types::time::{MockTimeService, RealTimeService, TimeService};
@@ -288,24 +288,26 @@ pub struct BaseConfig {
 impl BaseConfig {
     pub fn load_with_opt(opt: &StarcoinOpt) -> Result<Self> {
         let id = opt.net.clone().unwrap_or_default();
-        let base_data_dir = opt.base_data_dir.clone();
-        let base_data_dir = match base_data_dir {
-            Some(base_data_dir) => DataDirPath::PathBuf(base_data_dir),
-            None => DataDirPath::PathBuf(G_DEFAULT_BASE_DATA_DIR.to_path_buf()),
-        };
-        let mut data_dir = base_data_dir.as_ref().join(id.dir_name());
-        if !data_dir.exists() {
-            create_dir_all(data_dir.as_path())?;
-        } else {
-            let data_dir_with_ipc = data_dir.join(DEFAULT_IPC_FILE);
-            if data_dir_with_ipc.exists() {
-                if id.is_dev() || id.is_test() {
-                    data_dir = temp_dir().as_ref().join(id.dir_name());
-                    create_dir_all(data_dir.as_path())?;
+        let base_data_dir = match opt.base_data_dir.clone() {
+            Some(base_data_dir) => {
+                if base_data_dir.to_str() == Some("TMP") {
+                    temp_dir()
                 } else {
-                    return Err(anyhow!("starcoin has been activated"));
+                    DataDirPath::PathBuf(base_data_dir)
                 }
             }
+            None => {
+                if id.is_test() {
+                    temp_dir()
+                } else {
+                    DataDirPath::PathBuf(G_DEFAULT_BASE_DATA_DIR.to_path_buf())
+                }
+            }
+        };
+
+        let data_dir = base_data_dir.as_ref().join(id.dir_name());
+        if !data_dir.exists() {
+            create_dir_all(data_dir.as_path())?;
         }
 
         let genesis_config = Self::load_genesis_config_by_opt(

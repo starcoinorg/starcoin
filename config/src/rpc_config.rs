@@ -18,6 +18,7 @@ use std::sync::Arc;
 
 //10M
 const DEFAULT_MAX_REQUEST_BODY_SIZE: usize = 10 * 1024 * 1024;
+const DEFAULT_IPC_FILE: &str = "starcoin.ipc";
 const DEFAULT_HTTP_PORT: u16 = 9850;
 const DEFAULT_TCP_PORT: u16 = 9860;
 const DEFAULT_WEB_SOCKET_PORT: u16 = 9870;
@@ -25,8 +26,6 @@ const DEFAULT_WEB_SOCKET_PORT: u16 = 9870;
 const DEFAULT_RPC_ADDRESS: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
 const DEFAULT_BLOCK_QUERY_MAX_RANGE: u64 = 32;
 const DEFAULT_TXN_INFO_QUEYR_MAX_RANGE: u64 = 32;
-
-pub const DEFAULT_IPC_FILE: &str = "starcoin.ipc";
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Parser)]
 pub struct HttpConfiguration {
