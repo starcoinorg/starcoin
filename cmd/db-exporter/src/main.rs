@@ -543,13 +543,13 @@ fn main() -> anyhow::Result<()> {
         #[cfg(target_os = "linux")]
         let guard = pprof::ProfilerGuard::new(100).unwrap();
         let output = option.output.as_path();
-        let block_id = option.block_hash;
+        let block_hash = option.block_hash;
         let resource = option.resource_type.clone();
         // let result = apply_block(option.to_path, option.input_path, option.net, verifier);
         export_resource(
             option.db_path.display().to_string().as_str(),
             output,
-            block_id,
+            block_hash,
             resource,
             option.fields.as_slice(),
         )?;
@@ -1557,7 +1557,7 @@ pub struct AccountData<R: Serialize> {
 pub fn export_resource(
     db: &str,
     output: &Path,
-    block_id: HashValue,
+    block_hash: HashValue,
     resource_struct_tag: StructTag,
     fields: &[String],
 ) -> anyhow::Result<()> {
@@ -1573,8 +1573,8 @@ pub fn export_resource(
     let storage = Storage::new(StorageInstance::new_db_instance(db_storage))?;
     let storage = Arc::new(storage);
     let block = storage
-        .get_block(block_id)?
-        .ok_or_else(|| anyhow::anyhow!("block {} not exist", block_id))?;
+        .get_block(block_hash)?
+        .ok_or_else(|| anyhow::anyhow!("block {} not exist", block_hash))?;
 
     let root = block.header.state_root();
     let statedb = ChainStateDB::new(storage, Some(root));
