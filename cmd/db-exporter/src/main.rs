@@ -1590,7 +1590,7 @@ pub fn export_resource(
         csv_writer.write_record(None::<&[u8]>)?;
     }
 
-    use std::time::{Duration, Instant};
+    use std::time::Instant;
 
     let now = Instant::now();
 
@@ -1641,7 +1641,7 @@ pub fn export_resource(
         // println!("t2 sum in loop: {}", t2_sum);
         now3 = Instant::now();
     }
-    println!("iter time: {}, {}", iter_time, iter_time / 1000_000);
+    println!("iter time: {}, {}", iter_time, iter_time / 1_000_000);
     println!("loop count: {}", loop_count);
     println!("t1_sum: {}, {}", t1_sum, t1_sum / 1000000);
     println!("t2_sum: {}, {}", t2_sum, t2_sum / 1000000);

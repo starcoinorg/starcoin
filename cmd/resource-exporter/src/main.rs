@@ -66,7 +66,7 @@ pub fn export(
 
     let global_states = state_tree.dump()?;
 
-    use std::time::{Duration, Instant};
+    use std::time::Instant;
     let now = Instant::now();
     for (address_bytes, account_state_bytes) in global_states.iter() {
         let account: AccountAddress = bcs_ext::from_bytes(address_bytes)?;
