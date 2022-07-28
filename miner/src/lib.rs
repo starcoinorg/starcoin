@@ -15,7 +15,6 @@ use starcoin_service_registry::{
 use std::sync::Arc;
 use std::time::Duration;
 use types::block::BlockTemplate;
-use types::system_events::GenerateSleepBlockEvent;
 
 mod create_block_template;
 pub mod generate_block_event_pacemaker;
@@ -128,13 +127,11 @@ impl ServiceFactory<MinerService> for MinerService {
 impl ActorService for MinerService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<GenerateBlockEvent>();
-        ctx.subscribe::<GenerateSleepBlockEvent>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<GenerateBlockEvent>();
-        ctx.unsubscribe::<GenerateSleepBlockEvent>();
         Ok(())
     }
 }
@@ -157,7 +154,11 @@ impl ServiceHandler<Self, SubmitSealRequest> for MinerService {
 const MAX_BLOCK_TIME_GAP: u64 = 3600 * 1000;
 
 impl MinerService {
-    pub fn dispatch_task(&mut self, ctx: &mut ServiceContext<MinerService>) -> Result<()> {
+    pub fn dispatch_task(
+        &mut self,
+        ctx: &mut ServiceContext<MinerService>,
+        event: GenerateBlockEvent,
+    ) -> Result<()> {
         //create block template should block_on for avoid mint same block template.
         let response = block_on(async {
             self.create_block_template_service
@@ -168,10 +169,11 @@ impl MinerService {
         let block_template = response.template;
         let block_time_gap = block_template.timestamp - parent.timestamp();
 
-        if block_template.body.transactions.is_empty()
+        if !event.skip_empty_block_check
+            && (block_template.body.transactions.is_empty()
             && self.config.miner.is_disable_mint_empty_block()
             //if block time gap > 3600, force create a empty block for fix https://github.com/starcoinorg/starcoin/issues/3036
-            && block_time_gap < MAX_BLOCK_TIME_GAP
+            && block_time_gap < MAX_BLOCK_TIME_GAP)
         {
             debug!("The flag disable_mint_empty_block is true and no txn in pool, so skip mint empty block.");
             Ok(())
@@ -270,7 +272,7 @@ impl MinerService {
 impl EventHandler<Self, GenerateBlockEvent> for MinerService {
     fn handle_event(&mut self, event: GenerateBlockEvent, ctx: &mut ServiceContext<MinerService>) {
         debug!("Handle GenerateBlockEvent:{:?}", event);
-        if !event.force && self.is_minting() {
+        if !event.break_current_task && self.is_minting() {
             debug!("Miner has mint job so just ignore this event.");
             return;
         }
@@ -278,48 +280,17 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
             debug!("No miner client connected, ignore GenerateBlockEvent.");
             // Once Miner client connect, we should dispatch task.
             ctx.run_later(Duration::from_secs(2), |ctx| {
-                ctx.notify(GenerateBlockEvent::new(false));
+                ctx.notify(GenerateBlockEvent::default());
             });
             return;
         }
-        if let Err(err) = self.dispatch_task(ctx) {
+        if let Err(err) = self.dispatch_task(ctx, event) {
             warn!(
                 "Failed to process generate block event:{}, delay to trigger a new event.",
                 err
             );
-            ctx.run_later(Duration::from_secs(2), |ctx| {
-                ctx.notify(GenerateBlockEvent::new(false));
-            });
-        }
-    }
-}
-
-impl EventHandler<Self, GenerateSleepBlockEvent> for MinerService {
-    fn handle_event(
-        &mut self,
-        event: GenerateSleepBlockEvent,
-        ctx: &mut ServiceContext<MinerService>,
-    ) {
-        debug!("Handle GenerateSleepBlockEvent:{:?}", event);
-        if !event.force && self.is_minting() {
-            debug!("Miner has mint job so just ignore this event.");
-            return;
-        }
-        if self.config.miner.disable_miner_client() && self.client_subscribers_num == 0 {
-            debug!("No miner client connected, ignore GenerateSleepBlockEvent.");
-            // Once Miner client connect, we should dispatch task.
-            ctx.run_later(Duration::from_secs(2), |ctx| {
-                ctx.notify(GenerateSleepBlockEvent::new(false));
-            });
-            return;
-        }
-        if let Err(err) = self.dispatch_sleep_task(ctx) {
-            warn!(
-                "Failed to process generate sleep block event:{}, delay to trigger a new event.",
-                err
-            );
-            ctx.run_later(Duration::from_secs(2), |ctx| {
-                ctx.notify(GenerateSleepBlockEvent::new(false));
+            ctx.run_later(Duration::from_secs(2), move |ctx| {
+                ctx.notify(GenerateBlockEvent::default());
             });
         }
     }

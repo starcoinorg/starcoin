@@ -12,7 +12,7 @@ use starcoin_rpc_api::debug::DebugApi;
 use starcoin_rpc_api::types::FactoryAction;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
-use starcoin_types::system_events::GenerateSleepBlockEvent;
+use starcoin_types::system_events::GenerateBlockEvent;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -74,7 +74,7 @@ impl DebugApi for DebugRpcImpl {
         }
         self.config.net().time_service().sleep(time);
         self.bus
-            .broadcast(GenerateSleepBlockEvent::new(true))
+            .broadcast(GenerateBlockEvent::new(true, true))
             .map_err(|_e| jsonrpc_core::Error::internal_error())?;
         Ok(())
     }
