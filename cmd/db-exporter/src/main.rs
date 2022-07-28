@@ -555,7 +555,7 @@ fn main() -> anyhow::Result<()> {
         )?;
         #[cfg(target_os = "linux")]
         if let Ok(report) = guard.report().build() {
-            let file = File::create("/tmp/db-export-resource-flamegraph-freq-100.svg").unwrap();
+            let file = File::create("/tmp/flamegraph-db-export-resource-freq-100.svg").unwrap();
             report.flamegraph(file).unwrap();
         }
     }
@@ -1553,7 +1553,6 @@ pub struct AccountData<R: Serialize> {
     resource: Option<R>,
 }
 
-#[cfg(target_os = "linux")]
 pub fn export_resource(
     db: &str,
     output: &Path,

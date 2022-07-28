@@ -200,7 +200,7 @@ fn main() -> anyhow::Result<()> {
     #[cfg(target_os = "linux")]
     if let Ok(report) = guard.report().build() {
         println!("ok, export graph");
-        let file = std::fs::File::create("/tmp/flamegraph-resource-exporter.svg").unwrap();
+        let file = std::fs::File::create("/tmp/flamegraph-resource-exporter-freq-100.svg").unwrap();
         report.flamegraph(file).unwrap();
     }
     Ok(())
