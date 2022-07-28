@@ -184,7 +184,7 @@ impl NodeHandle {
             let head = chain_service.main_head_block().await?;
             debug!("generate_block: current head block: {:?}", head.header);
             let receiver = bus.oneshot::<NewHeadBlock>().await?;
-            bus.broadcast(GenerateBlockEvent::new(true))?;
+            bus.broadcast(GenerateBlockEvent::new_break(true))?;
             let block = if let Ok(Ok(event)) =
                 async_std::future::timeout(Duration::from_secs(5), receiver).await
             {

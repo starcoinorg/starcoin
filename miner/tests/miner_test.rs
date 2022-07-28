@@ -52,10 +52,10 @@ async fn test_miner_service() {
     assert!(miner.is_ok());
 
     let miner = miner.unwrap();
-    miner.notify(GenerateBlockEvent::new(false)).unwrap();
+    miner.notify(GenerateBlockEvent::new_break(false)).unwrap();
 
     sleep(Duration::from_millis(200)).await;
-    miner.notify(GenerateBlockEvent::new(true)).unwrap();
+    miner.notify(GenerateBlockEvent::new_break(true)).unwrap();
     sleep(Duration::from_millis(200)).await;
     // Generate a event
     let diff = U256::from(1024);
