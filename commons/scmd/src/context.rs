@@ -5,7 +5,8 @@ pub use crate::console::G_DEFAULT_CONSOLE_CONFIG;
 use crate::console::{init_helper, CommandName, RLHelper};
 use crate::error::CmdError;
 use crate::{
-    print_action_result, CommandAction, CommandExec, CustomCommand, HistoryOp, OutputFormat,
+    print_action_result, result_to_json, CommandAction, CommandExec, CustomCommand, HistoryOp,
+    OutputFormat,
 };
 use anyhow::Result;
 use clap::{Arg, Command};
@@ -165,7 +166,7 @@ where
     /// Execute command by parse std::env::args_os() and print result.
     pub fn exec(self) -> Result<()> {
         let (output_format, result) = self.exec_inner(&mut std::env::args_os())?;
-        print_action_result(output_format, result, false)
+        print_action_result(output_format, &result_to_json(result))
     }
 
     /// Execute command by args and return Command execute ReturnItem
@@ -314,12 +315,14 @@ where
                 println!("Load history from file {:?} error: {:?}", history_file, e);
             }
         }
+        let mut cmd_ctx = jpst::TemplateContext::new();
         let prompt = format!("{}% ", app_name);
         loop {
             let readline = rl.readline(prompt.as_str());
             match readline {
                 Ok(line) => {
-                    let params: Vec<&str> = line
+                    let line_after_eval = jpst::format_str!(line.as_str(), &cmd_ctx);
+                    let params: Vec<&str> = line_after_eval
                         .as_str()
                         .trim()
                         .split(' ')
@@ -411,14 +414,16 @@ where
                                             if !skip_history {
                                                 rl.add_history_entry(line.as_str());
                                             }
+                                            let result = result_to_json(result);
                                             if let Err(err) =
-                                                print_action_result(output_format, result, true)
+                                                print_action_result(output_format, &result)
                                             {
                                                 println!("Print result error: {:?}", err);
                                             }
+                                            cmd_ctx.entry(cmd_name).append(result);
                                         }
                                         Err(e) => {
-                                            rl.add_history_entry(line.as_str());
+                                            rl.add_history_entry(line_after_eval.as_str());
                                             println!("{}", e);
                                         }
                                     }
