@@ -97,7 +97,13 @@ def check_or_do(network):
         # export snapshot
         export_snapshot_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- /starcoin/starcoin_db_exporter export-snapshot --db-path /sc-data/%s -n %s -o /sc-data/snapshot -t true" % (
             network, network, network)
-        os.system(export_snapshot_cmd)
+        export_snapshot_status = os.system(export_snapshot_cmd)
+        if export_snapshot_status != 0:
+            print("export snapshot failed, export_snapshot_status:%s" %
+                  export_snapshot_status)
+            os.system(
+                "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c 'rm -rf /sc-data/snapshot;mv /sc-data/snapshotbak /sc-data/snapshot'" % network)
+            sys.exit(1)
         export_state_node_status = os.system(
             "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(more /sc-data/snapshot/manifest.csv| grep state_node | awk -F ' ' '{print\$2}') -eq \$(more /sc-data/snapshot/state_node | wc -l) ]; then exit 0; else exit 1;fi\"" % network)
         export_acc_node_transaction_status = os.system(
@@ -110,10 +116,17 @@ def check_or_do(network):
             "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(more /sc-data/snapshot/manifest.csv| grep block_info | awk -F ' ' '{print\$2}') -eq \$(more /sc-data/snapshot/block_info | wc -l) ]; then exit 0; else exit 1;fi\"" % network)
 
         if export_state_node_status != 0 or export_acc_node_transaction_status != 0 or export_acc_node_block_status != 0 or export_block_status != 0 or export_block_info_status != 0:
-            os.system("kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c 'rm -rf /sc-data/snapshot'" % network)
-            os.system("kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c 'mv /sc-data/snapshotbak /sc-data/snapshot'" % network)
+            print("check export snapshot status, found something wrong, export_state_node_status:%s, export_acc_node_transaction_status:%s, export_acc_node_block_status:%s, export_block_status:%s, export_block_info_status:%s" % (
+                export_state_node_status,
+                export_acc_node_transaction_status,
+                export_acc_node_block_status,
+                export_block_status,
+                export_block_info_status))
+            os.system(
+                "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c 'rm -rf /sc-data/snapshot;mv /sc-data/snapshotbak /sc-data/snapshot'" % network)
             sys.exit(1)
-        os.system("kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c 'rm -rf /sc-data/snapshotbak'" % network)
+        os.system(
+            "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c 'rm -rf /sc-data/snapshotbak'" % network)
 
         # tar snapshot
         tar_snapshot_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- tar -czvf /sc-data/%s -C /sc-data/ %s " % (
