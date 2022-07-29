@@ -199,6 +199,24 @@ Feature: cmd integration test
     Examples:
       |  |
 
+  Scenario Outline: [cmd] cli chain test 
+    Then cmd: "chain epoch-info" 
+    Then cmd: "chain list-block" 
+    Then cmd: "chain get-block @$[0].block_hash@" 
+    Then cmd: "chain list-block" 
+    Then cmd: "chain get-block @$[0].number@" 
+    Then cmd: "chain get-txn-infos @$.header.block_hash@" 
+    Then cmd: "chain get-txn @$[0].transaction_hash@" 
+    Then cmd: "chain get-events @$.transaction_hash@" 
+    Then cmd: "chain get-txn-info-list -s 0 -c 5" 
+    Then cmd: "chain list-block" 
+    Then cmd: "chain get-block-info @$[0].number@" 
+    Then cmd: "chain list-block" 
+    Then cmd: "chain get-txn-proof --block-hash @$[0].block_hash@ --transaction-global-index 0" 
+    Then cmd: "chain list-block" 
+    Then cmd: "chain get-txn-proof --block-hash @$[0].block_hash@ --transaction-global-index 0 --raw" 
+    Then stop 
+
 #mytoken
 #  Scenario Outline: [cmd] my_token test
 #    Then cmd: "account unlock 0x0000000000000000000000000a550c18"

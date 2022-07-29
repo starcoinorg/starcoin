@@ -1,6 +1,6 @@
 use crate::in_memory_state_cache::InMemoryStateCache;
 use crate::remote_state::{RemoteViewer, SelectableStateView};
-use anyhow::{bail, Result};
+use anyhow::{bail, Result, Ok};
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
 use move_compiler::compiled_unit::CompiledUnitEnum;
 use move_compiler::shared::{NumberFormat, NumericalAddress};
@@ -184,6 +184,11 @@ pub enum StarcoinSubcommands {
         #[clap(name = "params", default_value = "", parse(try_from_str=parse_params))]
         /// api params, should be a json array string
         params: Params,
+    },
+    #[clap(name = "package")]
+    Package {
+        // #[clap(long = "syntax")]
+        // pub syntax: Option<SyntaxChoice>
     },
 }
 
@@ -655,6 +660,17 @@ impl<'a> StarcoinTestAdapter<'a> {
         let output = remote_viewer.call_api(method.as_str(), params)?;
         Ok((None, Some(serde_json::to_value(&output)?)))
     }
+
+    fn handle_package(
+        &mut self) -> Result<(Option<String>, Option<Value>)> {
+        println!("package module");
+        println!("self.default_syntax: {:?}", self.default_syntax);
+        match self.default_syntax {
+            SyntaxChoice::Source => println!("source"),
+            SyntaxChoice::IR => println!("IR type"),
+        }
+        Ok((None, None))
+    }
 }
 
 impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
@@ -787,7 +803,9 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         gas_budget: Option<u64>,
         _extra: Self::ExtraPublishArgs,
     ) -> anyhow::Result<(Option<String>, Option<Value>)> {
+        println!("xxxxxxx publish module start");
         let module_id = module.self_id();
+        println!("xxxxxxx module id {}", module_id);
         let signer = match named_addr_opt {
             Some(name) => self.compiled_state.resolve_named_address(name.as_str()),
             None => *module_id.address(),
@@ -817,6 +835,8 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             )),
         }
     }
+
+    
 
     fn execute_script(
         &mut self,
@@ -941,6 +961,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                 type_args,
             }),
             StarcoinSubcommands::CallAPI { method, params } => self.handle_call_api(method, params),
+            StarcoinSubcommands::Package {} => self.handle_package(),
         }?;
         if self.debug {
             if let Some(cmd_var_ctx) = cmd_var_ctx.as_ref() {
@@ -948,6 +969,205 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             }
         }
         Ok((result_str, cmd_var_ctx))
+    }
+
+    fn handle_command(
+        &mut self,
+        task: TaskInput<
+            move_transactional_test_runner::tasks::TaskCommand<
+                Self::ExtraInitArgs,
+                Self::ExtraPublishArgs,
+                Self::ExtraRunArgs,
+                Self::Subcommand,
+            >,
+        >,
+    ) -> Result<(Option<String>, Option<Value>)> {
+        let TaskInput {
+            command,
+            name,
+            number,
+            start_line,
+            command_lines_stop,
+            stop_line,
+            data,
+        } = task;
+        match command {
+            move_transactional_test_runner::tasks::TaskCommand::Init { .. } => {
+                panic!("The 'init' command is optional. But if used, it must be the first command")
+            }
+            move_transactional_test_runner::tasks::TaskCommand::PrintBytecode(move_transactional_test_runner::tasks::PrintBytecodeCommand { input }) => {
+                let state = self.compiled_state();
+                let data = match data {
+                    Some(f) => f,
+                    None => panic!(
+                        "Expected a Move IR module text block following 'print-bytecode' starting on lines {}-{}",
+                        start_line, command_lines_stop
+                    ),
+                };
+                let data_path = data.path().to_str().unwrap();
+                let compiled = match input {
+                    move_transactional_test_runner::tasks::PrintBytecodeInputChoice::Script => {
+                        either::Either::Left(compile_ir_script(state.dep_modules(), data_path)?)
+                    }
+                    move_transactional_test_runner::tasks::PrintBytecodeInputChoice::Module => {
+                        either::Either::Right(compile_ir_module(state.dep_modules(), data_path)?)
+                    }
+                };
+                let source_mapping = SourceMapping::new_from_view(
+                    match &compiled {
+                        either::Either::Left(script) => move_binary_format::binary_views::BinaryIndexedView::Script(script),
+                        either::Either::Right(module) => move_binary_format::binary_views::BinaryIndexedView::Module(module),
+                    },
+                    Spanned::unsafe_no_loc(()).loc,
+                )
+                .expect("Unable to build dummy source mapping");
+                let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
+                Ok((Some(disassembler.disassemble()?), None))
+            }
+            move_transactional_test_runner::tasks::TaskCommand::Publish(move_transactional_test_runner::tasks::PublishCommand { gas_budget, syntax }, extra_args) => {
+                let syntax = syntax.unwrap_or_else(|| self.default_syntax());
+                let data = match data {
+                    Some(f) => f,
+                    None => panic!(
+                        "Expected a module text block following 'publish' starting on lines {}-{}",
+                        start_line, command_lines_stop
+                    ),
+                };
+                let data_path = data.path().to_str().unwrap();
+                let state = self.compiled_state();
+                let (named_addr_opt, module, warnings_opt) = match syntax {
+                    SyntaxChoice::Source => {
+                        let (unit, warnings_opt) = compile_source_unit(
+                            state.pre_compiled_deps,
+                            state.named_address_mapping.clone(),
+                            state
+                                .compiled_module_named_address_mapping
+                                .iter()
+                                .map(|(k, v)| (k.clone(), v.as_str().to_string()))
+                                .collect(),
+                            &state.interface_files().cloned().collect::<Vec<_>>(),
+                            data_path.to_owned(),
+                        )?;
+                        match unit {
+                        move_compiler::compiled_unit::AnnotatedCompiledUnit::Module(annot_module) =>  {
+                            let (named_addr_opt, _id) = annot_module.module_id();
+                            (named_addr_opt.map(|n| n.value), annot_module.named_module.module, warnings_opt)
+                        }
+                        move_compiler::compiled_unit::AnnotatedCompiledUnit::Script(_) => panic!(
+                            "Expected a module text block, not a script, following 'publish' starting on lines {}-{}",
+                            start_line, command_lines_stop
+                        ),
+                    }
+                    }
+                    SyntaxChoice::IR => {
+                        let module = compile_ir_module(state.dep_modules(), data_path)?;
+                        (None, module, None)
+                    }
+                };
+                state.add(named_addr_opt, module.clone());
+                let (result, cmd_var_ctx) = self.publish_module(
+                    module,
+                    named_addr_opt.map(|s| Identifier::new(s.as_str()).unwrap()),
+                    gas_budget,
+                    extra_args,
+                )?;
+                Ok((merge_output(warnings_opt, result), cmd_var_ctx))
+            }
+            move_transactional_test_runner::tasks::TaskCommand::Run(
+                move_transactional_test_runner::tasks::RunCommand {
+                    signers,
+                    args,
+                    type_args,
+                    gas_budget,
+                    syntax,
+                    name: None,
+                },
+                extra_args,
+            ) => {
+                let syntax = syntax.unwrap_or_else(|| self.default_syntax());
+                let data = match data {
+                    Some(f) => f,
+                    None => panic!(
+                        "Expected a script text block following 'run' starting on lines {}-{}",
+                        start_line, command_lines_stop
+                    ),
+                };
+                let data_path = data.path().to_str().unwrap();
+                let state = self.compiled_state();
+                let (script, warning_opt) = match syntax {
+                    SyntaxChoice::Source => {
+                        let (unit, warning_opt) = compile_source_unit(
+                            state.pre_compiled_deps,
+                            state.named_address_mapping.clone(),
+                            state
+                                .compiled_module_named_address_mapping
+                                .iter()
+                                .map(|(k, v)| (k.clone(), v.as_str().to_string()))
+                                .collect(),
+                            &state.interface_files().cloned().collect::<Vec<_>>(),
+                            data_path.to_owned(),
+                        )?;
+                        match unit {
+                        move_compiler::compiled_unit::AnnotatedCompiledUnit::Script(annot_script) => (annot_script.named_script.script, warning_opt),
+                        move_compiler::compiled_unit::AnnotatedCompiledUnit::Module(_) => panic!(
+                            "Expected a script text block, not a module, following 'run' starting on lines {}-{}",
+                            start_line, command_lines_stop
+                        ),
+                    }
+                    }
+                    SyntaxChoice::IR => (compile_ir_script(state.dep_modules(), data_path)?, None),
+                };
+                let args = self.compiled_state().resolve_args(args);
+                let (output, cmd_var_ctx) =
+                    self.execute_script(script, type_args, signers, args, gas_budget, extra_args)?;
+                Ok((merge_output(warning_opt, output), cmd_var_ctx))
+            }
+            move_transactional_test_runner::tasks::TaskCommand::Run(
+                move_transactional_test_runner::tasks::RunCommand {
+                    signers,
+                    args,
+                    type_args,
+                    gas_budget,
+                    syntax,
+                    name: Some((module, name)),
+                },
+                extra_args,
+            ) => {
+                assert!(
+                    syntax.is_none(),
+                    "syntax flag meaningless with function execution"
+                );
+                let args = self.compiled_state().resolve_args(args);
+                let output = self.call_function(
+                    &module,
+                    name.as_ident_str(),
+                    type_args,
+                    signers,
+                    args,
+                    gas_budget,
+                    extra_args,
+                )?;
+                Ok(output)
+            }
+            move_transactional_test_runner::tasks::TaskCommand::View(move_transactional_test_runner::tasks::ViewCommand {
+                address,
+                resource: (module, name, type_arguments),
+            }) => {
+                let address = self.compiled_state().resolve_address(&address);
+                let (output, cmd_var_ctx) =
+                    self.view_data(address, &module, name.as_ident_str(), type_arguments)?;
+                Ok((Some(output), Some(cmd_var_ctx)))
+            }
+            move_transactional_test_runner::tasks::TaskCommand::Subcommand(c) => self.handle_subcommand(TaskInput {
+                command: c,
+                name,
+                number,
+                start_line,
+                command_lines_stop,
+                stop_line,
+                data,
+            }),
+        }
     }
 }
 
