@@ -4,7 +4,7 @@
 pub use self::gen_client::Client as StateClient;
 use crate::types::{
     AccountStateSetView, CodeView, ListCodeView, ListResourceView, ResourceView,
-    StateWithProofView, StrView,
+    StateWithProofView, StateWithTableItemProofView, StrView,
 };
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
@@ -57,6 +57,23 @@ pub trait StateApi {
         access_path: AccessPath,
         state_root: HashValue,
     ) -> FutureResult<StrView<Vec<u8>>>;
+
+    /// Return the TableItem value  and provide a State Proof at `state_root`
+    #[rpc(name = "state.get_with_table_item_proof")]
+    fn get_with_table_item_proof(
+        &self,
+        handle: u128,
+        key: Vec<u8>,
+    ) -> FutureResult<StateWithTableItemProofView>;
+
+    /// Return the TableItem value  and provide a State Proof at `state_root`
+    #[rpc(name = "state.get_with_table_item_proof_by_root")]
+    fn get_with_table_item_proof_by_root(
+        &self,
+        handle: u128,
+        key: Vec<u8>,
+        state_root: HashValue,
+    ) -> FutureResult<StateWithTableItemProofView>;
 
     /// get code of module
     #[rpc(name = "state.get_code")]

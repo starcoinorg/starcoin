@@ -137,7 +137,11 @@ pub trait ChainStateReader: StateView {
 
     fn dump_iter(&self) -> Result<AccountStateSetIterator>;
 
-    fn get_table_item_with_proof(&self, _handle: u128, _key: &[u8]) -> Result<StateWithProof>;
+    fn get_with_table_item_proof(
+        &self,
+        handle: &u128,
+        key: &[u8],
+    ) -> Result<StateWithTableItemProof>;
 }
 
 pub trait ChainStateWriter {
@@ -380,5 +384,27 @@ where
 
     pub fn get_chain_id(&self) -> Result<ChainId> {
         self.reader.get_chain_id()
+    }
+}
+
+// XXX FIXME YSG
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
+pub struct StateWithTableItemProof {
+    pub state: Option<Vec<u8>>,
+    pub proof: StateProof,
+}
+
+impl StateWithTableItemProof {
+    pub fn new(state: Option<Vec<u8>>, proof: StateProof) -> Self {
+        Self { state, proof }
+    }
+
+    pub fn get_state(&self) -> &Option<Vec<u8>> {
+        &self.state
+    }
+
+    pub fn verify(&self, expect_root: HashValue, access_path: AccessPath) -> Result<()> {
+        self.proof
+            .verify(expect_root, access_path, self.state.as_deref())
     }
 }

@@ -19,7 +19,7 @@ use starcoin_accumulator::proof::AccumulatorProof;
 use starcoin_crypto::{CryptoMaterialError, HashValue, ValidCryptoMaterialStringExt};
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_service_registry::ServiceRequest;
-use starcoin_state_api::{StateProof, StateWithProof};
+use starcoin_state_api::{StateProof, StateWithProof, StateWithTableItemProof};
 use starcoin_types::block::{
     Block, BlockBody, BlockHeader, BlockHeaderExtra, BlockInfo, BlockNumber,
 };
@@ -1275,6 +1275,48 @@ impl From<StateWithProofView> for StateWithProof {
             view.account_state_proof.into(),
         );
         StateWithProof::new(state, proof)
+    }
+}
+
+// XXX FIXME YSG
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct StateWithTableItemProofView {
+    pub state: Option<StrView<Vec<u8>>>,
+    pub account_state: Option<StrView<Vec<u8>>>,
+    pub account_proof: SparseMerkleProofView,
+    pub account_state_proof: SparseMerkleProofView,
+}
+
+impl StateWithTableItemProofView {
+    pub fn into_state_table_item_proof(self) -> StateWithTableItemProof {
+        self.into()
+    }
+}
+
+impl From<StateWithTableItemProof> for StateWithTableItemProofView {
+    fn from(state_table_item_proof: StateWithTableItemProof) -> Self {
+        let state = state_table_item_proof.state.map(StrView);
+        Self {
+            state,
+            account_state: state_table_item_proof
+                .proof
+                .account_state
+                .map(|b| StrView(b.into())),
+            account_proof: state_table_item_proof.proof.account_proof.into(),
+            account_state_proof: state_table_item_proof.proof.account_state_proof.into(),
+        }
+    }
+}
+
+impl From<StateWithTableItemProofView> for StateWithTableItemProof {
+    fn from(view: StateWithTableItemProofView) -> Self {
+        let state = view.state.map(|v| v.0);
+        let proof = StateProof::new(
+            view.account_state.map(|v| v.0),
+            view.account_proof.into(),
+            view.account_state_proof.into(),
+        );
+        StateWithTableItemProof::new(state, proof)
     }
 }
 

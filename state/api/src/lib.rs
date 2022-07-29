@@ -11,7 +11,7 @@ use starcoin_types::{
 
 pub use chain_state::{
     AccountStateReader, ChainStateReader, ChainStateWriter, StateProof, StateReaderExt,
-    StateWithProof,
+    StateWithProof, StateWithTableItemProof,
 };
 use serde::de::DeserializeOwned;
 pub use starcoin_state_tree::StateNodeStore;
@@ -63,6 +63,18 @@ pub trait ChainStateAsyncService: Clone + std::marker::Unpin + Send + Sync {
         address: AccountAddress,
         state_root: HashValue,
     ) -> Result<Option<AccountState>>;
+
+    async fn get_with_table_item_proof(
+        self,
+        handle: u128,
+        key: Vec<u8>,
+    ) -> Result<StateWithTableItemProof>;
+    async fn get_with_table_item_proof_by_root(
+        self,
+        handle: u128,
+        key: Vec<u8>,
+        state_root: HashValue,
+    ) -> Result<StateWithTableItemProof>;
 }
 
 #[async_trait::async_trait]
@@ -150,6 +162,39 @@ where
             .await??;
         if let StateResponse::AccountState(state) = response {
             Ok(state)
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
+
+    async fn get_with_table_item_proof(
+        self,
+        handle: u128,
+        key: Vec<u8>,
+    ) -> Result<StateWithTableItemProof> {
+        let response = self
+            .send(StateRequest::GetWithTableItemProof(handle, key))
+            .await??;
+        if let StateResponse::StateWithTableItemProof(state) = response {
+            Ok(*state)
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
+
+    async fn get_with_table_item_proof_by_root(
+        self,
+        handle: u128,
+        key: Vec<u8>,
+        state_root: HashValue,
+    ) -> Result<StateWithTableItemProof> {
+        let response = self
+            .send(StateRequest::GetWithTableItemProofByRoot(
+                handle, key, state_root,
+            ))
+            .await??;
+        if let StateResponse::StateWithTableItemProof(state) = response {
+            Ok(*state)
         } else {
             panic!("Unexpect response type.")
         }

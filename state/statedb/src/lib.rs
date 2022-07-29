@@ -13,6 +13,7 @@ use parking_lot::{Mutex, RwLock};
 use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
+use starcoin_state_api::StateWithTableItemProof;
 pub use starcoin_state_api::{ChainStateReader, ChainStateWriter, StateProof, StateWithProof};
 use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_state_tree::AccountStateSetIterator;
@@ -509,7 +510,11 @@ impl ChainStateReader for ChainStateDB {
         Ok(iter)
     }
 
-    fn get_table_item_with_proof(&self, _handle: u128, _key: &[u8]) -> Result<StateWithProof> {
+    fn get_with_table_item_proof(
+        &self,
+        _handle: &u128,
+        _key: &[u8],
+    ) -> Result<StateWithTableItemProof> {
         // XXX FIXME YSG
         todo!()
     }

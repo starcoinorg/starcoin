@@ -4,7 +4,7 @@
 use crate::RpcClient;
 use anyhow::{format_err, Result};
 use starcoin_crypto::HashValue;
-use starcoin_state_api::{ChainStateReader, StateView, StateWithProof};
+use starcoin_state_api::{ChainStateReader, StateView, StateWithProof, StateWithTableItemProof};
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
@@ -83,13 +83,13 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
         //TODO implement get_account_state by root
     }
 
+    fn get_account_state_set(&self, _address: &AccountAddress) -> Result<Option<AccountStateSet>> {
+        unimplemented!()
+    }
+
     fn state_root(&self) -> HashValue {
         //TODO change trait api to return Result<HashValue>
         self.state_root
-    }
-
-    fn get_account_state_set(&self, _address: &AccountAddress) -> Result<Option<AccountStateSet>> {
-        unimplemented!()
     }
     fn dump(&self) -> Result<ChainStateSet> {
         unimplemented!()
@@ -99,9 +99,14 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
         unimplemented!()
     }
 
-    fn get_table_item_with_proof(&self, _handle: u128, _key: &[u8]) -> Result<StateWithProof> {
-        // XXX FIXME YSG
-        todo!()
+    fn get_with_table_item_proof(
+        &self,
+        handle: &u128,
+        key: &[u8],
+    ) -> Result<StateWithTableItemProof> {
+        self.client
+            .state_get_with_table_item_proof_by_root(*handle, key.to_vec(), self.state_root)
+            .map(Into::into)
     }
 }
 

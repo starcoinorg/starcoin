@@ -11,6 +11,7 @@ use starcoin_service_registry::{
 use starcoin_state_api::message::{StateRequest, StateResponse};
 use starcoin_state_api::{
     ChainStateReader, StateNodeStore, StateReaderExt, StateView, StateWithProof,
+    StateWithTableItemProof,
 };
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_statedb::ChainStateDB;
@@ -108,6 +109,17 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
                 self.service
                     .get_account_state_set_with_root(address, state_root)?,
             ),
+            StateRequest::GetWithTableItemProof(handle, key) => {
+                StateResponse::StateWithTableItemProof(Box::new(
+                    self.service.get_with_table_item_proof(&handle, &key)?,
+                ))
+            }
+            StateRequest::GetWithTableItemProofByRoot(handle, key, state_root) => {
+                StateResponse::StateWithTableItemProof(Box::new(
+                    self.service
+                        .get_with_table_item_proof_by_root(handle, key, state_root)?,
+                ))
+            }
         };
         Ok(response)
     }
@@ -164,6 +176,16 @@ impl Inner {
         reader.get_with_proof(&access_path)
     }
 
+    pub(crate) fn get_with_table_item_proof_by_root(
+        &self,
+        handle: u128,
+        key: Vec<u8>,
+        state_root: HashValue,
+    ) -> Result<StateWithTableItemProof> {
+        let reader = self.state_db.fork_at(state_root);
+        reader.get_with_table_item_proof(&handle, &key)
+    }
+
     pub(crate) fn get_account_state_by_root(
         &self,
         account: AccountAddress,
@@ -214,8 +236,12 @@ impl ChainStateReader for Inner {
         unimplemented!()
     }
 
-    fn get_table_item_with_proof(&self, handle: u128, key: &[u8]) -> Result<StateWithProof> {
-        self.state_db.get_table_item_with_proof(handle, key)
+    fn get_with_table_item_proof(
+        &self,
+        handle: &u128,
+        key: &[u8],
+    ) -> Result<StateWithTableItemProof> {
+        self.state_db.get_with_table_item_proof(handle, key)
     }
 }
 

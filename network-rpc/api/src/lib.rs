@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::HashValue;
-use starcoin_state_api::StateWithProof;
+use starcoin_state_api::{StateWithProof, StateWithTableItemProof};
 use starcoin_state_tree::StateNode;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
@@ -278,12 +278,17 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         peer_id: PeerId,
         ids: Vec<HashValue>,
     ) -> BoxFuture<Result<Vec<Option<Block>>>>;
+
+    fn get_state_with_table_item_proof(
+        &self,
+        peer_id: PeerId,
+        request: GetStateWithTableItemProof,
+    ) -> BoxFuture<Result<StateWithTableItemProof>>;
 }
 
-/// XXX FIXME YSG
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GetTableItemStateWithProof {
+pub struct GetStateWithTableItemProof {
     pub state_root: HashValue,
-    pub table_item: u128,
+    pub handle: u128,
     pub key: Vec<u8>,
 }

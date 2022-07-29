@@ -1,10 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{gen_client::NetworkRpcClient, GetAccountState, GetStateWithProof};
+use crate::{
+    gen_client::NetworkRpcClient, GetAccountState, GetStateWithProof, GetStateWithTableItemProof,
+};
 use anyhow::{anyhow, Result};
 use starcoin_crypto::HashValue;
-use starcoin_state_api::{ChainStateReader, StateView, StateWithProof};
+use starcoin_state_api::{ChainStateReader, StateView, StateWithProof, StateWithTableItemProof};
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
@@ -95,9 +97,34 @@ impl ChainStateReader for RemoteChainStateReader {
         unimplemented!()
     }
 
-    fn get_table_item_with_proof(&self, _handle: u128, _key: &[u8]) -> Result<StateWithProof> {
+    fn get_with_table_item_proof(
+        &self,
+        handle: &u128,
+        key: &[u8],
+    ) -> Result<StateWithTableItemProof> {
+        let peer_id = self
+            .peer_id
+            .clone()
+            .ok_or_else(|| anyhow!("peer id not set"))?;
+        let state_root = self
+            .state_root
+            .ok_or_else(|| anyhow!("state root not set"))?;
+        let req = GetStateWithTableItemProof {
+            state_root,
+            handle: *handle,
+            key: key.to_vec(),
+        };
+        let client = self.client.clone();
+        let state_proof: StateWithTableItemProof =
+            futures::executor::block_on(client.get_state_with_table_item_proof(peer_id, req))?;
         // XXX FIXME YSG
-        todo!()
+        /*
+        state_proof.proof.verify(
+            state_root,
+            access_path.clone(),
+            state_proof.state.as_deref(),
+        )?; */
+        Ok(state_proof)
     }
 }
 
@@ -108,9 +135,9 @@ impl StateView for RemoteChainStateReader {
                 let state_proof = self.get_with_proof(access_path)?;
                 Ok(state_proof.state)
             }
-            StateKey::TableItem { handle: _, key: _ } => {
-                // XXX FIXME YSG
-                unimplemented!()
+            StateKey::TableItem { handle, key } => {
+                let state_proof = self.get_with_table_item_proof(handle, key)?;
+                Ok(state_proof.state)
             }
         }
     }
