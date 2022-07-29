@@ -4666,7 +4666,7 @@ dependencies = [
  "serde 1.0.140",
  "serde-value",
  "serde_json",
- "serde_yaml",
+ "serde_yaml 0.8.26",
  "thiserror",
  "thread-id",
  "typemap",
@@ -5051,7 +5051,7 @@ dependencies = [
  "read-write-set",
  "read-write-set-dynamic",
  "serde 1.0.140",
- "serde_yaml",
+ "serde_yaml 0.8.26",
  "tempfile",
  "walkdir",
 ]
@@ -5320,7 +5320,7 @@ dependencies = [
  "ptree",
  "regex",
  "serde 1.0.140",
- "serde_yaml",
+ "serde_yaml 0.8.26",
  "sha2 0.9.9",
  "tempfile",
  "toml",
@@ -8326,7 +8326,7 @@ dependencies = [
  "serde 1.0.140",
  "serde-reflection 0.3.2",
  "serde_bytes",
- "serde_yaml",
+ "serde_yaml 0.8.26",
  "structopt 0.3.26",
  "textwrap 0.13.4",
 ]
@@ -8511,6 +8511,19 @@ dependencies = [
  "ryu",
  "serde 1.0.140",
  "yaml-rust",
+]
+
+[[package]]
+name = "serde_yaml"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a35a3320a1c8ead0efb4bf508678e8dc29a1bd89118b2f9eae2dccb5123b1a69"
+dependencies = [
+ "indexmap",
+ "itoa 1.0.2",
+ "ryu",
+ "serde 1.0.140",
+ "unsafe-libyaml",
 ]
 
 [[package]]
@@ -9314,7 +9327,7 @@ dependencies = [
  "bcs-ext",
  "serde 1.0.140",
  "serde-reflection 0.3.6",
- "serde_yaml",
+ "serde_yaml 0.9.0",
  "starcoin-crypto",
  "starcoin-types",
 ]
@@ -11696,7 +11709,7 @@ dependencies = [
  "regex",
  "serde-generate",
  "serde-reflection 0.3.2",
- "serde_yaml",
+ "serde_yaml 0.9.0",
  "starcoin-vm-types",
  "tempfile",
  "textwrap 0.14.2",
@@ -11998,6 +12011,12 @@ checksum = "f30360d7979f5e9c6e6cea48af192ea8fab4afb3cf72597154b8f08935bc9c7f"
 dependencies = [
  "traitobject",
 ]
+
+[[package]]
+name = "unsafe-libyaml"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9dc1c637311091be28e5d462c07db78081e5828da80ba22605c81c4ad6f7f813"
 
 [[package]]
 name = "unsigned-varint"

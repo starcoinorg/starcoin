@@ -17,5 +17,5 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 #starcoin-rpc-api = {path = "../rpc/api" }
 anyhow = "1.0"
 serde = "1.0.130"
-serde_yaml = "0.8"
+serde_yaml = "0.9"
 bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }
