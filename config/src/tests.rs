@@ -9,17 +9,26 @@ use starcoin_vm_types::gas_schedule::GasAlgebra;
 fn test_generate_and_load() -> Result<()> {
     for net in BuiltinNetworkID::networks() {
         let mut opt = StarcoinOpt::default();
-        let temp_path = temp_dir();
         opt.net = Some(net.into());
-        opt.base_data_dir = Some(temp_path.path().to_path_buf());
+        opt.base_data_dir = Some(temp_dir().path().to_path_buf());
         let config = NodeConfig::load_with_opt(&opt)?;
         let config2 = NodeConfig::load_with_opt(&opt)?;
-        assert_eq!(
-            to_toml(&config)?,
-            to_toml(&config2)?,
-            "test config for network {} fail.",
-            net
-        );
+
+        if net == BuiltinNetworkID::Test {
+            assert_ne!(
+                to_toml(&config)?,
+                to_toml(&config2)?,
+                "test config for network {} fail.",
+                net
+            );
+        } else {
+            assert_eq!(
+                to_toml(&config)?,
+                to_toml(&config2)?,
+                "test config for network {} fail.",
+                net
+            );
+        }
     }
     Ok(())
 }
