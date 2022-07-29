@@ -92,8 +92,13 @@ def check_or_do(network):
         # check the snapshot is ok or not with the manifest file
         # if not, recover the backdir, then exit.
         # if ok, rm backup dir, and do the next step
-        os.system(
+        backup_snapshot_status = os.system(
             "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c 'cp -r /sc-data/snapshot /sc-data/snapshotbak'" % network)
+        if backup_snapshot_status != 0:
+            print("backup snapshot failed, backup_snapshot_status:%s" %
+                  backup_snapshot_status)
+            sys.exit(1)
+        print("backup snapshot succeeded")
         # export snapshot
         export_snapshot_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- /starcoin/starcoin_db_exporter export-snapshot --db-path /sc-data/%s -n %s -o /sc-data/snapshot -t true" % (
             network, network, network)
@@ -104,6 +109,7 @@ def check_or_do(network):
             os.system(
                 "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c 'rm -rf /sc-data/snapshot;mv /sc-data/snapshotbak /sc-data/snapshot'" % network)
             sys.exit(1)
+        print("export snapshot succeeded")
         export_state_node_status = os.system(
             "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(more /sc-data/snapshot/manifest.csv| grep state_node | awk -F ' ' '{print\$2}') -eq \$(more /sc-data/snapshot/state_node | wc -l) ]; then exit 0; else exit 1;fi\"" % network)
         export_acc_node_transaction_status = os.system(
@@ -122,9 +128,11 @@ def check_or_do(network):
                 export_acc_node_block_status,
                 export_block_status,
                 export_block_info_status))
+            print("check snapshot found somethind wrong, now delete snapshot and recover with snapshotbak")
             os.system(
                 "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c 'rm -rf /sc-data/snapshot;mv /sc-data/snapshotbak /sc-data/snapshot'" % network)
             sys.exit(1)
+        print("check snapshot succeeded, now delete snapshotbak")
         os.system(
             "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c 'rm -rf /sc-data/snapshotbak'" % network)
 
