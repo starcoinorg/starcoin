@@ -66,6 +66,8 @@ pub fn export(
 
     let global_states = state_tree.dump()?;
 
+    use std::time::Instant;
+    let now = Instant::now();
     for (address_bytes, account_state_bytes) in global_states.iter() {
         let account: AccountAddress = bcs_ext::from_bytes(address_bytes)?;
         let account_state: AccountState = account_state_bytes.as_slice().try_into()?;
@@ -98,6 +100,7 @@ pub fn export(
             csv_writer.serialize(record)?;
         }
     }
+    println!("t2: {}", now.elapsed().as_millis());
     // flush csv writer
     csv_writer.flush()?;
     Ok(())
@@ -181,6 +184,8 @@ pub struct ExporterOptions {
 }
 
 fn main() -> anyhow::Result<()> {
+    #[cfg(target_os = "linux")]
+    let guard = pprof::ProfilerGuard::new(100).unwrap();
     let option: ExporterOptions = ExporterOptions::parse();
     let output = option.output.as_path();
     let block_id = option.block_id;
@@ -192,5 +197,11 @@ fn main() -> anyhow::Result<()> {
         resource,
         option.fields.as_slice(),
     )?;
+    #[cfg(target_os = "linux")]
+    if let Ok(report) = guard.report().build() {
+        println!("ok, export graph");
+        let file = std::fs::File::create("/tmp/flamegraph-resource-exporter-freq-100.svg").unwrap();
+        report.flamegraph(file).unwrap();
+    }
     Ok(())
 }

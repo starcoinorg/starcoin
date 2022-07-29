@@ -2,10 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, format_err, Result};
+use bcs_ext::BCSCodec;
 use bcs_ext::Sample;
-use clap::{IntoApp, Parser};
+use clap::IntoApp;
+use clap::Parser;
 use csv::Writer;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use serde::ser::SerializeMap;
+use serde::{Serialize, Serializer};
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
@@ -19,6 +23,7 @@ use starcoin_crypto::HashValue;
 use starcoin_executor::account::{create_account_txn_sent_as_association, peer_to_peer_txn};
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_genesis::Genesis;
+use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
 use starcoin_statedb::ChainStateDB;
 use starcoin_statedb::ChainStateReader;
 use starcoin_statedb::ChainStateWriter;
@@ -26,8 +31,9 @@ use starcoin_storage::block::FailedBlock;
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
+use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::storage::ValueCodec;
-use starcoin_storage::storage::{ColumnFamilyName, InnerStore, StorageInstance};
+use starcoin_storage::storage::{ColumnFamilyName, InnerStore};
 use starcoin_storage::{
     BlockStore, Storage, StorageVersion, Store, BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
     BLOCK_HEADER_PREFIX_NAME, BLOCK_INFO_PREFIX_NAME, BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
@@ -37,21 +43,26 @@ use starcoin_transaction_builder::build_signed_empty_txn;
 use starcoin_types::account::Account;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
+use starcoin_types::language_storage::{StructTag, TypeTag};
 use starcoin_types::startup_info::{SnapshotRange, StartupInfo};
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 use starcoin_types::transaction::Transaction;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm_types::parser::parse_type_tag;
 use std::collections::HashMap;
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
+use std::fmt::Formatter;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, Write};
+use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::SystemTime;
+
 const BLOCK_GAP: u64 = 1000;
 const BACK_SIZE: u64 = 10000;
 const SNAP_GAP: u64 = 128;
@@ -213,6 +224,7 @@ enum Cmd {
     GenBlockTransactions(GenBlockTransactionsOptions),
     ExportSnapshot(ExportSnapshotOptions),
     ApplySnapshot(ApplySnapshotOptions),
+    ExportResource(ExportResourceOptions),
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -366,6 +378,34 @@ pub struct ApplySnapshotOptions {
     pub input_path: PathBuf,
 }
 
+#[derive(Debug, Clone, Parser)]
+#[clap(name = "export-resource", about = "onchain resource exporter")]
+pub struct ExportResourceOptions {
+    #[clap(long, short = 'o', parse(from_os_str))]
+    /// output file, like accounts.csv
+    pub output: PathBuf,
+    #[clap(long, short = 'i', parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db/starcoindb
+    pub db_path: PathBuf,
+
+    #[clap(long)]
+    /// block hash of the snapshot.
+    pub block_hash: HashValue,
+
+    #[clap(
+        short='r',
+        default_value = "0x1::Account::Balance<0x1::STC::STC>",
+        parse(try_from_str=parse_struct_tag)
+    )]
+    /// resource struct tag.
+    resource_type: StructTag,
+
+    #[clap(min_values = 1, required = true)]
+    /// fields of the struct to output. it use pointer syntax of serde_json.
+    /// like: /authentication_key /sequence_number /deposit_events/counter /token/value
+    pub fields: Vec<String>,
+}
+
 fn main() -> anyhow::Result<()> {
     let opt = Opt::parse();
     let cmd = match opt.cmd {
@@ -384,7 +424,8 @@ fn main() -> anyhow::Result<()> {
             Some(output) => {
                 let writer = writer_builder.from_path(output)?;
                 export(
-                    option.db_path.display().to_string().as_str(),
+                    // option.db_path.display().to_string().as_str(),
+                    option.db_path.to_str().unwrap(),
                     writer,
                     option.schema,
                 )
@@ -496,6 +537,27 @@ fn main() -> anyhow::Result<()> {
     if let Cmd::ApplySnapshot(option) = cmd {
         let result = apply_snapshot(option.to_path, option.input_path, option.net);
         return result;
+    }
+
+    if let Cmd::ExportResource(option) = cmd {
+        #[cfg(target_os = "linux")]
+        let guard = pprof::ProfilerGuard::new(100).unwrap();
+        let output = option.output.as_path();
+        let block_hash = option.block_hash;
+        let resource = option.resource_type.clone();
+        // let result = apply_block(option.to_path, option.input_path, option.net, verifier);
+        export_resource(
+            option.db_path.display().to_string().as_str(),
+            output,
+            block_hash,
+            resource,
+            option.fields.as_slice(),
+        )?;
+        #[cfg(target_os = "linux")]
+        if let Ok(report) = guard.report().build() {
+            let file = File::create("/tmp/flamegraph-db-export-resource-freq-100.svg").unwrap();
+            report.flamegraph(file).unwrap();
+        }
     }
 
     Ok(())
@@ -1482,4 +1544,157 @@ pub fn apply_snapshot(
     let use_time = SystemTime::now().duration_since(start_time)?;
     println!("apply snapshot use time: {:?}", use_time.as_secs());
     Ok(())
+}
+
+#[derive(Serialize, Debug)]
+pub struct AccountData<R: Serialize> {
+    address: AccountAddress,
+    #[serde(flatten)]
+    resource: Option<R>,
+}
+
+pub fn export_resource(
+    db: &str,
+    output: &Path,
+    block_hash: HashValue,
+    resource_struct_tag: StructTag,
+    fields: &[String],
+) -> anyhow::Result<()> {
+    let db_storage = DBStorage::open_with_cfs(
+        db,
+        StorageVersion::current_version()
+            .get_column_family_names()
+            .to_vec(),
+        true,
+        Default::default(),
+        None,
+    )?;
+    let storage = Storage::new(StorageInstance::new_db_instance(db_storage))?;
+    let storage = Arc::new(storage);
+    let block = storage
+        .get_block(block_hash)?
+        .ok_or_else(|| anyhow::anyhow!("block {} not exist", block_hash))?;
+
+    let root = block.header.state_root();
+    let statedb = ChainStateDB::new(storage, Some(root));
+    let value_annotator = MoveValueAnnotator::new(&statedb);
+
+    let mut csv_writer = csv::WriterBuilder::new().from_path(output)?;
+
+    // write csv header.
+    {
+        csv_writer.write_field("address")?;
+        for f in fields {
+            csv_writer.write_field(f)?;
+        }
+        csv_writer.write_record(None::<&[u8]>)?;
+    }
+
+    use std::time::Instant;
+
+    let now = Instant::now();
+
+    let global_states_iter = statedb.dump_iter()?;
+    println!("t1: {}", now.elapsed().as_millis());
+
+    let now = Instant::now();
+    let mut t1_sum = 0;
+    let mut t2_sum = 0;
+    let mut loop_count = 0;
+    let mut now3 = Instant::now();
+    let mut iter_time = 0;
+    for (account_address, account_state_set) in global_states_iter {
+        iter_time += now3.elapsed().as_nanos();
+
+        loop_count += 1;
+
+        let now1 = Instant::now();
+        let resource_set = account_state_set.resource_set().unwrap();
+        // t1_sum += now1.elapsed().as_micros();
+        t1_sum += now1.elapsed().as_nanos();
+        // println!("t1 sum in loop: {}", t1_sum);
+
+        let now2 = Instant::now();
+        for (k, v) in resource_set.iter() {
+            let struct_tag = StructTag::decode(k.as_slice())?;
+            if struct_tag == resource_struct_tag {
+                let annotated_struct =
+                    value_annotator.view_struct(resource_struct_tag.clone(), v.as_slice())?;
+                let resource_struct = annotated_struct;
+                let resource_json_value = serde_json::to_value(MoveStruct(resource_struct))?;
+                let resource = Some(resource_json_value);
+                let record: Option<Vec<_>> = resource
+                    .as_ref()
+                    .map(|v| fields.iter().map(|f| v.pointer(f.as_str())).collect());
+                if let Some(mut record) = record {
+                    let account_value = serde_json::to_value(account_address).unwrap();
+                    record.insert(0, Some(&account_value));
+                    csv_writer.serialize(record)?;
+                }
+                break;
+            }
+        }
+        // let d = now2.elapsed().as_micros();
+        let d = now2.elapsed().as_nanos();
+        // println!("d is: {}", d);
+        t2_sum += d;
+        // println!("t2 sum in loop: {}", t2_sum);
+        now3 = Instant::now();
+    }
+    println!("iter time: {}, {}", iter_time, iter_time / 1_000_000);
+    println!("loop count: {}", loop_count);
+    println!("t1_sum: {}, {}", t1_sum, t1_sum / 1000000);
+    println!("t2_sum: {}, {}", t2_sum, t2_sum / 1000000);
+
+    println!("t2: {}", now.elapsed().as_millis());
+    csv_writer.flush()?;
+    Ok(())
+}
+
+#[derive(Debug, Clone)]
+struct MoveStruct(AnnotatedMoveStruct);
+
+impl serde::Serialize for MoveStruct {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(self.0.value.len()))?;
+        for (field, value) in &self.0.value {
+            map.serialize_entry(field.as_str(), &MoveValue(value.clone()))?;
+        }
+        map.end()
+    }
+}
+
+#[derive(Debug, Clone)]
+struct MoveValue(AnnotatedMoveValue);
+
+impl serde::Serialize for MoveValue {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        match &self.0 {
+            AnnotatedMoveValue::Bool(b) => serializer.serialize_bool(*b),
+            AnnotatedMoveValue::U8(v) => serializer.serialize_u8(*v),
+            AnnotatedMoveValue::U64(v) => serializer.serialize_u64(*v),
+            AnnotatedMoveValue::U128(v) => serializer.serialize_u128(*v),
+            AnnotatedMoveValue::Address(v) => v.serialize(serializer),
+            AnnotatedMoveValue::Vector(v) => {
+                let vs: Vec<_> = v.clone().into_iter().map(MoveValue).collect();
+                vs.serialize(serializer)
+            }
+            AnnotatedMoveValue::Bytes(v) => hex::encode(v).serialize(serializer),
+            AnnotatedMoveValue::Struct(v) => MoveStruct(v.clone()).serialize(serializer),
+        }
+    }
+}
+fn parse_struct_tag(input: &str) -> anyhow::Result<StructTag> {
+    match parse_type_tag(input)? {
+        TypeTag::Struct(s) => Ok(s),
+        _ => {
+            anyhow::bail!("invalid struct tag")
+        }
+    }
 }
