@@ -170,14 +170,11 @@ fn create_default_account(
         .account_sign_txn(transfer_raw_txn)
         .unwrap();
     let transfer_txn_id = transfer_txn.id();
-    cli_state
-        .client()
-        .submit_transaction(transfer_txn.clone())
-        .unwrap();
+    debug!("transfer_txn: {}", transfer_txn_id);
+    cli_state.client().submit_transaction(transfer_txn).unwrap();
 
-    sleep(Duration::from_millis(500));
-    let block = node_handle.generate_block().unwrap();
-    assert!(block.transactions().contains(&transfer_txn));
+    sleep(Duration::from_millis(1000));
+    let _block = node_handle.generate_block().unwrap();
     let transfer_txn_info = cli_state
         .client()
         .chain_get_transaction_info(transfer_txn_id)
@@ -187,9 +184,11 @@ fn create_default_account(
     transfer_amount
 }
 
+//TODO replace this with integration-test
 #[stest::test(timeout = 300)]
 fn test_upgrade_module() {
-    let node_config = NodeConfig::random_for_test();
+    let mut node_config = NodeConfig::random_for_test();
+    node_config.miner.disable_mint_empty_block = Some(true);
     let config = Arc::new(node_config);
     let node_handle = run_node_by_config(config.clone()).unwrap();
     let rpc_service = node_handle.rpc_service().unwrap();
@@ -258,7 +257,7 @@ fn test_upgrade_module() {
         .chain_get_transaction_info(proposal_txn_id)
         .unwrap()
         .unwrap();
-    info!("step1 txn status : {:?}", proposal_txn_info);
+    debug!("step1 txn status : {:?}", proposal_txn_info);
     assert_eq!(proposal_txn_info.status, TransactionStatusView::Executed);
 
     // 2. transfer
@@ -434,9 +433,11 @@ fn test_upgrade_module() {
     node_handle.stop().unwrap();
 }
 
+//TODO replace this with integration-test
 #[stest::test(timeout = 300)]
 fn test_only_new_module() {
-    let node_config = NodeConfig::random_for_test();
+    let mut node_config = NodeConfig::random_for_test();
+    node_config.miner.disable_mint_empty_block = Some(true);
     let config = Arc::new(node_config);
     let node_handle = run_node_by_config(config.clone()).unwrap();
     let rpc_service = node_handle.rpc_service().unwrap();

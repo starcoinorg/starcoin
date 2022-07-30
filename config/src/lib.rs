@@ -288,21 +288,20 @@ pub struct BaseConfig {
 impl BaseConfig {
     pub fn load_with_opt(opt: &StarcoinOpt) -> Result<Self> {
         let id = opt.net.clone().unwrap_or_default();
-        let base_data_dir = opt.base_data_dir.clone();
-        let base_data_dir = match base_data_dir {
-            Some(base_data_dir) => DataDirPath::PathBuf(base_data_dir),
-            None => {
-                if id.is_dev() || id.is_test() {
-                    temp_dir()
-                } else {
-                    DataDirPath::PathBuf(G_DEFAULT_BASE_DATA_DIR.to_path_buf())
-                }
+        let base_data_dir = if id.is_test() {
+            temp_dir()
+        } else {
+            match opt.base_data_dir.clone() {
+                Some(base_data_dir) if base_data_dir.to_str() == Some("TMP") => temp_dir(),
+                _ => DataDirPath::PathBuf(G_DEFAULT_BASE_DATA_DIR.to_path_buf()),
             }
         };
+
         let data_dir = base_data_dir.as_ref().join(id.dir_name());
         if !data_dir.exists() {
             create_dir_all(data_dir.as_path())?;
         }
+
         let genesis_config = Self::load_genesis_config_by_opt(
             id.clone(),
             data_dir.as_path(),

@@ -172,7 +172,7 @@ async fn test_block_chain_forks() {
     );
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 async fn test_block_chain_switch_main() {
     let times = 10;
     let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
