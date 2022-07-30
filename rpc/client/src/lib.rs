@@ -585,7 +585,7 @@ impl RpcClient {
         state_root: Option<HashValue>,
         start_index: usize,
         max_size: usize,
-        types: Option<Vec<String>>
+        resource_types: Option<Vec<String>>,
     ) -> anyhow::Result<ListResourceView> {
         self.call_rpc_blocking(|inner| {
             inner.state_client.list_resource(
@@ -595,7 +595,7 @@ impl RpcClient {
                     state_root,
                     start_index,
                     max_size,
-                    types
+                    resource_types,
                 }),
             )
         })

@@ -27,7 +27,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::StructTag;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::sync::Arc;
 
 pub struct StateRpcImpl<S>
@@ -261,6 +261,13 @@ where
             let statedb = ChainStateDB::new(db, Some(state_root));
             //TODO implement list state by iter, and pagination
             let state = statedb.get_account_state_set(&addr)?;
+            let resource_types_set: Option<HashSet<String>> = match option.resource_types {
+                Some(resource_types_value) => {
+                    // Some(HashSet::from_iter(resource_types_value.iter().map(|f| starcoin_vm_types::parser::parse_struct_tag(f).unwrap())))
+                    Some(HashSet::from_iter(resource_types_value.iter().cloned()))
+                }
+                _ => None,
+            };
             match state {
                 None => Ok(ListResourceView::default()),
                 Some(s) => {
@@ -269,8 +276,32 @@ where
                         .cloned()
                         .unwrap_or_default()
                         .iter()
-                        .filter(|(k, v)| {
+                        .filter(|(k, _)| {
+                            if resource_types_set.is_none() {
+                                return true;
+                            }
                             let struct_tag = StructTag::decode(k.as_slice()).unwrap();
+                            let resource_type_amt = format!(
+                                "{}::{}::{}",
+                                struct_tag.address, struct_tag.module, struct_tag.name
+                            );
+                            return resource_types_set
+                                .as_ref()
+                                .unwrap()
+                                .contains(&resource_type_amt);
+                            // return true
+                            // }
+                            // if resource_type_value_str_0
+                            // println!(
+                            //     "contains {} ? {}",
+                            //     struct_tag,
+                            //     option
+                            //         .resource_types
+                            //         .as_ref()
+                            //         .unwrap()
+                            //         .contains(&resource_type_value_str_0),
+                            // );
+                            // print
                             //                         s = format!("{{ \"sec\": {} \"usec\": {} }}{}",
                             //     pt.sec,
                             //     pt.usec,
@@ -281,19 +312,14 @@ where
                             //     .unwrap().to_owned()
                             //     + serde_json::to_string(&struct_tag.module).unwrap().to_owned()
                             //     + serde_json::to_string(&struct_tag.name).unwrap();
-                            let struct_tag_value = serde_json::to_value(struct_tag).unwrap();
-                            let address_value = struct_tag_value["address"].as_str().unwrap();
-                            let module_value = struct_tag_value["module"].as_str().unwrap();
-                            let name_value = struct_tag_value["name"].as_str().unwrap();
+                            // let struct_tag_value = serde_json::to_value(struct_tag).unwrap();
+                            // let address_value = struct_tag_value["address"].as_str().unwrap();
+                            // let module_value = struct_tag_value["module"].as_str().unwrap();
+                            // let name_value = struct_tag_value["name"].as_str().unwrap();
                             // struct_tag_value["name"];
-                            let resource_type_value_str = format!(
-                                "{}::{}::{}",
-                                address_value,
-                                module_value,
-                                name_value
-                            );
-                            println!("resource_type_value_str: {}", resource_type_value_str);
-                            
+                            // let resource_type_value_str =
+                            // format!("{}::{}::{}", address_value, module_value, name_value);
+                            // println!("resource_type_value_str: {}", resource_type_value_str);
                             // let resource_type_str = format!(
                             //     "{}{}{}",
                             //     serde_json::to_string(&struct_tag.address).unwrap().as_str(),
@@ -308,19 +334,19 @@ where
                             // let str_view_struct_tag = StrView(struct_tag);
                             // let struct_tag_str =
                             //     serde_json::to_string(&str_view_struct_tag).unwrap();
-                            println!(
-                                // "struct_tag {:?}, {}, {:?}, {}, {}",
-                                // "struct_tag {:?}, {}, {}, {}",
-                                "struct_tag {}, {}",
-                                // option.types.as_ref().unwrap().contains(&struct_tag_str),
-                                // option.types.as_ref().unwrap().contains(&resource_type_str),
-                                option.types.as_ref().unwrap().contains(&resource_type_value_str),
-                                // str_view_struct_tag,
-                                // struct_tag_str,
-                                // resource_type_str,
-                                resource_type_value_str
-                            );
-                            true
+                            // println!(
+                            //     // "struct_tag {:?}, {}, {:?}, {}, {}",
+                            //     // "struct_tag {:?}, {}, {}, {}",
+                            //     "struct_tag {}, {}",
+                            //     // option.types.as_ref().unwrap().contains(&struct_tag_str),
+                            //     // option.types.as_ref().unwrap().contains(&resource_type_str),
+                            //     option.types.as_ref().unwrap().contains(&resource_type_value_str),
+                            //     // str_view_struct_tag,
+                            //     // struct_tag_str,
+                            //     // resource_type_str,
+                            //     resource_type_value_str
+                            // );
+                            // true
                             // option.types.contains()
                             // let id = Identifier::from_utf8(*k);
                             // println!("id = {}", id.);
