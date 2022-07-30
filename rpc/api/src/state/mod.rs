@@ -114,7 +114,7 @@ pub struct ListResourceOption {
     pub state_root: Option<HashValue>,
     pub start_index: usize,
     pub max_size: usize,
-    //TODO support filter by type
+    pub resource_types: Option<Vec<String>>,
 }
 
 impl Default for ListResourceOption {
@@ -124,6 +124,7 @@ impl Default for ListResourceOption {
             state_root: None,
             start_index: 0,
             max_size: std::usize::MAX,
+            resource_types: None,
         }
     }
 }

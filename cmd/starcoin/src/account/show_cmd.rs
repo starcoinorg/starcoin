@@ -67,6 +67,7 @@ impl CommandAction for ShowCommand {
             Some(chain_state_reader.state_root()),
             0,
             std::usize::MAX,
+            None,
         )?;
         let balances: HashMap<TokenCode, u128> = resources
             .resources

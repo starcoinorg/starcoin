@@ -118,6 +118,7 @@ impl CommandAction for ListCmd {
                         state_root,
                         0,
                         std::usize::MAX,
+                        None,
                     )?,
                 ))
             }

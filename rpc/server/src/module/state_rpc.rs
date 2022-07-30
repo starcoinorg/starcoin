@@ -26,7 +26,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::StructTag;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::sync::Arc;
 
 pub struct StateRpcImpl<S>
@@ -260,6 +260,10 @@ where
             let statedb = ChainStateDB::new(db, Some(state_root));
             //TODO implement list state by iter, and pagination
             let state = statedb.get_account_state_set(&addr)?;
+            let resource_types_set: Option<HashSet<String>> =
+                option.resource_types.map(|resource_types_value| {
+                    HashSet::from_iter(resource_types_value.iter().cloned())
+                });
             match state {
                 None => Ok(ListResourceView::default()),
                 Some(s) => {
@@ -268,6 +272,20 @@ where
                         .cloned()
                         .unwrap_or_default()
                         .iter()
+                        .filter(|(k, _)| {
+                            if resource_types_set.is_none() {
+                                return true;
+                            }
+                            let struct_tag = StructTag::decode(k.as_slice()).unwrap();
+                            let resource_type_address_module_name_str = format!(
+                                "{}::{}::{}",
+                                struct_tag.address, struct_tag.module, struct_tag.name
+                            );
+                            resource_types_set
+                                .as_ref()
+                                .unwrap()
+                                .contains(&resource_type_address_module_name_str)
+                        })
                         .skip(option.start_index)
                         .take(option.max_size)
                         .map(|(k, v)| {
