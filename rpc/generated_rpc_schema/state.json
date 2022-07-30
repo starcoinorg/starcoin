@@ -1828,6 +1828,16 @@
                 "format": "uint",
                 "minimum": 0.0
               },
+              "resource_types": {
+                "default": null,
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
               "start_index": {
                 "default": 0,
                 "type": "integer",
