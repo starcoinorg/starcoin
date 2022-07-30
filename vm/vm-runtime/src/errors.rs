@@ -44,7 +44,7 @@ pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
     let status = error.into_vm_status();
     Err(match status {
         VMStatus::Executed => VMStatus::Executed,
-        VMStatus::MoveAbort(_location, code) => {
+        VMStatus::MoveAbort(location, code) => {
             let (category, reason) = error_split(code);
             let new_major_status = match (category, reason) {
                 (REQUIRES_ADDRESS, PROLOGUE_ACCOUNT_DOES_NOT_EXIST) => {
@@ -88,8 +88,8 @@ pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
                 }
                 (category, reason) => {
                     warn!(
-                        "prologue runtime unknown: category({}), reason:({})",
-                        category, reason
+                        "prologue runtime unknown: category({}), reason:({}), location:({})",
+                        category, reason, location
                     );
                     StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
                 }

@@ -41,7 +41,7 @@ use stream_task::{
 };
 use test_helper::DummyNetworkService;
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 pub async fn test_full_sync_new_node() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let mut node1 = SyncNodeMocker::new(net1, 1, 50)?;
@@ -210,7 +210,7 @@ pub async fn test_failed_block() -> Result<()> {
     }
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 pub async fn test_full_sync_fork() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let mut node1 = SyncNodeMocker::new(net1, 1, 50)?;
