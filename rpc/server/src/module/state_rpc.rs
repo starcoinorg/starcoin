@@ -277,14 +277,14 @@ where
                                 return true;
                             }
                             let struct_tag = StructTag::decode(k.as_slice()).unwrap();
-                            let resource_type_amt = format!(
+                            let resource_type_address_module_name_str = format!(
                                 "{}::{}::{}",
                                 struct_tag.address, struct_tag.module, struct_tag.name
                             );
-                            return resource_types_set
+                            resource_types_set
                                 .as_ref()
                                 .unwrap()
-                                .contains(&resource_type_amt);
+                                .contains(&resource_type_address_module_name_str)
                         })
                         .skip(option.start_index)
                         .take(option.max_size)
