@@ -5,7 +5,6 @@ use crate::module::map_err;
 use bcs_ext::BCSCodec;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
-use serde::Serialize;
 use starcoin_abi_resolver::ABIResolver;
 use starcoin_crypto::HashValue;
 use starcoin_dev::playground::view_resource;
@@ -261,13 +260,10 @@ where
             let statedb = ChainStateDB::new(db, Some(state_root));
             //TODO implement list state by iter, and pagination
             let state = statedb.get_account_state_set(&addr)?;
-            let resource_types_set: Option<HashSet<String>> = match option.resource_types {
-                Some(resource_types_value) => {
-                    // Some(HashSet::from_iter(resource_types_value.iter().map(|f| starcoin_vm_types::parser::parse_struct_tag(f).unwrap())))
-                    Some(HashSet::from_iter(resource_types_value.iter().cloned()))
-                }
-                _ => None,
-            };
+            let resource_types_set: Option<HashSet<String>> =
+                option.resource_types.map(|resource_types_value| {
+                    HashSet::from_iter(resource_types_value.iter().cloned())
+                });
             match state {
                 None => Ok(ListResourceView::default()),
                 Some(s) => {
@@ -289,120 +285,6 @@ where
                                 .as_ref()
                                 .unwrap()
                                 .contains(&resource_type_amt);
-                            // return true
-                            // }
-                            // if resource_type_value_str_0
-                            // println!(
-                            //     "contains {} ? {}",
-                            //     struct_tag,
-                            //     option
-                            //         .resource_types
-                            //         .as_ref()
-                            //         .unwrap()
-                            //         .contains(&resource_type_value_str_0),
-                            // );
-                            // print
-                            //                         s = format!("{{ \"sec\": {} \"usec\": {} }}{}",
-                            //     pt.sec,
-                            //     pt.usec,
-                            //     if isLast { "" } else { "," }
-                            // )
-
-                            // let resource_type_str = serde_json::to_string(&struct_tag.address)
-                            //     .unwrap().to_owned()
-                            //     + serde_json::to_string(&struct_tag.module).unwrap().to_owned()
-                            //     + serde_json::to_string(&struct_tag.name).unwrap();
-                            // let struct_tag_value = serde_json::to_value(struct_tag).unwrap();
-                            // let address_value = struct_tag_value["address"].as_str().unwrap();
-                            // let module_value = struct_tag_value["module"].as_str().unwrap();
-                            // let name_value = struct_tag_value["name"].as_str().unwrap();
-                            // struct_tag_value["name"];
-                            // let resource_type_value_str =
-                            // format!("{}::{}::{}", address_value, module_value, name_value);
-                            // println!("resource_type_value_str: {}", resource_type_value_str);
-                            // let resource_type_str = format!(
-                            //     "{}{}{}",
-                            //     serde_json::to_string(&struct_tag.address).unwrap().as_str(),
-                            //     serde_json::to_string(&struct_tag.module).unwrap().as_str(),
-                            //     serde_json::to_string(&struct_tag.name).unwrap().as_str()
-                            // );
-                            // println!("address value is: {}", serde_json::to_string(&struct_tag.address).unwrap());
-                            // for (address, module, name) in struct_tag {
-                            //     serde_json::to_string(&struct_tag.address)
-                            // }
-                            // struct_tag.address + struct_tag.module + struct_tag.name;
-                            // let str_view_struct_tag = StrView(struct_tag);
-                            // let struct_tag_str =
-                            //     serde_json::to_string(&str_view_struct_tag).unwrap();
-                            // println!(
-                            //     // "struct_tag {:?}, {}, {:?}, {}, {}",
-                            //     // "struct_tag {:?}, {}, {}, {}",
-                            //     "struct_tag {}, {}",
-                            //     // option.types.as_ref().unwrap().contains(&struct_tag_str),
-                            //     // option.types.as_ref().unwrap().contains(&resource_type_str),
-                            //     option.types.as_ref().unwrap().contains(&resource_type_value_str),
-                            //     // str_view_struct_tag,
-                            //     // struct_tag_str,
-                            //     // resource_type_str,
-                            //     resource_type_value_str
-                            // );
-                            // true
-                            // option.types.contains()
-                            // let id = Identifier::from_utf8(*k);
-                            // println!("id = {}", id.);
-                            // struct_tag.unwrap().serialize();
-                            // let str = view_resource(&statedb, struct_tag.clone(), v.as_slice())
-                            //     .ok()
-                            //     .map(Into::into);
-                            // println!("")
-                            // match option.types {
-                            //     None => true,
-                            //     Some(types) => {
-                            //         let struct_tag = StructTag::decode(k.as_slice())?;
-                            //         let str = view_resource(&statedb, struct_tag.clone(), v.as_slice())
-                            //             .ok()
-                            //             .map(Into::into);
-                            //         let decoded = if option.decode {
-                            //             //ignore the resource decode error
-                            //         } else {
-                            //             None
-                            //         };
-                            //         let account_state: AccountState = account_state_bytes.as_slice().try_into()?;
-                            //         account_state.
-
-                            //         if types.contains(address) {
-
-                            //         }
-                            //     }
-                            // }
-                            // if option.types.is
-                            // let account: AccountAddress = bcs_ext::from_bytes(address_bytes);
-                            // let account_state: AccountState =
-                            //     account_state_bytes.as_slice().try_into()?;
-                            // let resource_root =
-                            //     account_state.storage_roots()[DataType::RESOURCE.storage_index()];
-                            // let resource = match resource_root {
-                            //     None => None,
-                            //     Some(root) => {
-                            //         let account_tree =
-                            //             StateTree::<StructTag>::new(storage.clone(), Some(root));
-                            //         let data = account_tree.get(&resource_struct_tag)?;
-
-                            //         if let Some(d) = data {
-                            //             let annotated_struct = value_annotator.view_struct(
-                            //                 resource_struct_tag.clone(),
-                            //                 d.as_slice(),
-                            //             )?;
-                            //             let resource = annotated_struct;
-                            //             let resource_json_value =
-                            //                 serde_json::to_value(MoveStruct(resource))?;
-                            //             Some(resource_json_value)
-                            //         } else {
-                            //             None
-                            //         }
-                            //     }
-                            // };
-                            // println!("x: {}", x.)
                         })
                         .skip(option.start_index)
                         .take(option.max_size)
