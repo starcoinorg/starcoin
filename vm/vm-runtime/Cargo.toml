@@ -26,7 +26,7 @@ starcoin-natives = {path = "../natives"}
 starcoin-types = {path = "../../types"}
 starcoin-vm-types = {path = "../types"}
 stdlib = {package = "stdlib", path = "../stdlib"}
-tracing = "0.1.34"
+tracing = "0.1.36"
 
 [dev-dependencies]
 
