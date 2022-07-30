@@ -38,21 +38,28 @@ serde = { version = "1" }
 serde_json = { version = "1" }
 tokio = { version = "^1", features = ["full"] }
 
-bcs-ext = { path = "../../commons/bcs_ext" }
-move-resource-viewer = { git = "https://github.com/starcoinorg/move", rev = "ed32208eb82e87000fe2d163d2b6df3851d2b9c1" }
-starcoin-abi-decoder = { path = "../../abi/decoder" }
-starcoin-config = { path = "../../config" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-starcoin-dev = { path = "../dev" }
-starcoin-genesis = { path = "../../genesis" }
-starcoin-resource-viewer = { path = "../resource-viewer" }
-starcoin-rpc-api = { path = "../../rpc/api" }
-starcoin-state-api = { path = "../../state/api" }
-starcoin-statedb = { path = "../../state/statedb" }
-starcoin-types = { path = "../../types" }
-starcoin-vm-runtime = { path = "../../vm/vm-runtime" }
-starcoin-vm-types = { path = "../../vm/types" }
+bcs-ext = {path = "../../commons/bcs_ext"}
+move-resource-viewer = {git = "https://github.com/starcoinorg/move", rev = "ed32208eb82e87000fe2d163d2b6df3851d2b9c1"}
+starcoin-abi-decoder = {path = "../../abi/decoder"}
+starcoin-config = {path = "../../config"}
+starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-dev = {path = "../dev"}
+starcoin-genesis = {path = "../../genesis"}
+starcoin-resource-viewer = {path = "../resource-viewer"}
+starcoin-rpc-api = {path = "../../rpc/api"}
+starcoin-rpc-server = {path = "../../rpc/server"}
+starcoin-state-api = {path = "../../state/api"}
+starcoin-statedb = {path = "../../state/statedb"}
+starcoin-types = {path = "../../types"}
+starcoin-vm-runtime = {path = "../../vm/vm-runtime"}
+starcoin-vm-types = {path = "../../vm/types"}
 stdlib = { path = "../stdlib" }
+starcoin-storage = {path = "../../storage"}
+starcoin-accumulator = { package="starcoin-accumulator", path = "../../commons/accumulator"}
+starcoin-chain-api = {path="../../chain/api"}
+jsonrpc-core = { version = "18", features = ["arbitrary_precision"] }
+jsonrpc-http-server = "18"
+jsonrpc-derive = "18"
 
 [dev-dependencies]
 datatest-stable = "0.1.1"

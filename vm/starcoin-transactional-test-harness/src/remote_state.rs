@@ -5,6 +5,7 @@ use move_core_types::resolver::{ModuleResolver, ResourceResolver};
 use serde_json::Value;
 use starcoin_crypto::HashValue;
 
+use starcoin_rpc_api::chain::ChainApiClient;
 use starcoin_rpc_api::state::StateApiClient;
 use starcoin_rpc_api::types::{BlockView, StateWithProofView};
 use starcoin_rpc_api::Params;
@@ -185,8 +186,10 @@ where
 #[derive(Clone)]
 pub struct RemoteRpcAsyncClient {
     state_client: StateApiClient,
+    chain_client: ChainApiClient,
     raw_client: RawClient,
     state_root: HashValue,
+    fork_number: u64,
 }
 
 impl RemoteRpcAsyncClient {
@@ -195,13 +198,13 @@ impl RemoteRpcAsyncClient {
             .await
             .map_err(|e| anyhow!(format!("{}", e)))?;
         let chain_client: starcoin_rpc_api::chain::ChainApiClient = rpc_channel.clone().into();
-        let state_root = match block_number {
+        let (state_root, fork_number) = match block_number {
             None => {
                 let chain_info = chain_client
                     .info()
                     .await
                     .map_err(|e| anyhow!(format!("{}", e)))?;
-                chain_info.head.state_root
+                (chain_info.head.state_root, chain_info.head.number.0)
             }
             Some(n) => {
                 let b: Option<BlockView> = chain_client
@@ -209,15 +212,17 @@ impl RemoteRpcAsyncClient {
                     .await
                     .map_err(|e| anyhow!(format!("{}", e)))?;
                 let b = b.ok_or_else(|| anyhow::anyhow!("cannot found block of height {}", n))?;
-                b.header.state_root
+                (b.header.state_root, n)
             }
         };
         let state_client: starcoin_rpc_api::state::StateApiClient = rpc_channel.clone().into();
         let raw_client = rpc_channel.clone().into();
         Ok(Self {
             state_client,
+            chain_client,
             raw_client,
             state_root,
+            fork_number,
         })
     }
 
@@ -279,6 +284,16 @@ impl RemoteRpcAsyncClient {
             .await
             .map_err(|e| anyhow!(format!("{}", e)))
     }
+
+    pub fn get_chain_client(&self) -> &ChainApiClient {
+        &self.chain_client
+    }
+
+    pub fn get_fork_block_number(&self) -> u64 {
+        let n = self.fork_number;
+        n
+    }
+
 }
 
 #[derive(Clone)]

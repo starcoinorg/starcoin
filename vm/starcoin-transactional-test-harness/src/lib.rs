@@ -1,3 +1,4 @@
+use crate::context::ForkContext;
 use crate::in_memory_state_cache::InMemoryStateCache;
 use crate::remote_state::{RemoteViewer, SelectableStateView};
 use anyhow::{bail, Result};
@@ -34,7 +35,9 @@ use starcoin_rpc_api::types::{
 use starcoin_rpc_api::Params;
 use starcoin_state_api::{ChainStateWriter, StateReaderExt};
 use starcoin_statedb::ChainStateDB;
+use starcoin_types::U256;
 use starcoin_types::account::{Account, AccountData};
+use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockHeaderExtra};
 use starcoin_types::{
     access_path::AccessPath,
     account_config::{genesis_address, AccountResource},
@@ -67,6 +70,8 @@ use stdlib::{starcoin_framework_named_addresses, G_PRECOMPILED_STARCOIN_FRAMEWOR
 
 mod in_memory_state_cache;
 pub mod remote_state;
+pub mod fork_chain;
+pub mod context;
 
 #[derive(Parser, Debug, Default)]
 pub struct ExtraInitArgs {
@@ -268,6 +273,7 @@ pub struct StarcoinTestAdapter<'a> {
     storage: SelectableStateView<ChainStateDB, InMemoryStateCache<RemoteViewer>>,
     default_syntax: SyntaxChoice,
     remote_viewer: Option<RemoteViewer>,
+    fork_context: Option<ForkContext>,
     debug: bool,
 }
 
@@ -628,17 +634,34 @@ impl<'a> StarcoinTestAdapter<'a> {
                 HashValue::sha3_256_of(parent_hash.as_slice())
             })
             .unwrap_or_else(HashValue::zero);
-        let new_block_meta = BlockMetadata::new(
+
+        let block_header = BlockHeader::new(
             parent_hash,
             timestamp,
-            author,
-            None,
-            uncles,
             height,
+            author,
+            HashValue::random(),
+            HashValue::random(),
+            HashValue::random(),
+            0u64,
+            U256::zero(),
+            HashValue::random(),
             self.storage.get_chain_id()?,
             0,
+            BlockHeaderExtra::new([0u8; 4]),
         );
+        let block_body = BlockBody::new(
+            vec![],
+            None,
+        );
+        let new_block = Block::new(block_header, block_body);
+        let new_block_meta = new_block.to_metadata(0);
         self.run_blockmeta(new_block_meta.clone())?;
+
+        if let Some(context) = &mut self.fork_context {
+            let mut chain = context.chain.lock().unwrap();
+            chain.add_new_block(new_block)?;
+        }
 
         Ok((None, Some(serde_json::to_value(&new_block_meta)?)))
     }
@@ -648,11 +671,11 @@ impl<'a> StarcoinTestAdapter<'a> {
         method: String,
         params: Params,
     ) -> Result<(Option<String>, Option<Value>)> {
-        let remote_viewer = match self.remote_viewer.as_ref() {
+        let context = match self.fork_context.as_ref() {
             Some(c) => c,
             None => bail!("please set RPC url at init argument"),
         };
-        let output = remote_viewer.call_api(method.as_str(), params)?;
+        let output = context.call_api(method.as_str(), params)?;
         Ok((None, Some(serde_json::to_value(&output)?)))
     }
 }
@@ -709,9 +732,10 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         }
 
         let mut remote_viewer: Option<RemoteViewer> = None;
-
+        let mut fork_context: Option<ForkContext> = None;
         let store = if let Some(rpc) = init_args.rpc {
             let remote_view = RemoteViewer::from_url(&rpc, init_args.block_number).unwrap();
+            fork_context = Some(ForkContext::new_from_url(&rpc, init_args.block_number).unwrap());
             remote_viewer = Some(remote_view.clone());
             SelectableStateView::B(InMemoryStateCache::new(remote_view))
         } else {
@@ -767,6 +791,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             default_syntax,
             storage: store,
             remote_viewer,
+            fork_context,
             debug: init_args.debug,
         };
         me.hack_genesis_account()
@@ -775,8 +800,8 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         me.hack_account(association_address()).unwrap();
 
         // auto start from a new block based on existed state.
-        me.handle_new_block(None, None, None, None)
-            .expect("init test adapter failed");
+        // me.handle_new_block(None, None, None, None)
+        //     .expect("init test adapter failed");
         me
     }
 
