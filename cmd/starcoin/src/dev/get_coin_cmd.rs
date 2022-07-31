@@ -53,7 +53,11 @@ impl CommandAction for GetCoinCommand {
         let state = ctx.state();
         let net = ctx.state().net();
         let account_client = ctx.state().account_client();
-        let to = ctx.state().get_account_or_default(opt.address_or_receipt)?;
+        let to = if let Some(account_address) = opt.address_or_receipt {
+            account_address
+        } else {
+            ctx.state().default_account()?.address
+        };
 
         let transaction_info = if net.is_test_or_dev() {
             let sender = account_config::association_address();
@@ -67,7 +71,7 @@ impl CommandAction for GetCoinCommand {
                 .build_and_execute_transaction(
                     txn_opt,
                     TransactionPayload::ScriptFunction(encode_transfer_script_by_token_code(
-                        to.address,
+                        to,
                         opt.amount.scaling(),
                         G_STC_TOKEN_CODE.clone(),
                     )),
