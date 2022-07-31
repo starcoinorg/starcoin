@@ -35,9 +35,9 @@ use starcoin_rpc_api::types::{
 use starcoin_rpc_api::Params;
 use starcoin_state_api::{ChainStateWriter, StateReaderExt};
 use starcoin_statedb::ChainStateDB;
-use starcoin_types::U256;
 use starcoin_types::account::{Account, AccountData};
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockHeaderExtra};
+use starcoin_types::U256;
 use starcoin_types::{
     access_path::AccessPath,
     account_config::{genesis_address, AccountResource},
@@ -68,10 +68,11 @@ use starcoin_vm_types::{
 use std::{collections::BTreeMap, convert::TryInto, path::Path, str::FromStr};
 use stdlib::{starcoin_framework_named_addresses, G_PRECOMPILED_STARCOIN_FRAMEWORK};
 
+pub mod context;
+pub mod fork_chain;
+pub mod fork_state;
 mod in_memory_state_cache;
 pub mod remote_state;
-pub mod fork_chain;
-pub mod context;
 
 #[derive(Parser, Debug, Default)]
 pub struct ExtraInitArgs {
@@ -298,12 +299,16 @@ impl<'a> StarcoinTestAdapter<'a> {
     fn fetch_account_resource(&self, signer_addr: &AccountAddress) -> Result<AccountResource> {
         let account_access_path =
             AccessPath::resource_access_path(*signer_addr, AccountResource::struct_tag());
-        let account_blob = self.context.storage.get(&account_access_path)?.ok_or_else(|| {
-            anyhow::anyhow!(
+        let account_blob = self
+            .context
+            .storage
+            .get(&account_access_path)?
+            .ok_or_else(|| {
+                anyhow::anyhow!(
                 "Failed to fetch account resource under address {}. Has the account been created?",
                 signer_addr
             )
-        })?;
+            })?;
         Ok(bcs::from_bytes(&account_blob).unwrap())
     }
 
@@ -319,12 +324,16 @@ impl<'a> StarcoinTestAdapter<'a> {
         let balance_access_path =
             AccessPath::resource_access_path(*signer_addr, balance_resource_tag);
 
-        let balance_blob = self.context.storage.get(&balance_access_path)?.ok_or_else(|| {
-            anyhow::anyhow!(
-                "Failed to fetch balance resource under address {}.",
-                signer_addr
-            )
-        })?;
+        let balance_blob = self
+            .context
+            .storage
+            .get(&balance_access_path)?
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Failed to fetch balance resource under address {}.",
+                    signer_addr
+                )
+            })?;
 
         Ok(bcs::from_bytes(&balance_blob).unwrap())
     }
@@ -345,7 +354,8 @@ impl<'a> StarcoinTestAdapter<'a> {
             genesis_account.has_delegated_key_rotation_capability(),
             genesis_account.has_delegated_withdrawal_capability(),
         );
-        self.context.storage
+        self.context
+            .storage
             .apply_write_set(genesis_account_data.to_writeset())?;
 
         {
@@ -362,7 +372,9 @@ impl<'a> StarcoinTestAdapter<'a> {
                 ),
                 WriteOp::Deletion,
             ));
-            self.context.storage.apply_write_set(writes.freeze().unwrap())?;
+            self.context
+                .storage
+                .apply_write_set(writes.freeze().unwrap())?;
         }
         Ok(())
     }
@@ -386,7 +398,9 @@ impl<'a> StarcoinTestAdapter<'a> {
             account.has_delegated_key_rotation_capability(),
             account.has_delegated_withdrawal_capability(),
         );
-        self.context.storage.apply_write_set(account_data.to_writeset())?;
+        self.context
+            .storage
+            .apply_write_set(account_data.to_writeset())?;
         Ok(())
     }
 
@@ -448,7 +462,9 @@ impl<'a> StarcoinTestAdapter<'a> {
         match output.status() {
             TransactionStatus::Keep(kept_vm_status) => match kept_vm_status {
                 KeptVMStatus::Executed => {
-                    self.context.storage.apply_write_set(output.into_inner().0)?;
+                    self.context
+                        .storage
+                        .apply_write_set(output.into_inner().0)?;
                 }
                 _ => {
                     bail!("Failed to execute transaction. VMStatus: {}", status)
@@ -480,7 +496,8 @@ impl<'a> StarcoinTestAdapter<'a> {
             .unwrap();
         match output.status() {
             TransactionStatus::Keep(_kept_vm_status) => {
-                self.context.storage
+                self.context
+                    .storage
                     .apply_write_set(output.clone().into_inner().0)?;
             }
             TransactionStatus::Discard(_) => {}
@@ -616,6 +633,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         let height = number
             .or_else(|| last_blockmeta.as_ref().map(|b| b.number + 1))
             .unwrap_or(0);
+        println!("adding new block: {}", height);
 
         let author = author
             .map(|v| self.compiled_state.resolve_address(&v))
@@ -625,7 +643,8 @@ impl<'a> StarcoinTestAdapter<'a> {
         let uncles = uncles
             .or_else(|| last_blockmeta.as_ref().map(|b| b.uncles))
             .unwrap_or(0);
-        let timestamp = timestamp.unwrap_or(self.context.storage.get_timestamp()?.milliseconds + 10 * 1000);
+        let timestamp =
+            timestamp.unwrap_or(self.context.storage.get_timestamp()?.milliseconds + 10 * 1000);
         //TODO find a better way to get parent hash, we should keep to local storage.
         let parent_hash = last_blockmeta
             .as_ref()
@@ -651,14 +670,13 @@ impl<'a> StarcoinTestAdapter<'a> {
             0,
             BlockHeaderExtra::new([0u8; 4]),
         );
-        let block_body = BlockBody::new(
-            vec![],
-            None,
-        );
+        let block_body = BlockBody::new(vec![], None);
         let new_block = Block::new(block_header, block_body);
         let new_block_meta = new_block.to_metadata(0);
-        self.run_blockmeta(new_block_meta.clone())?;
-
+        self.run_blockmeta(new_block_meta.clone()).map_err(|e| {
+            println!("Run blockmeta error: {}", e);
+            e
+        })?;
         let mut chain = self.context.chain.lock().unwrap();
         chain.add_new_block(new_block)?;
 
@@ -726,10 +744,16 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             eprintln!("[WARN] the `public_keys` option is deprecated, and is no longer working, please remove it.");
         }
 
-        let context = if let Some(rpc) = init_args.rpc {
-            ForkContext::new_fork(&rpc, init_args.block_number).unwrap()
+        let (context, fork_flag) = if let Some(rpc) = init_args.rpc {
+            (
+                ForkContext::new_fork(&rpc, init_args.block_number).unwrap(),
+                true,
+            )
         } else {
-            ForkContext::new_local(init_args.network.unwrap()).unwrap()
+            (
+                ForkContext::new_local(init_args.network.unwrap()).unwrap(),
+                false,
+            )
         };
 
         // add pre compiled modules
@@ -769,7 +793,10 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                     ));
                 }
             }
-            context.storage.apply_write_set(writes.freeze().unwrap()).unwrap();
+            context
+                .storage
+                .apply_write_set(writes.freeze().unwrap())
+                .unwrap();
         }
 
         let mut me = Self {
@@ -783,9 +810,12 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
 
         me.hack_account(association_address()).unwrap();
 
-        // auto start from a new block based on existed state.
-        // me.handle_new_block(None, None, None, None)
-        //     .expect("init test adapter failed");
+        if fork_flag {
+        } else {
+            // auto start from a new block based on existed state.
+            me.handle_new_block(None, None, None, None)
+                .expect("init test adapter failed");
+        };
         me
     }
 

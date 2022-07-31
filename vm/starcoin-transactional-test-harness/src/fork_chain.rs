@@ -1,25 +1,25 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::remote_state::RemoteRpcAsyncClient;
 use anyhow::{anyhow, bail, ensure, format_err, Result};
 use dashmap::DashMap;
 use jsonrpc_client_transports::RpcError;
 use jsonrpc_core::futures_util::future::Remote;
 use jsonrpc_core::futures_util::{FutureExt, TryFutureExt};
-use starcoin_chain_api::{
-    ChainReader,
-};
-use starcoin_rpc_api::chain::ChainApiClient;
-use starcoin_rpc_api::{FutureResult, debug};
-use starcoin_config::{ChainNetworkID, BuiltinNetworkID};
+use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
+use starcoin_chain_api::ChainReader;
+use starcoin_config::{BuiltinNetworkID, ChainNetworkID};
 use starcoin_crypto::HashValue;
+use starcoin_rpc_api::chain::ChainApiClient;
 use starcoin_rpc_api::chain::{ChainApi, GetBlockOption};
 use starcoin_rpc_api::state::StateApi;
-use starcoin_rpc_api::types::{
-    BlockInfoView, BlockView, ChainId, ChainInfoView, StrView,
-};
+use starcoin_rpc_api::types::{BlockInfoView, BlockView, ChainId, ChainInfoView, StrView};
+use starcoin_rpc_api::{debug, FutureResult};
 use starcoin_rpc_server::module::map_err;
 use starcoin_storage::block_info::BlockInfoStore;
+use starcoin_storage::storage::StorageInstance;
+use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::{
     account_address::AccountAddress,
@@ -29,13 +29,6 @@ use starcoin_vm_types::access_path::AccessPath;
 use std::hash::Hash;
 use std::option::Option::{None, Some};
 use std::sync::{Arc, Mutex};
-use crate::remote_state::RemoteRpcAsyncClient;
-use starcoin_accumulator::{
-    node::AccumulatorStoreType, Accumulator, MerkleAccumulator,
-};
-use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::{BlockStore, Storage, Store};
-
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct ChainStatusWithBlock {
@@ -44,7 +37,7 @@ pub struct ChainStatusWithBlock {
 }
 
 #[derive(Clone)]
-pub struct ForkBlockChain {    
+pub struct ForkBlockChain {
     remote_client: Option<Arc<RemoteRpcAsyncClient>>,
     storage: Arc<Storage>,
     fork_number: u64,
@@ -63,7 +56,10 @@ impl ForkBlockChain {
         Self::new_inner(fork_number, Some(remote_client))
     }
     // Mock chain fork from remote_client if fork_number > 0
-        fn new_inner(fork_number: u64, remote_client: Option<Arc<RemoteRpcAsyncClient>>) -> Result<Self> {
+    fn new_inner(
+        fork_number: u64,
+        remote_client: Option<Arc<RemoteRpcAsyncClient>>,
+    ) -> Result<Self> {
         let storage_instance = StorageInstance::new_cache_instance();
         let storage = Arc::new(Storage::new(storage_instance)?);
         Ok(Self {
@@ -81,19 +77,22 @@ impl ForkBlockChain {
         block.header = block.header().as_builder().build();
 
         let txn_accumulator = MerkleAccumulator::new_empty(
-            self.storage.get_accumulator_store(AccumulatorStoreType::Transaction),
+            self.storage
+                .get_accumulator_store(AccumulatorStoreType::Transaction),
         );
         let block_accumulator = MerkleAccumulator::new_empty(
-            self.storage.get_accumulator_store(AccumulatorStoreType::Block),
+            self.storage
+                .get_accumulator_store(AccumulatorStoreType::Block),
         );
         let block_info = BlockInfo::new(
             block.header.id(),
             block.header.difficulty(),
             txn_accumulator.get_info(),
             block_accumulator.get_info(),
-        );      
+        );
         self.current_number = block.header().number();
-        self.number_hash_map.insert(self.current_number, block.header().id());
+        self.number_hash_map
+            .insert(self.current_number, block.header().id());
         self.block_map.insert(block.header().id(), block.clone());
         self.status = Some(ChainStatusWithBlock {
             status: ChainStatus::new(block.header().clone(), block_info.clone()),
@@ -123,39 +122,28 @@ impl MockApi {
     }
 }
 
-impl ChainApi for MockApi
-{
+impl ChainApi for MockApi {
     fn id(&self) -> jsonrpc_core::Result<ChainId> {
-        Ok(ChainId::from(&ChainNetworkID::Builtin(BuiltinNetworkID::Dev)))
+        Ok(ChainId::from(&ChainNetworkID::Builtin(
+            BuiltinNetworkID::Dev,
+        )))
     }
 
     fn info(&self) -> FutureResult<ChainInfoView> {
         let chain = self.chain.lock().unwrap();
-        let status = chain.status.clone();        
+        let status = chain.status.clone();
         let client = chain.remote_chain_client().clone();
         let fut = async move {
             match status {
-                Some(status) => {
-                    Ok(ChainInfoView::from(
-                        ChainInfo::new(
-                            status.head.header().chain_id(),
-                            HashValue::random(),
-                            status.status.clone(),
-                        )
-                    ))
+                Some(status) => Ok(ChainInfoView::from(ChainInfo::new(
+                    status.head.header().chain_id(),
+                    HashValue::random(),
+                    status.status.clone(),
+                ))),
+                None => match client {
+                    Some(client) => client.info().await.map_err(|e| anyhow!("{}", e)),
+                    None => bail!("No block generated."),
                 },
-                None => {                
-                    match client{
-                        Some(client) => {
-                                client
-                                .info()
-                                .await
-                                .map_err(|e| anyhow!("{}", e))
-                        },
-                        None => bail!("No block generated.")
-                    }
-
-                }
             }
         };
         Box::pin(fut.boxed().map_err(map_err))
@@ -167,25 +155,20 @@ impl ChainApi for MockApi
         option: Option<GetBlockOption>,
     ) -> FutureResult<Option<BlockView>> {
         let chain = self.chain.lock().unwrap();
-        let status = chain.status.clone();        
+        let status = chain.status.clone();
         let client = chain.remote_chain_client().clone();
         let fut = async move {
             match status {
                 Some(status) => {
                     todo!()
-                },
-                None => {                
-                    match client {
-                        Some(client) => {
-                            client
-                            .get_block_by_hash(hash, option)
-                            .await
-                            .map_err(|e| anyhow!("{}", e))
-                        },
-                        None => bail!("No block generated.")
-                    }
-
                 }
+                None => match client {
+                    Some(client) => client
+                        .get_block_by_hash(hash, option)
+                        .await
+                        .map_err(|e| anyhow!("{}", e)),
+                    None => bail!("No block generated."),
+                },
             }
         };
         Box::pin(fut.boxed().map_err(map_err))
@@ -193,11 +176,11 @@ impl ChainApi for MockApi
 
     fn get_block_by_number(
         &self,
-        number:BlockNumber,
-        option:Option<GetBlockOption>,
+        number: BlockNumber,
+        option: Option<GetBlockOption>,
     ) -> FutureResult<Option<BlockView>> {
         let chain = self.chain.lock().unwrap();
-        let status = chain.status.clone();        
+        let status = chain.status.clone();
         let client = chain.remote_chain_client();
         let fork_number = chain.fork_number;
         let current_number = chain.current_number;
@@ -207,19 +190,17 @@ impl ChainApi for MockApi
             if number <= fork_number {
                 debug_assert!(client.is_some());
                 client
-                .unwrap()
-                .get_block_by_number(number, option)
-                .await
-                .map_err(|e| anyhow!("{}", e))
+                    .unwrap()
+                    .get_block_by_number(number, option)
+                    .await
+                    .map_err(|e| anyhow!("{}", e))
             } else if number <= current_number {
                 debug_assert!(status.is_some());
                 let hash = number_hash_map.get(&number).map(|h| *h);
                 let block_view = match hash {
-                    Some(hash) => {
-                        match block_map.get(&hash) {
-                            Some(b) => Some(BlockView::try_from(b.clone())?),
-                            None => None,
-                        }
+                    Some(hash) => match block_map.get(&hash) {
+                        Some(b) => Some(BlockView::try_from(b.clone())?),
+                        None => None,
                     },
                     None => None,
                 };
@@ -228,36 +209,33 @@ impl ChainApi for MockApi
                 Ok(None)
             }
         };
-        println!("run in get block by number: {}, current number: {}", number, current_number);
+        println!(
+            "run in get block by number: {}, current number: {}",
+            number, current_number
+        );
         Box::pin(fut.boxed().map_err(map_err))
     }
 
     fn get_blocks_by_number(
         &self,
-        number:Option<BlockNumber>,
-        count:u64,
-    ) -> FutureResult<Vec<BlockView>>  {
+        number: Option<BlockNumber>,
+        count: u64,
+    ) -> FutureResult<Vec<BlockView>> {
         todo!()
     }
 
-    fn get_block_info_by_number(
-        &self,
-        number:BlockNumber
-    ) -> FutureResult<Option<BlockInfoView>>  {
+    fn get_block_info_by_number(&self, number: BlockNumber) -> FutureResult<Option<BlockInfoView>> {
         let chain = self.chain.lock().unwrap();
-        let status = chain.status.clone();        
+        let status = chain.status.clone();
         let client = chain.remote_chain_client();
         let fut = async move {
             match status {
                 Some(status) => {
                     todo!()
-                },
-                None => {                
+                }
+                None => {
                     debug_assert!(client.is_some());
-                    client
-                        .unwrap()
-                        .get_block_info_by_number(number)
-                        .await
+                    client.unwrap().get_block_info_by_number(number).await
                 }
             }
         };
@@ -265,62 +243,115 @@ impl ChainApi for MockApi
         todo!()
     }
 
-    fn get_transaction(&self,transaction_hash:HashValue,option:Option<starcoin_rpc_api::chain::GetTransactionOption> ,) -> starcoin_rpc_api::FutureResult<Option<starcoin_rpc_api::types::TransactionView> >  {
+    fn get_transaction(
+        &self,
+        transaction_hash: HashValue,
+        option: Option<starcoin_rpc_api::chain::GetTransactionOption>,
+    ) -> starcoin_rpc_api::FutureResult<Option<starcoin_rpc_api::types::TransactionView>> {
         todo!()
     }
 
-    fn get_transaction_info(&self,transaction_hash:HashValue,) -> starcoin_rpc_api::FutureResult<Option<starcoin_rpc_api::types::TransactionInfoView> >  {
+    fn get_transaction_info(
+        &self,
+        transaction_hash: HashValue,
+    ) -> starcoin_rpc_api::FutureResult<Option<starcoin_rpc_api::types::TransactionInfoView>> {
         todo!()
     }
 
-    fn get_block_txn_infos(&self,block_hash:HashValue) -> starcoin_rpc_api::FutureResult<Vec<starcoin_rpc_api::types::TransactionInfoView> >  {
+    fn get_block_txn_infos(
+        &self,
+        block_hash: HashValue,
+    ) -> starcoin_rpc_api::FutureResult<Vec<starcoin_rpc_api::types::TransactionInfoView>> {
         todo!()
     }
 
-    fn get_txn_info_by_block_and_index(&self,block_hash:HashValue,idx:u64,) -> starcoin_rpc_api::FutureResult<Option<starcoin_rpc_api::types::TransactionInfoView> >  {
+    fn get_txn_info_by_block_and_index(
+        &self,
+        block_hash: HashValue,
+        idx: u64,
+    ) -> starcoin_rpc_api::FutureResult<Option<starcoin_rpc_api::types::TransactionInfoView>> {
         todo!()
     }
 
-    fn get_events_by_txn_hash(&self,txn_hash:HashValue,option:Option<starcoin_rpc_api::chain::GetEventOption> ,) -> starcoin_rpc_api::FutureResult<Vec<starcoin_rpc_api::types::TransactionEventResponse> >  {
+    fn get_events_by_txn_hash(
+        &self,
+        txn_hash: HashValue,
+        option: Option<starcoin_rpc_api::chain::GetEventOption>,
+    ) -> starcoin_rpc_api::FutureResult<Vec<starcoin_rpc_api::types::TransactionEventResponse>>
+    {
         todo!()
     }
 
-    fn get_events(&self,filter:starcoin_rpc_api::types::pubsub::EventFilter,option:Option<starcoin_rpc_api::chain::GetEventOption> ,) -> starcoin_rpc_api::FutureResult<Vec<starcoin_rpc_api::types::TransactionEventResponse> >  {
+    fn get_events(
+        &self,
+        filter: starcoin_rpc_api::types::pubsub::EventFilter,
+        option: Option<starcoin_rpc_api::chain::GetEventOption>,
+    ) -> starcoin_rpc_api::FutureResult<Vec<starcoin_rpc_api::types::TransactionEventResponse>>
+    {
         todo!()
     }
 
-    fn get_headers(&self,ids:Vec<HashValue>) -> starcoin_rpc_api::FutureResult<Vec<starcoin_rpc_api::types::BlockHeaderView> >  {
+    fn get_headers(
+        &self,
+        ids: Vec<HashValue>,
+    ) -> starcoin_rpc_api::FutureResult<Vec<starcoin_rpc_api::types::BlockHeaderView>> {
         todo!()
     }
 
-    fn get_transaction_infos(&self,start_global_index:u64,reverse:bool,max_size:u64,) -> starcoin_rpc_api::FutureResult<Vec<starcoin_rpc_api::types::TransactionInfoView> >  {
+    fn get_transaction_infos(
+        &self,
+        start_global_index: u64,
+        reverse: bool,
+        max_size: u64,
+    ) -> starcoin_rpc_api::FutureResult<Vec<starcoin_rpc_api::types::TransactionInfoView>> {
         todo!()
     }
 
-    fn get_transaction_proof(&self,block_hash:HashValue,transaction_global_index:u64,event_index:Option<u64> ,access_path:Option<starcoin_rpc_api::types::StrView<AccessPath> > ,) -> starcoin_rpc_api::FutureResult<Option<starcoin_rpc_api::types::TransactionInfoWithProofView> >  {
+    fn get_transaction_proof(
+        &self,
+        block_hash: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<starcoin_rpc_api::types::StrView<AccessPath>>,
+    ) -> starcoin_rpc_api::FutureResult<Option<starcoin_rpc_api::types::TransactionInfoWithProofView>>
+    {
         todo!()
     }
 
-    fn get_transaction_proof_raw(&self,block_hash:HashValue,transaction_global_index:u64,event_index:Option<u64> ,access_path:Option<starcoin_rpc_api::types::StrView<AccessPath> > ,) -> starcoin_rpc_api::FutureResult<Option<starcoin_rpc_api::types::StrView<Vec<u8> > > >  {
+    fn get_transaction_proof_raw(
+        &self,
+        block_hash: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<starcoin_rpc_api::types::StrView<AccessPath>>,
+    ) -> starcoin_rpc_api::FutureResult<Option<starcoin_rpc_api::types::StrView<Vec<u8>>>> {
         todo!()
     }
 }
 
-impl StateApi for MockApi 
-{
+impl StateApi for MockApi {
     fn get(&self, access_path: AccessPath) -> starcoin_rpc_api::FutureResult<Option<Vec<u8>>> {
         todo!()
     }
 
-    fn get_with_proof(&self, access_path: AccessPath) -> starcoin_rpc_api::FutureResult<starcoin_rpc_api::types::StateWithProofView> {
+    fn get_with_proof(
+        &self,
+        access_path: AccessPath,
+    ) -> starcoin_rpc_api::FutureResult<starcoin_rpc_api::types::StateWithProofView> {
         todo!()
     }
 
-    fn get_with_proof_raw(&self, access_path: AccessPath) -> starcoin_rpc_api::FutureResult<StrView<Vec<u8>>> {
+    fn get_with_proof_raw(
+        &self,
+        access_path: AccessPath,
+    ) -> starcoin_rpc_api::FutureResult<StrView<Vec<u8>>> {
         todo!()
     }
 
-    fn get_account_state(&self, address: AccountAddress) -> starcoin_rpc_api::FutureResult<Option<starcoin_types::account_state::AccountState>> {
+    fn get_account_state(
+        &self,
+        address: AccountAddress,
+    ) -> starcoin_rpc_api::FutureResult<Option<starcoin_types::account_state::AccountState>> {
         todo!()
     }
 

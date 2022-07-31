@@ -293,7 +293,6 @@ impl RemoteRpcAsyncClient {
         let n = self.fork_number;
         n
     }
-
 }
 
 #[derive(Clone)]
