@@ -423,7 +423,7 @@ where
                                             template_ctx.entry(cmd_name).append(result);
                                         }
                                         Err(e) => {
-                                            rl.add_history_entry(line_after_eval.as_str());
+                                            rl.add_history_entry(line.as_str());
                                             println!("{}", e);
                                         }
                                     }
