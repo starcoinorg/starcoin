@@ -3,10 +3,8 @@
 
 use crate::MyWorld;
 use cucumber::{Steps, StepsBuilder};
-use jsonpath::Selector;
-use lazy_static::lazy_static;
-use regex::Regex;
-use scmd::CmdContext;
+use jpst::TemplateContext;
+use scmd::{result_to_json, CmdContext};
 use serde_json::Value;
 use starcoin_account_provider::ProviderFactory;
 use starcoin_cmd::add_command;
@@ -14,89 +12,84 @@ use starcoin_cmd::{CliState, StarcoinOpt};
 use starcoin_config::account_provider_config::AccountProviderConfig;
 use starcoin_config::{G_APP_VERSION, G_CRATE_VERSION};
 use starcoin_logger::prelude::*;
-use std::collections::{HashMap, HashSet};
 use std::time::Duration;
-
-lazy_static! {
-    static ref G_SELECTOR_REGEX: Regex = Regex::new(r"@(?P<value>[^@\s]+)@").unwrap();
-}
-fn extract_selector_str(input: &str) -> HashSet<&str> {
-    G_SELECTOR_REGEX
-        .captures_iter(input)
-        .filter_map(|cap| cap.name("value").map(|find| find.as_str()))
-        .collect()
-}
 
 pub fn steps() -> Steps<MyWorld> {
     let mut builder: StepsBuilder<MyWorld> = Default::default();
     builder
-        .then_regex(r#"cmd: "([^"]*)""#, |world: &mut MyWorld, args, _step| {
-            let client = world.default_rpc_client.as_ref().take().unwrap();
-            let chain_id = client.node_info().unwrap().net.chain_id();
-            let account_client = ProviderFactory::create_provider(
-                client.clone(),
-                chain_id,
-                &AccountProviderConfig::default(),
-            )
-            .unwrap();
-            let node_info = client.clone().node_info().unwrap();
-            let state = CliState::new(
-                node_info.net,
-                client.clone(),
-                Some(Duration::from_secs(5)),
-                None,
-                account_client,
-            );
-            let context = CmdContext::<CliState, StarcoinOpt>::with_state(
-                G_CRATE_VERSION,
-                Some(G_APP_VERSION.as_str()),
-                state,
-            );
-            // get last cmd result as current parameter
-            let mut vec = vec!["starcoin"];
-            let parameters = get_command_args(world, (*args[1]).parse().unwrap());
-            for parameter in parameters.as_str().split_whitespace() {
-                vec.push(parameter);
-            }
-            info!("parameter: {:?}", vec.clone());
-            let result = add_command(context).exec_with_args::<Value>(vec).unwrap();
+        .then_regex(
+            r#"cmd: "(([^"\\]|\\).*)""#,
+            |world: &mut MyWorld, args, _step| {
+                let client = world.default_rpc_client.as_ref().take().unwrap();
+                let chain_id = client.node_info().unwrap().net.chain_id();
+                let account_client = ProviderFactory::create_provider(
+                    client.clone(),
+                    chain_id,
+                    &AccountProviderConfig::default(),
+                )
+                .unwrap();
+                let node_info = client.clone().node_info().unwrap();
+                let state = CliState::new(
+                    node_info.net,
+                    client.clone(),
+                    Some(Duration::from_secs(5)),
+                    None,
+                    account_client,
+                );
+                let context = CmdContext::<CliState, StarcoinOpt>::with_state(
+                    G_CRATE_VERSION,
+                    Some(G_APP_VERSION.as_str()),
+                    state,
+                );
+                if world.tpl_ctx.is_none() {
+                    world.tpl_ctx = Some(TemplateContext::new());
+                }
+                let tpl_ctx = world.tpl_ctx.as_mut().unwrap();
+                // get last cmd result as current parameter
+                let mut vec = vec!["starcoin"];
 
-            debug!("cmd execute result: {:?}", result);
+                let evaled_parameters = eval_command_args(tpl_ctx, args[1].parse().unwrap());
+                let parameters = evaled_parameters.split_whitespace();
 
-            world.value = Some(result);
-        })
+                for parameter in parameters {
+                    vec.push(parameter);
+                }
+
+                let cmd = vec.get(1).cloned().unwrap();
+
+                let result = add_command(context).exec_with_args::<Value>(vec);
+
+                //TODO support error and check error in the cmd.feature
+                if result.is_err() {
+                    panic!("{}", result.unwrap_err());
+                }
+                let result_json = result_to_json(result);
+
+                debug!("cmd {} execute result: {:?}", cmd, result_json);
+                tpl_ctx.entry(cmd).append(result_json);
+            },
+        )
         .then_regex(
             r#"assert: "([^"]*)""#,
             |world: &mut MyWorld, args, _step| {
-                //get field_name from args
-                let mut args_vec = vec![];
-                for parameter in args[1].as_str().split_whitespace() {
-                    args_vec.push(parameter);
-                }
-                let mut args_map = HashMap::new();
-                for (i, v) in args_vec.iter().enumerate() {
-                    if (i % 2) == 1 {
-                        continue;
-                    }
-                    if i + 1 <= args_vec.len() {
-                        args_map.insert(*v, args_vec.get(i + 1).unwrap());
-                    }
-                }
-                for (arg_key, arg_val) in args_map {
-                    if let Some(value) = &world.value {
-                        let selector = Selector::new(arg_key).unwrap();
-                        let mut value: Vec<String> = selector
-                            .find(&value)
-                            .map(|t| {
-                                if t.is_string() {
-                                    t.as_str().unwrap().to_string()
-                                } else {
-                                    t.to_string()
-                                }
-                            })
-                            .collect();
-                        info!("assert value: {:?},expect: {:?}", value, *arg_val);
-                        assert_eq!(value.pop().unwrap().as_str(), *arg_val);
+                let evaled_parameters =
+                    eval_command_args(world.tpl_ctx.as_ref().unwrap(), args[1].to_owned());
+                let parameters = evaled_parameters.split_whitespace().collect::<Vec<_>>();
+
+                for chunk in parameters.chunks(3) {
+                    let first = chunk.get(0).cloned();
+                    let op = chunk.get(1).cloned();
+                    let second = chunk.get(2).cloned();
+
+                    info!("assert value: {:?} {:?} {:?}", first, op, second);
+
+                    match (first, op, second) {
+                        (Some(first), Some(op), Some(second)) => match op {
+                            "==" => assert_eq!(first, second),
+                            "!=" => assert_ne!(first, second),
+                            _ => panic!("unsupported operator"),
+                        },
+                        _ => panic!("expected 3 arguments: first [==|!=] second"),
                     }
                 }
                 info!("assert ok!");
@@ -105,33 +98,10 @@ pub fn steps() -> Steps<MyWorld> {
     builder.build()
 }
 
-fn get_command_args(world: &mut MyWorld, args: String) -> String {
-    let args_set = extract_selector_str(args.as_str());
-    info!("extract str: {:?}", args_set.clone());
-    let mut replace_map = HashMap::new();
-    for key in args_set {
-        if let Some(value) = &world.value {
-            let selector = Selector::new(key).unwrap();
-            let mut next_value: Vec<&str> =
-                selector.find(&value).map(|t| t.as_str().unwrap()).collect();
-            if !next_value.is_empty() {
-                replace_map.insert(key, next_value.pop().unwrap());
-            }
-        }
-    }
-    info!("replace_map: {:?}", replace_map.clone());
-    //replace args
-    let mut result = args.clone();
-    for (arg_key, arg_val) in replace_map {
-        let key = "@".to_owned() + arg_key + "@";
-        if arg_key.ends_with("auth_key") {
-            let val = "\"".to_owned() + arg_val + "\"";
-            result = result.replace(key.as_str(), val.as_str());
-        } else {
-            result = result.replace(key.as_str(), arg_val);
-        }
-    }
-
-    info!("replace result:{:?}", result);
-    result
+fn eval_command_args(ctx: &TemplateContext, args: String) -> String {
+    info!("args: {}", args);
+    let args = args.replace("\\\"", "\"");
+    let eval_args = jpst::format_str!(&args, ctx);
+    info!("eval args:{}", eval_args);
+    eval_args
 }

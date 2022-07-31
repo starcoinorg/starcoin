@@ -315,13 +315,13 @@ where
                 println!("Load history from file {:?} error: {:?}", history_file, e);
             }
         }
-        let mut cmd_ctx = jpst::TemplateContext::new();
+        let mut template_ctx = jpst::TemplateContext::new();
         let prompt = format!("{}% ", app_name);
         loop {
             let readline = rl.readline(prompt.as_str());
             match readline {
                 Ok(line) => {
-                    let line_after_eval = jpst::format_str!(line.as_str(), &cmd_ctx);
+                    let line_after_eval = jpst::format_str!(line.as_str(), &template_ctx);
                     let params: Vec<&str> = line_after_eval
                         .as_str()
                         .trim()
@@ -420,7 +420,7 @@ where
                                             {
                                                 println!("Print result error: {:?}", err);
                                             }
-                                            cmd_ctx.entry(cmd_name).append(result);
+                                            template_ctx.entry(cmd_name).append(result);
                                         }
                                         Err(e) => {
                                             rl.add_history_entry(line_after_eval.as_str());
