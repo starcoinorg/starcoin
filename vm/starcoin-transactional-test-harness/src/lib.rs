@@ -270,10 +270,9 @@ struct SimpleTransactionResult {
 
 pub struct StarcoinTestAdapter<'a> {
     compiled_state: CompiledState<'a>,
-    storage: SelectableStateView<ChainStateDB, InMemoryStateCache<RemoteViewer>>,
+    // storage: SelectableStateView<ChainStateDB, InMemoryStateCache<RemoteViewer>>,
     default_syntax: SyntaxChoice,
-    remote_viewer: Option<RemoteViewer>,
-    fork_context: Option<ForkContext>,
+    context: ForkContext,
     debug: bool,
 }
 
@@ -299,7 +298,7 @@ impl<'a> StarcoinTestAdapter<'a> {
     fn fetch_account_resource(&self, signer_addr: &AccountAddress) -> Result<AccountResource> {
         let account_access_path =
             AccessPath::resource_access_path(*signer_addr, AccountResource::struct_tag());
-        let account_blob = self.storage.get(&account_access_path)?.ok_or_else(|| {
+        let account_blob = self.context.storage.get(&account_access_path)?.ok_or_else(|| {
             anyhow::anyhow!(
                 "Failed to fetch account resource under address {}. Has the account been created?",
                 signer_addr
@@ -320,7 +319,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         let balance_access_path =
             AccessPath::resource_access_path(*signer_addr, balance_resource_tag);
 
-        let balance_blob = self.storage.get(&balance_access_path)?.ok_or_else(|| {
+        let balance_blob = self.context.storage.get(&balance_access_path)?.ok_or_else(|| {
             anyhow::anyhow!(
                 "Failed to fetch balance resource under address {}.",
                 signer_addr
@@ -346,7 +345,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             genesis_account.has_delegated_key_rotation_capability(),
             genesis_account.has_delegated_withdrawal_capability(),
         );
-        self.storage
+        self.context.storage
             .apply_write_set(genesis_account_data.to_writeset())?;
 
         {
@@ -363,7 +362,7 @@ impl<'a> StarcoinTestAdapter<'a> {
                 ),
                 WriteOp::Deletion,
             ));
-            self.storage.apply_write_set(writes.freeze().unwrap())?;
+            self.context.storage.apply_write_set(writes.freeze().unwrap())?;
         }
         Ok(())
     }
@@ -387,7 +386,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             account.has_delegated_key_rotation_capability(),
             account.has_delegated_withdrawal_capability(),
         );
-        self.storage.apply_write_set(account_data.to_writeset())?;
+        self.context.storage.apply_write_set(account_data.to_writeset())?;
         Ok(())
     }
 
@@ -403,6 +402,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         let sequence_number = account_resource.sequence_number();
         // let gas_currency_code = stc_type_tag().to_string();
         let vmconfig = self
+            .context
             .storage
             .get_on_chain_config::<VMConfig>()?
             .ok_or_else(|| anyhow::anyhow!("Failed to fetch onchain vm config."))?;
@@ -421,12 +421,12 @@ impl<'a> StarcoinTestAdapter<'a> {
                 (account_balance.token() / gas_unit_price as u128) as u64,
             )
         };
-        let chain_id = self.storage.get_chain_id()?;
+        let chain_id = self.context.storage.get_chain_id()?;
         Ok(TransactionParameters {
             sequence_number,
             gas_unit_price,
             max_gas_amount,
-            expiration_timestamp_secs: self.storage.get_timestamp()?.seconds() + 60 * 60,
+            expiration_timestamp_secs: self.context.storage.get_timestamp()?.seconds() + 60 * 60,
             chainid: chain_id,
         })
     }
@@ -438,7 +438,7 @@ impl<'a> StarcoinTestAdapter<'a> {
     fn run_blockmeta(&mut self, meta: BlockMetadata) -> Result<()> {
         let mut vm = StarcoinVM::new(None);
         let mut outputs = vm.execute_block_transactions(
-            &self.storage,
+            &self.context.storage,
             vec![Transaction::BlockMetadata(meta)],
             None,
         )?;
@@ -448,7 +448,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         match output.status() {
             TransactionStatus::Keep(kept_vm_status) => match kept_vm_status {
                 KeptVMStatus::Executed => {
-                    self.storage.apply_write_set(output.into_inner().0)?;
+                    self.context.storage.apply_write_set(output.into_inner().0)?;
                 }
                 _ => {
                     bail!("Failed to execute transaction. VMStatus: {}", status)
@@ -472,7 +472,7 @@ impl<'a> StarcoinTestAdapter<'a> {
 
         let (_status, output) = vm
             .execute_block_transactions(
-                &self.storage,
+                &self.context.storage,
                 vec![Transaction::UserTransaction(signed_txn.clone())],
                 None,
             )?
@@ -480,12 +480,12 @@ impl<'a> StarcoinTestAdapter<'a> {
             .unwrap();
         match output.status() {
             TransactionStatus::Keep(_kept_vm_status) => {
-                self.storage
+                self.context.storage
                     .apply_write_set(output.clone().into_inner().0)?;
             }
             TransactionStatus::Discard(_) => {}
         }
-        let payload = decode_txn_payload(&self.storage, signed_txn.payload())?;
+        let payload = decode_txn_payload(&self.context.storage, signed_txn.payload())?;
         let mut txn_view: SignedUserTransactionView = signed_txn.try_into()?;
         txn_view.raw_txn.decoded_payload = Some(payload.into());
         Ok(TransactionWithOutput {
@@ -501,7 +501,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             args,
         } = call;
         let rets = call_contract(
-            &self.storage,
+            &self.context.storage,
             function_id.0.module,
             function_id.0.function.as_str(),
             type_args.into_iter().map(|t| t.0).collect(),
@@ -509,7 +509,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             None,
         )?;
 
-        let move_resolver = RemoteStorage::new(&self.storage);
+        let move_resolver = RemoteStorage::new(&self.context.storage);
         let annotator = move_resource_viewer::MoveValueAnnotator::new(&move_resolver);
         let rets = rets
             .into_iter()
@@ -609,6 +609,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         uncles: Option<u64>,
     ) -> Result<(Option<String>, Option<Value>)> {
         let last_blockmeta = self
+            .context
             .storage
             .get_resource::<on_chain_resource::BlockMetadata>(genesis_address())?;
 
@@ -624,7 +625,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         let uncles = uncles
             .or_else(|| last_blockmeta.as_ref().map(|b| b.uncles))
             .unwrap_or(0);
-        let timestamp = timestamp.unwrap_or(self.storage.get_timestamp()?.milliseconds + 10 * 1000);
+        let timestamp = timestamp.unwrap_or(self.context.storage.get_timestamp()?.milliseconds + 10 * 1000);
         //TODO find a better way to get parent hash, we should keep to local storage.
         let parent_hash = last_blockmeta
             .as_ref()
@@ -646,7 +647,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             0u64,
             U256::zero(),
             HashValue::random(),
-            self.storage.get_chain_id()?,
+            self.context.storage.get_chain_id()?,
             0,
             BlockHeaderExtra::new([0u8; 4]),
         );
@@ -658,10 +659,8 @@ impl<'a> StarcoinTestAdapter<'a> {
         let new_block_meta = new_block.to_metadata(0);
         self.run_blockmeta(new_block_meta.clone())?;
 
-        if let Some(context) = &mut self.fork_context {
-            let mut chain = context.chain.lock().unwrap();
-            chain.add_new_block(new_block)?;
-        }
+        let mut chain = self.context.chain.lock().unwrap();
+        chain.add_new_block(new_block)?;
 
         Ok((None, Some(serde_json::to_value(&new_block_meta)?)))
     }
@@ -671,11 +670,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         method: String,
         params: Params,
     ) -> Result<(Option<String>, Option<Value>)> {
-        let context = match self.fork_context.as_ref() {
-            Some(c) => c,
-            None => bail!("please set RPC url at init argument"),
-        };
-        let output = context.call_api(method.as_str(), params)?;
+        let output = self.context.call_api(method.as_str(), params)?;
         Ok((None, Some(serde_json::to_value(&output)?)))
     }
 }
@@ -731,19 +726,10 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             eprintln!("[WARN] the `public_keys` option is deprecated, and is no longer working, please remove it.");
         }
 
-        let mut remote_viewer: Option<RemoteViewer> = None;
-        let mut fork_context: Option<ForkContext> = None;
-        let store = if let Some(rpc) = init_args.rpc {
-            let remote_view = RemoteViewer::from_url(&rpc, init_args.block_number).unwrap();
-            fork_context = Some(ForkContext::new_from_url(&rpc, init_args.block_number).unwrap());
-            remote_viewer = Some(remote_view.clone());
-            SelectableStateView::B(InMemoryStateCache::new(remote_view))
+        let context = if let Some(rpc) = init_args.rpc {
+            ForkContext::new_fork(&rpc, init_args.block_number).unwrap()
         } else {
-            let net = ChainNetwork::new_builtin(init_args.network.unwrap());
-            let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
-            let data_store = ChainStateDB::mock();
-            Genesis::execute_genesis_txn(&data_store, genesis_txn).unwrap();
-            SelectableStateView::A(data_store)
+            ForkContext::new_local(init_args.network.unwrap()).unwrap()
         };
 
         // add pre compiled modules
@@ -783,15 +769,13 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                     ));
                 }
             }
-            store.apply_write_set(writes.freeze().unwrap()).unwrap();
+            context.storage.apply_write_set(writes.freeze().unwrap()).unwrap();
         }
 
         let mut me = Self {
             compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps),
             default_syntax,
-            storage: store,
-            remote_viewer,
-            fork_context,
+            context,
             debug: init_args.debug,
         };
         me.hack_genesis_account()
@@ -937,7 +921,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         resource: &IdentStr,
         type_args: Vec<TypeTag>,
     ) -> anyhow::Result<(String, Value)> {
-        let s = RemoteStorage::new(&self.storage);
+        let s = RemoteStorage::new(&self.context.storage);
         view_resource_in_move_storage(&s, address, module, resource, type_args)
     }
 

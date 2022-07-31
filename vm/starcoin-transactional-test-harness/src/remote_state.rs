@@ -298,7 +298,7 @@ impl RemoteRpcAsyncClient {
 
 #[derive(Clone)]
 pub struct RemoteViewer {
-    svc: RemoteRpcAsyncClient,
+    svc: Arc<RemoteRpcAsyncClient>,
     rt: Arc<Runtime>,
 }
 
@@ -313,9 +313,16 @@ impl RemoteViewer {
             rt.block_on(async { RemoteRpcAsyncClient::from_url(rpc_url, block_number).await })?;
 
         Ok(Self {
-            svc: v,
+            svc: Arc::new(v),
             rt: Arc::new(rt),
         })
+    }
+
+    pub fn new(rpc_async_client: Arc<RemoteRpcAsyncClient>, rt: Arc<Runtime>) -> Self {
+        Self {
+            svc: rpc_async_client,
+            rt,
+        }
     }
 
     pub fn get_modules(

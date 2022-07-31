@@ -4,11 +4,13 @@
 use anyhow::{anyhow, bail, ensure, format_err, Result};
 use dashmap::DashMap;
 use jsonrpc_client_transports::RpcError;
+use jsonrpc_core::futures_util::future::Remote;
 use jsonrpc_core::futures_util::{FutureExt, TryFutureExt};
 use starcoin_chain_api::{
     ChainReader,
 };
-use starcoin_rpc_api::FutureResult;
+use starcoin_rpc_api::chain::ChainApiClient;
+use starcoin_rpc_api::{FutureResult, debug};
 use starcoin_config::{ChainNetworkID, BuiltinNetworkID};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::{ChainApi, GetBlockOption};
@@ -18,7 +20,6 @@ use starcoin_rpc_api::types::{
 };
 use starcoin_rpc_server::module::map_err;
 use starcoin_storage::block_info::BlockInfoStore;
-use starcoin_types::block::BlockHeaderBuilder;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::{
     account_address::AccountAddress,
@@ -26,7 +27,6 @@ use starcoin_types::{
 };
 use starcoin_vm_types::access_path::AccessPath;
 use std::hash::Hash;
-use std::ops::{Deref, DerefMut};
 use std::option::Option::{None, Some};
 use std::sync::{Arc, Mutex};
 use crate::remote_state::RemoteRpcAsyncClient;
@@ -36,6 +36,7 @@ use starcoin_accumulator::{
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{BlockStore, Storage, Store};
 
+
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
@@ -44,7 +45,7 @@ pub struct ChainStatusWithBlock {
 
 #[derive(Clone)]
 pub struct ForkBlockChain {    
-    remote_viewer: Arc<RemoteRpcAsyncClient>,
+    remote_client: Option<Arc<RemoteRpcAsyncClient>>,
     storage: Arc<Storage>,
     fork_number: u64,
     current_number: u64,
@@ -54,12 +55,19 @@ pub struct ForkBlockChain {
 }
 
 impl ForkBlockChain {
-    pub fn new(remote_viewer: Arc<RemoteRpcAsyncClient>, fork_number: u64) -> Result<Self> {
+    pub fn new() -> Result<Self> {
+        Self::new_inner(0, None)
+    }
+
+    pub fn fork(remote_client: Arc<RemoteRpcAsyncClient>, fork_number: u64) -> Result<Self> {
+        Self::new_inner(fork_number, Some(remote_client))
+    }
+    // Mock chain fork from remote_client if fork_number > 0
+        fn new_inner(fork_number: u64, remote_client: Option<Arc<RemoteRpcAsyncClient>>) -> Result<Self> {
         let storage_instance = StorageInstance::new_cache_instance();
         let storage = Arc::new(Storage::new(storage_instance)?);
-
         Ok(Self {
-            remote_viewer,
+            remote_client,
             storage,
             fork_number,
             current_number: fork_number,
@@ -67,10 +75,6 @@ impl ForkBlockChain {
             block_map: DashMap::new(),
             number_hash_map: DashMap::new(),
         })
-    }
-
-    pub fn get_remote_viewer(&self) -> Arc<RemoteRpcAsyncClient> {
-        self.remote_viewer.clone()
     }
 
     pub fn add_new_block(&mut self, mut block: Block) -> Result<()> {
@@ -99,6 +103,13 @@ impl ForkBlockChain {
         self.storage.commit_block(block)?;
         Ok(())
     }
+
+    fn remote_chain_client(&self) -> Option<ChainApiClient> {
+        match self.remote_client.clone() {
+            Some(client) => Some(client.get_chain_client().clone()),
+            None => None,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -121,7 +132,7 @@ impl ChainApi for MockApi
     fn info(&self) -> FutureResult<ChainInfoView> {
         let chain = self.chain.lock().unwrap();
         let status = chain.status.clone();        
-        let client = chain.remote_viewer.get_chain_client().clone();
+        let client = chain.remote_chain_client().clone();
         let fut = async move {
             match status {
                 Some(status) => {
@@ -134,10 +145,16 @@ impl ChainApi for MockApi
                     ))
                 },
                 None => {                
-                    client
-                        .info()
-                        .await
-                        .map_err(|e| anyhow!("{}", e))
+                    match client{
+                        Some(client) => {
+                                client
+                                .info()
+                                .await
+                                .map_err(|e| anyhow!("{}", e))
+                        },
+                        None => bail!("No block generated.")
+                    }
+
                 }
             }
         };
@@ -151,17 +168,23 @@ impl ChainApi for MockApi
     ) -> FutureResult<Option<BlockView>> {
         let chain = self.chain.lock().unwrap();
         let status = chain.status.clone();        
-        let client = chain.remote_viewer.get_chain_client().clone();
+        let client = chain.remote_chain_client().clone();
         let fut = async move {
             match status {
                 Some(status) => {
                     todo!()
                 },
                 None => {                
-                    client
-                        .get_block_by_hash(hash, option)
-                        .await
-                        .map_err(|e| anyhow!("{}", e))
+                    match client {
+                        Some(client) => {
+                            client
+                            .get_block_by_hash(hash, option)
+                            .await
+                            .map_err(|e| anyhow!("{}", e))
+                        },
+                        None => bail!("No block generated.")
+                    }
+
                 }
             }
         };
@@ -175,14 +198,16 @@ impl ChainApi for MockApi
     ) -> FutureResult<Option<BlockView>> {
         let chain = self.chain.lock().unwrap();
         let status = chain.status.clone();        
-        let client = chain.remote_viewer.get_chain_client().clone();
+        let client = chain.remote_chain_client();
         let fork_number = chain.fork_number;
         let current_number = chain.current_number;
         let number_hash_map = chain.number_hash_map.clone();
         let block_map = chain.block_map.clone();
         let fut = async move {
             if number <= fork_number {
+                debug_assert!(client.is_some());
                 client
+                .unwrap()
                 .get_block_by_number(number, option)
                 .await
                 .map_err(|e| anyhow!("{}", e))
@@ -221,14 +246,16 @@ impl ChainApi for MockApi
     ) -> FutureResult<Option<BlockInfoView>>  {
         let chain = self.chain.lock().unwrap();
         let status = chain.status.clone();        
-        let client = Arc::new(chain.remote_viewer.get_chain_client());
+        let client = chain.remote_chain_client();
         let fut = async move {
             match status {
                 Some(status) => {
                     todo!()
                 },
                 None => {                
+                    debug_assert!(client.is_some());
                     client
+                        .unwrap()
                         .get_block_info_by_number(number)
                         .await
                 }
