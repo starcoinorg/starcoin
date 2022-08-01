@@ -1,4 +1,4 @@
-// Copyright (c) The Diem Core Contributors
+// Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::common;
@@ -206,7 +206,7 @@ import com.novi.serde.Bytes;
             self.out,
             r#"
 /**
- * Build a Diem {{@link org.starcoin.types.Script}} from a structured value {{@link ScriptCall}}.
+ * Build a Starcoin {{@link org.starcoin.types.Script}} from a structured value {{@link ScriptCall}}.
  *
  * @param call {{@link ScriptCall}} value to encode.
  * @return Encoded script.
@@ -220,7 +220,7 @@ public static Script encode_script(ScriptCall call) {{
             self.out,
             r#"
 /**
- * Build a Diem {{@link org.starcoin.types.TransactionPayload}} from a structured value {{@link ScriptFunctionCall}}.
+ * Build a Starcoin {{@link org.starcoin.types.TransactionPayload}} from a structured value {{@link ScriptFunctionCall}}.
  *
  * @param call {{@link ScriptFunctionCall}} value to encode.
  * @return Encoded TransactionPayload.
@@ -237,7 +237,7 @@ public static TransactionPayload encode_script_function(ScriptFunctionCall call)
             self.out,
             r#"
 /**
- * Try to recognize a Diem {{@link org.starcoin.types.Script}} and convert it into a structured value {{@code ScriptCall}}.
+ * Try to recognize a Starcoin {{@link org.starcoin.types.Script}} and convert it into a structured value {{@code ScriptCall}}.
  *
  * @param script {{@link org.starcoin.types.Script}} values to decode.
  * @return Decoded {{@link ScriptCall}} value.
@@ -256,7 +256,7 @@ public static ScriptCall decode_script(Script script) throws IllegalArgumentExce
             self.out,
             r#"
 /**
- * Try to recognize a Diem {{@link org.starcoin.types.TransactionPayload}} and convert it into a structured value {{@code ScriptFunctionCall}}.
+ * Try to recognize a Starcoin {{@link org.starcoin.types.TransactionPayload}} and convert it into a structured value {{@code ScriptFunctionCall}}.
  *
  * @param payload {{@link org.starcoin.types.TransactionPayload}} values to decode.
  * @return Decoded {{@link ScriptFunctionCall}} value.

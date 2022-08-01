@@ -121,7 +121,7 @@ Supporting transaction builders in an additional programming language boils down
 
 1. Code generation for Starcoin types (Rust library and tool),
 
-2. LCS runtime (library in target language),
+2. BCS runtime (library in target language),
 
 3. Code generation for transaction builders (Rust tool).
 
