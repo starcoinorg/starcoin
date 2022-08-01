@@ -287,7 +287,7 @@ impl CliState {
                 TransactionStatusView::Executed
             )
         {
-            eprintln!("txn dry run failed");
+            eprintln!("txn dry run result:");
             return Ok(execute_result);
         }
 
