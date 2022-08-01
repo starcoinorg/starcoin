@@ -9,7 +9,7 @@ xlint = "run --package starcoin-x --bin starcoin-x -- lint"
 
 [net]
 retry = 2
-# git-fetch-with-cli = true
+git-fetch-with-cli = true
 
 [target.x86_64-pc-windows-msvc]
 rustflags = ["-C", "link-arg=/STACK:8000000"]
