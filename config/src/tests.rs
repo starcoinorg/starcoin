@@ -17,21 +17,12 @@ fn test_generate_and_load() -> Result<()> {
         let config = NodeConfig::load_with_opt(&opt)?;
         let config2 = NodeConfig::load_with_opt(&opt)?;
 
-        if net == BuiltinNetworkID::Test {
-            assert_ne!(
-                to_toml(&config)?,
-                to_toml(&config2)?,
-                "test config for network {} fail.",
-                net
-            );
-        } else {
-            assert_eq!(
-                to_toml(&config)?,
-                to_toml(&config2)?,
-                "test config for network {} fail.",
-                net
-            );
-        }
+        assert_eq!(
+            to_toml(&config)?,
+            to_toml(&config2)?,
+            "test config for network {} fail.",
+            net
+        );
     }
     Ok(())
 }
