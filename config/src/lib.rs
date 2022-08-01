@@ -293,7 +293,8 @@ impl BaseConfig {
         } else {
             match opt.base_data_dir.clone() {
                 Some(base_data_dir) if base_data_dir.to_str() == Some("TMP") => temp_dir(),
-                _ => DataDirPath::PathBuf(G_DEFAULT_BASE_DATA_DIR.to_path_buf()),
+                Some(base_data_dir) => DataDirPath::PathBuf(base_data_dir),
+                None => DataDirPath::PathBuf(G_DEFAULT_BASE_DATA_DIR.to_path_buf()),
             }
         };
 
