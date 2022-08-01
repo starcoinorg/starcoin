@@ -65,7 +65,7 @@ pub mod transaction {
         let arg = match parse_transaction_argument(s) {
             Ok(arg) => arg,
             Err(e) => {
-                //auto covert 0xxx to vector<u8>
+                //auto convert 0xxx to vector<u8>
                 match s.strip_prefix("0x") {
                     Some(stripped) => TransactionArgument::U8Vector(hex::decode(stripped)?),
                     None => return Err(e),
