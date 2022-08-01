@@ -19,10 +19,11 @@ use bcs_ext::BCSCodec;
 use starcoin_abi_decoder::{decode_txn_payload, DecodedTransactionPayload};
 use starcoin_account_api::{AccountInfo, AccountProvider};
 use starcoin_config::{ChainNetworkID, DataDirPath};
+use starcoin_dev::playground;
 use starcoin_node::NodeHandle;
 use starcoin_rpc_api::chain::GetEventOption;
 use starcoin_rpc_api::types::{
-    RawUserTransactionView, SignedUserTransactionView, TransactionStatusView,
+    DryRunOutputView, RawUserTransactionView, SignedUserTransactionView, TransactionStatusView,
 };
 use starcoin_rpc_client::{RpcClient, StateRootOption};
 use starcoin_state_api::StateReaderExt;
@@ -258,6 +259,11 @@ impl CliState {
         ))
     }
 
+    pub fn dry_run_transaction(&self, txn: DryRunTransaction) -> Result<DryRunOutputView> {
+        let state_reader = self.client().state_reader(StateRootOption::Latest)?;
+        playground::dry_run_explain(&state_reader, txn, None)
+    }
+
     pub fn execute_transaction(
         &self,
         raw_txn: RawUserTransaction,
@@ -266,7 +272,7 @@ impl CliState {
     ) -> Result<ExecuteResultView> {
         let sender = self.get_account(raw_txn.sender())?;
         let public_key = sender.public_key;
-        let dry_output = self.client.dry_run_raw(DryRunTransaction {
+        let dry_output = self.dry_run_transaction(DryRunTransaction {
             public_key: public_key.clone(),
             raw_txn: raw_txn.clone(),
         })?;

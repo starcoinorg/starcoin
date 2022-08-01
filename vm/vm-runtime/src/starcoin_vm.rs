@@ -498,7 +498,10 @@ impl StarcoinVM {
                         only_new_module,
                     },
                 )
-                .map_err(|e| e.into_vm_status())?;
+                .map_err(|e| {
+                    warn!("[VM] execute_package error, status_type: {:?}, status_code:{:?}, message:{:?}, location:{:?}", e.status_type(), e.major_status(), e.message(), e.location());
+                    e.into_vm_status()
+                })?;
 
             // after publish the modules, we need to clear loader cache, to make init script function and
             // epilogue use the new modules.
@@ -599,7 +602,11 @@ impl StarcoinVM {
                     return Err(VMStatus::Error(StatusCode::UNREACHABLE));
                 }
             }
-            .map_err(|e| e.into_vm_status())?;
+            .map_err(|e|
+                {
+                    warn!("[VM] execute_script_function error, status_type: {:?}, status_code:{:?}, message:{:?}, location:{:?}", e.status_type(), e.major_status(), e.message(), e.location());
+                    e.into_vm_status()
+                })?;
 
             charge_global_write_gas_usage(cost_strategy, &session, &txn_data.sender())?;
 
