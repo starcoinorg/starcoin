@@ -31,18 +31,23 @@ jobs:
       #   env:
       #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: sync blocks barnard
+        run: python3 ./scripts/sync_block.py --net barnard
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: backup snapshot barnard
         run: python3 ./scripts/backup_snapshot.py --net barnard
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      - name: sync barnard
-        run: python3 ./scripts/sync_block.py --net barnard
+      - name: sync snapshot barnard
+        run: python3 ./scripts/sync_snapshot.py --net barnard
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: check sync barnard result
-        run: python3 ./scripts/sync_block.py --net barnard
+        run: python3 ./scripts/check_sync_snapshot_result.py --net barnard
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
