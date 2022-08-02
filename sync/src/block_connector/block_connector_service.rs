@@ -5,6 +5,7 @@ use crate::block_connector::{ExecuteRequest, ResetRequest, WriteBlockChainServic
 use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::BlockConnectedEvent;
 use anyhow::{format_err, Result};
+use sysinfo::{System,SystemExt, DiskExt};
 use config::{NodeConfig, G_CRATE_VERSION};
 use executor::VMMetrics;
 use logger::prelude::*;
@@ -19,12 +20,18 @@ use starcoin_sync_api::PeerNewBlock;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent};
-use std::sync::Arc;
+use std::{sync::Arc,time::Instant};
 use txpool::TxPoolService;
+
+
+const DISKCHECKPOINTFORPAINC: u64 = 1024 * 1024 * 1024 * 3;
+const DISKCHECKPOINTFORWARN: u64 = 1024 * 1024 * 1024 * 5;
+
 
 pub struct BlockConnectorService {
     chain_service: WriteBlockChainService<TxPoolService>,
     sync_status: Option<SyncStatus>,
+    disk_space_check_time: Instant,
 }
 
 impl BlockConnectorService {
@@ -32,6 +39,7 @@ impl BlockConnectorService {
         Self {
             chain_service,
             sync_status: None,
+            disk_space_check_time: Instant::now(),
         }
     }
 
@@ -40,6 +48,50 @@ impl BlockConnectorService {
             Some(sync_status) => sync_status.is_synced(),
             None => false,
         }
+    }
+
+    pub fn check_disk_space(&mut self) -> Option<Result<u64>>{
+        let t = std::time::Duration::from_secs(3);
+        let check = self.disk_space_check_time;
+        self.disk_space_check_time = Instant::now();
+        
+        if check.elapsed() >= t && System::IS_SUPPORTED {
+        let mut sys = System::new_all();
+            if sys.disks().len() == 1 {
+                let disk = &sys.disks()[0];
+                if DISKCHECKPOINTFORPAINC > disk.available_space() {
+                    return Some(Err(anyhow::anyhow!("")))
+                } else if DISKCHECKPOINTFORWARN > disk.available_space() {
+                    return Some(Ok(disk.available_space() / 1024 / 1024))
+                }
+            } else {
+                sys.sort_disks_by(|a, b| {
+                    if a.mount_point()
+                        .starts_with(b.mount_point().to_str().unwrap())
+                    {
+                        std::cmp::Ordering::Less
+                    } else {
+                        std::cmp::Ordering::Greater
+                    }
+                });
+
+
+                // TODO:
+                for _disk in sys.disks() {
+                    // if opt.bash_data_dir.starts_with(disk.mount_point()) {
+                    //     if CHECKDISKPOINTFORPAINC > disk.available_space() {
+                    //         return Some(anyhow::Error(""))
+                    //     } else if CHECKDISKPOINTFOR > disk.available_space() {
+                    //         return Some(Ok(disk.available_space()))
+                    //     }
+                    //     break;
+                    // }
+                    // println!("{:?}", disk.mount_point());
+                }
+            }
+        }
+        
+        None
     }
 }
 
@@ -84,6 +136,13 @@ impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService {
     ) {
         //because this block has execute at sync task, so just try connect to select head chain.
         //TODO refactor connect and execute
+        if let Some(res) = self.check_disk_space() {
+            match res {
+                Ok(available_space) => warn!("Available diskspace only {}/GB left ",available_space / 1024 / 1024),
+                Err(e) => panic!("{}",e)
+            }
+        }
+        
         let block = msg.block;
         if let Err(e) = self.chain_service.try_connect(block) {
             error!("Process connected block error: {:?}", e);

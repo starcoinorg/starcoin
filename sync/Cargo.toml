@@ -46,6 +46,7 @@ starcoin-service-registry = { path = "../commons/service-registry" }
 starcoin-chain-service = { path = "../chain/service" }
 starcoin-chain-api = { path = "../chain/api" }
 network-rpc-core = { path = "../network-rpc/core" }
+sysinfo = "0.25.1"
 
 [dev-dependencies]
 tokio = {version = "^1", features = ["full"] }

@@ -10385,6 +10385,7 @@ dependencies = [
  "starcoin-vm-types",
  "stest",
  "stream-task",
+ "sysinfo",
  "test-helper",
  "thiserror",
  "tokio 1.20.1",
@@ -10950,6 +10951,21 @@ dependencies = [
  "quote 1.0.20",
  "syn 1.0.98",
  "unicode-xid 0.2.3",
+]
+
+[[package]]
+name = "sysinfo"
+version = "0.25.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "373e4bc9213f734126e2be3e2e118dbc9b909c37487d8d755822bc90f70ae62a"
+dependencies = [
+ "cfg-if 1.0.0",
+ "core-foundation-sys",
+ "libc",
+ "ntapi",
+ "once_cell",
+ "rayon",
+ "winapi 0.3.9",
 ]
 
 [[package]]
