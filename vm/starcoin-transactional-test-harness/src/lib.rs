@@ -1,6 +1,4 @@
 use crate::context::ForkContext;
-use crate::in_memory_state_cache::InMemoryStateCache;
-use crate::remote_state::{RemoteViewer, SelectableStateView};
 use anyhow::{bail, Result};
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
 use move_compiler::compiled_unit::CompiledUnitEnum;
@@ -24,7 +22,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
 use starcoin_abi_decoder::decode_txn_payload;
-use starcoin_config::{genesis_key_pair, BuiltinNetworkID, ChainNetwork};
+use starcoin_config::{genesis_key_pair, BuiltinNetworkID};
 use starcoin_crypto::HashValue;
 use starcoin_dev::playground::call_contract;
 use starcoin_genesis::Genesis;
@@ -33,7 +31,7 @@ use starcoin_rpc_api::types::{
     TransactionOutputView, TransactionStatusView, TypeTagView,
 };
 use starcoin_rpc_api::Params;
-use starcoin_state_api::{ChainStateWriter, StateReaderExt};
+use starcoin_state_api::{ChainStateReader, ChainStateWriter, StateReaderExt};
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::account::{Account, AccountData};
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockHeaderExtra};
@@ -71,7 +69,6 @@ use stdlib::{starcoin_framework_named_addresses, G_PRECOMPILED_STARCOIN_FRAMEWOR
 pub mod context;
 pub mod fork_chain;
 pub mod fork_state;
-mod in_memory_state_cache;
 pub mod remote_state;
 
 #[derive(Parser, Debug, Default)]
@@ -662,7 +659,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             author,
             HashValue::random(),
             HashValue::random(),
-            HashValue::random(),
+            self.context.storage.state_root(),
             0u64,
             U256::zero(),
             HashValue::random(),
@@ -670,6 +667,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             0,
             BlockHeaderExtra::new([0u8; 4]),
         );
+        println!("new block with state root: {}", block_header.state_root());
         let block_body = BlockBody::new(vec![], None);
         let new_block = Block::new(block_header, block_body);
         let new_block_meta = new_block.to_metadata(0);

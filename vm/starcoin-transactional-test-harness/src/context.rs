@@ -1,24 +1,20 @@
 use anyhow::{anyhow, Result};
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
-use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
-use starcoin_state_api::ChainStateAsyncService;
 use starcoin_statedb::ChainStateDB;
 use std::sync::{Arc, Mutex};
 use tokio::runtime::Runtime;
 use tokio::task::JoinHandle;
 
-use jsonrpc_client_transports::{RawClient, RpcChannel};
-use jsonrpc_core::futures::{self, future, TryFutureExt};
-use jsonrpc_core::{BoxFuture, IoHandler, Params, Value};
+use jsonrpc_client_transports::RawClient;
+use jsonrpc_core::{IoHandler, Params, Value};
 use jsonrpc_core_client::transports::local;
 use starcoin_rpc_api::chain::ChainApi;
 use starcoin_rpc_api::state::StateApi;
 
 use crate::fork_chain::{ForkBlockChain, MockChainApi, MockStateApi};
-use crate::fork_state::{ForkStateDB, MockStateNodeStore};
-use crate::in_memory_state_cache::InMemoryStateCache;
-use crate::remote_state::{RemoteRpcAsyncClient, RemoteViewer, SelectableStateView};
+use crate::fork_state::MockStateNodeStore;
+use crate::remote_state::RemoteRpcAsyncClient;
 
 pub struct MockServer {
     server_handle: JoinHandle<()>,
@@ -42,7 +38,6 @@ impl MockServer {
 
 pub struct ForkContext {
     pub chain: Arc<Mutex<ForkBlockChain>>,
-    //pub storage: SelectableStateView<ChainStateDB, ChainStateDB>,
     pub storage: ChainStateDB,
     server: MockServer,
     client: RawClient,
@@ -79,12 +74,6 @@ impl ForkContext {
             Arc::new(rt.block_on(async {
                 RemoteRpcAsyncClient::from_url(&rpc[..], block_number).await
             })?);
-        // let remote_viewer = RemoteViewer::new(remote_async_client.clone(), rt.clone());
-        // let state_db = ForkStateDB::new(
-        //     Some(HashValue::random()),
-        //     Arc::new(remote_async_client.get_state_client().clone()),
-        //     rt.clone(),
-        // )?;
         let state_api_client = Arc::new(remote_async_client.get_state_client().clone());
         let root_hash = rt
             .block_on(async { state_api_client.get_state_root().await })
@@ -93,8 +82,6 @@ impl ForkContext {
             Arc::new(MockStateNodeStore::new(state_api_client, rt.clone())?),
             Some(root_hash),
         );
-        //let storage = SelectableStateView::B(data_store.clone());
-        //let storage = SelectableStateView::B(InMemoryStateCache::new(remote_viewer));
 
         let fork_nubmer = remote_async_client.get_fork_block_number();
         let chain = Arc::new(Mutex::new(ForkBlockChain::fork(
@@ -107,9 +94,7 @@ impl ForkContext {
 
     fn new_inner(
         chain: Arc<Mutex<ForkBlockChain>>,
-        // storage: SelectableStateView<ChainStateDB, ChainStateDB>,
         storage: ChainStateDB,
-        // state_db: ChainStateDB,
         rt: Arc<Runtime>,
     ) -> Result<Self> {
         let chain_api = MockChainApi::new(chain.clone());
