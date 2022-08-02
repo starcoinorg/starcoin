@@ -41,8 +41,8 @@ def check_or_do(network):
     headers = {"content-type": "application/json"}
 
     current_height = get_height(method, url, post_data, headers)
-    print("main current_height is %s, last_export_height is %s" %
-          (current_height, last_export_height))
+    print("%s current_height is %s, last_export_height is %s" %
+          (network, current_height, last_export_height))
     export_height = int(current_height) - 1000
 
     if export_height - int(last_export_height) > 10000:

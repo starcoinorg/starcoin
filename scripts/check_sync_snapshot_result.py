@@ -9,16 +9,6 @@ def check_or_do(network):
     # check the snapshot is ok or not with the manifest file
     # if not, recover the backdir, then exit.
     # if ok, rm backup dir, and do the next step
-    print("cat the manifest file")
-    export_state_node_status = os.system(
-        "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"cat /sc-data/snapshot/manifest.csv \"" % network)
-
-    # add debug print
-    print("wc the acc_node_block file")
-    os.system("kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"wc -l /sc-data/snapshot/acc_node_block \"" % network)
-    print("grep acc_node_block in the manifest file")
-    os.system(
-        "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"more /sc-data/snapshot/manifest.csv| grep acc_node_block | awk -F ' ' '{print\$2}'\"" % network)
 
     export_state_node_status = os.system(
         "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(more /sc-data/snapshot/manifest.csv| grep state_node | awk -F ' ' '{print\$2}') -eq \$(wc -l /sc-data/snapshot/state_node| awk -F ' ' '{print\$1}') ]; then exit 0; else exit 1;fi\"" % network)
@@ -39,9 +29,8 @@ def check_or_do(network):
             export_block_status,
             export_block_info_status))
         print("check snapshot found somethind wrong, now delete snapshot and recover with snapshotbak")
-        # TODO  temporarily comment to checkout the result manually
-        # os.system(
-        #     "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c 'rm -rf /sc-data/snapshot;mv /sc-data/snapshotbak /sc-data/snapshot'" % network)
+        os.system(
+            "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c 'rm -rf /sc-data/snapshot;mv /sc-data/snapshotbak /sc-data/snapshot'" % network)
         sys.exit(1)
     print("check snapshot succeeded, now delete snapshotbak")
     os.system(
