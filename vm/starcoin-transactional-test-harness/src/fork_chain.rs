@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::remote_state::RemoteRpcAsyncClient;
+use crate::remote_state::{RemoteRpcAsyncClient, SelectableStateView};
 use anyhow::{anyhow, bail, ensure, format_err, Result};
 use dashmap::DashMap;
 use jsonrpc_client_transports::RpcError;
@@ -17,6 +17,8 @@ use starcoin_rpc_api::state::StateApi;
 use starcoin_rpc_api::types::{BlockInfoView, BlockView, ChainId, ChainInfoView, StrView};
 use starcoin_rpc_api::{debug, FutureResult};
 use starcoin_rpc_server::module::map_err;
+use starcoin_state_api::{ChainStateReader, StateView};
+use starcoin_statedb::ChainStateDB;
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{BlockStore, Storage, Store};
@@ -111,18 +113,17 @@ impl ForkBlockChain {
     }
 }
 
-#[derive(Clone)]
-pub struct MockApi {
+pub struct MockChainApi {
     pub chain: Arc<Mutex<ForkBlockChain>>,
 }
 
-impl MockApi {
+impl MockChainApi {
     pub fn new(chain: Arc<Mutex<ForkBlockChain>>) -> Self {
         Self { chain }
     }
 }
 
-impl ChainApi for MockApi {
+impl ChainApi for MockChainApi {
     fn id(&self) -> jsonrpc_core::Result<ChainId> {
         Ok(ChainId::from(&ChainNetworkID::Builtin(
             BuiltinNetworkID::Dev,
@@ -329,9 +330,21 @@ impl ChainApi for MockApi {
     }
 }
 
-impl StateApi for MockApi {
+pub struct MockStateApi {
+    pub state: ChainStateDB,
+}
+
+impl MockStateApi {
+    pub fn new(state: ChainStateDB) -> Self {
+        Self { state }
+    }
+}
+
+impl StateApi for MockStateApi {
     fn get(&self, access_path: AccessPath) -> starcoin_rpc_api::FutureResult<Option<Vec<u8>>> {
-        todo!()
+        let blob = self.state.get(&access_path);
+        let fut = async move { blob };
+        Box::pin(fut.boxed().map_err(map_err))
     }
 
     fn get_with_proof(
@@ -364,7 +377,9 @@ impl StateApi for MockApi {
     }
 
     fn get_state_root(&self) -> starcoin_rpc_api::FutureResult<HashValue> {
-        todo!()
+        let root = Ok(self.state.state_root());
+        let fut = async move { root };
+        Box::pin(fut.boxed())
     }
 
     fn get_with_proof_by_root(
@@ -413,6 +428,10 @@ impl StateApi for MockApi {
         addr: AccountAddress,
         option: Option<starcoin_rpc_api::state::ListCodeOption>,
     ) -> starcoin_rpc_api::FutureResult<starcoin_rpc_api::types::ListCodeView> {
+        todo!()
+    }
+
+    fn get_by_hash(&self, key_hash: HashValue) -> FutureResult<Option<Vec<u8>>> {
         todo!()
     }
 }

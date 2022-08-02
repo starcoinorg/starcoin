@@ -289,6 +289,10 @@ impl RemoteRpcAsyncClient {
         &self.chain_client
     }
 
+    pub fn get_state_client(&self) -> &StateApiClient {
+        &self.state_client
+    }
+
     pub fn get_fork_block_number(&self) -> u64 {
         let n = self.fork_number;
         n

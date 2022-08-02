@@ -60,6 +60,8 @@ starcoin-chain-api = {path="../../chain/api"}
 jsonrpc-core = { version = "18", features = ["arbitrary_precision"] }
 jsonrpc-http-server = "18"
 jsonrpc-derive = "18"
+starcoin-state-tree = {path = "../../state/state-tree"}
+starcoin-rpc-client = { path = "../../rpc/client" }
 
 [dev-dependencies]
 datatest-stable = "0.1.1"
