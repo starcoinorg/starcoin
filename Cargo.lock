@@ -9346,11 +9346,13 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-resource-viewer",
+ "starcoin-rpc-api",
  "starcoin-state-api",
  "starcoin-statedb",
  "starcoin-vm-runtime",
  "starcoin-vm-types",
  "thiserror",
+ "vm-status-translator",
 ]
 
 [[package]]
