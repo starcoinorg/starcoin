@@ -23,8 +23,8 @@ use std::{sync::Arc, time::Instant};
 use sysinfo::{DiskExt, System, SystemExt};
 use txpool::TxPoolService;
 
-const DISKCHECKPOINTFORPAINC: u64 = 1024 * 1024 * 1024 * 3;
-const DISKCHECKPOINTFORWARN: u64 = 1024 * 1024 * 1024 * 5;
+const DISK_CHECKPOINT_FOR_PAINC: u64 = 1024 * 1024 * 1024 * 3;
+const DISK_CHECKPOINT_FOR_WARN: u64 = 1024 * 1024 * 1024 * 5;
 
 pub struct BlockConnectorService {
     chain_service: WriteBlockChainService<TxPoolService>,
@@ -62,11 +62,12 @@ impl BlockConnectorService {
             let mut sys = System::new_all();
             if sys.disks().len() == 1 {
                 let disk = &sys.disks()[0];
-                if DISKCHECKPOINTFORPAINC > disk.available_space() {
+                if DISK_CHECKPOINT_FOR_PAINC > disk.available_space() {
                     return Some(Err(anyhow::anyhow!(
-                        "Disk space is less than 3GB, please add disk space."
+                        "Disk space is less than {} GB, please add disk space.",
+                        DISK_CHECKPOINT_FOR_PAINC / 1024 / 1024
                     )));
-                } else if DISKCHECKPOINTFORWARN > disk.available_space() {
+                } else if DISK_CHECKPOINT_FOR_WARN > disk.available_space() {
                     return Some(Ok(disk.available_space() / 1024 / 1024));
                 }
             } else {
@@ -83,13 +84,15 @@ impl BlockConnectorService {
                 let base_data_dir = self.config.base().base_data_dir.path();
                 for disk in sys.disks() {
                     if base_data_dir.starts_with(disk.mount_point()) {
-                        if DISKCHECKPOINTFORPAINC > disk.available_space() {
+                        if DISK_CHECKPOINT_FOR_PAINC > disk.available_space() {
                             return Some(Err(anyhow::anyhow!(
-                                "Disk space is less than 3GB, please add disk space."
+                                "Disk space is less than {} GB, please add disk space.",
+                                DISK_CHECKPOINT_FOR_PAINC / 1024 / 1024
                             )));
-                        } else if DISKCHECKPOINTFORWARN > disk.available_space() {
-                            return Some(Ok(disk.available_space()));
+                        } else if DISK_CHECKPOINT_FOR_WARN > disk.available_space() {
+                            return Some(Ok(disk.available_space() / 1024 / 1024));
                         }
+
                         break;
                     }
                 }
@@ -145,9 +148,6 @@ impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService {
         msg: BlockConnectedEvent,
         _ctx: &mut ServiceContext<BlockConnectorService>,
     ) {
-        //because this block has execute at sync task, so just try connect to select head chain.
-        //TODO refactor connect and execute
-
         if let Some(res) = self.check_disk_space() {
             match res {
                 Ok(available_space) => {
@@ -157,6 +157,8 @@ impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService {
             }
         }
 
+        //because this block has execute at sync task, so just try connect to select head chain.
+        //TODO refactor connect and execute
         let block = msg.block;
         if let Err(e) = self.chain_service.try_connect(block) {
             error!("Process connected block error: {:?}", e);

@@ -15,6 +15,7 @@ futures-retry = "0.6"
 itertools = { version = "0.10.3", default-features = false }
 pin-project = "1.0.1"
 futures-timer = "3.0"
+sysinfo = "0.25.1"
 stream-task ={ path = "../commons/stream-task"}
 starcoin-chain = { path = "../chain" }
 config = {path = "../config", package="starcoin-config"}
@@ -46,7 +47,7 @@ starcoin-service-registry = { path = "../commons/service-registry" }
 starcoin-chain-service = { path = "../chain/service" }
 starcoin-chain-api = { path = "../chain/api" }
 network-rpc-core = { path = "../network-rpc/core" }
-sysinfo = "0.25.1"
+
 
 [dev-dependencies]
 tokio = {version = "^1", features = ["full"] }
