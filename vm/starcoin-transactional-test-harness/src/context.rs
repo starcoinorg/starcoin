@@ -1,6 +1,9 @@
 use anyhow::{anyhow, Result};
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_genesis::Genesis;
+use starcoin_rpc_server::module::StateRpcImpl;
+use starcoin_state_api::StateNodeStore;
+use starcoin_state_tree::StateTree;
 use starcoin_statedb::ChainStateDB;
 use std::sync::{Arc, Mutex};
 use tokio::runtime::Runtime;
@@ -11,9 +14,10 @@ use jsonrpc_core::{IoHandler, Params, Value};
 use jsonrpc_core_client::transports::local;
 use starcoin_rpc_api::chain::ChainApi;
 use starcoin_rpc_api::state::StateApi;
+use starcoin_state_tree;
 
 use crate::fork_chain::{ForkBlockChain, MockChainApi, MockStateApi};
-use crate::fork_state::MockStateNodeStore;
+use crate::fork_state::{MockChainStateAsyncService, MockStateNodeStore};
 use crate::remote_state::RemoteRpcAsyncClient;
 
 pub struct MockServer {
@@ -23,7 +27,7 @@ pub struct MockServer {
 impl MockServer {
     pub fn create_and_start(
         chain_api: MockChainApi,
-        state_api: MockStateApi,
+        state_api: impl StateApi,
         rt: Arc<Runtime>,
     ) -> Result<(Self, RawClient)> {
         let mut io = IoHandler::new();
@@ -54,12 +58,12 @@ impl ForkContext {
         );
         let net = ChainNetwork::new_builtin(network);
         let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
-        let data_store = ChainStateDB::mock();
-        Genesis::execute_genesis_txn(&data_store, genesis_txn).unwrap();
-        // let storage = SelectableStateView::A(data_store.clone());
+        let data_store = Arc::new(starcoin_state_tree::mock::MockStateNodeStore::new());
+        let state_db = ChainStateDB::new(data_store.clone(), None);
+        Genesis::execute_genesis_txn(&state_db, genesis_txn).unwrap();
         let chain = Arc::new(Mutex::new(ForkBlockChain::new()?));
 
-        Self::new_inner(chain, data_store, rt)
+        Self::new_inner(chain, state_db, data_store, rt)
     }
 
     pub fn new_fork(rpc: &str, block_number: Option<u64>) -> Result<Self> {
@@ -78,10 +82,8 @@ impl ForkContext {
         let root_hash = rt
             .block_on(async { state_api_client.get_state_root().await })
             .map_err(|e| anyhow!("{}", e))?;
-        let data_store = ChainStateDB::new(
-            Arc::new(MockStateNodeStore::new(state_api_client, rt.clone())?),
-            Some(root_hash),
-        );
+        let data_store = Arc::new(MockStateNodeStore::new(state_api_client, rt.clone())?);
+        let state_db = ChainStateDB::new(data_store.clone(), Some(root_hash));
 
         let fork_nubmer = remote_async_client.get_fork_block_number();
         let chain = Arc::new(Mutex::new(ForkBlockChain::fork(
@@ -89,16 +91,18 @@ impl ForkContext {
             fork_nubmer,
         )?));
 
-        Self::new_inner(chain, data_store, rt)
+        Self::new_inner(chain, state_db, data_store, rt)
     }
 
     fn new_inner(
         chain: Arc<Mutex<ForkBlockChain>>,
         storage: ChainStateDB,
+        data_store: Arc<dyn StateNodeStore>,
         rt: Arc<Runtime>,
     ) -> Result<Self> {
         let chain_api = MockChainApi::new(chain.clone());
-        let state_api = MockStateApi::new(storage.fork());
+        let state_svc = MockChainStateAsyncService::new(data_store.clone(), None);
+        let state_api = StateRpcImpl::new(state_svc, data_store);
         let (server, client) = MockServer::create_and_start(chain_api, state_api, rt.clone())?;
 
         Ok(Self {
