@@ -62,10 +62,10 @@ impl BlockConnectorService {
             let mut sys = System::new_all();
             if sys.disks().len() == 1 {
                 let disk = &sys.disks()[0];
-                if DISK_CHECKPOINT_FOR_PAINC > disk.available_space() {
+                if DISK_CHECKPOINT_FOR_PANIC > disk.available_space() {
                     return Some(Err(anyhow::anyhow!(
                         "Disk space is less than {} GB, please add disk space.",
-                        DISK_CHECKPOINT_FOR_PAINC / 1024 / 1024
+                        DISK_CHECKPOINT_FOR_PANIC / 1024 / 1024
                     )));
                 } else if DISK_CHECKPOINT_FOR_WARN > disk.available_space() {
                     return Some(Ok(disk.available_space() / 1024 / 1024));
@@ -84,10 +84,10 @@ impl BlockConnectorService {
                 let base_data_dir = self.config.base().base_data_dir.path();
                 for disk in sys.disks() {
                     if base_data_dir.starts_with(disk.mount_point()) {
-                        if DISK_CHECKPOINT_FOR_PAINC > disk.available_space() {
+                        if DISK_CHECKPOINT_FOR_PANIC > disk.available_space() {
                             return Some(Err(anyhow::anyhow!(
                                 "Disk space is less than {} GB, please add disk space.",
-                                DISK_CHECKPOINT_FOR_PAINC / 1024 / 1024
+                                DISK_CHECKPOINT_FOR_PANIC / 1024 / 1024
                             )));
                         } else if DISK_CHECKPOINT_FOR_WARN > disk.available_space() {
                             return Some(Ok(disk.available_space() / 1024 / 1024));
