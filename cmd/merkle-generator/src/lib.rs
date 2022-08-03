@@ -31,7 +31,7 @@ impl Default for Sha3Algorithm {
     }
 }
 
-impl std::hash::Hasher for Sha3Algorithm {
+impl Hasher for Sha3Algorithm {
     #[inline]
     fn finish(&self) -> u64 {
         unimplemented!()
