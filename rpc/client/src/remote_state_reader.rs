@@ -118,9 +118,12 @@ impl<'a> StateView for RemoteStateReader<'a> {
                 .state_get_with_proof_by_root(access_path.clone(), self.state_root())?
                 .state
                 .map(|v| v.0)),
-            StateKey::TableItem { handle: _, key: _ } => {
-                unimplemented!()
-            }
+            StateKey::TableItem { handle, key } => Ok(self
+                .client
+                .state_get_with_table_item_proof_by_root(*handle, key.clone(), self.state_root())?
+                .key_proof
+                .0
+                .map(|v| v.0)),
         }
     }
 

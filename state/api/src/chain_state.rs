@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::TABLE_PATH;
 use anyhow::{ensure, format_err, Result};
 use merkle_tree::{blob::Blob, proof::SparseMerkleProof, RawKey};
 use serde::de::DeserializeOwned;
@@ -9,6 +10,7 @@ use starcoin_crypto::HashValue;
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_types::language_storage::StructTag;
 use starcoin_types::state_set::AccountStateSet;
+use starcoin_types::table::TableHandleKey;
 use starcoin_types::write_set::WriteSet;
 use starcoin_types::{
     access_path::AccessPath,
@@ -17,7 +19,7 @@ use starcoin_types::{
     account_state::AccountState,
     state_set::ChainStateSet,
 };
-use starcoin_vm_types::account_config::{genesis_address, G_STC_TOKEN_CODE};
+use starcoin_vm_types::account_config::{genesis_address, table_handle_address, G_STC_TOKEN_CODE};
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::on_chain_resource::dao::{Proposal, ProposalAction};
@@ -387,24 +389,50 @@ where
     }
 }
 
-// XXX FIXME YSG
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct StateWithTableItemProof {
-    pub state: Option<Vec<u8>>,
-    pub proof: StateProof,
+    pub state_proof: (StateWithProof, HashValue),
+    pub table_handle_proof: (Option<Vec<u8>>, SparseMerkleProof, HashValue),
+    pub key_proof: (Option<Vec<u8>>, SparseMerkleProof, HashValue),
 }
 
 impl StateWithTableItemProof {
-    pub fn new(state: Option<Vec<u8>>, proof: StateProof) -> Self {
-        Self { state, proof }
+    pub fn new(
+        state_proof: (StateWithProof, HashValue),
+        table_handle_proof: (Option<Vec<u8>>, SparseMerkleProof, HashValue),
+        key_proof: (Option<Vec<u8>>, SparseMerkleProof, HashValue),
+    ) -> Self {
+        Self {
+            state_proof,
+            table_handle_proof,
+            key_proof,
+        }
     }
 
-    pub fn get_state(&self) -> &Option<Vec<u8>> {
-        &self.state
-    }
-
-    pub fn verify(&self, expect_root: HashValue, access_path: AccessPath) -> Result<()> {
-        self.proof
-            .verify(expect_root, access_path, self.state.as_deref())
+    pub fn verify(&self, handle: &u128, key: &[u8]) -> Result<()> {
+        self.state_proof.0.proof.verify(
+            self.state_proof.1,
+            AccessPath::new(table_handle_address(), TABLE_PATH.clone()),
+            self.state_proof.0.state.as_deref(),
+        )?;
+        self.table_handle_proof.1.verify(
+            self.table_handle_proof.2,
+            TableHandleKey(*handle).key_hash(),
+            self.table_handle_proof
+                .0
+                .as_ref()
+                .map(|v| Blob::from(v.clone()))
+                .as_ref(),
+        )?;
+        self.key_proof.1.verify(
+            self.key_proof.2,
+            key.to_vec().key_hash(),
+            self.key_proof
+                .0
+                .as_ref()
+                .map(|v| Blob::from(v.clone()))
+                .as_ref(),
+        )?;
+        Ok(())
     }
 }

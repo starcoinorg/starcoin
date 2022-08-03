@@ -4,8 +4,10 @@ use move_binary_format::errors::VMError;
 use move_core_types::resolver::{ModuleResolver, ResourceResolver};
 use starcoin_crypto::HashValue;
 
+use move_core_types::gas_schedule::{GasAlgebra, GasCarrier, InternalGasUnits};
+use move_table_extension::{TableHandle, TableOperation, TableResolver};
 use starcoin_rpc_api::state::StateApiClient;
-use starcoin_rpc_api::types::{BlockView, StateWithProofView};
+use starcoin_rpc_api::types::{BlockView, StateWithProofView, StateWithTableItemProofView};
 use starcoin_state_api::ChainStateWriter;
 use starcoin_types::access_path::{AccessPath, DataPath};
 use starcoin_types::account_address::AccountAddress;
@@ -267,6 +269,19 @@ impl RemoteStateAsyncView {
             .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))?;
         Ok(state_with_proof.state.map(|v| v.0))
     }
+
+    pub async fn resolve_table_entry_async(
+        &self,
+        handle: &TableHandle,
+        key: &[u8],
+    ) -> Result<Option<Vec<u8>>> {
+        let state_table_item_proof: StateWithTableItemProofView = self
+            .state_client
+            .get_with_table_item_proof_by_root(handle.0, key.to_vec(), self.state_root)
+            .await
+            .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))?;
+        Ok(state_table_item_proof.key_proof.0.map(|v| v.0))
+    }
 }
 
 #[derive(Clone)]
@@ -321,6 +336,22 @@ impl ResourceResolver for RemoteStateView {
     }
 }
 
+impl TableResolver for RemoteStateView {
+    fn resolve_table_entry(&self, handle: &TableHandle, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        let h = self.rt.handle().clone();
+        h.block_on(self.svc.resolve_table_entry_async(handle, key))
+    }
+
+    fn operation_cost(
+        &self,
+        _op: TableOperation,
+        _key_size: usize,
+        _val_size: usize,
+    ) -> InternalGasUnits<GasCarrier> {
+        InternalGasUnits::new(1)
+    }
+}
+
 impl StateView for RemoteStateView {
     fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
         match state_key {
@@ -332,8 +363,8 @@ impl StateView for RemoteStateView {
                     .get_resource(&access_path.address, s)
                     .map_err(|err| err.finish(Location::Undefined).into_vm_status())?),
             },
-            StateKey::TableItem { handle: _, key: _ } => {
-                unimplemented!()
+            StateKey::TableItem { handle, key } => {
+                Ok(self.resolve_table_entry(&TableHandle(*handle), key.as_slice())?)
             }
         }
     }

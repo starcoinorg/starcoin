@@ -8,13 +8,12 @@ use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::RawKey;
 use lru::LruCache;
 use move_table_extension::TableHandle;
-use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock};
 use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_state_api::StateWithTableItemProof;
 pub use starcoin_state_api::{ChainStateReader, ChainStateWriter, StateProof, StateWithProof};
+use starcoin_state_api::{StateWithTableItemProof, TABLE_PATH};
 use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_state_tree::{StateNodeStore, StateTree};
@@ -33,7 +32,6 @@ use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateView;
 use std::collections::HashSet;
 use std::convert::TryInto;
-use std::str::FromStr;
 use std::sync::Arc;
 use thiserror::Error;
 
@@ -227,15 +225,6 @@ pub struct ChainStateDB {
 }
 
 static G_DEFAULT_CACHE_SIZE: usize = 10240;
-
-static TABLE_PATH: Lazy<DataPath> = Lazy::new(|| {
-    let str = format!(
-        "{}/1/{}::TableHandles::TableHandles",
-        table_handle_address(),
-        table_handle_address()
-    );
-    AccessPath::from_str(str.as_str()).unwrap().path
-});
 
 impl ChainStateDB {
     pub fn mock() -> Self {
@@ -512,11 +501,30 @@ impl ChainStateReader for ChainStateDB {
 
     fn get_with_table_item_proof(
         &self,
-        _handle: &u128,
-        _key: &[u8],
+        handle: &u128,
+        key: &[u8],
     ) -> Result<StateWithTableItemProof> {
-        // XXX FIXME YSG
-        todo!()
+        let table_path_proof =
+            self.get_with_proof(&AccessPath::new(table_handle_address(), TABLE_PATH.clone()))?;
+        let table_handle_proof = self
+            .state_tree_table_handles
+            .get_with_proof(&TableHandleKey(*handle))?;
+        let table_handle_state_object =
+            self.get_table_handle_state_object(&TableHandle(*handle))?;
+        let key_proof = table_handle_state_object.get_with_proof(&key.to_vec())?;
+        Ok(StateWithTableItemProof::new(
+            (table_path_proof, self.state_root()),
+            (
+                table_handle_proof.0,
+                table_handle_proof.1,
+                self.state_tree_table_handles.root_hash(),
+            ),
+            (
+                key_proof.0,
+                key_proof.1,
+                table_handle_state_object.root_hash(),
+            ),
+        ))
     }
 }
 
@@ -712,6 +720,10 @@ impl TableHandleStateObject {
 
     pub fn get(&self, key: &Vec<u8>) -> Result<Option<Vec<u8>>> {
         self.state_tree.lock().get(key)
+    }
+
+    pub fn get_with_proof(&self, key: &Vec<u8>) -> Result<(Option<Vec<u8>>, SparseMerkleProof)> {
+        self.state_tree.lock().get_with_proof(key)
     }
 }
 

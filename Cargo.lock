@@ -10202,6 +10202,7 @@ dependencies = [
  "bcs-ext",
  "forkable-jellyfish-merkle",
  "move-table-extension",
+ "once_cell",
  "serde 1.0.137",
  "starcoin-crypto",
  "starcoin-service-registry",

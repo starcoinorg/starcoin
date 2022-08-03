@@ -115,16 +115,10 @@ impl ChainStateReader for RemoteChainStateReader {
             key: key.to_vec(),
         };
         let client = self.client.clone();
-        let state_proof: StateWithTableItemProof =
+        let state_table_item_proof: StateWithTableItemProof =
             futures::executor::block_on(client.get_state_with_table_item_proof(peer_id, req))?;
-        // XXX FIXME YSG
-        /*
-        state_proof.proof.verify(
-            state_root,
-            access_path.clone(),
-            state_proof.state.as_deref(),
-        )?; */
-        Ok(state_proof)
+        state_table_item_proof.verify(handle, key)?;
+        Ok(state_table_item_proof)
     }
 }
 
@@ -137,7 +131,7 @@ impl StateView for RemoteChainStateReader {
             }
             StateKey::TableItem { handle, key } => {
                 let state_proof = self.get_with_table_item_proof(handle, key)?;
-                Ok(state_proof.state)
+                Ok(state_proof.key_proof.0)
             }
         }
     }

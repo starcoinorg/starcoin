@@ -3,11 +3,13 @@
 
 use crate::message::{StateRequest, StateResponse};
 use anyhow::Result;
+use once_cell::sync::Lazy;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
 };
+use std::str::FromStr;
 
 pub use chain_state::{
     AccountStateReader, ChainStateReader, ChainStateWriter, StateProof, StateReaderExt,
@@ -16,12 +18,23 @@ pub use chain_state::{
 use serde::de::DeserializeOwned;
 pub use starcoin_state_tree::StateNodeStore;
 use starcoin_types::state_set::AccountStateSet;
+use starcoin_vm_types::access_path::DataPath;
+use starcoin_vm_types::account_config::table_handle_address;
 use starcoin_vm_types::move_resource::MoveResource;
 pub use starcoin_vm_types::state_view::StateView;
 
 mod chain_state;
 pub mod message;
 pub mod mock;
+
+pub static TABLE_PATH: Lazy<DataPath> = Lazy::new(|| {
+    let str = format!(
+        "{}/1/{}::TableHandles::TableHandles",
+        table_handle_address(),
+        table_handle_address()
+    );
+    AccessPath::from_str(str.as_str()).unwrap().path
+});
 
 #[async_trait::async_trait]
 pub trait ChainStateAsyncService: Clone + std::marker::Unpin + Send + Sync {
