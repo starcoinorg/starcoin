@@ -343,6 +343,7 @@ where
                             break;
                         }
                         "history" => {
+                            rl.add_history_entry(line.as_str());
                             if params.len() == 1 {
                                 let history = rl.history();
                                 for (idx, h_cmd) in history.iter().enumerate() {
@@ -368,9 +369,11 @@ where
                             }
                         }
                         "help" => {
+                            rl.add_history_entry(line.as_str());
                             app.print_long_help().expect("print help should success.");
                         }
                         "version" => {
+                            rl.add_history_entry(line.as_str());
                             let mut out = std::io::stdout();
                             let version = app.render_long_version();
                             out.write_all(version.as_bytes())
@@ -380,6 +383,7 @@ where
                                 .expect("write to stdout should success");
                         }
                         "output" => {
+                            rl.add_history_entry(line.as_str());
                             if params.len() == 1 {
                                 println!("Current format: {}", output_format);
                             } else if params.len() == 2 {
