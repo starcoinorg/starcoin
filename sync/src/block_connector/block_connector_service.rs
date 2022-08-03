@@ -23,7 +23,7 @@ use std::{sync::Arc, time::Instant};
 use sysinfo::{DiskExt, System, SystemExt};
 use txpool::TxPoolService;
 
-const DISK_CHECKPOINT_FOR_PAINC: u64 = 1024 * 1024 * 1024 * 3;
+const DISK_CHECKPOINT_FOR_PANIC: u64 = 1024 * 1024 * 1024 * 3;
 const DISK_CHECKPOINT_FOR_WARN: u64 = 1024 * 1024 * 1024 * 5;
 
 pub struct BlockConnectorService {
