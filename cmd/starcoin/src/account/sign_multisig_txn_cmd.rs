@@ -14,7 +14,7 @@ use starcoin_rpc_api::types::{FunctionIdView, RawUserTransactionView, Transactio
 use starcoin_rpc_client::StateRootOption;
 use starcoin_state_api::StateReaderExt;
 use starcoin_types::transaction::{
-    parse_transaction_argument, DryRunTransaction, RawUserTransaction, TransactionArgument,
+    parse_transaction_argument_advance, DryRunTransaction, RawUserTransaction, TransactionArgument,
 };
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE_STR;
@@ -55,7 +55,7 @@ pub struct GenerateMultisigTxnOpt {
     )]
     type_tags: Option<Vec<TypeTag>>,
 
-    #[clap(long = "arg", name = "transaction-arg", parse(try_from_str = parse_transaction_argument))]
+    #[clap(long = "arg", name = "transaction-arg", parse(try_from_str = parse_transaction_argument_advance))]
     /// transaction arguments
     args: Option<Vec<TransactionArgument>>,
 
