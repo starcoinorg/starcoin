@@ -4768,11 +4768,11 @@ dependencies = [
  "csv",
  "hex",
  "merkletree",
- "rust-crypto",
  "serde 1.0.140",
  "serde_json",
  "starcoin-crypto",
  "starcoin-vm-types",
+ "tiny-keccak",
 ]
 
 [[package]]
