@@ -352,7 +352,6 @@ impl<'a> StarcoinTestAdapter<'a> {
             genesis_account.has_delegated_withdrawal_capability(),
         );
         self.context
-            .storage
             .apply_write_set(genesis_account_data.to_writeset())?;
 
         {
@@ -369,9 +368,7 @@ impl<'a> StarcoinTestAdapter<'a> {
                 ),
                 WriteOp::Deletion,
             ));
-            self.context
-                .storage
-                .apply_write_set(writes.freeze().unwrap())?;
+            self.context.apply_write_set(writes.freeze().unwrap())?;
         }
         Ok(())
     }
@@ -395,9 +392,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             account.has_delegated_key_rotation_capability(),
             account.has_delegated_withdrawal_capability(),
         );
-        self.context
-            .storage
-            .apply_write_set(account_data.to_writeset())?;
+        self.context.apply_write_set(account_data.to_writeset())?;
         Ok(())
     }
 
@@ -459,9 +454,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         match output.status() {
             TransactionStatus::Keep(kept_vm_status) => match kept_vm_status {
                 KeptVMStatus::Executed => {
-                    self.context
-                        .storage
-                        .apply_write_set(output.into_inner().0)?;
+                    self.context.apply_write_set(output.into_inner().0)?;
                 }
                 _ => {
                     bail!("Failed to execute transaction. VMStatus: {}", status)
@@ -494,7 +487,6 @@ impl<'a> StarcoinTestAdapter<'a> {
         match output.status() {
             TransactionStatus::Keep(_kept_vm_status) => {
                 self.context
-                    .storage
                     .apply_write_set(output.clone().into_inner().0)?;
             }
             TransactionStatus::Discard(_) => {}
@@ -630,7 +622,6 @@ impl<'a> StarcoinTestAdapter<'a> {
         let height = number
             .or_else(|| last_blockmeta.as_ref().map(|b| b.number + 1))
             .unwrap_or(0);
-        println!("adding new block: {}", height);
 
         let author = author
             .map(|v| self.compiled_state.resolve_address(&v))
@@ -667,7 +658,11 @@ impl<'a> StarcoinTestAdapter<'a> {
             0,
             BlockHeaderExtra::new([0u8; 4]),
         );
-        println!("new block with state root: {}", block_header.state_root());
+        println!(
+            "new block {}, with state root: {}",
+            height,
+            block_header.state_root()
+        );
         let block_body = BlockBody::new(vec![], None);
         let new_block = Block::new(block_header, block_body);
         let new_block_meta = new_block.to_metadata(0);
@@ -791,10 +786,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                     ));
                 }
             }
-            context
-                .storage
-                .apply_write_set(writes.freeze().unwrap())
-                .unwrap();
+            context.apply_write_set(writes.freeze().unwrap()).unwrap();
         }
 
         let mut me = Self {

@@ -1,10 +1,18 @@
 use anyhow::{anyhow, Result};
+use move_core_types::account_address::AccountAddress;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
+use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_rpc_server::module::StateRpcImpl;
-use starcoin_state_api::StateNodeStore;
+use starcoin_state_api::{
+    ChainStateAsyncService, ChainStateReader, ChainStateWriter, StateNodeStore, StateWithProof,
+};
 use starcoin_state_tree::StateTree;
 use starcoin_statedb::ChainStateDB;
+use starcoin_types::access_path::AccessPath;
+use starcoin_types::account_state::AccountState;
+use starcoin_types::state_set::AccountStateSet;
+use starcoin_types::write_set::WriteSet;
 use std::sync::{Arc, Mutex};
 use tokio::runtime::Runtime;
 use tokio::task::JoinHandle;
@@ -46,6 +54,7 @@ pub struct ForkContext {
     server: MockServer,
     client: RawClient,
     rt: Arc<Runtime>,
+    state_root: Arc<Mutex<HashValue>>,
 }
 
 impl ForkContext {
@@ -63,7 +72,8 @@ impl ForkContext {
         Genesis::execute_genesis_txn(&state_db, genesis_txn).unwrap();
         let chain = Arc::new(Mutex::new(ForkBlockChain::new()?));
 
-        Self::new_inner(chain, state_db, data_store, rt)
+        let state_root = state_db.state_root();
+        Self::new_inner(chain, state_db, data_store, rt, state_root)
     }
 
     pub fn new_fork(rpc: &str, block_number: Option<u64>) -> Result<Self> {
@@ -82,7 +92,7 @@ impl ForkContext {
         let root_hash = rt
             .block_on(async { state_api_client.get_state_root().await })
             .map_err(|e| anyhow!("{}", e))?;
-        let data_store = Arc::new(MockStateNodeStore::new(state_api_client, rt.clone())?);
+        let data_store = Arc::new(MockStateNodeStore::new(state_api_client)?);
         let state_db = ChainStateDB::new(data_store.clone(), Some(root_hash));
 
         let fork_nubmer = remote_async_client.get_fork_block_number();
@@ -90,8 +100,7 @@ impl ForkContext {
             remote_async_client,
             fork_nubmer,
         )?));
-
-        Self::new_inner(chain, state_db, data_store, rt)
+        Self::new_inner(chain, state_db, data_store, rt, root_hash)
     }
 
     fn new_inner(
@@ -99,9 +108,11 @@ impl ForkContext {
         storage: ChainStateDB,
         data_store: Arc<dyn StateNodeStore>,
         rt: Arc<Runtime>,
+        state_root: HashValue,
     ) -> Result<Self> {
+        let state_root = Arc::new(Mutex::new(state_root));
         let chain_api = MockChainApi::new(chain.clone());
-        let state_svc = MockChainStateAsyncService::new(data_store.clone(), None);
+        let state_svc = MockChainStateAsyncService::new(data_store.clone(), state_root.clone());
         let state_api = StateRpcImpl::new(state_svc, data_store);
         let (server, client) = MockServer::create_and_start(chain_api, state_api, rt.clone())?;
 
@@ -111,6 +122,7 @@ impl ForkContext {
             server,
             client,
             rt,
+            state_root,
         })
     }
 
@@ -120,5 +132,12 @@ impl ForkContext {
         handle
             .block_on(async move { client.call_method(method, params).await })
             .map_err(|e| anyhow!(format!("{}", e)))
+    }
+
+    pub fn apply_write_set(&self, write_set: WriteSet) -> anyhow::Result<()> {
+        self.storage.apply_write_set(write_set)?;
+        let state_root = self.storage.commit()?;
+        *self.state_root.lock().unwrap() = state_root;
+        Ok(())
     }
 }

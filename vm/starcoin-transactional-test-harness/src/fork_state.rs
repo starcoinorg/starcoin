@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use crate::HashValue;
 use anyhow::{anyhow, Result};
@@ -22,18 +22,16 @@ use tokio::runtime::Runtime;
 pub struct MockStateNodeStore {
     local_storage: StateStorage,
     remote: Arc<StateApiClient>,
-    rt: Arc<Runtime>,
 }
 
 impl MockStateNodeStore {
-    pub fn new(remote: Arc<StateApiClient>, rt: Arc<Runtime>) -> Result<Self> {
+    pub fn new(remote: Arc<StateApiClient>) -> Result<Self> {
         let storage_instance = StorageInstance::new_cache_instance();
         let storage = StateStorage::new(storage_instance);
 
         Ok(Self {
             local_storage: storage,
             remote,
-            rt,
         })
     }
 }
@@ -43,9 +41,7 @@ impl StateNodeStore for MockStateNodeStore {
         match self.local_storage.get(*hash)? {
             Some(sn) => Ok(Some(sn)),
             None => {
-                let handle = self.rt.handle().clone();
-                let blob = handle
-                    .block_on(async move { self.remote.get_by_hash(*hash).await })
+                let blob = block_on(async move { self.remote.get_by_hash(*hash).await })
                     .map(|res| res.map(|b| StateNode(b)))
                     .map_err(|e| anyhow!("{}", e))?;
 
@@ -70,29 +66,33 @@ impl StateNodeStore for MockStateNodeStore {
 
 #[derive(Clone)]
 pub struct MockChainStateAsyncService {
-    state_db: Arc<ChainStateDB>,
+    state_store: Arc<dyn StateNodeStore>,
+    root: Arc<Mutex<HashValue>>,
 }
 
 impl MockChainStateAsyncService {
-    pub fn new(store: Arc<dyn StateNodeStore>, root_hash: Option<HashValue>) -> Self {
-        Self {
-            state_db: Arc::new(ChainStateDB::new(store, root_hash)),
-        }
+    pub fn new(state_store: Arc<dyn StateNodeStore>, root: Arc<Mutex<HashValue>>) -> Self {
+        Self { state_store, root }
+    }
+
+    fn state_db(&self) -> ChainStateDB {
+        let root = self.root.lock().unwrap();
+        ChainStateDB::new(self.state_store.clone(), Some(*root))
     }
 }
 
 #[async_trait::async_trait]
 impl ChainStateAsyncService for MockChainStateAsyncService {
     async fn get(self, access_path: AccessPath) -> Result<Option<Vec<u8>>> {
-        self.state_db.get(&access_path)
+        self.state_db().get(&access_path)
     }
 
     async fn get_with_proof(self, access_path: AccessPath) -> Result<StateWithProof> {
-        self.state_db.get_with_proof(&access_path)
+        self.state_db().get_with_proof(&access_path)
     }
 
     async fn get_account_state(self, address: AccountAddress) -> Result<Option<AccountState>> {
-        self.state_db.get_account_state(&address)
+        self.state_db().get_account_state(&address)
     }
     async fn get_account_state_set(
         self,
@@ -101,14 +101,14 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
     ) -> Result<Option<AccountStateSet>> {
         match state_root {
             Some(root) => {
-                let reader = self.state_db.fork_at(root);
+                let reader = self.state_db().fork_at(root);
                 reader.get_account_state_set(&address)
             }
-            None => self.state_db.get_account_state_set(&address),
+            None => self.state_db().get_account_state_set(&address),
         }
     }
     async fn state_root(self) -> Result<HashValue> {
-        Ok(self.state_db.state_root())
+        Ok(self.state_db().state_root())
     }
 
     async fn get_with_proof_by_root(
@@ -116,7 +116,7 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
         access_path: AccessPath,
         state_root: HashValue,
     ) -> Result<StateWithProof> {
-        let reader = self.state_db.fork_at(state_root);
+        let reader = self.state_db().fork_at(state_root);
         reader.get_with_proof(&access_path)
     }
 
@@ -125,7 +125,7 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
         account_address: AccountAddress,
         state_root: HashValue,
     ) -> Result<Option<AccountState>> {
-        let reader = self.state_db.fork_at(state_root);
+        let reader = self.state_db().fork_at(state_root);
         reader.get_account_state(&account_address)
     }
 }
