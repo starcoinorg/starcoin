@@ -302,9 +302,7 @@ where
                             if resource_types_set.is_none() {
                                 return true;
                             }
-                            dbg!(&resource_types_set);
                             let struct_tag = StructTag::decode(k.as_slice()).unwrap();
-                            dbg!(&struct_tag);
                             let resource_type_address_module_name_str = format!(
                                 "{}::{}::{}",
                                 struct_tag.address, struct_tag.module, struct_tag.name
