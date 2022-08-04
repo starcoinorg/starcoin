@@ -7,13 +7,12 @@ publish = false
 edition = "2021"
 
 [dependencies]
-stest-macro = {path = "./stest-macro"}
-starcoin-logger = {path = "../logger"}
-timeout-join-handler = {path = "../timeout-join-handler"}
+stest-macro = { path = "./stest-macro" }
+starcoin-logger = { path = "../logger" }
+timeout-join-handler = { path = "../timeout-join-handler" }
 log = "0.4.16"
 actix = "0.13"
 actix-rt = "2.6"
 futures = "0.3.12"
-tokio = {version = "^1", features = ["full"] }
+tokio = { version = "^1", features = ["full"] }
 anyhow = "1.0.41"
-

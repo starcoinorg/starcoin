@@ -10,10 +10,10 @@ edition = "2021"
 anyhow = "1.0.41"
 thiserror = "1.0"
 backtrace = "0.3"
-tokio = {version = "^1", features = ["full"] }
+tokio = { version = "^1", features = ["full"] }
 futures = "0.3.12"
 futures-timer = "3.0"
-hex= "0.4.3"
+hex = "0.4.3"
 serde = { version = "1.0.130" }
 serde_json = "1.0"
 starcoin-metrics = { path = "../commons/metrics" }
@@ -27,7 +27,7 @@ starcoin-chain-notify = { path = "../chain/chain-notify" }
 starcoin-rpc-server = { path = "../rpc/server" }
 starcoin-storage = { path = "../storage" }
 starcoin-miner = { path = "../miner" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
 starcoin-logger = { path = "../commons/logger" }
 starcoin-types = { path = "../types" }
 starcoin-vm-types = { path = "../vm/types" }
@@ -43,23 +43,22 @@ starcoin-block-relayer = { path = "../block-relayer" }
 starcoin-network-rpc = { path = "../network-rpc" }
 starcoin-network-rpc-api = { path = "../network-rpc/api" }
 network-rpc-core = { path = "../network-rpc/core" }
-network-p2p-types = { path = "../network-p2p/types"}
+network-p2p-types = { path = "../network-p2p/types" }
 starcoin-dev = { path = "../vm/dev" }
 starcoin-node = { path = "../node" }
 starcoin-node-api = { path = "../node/api" }
 starcoin-service-registry = { path = "../commons/service-registry" }
-stdlib = {path ="../vm/stdlib"}
-starcoin-statedb = {path = "../state/statedb"}
-starcoin-move-compiler = { path = "../vm/compiler"}
+stdlib = { path = "../vm/stdlib" }
+starcoin-statedb = { path = "../state/statedb" }
+starcoin-move-compiler = { path = "../vm/compiler" }
 rand = "0.8.5"
 network-api = { path = "../network/api" }
 async-trait = "0.1.51"
 accumulator = { path = "../commons/accumulator", package = "starcoin-accumulator" }
 state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }
 bcs-ext = { package = "bcs-ext", path = "../commons/bcs_ext" }
-starcoin-transaction-builder = { path = "../vm/transaction-builder"}
+starcoin-transaction-builder = { path = "../vm/transaction-builder" }
 
 
 [dev-dependencies]
 stest = { path = "../commons/stest" }
-

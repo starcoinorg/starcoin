@@ -8,11 +8,11 @@ version = "1.11.11"
 
 [dependencies]
 anyhow = "~1"
-move-model = {git = "https://github.com/starcoinorg/move", rev = "ed32208eb82e87000fe2d163d2b6df3851d2b9c1"}
-starcoin-abi-types = {path = "../types"}
-starcoin-resource-viewer = {path = "../../vm/resource-viewer"}
-starcoin-vm-types = {path = "../../vm/types"}
+move-model = { git = "https://github.com/starcoinorg/move", rev = "ed32208eb82e87000fe2d163d2b6df3851d2b9c1" }
+starcoin-abi-types = { path = "../types" }
+starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
+starcoin-vm-types = { path = "../../vm/types" }
 [dev-dependencies]
 serde_json = "1"
-stdlib = {path = "../../vm/stdlib"}
-test-helper = {path = "../../test-helper"}
+stdlib = { path = "../../vm/stdlib" }
+test-helper = { path = "../../test-helper" }
