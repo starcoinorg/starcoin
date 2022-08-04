@@ -22,8 +22,8 @@ pub trait StateApi {
     fn get(&self, access_path: AccessPath) -> FutureResult<Option<Vec<u8>>>;
 
     /// Return state from StateTree storage directly by tree node key.
-    #[rpc(name = "state.get_by_hash")]
-    fn get_by_hash(&self, key_hash: HashValue) -> FutureResult<Option<Vec<u8>>>;
+    #[rpc(name = "state.get_state_node_by_node_hash")]
+    fn get_state_node_by_node_hash(&self, key_hash: HashValue) -> FutureResult<Option<Vec<u8>>>;
 
     /// Return the Resource Or Code at the `access_path`, and provide a State Proof.
     #[rpc(name = "state.get_with_proof")]
