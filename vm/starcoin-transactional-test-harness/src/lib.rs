@@ -25,14 +25,12 @@ use starcoin_abi_decoder::decode_txn_payload;
 use starcoin_config::{genesis_key_pair, BuiltinNetworkID};
 use starcoin_crypto::HashValue;
 use starcoin_dev::playground::call_contract;
-use starcoin_genesis::Genesis;
 use starcoin_rpc_api::types::{
     ContractCall, FunctionIdView, SignedUserTransactionView, TransactionArgumentView,
     TransactionOutputView, TransactionStatusView, TypeTagView,
 };
 use starcoin_rpc_api::Params;
-use starcoin_state_api::{ChainStateReader, ChainStateWriter, StateReaderExt};
-use starcoin_statedb::ChainStateDB;
+use starcoin_state_api::{ChainStateReader, StateReaderExt};
 use starcoin_types::account::{Account, AccountData};
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockHeaderExtra};
 use starcoin_types::U256;
@@ -445,7 +443,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         let mut vm = StarcoinVM::new(None);
         let mut outputs = vm.execute_block_transactions(
             &self.context.storage,
-            vec![Transaction::BlockMetadata(meta)],
+            vec![Transaction::BlockMetadata(meta.clone())],
             None,
         )?;
         assert_eq!(outputs.len(), 1);
@@ -454,7 +452,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         match output.status() {
             TransactionStatus::Keep(kept_vm_status) => match kept_vm_status {
                 KeptVMStatus::Executed => {
-                    self.context.apply_write_set(output.into_inner().0)?;
+                    self.context.apply_write_set(output.clone().into_inner().0)?;
                 }
                 _ => {
                     bail!("Failed to execute transaction. VMStatus: {}", status)
@@ -464,6 +462,8 @@ impl<'a> StarcoinTestAdapter<'a> {
                 bail!("Transaction discarded. VMStatus: {}", status)
             }
         }
+        let mut chain = self.context.chain.lock().unwrap();
+        chain.add_new_txn(meta.id(), output)?;
 
         Ok(())
     }
@@ -492,6 +492,8 @@ impl<'a> StarcoinTestAdapter<'a> {
             TransactionStatus::Discard(_) => {}
         }
         let payload = decode_txn_payload(&self.context.storage, signed_txn.payload())?;
+        let mut chain = self.context.chain.lock().unwrap();
+        chain.add_new_txn(signed_txn.id(), output.clone())?;
         let mut txn_view: SignedUserTransactionView = signed_txn.try_into()?;
         txn_view.raw_txn.decoded_payload = Some(payload.into());
         Ok(TransactionWithOutput {
@@ -642,18 +644,36 @@ impl<'a> StarcoinTestAdapter<'a> {
                 HashValue::sha3_256_of(parent_hash.as_slice())
             })
             .unwrap_or_else(HashValue::zero);
+       
+        let new_block_meta = BlockMetadata::new(
+            parent_hash,
+            timestamp,
+            author,
+            None,
+            uncles,
+            height,
+            self.context.storage.get_chain_id()?,
+            0,
+        );
+        self.run_blockmeta(new_block_meta.clone()).map_err(|e| {
+            println!("Run blockmeta error: {}", e);
+            e
+        })?;
 
+        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _) =
+            new_block_meta.clone().into_inner();
+        let block_body = BlockBody::new(vec![], None);
         let block_header = BlockHeader::new(
             parent_hash,
             timestamp,
-            height,
+            number,
             author,
-            HashValue::random(),
+            self.context.chain.lock().unwrap().txn_accumulator_root(),
             HashValue::random(),
             self.context.storage.state_root(),
             0u64,
             U256::zero(),
-            HashValue::random(),
+            block_body.hash(),
             self.context.storage.get_chain_id()?,
             0,
             BlockHeaderExtra::new([0u8; 4]),
@@ -663,29 +683,6 @@ impl<'a> StarcoinTestAdapter<'a> {
             height,
             block_header.state_root()
         );
-        let block_body = BlockBody::new(vec![], None);
-        let new_block = Block::new(block_header, block_body);
-        let new_block_meta = new_block.to_metadata(0);
-        self.run_blockmeta(new_block_meta.clone()).map_err(|e| {
-            println!("Run blockmeta error: {}", e);
-            e
-        })?;
-        let block_header = BlockHeader::new(
-            parent_hash,
-            timestamp,
-            height,
-            author,
-            HashValue::random(),
-            HashValue::random(),
-            self.context.storage.state_root(),
-            0u64,
-            U256::zero(),
-            HashValue::random(),
-            self.context.storage.get_chain_id()?,
-            0,
-            BlockHeaderExtra::new([0u8; 4]),
-        );
-        let block_body = BlockBody::new(vec![], None);
         let new_block = Block::new(block_header, block_body);
         let mut chain = self.context.chain.lock().unwrap();
         chain.add_new_block(new_block)?;

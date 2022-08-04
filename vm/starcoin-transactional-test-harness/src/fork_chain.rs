@@ -4,24 +4,22 @@
 use crate::remote_state::RemoteRpcAsyncClient;
 use anyhow::{anyhow, bail, Result};
 use dashmap::DashMap;
+use futures::executor::block_on;
 use jsonrpc_core::futures_util::{FutureExt, TryFutureExt};
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_config::{BuiltinNetworkID, ChainNetworkID};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::ChainApiClient;
 use starcoin_rpc_api::chain::{ChainApi, GetBlockOption};
-use starcoin_rpc_api::state::StateApi;
-use starcoin_rpc_api::types::{BlockInfoView, BlockView, ChainId, ChainInfoView, StrView};
+use starcoin_rpc_api::types::{BlockInfoView, BlockView, ChainId, ChainInfoView};
 use starcoin_rpc_api::FutureResult;
 use starcoin_rpc_server::module::map_err;
-use starcoin_state_api::{ChainStateReader, StateView};
-use starcoin_statedb::ChainStateDB;
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use starcoin_types::transaction::{TransactionOutput, TransactionInfo};
 use starcoin_types::{
-    account_address::AccountAddress,
     block::{Block, BlockInfo, BlockNumber},
 };
 use starcoin_vm_types::access_path::AccessPath;
@@ -29,13 +27,61 @@ use std::hash::Hash;
 use std::option::Option::{None, Some};
 use std::sync::{Arc, Mutex};
 
+pub struct MockBlockInfoStore {
+    remote: Arc<ChainApiClient>,
+    store: Arc<dyn BlockInfoStore>,
+}
+
+impl MockBlockInfoStore {
+    pub fn new(chain_client: Arc<ChainApiClient>, store: Arc<dyn BlockInfoStore>) -> Self {
+        Self { remote: chain_client, store }
+    }
+}
+
+impl BlockInfoStore for MockBlockInfoStore {
+    fn save_block_info(&self, block_info: BlockInfo) -> Result<()> {
+        self.store.save_block_info(block_info)
+    }
+
+    fn get_block_info(&self, hash_value: HashValue) -> Result<Option<BlockInfo>> {
+        let block_info = match self.store.get_block_info(hash_value)? {
+            Some(block_info) => Some(block_info),
+            None => {
+                let block_view = 
+                    block_on(self.remote.get_block_by_hash(hash_value, 
+                        Some(GetBlockOption { decode: true, raw: false })))
+                    .map_err(|e| anyhow!("{}", e))?;
+                let block_info: Option<BlockInfo> = match block_view {
+                    Some(block_view) => {
+                        block_on(self.remote.get_block_info_by_number(block_view.header.number.0))
+                            .map_err(|e| anyhow!("{}", e))?
+                            .map(|view| view.into())
+                    },
+                    None => None,
+                };
+                block_info
+            }
+        };
+        Ok(block_info)
+    }
+
+    fn delete_block_info(&self, block_hash: HashValue) -> Result<()> {
+        self.store.delete_block_info(block_hash)
+    }
+
+    fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>> {
+        todo!()
+    }
+}
+
+
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
     pub head: Block,
 }
 
-#[derive(Clone)]
+// #[derive(Clone)]
 pub struct ForkBlockChain {
     remote_client: Option<Arc<RemoteRpcAsyncClient>>,
     storage: Arc<Storage>,
@@ -44,23 +90,44 @@ pub struct ForkBlockChain {
     status: Option<ChainStatusWithBlock>,
     block_map: DashMap<HashValue, Block>,
     number_hash_map: DashMap<u64, HashValue>,
+    txn_accumulator: MerkleAccumulator,
+    state_root: Arc<Mutex<HashValue>>,
 }
 
 impl ForkBlockChain {
-    pub fn new() -> Result<Self> {
-        Self::new_inner(0, None)
+    pub fn new(state_root: Arc<Mutex<HashValue>>) -> Result<Self> {
+        Self::new_inner(0, None, state_root)
     }
 
-    pub fn fork(remote_client: Arc<RemoteRpcAsyncClient>, fork_number: u64) -> Result<Self> {
-        Self::new_inner(fork_number, Some(remote_client))
+    pub fn fork(remote_client: Arc<RemoteRpcAsyncClient>, fork_number: u64, state_root: Arc<Mutex<HashValue>>) -> Result<Self> {
+        Self::new_inner(fork_number, Some(remote_client), state_root)
     }
     // Mock chain fork from remote_client if fork_number > 0
     fn new_inner(
         fork_number: u64,
         remote_client: Option<Arc<RemoteRpcAsyncClient>>,
+        state_root: Arc<Mutex<HashValue>>,
     ) -> Result<Self> {
         let storage_instance = StorageInstance::new_cache_instance();
         let storage = Arc::new(Storage::new(storage_instance)?);
+
+        let accumulator_store = 
+            storage.get_accumulator_store(AccumulatorStoreType::Transaction);
+        let txn_accumulator = match remote_client.clone() {
+            Some(client) => {
+                let block_info: Option<BlockInfo> = block_on(
+                    client
+                    .get_chain_client()
+                    .get_block_info_by_number(fork_number))
+                    .map_err(|e| anyhow!("{}", e))?
+                    .map(|view| view.into());
+                match block_info {
+                    Some(block) => MerkleAccumulator::new_with_info(block.txn_accumulator_info, accumulator_store),
+                    None => MerkleAccumulator::new_empty(accumulator_store),
+                }
+            },
+            None => MerkleAccumulator::new_empty(accumulator_store),
+        };
         Ok(Self {
             remote_client,
             storage,
@@ -69,16 +136,14 @@ impl ForkBlockChain {
             status: None,
             block_map: DashMap::new(),
             number_hash_map: DashMap::new(),
+            txn_accumulator,
+            state_root,
         })
     }
 
     pub fn add_new_block(&mut self, mut block: Block) -> Result<()> {
         block.header = block.header().as_builder().build();
 
-        let txn_accumulator = MerkleAccumulator::new_empty(
-            self.storage
-                .get_accumulator_store(AccumulatorStoreType::Transaction),
-        );
         let block_accumulator = MerkleAccumulator::new_empty(
             self.storage
                 .get_accumulator_store(AccumulatorStoreType::Block),
@@ -86,7 +151,7 @@ impl ForkBlockChain {
         let block_info = BlockInfo::new(
             block.header.id(),
             block.header.difficulty(),
-            txn_accumulator.get_info(),
+            self.txn_accumulator.get_info(),
             block_accumulator.get_info(),
         );
         self.current_number = block.header().number();
@@ -100,6 +165,27 @@ impl ForkBlockChain {
         self.storage.save_block_info(block_info)?;
         self.storage.commit_block(block)?;
         Ok(())
+    }
+
+    pub fn add_new_txn(&mut self, txn_hash: HashValue, output: TransactionOutput) -> Result<()> {
+        let state_root = *self.state_root.lock().unwrap();
+        let (_, events, gas_used, status) = output.into_inner();
+        let status = status
+            .status()
+            .expect("TransactionStatus at here must been KeptVMStatus");
+        let txn_info = TransactionInfo::new(
+            txn_hash,
+            state_root,
+            events.as_slice(),
+            gas_used,
+            status,
+        );
+        self.txn_accumulator.append(&[txn_info.id()])?;
+        Ok(())
+    }
+
+    pub fn txn_accumulator_root(&self) -> HashValue {
+        self.txn_accumulator.root_hash()
     }
 
     fn remote_chain_client(&self) -> Option<ChainApiClient> {
@@ -323,112 +409,6 @@ impl ChainApi for MockChainApi {
         event_index: Option<u64>,
         access_path: Option<starcoin_rpc_api::types::StrView<AccessPath>>,
     ) -> starcoin_rpc_api::FutureResult<Option<starcoin_rpc_api::types::StrView<Vec<u8>>>> {
-        todo!()
-    }
-}
-
-pub struct MockStateApi {
-    pub state: ChainStateDB,
-}
-
-impl MockStateApi {
-    pub fn new(state: ChainStateDB) -> Self {
-        Self { state }
-    }
-}
-
-impl StateApi for MockStateApi {
-    fn get(&self, access_path: AccessPath) -> starcoin_rpc_api::FutureResult<Option<Vec<u8>>> {
-        let blob = self.state.get(&access_path);
-        let fut = async move { blob };
-        Box::pin(fut.boxed().map_err(map_err))
-    }
-
-    fn get_with_proof(
-        &self,
-        access_path: AccessPath,
-    ) -> starcoin_rpc_api::FutureResult<starcoin_rpc_api::types::StateWithProofView> {
-        todo!()
-    }
-
-    fn get_with_proof_raw(
-        &self,
-        access_path: AccessPath,
-    ) -> starcoin_rpc_api::FutureResult<StrView<Vec<u8>>> {
-        todo!()
-    }
-
-    fn get_account_state(
-        &self,
-        address: AccountAddress,
-    ) -> starcoin_rpc_api::FutureResult<Option<starcoin_types::account_state::AccountState>> {
-        todo!()
-    }
-
-    fn get_account_state_set(
-        &self,
-        address: AccountAddress,
-        state_root: Option<HashValue>,
-    ) -> starcoin_rpc_api::FutureResult<Option<starcoin_rpc_api::types::AccountStateSetView>> {
-        todo!()
-    }
-
-    fn get_state_root(&self) -> starcoin_rpc_api::FutureResult<HashValue> {
-        let root = Ok(self.state.state_root());
-        let fut = async move { root };
-        Box::pin(fut.boxed())
-    }
-
-    fn get_with_proof_by_root(
-        &self,
-        access_path: AccessPath,
-        state_root: HashValue,
-    ) -> starcoin_rpc_api::FutureResult<starcoin_rpc_api::types::StateWithProofView> {
-        todo!()
-    }
-
-    fn get_with_proof_by_root_raw(
-        &self,
-        access_path: AccessPath,
-        state_root: HashValue,
-    ) -> starcoin_rpc_api::FutureResult<StrView<Vec<u8>>> {
-        todo!()
-    }
-
-    fn get_code(
-        &self,
-        module_id: StrView<move_core_types::language_storage::ModuleId>,
-        option: Option<starcoin_rpc_api::state::GetCodeOption>,
-    ) -> starcoin_rpc_api::FutureResult<Option<starcoin_rpc_api::types::CodeView>> {
-        todo!()
-    }
-
-    fn get_resource(
-        &self,
-        addr: AccountAddress,
-        resource_type: StrView<move_core_types::language_storage::StructTag>,
-        option: Option<starcoin_rpc_api::state::GetResourceOption>,
-    ) -> starcoin_rpc_api::FutureResult<Option<starcoin_rpc_api::types::ResourceView>> {
-        todo!()
-    }
-
-    fn list_resource(
-        &self,
-        addr: AccountAddress,
-        option: Option<starcoin_rpc_api::state::ListResourceOption>,
-    ) -> starcoin_rpc_api::FutureResult<starcoin_rpc_api::types::ListResourceView> {
-        todo!()
-    }
-
-    fn list_code(
-        &self,
-        addr: AccountAddress,
-        option: Option<starcoin_rpc_api::state::ListCodeOption>,
-    ) -> starcoin_rpc_api::FutureResult<starcoin_rpc_api::types::ListCodeView> {
-        todo!()
-    }
-
-    fn get_by_hash(&self, key_hash: HashValue) -> FutureResult<Option<Vec<u8>>> {
         todo!()
     }
 }

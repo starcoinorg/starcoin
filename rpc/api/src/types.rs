@@ -1651,6 +1651,17 @@ pub struct AccumulatorInfoView {
     pub num_nodes: StrView<u64>,
 }
 
+impl Into<AccumulatorInfo> for AccumulatorInfoView {
+    fn into(self) -> AccumulatorInfo {
+        AccumulatorInfo::new(
+            self.accumulator_root,
+            self.frozen_subtree_roots,
+            self.num_leaves.0,
+            self.num_nodes.0,
+        )
+    }
+}
+
 impl From<AccumulatorInfo> for AccumulatorInfoView {
     fn from(info: AccumulatorInfo) -> Self {
         AccumulatorInfoView {
@@ -1673,6 +1684,17 @@ pub struct BlockInfoView {
     pub txn_accumulator_info: AccumulatorInfoView,
     /// The block accumulator info.
     pub block_accumulator_info: AccumulatorInfoView,
+}
+
+impl Into<BlockInfo> for BlockInfoView {
+    fn into(self) -> BlockInfo {
+        BlockInfo::new(
+            self.block_hash,
+            self.total_difficulty,
+            self.txn_accumulator_info.into(),
+            self.block_accumulator_info.into(),
+        )
+    }
 }
 
 impl From<BlockInfo> for BlockInfoView {

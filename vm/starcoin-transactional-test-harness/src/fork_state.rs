@@ -17,7 +17,6 @@ use starcoin_state_tree::StateNode;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::state_set::AccountStateSet;
-use tokio::runtime::Runtime;
 
 pub struct MockStateNodeStore {
     local_storage: StateStorage,
