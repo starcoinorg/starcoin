@@ -670,6 +670,23 @@ impl<'a> StarcoinTestAdapter<'a> {
             println!("Run blockmeta error: {}", e);
             e
         })?;
+        let block_header = BlockHeader::new(
+            parent_hash,
+            timestamp,
+            height,
+            author,
+            HashValue::random(),
+            HashValue::random(),
+            self.context.storage.state_root(),
+            0u64,
+            U256::zero(),
+            HashValue::random(),
+            self.context.storage.get_chain_id()?,
+            0,
+            BlockHeaderExtra::new([0u8; 4]),
+        );
+        let block_body = BlockBody::new(vec![], None);
+        let new_block = Block::new(block_header, block_body);
         let mut chain = self.context.chain.lock().unwrap();
         chain.add_new_block(new_block)?;
 
