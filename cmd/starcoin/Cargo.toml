@@ -8,57 +8,57 @@ version = "1.11.11"
 
 [dependencies]
 anyhow = "1.0.41"
-bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
-clap = {version = "3", features = ["derive"]}
+bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
+clap = { version = "3", features = ["derive"] }
 crossbeam-channel = "0.5.6"
-forkable-jellyfish-merkle = {path = "../../commons/forkable-jellyfish-merkle"}
+forkable-jellyfish-merkle = { path = "../../commons/forkable-jellyfish-merkle" }
 futures = "0.3.12"
-hex = {version = "0.4.3", default-features = false}
+hex = { version = "0.4.3", default-features = false }
 itertools = "0.10.3"
-move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "ed32208eb82e87000fe2d163d2b6df3851d2b9c1"}
-move-errmapgen = {git = "https://github.com/starcoinorg/move", rev = "ed32208eb82e87000fe2d163d2b6df3851d2b9c1"}
-network-api = {path = "../../network/api", package = "network-api"}
-network-p2p-types = {path = "../../network-p2p/types"}
+move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "ed32208eb82e87000fe2d163d2b6df3851d2b9c1" }
+move-errmapgen = { git = "https://github.com/starcoinorg/move", rev = "ed32208eb82e87000fe2d163d2b6df3851d2b9c1" }
+network-api = { path = "../../network/api", package = "network-api" }
+network-p2p-types = { path = "../../network-p2p/types" }
 rand = "0.8.5"
-scmd = {path = "../../commons/scmd"}
-serde = {version = "1.0.130"}
-serde_json = {version = "1.0", features = ["arbitrary_precision"]}
-starcoin-abi-decoder = {path = "../../abi/decoder"}
-starcoin-abi-resolver = {path = "../../abi/resolver"}
-starcoin-abi-types = {path = "../../abi/types"}
-starcoin-account-api = {path = "../../account/api"}
-starcoin-account-provider = {path = "../../account/provider"}
-starcoin-chain-api = {path = "../../chain/api"}
-starcoin-config = {path = "../../config"}
-starcoin-consensus = {path = "../../consensus"}
-starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-dev = {path = "../../vm/dev"}
-starcoin-executor = {path = "../../executor"}
-starcoin-genesis = {path = "../../genesis"}
-starcoin-logger = {path = "../../commons/logger"}
-starcoin-move-compiler = {path = "../../vm/compiler"}
-starcoin-move-explain = {path = "../../vm/move-explain"}
-starcoin-network-rpc-api = {path = "../../network-rpc/api"}
-starcoin-node = {path = "../../node"}
-starcoin-node-api = {path = "../../node/api"}
-starcoin-resource-viewer = {path = "../../vm/resource-viewer"}
-starcoin-rpc-api = {path = "../../rpc/api"}
-starcoin-rpc-client = {path = "../../rpc/client"}
-starcoin-service-registry = {path = "../../commons/service-registry"}
-starcoin-state-api = {path = "../../state/api"}
-starcoin-sync-api = {path = "../../sync/api"}
-starcoin-transaction-builder = {path = "../../vm/transaction-builder"}
-starcoin-txpool-api = {path = "../../txpool/api"}
-starcoin-types = {path = "../../types"}
-starcoin-vm-runtime = {path = "../../vm/vm-runtime"}
-starcoin-vm-types = {path = "../../vm/types"}
-stdlib = {path = "../../vm/stdlib"}
-tokio = {version = "^1", features = ["full"]}
-vm-status-translator = {path = "../../vm/vm-status-translator"}
+scmd = { path = "../../commons/scmd" }
+serde = { version = "1.0.130" }
+serde_json = { version = "1.0", features = ["arbitrary_precision"] }
+starcoin-abi-decoder = { path = "../../abi/decoder" }
+starcoin-abi-resolver = { path = "../../abi/resolver" }
+starcoin-abi-types = { path = "../../abi/types" }
+starcoin-account-api = { path = "../../account/api" }
+starcoin-account-provider = { path = "../../account/provider" }
+starcoin-chain-api = { path = "../../chain/api" }
+starcoin-config = { path = "../../config" }
+starcoin-consensus = { path = "../../consensus" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
+starcoin-dev = { path = "../../vm/dev" }
+starcoin-executor = { path = "../../executor" }
+starcoin-genesis = { path = "../../genesis" }
+starcoin-logger = { path = "../../commons/logger" }
+starcoin-move-compiler = { path = "../../vm/compiler" }
+starcoin-move-explain = { path = "../../vm/move-explain" }
+starcoin-network-rpc-api = { path = "../../network-rpc/api" }
+starcoin-node = { path = "../../node" }
+starcoin-node-api = { path = "../../node/api" }
+starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
+starcoin-rpc-api = { path = "../../rpc/api" }
+starcoin-rpc-client = { path = "../../rpc/client" }
+starcoin-service-registry = { path = "../../commons/service-registry" }
+starcoin-state-api = { path = "../../state/api" }
+starcoin-sync-api = { path = "../../sync/api" }
+starcoin-transaction-builder = { path = "../../vm/transaction-builder" }
+starcoin-txpool-api = { path = "../../txpool/api" }
+starcoin-types = { path = "../../types" }
+starcoin-vm-runtime = { path = "../../vm/vm-runtime" }
+starcoin-vm-types = { path = "../../vm/types" }
+stdlib = { path = "../../vm/stdlib" }
+tokio = { version = "^1", features = ["full"] }
+vm-status-translator = { path = "../../vm/vm-status-translator" }
 
 [dev-dependencies]
-stest = {path = "../../commons/stest"}
-test-helper = {path = "../../test-helper"}
+stest = { path = "../../commons/stest" }
+test-helper = { path = "../../test-helper" }
 
 [[bin]]
 name = "starcoin"

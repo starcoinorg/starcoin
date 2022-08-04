@@ -12,13 +12,12 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { version = "3", features = ["derive"] }
-starcoin-config = { path = "../../config"}
-starcoin-chain = { path = "../../chain"}
-starcoin-genesis = { path = "../../genesis"}
-starcoin-storage = { path = "../../storage"}
-starcoin-vm-types = { path = "../../vm/types"}
+starcoin-config = { path = "../../config" }
+starcoin-chain = { path = "../../chain" }
+starcoin-genesis = { path = "../../genesis" }
+starcoin-storage = { path = "../../storage" }
+starcoin-vm-types = { path = "../../vm/types" }
 starcoin-logger = { path = "../../commons/logger" }
-sp-utils = {path = "../../commons/utils"}
-starcoin-types = {path = "../../types"}
-anyhow="~1"
-
+sp-utils = { path = "../../commons/utils" }
+starcoin-types = { path = "../../types" }
+anyhow = "~1"

@@ -14,7 +14,7 @@ once_cell = "1.13.0"
 async-trait = "0.1"
 asynchronous-codec = "0.5"
 
-bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }
+bcs-ext = { package = "bcs-ext", path = "../commons/bcs_ext" }
 
 derive_more = "0.99.14"
 either = "1.7.0"
@@ -29,19 +29,22 @@ parking_lot = "0.12.1"
 rand = "0.8.5"
 pin-project = "0.4.27"
 serde = { version = "1.0.130", features = ["derive"] }
-serde_json = { version="1.0", features = ["arbitrary_precision"]}
+serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 smallvec = "1.8.1"
 thiserror = "1"
-unsigned-varint = { version = "0.6.0", features = ["futures", "asynchronous_codec"] }
+unsigned-varint = { version = "0.6.0", features = [
+    "futures",
+    "asynchronous_codec",
+] }
 void = "1.0.2"
 zeroize = "1.3.0"
-hex= "0.4.3"
+hex = "0.4.3"
 wasm-timer = "0.2"
-sc-peerset = {  path = "peerset" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-metrics = {path = "../commons/metrics"}
-starcoin-types = {path = "../types"}
-network-p2p-types = {path = "./types"}
+sc-peerset = { path = "peerset" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
+starcoin-metrics = { path = "../commons/metrics" }
+starcoin-types = { path = "../types" }
+network-p2p-types = { path = "./types" }
 prometheus = "0.13.0"
 ip_network = "0.3.4"
 bs58 = "0.3.1"
@@ -51,11 +54,10 @@ async-std = "1.12.0"
 [dependencies.libp2p]
 version = "0.42.2"
 [dev-dependencies]
-stest = {path = "../commons/stest"}
+stest = { path = "../commons/stest" }
 async-std = "1.12"
 tempfile = "3.1.0"
 
 
 [features]
 default = []
-

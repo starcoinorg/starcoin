@@ -8,7 +8,9 @@ edition = "2021"
 
 jsonrpc-tcp-server = { git = "https://github.com/starcoinorg/jsonrpc", rev = "8f457b18921c1723db6349a1bdbb14b8e376e756" }
 jsonrpc-derive = { git = "https://github.com/starcoinorg/jsonrpc", rev = "8f457b18921c1723db6349a1bdbb14b8e376e756" }
-jsonrpc-core = { git = "https://github.com/starcoinorg/jsonrpc", rev = "8f457b18921c1723db6349a1bdbb14b8e376e756", features = ["arbitrary_precision"] }
+jsonrpc-core = { git = "https://github.com/starcoinorg/jsonrpc", rev = "8f457b18921c1723db6349a1bdbb14b8e376e756", features = [
+    "arbitrary_precision",
+] }
 jsonrpc-pubsub = { git = "https://github.com/starcoinorg/jsonrpc", rev = "8f457b18921c1723db6349a1bdbb14b8e376e756" }
 jsonrpc-core-client = { git = "https://github.com/starcoinorg/jsonrpc", rev = "8f457b18921c1723db6349a1bdbb14b8e376e756" }
 serde_json = { version = "1.0", features = ["arbitrary_precision"] }
@@ -21,7 +23,7 @@ starcoin-service-registry = { path = "../commons/service-registry" }
 starcoin-types = { path = "../types" }
 starcoin-miner = { path = "../miner" }
 starcoin-logger = { path = "../commons/logger" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
 starcoin-config = { path = "../config" }
 [dev-dependencies]
 stest = { path = "../commons/stest" }

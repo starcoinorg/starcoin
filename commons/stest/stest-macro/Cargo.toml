@@ -17,4 +17,4 @@ darling = "0.10.2"
 [dev-dependencies]
 actix = "0.13"
 actix-rt = "2.6"
-stest = { path = "../../stest"}
+stest = { path = "../../stest" }

@@ -1,8 +1,7 @@
-use crypto::digest::Digest;
-use crypto::sha3::Sha3;
 use merkletree::hash::Algorithm;
 use serde::Deserialize;
 use serde::Serialize;
+use sha3::{Digest, Sha3_256};
 use starcoin_vm_types::account_address::AccountAddress;
 use std::hash::Hasher;
 
@@ -23,11 +22,11 @@ pub fn encode(idx: u64, address: AccountAddress, amount: u128) -> anyhow::Result
     Ok(index)
 }
 
-pub struct Sha3Algorithm(Sha3);
+pub struct Sha3Algorithm(Sha3_256);
 
 impl Default for Sha3Algorithm {
     fn default() -> Self {
-        Self(Sha3::sha3_256())
+        Self(Sha3_256::new())
     }
 }
 
@@ -39,21 +38,20 @@ impl Hasher for Sha3Algorithm {
 
     #[inline]
     fn write(&mut self, msg: &[u8]) {
-        self.0.input(msg)
+        self.0.update(msg)
     }
 }
 
 impl Algorithm<[u8; 32]> for Sha3Algorithm {
     #[inline]
     fn hash(&mut self) -> [u8; 32] {
-        let mut h = [0u8; 32];
-        self.0.result(&mut h);
-        h
+        let result = self.0.clone().finalize();
+        <[u8; 32]>::from(result)
     }
 
     #[inline]
     fn reset(&mut self) {
-        self.0.reset();
+        self.0.reset()
     }
     /// Returns hash value for MT leaf (prefix 0x00).
     #[inline]
