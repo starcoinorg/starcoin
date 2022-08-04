@@ -6,6 +6,7 @@ use bcs_ext::BCSCodec;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
 use starcoin_abi_resolver::ABIResolver;
+use starcoin_crypto::ed25519::ED25519_PUBLIC_KEY_LENGTH;
 use starcoin_crypto::HashValue;
 use starcoin_dev::playground::view_resource;
 use starcoin_resource_viewer::MoveValueAnnotator;
@@ -262,7 +263,32 @@ where
             let state = statedb.get_account_state_set(&addr)?;
             let resource_types_set: Option<HashSet<String>> =
                 option.resource_types.map(|resource_types_value| {
-                    HashSet::from_iter(resource_types_value.iter().cloned())
+                    let mut hashset = HashSet::default();
+                    for resouces in resource_types_value {
+                        let resouces_split: Vec<&str> = resouces.split("::").collect();
+                        if resouces_split.len() < 3 {
+                            return hashset;
+                        }
+
+                        // start with 0x......
+                        let x: &[_] = &['0', 'x'];
+                        let mut address =
+                            resouces_split.get(0).unwrap().trim_matches(x).to_string();
+                        if address.len() < ED25519_PUBLIC_KEY_LENGTH {
+                            let i = ED25519_PUBLIC_KEY_LENGTH - address.len();
+                            for _ in 0..i {
+                                address.insert(0, '0');
+                            }
+                        }
+                        let resource_type_address_module_name_str = format!(
+                            "0x{}::{}::{}",
+                            address,
+                            resouces_split.get(1).unwrap(),
+                            resouces_split.get(2).unwrap()
+                        );
+                        hashset.insert(resource_type_address_module_name_str);
+                    }
+                    hashset
                 });
             match state {
                 None => Ok(ListResourceView::default()),
@@ -276,7 +302,9 @@ where
                             if resource_types_set.is_none() {
                                 return true;
                             }
+                            dbg!(&resource_types_set);
                             let struct_tag = StructTag::decode(k.as_slice()).unwrap();
+                            dbg!(&struct_tag);
                             let resource_type_address_module_name_str = format!(
                                 "{}::{}::{}",
                                 struct_tag.address, struct_tag.module, struct_tag.name
