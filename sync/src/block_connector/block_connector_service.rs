@@ -3,7 +3,7 @@
 
 use crate::block_connector::{ExecuteRequest, ResetRequest, WriteBlockChainService};
 use crate::sync::{CheckSyncEvent, SyncService};
-use crate::tasks::BlockConnectedEvent;
+use crate::tasks::{BlockConnectedEvent, BlockDiskCheckEvent};
 use anyhow::{format_err, Result};
 use config::{NodeConfig, G_CRATE_VERSION};
 use executor::VMMetrics;
@@ -19,7 +19,7 @@ use starcoin_sync_api::PeerNewBlock;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent};
-use std::{sync::Arc, time::Instant};
+use std::sync::Arc;
 use sysinfo::{DiskExt, System, SystemExt};
 use txpool::TxPoolService;
 
@@ -30,7 +30,6 @@ pub struct BlockConnectorService {
     chain_service: WriteBlockChainService<TxPoolService>,
     sync_status: Option<SyncStatus>,
     config: Arc<NodeConfig>,
-    disk_space_check_time: Instant,
 }
 
 impl BlockConnectorService {
@@ -41,7 +40,6 @@ impl BlockConnectorService {
         Self {
             chain_service,
             sync_status: None,
-            disk_space_check_time: Instant::now(),
             config,
         }
     }
@@ -54,11 +52,7 @@ impl BlockConnectorService {
     }
 
     pub fn check_disk_space(&mut self) -> Option<Result<u64>> {
-        let t = std::time::Duration::from_secs(3);
-        let check = self.disk_space_check_time;
-        self.disk_space_check_time = Instant::now();
-
-        if check.elapsed() >= t && System::IS_SUPPORTED {
+        if System::IS_SUPPORTED {
             let mut sys = System::new_all();
             if sys.disks().len() == 1 {
                 let disk = &sys.disks()[0];
@@ -92,7 +86,7 @@ impl BlockConnectorService {
                         } else if DISK_CHECKPOINT_FOR_WARN > disk.available_space() {
                             return Some(Ok(disk.available_space() / 1024 / 1024));
                         }
-
+                        
                         break;
                     }
                 }
@@ -132,13 +126,37 @@ impl ActorService for BlockConnectorService {
         ctx.set_mailbox_capacity(1024);
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<MinedBlock>();
+        //TODO how to trigger this event
+        ctx.subscribe::<BlockDiskCheckEvent>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<MinedBlock>();
+        ctx.unsubscribe::<BlockDiskCheckEvent>();
         Ok(())
+    }
+}
+
+impl EventHandler<Self, BlockDiskCheckEvent> for BlockConnectorService {
+    fn handle_event(
+        &mut self,
+        _: BlockDiskCheckEvent,
+        _ctx: &mut ServiceContext<BlockConnectorService>,
+    ) {
+        if let Some(res) = self.check_disk_space() {
+            match res {
+                Ok(available_space) => {
+                    warn!("Available diskspace only {}/GB left ", available_space)
+                }
+                Err(e) => {
+                    error!("{}", e);
+                    //TODO: exit the starcoin
+                    //ctx.notify(NodeRequest::ShutdownSystem);
+                }
+            }
+        }
     }
 }
 
@@ -148,17 +166,9 @@ impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService {
         msg: BlockConnectedEvent,
         _ctx: &mut ServiceContext<BlockConnectorService>,
     ) {
-        if let Some(res) = self.check_disk_space() {
-            match res {
-                Ok(available_space) => {
-                    warn!("Available diskspace only {}/GB left ", available_space)
-                }
-                Err(e) => panic!("{}", e),
-            }
-        }
-
         //because this block has execute at sync task, so just try connect to select head chain.
         //TODO refactor connect and execute
+
         let block = msg.block;
         if let Err(e) = self.chain_service.try_connect(block) {
             error!("Process connected block error: {:?}", e);
