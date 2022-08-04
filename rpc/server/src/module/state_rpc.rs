@@ -266,10 +266,9 @@ where
                     let mut hashset = HashSet::default();
                     for resouces in resource_types_value {
                         let resouces_split: Vec<&str> = resouces.split("::").collect();
-                        if resouces_split.len() < 3 {
+                        if resouces_split.is_empty() {
                             return hashset;
                         }
-
                         // start with 0x......
                         let x: &[_] = &['0', 'x'];
                         let mut address =
@@ -280,16 +279,23 @@ where
                                 address.insert(0, '0');
                             }
                         }
-                        let resource_type_address_module_name_str = format!(
-                            "0x{}::{}::{}",
-                            address,
-                            resouces_split.get(1).unwrap(),
-                            resouces_split.get(2).unwrap()
-                        );
-                        hashset.insert(resource_type_address_module_name_str);
+                        let resource_type = match resouces_split.len() {
+                            1 => format!("0x{}", address),
+                            2 => format!("0x{}::{}", address, resouces_split.get(1).unwrap()),
+                            3 => format!(
+                                "0x{}::{}::{}",
+                                address,
+                                resouces_split.get(1).unwrap(),
+                                resouces_split.get(2).unwrap()
+                            ),
+                            _ => return hashset,
+                        };                        
+                        
+                        hashset.insert(resource_type);
                     }
                     hashset
                 });
+            
             match state {
                 None => Ok(ListResourceView::default()),
                 Some(s) => {
@@ -303,10 +309,12 @@ where
                                 return true;
                             }
                             let struct_tag = StructTag::decode(k.as_slice()).unwrap();
+
                             let resource_type_address_module_name_str = format!(
                                 "{}::{}::{}",
                                 struct_tag.address, struct_tag.module, struct_tag.name
                             );
+                            
                             resource_types_set
                                 .as_ref()
                                 .unwrap()
