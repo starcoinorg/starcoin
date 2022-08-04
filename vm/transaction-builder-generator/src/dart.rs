@@ -203,7 +203,7 @@ import '../starcoin_types/starcoin_types.dart';
             self.out,
             r#"
 /**
- * Build a Diem {{@link com.diem.types.Script}} from a structured value {{@link ScriptCall}}.
+ * Build a Diem {{@link org.starcoin.types.Script}} from a structured value {{@link ScriptCall}}.
  *
  * @param call {{@link ScriptCall}} value to encode.
  * @return Encoded script.
@@ -217,7 +217,7 @@ static Script encode_script(ScriptCall call) {{
             self.out,
             r#"
 /**
- * Build a Diem {{@link com.diem.types.TransactionPayload}} from a structured value {{@link ScriptFunctionCall}}.
+ * Build a Diem {{@link org.starcoin.types.TransactionPayload}} from a structured value {{@link ScriptFunctionCall}}.
  *
  * @param call {{@link ScriptFunctionCall}} value to encode.
  * @return Encoded TransactionPayload.
@@ -234,9 +234,9 @@ static TransactionPayload encode_script_function(ScriptFunctionCall call) {{
             self.out,
             r#"
 /**
- * Try to recognize a Diem {{@link com.diem.types.Script}} and convert it into a structured value {{@code ScriptCall}}.
+ * Try to recognize a Diem {{@link org.starcoin.types.Script}} and convert it into a structured value {{@code ScriptCall}}.
  *
- * @param script {{@link com.diem.types.Script}} values to decode.
+ * @param script {{@link org.starcoin.types.Script}} values to decode.
  * @return Decoded {{@link ScriptCall}} value.
  */
 static ScriptCall decode_script(Script script)  {{
@@ -253,9 +253,9 @@ static ScriptCall decode_script(Script script)  {{
             self.out,
             r#"
 /**
- * Try to recognize a Diem {{@link com.diem.types.TransactionPayload}} and convert it into a structured value {{@code ScriptFunctionCall}}.
+ * Try to recognize a Diem {{@link org.starcoin.types.TransactionPayload}} and convert it into a structured value {{@code ScriptFunctionCall}}.
  *
- * @param payload {{@link com.diem.types.TransactionPayload}} values to decode.
+ * @param payload {{@link org.starcoin.types.TransactionPayload}} values to decode.
  * @return Decoded {{@link ScriptFunctionCall}} value.
  */
 static ScriptFunctionCall decode_script_function_payload(TransactionPayload payload) {{
@@ -288,7 +288,7 @@ static ScriptFunctionCall decode_script_function_payload(TransactionPayload payl
             Self::quote_doc(
                 abi.doc(),
                 [quoted_type_params_doc, quoted_params_doc].concat(),
-                "Encoded {@link com.diem.types.Script} value.",
+                "Encoded {@link org.starcoin.types.Script} value.",
             ),
             abi.name(),
             [quoted_type_params, quoted_params].concat().join(", ")
@@ -323,7 +323,7 @@ return builder.build();"#,
             Self::quote_doc(
                 abi.doc(),
                 [quoted_type_params_doc, quoted_params_doc].concat(),
-                "Encoded {@link com.diem.types.TransactionPayload} value.",
+                "Encoded {@link org.starcoin.types.TransactionPayload} value.",
             ),
             abi.name(),
             [quoted_type_params, quoted_params].concat().join(", ")
