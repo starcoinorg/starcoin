@@ -54,6 +54,11 @@ For prerequisites and detailed build instructions please read [Build from source
 
 Download binary release from GitHub [releases](https://github.com/starcoinorg/starcoin/releases) page.
 
+Or install by one-line script:
+
+`curl --proto '=https' -O --tlsv1.2 -sSf https://raw.githubusercontent.com/starcoinorg/starcoin/master/scripts/install_starcoin_mpm.sh | sh install_starcoin_mpm.sh v1.11.12
+`
+
 ## Run dev node:
 
 ```shell
