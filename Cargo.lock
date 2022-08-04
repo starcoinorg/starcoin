@@ -8207,6 +8207,7 @@ dependencies = [
  "clap 3.2.15",
  "cli-table",
  "ctrlc",
+ "jpst",
  "once_cell",
  "rand 0.8.5",
  "rust-flatten-json",
@@ -9444,7 +9445,7 @@ dependencies = [
 [[package]]
 name = "starcoin-framework"
 version = "11.0.0"
-source = "git+https://github.com/starcoinorg/starcoin-framework?rev=0d37c891a2d660fb94b3b8c0d396b67890691a00#0d37c891a2d660fb94b3b8c0d396b67890691a00"
+source = "git+https://github.com/starcoinorg/starcoin-framework?rev=98e96e6e33e7b93301bb0a341a85e3b6133ed2de#98e96e6e33e7b93301bb0a341a85e3b6133ed2de"
 dependencies = [
  "anyhow",
  "include_dir",
@@ -11184,8 +11185,8 @@ dependencies = [
  "anyhow",
  "clap 3.2.15",
  "cucumber_rust",
+ "jpst",
  "jsonpath",
- "lazy_static 1.4.0",
  "regex",
  "scmd",
  "serde 1.0.140",
