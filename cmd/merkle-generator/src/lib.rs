@@ -1,10 +1,9 @@
 use merkletree::hash::Algorithm;
 use serde::Deserialize;
 use serde::Serialize;
+use sha3::{Digest, Sha3_256};
 use starcoin_vm_types::account_address::AccountAddress;
 use std::hash::Hasher;
-use tiny_keccak::Hasher as THasher;
-use tiny_keccak::Sha3;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DataProof {
@@ -23,11 +22,11 @@ pub fn encode(idx: u64, address: AccountAddress, amount: u128) -> anyhow::Result
     Ok(index)
 }
 
-pub struct Sha3Algorithm(Sha3);
+pub struct Sha3Algorithm(Sha3_256);
 
 impl Default for Sha3Algorithm {
     fn default() -> Self {
-        Self(Sha3::v256())
+        Self(Sha3_256::new())
     }
 }
 
@@ -46,15 +45,13 @@ impl Hasher for Sha3Algorithm {
 impl Algorithm<[u8; 32]> for Sha3Algorithm {
     #[inline]
     fn hash(&mut self) -> [u8; 32] {
-        let mut h = [0u8; 32];
-        self.0.clone().finalize(&mut h);
-        self.0 = Sha3::v256();
-        h
+        let result = self.0.clone().finalize();
+        <[u8; 32]>::from(result)
     }
 
     #[inline]
     fn reset(&mut self) {
-        self.0 = Sha3::v256();
+        self.0.reset()
     }
     /// Returns hash value for MT leaf (prefix 0x00).
     #[inline]

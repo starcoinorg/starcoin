@@ -4770,9 +4770,9 @@ dependencies = [
  "merkletree",
  "serde 1.0.140",
  "serde_json",
+ "sha3 0.9.1",
  "starcoin-crypto",
  "starcoin-vm-types",
- "tiny-keccak",
 ]
 
 [[package]]

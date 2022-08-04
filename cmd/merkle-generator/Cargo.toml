@@ -9,7 +9,7 @@ edition = "2021"
 [dependencies]
 csv = "~1"
 serde = "~1"
-tiny-keccak = {version = "2", features = ["keccak"]}
+sha3="0.9.1"
 serde_json = {version="~1", features=["arbitrary_precision"]}
 anyhow="~1"
 hex="~0.4"
