@@ -9,7 +9,7 @@ version = "1.11.11"
 [dependencies]
 anyhow = "1.0.41"
 bech32 = "0.9"
-chrono = { version = "0.4.19", default-features = false, features = ["clock"] }
+chrono = { version = "0.4.20", default-features = false, features = ["clock"] }
 hex = "0.4.3"
 log = "0.4.16"
 mirai-annotations = "1.10.1"

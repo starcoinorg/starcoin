@@ -12,7 +12,7 @@ log = "0.4.16"
 slog = "2.7.0"
 slog-term = "2.9.0"
 slog-async = "2.7.0"
-chrono = "0.4.19"
+chrono = "0.4.20"
 lazy_static = "1.4.0"
 arc-swap = "1.5.1"
 log4rs = { version = "1.0.0", features = ["background_rotation", "gzip"] }
