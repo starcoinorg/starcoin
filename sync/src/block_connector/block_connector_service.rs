@@ -56,13 +56,15 @@ impl BlockConnectorService {
             let mut sys = System::new_all();
             if sys.disks().len() == 1 {
                 let disk = &sys.disks()[0];
+                dbg!(DISK_CHECKPOINT_FOR_PANIC);
+                dbg!(disk.available_space());
                 if DISK_CHECKPOINT_FOR_PANIC > disk.available_space() {
                     return Some(Err(anyhow::anyhow!(
                         "Disk space is less than {} GB, please add disk space.",
-                        DISK_CHECKPOINT_FOR_PANIC / 1024 / 1024
+                        DISK_CHECKPOINT_FOR_PANIC / 1024 / 1024 / 1024
                     )));
                 } else if DISK_CHECKPOINT_FOR_WARN > disk.available_space() {
-                    return Some(Ok(disk.available_space() / 1024 / 1024));
+                    return Some(Ok(disk.available_space() / 1024 / 1024 / 1024));
                 }
             } else {
                 sys.sort_disks_by(|a, b| {
@@ -81,10 +83,10 @@ impl BlockConnectorService {
                         if DISK_CHECKPOINT_FOR_PANIC > disk.available_space() {
                             return Some(Err(anyhow::anyhow!(
                                 "Disk space is less than {} GB, please add disk space.",
-                                DISK_CHECKPOINT_FOR_PANIC / 1024 / 1024
+                                DISK_CHECKPOINT_FOR_PANIC / 1024 / 1024 / 1024
                             )));
                         } else if DISK_CHECKPOINT_FOR_WARN > disk.available_space() {
-                            return Some(Ok(disk.available_space() / 1024 / 1024));
+                            return Some(Ok(disk.available_space() / 1024 / 1024 / 1024));
                         }
 
                         break;
