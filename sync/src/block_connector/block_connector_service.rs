@@ -18,7 +18,7 @@ use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::PeerNewBlock;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
-use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent};
+use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
 use std::sync::Arc;
 use sysinfo::{DiskExt, System, SystemExt};
 use txpool::TxPoolService;
@@ -86,7 +86,7 @@ impl BlockConnectorService {
                         } else if DISK_CHECKPOINT_FOR_WARN > disk.available_space() {
                             return Some(Ok(disk.available_space() / 1024 / 1024));
                         }
-                        
+
                         break;
                     }
                 }
@@ -128,9 +128,9 @@ impl ActorService for BlockConnectorService {
         ctx.subscribe::<MinedBlock>();
 
         ctx.run_interval(std::time::Duration::from_secs(3), move |ctx| {
-            ctx.notify(crate::tasks::BlockDiskCheckEvent{});
+            ctx.notify(crate::tasks::BlockDiskCheckEvent {});
         });
-        
+
         Ok(())
     }
 
@@ -145,7 +145,7 @@ impl EventHandler<Self, BlockDiskCheckEvent> for BlockConnectorService {
     fn handle_event(
         &mut self,
         _: BlockDiskCheckEvent,
-        _ctx: &mut ServiceContext<BlockConnectorService>,
+        ctx: &mut ServiceContext<BlockConnectorService>,
     ) {
         if let Some(res) = self.check_disk_space() {
             match res {
@@ -154,13 +154,10 @@ impl EventHandler<Self, BlockDiskCheckEvent> for BlockConnectorService {
                 }
                 Err(e) => {
                     error!("{}", e);
-                    //TODO: exit the starcoin
-                    //ctx.notify(NodeRequest::ShutdownSystem);
+                    ctx.broadcast(SystemShutdown);
                 }
             }
         }
-
-        error!("Check the disk space");
     }
 }
 

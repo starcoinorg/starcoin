@@ -387,7 +387,7 @@ pub struct BlockConnectedEvent {
 }
 
 #[derive(Clone, Debug)]
-pub struct BlockDiskCheckEvent{}
+pub struct BlockDiskCheckEvent {}
 
 pub trait BlockConnectedEventHandle: Send + Clone + std::marker::Unpin {
     fn handle(&mut self, event: BlockConnectedEvent) -> Result<()>;
