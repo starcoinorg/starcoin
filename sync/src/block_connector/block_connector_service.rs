@@ -126,15 +126,17 @@ impl ActorService for BlockConnectorService {
         ctx.set_mailbox_capacity(1024);
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<MinedBlock>();
-        //TODO how to trigger this event
-        ctx.subscribe::<BlockDiskCheckEvent>();
+
+        ctx.run_interval(std::time::Duration::from_secs(3), move |ctx| {
+            ctx.notify(crate::tasks::BlockDiskCheckEvent{});
+        });
+        
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<MinedBlock>();
-        ctx.unsubscribe::<BlockDiskCheckEvent>();
         Ok(())
     }
 }
@@ -157,6 +159,8 @@ impl EventHandler<Self, BlockDiskCheckEvent> for BlockConnectorService {
                 }
             }
         }
+
+        error!("Check the disk space");
     }
 }
 
