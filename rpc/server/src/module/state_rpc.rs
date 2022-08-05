@@ -263,24 +263,24 @@ where
             let resource_types_set: Option<Vec<StructTag>> =
                 option.resource_types.map(|resource_types_value| {
                     let mut find_resources_type = vec![];
-                    for resouces in resource_types_value {
-                        let resouces_split: Vec<&str> = resouces.split("::").collect();
-                        if resouces_split.is_empty() || resouces_split.len() < 3 {
+                    for resources in resource_types_value {
+                        let resources_split: Vec<&str> = resources.split("::").collect();
+                        if resources_split.is_empty() || resources_split.len() < 3 {
                             continue;
                         }
 
                         let address = match AccountAddress::from_hex_literal(
-                            resouces_split.get(0).unwrap(),
+                            resources_split.get(0).unwrap(),
                         ) {
                             Ok(addr) => addr,
                             Err(_) => continue,
                         };
-                        let module = match Identifier::new(*resouces_split.get(1).unwrap()) {
+                        let module = match Identifier::new(*resources_split.get(1).unwrap()) {
                             Ok(m) => m,
                             Err(_) => continue,
                         };
 
-                        let name = match Identifier::new(*resouces_split.get(2).unwrap()) {
+                        let name = match Identifier::new(*resources_split.get(2).unwrap()) {
                             Ok(n) => n,
                             Err(_) => continue,
                         };
