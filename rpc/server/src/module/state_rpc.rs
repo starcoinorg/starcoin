@@ -6,7 +6,6 @@ use bcs_ext::BCSCodec;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
 use starcoin_abi_resolver::ABIResolver;
-use starcoin_crypto::ed25519::ED25519_PUBLIC_KEY_LENGTH;
 use starcoin_crypto::HashValue;
 use starcoin_dev::playground::view_resource;
 use starcoin_resource_viewer::MoveValueAnnotator;
@@ -27,7 +26,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::StructTag;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 pub struct StateRpcImpl<S>
@@ -261,41 +260,41 @@ where
             let statedb = ChainStateDB::new(db, Some(state_root));
             //TODO implement list state by iter, and pagination
             let state = statedb.get_account_state_set(&addr)?;
-            let resource_types_set: Option<HashSet<String>> =
+            let resource_types_set: Option<Vec<StructTag>> =
                 option.resource_types.map(|resource_types_value| {
-                    let mut hashset = HashSet::default();
+                    let mut find_resources_type = vec![];
                     for resouces in resource_types_value {
                         let resouces_split: Vec<&str> = resouces.split("::").collect();
-                        if resouces_split.is_empty() {
-                            return hashset;
+                        if resouces_split.is_empty() || resouces_split.len() < 3 {
+                            continue;
                         }
-                        // start with 0x......
-                        let x: &[_] = &['0', 'x'];
-                        let mut address =
-                            resouces_split.get(0).unwrap().trim_matches(x).to_string();
-                        if address.len() < ED25519_PUBLIC_KEY_LENGTH {
-                            let i = ED25519_PUBLIC_KEY_LENGTH - address.len();
-                            for _ in 0..i {
-                                address.insert(0, '0');
-                            }
-                        }
-                        let resource_type = match resouces_split.len() {
-                            1 => format!("0x{}", address),
-                            2 => format!("0x{}::{}", address, resouces_split.get(1).unwrap()),
-                            3 => format!(
-                                "0x{}::{}::{}",
-                                address,
-                                resouces_split.get(1).unwrap(),
-                                resouces_split.get(2).unwrap()
-                            ),
-                            _ => return hashset,
-                        };                        
-                        
-                        hashset.insert(resource_type);
+
+                        let address = match AccountAddress::from_hex_literal(
+                            resouces_split.get(0).unwrap(),
+                        ) {
+                            Ok(addr) => addr,
+                            Err(_) => continue,
+                        };
+                        let module = match Identifier::new(*resouces_split.get(1).unwrap()) {
+                            Ok(m) => m,
+                            Err(_) => continue,
+                        };
+
+                        let name = match Identifier::new(*resouces_split.get(2).unwrap()) {
+                            Ok(n) => n,
+                            Err(_) => continue,
+                        };
+
+                        find_resources_type.push(StructTag {
+                            address,
+                            module,
+                            name,
+                            type_params: vec![],
+                        });
                     }
-                    hashset
+                    find_resources_type
                 });
-            
+
             match state {
                 None => Ok(ListResourceView::default()),
                 Some(s) => {
@@ -309,16 +308,15 @@ where
                                 return true;
                             }
                             let struct_tag = StructTag::decode(k.as_slice()).unwrap();
-
-                            let resource_type_address_module_name_str = format!(
-                                "{}::{}::{}",
-                                struct_tag.address, struct_tag.module, struct_tag.name
-                            );
-                            
-                            resource_types_set
-                                .as_ref()
-                                .unwrap()
-                                .contains(&resource_type_address_module_name_str)
+                            for resource in resource_types_set.as_ref().unwrap() {
+                                if resource.address == struct_tag.address
+                                    && resource.module == struct_tag.module
+                                    && resource.name == struct_tag.name
+                                {
+                                    return true;
+                                }
+                            }
+                            false
                         })
                         .skip(option.start_index)
                         .take(option.max_size)
