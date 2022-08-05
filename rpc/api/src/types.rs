@@ -1651,8 +1651,8 @@ pub struct AccumulatorInfoView {
     pub num_nodes: StrView<u64>,
 }
 
-impl Into<AccumulatorInfo> for AccumulatorInfoView {
-    fn into(self) -> AccumulatorInfo {
+impl AccumulatorInfoView {
+    fn into_info(self) -> AccumulatorInfo {
         AccumulatorInfo::new(
             self.accumulator_root,
             self.frozen_subtree_roots,
@@ -1686,13 +1686,13 @@ pub struct BlockInfoView {
     pub block_accumulator_info: AccumulatorInfoView,
 }
 
-impl Into<BlockInfo> for BlockInfoView {
-    fn into(self) -> BlockInfo {
+impl BlockInfoView {
+    pub fn into_info(self) -> BlockInfo {
         BlockInfo::new(
             self.block_hash,
             self.total_difficulty,
-            self.txn_accumulator_info.into(),
-            self.block_accumulator_info.into(),
+            self.txn_accumulator_info.into_info(),
+            self.block_accumulator_info.into_info(),
         )
     }
 }

@@ -42,7 +42,7 @@ impl StateNodeStore for MockStateNodeStore {
             None => {
                 let blob =
                     block_on(async move { self.remote.get_state_node_by_node_hash(*hash).await })
-                        .map(|res| res.map(|b| StateNode(b)))
+                        .map(|res| res.map(StateNode))
                         .map_err(|e| anyhow!("{}", e))?;
 
                 // Put result to local storage to accelerate the following getting.

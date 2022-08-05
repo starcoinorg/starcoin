@@ -294,8 +294,7 @@ impl RemoteRpcAsyncClient {
     }
 
     pub fn get_fork_block_number(&self) -> u64 {
-        let n = self.fork_number;
-        n
+        self.fork_number
     }
 }
 

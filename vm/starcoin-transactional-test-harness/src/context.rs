@@ -41,10 +41,16 @@ impl MockServer {
     }
 }
 
+impl Drop for MockServer {
+    fn drop(&mut self) {
+        self.server_handle.abort();
+    }
+}
+
 pub struct ForkContext {
     pub chain: Arc<Mutex<ForkBlockChain>>,
     pub storage: ChainStateDB,
-    server: MockServer,
+    _server: MockServer,
     client: RawClient,
     rt: Arc<Runtime>,
     state_root: Arc<Mutex<HashValue>>,
@@ -78,10 +84,9 @@ impl ForkContext {
                 .build()?,
         );
 
-        let remote_async_client =
-            Arc::new(rt.block_on(async {
-                RemoteRpcAsyncClient::from_url(&rpc[..], block_number).await
-            })?);
+        let remote_async_client = Arc::new(
+            rt.block_on(async { RemoteRpcAsyncClient::from_url(rpc, block_number).await })?,
+        );
         let state_api_client = Arc::new(remote_async_client.get_state_client().clone());
         let root_hash = rt
             .block_on(async { state_api_client.get_state_root().await })
@@ -114,7 +119,7 @@ impl ForkContext {
         Ok(Self {
             chain,
             storage,
-            server,
+            _server: server,
             client,
             rt,
             state_root,

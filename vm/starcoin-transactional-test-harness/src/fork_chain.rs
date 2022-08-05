@@ -82,7 +82,7 @@ impl ForkBlockChain {
                         .get_block_info_by_number(fork_number),
                 )
                 .map_err(|e| anyhow!("{}", e))?
-                .map(|view| view.into());
+                .map(|view| view.into_info());
                 match block_info {
                     Some(block) => MerkleAccumulator::new_with_info(
                         block.txn_accumulator_info,
@@ -137,13 +137,8 @@ impl ForkBlockChain {
         let status = status
             .status()
             .expect("TransactionStatus at here must been KeptVMStatus");
-        let txn_info = TransactionInfo::new(
-            txn_hash,
-            state_root,
-            events.clone().as_slice(),
-            gas_used,
-            status,
-        );
+        let txn_info =
+            TransactionInfo::new(txn_hash, state_root, events.as_slice(), gas_used, status);
         self.txn_accumulator.append(&[txn_info.id()])?;
 
         self.storage.save_contract_events(txn_hash, events)?;
@@ -156,10 +151,9 @@ impl ForkBlockChain {
     }
 
     fn remote_chain_client(&self) -> Option<ChainApiClient> {
-        match self.remote_client.clone() {
-            Some(client) => Some(client.get_chain_client().clone()),
-            None => None,
-        }
+        self.remote_client
+            .clone()
+            .map(|client| client.get_chain_client().clone())
     }
 }
 
@@ -183,13 +177,13 @@ impl ChainApi for MockChainApi {
     fn info(&self) -> FutureResult<ChainInfoView> {
         let chain = self.chain.lock().unwrap();
         let status = chain.status.clone();
-        let client = chain.remote_chain_client().clone();
+        let client = chain.remote_chain_client();
         let fut = async move {
             match status {
                 Some(status) => Ok(ChainInfoView::from(ChainInfo::new(
                     status.head.header().chain_id(),
                     HashValue::random(),
-                    status.status.clone(),
+                    status.status,
                 ))),
                 None => match client {
                     Some(client) => client.info().await.map_err(|e| anyhow!("{}", e)),
@@ -207,7 +201,7 @@ impl ChainApi for MockChainApi {
     ) -> FutureResult<Option<BlockView>> {
         let chain = self.chain.lock().unwrap();
         let storage = chain.storage.clone();
-        let client = chain.remote_chain_client().clone();
+        let client = chain.remote_chain_client();
         let decode = option.unwrap_or_default().decode;
         let raw = option.unwrap_or_default().raw;
         let status = chain.status.clone();
@@ -341,7 +335,7 @@ impl ChainApi for MockChainApi {
     ) -> starcoin_rpc_api::FutureResult<Option<TransactionView>> {
         let chain = self.chain.lock().unwrap();
         let storage = chain.storage.clone();
-        let client = chain.remote_chain_client().clone();
+        let client = chain.remote_chain_client();
         let status = chain.status.clone();
         let decode_payload = option.unwrap_or_default().decode;
         let fut = async move {
@@ -381,7 +375,7 @@ impl ChainApi for MockChainApi {
     ) -> starcoin_rpc_api::FutureResult<Option<TransactionInfoView>> {
         let chain = self.chain.lock().unwrap();
         let storage = chain.storage.clone();
-        let client = chain.remote_chain_client().clone();
+        let client = chain.remote_chain_client();
         let fut = async move {
             match storage.get_transaction_info(transaction_hash)? {
                 Some(_txn) => {
