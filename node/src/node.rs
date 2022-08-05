@@ -83,12 +83,7 @@ impl ActorService for NodeService {
 
 impl EventHandler<Self, SystemShutdown> for NodeService {
     fn handle_event(&mut self, _: SystemShutdown, _: &mut ServiceContext<Self>) {
-        if let Err(e) = self.registry.shutdown_system_sync() {
-            error!("Shutdown registry error: {}", e);
-        };
-        //wait a seconds for registry shutdown, then stop System.
-        std::thread::sleep(Duration::from_millis(2000));
-        System::current().stop();
+        self.shutdown_system();
     }
 }
 
@@ -126,12 +121,7 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
             }
             NodeRequest::ShutdownSystem => {
                 info!("Receive StopSystem request, try to stop system.");
-                if let Err(e) = self.registry.shutdown_system_sync() {
-                    error!("Shutdown registry error: {}", e);
-                };
-                //wait a seconds for registry shutdown, then stop System.
-                std::thread::sleep(Duration::from_millis(2000));
-                System::current().stop();
+                self.shutdown_system();
                 NodeResponse::Result(Ok(()))
             }
             NodeRequest::StopPacemaker => NodeResponse::Result(
@@ -424,5 +414,14 @@ impl NodeService {
         }
 
         Ok((registry, node_service))
+    }
+
+    fn shutdown_system(&self) {
+        if let Err(e) = self.registry.shutdown_system_sync() {
+            error!("Shutdown registry error: {}", e);
+        };
+        //wait a seconds for registry shutdown, then stop System.
+        std::thread::sleep(Duration::from_millis(2000));
+        System::current().stop();
     }
 }
