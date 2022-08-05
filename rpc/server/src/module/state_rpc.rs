@@ -269,12 +269,12 @@ where
                             continue;
                         }
 
-                        let address = match AccountAddress::from_hex_literal(
-                            resources_split.get(0).unwrap(),
-                        ) {
-                            Ok(addr) => addr,
-                            Err(_) => continue,
-                        };
+                        let address =
+                            match AccountAddress::from_hex_literal(resources_split.get(0).unwrap())
+                            {
+                                Ok(addr) => addr,
+                                Err(_) => continue,
+                            };
                         let module = match Identifier::new(*resources_split.get(1).unwrap()) {
                             Ok(m) => m,
                             Err(_) => continue,
