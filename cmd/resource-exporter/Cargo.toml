@@ -9,17 +9,17 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-starcoin-storage = {path = "../../storage"}
-starcoin-statedb = {path = "../../state/statedb"}
-starcoin-state-tree = {path = "../../state/state-tree"}
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-vm-types = {path = "../../vm/types"}
-starcoin-types = {path = "../../types"}
-bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
-starcoin-resource-viewer = {path = "../../vm/resource-viewer"}
+starcoin-storage = { path = "../../storage" }
+starcoin-statedb = { path = "../../state/statedb" }
+starcoin-state-tree = { path = "../../state/state-tree" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
+starcoin-vm-types = { path = "../../vm/types" }
+starcoin-types = { path = "../../types" }
+bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
+starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 clap = { version = "3", features = ["derive"] }
 csv = "~1"
 serde = "~1"
-serde_json = {version="~1", features=["arbitrary_precision"]}
-anyhow="~1"
-hex="~0.4"
+serde_json = { version = "~1", features = ["arbitrary_precision"] }
+anyhow = "~1"
+hex = "~0.4"

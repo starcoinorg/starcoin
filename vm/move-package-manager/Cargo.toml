@@ -52,17 +52,17 @@ datatest-stable = { git = "https://github.com/starcoinorg/diem-devtools", branch
 starcoin-vm-types = { path = "../../vm/types" }
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-types = { path = "../../types" }
-starcoin-config ={path = "../../config"}
-stdlib = {path = "../stdlib"}
-starcoin-vm-runtime = {path = "../vm-runtime", features=["testing"]}
-starcoin-move-compiler = {path = "../compiler"}
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-rpc-client = {path = "../../rpc/client"}
-starcoin-rpc-api = {path = "../../rpc/api"}
-starcoin-transactional-test-harness = {path = "../starcoin-transactional-test-harness"}
-starcoin-account-provider = {path = "../../account/provider"}
-starcoin-cmd = {path = "../../cmd/starcoin"}
-bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
+starcoin-config = { path = "../../config" }
+stdlib = { path = "../stdlib" }
+starcoin-vm-runtime = { path = "../vm-runtime", features = ["testing"] }
+starcoin-move-compiler = { path = "../compiler" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
+starcoin-rpc-client = { path = "../../rpc/client" }
+starcoin-rpc-api = { path = "../../rpc/api" }
+starcoin-transactional-test-harness = { path = "../starcoin-transactional-test-harness" }
+starcoin-account-provider = { path = "../../account/provider" }
+starcoin-cmd = { path = "../../cmd/starcoin" }
+bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 
 [dev-dependencies]
 

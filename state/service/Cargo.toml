@@ -11,17 +11,17 @@ anyhow = "1.0.41"
 futures = "0.3.12"
 async-trait = "0.1"
 starcoin-logger = { path = "../../commons/logger" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
 stest = { path = "../../commons/stest" }
 starcoin-types = { path = "../../types" }
 starcoin-config = { path = "../../config" }
 starcoin-state-api = { path = "../api" }
 starcoin-statedb = { path = "../statedb" }
 starcoin-storage = { path = "../../storage" }
-starcoin-state-tree = { path = "../state-tree"}
+starcoin-state-tree = { path = "../state-tree" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 tokio = "1"
-starcoin-vm-types = {path = "../../vm/types"}
+starcoin-vm-types = { path = "../../vm/types" }
 
 [dev-dependencies]
 test-helper = { path = "../../test-helper" }

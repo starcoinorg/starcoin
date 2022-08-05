@@ -15,7 +15,7 @@ thiserror = "1.0"
 dashmap = "5.2"
 hex = { version = "0.4.3", default-features = false }
 serde = { version = "1.0.130", features = ["derive"] }
-serde_json = { version="1.0", features = ["arbitrary_precision"]}
+serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 actix = "0.13"
 actix-rt = "2.6"
 jsonrpc-core = { version = "18", features = ["arbitrary_precision"] }
@@ -26,55 +26,60 @@ jsonrpc-ipc-server = "18"
 jsonrpc-ws-server = "18"
 jsonrpc-server-utils = "18"
 jsonrpc-pubsub = "18"
-jsonrpc-core-client = { version = "18", features = ["http", "ipc", "ws", "arbitrary_precision"]}
+jsonrpc-core-client = { version = "18", features = [
+    "http",
+    "ipc",
+    "ws",
+    "arbitrary_precision",
+] }
 futures = "0.3.12"
-bcs ="0.1"
-bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
-starcoin-types = {path = "../../types"}
-starcoin-config = {path = "../../config"}
-starcoin-logger = { path = "../../commons/logger"}
-starcoin-rpc-api = { path = "../api"}
-starcoin-rpc-middleware = { path = "../middleware"}
-starcoin-account-api = { path = "../../account/api"}
-starcoin-chain = {path ="../../chain"}
-starcoin-chain-service = {path ="../../chain/service"}
-starcoin-chain-notify = {path = "../../chain/chain-notify"}
-starcoin-account-service = { path = "../../account/service"}
-starcoin-statedb = { path = "../../state/statedb"}
-starcoin-state-tree = { path = "../../state/state-tree"}
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-state-api = { path = "../../state/api"}
-starcoin-state-service = { path = "../../state/service"}
-starcoin-txpool-api = {path = "../../txpool/api"}
-starcoin-txpool = {path = "../../txpool"}
-starcoin-network = {path = "../../network"}
-starcoin-metrics = {path = "../../commons/metrics"}
-starcoin-storage = {path = "../../storage"}
-starcoin-executor = {path = "../../executor"}
-starcoin-vm-types = { path = "../../vm/types"}
-starcoin-abi-types = {path = "../../abi/types"}
-starcoin-abi-resolver = {path = "../../abi/resolver"}
-starcoin-abi-decoder = {path = "../../abi/decoder"}
-starcoin-consensus= {path = "../../consensus"}
+bcs = "0.1"
+bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
+starcoin-types = { path = "../../types" }
+starcoin-config = { path = "../../config" }
+starcoin-logger = { path = "../../commons/logger" }
+starcoin-rpc-api = { path = "../api" }
+starcoin-rpc-middleware = { path = "../middleware" }
+starcoin-account-api = { path = "../../account/api" }
+starcoin-chain = { path = "../../chain" }
+starcoin-chain-service = { path = "../../chain/service" }
+starcoin-chain-notify = { path = "../../chain/chain-notify" }
+starcoin-account-service = { path = "../../account/service" }
+starcoin-statedb = { path = "../../state/statedb" }
+starcoin-state-tree = { path = "../../state/state-tree" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
+starcoin-state-api = { path = "../../state/api" }
+starcoin-state-service = { path = "../../state/service" }
+starcoin-txpool-api = { path = "../../txpool/api" }
+starcoin-txpool = { path = "../../txpool" }
+starcoin-network = { path = "../../network" }
+starcoin-metrics = { path = "../../commons/metrics" }
+starcoin-storage = { path = "../../storage" }
+starcoin-executor = { path = "../../executor" }
+starcoin-vm-types = { path = "../../vm/types" }
+starcoin-abi-types = { path = "../../abi/types" }
+starcoin-abi-resolver = { path = "../../abi/resolver" }
+starcoin-abi-decoder = { path = "../../abi/decoder" }
+starcoin-consensus = { path = "../../consensus" }
 starcoin-dev = { path = "../../vm/dev" }
 starcoin-miner = { path = "../../miner" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
-starcoin-resource-viewer = {path = "../../vm/resource-viewer"}
-vm-status-translator = {path = "../../vm/vm-status-translator"}
+starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
+vm-status-translator = { path = "../../vm/vm-status-translator" }
 network-api = { path = "../../network/api" }
-starcoin-node-api = { path = "../../node/api"}
-starcoin-sync-api = { path = "../../sync/api"}
-network-p2p-types = {path = "../../network-p2p/types"}
-network-rpc-core = {path = "../../network-rpc/core"}
-api-limiter = {path = "../../commons/api-limiter"}
-governor = {version="0.4.2", features=["dashmap"]}
+starcoin-node-api = { path = "../../node/api" }
+starcoin-sync-api = { path = "../../sync/api" }
+network-p2p-types = { path = "../../network-p2p/types" }
+network-rpc-core = { path = "../../network-rpc/core" }
+api-limiter = { path = "../../commons/api-limiter" }
+governor = { version = "0.4.2", features = ["dashmap"] }
 
 [dev-dependencies]
-stest = { path = "../../commons/stest"}
-starcoin-rpc-client = { path = "../client"}
-starcoin-txpool-mock-service = {path ="../../txpool/mock-service"}
-starcoin-executor={path="../../executor"}
-tokio = {version = "^1", features = ["full"] }
-starcoin-genesis = {path = "../../genesis"}
+stest = { path = "../../commons/stest" }
+starcoin-rpc-client = { path = "../client" }
+starcoin-txpool-mock-service = { path = "../../txpool/mock-service" }
+starcoin-executor = { path = "../../executor" }
+tokio = { version = "^1", features = ["full"] }
+starcoin-genesis = { path = "../../genesis" }
 test-helper = { path = "../../test-helper" }
 starcoin-chain-mock = { path = "../../chain/mock" }

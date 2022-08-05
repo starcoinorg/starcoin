@@ -16,7 +16,7 @@ serde = { version = "1.0.130", features = ["derive"] }
 starcoin-config = { path = "../../config" }
 starcoin-consensus = { path = "../../consensus" }
 starcoin-storage = { path = "../../storage" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-types = { path = "../../types" }
 starcoin-genesis = { path = "../../genesis" }
@@ -24,4 +24,3 @@ starcoin-service-registry = { path = "../../commons/service-registry" }
 
 [dev-dependencies]
 stest = { path = "../../commons/stest" }
-

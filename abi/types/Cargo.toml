@@ -8,10 +8,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-starcoin-vm-types = {path = "../../vm/types"}
-anyhow="~1"
-serde="~1"
+starcoin-vm-types = { path = "../../vm/types" }
+anyhow = "~1"
+serde = "~1"
 serde_bytes = "0.11"
 serde_json = "~1"
 hex = "0.4"
-schemars = {git = "https://github.com/starcoinorg/schemars", rev = "6972da92f4360e1779168bb3fe0274c521d324e2"}
+schemars = { git = "https://github.com/starcoinorg/schemars", rev = "6972da92f4360e1779168bb3fe0274c521d324e2" }

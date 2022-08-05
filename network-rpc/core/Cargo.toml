@@ -20,4 +20,3 @@ starcoin-types = { path = "../../types", package = "starcoin-types" }
 
 [dev-dependencies]
 stest = { path = "../../commons/stest" }
-

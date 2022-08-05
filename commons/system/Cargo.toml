@@ -7,5 +7,5 @@ publish = false
 edition = "2021"
 
 [dependencies]
-systemstat ="0.1.6"
+systemstat = "0.1.6"
 anyhow = "1.0.37"
