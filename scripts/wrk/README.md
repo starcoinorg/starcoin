@@ -2,7 +2,11 @@
 
 We may need to install `wrk` first. see https://github.com/wg/wrk/blob/master/INSTALL for installation guide
 
-## command example run in starcoin project root dir
+## command example
+
+following commands can be used to benchmark local starcoin node
+
+---
 
 `wrk -t10 -c200 -d30s -s './scripts/wrk/post-list-resource.lua' http://localhost:9850`
 
