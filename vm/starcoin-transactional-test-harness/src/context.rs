@@ -3,9 +3,7 @@ use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_rpc_server::module::StateRpcImpl;
-use starcoin_state_api::{
-    ChainStateReader, ChainStateWriter, StateNodeStore, 
-};
+use starcoin_state_api::{ChainStateReader, ChainStateWriter, StateNodeStore};
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::write_set::WriteSet;
 use std::sync::{Arc, Mutex};

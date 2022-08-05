@@ -452,7 +452,8 @@ impl<'a> StarcoinTestAdapter<'a> {
         match output.status() {
             TransactionStatus::Keep(kept_vm_status) => match kept_vm_status {
                 KeptVMStatus::Executed => {
-                    self.context.apply_write_set(output.clone().into_inner().0)?;
+                    self.context
+                        .apply_write_set(output.clone().into_inner().0)?;
                 }
                 _ => {
                     bail!("Failed to execute transaction. VMStatus: {}", status)
@@ -463,7 +464,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             }
         }
         let mut chain = self.context.chain.lock().unwrap();
-        chain.add_new_txn(meta.id(), output)?;
+        chain.add_new_txn(Transaction::BlockMetadata(meta), output)?;
 
         Ok(())
     }
@@ -493,7 +494,10 @@ impl<'a> StarcoinTestAdapter<'a> {
         }
         let payload = decode_txn_payload(&self.context.storage, signed_txn.payload())?;
         let mut chain = self.context.chain.lock().unwrap();
-        chain.add_new_txn(signed_txn.id(), output.clone())?;
+        chain.add_new_txn(
+            Transaction::UserTransaction(signed_txn.clone()),
+            output.clone(),
+        )?;
         let mut txn_view: SignedUserTransactionView = signed_txn.try_into()?;
         txn_view.raw_txn.decoded_payload = Some(payload.into());
         Ok(TransactionWithOutput {
@@ -644,7 +648,7 @@ impl<'a> StarcoinTestAdapter<'a> {
                 HashValue::sha3_256_of(parent_hash.as_slice())
             })
             .unwrap_or_else(HashValue::zero);
-       
+
         let new_block_meta = BlockMetadata::new(
             parent_hash,
             timestamp,
