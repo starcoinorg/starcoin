@@ -82,8 +82,13 @@ impl ActorService for NodeService {
 }
 
 impl EventHandler<Self, SystemShutdown> for NodeService {
-    fn handle_event(&mut self, _: SystemShutdown, ctx: &mut ServiceContext<Self>) {
-        ctx.broadcast(NodeRequest::ShutdownSystem);
+    fn handle_event(&mut self, _: SystemShutdown, _: &mut ServiceContext<Self>) {
+        if let Err(e) = self.registry.shutdown_system_sync() {
+            error!("Shutdown registry error: {}", e);
+        };
+        //wait a seconds for registry shutdown, then stop System.
+        std::thread::sleep(Duration::from_millis(2000));
+        System::current().stop();
     }
 }
 
