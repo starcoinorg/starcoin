@@ -682,11 +682,6 @@ impl<'a> StarcoinTestAdapter<'a> {
             0,
             BlockHeaderExtra::new([0u8; 4]),
         );
-        println!(
-            "new block {}, with state root: {}",
-            height,
-            block_header.state_root()
-        );
         let new_block = Block::new(block_header, block_body);
         let mut chain = self.context.chain.lock().unwrap();
         chain.add_new_block(new_block)?;

@@ -278,10 +278,6 @@ impl ChainApi for MockChainApi {
                 Ok(None)
             }
         };
-        println!(
-            "run in get block by number: {}, current number: {}",
-            number, current_number
-        );
         Box::pin(fut.boxed().map_err(map_err))
     }
 
