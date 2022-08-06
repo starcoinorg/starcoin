@@ -244,7 +244,6 @@ pub fn run_node_by_opt(
         let node_handle = run_node(config.clone())?;
         Some(node_handle)
     } else {
-        //TODO check ipc file is available.
         info!("Node has started at {:?}", ipc_file);
         None
     };
