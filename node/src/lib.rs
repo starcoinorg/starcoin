@@ -228,11 +228,22 @@ pub fn run_node_by_opt(
             .map_err(NodeStartError::LoadConfigError)?,
     );
     let ipc_file = config.rpc.get_ipc_file();
+    if ipc_file.exists() {
+        // check if ipc is connectable
+        info!(
+            "ipc_file: {:?} already exists, try to check if it's connectable",
+            ipc_file
+        );
+        if starcoin_rpc_client::RpcClient::connect_ipc(&ipc_file).is_err() {
+            info!("ipc_file: {:?} is not usable, just to remove it.", ipc_file);
+            _ = std::fs::remove_file(ipc_file.clone());
+        }
+    }
+
     let node_handle = if !ipc_file.exists() {
         let node_handle = run_node(config.clone())?;
         Some(node_handle)
     } else {
-        //TODO check ipc file is available.
         info!("Node has started at {:?}", ipc_file);
         None
     };
