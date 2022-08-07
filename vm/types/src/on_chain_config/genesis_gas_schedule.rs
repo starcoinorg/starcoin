@@ -421,6 +421,7 @@ pub fn v4_native_table() -> Vec<GasCost> {
         (N::UTF8_CHECK, GasCost::new(4, 1)),
         (N::UTF8_IS_CHAR, GasCost::new(4, 1)),
         (N::UTF8_SUB, GasCost::new(4, 1)),
+        (N::UTF8_INDEX, GasCost::new(4, 1)),
     ];
     raw_native_table.sort_by_key(|cost| cost.0 as u64);
     raw_native_table

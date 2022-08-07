@@ -59,11 +59,12 @@ pub mod gas_schedule {
         UTF8_CHECK = 41,
         UTF8_SUB = 42,
         UTF8_IS_CHAR = 43,
+        UTF8_INDEX = 44,
     }
 
     impl NativeCostIndex {
         //note: should change this value when add new native function.
-        pub const NUMBER_OF_NATIVE_FUNCTIONS: usize = 44;
+        pub const NUMBER_OF_NATIVE_FUNCTIONS: usize = 45;
     }
 }
 pub mod location {
