@@ -12,7 +12,7 @@ pub mod u256;
 pub mod ecrecover;
 
 pub mod vector;
-mod string;
+pub mod string;
 
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::CORE_CODE_ADDRESS;
@@ -124,6 +124,9 @@ pub fn starcoin_natives() -> NativeFunctionTable {
         ("U256", "native_div", u256::native_u256_div),
         ("U256", "native_rem", u256::native_u256_rem),
         ("U256", "native_pow", u256::native_u256_pow),
+        ("String","native_check_utf8",string::native_check_utf8),
+        ("String","native_is_char_boundary",string::native_is_char_boundary),
+        ("String","native_sub_string",string::native_sub_string),
     ];
     NATIVES
         .iter()

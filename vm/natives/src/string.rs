@@ -5,7 +5,6 @@
 //! Implementation of native functions for utf8 strings.
 
 use move_binary_format::errors::PartialVMResult;
-use move_core_types::account_address::AccountAddress;
 use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::{
     loaded_data::runtime_types::Type,
@@ -13,10 +12,9 @@ use move_vm_types::{
     pop_arg,
     values::Value,
 };
-use smallvec::smallvec;
 use starcoin_vm_types::gas_schedule::NativeCostIndex;
 use std::collections::VecDeque;
-
+use move_vm_types::values::VectorRef;
 // The implementation approach delegates all utf8 handling to Rust.
 // This is possible without copying of bytes because (a) we can
 // get a `std::cell::Ref<Vec<u8>>` from a `vector<u8>` and in turn a `&[u8]`
@@ -32,16 +30,15 @@ use std::collections::VecDeque;
  *
  **************************************************************************************************/
 
-pub fn make_native_check_utf8(
+pub fn native_check_utf8(
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut arguments: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     debug_assert!(ty_args.is_empty());
     debug_assert!(arguments.len() == 1);
-    let s_arg = pop_arg!(arguments, VectorRef);
-    let s_ref = s_arg.as_bytes_ref();
-    let ok = std::str::from_utf8(s_ref.as_slice()).is_ok();
+    let s_arg = pop_arg!(arguments, Vec<u8>);
+    let ok = std::str::from_utf8(s_arg.as_slice()).is_ok();
 
     let cost = native_gas(
         context.cost_table(),
@@ -57,7 +54,7 @@ pub fn make_native_check_utf8(
  *   gas cost: base_cost
  *
  **************************************************************************************************/
-pub fn make_native_is_char_boundary(
+pub fn native_is_char_boundary(
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut arguments: VecDeque<Value>,
@@ -65,11 +62,10 @@ pub fn make_native_is_char_boundary(
     debug_assert!(ty_args.is_empty());
     debug_assert!(arguments.len() == 2);
     let i = pop_arg!(arguments, u64);
-    let s_arg = pop_arg!(arguments, VectorRef);
-    let s_ref = s_arg.as_bytes_ref();
+    let s_arg = pop_arg!(arguments, Vec<u8>);
     let ok = unsafe {
         // This is safe because we guarantee the bytes to be utf8.
-        std::str::from_utf8_unchecked(s_ref.as_slice()).is_char_boundary(i as usize)
+        std::str::from_utf8_unchecked(s_arg.as_slice()).is_char_boundary(i as usize)
     };
     let cost = native_gas(
         context.cost_table(),
@@ -86,7 +82,7 @@ pub fn make_native_is_char_boundary(
  *
  **************************************************************************************************/
 
-pub fn make_native_sub_string(
+pub fn native_sub_string(
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut arguments: VecDeque<Value>,
@@ -95,25 +91,24 @@ pub fn make_native_sub_string(
     debug_assert!(arguments.len() == 3);
     let j = pop_arg!(arguments, u64) as usize;
     let i = pop_arg!(arguments, u64) as usize;
-
-    if j < i {
-        // TODO: what abort code should we use here?
-        return Ok(NativeResult::err(1, 1));
-    }
-
-    let s_arg = pop_arg!(arguments, VectorRef);
-    let s_ref = s_arg.as_bytes_ref();
-    let s_str = unsafe {
-        // This is safe because we guarantee the bytes to be utf8.
-        std::str::from_utf8_unchecked(s_ref.as_slice())
-    };
-    let v = Value::vector_u8((&s_str[i..j]).as_bytes().iter().cloned());
-
     let cost = native_gas(
         context.cost_table(),
         NativeCostIndex::CREATE_SIGNER as u8,
         0,
     );
+    if j < i {
+        // TODO: what abort code should we use here?
+        return Ok(NativeResult::err(cost, 1));
+    }
+
+    let s_arg = pop_arg!(arguments, Vec<u8>);
+    let s_str = unsafe {
+        // This is safe because we guarantee the bytes to be utf8.
+        std::str::from_utf8_unchecked(s_arg.as_slice())
+    };
+    let v = Value::vector_u8((&s_str[i..j]).as_bytes().iter().cloned());
+
+    
     NativeResult::map_partial_vm_result_one(cost, Ok(v))
 }
 
