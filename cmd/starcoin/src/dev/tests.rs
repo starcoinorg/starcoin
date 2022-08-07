@@ -11,7 +11,7 @@ use starcoin_transaction_builder::{
     build_module_upgrade_plan, build_module_upgrade_proposal, build_module_upgrade_queue,
 };
 use starcoin_types::transaction::{
-    parse_transaction_argument, ScriptFunction, TransactionArgument,
+    parse_transaction_argument_advance, ScriptFunction, TransactionArgument,
 };
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::core_code_address;
@@ -276,10 +276,11 @@ fn test_upgrade_module() {
     type_tags.push(G_STC_TOKEN_CODE.clone().try_into().unwrap());
     type_tags.push(module);
     let mut args: Vec<TransactionArgument> = Vec::new();
-    let arg_1 = parse_transaction_argument("0x0000000000000000000000000a550c18").unwrap();
-    let arg_2 = parse_transaction_argument(&format!("{}", proposal_id)).unwrap();
-    let arg_3 = parse_transaction_argument("true").unwrap();
-    let arg_4 = parse_transaction_argument(&format!("{}u128", transfer_amount * 90 / 100)).unwrap();
+    let arg_1 = parse_transaction_argument_advance("0x0000000000000000000000000a550c18").unwrap();
+    let arg_2 = parse_transaction_argument_advance(&format!("{}", proposal_id)).unwrap();
+    let arg_3 = parse_transaction_argument_advance("true").unwrap();
+    let arg_4 =
+        parse_transaction_argument_advance(&format!("{}u128", transfer_amount * 90 / 100)).unwrap();
     args.push(arg_1);
     args.push(arg_2);
     args.push(arg_3);
@@ -465,7 +466,7 @@ fn test_only_new_module() {
 
     // 2. set only_new_module strategy
     let mut args: Vec<TransactionArgument> = Vec::new();
-    let arg = parse_transaction_argument(&format!("{}u8", 2)).unwrap();
+    let arg = parse_transaction_argument_advance(&format!("{}u8", 2)).unwrap();
     args.push(arg);
     let script_function = ScriptFunction::new(
         ModuleId::new(

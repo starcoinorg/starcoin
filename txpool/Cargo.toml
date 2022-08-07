@@ -19,23 +19,23 @@ serde_derive = "1.0"
 parking_lot = "0.12"
 linked-hash-map = "0.5"
 trace-time = "0.1"
-starcoin-logger = {path = "../commons/logger"}
-starcoin-metrics = {path = "../commons/metrics"}
-stest = {path = "../commons/stest"}
-types = { package = "starcoin-types", path = "../types"}
-starcoin-txpool-api = {package = "starcoin-txpool-api", path ="api"}
-starcoin-state-api = {path = "../state/api"}
-crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-logger = { path = "../commons/logger" }
+starcoin-metrics = { path = "../commons/metrics" }
+stest = { path = "../commons/stest" }
+types = { package = "starcoin-types", path = "../types" }
+starcoin-txpool-api = { package = "starcoin-txpool-api", path = "api" }
+starcoin-state-api = { path = "../state/api" }
+crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
 transaction-pool = "2.0.3"
-storage = {path = "../storage", package="starcoin-storage"}
-starcoin-statedb={ path="../state/statedb" }
-forkable-jellyfish-merkle = {path="../commons/forkable-jellyfish-merkle"}
-starcoin-state-tree={path="../state/state-tree"}
-starcoin-executor={path="../executor"}
-starcoin-config={path="../config"}
+storage = { path = "../storage", package = "starcoin-storage" }
+starcoin-statedb = { path = "../state/statedb" }
+forkable-jellyfish-merkle = { path = "../commons/forkable-jellyfish-merkle" }
+starcoin-state-tree = { path = "../state/state-tree" }
+starcoin-executor = { path = "../executor" }
+starcoin-config = { path = "../config" }
 starcoin-service-registry = { path = "../commons/service-registry" }
 network-api = { package = "network-api", path = "../network/api" }
-tokio = {version = "^1", features=["full"]}
+tokio = { version = "^1", features = ["full"] }
 
 proptest = { version = "1.0.0", default-features = false, optional = true }
 proptest-derive = { version = "0.3.0", default-features = false, optional = true }
@@ -43,8 +43,8 @@ proptest-derive = { version = "0.3.0", default-features = false, optional = true
 
 [dev-dependencies]
 stdlib = { path = "../vm/stdlib" }
-tempfile="3"
-starcoin-open-block = {path = "../chain/open-block"}
+tempfile = "3"
+starcoin-open-block = { path = "../chain/open-block" }
 starcoin-genesis = { path = "../genesis" }
 test-helper = { path = "../test-helper" }
 proptest = "1.0.0"
@@ -53,4 +53,4 @@ proptest-derive = { version = "0.3.0" }
 
 [features]
 default = []
-fuzzing = ["proptest","proptest-derive", "types/fuzzing"]
+fuzzing = ["proptest", "proptest-derive", "types/fuzzing"]

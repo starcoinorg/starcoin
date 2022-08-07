@@ -25,13 +25,13 @@ use std::{
 pub fn output(
     out: &mut dyn Write,
     serde_package_name: Option<String>,
-    diem_package_name: Option<String>,
+    starcoin_package_name: Option<String>,
     abis: &[ScriptABI],
 ) -> Result<()> {
     let mut emitter = PythonEmitter {
         out: IndentedWriter::new(out, IndentConfig::Space(4)),
         serde_package_name,
-        diem_package_name,
+        starcoin_package_name,
     };
     emitter.output_script_call_enum_with_imports(abis)?;
     emitter.output_additional_imports()?;
@@ -64,7 +64,7 @@ struct PythonEmitter<T> {
     /// Package where to find the serde module (if any).
     serde_package_name: Option<String>,
     /// Package where to find the diem module (if any).
-    diem_package_name: Option<String>,
+    starcoin_package_name: Option<String>,
 }
 
 impl<T> PythonEmitter<T>
@@ -77,7 +77,7 @@ where
             self.out,
             r#"
 from {}starcoin_types import (Script, ScriptFunction, TransactionPayload, TransactionPayload__ScriptFunction, Identifier, ModuleId, TypeTag, AccountAddress, TransactionArgument, TransactionArgument__Bool, TransactionArgument__U8, TransactionArgument__U64, TransactionArgument__U128, TransactionArgument__Address, TransactionArgument__U8Vector)"#,
-            match &self.diem_package_name {
+            match &self.starcoin_package_name {
                 None => "".into(),
                 Some(package) => package.clone() + ".",
             },
@@ -138,7 +138,7 @@ def decode_script_function_payload(payload: TransactionPayload) -> ScriptFunctio
     }
 
     fn output_script_call_enum_with_imports(&mut self, abis: &[ScriptABI]) -> Result<()> {
-        let diem_types_module = match &self.diem_package_name {
+        let diem_types_module = match &self.starcoin_package_name {
             None => "starcoin_types".into(),
             Some(package) => format!("{}.starcoin_types", package),
         };
@@ -551,19 +551,19 @@ SCRIPT_FUNCTION_ENCODER_MAP: typing.Dict[typing.Type[ScriptFunctionCall], typing
 pub struct Installer {
     install_dir: PathBuf,
     serde_package_name: Option<String>,
-    diem_package_name: Option<String>,
+    starcoin_package_name: Option<String>,
 }
 
 impl Installer {
     pub fn new(
         install_dir: PathBuf,
         serde_package_name: Option<String>,
-        diem_package_name: Option<String>,
+        starcoin_package_name: Option<String>,
     ) -> Self {
         Installer {
             install_dir,
             serde_package_name,
-            diem_package_name,
+            starcoin_package_name,
         }
     }
 
@@ -586,7 +586,7 @@ impl crate::SourceInstaller for Installer {
         output(
             &mut file,
             self.serde_package_name.clone(),
-            self.diem_package_name.clone(),
+            self.starcoin_package_name.clone(),
             abis,
         )?;
         Ok(())

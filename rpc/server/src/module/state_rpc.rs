@@ -58,6 +58,15 @@ where
         Box::pin(fut)
     }
 
+    fn get_state_node_by_node_hash(&self, key_hash: HashValue) -> FutureResult<Option<Vec<u8>>> {
+        let state_store = self.state_store.clone();
+        let f = async move {
+            let node = state_store.get(&key_hash)?.map(|n| n.0);
+            Ok(node)
+        };
+        Box::pin(f.map_err(map_err).boxed())
+    }
+
     fn get_with_proof(&self, access_path: AccessPath) -> FutureResult<StateWithProofView> {
         let fut = self
             .service

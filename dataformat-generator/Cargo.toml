@@ -13,9 +13,9 @@ build = "build.rs"
 
 serde-reflection = "~0.3"
 starcoin-types = { path = "../types" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
 #starcoin-rpc-api = {path = "../rpc/api" }
 anyhow = "1.0"
 serde = "1.0.130"
 serde_yaml = "0.8"
-bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }
+bcs-ext = { package = "bcs-ext", path = "../commons/bcs_ext" }

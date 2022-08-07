@@ -12,7 +12,7 @@ thiserror = "1.0"
 backtrace = "0.3"
 actix = "0.13"
 actix-rt = "2.6"
-tokio = {version = "^1", features = ["full"] }
+tokio = { version = "^1", features = ["full"] }
 futures = "0.3.12"
 futures-timer = "3.0"
 async-trait = "0.1"
@@ -32,7 +32,7 @@ starcoin-chain-notify = { path = "../chain/chain-notify" }
 starcoin-rpc-server = { path = "../rpc/server" }
 starcoin-storage = { path = "../storage" }
 starcoin-miner = { path = "../miner" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
 starcoin-logger = { path = "../commons/logger" }
 starcoin-types = { path = "../types" }
 starcoin-sync = { path = "../sync" }
@@ -56,4 +56,3 @@ starcoin-stratum = { path = "../stratum" }
 starcoin-miner-client = { path = "../cmd/miner_client" }
 [dev-dependencies]
 stest = { path = "../commons/stest" }
-

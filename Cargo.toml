@@ -100,7 +100,7 @@ members = [
     "cmd/miner_client/api",
     "cmd/db-exporter",
     "cmd/genesis-nft-miner",
-    "devtools/x"
+    "devtools/x",
 ]
 
 default-members = [
@@ -201,7 +201,7 @@ default-members = [
     "cmd/genesis-nft-miner",
     "stratum",
     "cmd/miner_client/api",
-    "cmd/db-exporter"
+    "cmd/db-exporter",
 ]
 
 [profile.dev]

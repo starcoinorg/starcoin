@@ -8,8 +8,8 @@ edition = "2021"
 
 [dependencies]
 serde = { version = "1.0.130", features = ["derive"] }
-serde_bytes = {version = "0.11"}
-hex = {version = "0.4"}
+serde_bytes = { version = "0.11" }
+hex = { version = "0.4" }
 
 [dev-dependencies]
 bcs-ext = { package = "bcs-ext", path = "../bcs_ext" }

@@ -13,23 +13,23 @@ thiserror = "1.0"
 clap = { version = "3", features = ["derive"] }
 once_cell = "1.13.0"
 include_dir = "0.6.2"
-starcoin-types = {path = "../types", features = ["fuzzing"]}
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-types = { path = "../types", features = ["fuzzing"] }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
 serde = { version = "1.0.130" }
-starcoin-config = { path = "../config"}
-starcoin-executor = { path = "../executor"}
-starcoin-storage = { path = "../storage"}
-starcoin-statedb = { path = "../state/statedb"}
-starcoin-accumulator = { path = "../commons/accumulator"}
-stest = { path = "../commons/stest"}
-starcoin-logger = { path = "../commons/logger"}
-starcoin-consensus = { path = "../consensus"}
-starcoin-state-api = { path = "../state/api"}
-starcoin-vm-types = { path = "../vm/types"}
-starcoin-transaction-builder = { path = "../vm/transaction-builder"}
-stdlib = { path = "../vm/stdlib"}
-bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }
-starcoin-chain = { path = "../chain"}
+starcoin-config = { path = "../config" }
+starcoin-executor = { path = "../executor" }
+starcoin-storage = { path = "../storage" }
+starcoin-statedb = { path = "../state/statedb" }
+starcoin-accumulator = { path = "../commons/accumulator" }
+stest = { path = "../commons/stest" }
+starcoin-logger = { path = "../commons/logger" }
+starcoin-consensus = { path = "../consensus" }
+starcoin-state-api = { path = "../state/api" }
+starcoin-vm-types = { path = "../vm/types" }
+starcoin-transaction-builder = { path = "../vm/transaction-builder" }
+stdlib = { path = "../vm/stdlib" }
+bcs-ext = { package = "bcs-ext", path = "../commons/bcs_ext" }
+starcoin-chain = { path = "../chain" }
 
 [features]
 default = []

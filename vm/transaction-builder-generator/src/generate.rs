@@ -1,4 +1,4 @@
-// Copyright (c) The Diem Core Contributors
+// Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 //! # Code generator for Move script builders
@@ -59,15 +59,15 @@ struct Options {
     #[clap(long)]
     target_source_dir: Option<PathBuf>,
 
-    /// Also install the diem types described by the given YAML file, along with the BCS runtime.
+    /// Also install the starcoin types described by the given YAML file, along with the BCS runtime.
     #[clap(long)]
-    with_diem_types: Option<PathBuf>,
+    with_starcoin_types: Option<PathBuf>,
 
     /// Module name for the transaction builders installed in the `target_source_dir`.
     /// * Rust crates may contain a version number, e.g. "test:1.2.0".
     /// * In Java, this is expected to be a package name, e.g. "com.test" to create Java files in `com/test`.
     /// * In Go, this is expected to be of the format "go_module/path/go_package_name",
-    /// and `diem_types` is assumed to be in "go_module/path/diem_types".
+    /// and `starcoin_types` is assumed to be in "go_module/path/starcoin_types".
     #[clap(long)]
     module_name: Option<String>,
 
@@ -75,19 +75,19 @@ struct Options {
     #[clap(long)]
     serde_package_name: Option<String>,
 
-    /// Optional version number for the `diem_types` module (useful in Rust).
-    /// If `--with-diem-types` is passed, this will be the version of the generated `diem_types` module.
+    /// Optional version number for the `starcoin_types` module (useful in Rust).
+    /// If `--with-starcoin-types` is passed, this will be the version of the generated `starcoin_types` module.
     #[clap(long, default_value = "0.1.0")]
-    diem_version_number: String,
+    starcoin_version_number: String,
 
-    /// Optional package name (Python) or module path (Go) of the `diem_types` dependency.
+    /// Optional package name (Python) or module path (Go) of the `starcoin_types` dependency.
     #[clap(long)]
-    diem_package_name: Option<String>,
+    starcoin_package_name: Option<String>,
 
-    /// Read custom code for Diem containers from the given file paths. Containers will be matched with file stems.
+    /// Read custom code for starcoin containers from the given file paths. Containers will be matched with file stems.
     /// (e.g. `AddressAccount` <- `path/to/AddressAccount.py`)
     #[clap(long)]
-    with_custom_diem_code: Vec<PathBuf>,
+    with_custom_starcoin_code: Vec<PathBuf>,
 }
 
 fn main() {
@@ -107,7 +107,7 @@ fn main() {
                 Language::Python3 => buildgen::python3::output(
                     &mut out,
                     options.serde_package_name.clone(),
-                    options.diem_package_name.clone(),
+                    options.starcoin_package_name.clone(),
                     &abis,
                 )
                 .unwrap(),
@@ -137,8 +137,8 @@ fn main() {
         Some(dir) => dir,
     };
 
-    // Diem types
-    if let Some(registry_file) = options.with_diem_types {
+    // Starcoin types
+    if let Some(registry_file) = options.with_starcoin_types {
         let installer: Box<dyn serdegen::SourceInstaller<Error = Box<dyn std::error::Error>>> =
             match options.language {
                 Language::Python3 => Box::new(serdegen::python3::Installer::new(
@@ -161,12 +161,12 @@ fn main() {
         let content =
             std::fs::read_to_string(registry_file).expect("registry file must be readable");
         let registry = serde_yaml::from_str::<Registry>(content.as_str()).unwrap();
-        let (diem_package_name, diem_package_path) = match options.language {
+        let (starcoin_package_name, starcoin_package_path) = match options.language {
             Language::Rust => (
-                if options.diem_version_number == "0.1.0" {
+                if options.starcoin_version_number == "0.1.0" {
                     "starcoin-types".to_string()
                 } else {
-                    format!("starcoin-types:{}", options.diem_version_number)
+                    format!("starcoin-types:{}", options.starcoin_version_number)
                 },
                 vec!["starcoin-types"],
             ),
@@ -176,13 +176,13 @@ fn main() {
             ),
             _ => ("starcoin_types".to_string(), vec!["starcoin_types"]),
         };
-        let custom_diem_code = buildgen::read_custom_code_from_paths(
-            &diem_package_path,
-            options.with_custom_diem_code.into_iter(),
+        let custom_starcoin_code = buildgen::read_custom_code_from_paths(
+            &starcoin_package_path,
+            options.with_custom_starcoin_code.into_iter(),
         );
-        let config = serdegen::CodeGeneratorConfig::new(diem_package_name)
+        let config = serdegen::CodeGeneratorConfig::new(starcoin_package_name)
             .with_encodings(vec![serdegen::Encoding::Bcs])
-            .with_custom_code(custom_diem_code);
+            .with_custom_code(custom_starcoin_code);
         installer.install_module(&config, &registry).unwrap();
     }
 
@@ -192,11 +192,11 @@ fn main() {
             Language::Python3 => Box::new(buildgen::python3::Installer::new(
                 install_dir,
                 options.serde_package_name,
-                options.diem_package_name,
+                options.starcoin_package_name,
             )),
             Language::Rust => Box::new(buildgen::rust::Installer::new(
                 install_dir,
-                options.diem_version_number,
+                options.starcoin_version_number,
             )),
             Language::Cpp => Box::new(buildgen::cpp::Installer::new(install_dir)),
             Language::Java => Box::new(buildgen::java::Installer::new(install_dir)),

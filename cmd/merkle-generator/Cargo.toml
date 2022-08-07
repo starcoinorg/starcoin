@@ -9,12 +9,12 @@ edition = "2021"
 [dependencies]
 csv = "~1"
 serde = "~1"
-serde_json = {version="~1", features=["arbitrary_precision"]}
-anyhow="~1"
-hex="~0.4"
-bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
-merkletree = {version="0.21.0", features=["chaincore"]}
-rust-crypto = "~0.2"
-starcoin-vm-types = {path = "../../vm/types"}
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+sha3 = "0.9.1"
+serde_json = { version = "~1", features = ["arbitrary_precision"] }
+anyhow = "~1"
+hex = "~0.4"
+bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
+merkletree = { version = "0.21.0", features = ["chaincore"] }
+starcoin-vm-types = { path = "../../vm/types" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
 clap = { version = "3", features = ["derive"] }

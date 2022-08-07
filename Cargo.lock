@@ -4768,9 +4768,9 @@ dependencies = [
  "csv",
  "hex",
  "merkletree",
- "rust-crypto",
  "serde 1.0.140",
  "serde_json",
+ "sha3 0.9.1",
  "starcoin-crypto",
  "starcoin-vm-types",
 ]
@@ -8207,6 +8207,7 @@ dependencies = [
  "clap 3.2.15",
  "cli-table",
  "ctrlc",
+ "jpst",
  "once_cell",
  "rand 0.8.5",
  "rust-flatten-json",
@@ -9346,11 +9347,13 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-resource-viewer",
+ "starcoin-rpc-api",
  "starcoin-state-api",
  "starcoin-statedb",
  "starcoin-vm-runtime",
  "starcoin-vm-types",
  "thiserror",
+ "vm-status-translator",
 ]
 
 [[package]]
@@ -9442,7 +9445,7 @@ dependencies = [
 [[package]]
 name = "starcoin-framework"
 version = "11.0.0"
-source = "git+https://github.com/starcoinorg/starcoin-framework?rev=0d37c891a2d660fb94b3b8c0d396b67890691a00#0d37c891a2d660fb94b3b8c0d396b67890691a00"
+source = "git+https://github.com/starcoinorg/starcoin-framework?rev=98e96e6e33e7b93301bb0a341a85e3b6133ed2de#98e96e6e33e7b93301bb0a341a85e3b6133ed2de"
 dependencies = [
  "anyhow",
  "include_dir",
@@ -10435,15 +10438,20 @@ name = "starcoin-transactional-test-harness"
 version = "1.11.11"
 dependencies = [
  "anyhow",
+ "async-trait",
  "bcs",
  "bcs-ext",
  "clap 3.2.15",
  "dashmap",
  "datatest-stable 0.1.2",
  "either",
+ "futures 0.3.21",
  "itertools 0.10.3",
  "jsonrpc-client-transports 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-derive 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-http-server",
  "log 0.4.17",
  "move-binary-format",
  "move-command-line-common",
@@ -10455,14 +10463,20 @@ dependencies = [
  "serde 1.0.140",
  "serde_json",
  "starcoin-abi-decoder",
+ "starcoin-accumulator",
+ "starcoin-chain-api",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-dev",
  "starcoin-genesis",
  "starcoin-resource-viewer",
  "starcoin-rpc-api",
+ "starcoin-rpc-client",
+ "starcoin-rpc-server",
  "starcoin-state-api",
+ "starcoin-state-tree",
  "starcoin-statedb",
+ "starcoin-storage",
  "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-vm-types",
@@ -11198,8 +11212,8 @@ dependencies = [
  "anyhow",
  "clap 3.2.15",
  "cucumber_rust",
+ "jpst",
  "jsonpath",
- "lazy_static 1.4.0",
  "regex",
  "scmd",
  "serde 1.0.140",
