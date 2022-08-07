@@ -258,43 +258,11 @@ where
                 .state_root
                 .unwrap_or(state_service.state_root().await?);
             let statedb = ChainStateDB::new(db, Some(state_root));
+            
             //TODO implement list state by iter, and pagination
             let state = statedb.get_account_state_set(&addr)?;
-            let resource_types_set: Option<Vec<StructTag>> =
-                option.resource_types.map(|resource_types_value| {
-                    let mut find_resources_type = vec![];
-                    for resources in resource_types_value {
-                        let resources_split: Vec<&str> = resources.split("::").collect();
-                        if resources_split.is_empty() || resources_split.len() < 3 {
-                            continue;
-                        }
-
-                        let address =
-                            match AccountAddress::from_hex_literal(resources_split.get(0).unwrap())
-                            {
-                                Ok(addr) => addr,
-                                Err(_) => continue,
-                            };
-                        let module = match Identifier::new(*resources_split.get(1).unwrap()) {
-                            Ok(m) => m,
-                            Err(_) => continue,
-                        };
-
-                        let name = match Identifier::new(*resources_split.get(2).unwrap()) {
-                            Ok(n) => n,
-                            Err(_) => continue,
-                        };
-
-                        find_resources_type.push(StructTag {
-                            address,
-                            module,
-                            name,
-                            type_params: vec![],
-                        });
-                    }
-                    find_resources_type
-                });
-
+            let resource_types: Option<Vec<StructTagView>> = option.resource_types;
+            
             match state {
                 None => Ok(ListResourceView::default()),
                 Some(s) => {
@@ -304,16 +272,15 @@ where
                         .unwrap_or_default()
                         .iter()
                         .filter(|(k, _)| {
-                            if resource_types_set.is_none() {
+                            if resource_types.is_none() {
                                 return true;
                             }
-                            let struct_tag = StructTag::decode(k.as_slice()).unwrap();
-                            for resource in resource_types_set.as_ref().unwrap() {
-                                if resource.address == struct_tag.address
-                                    && resource.module == struct_tag.module
-                                    && resource.name == struct_tag.name
-                                {
-                                    return true;
+                            
+                            let struct_tag = StructTag::decode(k.as_slice()).unwrap();                            
+                            for resource_type in resource_types.as_ref().unwrap() {                                
+                                //TODO: fix this filter
+                                if resource_type.0.address == struct_tag.address {
+                                    return true
                                 }
                             }
                             false
