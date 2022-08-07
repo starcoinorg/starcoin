@@ -12,6 +12,7 @@ pub mod u256;
 pub mod ecrecover;
 
 pub mod vector;
+mod string;
 
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::CORE_CODE_ADDRESS;
