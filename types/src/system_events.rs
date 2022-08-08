@@ -24,6 +24,9 @@ pub struct MinedBlock(pub Arc<Block>);
 pub struct SystemStarted;
 
 #[derive(Clone, Debug)]
+pub struct SystemShutdown;
+
+#[derive(Clone, Debug)]
 pub struct SyncStatusChangeEvent(pub SyncStatus);
 
 ///Fire this event for generate a new block

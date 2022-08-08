@@ -34,8 +34,8 @@ use starcoin_rpc_server::module::{PubSubService, PubSubServiceFactory};
 use starcoin_rpc_server::service::RpcService;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{
-    ActorService, RegistryAsyncService, RegistryService, ServiceContext, ServiceFactory,
-    ServiceHandler, ServiceRef,
+    ActorService, EventHandler, RegistryAsyncService, RegistryService, ServiceContext,
+    ServiceFactory, ServiceHandler, ServiceRef,
 };
 use starcoin_state_service::ChainStateService;
 use starcoin_storage::block_info::BlockInfoStore;
@@ -53,7 +53,7 @@ use starcoin_sync::sync::SyncService;
 use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_txpool::TxPoolActorService;
-use starcoin_types::system_events::SystemStarted;
+use starcoin_types::system_events::{SystemShutdown, SystemStarted};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
@@ -69,7 +69,23 @@ impl ServiceFactory<Self> for NodeService {
     }
 }
 
-impl ActorService for NodeService {}
+impl ActorService for NodeService {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.subscribe::<SystemShutdown>();
+        Ok(())
+    }
+
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.unsubscribe::<SystemShutdown>();
+        Ok(())
+    }
+}
+
+impl EventHandler<Self, SystemShutdown> for NodeService {
+    fn handle_event(&mut self, _: SystemShutdown, _: &mut ServiceContext<Self>) {
+        self.shutdown_system();
+    }
+}
 
 impl ServiceHandler<Self, NodeRequest> for NodeService {
     fn handle(
@@ -105,12 +121,7 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
             }
             NodeRequest::ShutdownSystem => {
                 info!("Receive StopSystem request, try to stop system.");
-                if let Err(e) = self.registry.shutdown_system_sync() {
-                    error!("Shutdown registry error: {}", e);
-                };
-                //wait a seconds for registry shutdown, then stop System.
-                std::thread::sleep(Duration::from_millis(2000));
-                System::current().stop();
+                self.shutdown_system();
                 NodeResponse::Result(Ok(()))
             }
             NodeRequest::StopPacemaker => NodeResponse::Result(
@@ -403,5 +414,14 @@ impl NodeService {
         }
 
         Ok((registry, node_service))
+    }
+
+    fn shutdown_system(&self) {
+        if let Err(e) = self.registry.shutdown_system_sync() {
+            error!("Shutdown registry error: {}", e);
+        };
+        //wait a seconds for registry shutdown, then stop System.
+        std::thread::sleep(Duration::from_millis(2000));
+        System::current().stop();
     }
 }
