@@ -268,3 +268,55 @@ fn test_state_db_with_table_item_once() -> Result<()> {
     );
     Ok(())
 }
+
+#[test]
+fn test_state_with_table_item_proof() -> Result<()> {
+    let storage = MockStateNodeStore::new();
+    let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
+    let handle1 = random_u128();
+    let handle2 = random_u128();
+    let key1 = random_bytes();
+    let val1 = random_bytes();
+    let key2 = random_bytes();
+    let val2 = random_bytes();
+    let key3 = random_bytes();
+    let val3 = random_bytes();
+    let state_keys = vec![
+        StateKey::AccessPath(AccessPath::random_code()),
+        StateKey::AccessPath(AccessPath::random_resource()),
+        StateKey::TableItem {
+            handle: handle1,
+            key: key1.clone(),
+        },
+        StateKey::TableItem {
+            handle: handle1,
+            key: key2.clone(),
+        },
+        StateKey::TableItem {
+            handle: handle2,
+            key: key3.clone(),
+        },
+    ];
+    let values = vec![
+        random_bytes(),
+        random_bytes(),
+        val1.clone(),
+        val2.clone(),
+        val3.clone(),
+    ];
+    let write_set = state_keys_to_write_set(state_keys, values);
+    chain_state_db.apply_write_set(write_set)?;
+    chain_state_db.commit()?;
+    chain_state_db.flush()?;
+
+    let state_with_table_item_proof1 =
+        chain_state_db.get_with_table_item_proof(&handle1, key1.as_slice())?;
+    state_with_table_item_proof1.verify(&handle1, key1.as_slice())?;
+    let state_with_table_item_proof2 =
+        chain_state_db.get_with_table_item_proof(&handle1, key2.as_slice())?;
+    state_with_table_item_proof2.verify(&handle1, key2.as_slice())?;
+    let state_with_table_item_proof3 =
+        chain_state_db.get_with_table_item_proof(&handle2, key3.as_slice())?;
+    state_with_table_item_proof3.verify(&handle2, key3.as_slice())?;
+    Ok(())
+}
