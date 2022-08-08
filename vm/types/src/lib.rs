@@ -56,15 +56,12 @@ pub mod gas_schedule {
         TABLE_CONTAINS = 38,
         TABLE_DESTROY = 39,
         TABLE_DROP = 40,
-        UTF8_CHECK = 41,
-        UTF8_SUB = 42,
-        UTF8_IS_CHAR = 43,
-        UTF8_INDEX = 44,
+        STRING_CHECK_UT8 = 41,
     }
 
     impl NativeCostIndex {
         //note: should change this value when add new native function.
-        pub const NUMBER_OF_NATIVE_FUNCTIONS: usize = 45;
+        pub const NUMBER_OF_NATIVE_FUNCTIONS: usize = 42;
     }
 }
 pub mod location {
