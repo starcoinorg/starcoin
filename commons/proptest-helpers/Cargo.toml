@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies]
 crossbeam = "0.7.3"
-diem-proptest-helpers = { package = "diem-proptest-helpers", git = "https://github.com/WGB5445/move", rev = "d8e4ef11204107c777e94229d8e0ed49d55156c0" }
+diem-proptest-helpers = { package = "diem-proptest-helpers", git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
 
 proptest = "1.0.0"
 proptest-derive = "0.3.0"

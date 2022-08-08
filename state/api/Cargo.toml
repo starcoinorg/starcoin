@@ -17,7 +17,7 @@ merkle-tree = { package = "forkable-jellyfish-merkle", path = "../../commons/for
 starcoin-state-tree = { path = "../state-tree" }
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
-move-table-extension = { git = "https://github.com/WGB5445/move", rev = "d8e4ef11204107c777e94229d8e0ed49d55156c0" }
+move-table-extension = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
 once_cell = "1.12.0"
 
 [dev-dependencies]

@@ -12,7 +12,7 @@ edition = "2021"
 [dependencies]
 clap = { version = "3", features = ["derive"] }
 stdlib = { package = "stdlib", path = "../stdlib" }
-move-core-types = { git = "https://github.com/WGB5445/move", rev = "d8e4ef11204107c777e94229d8e0ed49d55156c0" }
+move-core-types = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 
 [features]

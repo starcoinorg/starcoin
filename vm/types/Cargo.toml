@@ -23,12 +23,12 @@ bech32 = "0.9"
 
 proptest = { version = "1.0.0", default-features = false, optional = true }
 proptest-derive = { version = "0.3.0", default-features = false, optional = true }
-move-core-types = { git = "https://github.com/WGB5445/move", rev = "d8e4ef11204107c777e94229d8e0ed49d55156c0" }
-move-vm-types = { git = "https://github.com/WGB5445/move", rev = "d8e4ef11204107c777e94229d8e0ed49d55156c0" }
-move-bytecode-verifier = { git = "https://github.com/WGB5445/move", rev = "d8e4ef11204107c777e94229d8e0ed49d55156c0" }
-vm = { package = "move-binary-format", git = "https://github.com/WGB5445/move", rev = "d8e4ef11204107c777e94229d8e0ed49d55156c0" }
-move-ir-types = { git = "https://github.com/WGB5445/move", rev = "d8e4ef11204107c777e94229d8e0ed49d55156c0" }
-move-table-extension = { git = "https://github.com/WGB5445/move", rev = "d8e4ef11204107c777e94229d8e0ed49d55156c0" }
+move-core-types = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
+move-vm-types = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
+move-bytecode-verifier = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
+vm = { package = "move-binary-format", git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
+move-ir-types = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
+move-table-extension = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
 
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 #starcoin-proptest-helpers = { path = "../../commons/proptest-helpers", optional = true }
@@ -40,7 +40,7 @@ schemars = { git = "https://github.com/starcoinorg/schemars", rev = "6972da92f43
 
 proptest = "1.0.0"
 proptest-derive = "0.3.0"
-vm = { package = "move-binary-format", git = "https://github.com/WGB5445/move", rev = "d8e4ef11204107c777e94229d8e0ed49d55156c0", features = [
+vm = { package = "move-binary-format", git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a", features = [
     "fuzzing",
 ] }
 starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }

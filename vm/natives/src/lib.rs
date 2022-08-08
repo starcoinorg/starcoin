@@ -123,10 +123,10 @@ pub fn starcoin_natives() -> NativeFunctionTable {
         ("U256", "native_div", u256::native_u256_div),
         ("U256", "native_rem", u256::native_u256_rem),
         ("U256", "native_pow", u256::native_u256_pow),
-        ("String","internal_check_utf8",move_stdlib::natives::string::native_internal_check_utf8),
-        ("String","internal_is_char_boundary",move_stdlib::natives::string::native_internal_is_char_boundary),
-        ("String","internal_sub_string",move_stdlib::natives::string::native_internal_sub_string),
-        ("String","internal_index_of",move_stdlib::natives::string::native_internal_index_of),
+        ("String","check_utf8",move_stdlib::natives::string::native_check_utf8),
+        ("String","is_char_boundary",move_stdlib::natives::string::native_is_char_boundary),
+        ("String","sub_string",move_stdlib::natives::string::native_sub_string),
+        ("String","index_of",move_stdlib::natives::string::native_index_of),
     ];
     NATIVES
         .iter()
