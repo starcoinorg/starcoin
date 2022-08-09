@@ -138,12 +138,13 @@ impl StarcoinVM {
                 );
                 let instruction_schedule = {
                     let data = self
-                        .execute_readonly_function(
+                        .execute_readonly_function_internal(
                             state,
                             &ModuleId::new(core_code_address(), G_VM_CONFIG_IDENTIFIER.to_owned()),
                             G_INSTRUCTION_SCHEDULE_IDENTIFIER.as_ident_str(),
                             vec![],
                             vec![],
+                            false,
                         )?
                         .pop()
                         .ok_or_else(|| {
@@ -155,12 +156,13 @@ impl StarcoinVM {
                 };
                 let native_schedule = {
                     let data = self
-                        .execute_readonly_function(
+                        .execute_readonly_function_internal(
                             state,
                             &ModuleId::new(core_code_address(), G_VM_CONFIG_IDENTIFIER.to_owned()),
                             G_NATIVE_SCHEDULE_IDENTIFIER.as_ident_str(),
                             vec![],
                             vec![],
+                            false,
                         )?
                         .pop()
                         .ok_or_else(|| {
@@ -170,12 +172,13 @@ impl StarcoinVM {
                 };
                 let gas_constants = {
                     let data = self
-                        .execute_readonly_function(
+                        .execute_readonly_function_internal(
                             state,
                             &ModuleId::new(core_code_address(), G_VM_CONFIG_IDENTIFIER.to_owned()),
                             G_GAS_CONSTANTS_IDENTIFIER.as_ident_str(),
                             vec![],
                             vec![],
+                            false,
                         )?
                         .pop()
                         .ok_or_else(|| {
@@ -1106,6 +1109,25 @@ impl StarcoinVM {
         type_params: Vec<TypeTag>,
         args: Vec<Vec<u8>>,
     ) -> Result<Vec<Vec<u8>>, VMStatus> {
+        self.execute_readonly_function_internal(
+            state_view,
+            module,
+            function_name,
+            type_params,
+            args,
+            true,
+        )
+    }
+
+    fn execute_readonly_function_internal<S: StateView>(
+        &mut self,
+        state_view: &S,
+        module: &ModuleId,
+        function_name: &IdentStr,
+        type_params: Vec<TypeTag>,
+        args: Vec<Vec<u8>>,
+        check_gas: bool,
+    ) -> Result<Vec<Vec<u8>>, VMStatus> {
         let _timer = self.metrics.as_ref().map(|metrics| {
             metrics
                 .vm_txn_exe_time
@@ -1114,9 +1136,23 @@ impl StarcoinVM {
         });
         let data_cache = StateViewCache::new(state_view);
 
-        let cost_table = &G_ZERO_COST_SCHEDULE;
-        let mut gas_status = {
-            let mut gas_status = GasStatus::new(cost_table, GasUnits::new(0));
+        let mut gas_status = if check_gas {
+            if let Err(err) = self.load_configs(state_view) {
+                warn!(
+                    "Load config error at execute_readonly_function_internal: {}",
+                    err
+                );
+                return Err(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE));
+            }
+            let gas_constants = &self.get_gas_schedule()?.gas_constants;
+            let mut gas_status = GasStatus::new(
+                &G_LATEST_GAS_SCHEDULE,
+                GasUnits::new(gas_constants.maximum_number_of_gas_units.get()),
+            );
+            gas_status.set_metering(true);
+            gas_status
+        } else {
+            let mut gas_status = GasStatus::new(&G_ZERO_COST_SCHEDULE, GasUnits::new(0));
             gas_status.set_metering(false);
             gas_status
         };
