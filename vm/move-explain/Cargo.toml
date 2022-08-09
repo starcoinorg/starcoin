@@ -10,10 +10,10 @@ repository = "https://github.com/diem/diem"
 version = "1.11.11"
 
 [dependencies]
-bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
-clap = { version = "3", features = ["derive"] }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "ed32208eb82e87000fe2d163d2b6df3851d2b9c1" }
-stdlib = { package = "stdlib", path = "../stdlib" }
+bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
+clap = {version = "3", features = ["derive"]}
+move-core-types = {git = "https://github.com/starcoinorg/move", rev = "95a4d7a4314efb819957c0f5a7bb2607ff3b32f1"}
+stdlib = {package = "stdlib", path = "../stdlib"}
 
 [features]
 default = []
