@@ -19,9 +19,9 @@ codespan = { version = "0.8.0", features = ["serialization"] }
 colored = "2.0.0"
 bcs = "0.1.2"
 
-move-bytecode-source-map = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
-move-coverage = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
-move-binary-format = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
-move-command-line-common = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
+move-bytecode-source-map = { git = "https://github.com/WGB5445/move", rev = "ddc06e82e462647b3a4729f2d972695df37f2073" }
+move-coverage = { git = "https://github.com/WGB5445/move", rev = "ddc06e82e462647b3a4729f2d972695df37f2073" }
+move-binary-format = { git = "https://github.com/WGB5445/move", rev = "ddc06e82e462647b3a4729f2d972695df37f2073" }
+move-command-line-common = { git = "https://github.com/WGB5445/move", rev = "ddc06e82e462647b3a4729f2d972695df37f2073" }
 [features]
 default = []

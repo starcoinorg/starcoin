@@ -417,8 +417,11 @@ pub fn v4_native_table() -> Vec<GasCost> {
         (N::TABLE_CONTAINS, GasCost::new(4, 1)),
         (N::TABLE_DESTROY, GasCost::new(4, 1)),
         (N::TABLE_DROP, GasCost::new(4, 1)),
-        //WGB instr_gas
-        (N::STRING_CHECK_UT8, GasCost::new(4, 1)),
+        //TODO  WGB inst_gas
+        (N::STRING_CHECK_UT8, GasCost::new(4,1)),
+        (N::STRING_SUB_STR,GasCost::new(4,1)),
+        (N::SRING_CHAR_BOUNDARY,GasCost::new(4,1)),
+        (N::STRING_INDEX_OF,GasCost::new(4,1)),
     ];
     raw_native_table.sort_by_key(|cost| cost.0 as u64);
     raw_native_table

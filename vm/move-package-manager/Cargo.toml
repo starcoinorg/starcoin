@@ -35,19 +35,19 @@ futures = "0.3"
 tokio = { version = "^1", features = ["full"] }
 tempfile = "~3"
 
-move-cli = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
-move-package = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
-move-bytecode-verifier = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
-move-disassembler = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
-move-errmapgen = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
-move-coverage = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
-move-binary-format = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
-move-compiler = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
-move-core-types = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
-move-vm-runtime = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
+move-cli = { git = "https://github.com/WGB5445/move", rev = "ddc06e82e462647b3a4729f2d972695df37f2073" }
+move-package = { git = "https://github.com/WGB5445/move", rev = "ddc06e82e462647b3a4729f2d972695df37f2073" }
+move-bytecode-verifier = { git = "https://github.com/WGB5445/move", rev = "ddc06e82e462647b3a4729f2d972695df37f2073" }
+move-disassembler = { git = "https://github.com/WGB5445/move", rev = "ddc06e82e462647b3a4729f2d972695df37f2073" }
+move-errmapgen = { git = "https://github.com/WGB5445/move", rev = "ddc06e82e462647b3a4729f2d972695df37f2073" }
+move-coverage = { git = "https://github.com/WGB5445/move", rev = "ddc06e82e462647b3a4729f2d972695df37f2073" }
+move-binary-format = { git = "https://github.com/WGB5445/move", rev = "ddc06e82e462647b3a4729f2d972695df37f2073" }
+move-compiler = { git = "https://github.com/WGB5445/move", rev = "ddc06e82e462647b3a4729f2d972695df37f2073" }
+move-core-types = { git = "https://github.com/WGB5445/move", rev = "ddc06e82e462647b3a4729f2d972695df37f2073" }
+move-vm-runtime = { git = "https://github.com/WGB5445/move", rev = "ddc06e82e462647b3a4729f2d972695df37f2073" }
 resource-viewer = { path = "../resource-viewer", package = "starcoin-resource-viewer" }
-move-unit-test = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
-move-command-line-common = { git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
+move-unit-test = { git = "https://github.com/WGB5445/move", rev = "ddc06e82e462647b3a4729f2d972695df37f2073" }
+move-command-line-common = { git = "https://github.com/WGB5445/move", rev = "ddc06e82e462647b3a4729f2d972695df37f2073" }
 datatest-stable = { git = "https://github.com/starcoinorg/diem-devtools", branch = "feature/pub-test-opts" }
 starcoin-vm-types = { path = "../../vm/types" }
 starcoin-logger = { path = "../../commons/logger" }

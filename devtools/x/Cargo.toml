@@ -24,6 +24,6 @@ regex = "1.6.0"
 rayon = "1.5.1"
 indexmap = "1.6.2"
 camino = { version = "1" }
-x-core = { package = "x-core", git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
-x-lint = { package = "x-lint", git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
-x = { package = "x", git = "https://github.com/WGB5445/move", rev = "c7a78e7c7a555ff5d766643107aed6305ca6119a" }
+x-core = { package = "x-core", git = "https://github.com/WGB5445/move", rev = "ddc06e82e462647b3a4729f2d972695df37f2073" }
+x-lint = { package = "x-lint", git = "https://github.com/WGB5445/move", rev = "ddc06e82e462647b3a4729f2d972695df37f2073" }
+x = { package = "x", git = "https://github.com/WGB5445/move", rev = "ddc06e82e462647b3a4729f2d972695df37f2073" }
