@@ -297,13 +297,7 @@ fn test_state_with_table_item_proof() -> Result<()> {
             key: key3.clone(),
         },
     ];
-    let values = vec![
-        random_bytes(),
-        random_bytes(),
-        val1.clone(),
-        val2.clone(),
-        val3.clone(),
-    ];
+    let values = vec![random_bytes(), random_bytes(), val1, val2, val3];
     let write_set = state_keys_to_write_set(state_keys, values);
     chain_state_db.apply_write_set(write_set)?;
     chain_state_db.commit()?;

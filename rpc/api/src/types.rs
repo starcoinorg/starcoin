@@ -1747,7 +1747,9 @@ impl From<BlockInfo> for BlockInfoView {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub enum StateKeyView {
+    #[serde(rename = "access_path")]
     AccessPath(AccessPath),
+    #[serde(rename = "table_item")]
     TableItem {
         handle: StrView<u128>,
         #[schemars(with = "String")]
