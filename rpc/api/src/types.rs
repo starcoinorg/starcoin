@@ -449,6 +449,36 @@ impl From<BlockHeader> for BlockHeaderView {
     }
 }
 
+impl From<BlockHeaderView> for BlockHeader {
+    fn from(header_view: BlockHeaderView) -> Self {
+        BlockHeader::new(
+            header_view.parent_hash,
+            header_view.timestamp.0,
+            header_view.number.0,
+            header_view.author,
+            header_view.txn_accumulator_root,
+            header_view.block_accumulator_root,
+            header_view.state_root,
+            header_view.gas_used.0,
+            header_view.difficulty,
+            header_view.body_hash,
+            genesis_config::ChainId::new(header_view.chain_id),
+            header_view.nonce,
+            header_view.extra,
+        )
+    }
+}
+
+impl FromIterator<BlockHeaderView> for Vec<BlockHeader> {
+    fn from_iter<T: IntoIterator<Item = BlockHeaderView>>(views: T) -> Self {
+        let mut blocks = vec![];
+        for view in views {
+            blocks.push(view.into())
+        }
+        blocks
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct RawUserTransactionView {
     /// Sender's address.
@@ -493,6 +523,21 @@ impl TryFrom<RawUserTransaction> for RawUserTransactionView {
             payload: StrView(origin.into_payload().encode()?),
             decoded_payload: None,
         })
+    }
+}
+
+impl From<RawUserTransactionView> for RawUserTransaction {
+    fn from(transaction_view: RawUserTransactionView) -> Self {
+        RawUserTransaction::new(
+            transaction_view.sender,
+            transaction_view.sequence_number.0,
+            TransactionPayload::decode(transaction_view.payload.0.as_slice()).unwrap(),
+            transaction_view.max_gas_amount.0,
+            transaction_view.gas_unit_price.0,
+            transaction_view.expiration_timestamp_secs.0,
+            genesis_config::ChainId::new(transaction_view.chain_id),
+            transaction_view.gas_token_code.clone(),
+        )
     }
 }
 
@@ -738,6 +783,25 @@ impl TryFrom<Vec<SignedUserTransaction>> for BlockTransactionsView {
     }
 }
 
+impl TryFrom<BlockTransactionsView> for Vec<SignedUserTransaction> {
+    type Error = anyhow::Error;
+
+    fn try_from(tx_view: BlockTransactionsView) -> Result<Self, Self::Error> {
+        match tx_view {
+            BlockTransactionsView::Full(full) => Ok(full
+                .into_iter()
+                .map(|transaction_view| {
+                    SignedUserTransaction::new(
+                        transaction_view.raw_txn.into(),
+                        transaction_view.authenticator.clone(),
+                    )
+                })
+                .collect()),
+            _ => Err(anyhow::Error::msg("not support")),
+        }
+    }
+}
+
 impl From<Vec<HashValue>> for BlockTransactionsView {
     fn from(txns: Vec<HashValue>) -> Self {
         BlockTransactionsView::Hashes(txns)
@@ -808,6 +872,25 @@ impl TryFrom<Block> for BlockView {
 
     fn try_from(block: Block) -> Result<Self, Self::Error> {
         Self::try_from_block(block, false, false)
+    }
+}
+
+impl TryFrom<BlockView> for Block {
+    type Error = anyhow::Error;
+
+    fn try_from(block_view: BlockView) -> Result<Self, Self::Error> {
+        let block_header: BlockHeader = block_view.header.into();
+        let uncles: Vec<BlockHeader> = block_view
+            .uncles
+            .into_iter()
+            .map(BlockHeader::from)
+            .collect();
+        let transactions = block_view.body.try_into()?;
+
+        Ok(Block {
+            header: block_header,
+            body: BlockBody::new(transactions, Some(uncles)),
+        })
     }
 }
 
