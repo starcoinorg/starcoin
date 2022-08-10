@@ -14,7 +14,7 @@ serde_json = { version = "~1", features = ["arbitrary_precision"] }
 anyhow = "~1"
 hex = "~0.4"
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
-merkletree = { version = "0.21.0", features = ["chaincore"] }
+merkletree = { git = "https://github.com/filecoin-project/merkletree", rev = "05dd6de235e0dc36dbe05cb0849f35957fdca5be" }
 starcoin-vm-types = { path = "../../vm/types" }
 starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
 clap = { version = "3", features = ["derive"] }

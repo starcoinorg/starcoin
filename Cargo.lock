@@ -2710,12 +2710,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gcc"
-version = "0.3.55"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f5f3913fa0bfe7ee1fd8248b6b9f42a5af4b9d65ec2dd2c3c26132b950ecfc2"
-
-[[package]]
 name = "generic-array"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4777,20 +4771,16 @@ dependencies = [
 
 [[package]]
 name = "merkletree"
-version = "0.21.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2202d6eb93a775e0a619fc08924b341d0cf12d6e0f064ee52d24311de45b925b"
+version = "0.22.0"
+source = "git+https://github.com/filecoin-project/merkletree?rev=05dd6de235e0dc36dbe05cb0849f35957fdca5be#05dd6de235e0dc36dbe05cb0849f35957fdca5be"
 dependencies = [
  "anyhow",
  "arrayref",
  "log 0.4.17",
  "memmap",
  "positioned-io",
- "rand 0.7.3",
  "rayon",
- "rust-crypto",
  "serde 1.0.140",
- "tempdir",
  "tempfile",
  "typenum",
 ]
@@ -7314,29 +7304,6 @@ dependencies = [
 
 [[package]]
 name = "rand"
-version = "0.3.23"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64ac302d8f83c0c1974bf758f6b041c6c8ada916fbb44a609158ca8b064cc76c"
-dependencies = [
- "libc",
- "rand 0.4.6",
-]
-
-[[package]]
-name = "rand"
-version = "0.4.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "552840b97013b1a26992c11eac34bdd778e464601a4c2054b5f0bff7c6761293"
-dependencies = [
- "fuchsia-cprng",
- "libc",
- "rand_core 0.3.1",
- "rdrand",
- "winapi 0.3.9",
-]
-
-[[package]]
-name = "rand"
 version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6d71dacdc3c88c1fde3885a3be3fbab9f35724e6ce99467f7d9c5026132184ca"
@@ -7893,19 +7860,6 @@ dependencies = [
  "blake2b_simd",
  "constant_time_eq",
  "crossbeam-utils 0.8.11",
-]
-
-[[package]]
-name = "rust-crypto"
-version = "0.2.36"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f76d05d3993fd5f4af9434e8e436db163a12a9d40e1a58a726f27a01dfd12a2a"
-dependencies = [
- "gcc",
- "libc",
- "rand 0.3.23",
- "rustc-serialize",
- "time 0.1.44",
 ]
 
 [[package]]
@@ -11048,16 +11002,6 @@ dependencies = [
  "cfg-expr 0.9.1",
  "serde 1.0.140",
  "target-lexicon",
-]
-
-[[package]]
-name = "tempdir"
-version = "0.3.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15f2b5fb00ccdf689e0149d1b1b3c03fead81c2b37735d812fa8bddbbf41b6d8"
-dependencies = [
- "rand 0.4.6",
- "remove_dir_all",
 ]
 
 [[package]]
