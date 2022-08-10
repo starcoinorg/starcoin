@@ -17,6 +17,7 @@ pub struct AccountProviderConfig {
     pub account_dir: Option<PathBuf>,
 
     /// Path to the secret file storing the private key.
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(
         long = "secret-file",
         help = "file path of private key",
