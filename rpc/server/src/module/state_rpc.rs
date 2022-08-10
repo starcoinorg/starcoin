@@ -20,7 +20,7 @@ use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::{ChainStateAsyncService, StateView};
 use starcoin_state_tree::StateNodeStore;
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
-use starcoin_types::language_storage::ModuleId;
+use starcoin_types::language_storage::{ModuleId, TypeTag};
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
 };
@@ -258,11 +258,13 @@ where
                 .state_root
                 .unwrap_or(state_service.state_root().await?);
             let statedb = ChainStateDB::new(db, Some(state_root));
-            
-            //TODO implement list state by iter, and pagination
+
             let state = statedb.get_account_state_set(&addr)?;
-            let resource_types: Option<Vec<StructTagView>> = option.resource_types;
-            
+            let resource_types = option.resource_types;
+            if resource_types.is_some() && resource_types.as_ref().unwrap().len() > 10 {
+                return Err(anyhow::anyhow!("Query resources is limited by 10"));
+            }
+
             match state {
                 None => Ok(ListResourceView::default()),
                 Some(s) => {
@@ -275,12 +277,11 @@ where
                             if resource_types.is_none() {
                                 return true;
                             }
-                            
-                            let struct_tag = StructTag::decode(k.as_slice()).unwrap();                            
-                            for resource_type in resource_types.as_ref().unwrap() {                                
-                                //TODO: fix this filter
-                                if resource_type.0.address == struct_tag.address {
-                                    return true
+
+                            let struct_tag = StructTag::decode(k.as_slice()).unwrap();
+                            for resource_type in resource_types.as_ref().unwrap() {
+                                if compared_suport_generics(&struct_tag, &resource_type.0) {
+                                    return true;
                                 }
                             }
                             false
@@ -364,4 +365,39 @@ where
         };
         Box::pin(fut.map_err(map_err).boxed())
     }
+}
+
+fn compared_suport_generics(account_tag: &StructTag, find_tag: &StructTag) -> bool {
+    if account_tag == find_tag {
+        return true;
+    }
+
+    if !find_tag.type_params.is_empty()
+        && find_tag.address == account_tag.address
+        && find_tag.module == account_tag.module
+        && find_tag.name == account_tag.name
+    {
+        return true;
+    }
+
+    if find_tag.address != account_tag.address
+        || find_tag.module != account_tag.module
+        || find_tag.name != account_tag.name
+    {
+        return false;
+    }
+
+    for inner_tag in find_tag.type_params.clone() {
+        if let TypeTag::Struct(inner_tag1) = inner_tag {
+            for inner_tag in account_tag.type_params.clone() {
+                if let TypeTag::Struct(inner_tag) = inner_tag {
+                    if compared_suport_generics(&inner_tag, &inner_tag1) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    false
 }
