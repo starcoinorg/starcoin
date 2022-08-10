@@ -372,14 +372,6 @@ fn compared_suport_generics(account_tag: &StructTag, find_tag: &StructTag) -> bo
         return true;
     }
 
-    if !find_tag.type_params.is_empty()
-        && find_tag.address == account_tag.address
-        && find_tag.module == account_tag.module
-        && find_tag.name == account_tag.name
-    {
-        return true;
-    }
-
     if find_tag.address != account_tag.address
         || find_tag.module != account_tag.module
         || find_tag.name != account_tag.name
@@ -387,17 +379,30 @@ fn compared_suport_generics(account_tag: &StructTag, find_tag: &StructTag) -> bo
         return false;
     }
 
-    for inner_tag in find_tag.type_params.clone() {
-        if let TypeTag::Struct(inner_tag1) = inner_tag {
-            for inner_tag in account_tag.type_params.clone() {
-                if let TypeTag::Struct(inner_tag) = inner_tag {
-                    if compared_suport_generics(&inner_tag, &inner_tag1) {
-                        return true;
-                    }
-                }
+    if find_tag.type_params.is_empty()
+        && find_tag.address == account_tag.address
+        && find_tag.module == account_tag.module
+        && find_tag.name == account_tag.name
+    {
+        return true;
+    }
+
+    if find_tag.type_params.len() != account_tag.type_params.len() {
+        return false;
+    }
+
+    let mut res: bool = false;
+    for (find, account) in std::iter::zip(
+        find_tag.type_params.clone(),
+        account_tag.type_params.clone(),
+    ) {
+        if let (TypeTag::Struct(account), TypeTag::Struct(find)) = (account, find) {
+            res = compared_suport_generics(&account, &find);
+            if !res {
+                return res;
             }
         }
     }
 
-    false
+    res
 }
