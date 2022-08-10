@@ -25,6 +25,7 @@ pub struct AccountProviderConfig {
     pub secret_file: Option<PathBuf>,
 
     /// Read private from env variable `STARCOIN_PRIVATE_KEY`.
+    #[serde(default)]
     #[clap(long = "from-env")]
     pub from_env: bool,
 
