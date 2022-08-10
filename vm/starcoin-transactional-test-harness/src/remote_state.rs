@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::{anyhow, Result};
 use jsonrpc_client_transports::{RawClient, RpcChannel};
 use move_binary_format::errors::VMError;
