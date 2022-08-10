@@ -827,7 +827,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             None => panic!("Expected a module text block following 'package'",),
         };
         let data_path = data.path().to_str().unwrap();
-        let (_named_addr_opt, module, warnings_opt) = {
+        let (named_addr_opt, module, warnings_opt) = {
             let (unit, warnings_opt) = self.compiled_state.complie(data_path)?;
             match unit {
                 AnnotatedCompiledUnit::Module(annot_module) => {
@@ -843,6 +843,9 @@ impl<'a> StarcoinTestAdapter<'a> {
                 }
             }
         };
+
+        self.compiled_state.add(named_addr_opt, module.clone());
+
         let package = Self::build_package(
             vec![module],
             init_function.map(|fid| {
