@@ -853,13 +853,13 @@ impl<'a> StarcoinTestAdapter<'a> {
                     fid.0.module,
                     fid.0.function,
                     type_args
-                        .unwrap_or_else(Vec::new)
+                        .unwrap_or_default()
                         .into_iter()
                         .map(|v| v.0)
                         .collect(),
                     convert_txn_args(
                         &args
-                            .unwrap_or_else(Vec::new)
+                            .unwrap_or_default()
                             .into_iter()
                             .map(|v| v.0)
                             .collect::<Vec<_>>(),
