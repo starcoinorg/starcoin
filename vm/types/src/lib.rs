@@ -79,7 +79,7 @@ pub mod language_storage {
         }
     }
 
-    /// check the filter SturctTag is match with the target.
+    /// check the filter StructTag is match with the target.
     pub fn struct_tag_match(filter: &StructTag, target: &StructTag) -> bool {
         if filter == target {
             return true;
