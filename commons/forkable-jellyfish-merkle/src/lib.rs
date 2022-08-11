@@ -88,6 +88,7 @@ pub mod tree_cache;
 #[cfg(test)]
 use crate::iterator::JellyfishMerkleIterator;
 use anyhow::{bail, ensure, format_err, Result};
+use backtrace::Backtrace;
 use blob::Blob;
 use nibble_path::{skip_common_prefix, NibbleIterator, NibblePath};
 use node_type::{Child, Children, InternalNode, LeafNode, Node, NodeKey};
@@ -96,6 +97,7 @@ use proof::{SparseMerkleProof, SparseMerkleRangeProof};
 use proptest_derive::Arbitrary;
 use serde::{de::DeserializeOwned, Serialize};
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
+use starcoin_logger::prelude::*;
 use std::collections::{BTreeMap, BTreeSet};
 use std::marker::PhantomData;
 use tree_cache::TreeCache;
@@ -109,8 +111,11 @@ pub const ROOT_NIBBLE_HEIGHT: usize = HashValue::LENGTH * 2;
 pub trait TreeReader<K: RawKey> {
     /// Gets node given a node key. Returns error if the node does not exist.
     fn get_node(&self, node_key: &NodeKey) -> Result<Node<K>> {
-        self.get_node_option(node_key)?
-            .ok_or_else(|| format_err!("Missing node at {:?}.", node_key))
+        self.get_node_option(node_key)?.ok_or_else(|| {
+            let backtrace = format!("{:#?}", Backtrace::new());
+            debug!("backtrace: {}", backtrace);
+            format_err!("Missing node at {:?}.", node_key)
+        })
     }
 
     /// Gets node given a node key. Returns `None` if the node does not exist.
