@@ -14,5 +14,5 @@ starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 starcoin-vm-types = { path = "../../vm/types" }
 [dev-dependencies]
 serde_json = "1"
-stdlib = { path = "../../vm/stdlib" }
-test-helper = { path = "../../test-helper" }
+stdlib = {path = "../../vm/stdlib"}
+test-helper = {path = "../../test-helper"}

@@ -1,7 +1,11 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::context::ForkContext;
-use anyhow::{bail, Result};
+use anyhow::{bail, format_err, Result};
+use clap::Parser;
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
-use move_compiler::compiled_unit::CompiledUnitEnum;
+use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
 use move_compiler::shared::{NumberFormat, NumericalAddress};
 use move_compiler::{shared::verify_and_create_named_address_mapping, FullyCompiledProgram};
 use move_core_types::language_storage::StructTag;
@@ -23,6 +27,7 @@ use serde::Serialize;
 use serde_json::Value;
 use starcoin_abi_decoder::decode_txn_payload;
 use starcoin_config::{genesis_key_pair, BuiltinNetworkID};
+use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_dev::playground::call_contract;
 use starcoin_rpc_api::types::{
@@ -33,6 +38,7 @@ use starcoin_rpc_api::Params;
 use starcoin_state_api::{ChainStateReader, StateReaderExt};
 use starcoin_types::account::{Account, AccountData};
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockHeaderExtra};
+use starcoin_types::transaction::Package;
 use starcoin_types::U256;
 use starcoin_types::{
     access_path::AccessPath,
@@ -43,8 +49,6 @@ use starcoin_vm_runtime::{data_cache::RemoteStorage, starcoin_vm::StarcoinVM};
 use starcoin_vm_types::account_config::{
     association_address, core_code_address, STC_TOKEN_CODE_STR,
 };
-
-use clap::Parser;
 use starcoin_vm_types::transaction::authenticator::AccountPrivateKey;
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
@@ -61,8 +65,12 @@ use starcoin_vm_types::{
     transaction_argument::convert_txn_args,
     vm_status::KeptVMStatus,
 };
+use std::fs::File;
+use std::io::{Read, Write};
+use std::path::PathBuf;
 use std::{collections::BTreeMap, convert::TryInto, path::Path, str::FromStr};
 use stdlib::{starcoin_framework_named_addresses, G_PRECOMPILED_STARCOIN_FRAMEWORK};
+use tempfile::{NamedTempFile, TempDir};
 
 pub mod context;
 pub mod fork_chain;
@@ -147,6 +155,43 @@ pub struct CallAPISub {
     params: Params,
 }
 
+#[derive(Debug, Parser)]
+#[clap(name = "package")]
+pub struct PackageSub {
+    #[clap(
+        long = "signers",
+        parse(try_from_str = RawAddress::parse),
+        takes_value(true),
+        multiple_values(true),
+        multiple_occurrences(true)
+    )]
+    signers: Vec<RawAddress>,
+    #[clap(long = "init-function")]
+    init_function: Option<FunctionIdView>,
+    #[clap(long = "type-args")]
+    type_args: Option<Vec<TypeTagView>>,
+    #[clap(long = "args")]
+    args: Option<Vec<TransactionArgumentView>>,
+}
+
+#[derive(Debug, Parser)]
+#[clap(name = "deploy")]
+pub struct DeploySub {
+    #[clap(
+    long = "signers",
+    parse(try_from_str = RawAddress::parse),
+    takes_value(true),
+    multiple_values(true),
+    multiple_occurrences(true)
+    )]
+    signers: Vec<RawAddress>,
+    #[clap(long = "gas-budget")]
+    gas_budget: Option<u64>,
+    #[clap(name = "mv-or-package-file")]
+    /// move bytecode file path or package binary path
+    mv_or_package_file: PathBuf,
+}
+
 #[derive(Parser, Debug)]
 pub enum StarcoinSubcommands {
     #[clap(name = "faucet")]
@@ -185,6 +230,33 @@ pub enum StarcoinSubcommands {
         #[clap(name = "params", default_value = "", parse(try_from_str=parse_params))]
         /// api params, should be a json array string
         params: Params,
+    },
+    #[clap(name = "package")]
+    Package {
+        #[clap(long = "init-function")]
+        init_function: Option<FunctionIdView>,
+        #[clap(long = "type-args")]
+        /// init function type args
+        type_args: Option<Vec<TypeTagView>>,
+        #[clap(long = "args")]
+        /// init function args
+        args: Option<Vec<TransactionArgumentView>>,
+    },
+    #[clap(name = "deploy")]
+    Deploy {
+        #[clap(
+        long = "signers",
+        parse(try_from_str = RawAddress::parse),
+        takes_value(true),
+        multiple_values(true),
+        multiple_occurrences(true)
+        )]
+        signers: Vec<RawAddress>,
+        #[clap(long = "gas-budget")]
+        gas_budget: Option<u64>,
+        #[clap(name = "mv-or-package-file")]
+        /// move bytecode file path or package binary path
+        mv_or_package_file: PathBuf,
     },
 }
 
@@ -235,16 +307,40 @@ impl From<CallAPISub> for StarcoinSubcommands {
     }
 }
 
+impl From<PackageSub> for StarcoinSubcommands {
+    fn from(sub: PackageSub) -> Self {
+        Self::Package {
+            init_function: sub.init_function,
+            args: sub.args,
+            type_args: sub.type_args,
+        }
+    }
+}
+
+impl From<DeploySub> for StarcoinSubcommands {
+    fn from(sub: DeploySub) -> Self {
+        Self::Deploy {
+            signers: sub.signers,
+            mv_or_package_file: sub.mv_or_package_file,
+            gas_budget: sub.gas_budget,
+        }
+    }
+}
+
 impl clap::Args for StarcoinSubcommands {
     fn augment_args(cmd: clap::Command<'_>) -> clap::Command<'_> {
         let faucet = FaucetSub::augment_args(clap::Command::new("faucet"));
         let block = BlockSub::augment_args(clap::Command::new("block"));
         let call = CallSub::augment_args(clap::Command::new("call"));
         let call_api = CallAPISub::augment_args(clap::Command::new("call-api"));
+        let package = PackageSub::augment_args(clap::Command::new("package"));
+        let deploy = DeploySub::augment_args(clap::Command::new("deploy"));
         cmd.subcommand(faucet)
             .subcommand(block)
             .subcommand(call)
             .subcommand(call_api)
+            .subcommand(package)
+            .subcommand(deploy)
     }
 
     fn augment_args_for_update(_cmd: clap::Command<'_>) -> clap::Command<'_> {
@@ -264,11 +360,19 @@ struct SimpleTransactionResult {
     status: TransactionStatusView,
 }
 
+#[derive(Debug, Clone, Hash, Serialize, Deserialize)]
+pub struct PackageResult {
+    pub file: String,
+    pub package_hash: HashValue,
+    pub hex: String,
+}
+
 pub struct StarcoinTestAdapter<'a> {
     compiled_state: CompiledState<'a>,
     // storage: SelectableStateView<ChainStateDB, InMemoryStateCache<RemoteViewer>>,
     default_syntax: SyntaxChoice,
     context: ForkContext,
+    tempdir: TempDir,
     debug: bool,
 }
 
@@ -697,6 +801,135 @@ impl<'a> StarcoinTestAdapter<'a> {
         let output = self.context.call_api(method.as_str(), params)?;
         Ok((None, Some(serde_json::to_value(&output)?)))
     }
+
+    fn build_package(
+        modules: Vec<CompiledModule>,
+        init_function: Option<ScriptFunction>,
+    ) -> Result<Package> {
+        let mut ms = vec![];
+        for m in modules {
+            let mut code = vec![];
+            m.serialize(&mut code)?;
+            ms.push(Module::new(code));
+        }
+        Package::new(ms, init_function)
+    }
+
+    fn handle_package(
+        &mut self,
+        data: Option<NamedTempFile>,
+        init_function: Option<FunctionIdView>,
+        type_args: Option<Vec<TypeTagView>>,
+        args: Option<Vec<TransactionArgumentView>>,
+    ) -> Result<(Option<String>, Option<Value>)> {
+        let data = match data {
+            Some(f) => f,
+            None => panic!("Expected a module text block following 'package'",),
+        };
+        let data_path = data.path().to_str().unwrap();
+        let (named_addr_opt, module, warnings_opt) = {
+            let (unit, warnings_opt) = self.compiled_state.complie(data_path)?;
+            match unit {
+                AnnotatedCompiledUnit::Module(annot_module) => {
+                    let (named_addr_opt, _id) = annot_module.module_id();
+                    (
+                        named_addr_opt.map(|n| n.value),
+                        annot_module.named_module.module,
+                        warnings_opt,
+                    )
+                }
+                AnnotatedCompiledUnit::Script(_) => {
+                    panic!("Expected a module text block, not a script, following 'package'")
+                }
+            }
+        };
+
+        self.compiled_state.add(named_addr_opt, module.clone());
+
+        let package = Self::build_package(
+            vec![module],
+            init_function.map(|fid| {
+                ScriptFunction::new(
+                    fid.0.module,
+                    fid.0.function,
+                    type_args
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|v| v.0)
+                        .collect(),
+                    convert_txn_args(
+                        &args
+                            .unwrap_or_default()
+                            .into_iter()
+                            .map(|v| v.0)
+                            .collect::<Vec<_>>(),
+                    ),
+                )
+            }),
+        )?;
+
+        let package_hash = package.crypto_hash();
+        let output_file = {
+            let mut output_file = self.tempdir.path().join(package_hash.to_string());
+            output_file.set_extension("blob");
+            output_file
+        };
+        let mut file = File::create(output_file.as_path())?;
+        let blob = bcs_ext::to_bytes(&package)?;
+        let hex = format!("0x{}", hex::encode(blob.as_slice()));
+        file.write_all(&blob)
+            .map_err(|e| format_err!("write package file {:?} error:{:?}", output_file, e))?;
+
+        let package_result = PackageResult {
+            file: output_file.to_str().unwrap().to_string(),
+            package_hash,
+            hex,
+        };
+        Ok((warnings_opt, Some(serde_json::to_value(&package_result)?)))
+    }
+
+    fn handle_deploy(
+        &mut self,
+        signers: Vec<RawAddress>,
+        gas_budget: Option<u64>,
+        package_path: &Path,
+    ) -> Result<(Option<String>, Option<Value>)> {
+        let mut bytes = vec![];
+        File::open(package_path)?.read_to_end(&mut bytes)?;
+
+        let package: Package = bcs_ext::from_bytes(&bytes).map_err(|e| {
+            format_err!(
+                "Decode Package failed {:?}, please ensure the file is a Package binary file.",
+                e
+            )
+        })?;
+
+        let signer = match signers.get(0) {
+            Some(addr) => self.compiled_state.resolve_address(addr),
+            None => package.package_address(),
+        };
+        let params = self.fetch_default_transaction_parameters(&signer)?;
+
+        let txn = RawUserTransaction::new_package(
+            signer,
+            params.sequence_number,
+            package,
+            gas_budget.unwrap_or(params.max_gas_amount),
+            params.gas_unit_price,
+            params.expiration_timestamp_secs,
+            params.chainid,
+        );
+
+        let output = self.run_transaction(txn)?;
+
+        match output.output.status {
+            TransactionStatusView::Executed => Ok((None, None)),
+            _ => Ok((
+                Some(format!("Publish failure: {:?}", output.output.status)),
+                Some(serde_json::to_value(&output)?),
+            )),
+        }
+    }
 }
 
 impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
@@ -806,6 +1039,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps),
             default_syntax,
             context,
+            tempdir: TempDir::new().unwrap(),
             debug: init_args.debug,
         };
         me.hack_genesis_account()
@@ -836,13 +1070,11 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         };
         let params = self.fetch_default_transaction_parameters(&signer)?;
 
-        let mut module_blob = vec![];
-        module.serialize(&mut module_blob).unwrap();
-
-        let txn = RawUserTransaction::new_module(
+        let package = Self::build_package(vec![module], None)?;
+        let txn = RawUserTransaction::new_package(
             signer,
             params.sequence_number,
-            Module::new(module_blob),
+            package,
             gas_budget.unwrap_or(params.max_gas_amount),
             params.gas_unit_price,
             params.expiration_timestamp_secs,
@@ -983,6 +1215,16 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                 type_args,
             }),
             StarcoinSubcommands::CallAPI { method, params } => self.handle_call_api(method, params),
+            StarcoinSubcommands::Package {
+                init_function,
+                type_args,
+                args,
+            } => self.handle_package(subcommand.data, init_function, type_args, args),
+            StarcoinSubcommands::Deploy {
+                signers,
+                gas_budget,
+                mv_or_package_file,
+            } => self.handle_deploy(signers, gas_budget, mv_or_package_file.as_path()),
         }?;
         if self.debug {
             if let Some(cmd_var_ctx) = cmd_var_ctx.as_ref() {

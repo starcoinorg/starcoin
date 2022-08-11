@@ -22,10 +22,10 @@ move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "3d15607d70
 num_enum = "0.5.7"
 ripemd160 = "0.9.1"
 smallvec = "1.8.1"
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-starcoin-uint = { path = "../../types/uint" }
-starcoin-vm-types = { path = "../types" }
-tiny-keccak = { version = "2", features = ["keccak"] }
+starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-uint = {path = "../../types/uint"}
+starcoin-vm-types = {path = "../types"}
+tiny-keccak = {version = "2", features = ["keccak"]}
 walkdir = "2.3.1"
 
 [dev-dependencies]

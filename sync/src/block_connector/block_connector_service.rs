@@ -56,8 +56,6 @@ impl BlockConnectorService {
             let mut sys = System::new_all();
             if sys.disks().len() == 1 {
                 let disk = &sys.disks()[0];
-                dbg!(DISK_CHECKPOINT_FOR_PANIC);
-                dbg!(disk.available_space());
                 if DISK_CHECKPOINT_FOR_PANIC > disk.available_space() {
                     return Some(Err(anyhow::anyhow!(
                         "Disk space is less than {} GB, please add disk space.",

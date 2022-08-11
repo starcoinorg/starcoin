@@ -4,7 +4,7 @@
 pub use self::gen_client::Client as StateClient;
 use crate::types::{
     AccountStateSetView, CodeView, ListCodeView, ListResourceView, ResourceView,
-    StateWithProofView, StrView,
+    StateWithProofView, StrView, StructTagView,
 };
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
@@ -118,7 +118,7 @@ pub struct ListResourceOption {
     pub state_root: Option<HashValue>,
     pub start_index: usize,
     pub max_size: usize,
-    pub resource_types: Option<Vec<String>>,
+    pub resource_types: Option<Vec<StructTagView>>,
 }
 
 impl Default for ListResourceOption {

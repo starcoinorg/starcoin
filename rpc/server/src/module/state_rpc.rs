@@ -20,13 +20,13 @@ use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::{ChainStateAsyncService, StateView};
 use starcoin_state_tree::StateNodeStore;
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
-use starcoin_types::language_storage::ModuleId;
+use starcoin_types::language_storage::{ModuleId, TypeTag};
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
 };
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::StructTag;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 pub struct StateRpcImpl<S>
@@ -267,12 +267,13 @@ where
                 .state_root
                 .unwrap_or(state_service.state_root().await?);
             let statedb = ChainStateDB::new(db, Some(state_root));
-            //TODO implement list state by iter, and pagination
+
             let state = statedb.get_account_state_set(&addr)?;
-            let resource_types_set: Option<HashSet<String>> =
-                option.resource_types.map(|resource_types_value| {
-                    HashSet::from_iter(resource_types_value.iter().cloned())
-                });
+            let resource_types = option.resource_types;
+            if resource_types.is_some() && resource_types.as_ref().unwrap().len() > 10 {
+                return Err(anyhow::anyhow!("Query resources is limited by 10"));
+            }
+
             match state {
                 None => Ok(ListResourceView::default()),
                 Some(s) => {
@@ -282,18 +283,17 @@ where
                         .unwrap_or_default()
                         .iter()
                         .filter(|(k, _)| {
-                            if resource_types_set.is_none() {
+                            if resource_types.is_none() {
                                 return true;
                             }
+
                             let struct_tag = StructTag::decode(k.as_slice()).unwrap();
-                            let resource_type_address_module_name_str = format!(
-                                "{}::{}::{}",
-                                struct_tag.address, struct_tag.module, struct_tag.name
-                            );
-                            resource_types_set
-                                .as_ref()
-                                .unwrap()
-                                .contains(&resource_type_address_module_name_str)
+                            for resource_type in resource_types.as_ref().unwrap() {
+                                if compared_suport_generics(&struct_tag, &resource_type.0) {
+                                    return true;
+                                }
+                            }
+                            false
                         })
                         .skip(option.start_index)
                         .take(option.max_size)
@@ -374,4 +374,44 @@ where
         };
         Box::pin(fut.map_err(map_err).boxed())
     }
+}
+
+fn compared_suport_generics(account_tag: &StructTag, find_tag: &StructTag) -> bool {
+    if account_tag == find_tag {
+        return true;
+    }
+
+    if find_tag.address != account_tag.address
+        || find_tag.module != account_tag.module
+        || find_tag.name != account_tag.name
+    {
+        return false;
+    }
+
+    if find_tag.type_params.is_empty()
+        && find_tag.address == account_tag.address
+        && find_tag.module == account_tag.module
+        && find_tag.name == account_tag.name
+    {
+        return true;
+    }
+
+    if find_tag.type_params.len() != account_tag.type_params.len() {
+        return false;
+    }
+
+    let mut res: bool = false;
+    for (find, account) in std::iter::zip(
+        find_tag.type_params.clone(),
+        account_tag.type_params.clone(),
+    ) {
+        if let (TypeTag::Struct(account), TypeTag::Struct(find)) = (account, find) {
+            res = compared_suport_generics(&account, &find);
+            if !res {
+                return res;
+            }
+        }
+    }
+
+    res
 }

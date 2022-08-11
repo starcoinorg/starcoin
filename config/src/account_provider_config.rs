@@ -17,6 +17,7 @@ pub struct AccountProviderConfig {
     pub account_dir: Option<PathBuf>,
 
     /// Path to the secret file storing the private key.
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(
         long = "secret-file",
         help = "file path of private key",
@@ -25,6 +26,7 @@ pub struct AccountProviderConfig {
     pub secret_file: Option<PathBuf>,
 
     /// Read private from env variable `STARCOIN_PRIVATE_KEY`.
+    #[serde(default)]
     #[clap(long = "from-env")]
     pub from_env: bool,
 
