@@ -17,7 +17,7 @@ use std::sync::Arc;
 #[derive(Debug, Clone, Parser, Default)]
 #[clap(name = "starcoin-miner", about = "Starcoin Miner")]
 pub struct StarcoinOpt {
-    #[clap(long, short = 'a', default_value = "127.0.0.1:9870")]
+    #[clap(long, short = 'a', default_value = "127.0.0.1:9880")]
     pub server: String,
     #[clap(long, short = 'u')]
     pub user: String,
