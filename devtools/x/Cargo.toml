@@ -24,6 +24,6 @@ regex = "1.6.0"
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = "1.0.61"
 toml = "0.5.9"
-x = { package = "x", git = "https://github.com/JerryKwan/move-starcoin", rev = "f4086a5517de269d320865d86081eb7aedfa7037" }
-x-core = { package = "x-core", git = "https://github.com/JerryKwan/move-starcoin", rev = "f4086a5517de269d320865d86081eb7aedfa7037" }
-x-lint = { package = "x-lint", git = "https://github.com/JerryKwan/move-starcoin", rev = "f4086a5517de269d320865d86081eb7aedfa7037" }
+x = { package = "x", git = "https://github.com/starcoinorg/move", rev = "3d15607d706d3cc1f03427205444c539def45b89" }
+x-core = { package = "x-core", git = "https://github.com/starcoinorg/move", rev = "3d15607d706d3cc1f03427205444c539def45b89" }
+x-lint = { package = "x-lint", git = "https://github.com/starcoinorg/move", rev = "3d15607d706d3cc1f03427205444c539def45b89" }
