@@ -24,6 +24,8 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 thiserror = "1.0"
 hex = "0.4.3"
 bcs-ext = { path = "../../commons/bcs_ext", package = "bcs-ext" }
+backtrace = "0.3"
+starcoin-logger = { path = "../../commons/logger" }
 
 [dev-dependencies]
 rand = "0.8.5"

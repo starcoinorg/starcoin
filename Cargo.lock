@@ -2486,6 +2486,7 @@ name = "forkable-jellyfish-merkle"
 version = "1.11.11"
 dependencies = [
  "anyhow",
+ "backtrace",
  "bcs",
  "bcs-ext",
  "byteorder 1.4.3",
@@ -2501,6 +2502,7 @@ dependencies = [
  "serde 1.0.140",
  "serde_bytes",
  "starcoin-crypto",
+ "starcoin-logger",
  "thiserror",
 ]
 

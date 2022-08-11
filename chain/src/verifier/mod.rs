@@ -3,6 +3,7 @@
 
 use anyhow::{format_err, Result};
 use consensus::{Consensus, ConsensusVerifyError};
+use logger::prelude::debug;
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_chain_api::{
     verify_block, ChainReader, ConnectBlockError, VerifiedBlock, VerifyBlockField,
@@ -134,6 +135,13 @@ pub trait BlockVerifier {
                 Self::can_be_uncle(current_chain, uncle)?,
                 "invalid block: block {} can not be uncle.",
                 uncle_id
+            );
+            debug!(
+                "verify_uncle header number {} hash {:?} uncle number {} hash {:?}",
+                header.number(),
+                header.id(),
+                uncle.number(),
+                uncle.id()
             );
             // uncle's parent exist in current chain is check in can_be_uncle, so this fork should bean success.
             let uncle_branch = current_chain.fork(uncle.parent_hash())?;
