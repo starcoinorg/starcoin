@@ -119,7 +119,7 @@ pub mod language_storage {
         use crate::parser::parse_struct_tag;
         #[test]
         fn test_struct_tag_match() {
-            let test_casese = vec![
+            let test_cases = vec![
                 (
                     "0x1::Account::Balance<0x1::STC::STC>",
                     "0x1::Account::Balance<0x1::STC::STC>",
