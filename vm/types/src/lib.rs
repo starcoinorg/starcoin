@@ -103,7 +103,7 @@ pub mod language_storage {
         for (filter_type_tag, target_type_tag) in
             std::iter::zip(filter.type_params.clone(), target.type_params.clone())
         {
-            if !type_tag_match(&filter_typetag, &target_typetag) {
+            if !type_tag_match(&filter_type_tag, &target_type_tag) {
                 return false;
             }
         }
@@ -177,7 +177,7 @@ pub mod language_storage {
                     false,
                 ),
             ];
-            for case in test_casese {
+            for case in test_cases {
                 let filter = parse_struct_tag(case.0).unwrap();
                 let target = parse_struct_tag(case.1).unwrap();
                 assert_eq!(
