@@ -69,6 +69,130 @@ pub mod language_storage {
     pub use move_core_types::language_storage::{
         ModuleId, ResourceKey, StructTag, TypeTag, CODE_TAG, CORE_CODE_ADDRESS, RESOURCE_TAG,
     };
+
+    /// check the filter TypeTag is match with the Target, if the filter and target both are StructTag, call `struct_tag_match`, otherwise, same as `==`
+    pub fn type_tag_match(filter: &TypeTag, target: &TypeTag) -> bool {
+        if let (TypeTag::Struct(filter), TypeTag::Struct(target)) = (filter, target) {
+            struct_tag_match(filter, target)
+        } else {
+            filter == target
+        }
+    }
+
+    /// check the filter SturctTag is match with the target.
+    pub fn struct_tag_match(filter: &StructTag, target: &StructTag) -> bool {
+        if filter == target {
+            return true;
+        }
+
+        if filter.address != target.address
+            || filter.module != target.module
+            || filter.name != target.name
+        {
+            return false;
+        }
+
+        if filter.type_params.is_empty()
+            && filter.address == target.address
+            && filter.module == target.module
+            && filter.name == target.name
+        {
+            return true;
+        }
+
+        if filter.type_params.len() != target.type_params.len() {
+            return false;
+        }
+
+        for (filter_typetag, target_typetag) in
+            std::iter::zip(filter.type_params.clone(), target.type_params.clone())
+        {
+            if !type_tag_match(&filter_typetag, &target_typetag) {
+                return false;
+            }
+        }
+        true
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use crate::parser::parse_struct_tag;
+        #[test]
+        fn test_struct_tag_match() {
+            let test_casese = vec![
+                (
+                    "0x1::Account::Balance<0x1::STC::STC>",
+                    "0x1::Account::Balance<0x1::STC::STC>",
+                    true,
+                ),
+                (
+                    "0x1::Account::Balance<0x1::STC::STC>",
+                    "0x2::Account::Balance<0x1::STC::STC>",
+                    false,
+                ),
+                (
+                    "0x1::Account::Balance<0x1::STC::STC>",
+                    "0x1::Account2::Balance<0x1::STC::STC>",
+                    false,
+                ),
+                (
+                    "0x1::Account::Balance<0x1::STC::STC>",
+                    "0x1::Account::Balance2<0x1::STC::STC>",
+                    false,
+                ),
+                (
+                    "0x1::Account::Balance<0x1::STC::STC>",
+                    "0x1::Account::Balance<0x1::XToken::XToken>",
+                    false,
+                ),
+                (
+                    "0x1::Account::Balance",
+                    "0x1::Account::Balance<0x1::STC::STC>",
+                    true,
+                ),
+                (
+                    "0x1::Test::TokenPair",
+                    "0x1::Test::TokenPair<0x1::STC::STC,0x1::USD::USD>",
+                    true,
+                ),
+                (
+                    "0x1::Test::TokenPair<0x1::STC::STC>",
+                    "0x1::Test::TokenPair<0x1::STC::STC,0x1::USD::USD>",
+                    false,
+                ),
+                (
+                    "0x1::Test::TypeWrapper<0x1::Test::TypeNest>",
+                    "0x1::Test::TypeWrapper<0x1::Test::TypeNest<0x1::X::X>>",
+                    true,
+                ),
+                (
+                    "0x1::Test::TypeWrapper<u64>",
+                    "0x1::Test::TypeWrapper<u64>",
+                    true,
+                ),
+                (
+                    "0x1::Test::TypeWrapper",
+                    "0x1::Test::TypeWrapper<u64>",
+                    true,
+                ),
+                (
+                    "0x1::Test::TypeWrapper<u64>",
+                    "0x1::Test::TypeWrapper<bool>",
+                    false,
+                ),
+            ];
+            for case in test_casese {
+                let filter = parse_struct_tag(case.0).unwrap();
+                let target = parse_struct_tag(case.1).unwrap();
+                assert_eq!(
+                    crate::language_storage::struct_tag_match(&filter, &target),
+                    case.2,
+                    "{:?} failed",
+                    case
+                );
+            }
+        }
+    }
 }
 
 pub mod move_resource;
