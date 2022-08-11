@@ -106,6 +106,8 @@ Feature: cmd integration test
     Then assert: "{{$.state[-1].ok.json.sequence_number}} == 0"
     Then cmd: "account show"
     Then cmd: "state list resource {{$.account[0].ok.account.address}}"
+    Then cmd: "state list resource -t 0x1::Account::Balance {{$.account[0].ok.account.address}}"
+    Then cmd: "state list resource -s 5 -i 0 {{$.account[0].ok.account.address}}"
     Then cmd: "account show"
     Then cmd: "state list code {{$.account[0].ok.account.address}}"
     Then stop
