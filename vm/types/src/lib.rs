@@ -92,11 +92,7 @@ pub mod language_storage {
             return false;
         }
 
-        if filter.type_params.is_empty()
-            && filter.address == target.address
-            && filter.module == target.module
-            && filter.name == target.name
-        {
+        if filter.type_params.is_empty() {
             return true;
         }
 
