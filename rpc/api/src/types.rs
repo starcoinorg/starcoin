@@ -793,7 +793,7 @@ impl TryFrom<BlockTransactionsView> for Vec<SignedUserTransaction> {
                 .map(|transaction_view| {
                     SignedUserTransaction::new(
                         transaction_view.raw_txn.into(),
-                        transaction_view.authenticator.clone(),
+                        transaction_view.authenticator,
                     )
                 })
                 .collect()),
