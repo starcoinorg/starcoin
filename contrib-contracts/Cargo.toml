@@ -1,30 +1,29 @@
 [package]
-name = "contrib-contracts"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
+name = "contrib-contracts"
+version = "1.12.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 
-
 [dev-dependencies]
-test-helper = { path = "../test-helper" }
-starcoin-state-api = { path = "../state/api" }
-starcoin-executor = { path = "../executor" }
-starcoin-vm-types = { path = "../vm/types" }
-starcoin-types = { path = "../types" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
+starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-executor = {path = "../executor"}
+starcoin-state-api = {path = "../state/api"}
+starcoin-types = {path = "../types"}
+starcoin-vm-types = {path = "../vm/types"}
+test-helper = {path = "../test-helper"}
 #starcoin-move-compiler= {path = "../vm/compiler"}
-stdlib = { path = "../vm/stdlib" }
-stest = { path = "../commons/stest" }
-tempfile = "~3"
-serde = "~1"
-serde_json = "~1"
 anyhow = "~1"
+bcs-ext = {path = "../commons/bcs_ext"}
+ethereum-types = "0.9"
 hex = "0.4"
 rlp = "0.4"
 rlp-derive = "0.1"
-ethereum-types = "0.9"
-bcs-ext = { path = "../commons/bcs_ext" }
+serde = "~1"
+serde_json = "~1"
+stdlib = {path = "../vm/stdlib"}
+stest = {path = "../commons/stest"}
+tempfile = "~3"

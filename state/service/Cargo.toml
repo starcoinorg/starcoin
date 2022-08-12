@@ -1,26 +1,26 @@
 [package]
-name = "starcoin-state-service"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-state-service"
+publish = false
+version = "1.12.0"
 
 [dependencies]
 anyhow = "1.0.41"
-futures = "0.3.12"
 async-trait = "0.1"
-starcoin-logger = { path = "../../commons/logger" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-stest = { path = "../../commons/stest" }
-starcoin-types = { path = "../../types" }
-starcoin-config = { path = "../../config" }
-starcoin-state-api = { path = "../api" }
-starcoin-statedb = { path = "../statedb" }
-starcoin-storage = { path = "../../storage" }
-starcoin-state-tree = { path = "../state-tree" }
-starcoin-service-registry = { path = "../../commons/service-registry" }
+futures = "0.3.12"
+starcoin-config = {path = "../../config"}
+starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-logger = {path = "../../commons/logger"}
+starcoin-service-registry = {path = "../../commons/service-registry"}
+starcoin-state-api = {path = "../api"}
+starcoin-state-tree = {path = "../state-tree"}
+starcoin-statedb = {path = "../statedb"}
+starcoin-storage = {path = "../../storage"}
+starcoin-types = {path = "../../types"}
+stest = {path = "../../commons/stest"}
 tokio = "1"
 
 [dev-dependencies]
-test-helper = { path = "../../test-helper" }
+test-helper = {path = "../../test-helper"}
