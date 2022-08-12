@@ -4,21 +4,21 @@ edition = "2021"
 license = "Apache-2.0"
 name = "starcoin-dev"
 publish = false
-version = "1.11.11"
+version = "1.12.0"
 
 [dependencies]
 anyhow = "1.0.41"
-bcs-ext = { path = "../../commons/bcs_ext" }
-starcoin-abi-decoder = { path = "../../abi/decoder" }
-starcoin-abi-resolver = { path = "../../abi/resolver" }
-starcoin-abi-types = { path = "../../abi/types" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-starcoin-logger = { path = "../../commons/logger" }
-starcoin-resource-viewer = { path = "../resource-viewer" }
-starcoin-rpc-api = { path = "../../rpc/api" }
-starcoin-state-api = { path = "../../state/api" }
-starcoin-statedb = { path = "../../state/statedb" }
-starcoin-vm-runtime = { path = "../vm-runtime" }
-starcoin-vm-types = { path = "../types" }
+bcs-ext = {path = "../../commons/bcs_ext"}
+starcoin-abi-decoder = {path = "../../abi/decoder"}
+starcoin-abi-resolver = {path = "../../abi/resolver"}
+starcoin-abi-types = {path = "../../abi/types"}
+starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-logger = {path = "../../commons/logger"}
+starcoin-resource-viewer = {path = "../resource-viewer"}
+starcoin-rpc-api = {path = "../../rpc/api"}
+starcoin-state-api = {path = "../../state/api"}
+starcoin-statedb = {path = "../../state/statedb"}
+starcoin-vm-runtime = {path = "../vm-runtime"}
+starcoin-vm-types = {path = "../types"}
 thiserror = "1.0"
-vm-status-translator = { path = "../vm-status-translator" }
+vm-status-translator = {path = "../vm-status-translator"}

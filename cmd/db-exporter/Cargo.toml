@@ -1,41 +1,41 @@
 [package]
-name = "db-exporter"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "db-exporter"
+publish = false
+version = "1.12.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-starcoin-config = { path = "../../config" }
-starcoin-chain = { path = "../../chain" }
-starcoin-genesis = { path = "../../genesis" }
-starcoin-storage = { path = "../../storage" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-starcoin-statedb = { path = "../../state/statedb" }
-starcoin-vm-types = { path = "../../vm/types" }
-starcoin-types = { path = "../../types" }
-starcoin-executor = { path = "../../executor" }
-starcoin-consensus = { path = "../../consensus" }
-starcoin-transaction-builder = { path = "../../vm/transaction-builder" }
-starcoin-account-api = { path = "../../account/api" }
-starcoin-accumulator = { path = "../../commons/accumulator", package = "starcoin-accumulator" }
-starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
-starcoin-state-tree = { path = "../../state/state-tree" }
-bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
-csv = "~1"
-serde = "~1"
-serde_json = { version = "~1", features = ["arbitrary_precision"] }
 anyhow = "~1"
+bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
+clap = {version = "3", features = ["derive"]}
+csv = "~1"
 hex = "~0.4"
 indicatif = "0.16.2"
-logger = { path = "../../commons/logger", package = "starcoin-logger" }
-clap = { version = "3", features = ["derive"] }
+logger = {path = "../../commons/logger", package = "starcoin-logger"}
+serde = "~1"
+serde_json = {version = "~1", features = ["arbitrary_precision"]}
+starcoin-account-api = {path = "../../account/api"}
+starcoin-accumulator = {path = "../../commons/accumulator", package = "starcoin-accumulator"}
+starcoin-chain = {path = "../../chain"}
+starcoin-config = {path = "../../config"}
+starcoin-consensus = {path = "../../consensus"}
+starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-executor = {path = "../../executor"}
+starcoin-genesis = {path = "../../genesis"}
+starcoin-resource-viewer = {path = "../../vm/resource-viewer"}
+starcoin-state-tree = {path = "../../state/state-tree"}
+starcoin-statedb = {path = "../../state/statedb"}
+starcoin-storage = {path = "../../storage"}
+starcoin-transaction-builder = {path = "../../vm/transaction-builder"}
+starcoin-types = {path = "../../types"}
+starcoin-vm-types = {path = "../../vm/types"}
 
 [target."cfg(target_os=\"linux\")".dependencies]
-pprof = { version = "0.10", features = ["flamegraph"] }
+pprof = {version = "0.10", features = ["flamegraph"]}
 
 [[bin]]
 name = "starcoin_db_exporter"

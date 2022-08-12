@@ -1,26 +1,26 @@
 [package]
-name = "starcoin-peer-watcher"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-peer-watcher"
+publish = false
+version = "1.12.0"
 
 [[bin]]
 name = "starcoin_peer_watcher"
 path = "src/main.rs"
 
 [dependencies]
-clap = { version = "3", features = ["derive"] }
 anyhow = "1.0.41"
 async-std = "1.12"
+clap = {version = "3", features = ["derive"]}
 futures = "0.3.12"
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-starcoin-config = { path = "../../config" }
-starcoin-genesis = { path = "../../genesis" }
-starcoin-types = { path = "../../types" }
-starcoin-logger = { path = "../../commons/logger" }
-network-p2p-types = { path = "../../network-p2p/types" }
-network-p2p = { path = "../../network-p2p" }
-starcoin-network = { path = "../../network" }
-starcoin-storage = { path = "../../storage" }
+network-p2p = {path = "../../network-p2p"}
+network-p2p-types = {path = "../../network-p2p/types"}
+starcoin-config = {path = "../../config"}
+starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-genesis = {path = "../../genesis"}
+starcoin-logger = {path = "../../commons/logger"}
+starcoin-network = {path = "../../network"}
+starcoin-storage = {path = "../../storage"}
+starcoin-types = {path = "../../types"}

@@ -2,16 +2,16 @@
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
 name = "starcoin-abi-resolver"
-version = "1.11.11"
+version = "1.12.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "~1"
-move-model = { git = "https://github.com/starcoinorg/move", rev = "3d15607d706d3cc1f03427205444c539def45b89" }
-starcoin-abi-types = { path = "../types" }
-starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
-starcoin-vm-types = { path = "../../vm/types" }
+move-model = {git = "https://github.com/starcoinorg/move", rev = "3d15607d706d3cc1f03427205444c539def45b89"}
+starcoin-abi-types = {path = "../types"}
+starcoin-resource-viewer = {path = "../../vm/resource-viewer"}
+starcoin-vm-types = {path = "../../vm/types"}
 [dev-dependencies]
 serde_json = "1"
 stdlib = {path = "../../vm/stdlib"}

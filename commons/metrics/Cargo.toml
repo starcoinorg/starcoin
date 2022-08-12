@@ -1,25 +1,25 @@
 [package]
-name = "starcoin-metrics"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
-edition = "2021"
 description = "Starcoin metrics"
+edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-metrics"
+publish = false
+version = "1.12.0"
 
 [dependencies]
 anyhow = "1.0.41"
 futures = "0.3.12"
-hyper = { version = "0.14.12", features = ["full"] }
-starcoin-logger = { path = "../logger" }
-prometheus = { version = "0.13.0", default-features = false, features = [
-    "push",
-] }
-serde_json = { version = "1.0", features = ["arbitrary_precision"] }
+hyper = {version = "0.14.12", features = ["full"]}
+prometheus = {version = "0.13.0", default-features = false, features = [
+  "push",
+]}
+serde_json = {version = "1.0", features = ["arbitrary_precision"]}
+starcoin-logger = {path = "../logger"}
 [target."cfg(any(target_os = \"macos\", target_os=\"linux\"))".dependencies]
-psutil = { version = "3.2", default-features = false, features = [
-    "cpu",
-    "memory",
-    "process",
-] }
-timeout-join-handler = { path = "../timeout-join-handler" }
+psutil = {version = "3.2", default-features = false, features = [
+  "cpu",
+  "memory",
+  "process",
+]}
+timeout-join-handler = {path = "../timeout-join-handler"}

@@ -1,30 +1,30 @@
 [package]
-name = "starcoin-generator"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-generator"
+publish = false
+version = "1.12.0"
 
 [dependencies]
 anyhow = "1.0.41"
-serde = { version = "1.0.130" }
-serde_json = { version = "1.0", features = ["arbitrary_precision"] }
+clap = {version = "3", features = ["derive"]}
 futures = "0.3.12"
-hex = { version = "0.4.3", default-features = false }
 futures-timer = "3.0"
-scmd = { path = "../../commons/scmd" }
-starcoin-logger = { path = "../../commons/logger" }
-starcoin-config = { path = "../../config" }
-starcoin-types = { path = "../../types" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-starcoin-storage = { path = "../../storage" }
-starcoin-genesis = { path = "../../genesis" }
-starcoin-account-api = { path = "../../account/api" }
-starcoin-account = { path = "../../account" }
-starcoin-chain = { path = "../../chain" }
-starcoin-chain-mock = { path = "../../chain/mock" }
-clap = { version = "3", features = ["derive"] }
+hex = {version = "0.4.3", default-features = false}
+scmd = {path = "../../commons/scmd"}
+serde = {version = "1.0.130"}
+serde_json = {version = "1.0", features = ["arbitrary_precision"]}
+starcoin-account = {path = "../../account"}
+starcoin-account-api = {path = "../../account/api"}
+starcoin-chain = {path = "../../chain"}
+starcoin-chain-mock = {path = "../../chain/mock"}
+starcoin-config = {path = "../../config"}
+starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-genesis = {path = "../../genesis"}
+starcoin-logger = {path = "../../commons/logger"}
+starcoin-storage = {path = "../../storage"}
+starcoin-types = {path = "../../types"}
 
 [[bin]]
 name = "starcoin_generator"
