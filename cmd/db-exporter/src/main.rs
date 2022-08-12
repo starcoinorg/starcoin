@@ -1090,7 +1090,9 @@ pub fn export_snapshot(
         .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
     let chain = BlockChain::new(net.time_service(), cur_block.id(), storage.clone(), None)
         .expect("create block chain should success.");
-    let cur_num = chain.epoch().start_block_number();
+
+    // For fork block verifier the parent block, So need block number sub 1
+    let cur_num = chain.epoch().start_block_number() - 1;
 
     // increment export read num
     let inc_export = increment.unwrap_or(false);
