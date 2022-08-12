@@ -10413,7 +10413,6 @@ dependencies = [
  "move-compiler",
  "move-core-types",
  "move-resource-viewer",
- "move-symbol-pool",
  "move-transactional-test-runner",
  "once_cell",
  "serde 1.0.140",
