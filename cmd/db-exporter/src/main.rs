@@ -37,7 +37,7 @@ use starcoin_storage::storage::{ColumnFamilyName, InnerStore};
 use starcoin_storage::{
     BlockStore, Storage, StorageVersion, Store, BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
     BLOCK_HEADER_PREFIX_NAME, BLOCK_INFO_PREFIX_NAME, BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
-    STATE_NODE_PREFIX_NAME, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
+    STATE_NODE_PREFIX_NAME, STATE_NODE_PREFIX_NAME_PREV, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
 };
 use starcoin_transaction_builder::build_signed_empty_txn;
 use starcoin_types::account::Account;
@@ -1152,8 +1152,11 @@ pub fn export_snapshot(
         .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
     let chain = BlockChain::new(net.time_service(), cur_block.id(), storage.clone(), None)
         .expect("create block chain should success.");
+
+    let cur_num = chain.epoch().start_block_number();
+
     // For fork block verifier the parent block, So need block number sub 1
-    let cur_num = chain.epoch().start_block_number() - 1;
+    let cur_num_prev = cur_num - 1;
 
     // increment export read num
     let inc_export = increment.unwrap_or(false);
@@ -1252,6 +1255,47 @@ pub fn export_snapshot(
         handles.push(handle);
     }
 
+    let block_prev = chain
+        .get_block_by_number(cur_num_prev)?
+        .ok_or_else(|| format_err!("get block by number {} error", cur_num_prev))?;
+    // get state
+    let state_root_prev = block_prev.header.state_root();
+    let statedb_prev = ChainStateDB::new(storage.clone(), Some(state_root_prev));
+    let output2_prev = output.clone();
+    // 20000000 is a pseudo number
+    let nums_prev = Arc::new(AtomicU64::default());
+    let nums2_prev = nums_prev.clone();
+    let bar_prev = mbar.add(ProgressBar::new(20000000 / BATCH_SIZE));
+    let state_handler_prev = thread::spawn(move || {
+        let mut index = 1;
+        let mut file = File::create(output2_prev.join(STATE_NODE_PREFIX_NAME))?;
+        bar_prev.set_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+        );
+        let global_states_iter = statedb_prev.dump_iter()?;
+        for (account_address, account_state_set) in global_states_iter {
+            writeln!(
+                file,
+                "{} {}",
+                serde_json::to_string(&account_address)?,
+                serde_json::to_string(&account_state_set)?
+            )?;
+
+            if index % BATCH_SIZE == 0 {
+                bar_prev.set_message(format!("export state {}", index / BATCH_SIZE));
+                bar_prev.inc(1);
+            }
+            index += 1;
+        }
+        file.flush()?;
+        bar_prev.finish();
+        nums2_prev.store(index - 1, Ordering::Relaxed);
+        Ok(())
+    });
+
+    handles.push(state_handler_prev);
+
     // get state
     let state_root = block.header.state_root();
     let statedb = ChainStateDB::new(storage, Some(state_root));
@@ -1294,10 +1338,23 @@ pub fn export_snapshot(
     }
 
     manifest_list.push((
+        STATE_NODE_PREFIX_NAME_PREV,
+        nums_prev.load(Ordering::Relaxed),
+        state_root_prev,
+    ));
+
+    println!(
+        "{} nums {}",
+        STATE_NODE_PREFIX_NAME_PREV,
+        nums_prev.load(Ordering::Relaxed)
+    );
+
+    manifest_list.push((
         STATE_NODE_PREFIX_NAME,
         nums.load(Ordering::Relaxed),
         state_root,
     ));
+
     println!(
         "{} nums {}",
         STATE_NODE_PREFIX_NAME,
@@ -1415,19 +1472,17 @@ pub fn apply_snapshot(
         CacheStorage::new(None),
         db_storage,
     ))?);
+
     let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
-    let mut chain = BlockChain::new(
-        net.time_service(),
-        chain_info.head().id(),
-        storage.clone(),
-        None,
-    )
-    .expect("create block chain should success.");
-    let cur_num = chain.status().head().number();
-    if cur_num > 0 {
-        println!("apply snapshot cur_num {} expect 0", cur_num);
-        std::process::exit(2);
-    }
+    let chain = Arc::new(std::sync::Mutex::new(
+        BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage.clone(),
+            None,
+        )
+        .expect("create block chain should success."),
+    ));
 
     let mut block_hash = HashValue::zero();
     let mut block_num = 1;
@@ -1461,18 +1516,18 @@ pub fn apply_snapshot(
     }
 
     let mbar = MultiProgress::new();
-    for item in file_list.iter().take(file_list.len() - 1) {
+    for item in file_list.iter().take(file_list.len() - 3) {
         let (column, nums, verify_hash) = item.clone();
         let storage2 = storage.clone();
         let accumulator = match column.as_str() {
             BLOCK_ACCUMULATOR_NODE_PREFIX_NAME | BLOCK_PREFIX_NAME | BLOCK_INFO_PREFIX_NAME => {
                 MerkleAccumulator::new_with_info(
-                    chain.status().info.block_accumulator_info,
+                    chain.lock().unwrap().status().info.block_accumulator_info,
                     storage.get_accumulator_store(AccumulatorStoreType::Block),
                 )
             }
             TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME => MerkleAccumulator::new_with_info(
-                chain.status().info.txn_accumulator_info,
+                chain.lock().unwrap().status().info.txn_accumulator_info,
                 storage.get_accumulator_store(AccumulatorStoreType::Transaction),
             ),
             _ => {
@@ -1487,7 +1542,56 @@ pub fn apply_snapshot(
         });
         handles.push(handle);
     }
+
     // STATE_NODE_PREFIX_NAME
+    if let Some((column, nums, verify_hash)) = file_list.get(file_list.len() - 2).cloned() {
+        let bar = mbar.add(ProgressBar::new(nums / BATCH_SIZE));
+        let input_path = input_path.clone();
+        let chain = chain.clone();
+        let handle = thread::spawn(move || {
+            let reader = BufReader::new(File::open(input_path.join(column))?);
+            bar.set_style(
+                ProgressStyle::default_bar()
+                    .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+            );
+            let mut index = 1;
+            let mut account_states = vec![];
+            for line in reader.lines() {
+                let line = line?;
+                let strs: Vec<&str> = line.split(' ').collect();
+                let account_address: AccountAddress = serde_json::from_str(strs[0])?;
+                let account_state_set: AccountStateSet = serde_json::from_str(strs[1])?;
+                account_states.push((account_address, account_state_set));
+                index += 1;
+                if index % BATCH_SIZE == 0 {
+                    bar.set_message(format!(
+                        "import {} index {}",
+                        STATE_NODE_PREFIX_NAME,
+                        index / BATCH_SIZE
+                    ));
+                    bar.inc(1);
+                }
+            }
+            bar.finish();
+            let chain_state_set = ChainStateSet::new(account_states);
+            let mut chain = chain.lock().unwrap();
+            chain.chain_state().apply(chain_state_set)?;
+            if chain.chain_state_reader().state_root() == verify_hash {
+                println!("snapshot_state hash match");
+            } else {
+                println!(
+                    "snapshot_state hash not match state_root {} verify_hash {}",
+                    chain.chain_state_reader().state_root(),
+                    verify_hash
+                );
+                std::process::exit(1);
+            }
+            Ok(())
+        });
+        handles.push(handle);
+    }
+
+    // STATE_NODE_PREFIX_NAME_PREV
     if let Some((column, nums, verify_hash)) = file_list.last().cloned() {
         let bar = mbar.add(ProgressBar::new(nums / BATCH_SIZE));
         let handle = thread::spawn(move || {
@@ -1516,6 +1620,7 @@ pub fn apply_snapshot(
             }
             bar.finish();
             let chain_state_set = ChainStateSet::new(account_states);
+            let mut chain = chain.lock().unwrap();
             chain.chain_state().apply(chain_state_set)?;
             if chain.chain_state_reader().state_root() == verify_hash {
                 println!("snapshot_state hash match");
@@ -1531,6 +1636,7 @@ pub fn apply_snapshot(
         });
         handles.push(handle);
     }
+
     mbar.join_and_clear()?;
     for handle in handles {
         handle.join().unwrap().unwrap();
