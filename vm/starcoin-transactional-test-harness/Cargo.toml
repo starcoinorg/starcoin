@@ -65,7 +65,7 @@ starcoin-storage = {path = "../../storage"}
 starcoin-types = {path = "../../types"}
 starcoin-vm-runtime = {path = "../../vm/vm-runtime"}
 starcoin-vm-types = {path = "../../vm/types"}
-stdlib = {path = "../stdlib"}
+stdlib = { path = "../stdlib" }
 
 [dev-dependencies]
 datatest-stable = "0.1.1"

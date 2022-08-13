@@ -14,27 +14,29 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::state_node::StateStorage;
 use starcoin_storage::storage::{CodecKVStore, CodecWriteBatch, StorageInstance};
 
-use futures::executor::block_on;
 use starcoin_rpc_api::state::StateApiClient;
 use starcoin_state_tree::StateNode;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::state_set::AccountStateSet;
+use tokio::runtime::Runtime;
 
 pub struct MockStateNodeStore {
     local_storage: StateStorage,
     remote: Arc<StateApiClient>,
+    rt: Arc<Runtime>,
 }
 
 impl MockStateNodeStore {
-    pub fn new(remote: Arc<StateApiClient>) -> Result<Self> {
+    pub fn new(remote: Arc<StateApiClient>, rt: Arc<Runtime>) -> Self {
         let storage_instance = StorageInstance::new_cache_instance();
         let storage = StateStorage::new(storage_instance);
 
-        Ok(Self {
+        Self {
             local_storage: storage,
             remote,
-        })
+            rt,
+        }
     }
 }
 
@@ -43,14 +45,19 @@ impl StateNodeStore for MockStateNodeStore {
         match self.local_storage.get(*hash)? {
             Some(sn) => Ok(Some(sn)),
             None => {
-                let blob =
-                    block_on(async move { self.remote.get_state_node_by_node_hash(*hash).await })
-                        .map(|res| res.map(StateNode))
-                        .map_err(|e| anyhow!("{}", e))?;
+                let client = self.remote.clone();
+                let handle = self.rt.handle().clone();
+                let hash = hash.clone();
+                let blob = // thread::spawn(move || {
+                    handle.block_on(client.get_state_node_by_node_hash(hash))
+                // })
+                // .join()
+                // .expect("Thread getting StateNode from remote panicked")
+                .map(|res| res.map(StateNode))
+                .map_err(|e| anyhow!("{}", e))?;
 
-                // Put result to local storage to accelerate the following getting.
                 if let Some(node) = blob.clone() {
-                    self.put(*hash, node)?;
+                    self.put(hash, node)?;
                 };
                 Ok(blob)
             }

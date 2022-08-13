@@ -299,6 +299,10 @@ impl RemoteRpcAsyncClient {
     pub fn get_fork_block_number(&self) -> u64 {
         self.fork_number
     }
+
+    pub fn get_fork_state_root(&self) -> HashValue {
+        self.state_root
+    }
 }
 
 #[derive(Clone)]
