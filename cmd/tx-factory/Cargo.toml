@@ -13,7 +13,7 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1.0.41"
 clap = {version = "3", features = ["derive"]}
-ctrlc = {version = "3.2.2", features = ["termination"]}
+ctrlc = {version = "3.2.3", features = ["termination"]}
 futures = "0.3.12"
 starcoin-account-api = {path = "../../account/api"}
 starcoin-config = {path = "../../config"}

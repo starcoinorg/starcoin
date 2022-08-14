@@ -20,7 +20,7 @@ serde_json = {version = "1.0", features = ["arbitrary_precision"]}
 thiserror = "1.0"
 
 [dev-dependencies]
-ctrlc = "3.2.2"
+ctrlc = "3.2.3"
 rand = "0.8.5"
 
 [features]
