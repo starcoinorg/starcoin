@@ -10,7 +10,7 @@ $env:RUST_LOG="OFF"
 $env:RUST_BACKTRACE=0
 cargo xtest --exclude starcoin-move-prover -j 15 -- --test-threads=10 --color never --format pretty | Tee-Object "$TEST_RESULT_FILE"
 
-$failed_tests=Select-String -Pattern 'test .* \.\.\. FAILED' -Path "./target/debug/test_result.txt" -AllMatches
+$failed_tests=Select-String -Pattern 'test .* \.\.\. +FAILED' -Path "./target/debug/test_result.txt" -AllMatches
 Write-Host "All failed tests are redirected to file: $TEST_RESULT_FAILED_FILE" -ForegroundColor Green
 $failed_tests > "$TEST_RESULT_FAILED_FILE"
 
