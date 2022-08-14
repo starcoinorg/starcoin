@@ -567,9 +567,9 @@ checksum = "cf9ff0bbfd639f15c74af777d81383cf53efb7c93613f6cab67c6c11e05bbf8b"
 
 [[package]]
 name = "bech32"
-version = "0.9.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5738be7561b0eeb501ef1d5c5db3f24e01ceb55fededd9b00039aada34966ad"
+checksum = "d86b93f97252c47b41663388e6d155714a9d0c398b99f1005cbc5f978b29f445"
 
 [[package]]
 name = "bencher"
@@ -10603,7 +10603,7 @@ version = "1.12.0"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "bech32 0.9.0",
+ "bech32 0.9.1",
  "chrono",
  "forkable-jellyfish-merkle",
  "hex",
