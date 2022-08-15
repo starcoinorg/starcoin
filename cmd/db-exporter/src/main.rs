@@ -60,8 +60,8 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use std::thread;
 use std::time::SystemTime;
+use std::{thread, thread::JoinHandle};
 
 const BLOCK_GAP: u64 = 1000;
 const BACK_SIZE: u64 = 10000;
@@ -1255,83 +1255,34 @@ pub fn export_snapshot(
         handles.push(handle);
     }
 
-    let block_prev = chain
+    let nums = Arc::new(AtomicU64::default());
+    let block = chain
+        .get_block_by_number(cur_num)?
+        .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
+    let state_root = block.header.state_root();
+    handles.push(chain_snapshot(
+        block,
+        storage.clone(),
+        &mbar,
+        output.clone(),
+        nums.clone(),
+        STATE_NODE_PREFIX_NAME,
+    )?);
+
+    let nums_prev = Arc::new(AtomicU64::default());
+    let block = chain
         .get_block_by_number(cur_num_prev)?
         .ok_or_else(|| format_err!("get block by number {} error", cur_num_prev))?;
-    // get state
-    let state_root_prev = block_prev.header.state_root();
-    let statedb_prev = ChainStateDB::new(storage.clone(), Some(state_root_prev));
-    let output2_prev = output.clone();
-    // 20000000 is a pseudo number
-    let nums_prev = Arc::new(AtomicU64::default());
-    let nums2_prev = nums_prev.clone();
-    let bar_prev = mbar.add(ProgressBar::new(20000000 / BATCH_SIZE));
-    let state_handler_prev = thread::spawn(move || {
-        let mut index = 1;
-        let mut file = File::create(output2_prev.join(STATE_NODE_PREFIX_NAME))?;
-        bar_prev.set_style(
-            ProgressStyle::default_bar()
-                .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
-        );
-        let global_states_iter = statedb_prev.dump_iter()?;
-        for (account_address, account_state_set) in global_states_iter {
-            writeln!(
-                file,
-                "{} {}",
-                serde_json::to_string(&account_address)?,
-                serde_json::to_string(&account_state_set)?
-            )?;
+    let state_root_prev = block.header.state_root();
+    handles.push(chain_snapshot(
+        block,
+        storage,
+        &mbar,
+        output.clone(),
+        nums_prev.clone(),
+        STATE_NODE_PREFIX_NAME_PREV,
+    )?);
 
-            if index % BATCH_SIZE == 0 {
-                bar_prev.set_message(format!("export state {}", index / BATCH_SIZE));
-                bar_prev.inc(1);
-            }
-            index += 1;
-        }
-        file.flush()?;
-        bar_prev.finish();
-        nums2_prev.store(index - 1, Ordering::Relaxed);
-        Ok(())
-    });
-
-    handles.push(state_handler_prev);
-
-    // get state
-    let state_root = block.header.state_root();
-    let statedb = ChainStateDB::new(storage, Some(state_root));
-    let output2 = output.clone();
-    // 20000000 is a pseudo number
-    let nums = Arc::new(AtomicU64::default());
-    let nums2 = nums.clone();
-    let bar = mbar.add(ProgressBar::new(20000000 / BATCH_SIZE));
-    let state_handler = thread::spawn(move || {
-        let mut index = 1;
-        let mut file = File::create(output2.join(STATE_NODE_PREFIX_NAME))?;
-        bar.set_style(
-            ProgressStyle::default_bar()
-                .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
-        );
-        let global_states_iter = statedb.dump_iter()?;
-        for (account_address, account_state_set) in global_states_iter {
-            writeln!(
-                file,
-                "{} {}",
-                serde_json::to_string(&account_address)?,
-                serde_json::to_string(&account_state_set)?
-            )?;
-
-            if index % BATCH_SIZE == 0 {
-                bar.set_message(format!("export state {}", index / BATCH_SIZE));
-                bar.inc(1);
-            }
-            index += 1;
-        }
-        file.flush()?;
-        bar.finish();
-        nums2.store(index - 1, Ordering::Relaxed);
-        Ok(())
-    });
-    handles.push(state_handler);
     mbar.join_and_clear()?;
     for handle in handles {
         handle.join().unwrap().unwrap();
@@ -1372,6 +1323,49 @@ pub fn export_snapshot(
     let use_time = SystemTime::now().duration_since(start_time)?;
     println!("export snapshot use time: {:?}", use_time.as_secs());
     Ok(())
+}
+
+fn chain_snapshot(
+    block: Block,
+    storage: Arc<Storage>,
+    mbar: &MultiProgress,
+    output: PathBuf,
+    nums: Arc<AtomicU64>,
+    name: &'static str,
+) -> Result<JoinHandle<Result<(), anyhow::Error>>, anyhow::Error> {
+    // get state
+    let state_root = block.header.state_root();
+    let statedb = ChainStateDB::new(storage, Some(state_root));
+    let bar = mbar.add(ProgressBar::new(20000000 / BATCH_SIZE));
+    let state_handler = thread::spawn(move || {
+        let mut index = 1;
+        let mut file = File::create(output.join(name))?;
+        bar.set_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+        );
+        let global_states_iter = statedb.dump_iter()?;
+        for (account_address, account_state_set) in global_states_iter {
+            writeln!(
+                file,
+                "{} {}",
+                serde_json::to_string(&account_address)?,
+                serde_json::to_string(&account_state_set)?
+            )?;
+
+            if index % BATCH_SIZE == 0 {
+                bar.set_message(format!("export state {}", index / BATCH_SIZE));
+                bar.inc(1);
+            }
+            index += 1;
+        }
+        file.flush()?;
+        bar.finish();
+        nums.store(index - 1, Ordering::Relaxed);
+        Ok(())
+    });
+
+    Ok(state_handler)
 }
 
 fn import_column(
