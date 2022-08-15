@@ -153,7 +153,7 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
                 let system = stest::actix_export::System::System::with_tokio_rt(|| {
                     tokio::runtime::Builder::new_multi_thread()
                         .enable_all()
-                        .on_thread_stop(|| println!("stest thread stopped"))
+                        .on_thread_stop(|| println!("stest thread stopped (has_test_attr) "))
                         .thread_name("stest")
                         .build()
                         .expect("failed to create tokio runtime for stest")
