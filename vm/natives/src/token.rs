@@ -80,7 +80,7 @@ fn test_type_params_formatting() {
         ),
         (
             vec![TypeTag::U64, TypeTag::Struct(a_struct)],
-            "<u64, 0x0::TestModule::TestStruct<address>>",
+            "<u64, 0x00000000000000000000000000000000::TestModule::TestStruct<address>>",
         ),
     ];
 
