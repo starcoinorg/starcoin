@@ -161,10 +161,11 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
                     Err((file, s)) => report_diagnostics(&file, s),
                 };
                 pre_compiled_lib.files.extend(full_program.files.clone());
+                /*
                 pre_compiled_lib
                     .parser
                     .lib_definitions
-                    .extend(full_program.parser.source_definitions);
+                    .extend(full_program.parser.source_definitions); */
                 pre_compiled_lib.expansion.modules = pre_compiled_lib.expansion.modules.union_with(
                     &full_program.expansion.modules.filter_map(|_k, v| {
                         if v.is_source_module {
