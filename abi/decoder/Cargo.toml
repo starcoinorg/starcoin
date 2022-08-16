@@ -13,7 +13,7 @@ serde = { version = "1.0.130", features = ["derive", "rc"] }
 serde_bytes = "0.11"
 anyhow = "1.0.41"
 hex = "0.4.3"
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "4b13373cef50c5e59a6fcc3b7059fef5af0ab53e" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "767ee8852a1ab21882b6799fc2ceea9f1c875914" }
 starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 starcoin-vm-types = { path = "../../vm/types" }
 starcoin-abi-types = { path = "../types" }
