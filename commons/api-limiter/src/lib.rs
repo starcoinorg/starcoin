@@ -118,6 +118,7 @@ mod tests {
 
     #[test]
     fn test_limit() {
+        panic!("0");
         let global_quota = Quota::per_second(unsafe { NonZeroU32::new_unchecked(5) });
         let user_quota = Quota::per_second(unsafe { NonZeroU32::new_unchecked(4) });
         let limiter = ApiLimiter::<String>::new(global_quota, user_quota);
