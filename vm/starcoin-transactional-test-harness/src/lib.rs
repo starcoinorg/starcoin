@@ -717,6 +717,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             }
         }
     }
+
     fn handle_new_block(
         &mut self,
         author: Option<RawAddress>,
