@@ -10,13 +10,20 @@ version = "1.12.0"
 bitflags = "1.3.2"
 bytes = "1"
 derive_more = "0.99.14"
-libp2p = {version = "0.42.2", default-features = false, features = [
-  "request-response",
-]}
 rand = "0.8.5"
 sc-peerset = {path = "../peerset"}
 schemars = {git = "https://github.com/starcoinorg/schemars", rev = "6972da92f4360e1779168bb3fe0274c521d324e2"}
 serde = {version = "1.0.130", features = ["derive"]}
 serde_json = {version = "1.0", features = ["arbitrary_precision"]}
+
+[target.'cfg(target_arch = "mips")'.dependencies]
+libp2p = { version = "0.42.2", git="https://github.com/strawWoo/rust-libp2p", rev="3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e", default-features = false, features = [
+    "request-response",
+] }
+[else]
+libp2p = { version = "0.42.2", default-features = false, features = [
+    "request-response",
+] }
+
 [features]
 default = []
