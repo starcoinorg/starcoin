@@ -139,6 +139,7 @@ impl ForkContext {
         self.storage.apply_write_set(write_set)?;
         let state_root = self.storage.commit()?;
         *self.state_root.lock().unwrap() = state_root;
+        self.storage.flush()?;
         Ok(())
     }
 }
