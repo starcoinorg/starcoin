@@ -28,7 +28,19 @@
 //! >       for example connecting to some nodes in priority should be added outside of this
 //! >       module, rather than inside.
 
+#[cfg(any(
+    target_arch = "x86_64",
+    target_arch = "x86",
+    target_arch = "powerpc",
+    target_arch = "powerpc64",
+    target_arch = "arm",
+    target_arch = "arrch64"
+))]
 use libp2p::PeerId;
+
+#[cfg(target_arch = "mips")]
+use libp2p_in_mips::PeerId;
+
 use log::error;
 use std::{
     borrow::Cow,
@@ -707,7 +719,20 @@ impl<'a> Drop for Reputation<'a> {
 #[cfg(test)]
 mod tests {
     use super::{Peer, PeersState, SetConfig};
+
+    #[cfg(any(
+        target_arch = "x86_64",
+        target_arch = "x86",
+        target_arch = "powerpc",
+        target_arch = "powerpc64",
+        target_arch = "arm",
+        target_arch = "arrch64"
+    ))]
     use libp2p::PeerId;
+
+    #[cfg(target_arch = "mips")]
+    use libp2p_in_mips::PeerId;
+
     use std::iter;
 
     #[test]

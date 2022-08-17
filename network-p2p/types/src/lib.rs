@@ -1,7 +1,17 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(any(
+    target_arch = "x86_64",
+    target_arch = "x86",
+    target_arch = "powerpc",
+    target_arch = "powerpc64",
+    target_arch = "arm",
+    target_arch = "arrch64"
+))]
 use libp2p::futures::channel::oneshot;
+#[cfg(target_arch = "mips")]
+use libp2p_in_mips::futures::channel::oneshot;
 use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::fmt;
@@ -9,9 +19,41 @@ use std::str::FromStr;
 
 pub mod network_state;
 
+#[cfg(any(
+    target_arch = "x86_64",
+    target_arch = "x86",
+    target_arch = "powerpc",
+    target_arch = "powerpc64",
+    target_arch = "arm",
+    target_arch = "arrch64"
+))]
 pub use libp2p::core::{identity, multiaddr, Multiaddr, PeerId, PublicKey};
+#[cfg(any(
+    target_arch = "x86_64",
+    target_arch = "x86",
+    target_arch = "powerpc",
+    target_arch = "powerpc64",
+    target_arch = "arm",
+    target_arch = "arrch64"
+))]
 pub use libp2p::request_response::{InboundFailure, OutboundFailure};
+#[cfg(any(
+    target_arch = "x86_64",
+    target_arch = "x86",
+    target_arch = "powerpc",
+    target_arch = "powerpc64",
+    target_arch = "arm",
+    target_arch = "arrch64"
+))]
 pub use libp2p::{build_multiaddr, multihash};
+
+#[cfg(target_arch = "mips")]
+pub use libp2p_in_mips::core::{identity, multiaddr, Multiaddr, PeerId, PublicKey};
+#[cfg(target_arch = "mips")]
+pub use libp2p_in_mips::request_response::{InboundFailure, OutboundFailure};
+#[cfg(target_arch = "mips")]
+pub use libp2p_in_mips::{build_multiaddr, multihash};
+
 pub use sc_peerset::{ReputationChange, BANNED_THRESHOLD};
 
 /// Parses a string address and splits it into Multiaddress and PeerId, if
@@ -56,9 +98,27 @@ pub fn random_memory_addr() -> Multiaddr {
 }
 
 /// Check the address is a memory protocol Multiaddr.
+#[cfg(any(
+    target_arch = "x86_64",
+    target_arch = "x86",
+    target_arch = "powerpc",
+    target_arch = "powerpc64",
+    target_arch = "arm",
+    target_arch = "arrch64"
+))]
 pub fn is_memory_addr(addr: &Multiaddr) -> bool {
     addr.iter()
         .any(|protocol| matches!(protocol, libp2p::core::multiaddr::Protocol::Memory(_)))
+}
+
+#[cfg(target_arch = "mips")]
+pub fn is_memory_addr(addr: &Multiaddr) -> bool {
+    addr.iter().any(|protocol| {
+        matches!(
+            protocol,
+            libp2p_in_mips::core::multiaddr::Protocol::Memory(_)
+        )
+    })
 }
 
 /// Address of a node, including its identity.

@@ -6018,6 +6018,7 @@ dependencies = [
  "bitflags",
  "bytes 1.2.1",
  "derive_more",
+ "libp2p 0.42.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "libp2p 0.42.2 (git+https://github.com/strawWoo/rust-libp2p?rev=3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e)",
  "rand 0.8.5",
  "sc-peerset",
@@ -8201,6 +8202,7 @@ name = "sc-peerset"
 version = "1.12.0"
 dependencies = [
  "futures 0.3.21",
+ "libp2p 0.42.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "libp2p 0.42.2 (git+https://github.com/strawWoo/rust-libp2p?rev=3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e)",
  "log 0.4.17",
  "rand 0.8.5",

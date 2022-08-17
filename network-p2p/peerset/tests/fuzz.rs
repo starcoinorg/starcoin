@@ -17,7 +17,20 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use futures::prelude::*;
+
+#[cfg(any(
+    target_arch = "x86_64",
+    target_arch = "x86",
+    target_arch = "powerpc",
+    target_arch = "powerpc64",
+    target_arch = "arm",
+    target_arch = "arrch64"
+))]
 use libp2p::PeerId;
+
+#[cfg(target_arch = "mips")]
+use libp2p_in_mips::PeerId;
+
 use rand::distributions::{Distribution, Uniform, WeightedIndex};
 use rand::seq::IteratorRandom;
 use sc_peerset::{

@@ -50,7 +50,18 @@ use wasm_timer::Instant;
 use crate::peersstate::PeersState;
 use futures::channel::oneshot;
 use futures::channel::oneshot::{Receiver, Sender};
+#[cfg(any(
+    target_arch = "x86_64",
+    target_arch = "x86",
+    target_arch = "powerpc",
+    target_arch = "powerpc64",
+    target_arch = "arm",
+    target_arch = "arrch64"
+))]
 pub use libp2p::PeerId;
+
+#[cfg(target_arch = "mips")]
+pub use libp2p_in_mips::PeerId;
 
 /// We don't accept nodes whose reputation is under this value.
 pub const BANNED_THRESHOLD: i32 = 82 * (i32::min_value() / 100);
@@ -794,7 +805,18 @@ mod tests {
         BANNED_THRESHOLD,
     };
     use futures::prelude::*;
+    #[cfg(any(
+        target_arch = "x86_64",
+        target_arch = "x86",
+        target_arch = "powerpc",
+        target_arch = "powerpc64",
+        target_arch = "arm",
+        target_arch = "arrch64"
+    ))]
     use libp2p::PeerId;
+    #[cfg(target_arch = "mips")]
+    use libp2p_in_mips::PeerId;
+
     use std::{pin::Pin, task::Poll, thread, time::Duration};
 
     fn assert_messages(mut peerset: Peerset, messages: Vec<Message>) -> Peerset {
