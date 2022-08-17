@@ -18,14 +18,7 @@
 
 use futures::prelude::*;
 
-#[cfg(any(
-    target_arch = "x86_64",
-    target_arch = "x86",
-    target_arch = "powerpc",
-    target_arch = "powerpc64",
-    target_arch = "arm",
-    target_arch = "arrch64"
-))]
+#[cfg(not(target_arch = "mips"))]
 use libp2p::PeerId;
 
 #[cfg(target_arch = "mips")]

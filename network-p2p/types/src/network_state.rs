@@ -20,7 +20,10 @@
 //!
 //! **Warning**: These APIs are not stable.
 
+#[cfg(not(target_arch = "mips"))]
 use libp2p::{core::ConnectedPoint, Multiaddr};
+#[cfg(target_arch = "mips")]
+use libp2p_in_mips::{core::ConnectedPoint, Multiaddr};
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use std::{
