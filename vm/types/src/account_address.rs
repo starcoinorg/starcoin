@@ -54,4 +54,10 @@ mod test {
 
         assert_eq!(address.hash(), HashValue::new(hash));
     }
+
+    #[test]
+    #[should_panic]
+    fn address_hash_panic() {
+        let _address: AccountAddress = "ca843279e3427144cead5e4d5999a3d0".parse().unwrap();
+    }
 }
