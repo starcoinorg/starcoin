@@ -7,5 +7,8 @@ publish = false
 version = "1.12.1"
 
 [dependencies]
-anyhow = "1.0.41"
+
 thiserror = "1.0"
+
+[dev-dependencies]
+anyhow = "1.0.41"

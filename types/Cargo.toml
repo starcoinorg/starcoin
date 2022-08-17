@@ -12,10 +12,7 @@ bcs-ext = {package = "bcs-ext", path = "../commons/bcs_ext"}
 byteorder = {version = "1.4.3", default-features = false}
 bytes = "1"
 forkable-jellyfish-merkle = {path = "../commons/forkable-jellyfish-merkle"}
-futures = "0.3.12"
 hex = {version = "0.4.3", default-features = false, features = ["serde"]}
-itertools = {version = "0.10.3", default-features = false}
-#network-p2p-types = {path = "../network-p2p/types"}
 num_enum = "0.5.7"
 proptest = {version = "1.0.0", default-features = false, optional = true}
 proptest-derive = {version = "0.3.0", default-features = false, optional = true}
