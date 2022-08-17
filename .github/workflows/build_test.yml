@@ -1,8 +1,9 @@
 name: Build and Test
 on:
+  workflow_dispatch:
   pull_request:
     branches:
-      - master
+      - update_move
 
 jobs:
   build-and-test:

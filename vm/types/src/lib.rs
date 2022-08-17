@@ -59,7 +59,7 @@ pub mod gas_schedule {
         STRING_CHECK_UT8 = 41,
         STRING_SUB_STR = 42,
         SRING_CHAR_BOUNDARY = 43,
-        STRING_INDEX_OF =44,
+        STRING_INDEX_OF = 44,
     }
 
     impl NativeCostIndex {
