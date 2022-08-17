@@ -17,7 +17,7 @@ use futures::future::BoxFuture;
 use futures::FutureExt;
 use futures_timer::Delay;
 use logger::prelude::*;
-use network_api::{PeerId, PeerSelector, PeerStrategy};
+use network_api::{PeerId, PeerInfo, PeerSelector, PeerStrategy};
 use pin_utils::core_reexport::time::Duration;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::tree_store::mock::MockAccumulatorStore;
@@ -29,7 +29,6 @@ use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_storage::BlockStore;
 use starcoin_sync_api::SyncTarget;
-use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeaderBuilder, BlockIdAndNumber, BlockInfo},
     U256,

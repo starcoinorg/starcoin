@@ -3,11 +3,11 @@
 
 use anyhow::Result;
 use network_p2p::NetworkWorker;
+use network_types::peer_info::PeerInfo;
 use starcoin_config::{ChainNetwork, NetworkConfig};
 use starcoin_network::{build_network_worker, NotificationMessage};
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
-use starcoin_types::peer_info::PeerInfo;
 use std::sync::Arc;
 
 pub fn build_lighting_network(

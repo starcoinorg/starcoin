@@ -6,12 +6,15 @@ use crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     HashValue, PrivateKey, Uniform,
 };
-use executor::{encode_create_account_script_function, encode_transfer_script_function};
 use logger::prelude::*;
 use rand::{rngs::StdRng, SeedableRng};
 use starcoin_config::ChainNetwork;
 use starcoin_genesis::Genesis;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
+use starcoin_transaction_builder::{
+    create_signed_txn_with_association_account, encode_create_account_script_function,
+    encode_transfer_script_function,
+};
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::token::stc;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
@@ -287,7 +290,7 @@ fn create_transaction(
     expiration_timestamp_secs: u64,
     net: &ChainNetwork,
 ) -> Transaction {
-    let signed_txn = executor::create_signed_txn_with_association_account(
+    let signed_txn = create_signed_txn_with_association_account(
         TransactionPayload::ScriptFunction(program),
         sequence_number,
         40_000_000,

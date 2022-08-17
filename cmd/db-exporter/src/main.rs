@@ -20,8 +20,6 @@ use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_config::{BuiltinNetworkID, ChainNetwork, RocksdbConfig};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
-use starcoin_executor::account::{create_account_txn_sent_as_association, peer_to_peer_txn};
-use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_genesis::Genesis;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
 use starcoin_statedb::ChainStateDB;
@@ -39,16 +37,24 @@ use starcoin_storage::{
     BLOCK_HEADER_PREFIX_NAME, BLOCK_INFO_PREFIX_NAME, BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
     STATE_NODE_PREFIX_NAME, STATE_NODE_PREFIX_NAME_PREV, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
 };
-use starcoin_transaction_builder::build_signed_empty_txn;
+use starcoin_transaction_builder::{
+    build_signed_empty_txn, create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT,
+};
+use starcoin_types::account::peer_to_peer_txn;
 use starcoin_types::account::Account;
+use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::language_storage::{StructTag, TypeTag};
 use starcoin_types::startup_info::{SnapshotRange, StartupInfo};
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 use starcoin_types::transaction::Transaction;
+use starcoin_vm_types::account_config::stc_type_tag;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm_types::identifier::Identifier;
+use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::parser::parse_type_tag;
+use starcoin_vm_types::transaction::{ScriptFunction, SignedUserTransaction, TransactionPayload};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fmt::Formatter;
@@ -811,6 +817,37 @@ pub fn gen_block_transactions(
             execute_empty_transaction_with_miner(storage, &mut chain, &net, block_num, trans_num)
         }
     }
+}
+/// Returns a transaction to create a new account with the given arguments.
+pub fn create_account_txn_sent_as_association(
+    new_account: &Account,
+    seq_num: u64,
+    initial_amount: u128,
+    expiration_timstamp_secs: u64,
+    net: &ChainNetwork,
+) -> SignedUserTransaction {
+    let args = vec![
+        bcs_ext::to_bytes(new_account.address()).unwrap(),
+        bcs_ext::to_bytes(&new_account.auth_key().to_vec()).unwrap(),
+        bcs_ext::to_bytes(&initial_amount).unwrap(),
+    ];
+
+    create_signed_txn_with_association_account(
+        TransactionPayload::ScriptFunction(ScriptFunction::new(
+            ModuleId::new(
+                starcoin_vm_types::account_config::core_code_address(),
+                Identifier::new("Account").unwrap(),
+            ),
+            Identifier::new("create_account_with_initial_amount").unwrap(),
+            vec![stc_type_tag()],
+            args,
+        )),
+        seq_num,
+        DEFAULT_MAX_GAS_AMOUNT,
+        1,
+        expiration_timstamp_secs,
+        net,
+    )
 }
 
 // This use in test net create account then transfer faster then transfer non exist account

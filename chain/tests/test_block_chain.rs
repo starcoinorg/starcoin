@@ -11,7 +11,7 @@ use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_chain_mock::MockChain;
 use starcoin_config::NodeConfig;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
-use starcoin_executor::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
+use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::account_address;
 use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::filter::Filter;

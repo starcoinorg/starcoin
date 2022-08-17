@@ -25,3 +25,4 @@ starcoin-rpc-client = {path = "../../rpc/client"}
 starcoin-state-api = {path = "../../state/api"}
 starcoin-types = {path = "../../types"}
 tokio = {version = "^1", features = ["full"]}
+starcoin-transaction-builder = {path = "../../vm/transaction-builder"}

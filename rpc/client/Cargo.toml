@@ -48,6 +48,7 @@ starcoin-state-api = {path = "../../state/api"}
 starcoin-state-tree = {path = "../../state/state-tree"}
 starcoin-sync-api = {path = "../../sync/api"}
 starcoin-txpool-api = {path = "../../txpool/api"}
+network-types = {path = "../../network/types"}
 starcoin-types = {path = "../../types"}
 starcoin-vm-types = {path = "../../vm/types"}
 thiserror = "1.0"

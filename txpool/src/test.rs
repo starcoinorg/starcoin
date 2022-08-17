@@ -9,10 +9,10 @@ use network_api::messages::{PeerTransactionsMessage, TransactionsMessage};
 use network_api::PeerId;
 use parking_lot::RwLock;
 use starcoin_config::{MetricsConfig, NodeConfig};
-use starcoin_executor::{
-    create_signed_txn_with_association_account, encode_transfer_script_function,
-    DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
-};
+// use starcoin_executor::{
+//     create_signed_txn_with_association_account, encode_transfer_script_function,
+//     DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
+// };
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
@@ -73,7 +73,7 @@ async fn test_tx_pool() -> Result<()> {
     let (txpool_service, _storage, config, _, _) = test_helper::start_txpool().await;
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
-    let txn = starcoin_executor::build_transfer_from_association(
+    let txn = starcoin_transaction_builder::build_transfer_from_association(
         account_address,
         0,
         10000,
@@ -186,11 +186,11 @@ async fn test_rollback() -> Result<()> {
     let retracted_txn = {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
         let account_address = account_address::from_public_key(&public_key);
-        let txn = starcoin_executor::build_transfer_from_association(
+        let txn = starcoin_transaction_builder::build_transfer_from_association(
             account_address,
             0,
             10000,
-            start_timestamp + DEFAULT_EXPIRATION_TIME,
+            start_timestamp + starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME,
             config.net(),
         );
         txn.as_signed_user_txn()?.clone()
@@ -200,11 +200,11 @@ async fn test_rollback() -> Result<()> {
     let enacted_txn = {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
         let account_address = account_address::from_public_key(&public_key);
-        let txn = starcoin_executor::build_transfer_from_association(
+        let txn = starcoin_transaction_builder::build_transfer_from_association(
             account_address,
             0,
             20000,
-            start_timestamp + DEFAULT_EXPIRATION_TIME,
+            start_timestamp + starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME,
             config.net(),
         );
         txn.as_signed_user_txn()?.clone()
@@ -297,10 +297,12 @@ async fn test_txpool_actor_service() {
 fn generate_txn(config: Arc<NodeConfig>, seq: u64) -> SignedUserTransaction {
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
-    let txn = create_signed_txn_with_association_account(
-        TransactionPayload::ScriptFunction(encode_transfer_script_function(account_address, 10000)),
+    let txn = starcoin_transaction_builder::create_signed_txn_with_association_account(
+        TransactionPayload::ScriptFunction(
+            starcoin_transaction_builder::encode_transfer_script_function(account_address, 10000),
+        ),
         seq,
-        DEFAULT_MAX_GAS_AMOUNT,
+        starcoin_transaction_builder::DEFAULT_MAX_GAS_AMOUNT,
         1,
         2,
         config.net(),

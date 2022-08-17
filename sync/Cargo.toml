@@ -47,7 +47,7 @@ stream-task = {path = "../commons/stream-task"}
 sysinfo = "0.25.1"
 thiserror = "1.0"
 txpool = {path = "../txpool", package = "starcoin-txpool"}
-
+starcoin-transaction-builder = {path = "../vm/transaction-builder"}
 [dev-dependencies]
 hex = "0.4.3"
 miner = {path = "../miner", package = "starcoin-miner"}

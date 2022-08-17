@@ -25,4 +25,5 @@ statedb = {path = "../../state/statedb", package = "starcoin-statedb"}
 storage = {package = "starcoin-storage", path = "../../storage"}
 types = {package = "starcoin-types", path = "../../types"}
 vm-runtime = {package = "starcoin-vm-runtime", path = "../../vm/vm-runtime"}
+starcoin-transaction-builder = {path = "../../vm/transaction-builder"}
 [features]

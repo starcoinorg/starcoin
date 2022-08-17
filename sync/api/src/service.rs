@@ -6,9 +6,9 @@ use crate::{
     SyncProgressRequest, SyncStartRequest, SyncStatusRequest,
 };
 use anyhow::Result;
+use network_api::PeerId;
 use network_api::PeerStrategy;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
-use starcoin_types::peer_info::PeerId;
 use starcoin_types::sync_status::SyncStatus;
 
 #[async_trait::async_trait]

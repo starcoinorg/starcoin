@@ -69,6 +69,7 @@ starcoin-storage = {path = "../../storage"}
 starcoin-sync-api = {path = "../../sync/api"}
 starcoin-txpool = {path = "../../txpool"}
 starcoin-txpool-api = {path = "../../txpool/api"}
+network-types = {path = "../../network/types"}
 starcoin-types = {path = "../../types"}
 starcoin-vm-types = {path = "../../vm/types"}
 thiserror = "1.0"
@@ -83,3 +84,4 @@ starcoin-txpool-mock-service = {path = "../../txpool/mock-service"}
 stest = {path = "../../commons/stest"}
 test-helper = {path = "../../test-helper"}
 tokio = {version = "^1", features = ["full"]}
+starcoin-transaction-builder = {path = "../../vm/transaction-builder"}

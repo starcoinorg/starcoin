@@ -9,7 +9,7 @@ use crypto::HashValue;
 use futures::FutureExt;
 use logger::prelude::*;
 use network_api::messages::{CompactBlockMessage, NotificationMessage, PeerCompactBlockMessage};
-use network_api::{NetworkService, PeerProvider, PeerSelector, PeerStrategy};
+use network_api::{NetworkService, PeerId, PeerProvider, PeerSelector, PeerStrategy};
 use starcoin_chain::verifier::StaticVerifier;
 use starcoin_network::NetworkServiceRef;
 use starcoin_network_rpc_api::GetTxnsWithHash;
@@ -26,7 +26,6 @@ use starcoin_types::time::TimeService;
 use starcoin_types::{
     block::{Block, BlockBody},
     compact_block::{CompactBlock, ShortId},
-    peer_info::PeerId,
     system_events::NewHeadBlock,
     transaction::SignedUserTransaction,
 };

@@ -15,7 +15,9 @@ use network_api::messages::{
     AnnouncementType, BanPeer, GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage,
     PeerEvent, PeerMessage, PeerReputations, ReportReputation, TransactionsMessage,
 };
-use network_api::{BroadcastProtocolFilter, NetworkActor, PeerMessageHandler};
+use network_api::{
+    BroadcastProtocolFilter, NetworkActor, PeerId, PeerInfo, PeerMessageHandler, RpcInfo,
+};
 use network_p2p::{Event, NetworkWorker};
 use rand::prelude::SliceRandom;
 use starcoin_config::NodeConfig;
@@ -26,7 +28,6 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceHandler, ServiceRef, ServiceRequest,
 };
 use starcoin_txpool_api::PropagateTransactions;
-use starcoin_types::peer_info::{PeerId, PeerInfo, RpcInfo};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::SyncStatusChangeEvent;
