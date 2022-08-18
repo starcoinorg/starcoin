@@ -1,41 +1,41 @@
 [package]
-name = "starcoin-chain-mock"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-chain-mock"
+publish = false
+version = "1.12.1"
 
 [dependencies]
 anyhow = "1.0.41"
-thiserror = "1.0"
-starcoin-types = { path = "../../types", package = "starcoin-types" }
-starcoin-config = { path = "../../config" }
-state-tree = { path = "../../state/state-tree", package = "starcoin-state-tree" }
-starcoin-executor = { path = "../../executor", package = "starcoin-executor" }
-crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-starcoin-consensus = { path = "../../consensus" }
-bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
-starcoin-state-api = { path = "../../state/api" }
-starcoin-accumulator = { path = "../../commons/accumulator", package = "starcoin-accumulator" }
 async-trait = "0.1"
+bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
+crypto = {package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 futures = "0.3.12"
-parking_lot = "0.12"
-starcoin-storage = { path = "../../storage" }
 futures-timer = "3.0"
-logger = { path = "../../commons/logger", package = "starcoin-logger" }
-starcoin-statedb = { path = "../../state/statedb" }
-starcoin-open-block = { path = "../open-block" }
-starcoin-vm-types = { path = "../../vm/types" }
-proptest = { version = "1.0.0", default-features = false, optional = true }
-proptest-derive = { version = "0.3.0", default-features = false, optional = true }
-starcoin-account-api = { path = "../../account/api" }
-starcoin-genesis = { path = "../../genesis" }
-starcoin-chain = { path = "../../chain" }
+logger = {path = "../../commons/logger", package = "starcoin-logger"}
+parking_lot = "0.12"
+proptest = {version = "1.0.0", default-features = false, optional = true}
+proptest-derive = {version = "0.3.0", default-features = false, optional = true}
+starcoin-account-api = {path = "../../account/api"}
+starcoin-accumulator = {path = "../../commons/accumulator", package = "starcoin-accumulator"}
+starcoin-chain = {path = "../../chain"}
+starcoin-config = {path = "../../config"}
+starcoin-consensus = {path = "../../consensus"}
+starcoin-executor = {path = "../../executor", package = "starcoin-executor"}
+starcoin-genesis = {path = "../../genesis"}
+starcoin-open-block = {path = "../open-block"}
+starcoin-state-api = {path = "../../state/api"}
+starcoin-statedb = {path = "../../state/statedb"}
+starcoin-storage = {path = "../../storage"}
+starcoin-types = {path = "../../types", package = "starcoin-types"}
+starcoin-vm-types = {path = "../../vm/types"}
+state-tree = {path = "../../state/state-tree", package = "starcoin-state-tree"}
+thiserror = "1.0"
 
 [dev-dependencies]
 proptest = "1.0.0"
-proptest-derive = { version = "0.3.0" }
+proptest-derive = {version = "0.3.0"}
 
 [features]
 default = []

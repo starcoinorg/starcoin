@@ -4,7 +4,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "starcoin-cmd"
 publish = false
-version = "1.11.11"
+version = "1.12.1"
 
 [dependencies]
 anyhow = "1.0.41"
@@ -15,10 +15,10 @@ forkable-jellyfish-merkle = {path = "../../commons/forkable-jellyfish-merkle"}
 futures = "0.3.12"
 hex = {version = "0.4.3", default-features = false}
 itertools = "0.10.3"
-move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "3d15607d706d3cc1f03427205444c539def45b89" }
-move-errmapgen = { git = "https://github.com/starcoinorg/move", rev = "3d15607d706d3cc1f03427205444c539def45b89" }
-network-api = { path = "../../network/api", package = "network-api" }
-network-p2p-types = { path = "../../network-p2p/types" }
+move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "9d1e76b770d630ad646a540b325f88ef986af3a3"}
+move-errmapgen = {git = "https://github.com/starcoinorg/move", rev = "9d1e76b770d630ad646a540b325f88ef986af3a3"}
+network-api = {path = "../../network/api", package = "network-api"}
+network-p2p-types = {path = "../../network-p2p/types"}
 rand = "0.8.5"
 scmd = {path = "../../commons/scmd"}
 serde = {version = "1.0.130"}

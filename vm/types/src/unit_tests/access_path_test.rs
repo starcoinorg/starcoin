@@ -75,18 +75,18 @@ fn test_bad_case_from_protest() {
 }
 
 proptest! {
-        //TODO enable this test, when test_bad_case_from_protest is fixed.
-        #[ignore]
-        #[test]
-        fn test_access_path(raw_access_path in any::<AccessPath>()){
-           let bytes = bcs_ext::to_bytes(&raw_access_path).expect("access_path serialize should ok.");
-           let access_path = bcs_ext::from_bytes::<AccessPath>(bytes.as_slice()).expect("access_path deserialize should ok.");
-           prop_assert_eq!(&raw_access_path, &access_path);
-           let access_path = raw_access_path.to_string();
-           let access_path = AccessPath::from_str(access_path.as_str()).expect("access_path from str should ok");
-           prop_assert_eq!(&raw_access_path, &access_path);
-           let raw_json = serde_json::to_string(&raw_access_path).expect("access_path to json str should ok");
-           let access_path = serde_json::from_str::<AccessPath>(raw_json.as_str()).expect("access_path from json str should ok");
-            prop_assert_eq!(&raw_access_path, &access_path);
-        }
+    //TODO enable this test, when test_bad_case_from_protest is fixed.
+    #[ignore]
+    #[test]
+    fn test_access_path(raw_access_path in any::<AccessPath>()){
+        let bytes = bcs_ext::to_bytes(&raw_access_path).expect("access_path serialize should ok.");
+        let access_path = bcs_ext::from_bytes::<AccessPath>(bytes.as_slice()).expect("access_path deserialize should ok.");
+        prop_assert_eq!(&raw_access_path, &access_path);
+        let access_path = raw_access_path.to_string();
+        let access_path = AccessPath::from_str(access_path.as_str()).expect("access_path from str should ok");
+        prop_assert_eq!(&raw_access_path, &access_path);
+        let raw_json = serde_json::to_string(&raw_access_path).expect("access_path to json str should ok");
+        let access_path = serde_json::from_str::<AccessPath>(raw_json.as_str()).expect("access_path from json str should ok");
+        prop_assert_eq!(&raw_access_path, &access_path);
+    }
 }

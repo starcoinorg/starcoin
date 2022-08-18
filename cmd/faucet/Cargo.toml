@@ -1,33 +1,33 @@
 [package]
-name = "starcoin-faucet"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-faucet"
+publish = false
+version = "1.12.1"
 
 [dependencies]
 anyhow = "1.0.41"
-tiny_http = "0.8.2"
-futures = "0.3.12"
-hex = { version = "0.4.3", default-features = false }
-tokio = { version = "^1", features = ["full"] }
-tokio-executor = { version = "0.2.0-alpha.6", features = ["blocking"] }
-futures-timer = "3.0"
 ascii = "1.0.0"
-rust-embed = "6.3.0"
-serde = { version = "1.0.130" }
-serde_json = { version = "1.0", features = ["arbitrary_precision"] }
+clap = {version = "3", features = ["derive"]}
+futures = "0.3.12"
+futures-timer = "3.0"
+hex = {version = "0.4.3", default-features = false}
 once_cell = "1.13.0"
-starcoin-logger = { path = "../../commons/logger" }
-starcoin-config = { path = "../../config" }
-starcoin-state-api = { path = "../../state/api" }
-starcoin-types = { path = "../../types" }
-starcoin-rpc-client = { path = "../../rpc/client" }
-starcoin-account-api = { path = "../../account/api" }
-starcoin-executor = { path = "../../executor" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-clap = { version = "3", features = ["derive"] }
+rust-embed = "6.3.0"
+serde = {version = "1.0.130"}
+serde_json = {version = "1.0", features = ["arbitrary_precision"]}
+starcoin-account-api = {path = "../../account/api"}
+starcoin-config = {path = "../../config"}
+starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-executor = {path = "../../executor"}
+starcoin-logger = {path = "../../commons/logger"}
+starcoin-rpc-client = {path = "../../rpc/client"}
+starcoin-state-api = {path = "../../state/api"}
+starcoin-types = {path = "../../types"}
+tiny_http = "0.8.2"
+tokio = {version = "^1", features = ["full"]}
+tokio-executor = {version = "0.2.0-alpha.6", features = ["blocking"]}
 [[bin]]
 name = "starcoin_faucet"
 path = "src/main.rs"

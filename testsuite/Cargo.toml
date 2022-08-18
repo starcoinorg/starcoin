@@ -4,39 +4,39 @@ edition = "2021"
 license = "Apache-2.0"
 name = "testsuite"
 publish = false
-version = "1.11.11"
+version = "1.12.1"
 
 [dependencies]
 anyhow = "1.0.41"
-clap = { version = "3", features = ["derive"] }
-cucumber = { package = "cucumber_rust", version = "^0.6.0" }
+clap = {version = "3", features = ["derive"]}
+cucumber = {package = "cucumber_rust", version = "^0.6.0"}
 jpst = "0.1.1"
-scmd = { path = "../commons/scmd" }
-serde = { version = "1.0.130", features = ["derive"] }
-serde_bytes = "0.11"
-serde_json = { version = "1.0", features = ["arbitrary_precision"] }
-regex = "1.6.0"
-starcoin-config = { path = "../config" }
-starcoin-consensus = { path = "../consensus" }
-starcoin-executor = { path = "../executor" }
-starcoin-network = { path = "../network" }
-starcoin-txpool = { path = "../txpool" }
-starcoin-chain = { path = "../chain" }
-starcoin-rpc-server = { path = "../rpc/server" }
-starcoin-rpc-client = { path = "../rpc/client" }
-starcoin-storage = { path = "../storage" }
-starcoin-miner = { path = "../miner" }
-starcoin-node = { path = "../node" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-starcoin-logger = { path = "../commons/logger" }
-starcoin-cmd = { package = "starcoin-cmd", path = "../cmd/starcoin" }
-starcoin-types = { path = "../types" }
-starcoin-vm-runtime = { path = "../vm/vm-runtime" }
-starcoin-vm-types = { path = "../vm/types" }
-starcoin-account-api = { path = "../account/api" }
-starcoin-account-provider = { path = "../account/provider" }
-starcoin-state-api = { path = "../state/api" }
 jsonpath = "0.1.1"
+regex = "1.6.0"
+scmd = {path = "../commons/scmd"}
+serde = {version = "1.0.130", features = ["derive"]}
+serde_bytes = "0.11"
+serde_json = {version = "1.0", features = ["arbitrary_precision"]}
+starcoin-account-api = {path = "../account/api"}
+starcoin-account-provider = {path = "../account/provider"}
+starcoin-chain = {path = "../chain"}
+starcoin-cmd = {package = "starcoin-cmd", path = "../cmd/starcoin"}
+starcoin-config = {path = "../config"}
+starcoin-consensus = {path = "../consensus"}
+starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-executor = {path = "../executor"}
+starcoin-logger = {path = "../commons/logger"}
+starcoin-miner = {path = "../miner"}
+starcoin-network = {path = "../network"}
+starcoin-node = {path = "../node"}
+starcoin-rpc-client = {path = "../rpc/client"}
+starcoin-rpc-server = {path = "../rpc/server"}
+starcoin-state-api = {path = "../state/api"}
+starcoin-storage = {path = "../storage"}
+starcoin-txpool = {path = "../txpool"}
+starcoin-types = {path = "../types"}
+starcoin-vm-runtime = {path = "../vm/vm-runtime"}
+starcoin-vm-types = {path = "../vm/types"}
 
 [dev-dependencies]
 

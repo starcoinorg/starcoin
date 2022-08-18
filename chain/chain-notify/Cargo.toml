@@ -1,15 +1,15 @@
 [package]
-name = "starcoin-chain-notify"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-chain-notify"
+publish = false
+version = "1.12.1"
 
 [dependencies]
 anyhow = "1.0.41"
-starcoin-types = { path = "../../types" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-starcoin-logger = { path = "../../commons/logger" }
-starcoin-storage = { path = "../../storage" }
-starcoin-service-registry = { path = "../../commons/service-registry" }
+starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-logger = {path = "../../commons/logger"}
+starcoin-service-registry = {path = "../../commons/service-registry"}
+starcoin-storage = {path = "../../storage"}
+starcoin-types = {path = "../../types"}

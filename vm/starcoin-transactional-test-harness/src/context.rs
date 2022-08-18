@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{anyhow, Result};
+use futures::executor::block_on;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
@@ -10,8 +11,8 @@ use starcoin_state_api::{ChainStateReader, ChainStateWriter, StateNodeStore};
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::write_set::WriteSet;
 use std::sync::{Arc, Mutex};
+use std::thread::{self, JoinHandle};
 use tokio::runtime::Runtime;
-use tokio::task::JoinHandle;
 
 use jsonrpc_client_transports::RawClient;
 use jsonrpc_core::{IoHandler, Params, Value};
@@ -25,28 +26,27 @@ use crate::fork_state::{MockChainStateAsyncService, MockStateNodeStore};
 use crate::remote_state::RemoteRpcAsyncClient;
 
 pub struct MockServer {
-    server_handle: JoinHandle<()>,
+    _server_handle: JoinHandle<()>,
 }
 
 impl MockServer {
     pub fn create_and_start(
         chain_api: MockChainApi,
         state_api: impl StateApi,
-        rt: Arc<Runtime>,
     ) -> Result<(Self, RawClient)> {
         let mut io = IoHandler::new();
         io.extend_with(ChainApi::to_delegate(chain_api));
         io.extend_with(StateApi::to_delegate(state_api));
 
         let (client, server) = local::connect::<RawClient, _, _>(io);
-        let server_handle = rt.spawn(async move { server.await.unwrap() });
-        Ok((Self { server_handle }, client))
-    }
-}
+        let server_handle = thread::spawn(move || block_on(server).unwrap());
 
-impl Drop for MockServer {
-    fn drop(&mut self) {
-        self.server_handle.abort();
+        Ok((
+            Self {
+                _server_handle: server_handle,
+            },
+            client,
+        ))
     }
 }
 
@@ -91,10 +91,8 @@ impl ForkContext {
             rt.block_on(async { RemoteRpcAsyncClient::from_url(rpc, block_number).await })?,
         );
         let state_api_client = Arc::new(remote_async_client.get_state_client().clone());
-        let root_hash = rt
-            .block_on(async { state_api_client.get_state_root().await })
-            .map_err(|e| anyhow!("{}", e))?;
-        let data_store = Arc::new(MockStateNodeStore::new(state_api_client)?);
+        let root_hash = remote_async_client.get_fork_state_root();
+        let data_store = Arc::new(MockStateNodeStore::new(state_api_client, rt.clone()));
         let state_db = ChainStateDB::new(data_store.clone(), Some(root_hash));
 
         let fork_nubmer = remote_async_client.get_fork_block_number();
@@ -117,7 +115,7 @@ impl ForkContext {
         let chain_api = MockChainApi::new(chain.clone());
         let state_svc = MockChainStateAsyncService::new(data_store.clone(), state_root.clone());
         let state_api = StateRpcImpl::new(state_svc, data_store);
-        let (server, client) = MockServer::create_and_start(chain_api, state_api, rt.clone())?;
+        let (server, client) = MockServer::create_and_start(chain_api, state_api)?;
 
         Ok(Self {
             chain,
@@ -141,6 +139,7 @@ impl ForkContext {
         self.storage.apply_write_set(write_set)?;
         let state_root = self.storage.commit()?;
         *self.state_root.lock().unwrap() = state_root;
+        self.storage.flush()?;
         Ok(())
     }
 }

@@ -1,24 +1,23 @@
 [package]
-name = "starcoin-state-tree"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
-
+license = "Apache-2.0"
+name = "starcoin-state-tree"
+publish = false
+version = "1.12.1"
 
 [dependencies]
 anyhow = "1.0.41"
+bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
+forkable-jellyfish-merkle = {path = "../../commons/forkable-jellyfish-merkle"}
+logger = {path = "../../commons/logger", package = "starcoin-logger"}
 parking_lot = "0.12.1"
+serde = {version = "1.0.130"}
+starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-state-store-api = {path = "../state-store-api"}
 starcoin-types = {path = "../../types"}
 starcoin-vm-types = {path = "../../vm/types"}
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-serde = { version = "1.0.130" }
-forkable-jellyfish-merkle = { path = "../../commons/forkable-jellyfish-merkle"}
-starcoin-state-store-api = {path = "../state-store-api"}
-bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
-logger = { path = "../../commons/logger", package="starcoin-logger"}
 
 [dev-dependencies]
-starcoin-config= { path = "../../config"}
-starcoin-storage = { path = "../../storage"}
+starcoin-config = {path = "../../config"}
+starcoin-storage = {path = "../../storage"}

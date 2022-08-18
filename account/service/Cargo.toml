@@ -1,26 +1,26 @@
 [package]
-name = "starcoin-account-service"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-account-service"
+publish = false
+version = "1.12.1"
 
 [dependencies]
 anyhow = "1.0.41"
-futures = "0.3.12"
 async-trait = "0.1"
-starcoin-logger = { path = "../../commons/logger" }
-starcoin-types = { path = "../../types" }
-bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
-starcoin-config = { path = "../../config" }
-starcoin-service-registry = { path = "../../commons/service-registry" }
-starcoin-account-api = { path = "../api", features = ["mock"] }
-starcoin-account = { path = "../" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-starcoin-chain-notify = { path = "../../chain/chain-notify" }
+bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
+futures = "0.3.12"
+starcoin-account = {path = "../"}
+starcoin-account-api = {path = "../api", features = ["mock"]}
+starcoin-chain-notify = {path = "../../chain/chain-notify"}
+starcoin-config = {path = "../../config"}
+starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-logger = {path = "../../commons/logger"}
+starcoin-service-registry = {path = "../../commons/service-registry"}
+starcoin-types = {path = "../../types"}
 tokio = "1"
 
 [dev-dependencies]
-stest = { path = "../../commons/stest" }
+stest = {path = "../../commons/stest"}
 tempfile = "3"

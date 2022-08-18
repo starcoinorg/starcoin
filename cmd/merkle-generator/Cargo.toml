@@ -1,20 +1,20 @@
 [package]
-name = "merkle-generator"
-version = "1.11.11"
 authors = ["caojiafeng <funfriendcjf@gmail.com>"]
 edition = "2021"
+name = "merkle-generator"
+version = "1.12.1"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-csv = "~1"
-serde = "~1"
-sha3 = "0.9.1"
-serde_json = { version = "~1", features = ["arbitrary_precision"] }
 anyhow = "~1"
+bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
+clap = {version = "3", features = ["derive"]}
+csv = "~1"
 hex = "~0.4"
-bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
-merkletree = { git = "https://github.com/filecoin-project/merkletree", rev = "05dd6de235e0dc36dbe05cb0849f35957fdca5be" }
-starcoin-vm-types = { path = "../../vm/types" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-clap = { version = "3", features = ["derive"] }
+merkletree = {git = "https://github.com/filecoin-project/merkletree", rev = "05dd6de235e0dc36dbe05cb0849f35957fdca5be"}
+serde = "~1"
+serde_json = {version = "~1", features = ["arbitrary_precision"]}
+sha3 = "0.9.1"
+starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-vm-types = {path = "../../vm/types"}

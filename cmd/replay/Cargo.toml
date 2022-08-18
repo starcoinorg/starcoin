@@ -1,23 +1,23 @@
 [package]
-name = "starcoin-replay"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-replay"
+publish = false
+version = "1.12.1"
 
 [[bin]]
 name = "starcoin-replay"
 path = "src/main.rs"
 
 [dependencies]
-clap = { version = "3", features = ["derive"] }
-starcoin-config = { path = "../../config" }
-starcoin-chain = { path = "../../chain" }
-starcoin-genesis = { path = "../../genesis" }
-starcoin-storage = { path = "../../storage" }
-starcoin-vm-types = { path = "../../vm/types" }
-starcoin-logger = { path = "../../commons/logger" }
-sp-utils = { path = "../../commons/utils" }
-starcoin-types = { path = "../../types" }
 anyhow = "~1"
+clap = {version = "3", features = ["derive"]}
+sp-utils = {path = "../../commons/utils"}
+starcoin-chain = {path = "../../chain"}
+starcoin-config = {path = "../../config"}
+starcoin-genesis = {path = "../../genesis"}
+starcoin-logger = {path = "../../commons/logger"}
+starcoin-storage = {path = "../../storage"}
+starcoin-types = {path = "../../types"}
+starcoin-vm-types = {path = "../../vm/types"}

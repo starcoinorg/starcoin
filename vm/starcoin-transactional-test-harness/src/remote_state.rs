@@ -2,16 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{anyhow, Result};
-use jsonrpc_client_transports::{RawClient, RpcChannel};
+use jsonrpc_client_transports::RpcChannel;
 use move_binary_format::errors::VMError;
 use move_core_types::resolver::{ModuleResolver, ResourceResolver};
-use serde_json::Value;
 use starcoin_crypto::HashValue;
 
 use starcoin_rpc_api::chain::ChainApiClient;
 use starcoin_rpc_api::state::StateApiClient;
 use starcoin_rpc_api::types::{BlockView, StateWithProofView};
-use starcoin_rpc_api::Params;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_types::access_path::{AccessPath, DataPath};
 use starcoin_types::account_address::AccountAddress;
@@ -190,7 +188,6 @@ where
 pub struct RemoteRpcAsyncClient {
     state_client: StateApiClient,
     chain_client: ChainApiClient,
-    raw_client: RawClient,
     state_root: HashValue,
     fork_number: u64,
 }
@@ -219,11 +216,9 @@ impl RemoteRpcAsyncClient {
             }
         };
         let state_client: starcoin_rpc_api::state::StateApiClient = rpc_channel.clone().into();
-        let raw_client = rpc_channel.clone().into();
         Ok(Self {
             state_client,
             chain_client,
-            raw_client,
             state_root,
             fork_number,
         })
@@ -281,13 +276,6 @@ impl RemoteRpcAsyncClient {
         Ok(state_with_proof.state.map(|v| v.0))
     }
 
-    pub async fn call_api(&self, method: &str, params: Params) -> Result<Value> {
-        self.raw_client
-            .call_method(method, params)
-            .await
-            .map_err(|e| anyhow!(format!("{}", e)))
-    }
-
     pub fn get_chain_client(&self) -> &ChainApiClient {
         &self.chain_client
     }
@@ -298,6 +286,10 @@ impl RemoteRpcAsyncClient {
 
     pub fn get_fork_block_number(&self) -> u64 {
         self.fork_number
+    }
+
+    pub fn get_fork_state_root(&self) -> HashValue {
+        self.state_root
     }
 }
 
@@ -336,11 +328,6 @@ impl RemoteViewer {
     ) -> VMResult<Option<BTreeMap<Identifier, Vec<u8>>>> {
         let handle = self.rt.handle().clone();
         handle.block_on(self.svc.get_modules_async(addr))
-    }
-
-    pub fn call_api(&self, method: &str, params: Params) -> Result<Value> {
-        let handle = self.rt.handle().clone();
-        handle.block_on(self.svc.call_api(method, params))
     }
 }
 
