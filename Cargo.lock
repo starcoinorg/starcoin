@@ -9862,6 +9862,7 @@ dependencies = [
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-types",
+ "starcoin-vm-runtime",
  "stest",
  "thiserror",
  "timeout-join-handler",

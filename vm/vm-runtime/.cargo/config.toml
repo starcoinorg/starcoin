@@ -1,0 +1,9 @@
+
+[target.mips-unknown-linux-musl]
+#linker = "mips-linux-musl-gcc"
+rustflags = ["-C", "target-feature=+crt-static", "-C", "link-self-contained=yes", "-C", "link-arg=-s"]
+
+
+[target.mips-unknown-linux-gnu]
+#linker = "mips-linux-musl-gcc"
+rustflags = ["-C", "target-feature=+crt-static", "-C", "link-self-contained=yes", "-C", "link-arg=-s"]

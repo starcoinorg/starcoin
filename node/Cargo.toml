@@ -29,9 +29,10 @@ starcoin-consensus = {path = "../consensus"}
 starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 starcoin-dev = {path = "../vm/dev"}
 starcoin-executor = {path = "../executor"}
+starcoin-vm-runtime = {path = "../vm/vm-runtime" }
 starcoin-genesis = {path = "../genesis"}
 starcoin-logger = {path = "../commons/logger"}
-starcoin-metrics = {path = "../commons/metrics"}
+starcoin-metrics = {path = "../commons/metrics", features=["server"]}
 starcoin-miner = {path = "../miner"}
 starcoin-miner-client = {path = "../cmd/miner_client"}
 starcoin-network = {path = "../network"}
