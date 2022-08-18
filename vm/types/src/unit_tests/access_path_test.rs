@@ -67,7 +67,7 @@ fn test_access_path_str_invalid() {
 
 #[test]
 fn test_bad_case_from_protest() {
-    let raw_path = "0xa/0/0x1::A::A";
+    let raw_path = "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::a::A_";
     let access_path = AccessPath::from_str(raw_path);
     assert!(access_path.is_ok());
 
