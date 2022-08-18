@@ -12,7 +12,7 @@ bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
 clap = {version = "3", features = ["derive"]}
 csv = "~1"
 hex = "~0.4"
-merkletree = {git = "https://github.com/filecoin-project/merkletree", rev = "05dd6de235e0dc36dbe05cb0849f35957fdca5be"}
+merkletree = {git = "https://github.com/filecoin-project/merkletree", rev = "3b1d98c43b341aed935152c5c1535c17d1b21d20"}
 serde = "~1"
 serde_json = {version = "~1", features = ["arbitrary_precision"]}
 sha3 = "0.9.1"
