@@ -19,7 +19,7 @@ bcs-ext = {package = "bcs-ext", path = "../commons/bcs_ext"}
 async-std = "1.12.0"
 bs58 = "0.3.1"
 derive_more = "0.99.14"
-either = "1.7.0"
+either = "1.8.0"
 fnv = "1.0.6"
 futures = "0.3.12"
 futures-timer = "3.0"
