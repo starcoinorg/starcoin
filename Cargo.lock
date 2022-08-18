@@ -10619,6 +10619,7 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "rand 0.8.5",
+ "regex",
  "schemars 0.8.8",
  "serde 1.0.140",
  "serde-helpers",
