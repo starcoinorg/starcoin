@@ -11,7 +11,6 @@ use log::debug;
 use pin_project::pin_project;
 use pin_utils::core_reexport::option::Option::Some;
 use std::pin::Pin;
-#[cfg(all(not(target_arch = "mips"), not(target_arch = "mips64")))]
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -66,20 +65,17 @@ where
 }
 
 #[derive(Clone)]
-#[cfg(all(not(target_arch = "mips"), not(target_arch = "mips64")))]
 pub struct CounterCollector {
     counter: Arc<AtomicU64>,
     max: u64,
 }
 
-#[cfg(all(not(target_arch = "mips"), not(target_arch = "mips64")))]
 impl Default for CounterCollector {
     fn default() -> Self {
         Self::new()
     }
 }
 
-#[cfg(all(not(target_arch = "mips"), not(target_arch = "mips64")))]
 impl CounterCollector {
     pub fn new() -> Self {
         Self::new_with_counter(Arc::new(AtomicU64::default()))
