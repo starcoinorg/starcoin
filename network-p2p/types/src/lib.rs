@@ -1,9 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#[cfg(not(target_arch = "mips"))]
+#[cfg(all(not(target_arch = "mips"), not(target_arch = "mips64")))]
 use libp2p::futures::channel::oneshot;
-#[cfg(target_arch = "mips")]
+#[cfg(any(target_arch = "mips", target_arch = "mips64"))]
 use libp2p_in_mips::futures::channel::oneshot;
 use std::borrow::Cow;
 use std::convert::TryFrom;
@@ -12,18 +12,18 @@ use std::str::FromStr;
 
 pub mod network_state;
 
-#[cfg(not(target_arch = "mips"))]
+#[cfg(all(not(target_arch = "mips"), not(target_arch = "mips64")))]
 pub use libp2p::core::{identity, multiaddr, Multiaddr, PeerId, PublicKey};
-#[cfg(not(target_arch = "mips"))]
+#[cfg(all(not(target_arch = "mips"), not(target_arch = "mips64")))]
 pub use libp2p::request_response::{InboundFailure, OutboundFailure};
-#[cfg(not(target_arch = "mips"))]
+#[cfg(all(not(target_arch = "mips"), not(target_arch = "mips64")))]
 pub use libp2p::{build_multiaddr, multihash};
 
-#[cfg(target_arch = "mips")]
+#[cfg(any(target_arch = "mips", target_arch = "mips64"))]
 pub use libp2p_in_mips::core::{identity, multiaddr, Multiaddr, PeerId, PublicKey};
-#[cfg(target_arch = "mips")]
+#[cfg(any(target_arch = "mips", target_arch = "mips64"))]
 pub use libp2p_in_mips::request_response::{InboundFailure, OutboundFailure};
-#[cfg(target_arch = "mips")]
+#[cfg(any(target_arch = "mips", target_arch = "mips64"))]
 pub use libp2p_in_mips::{build_multiaddr, multihash};
 
 pub use sc_peerset::{ReputationChange, BANNED_THRESHOLD};
@@ -70,13 +70,13 @@ pub fn random_memory_addr() -> Multiaddr {
 }
 
 /// Check the address is a memory protocol Multiaddr.
-#[cfg(not(target_arch = "mips"))]
+#[cfg(all(not(target_arch = "mips"), not(target_arch = "mips64")))]
 pub fn is_memory_addr(addr: &Multiaddr) -> bool {
     addr.iter()
         .any(|protocol| matches!(protocol, libp2p::core::multiaddr::Protocol::Memory(_)))
 }
 
-#[cfg(target_arch = "mips")]
+#[cfg(any(target_arch = "mips", target_arch = "mips64"))]
 pub fn is_memory_addr(addr: &Multiaddr) -> bool {
     addr.iter().any(|protocol| {
         matches!(

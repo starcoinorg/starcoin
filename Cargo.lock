@@ -4031,7 +4031,7 @@ dependencies = [
 [[package]]
 name = "libp2p"
 version = "0.42.2"
-source = "git+https://github.com/strawWoo/rust-libp2p?rev=3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e#3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e"
+source = "git+https://github.com/strawWoo/rust-libp2p?rev=3ef93a50ac06399c389977ff3655af103ae6510c#3ef93a50ac06399c389977ff3655af103ae6510c"
 dependencies = [
  "atomic",
  "bytes 1.2.1",
@@ -4040,10 +4040,10 @@ dependencies = [
  "getrandom 0.2.7",
  "instant",
  "lazy_static 1.4.0",
- "libp2p-core 0.31.1 (git+https://github.com/strawWoo/rust-libp2p?rev=3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e)",
- "libp2p-request-response 0.15.0 (git+https://github.com/strawWoo/rust-libp2p?rev=3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e)",
- "libp2p-swarm 0.33.0 (git+https://github.com/strawWoo/rust-libp2p?rev=3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e)",
- "libp2p-swarm-derive 0.26.1 (git+https://github.com/strawWoo/rust-libp2p?rev=3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e)",
+ "libp2p-core 0.31.1 (git+https://github.com/strawWoo/rust-libp2p?rev=3ef93a50ac06399c389977ff3655af103ae6510c)",
+ "libp2p-request-response 0.15.0 (git+https://github.com/strawWoo/rust-libp2p?rev=3ef93a50ac06399c389977ff3655af103ae6510c)",
+ "libp2p-swarm 0.33.0 (git+https://github.com/strawWoo/rust-libp2p?rev=3ef93a50ac06399c389977ff3655af103ae6510c)",
+ "libp2p-swarm-derive 0.26.1 (git+https://github.com/strawWoo/rust-libp2p?rev=3ef93a50ac06399c389977ff3655af103ae6510c)",
  "multiaddr",
  "parking_lot 0.11.2",
  "pin-project 1.0.11",
@@ -4108,7 +4108,7 @@ dependencies = [
 [[package]]
 name = "libp2p-core"
 version = "0.31.1"
-source = "git+https://github.com/strawWoo/rust-libp2p?rev=3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e#3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e"
+source = "git+https://github.com/strawWoo/rust-libp2p?rev=3ef93a50ac06399c389977ff3655af103ae6510c#3ef93a50ac06399c389977ff3655af103ae6510c"
 dependencies = [
  "asn1_der",
  "bs58 0.4.0",
@@ -4122,7 +4122,7 @@ dependencies = [
  "log 0.4.17",
  "multiaddr",
  "multihash",
- "multistream-select 0.11.0 (git+https://github.com/strawWoo/rust-libp2p?rev=3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e)",
+ "multistream-select 0.11.0 (git+https://github.com/strawWoo/rust-libp2p?rev=3ef93a50ac06399c389977ff3655af103ae6510c)",
  "parking_lot 0.11.2",
  "pin-project 1.0.11",
  "prost",
@@ -4449,14 +4449,14 @@ dependencies = [
 [[package]]
 name = "libp2p-request-response"
 version = "0.15.0"
-source = "git+https://github.com/strawWoo/rust-libp2p?rev=3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e#3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e"
+source = "git+https://github.com/strawWoo/rust-libp2p?rev=3ef93a50ac06399c389977ff3655af103ae6510c#3ef93a50ac06399c389977ff3655af103ae6510c"
 dependencies = [
  "async-trait",
  "bytes 1.2.1",
  "futures 0.3.21",
  "instant",
- "libp2p-core 0.31.1 (git+https://github.com/strawWoo/rust-libp2p?rev=3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e)",
- "libp2p-swarm 0.33.0 (git+https://github.com/strawWoo/rust-libp2p?rev=3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e)",
+ "libp2p-core 0.31.1 (git+https://github.com/strawWoo/rust-libp2p?rev=3ef93a50ac06399c389977ff3655af103ae6510c)",
+ "libp2p-swarm 0.33.0 (git+https://github.com/strawWoo/rust-libp2p?rev=3ef93a50ac06399c389977ff3655af103ae6510c)",
  "log 0.4.17",
  "rand 0.7.3",
  "smallvec 1.9.0",
@@ -4483,13 +4483,13 @@ dependencies = [
 [[package]]
 name = "libp2p-swarm"
 version = "0.33.0"
-source = "git+https://github.com/strawWoo/rust-libp2p?rev=3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e#3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e"
+source = "git+https://github.com/strawWoo/rust-libp2p?rev=3ef93a50ac06399c389977ff3655af103ae6510c#3ef93a50ac06399c389977ff3655af103ae6510c"
 dependencies = [
  "either",
  "futures 0.3.21",
  "futures-timer",
  "instant",
- "libp2p-core 0.31.1 (git+https://github.com/strawWoo/rust-libp2p?rev=3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e)",
+ "libp2p-core 0.31.1 (git+https://github.com/strawWoo/rust-libp2p?rev=3ef93a50ac06399c389977ff3655af103ae6510c)",
  "log 0.4.17",
  "rand 0.7.3",
  "smallvec 1.9.0",
@@ -4509,7 +4509,7 @@ dependencies = [
 [[package]]
 name = "libp2p-swarm-derive"
 version = "0.26.1"
-source = "git+https://github.com/strawWoo/rust-libp2p?rev=3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e#3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e"
+source = "git+https://github.com/strawWoo/rust-libp2p?rev=3ef93a50ac06399c389977ff3655af103ae6510c#3ef93a50ac06399c389977ff3655af103ae6510c"
 dependencies = [
  "quote 1.0.20",
  "syn 1.0.98",
@@ -5809,7 +5809,7 @@ dependencies = [
 [[package]]
 name = "multistream-select"
 version = "0.11.0"
-source = "git+https://github.com/strawWoo/rust-libp2p?rev=3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e#3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e"
+source = "git+https://github.com/strawWoo/rust-libp2p?rev=3ef93a50ac06399c389977ff3655af103ae6510c#3ef93a50ac06399c389977ff3655af103ae6510c"
 dependencies = [
  "bytes 1.2.1",
  "futures 0.3.21",
@@ -6019,7 +6019,7 @@ dependencies = [
  "bytes 1.2.1",
  "derive_more",
  "libp2p 0.42.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p 0.42.2 (git+https://github.com/strawWoo/rust-libp2p?rev=3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e)",
+ "libp2p 0.42.2 (git+https://github.com/strawWoo/rust-libp2p?rev=3ef93a50ac06399c389977ff3655af103ae6510c)",
  "rand 0.8.5",
  "sc-peerset",
  "schemars 0.8.8",
@@ -8203,7 +8203,7 @@ version = "1.12.0"
 dependencies = [
  "futures 0.3.21",
  "libp2p 0.42.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p 0.42.2 (git+https://github.com/strawWoo/rust-libp2p?rev=3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e)",
+ "libp2p 0.42.2 (git+https://github.com/strawWoo/rust-libp2p?rev=3ef93a50ac06399c389977ff3655af103ae6510c)",
  "log 0.4.17",
  "rand 0.8.5",
  "serde_json",

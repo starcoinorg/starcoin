@@ -51,10 +51,10 @@ use crate::peersstate::PeersState;
 use futures::channel::oneshot;
 use futures::channel::oneshot::{Receiver, Sender};
 
-#[cfg(not(target_arch = "mips"))]
+#[cfg(all(not(target_arch = "mips"), not(target_arch = "mips64")))]
 pub use libp2p::PeerId;
 
-#[cfg(target_arch = "mips")]
+#[cfg(any(target_arch = "mips", target_arch = "mips64"))]
 pub use libp2p_in_mips::PeerId;
 
 /// We don't accept nodes whose reputation is under this value.
@@ -799,9 +799,9 @@ mod tests {
         BANNED_THRESHOLD,
     };
     use futures::prelude::*;
-    #[cfg(not(target_arch = "mips"))]
+    #[cfg(all(not(target_arch = "mips"), not(target_arch = "mips64")))]
     use libp2p::PeerId;
-    #[cfg(target_arch = "mips")]
+    #[cfg(any(target_arch = "mips", target_arch = "mips64"))]
     use libp2p_in_mips::PeerId;
 
     use std::{pin::Pin, task::Poll, thread, time::Duration};

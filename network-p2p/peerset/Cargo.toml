@@ -23,8 +23,8 @@ sp-utils = {path = "../../commons/utils"}
 wasm-timer = "0.2"
 
 
-[target.'cfg(target_arch = "mips")'.dependencies]
-libp2p-in-mips = { version = "0.42.2", git="https://github.com/strawWoo/rust-libp2p", package = "libp2p", rev="3d7fa56aa276ac4c9588ddf4f6d22ee98d16e82e", default-features = false }
+[target.'cfg(any(target_arch = "mips", target_arch = "mips64"))'.dependencies]
+libp2p-in-mips = { version = "0.42.2", git="https://github.com/strawWoo/rust-libp2p", package = "libp2p", rev="3ef93a50ac06399c389977ff3655af103ae6510c", default-features = false }
 [target.'cfg(any(target_arch = "x86_64", target_arch = "x86", target_arch = "powerpc", target_arch = "powerpc64", target_arch = "arm", target_arch = "arrch64"))'.dependencies]
 libp2p = { version = "0.42.2", default-features = false }
 

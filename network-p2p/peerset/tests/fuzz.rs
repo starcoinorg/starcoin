@@ -18,10 +18,10 @@
 
 use futures::prelude::*;
 
-#[cfg(not(target_arch = "mips"))]
+#[cfg(all(not(target_arch = "mips"), not(target_arch = "mips64")))]
 use libp2p::PeerId;
 
-#[cfg(target_arch = "mips")]
+#[cfg(any(target_arch = "mips", target_arch = "mips64"))]
 use libp2p_in_mips::PeerId;
 
 use rand::distributions::{Distribution, Uniform, WeightedIndex};
