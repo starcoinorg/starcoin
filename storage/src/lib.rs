@@ -61,6 +61,7 @@ pub const BLOCK_INFO_PREFIX_NAME: ColumnFamilyName = "block_info";
 pub const BLOCK_TRANSACTIONS_PREFIX_NAME: ColumnFamilyName = "block_txns";
 pub const BLOCK_TRANSACTION_INFOS_PREFIX_NAME: ColumnFamilyName = "block_txn_infos";
 pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
+pub const STATE_NODE_PREFIX_NAME_PREV: ColumnFamilyName = "state_node_prev";
 pub const CHAIN_INFO_PREFIX_NAME: ColumnFamilyName = "chain_info";
 pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
 pub const TRANSACTION_INFO_PREFIX_NAME: ColumnFamilyName = "transaction_info";
