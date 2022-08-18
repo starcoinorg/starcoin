@@ -15,12 +15,15 @@ fn test_data_type() {
 
 #[test]
 fn test_access_path_str_valid() {
-    let r1 = format!("{}/1/0x1::Account::Account", AccountAddress::random());
+    let r1 = format!(
+        "{}/1/0x00000000000000000000000000000001::Account::Account",
+        AccountAddress::random()
+    );
     let test_cases = vec![
         "0x00000000000000000000000000000000/0/Account",
         "0x00000000000000000000000000000001/0/Account",
-        "0x00000000000000000000000000000001/1/0x1::Account::Account",
-        "0x00000000000000000000000000000001/1/0x1::Account::Balance<0x1::STC::STC>",
+        "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::Account::Account",
+        "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::Account::Balance<0x00000000000000000000000000000001::STC::STC>",
         r1.as_str(),
     ];
     for case in test_cases {
