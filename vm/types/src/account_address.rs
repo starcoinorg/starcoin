@@ -58,6 +58,8 @@ mod test {
     #[test]
     #[should_panic(expected = "AccountAddressParseError")]
     fn address_hash_panic() {
-        let _address: AccountAddress = "ca843279e3427144cead5e4d5999a3d0".parse().unwrap();
+        "ca843279e3427144cead5e4d5999a3d0"
+            .parse::<AccountAddress>()
+            .unwrap();
     }
 }
