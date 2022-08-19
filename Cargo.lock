@@ -4727,20 +4727,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 
 [[package]]
-name = "memmap"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6585fd95e7bb50d6cc31e20d4cf9afb4e2ba16c5846fc76793f11218da9c475b"
-dependencies = [
- "libc",
- "winapi 0.3.9",
-]
-
-[[package]]
 name = "memmap2"
-version = "0.5.5"
+version = "0.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a79b39c93a7a5a27eeaf9a23b5ff43f1b9e0ad6b1cdd441140ae53c35613fc7"
+checksum = "95af15f345b17af2efc8ead6080fb8bc376f8cec1b35277b935637595fe77498"
 dependencies = [
  "libc",
 ]
@@ -4774,12 +4764,12 @@ dependencies = [
 [[package]]
 name = "merkletree"
 version = "0.22.0"
-source = "git+https://github.com/filecoin-project/merkletree?rev=05dd6de235e0dc36dbe05cb0849f35957fdca5be#05dd6de235e0dc36dbe05cb0849f35957fdca5be"
+source = "git+https://github.com/filecoin-project/merkletree?rev=3b1d98c43b341aed935152c5c1535c17d1b21d20#3b1d98c43b341aed935152c5c1535c17d1b21d20"
 dependencies = [
  "anyhow",
  "arrayref",
  "log 0.4.17",
- "memmap",
+ "memmap2",
  "positioned-io",
  "rayon",
  "serde 1.0.140",
