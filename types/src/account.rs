@@ -1,7 +1,8 @@
 // Copyright (c) The Diem Core Contributors
+// Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-//! Test infrastructure for modeling Diem accounts.
+//! Test infrastructure for modeling Starcoin accounts.
 
 use crate::{
     access_path::AccessPath,
@@ -35,7 +36,7 @@ use std::sync::Arc;
 /// Details about a Starcoin account.
 ///
 /// Tests will typically create a set of `Account` instances to run transactions on. This type
-/// encodes the logic to operate on and verify operations on any Diem account.
+/// encodes the logic to operate on and verify operations on any Starcoin account.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Account {
     pub addr: AccountAddress,
@@ -46,7 +47,7 @@ impl Account {
     /// Creates a new account in memory.
     ///
     /// The account returned by this constructor is a purely logical entity, meaning that it does
-    /// not automatically get added to the Diem store. To add an account to the store, use
+    /// not automatically get added to the Starcoin store. To add an account to the store, use
     /// [`AccountData`] instances with
     /// [`FakeExecutor::add_account_data`][crate::executor::FakeExecutor::add_account_data].
     /// This function returns distinct values upon every call.
