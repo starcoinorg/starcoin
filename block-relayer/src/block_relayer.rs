@@ -17,12 +17,12 @@ use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, Serv
 use starcoin_sync::block_connector::BlockConnectorService;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_sync_api::PeerNewBlock;
+use starcoin_time_service::TimeService;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewBranch, SyncStatusChangeEvent};
-use starcoin_types::time::TimeService;
 use starcoin_types::{
     block::{Block, BlockBody},
     compact_block::{CompactBlock, ShortId},

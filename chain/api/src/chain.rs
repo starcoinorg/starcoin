@@ -5,6 +5,7 @@ use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::ChainStateReader;
 use starcoin_statedb::ChainStateDB;
+use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::RichTransactionInfo;
@@ -14,7 +15,6 @@ use starcoin_types::{
     U256,
 };
 use starcoin_vm_types::on_chain_resource::Epoch;
-use starcoin_vm_types::time::TimeService;
 use std::collections::HashMap;
 
 use crate::TransactionInfoWithProof;

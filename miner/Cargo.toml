@@ -32,12 +32,14 @@ starcoin-storage = {path = "../storage"}
 starcoin-txpool = {path = "../txpool"}
 starcoin-txpool-api = {path = "../txpool/api"}
 starcoin-vm-types = {path = "../vm/types"}
+
 state_tree = {path = "../state/state-tree", package = "starcoin-state-tree"}
 statedb = {path = "../state/statedb", package = "starcoin-statedb"}
 tokio = {version = "^1", features = ["full"]}
 types = {path = "../types", package = "starcoin-types"}
 
 [dev-dependencies]
+starcoin-time-service={path="../commons/time-service"}
 network-rpc = {path = "../network-rpc", package = "starcoin-network-rpc"}
 starcoin-genesis = {path = "../genesis"}
 starcoin-network-rpc-api = {path = "../network-rpc/api"}

@@ -66,7 +66,7 @@ pub use rpc_config::{
     WsConfiguration,
 };
 pub use starcoin_crypto::ed25519::genesis_key_pair;
-pub use starcoin_vm_types::time::{MockTimeService, RealTimeService, TimeService};
+pub use starcoin_time_service::{MockTimeService, RealTimeService, TimeService};
 pub use storage_config::{RocksdbConfig, StorageConfig, DEFAULT_CACHE_SIZE};
 pub use txpool_config::TxPoolConfig;
 

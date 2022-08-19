@@ -26,6 +26,7 @@ starcoin-sync-api = {package = "starcoin-sync-api", path = "../sync/api"}
 starcoin-txpool = {path = "../txpool"}
 starcoin-txpool-api = {path = "../txpool/api"}
 starcoin-types = {path = "../types", package = "starcoin-types"}
+starcoin-time-service = {path = "../commons/time-service"}
 
 [dev-dependencies]
 hex = "0.4.3"

@@ -35,6 +35,7 @@ starcoin-types = {path = "../types"}
 starcoin-uint = {path = "../types/uint"}
 starcoin-vm-types = {path = "../vm/types"}
 stdlib = {path = "../vm/stdlib"}
+starcoin-time-service = {path = "../commons/time-service"}
 tempfile = "3.2.0"
 thiserror = "1.0"
 toml = {version = "0.5.9", default-features = false}

@@ -16,6 +16,7 @@ members = [
     "commons/api-limiter",
     "commons/accumulator",
     "commons/forkable-jellyfish-merkle",
+    "commons/time-service",
     "types",
     "types/uint",
     "genesis",

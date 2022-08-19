@@ -15,7 +15,6 @@ use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
-use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
 use std::collections::HashMap;
 use std::sync::Arc;
 use stream_task::{CollectorState, TaskError, TaskResultCollector, TaskState};
@@ -300,9 +299,7 @@ where
             }
             None => {
                 self.apply_block(block.clone(), peer_id)?;
-                self.chain
-                    .time_service()
-                    .adjust(GlobalTimeOnChain::new(timestamp));
+                self.chain.time_service().adjust(timestamp);
                 let block_info = self.chain.status().info;
                 let total_difficulty = block_info.get_total_difficulty();
                 // only try connect block when sync chain total_difficulty > node's current chain.

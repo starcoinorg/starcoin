@@ -7,7 +7,6 @@ use crate::event::EventHandle;
 use crate::genesis_config::ChainId;
 use crate::identifier::Identifier;
 use crate::language_storage::ModuleId;
-use crate::time::{MockTimeService, TimeService};
 use crate::transaction::authenticator::AuthenticationKey;
 use crate::transaction::{
     Module, Package, RawUserTransaction, Script, ScriptFunction, SignatureCheckedTransaction,
@@ -27,6 +26,7 @@ use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519KeyShard;
 use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;
 use starcoin_crypto::test_utils::KeyPair;
 use starcoin_crypto::{ed25519, HashValue, SigningKey};
+use starcoin_time_service::{MockTimeService, TimeService};
 use std::ops::Deref;
 use std::sync::Arc;
 use vm::CompiledModule;

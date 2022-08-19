@@ -12,10 +12,10 @@ use once_cell::sync::Lazy;
 use rand::Rng;
 use starcoin_chain_api::ChainReader;
 use starcoin_crypto::HashValue;
+use starcoin_time_service::TimeService;
 use starcoin_types::block::{BlockHeader, BlockHeaderExtra};
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use starcoin_vm_types::time::TimeService;
 use std::io::Write;
 
 pub mod argon;
@@ -28,7 +28,7 @@ pub mod dummy;
 pub mod keccak;
 
 pub use consensus::{Consensus, ConsensusVerifyError};
-pub use starcoin_vm_types::time::duration_since_epoch;
+pub use starcoin_time_service::duration_since_epoch;
 
 pub fn target_to_difficulty(target: U256) -> U256 {
     U256::max_value() / target

@@ -6,7 +6,6 @@ use crate::data_cache::{RemoteStorage, StateViewCache};
 use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
-use crate::metrics::VMMetrics;
 use anyhow::{format_err, Error, Result};
 use crypto::HashValue;
 use move_core_types::resolver::MoveResolver;
@@ -67,6 +66,9 @@ use starcoin_vm_types::{
 use std::convert::{TryFrom, TryInto};
 use std::sync::Arc;
 
+#[cfg(feature = "metrics")]
+use crate::metrics::VMMetrics;
+
 static G_ZERO_COST_SCHEDULE: Lazy<CostTable> =
     Lazy::new(|| zero_cost_schedule(NativeCostIndex::NUMBER_OF_NATIVE_FUNCTIONS));
 
@@ -78,6 +80,7 @@ pub struct StarcoinVM {
     vm_config: Option<VMConfig>,
     version: Option<Version>,
     move_version: Option<MoveLanguageVersion>,
+    #[cfg(feature = "metrics")]
     metrics: Option<VMMetrics>,
 }
 
@@ -85,6 +88,7 @@ pub struct StarcoinVM {
 const VMCONFIG_UPGRADE_VERSION_MARK: u64 = 10;
 
 impl StarcoinVM {
+    #[cfg(feature = "metrics")]
     pub fn new(metrics: Option<VMMetrics>) -> Self {
         let inner = MoveVM::new(super::natives::starcoin_natives())
             .expect("should be able to create Move VM; check if there are duplicated natives");
@@ -94,6 +98,17 @@ impl StarcoinVM {
             version: None,
             move_version: None,
             metrics,
+        }
+    }
+    #[cfg(not(feature = "metrics"))]
+    pub fn new() -> Self {
+        let inner = MoveVM::new(super::natives::starcoin_natives())
+            .expect("should be able to create Move VM; check if there are duplicated natives");
+        Self {
+            move_vm: Arc::new(inner),
+            vm_config: None,
+            version: None,
+            move_version: None,
         }
     }
 
@@ -387,6 +402,7 @@ impl StarcoinVM {
         state_view: &S,
         txn: SignedUserTransaction,
     ) -> Option<VMStatus> {
+        #[cfg(feature = "metrics")]
         let _timer = self.metrics.as_ref().map(|metrics| {
             metrics
                 .vm_txn_exe_time
@@ -1011,10 +1027,12 @@ impl StarcoinVM {
 
         let blocks = chunk_block_transactions(transactions);
         'outer: for block in blocks {
+            #[cfg(feature = "metrics")]
             let txn_type_name = block.type_name().to_string();
             match block {
                 TransactionBlock::UserTransaction(txns) => {
                     for transaction in txns {
+                        #[cfg(feature = "metrics")]
                         let timer = self.metrics.as_ref().map(|metrics| {
                             metrics
                                 .vm_txn_exe_time
@@ -1041,9 +1059,11 @@ impl StarcoinVM {
                             data_cache.push_write_set(output.write_set())
                         }
                         self.check_reconfigure(&data_cache, &output)?;
+                        #[cfg(feature = "metrics")]
                         if let Some(timer) = timer {
                             timer.observe_duration();
                         }
+                        #[cfg(feature = "metrics")]
                         if let Some(metrics) = self.metrics.as_ref() {
                             metrics.vm_txn_gas_usage.observe(output.gas_used() as f64);
                             metrics
@@ -1058,6 +1078,7 @@ impl StarcoinVM {
                     }
                 }
                 TransactionBlock::BlockPrologue(block_metadata) => {
+                    #[cfg(feature = "metrics")]
                     let timer = self.metrics.as_ref().map(|metrics| {
                         metrics
                             .vm_txn_exe_time
@@ -1082,9 +1103,11 @@ impl StarcoinVM {
                         );
                         data_cache.push_write_set(output.write_set())
                     }
+                    #[cfg(feature = "metrics")]
                     if let Some(timer) = timer {
                         timer.observe_duration();
                     }
+                    #[cfg(feature = "metrics")]
                     if let Some(metrics) = self.metrics.as_ref() {
                         metrics
                             .vm_txn_exe_total
@@ -1128,6 +1151,7 @@ impl StarcoinVM {
         args: Vec<Vec<u8>>,
         check_gas: bool,
     ) -> Result<Vec<Vec<u8>>, VMStatus> {
+        #[cfg(feature = "metrics")]
         let _timer = self.metrics.as_ref().map(|metrics| {
             metrics
                 .vm_txn_exe_time

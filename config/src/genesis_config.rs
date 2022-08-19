@@ -14,6 +14,7 @@ use starcoin_crypto::{
     multi_ed25519::{genesis_multi_key_pair, MultiEd25519PublicKey},
     HashValue, ValidCryptoMaterialStringExt,
 };
+use starcoin_time_service::{TimeService, TimeServiceType};
 use starcoin_uint::U256;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::event::EventHandle;
@@ -27,7 +28,6 @@ use starcoin_vm_types::on_chain_config::{
     TransactionPublishOption, VMConfig, Version,
 };
 use starcoin_vm_types::on_chain_resource::Epoch;
-use starcoin_vm_types::time::{TimeService, TimeServiceType};
 use starcoin_vm_types::token::stc::STCUnit;
 use starcoin_vm_types::token::token_value::TokenValue;
 use starcoin_vm_types::transaction::{RawUserTransaction, SignedUserTransaction};

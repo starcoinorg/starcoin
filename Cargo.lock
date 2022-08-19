@@ -8985,6 +8985,7 @@ dependencies = [
  "starcoin-service-registry",
  "starcoin-sync",
  "starcoin-sync-api",
+ "starcoin-time-service",
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-types",
@@ -9021,6 +9022,7 @@ dependencies = [
  "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
+ "starcoin-time-service",
  "starcoin-transaction-builder",
  "starcoin-types",
  "starcoin-vm-types",
@@ -9047,6 +9049,7 @@ dependencies = [
  "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-statedb",
+ "starcoin-time-service",
  "starcoin-types",
  "starcoin-vm-types",
  "thiserror",
@@ -9207,6 +9210,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-system",
+ "starcoin-time-service",
  "starcoin-types",
  "starcoin-uint",
  "starcoin-vm-types",
@@ -9236,6 +9240,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-state-api",
+ "starcoin-time-service",
  "starcoin-types",
  "starcoin-vm-types",
  "stest",
@@ -9557,6 +9562,7 @@ dependencies = [
  "starcoin-storage",
  "starcoin-sync",
  "starcoin-sync-api",
+ "starcoin-time-service",
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-types",
@@ -9603,6 +9609,7 @@ dependencies = [
  "starcoin-rpc-client",
  "starcoin-service-registry",
  "starcoin-stratum",
+ "starcoin-time-service",
  "starcoin-types",
  "stest",
  "thiserror",
@@ -10349,6 +10356,7 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-sync-api",
+ "starcoin-time-service",
  "starcoin-transaction-builder",
  "starcoin-txpool",
  "starcoin-txpool-api",
@@ -10386,6 +10394,14 @@ version = "1.12.1"
 dependencies = [
  "anyhow",
  "systemstat",
+]
+
+[[package]]
+name = "starcoin-time-service"
+version = "1.12.1"
+dependencies = [
+ "log 0.4.17",
+ "serde 1.0.140",
 ]
 
 [[package]]
@@ -10635,6 +10651,7 @@ dependencies = [
  "serde_json",
  "starcoin-accumulator",
  "starcoin-crypto",
+ "starcoin-time-service",
 ]
 
 [[package]]
