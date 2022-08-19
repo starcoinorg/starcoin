@@ -43,7 +43,6 @@ vm = {package = "move-binary-format", git = "https://github.com/starcoinorg/move
   "fuzzing",
 ]}
 #starcoin-proptest-helpers = { path = "../../commons/proptest-helpers"}
-regex = "1.6.0"
 
 [features]
 default = []

@@ -1,9 +1,7 @@
 use crate::access_path::{AccessPath, DataType};
 use crate::account_address::AccountAddress;
-use once_cell::sync::Lazy;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::prelude::*;
-use regex::Regex;
 use std::str::FromStr;
 
 #[test]
@@ -78,14 +76,13 @@ fn test_bad_case_from_protest() {
     assert!(access_path.is_err());
 }
 
-static VALID_ACCESS_PATH: &str =
-    // used for generate VALID_ACCESS_PATH in proptest
-    r"0x(?:[0-9a-fA-F]{1,32})/(((?:0)/(?:[a-zA-Z][a-zA-Z0-9_]*))|((?:1)/0x(?:[0-9a-fA-F]{1,32})::(?:[a-zA-Z][a-zA-Z0-9_]*)::(?:[a-zA-Z][a-zA-Z0-9_]*)))";
+// used for generate VALID_ACCESS_PATH in proptest
+static VALID_ACCESS_PATH: &str = r"0x(?:[0-9a-fA-F]{1,32})/(?:((?:0)/(?:[a-zA-Z][a-zA-Z0-9_]*))|((?:1)/0x(?:[0-9a-fA-F]{1,32})::(?:[a-zA-Z][a-zA-Z0-9_]*)::(?:[a-zA-Z][a-zA-Z0-9_]*)))";
 
 proptest! {
     #[test]
     fn test_access_path(raw_access_path in VALID_ACCESS_PATH) {
-        // println!("in_rap: {}", raw_access_path);
+        println!("in_rap: {}", raw_access_path);
         let raw_access_path = AccessPath::from_str(&raw_access_path).unwrap();
 
         let bytes = bcs_ext::to_bytes(&raw_access_path).expect("access_path serialize should ok.");
