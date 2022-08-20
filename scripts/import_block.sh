@@ -69,7 +69,7 @@ fi
 net=$1
 to_dir=$2
 case $net in
-"main" | "barnard" | "proxima" |"halley")
+"main" | "barnard" | "proxima" | "halley")
   import_block "$net" block_list.csv "$to_dir"
   ;;
 *)
