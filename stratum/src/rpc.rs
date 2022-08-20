@@ -75,12 +75,12 @@ pub struct SubmitResult {
     pub result: Status,
 }
 
-#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
 pub struct KeepalivedResult {
     pub result: Status,
 }
 
-#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
 pub struct Status {
     pub status: String,
 }
@@ -145,7 +145,7 @@ impl StratumRpcImpl {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct LoginRequest {
     pub login: String,
     pub pass: String,
@@ -174,7 +174,7 @@ impl LoginRequest {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct StratumJobResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub login: Option<LoginRequest>,
@@ -183,7 +183,7 @@ pub struct StratumJobResponse {
     pub job: StratumJob,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct StratumJob {
     pub height: u64,
     pub id: String,

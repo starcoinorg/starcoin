@@ -99,7 +99,7 @@ impl IntoIterator for GetBlockHeadersByNumber {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
 pub struct GetAccumulatorNodeByNodeHash {
     pub node_hash: HashValue,
     pub accumulator_storage_type: AccumulatorStoreType,

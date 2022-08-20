@@ -8,7 +8,7 @@ use schemars::JsonSchema;
 const TIMESTAMP_MODULE_NAME: &str = "Timestamp";
 
 /// The CurrentTimeMilliseconds on chain.
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, JsonSchema)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize, JsonSchema)]
 pub struct GlobalTimeOnChain {
     pub milliseconds: u64,
 }

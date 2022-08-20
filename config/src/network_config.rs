@@ -32,7 +32,7 @@ use std::sync::Arc;
 pub static G_DEFAULT_NETWORK_PORT: u16 = 9840;
 static G_NETWORK_KEY_FILE: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("network_key"));
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Parser)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize, Serialize, Parser)]
 pub struct NetworkRpcQuotaConfiguration {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(
@@ -119,7 +119,7 @@ impl NetworkRpcQuotaConfiguration {
 }
 //for avoid conflict between seed vec and subcommand, so define a custom type to parse seeds.
 //https://github.com/TeXitoi/clap/issues/367
-#[derive(Default, Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Default, Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct Seeds(pub Vec<MultiaddrWithPeerId>);
 impl Seeds {
     pub fn into_vec(self) -> Vec<MultiaddrWithPeerId> {

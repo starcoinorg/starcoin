@@ -3,7 +3,7 @@ use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::num::NonZeroU32;
 use std::str::FromStr;
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ApiQuotaConfig {
     pub max_burst: NonZeroU32,
     pub duration: QuotaDuration,

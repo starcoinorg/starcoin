@@ -4,7 +4,7 @@ use std::{error, fmt};
 type Gas = u64;
 type GasPrice = u64;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 /// Errors concerning transaction processing.
 pub enum Error {
     /// Transaction is already imported to the queue
@@ -116,7 +116,7 @@ impl error::Error for Error {
 }
 
 /// Result of executing the transaction.
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum CallError {
     /// Couldn't find the transaction in the chain.
     TransactionNotFound,

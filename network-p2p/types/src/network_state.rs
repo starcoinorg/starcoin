@@ -33,7 +33,7 @@ use std::{
 /// Meant for general diagnostic purposes.
 ///
 /// **Warning**: This API is not stable.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkState {
     /// PeerId of the local node.
@@ -51,7 +51,7 @@ pub struct NetworkState {
 }
 
 /// Part of the `NetworkState` struct. Unstable.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Peer {
     /// How we are connected to the node.
@@ -65,7 +65,7 @@ pub struct Peer {
 }
 
 /// Part of the `NetworkState` struct. Unstable.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct NotConnectedPeer {
     /// List of addresses known for this node.
@@ -77,7 +77,7 @@ pub struct NotConnectedPeer {
 }
 
 /// Part of the `NetworkState` struct. Unstable.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum PeerEndpoint {
     /// We are dialing the given address.

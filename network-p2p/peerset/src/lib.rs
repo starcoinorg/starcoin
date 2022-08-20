@@ -201,7 +201,7 @@ impl PeersetHandle {
 }
 
 /// Message that can be sent by the peer set manager (PSM).
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Message {
     /// Request to open a connection to the given peer. From the point of view of the PSM, we are
     /// immediately connected.

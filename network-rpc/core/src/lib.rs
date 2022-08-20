@@ -49,7 +49,7 @@ pub enum RpcErrorCode {
     Unknown = 1000,
 }
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NetRpcError {
     error_code: u32,

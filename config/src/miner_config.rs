@@ -62,7 +62,7 @@ impl MinerConfig {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct MinerClientConfig {
     pub server: Option<String>,
     pub plugin_path: Option<String>,

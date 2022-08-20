@@ -136,8 +136,8 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                 let connect_service = ctx.service_ref::<BlockConnectorService>()?.clone();
                 let fut = async move {
                     info!("Prepare to reset node startup info to {}", block_hash);
-                    let result = connect_service.send(ResetRequest { block_hash }).await?;
-                    result
+                    
+                    connect_service.send(ResetRequest { block_hash }).await?
                 };
                 let receiver = ctx.exec(fut);
                 NodeResponse::AsyncResult(receiver)

@@ -3,7 +3,7 @@ use crate::language_storage::TypeTag;
 use crate::on_chain_config::OnChainConfig;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct DaoConfig {
     /// after proposal created, how long use should wait before he can vote.
     pub voting_delay: u64,
