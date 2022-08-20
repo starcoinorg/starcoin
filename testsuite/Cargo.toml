@@ -39,6 +39,7 @@ starcoin-vm-runtime = {path = "../vm/vm-runtime"}
 starcoin-vm-types = {path = "../vm/types"}
 
 [dev-dependencies]
+starcoin-transaction-builder = {path = "../vm/transaction-builder"}
 
 [[test]]
 harness = false
