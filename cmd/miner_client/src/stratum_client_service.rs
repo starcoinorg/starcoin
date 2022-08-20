@@ -35,7 +35,7 @@ pub enum PendingRequest {
     SubmitSealRequest(oneshot::Sender<()>),
 }
 
-#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(untagged)]
 pub enum Response {
