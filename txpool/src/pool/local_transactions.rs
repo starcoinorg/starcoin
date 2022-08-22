@@ -16,7 +16,7 @@ use tx_pool::{self, VerifiedTransaction};
 /// Status of local transaction.
 /// Can indicate that the transaction is currently part of the queue (`Pending/Future`)
 /// or gives a reason why the transaction was removed.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Status {
     /// The transaction is currently in the transaction queue.
     Pending(Arc<Transaction>),

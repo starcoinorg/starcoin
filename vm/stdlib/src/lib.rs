@@ -63,7 +63,7 @@ pub const STDLIB_DIR: Dir = starcoin_framework::SOURCES_DIR;
 
 // The current stdlib that is freshly built. This will never be used in deployment so we don't need
 // to pull the same trick here in order to include this in the Rust binary.
-static G_FRESH_MOVELANG_STDLIB: Lazy<Vec<Vec<u8>>> = Lazy::new(|| {
+static G_FRESH_MOVE_LANG_STDLIB: Lazy<Vec<Vec<u8>>> = Lazy::new(|| {
     build_stdlib(STARCOIN_FRAMEWORK_SOURCES.files().as_slice())
         .values()
         .map(|m| {
@@ -161,8 +161,8 @@ pub enum StdLibOptions {
 /// will be used.
 pub fn stdlib_modules(option: StdLibOptions) -> &'static [Vec<u8>] {
     match option {
-        StdLibOptions::Fresh => &*G_FRESH_MOVELANG_STDLIB,
-        StdLibOptions::Compiled(version) => &*G_COMPILED_STDLIB
+        StdLibOptions::Fresh => &*G_FRESH_MOVE_LANG_STDLIB,
+        StdLibOptions::Compiled(version) => G_COMPILED_STDLIB
             .get(&version)
             .unwrap_or_else(|| panic!("Stdlib version {:?} not exist.", version)),
     }

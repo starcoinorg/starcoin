@@ -35,7 +35,7 @@ pub enum PendingRequest {
     SubmitSealRequest(oneshot::Sender<()>),
 }
 
-#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(untagged)]
 pub enum Response {
@@ -48,7 +48,7 @@ pub enum Response {
 }
 
 /// Represents jsonrpc request which is a notification.
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct JobNotification {
     /// A String specifying the version of the JSON-RPC protocol.
@@ -59,7 +59,7 @@ pub struct JobNotification {
     pub params: StratumJob,
 }
 
-#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(untagged)]
 #[allow(clippy::large_enum_variant)]
@@ -69,7 +69,7 @@ pub enum OutputResponse {
 }
 
 /// Successful response
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Output {
     /// Protocol version
@@ -83,7 +83,7 @@ pub struct Output {
     pub error: Option<ResponseError>,
 }
 
-#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Failure {
     pub id: u32,
@@ -92,7 +92,7 @@ pub struct Failure {
     pub error: ResponseError,
 }
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ResponseError {
     pub code: u32,

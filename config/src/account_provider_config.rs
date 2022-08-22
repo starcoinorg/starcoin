@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 pub const G_ENV_PRIVATE_KEY: &str = "STARCOIN_PRIVATE_KEY";
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Parser)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, Parser)]
 pub struct AccountProviderConfig {
     /// Path to the local account provider dir, load the accounts from local dir path
     #[serde(skip_serializing_if = "Option::is_none")]

@@ -212,7 +212,7 @@ impl From<BuiltinNetworkID> for ChainNetwork {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct CustomNetworkID {
     chain_name: String,
@@ -256,7 +256,7 @@ impl FromStr for CustomNetworkID {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum ChainNetworkID {
     Builtin(BuiltinNetworkID),
@@ -563,7 +563,7 @@ pub trait FutureBlockParameterResolver {
     fn resolve(&self, parameter: &FutureBlockParameter) -> Result<GenesisBlockParameter>;
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct GenesisBlockParameter {
     /// Genesis block parent hash
     pub parent_hash: HashValue,
@@ -573,13 +573,13 @@ pub struct GenesisBlockParameter {
     pub difficulty: U256,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct FutureBlockParameter {
     pub network: BuiltinNetworkID,
     pub block_number: u64,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub enum GenesisBlockParameterConfig {
     Static(GenesisBlockParameter),
     FutureBlock(FutureBlockParameter),

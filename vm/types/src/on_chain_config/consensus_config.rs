@@ -14,7 +14,7 @@ pub static G_CONSENSUS_CONFIG_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new(CONSENSUS_CONFIG_MODULE_NAME).unwrap());
 
 /// The Consensus on chain.
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct ConsensusConfig {
     pub uncle_rate_target: u64,
     pub base_block_time_target: u64,
