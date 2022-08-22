@@ -39,5 +39,5 @@ fn test_that_generated_file_are_up_to_date_in_git() {
         .success());
 
     // Running the stdlib tool should not create unstaged changes.
-    // assert_that_version_control_has_no_unstaged_changes();
+    assert_that_version_control_has_no_unstaged_changes();
 }
