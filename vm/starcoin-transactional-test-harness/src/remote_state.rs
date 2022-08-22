@@ -190,6 +190,7 @@ pub struct RemoteRpcAsyncClient {
     chain_client: ChainApiClient,
     state_root: HashValue,
     fork_number: u64,
+    fork_block_hash: HashValue,
 }
 
 impl RemoteRpcAsyncClient {
@@ -198,13 +199,17 @@ impl RemoteRpcAsyncClient {
             .await
             .map_err(|e| anyhow!(format!("{}", e)))?;
         let chain_client: starcoin_rpc_api::chain::ChainApiClient = rpc_channel.clone().into();
-        let (state_root, fork_number) = match block_number {
+        let (state_root, fork_number, fork_block_hash) = match block_number {
             None => {
                 let chain_info = chain_client
                     .info()
                     .await
                     .map_err(|e| anyhow!(format!("{}", e)))?;
-                (chain_info.head.state_root, chain_info.head.number.0)
+                (
+                    chain_info.head.state_root,
+                    chain_info.head.number.0,
+                    chain_info.head.block_hash,
+                )
             }
             Some(n) => {
                 let b: Option<BlockView> = chain_client
@@ -212,7 +217,7 @@ impl RemoteRpcAsyncClient {
                     .await
                     .map_err(|e| anyhow!(format!("{}", e)))?;
                 let b = b.ok_or_else(|| anyhow::anyhow!("cannot found block of height {}", n))?;
-                (b.header.state_root, n)
+                (b.header.state_root, n, b.header.block_hash)
             }
         };
         let state_client: starcoin_rpc_api::state::StateApiClient = rpc_channel.clone().into();
@@ -221,6 +226,7 @@ impl RemoteRpcAsyncClient {
             chain_client,
             state_root,
             fork_number,
+            fork_block_hash,
         })
     }
 
@@ -290,6 +296,10 @@ impl RemoteRpcAsyncClient {
 
     pub fn get_fork_state_root(&self) -> HashValue {
         self.state_root
+    }
+
+    pub fn get_fork_block_hash(&self) -> HashValue {
+        self.fork_block_hash
     }
 }
 

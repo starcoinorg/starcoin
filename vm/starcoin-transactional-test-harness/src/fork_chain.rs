@@ -50,25 +50,33 @@ pub struct ForkBlockChain {
     number_hash_map: DashMap<u64, HashValue>,
     txn_accumulator: MerkleAccumulator,
     state_root: Arc<Mutex<HashValue>>,
+    head_block_hash: HashValue,
 }
 
 impl ForkBlockChain {
     pub fn new(state_root: Arc<Mutex<HashValue>>) -> Result<Self> {
-        Self::new_inner(0, None, state_root)
+        Self::new_inner(0, None, state_root, HashValue::zero())
     }
 
     pub fn fork(
         remote_client: Arc<RemoteRpcAsyncClient>,
         fork_number: u64,
+        fork_block_hash: HashValue,
         state_root: Arc<Mutex<HashValue>>,
     ) -> Result<Self> {
-        Self::new_inner(fork_number, Some(remote_client), state_root)
+        Self::new_inner(
+            fork_number,
+            Some(remote_client),
+            state_root,
+            fork_block_hash,
+        )
     }
     // Mock chain fork from remote_client if fork_number > 0
     fn new_inner(
         fork_number: u64,
         remote_client: Option<Arc<RemoteRpcAsyncClient>>,
         state_root: Arc<Mutex<HashValue>>,
+        head_block_hash: HashValue,
     ) -> Result<Self> {
         let storage_instance = StorageInstance::new_cache_instance();
         let storage = Arc::new(Storage::new(storage_instance)?);
@@ -102,6 +110,7 @@ impl ForkBlockChain {
             number_hash_map: DashMap::new(),
             txn_accumulator,
             state_root,
+            head_block_hash,
         })
     }
 
@@ -119,6 +128,7 @@ impl ForkBlockChain {
             block_accumulator.get_info(),
         );
         self.current_number = block.header().number();
+        self.head_block_hash = block.header().id();
         self.number_hash_map
             .insert(self.current_number, block.header().id());
         self.status = Some(ChainStatusWithBlock {
@@ -148,6 +158,10 @@ impl ForkBlockChain {
 
     pub fn txn_accumulator_root(&self) -> HashValue {
         self.txn_accumulator.root_hash()
+    }
+
+    pub fn head_block_hash(&self) -> HashValue {
+        self.head_block_hash
     }
 
     fn remote_chain_client(&self) -> Option<ChainApiClient> {

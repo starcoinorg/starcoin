@@ -745,14 +745,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         let timestamp =
             timestamp.unwrap_or(self.context.storage.get_timestamp()?.milliseconds + 10 * 1000);
         //TODO find a better way to get parent hash, we should keep to local storage.
-        let parent_hash = last_blockmeta
-            .as_ref()
-            .map(|b| {
-                let mut parent_hash = b.parent_hash.to_vec();
-                parent_hash.extend(bcs_ext::to_bytes(&b.number).expect("bcs should success"));
-                HashValue::sha3_256_of(parent_hash.as_slice())
-            })
-            .unwrap_or_else(HashValue::zero);
+        let parent_hash = self.context.chain.lock().unwrap().head_block_hash();
 
         let new_block_meta = BlockMetadata::new(
             parent_hash,
