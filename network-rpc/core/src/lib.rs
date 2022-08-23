@@ -8,7 +8,7 @@ use futures::FutureExt;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use serde::{Deserialize, Serialize};
 
-pub use starcoin_types::peer_info::PeerId;
+pub use network_types::peer_info::PeerId;
 
 //TODO find a suitable place for this type.
 use crate::server::NetworkRpcServer;

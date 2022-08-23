@@ -24,7 +24,9 @@ use std::{
 };
 
 mod json_encoder;
+#[cfg(feature = "server")]
 pub mod metric_server;
+
 mod op_counters;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 mod process_collector;

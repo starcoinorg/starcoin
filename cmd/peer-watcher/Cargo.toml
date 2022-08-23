@@ -24,3 +24,4 @@ starcoin-logger = {path = "../../commons/logger"}
 starcoin-network = {path = "../../network"}
 starcoin-storage = {path = "../../storage"}
 starcoin-types = {path = "../../types"}
+network-types = {path="../../network/types"}

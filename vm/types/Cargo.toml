@@ -17,7 +17,6 @@ num_enum = "0.5.7"
 once_cell = "1.13.0"
 rand = "0.8.5"
 serde = {version = "1.0.130", default-features = false}
-serde-helpers = {path = "../../commons/serde-helpers"}
 serde_bytes = "0.11.5"
 serde_json = {version = "1.0", features = ["arbitrary_precision"]}
 
@@ -27,6 +26,7 @@ move-ir-types = {git = "https://github.com/starcoinorg/move", rev = "9d1e76b770d
 move-vm-types = {git = "https://github.com/starcoinorg/move", rev = "9d1e76b770d630ad646a540b325f88ef986af3a3"}
 proptest = {version = "1.0.0", default-features = false, optional = true}
 proptest-derive = {version = "0.3.0", default-features = false, optional = true}
+starcoin-time-service={path = "../../commons/time-service", optional=true}
 vm = {package = "move-binary-format", git = "https://github.com/starcoinorg/move", rev = "9d1e76b770d630ad646a540b325f88ef986af3a3"}
 
 bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
@@ -35,6 +35,7 @@ forkable-jellyfish-merkle = {path = "../../commons/forkable-jellyfish-merkle"}
 schemars = {git = "https://github.com/starcoinorg/schemars", rev = "6972da92f4360e1779168bb3fe0274c521d324e2"}
 starcoin-accumulator = {path = "../../commons/accumulator"}
 starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+
 [dev-dependencies]
 proptest = "1.0.0"
 proptest-derive = "0.3.0"
@@ -42,6 +43,7 @@ starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev =
 vm = {package = "move-binary-format", git = "https://github.com/starcoinorg/move", rev = "9d1e76b770d630ad646a540b325f88ef986af3a3", features = [
   "fuzzing",
 ]}
+starcoin-time-service={path = "../../commons/time-service"}
 #starcoin-proptest-helpers = { path = "../../commons/proptest-helpers"}
 
 [features]
@@ -50,6 +52,7 @@ fuzzing = [
   "proptest",
   "proptest-derive",
   "vm/fuzzing",
+  "starcoin-time-service",
   "starcoin-crypto/fuzzing",
   "move-core-types/fuzzing",
 ]

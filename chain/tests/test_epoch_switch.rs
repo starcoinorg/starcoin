@@ -6,9 +6,9 @@ use consensus::Consensus;
 use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_config::{ChainNetwork, NodeConfig};
-use starcoin_executor::{Account, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_state_api::StateReaderExt;
-use starcoin_transaction_builder::encode_create_account_script_function;
+use starcoin_transaction_builder::{encode_create_account_script_function, DEFAULT_MAX_GAS_AMOUNT};
+use starcoin_types::account::Account;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;
 use starcoin_types::account_config::stc_type_tag;
@@ -19,7 +19,7 @@ use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::language_storage::TypeTag;
-use starcoin_vm_types::on_chain_config::{consensus_config_type_tag, GlobalTimeOnChain};
+use starcoin_vm_types::on_chain_config::consensus_config_type_tag;
 use starcoin_vm_types::transaction::RawUserTransaction;
 use std::sync::Arc;
 use test_helper::dao::{
@@ -185,9 +185,7 @@ pub fn modify_on_chain_config_by_dao_block(
     let chain_state = chain.chain_state();
     let seq = get_sequence_number(address, chain_state);
     {
-        chain.time_service().adjust(GlobalTimeOnChain {
-            milliseconds: block_timestamp,
-        });
+        chain.time_service().adjust(block_timestamp);
 
         let (template, _) = chain.create_block_template(
             address,
@@ -216,9 +214,7 @@ pub fn modify_on_chain_config_by_dao_block(
     let chain_state = chain.chain_state();
     let alice_seq = get_sequence_number(*alice.address(), chain_state);
     {
-        chain.time_service().adjust(GlobalTimeOnChain {
-            milliseconds: block_timestamp,
-        });
+        chain.time_service().adjust(block_timestamp);
         let block2 = create_new_block(
             &chain,
             &alice,
@@ -249,9 +245,7 @@ pub fn modify_on_chain_config_by_dao_block(
     let alice_seq = get_sequence_number(*alice.address(), chain_state);
     let block_timestamp = block_timestamp + voting_delay(chain_state, stc_type_tag()) + 10000;
     {
-        chain.time_service().adjust(GlobalTimeOnChain {
-            milliseconds: block_timestamp,
-        });
+        chain.time_service().adjust(block_timestamp);
         let block3 = create_new_block(
             &chain,
             &alice,
@@ -269,9 +263,7 @@ pub fn modify_on_chain_config_by_dao_block(
     let chain_state = chain.chain_state();
     let block_timestamp = block_timestamp + voting_period(chain_state, stc_type_tag()) - 10000;
     {
-        chain.time_service().adjust(GlobalTimeOnChain {
-            milliseconds: block_timestamp,
-        });
+        chain.time_service().adjust(block_timestamp);
         let block4 = create_new_block(&chain, &alice, vec![])?;
         chain.apply(block4)?;
         let chain_state = chain.chain_state();
@@ -291,9 +283,7 @@ pub fn modify_on_chain_config_by_dao_block(
     // block 5
     let block_timestamp = block_timestamp + 20 * 1000;
     {
-        chain.time_service().adjust(GlobalTimeOnChain {
-            milliseconds: block_timestamp,
-        });
+        chain.time_service().adjust(block_timestamp);
         chain.apply(create_new_block(&chain, &alice, vec![])?)?;
         let chain_state = chain.chain_state();
         let state = proposal_state(
@@ -311,9 +301,7 @@ pub fn modify_on_chain_config_by_dao_block(
     let alice_seq = get_sequence_number(*alice.address(), chain_state);
     let block_timestamp = block_timestamp + 20 * 1000;
     {
-        chain.time_service().adjust(GlobalTimeOnChain {
-            milliseconds: block_timestamp,
-        });
+        chain.time_service().adjust(block_timestamp);
         let block6 = create_new_block(
             &chain,
             &alice,
@@ -341,9 +329,7 @@ pub fn modify_on_chain_config_by_dao_block(
     let chain_state = chain.chain_state();
     let block_timestamp = block_timestamp + min_action_delay(chain_state, stc_type_tag());
     {
-        chain.time_service().adjust(GlobalTimeOnChain {
-            milliseconds: block_timestamp,
-        });
+        chain.time_service().adjust(block_timestamp);
         chain.apply(create_new_block(&chain, &alice, vec![])?)?;
         let chain_state = chain.chain_state();
         let state = proposal_state(
@@ -376,9 +362,7 @@ pub fn modify_on_chain_config_by_dao_block(
     let block_timestamp = block_timestamp + 1000;
     let _chain_state = chain.chain_state();
     {
-        chain.time_service().adjust(GlobalTimeOnChain {
-            milliseconds: block_timestamp,
-        });
+        chain.time_service().adjust(block_timestamp);
         chain.apply(create_new_block(&chain, &alice, vec![])?)?;
         let chain_state = chain.chain_state();
         let state = proposal_state(

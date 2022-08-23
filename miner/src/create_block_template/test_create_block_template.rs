@@ -16,8 +16,8 @@ use starcoin_config::{temp_dir, NodeConfig, StarcoinOpt};
 use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::BlockStore;
+use starcoin_time_service::MockTimeService;
 use starcoin_txpool::TxPoolService;
-use starcoin_vm_types::time::MockTimeService;
 use std::sync::Arc;
 
 #[stest::test]

@@ -14,13 +14,13 @@ use network_p2p_types::{
     multiaddr::{Multiaddr, Protocol},
     MultiaddrWithPeerId,
 };
+use network_types::peer_info::PeerId;
 use once_cell::sync::Lazy;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_logger::prelude::*;
-use starcoin_types::peer_info::PeerId;
 use std::borrow::Cow;
 use std::collections::HashSet;
 use std::net::Ipv4Addr;

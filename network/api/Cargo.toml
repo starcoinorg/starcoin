@@ -22,3 +22,4 @@ starcoin-logger = {path = "../../commons/logger"}
 starcoin-metrics = {path = "../../commons/metrics"}
 starcoin-service-registry = {path = "../../commons/service-registry"}
 starcoin-types = {path = "../../types"}
+network-types = {path="../types"}

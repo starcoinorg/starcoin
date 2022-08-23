@@ -4,10 +4,11 @@
 use anyhow::{format_err, Result};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
-use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::{RpcClient, StateRootOption};
 use starcoin_state_api::StateReaderExt;
+use starcoin_transaction_builder::build_transfer_txn;
+use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_value::TokenValue;
 use starcoin_types::account_config::STCUnit;
@@ -72,7 +73,7 @@ impl Faucet {
             }
         };
         let node_info = self.client.node_info()?;
-        let raw_tx = starcoin_executor::build_transfer_txn(
+        let raw_tx = build_transfer_txn(
             self.faucet_account.address,
             receiver,
             sequence_number,

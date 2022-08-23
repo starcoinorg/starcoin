@@ -3,7 +3,7 @@
 
 use anyhow::Result;
 use starcoin_crypto::HashValue;
-use starcoin_executor::{encode_create_account_script_function, execute_readonly_function};
+use starcoin_executor::execute_readonly_function;
 use starcoin_state_api::{AccountStateReader, StateReaderExt};
 use starcoin_types::account_config::stc_type_tag;
 use starcoin_types::block_metadata::BlockMetadata;
@@ -222,7 +222,7 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
         )?;
     }
     //create user for txn verifier
-    let script_function = encode_create_account_script_function(
+    let script_function = starcoin_transaction_builder::encode_create_account_script_function(
         net.stdlib_version(),
         stc_type_tag(),
         bob.address(),

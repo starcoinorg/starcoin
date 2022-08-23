@@ -4,9 +4,9 @@
 use clap::Parser;
 use futures::StreamExt;
 use network_p2p::Event;
+use network_types::peer_info::PeerInfo;
 use starcoin_config::{NodeConfig, StarcoinOpt};
 use starcoin_peer_watcher::build_lighting_network;
-use starcoin_types::peer_info::PeerInfo;
 
 /// A lighting node, connect to peer to peer network, and monitor peers.
 fn main() {

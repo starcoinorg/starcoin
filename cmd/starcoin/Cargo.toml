@@ -55,7 +55,7 @@ starcoin-vm-types = {path = "../../vm/types"}
 stdlib = {path = "../../vm/stdlib"}
 tokio = {version = "^1", features = ["full"]}
 vm-status-translator = {path = "../../vm/vm-status-translator"}
-
+network-types = {path="../../network/types"}
 [dev-dependencies]
 stest = {path = "../../commons/stest"}
 test-helper = {path = "../../test-helper"}

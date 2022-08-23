@@ -3,13 +3,13 @@
 
 use crate::{gen_client::NetworkRpcClient, GetAccountState, GetStateWithProof};
 use anyhow::{anyhow, Result};
+use network_types::peer_info::PeerId;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::{ChainStateReader, StateView, StateWithProof};
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
-use starcoin_types::peer_info::PeerId;
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 
 #[derive(Clone)]

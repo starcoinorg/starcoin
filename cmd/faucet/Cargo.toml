@@ -25,6 +25,7 @@ starcoin-logger = {path = "../../commons/logger"}
 starcoin-rpc-client = {path = "../../rpc/client"}
 starcoin-state-api = {path = "../../state/api"}
 starcoin-types = {path = "../../types"}
+starcoin-transaction-builder = {path = "../../vm/transaction-builder"}
 tiny_http = "0.8.2"
 tokio = {version = "^1", features = ["full"]}
 tokio-executor = {version = "0.2.0-alpha.6", features = ["blocking"]}

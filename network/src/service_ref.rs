@@ -10,13 +10,13 @@ use futures::future::BoxFuture;
 use futures::FutureExt;
 use log::warn;
 use network_api::messages::NotificationMessage;
-use network_api::{NetworkService, PeerProvider, ReputationChange, SupportedRpcProtocol};
+use network_api::{
+    NetworkService, PeerId, PeerInfo, PeerProvider, ReputationChange, SupportedRpcProtocol,
+};
 use network_p2p_types::network_state::NetworkState;
 use network_p2p_types::{IfDisconnected, Multiaddr, RequestFailure};
 use network_rpc_core::{NetRpcError, RawRpcClient};
 use starcoin_service_registry::ServiceRef;
-use starcoin_types::peer_info::PeerId;
-use starcoin_types::peer_info::PeerInfo;
 use std::borrow::Cow;
 use std::sync::Arc;
 

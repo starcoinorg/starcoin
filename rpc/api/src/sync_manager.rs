@@ -5,8 +5,8 @@ pub use self::gen_client::Client as SyncManagerClient;
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
 use network_api::PeerStrategy;
+use network_types::peer_info::PeerId;
 use starcoin_sync_api::{PeerScoreResponse, SyncProgressReport};
-use starcoin_types::peer_info::PeerId;
 use starcoin_types::sync_status::SyncStatus;
 
 #[rpc(client, server, schema)]

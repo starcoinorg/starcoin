@@ -48,7 +48,7 @@ starcoin-open-block = {path = "../chain/open-block"}
 stdlib = {path = "../vm/stdlib"}
 tempfile = "3"
 test-helper = {path = "../test-helper"}
-
+starcoin-transaction-builder = {path = "../vm/transaction-builder"}
 [features]
 default = []
 fuzzing = ["proptest", "proptest-derive", "types/fuzzing"]

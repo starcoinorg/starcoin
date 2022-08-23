@@ -30,10 +30,12 @@ starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev =
 starcoin-logger = {path = "../commons/logger", package = "starcoin-logger"}
 starcoin-metrics = {path = "../commons/metrics"}
 starcoin-system = {path = "../commons/system", package = "starcoin-system"}
+network-types = {path="../network/types"}
 starcoin-types = {path = "../types"}
 starcoin-uint = {path = "../types/uint"}
 starcoin-vm-types = {path = "../vm/types"}
 stdlib = {path = "../vm/stdlib"}
+starcoin-time-service = {path = "../commons/time-service"}
 tempfile = "3.2.0"
 thiserror = "1.0"
 toml = {version = "0.5.9", default-features = false}

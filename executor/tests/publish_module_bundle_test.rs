@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use starcoin_executor::account::create_account_txn_sent_as_association;
 use starcoin_types::transaction::Transaction;
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use test_helper::executor::{compile_modules_with_address, execute_and_apply, prepare_genesis};
+use test_helper::txn::create_account_txn_sent_as_association;
 use test_helper::Account;
 
 #[stest::test]

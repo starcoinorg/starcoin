@@ -6,10 +6,10 @@ use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use bcs_ext::BCSCodec;
 use clap::Parser;
+use network_types::peer_info::PeerId;
 use scmd::{CommandAction, ExecContext};
 use starcoin_network_rpc_api::Ping;
 use starcoin_rpc_api::types::StrView;
-use starcoin_types::peer_info::PeerId;
 
 /// Call peer method by p2p network, just for diagnose network problem.
 #[derive(Debug, Parser)]

@@ -19,7 +19,6 @@ use starcoin_types::{
     startup_info::StartupInfo,
     system_events::{NewBranch, NewHeadBlock},
 };
-use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
 use std::fmt::Formatter;
 use std::sync::Arc;
 
@@ -219,7 +218,7 @@ where
         self.config
             .net()
             .time_service()
-            .adjust(GlobalTimeOnChain::new(executed_block.header().timestamp()));
+            .adjust(executed_block.header().timestamp());
         info!("[chain] Select new head, id: {}, number: {}, total_difficulty: {}, enacted_block_count: {}, retracted_block_count: {}", executed_block.header().id(), executed_block.header().number(), executed_block.block_info().total_difficulty, enacted_count, retracted_count);
 
         if let Some(metrics) = self.metrics.as_ref() {

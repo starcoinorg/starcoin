@@ -8,7 +8,7 @@ use config::ApiQuotaConfig;
 use config::NetworkRpcQuotaConfiguration;
 use config::NodeConfig;
 use config::QuotaDuration;
-
+use network_api::{PeerId, RpcInfo};
 use network_p2p_types::{OutgoingResponse, ProtocolRequest};
 use network_rpc_core::server::NetworkRpcServer;
 use network_rpc_core::{NetRpcError, RawRpcServer, RpcErrorCode};
@@ -21,7 +21,6 @@ use starcoin_service_registry::{
 };
 use starcoin_state_service::ChainStateService;
 use starcoin_storage::{Storage, Store};
-use starcoin_types::peer_info::{PeerId, RpcInfo};
 use std::sync::Arc;
 use txpool::TxPoolService;
 

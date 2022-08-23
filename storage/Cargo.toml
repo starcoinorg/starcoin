@@ -28,6 +28,7 @@ starcoin-state-store-api = {path = "../state/state-store-api"}
 coarsetime = "0.1.22"
 forkable-jellyfish-merkle = {path = "../commons/forkable-jellyfish-merkle", package = "forkable-jellyfish-merkle"}
 logger = {path = "../commons/logger", package = "starcoin-logger"}
+network-types = {path = "../network/types"}
 starcoin-config = {path = "../config"}
 starcoin-metrics = {path = "../commons/metrics"}
 starcoin-uint = {path = "../types/uint"}
