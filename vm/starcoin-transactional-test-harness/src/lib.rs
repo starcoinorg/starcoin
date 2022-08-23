@@ -706,7 +706,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         match output.output.status {
             TransactionStatusView::Executed => {
                 self.hack_account(addr)?;
-                Ok((None, None))
+                Ok((None, Some(serde_json::to_value(&output)?)))
             }
             _ => {
                 bail!(
