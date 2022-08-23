@@ -119,6 +119,7 @@ impl<'a> ABIResolver<'a> {
             TypeTag::Struct(struct_type) => {
                 TypeInstantiation::new_struct_instantiation(self.resolve_struct_tag(struct_type)?)
             }
+            TypeTag::TypeParameter(idx) => TypeInstantiation::TypeParameter(*idx as usize),
         })
     }
 

@@ -307,6 +307,9 @@ TypeTag:
       struct:
         NEWTYPE:
           TYPENAME: StructTag
+    8:
+      parameter:
+        NEWTYPE: U16
 WithdrawCapabilityResource:
   STRUCT:
     - account_address:
