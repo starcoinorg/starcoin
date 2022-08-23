@@ -39,7 +39,7 @@ pub trait TimeService: Send + Sync + Debug {
     fn as_any(&self) -> &dyn Any;
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Deserialize, Serialize)]
 pub enum TimeServiceType {
     RealTimeService,
     MockTimeService,
