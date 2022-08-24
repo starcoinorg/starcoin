@@ -615,7 +615,7 @@ impl TypeInstantiation {
 
             Self::Vector(t) => TypeTag::Vector(Box::new(t.type_tag()?)),
             Self::Struct(s) => TypeTag::Struct(s.struct_tag()?),
-            Self::TypeParameter(_) => anyhow::bail!("get type tag failed -- {:?}", self),
+            Self::TypeParameter(_) => TypeTag::U64,
             Self::Reference(_, _) => anyhow::bail!("get type tag failed -- {:?}", self),
         })
     }
