@@ -31,9 +31,9 @@ starcoin-service-registry = {path = "../commons/service-registry"}
 starcoin-state-store-api = {path = "../state/state-store-api"}
 starcoin-state-tree = {path = "../state/state-tree"}
 starcoin-storage = {path = "../storage"}
+starcoin-transaction-builder = {path = "../vm/transaction-builder"}
 starcoin-vm-runtime = {path = "../vm/vm-runtime"}
 starcoin-vm-types = {path = "../vm/types"}
-starcoin-transaction-builder = {path = "../vm/transaction-builder"}
 types = {path = "../types", package = "starcoin-types"}
 [target."cfg(target_os=\"linux\")".dependencies]
 pprof = {version = "0.10", features = ["flamegraph", "criterion"]}

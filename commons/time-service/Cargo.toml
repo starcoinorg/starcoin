@@ -7,5 +7,5 @@ publish = false
 version = "1.12.1"
 
 [dependencies]
-log = { version = "0.4" }
-serde = { version = "1" }
+log = {version = "0.4"}
+serde = {version = "1"}

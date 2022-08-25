@@ -18,7 +18,7 @@ serde = {version = "1.0.130", features = ["derive"]}
 #todo remove this dependency.
 starcoin-types = {path = "../../types", package = "starcoin-types"}
 
-network-types={path="../../network/types"}
+network-types = {path = "../../network/types"}
 
 [dev-dependencies]
 stest = {path = "../../commons/stest"}

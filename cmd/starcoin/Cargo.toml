@@ -19,6 +19,7 @@ move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "
 move-errmapgen = {git = "https://github.com/starcoinorg/move", rev = "9d1e76b770d630ad646a540b325f88ef986af3a3"}
 network-api = {path = "../../network/api", package = "network-api"}
 network-p2p-types = {path = "../../network-p2p/types"}
+network-types = {path = "../../network/types"}
 rand = "0.8.5"
 scmd = {path = "../../commons/scmd"}
 serde = {version = "1.0.130"}
@@ -55,7 +56,6 @@ starcoin-vm-types = {path = "../../vm/types"}
 stdlib = {path = "../../vm/stdlib"}
 tokio = {version = "^1", features = ["full"]}
 vm-status-translator = {path = "../../vm/vm-status-translator"}
-network-types = {path="../../network/types"}
 [dev-dependencies]
 stest = {path = "../../commons/stest"}
 test-helper = {path = "../../test-helper"}
