@@ -20,10 +20,10 @@ starcoin-config = {path = "../../config"}
 starcoin-consensus = {path = "../../consensus"}
 starcoin-genesis = {path = "../../genesis"}
 starcoin-state-api = {path = "../../state/api"}
+starcoin-transaction-builder = {path = "../../vm/transaction-builder"}
 starcoin-vm-types = {path = "../../vm/types"}
 statedb = {path = "../../state/statedb", package = "starcoin-statedb"}
 storage = {package = "starcoin-storage", path = "../../storage"}
 types = {package = "starcoin-types", path = "../../types"}
 vm-runtime = {package = "starcoin-vm-runtime", path = "../../vm/vm-runtime"}
-starcoin-transaction-builder = {path = "../../vm/transaction-builder"}
 [features]
