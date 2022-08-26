@@ -30,7 +30,7 @@ jobs:
           RUST_LOG: error
         run: ./scripts/coverage_report.sh . target/codecov --batch
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           file: ./target/codecov/lcov.info
           flags: unittests
