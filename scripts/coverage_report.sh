@@ -82,6 +82,6 @@ echo "Cleaning project..."
 
 # Run tests
 echo "Running tests..."
-cargo xtest --html-lcov-dir="${COVERAGE_DIR}" --no-fail-fast --lib -j 5 || true
+cargo xtest --html-lcov-dir="${COVERAGE_DIR}" --no-fail-fast --lib -j 1 || true
 
 echo "Done. Please view report at ${COVERAGE_DIR}/index.html"
