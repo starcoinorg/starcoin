@@ -9,7 +9,7 @@ use move_core_types::resolver::{ModuleResolver, ResourceResolver};
 use move_table_extension::{TableHandle, TableOperation, TableResolver};
 use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::state_key::{StateKey, TableItem};
 use starcoin_vm_types::{
     access_path::AccessPath,
     errors::*,
@@ -158,10 +158,10 @@ impl<'a, S: StateView> TableResolver for RemoteStorage<'a, S> {
         handle: &TableHandle,
         key: &[u8],
     ) -> Result<Option<Vec<u8>>, Error> {
-        self.0.get_state_value(&StateKey::TableItem {
+        self.0.get_state_value(&StateKey::TableItem(TableItem {
             handle: handle.0,
             key: key.to_vec(),
-        })
+        }))
     }
 
     fn operation_cost(

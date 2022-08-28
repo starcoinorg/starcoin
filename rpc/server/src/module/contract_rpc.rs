@@ -18,7 +18,7 @@ use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_rpc_api::contract_api::ContractApi;
 use starcoin_rpc_api::types::{
     AnnotatedMoveStructView, AnnotatedMoveValueView, ContractCall, DryRunOutputView,
-    DryRunTransactionRequest, FunctionIdView, ModuleIdView, StateKeyView, StrView, StructTagView,
+    DryRunTransactionRequest, FunctionIdView, ModuleIdView, StrView, StructTagView,
     TransactionOutputView, WriteOpValueView,
 };
 use starcoin_rpc_api::FutureResult;
@@ -299,29 +299,23 @@ pub fn dry_run<S: StateView>(
         ABIResolver::new_with_module_cache(state_view, module_cache)
     };
     for action in txn_output.write_set.iter_mut() {
-        match &action.state_key {
-            StateKeyView::AccessPath(access_path) => {
-                let access_path = access_path.clone();
-                if let Some(value) = &mut action.value {
-                    match value {
-                        WriteOpValueView::Code(view) => {
-                            view.abi = Some(resolver.resolve_module_code(view.code.0.as_slice())?);
-                        }
-                        WriteOpValueView::Resource(view) => {
-                            let struct_tag = access_path.path.as_struct_tag().ok_or_else(|| {
-                                format_err!("invalid resource access path: {}", access_path)
-                            })?;
-                            let struct_abi = resolver.resolve_struct_tag(struct_tag)?;
-                            view.json = Some(decode_move_value(
-                                &TypeInstantiation::Struct(Box::new(struct_abi)),
-                                view.raw.0.as_slice(),
-                            )?)
-                        }
-                        _ => unreachable!(),
-                    }
+        let access_path = action.access_path.clone();
+        if let Some(value) = &mut action.value {
+            match value {
+                WriteOpValueView::Code(view) => {
+                    view.abi = Some(resolver.resolve_module_code(view.code.0.as_slice())?);
+                }
+                WriteOpValueView::Resource(view) => {
+                    let struct_tag = access_path.path.as_struct_tag().ok_or_else(|| {
+                        format_err!("invalid resource access path: {}", access_path)
+                    })?;
+                    let struct_abi = resolver.resolve_struct_tag(struct_tag)?;
+                    view.json = Some(decode_move_value(
+                        &TypeInstantiation::Struct(Box::new(struct_abi)),
+                        view.raw.0.as_slice(),
+                    )?)
                 }
             }
-            StateKeyView::TableItem { handle: _, key: _ } => {}
         }
     }
     Ok(DryRunOutputView {

@@ -384,10 +384,10 @@ impl StateView for ChainStateDB {
                         None => Ok(None),
                     })
             }
-            StateKey::TableItem { handle, key } => {
+            StateKey::TableItem(table_item) => {
                 let table_handle_state_object =
-                    self.get_table_handle_state_object(&TableHandle(*handle))?;
-                table_handle_state_object.get(key)
+                    self.get_table_handle_state_object(&TableHandle(table_item.handle))?;
+                table_handle_state_object.get(&table_item.key)
             }
         }
     }
@@ -599,17 +599,17 @@ impl ChainStateWriter for ChainStateDB {
                         }
                     }
                 }
-                StateKey::TableItem { handle, key } => {
-                    debug!("TableItem {} {:?}", handle, key);
-                    lock_table_handle.insert(TableHandle(handle));
+                StateKey::TableItem(table_item) => {
+                    debug!("{:?}", table_item);
+                    lock_table_handle.insert(TableHandle(table_item.handle));
                     let table_handle_state_object =
-                        self.get_table_handle_state_object(&TableHandle(handle))?;
+                        self.get_table_handle_state_object(&TableHandle(table_item.handle))?;
                     match write_op {
                         WriteOp::Value(value) => {
-                            table_handle_state_object.set(key, value);
+                            table_handle_state_object.set(table_item.key, value);
                         }
                         WriteOp::Deletion => {
-                            table_handle_state_object.remove(&key);
+                            table_handle_state_object.remove(&table_item.key);
                         }
                     }
                 }

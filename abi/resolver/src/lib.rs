@@ -387,7 +387,7 @@ mod tests {
                         data
                     }))
                 }
-                StateKey::TableItem { handle: _, key: _ } => {
+                StateKey::TableItem(_table_item) => {
                     // XXX FIXME YSG
                     unimplemented!()
                 }
