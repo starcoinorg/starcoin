@@ -12,19 +12,25 @@ use serde::{Deserialize, Serialize};
     Clone, Debug, Eq, PartialEq, Serialize, Deserialize, Ord, PartialOrd, Hash, JsonSchema,
 )]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(proptest_derive::Arbitrary))]
+pub struct TableItem {
+    #[schemars(with = "String")]
+    pub handle: u128,
+    #[serde(with = "serde_bytes")]
+    #[schemars(with = "String")]
+    pub key: Vec<u8>,
+}
+
+#[derive(
+    Clone, Debug, Eq, PartialEq, Serialize, Deserialize, Ord, PartialOrd, Hash, JsonSchema,
+)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(proptest_derive::Arbitrary))]
 pub enum StateKey {
     AccessPath(AccessPath),
-    TableItem {
-        #[schemars(with = "String")]
-        handle: u128,
-        #[serde(with = "serde_bytes")]
-        #[schemars(with = "String")]
-        key: Vec<u8>,
-    },
+    TableItem(TableItem),
 }
 
 impl StateKey {
     pub fn table_item(handle: u128, key: Vec<u8>) -> Self {
-        StateKey::TableItem { handle, key }
+        StateKey::TableItem(TableItem { handle, key })
     }
 }

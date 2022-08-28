@@ -207,9 +207,8 @@ StateKey:
           TYPENAME: AccessPath
     1:
       TableItem:
-        STRUCT:
-          - handle: U128
-          - key: BYTES
+        NEWTYPE:
+          TYPENAME: TableItem
 StructTag:
   STRUCT:
     - address:
@@ -221,6 +220,10 @@ StructTag:
     - type_args:
         SEQ:
           TYPENAME: TypeTag
+TableItem:
+  STRUCT:
+    - handle: U128
+    - key: BYTES
 Transaction:
   ENUM:
     0:

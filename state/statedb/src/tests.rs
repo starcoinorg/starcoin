@@ -4,7 +4,7 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 use starcoin_vm_types::account_config::AccountResource;
 use starcoin_vm_types::move_resource::MoveResource;
-use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::state_key::{StateKey, TableItem};
 use std::collections::HashMap;
 
 fn random_bytes() -> Vec<u8> {
@@ -189,22 +189,22 @@ fn test_state_db_with_table_item_once() -> Result<()> {
     let state_keys = vec![
         StateKey::AccessPath(AccessPath::random_code()),
         StateKey::AccessPath(AccessPath::random_resource()),
-        StateKey::TableItem {
+        StateKey::TableItem(TableItem {
             handle: handle1,
             key: key2.clone(),
-        },
-        StateKey::TableItem {
+        }),
+        StateKey::TableItem(TableItem {
             handle: handle1,
             key: key3.clone(),
-        },
-        StateKey::TableItem {
+        }),
+        StateKey::TableItem(TableItem {
             handle: handle2,
             key: key4.clone(),
-        },
-        StateKey::TableItem {
+        }),
+        StateKey::TableItem(TableItem {
             handle: handle2,
             key: key5.clone(),
-        },
+        }),
     ];
     let values = vec![
         random_bytes(),
@@ -284,18 +284,18 @@ fn test_state_with_table_item_proof() -> Result<()> {
     let state_keys = vec![
         StateKey::AccessPath(AccessPath::random_code()),
         StateKey::AccessPath(AccessPath::random_resource()),
-        StateKey::TableItem {
+        StateKey::TableItem(TableItem {
             handle: handle1,
             key: key1.clone(),
-        },
-        StateKey::TableItem {
+        }),
+        StateKey::TableItem(TableItem {
             handle: handle1,
             key: key2.clone(),
-        },
-        StateKey::TableItem {
+        }),
+        StateKey::TableItem(TableItem {
             handle: handle2,
             key: key3.clone(),
-        },
+        }),
     ];
     let values = vec![random_bytes(), random_bytes(), val1, val2, val3];
     let write_set = state_keys_to_write_set(state_keys, values);

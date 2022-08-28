@@ -129,8 +129,9 @@ impl StateView for RemoteChainStateReader {
                 let state_proof = self.get_with_proof(access_path)?;
                 Ok(state_proof.state)
             }
-            StateKey::TableItem { handle, key } => {
-                let state_proof = self.get_with_table_item_proof(handle, key)?;
+            StateKey::TableItem(table_item) => {
+                let state_proof =
+                    self.get_with_table_item_proof(&table_item.handle, &table_item.key)?;
                 Ok(state_proof.key_proof.0)
             }
         }
