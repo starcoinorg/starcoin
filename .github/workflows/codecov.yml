@@ -25,6 +25,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install lcov -y
           cargo install --force grcov
+      - uses: taiki-e/install-action@v1.5.6
+        with:
+          tool: cargo-llvm-cov
       - name: Run code coverage
         env:
           RUST_LOG: error
