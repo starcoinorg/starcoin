@@ -25,6 +25,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install lcov -y
           cargo install --force grcov
+      - run: rustup component add llvm-tools-preview
       - uses: taiki-e/install-action@v1.5.6
         with:
           tool: cargo-llvm-cov
