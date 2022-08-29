@@ -36,9 +36,9 @@ jobs:
       - name: Run code coverage
         env:
           RUST_LOG: error
-          CARGO_LLVM_COV_TARGET_DIR: ./target
-          CARGO_TARGET_DIR: ./target
-          CARGO_INCREMENTAL: 1
+          # CARGO_LLVM_COV_TARGET_DIR: ./target
+          # CARGO_TARGET_DIR: ./target
+          # CARGO_INCREMENTAL: 1
         run: ./scripts/coverage_report.sh . target --batch
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
