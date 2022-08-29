@@ -29,8 +29,8 @@ jobs:
       - uses: taiki-e/install-action@v1.5.6
         with:
           tool: cargo-llvm-cov
-      - name: cargo-llvm-cov clean
-        run: cargo llvm-cov clean
+      # - name: cargo-llvm-cov clean
+      #   run: cargo llvm-cov clean
       - name: Run code coverage
         env:
           RUST_LOG: error
@@ -39,9 +39,9 @@ jobs:
           CARGO_INCREMENTAL: 1
         run: ./scripts/coverage_report.sh . target --batch
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v1
         with:
           # file: ./target/codecov/lcov.info
           file: ./target/lcov.info
-          flags: unittests
+          flags: coverage-info
           fail_ci_if_error: false
