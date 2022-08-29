@@ -33,6 +33,8 @@ jobs:
         env:
           RUST_LOG: error
         run: ./scripts/coverage_report.sh . target --batch
+        env:
+          CARGO_LLVM_COV_TARGET_DIR: target
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
