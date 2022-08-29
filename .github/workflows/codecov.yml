@@ -32,11 +32,11 @@ jobs:
       - name: Run code coverage
         env:
           RUST_LOG: error
-        run: ./scripts/coverage_report.sh . target/codecov --batch
+        run: ./scripts/coverage_report.sh . target --batch
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
           # file: ./target/codecov/lcov.info
-          file: ./target/llvm-cov-target/lcov.info
+          file: ./target/lcov.info
           flags: unittests
           fail_ci_if_error: false
