@@ -45,5 +45,5 @@ jobs:
         with:
           # file: ./target/codecov/lcov.info
           file: ./target/lcov.info
-          flags: coverage-info
+          flags: unittests
           fail_ci_if_error: false
