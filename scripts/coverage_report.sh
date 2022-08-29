@@ -82,6 +82,6 @@ echo "Cleaning project..."
 
 # Run tests
 echo "Running tests..."
-cargo llvm-cov -v --lib --ignore-run-fail --workspace --lcov --jobs 10 --output-path "${COVERAGE_DIR}" || true
+cargo llvm-cov -v --lib --ignore-run-fail --workspace --lcov --jobs 10 --output-path "${COVERAGE_DIR}"/lcov.info || true
 
 echo "Done. Please view report at ${COVERAGE_DIR}/index.html"
