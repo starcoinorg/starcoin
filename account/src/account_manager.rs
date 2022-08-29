@@ -202,6 +202,7 @@ impl AccountManager {
     }
 
     pub fn account_info(&self, address: AccountAddress) -> AccountResult<Option<AccountInfo>> {
+        let is_locked = self.key_cache.write().get_pass(&address).is_none();
         match self.store.public_key(address)? {
             Some(p) => {
                 let setting = self.store.load_setting(address)?;
@@ -210,6 +211,7 @@ impl AccountManager {
                     p,
                     setting.is_default,
                     setting.is_readonly,
+                    is_locked,
                 )))
             }
             None => Ok(None),
