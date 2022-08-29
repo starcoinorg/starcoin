@@ -11,7 +11,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v3
         with:
           submodules: recursive
       - name: setup rust toolchain
@@ -20,16 +20,17 @@ jobs:
           components: rustfmt,clippy
       - name: setup environment
         run: bash ./scripts/dev_setup.sh -b -t -y
-      - name: Install grcov and lcov
-        run: |
-          sudo apt-get update
-          sudo apt-get install lcov -y
-          cargo install --force grcov
+      # - name: Install grcov and lcov
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install lcov -y
+      #     cargo install --force grcov
       - run: rustup component add llvm-tools-preview
       - uses: taiki-e/install-action@v1.5.6
         with:
           tool: cargo-llvm-cov
-      - run: cargo llvm-cov clean
+      - name: cargo-llvm-cov clean
+        run: cargo llvm-cov clean
       - name: Run code coverage
         env:
           RUST_LOG: error
@@ -38,7 +39,7 @@ jobs:
           CARGO_INCREMENTAL: 1
         run: ./scripts/coverage_report.sh . target --batch
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3.1.0
+        uses: codecov/codecov-action@v3
         with:
           # file: ./target/codecov/lcov.info
           file: ./target/lcov.info
