@@ -1,3 +1,4 @@
+name: Auto Bump Homebrew formula
 on:
   push:
     tags: 'v*'
@@ -29,5 +30,5 @@ jobs:
 
             Created by https://github.com/mislav/bump-homebrew-formula-action
         env:
-          # COMMITTER_TOKEN: ${{ secrets.COMMITTER_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.BUMP_FORMULA_TOKEN }}
+          COMMITTER_TOKEN: ${{ secrets.BUMP_FORMULA_TOKEN }}
+          # GITHUB_TOKEN: ${{ secrets.BUMP_FORMULA_TOKEN }}
