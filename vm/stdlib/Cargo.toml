@@ -20,7 +20,7 @@ move-compiler = {git = "https://github.com/starcoinorg/move", rev = "9d1e76b770d
 move-prover = {git = "https://github.com/starcoinorg/move", rev = "9d1e76b770d630ad646a540b325f88ef986af3a3"}
 once_cell = "1.13.0"
 serde = {version = "1.0.130", default-features = false}
-sha2 = "0.10.2"
+sha2 = "0.10.3"
 simplelog = "0.9.0"
 starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 starcoin-framework = {git = "https://github.com/starcoinorg/starcoin-framework", rev = "a981f67391256afe1c40ca90938c105b2981a29e"}
