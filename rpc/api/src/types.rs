@@ -1161,21 +1161,36 @@ pub enum WriteOpView {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub enum WriteStateKeyOpValueView {
-    Code(CodeView),
-    Resource(ResourceView),
-    Str(StrView<Vec<u8>>),
+pub struct DryRunOutputViewV2 {
+    pub explained_status: VmStatusExplainView,
+    #[serde(flatten)]
+    pub txn_output: TransactionOutputViewV2,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct TransactionStateKeyOutputAction {
-    pub state_key: StateKeyView,
-    pub action: WriteOpView,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub value: Option<WriteStateKeyOpValueView>,
+pub struct TransactionOutputViewV2 {
+    pub status: TransactionStatusView,
+    pub gas_used: StrView<u64>,
+    pub write_set: Vec<TransactionOutputActionV2>,
+    pub events: Vec<TransactionEventView>,
 }
 
-impl From<(StateKey, WriteOp)> for TransactionStateKeyOutputAction {
+impl From<TransactionOutput> for TransactionOutputViewV2 {
+    fn from(txn_output: TransactionOutput) -> Self {
+        let (write_set, events, gas_used, status) = txn_output.into_inner();
+        Self {
+            events: events.into_iter().map(Into::into).collect(),
+            gas_used: gas_used.into(),
+            status: status.into(),
+            write_set: write_set
+                .into_iter()
+                .map(TransactionOutputActionV2::from)
+                .collect(),
+        }
+    }
+}
+
+impl From<(StateKey, WriteOp)> for TransactionOutputActionV2 {
     fn from((state_key, op): (StateKey, WriteOp)) -> Self {
         let (action, value) = match op {
             WriteOp::Deletion => (WriteOpView::Deletion, None),
@@ -1183,23 +1198,36 @@ impl From<(StateKey, WriteOp)> for TransactionStateKeyOutputAction {
                 WriteOpView::Value,
                 match &state_key {
                     StateKey::AccessPath(access_path) => Some(if access_path.path.is_resource() {
-                        WriteStateKeyOpValueView::Resource(v.into())
+                        WriteOpValueViewV2::Resource(v.into())
                     } else {
-                        WriteStateKeyOpValueView::Code(v.into())
+                        WriteOpValueViewV2::Code(v.into())
                     }),
-                    StateKey::TableItem(_table_item) => {
-                        Some(WriteStateKeyOpValueView::Str(StrView(v)))
-                    }
+                    StateKey::TableItem(_table_item) => Some(WriteOpValueViewV2::Str(StrView(v))),
                 },
             ),
         };
 
-        TransactionStateKeyOutputAction {
+        TransactionOutputActionV2 {
             state_key: state_key.into(),
             action,
             value,
         }
     }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct TransactionOutputActionV2 {
+    pub state_key: StateKeyView,
+    pub action: WriteOpView,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value: Option<WriteOpValueViewV2>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub enum WriteOpValueViewV2 {
+    Code(CodeView),
+    Resource(ResourceView),
+    Str(StrView<Vec<u8>>),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
