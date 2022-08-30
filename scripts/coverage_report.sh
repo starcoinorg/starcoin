@@ -3,9 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Check that the test directory and report path arguments are provided
-if [ $# -lt 2 ] || ! [ -d "$1" ]; then
-  echo "Usage: $0 <testdir> <outdir> [--batch]"
-  echo "All tests in <testdir> and its subdirectories will be run to measure coverage."
+if [ $# -lt 1 ]; then
+  echo "Usage: $0 <outdir> [--batch]"
   echo "The resulting coverage report will be stored in <outdir>."
   echo "--batch will skip all prompts."
   exit 1
@@ -13,15 +12,12 @@ fi
 
 # User prompts will be skipped if '--batch' is given as the third argument
 SKIP_PROMPTS=0
-if [ $# -eq 3 ] && [ "$3" == "--batch" ]; then
+if [ $# -eq 2 ] && [ "$2" == "--batch" ]; then
   SKIP_PROMPTS=1
 fi
 
-# Set the directory containing the tests to run (includes subdirectories)
-TEST_DIR=$1
-
 # Set the directory to which the report will be saved
-COVERAGE_DIR=$2
+COVERAGE_DIR=$1
 
 # This needs to run in starcoin
 STARCOIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
@@ -64,6 +60,8 @@ if [ $SKIP_PROMPTS -eq 0 ]; then
   fi
 fi
 
+cargo llvm-cov show-env
+
 # Set the flags necessary for coverage output
 export RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off"
 export RUSTC_BOOTSTRAP=1
@@ -80,14 +78,16 @@ echo "Cleaning project..."
   cargo clean
 )
 
+source <(cargo llvm-cov show-env --export-prefix) # Set the environment variables needed to get coverage.
+
+export CARGO_LLVM_COV_TARGET_DIR=./target
+
 # Run tests
 echo "Running tests and collecting coverage data ..."
 # cargo llvm-cov -v --lib --ignore-run-fail --workspace --test unit_tests::transaction_test::transaction_payload_bcs_roundtrip --no-run --lcov --jobs 5 --output-path "${COVERAGE_DIR}"/lcov.info || true
 # cargo llvm-cov -v --lib --ignore-run-fail  --package starcoin-transactional-test-harness  --lcov --jobs 5 --output-path "${COVERAGE_DIR}"/lcov.info || true
 # cargo llvm-cov -v --lib --package starcoin-rpc-api --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
 # cargo llvm-cov -v --package starcoin-storage --lib --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
-
-source <(cargo llvm-cov show-env --export-prefix) # Set the environment variables needed to get coverage.
 
 cargo llvm-cov -v --lib --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
 
