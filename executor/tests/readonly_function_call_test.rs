@@ -138,15 +138,16 @@ fn test_readonly_function_call() -> Result<()> {
             &chain_state,
             compiled_module.self_id(),
             "test",
-            vec![TypeTag::Struct(StructTag{
-                address:AccountAddress::ONE,
+            vec![TypeTag::Struct(StructTag {
+                address: AccountAddress::ONE,
                 module: Identifier::new("STC").unwrap(),
-                name:Identifier::new("STC").unwrap(),
-                type_params:vec![],
+                name: Identifier::new("STC").unwrap(),
+                type_params: vec![],
             })],
             vec![],
             None,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(result.len(), 1);
         assert_eq!(bcs_ext::from_bytes::<u64>(result[0].1.as_slice())?, 1u64);
     }
