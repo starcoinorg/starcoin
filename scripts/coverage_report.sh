@@ -89,6 +89,6 @@ echo "Running tests and collecting coverage data ..."
 
 export CARGO_LLVM_COV_TARGET_DIR="./target"
 
-cargo llvm-cov --lib --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
+cargo llvm-cov -v --lib --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
 
 echo "Done. Please view report at ${COVERAGE_DIR}/lcov.info"
