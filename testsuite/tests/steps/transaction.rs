@@ -6,10 +6,12 @@ use anyhow::Error;
 use cucumber::{Steps, StepsBuilder};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
-use starcoin_executor::{DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::{RpcClient, StateRootOption};
 use starcoin_state_api::StateReaderExt;
+use starcoin_transaction_builder::{
+    build_transfer_txn, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
+};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
@@ -58,7 +60,7 @@ fn transfer_txn(
     let node_info = client.node_info()?;
     let balance = chain_state_reader.get_balance(from).unwrap().unwrap();
     let amount = amount.unwrap_or(balance * 20 / 100);
-    let raw_txn = starcoin_executor::build_transfer_txn(
+    let raw_txn = build_transfer_txn(
         from,
         to.address,
         account_resource.sequence_number(),

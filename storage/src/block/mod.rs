@@ -10,9 +10,9 @@ use anyhow::{bail, Result};
 use bcs_ext::{BCSCodec, Sample};
 use crypto::HashValue;
 use logger::prelude::*;
+use network_types::peer_info::PeerId;
 use serde::{Deserialize, Serialize};
 use starcoin_types::block::{Block, BlockBody, BlockHeader};
-use starcoin_types::peer_info::PeerId;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct OldFailedBlock {

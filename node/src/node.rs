@@ -17,7 +17,6 @@ use starcoin_block_relayer::BlockRelayer;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
-use starcoin_executor::VMMetrics;
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
 use starcoin_logger::structured_log::init_slog_logger;
@@ -54,6 +53,7 @@ use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_txpool::TxPoolActorService;
 use starcoin_types::system_events::{SystemShutdown, SystemStarted};
+use starcoin_vm_runtime::metrics::VMMetrics;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
@@ -136,8 +136,7 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                 let connect_service = ctx.service_ref::<BlockConnectorService>()?.clone();
                 let fut = async move {
                     info!("Prepare to reset node startup info to {}", block_hash);
-                    let result = connect_service.send(ResetRequest { block_hash }).await?;
-                    result
+                    connect_service.send(ResetRequest { block_hash }).await?
                 };
                 let receiver = ctx.exec(fut);
                 NodeResponse::AsyncResult(receiver)

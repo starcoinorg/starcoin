@@ -593,15 +593,15 @@ impl<'a> StarcoinTestAdapter<'a> {
             TransactionStatus::Keep(_kept_vm_status) => {
                 self.context
                     .apply_write_set(output.clone().into_inner().0)?;
+                let mut chain = self.context.chain.lock().unwrap();
+                chain.add_new_txn(
+                    Transaction::UserTransaction(signed_txn.clone()),
+                    output.clone(),
+                )?;
             }
             TransactionStatus::Discard(_) => {}
         }
         let payload = decode_txn_payload(&self.context.storage, signed_txn.payload())?;
-        let mut chain = self.context.chain.lock().unwrap();
-        chain.add_new_txn(
-            Transaction::UserTransaction(signed_txn.clone()),
-            output.clone(),
-        )?;
         let mut txn_view: SignedUserTransactionView = signed_txn.try_into()?;
         txn_view.raw_txn.decoded_payload = Some(payload.into());
         Ok(TransactionWithOutput {
@@ -706,7 +706,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         match output.output.status {
             TransactionStatusView::Executed => {
                 self.hack_account(addr)?;
-                Ok((None, None))
+                Ok((None, Some(serde_json::to_value(&output)?)))
             }
             _ => {
                 bail!(
@@ -745,14 +745,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         let timestamp =
             timestamp.unwrap_or(self.context.storage.get_timestamp()?.milliseconds + 10 * 1000);
         //TODO find a better way to get parent hash, we should keep to local storage.
-        let parent_hash = last_blockmeta
-            .as_ref()
-            .map(|b| {
-                let mut parent_hash = b.parent_hash.to_vec();
-                parent_hash.extend(bcs_ext::to_bytes(&b.number).expect("bcs should success"));
-                HashValue::sha3_256_of(parent_hash.as_slice())
-            })
-            .unwrap_or_else(HashValue::zero);
+        let parent_hash = self.context.chain.lock().unwrap().head_block_hash();
 
         let new_block_meta = BlockMetadata::new(
             parent_hash,

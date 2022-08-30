@@ -17,7 +17,7 @@ pub static G_DEFAULT_METRIC_PUSH_AUTH_PASSWORD: &str = "";
 
 pub static G_DEFAULT_METRIC_NAMESPACE: &str = "starcoin";
 
-#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
+#[derive(Clone, Default, Debug, Deserialize, PartialEq, Eq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
 pub struct PushParameterConfig {
     #[serde(skip_serializing_if = "Option::is_none")]

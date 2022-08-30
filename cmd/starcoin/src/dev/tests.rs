@@ -155,7 +155,7 @@ fn create_default_account(
         association_balance * 90 / 100
     );
     let seq_num = association_account_resource.sequence_number();
-    let transfer_raw_txn = starcoin_executor::build_transfer_txn(
+    let transfer_raw_txn = starcoin_transaction_builder::build_transfer_txn(
         association_address(),
         default_account.address,
         seq_num,

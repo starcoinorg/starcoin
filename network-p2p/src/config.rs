@@ -200,13 +200,12 @@ impl NetworkConfiguration {
     /// Create new default configuration for localhost-only connection with random port (useful for
     /// testing)
     pub fn new_local() -> NetworkConfiguration {
-        let config = NetworkConfiguration {
+        NetworkConfiguration {
             listen_addresses: vec![iter::once(Protocol::Ip4(Ipv4Addr::new(127, 0, 0, 1)))
                 .chain(iter::once(Protocol::Tcp(0)))
                 .collect()],
             ..Default::default()
-        };
-        config
+        }
     }
 }
 

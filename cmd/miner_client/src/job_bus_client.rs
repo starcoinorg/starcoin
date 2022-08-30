@@ -6,7 +6,7 @@ use futures::stream::StreamExt;
 use starcoin_miner::{MinerService, SubmitSealRequest};
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
-use starcoin_types::time::TimeService;
+use starcoin_time_service::TimeService;
 use std::sync::Arc;
 
 #[derive(Clone)]

@@ -96,10 +96,12 @@ impl ForkContext {
         let state_db = ChainStateDB::new(data_store.clone(), Some(root_hash));
 
         let fork_nubmer = remote_async_client.get_fork_block_number();
+        let fork_block_hash = remote_async_client.get_fork_block_hash();
         let state_root = Arc::new(Mutex::new(root_hash));
         let chain = Arc::new(Mutex::new(ForkBlockChain::fork(
             remote_async_client,
             fork_nubmer,
+            fork_block_hash,
             state_root.clone(),
         )?));
         Self::new_inner(chain, state_db, data_store, rt, state_root)

@@ -5,12 +5,12 @@ use crate::{difficult_to_target, generate_nonce, ChainReader};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
+use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate},
     U256,
 };
-use starcoin_vm_types::time::TimeService;
 use thiserror::Error;
 
 #[derive(Debug, Error)]

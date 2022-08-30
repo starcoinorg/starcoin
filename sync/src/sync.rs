@@ -14,7 +14,7 @@ use logger::prelude::*;
 use network::NetworkServiceRef;
 use network::PeerEvent;
 use network_api::peer_score::PeerScoreMetrics;
-use network_api::{PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
+use network_api::{PeerId, PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_service_registry::{
@@ -27,7 +27,6 @@ use starcoin_sync_api::{
     SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
 use starcoin_types::block::BlockIdAndNumber;
-use starcoin_types::peer_info::PeerId;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};

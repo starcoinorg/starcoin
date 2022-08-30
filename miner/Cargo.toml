@@ -2,7 +2,7 @@
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
 name = "starcoin-miner"
-version = "1.12.1"
+version = "1.12.3"
 
 [dependencies]
 anyhow = "1.0.41"
@@ -32,6 +32,7 @@ starcoin-storage = {path = "../storage"}
 starcoin-txpool = {path = "../txpool"}
 starcoin-txpool-api = {path = "../txpool/api"}
 starcoin-vm-types = {path = "../vm/types"}
+
 state_tree = {path = "../state/state-tree", package = "starcoin-state-tree"}
 statedb = {path = "../state/statedb", package = "starcoin-statedb"}
 tokio = {version = "^1", features = ["full"]}
@@ -44,6 +45,7 @@ starcoin-network-rpc-api = {path = "../network-rpc/api"}
 starcoin-node = {path = "../node"}
 starcoin-state-service = {path = "../state/service"}
 starcoin-sync-api = {package = "starcoin-sync-api", path = "../sync/api"}
+starcoin-time-service = {path = "../commons/time-service"}
 stest = {path = "../commons/stest"}
 sync = {path = "../sync", package = "starcoin-sync"}
 test-helper = {path = "../test-helper"}

@@ -4,12 +4,13 @@ edition = "2021"
 license = "Apache-2.0"
 name = "stdlib"
 publish = false
-version = "1.12.1"
+version = "1.12.3"
 
 [dependencies]
 anyhow = "1.0.41"
 bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
 clap = {version = "3", features = ["derive"]}
+
 fs_extra = "1.2.0"
 include_dir = "0.6.2"
 itertools = "0.10.3"

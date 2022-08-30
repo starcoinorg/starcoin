@@ -3,9 +3,9 @@
 
 use crate::peer_provider::{PeerSelector, PeerStrategy};
 use crate::peer_score::{InverseScore, Score};
+use network_types::peer_info::{PeerId, PeerInfo};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::U256;
 

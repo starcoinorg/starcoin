@@ -17,9 +17,12 @@ use crate::{
 use starcoin_crypto::ed25519::*;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::multi_ed25519::genesis_multi_key_pair;
-use starcoin_vm_types::account_config::STC_TOKEN_CODE_STR;
+use starcoin_vm_types::account_config::{core_code_address, stc_type_tag, STC_TOKEN_CODE_STR};
 use starcoin_vm_types::genesis_config::ChainId;
+use starcoin_vm_types::identifier::Identifier;
+use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::token::token_code::TokenCode;
+use starcoin_vm_types::transaction::ScriptFunction;
 use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use starcoin_vm_types::{
     account_config::{self, AccountResource, BalanceResource},
@@ -232,6 +235,42 @@ impl Default for Account {
     fn default() -> Self {
         Self::new()
     }
+}
+pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 40000000;
+pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
+
+/// Returns a transaction to transfer coin from one account to another (possibly new) one, with the
+/// given arguments.
+pub fn peer_to_peer_txn(
+    sender: &Account,
+    receiver: &Account,
+    seq_num: u64,
+    transfer_amount: u128,
+    expiration_timestamp_secs: u64,
+    chain_id: ChainId,
+) -> SignedUserTransaction {
+    let args = vec![
+        bcs_ext::to_bytes(receiver.address()).unwrap(),
+        bcs_ext::to_bytes(&transfer_amount).unwrap(),
+    ];
+
+    // get a SignedTransaction
+    sender.create_signed_txn_with_args(
+        TransactionPayload::ScriptFunction(ScriptFunction::new(
+            ModuleId::new(
+                core_code_address(),
+                Identifier::new("TransferScripts").unwrap(),
+            ),
+            Identifier::new("peer_to_peer_v2").unwrap(),
+            vec![stc_type_tag()],
+            args,
+        )),
+        seq_num,
+        DEFAULT_MAX_GAS_AMOUNT, // this is a default for gas
+        1,                      // this is a default for gas
+        expiration_timestamp_secs,
+        chain_id,
+    )
 }
 
 //---------------------------------------------------------------------------

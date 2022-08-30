@@ -5,6 +5,7 @@ use anyhow::Result;
 use futures::future::BoxFuture;
 use network_rpc_core::{NetRpcError, RpcErrorCode};
 use network_rpc_derive::*;
+use network_types::peer_info::{PeerId, RpcInfo};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::AccumulatorStoreType;
@@ -16,7 +17,6 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
-use starcoin_types::peer_info::{PeerId, RpcInfo};
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionInfo};
 
 mod remote_chain_state;
@@ -99,7 +99,7 @@ impl IntoIterator for GetBlockHeadersByNumber {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
 pub struct GetAccumulatorNodeByNodeHash {
     pub node_hash: HashValue,
     pub accumulator_storage_type: AccumulatorStoreType,

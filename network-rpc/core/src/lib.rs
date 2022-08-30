@@ -8,7 +8,7 @@ use futures::FutureExt;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use serde::{Deserialize, Serialize};
 
-pub use starcoin_types::peer_info::PeerId;
+pub use network_types::peer_info::PeerId;
 
 //TODO find a suitable place for this type.
 use crate::server::NetworkRpcServer;
@@ -49,7 +49,7 @@ pub enum RpcErrorCode {
     Unknown = 1000,
 }
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NetRpcError {
     error_code: u32,

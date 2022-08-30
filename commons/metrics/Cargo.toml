@@ -5,17 +5,17 @@ edition = "2021"
 license = "Apache-2.0"
 name = "starcoin-metrics"
 publish = false
-version = "1.12.1"
+version = "1.12.3"
 
 [dependencies]
 anyhow = "1.0.41"
-futures = "0.3.12"
-hyper = {version = "0.14.12", features = ["full"]}
-prometheus = {version = "0.13.0", default-features = false, features = [
-  "push",
-]}
+prometheus = {version = "0.13.1", default-features = false}
 serde_json = {version = "1.0", features = ["arbitrary_precision"]}
 starcoin-logger = {path = "../logger"}
+
+futures = {version = "0.3.12", optional = true}
+hyper = {version = "0.14.12", features = ["full"], optional = true}
+
 [target."cfg(any(target_os = \"macos\", target_os=\"linux\"))".dependencies]
 psutil = {version = "3.2", default-features = false, features = [
   "cpu",
@@ -23,3 +23,6 @@ psutil = {version = "3.2", default-features = false, features = [
   "process",
 ]}
 timeout-join-handler = {path = "../timeout-join-handler"}
+
+[features]
+server = ["prometheus/push", "hyper", "futures"]

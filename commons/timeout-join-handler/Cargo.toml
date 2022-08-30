@@ -4,8 +4,11 @@ edition = "2021"
 license = "Apache-2.0"
 name = "timeout-join-handler"
 publish = false
-version = "1.12.1"
+version = "1.12.3"
 
 [dependencies]
-anyhow = "1.0.41"
+
 thiserror = "1.0"
+
+[dev-dependencies]
+anyhow = "1.0.41"

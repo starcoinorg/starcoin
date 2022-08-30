@@ -4,7 +4,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "benchmarks"
 publish = false
-version = "1.12.1"
+version = "1.12.3"
 
 [dependencies]
 anyhow = "1.0.41"
@@ -31,6 +31,7 @@ starcoin-service-registry = {path = "../commons/service-registry"}
 starcoin-state-store-api = {path = "../state/state-store-api"}
 starcoin-state-tree = {path = "../state/state-tree"}
 starcoin-storage = {path = "../storage"}
+starcoin-transaction-builder = {path = "../vm/transaction-builder"}
 starcoin-vm-runtime = {path = "../vm/vm-runtime"}
 starcoin-vm-types = {path = "../vm/types"}
 types = {path = "../types", package = "starcoin-types"}

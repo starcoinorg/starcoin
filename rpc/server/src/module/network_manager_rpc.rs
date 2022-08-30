@@ -8,11 +8,11 @@ use jsonrpc_core::Result;
 use network_api::{PeerProvider, ReputationChange, BANNED_THRESHOLD};
 use network_p2p_types::network_state::NetworkState;
 use network_rpc_core::RawRpcClient;
+use network_types::peer_info::{Multiaddr, PeerId};
 use starcoin_network::NetworkServiceRef;
 use starcoin_rpc_api::network_manager::NetworkManagerApi;
 use starcoin_rpc_api::types::StrView;
 use starcoin_rpc_api::FutureResult;
-use starcoin_types::peer_info::{Multiaddr, PeerId};
 use std::borrow::Cow;
 use std::str::FromStr;
 

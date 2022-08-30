@@ -55,8 +55,7 @@ pub use available_port::{
 pub use genesis_config::{
     BuiltinNetworkID, ChainNetwork, ChainNetworkID, FutureBlockParameter,
     FutureBlockParameterResolver, GenesisBlockParameter, GenesisBlockParameterConfig,
-    GenesisConfig, G_DEV_CONFIG, G_HALLEY_CONFIG, G_LATEST_GAS_SCHEDULE, G_MAIN_CONFIG,
-    G_PROXIMA_CONFIG, G_TEST_CONFIG,
+    GenesisConfig, G_DEV_CONFIG, G_HALLEY_CONFIG, G_MAIN_CONFIG, G_PROXIMA_CONFIG, G_TEST_CONFIG,
 };
 pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;
@@ -67,7 +66,7 @@ pub use rpc_config::{
     WsConfiguration,
 };
 pub use starcoin_crypto::ed25519::genesis_key_pair;
-pub use starcoin_vm_types::time::{MockTimeService, RealTimeService, TimeService};
+pub use starcoin_time_service::{MockTimeService, RealTimeService, TimeService};
 pub use storage_config::{RocksdbConfig, StorageConfig, DEFAULT_CACHE_SIZE};
 pub use txpool_config::TxPoolConfig;
 

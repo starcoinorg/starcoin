@@ -17,3 +17,17 @@ script{
          assert!(Vector::length(&state_proof) > 32, 1002);
      }
 }
+
+//# call-api chain.info
+
+//# block --author=0x3
+
+//# call-api chain.info
+
+//# run --signers creator --args {{$.call-api[2].head.block_hash}} --args {{$.call-api[3].head.parent_hash}}
+script {
+    fun latest(_account: signer, parent_hash: vector<u8>, expect_parent_hash: vector<u8>) {
+        assert!(parent_hash == expect_parent_hash, 1003)
+    }
+}
+// check: EXECUTED

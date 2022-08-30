@@ -48,13 +48,10 @@ impl StateNodeStore for MockStateNodeStore {
                 let client = self.remote.clone();
                 let handle = self.rt.handle().clone();
                 let hash = *hash;
-                let blob = // thread::spawn(move || {
-                    handle.block_on(client.get_state_node_by_node_hash(hash))
-                // })
-                // .join()
-                // .expect("Thread getting StateNode from remote panicked")
-                .map(|res| res.map(StateNode))
-                .map_err(|e| anyhow!("{}", e))?;
+                let blob = handle
+                    .block_on(client.get_state_node_by_node_hash(hash))
+                    .map(|res| res.map(StateNode))
+                    .map_err(|e| anyhow!("{}", e))?;
 
                 if let Some(node) = blob.clone() {
                     self.put(hash, node)?;

@@ -1,6 +1,7 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use starcoin_executor::{execute_readonly_function, Account};
+use starcoin_executor::execute_readonly_function;
+use starcoin_types::account::Account;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;

@@ -4,7 +4,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "network-rpc-core"
 publish = false
-version = "1.12.1"
+version = "1.12.3"
 
 [dependencies]
 anyhow = "1.0.41"
@@ -17,6 +17,8 @@ serde = {version = "1.0.130", features = ["derive"]}
 
 #todo remove this dependency.
 starcoin-types = {path = "../../types", package = "starcoin-types"}
+
+network-types = {path = "../../network/types"}
 
 [dev-dependencies]
 stest = {path = "../../commons/stest"}

@@ -4,7 +4,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "starcoin-executor-benchmark"
 publish = false
-version = "1.12.1"
+version = "1.12.3"
 
 [dependencies]
 anyhow = "1.0.41"
@@ -20,6 +20,7 @@ starcoin-config = {path = "../../config"}
 starcoin-consensus = {path = "../../consensus"}
 starcoin-genesis = {path = "../../genesis"}
 starcoin-state-api = {path = "../../state/api"}
+starcoin-transaction-builder = {path = "../../vm/transaction-builder"}
 starcoin-vm-types = {path = "../../vm/types"}
 statedb = {path = "../../state/statedb", package = "starcoin-statedb"}
 storage = {package = "starcoin-storage", path = "../../storage"}

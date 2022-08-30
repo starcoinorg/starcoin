@@ -107,14 +107,14 @@ pub struct AccountWithStateView {
     pub balances: HashMap<TokenCode, u128>,
 }
 
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 pub struct EventView {
     pub key: EventKey,
     pub sequence_number: u64,
     pub data: EventDataView,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(tag = "type")]
 pub enum EventDataView {
     #[serde(rename = "mint")]

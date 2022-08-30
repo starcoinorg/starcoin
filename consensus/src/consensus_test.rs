@@ -7,11 +7,9 @@ use crate::consensus::Consensus;
 use crate::difficulty::{get_next_target_helper, BlockDiffInfo};
 use crate::{difficult_to_target, target_to_difficulty, G_CRYPTONIGHT};
 use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_time_service::{duration_since_epoch, MockTimeService, TimeService, TimeServiceType};
 use starcoin_types::block::{BlockHeader, BlockHeaderBuilder, RawBlockHeader};
 use starcoin_types::U256;
-use starcoin_vm_types::time::{
-    duration_since_epoch, MockTimeService, TimeService, TimeServiceType,
-};
 use std::collections::VecDeque;
 
 #[stest::test]

@@ -4,7 +4,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "starcoin-txpool"
 publish = false
-version = "1.12.1"
+version = "1.12.3"
 
 [dependencies]
 anyhow = "1.0.41"
@@ -45,10 +45,10 @@ proptest = "1.0.0"
 proptest-derive = {version = "0.3.0"}
 starcoin-genesis = {path = "../genesis"}
 starcoin-open-block = {path = "../chain/open-block"}
+starcoin-transaction-builder = {path = "../vm/transaction-builder"}
 stdlib = {path = "../vm/stdlib"}
 tempfile = "3"
 test-helper = {path = "../test-helper"}
-
 [features]
 default = []
 fuzzing = ["proptest", "proptest-derive", "types/fuzzing"]

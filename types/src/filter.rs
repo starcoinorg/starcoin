@@ -8,7 +8,7 @@ use crate::contract_event::ContractEvent;
 use crate::event::EventKey;
 use crate::language_storage::TypeTag;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Filter {
     /// Blockchain will be searched from this block.
     pub from_block: BlockNumber,
