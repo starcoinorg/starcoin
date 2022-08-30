@@ -87,7 +87,7 @@ echo "Running tests and collecting coverage data ..."
 # cargo llvm-cov -v --lib --package starcoin-rpc-api --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
 # cargo llvm-cov -v --package starcoin-storage --lib --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
 
-export CARGO_LLVM_COV_TARGET_DIR="./target"
+source <(cargo llvm-cov show-env --export-prefix) # Set the environment variables needed to get coverage.
 
 cargo llvm-cov -v --lib --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
 
