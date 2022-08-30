@@ -39,6 +39,16 @@ fn test_readonly_function_call() -> Result<()> {
             f1: u64,
         }
 
+        struct T<phantom G> has drop,copy{
+            count : u64
+        }
+
+        public fun test<G> ():T<G>{
+             T<G>{
+                 count: 1
+             }
+        }
+
         public fun new(): S { Self::S { f1: 20 } }
 
         public fun get_s(): S {
@@ -123,6 +133,24 @@ fn test_readonly_function_call() -> Result<()> {
             AccountAddress::from_hex_literal("0x1").unwrap()
         );
     }
+    {
+        let result = call_contract(
+            &chain_state,
+            compiled_module.self_id(),
+            "test",
+            vec![TypeTag::Struct(StructTag{
+                address:AccountAddress::ONE,
+                module: Identifier::new("STC").unwrap(),
+                name:Identifier::new("STC").unwrap(),
+                type_params:vec![],
+            })],
+            vec![],
+            None,
+        ).unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(bcs_ext::from_bytes::<u64>(result[0].1.as_slice())?, 1u64);
+    }
+
     let _result = call_contract(
         &chain_state,
         compiled_module.self_id(),
