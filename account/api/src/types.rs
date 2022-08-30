@@ -19,6 +19,7 @@ pub struct AccountInfo {
     /// Every wallet must has one default account.
     pub is_default: bool,
     pub is_readonly: bool,
+    pub is_locked: bool,
     pub public_key: AccountPublicKey,
     pub receipt_identifier: String,
 }
@@ -29,12 +30,14 @@ impl AccountInfo {
         public_key: AccountPublicKey,
         is_default: bool,
         is_readonly: bool,
+        is_locked: bool,
     ) -> Self {
         Self {
             address,
             public_key,
             is_default,
             is_readonly,
+            is_locked,
             receipt_identifier: address.to_bech32(),
         }
     }
@@ -56,6 +59,7 @@ impl AccountInfo {
             address,
             is_default: false,
             is_readonly: false,
+            is_locked: false,
             public_key: account_public_key,
             receipt_identifier: address.to_bech32(),
         }
@@ -64,7 +68,7 @@ impl AccountInfo {
 
 impl From<&Account> for AccountInfo {
     fn from(account: &Account) -> Self {
-        AccountInfo::new(account.addr, account.public_key(), false, false)
+        AccountInfo::new(account.addr, account.public_key(), false, false, false)
     }
 }
 

@@ -4,7 +4,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "starcoin-rpc-client"
 publish = false
-version = "1.12.1"
+version = "1.12.3"
 
 [dependencies]
 actix = "0.13"
@@ -34,6 +34,7 @@ jsonrpc-server-utils = "18"
 log = "0.4.16"
 network-api = {path = "../../network/api", package = "network-api"}
 network-p2p-types = {path = "../../network-p2p/types"}
+network-types = {path = "../../network/types"}
 parity-tokio-ipc = "0.9"
 parking_lot = "0.12.1"
 serde = {version = "1.0.130", features = ["derive"]}
@@ -48,7 +49,6 @@ starcoin-state-api = {path = "../../state/api"}
 starcoin-state-tree = {path = "../../state/state-tree"}
 starcoin-sync-api = {path = "../../sync/api"}
 starcoin-txpool-api = {path = "../../txpool/api"}
-network-types = {path = "../../network/types"}
 starcoin-types = {path = "../../types"}
 starcoin-vm-types = {path = "../../vm/types"}
 thiserror = "1.0"

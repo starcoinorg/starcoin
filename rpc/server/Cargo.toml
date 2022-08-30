@@ -4,7 +4,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "starcoin-rpc-server"
 publish = false
-version = "1.12.1"
+version = "1.12.3"
 
 [dependencies]
 actix = "0.13"
@@ -36,6 +36,7 @@ log = "0.4"
 network-api = {path = "../../network/api"}
 network-p2p-types = {path = "../../network-p2p/types"}
 network-rpc-core = {path = "../../network-rpc/core"}
+network-types = {path = "../../network/types"}
 parking_lot = "0.12"
 serde = {version = "1.0.130", features = ["derive"]}
 serde_json = {version = "1.0", features = ["arbitrary_precision"]}
@@ -69,7 +70,6 @@ starcoin-storage = {path = "../../storage"}
 starcoin-sync-api = {path = "../../sync/api"}
 starcoin-txpool = {path = "../../txpool"}
 starcoin-txpool-api = {path = "../../txpool/api"}
-network-types = {path = "../../network/types"}
 starcoin-types = {path = "../../types"}
 starcoin-vm-types = {path = "../../vm/types"}
 thiserror = "1.0"
@@ -80,8 +80,8 @@ starcoin-chain-mock = {path = "../../chain/mock"}
 starcoin-executor = {path = "../../executor"}
 starcoin-genesis = {path = "../../genesis"}
 starcoin-rpc-client = {path = "../client"}
+starcoin-transaction-builder = {path = "../../vm/transaction-builder"}
 starcoin-txpool-mock-service = {path = "../../txpool/mock-service"}
 stest = {path = "../../commons/stest"}
 test-helper = {path = "../../test-helper"}
 tokio = {version = "^1", features = ["full"]}
-starcoin-transaction-builder = {path = "../../vm/transaction-builder"}

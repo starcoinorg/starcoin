@@ -4,7 +4,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "starcoin-faucet"
 publish = false
-version = "1.12.1"
+version = "1.12.3"
 
 [dependencies]
 anyhow = "1.0.41"
@@ -24,8 +24,8 @@ starcoin-executor = {path = "../../executor"}
 starcoin-logger = {path = "../../commons/logger"}
 starcoin-rpc-client = {path = "../../rpc/client"}
 starcoin-state-api = {path = "../../state/api"}
-starcoin-types = {path = "../../types"}
 starcoin-transaction-builder = {path = "../../vm/transaction-builder"}
+starcoin-types = {path = "../../types"}
 tiny_http = "0.8.2"
 tokio = {version = "^1", features = ["full"]}
 tokio-executor = {version = "0.2.0-alpha.6", features = ["blocking"]}

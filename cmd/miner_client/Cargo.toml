@@ -2,7 +2,7 @@
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
 name = "starcoin-miner-client"
-version = "1.12.1"
+version = "1.12.3"
 
 [dependencies]
 actix = "0.13"
@@ -18,8 +18,8 @@ jsonrpc-core-client = {version = "18"}
 jsonrpc-server-utils = {version = "18"}
 logger = {path = "../../commons/logger", package = "starcoin-logger"}
 starcoin-config = {path = "../../config"}
+starcoin-time-service = {path = "../../commons/time-service"}
 starcoin-types = {path = "../../types"}
-starcoin-time-service={path="../../commons/time-service"}
 tokio = {version = "^1", features = ["full"]}
 
 async-trait = "0.1.53"

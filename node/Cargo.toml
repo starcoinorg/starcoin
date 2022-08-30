@@ -4,7 +4,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "starcoin-node"
 publish = false
-version = "1.12.1"
+version = "1.12.3"
 
 [dependencies]
 actix = "0.13"
@@ -29,10 +29,9 @@ starcoin-consensus = {path = "../consensus"}
 starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 starcoin-dev = {path = "../vm/dev"}
 starcoin-executor = {path = "../executor"}
-starcoin-vm-runtime = {path = "../vm/vm-runtime" }
 starcoin-genesis = {path = "../genesis"}
 starcoin-logger = {path = "../commons/logger"}
-starcoin-metrics = {path = "../commons/metrics", features=["server"]}
+starcoin-metrics = {path = "../commons/metrics", features = ["server"]}
 starcoin-miner = {path = "../miner"}
 starcoin-miner-client = {path = "../cmd/miner_client"}
 starcoin-network = {path = "../network"}
@@ -52,6 +51,7 @@ starcoin-sync-api = {package = "starcoin-sync-api", path = "../sync/api"}
 starcoin-txpool = {path = "../txpool"}
 starcoin-txpool-api = {path = "../txpool/api"}
 starcoin-types = {path = "../types"}
+starcoin-vm-runtime = {path = "../vm/vm-runtime"}
 thiserror = "1.0"
 timeout-join-handler = {path = "../commons/timeout-join-handler"}
 tokio = {version = "^1", features = ["full"]}

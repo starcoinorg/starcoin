@@ -32,28 +32,28 @@ fi
 
 #set -e
 
-# Check that grcov is installed
-if ! [ -x "$(command -v grcov)" ]; then
-  echo "Error: grcov is not installed." >&2
-  if [ $SKIP_PROMPTS -eq 0 ]; then
-    read -p "Install grcov? [yY/*] " -n 1 -r
-    echo ""
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-      [[ "$0" == "$BASH_SOURCE" ]] && exit 1 || return 1
-    fi
-    cargo install grcov
-  else
-    exit 1
-  fi
-fi
+# # Check that grcov is installed
+# if ! [ -x "$(command -v grcov)" ]; then
+#   echo "Error: grcov is not installed." >&2
+#   if [ $SKIP_PROMPTS -eq 0 ]; then
+#     read -p "Install grcov? [yY/*] " -n 1 -r
+#     echo ""
+#     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+#       [[ "$0" == "$BASH_SOURCE" ]] && exit 1 || return 1
+#     fi
+#     cargo install grcov
+#   else
+#     exit 1
+#   fi
+# fi
 
-# Check that lcov is installed
-if ! [ -x "$(command -v lcov)" ]; then
-  echo "Error: lcov is not installed." >&2
-  echo "Documentation for lcov can be found at http://ltp.sourceforge.net/coverage/lcov.php"
-  echo "If on macOS and using homebrew, run 'brew install lcov'"
-  exit 1
-fi
+# # Check that lcov is installed
+# if ! [ -x "$(command -v lcov)" ]; then
+#   echo "Error: lcov is not installed." >&2
+#   echo "Documentation for lcov can be found at http://ltp.sourceforge.net/coverage/lcov.php"
+#   echo "If on macOS and using homebrew, run 'brew install lcov'"
+#   exit 1
+# fi
 
 # Warn that cargo clean will happen
 if [ $SKIP_PROMPTS -eq 0 ]; then
@@ -81,7 +81,11 @@ echo "Cleaning project..."
 )
 
 # Run tests
-echo "Running tests..."
-cargo xtest --html-lcov-dir="${COVERAGE_DIR}" --no-fail-fast --lib -j 5 || true
+echo "Running tests and collecting coverage data ..."
+# cargo llvm-cov -v --lib --ignore-run-fail --workspace --test unit_tests::transaction_test::transaction_payload_bcs_roundtrip --no-run --lcov --jobs 5 --output-path "${COVERAGE_DIR}"/lcov.info || true
+# cargo llvm-cov -v --lib --ignore-run-fail  --package starcoin-transactional-test-harness  --lcov --jobs 5 --output-path "${COVERAGE_DIR}"/lcov.info || true
+# cargo llvm-cov -v --lib --package starcoin-rpc-api --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
+# cargo llvm-cov -v --package starcoin-storage --lib --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
+cargo llvm-cov --lib --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
 
-echo "Done. Please view report at ${COVERAGE_DIR}/index.html"
+echo "Done. Please view report at ${COVERAGE_DIR}/lcov.info"

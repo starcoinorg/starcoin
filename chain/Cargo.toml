@@ -4,7 +4,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "starcoin-chain"
 publish = false
-version = "1.12.1"
+version = "1.12.3"
 
 [dependencies]
 anyhow = "1.0.41"
@@ -26,10 +26,10 @@ starcoin-open-block = {path = "./open-block"}
 starcoin-service-registry = {path = "../commons/service-registry"}
 starcoin-state-api = {path = "../state/api"}
 starcoin-statedb = {path = "../state/statedb"}
+starcoin-time-service = {path = "../commons/time-service"}
 starcoin-types = {path = "../types", package = "starcoin-types"}
 starcoin-vm-types = {path = "../vm/types"}
 state-tree = {path = "../state/state-tree", package = "starcoin-state-tree"}
-starcoin-time-service={path="../commons/time-service"}
 storage = {package = "starcoin-storage", path = "../storage"}
 thiserror = "1.0"
 

@@ -4,15 +4,15 @@ edition = "2021"
 license = "Apache-2.0"
 name = "starcoin-vm-runtime"
 publish = false
-version = "1.12.1"
+version = "1.12.3"
 
 [dependencies]
 anyhow = "1.0.41"
-once_cell = "1.13.0"
-tracing = "0.1.34"
 bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
 crypto = {package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 move-core-types = {git = "https://github.com/starcoinorg/move", rev = "9d1e76b770d630ad646a540b325f88ef986af3a3"}
+once_cell = "1.13.0"
+tracing = "0.1.34"
 
 move-vm-runtime = {git = "https://github.com/starcoinorg/move", rev = "9d1e76b770d630ad646a540b325f88ef986af3a3"}
 num_enum = "0.5.7"
@@ -25,15 +25,13 @@ starcoin-natives = {path = "../natives"}
 starcoin-types = {path = "../../types"}
 starcoin-vm-types = {path = "../types"}
 
-move-stdlib = {git = "https://github.com/starcoinorg/move", rev = "9d1e76b770d630ad646a540b325f88ef986af3a3", optional=true}
-starcoin-metrics = {path = "../../commons/metrics", optional=true}
-
-
+move-stdlib = {git = "https://github.com/starcoinorg/move", rev = "9d1e76b770d630ad646a540b325f88ef986af3a3", optional = true}
+starcoin-metrics = {path = "../../commons/metrics", optional = true}
 
 [dev-dependencies]
 stdlib = {package = "stdlib", path = "../stdlib"}
 
 [features]
 default = ["metrics"]
-metrics=["starcoin-metrics"]
+metrics = ["starcoin-metrics"]
 testing = ["move-stdlib/testing", "starcoin-natives/testing"]

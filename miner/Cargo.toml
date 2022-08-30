@@ -2,7 +2,7 @@
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
 name = "starcoin-miner"
-version = "1.12.1"
+version = "1.12.3"
 
 [dependencies]
 anyhow = "1.0.41"
@@ -39,13 +39,13 @@ tokio = {version = "^1", features = ["full"]}
 types = {path = "../types", package = "starcoin-types"}
 
 [dev-dependencies]
-starcoin-time-service={path="../commons/time-service"}
 network-rpc = {path = "../network-rpc", package = "starcoin-network-rpc"}
 starcoin-genesis = {path = "../genesis"}
 starcoin-network-rpc-api = {path = "../network-rpc/api"}
 starcoin-node = {path = "../node"}
 starcoin-state-service = {path = "../state/service"}
 starcoin-sync-api = {package = "starcoin-sync-api", path = "../sync/api"}
+starcoin-time-service = {path = "../commons/time-service"}
 stest = {path = "../commons/stest"}
 sync = {path = "../sync", package = "starcoin-sync"}
 test-helper = {path = "../test-helper"}
