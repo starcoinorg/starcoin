@@ -1,8 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-#![cfg_attr(coverage_nightly, feature(no_coverage))]
-
 use jsonrpc_core::{BoxFuture, Error};
 
 pub type FutureResult<T> = BoxFuture<Result<T, Error>>;
