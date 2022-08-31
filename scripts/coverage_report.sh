@@ -60,7 +60,9 @@ if [ $SKIP_PROMPTS -eq 0 ]; then
   fi
 fi
 
+echo --- llvm-cov env ---
 cargo llvm-cov show-env
+echo --- llvm-cov env end ---
 
 # Set the flags necessary for coverage output
 # export RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off"
@@ -80,7 +82,12 @@ echo "Cleaning project..."
 
 source <(cargo llvm-cov show-env --export-prefix) # Set the environment variables needed to get coverage.
 
-export CARGO_LLVM_COV_TARGET_DIR=./target
+export CARGO_LLVM_COV_TARGET_DIR=`pwd`/target
+echo 'CARGO_LLVM_COV_TARGET_DIR is' $CARGO_LLVM_COV_TARGET_DIR
+
+echo --- new llvm-cov env ---
+cargo llvm-cov show-env
+echo --- llvm-cov env end ---
 
 # Run tests
 echo "Running tests and collecting coverage data ..."
