@@ -29,6 +29,8 @@ use starcoin_crypto::{
 use std::ops::Deref;
 use std::{convert::TryFrom, fmt};
 
+use crate::state_store::state_key::StateKey;
+use crate::write_set::WriteOp;
 pub use error::CallError;
 pub use error::Error as TransactionError;
 pub use module::Module;
@@ -689,6 +691,16 @@ impl TransactionOutput {
 
     pub fn into_inner(self) -> (WriteSet, Vec<ContractEvent>, u64, TransactionStatus) {
         (self.write_set, self.events, self.gas_used, self.status)
+    }
+
+    pub fn table_items(&self) -> Vec<(StateKey, WriteOp)> {
+        let mut table_items = vec![];
+        for (state_key, op) in &self.write_set {
+            if let StateKey::TableItem(table_item) = state_key {
+                table_items.push((StateKey::TableItem(table_item.clone()), op.clone()));
+            }
+        }
+        table_items
     }
 }
 
