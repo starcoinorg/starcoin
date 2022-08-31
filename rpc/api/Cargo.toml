@@ -19,6 +19,7 @@ jsonrpc-core-client = {version = "18", features = [
   "ipc",
   "ws",
   "arbitrary_precision",
+  "tls"
 ]}
 jsonrpc-derive = {git = "https://github.com/starcoinorg/jsonrpc", rev = "2f6c2b33d3048d57a85347ee735b312df0117b15"}
 jsonrpc-pubsub = "18"
