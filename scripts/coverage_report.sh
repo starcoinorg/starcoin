@@ -96,10 +96,6 @@ echo "Running tests and collecting coverage data ..."
 # cargo llvm-cov -v --lib --package starcoin-rpc-api --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
 # cargo llvm-cov -v --package starcoin-storage --lib --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
 
-# Generate bin in advance for test case `test_generated_schema_are_up_to_date_in_git` to avoid error
-# Are there better solutions ?
-cargo build --bin starcoin-rpc-schema-generate
-
 cargo llvm-cov --lib -v --ignore-run-fail --lcov --jobs 6 --output-path "${COVERAGE_DIR}"/lcov.info -- -Z unstable-options --report-time || true
 
 echo "Done. Please view report at ${COVERAGE_DIR}/lcov.info"
