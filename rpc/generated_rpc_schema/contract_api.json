@@ -852,6 +852,7 @@
             "explained_status",
             "gas_used",
             "status",
+            "table_item_write_set",
             "write_set"
           ],
           "properties": {
@@ -1151,6 +1152,46 @@
                   "additionalProperties": false
                 }
               ]
+            },
+            "table_item_write_set": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "action",
+                  "table_item"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "Deletion",
+                      "Value"
+                    ]
+                  },
+                  "table_item": {
+                    "type": "object",
+                    "required": [
+                      "handle",
+                      "key"
+                    ],
+                    "properties": {
+                      "handle": {
+                        "type": "string"
+                      },
+                      "key": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "value": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
             },
             "write_set": {
               "type": "array",
@@ -2088,6 +2129,7 @@
             "explained_status",
             "gas_used",
             "status",
+            "table_item_write_set",
             "write_set"
           ],
           "properties": {
@@ -2387,6 +2429,46 @@
                   "additionalProperties": false
                 }
               ]
+            },
+            "table_item_write_set": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "action",
+                  "table_item"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "Deletion",
+                      "Value"
+                    ]
+                  },
+                  "table_item": {
+                    "type": "object",
+                    "required": [
+                      "handle",
+                      "key"
+                    ],
+                    "properties": {
+                      "handle": {
+                        "type": "string"
+                      },
+                      "key": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "value": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
             },
             "write_set": {
               "type": "array",

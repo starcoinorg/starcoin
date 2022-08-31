@@ -17,11 +17,9 @@ use starcoin_resource_viewer::module_cache::ModuleCache;
 use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_rpc_api::contract_api::ContractApi;
 use starcoin_rpc_api::types::{
-    AnnotatedMoveStructView, AnnotatedMoveValueView, ContractCall, DryRunOutputStateKeyView,
-    DryRunOutputTableItemView, DryRunOutputView, DryRunTransactionRequest, FunctionIdView,
-    ModuleIdView, StateKeyView, StrView, StructTagView, TransactionOutputStateKeyView,
-    TransactionOutputTableItemView, TransactionOutputView, WriteOpValueStateKeyView,
-    WriteOpValueView,
+    AnnotatedMoveStructView, AnnotatedMoveValueView, ContractCall, DryRunOutputView,
+    DryRunTransactionRequest, FunctionIdView, ModuleIdView, StrView, StructTagView,
+    TransactionOutputView, WriteOpValueView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::ChainStateAsyncService;
@@ -226,118 +224,6 @@ where
         Box::pin(f.boxed())
     }
 
-    fn dry_run_table_item(
-        &self,
-        txn: DryRunTransactionRequest,
-    ) -> FutureResult<DryRunOutputTableItemView> {
-        // XXX FIXME YSG
-        let service = self.chain_state.clone();
-        let storage = self.storage.clone();
-        let txn_builder = self.txn_request_filler();
-        let metrics = self.playground.metrics.clone();
-        let f = async move {
-            let state_root = service.state_root().await?;
-            let DryRunTransactionRequest {
-                transaction,
-                sender_public_key,
-            } = txn;
-
-            let txn = txn_builder.fill_transaction(transaction).await?;
-            let state_view = ChainStateDB::new(storage, Some(state_root));
-            dry_run_table_item(
-                &state_view,
-                DryRunTransaction {
-                    raw_txn: txn,
-                    public_key: sender_public_key.0,
-                },
-                metrics,
-            )
-        }
-        .map_err(map_err);
-        Box::pin(f.boxed())
-    }
-
-    fn dry_run_raw_table_item(
-        &self,
-        raw_txn: String,
-        sender_public_key: StrView<AccountPublicKey>,
-    ) -> FutureResult<DryRunOutputTableItemView> {
-        // XXX FIXME YSG
-        let service = self.chain_state.clone();
-        let storage = self.storage.clone();
-        let metrics = self.playground.metrics.clone();
-        let f = async move {
-            let state_root = service.state_root().await?;
-            let raw_txn = RawUserTransaction::from_str(raw_txn.as_str())?;
-            let state_view = ChainStateDB::new(storage, Some(state_root));
-            dry_run_table_item(
-                &state_view,
-                DryRunTransaction {
-                    raw_txn,
-                    public_key: sender_public_key.0,
-                },
-                metrics,
-            )
-        }
-        .map_err(map_err);
-        Box::pin(f.boxed())
-    }
-
-    fn dry_run_state_key(
-        &self,
-        txn: DryRunTransactionRequest,
-    ) -> FutureResult<DryRunOutputStateKeyView> {
-        let service = self.chain_state.clone();
-        let storage = self.storage.clone();
-        let txn_builder = self.txn_request_filler();
-        let metrics = self.playground.metrics.clone();
-        let f = async move {
-            let state_root = service.state_root().await?;
-            let DryRunTransactionRequest {
-                transaction,
-                sender_public_key,
-            } = txn;
-
-            let txn = txn_builder.fill_transaction(transaction).await?;
-            let state_view = ChainStateDB::new(storage, Some(state_root));
-            dry_run_state_key(
-                &state_view,
-                DryRunTransaction {
-                    raw_txn: txn,
-                    public_key: sender_public_key.0,
-                },
-                metrics,
-            )
-        }
-        .map_err(map_err);
-        Box::pin(f.boxed())
-    }
-
-    fn dry_run_raw_state_key(
-        &self,
-        raw_txn: String,
-        sender_public_key: StrView<AccountPublicKey>,
-    ) -> FutureResult<DryRunOutputStateKeyView> {
-        let service = self.chain_state.clone();
-        let storage = self.storage.clone();
-        let metrics = self.playground.metrics.clone();
-        let f = async move {
-            let state_root = service.state_root().await?;
-            let raw_txn = RawUserTransaction::from_str(raw_txn.as_str())?;
-            let state_view = ChainStateDB::new(storage, Some(state_root));
-            dry_run_state_key(
-                &state_view,
-                DryRunTransaction {
-                    raw_txn,
-                    public_key: sender_public_key.0,
-                },
-                metrics,
-            )
-        }
-        .map_err(map_err);
-        Box::pin(f.boxed())
-    }
-
     fn resolve_function(&self, function_id: FunctionIdView) -> FutureResult<FunctionABI> {
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
@@ -433,76 +319,6 @@ pub fn dry_run<S: StateView>(
         }
     }
     Ok(DryRunOutputView {
-        explained_status: vm_status_explain,
-        txn_output,
-    })
-}
-
-pub fn dry_run_table_item<S: StateView>(
-    state_view: &S,
-    txn: DryRunTransaction,
-    metrics: Option<VMMetrics>,
-) -> anyhow::Result<DryRunOutputTableItemView> {
-    let (vm_status, output) = starcoin_dev::playground::dry_run(state_view, txn, metrics)?;
-    let vm_status_explain = vm_status_translator::explain_vm_status(state_view, vm_status)?;
-    let txn_output: TransactionOutputTableItemView = output.into();
-    Ok(DryRunOutputTableItemView {
-        explained_status: vm_status_explain,
-        txn_output,
-    })
-}
-
-pub fn dry_run_state_key<S: StateView>(
-    state_view: &S,
-    txn: DryRunTransaction,
-    metrics: Option<VMMetrics>,
-) -> anyhow::Result<DryRunOutputStateKeyView> {
-    let (vm_status, output) = starcoin_dev::playground::dry_run(state_view, txn.clone(), metrics)?;
-    let vm_status_explain = vm_status_translator::explain_vm_status(state_view, vm_status)?;
-    let mut txn_output: TransactionOutputStateKeyView = output.into();
-
-    let resolver = {
-        let module_cache = ModuleCache::new();
-        // If the txn is package txn, we need to use modules in the package to resolve transaction output.
-        if let TransactionPayload::Package(p) = txn.raw_txn.into_payload() {
-            let modules = p
-                .modules()
-                .iter()
-                .map(|m| CompiledModule::deserialize(m.code()))
-                .collect::<Result<Vec<_>, _>>()?;
-            for m in modules {
-                module_cache.insert(m.self_id(), m);
-            }
-        }
-        ABIResolver::new_with_module_cache(state_view, module_cache)
-    };
-    for action in txn_output.write_set.iter_mut() {
-        match &action.state_key {
-            StateKeyView::AccessPath(access_path) => {
-                let access_path = access_path.clone();
-                if let Some(value) = &mut action.value {
-                    match value {
-                        WriteOpValueStateKeyView::Code(view) => {
-                            view.abi = Some(resolver.resolve_module_code(view.code.0.as_slice())?);
-                        }
-                        WriteOpValueStateKeyView::Resource(view) => {
-                            let struct_tag = access_path.path.as_struct_tag().ok_or_else(|| {
-                                format_err!("invalid resource access path: {}", access_path)
-                            })?;
-                            let struct_abi = resolver.resolve_struct_tag(struct_tag)?;
-                            view.json = Some(decode_move_value(
-                                &TypeInstantiation::Struct(Box::new(struct_abi)),
-                                view.raw.0.as_slice(),
-                            )?)
-                        }
-                        _ => unreachable!(),
-                    }
-                }
-            }
-            StateKeyView::TableItem(_table_item) => {}
-        }
-    }
-    Ok(DryRunOutputStateKeyView {
         explained_status: vm_status_explain,
         txn_output,
     })

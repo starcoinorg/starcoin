@@ -29,7 +29,7 @@ use starcoin_dev::playground::call_contract;
 use starcoin_genesis::Genesis;
 use starcoin_rpc_api::types::{
     ContractCall, FunctionIdView, TransactionArgumentView, TransactionEventView,
-    TransactionOutputStateKeyAction, TypeTagView,
+    TransactionOutputAction, TransactionOutputTableItemAction, TypeTagView,
 };
 use starcoin_state_api::{ChainStateWriter, StateReaderExt};
 use starcoin_statedb::ChainStateDB;
@@ -274,9 +274,11 @@ struct TransactionResult {
     gas_used: u64,
     status: TransactionStatus,
     #[serde(skip_serializing_if = "Option::is_none")]
-    write_set: Option<Vec<TransactionOutputStateKeyAction>>,
+    write_set: Option<Vec<TransactionOutputAction>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     events: Option<Vec<TransactionEventView>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    table_item_write_set: Option<Vec<TransactionOutputTableItemAction>>,
 }
 
 pub struct StarcoinTestAdapter<'a> {
@@ -602,6 +604,7 @@ impl<'a> StarcoinTestAdapter<'a> {
                     status: output.status().clone(),
                     write_set: None,
                     events: None,
+                    table_item_write_set: None,
                 };
                 Ok(Some(serde_json::to_string_pretty(&result)?))
             }
@@ -904,16 +907,10 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             status: output.status().clone(),
             write_set: None,
             events: None,
+            table_item_write_set: None,
         };
         if extra_args.verbose {
-            result.write_set = Some(
-                output
-                    .write_set()
-                    .clone()
-                    .into_iter()
-                    .map(TransactionOutputStateKeyAction::from)
-                    .collect(),
-            );
+            convert_write_set(&mut result, &output);
             result.events = Some(
                 output
                     .events()
@@ -986,16 +983,10 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             status: output.status().clone(),
             write_set: None,
             events: None,
+            table_item_write_set: None,
         };
         if extra_args.verbose {
-            result.write_set = Some(
-                output
-                    .write_set()
-                    .clone()
-                    .into_iter()
-                    .map(TransactionOutputStateKeyAction::from)
-                    .collect(),
-            );
+            convert_write_set(&mut result, &output);
             result.events = Some(
                 output
                     .events()
@@ -1071,4 +1062,31 @@ pub fn run_test_impl(
     fully_compiled_program_opt: Option<&FullyCompiledProgram>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     framework::run_test_impl::<StarcoinTestAdapter>(path, fully_compiled_program_opt)
+}
+
+fn convert_write_set(result: &mut TransactionResult, output: &TransactionOutput) {
+    let mut access_write_set = vec![];
+    let mut table_item_write_set = vec![];
+    for (state_key, op) in output.write_set().clone() {
+        match state_key {
+            StateKey::AccessPath(access_path) => {
+                access_write_set.push((access_path, op));
+            }
+            StateKey::TableItem(table_item) => {
+                table_item_write_set.push((table_item, op));
+            }
+        }
+    }
+    result.write_set = Some(
+        access_write_set
+            .into_iter()
+            .map(TransactionOutputAction::from)
+            .collect(),
+    );
+    result.table_item_write_set = Some(
+        table_item_write_set
+            .into_iter()
+            .map(TransactionOutputTableItemAction::from)
+            .collect(),
+    );
 }

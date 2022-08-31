@@ -1097,15 +1097,22 @@ pub struct TransactionOutputView {
     pub gas_used: StrView<u64>,
     pub write_set: Vec<TransactionOutputAction>,
     pub events: Vec<TransactionEventView>,
+    pub table_item_write_set: Vec<TransactionOutputTableItemAction>,
 }
 
 impl From<TransactionOutput> for TransactionOutputView {
     fn from(txn_output: TransactionOutput) -> Self {
         let (write_set, events, gas_used, status) = txn_output.into_inner();
         let mut access_write_set = vec![];
+        let mut table_item_write_set = vec![];
         for (state_key, op) in write_set {
-            if let StateKey::AccessPath(access_path) = state_key {
-                access_write_set.push((access_path, op));
+            match state_key {
+                StateKey::AccessPath(access_path) => {
+                    access_write_set.push((access_path, op));
+                }
+                StateKey::TableItem(table_item) => {
+                    table_item_write_set.push((table_item, op));
+                }
             }
         }
         Self {
@@ -1115,6 +1122,10 @@ impl From<TransactionOutput> for TransactionOutputView {
             write_set: access_write_set
                 .into_iter()
                 .map(TransactionOutputAction::from)
+                .collect(),
+            table_item_write_set: table_item_write_set
+                .into_iter()
+                .map(TransactionOutputTableItemAction::from)
                 .collect(),
         }
     }
@@ -1160,42 +1171,6 @@ pub enum WriteOpView {
     Value,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct DryRunOutputTableItemView {
-    pub explained_status: VmStatusExplainView,
-    #[serde(flatten)]
-    pub txn_output: TransactionOutputTableItemView,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct TransactionOutputTableItemView {
-    pub status: TransactionStatusView,
-    pub gas_used: StrView<u64>,
-    pub write_set: Vec<TransactionOutputTableItemAction>,
-    pub events: Vec<TransactionEventView>,
-}
-
-impl From<TransactionOutput> for TransactionOutputTableItemView {
-    fn from(txn_output: TransactionOutput) -> Self {
-        let (write_set, events, gas_used, status) = txn_output.into_inner();
-        let mut table_item_write_set = vec![];
-        for (state_key, op) in write_set {
-            if let StateKey::TableItem(table_item) = state_key {
-                table_item_write_set.push((table_item, op));
-            }
-        }
-        Self {
-            events: events.into_iter().map(Into::into).collect(),
-            gas_used: gas_used.into(),
-            status: status.into(),
-            write_set: table_item_write_set
-                .into_iter()
-                .map(TransactionOutputTableItemAction::from)
-                .collect(),
-        }
-    }
-}
-
 impl From<(TableItem, WriteOp)> for TransactionOutputTableItemAction {
     fn from((table_item, op): (TableItem, WriteOp)) -> Self {
         let (action, value) = match op {
@@ -1217,78 +1192,6 @@ pub struct TransactionOutputTableItemAction {
     pub action: WriteOpView,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub value: Option<StrView<Vec<u8>>>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct DryRunOutputStateKeyView {
-    pub explained_status: VmStatusExplainView,
-    #[serde(flatten)]
-    pub txn_output: TransactionOutputStateKeyView,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct TransactionOutputStateKeyView {
-    pub status: TransactionStatusView,
-    pub gas_used: StrView<u64>,
-    pub write_set: Vec<TransactionOutputStateKeyAction>,
-    pub events: Vec<TransactionEventView>,
-}
-
-impl From<TransactionOutput> for TransactionOutputStateKeyView {
-    fn from(txn_output: TransactionOutput) -> Self {
-        let (write_set, events, gas_used, status) = txn_output.into_inner();
-        Self {
-            events: events.into_iter().map(Into::into).collect(),
-            gas_used: gas_used.into(),
-            status: status.into(),
-            write_set: write_set
-                .into_iter()
-                .map(TransactionOutputStateKeyAction::from)
-                .collect(),
-        }
-    }
-}
-
-impl From<(StateKey, WriteOp)> for TransactionOutputStateKeyAction {
-    fn from((state_key, op): (StateKey, WriteOp)) -> Self {
-        let (action, value) = match op {
-            WriteOp::Deletion => (WriteOpView::Deletion, None),
-            WriteOp::Value(v) => (
-                WriteOpView::Value,
-                match &state_key {
-                    StateKey::AccessPath(access_path) => Some(if access_path.path.is_resource() {
-                        WriteOpValueStateKeyView::Resource(v.into())
-                    } else {
-                        WriteOpValueStateKeyView::Code(v.into())
-                    }),
-                    StateKey::TableItem(_table_item) => {
-                        Some(WriteOpValueStateKeyView::Str(StrView(v)))
-                    }
-                },
-            ),
-        };
-
-        TransactionOutputStateKeyAction {
-            state_key: state_key.into(),
-            action,
-            value,
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct TransactionOutputStateKeyAction {
-    pub state_key: StateKeyView,
-    pub action: WriteOpView,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub value: Option<WriteOpValueStateKeyView>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub enum WriteOpValueStateKeyView {
-    Code(CodeView),
-    Resource(ResourceView),
-    Str(StrView<Vec<u8>>),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
