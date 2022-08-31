@@ -54,6 +54,8 @@ fn assert_that_version_control_has_no_unstaged_changes() {
     assert!(output.status.success());
 }
 
+// temporally disable cov, need to be enabled
+#[cfg_attr(coverage, no_coverage)]
 #[test]
 fn test_generated_schema_are_up_to_date_in_git() {
     // Better not run the `stdlib` tool when the repository is not in a clean state.
