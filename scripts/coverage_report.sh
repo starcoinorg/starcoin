@@ -63,9 +63,9 @@ fi
 cargo llvm-cov show-env
 
 # Set the flags necessary for coverage output
-export RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off"
-export RUSTC_BOOTSTRAP=1
-export CARGO_INCREMENTAL=0
+# export RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off"
+# export RUSTC_BOOTSTRAP=1
+# export CARGO_INCREMENTAL=0
 export RUST_MIN_STACK=8388608 # 8 * 1024 * 1024
 
 echo check ulimits
@@ -89,6 +89,6 @@ echo "Running tests and collecting coverage data ..."
 # cargo llvm-cov -v --lib --package starcoin-rpc-api --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
 # cargo llvm-cov -v --package starcoin-storage --lib --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
 
-cargo llvm-cov -v --lib --ignore-run-fail --lcov --jobs 7 --output-path "${COVERAGE_DIR}"/lcov.info || true
+cargo llvm-cov -v --ignore-run-fail --lcov --jobs 6 --output-path "${COVERAGE_DIR}"/lcov.info || true
 
 echo "Done. Please view report at ${COVERAGE_DIR}/lcov.info"
