@@ -29,7 +29,7 @@ use starcoin_dev::playground::call_contract;
 use starcoin_genesis::Genesis;
 use starcoin_rpc_api::types::{
     ContractCall, FunctionIdView, TransactionArgumentView, TransactionEventView,
-    TransactionOutputActionV2, TypeTagView,
+    TransactionOutputStateKeyAction, TypeTagView,
 };
 use starcoin_state_api::{ChainStateWriter, StateReaderExt};
 use starcoin_statedb::ChainStateDB;
@@ -274,7 +274,7 @@ struct TransactionResult {
     gas_used: u64,
     status: TransactionStatus,
     #[serde(skip_serializing_if = "Option::is_none")]
-    write_set: Option<Vec<TransactionOutputActionV2>>,
+    write_set: Option<Vec<TransactionOutputStateKeyAction>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     events: Option<Vec<TransactionEventView>>,
 }
@@ -911,7 +911,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                     .write_set()
                     .clone()
                     .into_iter()
-                    .map(TransactionOutputActionV2::from)
+                    .map(TransactionOutputStateKeyAction::from)
                     .collect(),
             );
             result.events = Some(
@@ -993,7 +993,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                     .write_set()
                     .clone()
                     .into_iter()
-                    .map(TransactionOutputActionV2::from)
+                    .map(TransactionOutputStateKeyAction::from)
                     .collect(),
             );
             result.events = Some(

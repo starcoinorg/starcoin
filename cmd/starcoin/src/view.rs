@@ -8,7 +8,7 @@ use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 pub use starcoin_rpc_api::types::TransactionOutputView;
 use starcoin_rpc_api::types::{
-    DryRunOutputView, RawUserTransactionView, StrView, TransactionEventResponse,
+    DryRunOutputStateKeyView, RawUserTransactionView, StrView, TransactionEventResponse,
     TransactionEventView, TransactionInfoView, TypeTagView,
 };
 use starcoin_types::account_address::AccountAddress;
@@ -284,7 +284,7 @@ impl From<ContractEvent> for EventView {
 pub struct ExecuteResultView {
     pub raw_txn: RawUserTransactionView,
     pub raw_txn_hex: String,
-    pub dry_run_output: DryRunOutputView,
+    pub dry_run_output: DryRunOutputStateKeyView,
     pub execute_output: Option<ExecutionOutputView>,
 }
 
@@ -292,7 +292,7 @@ impl ExecuteResultView {
     pub fn new(
         raw_txn: RawUserTransactionView,
         raw_txn_hex: String,
-        dry_run_output: DryRunOutputView,
+        dry_run_output: DryRunOutputStateKeyView,
     ) -> Self {
         Self {
             raw_txn,
