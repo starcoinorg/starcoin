@@ -70,7 +70,7 @@ fn test_generated_schema_are_up_to_date_in_git() {
     assert_that_version_control_has_no_unstaged_changes();
 
     assert!(Command::new("cargo")
-        .current_dir(path)
+        .current_dir(path.parent().unwrap())
         .arg("run")
         .arg("--bin")
         .arg("starcoin-rpc-schema-generate")
