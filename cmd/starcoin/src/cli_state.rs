@@ -266,7 +266,7 @@ impl CliState {
     ) -> Result<ExecuteResultView> {
         let sender = self.get_account(raw_txn.sender())?;
         let public_key = sender.public_key;
-        let dry_output = self.client.dry_run_raw_state_key(DryRunTransaction {
+        let dry_output = self.client.dry_run_raw(DryRunTransaction {
             public_key: public_key.clone(),
             raw_txn: raw_txn.clone(),
         })?;

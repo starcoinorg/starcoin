@@ -1,8 +1,7 @@
 pub use self::gen_client::Client as ContractClient;
 use crate::types::{
-    AnnotatedMoveStructView, AnnotatedMoveValueView, ContractCall, DryRunOutputStateKeyView,
-    DryRunOutputTableItemView, DryRunOutputView, DryRunTransactionRequest, FunctionIdView,
-    ModuleIdView, StrView, StructTagView,
+    AnnotatedMoveStructView, AnnotatedMoveValueView, ContractCall, DryRunOutputView,
+    DryRunTransactionRequest, FunctionIdView, ModuleIdView, StrView, StructTagView,
 };
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
@@ -44,36 +43,6 @@ pub trait ContractApi {
         raw_txn: String,
         sender_public_key: StrView<AccountPublicKey>,
     ) -> FutureResult<DryRunOutputView>;
-
-    #[rpc(name = "contract.dry_run_table_item")]
-    fn dry_run_table_item(
-        &self,
-        txn: DryRunTransactionRequest,
-    ) -> FutureResult<DryRunOutputTableItemView>;
-
-    /// Dry run RawUserTransaction, the raw_txn parameter is RawUserTransaction's hex
-    #[rpc(name = "contract.dry_run_raw_table_item")]
-    fn dry_run_raw_table_item(
-        &self,
-        raw_txn: String,
-        sender_public_key: StrView<AccountPublicKey>,
-    ) -> FutureResult<DryRunOutputTableItemView>;
-
-    /// return with StateKey
-    #[rpc(name = "contract.dry_run_state_key")]
-    fn dry_run_state_key(
-        &self,
-        txn: DryRunTransactionRequest,
-    ) -> FutureResult<DryRunOutputStateKeyView>;
-
-    /// Dry run RawUserTransaction, the raw_txn parameter is RawUserTransaction's hex
-    #[rpc(name = "contract.dry_run_raw_state_key")]
-    fn dry_run_raw_state_key(
-        &self,
-        raw_txn: String,
-        sender_public_key: StrView<AccountPublicKey>,
-    ) -> FutureResult<DryRunOutputStateKeyView>;
-
     #[rpc(name = "contract.resolve_function")]
     fn resolve_function(&self, function_id: FunctionIdView) -> FutureResult<FunctionABI>;
     #[rpc(name = "contract.resolve_module_function_index")]

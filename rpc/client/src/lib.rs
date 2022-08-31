@@ -29,12 +29,12 @@ use starcoin_rpc_api::state::{
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     AccountStateSetView, AnnotatedMoveStructView, BlockHeaderView, BlockInfoView, BlockView,
-    ChainId, ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputStateKeyView,
-    DryRunOutputTableItemView, DryRunOutputView, DryRunTransactionRequest, FactoryAction,
-    FunctionIdView, ListCodeView, ListResourceView, MintedBlockView, ModuleIdView, PeerInfoView,
-    ResourceView, SignedMessageView, SignedUserTransactionView, StateWithProofView,
-    StateWithTableItemProofView, StrView, StructTagView, TransactionEventResponse,
-    TransactionInfoView, TransactionInfoWithProofView, TransactionRequest, TransactionView,
+    ChainId, ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputView,
+    DryRunTransactionRequest, FactoryAction, FunctionIdView, ListCodeView, ListResourceView,
+    MintedBlockView, ModuleIdView, PeerInfoView, ResourceView, SignedMessageView,
+    SignedUserTransactionView, StateWithProofView, StateWithTableItemProofView, StrView,
+    StructTagView, TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView,
+    TransactionRequest, TransactionView,
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
@@ -873,52 +873,6 @@ impl RpcClient {
             inner
                 .contract_client
                 .dry_run_raw(raw_txn, StrView(public_key))
-        })
-        .map_err(map_err)
-    }
-    pub fn dry_run_table_item(
-        &self,
-        txn: DryRunTransactionRequest,
-    ) -> anyhow::Result<DryRunOutputTableItemView> {
-        self.call_rpc_blocking(|inner| inner.contract_client.dry_run_table_item(txn))
-            .map_err(map_err)
-    }
-    pub fn dry_run_raw_table_item(
-        &self,
-        txn: DryRunTransaction,
-    ) -> anyhow::Result<DryRunOutputTableItemView> {
-        let DryRunTransaction {
-            raw_txn,
-            public_key,
-        } = txn;
-        let raw_txn = hex::encode(raw_txn.encode()?);
-        self.call_rpc_blocking(|inner| {
-            inner
-                .contract_client
-                .dry_run_raw_table_item(raw_txn, StrView(public_key))
-        })
-        .map_err(map_err)
-    }
-    pub fn dry_run_state_key(
-        &self,
-        txn: DryRunTransactionRequest,
-    ) -> anyhow::Result<DryRunOutputStateKeyView> {
-        self.call_rpc_blocking(|inner| inner.contract_client.dry_run_state_key(txn))
-            .map_err(map_err)
-    }
-    pub fn dry_run_raw_state_key(
-        &self,
-        txn: DryRunTransaction,
-    ) -> anyhow::Result<DryRunOutputStateKeyView> {
-        let DryRunTransaction {
-            raw_txn,
-            public_key,
-        } = txn;
-        let raw_txn = hex::encode(raw_txn.encode()?);
-        self.call_rpc_blocking(|inner| {
-            inner
-                .contract_client
-                .dry_run_raw_state_key(raw_txn, StrView(public_key))
         })
         .map_err(map_err)
     }
