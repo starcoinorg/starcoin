@@ -222,8 +222,12 @@ pub fn call_contract<S: StateView>(
     let ret_tys = func_instantiation
         .returns()
         .iter()
-        .map(|r| r.type_tag())
+        .map(|r| match r.type_tag_as_option() {
+            Some(t) => Ok(t),
+            None => Ok(TypeTag::U64),
+        })
         .collect::<Result<Vec<_>>>()?;
+
     anyhow::ensure!(
         ret_tys.len() == rets.len(),
         "length of return values mismatch, expect: {}, got: {}",

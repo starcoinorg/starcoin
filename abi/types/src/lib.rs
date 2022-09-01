@@ -615,10 +615,34 @@ impl TypeInstantiation {
 
             Self::Vector(t) => TypeTag::Vector(Box::new(t.type_tag()?)),
             Self::Struct(s) => TypeTag::Struct(s.struct_tag()?),
-            Self::TypeParameter(_) => TypeTag::U64,
+            Self::TypeParameter(_) => anyhow::bail!("get type tag failed -- {:?}", self),
             Self::Reference(_, _) => anyhow::bail!("get type tag failed -- {:?}", self),
         })
     }
+
+    pub fn type_tag_as_option(&self) -> Option<TypeTag> {
+        match self {
+            Self::Bool => Some(TypeTag::Bool),
+            Self::U8 => Some(TypeTag::U8),
+
+            Self::U64 => Some(TypeTag::U64),
+            Self::U128 => Some(TypeTag::U128),
+            Self::Address => Some(TypeTag::Address),
+            Self::Signer => Some(TypeTag::Signer),
+
+            Self::Vector(t) => match t.type_tag() {
+                Ok(t) => Some(TypeTag::Vector(Box::new(t))),
+                Err(_) => None,
+            },
+            Self::Struct(s) => match s.struct_tag() {
+                Ok(s) => Some(TypeTag::Struct(s)),
+                Err(_) => None,
+            },
+            Self::TypeParameter(_) => None,
+            Self::Reference(_, _) => None,
+        }
+    }
+
     pub fn subst(&self, ty_args: &[TypeInstantiation]) -> Result<TypeInstantiation> {
         use TypeInstantiation as T;
         Ok(match self {
