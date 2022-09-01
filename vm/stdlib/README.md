@@ -12,7 +12,7 @@ Compile and generate document:
 cargo run 
 ```
 
-Release a new `N` version, N must bean an uint number, such as v3:
+Release a new `N` version, N must be an uint number, such as v3:
 
 ```shell
 cargo run -- -v 3 -m StdlibUpgradeScripts -f upgrade_from_v2_to_v3 -a 3185136000000000000u128

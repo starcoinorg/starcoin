@@ -62,7 +62,7 @@ where
 {
     fn start(&mut self, ctx: &mut ServiceContext<S>) -> Result<()> {
         if self.status().is_started() {
-            warn!("Service {} has bean started", S::service_name());
+            warn!("Service {} has been started", S::service_name());
             return Ok(());
         }
         let mut service = match (self.service_creator)(ctx) {
@@ -80,7 +80,7 @@ where
 
     fn stop(&mut self, ctx: &mut ServiceContext<S>) -> Result<()> {
         if self.status().is_stopped() {
-            info!("Service {} has bean stopped", S::service_name());
+            info!("Service {} has been stopped", S::service_name());
             return Ok(());
         }
         let service = self.service.take();
@@ -162,7 +162,7 @@ where
 {
     fn start(&mut self, _ctx: &mut ServiceContext<S>) -> Result<()> {
         if self.status().is_started() {
-            bail!("Service {} has bean started", S::service_name())
+            bail!("Service {} has been started", S::service_name())
         }
         info!("Mock {} handler do start.", S::service_name());
         self.status = ServiceStatus::Started;
@@ -171,7 +171,7 @@ where
 
     fn stop(&mut self, _ctx: &mut ServiceContext<S>) -> Result<()> {
         if self.status().is_stopped() {
-            bail!("Service {} has bean stopped", S::service_name())
+            bail!("Service {} has been stopped", S::service_name())
         }
         info!("Mock {} handler do stop.", S::service_name());
         self.status = ServiceStatus::Stopped;
