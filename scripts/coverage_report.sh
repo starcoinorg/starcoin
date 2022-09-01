@@ -89,6 +89,8 @@ echo --- new llvm-cov env ---
 cargo llvm-cov show-env
 echo --- llvm-cov env end ---
 
+export RUST_BACKTRACE=full
+
 # Run tests
 echo "Running tests and collecting coverage data ..."
 # cargo llvm-cov -v --lib --ignore-run-fail --workspace --test unit_tests::transaction_test::transaction_payload_bcs_roundtrip --no-run --lcov --jobs 5 --output-path "${COVERAGE_DIR}"/lcov.info || true
