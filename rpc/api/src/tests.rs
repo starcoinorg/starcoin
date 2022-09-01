@@ -56,21 +56,15 @@ fn assert_that_version_control_has_no_unstaged_changes() {
 
 #[test]
 fn test_generated_schema_are_up_to_date_in_git() {
-    const CARGO_MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
-
-    let path = PathBuf::from(CARGO_MANIFEST_DIR);
-    path.parent().unwrap().parent().unwrap();
-    // .join(PathBuf::from("target/debug/starcoin-rpc-schema-generate"));
-    // .canonicalize()
-    // .unwrap();
-
-    println!("md: {}", CARGO_MANIFEST_DIR);
-
     // Better not run the `stdlib` tool when the repository is not in a clean state.
     assert_that_version_control_has_no_unstaged_changes();
 
+    // The directory containing the manifest for the package being built
+    const CARGO_MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
+    let generated_file_path = PathBuf::from(CARGO_MANIFEST_DIR);
+
     assert!(Command::new("cargo")
-        .current_dir(path.parent().unwrap())
+        .current_dir(generated_file_path)
         .arg("run")
         .arg("--bin")
         .arg("starcoin-rpc-schema-generate")
