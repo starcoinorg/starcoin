@@ -63,7 +63,7 @@ fn test_generated_schema_are_up_to_date_in_git() {
     const CARGO_MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
     let path = PathBuf::from(CARGO_MANIFEST_DIR);
     assert!(Command::new("cargo")
-        .current_dir(path)
+        .current_dir(path.parent().unwrap())
         .arg("run")
         .arg("--bin")
         .arg("starcoin-rpc-schema-generate")
