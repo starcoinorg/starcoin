@@ -62,6 +62,7 @@ fn test_generated_schema_are_up_to_date_in_git() {
     // The directory containing the manifest for the package being built
     const CARGO_MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
     let generated_file_path = PathBuf::from(CARGO_MANIFEST_DIR);
+    // println!("generated_file_path {:?}", generated_file_path);
 
     assert!(Command::new("cargo")
         .current_dir(generated_file_path)
