@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   pull_request:
     branches:
-      - update_move
+      - dev
 
 jobs:
   build-and-test:
