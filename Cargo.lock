@@ -5637,6 +5637,7 @@ dependencies = [
  "anyhow",
  "move-binary-format",
  "move-core-types",
+ "move-table-extension",
 ]
 
 [[package]]
