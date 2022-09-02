@@ -414,17 +414,17 @@ where
         }
         let (block_info, fork) = self.find_or_fork(block.header())?;
         match (block_info, fork) {
-            //block has bean processed in some branch, so just trigger a head select.
+            //block has been processed in some branch, so just trigger a head selection.
             (Some(_block_info), Some(branch)) => {
                 debug!(
-                    "Block {} has bean processed, trigger head select, total_difficulty: {}",
+                    "Block {} has been processed, trigger head selection, total_difficulty: {}",
                     block_id,
                     branch.get_total_difficulty()?
                 );
                 self.select_head(branch)?;
                 Ok(ConnectOk::Duplicate)
             }
-            //block has bean processed, and it parent is main chain ,so just connect it to main chain.
+            //block has been processed, and its parent is main chain, so just connect it to main chain.
             (Some(block_info), None) => {
                 let executed_block = self.main.connect(ExecutedBlock {
                     block: block.clone(),

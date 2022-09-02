@@ -53,7 +53,7 @@ impl ActorService for AccountService {
                 self.manager.create_account(DEFAULT_ACCOUNT_PASSWORD)?;
             }
             Some(account_info) => {
-                // before v1.1, account's setting is not persistent in storage, so the is_default in the account_info may bean wrong,
+                // before v1.1, account's setting is not persistent in storage, so the is_default in the account_info may be wrong,
                 // repair the old account data
                 if !account_info.is_default {
                     info!(

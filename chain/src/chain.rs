@@ -221,8 +221,8 @@ impl BlockChain {
         block_gas_limit: Option<u64>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
         //FIXME create block template by parent may be use invalid chain state, such as epoch.
-        //So the right way should bean create a BlockChain by parent_hash, then create block template.
-        //the timestamp should bean a argument, if want to mock a early block.
+        //So the right way should be creating a BlockChain by parent_hash, then create block template.
+        //the timestamp should be an argument, if want to mock an early block.
         let previous_header = match parent_hash {
             Some(hash) => self
                 .get_header(hash)?
