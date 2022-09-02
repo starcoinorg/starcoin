@@ -89,8 +89,6 @@ echo --- new llvm-cov env ---
 cargo llvm-cov show-env
 echo --- llvm-cov env end ---
 
-export RUST_BACKTRACE=full
-
 # Run tests
 echo "Running tests and collecting coverage data ..."
 # cargo llvm-cov -v --lib --ignore-run-fail --workspace --test unit_tests::transaction_test::transaction_payload_bcs_roundtrip --no-run --lcov --jobs 5 --output-path "${COVERAGE_DIR}"/lcov.info || true
@@ -98,6 +96,6 @@ echo "Running tests and collecting coverage data ..."
 # cargo llvm-cov -v --lib --package starcoin-rpc-api --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
 # cargo llvm-cov -v --package starcoin-storage --lib --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
 
-cargo llvm-cov --lib -v --ignore-run-fail --lcov --jobs 6 --output-path "${COVERAGE_DIR}"/lcov.info -- -Z unstable-options --report-time || true
+RUST_BACKTRACE=full cargo llvm-cov -v --lib --ignore-run-fail --lcov --jobs 5 --output-path "${COVERAGE_DIR}"/lcov.info -- -Z unstable-options --report-time || true
 
 echo "Done. Please view report at ${COVERAGE_DIR}/lcov.info"

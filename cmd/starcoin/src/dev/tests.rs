@@ -173,7 +173,7 @@ fn create_default_account(
     debug!("transfer_txn: {}", transfer_txn_id);
     cli_state.client().submit_transaction(transfer_txn).unwrap();
 
-    sleep(Duration::from_millis(1000));
+    sleep(Duration::from_millis(5000));
     let _block = node_handle.generate_block().unwrap();
     let transfer_txn_info = cli_state
         .client()
