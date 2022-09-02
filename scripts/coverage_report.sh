@@ -70,7 +70,7 @@ fi
 # export CARGO_INCREMENTAL=0
 
 # Set the environment variables needed to get coverage.
-# actual env values at current CI server
+# env generate by `cargo-llvm-cov` on current CI server
 # ----------------------------------------
 # RUSTFLAGS=" -C instrument-coverage --cfg coverage --cfg trybuild_no_target"
 # LLVM_PROFILE_FILE="/runner/_work/starcoin/starcoin/target/starcoin-%m.profraw"
@@ -100,6 +100,6 @@ echo "Running tests and collecting coverage data ..."
 # cargo llvm-cov -v --package starcoin-storage --lib --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
 
 # --job 7 is tested to be fastest on current CI server
-cargo llvm-cov --lib --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
+cargo llvm-cov --lib --ignore-run-fail --lcov --jobs 7 --output-path "${COVERAGE_DIR}"/lcov.info || true
 
 echo "Done. Please view report at ${COVERAGE_DIR}/lcov.info"
