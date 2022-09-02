@@ -15,7 +15,7 @@ struct TestAttributeOpts {
     timeout: Option<u64>,
 }
 
-/// Marks test function, support async and sync mehtod both.
+/// Marks test function, support async and sync method both.
 /// The async test need actix.
 /// ## Usage
 ///

@@ -89,8 +89,8 @@ impl Collector for ProcessCollector {
                     self.pid, e
                 );
             }
-            Ok(perent) => {
-                self.cpu_usage.set(perent as f64);
+            Ok(percent) => {
+                self.cpu_usage.set(percent as f64);
                 mfs.extend(self.cpu_usage.collect());
             }
         }
