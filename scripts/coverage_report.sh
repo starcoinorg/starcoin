@@ -96,6 +96,6 @@ echo "Running tests and collecting coverage data ..."
 # cargo llvm-cov -v --lib --package starcoin-rpc-api --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
 # cargo llvm-cov -v --package starcoin-storage --lib --ignore-run-fail --lcov --jobs 8 --output-path "${COVERAGE_DIR}"/lcov.info || true
 
-RUST_BACKTRACE=full cargo llvm-cov -v --lib --ignore-run-fail --lcov --jobs 5 --output-path "${COVERAGE_DIR}"/lcov.info -- -Z unstable-options --report-time || true
+RUST_BACKTRACE=full cargo llvm-cov -v --lib --ignore-run-fail --lcov --jobs 7 --output-path "${COVERAGE_DIR}"/lcov.info -- -Z unstable-options --report-time || true
 
 echo "Done. Please view report at ${COVERAGE_DIR}/lcov.info"
