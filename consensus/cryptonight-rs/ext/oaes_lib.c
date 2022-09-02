@@ -505,7 +505,7 @@ static void oaes_get_seed( char buf[RANDSIZ + 1] )
 #else
 static uint32_t oaes_get_seed(void)
 {
-        #if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__ANDROID__) && !defined(__NetBSD__)
+        #if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__ANDROID__) && !defined(__NetBSD__) && !defined(__GLIBC__)
 	struct timeb timer;
 	struct tm *gmTimer;
 	char * _test = NULL;
@@ -518,6 +518,7 @@ static uint32_t oaes_get_seed(void)
 			gmTimer->tm_hour + gmTimer->tm_min + gmTimer->tm_sec + timer.millitm +
 			(uintptr_t) ( _test + timer.millitm ) + GETPID();
 	#else
+	#include <sys/time.h>
 	struct timeval timer;
 	struct tm *gmTimer;
 	char * _test = NULL;
