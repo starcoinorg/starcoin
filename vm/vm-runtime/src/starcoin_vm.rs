@@ -587,19 +587,17 @@ impl StarcoinVM {
                     if let Ok(s) = CompiledScript::deserialize(script.code()) {
                         self.check_move_version(s.version() as u64)?;
                     };
-                    debug!("TransactionPayload::Script script {:?}", script);
-                    session.as_mut().execute_script(
+                    debug!("TransactionPayload::{:?}", script);
+                    session.execute_script(
                         script.code().to_vec(),
                         script.ty_args().to_vec(),
                         script.args().to_vec(),
                         cost_strategy,
+                        txn_data.sender(),
                     )
                 }
                 TransactionPayload::ScriptFunction(script_function) => {
-                    debug!(
-                        "TransactionPayload::Script script_function {:?}",
-                        script_function
-                    );
+                    debug!("TransactionPayload::{:?}", script_function);
                     session.execute_entry_function(
                         script_function.module(),
                         script_function.function(),
