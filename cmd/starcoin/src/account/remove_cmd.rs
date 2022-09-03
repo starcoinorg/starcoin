@@ -18,7 +18,7 @@ pub struct RemoveOpt {
     password: Option<String>,
     #[clap(
         name = "account_address",
-        help = "The wallet account address which to remove, the default account can not bean removed."
+        help = "The wallet account address which to remove, the default account can not been removed."
     )]
     account_address: AccountAddress,
 }

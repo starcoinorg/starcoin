@@ -195,7 +195,7 @@ impl<Item, Output> Sink<Item> for FutureTaskSink<Item, Output> {
 
     fn start_send(self: Pin<&mut Self>, item: Item) -> Result<(), Self::Error> {
         let this = self.project();
-        //ignore sender error, because if send error, may bean task is finished
+        //ignore sender error, because if send error, may be task is finished
         this.sender
             .start_send(item)
             .map_err(|_| SinkError::CollectorEnough)

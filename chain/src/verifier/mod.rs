@@ -143,7 +143,7 @@ pub trait BlockVerifier {
                 uncle.number(),
                 uncle.id()
             );
-            // uncle's parent exist in current chain is check in can_be_uncle, so this fork should bean success.
+            // uncle's parent exists in current chain is checked in `can_be_uncle`, so this fork should success.
             let uncle_branch = current_chain.fork(uncle.parent_hash())?;
             Self::verify_header(&uncle_branch, uncle)?;
             uncle_ids.insert(uncle_id);
