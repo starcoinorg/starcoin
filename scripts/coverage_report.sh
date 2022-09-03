@@ -77,9 +77,8 @@ fi
 # RUST_TEST_THREADS="1"
 # CARGO_LLVM_COV_TARGET_DIR="/runner/_work/starcoin/starcoin/target"
 # ----------------------------------------
-
 # Set the environment variables needed to get coverage.
-source <(cargo llvm-cov show-env --export-prefix) 
+# source <(cargo llvm-cov show-env --export-prefix) 
 
 export RUST_MIN_STACK=8388608 # 8 * 1024 * 1024
 
