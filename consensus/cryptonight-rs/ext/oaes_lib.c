@@ -41,9 +41,12 @@
 
 // ANDROID, FreeBSD, OpenBSD and NetBSD also don't need timeb.h
 #if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__ANDROID__) \
-  && !defined(__NetBSD__)
+  && !defined(__NetBSD__) \
+  || (defined(__GLIBC__) && __GLIBC__ <= 2 && __GLIBC_MINOR__ < 31)
  #include <sys/timeb.h>
 #else
+// use gettimeofday to get rid of `ftime` warning if glibc >= 2.31
+// https://sourceware.org/pipermail/libc-announce/2020/000025.html
  #include <sys/time.h>
 #endif
 
@@ -505,7 +508,8 @@ static void oaes_get_seed( char buf[RANDSIZ + 1] )
 #else
 static uint32_t oaes_get_seed(void)
 {
-        #if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__ANDROID__) && !defined(__NetBSD__) && !defined(__GLIBC__)
+	#if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__ANDROID__) && !defined(__NetBSD__) \
+		|| (defined(__GLIBC__) && __GLIBC__ <= 2 && __GLIBC_MINOR__ < 31)
 	struct timeb timer;
 	struct tm *gmTimer;
 	char * _test = NULL;
@@ -518,7 +522,6 @@ static uint32_t oaes_get_seed(void)
 			gmTimer->tm_hour + gmTimer->tm_min + gmTimer->tm_sec + timer.millitm +
 			(uintptr_t) ( _test + timer.millitm ) + GETPID();
 	#else
-	#include <sys/time.h>
 	struct timeval timer;
 	struct tm *gmTimer;
 	char * _test = NULL;
