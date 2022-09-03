@@ -42,7 +42,7 @@
 // ANDROID, FreeBSD, OpenBSD and NetBSD also don't need timeb.h
 #if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__ANDROID__) \
   && !defined(__NetBSD__) \
-  || (defined(__GLIBC__) && __GLIBC__ <= 2 && __GLIBC_MINOR__ < 31)
+  && (defined(__GLIBC__) && __GLIBC__ <= 2 && __GLIBC_MINOR__ < 31)
  #include <sys/timeb.h>
 #else
 // use gettimeofday to get rid of `ftime` warning if glibc >= 2.31
@@ -509,7 +509,7 @@ static void oaes_get_seed( char buf[RANDSIZ + 1] )
 static uint32_t oaes_get_seed(void)
 {
 	#if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__ANDROID__) && !defined(__NetBSD__) \
-		|| (defined(__GLIBC__) && __GLIBC__ <= 2 && __GLIBC_MINOR__ < 31)
+		&& (defined(__GLIBC__) && __GLIBC__ <= 2 && __GLIBC_MINOR__ < 31)
 	struct timeb timer;
 	struct tm *gmTimer;
 	char * _test = NULL;
