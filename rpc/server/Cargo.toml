@@ -13,7 +13,7 @@ anyhow = "1.0.41"
 api-limiter = {path = "../../commons/api-limiter"}
 bcs = "0.1"
 bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
-dashmap = "5.3"
+dashmap = "5.4"
 futures = "0.3.12"
 futures-channel = "0.3"
 governor = {version = "0.4.2", features = ["dashmap"]}
