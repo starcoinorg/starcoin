@@ -3,7 +3,7 @@
 
 use crate::context::ForkContext;
 use anyhow::{bail, format_err, Result};
-use clap::Parser;
+use clap::{Args, CommandFactory, Parser};
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
 use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
 use move_compiler::shared::{NumberFormat, NumericalAddress};
@@ -17,6 +17,9 @@ use move_core_types::{
     transaction_argument::TransactionArgument,
 };
 use move_transactional_test_runner::framework;
+use move_transactional_test_runner::tasks::{
+    PrintBytecodeCommand, PublishCommand, RunCommand, ViewCommand,
+};
 use move_transactional_test_runner::{
     framework::{CompiledState, MoveTestAdapter},
     tasks::{InitCommand, RawAddress, SyntaxChoice, TaskInput},
@@ -65,6 +68,7 @@ use starcoin_vm_types::{
     transaction_argument::convert_txn_args,
     vm_status::KeptVMStatus,
 };
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
@@ -112,16 +116,18 @@ pub struct StarcoinPublishArgs {}
 #[derive(Parser, Debug)]
 pub struct StarcoinRunArgs {}
 
-#[derive(clap::Args, Debug)]
+#[derive(Debug, Parser)]
 #[clap(name = "faucet")]
 struct FaucetSub {
     #[clap(long="addr", parse(try_from_str=RawAddress::parse))]
+    /// faucet target address
     address: RawAddress,
     #[clap(long = "amount", default_value = "100000000000")]
+    /// faucet amount
     initial_balance: u128,
 }
 
-#[derive(clap::Args, Debug)]
+#[derive(Debug, Parser)]
 #[clap(name = "block")]
 struct BlockSub {
     #[clap(long, parse(try_from_str=RawAddress::parse))]
@@ -133,14 +139,19 @@ struct BlockSub {
     #[clap(long)]
     uncles: Option<u64>,
 }
-#[derive(clap::Args, Debug)]
+#[derive(Debug, Parser)]
 #[clap(name = "call")]
 struct CallSub {
     #[clap(name = "FUNCTION")]
+    /// smart contract function name.
     name: FunctionIdView,
     #[clap(long = "args", short = 'i')]
+
+    /// function arguments.
     args: Vec<TransactionArgumentView>,
+
     #[clap(long = "type-args", short = 't')]
+    /// function type arguments.
     type_args: Vec<TypeTagView>,
 }
 
@@ -167,10 +178,13 @@ pub struct PackageSub {
     )]
     signers: Vec<RawAddress>,
     #[clap(long = "init-function")]
+    /// module init function.
     init_function: Option<FunctionIdView>,
     #[clap(long = "type-args")]
+    /// type arguments of init function.
     type_args: Option<Vec<TypeTagView>>,
     #[clap(long = "args")]
+    /// arguments of init function.
     args: Option<Vec<TransactionArgumentView>>,
 }
 
@@ -185,6 +199,7 @@ pub struct DeploySub {
     multiple_occurrences(true)
     )]
     signers: Vec<RawAddress>,
+    /// max gas for transaction.
     #[clap(long = "gas-budget")]
     gas_budget: Option<u64>,
     #[clap(name = "mv-or-package-file")]
@@ -593,15 +608,15 @@ impl<'a> StarcoinTestAdapter<'a> {
             TransactionStatus::Keep(_kept_vm_status) => {
                 self.context
                     .apply_write_set(output.clone().into_inner().0)?;
-                let mut chain = self.context.chain.lock().unwrap();
-                chain.add_new_txn(
-                    Transaction::UserTransaction(signed_txn.clone()),
-                    output.clone(),
-                )?;
             }
             TransactionStatus::Discard(_) => {}
         }
         let payload = decode_txn_payload(&self.context.storage, signed_txn.payload())?;
+        let mut chain = self.context.chain.lock().unwrap();
+        chain.add_new_txn(
+            Transaction::UserTransaction(signed_txn.clone()),
+            output.clone(),
+        )?;
         let mut txn_view: SignedUserTransactionView = signed_txn.try_into()?;
         txn_view.raw_txn.decoded_payload = Some(payload.into());
         Ok(TransactionWithOutput {
@@ -1239,4 +1254,44 @@ pub fn run_test_impl(
     fully_compiled_program_opt: Option<&FullyCompiledProgram>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     framework::run_test_impl::<StarcoinTestAdapter>(path, fully_compiled_program_opt)
+}
+
+pub fn print_help(task_name: Option<String>) -> Result<()> {
+    let mut tasks = HashMap::new();
+    tasks.insert(
+        "init",
+        ExtraInitArgs::augment_args(InitCommand::command().name("init")),
+    );
+    tasks.insert(
+        "print-bytecode",
+        PrintBytecodeCommand::command().name("print-bytecode"),
+    );
+    tasks.insert("publish", PublishCommand::command().name("publish"));
+    tasks.insert("run", RunCommand::command().name("run"));
+    tasks.insert("view", ViewCommand::command().name("view"));
+    tasks.insert("faucet", FaucetSub::command().name("faucet"));
+    tasks.insert("block", BlockSub::command().name("block"));
+    tasks.insert("call", CallSub::command().name("call"));
+    tasks.insert("call-api", CallAPISub::command().name("call-api"));
+    tasks.insert("package", PackageSub::command().name("package"));
+    tasks.insert("deploy", DeploySub::command().name("deploy"));
+
+    match task_name {
+        Some(name) => match tasks.get_mut(&name[..]) {
+            Some(cmd) => cmd
+                .print_help()
+                .map_err(|e| format_err!("print help error: {:?}", e)),
+            None => bail!("Task {:?} not found.", name),
+        },
+        None => {
+            {
+                for cmd in tasks.values_mut() {
+                    println!("------------------------------------------------");
+                    cmd.print_help()?;
+                    println!();
+                }
+            };
+            Ok(())
+        }
+    }
 }
