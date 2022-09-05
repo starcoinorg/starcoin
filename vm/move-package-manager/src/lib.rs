@@ -107,10 +107,22 @@ pub struct IntegrationTestCommand {
     #[clap(long = "ub")]
     /// update test baseline.
     update_baseline: bool,
+
+    #[clap(long)]
+    /// Print usage of tasks.
+    task_help: bool,
+
+    #[clap(long)]
+    /// Task name to print usage, if None, print all tasks.
+    task_name: Option<String>,
 }
+
 static G_PRE_COMPILED_LIB: Lazy<Mutex<Option<FullyCompiledProgram>>> =
     Lazy::new(|| Mutex::new(None));
 pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Result<()> {
+    if cmd.task_help {
+        return starcoin_transactional_test_harness::print_help(cmd.task_name);
+    };
     let rerooted_path = {
         let path = &move_arg.package_path;
         // Always root ourselves to the package root, and then compile relative to that.
