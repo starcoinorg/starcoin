@@ -608,15 +608,15 @@ impl<'a> StarcoinTestAdapter<'a> {
             TransactionStatus::Keep(_kept_vm_status) => {
                 self.context
                     .apply_write_set(output.clone().into_inner().0)?;
+                let mut chain = self.context.chain.lock().unwrap();
+                chain.add_new_txn(
+                    Transaction::UserTransaction(signed_txn.clone()),
+                    output.clone(),
+                )?;
             }
             TransactionStatus::Discard(_) => {}
         }
         let payload = decode_txn_payload(&self.context.storage, signed_txn.payload())?;
-        let mut chain = self.context.chain.lock().unwrap();
-        chain.add_new_txn(
-            Transaction::UserTransaction(signed_txn.clone()),
-            output.clone(),
-        )?;
         let mut txn_view: SignedUserTransactionView = signed_txn.try_into()?;
         txn_view.raw_txn.decoded_payload = Some(payload.into());
         Ok(TransactionWithOutput {
