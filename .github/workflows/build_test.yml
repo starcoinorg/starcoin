@@ -43,8 +43,10 @@ jobs:
         with:
           command: build
           args: --all
+      - uses: taiki-e/install-action@nextest
       - name: test
-        run: bash ./scripts/auto_rerun_test.sh
+        # run: bash ./scripts/auto_rerun_test.sh
+        run: cargo nextest run --workspace --lib --retries 10 --build-jobs 10
 #       - name: check changed files
 #         run: bash ./scripts/changed_files.sh
       - name: integration test dev environment
