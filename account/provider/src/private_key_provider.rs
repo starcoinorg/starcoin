@@ -43,20 +43,8 @@ impl AccountPrivateKeyProvider {
         };
 
         let private_key = AccountPrivateKey::from_encoded_string(data)?;
-        let address = match address {
-            Some(address_value) => {
-                if address_value != private_key.public_key().derived_address() {
-                    bail!(
-                        "account address {} and private key derived address {} are not equal",
-                        address_value,
-                        private_key.public_key().derived_address()
-                    );
-                }
-                address_value
-            }
-            None => private_key.public_key().derived_address(),
-        };
-        manager.import_account(address, private_key.to_bytes().to_vec(), "")?;
+        let address = address.unwrap_or_else(|| private_key.public_key().derived_address());
+        let _account = manager.import_account(address, private_key.to_bytes().to_vec(), "")?;
         Ok(Self { manager })
     }
 }
