@@ -208,21 +208,22 @@ pub struct DeploySub {
 }
 
 #[derive(Debug, Parser)]
-#[clap(name = "env")]
-pub struct EnvSub {
-    #[clap(name="env",
+#[clap(name = "var")]
+pub struct VarSub {
+    #[clap(name="var",
         parse(try_from_str = parse_env),
         takes_value(true),
         multiple_values(true),
         multiple_occurrences(true)
     )]
-    env: Vec<(String, String)>,
+    /// variables with format <key1>=<value1>, <key2>=<value2>,...
+    var: Vec<(String, String)>,
 }
 
 #[derive(Debug, Parser)]
-#[clap(name = "read_json")]
+#[clap(name = "read-json")]
 pub struct ReadJsonSub {
-    /// max gas for transaction.
+    /// path of json file
     #[clap(name = "file")]
     file: PathBuf,
 }
@@ -293,17 +294,17 @@ pub enum StarcoinSubcommands {
         /// move bytecode file path or package binary path
         mv_or_package_file: PathBuf,
     },
-    #[clap(name = "env")]
-    Env {
-        #[clap(name="env",
+    #[clap(name = "var")]
+    Var {
+        #[clap(name="var",
             parse(try_from_str = parse_env),
             takes_value(true),
             multiple_values(true),
             multiple_occurrences(true)
         )]
-        env: Vec<(String, String)>,
+        var: Vec<(String, String)>,
     },
-    #[clap(name = "read_json")]
+    #[clap(name = "read-json")]
     ReadJson {
         /// max gas for transaction.
         #[clap(name = "file")]
@@ -324,7 +325,7 @@ pub fn parse_env(s: &str) -> anyhow::Result<(String, String)> {
 
     if before_after.len() != 2 {
         anyhow::bail!(
-            "Invalid named env assignment. Must be of the form <key>=<value>, but \
+            "Invalid named var assignment. Must be of the form <key>=<value>, but \
              found '{}'",
             s
         );
@@ -399,9 +400,9 @@ impl From<ReadJsonSub> for StarcoinSubcommands {
     }
 }
 
-impl From<EnvSub> for StarcoinSubcommands {
-    fn from(sub: EnvSub) -> Self {
-        Self::Env { env: sub.env }
+impl From<VarSub> for StarcoinSubcommands {
+    fn from(sub: VarSub) -> Self {
+        Self::Var { var: sub.var }
     }
 }
 
@@ -413,15 +414,15 @@ impl clap::Args for StarcoinSubcommands {
         let call_api = CallAPISub::augment_args(clap::Command::new("call-api"));
         let package = PackageSub::augment_args(clap::Command::new("package"));
         let deploy = DeploySub::augment_args(clap::Command::new("deploy"));
-        let env = EnvSub::augment_args(clap::Command::new("env"));
-        let read_json = ReadJsonSub::augment_args(clap::Command::new("read_json"));
+        let var = VarSub::augment_args(clap::Command::new("var"));
+        let read_json = ReadJsonSub::augment_args(clap::Command::new("read-json"));
         cmd.subcommand(faucet)
             .subcommand(block)
             .subcommand(call)
             .subcommand(call_api)
             .subcommand(package)
             .subcommand(deploy)
-            .subcommand(env)
+            .subcommand(var)
             .subcommand(read_json)
     }
 
@@ -1314,7 +1315,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                 gas_budget,
                 mv_or_package_file,
             } => self.handle_deploy(signers, gas_budget, mv_or_package_file.as_path()),
-            StarcoinSubcommands::Env { env } => self.handle_env(env),
+            StarcoinSubcommands::Var { var } => self.handle_env(var),
             StarcoinSubcommands::ReadJson { file } => self.handle_read_json(file.as_path()),
         }?;
         if self.debug {
@@ -1357,8 +1358,8 @@ pub fn print_help(task_name: Option<String>) -> Result<()> {
     tasks.insert("call-api", CallAPISub::command().name("call-api"));
     tasks.insert("package", PackageSub::command().name("package"));
     tasks.insert("deploy", DeploySub::command().name("deploy"));
-    tasks.insert("env", EnvSub::command().name("env"));
-    tasks.insert("read_json", ReadJsonSub::command().name("read_json"));
+    tasks.insert("var", VarSub::command().name("var"));
+    tasks.insert("read-json", ReadJsonSub::command().name("read-json"));
 
     match task_name {
         Some(name) => match tasks.get_mut(&name[..]) {
