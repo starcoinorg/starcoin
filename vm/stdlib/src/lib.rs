@@ -5,7 +5,7 @@
 
 use anyhow::{bail, ensure, format_err, Result};
 use include_dir::{include_dir, Dir};
-use log::{info, LevelFilter};
+use log::{debug, info, LevelFilter};
 use move_bytecode_verifier::{dependencies, verify_module};
 use move_compiler::command_line::compiler::construct_pre_compiled_lib_from_compiler;
 use move_compiler::FullyCompiledProgram;
@@ -93,11 +93,11 @@ pub static G_STDLIB_VERSIONS: Lazy<Vec<StdlibVersion>> = Lazy::new(|| {
     versions
 });
 
-static G_COMPILED_STDLIB: Lazy<HashMap<StdlibVersion, Vec<Vec<u8>>>> = Lazy::new(|| {
+pub static G_COMPILED_STDLIB: Lazy<HashMap<StdlibVersion, Vec<Vec<u8>>>> = Lazy::new(|| {
     let mut map = HashMap::new();
     for version in &*G_STDLIB_VERSIONS {
         let modules = read_compiled_modules(*version);
-        verify_compiled_modules(&modules);
+        verify_compiled_modules(*version, &modules);
         map.insert(*version, modules);
     }
     map
@@ -213,7 +213,8 @@ pub fn build_stdlib(targets: &[String]) -> BTreeMap<String, CompiledModule> {
                     .expect("stdlib module dependency failed to verify");
                 // Tag each module with its index in the module dependency order. Needed for
                 // when they are deserialized and verified later on.
-                modules.insert(format!("{:02}_{}", i, name), module);
+                //TODO use a dependency analyzer method to do this.
+                modules.insert(format!("{:03}_{}", i, name), module);
             }
             CompiledUnit::Script(_) => panic!("Unexpected Script in stdlib"),
         }
@@ -289,13 +290,31 @@ pub fn read_compiled_modules(stdlib_version: StdlibVersion) -> Vec<Vec<u8>> {
 }
 
 /// verify modules blob.
-pub fn verify_compiled_modules(modules: &[Vec<u8>]) -> Vec<CompiledModule> {
+pub fn verify_compiled_modules(
+    stdlib_version: StdlibVersion,
+    modules: &[Vec<u8>],
+) -> Vec<CompiledModule> {
+    debug!(
+        "verify modules version:{}, modules: {}",
+        stdlib_version,
+        modules.len()
+    );
     let mut verified_modules = vec![];
     for module in modules {
         let module = CompiledModule::deserialize(module).expect("module deserialize should be ok");
-        verify_module(&module).expect("stdlib module failed to verify");
-        dependencies::verify_module(&module, &verified_modules)
-            .expect("stdlib module dependency failed to verify");
+        debug!("verify module {}", module.self_id());
+        if let Err(e) = verify_module(&module) {
+            eprintln!("verify module {} failed: {:?}", module.self_id(), e);
+            panic!("verify module failed");
+        }
+        if let Err(e) = dependencies::verify_module(&module, &verified_modules) {
+            eprintln!(
+                "verify module {} dependencies failed: {:?}",
+                module.self_id(),
+                e
+            );
+            panic!("verify module dependencies failed");
+        }
         verified_modules.push(module)
     }
     verified_modules
@@ -303,7 +322,7 @@ pub fn verify_compiled_modules(modules: &[Vec<u8>]) -> Vec<CompiledModule> {
 
 pub fn load_compiled_modules(stdlib_version: StdlibVersion) -> Vec<CompiledModule> {
     let modules = read_compiled_modules(stdlib_version);
-    verify_compiled_modules(modules.as_slice())
+    verify_compiled_modules(stdlib_version, modules.as_slice())
 }
 
 pub fn modules_diff(

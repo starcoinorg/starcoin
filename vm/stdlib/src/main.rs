@@ -162,13 +162,18 @@ fn replace_stdlib_by_path(
 // modules/scripts, and changes in the Move compiler will not be reflected in the stdlib used for
 // genesis, and everywhere else across the code-base unless otherwise specified.
 fn main() {
-    SimpleLogger::init(LevelFilter::Info, Config::default()).expect("init logger failed.");
     // pass argument 'version' to generate new release
     // for example, "cargo run -- --version 1"
     let cli = Command::new("stdlib")
         .name("Move standard library")
         .author("The Starcoin Core Contributors")
         .after_help("this command can be used to generate an incremental package, with init script included.")
+        .arg(
+            Arg::new("debug")
+                .long("debug")
+                .takes_value(false)
+                .help("print debug log")
+        )
         .arg(
             Arg::new("version")
                 .short('v')
@@ -223,6 +228,13 @@ fn main() {
         );
 
     let matches = cli.get_matches();
+    let log_level = if matches.is_present("debug") {
+        LevelFilter::Debug
+    } else {
+        LevelFilter::Info
+    };
+    SimpleLogger::init(log_level, Config::default()).expect("init logger failed.");
+
     let mut generate_new_version = false;
     let mut version_number: u64 = 0;
     if matches.is_present("version") {
@@ -352,7 +364,15 @@ fn main() {
         module_path.as_path(),
         new_modules.clone(),
     );
-
+    let stdlib_versions = &stdlib::G_STDLIB_VERSIONS;
+    for version in stdlib_versions.iter() {
+        let modules = stdlib::load_compiled_modules(*version);
+        println!(
+            "Check compiled stdlib version: {}, modules:{}",
+            version,
+            modules.len()
+        );
+    }
     if generate_new_version {
         let dest_dir = full_update_with_version(version_number);
         if let Some(pre_version) = pre_version {
