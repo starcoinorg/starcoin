@@ -63,6 +63,7 @@ starcoin-types = {path = "../../types"}
 starcoin-vm-runtime = {path = "../vm-runtime", features = ["testing"]}
 starcoin-vm-types = {path = "../../vm/types"}
 stdlib = {path = "../stdlib"}
+vm-status-translator = {path = "../../vm/vm-status-translator"}
 
 [dev-dependencies]
 
