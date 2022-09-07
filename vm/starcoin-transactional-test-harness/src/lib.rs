@@ -211,7 +211,7 @@ pub struct DeploySub {
 #[clap(name = "var")]
 pub struct VarSub {
     #[clap(name="var",
-        parse(try_from_str = parse_env),
+        parse(try_from_str = parse_var),
         takes_value(true),
         multiple_values(true),
         multiple_occurrences(true)
@@ -297,7 +297,7 @@ pub enum StarcoinSubcommands {
     #[clap(name = "var")]
     Var {
         #[clap(name="var",
-            parse(try_from_str = parse_env),
+            parse(try_from_str = parse_var),
             takes_value(true),
             multiple_values(true),
             multiple_occurrences(true)
@@ -320,7 +320,7 @@ fn parse_params(params: &str) -> Result<Params> {
     Ok(params)
 }
 
-pub fn parse_env(s: &str) -> anyhow::Result<(String, String)> {
+pub fn parse_var(s: &str) -> anyhow::Result<(String, String)> {
     let before_after = s.split('=').collect::<Vec<_>>();
 
     if before_after.len() != 2 {
@@ -1008,12 +1008,12 @@ impl<'a> StarcoinTestAdapter<'a> {
         }
     }
 
-    fn handle_env(
+    fn handle_var(
         &mut self,
-        envs: Vec<(String, String)>,
+        vars: Vec<(String, String)>,
     ) -> Result<(Option<String>, Option<Value>)> {
-        let env_dict: HashMap<String, String> = envs.into_iter().collect();
-        Ok((None, Some(serde_json::to_value(&env_dict)?)))
+        let var_dict: HashMap<String, String> = vars.into_iter().collect();
+        Ok((None, Some(serde_json::to_value(&var_dict)?)))
     }
 
     fn handle_read_json(&mut self, file: &Path) -> Result<(Option<String>, Option<Value>)> {
@@ -1315,7 +1315,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                 gas_budget,
                 mv_or_package_file,
             } => self.handle_deploy(signers, gas_budget, mv_or_package_file.as_path()),
-            StarcoinSubcommands::Var { var } => self.handle_env(var),
+            StarcoinSubcommands::Var { var } => self.handle_var(var),
             StarcoinSubcommands::ReadJson { file } => self.handle_read_json(file.as_path()),
         }?;
         if self.debug {
