@@ -207,6 +207,27 @@ pub struct DeploySub {
     mv_or_package_file: PathBuf,
 }
 
+#[derive(Debug, Parser)]
+#[clap(name = "var")]
+pub struct VarSub {
+    #[clap(name="var",
+        parse(try_from_str = parse_var),
+        takes_value(true),
+        multiple_values(true),
+        multiple_occurrences(true)
+    )]
+    /// variables with format <key1>=<value1>, <key2>=<value2>,...
+    var: Vec<(String, String)>,
+}
+
+#[derive(Debug, Parser)]
+#[clap(name = "read-json")]
+pub struct ReadJsonSub {
+    /// path of json file
+    #[clap(name = "file")]
+    file: PathBuf,
+}
+
 #[derive(Parser, Debug)]
 pub enum StarcoinSubcommands {
     #[clap(name = "faucet")]
@@ -273,6 +294,22 @@ pub enum StarcoinSubcommands {
         /// move bytecode file path or package binary path
         mv_or_package_file: PathBuf,
     },
+    #[clap(name = "var")]
+    Var {
+        #[clap(name="var",
+            parse(try_from_str = parse_var),
+            takes_value(true),
+            multiple_values(true),
+            multiple_occurrences(true)
+        )]
+        var: Vec<(String, String)>,
+    },
+    #[clap(name = "read-json")]
+    ReadJson {
+        /// max gas for transaction.
+        #[clap(name = "file")]
+        file: PathBuf,
+    },
 }
 
 fn parse_params(params: &str) -> Result<Params> {
@@ -281,6 +318,21 @@ fn parse_params(params: &str) -> Result<Params> {
         param => serde_json::from_str(param)?,
     };
     Ok(params)
+}
+
+pub fn parse_var(s: &str) -> anyhow::Result<(String, String)> {
+    let before_after = s.split('=').collect::<Vec<_>>();
+
+    if before_after.len() != 2 {
+        anyhow::bail!(
+            "Invalid named var assignment. Must be of the form <key>=<value>, but \
+             found '{}'",
+            s
+        );
+    }
+    let key = before_after[0].parse()?;
+    let value = before_after[1].parse()?;
+    Ok((key, value))
 }
 
 impl From<FaucetSub> for StarcoinSubcommands {
@@ -342,6 +394,18 @@ impl From<DeploySub> for StarcoinSubcommands {
     }
 }
 
+impl From<ReadJsonSub> for StarcoinSubcommands {
+    fn from(sub: ReadJsonSub) -> Self {
+        Self::ReadJson { file: sub.file }
+    }
+}
+
+impl From<VarSub> for StarcoinSubcommands {
+    fn from(sub: VarSub) -> Self {
+        Self::Var { var: sub.var }
+    }
+}
+
 impl clap::Args for StarcoinSubcommands {
     fn augment_args(cmd: clap::Command<'_>) -> clap::Command<'_> {
         let faucet = FaucetSub::augment_args(clap::Command::new("faucet"));
@@ -350,12 +414,16 @@ impl clap::Args for StarcoinSubcommands {
         let call_api = CallAPISub::augment_args(clap::Command::new("call-api"));
         let package = PackageSub::augment_args(clap::Command::new("package"));
         let deploy = DeploySub::augment_args(clap::Command::new("deploy"));
+        let var = VarSub::augment_args(clap::Command::new("var"));
+        let read_json = ReadJsonSub::augment_args(clap::Command::new("read-json"));
         cmd.subcommand(faucet)
             .subcommand(block)
             .subcommand(call)
             .subcommand(call_api)
             .subcommand(package)
             .subcommand(deploy)
+            .subcommand(var)
+            .subcommand(read_json)
     }
 
     fn augment_args_for_update(_cmd: clap::Command<'_>) -> clap::Command<'_> {
@@ -939,6 +1007,19 @@ impl<'a> StarcoinTestAdapter<'a> {
             )),
         }
     }
+
+    fn handle_var(
+        &mut self,
+        vars: Vec<(String, String)>,
+    ) -> Result<(Option<String>, Option<Value>)> {
+        let var_dict: HashMap<String, String> = vars.into_iter().collect();
+        Ok((None, Some(serde_json::to_value(&var_dict)?)))
+    }
+
+    fn handle_read_json(&mut self, file: &Path) -> Result<(Option<String>, Option<Value>)> {
+        let content: serde_json::Value = serde_json::from_reader(File::open(file)?)?;
+        Ok((None, Some(content)))
+    }
 }
 
 impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
@@ -1234,6 +1315,8 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                 gas_budget,
                 mv_or_package_file,
             } => self.handle_deploy(signers, gas_budget, mv_or_package_file.as_path()),
+            StarcoinSubcommands::Var { var } => self.handle_var(var),
+            StarcoinSubcommands::ReadJson { file } => self.handle_read_json(file.as_path()),
         }?;
         if self.debug {
             if let Some(cmd_var_ctx) = cmd_var_ctx.as_ref() {
@@ -1275,6 +1358,8 @@ pub fn print_help(task_name: Option<String>) -> Result<()> {
     tasks.insert("call-api", CallAPISub::command().name("call-api"));
     tasks.insert("package", PackageSub::command().name("package"));
     tasks.insert("deploy", DeploySub::command().name("deploy"));
+    tasks.insert("var", VarSub::command().name("var"));
+    tasks.insert("read-json", ReadJsonSub::command().name("read-json"));
 
     match task_name {
         Some(name) => match tasks.get_mut(&name[..]) {
