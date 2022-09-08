@@ -46,7 +46,9 @@ jobs:
       - uses: taiki-e/install-action@nextest
       - name: test
         # run: bash ./scripts/auto_rerun_test.sh
-        run: cargo nextest run --workspace --lib --retries 10 --build-jobs 10 --failure-output immediate-final
+        # --test-threads 5, for lower failure rate
+        # --failure-output immediate-final, make error log output at the end
+        run: cargo nextest run --workspace --lib --retries 10 --build-jobs 10 --test-threads 5 --failure-output immediate-final
 #       - name: check changed files
 #         run: bash ./scripts/changed_files.sh
       - name: integration test dev environment
