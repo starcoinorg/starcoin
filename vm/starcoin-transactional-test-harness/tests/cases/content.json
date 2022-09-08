@@ -1,12 +1,4 @@
 {
-    "name": "John Doe",
-    "age": 43,
-    "address": {
-        "street": "10 Downing Street",
-        "city": "London"
-    },
-    "phones": [
-        "+44 1234567",
-        "+44 2345678"
-    ]
+    "id": 253,
+    "name": "halley"
 }
