@@ -48,8 +48,8 @@ jobs:
         # run: bash ./scripts/auto_rerun_test.sh
         # --test-threads 6, proper test concurrency level, balance failure rate and test speed
         # --failure-output immediate-final, make error log output at the end
-        # --retries 5, from experiment, a correct test case hardly requires more than 5 retries to pass
-        run: cargo nextest run --workspace --lib --retries 5 --build-jobs 8 --test-threads 8 --failure-output immediate-final
+        # --retries 3, a test case usually takes no more than 3 retries to pass
+        run: cargo nextest run --workspace --lib --retries 3 --build-jobs 8 --test-threads 6 --failure-output immediate-final
 #       - name: check changed files
 #         run: bash ./scripts/changed_files.sh
       - name: Doc Tests
