@@ -46,9 +46,9 @@ jobs:
       - uses: taiki-e/install-action@nextest
       - name: test
         # run: bash ./scripts/auto_rerun_test.sh
-        # --test-threads 6, proper test concurrency level, for lower failure rate and speed
+        # --test-threads 6, proper test concurrency level, balance failure rate and test speed
         # --failure-output immediate-final, make error log output at the end
-        # --retries 5, from experiment, it is very rare a correct test case requires more than 5 retries to pass
+        # --retries 5, from experiment, a correct test case hardly requires more than 5 retries to pass
         run: cargo nextest run --workspace --lib --retries 5 --build-jobs 8 --test-threads 6 --failure-output immediate-final
 #       - name: check changed files
 #         run: bash ./scripts/changed_files.sh
