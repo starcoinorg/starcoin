@@ -42,7 +42,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --all
+          args: --all --jobs 8
       - uses: taiki-e/install-action@nextest
       - name: test
         # run: bash ./scripts/auto_rerun_test.sh
