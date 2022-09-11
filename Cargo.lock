@@ -4166,7 +4166,7 @@ dependencies = [
  "libp2p-core",
  "libp2p-swarm",
  "log 0.4.17",
- "lru",
+ "lru 0.7.8",
  "prost",
  "prost-build",
  "smallvec 1.9.0",
@@ -4675,6 +4675,15 @@ name = "lru"
 version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e999beba7b6e8345721bd280141ed958096a2e4abdf74f67ff4ce49b4b54e47a"
+dependencies = [
+ "hashbrown",
+]
+
+[[package]]
+name = "lru"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "936d98d2ddd79c18641c6709e7bb09981449694e402d1a0f0f657ea8d61f4a51"
 dependencies = [
  "hashbrown",
 ]
@@ -5870,7 +5879,7 @@ dependencies = [
  "linked-hash-map",
  "linked_hash_set",
  "log 0.4.17",
- "lru",
+ "lru 0.8.0",
  "network-p2p-types",
  "once_cell",
  "parking_lot 0.12.1",
@@ -8951,7 +8960,7 @@ dependencies = [
  "bcs-ext",
  "byteorder 1.4.3",
  "itertools 0.10.3",
- "lru",
+ "lru 0.8.0",
  "mirai-annotations",
  "once_cell",
  "parking_lot 0.12.1",
@@ -9729,7 +9738,7 @@ dependencies = [
  "futures-timer",
  "hex",
  "log 0.4.17",
- "lru",
+ "lru 0.8.0",
  "network-api",
  "network-p2p",
  "network-p2p-types",
@@ -10243,7 +10252,7 @@ dependencies = [
  "anyhow",
  "bcs-ext",
  "forkable-jellyfish-merkle",
- "lru",
+ "lru 0.8.0",
  "parking_lot 0.12.1",
  "serde 1.0.140",
  "starcoin-crypto",
@@ -10265,7 +10274,7 @@ dependencies = [
  "chrono",
  "coarsetime",
  "forkable-jellyfish-merkle",
- "lru",
+ "lru 0.8.0",
  "network-types",
  "num_enum",
  "once_cell",

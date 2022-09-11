@@ -12,7 +12,7 @@ bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
 byteorder = "1.4.3"
 itertools = {version = "0.10.3", default-features = false}
 logger = {path = "../../commons/logger", package = "starcoin-logger"}
-lru = "0.7.8"
+lru = "0.8.0"
 mirai-annotations = "1.10.1"
 once_cell = "1.13.0"
 parking_lot = "0.12.1"

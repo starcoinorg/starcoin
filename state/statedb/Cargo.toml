@@ -10,7 +10,7 @@ version = "1.12.3"
 anyhow = "1.0.41"
 bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
 forkable-jellyfish-merkle = {path = "../../commons/forkable-jellyfish-merkle"}
-lru = "0.7.8"
+lru = "0.8.0"
 parking_lot = "0.12.1"
 serde = {version = "1.0.130"}
 starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
