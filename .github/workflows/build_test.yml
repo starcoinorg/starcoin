@@ -49,7 +49,8 @@ jobs:
         # --test-threads 8, proper test concurrency level, balance failure rate and test speed
         # --failure-output immediate-final, make error log output at the end
         # --retries 3, a test case usually takes no more than 3 retries to pass
-        run: cargo nextest run --workspace --retries 3 --build-jobs 5 --test-threads 8 --failure-output immediate-final
+        # --build-jobs 8, a little (~20s) faster than 5 or 10 build jobs 
+        run: cargo nextest run --workspace --retries 3 --build-jobs 8 --test-threads 8 --failure-output immediate-final
 #       - name: check changed files
 #         run: bash ./scripts/changed_files.sh
       - name: Doc Tests
