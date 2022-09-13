@@ -10,7 +10,7 @@ version = "1.12.3"
 anyhow = "1.0.41"
 bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
 byteorder = "1.4.3"
-itertools = {version = "0.10.3", default-features = false}
+itertools = {version = "0.10.4", default-features = false}
 logger = {path = "../../commons/logger", package = "starcoin-logger"}
 lru = "0.7.8"
 mirai-annotations = "1.10.1"

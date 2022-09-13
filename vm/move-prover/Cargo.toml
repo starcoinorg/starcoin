@@ -27,7 +27,7 @@ walkdir = "2.3"
 
 clap = {version = "3", features = ["derive"]}
 hex = "0.4.3"
-itertools = "0.10.3"
+itertools = "0.10.4"
 log = "0.4.16"
 num = "0.4.0"
 pretty = "0.10.0"

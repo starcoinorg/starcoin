@@ -13,7 +13,7 @@ clap = {version = "3", features = ["derive"]}
 
 fs_extra = "1.2.0"
 include_dir = "0.6.2"
-itertools = "0.10.3"
+itertools = "0.10.4"
 log = "0.4.16"
 move-bytecode-verifier = {git = "https://github.com/starcoinorg/move", rev = "9d1e76b770d630ad646a540b325f88ef986af3a3"}
 move-compiler = {git = "https://github.com/starcoinorg/move", rev = "9d1e76b770d630ad646a540b325f88ef986af3a3"}

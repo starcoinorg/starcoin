@@ -16,7 +16,7 @@ forkable-jellyfish-merkle = {path = "../commons/forkable-jellyfish-merkle"}
 futures = "0.3.12"
 futures-retry = "0.6"
 futures-timer = "3.0"
-itertools = {version = "0.10.3", default-features = false}
+itertools = {version = "0.10.4", default-features = false}
 logger = {path = "../commons/logger", package = "starcoin-logger"}
 network = {path = "../network", package = "starcoin-network"}
 network-api = {package = "network-api", path = "../network/api"}
