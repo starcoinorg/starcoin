@@ -363,9 +363,8 @@ impl StateView for RemoteStateView {
                     .get_resource(&access_path.address, s)
                     .map_err(|err| err.finish(Location::Undefined).into_vm_status())?),
             },
-            StateKey::TableItem { handle, key } => {
-                Ok(self.resolve_table_entry(&TableHandle(*handle), key.as_slice())?)
-            }
+            StateKey::TableItem(table_item) => Ok(self
+                .resolve_table_entry(&TableHandle(table_item.handle), table_item.key.as_slice())?),
         }
     }
 
