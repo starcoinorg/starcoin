@@ -15,6 +15,6 @@ git-fetch-with-cli = true
 rustflags = ["-C", "link-arg=/STACK:8000000"]
 
 # ========== EXPERIMENTAL MOLD LINKER SUPPORT ==========
-# [target.x86_64-unknown-linux-gnu]
-# linker = "/usr/bin/clang"
-# rustflags = ["-C", "link-arg=--ld-path=/usr/local/mold"]
+[target.x86_64-unknown-linux-gnu]
+linker = "/usr/bin/clang"
+rustflags = ["-C", "link-arg=--ld-path=/usr/bin/mold"]

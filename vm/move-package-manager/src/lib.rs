@@ -161,11 +161,14 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
                     Err((file, s)) => report_diagnostics(&file, s),
                 };
                 pre_compiled_lib.files.extend(full_program.files.clone());
-                /*
                 pre_compiled_lib
                     .parser
-                    .lib_definitions
-                    .extend(full_program.parser.source_definitions); */
+                    .source_definitions
+                    .extend(full_program.parser.source_definitions);
+                pre_compiled_lib
+                    .parser
+                    .named_address_maps
+                    .extend(&full_program.parser.named_address_maps);
                 pre_compiled_lib.expansion.modules = pre_compiled_lib.expansion.modules.union_with(
                     &full_program.expansion.modules.filter_map(|_k, v| {
                         if v.is_source_module {
@@ -249,7 +252,22 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
         eprintln!("No integration tests file in the dir `integration-tests`.");
         return Ok(());
     }
-
+    use std::io::Write;
+    let mut tmp_file = std::fs::File::create("dbg.txt").unwrap();
+    tmp_file
+        .write_all(
+            format!(
+                "{:#?}",
+                &G_PRE_COMPILED_LIB
+                    .lock()
+                    .unwrap()
+                    .as_ref()
+                    .unwrap()
+                    .compiled
+            )
+            .as_bytes(),
+        )
+        .unwrap();
     let requirements = datatest_stable::Requirements::new(
         move |path| {
             starcoin_transactional_test_harness::run_test_impl(
