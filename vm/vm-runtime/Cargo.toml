@@ -18,7 +18,7 @@ move-vm-runtime = {git = "https://github.com/starcoinorg/move", rev = "9d1e76b77
 num_enum = "0.5.7"
 rand = "0.8.5"
 #prometheus = { version = "0.13.1", default_features = false }
-rand_core = {version = "0.6.3", default-features = false}
+rand_core = {version = "0.6.4", default-features = false}
 starcoin-logger = {path = "../../commons/logger"}
 
 starcoin-natives = {path = "../natives"}

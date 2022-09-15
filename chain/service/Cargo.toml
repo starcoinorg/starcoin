@@ -11,7 +11,7 @@ anyhow = "1.0.41"
 async-trait = "0.1"
 futures = "0.3.12"
 rand = "0.8.5"
-rand_core = {version = "0.6.3", default-features = false}
+rand_core = {version = "0.6.4", default-features = false}
 serde = {version = "1.0.130", default-features = false}
 starcoin-chain = {path = "../"}
 starcoin-chain-api = {path = "../api"}

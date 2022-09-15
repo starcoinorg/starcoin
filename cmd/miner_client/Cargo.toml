@@ -31,7 +31,7 @@ hex = {version = "0.4.3", default-features = false}
 libloading = "0.7.2"
 parking_lot = "0.12.1"
 rand = "0.8.5"
-rand_core = {version = "0.6.3", default-features = false}
+rand_core = {version = "0.6.4", default-features = false}
 rust-argon2 = "0.8"
 serde = {version = "1.0.130", features = ["derive"]}
 serde_json = {version = "1.0", features = ["arbitrary_precision"]}

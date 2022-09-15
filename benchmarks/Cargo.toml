@@ -18,7 +18,7 @@ logger = {path = "../commons/logger", package = "starcoin-logger"}
 parking_lot = "0.12"
 proptest = "1.0.0"
 rand = "0.8.5"
-rand_core = {version = "0.6.3", default-features = false}
+rand_core = {version = "0.6.4", default-features = false}
 starcoin-account-api = {path = "../account/api"}
 starcoin-accumulator = {package = "starcoin-accumulator", path = "../commons/accumulator"}
 starcoin-chain = {path = "../chain"}
