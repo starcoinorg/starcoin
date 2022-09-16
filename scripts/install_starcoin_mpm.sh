@@ -6,14 +6,16 @@ get_latest_release() {
     sed -E 's/.*"([^"]+)".*/\1/'                                    # Pluck JSON value
 }
 
+// TODO support -h
+
 if [ -z "$1" ]; then
-    Provide a script to download the latest starcoin and mpm from gitHub release page.
+    echo "A script to download the latest starcoin and mpm from gitHub release page."
     echo "Usage: $0 [version]"
     echo "version "
     exit 1
 fi
 
-// same as dev_setup.sh default, no need for `sudo` to operate
+// same as dev_setup.sh default INSTALL_DIR, no need for `sudo` to operate on
 INSTALL_DIR="${HOME}/bin"
 
 VERSION=$1
