@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: starcoin/starcoin:v1.12.3
+        image: starcoin/starcoin:v.1.12.3.fix3
         imagePullPolicy: Always
         command:
           - bash
