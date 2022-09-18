@@ -10,6 +10,7 @@ version = "1.12.3"
 
 [dependencies]
 anyhow = "~1"
+atomic-counter = "1.0.1"
 bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
 clap = {version = "3", features = ["derive"]}
 csv = "~1"
@@ -18,6 +19,11 @@ indicatif = "0.16.2"
 logger = {path = "../../commons/logger", package = "starcoin-logger"}
 serde = "~1"
 serde_json = {version = "~1", features = ["arbitrary_precision"]}
+tokio = {version = "^1", features = ["full"]}
+
+move-binary-format = {git = "https://github.com/starcoinorg/move", rev = "9d1e76b770d630ad646a540b325f88ef986af3a3"}
+move-bytecode-verifier = {git = "https://github.com/starcoinorg/move", rev = "9d1e76b770d630ad646a540b325f88ef986af3a3"}
+
 starcoin-account-api = {path = "../../account/api"}
 starcoin-accumulator = {path = "../../commons/accumulator", package = "starcoin-accumulator"}
 starcoin-chain = {path = "../../chain"}
