@@ -24,8 +24,8 @@ use starcoin_vm_types::transaction::RawUserTransaction;
 use std::sync::Arc;
 use test_helper::dao::{
     execute_script_on_chain_config, min_action_delay, on_chain_config_type_tag, proposal_state,
-    quorum_vote, reward_config_type_tag, vote_reward_scripts, vote_script_consensus, voting_delay,
-    voting_period, ACTIVE, AGREED, EXECUTABLE, EXTRACTED, PENDING, QUEUED,
+    quorum_vote, reward_config_type_tag, vote_reward_scripts, voting_delay, voting_period, ACTIVE,
+    AGREED, EXECUTABLE, EXTRACTED, PENDING, QUEUED,
 };
 use test_helper::executor::{get_balance, get_sequence_number};
 
@@ -420,12 +420,13 @@ fn test_modify_on_chain_config_reward_by_dao() -> Result<()> {
 fn test_modify_on_chain_config_consensus_by_dao() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
     let net = config.net();
-    let chain = test_helper::gen_blockchain_for_test(net)?;
+    let _chain = test_helper::gen_blockchain_for_test(net)?;
 
-    let alice = Account::new();
-    let bob = Account::new();
-    let action_type_tag = consensus_config_type_tag();
-    let strategy = 3u8;
+    let _alice = Account::new();
+    let _bob = Account::new();
+    let _action_type_tag = consensus_config_type_tag();
+    let _strategy = 3u8;
+
     // TODO: update to StarcoinDAO
     // let mut modified_chain = modify_on_chain_config_by_dao_block(
     //     alice,

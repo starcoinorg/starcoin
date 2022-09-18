@@ -3,7 +3,6 @@ use logger::prelude::*;
 use starcoin_config::genesis_config::G_TOTAL_STC_AMOUNT;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::hash::PlainCryptoHash;
-use starcoin_executor::execute_readonly_function;
 use starcoin_state_api::{ChainStateReader, StateReaderExt, StateView};
 use starcoin_transaction_builder::{build_package_with_stdlib_module, StdLibOptions};
 use starcoin_types::access_path::DataPath;
@@ -429,18 +428,4 @@ where
         .get_resource::<TwoPhaseUpgradeV2Resource>(genesis_address())?
         .map(|tpu| tpu.enforced())
         .unwrap_or(false))
-}
-
-fn read_foo<S: StateView>(state_view: &S) -> u8 {
-    let mut ret = execute_readonly_function(
-        state_view,
-        &ModuleId::new(genesis_address(), Identifier::new("M").unwrap()),
-        &Identifier::new("foo").unwrap(),
-        vec![],
-        vec![],
-        None,
-    )
-    .unwrap();
-    assert_eq!(ret.len(), 1);
-    bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
