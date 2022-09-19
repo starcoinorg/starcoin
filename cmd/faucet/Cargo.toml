@@ -8,7 +8,7 @@ version = "1.12.3"
 
 [dependencies]
 anyhow = "1.0.41"
-ascii = "1.0.0"
+ascii = "1.1.0"
 clap = {version = "3", features = ["derive"]}
 futures = "0.3.12"
 futures-timer = "3.0"
