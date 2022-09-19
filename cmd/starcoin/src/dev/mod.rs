@@ -33,6 +33,3 @@ mod upgrade_module_plan_cmd;
 mod upgrade_module_proposal_cmd;
 mod upgrade_module_queue_cmd;
 mod upgrade_vm_config_proposal_cmd;
-
-#[cfg(test)]
-mod tests;
