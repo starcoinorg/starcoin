@@ -4,9 +4,8 @@
 use anyhow::Result;
 use consensus::Consensus;
 use starcoin_chain::BlockChain;
-use starcoin_chain::{ChainReader, ChainWriter};
+use starcoin_chain::ChainWriter;
 use starcoin_config::{ChainNetwork, NodeConfig};
-use starcoin_state_api::StateReaderExt;
 use starcoin_transaction_builder::{encode_create_account_script_function, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_types::account::Account;
 use starcoin_types::account_address::AccountAddress;
@@ -23,9 +22,8 @@ use starcoin_vm_types::on_chain_config::consensus_config_type_tag;
 use starcoin_vm_types::transaction::RawUserTransaction;
 use std::sync::Arc;
 use test_helper::dao::{
-    execute_script_on_chain_config, min_action_delay, on_chain_config_type_tag, proposal_state,
-    quorum_vote, reward_config_type_tag, vote_reward_scripts, voting_delay, voting_period, ACTIVE,
-    AGREED, EXECUTABLE, EXTRACTED, PENDING, QUEUED,
+    min_action_delay, proposal_state, quorum_vote, voting_delay, voting_period, ACTIVE, AGREED,
+    EXECUTABLE, EXTRACTED, PENDING, QUEUED,
 };
 use test_helper::executor::{get_balance, get_sequence_number};
 
@@ -377,43 +375,6 @@ pub fn modify_on_chain_config_by_dao_block(
 
     // return chain state for verify
     Ok(chain)
-}
-
-#[stest::test]
-fn test_modify_on_chain_config_reward_by_dao() -> Result<()> {
-    let config = Arc::new(NodeConfig::random_for_test());
-    let net = config.net();
-    let chain = test_helper::gen_blockchain_for_test(net)?;
-    let alice = Account::new();
-    let bob = Account::new();
-    let action_type_tag = reward_config_type_tag();
-    let reward_delay: u64 = 10;
-    let mut chain = modify_on_chain_config_by_dao_block(
-        alice.clone(),
-        chain,
-        net,
-        vote_reward_scripts(net, reward_delay),
-        on_chain_config_type_tag(action_type_tag.clone()),
-        execute_script_on_chain_config(net, action_type_tag, 0u64),
-    )?;
-
-    //get first miner reward
-    let begin_reward = chain.chain_state_reader().get_epoch_info()?.total_reward();
-    chain.apply(create_new_block(&chain, &bob, vec![])?)?;
-    let account_state_reader = chain.chain_state_reader();
-    let balance = account_state_reader.get_balance(*bob.address())?.unwrap();
-    let end_reward = account_state_reader.get_epoch_info()?.total_reward();
-    // get reward after modify delay
-    let mut count = 0;
-    while count < reward_delay {
-        chain.apply(create_new_block(&chain, &alice, vec![])?)?;
-        count += 1;
-    }
-    let account_state_reader = chain.chain_state_reader();
-    let after_balance = account_state_reader.get_balance(*bob.address())?.unwrap();
-    assert!(after_balance > balance);
-    assert_eq!(after_balance, (balance + (end_reward - begin_reward)));
-    Ok(())
 }
 
 #[stest::test(timeout = 120)]
