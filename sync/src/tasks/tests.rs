@@ -289,7 +289,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
     Ok(())
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let mut node1 = SyncNodeMocker::new(net1, 1, 50)?;
@@ -342,7 +342,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
     Ok(())
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 pub async fn test_full_sync_continue() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let mut node1 = SyncNodeMocker::new(net1, 10, 50)?;
