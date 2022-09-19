@@ -457,6 +457,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "atomic-counter"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62f447d68cfa5a9ab0c1c862a703da2a65b5ed1b7ce1153c9eb0169506d56019"
+
+[[package]]
 name = "atomic-waker"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1839,11 +1845,14 @@ name = "db-exporter"
 version = "1.12.3"
 dependencies = [
  "anyhow",
+ "atomic-counter",
  "bcs-ext",
  "clap 3.2.15",
  "csv",
  "hex",
  "indicatif",
+ "move-binary-format",
+ "move-bytecode-verifier",
  "pprof",
  "serde 1.0.140",
  "serde_json",
@@ -1863,6 +1872,7 @@ dependencies = [
  "starcoin-transaction-builder",
  "starcoin-types",
  "starcoin-vm-types",
+ "tokio 1.20.1",
 ]
 
 [[package]]

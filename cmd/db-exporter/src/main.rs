@@ -7,6 +7,7 @@ use bcs_ext::Sample;
 use clap::IntoApp;
 use clap::Parser;
 use csv::Writer;
+use db_exporter::verify_modules_via_export_file;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
@@ -231,6 +232,7 @@ enum Cmd {
     ExportSnapshot(ExportSnapshotOptions),
     ApplySnapshot(ApplySnapshotOptions),
     ExportResource(ExportResourceOptions),
+    VerifyModules(VerifyModulesOptions),
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -412,7 +414,19 @@ pub struct ExportResourceOptions {
     pub fields: Vec<String>,
 }
 
-fn main() -> anyhow::Result<()> {
+#[derive(Debug, Parser)]
+#[clap(
+    name = "verify-modules",
+    about = "fast verify all modules, do not execute the transactions"
+)]
+pub struct VerifyModulesOptions {
+    #[clap(long, short = 'i', parse(from_os_str))]
+    /// input file, like accounts.csv
+    pub input_path: PathBuf,
+}
+
+#[tokio::main(flavor = "multi_thread")]
+async fn main() -> anyhow::Result<()> {
     let opt = Opt::parse();
     let cmd = match opt.cmd {
         Some(cmd) => cmd,
@@ -422,150 +436,147 @@ fn main() -> anyhow::Result<()> {
         }
     };
 
-    if let Cmd::Exporter(option) = cmd {
-        let output = option.output.as_deref();
-        let mut writer_builder = csv::WriterBuilder::new();
-        let writer_builder = writer_builder.delimiter(b'\t').double_quote(false);
-        let result = match output {
-            Some(output) => {
-                let writer = writer_builder.from_path(output)?;
-                export(
-                    // option.db_path.display().to_string().as_str(),
-                    option.db_path.to_str().unwrap(),
-                    writer,
-                    option.schema,
-                )
-            }
-            None => {
-                let writer = writer_builder.from_writer(std::io::stdout());
-                export(
-                    option.db_path.display().to_string().as_str(),
-                    writer,
-                    option.schema,
-                )
-            }
-        };
-        if let Err(err) = result {
-            let broken_pipe_err = err.downcast_ref::<csv::Error>().and_then(|err| {
-                if let csv::ErrorKind::Io(io_err) = err.kind() {
-                    if io_err.kind() == std::io::ErrorKind::BrokenPipe {
-                        Some(io_err)
+    match cmd {
+        Cmd::Exporter(option) => {
+            let output = option.output.as_deref();
+            let mut writer_builder = csv::WriterBuilder::new();
+            let writer_builder = writer_builder.delimiter(b'\t').double_quote(false);
+            let result = match output {
+                Some(output) => {
+                    let writer = writer_builder.from_path(output)?;
+                    export(
+                        // option.db_path.display().to_string().as_str(),
+                        option.db_path.to_str().unwrap(),
+                        writer,
+                        option.schema,
+                    )
+                }
+                None => {
+                    let writer = writer_builder.from_writer(std::io::stdout());
+                    export(
+                        option.db_path.display().to_string().as_str(),
+                        writer,
+                        option.schema,
+                    )
+                }
+            };
+            if let Err(err) = result {
+                let broken_pipe_err = err.downcast_ref::<csv::Error>().and_then(|err| {
+                    if let csv::ErrorKind::Io(io_err) = err.kind() {
+                        if io_err.kind() == std::io::ErrorKind::BrokenPipe {
+                            Some(io_err)
+                        } else {
+                            None
+                        }
                     } else {
                         None
                     }
+                });
+                //ignore BrokenPipe
+                return if let Some(_broken_pipe_err) = broken_pipe_err {
+                    Ok(())
                 } else {
-                    None
-                }
-            });
-            //ignore BrokenPipe
-            return if let Some(_broken_pipe_err) = broken_pipe_err {
-                Ok(())
+                    Err(err)
+                };
+            }
+            return result;
+        }
+        Cmd::Checkkey(option) => {
+            let db = DBStorage::open_with_cfs(
+                option.db_path.display().to_string().as_str(),
+                StorageVersion::current_version()
+                    .get_column_family_names()
+                    .to_vec(),
+                true,
+                Default::default(),
+                None,
+            )?;
+
+            let result = db.get(option.cf_name.as_str(), option.block_hash.to_vec())?;
+            if result.is_some() {
+                println!("{} block_hash {} exist", option.cf_name, option.block_hash);
             } else {
-                Err(err)
-            };
+                println!(
+                    "{} block_hash {} not exist",
+                    option.cf_name, option.block_hash
+                );
+            }
+            return Ok(());
         }
-        return result;
-    }
-
-    if let Cmd::Checkkey(option) = cmd {
-        let db = DBStorage::open_with_cfs(
-            option.db_path.display().to_string().as_str(),
-            StorageVersion::current_version()
-                .get_column_family_names()
-                .to_vec(),
-            true,
-            Default::default(),
-            None,
-        )?;
-
-        let result = db.get(option.cf_name.as_str(), option.block_hash.to_vec())?;
-        if result.is_some() {
-            println!("{} block_hash {} exist", option.cf_name, option.block_hash);
-        } else {
-            println!(
-                "{} block_hash {} not exist",
-                option.cf_name, option.block_hash
+        Cmd::ExportBlockRange(option) => {
+            let result = export_block_range(
+                option.db_path,
+                option.output,
+                option.net,
+                option.start,
+                option.end,
             );
+            return result;
         }
-        return Ok(());
-    }
-
-    if let Cmd::ExportBlockRange(option) = cmd {
-        let result = export_block_range(
-            option.db_path,
-            option.output,
-            option.net,
-            option.start,
-            option.end,
-        );
-        return result;
-    }
-
-    if let Cmd::ApplyBlock(option) = cmd {
-        #[cfg(target_os = "linux")]
-        let guard = pprof::ProfilerGuard::new(100).unwrap();
-        let verifier = option.verifier.unwrap_or(Verifier::Basic);
-        let result = apply_block(option.to_path, option.input_path, option.net, verifier);
-        #[cfg(target_os = "linux")]
-        if let Ok(report) = guard.report().build() {
-            let file = File::create("/tmp/flamegraph.svg").unwrap();
-            report.flamegraph(file).unwrap();
+        Cmd::ApplyBlock(option) => {
+            #[cfg(target_os = "linux")]
+            let guard = pprof::ProfilerGuard::new(100).unwrap();
+            let verifier = option.verifier.unwrap_or(Verifier::Basic);
+            let result = apply_block(option.to_path, option.input_path, option.net, verifier);
+            #[cfg(target_os = "linux")]
+            if let Ok(report) = guard.report().build() {
+                let file = File::create("/tmp/flamegraph.svg").unwrap();
+                report.flamegraph(file).unwrap();
+            }
+            return result;
         }
-        return result;
-    }
-
-    if let Cmd::StartupInfoBack(option) = cmd {
-        let result = startup_info_back(option.to_path, option.back_size, option.net);
-        return result;
-    }
-
-    if let Cmd::GenBlockTransactions(option) = cmd {
-        let result = gen_block_transactions(
-            option.to_path,
-            option.block_num,
-            option.trans_num,
-            option.txn_type,
-        );
-        return result;
-    }
-
-    if let Cmd::ExportSnapshot(option) = cmd {
-        let result = export_snapshot(
-            option.db_path,
-            option.output,
-            option.net,
-            option.increment,
-            option.special_block_num,
-        );
-        return result;
-    }
-
-    if let Cmd::ApplySnapshot(option) = cmd {
-        let result = apply_snapshot(option.to_path, option.input_path, option.net);
-        return result;
-    }
-
-    if let Cmd::ExportResource(option) = cmd {
-        #[cfg(target_os = "linux")]
-        let guard = pprof::ProfilerGuard::new(100).unwrap();
-        let output = option.output.as_path();
-        let block_hash = option.block_hash;
-        let resource = option.resource_type.clone();
-        // let result = apply_block(option.to_path, option.input_path, option.net, verifier);
-        export_resource(
-            option.db_path.display().to_string().as_str(),
-            output,
-            block_hash,
-            resource,
-            option.fields.as_slice(),
-        )?;
-        #[cfg(target_os = "linux")]
-        if let Ok(report) = guard.report().build() {
-            let file = File::create("/tmp/flamegraph-db-export-resource-freq-100.svg").unwrap();
-            report.flamegraph(file).unwrap();
+        Cmd::StartupInfoBack(option) => {
+            let result = startup_info_back(option.to_path, option.back_size, option.net);
+            return result;
+        }
+        Cmd::GenBlockTransactions(option) => {
+            let result = gen_block_transactions(
+                option.to_path,
+                option.block_num,
+                option.trans_num,
+                option.txn_type,
+            );
+            return result;
+        }
+        Cmd::ExportSnapshot(option) => {
+            let result = export_snapshot(
+                option.db_path,
+                option.output,
+                option.net,
+                option.increment,
+                option.special_block_num,
+            );
+            return result;
+        }
+        Cmd::ApplySnapshot(option) => {
+            let result = apply_snapshot(option.to_path, option.input_path, option.net);
+            return result;
+        }
+        Cmd::ExportResource(option) => {
+            #[cfg(target_os = "linux")]
+            let guard = pprof::ProfilerGuard::new(100).unwrap();
+            let output = option.output.as_path();
+            let block_hash = option.block_hash;
+            let resource = option.resource_type.clone();
+            // let result = apply_block(option.to_path, option.input_path, option.net, verifier);
+            export_resource(
+                option.db_path.display().to_string().as_str(),
+                output,
+                block_hash,
+                resource,
+                option.fields.as_slice(),
+            )?;
+            #[cfg(target_os = "linux")]
+            if let Ok(report) = guard.report().build() {
+                let file = File::create("/tmp/flamegraph-db-export-resource-freq-100.svg").unwrap();
+                report.flamegraph(file).unwrap();
+            }
+        }
+        Cmd::VerifyModules(option) => {
+            let result = verify_modules_via_export_file(option.input_path);
+            return result;
         }
     }
-
     Ok(())
 }
 
