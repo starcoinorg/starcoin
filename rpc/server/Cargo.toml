@@ -16,7 +16,7 @@ bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
 dashmap = "5.3"
 futures = "0.3.12"
 futures-channel = "0.3"
-governor = {version = "0.4.2", features = ["dashmap"]}
+governor = {version = "0.5.0", features = ["dashmap"]}
 hex = {version = "0.4.3", default-features = false}
 jsonrpc-core = {version = "18", features = ["arbitrary_precision"]}
 jsonrpc-core-client = {version = "18", features = [
