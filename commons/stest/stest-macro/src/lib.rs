@@ -100,7 +100,7 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
-    let timeout: u64 = args.timeout.unwrap_or(600);
+    let timeout: u64 = args.timeout.unwrap_or(60) * 3;
     let input = syn::parse_macro_input!(item as syn::ItemFn);
 
     let ret = &input.sig.output;
