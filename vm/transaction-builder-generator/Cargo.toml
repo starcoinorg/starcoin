@@ -19,7 +19,7 @@ serde_yaml = "0.8.26"
 textwrap = "0.14.0"
 
 bcs = "0.1.3"
-move-core-types = {git = "https://github.com/starcoinorg/move", rev = "9d1e76b770d630ad646a540b325f88ef986af3a3"}
+move-core-types = {git = "https://github.com/starcoinorg/move", rev = "ae90a6d2453fcceebfc546d572ca4f91da29b749"}
 starcoin-vm-types = {path = "../types"}
 
 [dev-dependencies]
