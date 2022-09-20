@@ -18,7 +18,7 @@ test-helper = {path = "../test-helper"}
 #starcoin-move-compiler= {path = "../vm/compiler"}
 anyhow = "~1"
 bcs-ext = {path = "../commons/bcs_ext"}
-ethereum-types = "0.9"
+ethereum-types = "0.14"
 hex = "0.4"
 rlp = "0.4"
 rlp-derive = "0.1"
