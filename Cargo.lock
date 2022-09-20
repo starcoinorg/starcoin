@@ -4205,7 +4205,7 @@ dependencies = [
  "sha2 0.10.2",
  "smallvec 1.9.0",
  "thiserror",
- "uint 0.9.3",
+ "uint 0.9.4",
  "unsigned-varint 0.7.1",
  "void",
 ]
@@ -10608,7 +10608,7 @@ dependencies = [
  "serde_json",
  "starcoin-crypto",
  "starcoin-types",
- "uint 0.9.3",
+ "uint 0.9.4",
 ]
 
 [[package]]
@@ -11850,9 +11850,9 @@ dependencies = [
 
 [[package]]
 name = "uint"
-version = "0.9.3"
+version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12f03af7ccf01dd611cc450a0d10dbc9b745770d096473e2faf0ca6e2d66d1e0"
+checksum = "a45526d29728d135c2900b0d30573fe3ee79fceb12ef534c7bb30e810a91b601"
 dependencies = [
  "byteorder 1.4.3",
  "crunchy",

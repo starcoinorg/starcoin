@@ -10,7 +10,7 @@ version = "1.12.4"
 hex = {version = "0.4.3", default-features = false}
 serde = {version = "1.0.130", default-features = false}
 starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-uint = "0.9.3"
+uint = "0.9.4"
 [dev-dependencies]
 bcs-ext = {path = "../../commons/bcs_ext"}
 serde_json = "1.0"
