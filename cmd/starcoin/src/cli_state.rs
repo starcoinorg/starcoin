@@ -167,18 +167,25 @@ impl CliState {
     }
 
     pub fn watch_txn(&self, txn_hash: HashValue) -> Result<ExecutionOutputView> {
-        let block = self.client.watch_txn(txn_hash, Some(self.watch_timeout))?;
+        let block = self
+            .client
+            .watch_txn(txn_hash, Some(self.watch_timeout))
+            .map(Some)
+            .unwrap_or_else(|e| {
+                eprintln!("Watch txn {:?}  err: {:?}", txn_hash, e);
+                None
+            });
 
         let txn_info = {
             if let Some(info) = self.client.chain_get_transaction_info(txn_hash)? {
                 info
             } else {
                 //sleep and try again.
-                std::thread::sleep(Duration::from_secs(1));
+                std::thread::sleep(Duration::from_secs(5));
                 if let Some(info) = self.client.chain_get_transaction_info(txn_hash)? {
                     info
                 } else {
-                    bail!("transaction execute success, but get transaction info return none, block: {}", block.header.number);
+                    bail!("transaction execute success, but get transaction info return none, block: {}", block.map(|b|b.header.number.to_string()).unwrap_or_else(||"unknown".to_string()));
                 }
             }
         };
