@@ -11,7 +11,7 @@ def check_or_do(network):
     # if ok, rm backup dir, and do the next step
 
     export_state_node_status = os.system(
-        "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(more /sc-data/snapshot/manifest.csv| grep state_node | awk -F ' ' '{print\$2}') -eq \$(wc -l /sc-data/snapshot/state_node| awk -F ' ' '{print\$1}') ]; then exit 0; else exit 1;fi\"" % network)
+        "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(more /sc-data/snapshot/manifest.csv| grep -w state_node | awk -F ' ' '{print\$2}') -eq \$(wc -l /sc-data/snapshot/state_node| awk -F ' ' '{print\$1}') ]; then exit 0; else exit 1;fi\"" % network)
     export_acc_node_transaction_status = os.system(
         "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(more /sc-data/snapshot/manifest.csv| grep acc_node_transaction | awk -F ' ' '{print\$2}') -eq \$(wc -l /sc-data/snapshot/acc_node_transaction| awk -F ' ' '{print\$1}') ]; then exit 0; else exit 1;fi\"" % network)
     export_acc_node_block_status = os.system(
