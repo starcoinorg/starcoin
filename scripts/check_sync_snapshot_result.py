@@ -11,7 +11,7 @@ def check_or_do(network):
     # if ok, rm backup dir, and do the next step
 
     export_state_node_status = os.system(
-        "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(more /sc-data/snapshot/manifest.csv| grep state_node | awk -F ' ' '{print\$2}') -eq \$(wc -l /sc-data/snapshot/state_node| awk -F ' ' '{print\$1}') ]; then exit 0; else exit 1;fi\"" % network)
+        "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(more /sc-data/snapshot/manifest.csv| grep -w state_node | awk -F ' ' '{print\$2}') -eq \$(wc -l /sc-data/snapshot/state_node| awk -F ' ' '{print\$1}') ]; then exit 0; else exit 1;fi\"" % network)
     export_acc_node_transaction_status = os.system(
         "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(more /sc-data/snapshot/manifest.csv| grep acc_node_transaction | awk -F ' ' '{print\$2}') -eq \$(wc -l /sc-data/snapshot/acc_node_transaction| awk -F ' ' '{print\$1}') ]; then exit 0; else exit 1;fi\"" % network)
     export_acc_node_block_status = os.system(
@@ -20,14 +20,17 @@ def check_or_do(network):
         "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(more /sc-data/snapshot/manifest.csv| grep -w block | awk -F ' ' '{print\$2}') -eq \$(wc -l /sc-data/snapshot/block| awk -F ' ' '{print\$1}') ]; then exit 0; else exit 1;fi\"" % network)
     export_block_info_status = os.system(
         "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(more /sc-data/snapshot/manifest.csv| grep block_info | awk -F ' ' '{print\$2}') -eq \$(wc -l /sc-data/snapshot/block_info| awk -F ' ' '{print\$1}') ]; then exit 0; else exit 1;fi\"" % network)
+    export_state_node_prev_status = os.system(
+        "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c \"if [ \$(more /sc-data/snapshot/manifest.csv| grep state_node_prev | awk -F ' ' '{print\$2}') -eq \$(wc -l /sc-data/snapshot/state_node_prev| awk -F ' ' '{print\$1}') ]; then exit 0; else exit 1;fi\"" % network)
 
-    if export_state_node_status != 0 or export_acc_node_transaction_status != 0 or export_acc_node_block_status != 0 or export_block_status != 0 or export_block_info_status != 0:
-        print("check export snapshot status, found something wrong, export_state_node_status:%s, export_acc_node_transaction_status:%s, export_acc_node_block_status:%s, export_block_status:%s, export_block_info_status:%s" % (
+    if export_state_node_status != 0 or export_acc_node_transaction_status != 0 or export_acc_node_block_status != 0 or export_block_status != 0 or export_block_info_status != 0 or export_state_node_prev_status != 0:
+        print("check export snapshot status, found something wrong, export_state_node_status:%s, export_acc_node_transaction_status:%s, export_acc_node_block_status:%s, export_block_status:%s, export_block_info_status:%s, export_state_node_prev_status:%s" % (
             export_state_node_status,
             export_acc_node_transaction_status,
             export_acc_node_block_status,
             export_block_status,
-            export_block_info_status))
+            export_block_info_status,
+            export_state_node_prev_status))
         print("check snapshot found somethind wrong, now delete snapshot and recover with snapshotbak")
         os.system(
             "kubectl exec -it -n starcoin-%s starcoin-1 -- bash -c 'rm -rf /sc-data/snapshot;mv /sc-data/snapshotbak /sc-data/snapshot'" % network)
