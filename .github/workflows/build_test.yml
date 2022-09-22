@@ -44,6 +44,10 @@ jobs:
           command: build
           args: --all
       - uses: taiki-e/install-action@nextest
+      - name: verify modules
+        run: |
+          cp ./target/debug/starcoin_db_exporter .
+          bash ./scripts/verify_modules.sh main
       - name: test
         # run: bash ./scripts/auto_rerun_test.sh
         # --test-threads 10, proper test concurrency level, balance failure rate and test speed
