@@ -252,22 +252,6 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
         eprintln!("No integration tests file in the dir `integration-tests`.");
         return Ok(());
     }
-    use std::io::Write;
-    let mut tmp_file = std::fs::File::create("dbg.txt").unwrap();
-    tmp_file
-        .write_all(
-            format!(
-                "{:#?}",
-                &G_PRE_COMPILED_LIB
-                    .lock()
-                    .unwrap()
-                    .as_ref()
-                    .unwrap()
-                    .compiled
-            )
-            .as_bytes(),
-        )
-        .unwrap();
     let requirements = datatest_stable::Requirements::new(
         move |path| {
             starcoin_transactional_test_harness::run_test_impl(
