@@ -46,6 +46,7 @@ use starcoin_vm_types::on_chain_config::{
     MoveLanguageVersion, G_GAS_CONSTANTS_IDENTIFIER, G_INSTRUCTION_SCHEDULE_IDENTIFIER,
     G_NATIVE_SCHEDULE_IDENTIFIER, G_VM_CONFIG_IDENTIFIER,
 };
+use starcoin_vm_types::state_view::StateReaderExt;
 use starcoin_vm_types::transaction::{DryRunTransaction, Package, TransactionPayloadType};
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
@@ -446,9 +447,20 @@ impl StarcoinVM {
         remote_cache: &StateViewCache<S>,
         package_address: AccountAddress,
     ) -> Result<bool> {
-        let two_phase_upgrade_v2_path = access_path_for_two_phase_upgrade_v2(package_address);
-        if let Some(data) = remote_cache.get(&two_phase_upgrade_v2_path)? {
-            Ok(bcs_ext::from_bytes::<TwoPhaseUpgradeV2Resource>(&data)?.enforced())
+        let chain_id = remote_cache.get_chain_id()?;
+        let block_meta = remote_cache.get_block_metadata()?;
+        // from mainnet after 8015088 and barnard after 8311392, we disable enforce upgrade
+        if package_address == genesis_address()
+            || (chain_id.is_main() && block_meta.number < 8015088)
+            || (chain_id.is_barnard() && block_meta.number < 8311392)
+        {
+            let two_phase_upgrade_v2_path = access_path_for_two_phase_upgrade_v2(package_address);
+            if let Some(data) = remote_cache.get(&two_phase_upgrade_v2_path)? {
+                let enforced = bcs_ext::from_bytes::<TwoPhaseUpgradeV2Resource>(&data)?.enforced();
+                Ok(enforced)
+            } else {
+                Ok(false)
+            }
         } else {
             Ok(false)
         }

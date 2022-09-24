@@ -9,8 +9,8 @@ version = "1.12.4"
 [dependencies]
 anyhow = "1.0.41"
 hex = "0.4.3"
-move-binary-format = {git = "https://github.com/starcoinorg/move", rev = "ae90a6d2453fcceebfc546d572ca4f91da29b749"}
-move-core-types = {git = "https://github.com/starcoinorg/move", rev = "ae90a6d2453fcceebfc546d572ca4f91da29b749"}
+move-binary-format = {git = "https://github.com/starcoinorg/move", rev = "c6dc63d3da2bfc625073536001a50b0d2fd093f5"}
+move-core-types = {git = "https://github.com/starcoinorg/move", rev = "c6dc63d3da2bfc625073536001a50b0d2fd093f5"}
 serde = {version = "1.0.130", features = ["derive", "rc"]}
 serde_json = "1.0"
 starcoin-vm-types = {path = "../types"}
