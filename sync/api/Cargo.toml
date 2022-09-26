@@ -2,7 +2,7 @@
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
 name = "starcoin-sync-api"
-version = "1.12.4"
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
