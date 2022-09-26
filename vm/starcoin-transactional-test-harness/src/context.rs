@@ -60,7 +60,10 @@ pub struct ForkContext {
 }
 
 impl ForkContext {
-    pub fn new_local(network: BuiltinNetworkID) -> Result<Self> {
+    pub fn new_local(
+        network: BuiltinNetworkID,
+        stdlib_modules: Option<Vec<Vec<u8>>>,
+    ) -> Result<Self> {
         let rt = Arc::new(
             tokio::runtime::Builder::new_multi_thread()
                 .thread_name("fork-context-worker")
@@ -68,7 +71,10 @@ impl ForkContext {
                 .build()?,
         );
         let net = ChainNetwork::new_builtin(network);
-        let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
+        let genesis_txn = match stdlib_modules {
+            Some(module) => Genesis::build_genesis_transaction_with_stdlib(&net, module).unwrap(),
+            None => Genesis::build_genesis_transaction(&net).unwrap(),
+        };
         let data_store = Arc::new(starcoin_state_tree::mock::MockStateNodeStore::new());
         let state_db = ChainStateDB::new(data_store.clone(), None);
         Genesis::execute_genesis_txn(&state_db, genesis_txn).unwrap();

@@ -72,6 +72,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
+use std::sync::Mutex;
 use std::{collections::BTreeMap, convert::TryInto, path::Path, str::FromStr};
 use stdlib::{starcoin_framework_named_addresses, G_PRECOMPILED_STARCOIN_FRAMEWORK};
 use tempfile::{NamedTempFile, TempDir};
@@ -80,6 +81,8 @@ pub mod context;
 pub mod fork_chain;
 pub mod fork_state;
 pub mod remote_state;
+
+pub static G_FLAG_LOAD_STDLIB: Mutex<bool> = Mutex::new(false);
 
 #[derive(Parser, Debug, Default)]
 pub struct ExtraInitArgs {
@@ -1079,8 +1082,25 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                 true,
             )
         } else {
+            let stdlib_modules = if *G_FLAG_LOAD_STDLIB.lock().unwrap() {
+                assert!(
+                    pre_compiled_deps.is_some(),
+                    "Current project must be framework."
+                );
+                let mut modules: Vec<Vec<u8>> = vec![];
+                for c in &pre_compiled_deps.unwrap().compiled {
+                    if let CompiledUnitEnum::Module(m) = c {
+                        let mut buffer: Vec<u8> = vec![];
+                        m.named_module.module.serialize(&mut buffer).unwrap();
+                        modules.push(buffer);
+                    }
+                }
+                Some(modules)
+            } else {
+                None
+            };
             (
-                ForkContext::new_local(init_args.network.unwrap()).unwrap(),
+                ForkContext::new_local(init_args.network.unwrap(), stdlib_modules).unwrap(),
                 false,
             )
         };

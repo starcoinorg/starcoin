@@ -17,8 +17,10 @@ use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{BlockStore, Storage, Store};
+use starcoin_transaction_builder::build_stdlib_package_with_modules;
 use starcoin_transaction_builder::{build_stdlib_package, StdLibOptions};
 use starcoin_types::startup_info::{ChainInfo, StartupInfo};
+use starcoin_types::transaction::Package;
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::{block::Block, transaction::Transaction};
 use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
@@ -143,6 +145,21 @@ impl Genesis {
                 StdLibOptions::Compiled(net.stdlib_version())
             },
         )?;
+        Self::build_genesis_transaction_with_package(net, package)
+    }
+
+    pub fn build_genesis_transaction_with_stdlib(
+        net: &ChainNetwork,
+        stdlib: Vec<Vec<u8>>,
+    ) -> Result<SignedUserTransaction> {
+        let package = build_stdlib_package_with_modules(net, stdlib)?;
+        Self::build_genesis_transaction_with_package(net, package)
+    }
+
+    fn build_genesis_transaction_with_package(
+        net: &ChainNetwork,
+        package: Package,
+    ) -> Result<SignedUserTransaction> {
         let txn = RawUserTransaction::new_with_default_gas_token(
             CORE_CODE_ADDRESS,
             0,

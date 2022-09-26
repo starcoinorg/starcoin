@@ -115,6 +115,10 @@ pub struct IntegrationTestCommand {
     #[clap(long)]
     /// Task name to print usage, if None, print all tasks.
     task_name: Option<String>,
+
+    #[clap(long)]
+    /// If current project is the framework project, load the modules as stdlib.
+    load_stdlib: bool,
 }
 
 static G_PRE_COMPILED_LIB: Lazy<Mutex<Option<FullyCompiledProgram>>> =
@@ -262,6 +266,9 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
         return Ok(());
     }
 
+    *starcoin_transactional_test_harness::G_FLAG_LOAD_STDLIB
+        .lock()
+        .unwrap() = cmd.load_stdlib;
     let requirements = datatest_stable::Requirements::new(
         move |path| {
             starcoin_transactional_test_harness::run_test_impl(
