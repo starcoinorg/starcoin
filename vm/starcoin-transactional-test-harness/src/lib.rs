@@ -82,7 +82,7 @@ pub mod fork_chain;
 pub mod fork_state;
 pub mod remote_state;
 
-pub static G_FLAG_LOAD_STDLIB: Mutex<bool> = Mutex::new(false);
+pub static G_FLAG_RELOAD_STDLIB: Mutex<bool> = Mutex::new(false);
 
 #[derive(Parser, Debug, Default)]
 pub struct ExtraInitArgs {
@@ -1082,7 +1082,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                 true,
             )
         } else {
-            let stdlib_modules = if *G_FLAG_LOAD_STDLIB.lock().unwrap() {
+            let stdlib_modules = if *G_FLAG_RELOAD_STDLIB.lock().unwrap() {
                 assert!(
                     pre_compiled_deps.is_some(),
                     "Current project must be framework."
