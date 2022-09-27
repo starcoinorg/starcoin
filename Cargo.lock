@@ -9700,6 +9700,7 @@ name = "starcoin-natives"
 version = "1.12.5"
 dependencies = [
  "arrayref",
+ "base64 0.13.0",
  "hex",
  "libsecp256k1",
  "log 0.4.17",

@@ -41,6 +41,8 @@ pub enum NativeCostIndex {
     VEC_APPEND = 30,
     VEC_REMOVE = 31,
     VEC_REVERSE = 32,
+    BASE64_ENCODE = 33,
+    BASE64_DECODE = 34,
 }
 
 impl NativeCostIndex {
