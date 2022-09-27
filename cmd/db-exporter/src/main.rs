@@ -1153,6 +1153,8 @@ fn export_column(
 /// block_info num block.header.hash
 /// txn_accumulator num accumulator_root_hash
 /// state  num state_root_hash
+/// state_node_prev num state_root_hash
+
 pub fn export_snapshot(
     from_dir: PathBuf,
     output: PathBuf,
@@ -1222,7 +1224,7 @@ pub fn export_snapshot(
             let num = str_list[1].parse::<u64>()?;
             old_snapshot_nums.insert(column, num);
         }
-        if old_snapshot_nums.len() != 5 {
+        if old_snapshot_nums.len() != 6 {
             println!("increment export snapshot manifest.cvs error");
             std::process::exit(1);
         }
@@ -1337,18 +1339,6 @@ pub fn export_snapshot(
     }
 
     manifest_list.push((
-        STATE_NODE_PREFIX_NAME_PREV,
-        nums_prev.load(Ordering::Relaxed),
-        state_root_prev,
-    ));
-
-    println!(
-        "{} nums {}",
-        STATE_NODE_PREFIX_NAME_PREV,
-        nums_prev.load(Ordering::Relaxed)
-    );
-
-    manifest_list.push((
         STATE_NODE_PREFIX_NAME,
         nums.load(Ordering::Relaxed),
         state_root,
@@ -1358,6 +1348,18 @@ pub fn export_snapshot(
         "{} nums {}",
         STATE_NODE_PREFIX_NAME,
         nums.load(Ordering::Relaxed)
+    );
+
+    manifest_list.push((
+        STATE_NODE_PREFIX_NAME_PREV,
+        nums_prev.load(Ordering::Relaxed),
+        state_root_prev,
+    ));
+
+    println!(
+        "{} nums {}",
+        STATE_NODE_PREFIX_NAME_PREV,
+        nums_prev.load(Ordering::Relaxed)
     );
 
     // save manifest
@@ -1654,7 +1656,7 @@ pub fn apply_snapshot(
                 if index % BATCH_SIZE == 0 {
                     bar.set_message(format!(
                         "import {} index {}",
-                        STATE_NODE_PREFIX_NAME,
+                        STATE_NODE_PREFIX_NAME_PREV,
                         index / BATCH_SIZE
                     ));
                     bar.inc(1);
