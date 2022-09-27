@@ -176,7 +176,7 @@ pub fn stdlib_package(
     module_to_package(modules.to_vec(), init_script)
 }
 
-fn module_to_package(
+pub fn module_to_package(
     modules: Vec<Vec<u8>>,
     init_script: Option<ScriptFunction>,
 ) -> Result<Package> {

@@ -26,7 +26,7 @@ use starcoin_vm_types::transaction::{
 };
 use starcoin_vm_types::value::MoveValue;
 use std::convert::TryInto;
-use stdlib::stdlib_package;
+use stdlib::{module_to_package, stdlib_package};
 pub use stdlib::{stdlib_modules, StdLibOptions, StdlibVersion};
 
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
@@ -324,6 +324,17 @@ pub fn build_stdlib_package(net: &ChainNetwork, stdlib_option: StdLibOptions) ->
         _ => build_init_script_v2(net),
     };
     stdlib_package(stdlib_option, Some(init_script))
+}
+
+pub fn build_stdlib_package_with_modules(
+    net: &ChainNetwork,
+    modules: Vec<Vec<u8>>,
+) -> Result<Package> {
+    let init_script = match net.genesis_config().stdlib_version {
+        StdlibVersion::Version(1) => build_init_script_v1(net),
+        _ => build_init_script_v2(net),
+    };
+    module_to_package(modules, Some(init_script))
 }
 
 pub fn build_init_script_v1(net: &ChainNetwork) -> ScriptFunction {
