@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use base64;
 use move_binary_format::errors::PartialVMResult;
 use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::{
@@ -13,7 +14,6 @@ use ripemd160::Digest;
 use smallvec::smallvec;
 use starcoin_vm_types::gas_schedule::NativeCostIndex;
 use std::collections::VecDeque;
-use base64;
 
 pub fn native_base64_encode(
     context: &mut NativeContext,
@@ -33,7 +33,10 @@ pub fn native_base64_encode(
 
     let output = base64::encode(&input_arg);
 
-    Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(output.as_bytes().to_vec())]))
+    Ok(NativeResult::ok(
+        cost,
+        smallvec![Value::vector_u8(output.as_bytes().to_vec())],
+    ))
 }
 
 pub fn native_base64_decode(
@@ -62,4 +65,3 @@ pub fn native_base64_decode(
         return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
     }
 }
-

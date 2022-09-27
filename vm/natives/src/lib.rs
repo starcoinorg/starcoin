@@ -124,8 +124,16 @@ pub fn starcoin_natives() -> NativeFunctionTable {
         ("U256", "native_div", u256::native_u256_div),
         ("U256", "native_rem", u256::native_u256_rem),
         ("U256", "native_pow", u256::native_u256_pow),
-        ("Base64", "native_base64_encode", base64::native_base64_encode),
-        ("Base64", "native_base64_decode", base64::native_base64_decode),
+        (
+            "Base64",
+            "native_base64_encode",
+            base64::native_base64_encode,
+        ),
+        (
+            "Base64",
+            "native_base64_decode",
+            base64::native_base64_decode,
+        ),
     ];
     NATIVES
         .iter()
