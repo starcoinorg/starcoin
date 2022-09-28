@@ -189,9 +189,9 @@ Feature: cmd integration test
   Scenario Outline: [cmd] starcoin-framework checkpoint
     Then cmd: "dev get-coin"
     Then cmd: "account unlock"
-    Then cmd: "account execute-function --function 0x1::CheckpointScript::checkpoint -b"
+    Then cmd: "account execute-function --function 0x1::Block::checkpoint_entry -b"
     Then cmd: "dev call-api chain.get_block_by_number [1,{\"raw\":true}]"
-    Then cmd: "account execute-function --function 0x1::CheckpointScript::update_state_root --arg {{$.dev[1].ok.raw.header}} -b"
+    Then cmd: "account execute-function --function 0x1::Block::update_state_root_entry --arg {{$.dev[1].ok.raw.header}} -b"
     Then cmd: "dev call --function 0x1::Block::latest_state_root"
     Then assert: "{{$.dev[2].ok[1]}} == {{$.dev[1].ok.header.state_root}}"
 
