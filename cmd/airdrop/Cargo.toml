@@ -10,7 +10,7 @@ version = "1.12.5"
 anyhow = "~1"
 async-trait = "~0.1"
 bcs-ext = {path = "../../commons/bcs_ext"}
-clap = {version = "3", features = ["derive"]}
+clap = {version = "4", features = ["derive"]}
 csv = "~1"
 elasticsearch = "7.10.0-alpha.1"
 futures-retry = "0.6"

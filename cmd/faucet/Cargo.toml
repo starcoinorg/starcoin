@@ -9,7 +9,7 @@ version = "1.12.5"
 [dependencies]
 anyhow = "1.0.41"
 ascii = "1.0.0"
-clap = {version = "3", features = ["derive"]}
+clap = {version = "4", features = ["derive"]}
 futures = "0.3.12"
 futures-timer = "3.0"
 hex = {version = "0.4.3", default-features = false}

@@ -9,7 +9,7 @@ version = "1.12.5"
 [dependencies]
 anyhow = "1.0.41"
 bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
-clap = {version = "3", features = ["derive"]}
+clap = {version = "4", features = ["derive"]}
 crossbeam-channel = "0.5.6"
 forkable-jellyfish-merkle = {path = "../../commons/forkable-jellyfish-merkle"}
 futures = "0.3.12"

@@ -11,7 +11,7 @@ version = "1.12.5"
 [dependencies]
 anyhow = "~1"
 bcs = "~0.1"
-clap = {version = "3", features = ["derive"]}
+clap = {version = "4", features = ["derive"]}
 dashmap = "~5"
 either = "~1"
 hex = "0.4"

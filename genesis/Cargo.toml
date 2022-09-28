@@ -9,7 +9,7 @@ version = "1.12.5"
 [dependencies]
 anyhow = "1.0.41"
 bcs-ext = {package = "bcs-ext", path = "../commons/bcs_ext"}
-clap = {version = "3", features = ["derive"]}
+clap = {version = "4", features = ["derive"]}
 include_dir = "0.6.2"
 once_cell = "1.13.0"
 serde = {version = "1.0.130"}

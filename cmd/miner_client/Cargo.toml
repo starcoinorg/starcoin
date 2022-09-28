@@ -24,7 +24,7 @@ tokio = {version = "^1", features = ["full"]}
 
 async-trait = "0.1.53"
 byteorder = "1.4.3"
-clap = {version = "3", features = ["derive"]}
+clap = {version = "4", features = ["derive"]}
 dyn-clone = "1.0.8"
 futures-timer = "3.0"
 hex = {version = "0.4.3", default-features = false}

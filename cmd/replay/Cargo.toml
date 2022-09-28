@@ -12,7 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "~1"
-clap = {version = "3", features = ["derive"]}
+clap = {version = "4", features = ["derive"]}
 sp-utils = {path = "../../commons/utils"}
 starcoin-chain = {path = "../../chain"}
 starcoin-config = {path = "../../config"}

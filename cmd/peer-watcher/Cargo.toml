@@ -13,7 +13,7 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1.0.41"
 async-std = "1.12"
-clap = {version = "3", features = ["derive"]}
+clap = {version = "4", features = ["derive"]}
 futures = "0.3.12"
 network-p2p = {path = "../../network-p2p"}
 network-p2p-types = {path = "../../network-p2p/types"}

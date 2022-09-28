@@ -9,7 +9,7 @@ version = "1.12.5"
 [dependencies]
 anyhow = "~1"
 bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
-clap = {version = "3", features = ["derive"]}
+clap = {version = "4", features = ["derive"]}
 csv = "~1"
 hex = "~0.4"
 merkletree = {git = "https://github.com/filecoin-project/merkletree", rev = "3b1d98c43b341aed935152c5c1535c17d1b21d20"}

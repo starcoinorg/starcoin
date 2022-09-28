@@ -10,7 +10,7 @@ version = "1.12.5"
 anyhow = "1.0.41"
 async-trait = "0.1"
 bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
-clap = {version = "3", features = ["derive"]}
+clap = {version = "4", features = ["derive"]}
 futures = "0.3.12"
 hex = "0.4.3"
 jsonrpc-core = {version = "18", features = ["arbitrary_precision"]}

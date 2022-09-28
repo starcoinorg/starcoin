@@ -9,7 +9,7 @@ version = "1.12.5"
 [dependencies]
 anyhow = "~1"
 bcs-ext = {path = "../../commons/bcs_ext"}
-clap = {version = "3", features = ["derive"]}
+clap = {version = "4", features = ["derive"]}
 hex = "0.4"
 jsonrpc-core-client = "18"
 rpassword = "~5"
