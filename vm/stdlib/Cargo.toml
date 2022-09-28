@@ -23,7 +23,7 @@ serde = {version = "1.0.130", default-features = false}
 sha2 = "0.10.2"
 simplelog = "0.9.0"
 starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-framework = {git = "https://github.com/starcoinorg/starcoin-framework", rev = "6cccb7395721be0d5037b799830dd85b84658129"}
+starcoin-framework = {git = "https://github.com/starcoinorg/starcoin-framework", rev = "0fb8810d08875fdd0bf319755ab031f31b1be441"}
 starcoin-move-compiler = {path = "../../vm/compiler"}
 starcoin-vm-types = {path = "../types"}
 tempfile = "3.2.0"
