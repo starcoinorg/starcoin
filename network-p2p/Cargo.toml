@@ -37,7 +37,7 @@ rand = "0.8.5"
 sc-peerset = {path = "peerset"}
 serde = {version = "1.0.130", features = ["derive"]}
 serde_json = {version = "1.0", features = ["arbitrary_precision"]}
-smallvec = "1.8.1"
+smallvec = "1.10.0"
 starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 starcoin-metrics = {path = "../commons/metrics"}
 starcoin-types = {path = "../types"}
