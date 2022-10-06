@@ -40,7 +40,6 @@ jobs:
           args: --all
       - uses: taiki-e/install-action@nextest
       - name: test
-        # run: bash ./scripts/auto_rerun_test.sh
         # --test-threads 10, proper test concurrency level, balance failure rate and test speed
         # --failure-output immediate-final, make error log output at the end
         # --retries 2, a correct test case usually takes no more than 3 tries to pass
