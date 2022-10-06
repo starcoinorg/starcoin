@@ -548,7 +548,7 @@ function install_mold {
           curl -sL -o "$TMPFILE"/out.tar.gz "https://github.com/rui314/mold/releases/download/v1.5.1/mold-1.5.1-x86_64-linux.tar.gz"
           tar -zxvf "$TMPFILE"/out.tar.gz -C "$TMPFILE"/
           echo "copy mold to $(pwd)/mold"
-          cp "${TMPFILE}/mold-1.2.1-x86_64-linux/bin/mold" "$(pwd)/mold"
+          cp "${TMPFILE}/mold-1.5.1-x86_64-linux/bin/mold" "$(pwd)/mold"
           # rm -rf "$TMPFILE"
           chmod +x "$(pwd)/mold"
           printf $"[target.x86_64-unknown-linux-gnu]\nlinker = \"/usr/bin/clang\"\nrustflags = [\"-C\", \"link-arg=-fuse-ld=$(pwd)/mold\"]\n" >> ./.cargo/config
