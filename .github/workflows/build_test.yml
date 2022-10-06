@@ -21,7 +21,7 @@ jobs:
           command: fmt
           args: -- --check
       - name: setup environment
-        run: bash ./scripts/dev_setup.sh  -b -t -y
+        run: bash ./scripts/dev_setup.sh  -b -t -y -m
       - name: run cargo clean
         uses: actions-rs/cargo@v1
         with:

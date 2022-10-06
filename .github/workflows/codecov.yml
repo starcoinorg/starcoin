@@ -15,7 +15,7 @@ jobs:
         with:
           submodules: recursive
       - name: setup environment
-        run: bash ./scripts/dev_setup.sh -b -t -y
+        run: bash ./scripts/dev_setup.sh -b -t -y -m
       - run: rustup component add llvm-tools-preview
       - uses: taiki-e/install-action@v1.5.6
         with:
