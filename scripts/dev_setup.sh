@@ -545,7 +545,7 @@ function install_mold {
           TMPFILE=$(mktemp)
           rm "$TMPFILE"
           mkdir -p "$TMPFILE"/
-          curl -sL -o "$TMPFILE"/out.tar.gz "https://github.com/rui314/mold/releases/download/v1.2.1/mold-1.2.1-x86_64-linux.tar.gz"
+          curl -sL -o "$TMPFILE"/out.tar.gz "https://github.com/rui314/mold/releases/download/v1.5.1/mold-1.5.1-x86_64-linux.tar.gz"
           tar -zxvf "$TMPFILE"/out.tar.gz -C "$TMPFILE"/
           echo "copy mold to $(pwd)/mold"
           cp "${TMPFILE}/mold-1.2.1-x86_64-linux/bin/mold" "$(pwd)/mold"
