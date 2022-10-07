@@ -393,7 +393,7 @@ function install_gcc_powerpc_linux_gnu {
 
 function install_toolchain {
   version=$1
-  FOUND=$(rustup show | grep -c "$version" || true )
+  FOUND=$(rustup show | grep -c "$version" || true)
   if [[ "$FOUND" == "0" ]]; then
     echo "Installing ${version} of rust toolchain"
     rustup install "$version"
@@ -545,10 +545,10 @@ function install_mold {
           TMPFILE=$(mktemp)
           rm "$TMPFILE"
           mkdir -p "$TMPFILE"/
-          curl -sL -o "$TMPFILE"/out.tar.gz "https://github.com/rui314/mold/releases/download/v1.2.1/mold-1.2.1-x86_64-linux.tar.gz"
+          curl -sL -o "$TMPFILE"/out.tar.gz "https://github.com/rui314/mold/releases/download/v1.5.1/mold-1.5.1-x86_64-linux.tar.gz"
           tar -zxvf "$TMPFILE"/out.tar.gz -C "$TMPFILE"/
           echo "copy mold to $(pwd)/mold"
-          cp "${TMPFILE}/mold-1.2.1-x86_64-linux/bin/mold" "$(pwd)/mold"
+          cp "${TMPFILE}/mold-1.5.1-x86_64-linux/bin/mold" "$(pwd)/mold"
           # rm -rf "$TMPFILE"
           chmod +x "$(pwd)/mold"
           printf $"[target.x86_64-unknown-linux-gnu]\nlinker = \"/usr/bin/clang\"\nrustflags = [\"-C\", \"link-arg=-fuse-ld=$(pwd)/mold\"]\n" >> ./.cargo/config
@@ -811,7 +811,7 @@ if [[ "$INSTALL_BUILD_TOOLS" == "false" ]] && \
    INSTALL_BUILD_TOOLS="true"
 fi
 
-if [ ! -f rust-toolchain ]; then
+if [ ! -f rust-toolchain.toml ]; then
 	echo "Unknown location. Please run this from the starcoin repository. Abort."
 	exit 1
 fi
@@ -913,7 +913,7 @@ if [[ "$INSTALL_BUILD_TOOLS" == "true" ]]; then
   install_pkg_config "$PACKAGE_MANAGER"
 
   install_rustup "$BATCH_MODE"
-  install_toolchain "$(cat ./rust-toolchain)"
+  install_toolchain "$(cat rust-toolchain.toml | grep channel | sed -E 's/.*"([^"]+)"/\1/')"
   # Add all the components that we need
   rustup component add rustfmt
   rustup component add clippy

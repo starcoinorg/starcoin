@@ -15,11 +15,6 @@ jobs:
         uses: actions/checkout@v1
         with:
           submodules: recursive
-      - name: setup rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          components: rustfmt,clippy
       - name: run fmt check
         uses: actions-rs/cargo@v1
         with:
@@ -45,12 +40,11 @@ jobs:
           args: --all
       - uses: taiki-e/install-action@nextest
       - name: test
-        # run: bash ./scripts/auto_rerun_test.sh
-        # --test-threads 10, proper test concurrency level, balance failure rate and test speed
+        # --test-threads 12, proper test concurrency level, balance failure rate and test speed
         # --failure-output immediate-final, make error log output at the end
         # --retries 2, a correct test case usually takes no more than 3 tries to pass
         # --build-jobs 8, a little (~20s) faster than 5 or 10 build jobs 
-        run: cargo nextest run --workspace --retries 2 --build-jobs 8 --test-threads 10 --failure-output immediate-final
+        run: cargo nextest run --workspace --retries 2 --build-jobs 8 --test-threads 12 --failure-output immediate-final
 #       - name: check changed files
 #         run: bash ./scripts/changed_files.sh
       - name: Doc Tests
