@@ -1,11 +1,4 @@
 [alias]
-x = "run --package starcoin-x --bin starcoin-x --"
-xcheck = "run --package starcoin-x --bin starcoin-x -- check"
-xclippy = "run --package starcoin-x --bin starcoin-x -- clippy"
-xfmt = "run --package starcoin-x --bin starcoin-x -- fmt"
-xfix = "run --package starcoin-x --bin starcoin-x -- fix"
-xtest = "run --package starcoin-x --bin starcoin-x -- test"
-xlint = "run --package starcoin-x --bin starcoin-x -- lint"
 
 [net]
 retry = 2
@@ -15,6 +8,6 @@ git-fetch-with-cli = true
 rustflags = ["-C", "link-arg=/STACK:8000000"]
 
 # ========== EXPERIMENTAL MOLD LINKER SUPPORT ==========
-[target.x86_64-unknown-linux-gnu]
-linker = "/usr/bin/clang"
-rustflags = ["-C", "link-arg=--ld-path=/usr/bin/mold"]
+# [target.x86_64-unknown-linux-gnu]
+# linker = "/usr/bin/clang"
+# rustflags = ["-C", "link-arg=-fuse-ld=/usr/local/mold"]
