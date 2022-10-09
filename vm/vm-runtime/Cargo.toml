@@ -12,7 +12,7 @@ bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
 crypto = {package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 move-core-types = {git = "https://github.com/starcoinorg/move", rev = "c6dc63d3da2bfc625073536001a50b0d2fd093f5"}
 once_cell = "1.13.0"
-tracing = "0.1.34"
+tracing = "0.1.37"
 
 move-vm-runtime = {git = "https://github.com/starcoinorg/move", rev = "c6dc63d3da2bfc625073536001a50b0d2fd093f5"}
 num_enum = "0.5.7"
