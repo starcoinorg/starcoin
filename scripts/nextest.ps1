@@ -14,7 +14,7 @@
 # Write-Host "All failed tests are redirected to file: $TEST_RESULT_FAILED_FILE" -ForegroundColor Green
 # $failed_tests > "$TEST_RESULT_FAILED_FILE"
 
-cargo nextest -V >/dev/null 2>&1 || cargo install cargo-nextest
+cargo install cargo-nextest
 
 cargo nextest run --workspace --retries 2 --build-jobs 8 --test-threads 12 --failure-output immediate-final
 
