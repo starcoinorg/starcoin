@@ -11,7 +11,7 @@ version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
-bcs = "0.1.2"
+bcs = "0.1.4"
 clap = {version = "3", features = ["derive"]}
 difference = "2.0.0"
 include_dir = {version = "0.6.2", features = ["search"]}

@@ -8,5 +8,5 @@ version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
-bcs = "0.1.3"
+bcs = "0.1.4"
 serde = {version = "1.0.130"}

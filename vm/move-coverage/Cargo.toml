@@ -12,7 +12,7 @@ version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
-bcs = "0.1.2"
+bcs = "0.1.4"
 clap = {version = "3", features = ["derive"]}
 codespan = {version = "0.8.0", features = ["serialization"]}
 colored = "2.0.0"
