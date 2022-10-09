@@ -64,7 +64,7 @@ platforms = [
 workspace-members = [
 
     # Also exclude the devtools packages since they get compiled with a different set of options.
-    "starcoin-x",
+    # "starcoin-x",
 ]
 
 [hakari.final-excludes]
@@ -126,7 +126,7 @@ features = ["fuzzing"]
 [workspace.test-only]
 members = [
     "common/proptest-helpers",
-    "devtools/x",
+    # "devtools/x",
 ]
 
 [workspace.move-to-diem-deps]
