@@ -19,7 +19,7 @@ jobs:
       - run: rustup component add llvm-tools-preview
       - uses: taiki-e/install-action@v1
         with:
-          tool: cargo-llvm-cov, cargo-nextest
+          tool: cargo-llvm-cov, nextest
       - name: Run code coverage
         env:
           RUST_LOG: error
