@@ -12,7 +12,8 @@ set -eo pipefail
 echo check ulimits
 ulimit -a
 
-# install
+# install cargo-nextest
+echo "Setup cargo-nextest."
 cargo nextest -V >/dev/null 2>&1 || cargo install cargo-nextest
 
 # following options are tuned for current self hosted CI machine
