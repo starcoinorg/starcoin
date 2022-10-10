@@ -17,26 +17,23 @@ jobs:
       - name: setup environment
         run: bash ./scripts/dev_setup.sh -b -t -y -m
       - run: rustup component add llvm-tools-preview
-      - uses: taiki-e/install-action@v1.5.6
+      - uses: taiki-e/install-action@v1
         with:
-          tool: cargo-llvm-cov
+          tool: cargo-llvm-cov,nextest
       - name: Run code coverage
         env:
           RUST_LOG: error
-          # CARGO_LLVM_COV_TARGET_DIR: ./target
-          # CARGO_TARGET_DIR: ./target
-          # CARGO_INCREMENTAL: 1
-        run: ./scripts/coverage_report.sh . target --batch
+        run: cargo llvm-cov nextest --build-jobs 8 --lib --lcov --test-threads 12 --no-fail-fast --output-path target/lcov.info
       - name: Upload coverage to Codecov, attempt 1
         uses: codecov/codecov-action@v1
         id: upload_code_coverage_report_1
         continue-on-error: true
         with:
-          # file: ./target/codecov/lcov.info
           file: ./target/lcov.info
           flags: unittests
           fail_ci_if_error: false
-      # retry upload to resolve random upload failure caused by github and codecov 
+          verbose: true
+      # retry upload to resolve random upload failure caused by github and codecov
       # https://github.com/starcoinorg/starcoin/pull/3693#issuecomment-1230963051
       - name: Wait on failure 1
         if: steps.upload_code_coverage_report_1.outcome == 'failure'
@@ -48,6 +45,8 @@ jobs:
         uses: codecov/codecov-action@v3
         continue-on-error: true
         with:
+          file: ./target/lcov.info
+          flags: unittests
           fail_ci_if_error: false
           verbose: true
       - name: Wait on failure 2
@@ -59,5 +58,7 @@ jobs:
         if: steps.upload_code_coverage_report_2.outcome == 'failure'
         uses: codecov/codecov-action@v3
         with:
+          file: ./target/lcov.info
+          flags: unittests
           fail_ci_if_error: false
           verbose: true
