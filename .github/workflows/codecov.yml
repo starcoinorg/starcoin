@@ -23,7 +23,7 @@ jobs:
       - name: Run code coverage
         env:
           RUST_LOG: error
-        run: cargo llvm-cov nextest --build-jobs 8 --lib --lcov --test-threads 12 --output-path "target/lcov.info
+        run: cargo llvm-cov nextest --build-jobs 8 --lib --lcov --test-threads 12 --output-path target/lcov.info
       - name: Upload coverage to Codecov, attempt 1
         uses: codecov/codecov-action@v1
         id: upload_code_coverage_report_1
