@@ -166,7 +166,7 @@ where
     /// Execute command by parse std::env::args_os() and print result.
     pub fn exec(self) -> Result<()> {
         let (output_format, result) = self.exec_inner(&mut std::env::args_os())?;
-        print_action_result(output_format, &result_to_json(result))
+        print_action_result(output_format, &result_to_json(&result))
     }
 
     /// Execute command by args and return Command execute ReturnItem
@@ -418,13 +418,20 @@ where
                                             if !skip_history {
                                                 rl.add_history_entry(line.as_str());
                                             }
-                                            let result = result_to_json(result);
-                                            if let Err(err) =
-                                                print_action_result(output_format, &result)
-                                            {
-                                                println!("Print result error: {:?}", err);
+                                            let result_json = result_to_json(&result);
+
+                                            match result {
+                                                Ok(_) => {
+                                                    if let Err(err) = print_action_result(
+                                                        output_format,
+                                                        &result_json,
+                                                    ) {
+                                                        println!("Print result error: {:?}", err);
+                                                    }
+                                                }
+                                                Err(e) => println!("{}", e),
                                             }
-                                            template_ctx.entry(cmd_name).append(result);
+                                            template_ctx.entry(cmd_name).append(result_json);
                                         }
                                         Err(e) => {
                                             rl.add_history_entry(line.as_str());
