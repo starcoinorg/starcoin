@@ -58,7 +58,7 @@ Feature: cmd integration test
     Then cmd: "dev get-coin"
     Then cmd: "account generate-keypair -c 3"
     Then cmd: "account derive-address -t 2 -p {{$.account[1].ok[0].public_key}} -p {{$.account[1].ok[1].public_key}}  -p {{$.account[1].ok[2].public_key}} "
-    Then cmd: "account transfer --blocking -r {{$.account[-1].ok.receipt_identifier}} -t 0x1::STC::STC -v 10000000"
+    Then cmd: "account transfer --blocking -r {{$.account[-1].ok.receipt_identifier}} -t 0x1::STC::STC -v 10000000 --gas-token 0x1::STC::STC"
     # account for testing only
     Then cmd: "account import-multisig --pubkey 0x934e8a5a557229f90be7c95ec17fab84e64dcc3cf2dc934ff83ffc0915fad13e --pubkey 0x28358c05692e6758ba1398835525687c16d65abc9e1dc89023b46298ed2c575a --prikey 0x0c84a983ff0bfab39570c2ceed3e1c1feb645e84eccf9fd6baf4f49351a52329 --prikey 0x3695d6e08e3ad41962cba8c55ebb0552827807ae4cd6236d35195c769437272e -t 2"
     Then cmd: "account unlock"
@@ -139,7 +139,7 @@ Feature: cmd integration test
     Then cmd: "account transfer --blocking -v 100000000 -r 0x809c795045105a7b1efbcca4510d2034"
     Then cmd: "account unlock 0x809c795045105a7b1efbcca4510d2034"
     # using a temporal private key as import
-    Then cmd: "account rotate-authentication-key 0x809c795045105a7b1efbcca4510d2034 -i 0x3885e7dde8381046849d64d28b675f1c668dc36eaa9be11cbcaadb24c3917554"
+    Then cmd: "account rotate-authentication-key 0x809c795045105a7b1efbcca4510d2034 -i 0x3885e7dde8381046849d64d28b675f1c668dc36eaa9be11cbcaadb24c3917554 --gas-token 0x1::STC::STC"
     # rotate-authentication-key twice for:
     # 1. auth key will be verified on chain, so do it again for checking last rotation.
     # 2. ensuring it's idempotent
@@ -204,7 +204,7 @@ Feature: cmd integration test
 #    Then cmd: "account unlock 0x0000000000000000000000000a550c18"
 #    Then cmd: "dev compile ../examples/my_token/MyToken.move -o ../examples -s 0x0000000000000000000000000a550c18"
 #    Then cmd: "dev deploy --blocking @$[0]@"
-#    Then cmd: "account execute-function -s 0x0000000000000000000000000a550c18 --function 0x0000000000000000000000000a550c18::MyToken::init --blocking"
+#    Then cmd: "account execute-function -s 0x0000000000000000000000000a550c18 --function 0x0000000000000000000000000a550c18::MyToken::init --gas-token 0x1::STC::STC --blocking"
 #    Then cmd: "chain get-txn @$.execute_output.txn_hash@"
 #    Then cmd: "account show"
 #    Then cmd: "account execute-function -s 0x0000000000000000000000000a550c18 --function 0x0000000000000000000000000a550c18::MyToken::mint --blocking --arg 1000000u128"
