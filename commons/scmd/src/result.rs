@@ -43,7 +43,7 @@ impl std::fmt::Display for OutputFormat {
     }
 }
 
-pub fn result_to_json(result: Result<Value>) -> Value {
+pub fn result_to_json(result: &Result<Value>) -> Value {
     match result {
         Ok(value) => {
             json!({ "ok": value })

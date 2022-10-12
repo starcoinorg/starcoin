@@ -63,7 +63,7 @@ pub fn steps() -> Steps<MyWorld> {
                 if result.is_err() {
                     panic!("{}", result.unwrap_err());
                 }
-                let result_json = result_to_json(result);
+                let result_json = result_to_json(&result);
 
                 debug!("cmd {} execute result: {:?}", cmd, result_json);
                 tpl_ctx.entry(cmd).append(result_json);
