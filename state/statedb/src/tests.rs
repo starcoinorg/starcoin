@@ -33,14 +33,6 @@ fn state_keys_to_write_set(state_keys: Vec<StateKey>, values: Vec<Vec<u8>>) -> W
     .expect("freeze write_set must success.")
 }
 
-fn random_u128() -> u128 {
-    u128::from_be_bytes(
-        HashValue::random().as_ref()[..16]
-            .try_into()
-            .expect("Slice to array conversion failed."),
-    )
-}
-
 #[test]
 fn test_state_proof() -> Result<()> {
     let storage = MockStateNodeStore::new();
@@ -176,8 +168,8 @@ fn check_write_set(chain_state_db: &ChainStateDB, write_set: &WriteSet) -> Resul
 fn test_state_db_with_table_item_once() -> Result<()> {
     let storage = MockStateNodeStore::new();
     let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
-    let handle1 = random_u128();
-    let handle2 = random_u128();
+    let handle1 = TableHandle(AccountAddress::random());
+    let handle2 = TableHandle(AccountAddress::random());
     let key2 = random_bytes();
     let val2 = random_bytes();
     let key3 = random_bytes();
@@ -225,16 +217,10 @@ fn test_state_db_with_table_item_once() -> Result<()> {
 
     let storage1 = MockStateNodeStore::new();
     let storage2 = MockStateNodeStore::new();
-    let table_handle_state1 = TableHandleStateObject::new(
-        TableHandle(handle1),
-        Arc::new(storage1),
-        *SPARSE_MERKLE_PLACEHOLDER_HASH,
-    );
-    let table_handle_state2 = TableHandleStateObject::new(
-        TableHandle(handle2),
-        Arc::new(storage2),
-        *SPARSE_MERKLE_PLACEHOLDER_HASH,
-    );
+    let table_handle_state1 =
+        TableHandleStateObject::new(handle1, Arc::new(storage1), *SPARSE_MERKLE_PLACEHOLDER_HASH);
+    let table_handle_state2 =
+        TableHandleStateObject::new(handle2, Arc::new(storage2), *SPARSE_MERKLE_PLACEHOLDER_HASH);
 
     table_handle_state1.set(key2, val2);
     table_handle_state1.set(key3, val3);
@@ -247,14 +233,8 @@ fn test_state_db_with_table_item_once() -> Result<()> {
 
     let storage3 = MockStateNodeStore::new();
     let state_tree_table_handles = StateTree::new(Arc::new(storage3), None);
-    state_tree_table_handles.put(
-        TableHandleKey(handle1),
-        table_handle_state1.root_hash().to_vec(),
-    );
-    state_tree_table_handles.put(
-        TableHandleKey(handle2),
-        table_handle_state2.root_hash().to_vec(),
-    );
+    state_tree_table_handles.put(handle1, table_handle_state1.root_hash().to_vec());
+    state_tree_table_handles.put(handle2, table_handle_state2.root_hash().to_vec());
     state_tree_table_handles.commit()?;
     state_tree_table_handles.flush()?;
 
@@ -273,8 +253,8 @@ fn test_state_db_with_table_item_once() -> Result<()> {
 fn test_state_with_table_item_proof() -> Result<()> {
     let storage = MockStateNodeStore::new();
     let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
-    let handle1 = random_u128();
-    let handle2 = random_u128();
+    let handle1 = TableHandle(AccountAddress::random());
+    let handle2 = TableHandle(AccountAddress::random());
     let key1 = random_bytes();
     let val1 = random_bytes();
     let key2 = random_bytes();

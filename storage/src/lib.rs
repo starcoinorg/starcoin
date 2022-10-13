@@ -10,7 +10,7 @@ use crate::chain_info::ChainInfoStorage;
 use crate::contract_event::ContractEventStorage;
 use crate::state_node::StateStorage;
 use crate::storage::{CodecKVStore, CodecWriteBatch, ColumnFamilyName, StorageInstance};
-use crate::table_info::{TableInfoStorage, TableInfoStore};
+//use crate::table_info::{TableInfoStorage, TableInfoStore};
 use crate::transaction::TransactionStorage;
 use crate::transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage};
 use anyhow::{bail, format_err, Error, Result};
@@ -23,12 +23,12 @@ use starcoin_accumulator::AccumulatorTreeStore;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
-use starcoin_types::table::{TableHandleKey, TableInfoValue};
 use starcoin_types::transaction::{RichTransactionInfo, Transaction};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
     startup_info::StartupInfo,
 };
+//use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
@@ -136,7 +136,7 @@ static VEC_PREFIX_NAME_V3: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         TRANSACTION_INFO_HASH_PREFIX_NAME,
         CONTRACT_EVENT_PREFIX_NAME,
         FAILED_BLOCK_PREFIX_NAME,
-        TABLE_INFO_PREFIX_NAME,
+        // TABLE_INFO_PREFIX_NAME,
     ]
 });
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, IntoPrimitive, TryFromPrimitive)]
@@ -272,7 +272,7 @@ pub struct Storage {
     block_info_storage: BlockInfoStorage,
     event_storage: ContractEventStorage,
     chain_info_storage: ChainInfoStorage,
-    table_info_storage: TableInfoStorage,
+    // table_info_storage: TableInfoStorage,
     // instance: StorageInstance,
 }
 
@@ -291,8 +291,8 @@ impl Storage {
                 AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
             block_info_storage: BlockInfoStorage::new(instance.clone()),
             event_storage: ContractEventStorage::new(instance.clone()),
-            chain_info_storage: ChainInfoStorage::new(instance.clone()),
-            table_info_storage: TableInfoStorage::new(instance),
+            chain_info_storage: ChainInfoStorage::new(instance),
+            // table_info_storage: TableInfoStorage::new(instance),
             // instance,
         };
         Ok(storage)
@@ -647,25 +647,24 @@ impl Store for Storage {
     }
 }
 
+/*
+XXX FIXME YSG temp comment
 impl TableInfoStore for Storage {
-    fn get_table_info(&self, key: TableHandleKey) -> Result<Option<TableInfoValue>> {
+    fn get_table_info(&self, key: TableHandle) -> Result<Option<TableInfo>> {
         self.table_info_storage.get(key)
     }
 
-    fn save_table_info(&self, key: TableHandleKey, table_info: TableInfoValue) -> Result<()> {
+    fn save_table_info(&self, key: TableHandle, table_info: TableInfo) -> Result<()> {
         self.table_info_storage.put(key, table_info)
     }
 
-    fn get_table_infos(&self, keys: Vec<TableHandleKey>) -> Result<Vec<Option<TableInfoValue>>> {
+    fn get_table_infos(&self, keys: Vec<TableHandle>) -> Result<Vec<Option<TableInfo>>> {
         self.table_info_storage.multiple_get(keys)
     }
 
-    fn save_table_infos(
-        &self,
-        keys: Vec<TableHandleKey>,
-        table_infos: Vec<TableInfoValue>,
-    ) -> Result<()> {
+    fn save_table_infos(&self, keys: Vec<TableHandle>, table_infos: Vec<TableInfo>) -> Result<()> {
         let batch = CodecWriteBatch::new_puts(keys.into_iter().zip(table_infos).collect());
         self.table_info_storage.write_batch(batch)
     }
 }
+*/

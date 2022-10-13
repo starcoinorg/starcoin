@@ -23,6 +23,7 @@ use std::sync::Mutex;
 
 pub mod compatibility_check_cmd;
 pub mod deployment;
+pub mod package;
 pub mod release;
 
 // use `integration-tests` rather than `tests`, for avoid conflict with `mpm package test`
@@ -132,7 +133,8 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
     let rerooted_path = {
         let path = &move_arg.package_path;
         // Always root ourselves to the package root, and then compile relative to that.
-        let rooted_path = SourcePackageLayout::try_find_root(&path.canonicalize()?)?;
+        let rooted_path =
+            SourcePackageLayout::try_find_root(&path.as_ref().unwrap().canonicalize()?)?;
         std::env::set_current_dir(&rooted_path).unwrap();
         PathBuf::from(".")
     };
@@ -140,7 +142,8 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
         // force move to rebuild all packages, so that we can use compile_driver to generate the full compiled program.
         let mut build_config = move_arg.build_config;
         build_config.force_recompilation = true;
-        let resolved_graph = build_config.resolution_graph_for_package(&rerooted_path)?;
+        let resolved_graph =
+            build_config.resolution_graph_for_package(&rerooted_path, &mut std::io::stdout())?;
         let mut pre_compiled_lib = FullyCompiledProgram {
             files: Default::default(),
             parser: parser::ast::Program {

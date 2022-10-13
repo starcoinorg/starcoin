@@ -159,7 +159,7 @@ pub mod parser {
     pub fn parse_struct_tag(s: &str) -> Result<StructTag> {
         let type_tag = parse_type_tag(s)?;
         match type_tag {
-            TypeTag::Struct(st) => Ok(st),
+            TypeTag::Struct(st) => Ok(*st),
             t => bail!("expect a struct tag, found: {:?}", t),
         }
     }

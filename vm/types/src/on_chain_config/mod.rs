@@ -18,14 +18,25 @@ use std::{collections::HashMap, sync::Arc};
 
 mod consensus_config;
 mod dao_config;
+mod gas_schedule;
 mod genesis_gas_schedule;
 mod move_lang_version;
 mod version;
 mod vm_config;
+
 pub use self::{
     consensus_config::{consensus_config_type_tag, ConsensusConfig, G_CONSENSUS_CONFIG_IDENTIFIER},
     dao_config::DaoConfig,
-    genesis_gas_schedule::*,
+    gas_schedule::{
+        instruction_gas_schedule_v1, instruction_gas_schedule_v2, native_gas_schedule_v1,
+        native_gas_schedule_v2, native_gas_schedule_v3, native_gas_schedule_v4,
+        txn_gas_schedule_test, txn_gas_schedule_v1, txn_gas_schedule_v2, txn_gas_schedule_v3,
+        GasSchedule,
+    },
+    genesis_gas_schedule::{
+        instruction_table_v1, instruction_table_v2, native_table_v1, native_table_v2,
+        G_LATEST_INSTRUCTION_TABLE, G_LATEST_NATIVE_TABLE,
+    },
     move_lang_version::MoveLanguageVersion,
     version::{version_config_type_tag, Version, G_VERSION_CONFIG_IDENTIFIER},
     vm_config::*,
@@ -180,12 +191,12 @@ pub fn access_path_for_config(
             address: CORE_CODE_ADDRESS,
             module: Identifier::new("Config").unwrap(),
             name: Identifier::new("Config").unwrap(),
-            type_params: vec![TypeTag::Struct(StructTag {
+            type_params: vec![TypeTag::Struct(Box::new(StructTag {
                 address: CORE_CODE_ADDRESS,
                 module: module_name,
                 name: config_name,
                 type_params: params,
-            })],
+            }))],
         },
     )
 }

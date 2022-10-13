@@ -27,6 +27,7 @@ use starcoin_types::{
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{struct_tag_match, StructTag};
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::table::TableHandle;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -186,7 +187,7 @@ where
 
     fn get_with_table_item_proof(
         &self,
-        handle: u128,
+        handle: TableHandle,
         key: Vec<u8>,
     ) -> FutureResult<StateWithTableItemProofView> {
         let fut = self
@@ -200,7 +201,7 @@ where
 
     fn get_with_table_item_proof_by_root(
         &self,
-        handle: u128,
+        handle: TableHandle,
         key: Vec<u8>,
         state_root: HashValue,
     ) -> FutureResult<StateWithTableItemProofView> {

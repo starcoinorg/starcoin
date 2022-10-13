@@ -443,27 +443,23 @@
           "memory_gas": 1
         },
         {
-          "instruction_gas": 4,
+          "instruction_gas": 10,
           "memory_gas": 1
         },
         {
-          "instruction_gas": 4,
+          "instruction_gas": 8,
           "memory_gas": 1
         },
         {
-          "instruction_gas": 4,
+          "instruction_gas": 40,
           "memory_gas": 1
         },
         {
-          "instruction_gas": 4,
+          "instruction_gas": 20,
           "memory_gas": 1
         },
         {
-          "instruction_gas": 4,
-          "memory_gas": 1
-        },
-        {
-          "instruction_gas": 4,
+          "instruction_gas": 73,
           "memory_gas": 1
         },
         {

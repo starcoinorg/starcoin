@@ -63,7 +63,7 @@ pub fn handle_compatibility_check(
         if let Some(old) = old_module {
             let old_module = CompiledModule::deserialize(&old)?;
             let compatibility = check_compiled_module_compat(&old_module, m);
-            if !compatibility.is_fully_compatible() {
+            if compatibility.is_err() {
                 incompatible_module_ids.push((m.self_id(), compatibility));
             }
         }
@@ -74,10 +74,8 @@ pub fn handle_compatibility_check(
             "Modules {} is incompatible with remote chain: {}!",
             incompatible_module_ids
                 .into_iter()
-                .map(|(module_id, compat)| format!(
-                    "{}(struct_layout:{},struct_and_function_linking:{})",
-                    module_id, compat.struct_layout, compat.struct_and_function_linking
-                ))
+                // XXX FIXME YSG
+                .map(|(module_id, compat)| format!("{} {}", module_id, compat.is_err()))
                 .join(","),
             &rpc
         );
@@ -132,9 +130,8 @@ fn handle_pre_version_compatibility_check(
             let new_module = module(&m.unit).unwrap();
             let module_id = new_module.self_id();
             if let Some(old_module) = pre_stable_modules.get(&module_id) {
-                let compatibility =
-                    check_compiled_module_compat(old_module, new_module).is_fully_compatible();
-                if !compatibility {
+                let compatibility = check_compiled_module_compat(old_module, new_module);
+                if compatibility.is_err() {
                     Some(module_id)
                 } else {
                     None

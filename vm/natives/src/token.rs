@@ -2,31 +2,38 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_binary_format::errors::PartialVMResult;
+use move_core_types::gas_algebra::InternalGas;
 use move_core_types::language_storage::TypeTag;
 use move_core_types::vm_status::sub_status::NFE_TOKEN_INVALID_TYPE_ARG_FAILURE;
-use move_vm_runtime::native_functions::NativeContext;
+use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
-    loaded_data::runtime_types::Type,
-    natives::function::{native_gas, NativeResult},
-    values::Value,
+    loaded_data::runtime_types::Type, natives::function::NativeResult, values::Value,
 };
 use smallvec::smallvec;
-use starcoin_vm_types::gas_schedule::NativeCostIndex;
 use std::collections::VecDeque;
+use std::sync::Arc;
+
+/***************************************************************************************************
+ * native fun token_name_of
+ *
+ *   gas cost: base_cost
+ *
+ **************************************************************************************************/
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NameOfGasParameters {
+    pub base: InternalGas,
+}
 
 /// Return Token types ModuleAddress, ModuleName and StructName
 pub fn native_token_name_of(
+    gas_params: &NameOfGasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     arguments: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     debug_assert!(ty_args.len() == 1);
     debug_assert!(arguments.is_empty());
-    let cost = native_gas(
-        context.cost_table(),
-        NativeCostIndex::TOKEN_NAME_OF as u8,
-        1,
-    );
+    let cost = gas_params.base;
     let type_tag = context.type_to_type_tag(&ty_args[0])?;
     if let TypeTag::Struct(struct_tag) = type_tag {
         let mut name = struct_tag.name.as_bytes().to_vec();
@@ -61,6 +68,28 @@ fn format_type_params(type_params: &[TypeTag]) -> Result<String, std::fmt::Error
     Ok(f)
 }
 
+pub fn make_native_token_name_of(gas_params: NameOfGasParameters) -> NativeFunction {
+    Arc::new(
+        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
+            native_token_name_of(&gas_params, context, ty_args, args)
+        },
+    )
+}
+/***************************************************************************************************
+ * module
+ *
+ **************************************************************************************************/
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GasParameters {
+    pub name_of: NameOfGasParameters,
+}
+
+pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
+    let natives = [("name_of", make_native_token_name_of(gas_params.name_of))];
+
+    crate::helpers::make_module_natives(natives)
+}
+
 #[test]
 fn test_type_params_formatting() {
     use move_core_types::account_address::AccountAddress;
@@ -79,7 +108,7 @@ fn test_type_params_formatting() {
             "<vector<u8>, u64>",
         ),
         (
-            vec![TypeTag::U64, TypeTag::Struct(a_struct)],
+            vec![TypeTag::U64, TypeTag::Struct(Box::new(a_struct))],
             "<u64, 0x00000000000000000000000000000000::TestModule::TestStruct<address>>",
         ),
     ];

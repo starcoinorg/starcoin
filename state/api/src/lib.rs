@@ -21,6 +21,7 @@ use starcoin_types::state_set::AccountStateSet;
 use starcoin_vm_types::access_path::DataPath;
 use starcoin_vm_types::account_config::table_handle_address;
 use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::state_store::table::TableHandle;
 pub use starcoin_vm_types::state_view::StateView;
 
 mod chain_state;
@@ -79,12 +80,12 @@ pub trait ChainStateAsyncService: Clone + std::marker::Unpin + Send + Sync {
 
     async fn get_with_table_item_proof(
         self,
-        handle: u128,
+        handle: TableHandle,
         key: Vec<u8>,
     ) -> Result<StateWithTableItemProof>;
     async fn get_with_table_item_proof_by_root(
         self,
-        handle: u128,
+        handle: TableHandle,
         key: Vec<u8>,
         state_root: HashValue,
     ) -> Result<StateWithTableItemProof>;
@@ -182,7 +183,7 @@ where
 
     async fn get_with_table_item_proof(
         self,
-        handle: u128,
+        handle: TableHandle,
         key: Vec<u8>,
     ) -> Result<StateWithTableItemProof> {
         let response = self
@@ -197,7 +198,7 @@ where
 
     async fn get_with_table_item_proof_by_root(
         self,
-        handle: u128,
+        handle: TableHandle,
         key: Vec<u8>,
         state_root: HashValue,
     ) -> Result<StateWithTableItemProof> {

@@ -7,8 +7,7 @@ use move_binary_format::errors::VMError;
 use move_core_types::resolver::{ModuleResolver, ResourceResolver};
 use starcoin_crypto::HashValue;
 
-use move_core_types::gas_schedule::{GasAlgebra, GasCarrier, InternalGasUnits};
-use move_table_extension::{TableHandle, TableOperation, TableResolver};
+use move_table_extension::{TableHandle, TableResolver};
 use starcoin_rpc_api::chain::ChainApiClient;
 use starcoin_rpc_api::state::StateApiClient;
 use starcoin_rpc_api::types::{BlockView, StateWithProofView, StateWithTableItemProofView};
@@ -21,6 +20,7 @@ use starcoin_types::state_set::ChainStateSet;
 use starcoin_types::vm_error::StatusCode;
 use starcoin_vm_types::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::table::TableHandle as StarcoinTableHandle;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::write_set::WriteSet;
 use std::collections::BTreeMap;
@@ -289,9 +289,10 @@ impl RemoteRpcAsyncClient {
         handle: &TableHandle,
         key: &[u8],
     ) -> Result<Option<Vec<u8>>> {
+        let handle1: StarcoinTableHandle = StarcoinTableHandle(handle.0);
         let state_table_item_proof: StateWithTableItemProofView = self
             .state_client
-            .get_with_table_item_proof_by_root(handle.0, key.to_vec(), self.state_root)
+            .get_with_table_item_proof_by_root(handle1, key.to_vec(), self.state_root)
             .await
             .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))?;
         Ok(state_table_item_proof.key_proof.0.map(|v| v.0))
@@ -381,15 +382,6 @@ impl TableResolver for RemoteViewer {
         let h = self.rt.handle().clone();
         h.block_on(self.svc.resolve_table_entry_async(handle, key))
     }
-
-    fn operation_cost(
-        &self,
-        _op: TableOperation,
-        _key_size: usize,
-        _val_size: usize,
-    ) -> InternalGasUnits<GasCarrier> {
-        InternalGasUnits::new(1)
-    }
 }
 
 impl StateView for RemoteViewer {
@@ -403,8 +395,10 @@ impl StateView for RemoteViewer {
                     .get_resource(&access_path.address, s)
                     .map_err(|err| err.finish(Location::Undefined).into_vm_status())?),
             },
-            StateKey::TableItem(table_item) => Ok(self
-                .resolve_table_entry(&TableHandle(table_item.handle), table_item.key.as_slice())?),
+            StateKey::TableItem(table_item) => Ok(self.resolve_table_entry(
+                &move_table_extension::TableHandle(table_item.handle.0),
+                table_item.key.as_slice(),
+            )?),
         }
     }
 

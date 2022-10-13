@@ -10,7 +10,6 @@ use starcoin_crypto::HashValue;
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_types::language_storage::StructTag;
 use starcoin_types::state_set::AccountStateSet;
-use starcoin_types::table::TableHandleKey;
 use starcoin_types::write_set::WriteSet;
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_config::AccountResource,
@@ -27,6 +26,7 @@ use starcoin_vm_types::on_chain_resource::{
 };
 use starcoin_vm_types::sips::SIP;
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::table::TableHandle;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::{
     move_resource::MoveResource, on_chain_config::OnChainConfig, state_view::StateView,
@@ -139,7 +139,7 @@ pub trait ChainStateReader: StateView {
 
     fn get_with_table_item_proof(
         &self,
-        handle: &u128,
+        handle: &TableHandle,
         key: &[u8],
     ) -> Result<StateWithTableItemProof>;
 }
@@ -407,7 +407,7 @@ impl StateWithTableItemProof {
         }
     }
 
-    pub fn verify(&self, handle: &u128, key: &[u8]) -> Result<()> {
+    pub fn verify(&self, handle: &TableHandle, key: &[u8]) -> Result<()> {
         self.state_proof.0.proof.verify(
             self.state_proof.1,
             AccessPath::new(table_handle_address(), TABLE_PATH.clone()),
@@ -415,7 +415,7 @@ impl StateWithTableItemProof {
         )?;
         self.table_handle_proof.1.verify(
             self.table_handle_proof.2,
-            TableHandleKey(*handle).key_hash(),
+            handle.key_hash(),
             self.table_handle_proof
                 .0
                 .as_ref()

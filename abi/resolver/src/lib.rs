@@ -12,7 +12,7 @@ use starcoin_resource_viewer::module_cache::ModuleCache;
 use starcoin_resource_viewer::resolver::Resolver;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::file_format::{
-    CompiledModule, CompiledScript, FunctionDefinitionIndex, StructDefinitionIndex, Visibility,
+    CompiledModule, CompiledScript, FunctionDefinitionIndex, StructDefinitionIndex,
 };
 use starcoin_vm_types::identifier::{IdentStr, Identifier};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag, TypeTag};
@@ -63,7 +63,7 @@ impl<'a> ABIResolver<'a> {
         let functions = m
             .exposed_functions
             .iter()
-            .filter(|(_, func)| func.visibility == Visibility::Script) // only script functions
+            // .filter(|(_, func)| func.visibility == Visibility::Script) // only script functions
             .map(|(name, func)| self.function_to_abi(&module_id, name.as_ident_str(), func))
             .collect::<Result<Vec<_>>>()?;
         Ok(ModuleABI::new(m.module_id(), structs, functions))
@@ -108,8 +108,11 @@ impl<'a> ABIResolver<'a> {
         Ok(match type_tag {
             TypeTag::Bool => TypeInstantiation::Bool,
             TypeTag::U8 => TypeInstantiation::U8,
+            TypeTag::U16 => TypeInstantiation::U16,
+            TypeTag::U32 => TypeInstantiation::U32,
             TypeTag::U64 => TypeInstantiation::U64,
             TypeTag::U128 => TypeInstantiation::U128,
+            TypeTag::U256 => TypeInstantiation::U256,
             TypeTag::Address => TypeInstantiation::Address,
 
             TypeTag::Signer => TypeInstantiation::Signer,
@@ -134,8 +137,11 @@ impl<'a> ABIResolver<'a> {
         Ok(match ty {
             Type::Bool => TypeInstantiation::Bool,
             Type::U8 => TypeInstantiation::U8,
+            Type::U16 => TypeInstantiation::U16,
+            Type::U32 => TypeInstantiation::U32,
             Type::U64 => TypeInstantiation::U64,
             Type::U128 => TypeInstantiation::U128,
+            Type::U256 => TypeInstantiation::U256,
             Type::Address => TypeInstantiation::Address,
             Type::Signer => TypeInstantiation::Signer,
             Type::Struct {
@@ -388,8 +394,7 @@ mod tests {
                     }))
                 }
                 StateKey::TableItem(_table_item) => {
-                    // XXX FIXME YSG
-                    unimplemented!()
+                    anyhow::bail!("no need table_item")
                 }
             }
         }

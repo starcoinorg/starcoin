@@ -18,7 +18,7 @@ starcoin-state-tree = { path = "../state-tree" }
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 serde = { version = "1.0.130" }
 forkable-jellyfish-merkle = { path = "../../commons/forkable-jellyfish-merkle" }
-move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
+move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
 once_cell = "1.12.0"
 parking_lot = "0.12.1"
 thiserror = "1.0"

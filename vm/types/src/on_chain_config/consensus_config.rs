@@ -36,12 +36,12 @@ impl OnChainConfig for ConsensusConfig {
 
 impl ConsensusConfig {
     pub fn type_tag() -> TypeTag {
-        TypeTag::Struct(StructTag {
+        TypeTag::Struct(Box::new(StructTag {
             address: CORE_CODE_ADDRESS,
             module: G_CONSENSUS_CONFIG_IDENTIFIER.clone(),
             name: G_CONSENSUS_CONFIG_IDENTIFIER.clone(),
             type_params: vec![],
-        })
+        }))
     }
 }
 pub fn consensus_config_type_tag() -> TypeTag {

@@ -124,7 +124,7 @@ async fn main() -> Result<()> {
         .token_code
         .unwrap_or_else(|| G_STC_TOKEN_CODE.clone())
         .try_into()?;
-    let is_stc = stc_type_tag().eq(&TypeTag::Struct(token_type.clone()));
+    let is_stc = stc_type_tag().eq(&TypeTag::Struct(Box::new(token_type.clone())));
 
     let mut total_amount = 0u128;
     let airdrop_infos: Vec<AirdropInfo> = {

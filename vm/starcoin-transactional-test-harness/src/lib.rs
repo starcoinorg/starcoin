@@ -8,25 +8,25 @@ use move_binary_format::{file_format::CompiledScript, CompiledModule};
 use move_command_line_common::address::ParsedAddress;
 use move_command_line_common::files::verify_and_create_named_address_mapping;
 use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
-use move_compiler::shared::{NumberFormat, NumericalAddress};
-use move_compiler::FullyCompiledProgram;
+use move_compiler::shared::{NumberFormat, NumericalAddress, PackagePaths};
+use move_compiler::{construct_pre_compiled_lib, FullyCompiledProgram};
 use move_core_types::language_storage::StructTag;
 use move_core_types::value::MoveValue;
 use move_core_types::{
     account_address::AccountAddress,
-    gas_schedule::GasAlgebra,
     identifier::{IdentStr, Identifier},
     language_storage::{ModuleId, TypeTag},
 };
 use move_transactional_test_runner::framework;
 use move_transactional_test_runner::tasks::{
-    PrintBytecodeCommand, PublishCommand, /*RunCommand ,*/ TaskCommand, ViewCommand,
+    PrintBytecodeCommand, PublishCommand, RunCommand, ViewCommand,
 };
 use move_transactional_test_runner::{
     framework::{CompiledState, MoveTestAdapter},
     tasks::{InitCommand, SyntaxChoice, TaskInput},
     vm_test_harness::view_resource_in_move_storage,
 };
+use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
@@ -77,7 +77,7 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::sync::Mutex;
 use std::{collections::BTreeMap, convert::TryInto, path::Path, str::FromStr};
-use stdlib::{starcoin_framework_named_addresses, G_PRECOMPILED_STARCOIN_FRAMEWORK};
+use stdlib::{starcoin_framework_named_addresses, stdlib_files};
 use tempfile::{NamedTempFile, TempDir};
 
 pub mod context;
@@ -609,12 +609,12 @@ impl<'a> StarcoinTestAdapter<'a> {
             .maximum_number_of_gas_units;
         let gas_unit_price = 1;
         let max_gas_amount = if gas_unit_price == 0 {
-            max_number_of_gas_units.get()
+            max_number_of_gas_units
         } else {
             let account_balance =
                 self.fetch_balance_resource(signer_addr, stc_type_tag().to_string())?;
             std::cmp::min(
-                max_number_of_gas_units.get(),
+                max_number_of_gas_units,
                 (account_balance.token() / gas_unit_price as u128) as u64,
             )
         };
@@ -929,7 +929,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             .add_precompiled(named_addr_opt, module.clone());
 
         let package = Self::build_package(
-            vec![module],
+            vec![module.clone()],
             init_function.map(|fid| {
                 let move_args = &args
                     .unwrap_or_default()
@@ -970,6 +970,11 @@ impl<'a> StarcoinTestAdapter<'a> {
             package_hash,
             hex,
         };
+        self.compiled_state().add_with_source_file(
+            named_addr_opt,
+            module,
+            (data_path.to_owned(), data),
+        );
         Ok((warnings_opt, Some(serde_json::to_value(&package_result)?)))
     }
 
@@ -1046,7 +1051,6 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
     }
 
     fn init(
-        _test_path: &Path,
         default_syntax: SyntaxChoice,
         pre_compiled_deps: Option<&'a FullyCompiledProgram>,
         task_opt: Option<TaskInput<(InitCommand, Self::ExtraInitArgs)>>,
@@ -1362,21 +1366,6 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         }
         Ok((result_str, cmd_var_ctx))
     }
-
-    fn handle_command(
-        &mut self,
-        _task: TaskInput<
-            TaskCommand<
-                Self::ExtraInitArgs,
-                Self::ExtraPublishArgs,
-                Self::ExtraValueArgs,
-                Self::ExtraRunArgs,
-                Self::Subcommand,
-            >,
-        >,
-    ) -> Result<(Option<String>, Option<Value>)> {
-        todo!()
-    }
 }
 
 fn convert_txn_args(args: &[MoveValue]) -> Vec<Vec<u8>> {
@@ -1389,14 +1378,14 @@ fn convert_txn_args(args: &[MoveValue]) -> Vec<Vec<u8>> {
 }
 
 /// Run the Starcoin transactional test flow, using the given file as input.
-pub fn run_test(path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run_test(path: &Path) -> Result<(), Box<dyn std::error::Error + 'static>> {
     run_test_impl(path, Some(&*G_PRECOMPILED_STARCOIN_FRAMEWORK))
 }
 
-pub fn run_test_impl(
+pub fn run_test_impl<'a>(
     path: &Path,
-    fully_compiled_program_opt: Option<&FullyCompiledProgram>,
-) -> Result<(), Box<dyn std::error::Error>> {
+    fully_compiled_program_opt: Option<&'a FullyCompiledProgram>,
+) -> Result<(), Box<dyn std::error::Error + 'static>> {
     framework::run_test_impl::<StarcoinTestAdapter>(path, fully_compiled_program_opt)
 }
 
@@ -1411,7 +1400,7 @@ pub fn print_help(task_name: Option<String>) -> Result<()> {
         PrintBytecodeCommand::command().name("print-bytecode"),
     );
     tasks.insert("publish", PublishCommand::command().name("publish"));
-    // tasks.insert("run", RunCommand::<ExtraValueArgs>::command().name("run"));
+    tasks.insert("run", RunCommand::<()>::command().name("run"));
     tasks.insert("view", ViewCommand::command().name("view"));
     tasks.insert("faucet", FaucetSub::command().name("faucet"));
     tasks.insert("block", BlockSub::command().name("block"));
@@ -1442,31 +1431,23 @@ pub fn print_help(task_name: Option<String>) -> Result<()> {
     }
 }
 
-/*
-fn convert_write_set(result: &mut TransactionResult, output: &TransactionOutput) {
-    let mut access_write_set = vec![];
-    let mut table_item_write_set = vec![];
-    for (state_key, op) in output.write_set().clone() {
-        match state_key {
-            StateKey::AccessPath(access_path) => {
-                access_write_set.push((access_path, op));
-            }
-            StateKey::TableItem(table_item) => {
-                table_item_write_set.push((table_item, op));
-            }
+pub static G_PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<FullyCompiledProgram> = Lazy::new(|| {
+    let sources = stdlib_files();
+    let program_res = construct_pre_compiled_lib(
+        vec![PackagePaths {
+            name: None,
+            paths: sources,
+            named_address_map: starcoin_framework_named_addresses(),
+        }],
+        None,
+        move_compiler::Flags::empty(),
+    )
+    .unwrap();
+    match program_res {
+        Ok(df) => df,
+        Err((files, errors)) => {
+            eprintln!("!!!Starcoin Framework failed to compile!!!");
+            move_compiler::diagnostics::report_diagnostics(&files, errors)
         }
     }
-    result.write_set = Some(
-        access_write_set
-            .into_iter()
-            .map(TransactionOutputAction::from)
-            .collect(),
-    );
-    result.table_item_write_set = Some(
-        table_item_write_set
-            .into_iter()
-            .map(TransactionOutputTableItemAction::from)
-            .collect(),
-    );
-}
-*/
+});

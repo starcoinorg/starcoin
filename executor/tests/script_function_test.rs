@@ -7,7 +7,9 @@ use starcoin_types::account::Account;
 use starcoin_types::transaction::Transaction;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::transaction::{Package, ScriptFunction, TransactionPayload};
+use starcoin_vm_types::transaction::{
+    Package, ScriptFunction, TransactionPayload, TransactionStatus,
+};
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use statedb::ChainStateDB;
 use test_helper::executor::{compile_modules_with_address, execute_and_apply, prepare_genesis};
@@ -163,6 +165,74 @@ fn test_invoke_private_function() -> Result<()> {
     assert_eq!(
         KeptVMStatus::MiscellaneousError,
         output.status().status().unwrap()
+    );
+    Ok(())
+}
+//a test for issue https://github.com/starcoinorg/starcoin/issues/3804
+#[stest::test]
+fn test_signer_cap_internal_type_error() -> Result<()> {
+    let (chain_state, net) = prepare_genesis();
+    let alice = Account::new();
+    let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+        &alice, 0, 50_000_000, 1, &net,
+    ));
+    let output1 = execute_and_apply(&chain_state, txn1);
+    assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
+    let module_source = r#"
+        module {{sender}}::IdentifierNFTTest {
+            use StarcoinFramework::NFT::{MintCapability, BurnCapability, UpdateCapability};
+            use StarcoinFramework::NFT;
+
+            struct Body has store{}
+            struct Meta has copy, store, drop{}
+
+            struct ShardCap has store, key{
+                mint_cap:MintCapability<Meta>,
+                burn_cap:BurnCapability<Meta>,
+                update_cap:UpdateCapability<Meta>
+            }
+            public(script) fun init(sender: signer){
+                let meta_data = NFT::empty_meta();
+                NFT::register_v2<Meta>(&sender, meta_data);
+                let mint_cap = NFT::remove_mint_capability<Meta>(&sender);
+                let update_cap  = NFT::remove_update_capability<Meta>(&sender);
+                let burn_cap = NFT::remove_burn_capability<Meta>(&sender);
+                move_to(&sender,ShardCap{
+                    mint_cap,
+                    update_cap,
+                    burn_cap
+                });
+            }
+        }
+        "#;
+    let compiled_module = compile_modules_with_address(*alice.address(), module_source)
+        .pop()
+        .unwrap();
+    let init_script = ScriptFunction::new(
+        ModuleId::new(
+            *alice.address(),
+            Identifier::new("IdentifierNFTTest").unwrap(),
+        ),
+        Identifier::new("init").unwrap(),
+        vec![],
+        vec![],
+    );
+    let txn = Transaction::UserTransaction(alice.create_signed_txn_impl(
+        *alice.address(),
+        TransactionPayload::Package(
+            Package::new(vec![compiled_module], Some(init_script)).unwrap(),
+        ),
+        0,
+        10_000_000,
+        1,
+        1,
+        net.chain_id(),
+    ));
+
+    let output = execute_and_apply(&chain_state, txn);
+    assert_eq!(
+        TransactionStatus::Keep(KeptVMStatus::Executed),
+        output.status().clone()
     );
     Ok(())
 }
