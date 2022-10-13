@@ -14,6 +14,7 @@ use starcoin_rpc_client::RpcClient;
 use starcoin_vm_types::transaction::TransactionPayload;
 use std::path::PathBuf;
 use std::time::Duration;
+use vm_status_translator::VmStatusExplainView;
 
 #[derive(Parser)]
 pub struct DeploymentCommand {
@@ -102,7 +103,16 @@ pub fn handle_deployment(_move_args: &Move, cmd: DeploymentCommand) -> anyhow::R
     let item =
         state.build_and_execute_transaction(cmd.txn_opts, TransactionPayload::Package(package));
     match item {
-        Ok(_) => println!("The deployment is successful."),
+        Ok(execute_result_view) => {
+            // check dry run result
+            if VmStatusExplainView::Executed == execute_result_view.dry_run_output.explained_status
+            {
+                println!("The deployment is successful.");
+            } else {
+                println!("The deployment is failed. execute result view is: ");
+                println!("{:?}", execute_result_view);
+            }
+        }
         Err(e) => {
             println!("The deployment is failed. Reason: ");
             println!("{:?}", e);

@@ -10,9 +10,9 @@ use logger::prelude::error;
 use starcoin_service_registry::ServiceRef;
 use starcoin_stratum::rpc::LoginRequest;
 use starcoin_stratum::target_hex_to_difficulty;
+use starcoin_time_service::TimeService;
 use starcoin_types::genesis_config::ConsensusStrategy;
 use starcoin_types::system_events::{MintBlockEvent, MintEventExtra};
-use starcoin_types::time::TimeService;
 
 #[derive(Clone)]
 pub struct StratumJobClient {

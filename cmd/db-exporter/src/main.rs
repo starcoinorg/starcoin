@@ -2,10 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, format_err, Result};
+use bcs_ext::BCSCodec;
 use bcs_ext::Sample;
-use clap::{IntoApp, Parser};
+use clap::IntoApp;
+use clap::Parser;
 use csv::Writer;
+use db_exporter::verify_modules_via_export_file;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use serde::ser::SerializeMap;
+use serde::{Serialize, Serializer};
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
@@ -16,9 +21,8 @@ use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_config::{BuiltinNetworkID, ChainNetwork, RocksdbConfig};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
-use starcoin_executor::account::{create_account_txn_sent_as_association, peer_to_peer_txn};
-use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_genesis::Genesis;
+use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
 use starcoin_statedb::ChainStateDB;
 use starcoin_statedb::ChainStateReader;
 use starcoin_statedb::ChainStateWriter;
@@ -26,32 +30,46 @@ use starcoin_storage::block::FailedBlock;
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
+use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::storage::ValueCodec;
-use starcoin_storage::storage::{ColumnFamilyName, InnerStore, StorageInstance};
+use starcoin_storage::storage::{ColumnFamilyName, InnerStore};
 use starcoin_storage::{
     BlockStore, Storage, StorageVersion, Store, BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
     BLOCK_HEADER_PREFIX_NAME, BLOCK_INFO_PREFIX_NAME, BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
-    STATE_NODE_PREFIX_NAME, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
+    STATE_NODE_PREFIX_NAME, STATE_NODE_PREFIX_NAME_PREV, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
 };
-use starcoin_transaction_builder::build_signed_empty_txn;
+use starcoin_transaction_builder::{
+    build_signed_empty_txn, create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT,
+};
+use starcoin_types::account::peer_to_peer_txn;
 use starcoin_types::account::Account;
+use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
+use starcoin_types::language_storage::{StructTag, TypeTag};
 use starcoin_types::startup_info::{SnapshotRange, StartupInfo};
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 use starcoin_types::transaction::Transaction;
+use starcoin_vm_types::account_config::stc_type_tag;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm_types::identifier::Identifier;
+use starcoin_vm_types::language_storage::ModuleId;
+use starcoin_vm_types::parser::parse_type_tag;
+use starcoin_vm_types::transaction::{ScriptFunction, SignedUserTransaction, TransactionPayload};
 use std::collections::HashMap;
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
+use std::fmt::Formatter;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, Write};
+use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use std::thread;
 use std::time::SystemTime;
+use std::{thread, thread::JoinHandle};
+
 const BLOCK_GAP: u64 = 1000;
 const BACK_SIZE: u64 = 10000;
 const SNAP_GAP: u64 = 128;
@@ -213,6 +231,8 @@ enum Cmd {
     GenBlockTransactions(GenBlockTransactionsOptions),
     ExportSnapshot(ExportSnapshotOptions),
     ApplySnapshot(ApplySnapshotOptions),
+    ExportResource(ExportResourceOptions),
+    VerifyModules(VerifyModulesOptions),
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -366,7 +386,47 @@ pub struct ApplySnapshotOptions {
     pub input_path: PathBuf,
 }
 
-fn main() -> anyhow::Result<()> {
+#[derive(Debug, Clone, Parser)]
+#[clap(name = "export-resource", about = "onchain resource exporter")]
+pub struct ExportResourceOptions {
+    #[clap(long, short = 'o', parse(from_os_str))]
+    /// output file, like accounts.csv
+    pub output: PathBuf,
+    #[clap(long, short = 'i', parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db/starcoindb
+    pub db_path: PathBuf,
+
+    #[clap(long)]
+    /// block hash of the snapshot.
+    pub block_hash: HashValue,
+
+    #[clap(
+        short='r',
+        default_value = "0x1::Account::Balance<0x1::STC::STC>",
+        parse(try_from_str=parse_struct_tag)
+    )]
+    /// resource struct tag.
+    resource_type: StructTag,
+
+    #[clap(min_values = 1, required = true)]
+    /// fields of the struct to output. it use pointer syntax of serde_json.
+    /// like: /authentication_key /sequence_number /deposit_events/counter /token/value
+    pub fields: Vec<String>,
+}
+
+#[derive(Debug, Parser)]
+#[clap(
+    name = "verify-modules",
+    about = "fast verify all modules, do not execute the transactions"
+)]
+pub struct VerifyModulesOptions {
+    #[clap(long, short = 'i', parse(from_os_str))]
+    /// input file, like accounts.csv
+    pub input_path: PathBuf,
+}
+
+#[tokio::main(flavor = "multi_thread")]
+async fn main() -> anyhow::Result<()> {
     let opt = Opt::parse();
     let cmd = match opt.cmd {
         Some(cmd) => cmd,
@@ -376,128 +436,147 @@ fn main() -> anyhow::Result<()> {
         }
     };
 
-    if let Cmd::Exporter(option) = cmd {
-        let output = option.output.as_deref();
-        let mut writer_builder = csv::WriterBuilder::new();
-        let writer_builder = writer_builder.delimiter(b'\t').double_quote(false);
-        let result = match output {
-            Some(output) => {
-                let writer = writer_builder.from_path(output)?;
-                export(
-                    option.db_path.display().to_string().as_str(),
-                    writer,
-                    option.schema,
-                )
-            }
-            None => {
-                let writer = writer_builder.from_writer(std::io::stdout());
-                export(
-                    option.db_path.display().to_string().as_str(),
-                    writer,
-                    option.schema,
-                )
-            }
-        };
-        if let Err(err) = result {
-            let broken_pipe_err = err.downcast_ref::<csv::Error>().and_then(|err| {
-                if let csv::ErrorKind::Io(io_err) = err.kind() {
-                    if io_err.kind() == std::io::ErrorKind::BrokenPipe {
-                        Some(io_err)
+    match cmd {
+        Cmd::Exporter(option) => {
+            let output = option.output.as_deref();
+            let mut writer_builder = csv::WriterBuilder::new();
+            let writer_builder = writer_builder.delimiter(b'\t').double_quote(false);
+            let result = match output {
+                Some(output) => {
+                    let writer = writer_builder.from_path(output)?;
+                    export(
+                        // option.db_path.display().to_string().as_str(),
+                        option.db_path.to_str().unwrap(),
+                        writer,
+                        option.schema,
+                    )
+                }
+                None => {
+                    let writer = writer_builder.from_writer(std::io::stdout());
+                    export(
+                        option.db_path.display().to_string().as_str(),
+                        writer,
+                        option.schema,
+                    )
+                }
+            };
+            if let Err(err) = result {
+                let broken_pipe_err = err.downcast_ref::<csv::Error>().and_then(|err| {
+                    if let csv::ErrorKind::Io(io_err) = err.kind() {
+                        if io_err.kind() == std::io::ErrorKind::BrokenPipe {
+                            Some(io_err)
+                        } else {
+                            None
+                        }
                     } else {
                         None
                     }
+                });
+                //ignore BrokenPipe
+                return if let Some(_broken_pipe_err) = broken_pipe_err {
+                    Ok(())
                 } else {
-                    None
-                }
-            });
-            //ignore BrokenPipe
-            return if let Some(_broken_pipe_err) = broken_pipe_err {
-                Ok(())
+                    Err(err)
+                };
+            }
+            return result;
+        }
+        Cmd::Checkkey(option) => {
+            let db = DBStorage::open_with_cfs(
+                option.db_path.display().to_string().as_str(),
+                StorageVersion::current_version()
+                    .get_column_family_names()
+                    .to_vec(),
+                true,
+                Default::default(),
+                None,
+            )?;
+
+            let result = db.get(option.cf_name.as_str(), option.block_hash.to_vec())?;
+            if result.is_some() {
+                println!("{} block_hash {} exist", option.cf_name, option.block_hash);
             } else {
-                Err(err)
-            };
+                println!(
+                    "{} block_hash {} not exist",
+                    option.cf_name, option.block_hash
+                );
+            }
+            return Ok(());
         }
-        return result;
-    }
-
-    if let Cmd::Checkkey(option) = cmd {
-        let db = DBStorage::open_with_cfs(
-            option.db_path.display().to_string().as_str(),
-            StorageVersion::current_version()
-                .get_column_family_names()
-                .to_vec(),
-            true,
-            Default::default(),
-            None,
-        )?;
-
-        let result = db.get(option.cf_name.as_str(), option.block_hash.to_vec())?;
-        if result.is_some() {
-            println!("{} block_hash {} exist", option.cf_name, option.block_hash);
-        } else {
-            println!(
-                "{} block_hash {} not exist",
-                option.cf_name, option.block_hash
+        Cmd::ExportBlockRange(option) => {
+            let result = export_block_range(
+                option.db_path,
+                option.output,
+                option.net,
+                option.start,
+                option.end,
             );
+            return result;
         }
-        return Ok(());
-    }
-
-    if let Cmd::ExportBlockRange(option) = cmd {
-        let result = export_block_range(
-            option.db_path,
-            option.output,
-            option.net,
-            option.start,
-            option.end,
-        );
-        return result;
-    }
-
-    if let Cmd::ApplyBlock(option) = cmd {
-        #[cfg(target_os = "linux")]
-        let guard = pprof::ProfilerGuard::new(100).unwrap();
-        let verifier = option.verifier.unwrap_or(Verifier::Basic);
-        let result = apply_block(option.to_path, option.input_path, option.net, verifier);
-        #[cfg(target_os = "linux")]
-        if let Ok(report) = guard.report().build() {
-            let file = File::create("/tmp/flamegraph.svg").unwrap();
-            report.flamegraph(file).unwrap();
+        Cmd::ApplyBlock(option) => {
+            #[cfg(target_os = "linux")]
+            let guard = pprof::ProfilerGuard::new(100).unwrap();
+            let verifier = option.verifier.unwrap_or(Verifier::Basic);
+            let result = apply_block(option.to_path, option.input_path, option.net, verifier);
+            #[cfg(target_os = "linux")]
+            if let Ok(report) = guard.report().build() {
+                let file = File::create("/tmp/flamegraph.svg").unwrap();
+                report.flamegraph(file).unwrap();
+            }
+            return result;
         }
-        return result;
+        Cmd::StartupInfoBack(option) => {
+            let result = startup_info_back(option.to_path, option.back_size, option.net);
+            return result;
+        }
+        Cmd::GenBlockTransactions(option) => {
+            let result = gen_block_transactions(
+                option.to_path,
+                option.block_num,
+                option.trans_num,
+                option.txn_type,
+            );
+            return result;
+        }
+        Cmd::ExportSnapshot(option) => {
+            let result = export_snapshot(
+                option.db_path,
+                option.output,
+                option.net,
+                option.increment,
+                option.special_block_num,
+            );
+            return result;
+        }
+        Cmd::ApplySnapshot(option) => {
+            let result = apply_snapshot(option.to_path, option.input_path, option.net);
+            return result;
+        }
+        Cmd::ExportResource(option) => {
+            #[cfg(target_os = "linux")]
+            let guard = pprof::ProfilerGuard::new(100).unwrap();
+            let output = option.output.as_path();
+            let block_hash = option.block_hash;
+            let resource = option.resource_type.clone();
+            // let result = apply_block(option.to_path, option.input_path, option.net, verifier);
+            export_resource(
+                option.db_path.display().to_string().as_str(),
+                output,
+                block_hash,
+                resource,
+                option.fields.as_slice(),
+            )?;
+            #[cfg(target_os = "linux")]
+            if let Ok(report) = guard.report().build() {
+                let file = File::create("/tmp/flamegraph-db-export-resource-freq-100.svg").unwrap();
+                report.flamegraph(file).unwrap();
+            }
+        }
+        Cmd::VerifyModules(option) => {
+            let result = verify_modules_via_export_file(option.input_path);
+            return result;
+        }
     }
-
-    if let Cmd::StartupInfoBack(option) = cmd {
-        let result = startup_info_back(option.to_path, option.back_size, option.net);
-        return result;
-    }
-
-    if let Cmd::GenBlockTransactions(option) = cmd {
-        let result = gen_block_transactions(
-            option.to_path,
-            option.block_num,
-            option.trans_num,
-            option.txn_type,
-        );
-        return result;
-    }
-
-    if let Cmd::ExportSnapshot(option) = cmd {
-        let result = export_snapshot(
-            option.db_path,
-            option.output,
-            option.net,
-            option.increment,
-            option.special_block_num,
-        );
-        return result;
-    }
-
-    if let Cmd::ApplySnapshot(option) = cmd {
-        let result = apply_snapshot(option.to_path, option.input_path, option.net);
-        return result;
-    }
-
     Ok(())
 }
 
@@ -749,6 +828,37 @@ pub fn gen_block_transactions(
             execute_empty_transaction_with_miner(storage, &mut chain, &net, block_num, trans_num)
         }
     }
+}
+/// Returns a transaction to create a new account with the given arguments.
+pub fn create_account_txn_sent_as_association(
+    new_account: &Account,
+    seq_num: u64,
+    initial_amount: u128,
+    expiration_timstamp_secs: u64,
+    net: &ChainNetwork,
+) -> SignedUserTransaction {
+    let args = vec![
+        bcs_ext::to_bytes(new_account.address()).unwrap(),
+        bcs_ext::to_bytes(&new_account.auth_key().to_vec()).unwrap(),
+        bcs_ext::to_bytes(&initial_amount).unwrap(),
+    ];
+
+    create_signed_txn_with_association_account(
+        TransactionPayload::ScriptFunction(ScriptFunction::new(
+            ModuleId::new(
+                starcoin_vm_types::account_config::core_code_address(),
+                Identifier::new("Account").unwrap(),
+            ),
+            Identifier::new("create_account_with_initial_amount").unwrap(),
+            vec![stc_type_tag()],
+            args,
+        )),
+        seq_num,
+        DEFAULT_MAX_GAS_AMOUNT,
+        1,
+        expiration_timstamp_secs,
+        net,
+    )
 }
 
 // This use in test net create account then transfer faster then transfer non exist account
@@ -1043,6 +1153,8 @@ fn export_column(
 /// block_info num block.header.hash
 /// txn_accumulator num accumulator_root_hash
 /// state  num state_root_hash
+/// state_node_prev num state_root_hash
+
 pub fn export_snapshot(
     from_dir: PathBuf,
     output: PathBuf,
@@ -1090,7 +1202,11 @@ pub fn export_snapshot(
         .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
     let chain = BlockChain::new(net.time_service(), cur_block.id(), storage.clone(), None)
         .expect("create block chain should success.");
+
     let cur_num = chain.epoch().start_block_number();
+
+    // For fork block verifier the parent block, So need block number sub 1
+    let cur_num_prev = cur_num - 1;
 
     // increment export read num
     let inc_export = increment.unwrap_or(false);
@@ -1108,7 +1224,7 @@ pub fn export_snapshot(
             let num = str_list[1].parse::<u64>()?;
             old_snapshot_nums.insert(column, num);
         }
-        if old_snapshot_nums.len() != 5 {
+        if old_snapshot_nums.len() != 6 {
             println!("increment export snapshot manifest.cvs error");
             std::process::exit(1);
         }
@@ -1189,17 +1305,91 @@ pub fn export_snapshot(
         handles.push(handle);
     }
 
+    let nums = Arc::new(AtomicU64::default());
+    let block = chain
+        .get_block_by_number(cur_num)?
+        .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
+    let state_root = block.header.state_root();
+    handles.push(chain_snapshot(
+        block,
+        storage.clone(),
+        &mbar,
+        output.clone(),
+        nums.clone(),
+        STATE_NODE_PREFIX_NAME,
+    )?);
+
+    let nums_prev = Arc::new(AtomicU64::default());
+    let block = chain
+        .get_block_by_number(cur_num_prev)?
+        .ok_or_else(|| format_err!("get block by number {} error", cur_num_prev))?;
+    let state_root_prev = block.header.state_root();
+    handles.push(chain_snapshot(
+        block,
+        storage,
+        &mbar,
+        output.clone(),
+        nums_prev.clone(),
+        STATE_NODE_PREFIX_NAME_PREV,
+    )?);
+
+    mbar.join_and_clear()?;
+    for handle in handles {
+        handle.join().unwrap().unwrap();
+    }
+
+    manifest_list.push((
+        STATE_NODE_PREFIX_NAME,
+        nums.load(Ordering::Relaxed),
+        state_root,
+    ));
+
+    println!(
+        "{} nums {}",
+        STATE_NODE_PREFIX_NAME,
+        nums.load(Ordering::Relaxed)
+    );
+
+    manifest_list.push((
+        STATE_NODE_PREFIX_NAME_PREV,
+        nums_prev.load(Ordering::Relaxed),
+        state_root_prev,
+    ));
+
+    println!(
+        "{} nums {}",
+        STATE_NODE_PREFIX_NAME_PREV,
+        nums_prev.load(Ordering::Relaxed)
+    );
+
+    // save manifest
+    let name_manifest = "manifest.csv".to_string();
+    let mut file_manifest = File::create(output.join(name_manifest))?;
+    for (path, num, hash) in manifest_list {
+        writeln!(file_manifest, "{} {} {}", path, num, hash)?;
+    }
+    file_manifest.flush()?;
+
+    let use_time = SystemTime::now().duration_since(start_time)?;
+    println!("export snapshot use time: {:?}", use_time.as_secs());
+    Ok(())
+}
+
+fn chain_snapshot(
+    block: Block,
+    storage: Arc<Storage>,
+    mbar: &MultiProgress,
+    output: PathBuf,
+    nums: Arc<AtomicU64>,
+    name: &'static str,
+) -> Result<JoinHandle<Result<(), anyhow::Error>>, anyhow::Error> {
     // get state
     let state_root = block.header.state_root();
     let statedb = ChainStateDB::new(storage, Some(state_root));
-    let output2 = output.clone();
-    // 20000000 is a pseudo number
-    let nums = Arc::new(AtomicU64::default());
-    let nums2 = nums.clone();
     let bar = mbar.add(ProgressBar::new(20000000 / BATCH_SIZE));
     let state_handler = thread::spawn(move || {
         let mut index = 1;
-        let mut file = File::create(output2.join(STATE_NODE_PREFIX_NAME))?;
+        let mut file = File::create(output.join(name))?;
         bar.set_style(
             ProgressStyle::default_bar()
                 .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
@@ -1221,37 +1411,11 @@ pub fn export_snapshot(
         }
         file.flush()?;
         bar.finish();
-        nums2.store(index - 1, Ordering::Relaxed);
+        nums.store(index - 1, Ordering::Relaxed);
         Ok(())
     });
-    handles.push(state_handler);
-    mbar.join_and_clear()?;
-    for handle in handles {
-        handle.join().unwrap().unwrap();
-    }
 
-    manifest_list.push((
-        STATE_NODE_PREFIX_NAME,
-        nums.load(Ordering::Relaxed),
-        state_root,
-    ));
-    println!(
-        "{} nums {}",
-        STATE_NODE_PREFIX_NAME,
-        nums.load(Ordering::Relaxed)
-    );
-
-    // save manifest
-    let name_manifest = "manifest.csv".to_string();
-    let mut file_manifest = File::create(output.join(name_manifest))?;
-    for (path, num, hash) in manifest_list {
-        writeln!(file_manifest, "{} {} {}", path, num, hash)?;
-    }
-    file_manifest.flush()?;
-
-    let use_time = SystemTime::now().duration_since(start_time)?;
-    println!("export snapshot use time: {:?}", use_time.as_secs());
-    Ok(())
+    Ok(state_handler)
 }
 
 fn import_column(
@@ -1352,19 +1516,17 @@ pub fn apply_snapshot(
         CacheStorage::new(None),
         db_storage,
     ))?);
+
     let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
-    let mut chain = BlockChain::new(
-        net.time_service(),
-        chain_info.head().id(),
-        storage.clone(),
-        None,
-    )
-    .expect("create block chain should success.");
-    let cur_num = chain.status().head().number();
-    if cur_num > 0 {
-        println!("apply snapshot cur_num {} expect 0", cur_num);
-        std::process::exit(2);
-    }
+    let chain = Arc::new(std::sync::Mutex::new(
+        BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage.clone(),
+            None,
+        )
+        .expect("create block chain should success."),
+    ));
 
     let mut block_hash = HashValue::zero();
     let mut block_num = 1;
@@ -1398,18 +1560,18 @@ pub fn apply_snapshot(
     }
 
     let mbar = MultiProgress::new();
-    for item in file_list.iter().take(file_list.len() - 1) {
+    for item in file_list.iter().take(file_list.len() - 3) {
         let (column, nums, verify_hash) = item.clone();
         let storage2 = storage.clone();
         let accumulator = match column.as_str() {
             BLOCK_ACCUMULATOR_NODE_PREFIX_NAME | BLOCK_PREFIX_NAME | BLOCK_INFO_PREFIX_NAME => {
                 MerkleAccumulator::new_with_info(
-                    chain.status().info.block_accumulator_info,
+                    chain.lock().unwrap().status().info.block_accumulator_info,
                     storage.get_accumulator_store(AccumulatorStoreType::Block),
                 )
             }
             TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME => MerkleAccumulator::new_with_info(
-                chain.status().info.txn_accumulator_info,
+                chain.lock().unwrap().status().info.txn_accumulator_info,
                 storage.get_accumulator_store(AccumulatorStoreType::Transaction),
             ),
             _ => {
@@ -1424,9 +1586,12 @@ pub fn apply_snapshot(
         });
         handles.push(handle);
     }
+
     // STATE_NODE_PREFIX_NAME
-    if let Some((column, nums, verify_hash)) = file_list.last().cloned() {
+    if let Some((column, nums, verify_hash)) = file_list.get(file_list.len() - 2).cloned() {
         let bar = mbar.add(ProgressBar::new(nums / BATCH_SIZE));
+        let input_path = input_path.clone();
+        let chain = chain.clone();
         let handle = thread::spawn(move || {
             let reader = BufReader::new(File::open(input_path.join(column))?);
             bar.set_style(
@@ -1453,6 +1618,7 @@ pub fn apply_snapshot(
             }
             bar.finish();
             let chain_state_set = ChainStateSet::new(account_states);
+            let mut chain = chain.lock().unwrap();
             chain.chain_state().apply(chain_state_set)?;
             if chain.chain_state_reader().state_root() == verify_hash {
                 println!("snapshot_state hash match");
@@ -1468,6 +1634,53 @@ pub fn apply_snapshot(
         });
         handles.push(handle);
     }
+
+    // STATE_NODE_PREFIX_NAME_PREV
+    if let Some((column, nums, verify_hash)) = file_list.last().cloned() {
+        let bar = mbar.add(ProgressBar::new(nums / BATCH_SIZE));
+        let handle = thread::spawn(move || {
+            let reader = BufReader::new(File::open(input_path.join(column))?);
+            bar.set_style(
+                ProgressStyle::default_bar()
+                    .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+            );
+            let mut index = 1;
+            let mut account_states = vec![];
+            for line in reader.lines() {
+                let line = line?;
+                let strs: Vec<&str> = line.split(' ').collect();
+                let account_address: AccountAddress = serde_json::from_str(strs[0])?;
+                let account_state_set: AccountStateSet = serde_json::from_str(strs[1])?;
+                account_states.push((account_address, account_state_set));
+                index += 1;
+                if index % BATCH_SIZE == 0 {
+                    bar.set_message(format!(
+                        "import {} index {}",
+                        STATE_NODE_PREFIX_NAME_PREV,
+                        index / BATCH_SIZE
+                    ));
+                    bar.inc(1);
+                }
+            }
+            bar.finish();
+            let chain_state_set = ChainStateSet::new(account_states);
+            let mut chain = chain.lock().unwrap();
+            chain.chain_state().apply(chain_state_set)?;
+            if chain.chain_state_reader().state_root() == verify_hash {
+                println!("snapshot_state hash match");
+            } else {
+                println!(
+                    "snapshot_state hash not match state_root {} verify_hash {}",
+                    chain.chain_state_reader().state_root(),
+                    verify_hash
+                );
+                std::process::exit(1);
+            }
+            Ok(())
+        });
+        handles.push(handle);
+    }
+
     mbar.join_and_clear()?;
     for handle in handles {
         handle.join().unwrap().unwrap();
@@ -1482,4 +1695,157 @@ pub fn apply_snapshot(
     let use_time = SystemTime::now().duration_since(start_time)?;
     println!("apply snapshot use time: {:?}", use_time.as_secs());
     Ok(())
+}
+
+#[derive(Serialize, Debug)]
+pub struct AccountData<R: Serialize> {
+    address: AccountAddress,
+    #[serde(flatten)]
+    resource: Option<R>,
+}
+
+pub fn export_resource(
+    db: &str,
+    output: &Path,
+    block_hash: HashValue,
+    resource_struct_tag: StructTag,
+    fields: &[String],
+) -> anyhow::Result<()> {
+    let db_storage = DBStorage::open_with_cfs(
+        db,
+        StorageVersion::current_version()
+            .get_column_family_names()
+            .to_vec(),
+        true,
+        Default::default(),
+        None,
+    )?;
+    let storage = Storage::new(StorageInstance::new_db_instance(db_storage))?;
+    let storage = Arc::new(storage);
+    let block = storage
+        .get_block(block_hash)?
+        .ok_or_else(|| anyhow::anyhow!("block {} not exist", block_hash))?;
+
+    let root = block.header.state_root();
+    let statedb = ChainStateDB::new(storage, Some(root));
+    let value_annotator = MoveValueAnnotator::new(&statedb);
+
+    let mut csv_writer = csv::WriterBuilder::new().from_path(output)?;
+
+    // write csv header.
+    {
+        csv_writer.write_field("address")?;
+        for f in fields {
+            csv_writer.write_field(f)?;
+        }
+        csv_writer.write_record(None::<&[u8]>)?;
+    }
+
+    use std::time::Instant;
+
+    let now = Instant::now();
+
+    let global_states_iter = statedb.dump_iter()?;
+    println!("t1: {}", now.elapsed().as_millis());
+
+    let now = Instant::now();
+    let mut t1_sum = 0;
+    let mut t2_sum = 0;
+    let mut loop_count = 0;
+    let mut now3 = Instant::now();
+    let mut iter_time = 0;
+    for (account_address, account_state_set) in global_states_iter {
+        iter_time += now3.elapsed().as_nanos();
+
+        loop_count += 1;
+
+        let now1 = Instant::now();
+        let resource_set = account_state_set.resource_set().unwrap();
+        // t1_sum += now1.elapsed().as_micros();
+        t1_sum += now1.elapsed().as_nanos();
+        // println!("t1 sum in loop: {}", t1_sum);
+
+        let now2 = Instant::now();
+        for (k, v) in resource_set.iter() {
+            let struct_tag = StructTag::decode(k.as_slice())?;
+            if struct_tag == resource_struct_tag {
+                let annotated_struct =
+                    value_annotator.view_struct(resource_struct_tag.clone(), v.as_slice())?;
+                let resource_struct = annotated_struct;
+                let resource_json_value = serde_json::to_value(MoveStruct(resource_struct))?;
+                let resource = Some(resource_json_value);
+                let record: Option<Vec<_>> = resource
+                    .as_ref()
+                    .map(|v| fields.iter().map(|f| v.pointer(f.as_str())).collect());
+                if let Some(mut record) = record {
+                    let account_value = serde_json::to_value(account_address).unwrap();
+                    record.insert(0, Some(&account_value));
+                    csv_writer.serialize(record)?;
+                }
+                break;
+            }
+        }
+        // let d = now2.elapsed().as_micros();
+        let d = now2.elapsed().as_nanos();
+        // println!("d is: {}", d);
+        t2_sum += d;
+        // println!("t2 sum in loop: {}", t2_sum);
+        now3 = Instant::now();
+    }
+    println!("iter time: {}, {}", iter_time, iter_time / 1_000_000);
+    println!("loop count: {}", loop_count);
+    println!("t1_sum: {}, {}", t1_sum, t1_sum / 1000000);
+    println!("t2_sum: {}, {}", t2_sum, t2_sum / 1000000);
+
+    println!("t2: {}", now.elapsed().as_millis());
+    csv_writer.flush()?;
+    Ok(())
+}
+
+#[derive(Debug, Clone)]
+struct MoveStruct(AnnotatedMoveStruct);
+
+impl serde::Serialize for MoveStruct {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(self.0.value.len()))?;
+        for (field, value) in &self.0.value {
+            map.serialize_entry(field.as_str(), &MoveValue(value.clone()))?;
+        }
+        map.end()
+    }
+}
+
+#[derive(Debug, Clone)]
+struct MoveValue(AnnotatedMoveValue);
+
+impl serde::Serialize for MoveValue {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        match &self.0 {
+            AnnotatedMoveValue::Bool(b) => serializer.serialize_bool(*b),
+            AnnotatedMoveValue::U8(v) => serializer.serialize_u8(*v),
+            AnnotatedMoveValue::U64(v) => serializer.serialize_u64(*v),
+            AnnotatedMoveValue::U128(v) => serializer.serialize_u128(*v),
+            AnnotatedMoveValue::Address(v) => v.serialize(serializer),
+            AnnotatedMoveValue::Vector(v) => {
+                let vs: Vec<_> = v.clone().into_iter().map(MoveValue).collect();
+                vs.serialize(serializer)
+            }
+            AnnotatedMoveValue::Bytes(v) => hex::encode(v).serialize(serializer),
+            AnnotatedMoveValue::Struct(v) => MoveStruct(v.clone()).serialize(serializer),
+        }
+    }
+}
+fn parse_struct_tag(input: &str) -> anyhow::Result<StructTag> {
+    match parse_type_tag(input)? {
+        TypeTag::Struct(s) => Ok(s),
+        _ => {
+            anyhow::bail!("invalid struct tag")
+        }
+    }
 }

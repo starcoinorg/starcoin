@@ -1,12 +1,12 @@
 [package]
-name = "bcs-ext"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "bcs-ext"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
-serde = { version = "1.0.130" }
 bcs = "0.1.3"
+serde = {version = "1.0.130"}

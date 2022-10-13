@@ -28,7 +28,7 @@ pub use peer_provider::PeerDetail;
 pub use peer_provider::{PeerProvider, PeerSelector, PeerStrategy};
 
 use futures::channel::oneshot::Receiver;
-pub use starcoin_types::peer_info::{PeerId, PeerInfo};
+pub use network_types::peer_info::{PeerId, PeerInfo, RpcInfo};
 use std::borrow::Cow;
 
 pub trait NetworkService: Send + Sync + Clone + Sized + std::marker::Unpin + PeerProvider {

@@ -5,6 +5,7 @@ use anyhow::bail;
 use bcs_ext::BCSCodec;
 use hex::FromHex;
 use jsonrpc_core_client::RpcChannel;
+use network_types::peer_info::{PeerId, PeerInfo};
 pub use node_api_types::*;
 use schemars::{self, JsonSchema};
 use serde::de::{DeserializeOwned, Error};
@@ -27,7 +28,6 @@ use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::event::EventKey;
 use starcoin_types::genesis_config;
 use starcoin_types::language_storage::TypeTag;
-use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_types::proof::SparseMerkleProof;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::authenticator::{AuthenticationKey, TransactionAuthenticator};
@@ -449,6 +449,36 @@ impl From<BlockHeader> for BlockHeaderView {
     }
 }
 
+impl From<BlockHeaderView> for BlockHeader {
+    fn from(header_view: BlockHeaderView) -> Self {
+        BlockHeader::new(
+            header_view.parent_hash,
+            header_view.timestamp.0,
+            header_view.number.0,
+            header_view.author,
+            header_view.txn_accumulator_root,
+            header_view.block_accumulator_root,
+            header_view.state_root,
+            header_view.gas_used.0,
+            header_view.difficulty,
+            header_view.body_hash,
+            genesis_config::ChainId::new(header_view.chain_id),
+            header_view.nonce,
+            header_view.extra,
+        )
+    }
+}
+
+impl FromIterator<BlockHeaderView> for Vec<BlockHeader> {
+    fn from_iter<T: IntoIterator<Item = BlockHeaderView>>(views: T) -> Self {
+        let mut blocks = vec![];
+        for view in views {
+            blocks.push(view.into())
+        }
+        blocks
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct RawUserTransactionView {
     /// Sender's address.
@@ -493,6 +523,21 @@ impl TryFrom<RawUserTransaction> for RawUserTransactionView {
             payload: StrView(origin.into_payload().encode()?),
             decoded_payload: None,
         })
+    }
+}
+
+impl From<RawUserTransactionView> for RawUserTransaction {
+    fn from(transaction_view: RawUserTransactionView) -> Self {
+        RawUserTransaction::new(
+            transaction_view.sender,
+            transaction_view.sequence_number.0,
+            TransactionPayload::decode(transaction_view.payload.0.as_slice()).unwrap(),
+            transaction_view.max_gas_amount.0,
+            transaction_view.gas_unit_price.0,
+            transaction_view.expiration_timestamp_secs.0,
+            genesis_config::ChainId::new(transaction_view.chain_id),
+            transaction_view.gas_token_code.clone(),
+        )
     }
 }
 
@@ -738,6 +783,25 @@ impl TryFrom<Vec<SignedUserTransaction>> for BlockTransactionsView {
     }
 }
 
+impl TryFrom<BlockTransactionsView> for Vec<SignedUserTransaction> {
+    type Error = anyhow::Error;
+
+    fn try_from(tx_view: BlockTransactionsView) -> Result<Self, Self::Error> {
+        match tx_view {
+            BlockTransactionsView::Full(full) => Ok(full
+                .into_iter()
+                .map(|transaction_view| {
+                    SignedUserTransaction::new(
+                        transaction_view.raw_txn.into(),
+                        transaction_view.authenticator,
+                    )
+                })
+                .collect()),
+            _ => Err(anyhow::Error::msg("not support")),
+        }
+    }
+}
+
 impl From<Vec<HashValue>> for BlockTransactionsView {
     fn from(txns: Vec<HashValue>) -> Self {
         BlockTransactionsView::Hashes(txns)
@@ -747,18 +811,18 @@ impl From<Vec<HashValue>> for BlockTransactionsView {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct RawBlockView {
     /// Raw block header that encoded in hex format.
-    pub header: String,
+    pub header: StrView<Vec<u8>>,
 
     /// Raw block body that encoded in hex format.
-    pub body: String,
+    pub body: StrView<Vec<u8>>,
 }
 
 impl TryFrom<&Block> for RawBlockView {
     type Error = anyhow::Error;
 
     fn try_from(value: &Block) -> Result<Self, Self::Error> {
-        let header = hex::encode(bcs_ext::to_bytes(value.header())?);
-        let body = hex::encode(bcs_ext::to_bytes(&value.body)?);
+        let header = StrView(bcs_ext::to_bytes(value.header())?);
+        let body = StrView(bcs_ext::to_bytes(&value.body)?);
         Ok(Self { header, body })
     }
 }
@@ -808,6 +872,25 @@ impl TryFrom<Block> for BlockView {
 
     fn try_from(block: Block) -> Result<Self, Self::Error> {
         Self::try_from_block(block, false, false)
+    }
+}
+
+impl TryFrom<BlockView> for Block {
+    type Error = anyhow::Error;
+
+    fn try_from(block_view: BlockView) -> Result<Self, Self::Error> {
+        let block_header: BlockHeader = block_view.header.into();
+        let uncles: Vec<BlockHeader> = block_view
+            .uncles
+            .into_iter()
+            .map(BlockHeader::from)
+            .collect();
+        let transactions = block_view.body.try_into()?;
+
+        Ok(Block {
+            header: block_header,
+            body: BlockBody::new(transactions, Some(uncles)),
+        })
     }
 }
 
@@ -1743,6 +1826,17 @@ pub struct AccumulatorInfoView {
     pub num_nodes: StrView<u64>,
 }
 
+impl AccumulatorInfoView {
+    fn into_info(self) -> AccumulatorInfo {
+        AccumulatorInfo::new(
+            self.accumulator_root,
+            self.frozen_subtree_roots,
+            self.num_leaves.0,
+            self.num_nodes.0,
+        )
+    }
+}
+
 impl From<AccumulatorInfo> for AccumulatorInfoView {
     fn from(info: AccumulatorInfo) -> Self {
         AccumulatorInfoView {
@@ -1765,6 +1859,17 @@ pub struct BlockInfoView {
     pub txn_accumulator_info: AccumulatorInfoView,
     /// The block accumulator info.
     pub block_accumulator_info: AccumulatorInfoView,
+}
+
+impl BlockInfoView {
+    pub fn into_info(self) -> BlockInfo {
+        BlockInfo::new(
+            self.block_hash,
+            self.total_difficulty,
+            self.txn_accumulator_info.into_info(),
+            self.block_accumulator_info.into_info(),
+        )
+    }
 }
 
 impl From<BlockInfo> for BlockInfoView {

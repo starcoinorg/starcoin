@@ -1,19 +1,23 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{format_err, Result};
+use starcoin_abi_decoder::decode_move_value;
 use starcoin_abi_resolver::ABIResolver;
 use starcoin_abi_types::TypeInstantiation;
 use starcoin_crypto::HashValue;
+use starcoin_resource_viewer::module_cache::ModuleCache;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
+use starcoin_rpc_api::types::{DryRunOutputView, TransactionOutputView, WriteOpValueView};
 use starcoin_state_api::StateNodeStore;
 use starcoin_statedb::ChainStateDB;
 use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
+use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::identifier::{IdentStr, Identifier};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag, TypeTag};
 use starcoin_vm_types::state_view::StateView;
-use starcoin_vm_types::transaction::{DryRunTransaction, TransactionOutput};
+use starcoin_vm_types::transaction::{DryRunTransaction, TransactionOutput, TransactionPayload};
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::transaction_argument::TransactionArgument;
 use starcoin_vm_types::vm_status::VMStatus;
@@ -94,6 +98,56 @@ pub fn dry_run<S: StateView>(
 ) -> Result<(VMStatus, TransactionOutput)> {
     let mut vm = StarcoinVM::new(metrics);
     vm.dry_run_transaction(state_view, txn)
+}
+
+pub fn dry_run_explain<S: StateView>(
+    state_view: &S,
+    txn: DryRunTransaction,
+    metrics: Option<VMMetrics>,
+) -> anyhow::Result<DryRunOutputView> {
+    let (vm_status, output) = dry_run(state_view, txn.clone(), metrics)?;
+    let vm_status_explain = vm_status_translator::explain_vm_status(state_view, vm_status)?;
+    let mut txn_output: TransactionOutputView = output.into();
+
+    let resolver = {
+        let module_cache = ModuleCache::new();
+        // If the txn is package txn, we need to use modules in the package to resolve transaction output.
+        if let TransactionPayload::Package(p) = txn.raw_txn.into_payload() {
+            let modules = p
+                .modules()
+                .iter()
+                .map(|m| CompiledModule::deserialize(m.code()))
+                .collect::<Result<Vec<_>, _>>()?;
+            for m in modules {
+                module_cache.insert(m.self_id(), m);
+            }
+        }
+        ABIResolver::new_with_module_cache(state_view, module_cache)
+    };
+    for action in txn_output.write_set.iter_mut() {
+        let access_path = action.access_path.clone();
+        if let Some(value) = &mut action.value {
+            match value {
+                WriteOpValueView::Code(view) => {
+                    view.abi = Some(resolver.resolve_module_code(view.code.0.as_slice())?);
+                }
+                WriteOpValueView::Resource(view) => {
+                    let struct_tag = access_path.path.as_struct_tag().ok_or_else(|| {
+                        format_err!("invalid resource access path: {}", access_path)
+                    })?;
+                    let struct_abi = resolver.resolve_struct_tag(struct_tag)?;
+                    view.json = Some(decode_move_value(
+                        &TypeInstantiation::Struct(Box::new(struct_abi)),
+                        view.raw.0.as_slice(),
+                    )?)
+                }
+            }
+        }
+    }
+    Ok(DryRunOutputView {
+        explained_status: vm_status_explain,
+        txn_output,
+    })
 }
 
 pub fn call_contract<S: StateView>(

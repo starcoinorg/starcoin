@@ -1,10 +1,10 @@
 [package]
-name = "cryptonight-rs"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "cryptonight-rs"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 libc = "^0.2"
@@ -16,9 +16,9 @@ cc = "1.0"
 name = "cryptonight"
 
 [dev-dependencies]
-rustc-serialize = "^0.3"
 bencher = "0.1.5"
+rustc-serialize = "^0.3"
 
 [[bench]]
-name = "bench"
 harness = false
+name = "bench"

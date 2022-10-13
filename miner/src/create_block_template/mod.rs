@@ -252,7 +252,7 @@ where
                 self.storage.clone(),
                 self.vm_metrics.clone(),
             )?;
-            //current block possible bean uncle.
+            //current block possible be uncle.
             self.uncles.insert(current_id, current_header);
 
             if let Some(metrics) = self.metrics.as_ref() {

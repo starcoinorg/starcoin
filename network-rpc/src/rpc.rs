@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::PeerId;
 use accumulator::AccumulatorNode;
 use anyhow::Result;
 use crypto::HashValue;
@@ -22,7 +23,6 @@ use starcoin_types::block::Block;
 use starcoin_types::{
     account_state::AccountState,
     block::{BlockHeader, BlockInfo, BlockNumber},
-    peer_info::PeerId,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 use state_tree::StateNode;

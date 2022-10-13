@@ -217,7 +217,7 @@ where
         M: Debug + Send + 'static,
     {
         let (sender, receiver) = channel(buffer);
-        // drop error, the receiver will also bean dropped, so sender will got error when try send.
+        // drop error, the receiver will also be dropped, so sender will got error when try send.
         let _ = self.add_event_stream(receiver);
         sender
     }

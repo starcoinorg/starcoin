@@ -1,11 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_executor::{peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME};
-
 use crypto::ed25519::random_public_key;
 use starcoin_config::ChainNetwork;
+use starcoin_transaction_builder::peer_to_peer_txn_sent_as_association;
 use starcoin_vm_types::account_address;
+use types::account::DEFAULT_EXPIRATION_TIME;
 use types::transaction::SignedUserTransaction;
 
 pub mod chain;

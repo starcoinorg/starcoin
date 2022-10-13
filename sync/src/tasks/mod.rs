@@ -9,7 +9,7 @@ use futures::channel::mpsc::UnboundedSender;
 use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
 use logger::prelude::*;
-use network_api::{PeerProvider, PeerSelector};
+use network_api::{PeerId, PeerProvider, PeerSelector};
 use network_rpc_core::{NetRpcError, RpcErrorCode};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::MerkleAccumulator;
@@ -18,11 +18,10 @@ use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
+use starcoin_time_service::TimeService;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
-use starcoin_types::peer_info::PeerId;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::U256;
-use starcoin_vm_types::time::TimeService;
 use std::str::FromStr;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
@@ -385,6 +384,9 @@ impl BlockLocalStore for Arc<dyn Store> {
 pub struct BlockConnectedEvent {
     pub block: Block,
 }
+
+#[derive(Clone, Debug)]
+pub struct BlockDiskCheckEvent {}
 
 pub trait BlockConnectedEventHandle: Send + Clone + std::marker::Unpin {
     fn handle(&mut self, event: BlockConnectedEvent) -> Result<()>;

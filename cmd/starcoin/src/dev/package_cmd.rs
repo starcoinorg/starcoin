@@ -11,7 +11,7 @@ use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_move_compiler::dependency_order::sort_by_dependency_order;
 use starcoin_rpc_api::types::FunctionIdView;
-use starcoin_types::transaction::{parse_transaction_argument, TransactionArgument};
+use starcoin_types::transaction::{parse_transaction_argument_advance, TransactionArgument};
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::transaction::ScriptFunction;
 use starcoin_vm_types::transaction::{Module, Package};
@@ -50,7 +50,7 @@ pub struct PackageOpt {
     /// type tags for the script
     type_tags: Option<Vec<TypeTag>>,
 
-    #[clap(long = "arg", name = "transaction-args", parse(try_from_str = parse_transaction_argument))]
+    #[clap(long = "arg", name = "transaction-args", parse(try_from_str = parse_transaction_argument_advance))]
     /// args for the script.
     args: Option<Vec<TransactionArgument>>,
 

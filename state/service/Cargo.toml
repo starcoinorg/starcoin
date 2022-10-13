@@ -1,15 +1,15 @@
 [package]
-name = "starcoin-state-service"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-state-service"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
-futures = "0.3.12"
 async-trait = "0.1"
+futures = "0.3.12"
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
 stest = { path = "../../commons/stest" }
@@ -24,4 +24,4 @@ tokio = "1"
 starcoin-vm-types = { path = "../../vm/types" }
 
 [dev-dependencies]
-test-helper = { path = "../../test-helper" }
+test-helper = {path = "../../test-helper"}

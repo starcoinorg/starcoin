@@ -1,9 +1,9 @@
 [package]
-name = "starcoin-abi-types"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-abi-types"
+version = "1.12.5"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

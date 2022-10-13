@@ -12,7 +12,7 @@ use futures::future::BoxFuture;
 use futures::{FutureExt, StreamExt};
 use futures_timer::Delay;
 use network_api::messages::NotificationMessage;
-use network_api::{PeerInfo, PeerSelector, PeerStrategy};
+use network_api::{PeerId, PeerInfo, PeerSelector, PeerStrategy};
 use network_rpc_core::{NetRpcError, RpcErrorCode};
 use rand::Rng;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
@@ -23,7 +23,6 @@ use starcoin_crypto::HashValue;
 use starcoin_network_rpc_api::G_RPC_INFO;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
-use starcoin_types::peer_info::PeerId;
 use std::sync::Arc;
 use std::time::Duration;
 

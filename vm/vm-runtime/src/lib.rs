@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod data_cache;
+#[cfg(feature = "metrics")]
 pub mod metrics;
 pub mod natives;
 pub mod starcoin_vm;

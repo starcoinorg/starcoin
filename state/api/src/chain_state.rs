@@ -13,13 +13,12 @@ use starcoin_types::state_set::AccountStateSet;
 use starcoin_types::table::TableHandleKey;
 use starcoin_types::write_set::WriteSet;
 use starcoin_types::{
-    access_path::AccessPath,
-    account_address::AccountAddress,
-    account_config::{AccountResource, BalanceResource},
-    account_state::AccountState,
-    state_set::ChainStateSet,
+    access_path::AccessPath, account_address::AccountAddress, account_config::AccountResource,
+    account_state::AccountState, state_set::ChainStateSet,
 };
-use starcoin_vm_types::account_config::{genesis_address, table_handle_address, G_STC_TOKEN_CODE};
+use starcoin_vm_types::account_config::{
+    genesis_address, table_handle_address, BalanceResource, TokenInfo, G_STC_TOKEN_CODE,
+};
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::on_chain_resource::dao::{Proposal, ProposalAction};
@@ -29,11 +28,10 @@ use starcoin_vm_types::on_chain_resource::{
 use starcoin_vm_types::sips::SIP;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::token::token_info::TokenInfo;
 use starcoin_vm_types::{
     move_resource::MoveResource, on_chain_config::OnChainConfig, state_view::StateView,
 };
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 #[derive(Debug, Default, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct StateProof {

@@ -8,12 +8,15 @@ use starcoin_vm_types::gas_schedule::GasAlgebra;
 #[test]
 fn test_generate_and_load() -> Result<()> {
     for net in BuiltinNetworkID::networks() {
-        let mut opt = StarcoinOpt::default();
-        let temp_path = temp_dir();
-        opt.net = Some(net.into());
-        opt.base_data_dir = Some(temp_path.path().to_path_buf());
+        let opt = StarcoinOpt {
+            net: Some(net.into()),
+            base_data_dir: Some(temp_dir().path().to_path_buf()),
+            ..Default::default()
+        };
+
         let config = NodeConfig::load_with_opt(&opt)?;
         let config2 = NodeConfig::load_with_opt(&opt)?;
+
         assert_eq!(
             to_toml(&config)?,
             to_toml(&config2)?,

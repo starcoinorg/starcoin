@@ -41,8 +41,8 @@ def check_or_do(network):
     headers = {"content-type": "application/json"}
 
     current_height = get_height(method, url, post_data, headers)
-    print("main current_height is %s, last_export_height is %s" %
-          (current_height, last_export_height))
+    print("%s current_height is %s, last_export_height is %s" %
+          (network, current_height, last_export_height))
     export_height = int(current_height) - 1000
 
     if export_height - int(last_export_height) > 10000:
@@ -86,43 +86,6 @@ def check_or_do(network):
         # update the last_export_height
         os.system("echo %s > ./last_export_height.txt" % end)
         os.system("aws s3api put-object --bucket main.starcoin.org --key %s/last_export_height.txt --body ./last_export_height.txt" % network)
-
-        # back up last snapshot cp to backdir
-        # do the increment snapshot export
-        # check the snapshot is ok or not with the manifest file
-        # if not, recover the backdir, then exit.
-        # if ok, rm backup dir, and do the next step
-        os.system("cp -r /sc-data/snapshot /sc-data/snapshotbak")
-        # export snapshot
-        export_snapshot_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- /starcoin/starcoin_db_exporter export-snapshot --db-path /sc-data/%s -n %s -o /sc-data/snapshot -t true" % (
-            network, network, network)
-        os.system(export_snapshot_cmd)
-        export_state_node_status = os.system(
-            "bash -c \"if [ $(less /sc-data/snapshot/manifest.csv| grep state_node | awk -F ' ' '{print$2}') -eq $(less /sc-data/snapshot/state_node | wc -l) ]; then exit 0; else exit 1;fi\"")
-        export_acc_node_transaction_status = os.system(
-            "bash -c \"if [ $(less /sc-data/snapshot/manifest.csv| grep acc_node_transaction | awk -F ' ' '{print$2}') -eq $(less /sc-data/snapshot/acc_node_transaction | wc -l) ]; then exit 0; else exit 1;fi\"")
-        export_acc_node_block_status = os.system(
-            "bash -c \"if [ $(less /sc-data/snapshot/manifest.csv| grep acc_node_block | awk -F ' ' '{print$2}') -eq $(less /sc-data/snapshot/acc_node_block | wc -l) ]; then exit 0; else exit 1;fi\"")
-        export_block_status = os.system(
-            "bash -c \"if [ $(less /sc-data/snapshot/manifest.csv| grep -w block | awk -F ' ' '{print$2}') -eq $(less /sc-data/snapshot/block | wc -l) ]; then exit 0; else exit 1;fi\"")
-        export_block_info_status = os.system(
-            "bash -c \"if [ $(less /sc-data/snapshot/manifest.csv| grep block_info | awk -F ' ' '{print$2}') -eq $(less /sc-data/snapshot/block_info | wc -l) ]; then exit 0; else exit 1;fi\"")
-
-        if export_state_node_status != 0 or export_acc_node_transaction_status != 0 or export_acc_node_block_status != 0 or export_block_status != 0 or export_block_info_status != 0:
-            os.system("rm -rf /sc-data/snapshot")
-            os.system("mv /sc-data/snapshotbak /sc-data/snapshot")
-            sys.exit(1)
-        os.system("rm -rf /sc-data/snapshotbak")
-
-        # tar snapshot
-        tar_snapshot_cmd = "kubectl exec -it -n starcoin-%s starcoin-1 -- tar -czvf /sc-data/%s -C /sc-data/ %s " % (
-            network, "snapshot.tar.gz", "snapshot")
-        os.system(tar_snapshot_cmd)
-
-        # cp snapshot.tar.gz to s3
-        cp_snapshot_tar_cmd = "timeout 30 bash -c 'export AWS_REGION=ap-northeast-1;skbn cp --src k8s://starcoin-%s/starcoin-1/starcoin/sc-data/%s --dst s3://main.starcoin.org/%s/%s '" % (
-            network, "snapshot.tar.gz", network, "snapshot.tar.gz")
-        os.system(cp_snapshot_tar_cmd)
 
 
 if __name__ == "__main__":

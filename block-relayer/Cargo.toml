@@ -1,10 +1,10 @@
 [package]
-name = "starcoin-block-relayer"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-block-relayer"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
@@ -26,6 +26,7 @@ starcoin-types = { path = "../types", package = "starcoin-types" }
 starcoin-metrics = { path = "../commons/metrics" }
 starcoin-network-rpc-api = { path = "../network-rpc/api" }
 starcoin-service-registry = { path = "../commons/service-registry" }
+starcoin-time-service = { path = "../commons/time-service" }
 
 [dev-dependencies]
 tokio = { version = "^1", features = ["full"] }

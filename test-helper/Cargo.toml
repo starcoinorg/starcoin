@@ -1,14 +1,14 @@
 [package]
-name = "test-helper"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "test-helper"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
-thiserror = "1.0"
+async-trait = "0.1.51"
 backtrace = "0.3"
 tokio = { version = "^1", features = ["full"] }
 futures = "0.3.12"
@@ -53,12 +53,13 @@ starcoin-statedb = { path = "../state/statedb" }
 starcoin-move-compiler = { path = "../vm/compiler" }
 rand = "0.8.5"
 network-api = { path = "../network/api" }
-async-trait = "0.1.51"
 accumulator = { path = "../commons/accumulator", package = "starcoin-accumulator" }
 state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }
 bcs-ext = { package = "bcs-ext", path = "../commons/bcs_ext" }
 starcoin-transaction-builder = { path = "../vm/transaction-builder" }
+thiserror = "1.0"
 
 
 [dev-dependencies]
 stest = { path = "../commons/stest" }
+

@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::MyWorld;
 use cucumber::{Steps, StepsBuilder};
-use jsonpath::Selector;
-use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RpcClient;
 use std::env;
@@ -31,26 +29,6 @@ pub fn steps() -> Steps<MyWorld> {
             info!("node1 : {:?}", node_info);
             let node2_info = local_client.clone().node_info();
             info!("node2 : {:?}", node2_info);
-        })
-        .then("transfer txn block check", |world: &mut MyWorld, _step| {
-            let node2_client = world.rpc_client2.as_ref().take().unwrap();
-            // get block_id from last step
-            let key = "$.block_id";
-            if let Some(value) = &world.value {
-                let selector = Selector::new(key).unwrap();
-                let mut value: Vec<&str> =
-                    selector.find(&value).map(|t| t.as_str().unwrap()).collect();
-                assert!(!value.is_empty());
-                let block_id = value.pop().unwrap();
-                // get txn_info from node1
-                let block = node2_client
-                    .clone()
-                    .chain_get_block_by_hash(HashValue::from_hex(block_id).unwrap(), None);
-                assert!(block.is_ok());
-                info!("node2 block info: {:?}", block.unwrap());
-            }
-
-            info!("transfer txn block check ok!");
         });
     builder.build()
 }

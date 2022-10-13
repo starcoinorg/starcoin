@@ -8,7 +8,7 @@ use network_api::PeerStrategy;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
+#[derive(Clone, Default, Debug, Deserialize, PartialEq, Eq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
 pub struct SyncConfig {
     /// peer select strategy

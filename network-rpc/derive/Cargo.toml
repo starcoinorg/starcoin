@@ -1,16 +1,16 @@
 [package]
-name = "network-rpc-derive"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "network-rpc-derive"
+publish = false
+version = "1.12.5"
 
 [lib]
 proc-macro = true
 
 [dependencies]
-syn = { version = "1.0", features = ["full", "extra-traits", "visit", "fold"] }
+anyhow = "1.0.41"
 proc-macro2 = "1.0"
 quote = "1.0.16"
-anyhow = "1.0.41"
+syn = {version = "1.0", features = ["full", "extra-traits", "visit", "fold"]}

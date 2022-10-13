@@ -3,7 +3,7 @@
 
 use crate::block_connector::{ExecuteRequest, ResetRequest, WriteBlockChainService};
 use crate::sync::{CheckSyncEvent, SyncService};
-use crate::tasks::BlockConnectedEvent;
+use crate::tasks::{BlockConnectedEvent, BlockDiskCheckEvent};
 use anyhow::{format_err, Result};
 use config::{NodeConfig, G_CRATE_VERSION};
 use executor::VMMetrics;
@@ -18,20 +18,29 @@ use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::PeerNewBlock;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
-use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent};
+use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
 use std::sync::Arc;
+use sysinfo::{DiskExt, System, SystemExt};
 use txpool::TxPoolService;
+
+const DISK_CHECKPOINT_FOR_PANIC: u64 = 1024 * 1024 * 1024 * 3;
+const DISK_CHECKPOINT_FOR_WARN: u64 = 1024 * 1024 * 1024 * 5;
 
 pub struct BlockConnectorService {
     chain_service: WriteBlockChainService<TxPoolService>,
     sync_status: Option<SyncStatus>,
+    config: Arc<NodeConfig>,
 }
 
 impl BlockConnectorService {
-    pub fn new(chain_service: WriteBlockChainService<TxPoolService>) -> Self {
+    pub fn new(
+        chain_service: WriteBlockChainService<TxPoolService>,
+        config: Arc<NodeConfig>,
+    ) -> Self {
         Self {
             chain_service,
             sync_status: None,
+            config,
         }
     }
 
@@ -40,6 +49,51 @@ impl BlockConnectorService {
             Some(sync_status) => sync_status.is_synced(),
             None => false,
         }
+    }
+
+    pub fn check_disk_space(&mut self) -> Option<Result<u64>> {
+        if System::IS_SUPPORTED {
+            let mut sys = System::new_all();
+            if sys.disks().len() == 1 {
+                let disk = &sys.disks()[0];
+                if DISK_CHECKPOINT_FOR_PANIC > disk.available_space() {
+                    return Some(Err(anyhow::anyhow!(
+                        "Disk space is less than {} GB, please add disk space.",
+                        DISK_CHECKPOINT_FOR_PANIC / 1024 / 1024 / 1024
+                    )));
+                } else if DISK_CHECKPOINT_FOR_WARN > disk.available_space() {
+                    return Some(Ok(disk.available_space() / 1024 / 1024 / 1024));
+                }
+            } else {
+                sys.sort_disks_by(|a, b| {
+                    if a.mount_point()
+                        .starts_with(b.mount_point().to_str().unwrap())
+                    {
+                        std::cmp::Ordering::Less
+                    } else {
+                        std::cmp::Ordering::Greater
+                    }
+                });
+
+                let base_data_dir = self.config.base().base_data_dir.path();
+                for disk in sys.disks() {
+                    if base_data_dir.starts_with(disk.mount_point()) {
+                        if DISK_CHECKPOINT_FOR_PANIC > disk.available_space() {
+                            return Some(Err(anyhow::anyhow!(
+                                "Disk space is less than {} GB, please add disk space.",
+                                DISK_CHECKPOINT_FOR_PANIC / 1024 / 1024 / 1024
+                            )));
+                        } else if DISK_CHECKPOINT_FOR_WARN > disk.available_space() {
+                            return Some(Ok(disk.available_space() / 1024 / 1024 / 1024));
+                        }
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        None
     }
 }
 
@@ -53,10 +107,16 @@ impl ServiceFactory<Self> for BlockConnectorService {
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist."))?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        let chain_service =
-            WriteBlockChainService::new(config, startup_info, storage, txpool, bus, vm_metrics)?;
+        let chain_service = WriteBlockChainService::new(
+            config.clone(),
+            startup_info,
+            storage,
+            txpool,
+            bus,
+            vm_metrics,
+        )?;
 
-        Ok(Self::new(chain_service))
+        Ok(Self::new(chain_service, config))
     }
 }
 
@@ -66,6 +126,11 @@ impl ActorService for BlockConnectorService {
         ctx.set_mailbox_capacity(1024);
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<MinedBlock>();
+
+        ctx.run_interval(std::time::Duration::from_secs(3), move |ctx| {
+            ctx.notify(crate::tasks::BlockDiskCheckEvent {});
+        });
+
         Ok(())
     }
 
@@ -73,6 +138,26 @@ impl ActorService for BlockConnectorService {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<MinedBlock>();
         Ok(())
+    }
+}
+
+impl EventHandler<Self, BlockDiskCheckEvent> for BlockConnectorService {
+    fn handle_event(
+        &mut self,
+        _: BlockDiskCheckEvent,
+        ctx: &mut ServiceContext<BlockConnectorService>,
+    ) {
+        if let Some(res) = self.check_disk_space() {
+            match res {
+                Ok(available_space) => {
+                    warn!("Available diskspace only {}/GB left ", available_space)
+                }
+                Err(e) => {
+                    error!("{}", e);
+                    ctx.broadcast(SystemShutdown);
+                }
+            }
+        }
     }
 }
 
@@ -84,6 +169,7 @@ impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService {
     ) {
         //because this block has execute at sync task, so just try connect to select head chain.
         //TODO refactor connect and execute
+
         let block = msg.block;
         if let Err(e) = self.chain_service.try_connect(block) {
             error!("Process connected block error: {:?}", e);

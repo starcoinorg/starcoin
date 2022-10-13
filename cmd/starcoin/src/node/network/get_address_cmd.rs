@@ -5,8 +5,8 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use clap::Parser;
+use network_types::peer_info::{Multiaddr, PeerId};
 use scmd::{CommandAction, ExecContext};
-use starcoin_types::peer_info::{Multiaddr, PeerId};
 
 #[derive(Debug, Parser, Default)]
 #[clap(name = "get_address")]

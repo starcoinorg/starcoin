@@ -16,8 +16,8 @@ use starcoin_config::{temp_dir, NodeConfig, StarcoinOpt};
 use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::BlockStore;
+use starcoin_time_service::MockTimeService;
 use starcoin_txpool::TxPoolService;
-use starcoin_vm_types::time::MockTimeService;
 use std::sync::Arc;
 
 #[stest::test]
@@ -316,7 +316,7 @@ fn test_new_head() {
             .consensus()
             .create_block(block_template, node_config.net().time_service().as_ref())
             .unwrap();
-        let executed_block = (&mut main_inner.chain).apply(block.clone()).unwrap();
+        let executed_block = main_inner.chain.apply(block.clone()).unwrap();
         if i % 2 == 0 {
             main_inner.update_chain(executed_block).unwrap();
         }
@@ -360,7 +360,7 @@ fn test_new_branch() {
             .consensus()
             .create_block(block_template, node_config.net().time_service().as_ref())
             .unwrap();
-        (&mut main_inner.chain).apply(block.clone()).unwrap();
+        main_inner.chain.apply(block.clone()).unwrap();
     }
 
     // branch

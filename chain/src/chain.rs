@@ -20,6 +20,7 @@ use starcoin_executor::VMMetrics;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
+use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
@@ -37,7 +38,6 @@ use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::Epoch;
-use starcoin_vm_types::time::TimeService;
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
@@ -221,8 +221,8 @@ impl BlockChain {
         block_gas_limit: Option<u64>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
         //FIXME create block template by parent may be use invalid chain state, such as epoch.
-        //So the right way should bean create a BlockChain by parent_hash, then create block template.
-        //the timestamp should bean a argument, if want to mock a early block.
+        //So the right way should be creating a BlockChain by parent_hash, then create block template.
+        //the timestamp should be an argument, if want to mock an early block.
         let previous_header = match parent_hash {
             Some(hash) => self
                 .get_header(hash)?

@@ -203,7 +203,7 @@ impl Inner {
     pub fn adjust_time(&self) {
         match self.state_db.get_timestamp() {
             Ok(on_chain_time) => {
-                self.time_service.adjust(on_chain_time);
+                self.time_service.adjust(on_chain_time.milliseconds);
             }
             Err(e) => {
                 error!("Get global time on chain fail: {:?}", e);

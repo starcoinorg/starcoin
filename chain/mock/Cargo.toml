@@ -1,10 +1,10 @@
 [package]
-name = "starcoin-chain-mock"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-chain-mock"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
@@ -20,22 +20,22 @@ starcoin-state-api = { path = "../../state/api" }
 starcoin-accumulator = { path = "../../commons/accumulator", package = "starcoin-accumulator" }
 async-trait = "0.1"
 futures = "0.3.12"
-parking_lot = "0.12"
-starcoin-storage = { path = "../../storage" }
 futures-timer = "3.0"
 logger = { path = "../../commons/logger", package = "starcoin-logger" }
-starcoin-statedb = { path = "../../state/statedb" }
-starcoin-open-block = { path = "../open-block" }
-starcoin-vm-types = { path = "../../vm/types" }
+parking_lot = "0.12"
 proptest = { version = "1.0.0", default-features = false, optional = true }
 proptest-derive = { version = "0.3.0", default-features = false, optional = true }
 starcoin-account-api = { path = "../../account/api" }
-starcoin-genesis = { path = "../../genesis" }
 starcoin-chain = { path = "../../chain" }
+starcoin-genesis = { path = "../../genesis" }
+starcoin-open-block = { path = "../open-block" }
+starcoin-statedb = { path = "../../state/statedb" }
+starcoin-storage = { path = "../../storage" }
+starcoin-vm-types = { path = "../../vm/types" }
 
 [dev-dependencies]
 proptest = "1.0.0"
-proptest-derive = { version = "0.3.0" }
+proptest-derive = {version = "0.3.0"}
 
 [features]
 default = []

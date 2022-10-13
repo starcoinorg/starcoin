@@ -1,10 +1,10 @@
 [package]
-name = "starcoin-move-compiler"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-move-compiler"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
@@ -14,16 +14,16 @@ regex = { version = "1.6.0", default-features = false, features = [
     "std",
     "perf",
 ] }
-move-compiler = { package = "move-compiler", git = "https://github.com/starcoinorg/move", rev = "161e732bc875a568421513e761dc4d39d301838a" }
-move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "161e732bc875a568421513e761dc4d39d301838a" }
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "161e732bc875a568421513e761dc4d39d301838a" }
+move-compiler = { package = "move-compiler", git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
+move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
 petgraph = "0.5.1"
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
+starcoin-logger = { path = "../../commons/logger" }
+starcoin-vm-types = { path = "../types" }
 walkdir = "2.3"
 rayon = "1.5.1"
 itertools = "0.10.3"
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-starcoin-vm-types = { path = "../types" }
-starcoin-logger = { path = "../../commons/logger" }
 
 [dev-dependencies]
 stest = { path = "../../commons/stest" }

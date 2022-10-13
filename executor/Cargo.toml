@@ -1,11 +1,10 @@
 [package]
-name = "starcoin-executor"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
-
+license = "Apache-2.0"
+name = "starcoin-executor"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
@@ -30,6 +29,7 @@ starcoin-dev = { path = "../vm/dev" }
 log = "0.4.16"
 
 [dev-dependencies]
+bcs-ext = {package = "bcs-ext", path = "../commons/bcs_ext"}
 hex = "0.4"
 serde_json = "1"
 serde = "1"

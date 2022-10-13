@@ -16,6 +16,7 @@ members = [
     "commons/api-limiter",
     "commons/accumulator",
     "commons/forkable-jellyfish-merkle",
+    "commons/time-service",
     "types",
     "types/uint",
     "genesis",
@@ -52,6 +53,7 @@ members = [
     "network-p2p/types",
     "network-p2p/peerset",
     "network",
+    "network/types",
     "network/api",
     "network-rpc",
     "network-rpc/derive",
@@ -100,7 +102,7 @@ members = [
     "cmd/miner_client/api",
     "cmd/db-exporter",
     "cmd/genesis-nft-miner",
-    "devtools/x"
+    "devtools/x",
 ]
 
 default-members = [
@@ -201,7 +203,7 @@ default-members = [
     "cmd/genesis-nft-miner",
     "stratum",
     "cmd/miner_client/api",
-    "cmd/db-exporter"
+    "cmd/db-exporter",
 ]
 
 [profile.dev]

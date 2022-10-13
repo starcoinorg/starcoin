@@ -240,8 +240,7 @@ impl BlockHeader {
     }
 
     pub fn id(&self) -> HashValue {
-        self.id
-            .expect("BlockHeader id should bean Some after init.")
+        self.id.expect("BlockHeader id should be Some after init.")
     }
 
     pub fn parent_hash(&self) -> HashValue {

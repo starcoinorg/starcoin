@@ -1,10 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::BlockHeader;
-use crate::block::BlockNumber;
-use crate::startup_info::{ChainInfo, ChainStatus};
-use crate::U256;
 use anyhow::{format_err, Result};
 use network_p2p_types::identity::PublicKey;
 pub use network_p2p_types::multiaddr::Multiaddr;
@@ -14,6 +10,10 @@ use schemars::{self, JsonSchema};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::HashValue;
+use starcoin_types::block::BlockHeader;
+use starcoin_types::block::BlockNumber;
+use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use starcoin_types::U256;
 use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::fmt;

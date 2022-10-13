@@ -1,42 +1,41 @@
 [package]
-name = "starcoin-move-prover"
-version = "1.11.11"
 authors = ["Diem Association <opensource@diem.com>"]
-publish = false
 edition = "2021"
 license = "Apache-2.0"
+name = "starcoin-move-prover"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 ## move dependencies
-move-prover = { git = "https://github.com/starcoinorg/move", rev = "161e732bc875a568421513e761dc4d39d301838a" }
+move-prover = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
 
 # external dependencies
-tempfile = "3.2.0"
-codespan-reporting = "0.11"
-atty = "0.2.14"
 anyhow = "1.0.41"
+atty = "0.2.14"
+codespan-reporting = "0.11"
+tempfile = "3.2.0"
 
 [dev-dependencies]
 datatest-stable = "0.1.1"
-move-prover-test-utils = { git = "https://github.com/starcoinorg/move", rev = "161e732bc875a568421513e761dc4d39d301838a" }
-move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "161e732bc875a568421513e761dc4d39d301838a" }
+move-prover-test-utils = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
+move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
 shell-words = "1.0.0"
 walkdir = "2.3"
 once_cell = "1.13.0"
 tempfile = "3.2"
-
-itertools = "0.10.3"
+clap = {version = "3", features = ["derive"]}
 hex = "0.4.3"
-clap = { version = "3", features = ["derive"] }
+itertools = "0.10.3"
 log = "0.4.16"
 num = "0.4.0"
 pretty = "0.10.0"
 rand = "0.8.5"
-serde = { version = "1.0.130", features = ["derive"] }
+serde = {version = "1.0.130", features = ["derive"]}
 serde_json = "1.0.61"
 simplelog = "0.9.0"
 toml = "0.5.9"
 
 [[test]]
-name = "testsuite"
 harness = false
+name = "testsuite"

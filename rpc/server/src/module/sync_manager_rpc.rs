@@ -5,10 +5,10 @@ use crate::module::map_err;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
 use network_api::PeerStrategy;
+use network_types::peer_info::PeerId;
 use starcoin_rpc_api::sync_manager::SyncManagerApi;
 use starcoin_rpc_api::FutureResult;
 use starcoin_sync_api::{PeerScoreResponse, SyncAsyncService, SyncProgressReport};
-use starcoin_types::peer_info::PeerId;
 use starcoin_types::sync_status::SyncStatus;
 
 pub struct SyncManagerRpcImpl<S>

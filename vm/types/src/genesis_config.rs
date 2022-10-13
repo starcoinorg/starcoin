@@ -177,6 +177,31 @@ impl ChainId {
     pub fn test() -> Self {
         ChainId::new(255)
     }
+
+    pub fn is_main(self) -> bool {
+        //TODO find way share the id define with BuiltinNetworkID
+        self.id == 1
+    }
+
+    pub fn is_barnard(self) -> bool {
+        self.id == 251
+    }
+
+    pub fn is_proxima(self) -> bool {
+        self.id == 252
+    }
+
+    pub fn is_halley(self) -> bool {
+        self.id == 253
+    }
+
+    pub fn is_dev(self) -> bool {
+        self.id == 254
+    }
+
+    pub fn is_test(self) -> bool {
+        self.id == 255
+    }
 }
 
 impl fmt::Display for ChainId {

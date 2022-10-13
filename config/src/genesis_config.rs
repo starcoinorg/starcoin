@@ -14,20 +14,20 @@ use starcoin_crypto::{
     multi_ed25519::{genesis_multi_key_pair, MultiEd25519PublicKey},
     HashValue, ValidCryptoMaterialStringExt,
 };
+use starcoin_time_service::{TimeService, TimeServiceType};
 use starcoin_uint::U256;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::event::EventHandle;
 use starcoin_vm_types::gas_schedule::{
-    AbstractMemorySize, CostTable, GasAlgebra, GasCarrier, GasConstants, GasPrice, GasUnits,
-    InternalGasUnits,
+    latest_cost_table, CostTable, G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_LATEST_GAS_SCHEDULE,
+    G_TEST_GAS_CONSTANTS,
 };
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy, StdlibVersion};
 use starcoin_vm_types::on_chain_config::{
     instruction_table_v1, native_table_v1, native_table_v2, ConsensusConfig, DaoConfig,
-    TransactionPublishOption, VMConfig, Version, G_LATEST_INSTRUCTION_TABLE, G_LATEST_NATIVE_TABLE,
+    TransactionPublishOption, VMConfig, Version,
 };
 use starcoin_vm_types::on_chain_resource::Epoch;
-use starcoin_vm_types::time::{TimeService, TimeServiceType};
 use starcoin_vm_types::token::stc::STCUnit;
 use starcoin_vm_types::token::token_value::TokenValue;
 use starcoin_vm_types::transaction::{RawUserTransaction, SignedUserTransaction};
@@ -212,7 +212,7 @@ impl From<BuiltinNetworkID> for ChainNetwork {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct CustomNetworkID {
     chain_name: String,
@@ -256,7 +256,7 @@ impl FromStr for CustomNetworkID {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum ChainNetworkID {
     Builtin(BuiltinNetworkID),
@@ -563,7 +563,7 @@ pub trait FutureBlockParameterResolver {
     fn resolve(&self, parameter: &FutureBlockParameter) -> Result<GenesisBlockParameter>;
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct GenesisBlockParameter {
     /// Genesis block parent hash
     pub parent_hash: HashValue,
@@ -573,13 +573,13 @@ pub struct GenesisBlockParameter {
     pub difficulty: U256,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct FutureBlockParameter {
     pub network: BuiltinNetworkID,
     pub block_number: u64,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub enum GenesisBlockParameterConfig {
     Static(GenesisBlockParameter),
     FutureBlock(FutureBlockParameter),
@@ -711,95 +711,6 @@ static G_DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
     Lazy::new(|| STCUnit::STC.value_of(10));
 
 pub static G_BASE_BLOCK_GAS_LIMIT: u64 = 50_000_000; //must big than maximum_number_of_gas_units
-
-static G_MAX_TRANSACTION_SIZE_IN_BYTES_V1: u64 = 4096 * 10;
-static G_MAX_TRANSACTION_SIZE_IN_BYTES_V2: u64 = 60000;
-static G_MAX_TRANSACTION_SIZE_IN_BYTES_V3: u64 = 128 * 1024;
-
-/// For V1 all accounts will be ~800 bytes
-static G_DEFAULT_ACCOUNT_SIZE: Lazy<AbstractMemorySize<GasCarrier>> =
-    Lazy::new(|| AbstractMemorySize::new(800));
-
-/// Any transaction over this size will be charged `INTRINSIC_GAS_PER_BYTE` per byte
-static G_LARGE_TRANSACTION_CUTOFF: Lazy<AbstractMemorySize<GasCarrier>> =
-    Lazy::new(|| AbstractMemorySize::new(600));
-
-static G_GAS_CONSTANTS_V1: Lazy<GasConstants> = Lazy::new(|| {
-    GasConstants {
-        global_memory_per_byte_cost: InternalGasUnits::new(4),
-        global_memory_per_byte_write_cost: InternalGasUnits::new(9),
-        min_transaction_gas_units: InternalGasUnits::new(600),
-        large_transaction_cutoff: *G_LARGE_TRANSACTION_CUTOFF,
-        intrinsic_gas_per_byte: InternalGasUnits::new(8),
-        maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
-        min_price_per_gas_unit: GasPrice::new(1),
-        max_price_per_gas_unit: GasPrice::new(10_000),
-        max_transaction_size_in_bytes: G_MAX_TRANSACTION_SIZE_IN_BYTES_V1, // to pass stdlib_upgrade
-        gas_unit_scaling_factor: 1,
-        default_account_size: *G_DEFAULT_ACCOUNT_SIZE,
-    }
-});
-
-static G_GAS_CONSTANTS_V2: Lazy<GasConstants> = Lazy::new(|| {
-    GasConstants {
-        global_memory_per_byte_cost: InternalGasUnits::new(4),
-        global_memory_per_byte_write_cost: InternalGasUnits::new(9),
-        min_transaction_gas_units: InternalGasUnits::new(600),
-        large_transaction_cutoff: *G_LARGE_TRANSACTION_CUTOFF,
-        intrinsic_gas_per_byte: InternalGasUnits::new(8),
-        maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
-        min_price_per_gas_unit: GasPrice::new(1),
-        max_price_per_gas_unit: GasPrice::new(10_000),
-        max_transaction_size_in_bytes: G_MAX_TRANSACTION_SIZE_IN_BYTES_V2, // to pass stdlib_upgrade
-        gas_unit_scaling_factor: 1,
-        default_account_size: *G_DEFAULT_ACCOUNT_SIZE,
-    }
-});
-pub static G_GAS_CONSTANTS_V3: Lazy<GasConstants> = Lazy::new(|| {
-    GasConstants {
-        global_memory_per_byte_cost: InternalGasUnits::new(4),
-        global_memory_per_byte_write_cost: InternalGasUnits::new(9),
-        min_transaction_gas_units: InternalGasUnits::new(600),
-        large_transaction_cutoff: *G_LARGE_TRANSACTION_CUTOFF,
-        intrinsic_gas_per_byte: InternalGasUnits::new(8),
-        maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
-        min_price_per_gas_unit: GasPrice::new(1),
-        max_price_per_gas_unit: GasPrice::new(10_000),
-        max_transaction_size_in_bytes: G_MAX_TRANSACTION_SIZE_IN_BYTES_V3,
-        gas_unit_scaling_factor: 1,
-        default_account_size: *G_DEFAULT_ACCOUNT_SIZE,
-    }
-});
-
-pub static G_TEST_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
-    GasConstants {
-        global_memory_per_byte_cost: InternalGasUnits::new(4),
-        global_memory_per_byte_write_cost: InternalGasUnits::new(9),
-        min_transaction_gas_units: InternalGasUnits::new(600),
-        large_transaction_cutoff: *G_LARGE_TRANSACTION_CUTOFF,
-        intrinsic_gas_per_byte: InternalGasUnits::new(8),
-        maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
-        min_price_per_gas_unit: GasPrice::new(0),
-        max_price_per_gas_unit: GasPrice::new(10_000),
-        max_transaction_size_in_bytes: G_MAX_TRANSACTION_SIZE_IN_BYTES_V3,
-        gas_unit_scaling_factor: 1,
-        default_account_size: *G_DEFAULT_ACCOUNT_SIZE,
-    }
-});
-
-pub static G_LATEST_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| G_GAS_CONSTANTS_V3.clone());
-
-pub fn latest_cost_table(gas_constants: GasConstants) -> CostTable {
-    CostTable {
-        instruction_table: G_LATEST_INSTRUCTION_TABLE.clone(),
-        native_table: G_LATEST_NATIVE_TABLE.clone(),
-        gas_constants,
-    }
-}
-
-/// only used in starcoin vm when init genesis
-pub static G_LATEST_GAS_SCHEDULE: Lazy<CostTable> =
-    Lazy::new(|| latest_cost_table(G_LATEST_GAS_CONSTANTS.clone()));
 
 static G_EMPTY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(Vec::new);
 const ONE_DAY: u64 = 86400;

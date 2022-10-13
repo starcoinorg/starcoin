@@ -11,10 +11,10 @@ use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::Store;
+use starcoin_time_service::TimeService;
 use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::Block;
 use starcoin_types::startup_info::StartupInfo;
-use starcoin_vm_types::time::TimeService;
 use std::sync::Arc;
 
 pub async fn create_writeable_block_chain() -> (
@@ -172,7 +172,7 @@ async fn test_block_chain_forks() {
     );
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 async fn test_block_chain_switch_main() {
     let times = 10;
     let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;

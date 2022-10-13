@@ -1,14 +1,13 @@
 [package]
-name = "starcoin-chain-service"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-chain-service"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
-thiserror = "1.0"
 async-trait = "0.1"
 serde = { version = "1.0.130", default-features = false }
 starcoin-types = { path = "../../types" }
@@ -16,20 +15,21 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 rand = "0.8.5"
 rand_core = { version = "0.6.3", default-features = false }
 futures = "0.3.12"
-starcoin-service-registry = { path = "../../commons/service-registry" }
-starcoin-vm-types = { path = "../../vm/types" }
-starcoin-vm-runtime = { path = "../../vm/vm-runtime" }
-starcoin-storage = { path = "../../storage" }
-starcoin-config = { path = "../../config" }
-starcoin-chain-api = { path = "../api" }
-starcoin-logger = { path = "../../commons/logger" }
-starcoin-state-api = { path = "../../state/api" }
 starcoin-chain = { path = "../" }
+starcoin-chain-api = { path = "../api" }
+starcoin-config = { path = "../../config" }
+starcoin-logger = { path = "../../commons/logger" }
+starcoin-service-registry = { path = "../../commons/service-registry" }
+starcoin-state-api = { path = "../../state/api" }
+starcoin-storage = { path = "../../storage" }
+starcoin-vm-runtime = { path = "../../vm/vm-runtime" }
+starcoin-vm-types = { path = "../../vm/types" }
+thiserror = "1.0"
 tokio = "1"
 
 [dev-dependencies]
-stest = { path = "../../commons/stest" }
-test-helper = { path = "../../test-helper" }
+stest = {path = "../../commons/stest"}
+test-helper = {path = "../../test-helper"}
 
 [features]
 mock = []

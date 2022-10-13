@@ -1,10 +1,10 @@
 [package]
-name = "db-exporter"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "db-exporter"
+publish = false
+version = "1.12.5"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -31,9 +31,14 @@ hex = "~0.4"
 indicatif = "0.16.2"
 logger = { path = "../../commons/logger", package = "starcoin-logger" }
 clap = { version = "3", features = ["derive"] }
-
+atomic-counter = "1.0.1"
+tokio = { version = "^1", features = ["full"] }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
+move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
+starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
+starcoin-state-tree = { path = "../../state/state-tree" }
 [target."cfg(target_os=\"linux\")".dependencies]
-pprof = { version = "0.10", features = ["flamegraph"] }
+pprof = {version = "0.10", features = ["flamegraph"]}
 
 [[bin]]
 name = "starcoin_db_exporter"

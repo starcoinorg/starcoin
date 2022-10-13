@@ -15,7 +15,7 @@ use std::sync::Arc;
 /// https://github.com/facebook/rocksdb/wiki/WAL-Performance
 /// wal_bytes_per_sync, bytes_per_sync see https://github.com/facebook/rocksdb/wiki/IO#range-sync
 /// for detailed explanations.
-#[derive(Copy, Clone, Debug, Deserialize, PartialEq, Serialize, Parser)]
+#[derive(Copy, Clone, Debug, Deserialize, PartialEq, Eq, Serialize, Parser)]
 #[serde(default, deny_unknown_fields)]
 pub struct RocksdbConfig {
     #[clap(name = "rocksdb-max-open-files", long, help = "rocksdb max open files")]

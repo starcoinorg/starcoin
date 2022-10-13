@@ -39,13 +39,10 @@ spec:
             /starcoin/starcoin -n halley -d /sc-data --discover-local=true $node_key_flag;
             ret=$?;
             if [ $ret -ne 0 ]; then
-              echo "Node start fail, try to remove config.";
+              echo "Node start fail, try to remove config and data.";
               rm /sc-data/halley/config.toml;
               rm /sc-data/halley/genesis_config.json;
-            fi;
-            if [ $ret -eq 120 ]; then
-            echo "Start failed with gensis mismatch code 120, clean data...";
-            rm -rf /sc-data/halley/ &>/dev/null;
+              rm -rf /sc-data/halley/ &>/dev/null;
             fi;
         ports:
           - containerPort: 9840

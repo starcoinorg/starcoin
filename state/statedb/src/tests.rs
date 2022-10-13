@@ -148,7 +148,7 @@ fn test_state_db_dump_iter() -> Result<()> {
     assert_eq!(
         global_state1.state_sets().len(),
         2,
-        "unexpect state_set length."
+        "unexpected state_set length."
     );
     let mut kv1 = HashMap::new();
     for item in global_state1.into_inner() {

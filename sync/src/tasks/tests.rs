@@ -17,7 +17,7 @@ use futures::future::BoxFuture;
 use futures::FutureExt;
 use futures_timer::Delay;
 use logger::prelude::*;
-use network_api::{PeerId, PeerSelector, PeerStrategy};
+use network_api::{PeerId, PeerInfo, PeerSelector, PeerStrategy};
 use pin_utils::core_reexport::time::Duration;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::tree_store::mock::MockAccumulatorStore;
@@ -29,7 +29,6 @@ use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_storage::BlockStore;
 use starcoin_sync_api::SyncTarget;
-use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeaderBuilder, BlockIdAndNumber, BlockInfo},
     U256,
@@ -41,7 +40,7 @@ use stream_task::{
 };
 use test_helper::DummyNetworkService;
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 pub async fn test_full_sync_new_node() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let mut node1 = SyncNodeMocker::new(net1, 1, 50)?;
@@ -210,7 +209,7 @@ pub async fn test_failed_block() -> Result<()> {
     }
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 pub async fn test_full_sync_fork() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let mut node1 = SyncNodeMocker::new(net1, 1, 50)?;
@@ -290,7 +289,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
     Ok(())
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let mut node1 = SyncNodeMocker::new(net1, 1, 50)?;
@@ -343,7 +342,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
     Ok(())
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 pub async fn test_full_sync_continue() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let mut node1 = SyncNodeMocker::new(net1, 10, 50)?;

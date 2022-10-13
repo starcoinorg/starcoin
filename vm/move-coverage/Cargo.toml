@@ -1,27 +1,26 @@
 [package]
 name = "move-coverage"
-version = "1.11.11"
 authors = [
     "Diem Association <opensource@diem.org>",
     "Starcoin Core Dev <dev@starcoin.org>",
 ]
 description = "starcoin Move VM code coverage"
+edition = "2021"
 license = "Apache-2.0"
 publish = false
-edition = "2021"
+version = "1.12.5"
 
 [dependencies]
-petgraph = "0.5.1"
-clap = { version = "3", features = ["derive"] }
-serde = { version = "1.0.130", default-features = false }
 anyhow = "1.0.41"
-codespan = { version = "0.8.0", features = ["serialization"] }
-colored = "2.0.0"
 bcs = "0.1.2"
-
-move-bytecode-source-map = { git = "https://github.com/starcoinorg/move", rev = "161e732bc875a568421513e761dc4d39d301838a" }
-move-coverage = { git = "https://github.com/starcoinorg/move", rev = "161e732bc875a568421513e761dc4d39d301838a" }
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "161e732bc875a568421513e761dc4d39d301838a" }
-move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "161e732bc875a568421513e761dc4d39d301838a" }
+clap = {version = "3", features = ["derive"]}
+codespan = {version = "0.8.0", features = ["serialization"]}
+colored = "2.0.0"
+petgraph = "0.5.1"
+serde = {version = "1.0.130", default-features = false}
+move-bytecode-source-map = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
+move-coverage = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
+move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
 [features]
 default = []

@@ -7,9 +7,9 @@ use rand::Rng;
 use starcoin_chain_api::ChainReader;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
+use starcoin_time_service::TimeService;
 use starcoin_types::block::{BlockHeader, BlockHeaderExtra};
 use starcoin_types::U256;
-use starcoin_vm_types::time::TimeService;
 
 #[derive(Default)]
 pub struct DummyConsensus {}

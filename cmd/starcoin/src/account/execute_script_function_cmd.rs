@@ -8,7 +8,7 @@ use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::FunctionIdView;
-use starcoin_types::transaction::{parse_transaction_argument, TransactionArgument};
+use starcoin_types::transaction::{parse_transaction_argument_advance, TransactionArgument};
 use starcoin_vm_types::transaction::{ScriptFunction, TransactionPayload};
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
@@ -26,7 +26,7 @@ pub struct ExecuteScriptFunctionOpt {
     /// type tags for the script
     type_tags: Option<Vec<TypeTag>>,
 
-    #[clap(long = "arg", name = "transaction-args", parse(try_from_str = parse_transaction_argument))]
+    #[clap(long = "arg", name = "transaction-args", parse(try_from_str = parse_transaction_argument_advance))]
     /// args for the script.
     args: Option<Vec<TransactionArgument>>,
 

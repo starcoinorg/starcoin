@@ -1,12 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::account::{create_account_txn_sent_as_association, Account};
 use anyhow::Result;
+use starcoin_types::account::Account;
 use starcoin_types::transaction::Transaction;
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use test_helper::executor::{compile_modules_with_address, execute_and_apply, prepare_genesis};
+use test_helper::txn::create_account_txn_sent_as_association;
 
 macro_rules! module_compatibility_test {
     ($name:ident, $prog1:literal, $prog2:literal, $result:ident) => {

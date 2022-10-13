@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use cucumber::{after, before, cucumber, Steps, StepsBuilder};
-use serde_json::Value;
+use jpst::TemplateContext;
 use starcoin_account_api::AccountInfo;
 use starcoin_cmd::helper;
 use starcoin_config::{NodeConfig, RocksdbConfig};
@@ -33,7 +33,7 @@ pub struct MyWorld {
     default_account: Option<AccountInfo>,
     txn_account: Option<AccountInfo>,
     node_handle: Option<NodeHandle>,
-    value: Option<Value>,
+    tpl_ctx: Option<TemplateContext>,
 }
 impl MyWorld {
     pub fn storage(&self) -> Option<&Storage> {

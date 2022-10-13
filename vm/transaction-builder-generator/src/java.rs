@@ -1,4 +1,4 @@
-// Copyright (c) The Diem Core Contributors
+// Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::common;
@@ -88,7 +88,7 @@ fn write_script_call_files(
     package_name: &str,
     abis: &[ScriptABI],
 ) -> Result<()> {
-    let external_definitions = crate::common::get_external_definitions("com.diem.types");
+    let external_definitions = crate::common::get_external_definitions("org.starcoin.types");
     let (transaction_script_abis, script_fun_abis): (Vec<_>, Vec<_>) = abis
         .iter()
         .cloned()
@@ -185,14 +185,14 @@ where
 import java.math.BigInteger;
 import java.lang.IllegalArgumentException;
 import java.lang.IndexOutOfBoundsException;
-import com.diem.types.AccountAddress;
-import com.diem.types.Script;
-import com.diem.types.ScriptFunction;
-import com.diem.types.TransactionPayload;
-import com.diem.types.Identifier;
-import com.diem.types.ModuleId;
-import com.diem.types.TransactionArgument;
-import com.diem.types.TypeTag;
+import org.starcoin.types.AccountAddress;
+import org.starcoin.types.Script;
+import org.starcoin.types.ScriptFunction;
+import org.starcoin.types.TransactionPayload;
+import org.starcoin.types.Identifier;
+import org.starcoin.types.ModuleId;
+import org.starcoin.types.TransactionArgument;
+import org.starcoin.types.TypeTag;
 import com.novi.serde.Int128;
 import com.novi.serde.Unsigned;
 import com.novi.serde.Bytes;
@@ -206,7 +206,7 @@ import com.novi.serde.Bytes;
             self.out,
             r#"
 /**
- * Build a Diem {{@link com.diem.types.Script}} from a structured value {{@link ScriptCall}}.
+ * Build a Starcoin {{@link org.starcoin.types.Script}} from a structured value {{@link ScriptCall}}.
  *
  * @param call {{@link ScriptCall}} value to encode.
  * @return Encoded script.
@@ -220,7 +220,7 @@ public static Script encode_script(ScriptCall call) {{
             self.out,
             r#"
 /**
- * Build a Diem {{@link com.diem.types.TransactionPayload}} from a structured value {{@link ScriptFunctionCall}}.
+ * Build a Starcoin {{@link org.starcoin.types.TransactionPayload}} from a structured value {{@link ScriptFunctionCall}}.
  *
  * @param call {{@link ScriptFunctionCall}} value to encode.
  * @return Encoded TransactionPayload.
@@ -237,9 +237,9 @@ public static TransactionPayload encode_script_function(ScriptFunctionCall call)
             self.out,
             r#"
 /**
- * Try to recognize a Diem {{@link com.diem.types.Script}} and convert it into a structured value {{@code ScriptCall}}.
+ * Try to recognize a Starcoin {{@link org.starcoin.types.Script}} and convert it into a structured value {{@code ScriptCall}}.
  *
- * @param script {{@link com.diem.types.Script}} values to decode.
+ * @param script {{@link org.starcoin.types.Script}} values to decode.
  * @return Decoded {{@link ScriptCall}} value.
  */
 public static ScriptCall decode_script(Script script) throws IllegalArgumentException, IndexOutOfBoundsException {{
@@ -256,9 +256,9 @@ public static ScriptCall decode_script(Script script) throws IllegalArgumentExce
             self.out,
             r#"
 /**
- * Try to recognize a Diem {{@link com.diem.types.TransactionPayload}} and convert it into a structured value {{@code ScriptFunctionCall}}.
+ * Try to recognize a Starcoin {{@link org.starcoin.types.TransactionPayload}} and convert it into a structured value {{@code ScriptFunctionCall}}.
  *
- * @param payload {{@link com.diem.types.TransactionPayload}} values to decode.
+ * @param payload {{@link org.starcoin.types.TransactionPayload}} values to decode.
  * @return Decoded {{@link ScriptFunctionCall}} value.
  */
 public static ScriptFunctionCall decode_script_function_payload(TransactionPayload payload) throws IllegalArgumentException, IndexOutOfBoundsException {{
@@ -291,7 +291,7 @@ public static ScriptFunctionCall decode_script_function_payload(TransactionPaylo
             Self::quote_doc(
                 abi.doc(),
                 [quoted_type_params_doc, quoted_params_doc].concat(),
-                "Encoded {@link com.diem.types.Script} value.",
+                "Encoded {@link org.starcoin.types.Script} value.",
             ),
             abi.name(),
             [quoted_type_params, quoted_params].concat().join(", ")
@@ -326,7 +326,7 @@ return builder.build();"#,
             Self::quote_doc(
                 abi.doc(),
                 [quoted_type_params_doc, quoted_params_doc].concat(),
-                "Encoded {@link com.diem.types.TransactionPayload} value.",
+                "Encoded {@link org.starcoin.types.TransactionPayload} value.",
             ),
             abi.name(),
             [quoted_type_params, quoted_params].concat().join(", ")

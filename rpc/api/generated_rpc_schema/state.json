@@ -73,6 +73,36 @@
       }
     },
     {
+      "name": "state.get_state_node_by_node_hash",
+      "params": [
+        {
+          "name": "key_hash",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "type": "string",
+            "format": "HashValue"
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < Vec < u8 > >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_Array_of_uint8",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          }
+        }
+      }
+    },
+    {
       "name": "state.get_with_proof",
       "params": [
         {
@@ -2334,6 +2364,16 @@
                 "type": "integer",
                 "format": "uint",
                 "minimum": 0.0
+              },
+              "resource_types": {
+                "default": null,
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "string"
+                }
               },
               "start_index": {
                 "default": 0,

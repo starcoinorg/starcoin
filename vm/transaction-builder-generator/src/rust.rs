@@ -803,14 +803,14 @@ fn decode_{}_argument(arg: TransactionArgument) -> Option<{}> {{
 
 pub struct Installer {
     install_dir: PathBuf,
-    diem_types_version: String,
+    starcoin_types_version: String,
 }
 
 impl Installer {
-    pub fn new(install_dir: PathBuf, diem_types_version: String) -> Self {
+    pub fn new(install_dir: PathBuf, starcoin_types_version: String) -> Self {
         Installer {
             install_dir,
-            diem_types_version,
+            starcoin_types_version,
         }
     }
 }
@@ -847,7 +847,7 @@ serde = {{ version = "1.0", features = ["derive"] }}
 serde_bytes = "0.11"
 starcoin-types = {{ path = "../starcoin-types", version = "{}" }}
 "#,
-            name, version, self.diem_types_version,
+            name, version, self.starcoin_types_version,
         )?;
         std::fs::create_dir(dir_path.join("src"))?;
         let source_path = dir_path.join("src/lib.rs");

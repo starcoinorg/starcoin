@@ -1,0 +1,11 @@
+[package]
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-time-service"
+publish = false
+version = "1.12.5"
+
+[dependencies]
+log = { version = "0.4" }
+serde = { version = "1" }

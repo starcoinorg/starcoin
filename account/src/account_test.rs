@@ -267,3 +267,26 @@ pub fn test_wallet_account() -> Result<()> {
     println!("txn hash is {:?}", stxn.id());
     Ok(())
 }
+
+#[test]
+pub fn test_account_info_between_lock_and_unlock() -> Result<()> {
+    let tempdir = tempfile::tempdir()?;
+    let storage = AccountStorage::create_from_path(tempdir.path(), RocksdbConfig::default())?;
+    let manager = AccountManager::new(storage, ChainId::test())?;
+
+    let account = manager.create_account("hello")?;
+
+    let lock_result = manager.lock_account(*account.address());
+    assert!(lock_result.is_ok());
+    {
+        let account_info = manager.account_info(*account.address())?.unwrap();
+        assert!(account_info.is_locked);
+    }
+
+    manager.unlock_account(*account.address(), "hello", Duration::from_secs(1))?;
+    {
+        let account_info = manager.account_info(*account.address())?.unwrap();
+        assert!(!account_info.is_locked);
+    }
+    Ok(())
+}

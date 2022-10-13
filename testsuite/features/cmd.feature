@@ -9,19 +9,15 @@ Feature: cmd integration test
   Scenario Outline: [cmd] cli chain test
     Then cmd: "chain epoch-info"
     Then cmd: "chain list-block"
-    Then cmd: "chain get-block @$[0].block_hash@"
-    Then cmd: "chain list-block"
-    Then cmd: "chain get-block @$[0].number@"
-    Then cmd: "chain get-txn-infos @$.header.block_hash@"
-    Then cmd: "chain get-txn @$[0].transaction_hash@"
-    Then cmd: "chain get-events @$.transaction_hash@"
+    Then cmd: "chain get-block {{$.chain[1].ok[0].block_hash}}"
+    Then cmd: "chain get-block {{$.chain[1].ok[0].number}}"
+    Then cmd: "chain get-txn-infos {{$.chain[1].ok[0].block_hash}}"
+    Then cmd: "chain get-txn {{$.chain[4].ok[0].transaction_hash}}"
+    Then cmd: "chain get-events {{$.chain[4].ok[0].transaction_hash}}"
     Then cmd: "chain get-txn-info-list -s 0 -c 5"
-    Then cmd: "chain list-block"
-    Then cmd: "chain get-block-info @$[0].number@"
-    Then cmd: "chain list-block"
-    Then cmd: "chain get-txn-proof --block-hash @$[0].block_hash@ --transaction-global-index 0"
-    Then cmd: "chain list-block"
-    Then cmd: "chain get-txn-proof --block-hash @$[0].block_hash@ --transaction-global-index 0 --raw"
+    Then cmd: "chain get-block-info {{$.chain[1].ok[0].number}}"
+    Then cmd: "chain get-txn-proof --block-hash {{$.chain[1].ok[0].block_hash}} --transaction-global-index 0"
+    Then cmd: "chain get-txn-proof --block-hash {{$.chain[1].ok[0].block_hash}} --transaction-global-index 0 --raw"
     Then stop
 
     Examples:
@@ -42,15 +38,15 @@ Feature: cmd integration test
     Then cmd: "node service list"
     Then cmd: "node service stop starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker"
     Then cmd: "node service check starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker"
-    Then assert: "$ Stopped"
+    Then assert: "{{$.node[-1].ok}} == Stopped"
     Then cmd: "node service start starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker"
     Then cmd: "node service check starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker"
-    Then assert: "$ Started"
+    Then assert: "{{$.node[-1].ok}} == Started"
     #ensure some service start successful.
     Then cmd: "node service check starcoin_rpc_server::service::RpcService"
-    Then assert: "$ Started"
+    Then assert: "{{$.node[-1].ok}} == Started"
     Then cmd: "node service check starcoin_node::metrics::MetricsServerActorService"
-    Then assert: "$ Started"
+    Then assert: "{{$.node[-1].ok}} == Started"
     Then stop
 
     Examples:
@@ -61,8 +57,8 @@ Feature: cmd integration test
     Then cmd: "account unlock"
     Then cmd: "dev get-coin"
     Then cmd: "account generate-keypair -c 3"
-    Then cmd: "account derive-address -t 2 -p @$[0].public_key@ -p @$[1].public_key@ -p @$[2].public_key@"
-    Then cmd: "account transfer --blocking -r @$.receipt_identifier@ -t 0x1::STC::STC -v 10000000"
+    Then cmd: "account derive-address -t 2 -p {{$.account[1].ok[0].public_key}} -p {{$.account[1].ok[1].public_key}}  -p {{$.account[1].ok[2].public_key}} "
+    Then cmd: "account transfer --blocking -r {{$.account[-1].ok.receipt_identifier}} -t 0x1::STC::STC -v 10000000"
     # account for testing only
     Then cmd: "account import-multisig --pubkey 0x934e8a5a557229f90be7c95ec17fab84e64dcc3cf2dc934ff83ffc0915fad13e --pubkey 0x28358c05692e6758ba1398835525687c16d65abc9e1dc89023b46298ed2c575a --prikey 0x0c84a983ff0bfab39570c2ceed3e1c1feb645e84eccf9fd6baf4f49351a52329 --prikey 0x3695d6e08e3ad41962cba8c55ebb0552827807ae4cd6236d35195c769437272e -t 2"
     Then cmd: "account unlock"
@@ -73,12 +69,12 @@ Feature: cmd integration test
     Then cmd: "account unlock 0x056d9bed868f8e8c74cf19109a2b375a"
     # sign to file first
     Then cmd: "account sign-multisig-txn -s 0x056d9bed868f8e8c74cf19109a2b375a --function 0x1::TransferScripts::peer_to_peer_v2 -t 0x1::STC::STC --arg 0x991c2f856a1e32985d9793b449c0f9d3 --arg 1000000u128 --output-dir /tmp"
-    Then cmd: "account submit-txn @$@ -b"
+    Then cmd: "account submit-txn {{$.account[-1].ok}} -b"
     Then stop
 
     Examples:
-      | para          |
-      | x@$.auth_key@ |
+      |  |
+      |  |
 
   #dev
   Scenario Outline: [cmd] dev resolve test
@@ -104,16 +100,16 @@ Feature: cmd integration test
     Then cmd: "state get-root"
     Then cmd: "dev get-coin"
     Then cmd: "account show"
-    Then cmd: "state get-proof @$.account.address@/1/0x1::Account::Account"
+    Then cmd: "state get-proof {{$.account[0].ok.account.address}}/1/0x1::Account::Account"
+    Then cmd: "state get-proof {{$.account[0].ok.account.address}}/1/0x1::Account::Account --raw"
+    Then cmd: "state get resource {{$.account[0].ok.account.address}} 0x1::Account::Account"
+    Then assert: "{{$.state[-1].ok.json.sequence_number}} == 0"
     Then cmd: "account show"
-    Then cmd: "state get-proof @$.account.address@/1/0x1::Account::Account --raw"
+    Then cmd: "state list resource {{$.account[0].ok.account.address}}"
+    Then cmd: "state list resource -t 0x1::Account::Balance {{$.account[0].ok.account.address}}"
+    Then cmd: "state list resource -s 5 -i 0 {{$.account[0].ok.account.address}}"
     Then cmd: "account show"
-    Then cmd: "state get resource @$.account.address@ 0x1::Account::Account"
-    Then assert: "$.json.sequence_number 0 "
-    Then cmd: "account show"
-    Then cmd: "state list resource @$.account.address@"
-    Then cmd: "account show"
-    Then cmd: "state list code @$.account.address@"
+    Then cmd: "state list code {{$.account[0].ok.account.address}}"
     Then stop
 
     Examples:
@@ -125,29 +121,20 @@ Feature: cmd integration test
     Then cmd: "account unlock"
     Then cmd: "dev get-coin"
     Then cmd: "account create -p transfer"
-    Then cmd: "account transfer --blocking -v 10000 -r @$.address@ -k @$.public_key@"
-    Then cmd: "chain get-txn @$.execute_output.txn_hash@"
-    Then cmd: "chain get-events @$.transaction_hash@"
-    Then cmd: "account create -p transfer"
-    Then cmd: "account transfer --blocking -v 10000 -r @$.receipt_identifier@"
-    Then cmd: "chain get-txn @$.execute_output.txn_hash@"
-    Then cmd: "chain get-events @$.transaction_hash@"
+    Then cmd: "account transfer --blocking -v 10000 -r {{$.account[2].ok.address}}"
+    Then cmd: "chain get-txn {{$.account[3].ok.execute_output.txn_hash}}"
+    Then cmd: "chain get-events {{$.account[3].ok.execute_output.txn_hash}}"
     Then cmd: "account create -p compat"
-    Then cmd: "account unlock -p compat @$.address@"
-    Then cmd: "account show @$.address@"
-    Then cmd: "account export -p compat @$.account.address@"
-    Then cmd: "account create -p test"
-    Then cmd: "account unlock -p test @$.address@"
-    Then cmd: "account change-password @$.address@ -p hello"
-    Then cmd: "account remove @$.address@ -p hello"
+    Then cmd: "account unlock -p compat {{$.account[4].ok.address}}"
+    Then cmd: "account export -p compat {{$.account[4].ok.address}}"
+    Then cmd: "account change-password {{$.account[4].ok.address}} -p hello"
+    Then cmd: "account remove {{$.account[4].ok.address}} -p hello"
     Then cmd: "account generate-keypair"
-    Then cmd: "account import-readonly -i @$[0].public_key@"
-    Then cmd: "account remove @$.address@"
+    Then cmd: "account import-readonly -i {{$.account[-1].ok[0].public_key}}"
+    Then cmd: "account remove {{$.account[-1].ok.address}}"
     Then cmd: "account generate-keypair"
-    Then cmd: "account import -i @$[0].private_key@"
-    Then cmd: "account remove @$.address@"
-    Then cmd: "account list"
-    Then cmd: "account unlock @$[0].address@"
+    Then cmd: "account import -i {{$.account[-1].ok[0].private_key}}"
+    Then cmd: "account remove {{$.account[-1].ok.address}}"
     Then cmd: "account import -i 0x6afe92b85f5fd61b099d1bd805aa54b9737ad73522f490c47872cd028ea338f3"
     Then cmd: "account transfer --blocking -v 100000000 -r 0x809c795045105a7b1efbcca4510d2034"
     Then cmd: "account unlock 0x809c795045105a7b1efbcca4510d2034"
@@ -159,11 +146,9 @@ Feature: cmd integration test
     Then cmd: "account unlock 0x809c795045105a7b1efbcca4510d2034"
     Then cmd: "account rotate-authentication-key 0x809c795045105a7b1efbcca4510d2034 -i 0x3885e7dde8381046849d64d28b675f1c668dc36eaa9be11cbcaadb24c3917554"
     Then cmd: "account unlock 0x809c795045105a7b1efbcca4510d2034"
-    Then cmd: "account create -p rotate-transfer"
     # transfer after rotation
-    Then cmd: "account transfer --blocking -v 10000000 -s 0x809c795045105a7b1efbcca4510d2034 -r @$.address@"
-    Then cmd: "chain get-txn @$.execute_output.txn_hash@"
-    Then cmd: "chain get-events @$.transaction_hash@"
+    Then cmd: "account transfer --blocking -v 10000000 -s 0x809c795045105a7b1efbcca4510d2034 -r {{$.account[2].ok.address}}"
+    Then cmd: "chain get-txn {{$.account[-1].ok.execute_output.txn_hash}}"
     Then cmd: "account remove 0x809c795045105a7b1efbcca4510d2034"
     Then cmd: "account list"
     Then cmd: "account show"
@@ -179,25 +164,40 @@ Feature: cmd integration test
     # test the account do not exist on chain
     Then cmd: "account unlock"
     Then cmd: "account sign-message -m helloworld"
-    Then cmd: "account verify-sign-message -m @$.hex@"
-    Then assert: "$.ok true"
+    Then cmd: "account verify-sign-message -m {{$.account[-1].ok.hex}}"
+    Then assert: "{{$.account[-1].ok.ok}} == true"
     # create the account on chain
     Then cmd: "dev get-coin"
     Then cmd: "account sign-message  -m helloworld"
-    Then cmd: "account verify-sign-message -m @$.hex@"
-    Then assert: "$.ok true"
+    Then cmd: "account verify-sign-message -m {{$.account[-1].ok.hex}}"
+    Then assert: "{{$.account[-1].ok.ok}} == true"
     # init the auth key on chain by send the first transaction, test authkey is not dummy key.
     Then cmd: "account transfer -v 1000 -r 0xA550C18 -b"
     Then cmd: "account sign-message -m helloworld"
-    Then cmd: "account verify-sign-message -m @$.hex@"
-    Then assert: "$.ok true"
+    Then cmd: "account verify-sign-message -m {{$.account[-1].ok.hex}}"
+    Then assert: "{{$.account[-1].ok.ok}} == true"
     # test multi sign account
     Then cmd: "account sign-message -s 0xA550C18 -m helloworld"
-    Then cmd: "account verify-sign-message -m @$.hex@"
-    Then assert: "$.ok true"
+    Then cmd: "account verify-sign-message -m {{$.account[-1].ok.hex}}"
+    Then assert: "{{$.account[-1].ok.ok}} == true"
 
     Examples:
       |  |
+
+
+  #StarcoinFramework checkpoint
+  Scenario Outline: [cmd] starcoin-framework checkpoint
+    Then cmd: "dev get-coin"
+    Then cmd: "account unlock"
+    Then cmd: "account execute-function --function 0x1::Block::checkpoint_entry -b"
+    Then cmd: "dev call-api chain.get_block_by_number [1,{\"raw\":true}]"
+    Then cmd: "account execute-function --function 0x1::Block::update_state_root_entry --arg {{$.dev[1].ok.raw.header}} -b"
+    Then cmd: "dev call --function 0x1::Block::latest_state_root"
+    Then assert: "{{$.dev[2].ok[1]}} == {{$.dev[1].ok.header.state_root}}"
+
+    Examples:
+      |  |
+
 
 #mytoken
 #  Scenario Outline: [cmd] my_token test

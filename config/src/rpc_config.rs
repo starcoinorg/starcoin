@@ -245,7 +245,7 @@ impl IpcConfiguration {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Parser)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize, Serialize, Parser)]
 pub struct ApiQuotaConfiguration {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(

@@ -43,7 +43,7 @@ mod test {
 
     #[test]
     fn address_hash() {
-        let address: AccountAddress = "ca843279e3427144cead5e4d5999a3d0".parse().unwrap();
+        let address: AccountAddress = "0xca843279e3427144cead5e4d5999a3d0".parse().unwrap();
 
         let hash_vec =
             Vec::from_hex("7d39654178dd4758d0bc33b26e3e06051f04a215fd7ad270d4fb5e4988c8e5d2")

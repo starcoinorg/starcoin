@@ -1,16 +1,16 @@
 [package]
 name = "sp-utils"
 #for unify version with project.
-version = "1.11.11"
 authors = [
     "Parity Technologies <admin@parity.io>",
     "Starcoin Core Dev <dev@starcoin.org>",
 ]
-edition = "2021"
-license = "Apache-2.0"
-homepage = "https://substrate.dev"
-repository = "https://github.com/paritytech/substrate/"
 description = "I/O for Substrate runtimes"
+edition = "2021"
+homepage = "https://substrate.dev"
+license = "Apache-2.0"
+repository = "https://github.com/paritytech/substrate/"
+version = "1.12.5"
 
 [dependencies]
 futures = "0.3.12"

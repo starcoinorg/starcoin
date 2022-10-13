@@ -3,6 +3,7 @@
 
 use anyhow::Result;
 use starcoin_account_api::AccountInfo;
+use starcoin_transaction_builder::{build_batch_transfer_txn, build_transfer_txn};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::genesis_config::ChainId;
 use starcoin_types::transaction::RawUserTransaction;
@@ -29,7 +30,7 @@ impl MockTxnGenerator {
     ) -> Result<RawUserTransaction> {
         let amount_to_transfer = 1000;
 
-        let transfer_txn = starcoin_executor::build_transfer_txn(
+        let transfer_txn = build_transfer_txn(
             self.account.address,
             self.receiver_address,
             sequence_number,
@@ -51,7 +52,7 @@ impl MockTxnGenerator {
         gas_price: u64,
         expiration_timestamp: u64,
     ) -> Result<RawUserTransaction> {
-        let transfer_txn = starcoin_executor::build_transfer_txn(
+        let transfer_txn = build_transfer_txn(
             sender,
             receiver_address,
             sequence_number,
@@ -73,7 +74,7 @@ impl MockTxnGenerator {
         gas_price: u64,
         expiration_timestamp: u64,
     ) -> Result<RawUserTransaction> {
-        let transfer_txn = starcoin_executor::build_batch_transfer_txn(
+        let transfer_txn = build_batch_transfer_txn(
             sender,
             receiver_address_vec,
             sequence_number,

@@ -1,47 +1,48 @@
 [package]
-name = "starcoin-miner-client"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
+name = "starcoin-miner-client"
+version = "1.12.5"
 
 [dependencies]
-anyhow = "1.0.41"
 actix = "0.13"
 actix-rt = "2.6"
+anyhow = "1.0.41"
 async-std = "1.12"
+consensus = { path = "../../consensus", package = "starcoin-consensus" }
+crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
 futures = "0.3.12"
 starcoin-config = { path = "../../config" }
 starcoin-types = { path = "../../types" }
-consensus = { path = "../../consensus", package = "starcoin-consensus" }
 tokio = { version = "^1", features = ["full"] }
 logger = { path = "../../commons/logger", package = "starcoin-logger" }
 futures-channel = "0.3"
-crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
 jsonrpc-core = { version = "18", features = ["arbitrary_precision"] }
 jsonrpc-server-utils = { version = "18" }
 jsonrpc-core-client = { version = "18" }
+starcoin-time-service = { path = "../../commons/time-service" }
 
-serde_json = { version = "1.0", features = ["arbitrary_precision"] }
-serde = { version = "1.0.130", features = ["derive"] }
-rust-argon2 = "0.8"
-rand = "0.8.5"
-rand_core = { version = "0.6.3", default-features = false }
+async-trait = "0.1.53"
 byteorder = "1.4.3"
-futures-timer = "3.0"
-hex = { version = "0.4.3", default-features = false }
-thiserror = "1.0"
-starcoin-rpc-client = { path = "../../rpc/client" }
-starcoin-rpc-api = { path = "../../rpc/api" }
-starcoin-service-registry = { path = "../../commons/service-registry" }
-libloading = "0.7.2"
+clap = {version = "3", features = ["derive"]}
 dyn-clone = "1.0.8"
+futures-timer = "3.0"
+hex = {version = "0.4.3", default-features = false}
+libloading = "0.7.2"
 parking_lot = "0.12.1"
-starcoin-stratum = { path = "../../stratum" }
+rand = "0.8.5"
+rand_core = {version = "0.6.3", default-features = false}
+rust-argon2 = "0.8"
+serde = { version = "1.0.130", features = ["derive"] }
+serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 starcoin-miner = { path = "../../miner" }
 starcoin-miner-client-api = { path = "./api" }
+starcoin-rpc-api = { path = "../../rpc/api" }
+starcoin-rpc-client = { path = "../../rpc/client" }
+starcoin-service-registry = { path = "../../commons/service-registry" }
+starcoin-stratum = { path = "../../stratum" }
 stest = { path = "../../commons/stest" }
-clap = { version = "3", features = ["derive"] }
-async-trait = "0.1.53"
+thiserror = "1.0"
 
 [[bin]]
 name = "starcoin_miner"

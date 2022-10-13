@@ -14,6 +14,7 @@ pub use jsonrpc_core::Params;
 use jsonrpc_core_client::{transports::ipc, transports::ws, RpcChannel};
 use network_api::PeerStrategy;
 use network_p2p_types::network_state::NetworkState;
+use network_types::peer_info::{Multiaddr, PeerId};
 use parking_lot::Mutex;
 use serde_json::Value;
 use starcoin_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
@@ -49,7 +50,6 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::block::BlockNumber;
-use starcoin_types::peer_info::{Multiaddr, PeerId};
 use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::MintBlockEvent;
@@ -585,6 +585,7 @@ impl RpcClient {
         state_root: Option<HashValue>,
         start_index: usize,
         max_size: usize,
+        resource_types: Option<Vec<StructTagView>>,
     ) -> anyhow::Result<ListResourceView> {
         self.call_rpc_blocking(|inner| {
             inner.state_client.list_resource(
@@ -594,6 +595,7 @@ impl RpcClient {
                     state_root,
                     start_index,
                     max_size,
+                    resource_types,
                 }),
             )
         })
@@ -648,6 +650,14 @@ impl RpcClient {
                 .get_with_table_item_proof_by_root(handle, key, state_root)
         })
         .map_err(map_err)
+    }
+
+    pub fn get_state_node_by_node_hash(
+        &self,
+        key_hash: HashValue,
+    ) -> anyhow::Result<Option<Vec<u8>>> {
+        self.call_rpc_blocking(|inner| inner.state_client.get_state_node_by_node_hash(key_hash))
+            .map_err(map_err)
     }
 
     pub fn contract_call(&self, call: ContractCall) -> anyhow::Result<Vec<DecodedMoveValue>> {

@@ -16,10 +16,13 @@ use crate::{
 use starcoin_crypto::ed25519::*;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::multi_ed25519::genesis_multi_key_pair;
-use starcoin_vm_types::account_config::STC_TOKEN_CODE_STR;
+use starcoin_vm_types::account_config::{core_code_address, stc_type_tag, STC_TOKEN_CODE_STR};
 use starcoin_vm_types::genesis_config::ChainId;
+use starcoin_vm_types::identifier::Identifier;
+use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::token::token_code::TokenCode;
+use starcoin_vm_types::transaction::ScriptFunction;
 use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use starcoin_vm_types::{
     account_config::{self, AccountResource, BalanceResource},
@@ -53,7 +56,7 @@ impl Account {
     /// This function returns distinct values upon every call.
     pub fn new() -> Self {
         let (privkey, pubkey) = KeyGen::from_os_rng().generate_keypair();
-        Self::with_keypair(privkey, pubkey, None)
+        Self::with_keypair(privkey.into(), pubkey.into(), None)
     }
 
     /// Creates a new account with the given keypair.
@@ -61,14 +64,14 @@ impl Account {
     /// Like with [`Account::new`], the account returned by this constructor is a purely logical
     /// entity.
     pub fn with_keypair(
-        privkey: Ed25519PrivateKey,
-        pubkey: Ed25519PublicKey,
+        privkey: AccountPrivateKey,
+        pubkey: AccountPublicKey,
         addr: Option<AccountAddress>,
     ) -> Self {
-        let addr = addr.unwrap_or_else(|| crate::account_address::from_public_key(&pubkey));
+        let addr = addr.unwrap_or_else(|| pubkey.derived_address());
         Account {
             addr,
-            private_key: Arc::new(AccountPrivateKey::Single(privkey)),
+            private_key: Arc::new(privkey),
         }
     }
 
@@ -233,6 +236,42 @@ impl Default for Account {
         Self::new()
     }
 }
+pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 40000000;
+pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
+
+/// Returns a transaction to transfer coin from one account to another (possibly new) one, with the
+/// given arguments.
+pub fn peer_to_peer_txn(
+    sender: &Account,
+    receiver: &Account,
+    seq_num: u64,
+    transfer_amount: u128,
+    expiration_timestamp_secs: u64,
+    chain_id: ChainId,
+) -> SignedUserTransaction {
+    let args = vec![
+        bcs_ext::to_bytes(receiver.address()).unwrap(),
+        bcs_ext::to_bytes(&transfer_amount).unwrap(),
+    ];
+
+    // get a SignedTransaction
+    sender.create_signed_txn_with_args(
+        TransactionPayload::ScriptFunction(ScriptFunction::new(
+            ModuleId::new(
+                core_code_address(),
+                Identifier::new("TransferScripts").unwrap(),
+            ),
+            Identifier::new("peer_to_peer_v2").unwrap(),
+            vec![stc_type_tag()],
+            args,
+        )),
+        seq_num,
+        DEFAULT_MAX_GAS_AMOUNT, // this is a default for gas
+        1,                      // this is a default for gas
+        expiration_timestamp_secs,
+        chain_id,
+    )
+}
 
 //---------------------------------------------------------------------------
 // Balance resource representation
@@ -355,7 +394,7 @@ impl AccountData {
         balance_token_code: &str,
         sequence_number: u64,
     ) -> Self {
-        let account = Account::with_keypair(privkey, pubkey, addr);
+        let account = Account::with_keypair(privkey.into(), pubkey.into(), addr);
         Self::with_account(account, balance, balance_token_code, sequence_number)
     }
 

@@ -12,7 +12,6 @@ use starcoin_genesis::Genesis;
 use starcoin_storage::Storage;
 use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::startup_info::ChainInfo;
-use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
 use std::sync::Arc;
 
 pub struct MockChain {
@@ -102,7 +101,7 @@ impl MockChain {
             debug!("Change to new head: {:?}", self.head.current_header());
             self.net
                 .time_service()
-                .adjust(GlobalTimeOnChain::new(new_block.header().timestamp()));
+                .adjust(new_block.header().timestamp());
         } else {
             debug!(
                 "New block({:?})'s total_difficulty({:?}) <= head's total_difficulty({:?})",

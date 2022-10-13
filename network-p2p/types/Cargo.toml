@@ -1,10 +1,10 @@
 [package]
-name = "network-p2p-types"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "network-p2p-types"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 bitflags = "1.3.2"

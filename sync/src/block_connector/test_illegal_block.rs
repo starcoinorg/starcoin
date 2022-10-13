@@ -18,11 +18,11 @@ use starcoin_chain_mock::MockChain;
 use starcoin_chain_service::WriteableChainService;
 use starcoin_crypto::HashValue;
 use starcoin_storage::Store;
+use starcoin_time_service::{duration_since_epoch, TimeServiceType};
 use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{block::Block, U256};
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
-use starcoin_vm_types::time::{duration_since_epoch, TimeServiceType};
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -300,7 +300,7 @@ async fn test_verify_consensus_failed() {
     }
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 async fn test_verify_new_epoch_block_uncle_should_none_failed() {
     let apply_failed = test_verify_uncles_in_old_epoch(true).await;
     assert!(apply_failed.is_err());
@@ -727,7 +727,7 @@ async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
     )
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 async fn test_verify_uncles_in_old_epoch_failed() {
     let apply_failed = test_verify_uncles_in_old_epoch(false).await;
     assert!(apply_failed.is_err());
@@ -736,7 +736,7 @@ async fn test_verify_uncles_in_old_epoch_failed() {
     }
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 async fn test_verify_uncles_uncle_exist_failed() {
     let count = 5;
     let (uncle_header, mut writeable_block_chain_service, node_config, storage) =
@@ -860,7 +860,7 @@ async fn test_verify_uncle_and_parent_number_failed() {
     }
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 async fn test_verify_uncle_which_parent_is_end_block_in_last_epoch() {
     let count = G_TEST_CONFIG.consensus_config.epoch_block_count;
     let (uncle_header, mut writeable_block_chain_service, node_config, storage) =

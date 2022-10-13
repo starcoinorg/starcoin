@@ -9,8 +9,8 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
+use starcoin_time_service::TimeService;
 use starcoin_types::block::{BlockIdAndNumber, BlockInfo};
-use starcoin_types::time::TimeService;
 use std::cmp::min;
 use std::sync::Arc;
 use stream_task::{

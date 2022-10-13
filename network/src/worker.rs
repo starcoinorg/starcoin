@@ -6,7 +6,7 @@ use bitflags::_core::time::Duration;
 use futures::channel::mpsc::channel;
 use futures::prelude::*;
 use log::{debug, error, info};
-use network_api::PeerInfo;
+use network_api::{PeerInfo, RpcInfo};
 use network_p2p::config::{RequestResponseConfig, TransportConfig};
 use network_p2p::{
     identity, NetworkConfiguration, NetworkWorker, NodeKeyConfig, Params, ProtocolId, Secret,
@@ -16,7 +16,6 @@ use starcoin_config::NetworkConfig;
 use starcoin_metrics::Registry;
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_service_registry::ServiceRef;
-use starcoin_types::peer_info::RpcInfo;
 use starcoin_types::startup_info::ChainInfo;
 use std::borrow::Cow;
 

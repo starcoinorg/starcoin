@@ -1,17 +1,14 @@
 [package]
-name = "starcoin-generator"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-generator"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
-serde = { version = "1.0.130" }
-serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 futures = "0.3.12"
-hex = { version = "0.4.3", default-features = false }
 futures-timer = "3.0"
 scmd = { path = "../../commons/scmd" }
 starcoin-logger = { path = "../../commons/logger" }
@@ -25,6 +22,9 @@ starcoin-account = { path = "../../account" }
 starcoin-chain = { path = "../../chain" }
 starcoin-chain-mock = { path = "../../chain/mock" }
 clap = { version = "3", features = ["derive"] }
+hex = { version = "0.4.3", default-features = false }
+serde = { version = "1.0.130" }
+serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 
 [[bin]]
 name = "starcoin_generator"

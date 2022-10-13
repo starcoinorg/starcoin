@@ -66,6 +66,14 @@ fn main() {
             }
         };
         if regenerate {
+            let exec_path = std::env::args().next().expect("path of the executable");
+            let base_path = std::path::Path::new(&exec_path)
+                .parent()
+                .unwrap()
+                .join("../../genesis");
+
+            std::env::set_current_dir(&base_path).expect("failed to change directory");
+
             let path = Path::new(G_GENESIS_GENERATED_DIR).join(net.to_string());
             new_genesis.save(path.as_path()).expect("save genesis fail");
         } else {

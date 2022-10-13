@@ -20,7 +20,7 @@ fn test_that_installed_rust_code_compiles() {
         .arg("rust")
         .arg("--module-name")
         .arg("starcoin-stdlib:0.1.1")
-        .arg("--with-diem-types")
+        .arg("--with-starcoin-types")
         .arg("etc/starcoin_types.yml")
         .arg("--target-source-dir")
         .arg(dir.path())

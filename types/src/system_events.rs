@@ -24,30 +24,38 @@ pub struct MinedBlock(pub Arc<Block>);
 pub struct SystemStarted;
 
 #[derive(Clone, Debug)]
+pub struct SystemShutdown;
+
+#[derive(Clone, Debug)]
 pub struct SyncStatusChangeEvent(pub SyncStatus);
 
 ///Fire this event for generate a new block
 #[derive(Clone, Debug)]
 pub struct GenerateBlockEvent {
-    /// Force break current minting, and Generate new block.
-    pub force: bool,
+    /// Force break current minting task, and Generate new block.
+    pub break_current_task: bool,
+    /// Skip the empty block check, see MinerConfig::disable_mint_empty_block
+    pub skip_empty_block_check: bool,
 }
 
-impl GenerateBlockEvent {
-    pub fn new(force: bool) -> Self {
-        Self { force }
+impl Default for GenerateBlockEvent {
+    fn default() -> Self {
+        Self::new(false, false)
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct GenerateSleepBlockEvent {
-    /// Force break current minting, and Generate new block.
-    pub force: bool,
-}
-
-impl GenerateSleepBlockEvent {
-    pub fn new(force: bool) -> Self {
-        Self { force }
+impl GenerateBlockEvent {
+    pub fn new(break_current_task: bool, skip_empty_block_check: bool) -> Self {
+        Self {
+            break_current_task,
+            skip_empty_block_check,
+        }
+    }
+    pub fn new_break(break_current_task: bool) -> Self {
+        Self {
+            break_current_task,
+            skip_empty_block_check: false,
+        }
     }
 }
 

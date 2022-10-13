@@ -4,6 +4,8 @@
 use anyhow::{format_err, Result};
 use logger::prelude::*;
 use network_api::peer_score::{InverseScore, Score};
+use network_api::PeerId;
+use network_api::PeerInfo;
 use network_api::PeerSelector;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
@@ -14,11 +16,9 @@ use starcoin_network_rpc_api::{
 };
 use starcoin_state_tree::StateNode;
 use starcoin_types::block::Block;
-use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction};
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
-    peer_info::PeerId,
     transaction::TransactionInfo,
 };
 use std::fmt::Debug;

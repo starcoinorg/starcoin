@@ -7,7 +7,7 @@ use crate::FutureResult;
 use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
 use network_p2p_types::network_state::NetworkState;
-use starcoin_types::peer_info::{Multiaddr, PeerId};
+use network_types::peer_info::{Multiaddr, PeerId};
 use std::borrow::Cow;
 
 #[rpc(client, server, schema)]

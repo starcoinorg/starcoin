@@ -20,6 +20,7 @@
           "required": [
             "address",
             "is_default",
+            "is_locked",
             "is_readonly",
             "public_key",
             "receipt_identifier"
@@ -31,6 +32,9 @@
             },
             "is_default": {
               "description": "This account is default at current wallet. Every wallet must has one default account.",
+              "type": "boolean"
+            },
+            "is_locked": {
               "type": "boolean"
             },
             "is_readonly": {
@@ -93,6 +97,7 @@
           "required": [
             "address",
             "is_default",
+            "is_locked",
             "is_readonly",
             "public_key",
             "receipt_identifier"
@@ -104,6 +109,9 @@
             },
             "is_default": {
               "description": "This account is default at current wallet. Every wallet must has one default account.",
+              "type": "boolean"
+            },
+            "is_locked": {
               "type": "boolean"
             },
             "is_readonly": {
@@ -165,6 +173,7 @@
           "required": [
             "address",
             "is_default",
+            "is_locked",
             "is_readonly",
             "public_key",
             "receipt_identifier"
@@ -176,6 +185,9 @@
             },
             "is_default": {
               "description": "This account is default at current wallet. Every wallet must has one default account.",
+              "type": "boolean"
+            },
+            "is_locked": {
               "type": "boolean"
             },
             "is_readonly": {
@@ -230,6 +242,7 @@
             "required": [
               "address",
               "is_default",
+              "is_locked",
               "is_readonly",
               "public_key",
               "receipt_identifier"
@@ -241,6 +254,9 @@
               },
               "is_default": {
                 "description": "This account is default at current wallet. Every wallet must has one default account.",
+                "type": "boolean"
+              },
+              "is_locked": {
                 "type": "boolean"
               },
               "is_readonly": {
@@ -307,6 +323,7 @@
           "required": [
             "address",
             "is_default",
+            "is_locked",
             "is_readonly",
             "public_key",
             "receipt_identifier"
@@ -318,6 +335,9 @@
             },
             "is_default": {
               "description": "This account is default at current wallet. Every wallet must has one default account.",
+              "type": "boolean"
+            },
+            "is_locked": {
               "type": "boolean"
             },
             "is_readonly": {
@@ -1075,6 +1095,7 @@
           "required": [
             "address",
             "is_default",
+            "is_locked",
             "is_readonly",
             "public_key",
             "receipt_identifier"
@@ -1086,6 +1107,9 @@
             },
             "is_default": {
               "description": "This account is default at current wallet. Every wallet must has one default account.",
+              "type": "boolean"
+            },
+            "is_locked": {
               "type": "boolean"
             },
             "is_readonly": {
@@ -1148,6 +1172,7 @@
           "required": [
             "address",
             "is_default",
+            "is_locked",
             "is_readonly",
             "public_key",
             "receipt_identifier"
@@ -1159,6 +1184,9 @@
             },
             "is_default": {
               "description": "This account is default at current wallet. Every wallet must has one default account.",
+              "type": "boolean"
+            },
+            "is_locked": {
               "type": "boolean"
             },
             "is_readonly": {
@@ -1237,6 +1265,7 @@
           "required": [
             "address",
             "is_default",
+            "is_locked",
             "is_readonly",
             "public_key",
             "receipt_identifier"
@@ -1248,6 +1277,9 @@
             },
             "is_default": {
               "description": "This account is default at current wallet. Every wallet must has one default account.",
+              "type": "boolean"
+            },
+            "is_locked": {
               "type": "boolean"
             },
             "is_readonly": {
@@ -1318,6 +1350,7 @@
           "required": [
             "address",
             "is_default",
+            "is_locked",
             "is_readonly",
             "public_key",
             "receipt_identifier"
@@ -1329,6 +1362,9 @@
             },
             "is_default": {
               "description": "This account is default at current wallet. Every wallet must has one default account.",
+              "type": "boolean"
+            },
+            "is_locked": {
               "type": "boolean"
             },
             "is_readonly": {
@@ -1434,6 +1470,7 @@
           "required": [
             "address",
             "is_default",
+            "is_locked",
             "is_readonly",
             "public_key",
             "receipt_identifier"
@@ -1445,6 +1482,9 @@
             },
             "is_default": {
               "description": "This account is default at current wallet. Every wallet must has one default account.",
+              "type": "boolean"
+            },
+            "is_locked": {
               "type": "boolean"
             },
             "is_readonly": {
@@ -1562,6 +1602,7 @@
           "required": [
             "address",
             "is_default",
+            "is_locked",
             "is_readonly",
             "public_key",
             "receipt_identifier"
@@ -1573,6 +1614,9 @@
             },
             "is_default": {
               "description": "This account is default at current wallet. Every wallet must has one default account.",
+              "type": "boolean"
+            },
+            "is_locked": {
               "type": "boolean"
             },
             "is_readonly": {

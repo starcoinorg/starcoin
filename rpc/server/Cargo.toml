@@ -1,10 +1,10 @@
 [package]
-name = "starcoin-rpc-server"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-rpc-server"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 log = "0.4"
@@ -12,20 +12,20 @@ parking_lot = "0.12"
 futures-channel = "0.3"
 anyhow = "1.0.41"
 thiserror = "1.0"
-dashmap = "5.2"
 hex = { version = "0.4.3", default-features = false }
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 actix = "0.13"
 actix-rt = "2.6"
-jsonrpc-core = { version = "18", features = ["arbitrary_precision"] }
+dashmap = "5.3"
+jsonrpc-core = {version = "18", features = ["arbitrary_precision"]}
 jsonrpc-derive = "18"
 jsonrpc-http-server = "18"
-jsonrpc-tcp-server = "18"
 jsonrpc-ipc-server = "18"
-jsonrpc-ws-server = "18"
-jsonrpc-server-utils = "18"
 jsonrpc-pubsub = "18"
+jsonrpc-server-utils = "18"
+jsonrpc-tcp-server = "18"
+jsonrpc-ws-server = "18"
 jsonrpc-core-client = { version = "18", features = [
     "http",
     "ipc",
@@ -71,6 +71,7 @@ starcoin-node-api = { path = "../../node/api" }
 starcoin-sync-api = { path = "../../sync/api" }
 network-p2p-types = { path = "../../network-p2p/types" }
 network-rpc-core = { path = "../../network-rpc/core" }
+network-types = { path = "../../network/types" }
 api-limiter = { path = "../../commons/api-limiter" }
 governor = { version = "0.4.2", features = ["dashmap"] }
 
@@ -83,3 +84,4 @@ tokio = { version = "^1", features = ["full"] }
 starcoin-genesis = { path = "../../genesis" }
 test-helper = { path = "../../test-helper" }
 starcoin-chain-mock = { path = "../../chain/mock" }
+starcoin-transaction-builder = { path = "../../vm/transaction-builder" }

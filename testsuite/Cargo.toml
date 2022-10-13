@@ -1,10 +1,10 @@
 [package]
-name = "testsuite"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "testsuite"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
@@ -37,12 +37,12 @@ starcoin-account-provider = { path = "../account/provider" }
 starcoin-state-api = { path = "../state/api" }
 cucumber = { package = "cucumber_rust", version = "^0.6.0" }
 jsonpath = "0.1.1"
-
+jpst = "0.1.1"
 
 [dev-dependencies]
-
+starcoin-transaction-builder = {path = "../vm/transaction-builder"}
 
 [[test]]
-test = false
-name = "integration"
 harness = false
+name = "integration"
+test = false

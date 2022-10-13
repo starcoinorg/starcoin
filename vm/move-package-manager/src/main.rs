@@ -12,8 +12,8 @@ use move_package_manager::compatibility_check_cmd::{
 use move_package_manager::deployment::{handle_deployment, DeploymentCommand};
 use move_package_manager::release::{handle_release, Release};
 use move_package_manager::{run_integration_test, IntegrationTestCommand};
-use starcoin_config::genesis_config;
 use starcoin_vm_runtime::natives::starcoin_natives;
+use starcoin_vm_types::gas_schedule::G_LATEST_GAS_SCHEDULE;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -88,7 +88,7 @@ fn main() -> Result<()> {
         ),
         Commands::Sandbox { storage_dir, cmd } => cmd.handle_command(
             natives,
-            &genesis_config::G_LATEST_GAS_SCHEDULE,
+            &G_LATEST_GAS_SCHEDULE,
             &error_descriptions,
             move_args,
             &storage_dir,

@@ -1,14 +1,13 @@
 [package]
-name = "starcoin-node-api"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-node-api"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
-thiserror = "1.0"
 backtrace = "0.3"
 futures = "0.3.12"
 async-trait = "0.1"
@@ -21,6 +20,7 @@ starcoin-logger = { path = "../../commons/logger" }
 starcoin-types = { path = "../../types" }
 starcoin-genesis = { path = "../../genesis" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
+thiserror = "1.0"
 
 [dev-dependencies]
 stest = { path = "../../commons/stest" }

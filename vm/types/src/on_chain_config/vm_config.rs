@@ -27,7 +27,7 @@ pub static G_GAS_CONSTANTS_IDENTIFIER: Lazy<Identifier> =
 /// 1.  !script_allowed && !module_publishing_allowed No module publishing, only script function are allowed.
 /// 2.  script_allowed && !module_publishing_allowed No module publishing, custom scripts are allowed.
 /// 3.  script_allowed && module_publishing_allowed Both module publishing and custom scripts are allowed.
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct TransactionPublishOption {
     // Anyone can use custom script if this flag is set to true.
     script_allowed: bool,

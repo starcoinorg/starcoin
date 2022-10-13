@@ -1,32 +1,32 @@
 [package]
-name = "stdlib"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "stdlib"
+publish = false
+version = "1.12.5"
 
 [dependencies]
-walkdir = "2.3"
 anyhow = "1.0.41"
-move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "161e732bc875a568421513e761dc4d39d301838a" }
+move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
 starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
 starcoin-vm-types = { path = "../types" }
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-move-compiler = { path = "../../vm/compiler" }
-move-prover = { git = "https://github.com/starcoinorg/move", rev = "161e732bc875a568421513e761dc4d39d301838a" }
-move-compiler = { git = "https://github.com/starcoinorg/move", rev = "161e732bc875a568421513e761dc4d39d301838a" }
+move-prover = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
+move-compiler = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
 once_cell = "1.13.0"
-include_dir = "0.6.2"
-sha2 = "0.10.2"
-log = "0.4.16"
-simplelog = "0.9.0"
+clap = {version = "3", features = ["derive"]}
 fs_extra = "1.2.0"
-clap = { version = "3", features = ["derive"] }
-serde = { version = "1.0.130", default-features = false }
+include_dir = "0.6.2"
 itertools = "0.10.3"
+log = "0.4.16"
+serde = {version = "1.0.130", default-features = false}
+sha2 = "0.10.2"
+simplelog = "0.9.0"
 tempfile = "3.2.0"
 starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "8720b1ccf013af476df1772ad63f45297beec66b" }
+walkdir = "2.3"
 
 [dev-dependencies]
 datatest-stable = "0.1.1"

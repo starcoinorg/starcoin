@@ -1,10 +1,10 @@
 [package]
-name = "serde-helpers"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "serde-helpers"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 serde = { version = "1.0.130", features = ["derive"] }
@@ -12,5 +12,5 @@ serde_bytes = { version = "0.11" }
 hex = { version = "0.4" }
 
 [dev-dependencies]
-bcs-ext = { package = "bcs-ext", path = "../bcs_ext" }
-serde_json = { version = "1.0", features = ["arbitrary_precision"] }
+bcs-ext = {package = "bcs-ext", path = "../bcs_ext"}
+serde_json = {version = "1.0", features = ["arbitrary_precision"]}

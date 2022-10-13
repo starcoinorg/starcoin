@@ -1,10 +1,10 @@
 [package]
-name = "genesis-nft-miner"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "genesis-nft-miner"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 starcoin-rpc-api = { path = "../../rpc/api" }
@@ -14,9 +14,9 @@ starcoin-vm-types = { path = "../../vm/types" }
 bcs-ext = { path = "../../commons/bcs_ext" }
 anyhow = "~1"
 clap = { version = "3", features = ["derive"] }
-serde = "1.0.130"
-serde_json = "~1"
 hex = "0.4"
 jsonrpc-core-client = "18"
 rpassword = "~5"
 tokio = { version = "^1", features = ["full"] }
+serde = "1.0.130"
+serde_json = "~1"

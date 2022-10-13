@@ -1,20 +1,19 @@
 [package]
-name = "starcoin-vm-runtime"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-vm-runtime"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
 once_cell = "1.13.0"
-
 starcoin-types = { path = "../../types" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "161e732bc875a568421513e761dc4d39d301838a" }
-move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "161e732bc875a568421513e761dc4d39d301838a" }
-move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "161e732bc875a568421513e761dc4d39d301838a" }
-move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "161e732bc875a568421513e761dc4d39d301838a" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
+move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
+move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
 tracing = "0.1.34"
 starcoin-config = { path = "../../config" }
 starcoin-logger = { path = "../../commons/logger" }
@@ -27,13 +26,15 @@ stdlib = { package = "stdlib", path = "../stdlib" }
 starcoin-vm-types = { path = "../types" }
 starcoin-move-compiler = { path = "../compiler" }
 starcoin-natives = { path = "../natives" }
-starcoin-metrics = { path = "../../commons/metrics" }
+starcoin-metrics = { path = "../../commons/metrics", optional = true }
 serde = { version = "1.0.130", default-features = false }
 serde_bytes = "0.11.5"
 serde-helpers = { path = "../../commons/serde-helpers" }
 
 [dev-dependencies]
+stdlib = {package = "stdlib", path = "../stdlib"}
 
 [features]
-default = []
+default = ["metrics"]
+metrics = ["starcoin-metrics"]
 testing = ["move-stdlib/testing", "starcoin-natives/testing"]

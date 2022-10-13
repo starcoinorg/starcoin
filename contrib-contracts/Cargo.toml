@@ -1,13 +1,12 @@
 [package]
-name = "contrib-contracts"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
+name = "contrib-contracts"
+version = "1.12.5"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
 
 [dev-dependencies]
 test-helper = { path = "../test-helper" }

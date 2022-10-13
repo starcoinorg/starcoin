@@ -8,7 +8,7 @@ use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Serialize, Serializer};
 use starcoin_abi_resolver::ABIResolver;
-use starcoin_rpc_api::types::{ListCodeView, ListResourceView};
+use starcoin_rpc_api::types::{ListCodeView, ListResourceView, StructTagView};
 use starcoin_rpc_client::StateRootOption;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::language_storage::ModuleId;
@@ -38,6 +38,15 @@ pub enum ListDataOpt {
         #[clap(long, short = 'n')]
         /// Get state at a special block height.
         block_number: Option<u64>,
+
+        #[clap(long, short = 't')]
+        resource_type: Option<StructTagView>,
+
+        #[clap(long, short = 'i')]
+        start_index: Option<usize>,
+
+        #[clap(long, short = 's')]
+        max_size: Option<usize>,
     },
 }
 
@@ -98,6 +107,9 @@ impl CommandAction for ListCmd {
             ListDataOpt::Resource {
                 address,
                 block_number,
+                resource_type,
+                start_index,
+                max_size,
             } => {
                 let state_root = match block_number {
                     Some(block_number) => ctx
@@ -110,14 +122,16 @@ impl CommandAction for ListCmd {
                 let state_reader = ctx.state().client().state_reader(
                     state_root.map_or(StateRootOption::Latest, StateRootOption::BlockHash),
                 )?;
+
                 ListDataResult::Resource(decode_resource(
                     &state_reader,
                     ctx.state().client().state_list_resource(
                         *address,
                         false,
                         state_root,
-                        0,
-                        std::usize::MAX,
+                        start_index.unwrap_or_default(),
+                        max_size.unwrap_or_else(|| std::usize::MAX),
+                        resource_type.as_ref().map(|a| vec![a.clone()]),
                     )?,
                 ))
             }

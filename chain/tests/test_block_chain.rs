@@ -11,12 +11,15 @@ use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_chain_mock::MockChain;
 use starcoin_config::NodeConfig;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
-use starcoin_executor::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
+use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::account_address;
 use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::filter::Filter;
+use starcoin_types::identifier::Identifier;
+use starcoin_types::language_storage::TypeTag;
 use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::event::EventKey;
+use starcoin_vm_types::language_storage::StructTag;
+use std::str::FromStr;
 use std::sync::Arc;
 
 #[stest::test(timeout = 120)]
@@ -24,14 +27,24 @@ fn test_chain_filter_events() {
     let mut mock_chain = MockChain::new(ChainNetwork::new_test()).unwrap();
     let times = 10;
     mock_chain.produce_and_apply_times(times).unwrap();
+
+    let event_type_tag = TypeTag::Struct(StructTag {
+        address: genesis_address(),
+        module: Identifier::from_str("Block").unwrap(),
+        name: Identifier::from_str("NewBlockEvent").unwrap(),
+        type_params: vec![],
+    });
+
+    // Origin block event index is 4, after https://github.com/starcoinorg/starcoin-framework/pull/42 , Genesis account create more event_handles, so the block event index is 7.
+    // So we should use type_tags to filter event, do not dependent on event key.
+    // let evt_key = EventKey::new_from_address(&genesis_address(), 7);
     {
-        let evt_key = EventKey::new_from_address(&genesis_address(), 4);
         let event_filter = Filter {
             from_block: 1,
             to_block: 5,
-            event_keys: vec![evt_key],
+            event_keys: vec![],
             addrs: vec![],
-            type_tags: vec![],
+            type_tags: vec![event_type_tag.clone()],
             limit: None,
             reverse: false,
         };
@@ -40,16 +53,16 @@ fn test_chain_filter_events() {
         let evt = evts.first().unwrap();
         assert_eq!(evt.block_number, 1);
         assert_eq!(evt.transaction_index, 0);
-        assert_eq!(evt.event.key(), &evt_key);
+        assert_eq!(evt.event.type_tag(), &event_type_tag);
     }
 
     {
         let event_filter = Filter {
             from_block: 1,
             to_block: 10,
-            event_keys: vec![EventKey::new_from_address(&genesis_address(), 4)],
+            event_keys: vec![],
             addrs: vec![],
-            type_tags: vec![],
+            type_tags: vec![event_type_tag.clone()],
             limit: Some(5),
             reverse: false,
         };
@@ -63,9 +76,9 @@ fn test_chain_filter_events() {
         let event_filter = Filter {
             from_block: 1,
             to_block: 10,
-            event_keys: vec![EventKey::new_from_address(&genesis_address(), 4)],
+            event_keys: vec![],
             addrs: vec![],
-            type_tags: vec![],
+            type_tags: vec![event_type_tag.clone()],
             limit: Some(5),
             reverse: true,
         };
@@ -81,9 +94,9 @@ fn test_chain_filter_events() {
         let event_filter = Filter {
             from_block: 0,
             to_block: 10,
-            event_keys: vec![EventKey::new_from_address(&genesis_address(), 4)],
+            event_keys: vec![],
             addrs: vec![],
-            type_tags: vec![],
+            type_tags: vec![event_type_tag.clone()],
             limit: Some(20),
             reverse: true,
         };
@@ -99,9 +112,9 @@ fn test_chain_filter_events() {
         let event_filter = Filter {
             from_block: 0,
             to_block: 20,
-            event_keys: vec![EventKey::new_from_address(&genesis_address(), 4)],
+            event_keys: vec![],
             addrs: vec![],
-            type_tags: vec![],
+            type_tags: vec![event_type_tag],
             limit: Some(20),
             reverse: true,
         };

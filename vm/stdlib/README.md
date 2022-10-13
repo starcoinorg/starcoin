@@ -4,34 +4,41 @@ Starcoin Move stdlib include the Move standard library and starcoin Move framewo
 
 Note: The Starcoin Move Framework code is migrate to [starcoin-framework](https://github.com/starcoinorg/starcoin-framework/). This project is provide capability for integration starcoin-framework with starcoin genesis.
 
-## Compilation and Generation
+## How to upgrade 
 
-Compile and generate document:
+### Halley 
 
-```shell
-cargo run 
-```
+1. Compile stdlib and generate document:
 
-Release a new `N` version, N must bean an uint number, such as v3:
+    ```shell
+    cargo run —bin stdlib
+    ```
 
-```shell
-cargo run -- -v 3 -m StdlibUpgradeScripts -f upgrade_from_v2_to_v3 -a 3185136000000000000u128
-```
+2. Generate genesis file
+
+    The halley network use the latest stdlib, if stdlib changed, should regenerate the halley genesis file.
+
+    ```shell
+    cargo run —bin starcoin-genesis
+    ```
+
+### Banard and Main
+
+1. Compile and upgrade stdlib and generate document
+
+    ```shell
+    cargo run —bin stdlib -v 3 -m StdlibUpgradeScripts -f upgrade_from_v2_to_v3 -a 3185136000000000000u128
+    ```
+
+    `-v` option must be an uint number, such as 3.
 
 Get help
 
 ```shell
-cargo run -- --help
+cargo run --bin stdlib -- --help
 ```
 
-## Generate genesis file
-
-The halley network use the latest stdlib, if stdlib changed, should regenerate the halley genesis file.
-```shell
-cd ../../genesis && cargo run
-```
-
-last, commit all modified source files and generated files.
+All modified source files and generated files should be committed.
 
 ## Layout
 The overall structure of the Starcoin stdlib is as follows:

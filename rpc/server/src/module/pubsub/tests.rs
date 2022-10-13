@@ -13,7 +13,6 @@ use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, Genesis, HashValue, PrivateKey};
-use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::metadata::Metadata;
 use starcoin_rpc_api::pubsub::StarcoinPubSub;
@@ -46,11 +45,12 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     let public_key = pri_key.public_key();
     let account_address = account_address::from_public_key(&public_key);
     let txn = {
-        let txn = starcoin_executor::build_transfer_from_association(
+        let txn = starcoin_transaction_builder::build_transfer_from_association(
             account_address,
             0,
             10000,
-            config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            config.net().time_service().now_secs()
+                + starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME,
             config.net(),
         );
         txn.as_signed_user_txn()?.clone()
@@ -163,11 +163,11 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     // Send new transactions
     let txn = {
         let account = AccountInfo::random();
-        let txn = starcoin_executor::build_transfer_from_association(
+        let txn = starcoin_transaction_builder::build_transfer_from_association(
             account.address,
             0,
             10000,
-            DEFAULT_EXPIRATION_TIME,
+            starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME,
             config.net(),
         );
         txn.as_signed_user_txn()?.clone()

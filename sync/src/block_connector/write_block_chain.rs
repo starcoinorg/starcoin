@@ -19,7 +19,6 @@ use starcoin_types::{
     startup_info::StartupInfo,
     system_events::{NewBranch, NewHeadBlock},
 };
-use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
 use std::fmt::Formatter;
 use std::sync::Arc;
 
@@ -219,7 +218,7 @@ where
         self.config
             .net()
             .time_service()
-            .adjust(GlobalTimeOnChain::new(executed_block.header().timestamp()));
+            .adjust(executed_block.header().timestamp());
         info!("[chain] Select new head, id: {}, number: {}, total_difficulty: {}, enacted_block_count: {}, retracted_block_count: {}", executed_block.header().id(), executed_block.header().number(), executed_block.block_info().total_difficulty, enacted_count, retracted_count);
 
         if let Some(metrics) = self.metrics.as_ref() {
@@ -415,17 +414,17 @@ where
         }
         let (block_info, fork) = self.find_or_fork(block.header())?;
         match (block_info, fork) {
-            //block has bean processed in some branch, so just trigger a head select.
+            //block has been processed in some branch, so just trigger a head selection.
             (Some(_block_info), Some(branch)) => {
                 debug!(
-                    "Block {} has bean processed, trigger head select, total_difficulty: {}",
+                    "Block {} has been processed, trigger head selection, total_difficulty: {}",
                     block_id,
                     branch.get_total_difficulty()?
                 );
                 self.select_head(branch)?;
                 Ok(ConnectOk::Duplicate)
             }
-            //block has bean processed, and it parent is main chain ,so just connect it to main chain.
+            //block has been processed, and its parent is main chain, so just connect it to main chain.
             (Some(block_info), None) => {
                 let executed_block = self.main.connect(ExecutedBlock {
                     block: block.clone(),

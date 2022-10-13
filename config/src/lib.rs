@@ -55,8 +55,7 @@ pub use available_port::{
 pub use genesis_config::{
     BuiltinNetworkID, ChainNetwork, ChainNetworkID, FutureBlockParameter,
     FutureBlockParameterResolver, GenesisBlockParameter, GenesisBlockParameterConfig,
-    GenesisConfig, G_DEV_CONFIG, G_HALLEY_CONFIG, G_LATEST_GAS_SCHEDULE, G_MAIN_CONFIG,
-    G_PROXIMA_CONFIG, G_TEST_CONFIG,
+    GenesisConfig, G_DEV_CONFIG, G_HALLEY_CONFIG, G_MAIN_CONFIG, G_PROXIMA_CONFIG, G_TEST_CONFIG,
 };
 pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;
@@ -67,7 +66,7 @@ pub use rpc_config::{
     WsConfiguration,
 };
 pub use starcoin_crypto::ed25519::genesis_key_pair;
-pub use starcoin_vm_types::time::{MockTimeService, RealTimeService, TimeService};
+pub use starcoin_time_service::{MockTimeService, RealTimeService, TimeService};
 pub use storage_config::{RocksdbConfig, StorageConfig, DEFAULT_CACHE_SIZE};
 pub use txpool_config::TxPoolConfig;
 
@@ -288,21 +287,18 @@ pub struct BaseConfig {
 impl BaseConfig {
     pub fn load_with_opt(opt: &StarcoinOpt) -> Result<Self> {
         let id = opt.net.clone().unwrap_or_default();
-        let base_data_dir = opt.base_data_dir.clone();
-        let base_data_dir = match base_data_dir {
+        let base_data_dir = match opt.base_data_dir.clone() {
+            Some(base_data_dir) if base_data_dir.to_str() == Some("TMP") => temp_dir(),
             Some(base_data_dir) => DataDirPath::PathBuf(base_data_dir),
-            None => {
-                if id.is_dev() || id.is_test() {
-                    temp_dir()
-                } else {
-                    DataDirPath::PathBuf(G_DEFAULT_BASE_DATA_DIR.to_path_buf())
-                }
-            }
+            None if id.is_test() => temp_dir(),
+            None => DataDirPath::PathBuf(G_DEFAULT_BASE_DATA_DIR.to_path_buf()),
         };
+
         let data_dir = base_data_dir.as_ref().join(id.dir_name());
         if !data_dir.exists() {
             create_dir_all(data_dir.as_path())?;
         }
+
         let genesis_config = Self::load_genesis_config_by_opt(
             id.clone(),
             data_dir.as_path(),

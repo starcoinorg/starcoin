@@ -15,7 +15,7 @@ struct TestAttributeOpts {
     timeout: Option<u64>,
 }
 
-/// Marks test function, support async and sync mehtod both.
+/// Marks test function, support async and sync method both.
 /// The async test need actix.
 /// ## Usage
 ///
@@ -100,7 +100,7 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
-    let timeout: u64 = args.timeout.unwrap_or(60);
+    let timeout: u64 = args.timeout.unwrap_or(60) * 3;
     let input = syn::parse_macro_input!(item as syn::ItemFn);
 
     let ret = &input.sig.output;

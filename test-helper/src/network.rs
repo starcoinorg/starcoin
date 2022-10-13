@@ -4,7 +4,7 @@
 use anyhow::{format_err, Result};
 use futures_timer::Delay;
 use network_api::messages::PeerMessage;
-use network_api::{MultiaddrWithPeerId, PeerMessageHandler};
+use network_api::{MultiaddrWithPeerId, PeerId, PeerMessageHandler, RpcInfo};
 use network_p2p_types::{OutgoingResponse, ProtocolRequest};
 use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
@@ -17,7 +17,6 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage};
-use starcoin_types::peer_info::{PeerId, RpcInfo};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use std::any::Any;
 use std::borrow::Cow;

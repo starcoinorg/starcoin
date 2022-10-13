@@ -108,10 +108,27 @@ pub struct IntegrationTestCommand {
     #[clap(long = "ub")]
     /// update test baseline.
     update_baseline: bool,
+
+    #[clap(long)]
+    /// Print usage of tasks.
+    task_help: bool,
+
+    #[clap(long)]
+    /// Task name to print usage, if None, print all tasks.
+    task_name: Option<String>,
+
+    #[clap(long)]
+    /// If current project is the framework project,
+    /// load these modules as stdlib and replace the default stdlib.
+    current_as_stdlib: bool,
 }
+
 static G_PRE_COMPILED_LIB: Lazy<Mutex<Option<FullyCompiledProgram>>> =
     Lazy::new(|| Mutex::new(None));
 pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Result<()> {
+    if cmd.task_help {
+        return starcoin_transactional_test_harness::print_help(cmd.task_name);
+    };
     let rerooted_path = {
         let path = &move_arg.package_path;
         // Always root ourselves to the package root, and then compile relative to that.
@@ -252,6 +269,9 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
         eprintln!("No integration tests file in the dir `integration-tests`.");
         return Ok(());
     }
+    *starcoin_transactional_test_harness::G_FLAG_RELOAD_STDLIB
+        .lock()
+        .unwrap() = cmd.current_as_stdlib;
     let requirements = datatest_stable::Requirements::new(
         move |path| {
             starcoin_transactional_test_harness::run_test_impl(

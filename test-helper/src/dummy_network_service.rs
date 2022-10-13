@@ -2,9 +2,10 @@ use futures::channel::oneshot::Receiver;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use network_api::messages::NotificationMessage;
-use network_api::{messages::PeerMessage, NetworkService, PeerId, PeerProvider, ReputationChange};
+use network_api::{
+    messages::PeerMessage, NetworkService, PeerId, PeerInfo, PeerProvider, ReputationChange,
+};
 use starcoin_logger::prelude::*;
-use starcoin_types::peer_info::PeerInfo;
 
 #[derive(Clone)]
 pub struct DummyNetworkService {

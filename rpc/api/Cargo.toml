@@ -1,52 +1,54 @@
 [package]
-name = "starcoin-rpc-api"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-rpc-api"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
-thiserror = "1.0"
-serde = { version = "1.0.130", features = ["derive"] }
-serde_json = { version = "1.0", features = ["arbitrary_precision"] }
-hex = "0.4.3"
 async-trait = "0.1"
-jsonrpc-core = { version = "18", features = ["arbitrary_precision"] }
-jsonrpc-server-utils = "18"
-jsonrpc-pubsub = "18"
-jsonrpc-core-client = { version = "18", features = [
-    "http",
-    "ipc",
-    "ws",
-    "arbitrary_precision",
-] }
+bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
+clap = {version = "3", features = ["derive"]}
 futures = "0.3.12"
-bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
-starcoin-types = { path = "../../types" }
-starcoin-chain-api = { path = "../../chain/api" }
-starcoin-account-api = { path = "../../account/api" }
-starcoin-txpool-api = { path = "../../txpool/api" }
-starcoin-state-api = { path = "../../state/api" }
-starcoin-sync-api = { path = "../../sync/api" }
-starcoin-config = { path = "../../config" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-starcoin-logger = { path = "../../commons/logger" }
-starcoin-vm-types = { path = "../../vm/types" }
-starcoin-abi-types = { path = "../../abi/types" }
-starcoin-abi-decoder = { path = "../../abi/decoder" }
-starcoin-service-registry = { path = "../../commons/service-registry" }
-starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
-vm-status-translator = { path = "../../vm/vm-status-translator" }
-serde-helpers = { path = "../../commons/serde-helpers" }
-network-p2p-types = { path = "../../network-p2p/types" }
-network-api = { path = "../../network/api", package = "network-api" }
-jsonrpc-derive = { git = "https://github.com/starcoinorg/jsonrpc", rev = "2f6c2b33d3048d57a85347ee735b312df0117b15" }
-schemars = { git = "https://github.com/starcoinorg/schemars", rev = "6972da92f4360e1779168bb3fe0274c521d324e2" }
-openrpc-rs = { git = "https://github.com/starcoinorg/openrpc-rs", rev = "077761500ff6fabe2f20da1bdf429575931e3048" }
-clap = { version = "3", features = ["derive"] }
-starcoin-accumulator = { path = "../../commons/accumulator" }
+hex = "0.4.3"
+jsonrpc-core = {version = "18", features = ["arbitrary_precision"]}
+jsonrpc-core-client = {version = "18", features = [
+  "http",
+  "ipc",
+  "ws",
+  "arbitrary_precision",
+  "tls",
+]}
+jsonrpc-derive = {git = "https://github.com/starcoinorg/jsonrpc", rev = "2f6c2b33d3048d57a85347ee735b312df0117b15"}
+jsonrpc-pubsub = "18"
+jsonrpc-server-utils = "18"
+network-api = {path = "../../network/api", package = "network-api"}
+network-p2p-types = {path = "../../network-p2p/types"}
+network-types = {path = "../../network/types"}
+openrpc-rs = {git = "https://github.com/starcoinorg/openrpc-rs", rev = "077761500ff6fabe2f20da1bdf429575931e3048"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev = "6972da92f4360e1779168bb3fe0274c521d324e2"}
+serde = {version = "1.0.130", features = ["derive"]}
+serde-helpers = {path = "../../commons/serde-helpers"}
+serde_json = {version = "1.0", features = ["arbitrary_precision"]}
+starcoin-abi-decoder = {path = "../../abi/decoder"}
+starcoin-abi-types = {path = "../../abi/types"}
+starcoin-account-api = {path = "../../account/api"}
+starcoin-accumulator = {path = "../../commons/accumulator"}
+starcoin-chain-api = {path = "../../chain/api"}
+starcoin-config = {path = "../../config"}
+starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-logger = {path = "../../commons/logger"}
+starcoin-resource-viewer = {path = "../../vm/resource-viewer"}
+starcoin-service-registry = {path = "../../commons/service-registry"}
+starcoin-state-api = {path = "../../state/api"}
+starcoin-sync-api = {path = "../../sync/api"}
+starcoin-txpool-api = {path = "../../txpool/api"}
+starcoin-types = {path = "../../types"}
+starcoin-vm-types = {path = "../../vm/types"}
+thiserror = "1.0"
+vm-status-translator = {path = "../../vm/vm-status-translator"}
 [[bin]]
 name = "starcoin-rpc-schema-generate"
 path = "src/generate_schema.rs"

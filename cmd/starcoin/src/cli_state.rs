@@ -19,10 +19,11 @@ use bcs_ext::BCSCodec;
 use starcoin_abi_decoder::{decode_txn_payload, DecodedTransactionPayload};
 use starcoin_account_api::{AccountInfo, AccountProvider};
 use starcoin_config::{ChainNetworkID, DataDirPath};
+use starcoin_dev::playground;
 use starcoin_node::NodeHandle;
 use starcoin_rpc_api::chain::GetEventOption;
 use starcoin_rpc_api::types::{
-    RawUserTransactionView, SignedUserTransactionView, TransactionStatusView,
+    DryRunOutputView, RawUserTransactionView, SignedUserTransactionView, TransactionStatusView,
 };
 use starcoin_rpc_client::{RpcClient, StateRootOption};
 use starcoin_state_api::StateReaderExt;
@@ -166,18 +167,25 @@ impl CliState {
     }
 
     pub fn watch_txn(&self, txn_hash: HashValue) -> Result<ExecutionOutputView> {
-        let block = self.client.watch_txn(txn_hash, Some(self.watch_timeout))?;
+        let block = self
+            .client
+            .watch_txn(txn_hash, Some(self.watch_timeout))
+            .map(Some)
+            .unwrap_or_else(|e| {
+                eprintln!("Watch txn {:?}  err: {:?}", txn_hash, e);
+                None
+            });
 
         let txn_info = {
             if let Some(info) = self.client.chain_get_transaction_info(txn_hash)? {
                 info
             } else {
                 //sleep and try again.
-                std::thread::sleep(Duration::from_secs(1));
+                std::thread::sleep(Duration::from_secs(5));
                 if let Some(info) = self.client.chain_get_transaction_info(txn_hash)? {
                     info
                 } else {
-                    bail!("transaction execute success, but get transaction info return none, block: {}", block.header.number);
+                    bail!("transaction execute success, but get transaction info return none, block: {}", block.map(|b|b.header.number.to_string()).unwrap_or_else(||"unknown".to_string()));
                 }
             }
         };
@@ -258,6 +266,11 @@ impl CliState {
         ))
     }
 
+    pub fn dry_run_transaction(&self, txn: DryRunTransaction) -> Result<DryRunOutputView> {
+        let state_reader = self.client().state_reader(StateRootOption::Latest)?;
+        playground::dry_run_explain(&state_reader, txn, None)
+    }
+
     pub fn execute_transaction(
         &self,
         raw_txn: RawUserTransaction,
@@ -266,7 +279,7 @@ impl CliState {
     ) -> Result<ExecuteResultView> {
         let sender = self.get_account(raw_txn.sender())?;
         let public_key = sender.public_key;
-        let dry_output = self.client.dry_run_raw(DryRunTransaction {
+        let dry_output = self.dry_run_transaction(DryRunTransaction {
             public_key: public_key.clone(),
             raw_txn: raw_txn.clone(),
         })?;
@@ -281,7 +294,10 @@ impl CliState {
                 TransactionStatusView::Executed
             )
         {
-            eprintln!("txn dry run failed");
+            eprintln!(
+                "txn dry run result: {:?}",
+                execute_result.dry_run_output.txn_output
+            );
             return Ok(execute_result);
         }
 

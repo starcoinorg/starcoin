@@ -1,10 +1,10 @@
 [package]
-name = "scmd"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "scmd"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
@@ -16,6 +16,7 @@ clap = { version = "3", features = ["derive"] }
 serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 rust-flatten-json = "0.2.0"
 cli-table = "0.3.2"
+jpst = "0.1.1"
 once_cell = "1.13.0"
 
 [dev-dependencies]

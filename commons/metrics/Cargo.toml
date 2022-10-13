@@ -1,16 +1,15 @@
 [package]
-name = "starcoin-metrics"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
-edition = "2021"
 description = "Starcoin metrics"
+edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-metrics"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
-futures = "0.3.12"
-hyper = { version = "0.14.12", features = ["full"] }
+hyper = { version = "0.14.12", features = ["full"], optional = true }
 starcoin-logger = { path = "../logger" }
 prometheus = { version = "0.13.0", default-features = false, features = [
     "push",
@@ -23,3 +22,6 @@ psutil = { version = "3.2", default-features = false, features = [
     "process",
 ] }
 timeout-join-handler = { path = "../timeout-join-handler" }
+futures = { version = "0.3.12", optional = true }
+[features]
+server = ["prometheus/push", "hyper", "futures"]

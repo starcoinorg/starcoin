@@ -13,9 +13,8 @@ use move_package::compilation::compiled_package::CompiledUnitWithSource;
 use starcoin_cmd::dev::dev_helper::{self};
 use starcoin_config::BuiltinNetworkID;
 use starcoin_move_compiler::check_compiled_module_compat;
-use starcoin_transactional_test_harness::remote_state::RemoteStateView;
+use starcoin_transactional_test_harness::remote_state::RemoteViewer;
 use starcoin_types::transaction::Package;
-
 use std::{collections::BTreeMap, path::PathBuf};
 
 #[derive(Parser)]
@@ -53,7 +52,7 @@ pub fn handle_compatibility_check(
         )
     });
 
-    let remote_view = RemoteStateView::from_url(&rpc, cmd.block_number)?;
+    let remote_view = RemoteViewer::from_url(&rpc, cmd.block_number)?;
 
     let mut incompatible_module_ids = vec![];
     for m in pkg.root_compiled_units.as_slice() {

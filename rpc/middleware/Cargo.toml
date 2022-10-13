@@ -1,23 +1,23 @@
 [package]
-name = "starcoin-rpc-middleware"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
-
+license = "Apache-2.0"
+name = "starcoin-rpc-middleware"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
+futures = "0.3.12"
 thiserror = "1.0"
 once_cell = "1.13.0"
-jsonrpc-core = { version = "18", features = ["arbitrary_precision"] }
-futures = "0.3.12"
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-metrics = { path = "../../commons/metrics" }
 starcoin-rpc-api = { path = "../api" }
 serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 starcoin-config = { path = "../../config" }
+jsonrpc-core = { version = "18", features = ["arbitrary_precision"] }
+
 [dev-dependencies]
-stest = { path = "../../commons/stest" }
 rand = "0.8.5"
+stest = { path = "../../commons/stest" }

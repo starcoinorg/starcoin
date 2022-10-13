@@ -1,14 +1,13 @@
 [package]
-name = "api-limiter"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
 edition = "2021"
+license = "Apache-2.0"
+name = "api-limiter"
+version = "1.12.5"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
 anyhow = "~1"
 governor = { version = "~0.4", features = ["dashmap"] }
-dashmap = "~5.2"
+dashmap = "~5.3"

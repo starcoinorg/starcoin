@@ -16,7 +16,7 @@ use std::sync::{atomic::AtomicUsize, Arc};
 use types::transaction;
 
 /// Verification options.
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Options {
     /// Skip checks for early rejection, to make sure that local transactions are always imported.
     pub no_early_reject: bool,

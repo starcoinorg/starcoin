@@ -1,0 +1,24 @@
+[package]
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+edition = "2021"
+name = "network-types"
+version = "1.12.5"
+
+[dependencies]
+anyhow = "1.0.41"
+#async-trait = "0.1.51"
+#futures = "0.3.12"
+#hex = "0.4.3"
+#itertools = "0.10.3"
+#parking_lot = "0.12.1"
+#rand = "0.8.5"
+serde = {version = "1.0.130", default-features = false}
+
+#bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
+network-p2p-types = {path = "../../network-p2p/types"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev = "6972da92f4360e1779168bb3fe0274c521d324e2"}
+starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+#starcoin-logger = {path = "../../commons/logger"}
+#starcoin-metrics = {path = "../../commons/metrics"}
+#starcoin-service-registry = {path = "../../commons/service-registry"}
+starcoin-types = {path = "../../types"}

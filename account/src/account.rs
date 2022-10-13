@@ -116,6 +116,7 @@ impl Account {
             self.public_key.clone(),
             self.setting.is_default,
             self.setting.is_readonly,
+            false,
         )
     }
 

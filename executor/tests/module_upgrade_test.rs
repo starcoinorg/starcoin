@@ -3,7 +3,6 @@ use logger::prelude::*;
 use starcoin_config::genesis_config::G_TOTAL_STC_AMOUNT;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::hash::PlainCryptoHash;
-use starcoin_executor::execute_readonly_function;
 use starcoin_state_api::{ChainStateReader, StateReaderExt, StateView};
 use starcoin_transaction_builder::{build_package_with_stdlib_module, StdLibOptions};
 use starcoin_types::access_path::DataPath;
@@ -33,172 +32,6 @@ use test_helper::dao::{
 };
 use test_helper::executor::*;
 use test_helper::Account;
-
-#[stest::test]
-fn test_dao_upgrade_module() -> Result<()> {
-    let alice = Account::new();
-    let (chain_state, net) = prepare_genesis();
-
-    let dao_action_type_tag = TypeTag::Struct(StructTag {
-        address: genesis_address(),
-        module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
-        name: Identifier::new("UpgradeModuleV2").unwrap(),
-        type_params: vec![],
-    });
-    let module = compile_modules_with_address(genesis_address(), TEST_MODULE)
-        .pop()
-        .unwrap();
-    let package = Package::new_with_module(module)?;
-    let package_hash = package.crypto_hash();
-
-    let vote_script_function = ScriptFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("ModuleUpgradeScripts").unwrap(),
-        ),
-        Identifier::new("propose_module_upgrade_v2").unwrap(),
-        vec![stc_type_tag()],
-        vec![
-            bcs_ext::to_bytes(&genesis_address()).unwrap(),
-            bcs_ext::to_bytes(&package_hash.to_vec()).unwrap(),
-            bcs_ext::to_bytes(&1u64).unwrap(),
-            bcs_ext::to_bytes(&0u64).unwrap(),
-            bcs_ext::to_bytes(&false).unwrap(),
-        ],
-    );
-    let execute_script_function = ScriptFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("ModuleUpgradeScripts").unwrap(),
-        ),
-        Identifier::new("submit_module_upgrade_plan").unwrap(),
-        vec![stc_type_tag()],
-        vec![
-            bcs_ext::to_bytes(alice.address()).unwrap(),
-            bcs_ext::to_bytes(&0u64).unwrap(),
-        ],
-    );
-    dao_vote_test(
-        &alice,
-        &chain_state,
-        &net,
-        vote_script_function,
-        dao_action_type_tag,
-        execute_script_function,
-        0,
-    )?;
-    association_execute_should_success(&net, &chain_state, TransactionPayload::Package(package))?;
-
-    assert_eq!(read_foo(&chain_state), 1);
-    Ok(())
-}
-
-#[stest::test]
-fn test_dao_upgrade_module_enforced() -> Result<()> {
-    let alice = Account::new();
-    let (chain_state, net) = prepare_genesis();
-
-    let dao_action_type_tag = TypeTag::Struct(StructTag {
-        address: genesis_address(),
-        module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
-        name: Identifier::new("UpgradeModuleV2").unwrap(),
-        type_params: vec![],
-    });
-    let module = compile_modules_with_address(genesis_address(), TEST_MODULE)
-        .pop()
-        .unwrap();
-    let package = Package::new_with_module(module)?;
-    let package_hash = package.crypto_hash();
-
-    let vote_script_function = ScriptFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("ModuleUpgradeScripts").unwrap(),
-        ),
-        Identifier::new("propose_module_upgrade_v2").unwrap(),
-        vec![stc_type_tag()],
-        vec![
-            bcs_ext::to_bytes(&genesis_address()).unwrap(),
-            bcs_ext::to_bytes(&package_hash.to_vec()).unwrap(),
-            bcs_ext::to_bytes(&1u64).unwrap(),
-            bcs_ext::to_bytes(&0u64).unwrap(),
-            bcs_ext::to_bytes(&false).unwrap(),
-        ],
-    );
-    let execute_script_function = ScriptFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("ModuleUpgradeScripts").unwrap(),
-        ),
-        Identifier::new("submit_module_upgrade_plan").unwrap(),
-        vec![stc_type_tag()],
-        vec![
-            bcs_ext::to_bytes(alice.address()).unwrap(),
-            bcs_ext::to_bytes(&0u64).unwrap(),
-        ],
-    );
-    dao_vote_test(
-        &alice,
-        &chain_state,
-        &net,
-        vote_script_function,
-        dao_action_type_tag.clone(),
-        execute_script_function,
-        0,
-    )?;
-    association_execute_should_success(&net, &chain_state, TransactionPayload::Package(package))?;
-
-    assert_eq!(read_foo(&chain_state), 1);
-
-    // test upgrade module enforced
-    let alice = Account::new();
-    let module = compile_modules_with_address(genesis_address(), TEST_MODULE_1)
-        .pop()
-        .unwrap();
-    let package = Package::new_with_module(module)?;
-    let package_hash = package.crypto_hash();
-
-    let vote_script_function = ScriptFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("ModuleUpgradeScripts").unwrap(),
-        ),
-        Identifier::new("propose_module_upgrade_v2").unwrap(),
-        vec![stc_type_tag()],
-        vec![
-            bcs_ext::to_bytes(&genesis_address()).unwrap(),
-            bcs_ext::to_bytes(&package_hash.to_vec()).unwrap(),
-            bcs_ext::to_bytes(&2u64).unwrap(),
-            bcs_ext::to_bytes(&0u64).unwrap(),
-            bcs_ext::to_bytes(&true).unwrap(),
-        ],
-    );
-    let execute_script_function = ScriptFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("ModuleUpgradeScripts").unwrap(),
-        ),
-        Identifier::new("submit_module_upgrade_plan").unwrap(),
-        vec![stc_type_tag()],
-        vec![
-            bcs_ext::to_bytes(alice.address()).unwrap(),
-            bcs_ext::to_bytes(&1u64).unwrap(),
-        ],
-    );
-    dao_vote_test(
-        &alice,
-        &chain_state,
-        &net,
-        vote_script_function,
-        dao_action_type_tag,
-        execute_script_function,
-        1,
-    )?;
-    association_execute_should_success(&net, &chain_state, TransactionPayload::Package(package))?;
-
-    assert_eq!(read_foo(&chain_state), 2);
-    Ok(())
-}
 
 #[stest::test]
 fn test_init_script() -> Result<()> {
@@ -587,7 +420,7 @@ where
 
 #[stest::test]
 fn test_upgrade_stdlib_with_disallowed_publish_option() -> Result<()> {
-    let alice = Account::new();
+    let _alice = Account::new();
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
     genesis_config.publishing_option = TransactionPublishOption::locked();
     let net = ChainNetwork::new_custom(
@@ -595,59 +428,9 @@ fn test_upgrade_stdlib_with_disallowed_publish_option() -> Result<()> {
         ChainId::new(100),
         genesis_config,
     )?;
-    let chain_state = prepare_customized_genesis(&net);
+    let _chain_state = prepare_customized_genesis(&net);
 
-    let dao_action_type_tag = TypeTag::Struct(StructTag {
-        address: genesis_address(),
-        module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
-        name: Identifier::new("UpgradeModuleV2").unwrap(),
-        type_params: vec![],
-    });
-    let module = compile_modules_with_address(genesis_address(), TEST_MODULE)
-        .pop()
-        .unwrap();
-    let package = Package::new_with_module(module)?;
-    let package_hash = package.crypto_hash();
-
-    let vote_script_function = ScriptFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("ModuleUpgradeScripts").unwrap(),
-        ),
-        Identifier::new("propose_module_upgrade_v2").unwrap(),
-        vec![stc_type_tag()],
-        vec![
-            bcs_ext::to_bytes(&genesis_address()).unwrap(),
-            bcs_ext::to_bytes(&package_hash.to_vec()).unwrap(),
-            bcs_ext::to_bytes(&1u64).unwrap(),
-            bcs_ext::to_bytes(&0u64).unwrap(),
-            bcs_ext::to_bytes(&false).unwrap(),
-        ],
-    );
-    let execute_script_function = ScriptFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("ModuleUpgradeScripts").unwrap(),
-        ),
-        Identifier::new("submit_module_upgrade_plan").unwrap(),
-        vec![stc_type_tag()],
-        vec![
-            bcs_ext::to_bytes(alice.address()).unwrap(),
-            bcs_ext::to_bytes(&0u64).unwrap(),
-        ],
-    );
-    dao_vote_test(
-        &alice,
-        &chain_state,
-        &net,
-        vote_script_function,
-        dao_action_type_tag,
-        execute_script_function,
-        0,
-    )?;
-    association_execute_should_success(&net, &chain_state, TransactionPayload::Package(package))?;
-
-    assert_eq!(read_foo(&chain_state), 1);
+    // TODO: test with StarcoinDAO with stdlib v12
     Ok(())
 }
 
@@ -659,18 +442,4 @@ where
         .get_resource::<TwoPhaseUpgradeV2Resource>(genesis_address())?
         .map(|tpu| tpu.enforced())
         .unwrap_or(false))
-}
-
-fn read_foo<S: StateView>(state_view: &S) -> u8 {
-    let mut ret = execute_readonly_function(
-        state_view,
-        &ModuleId::new(genesis_address(), Identifier::new("M").unwrap()),
-        &Identifier::new("foo").unwrap(),
-        vec![],
-        vec![],
-        None,
-    )
-    .unwrap();
-    assert_eq!(ret.len(), 1);
-    bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }

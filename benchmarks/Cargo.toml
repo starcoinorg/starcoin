@@ -1,15 +1,14 @@
 [package]
-name = "benchmarks"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "benchmarks"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
 criterion = "0.3.6"
-proptest = "1.0.0"
 futures-timer = "3.0"
 types = { path = "../types", package = "starcoin-types" }
 starcoin-storage = { path = "../storage" }
@@ -34,8 +33,10 @@ starcoin-network-api = { path = "../network/api", package = "network-api" }
 executor-benchmark = { path = "../executor/benchmark", package = "starcoin-executor-benchmark" }
 futures = "0.3.12"
 logger = { path = "../commons/logger", package = "starcoin-logger" }
+proptest = "1.0.0"
+starcoin-transaction-builder = { path = "../vm/transaction-builder" }
 [target."cfg(target_os=\"linux\")".dependencies]
-pprof = { version = "0.10", features = ["flamegraph", "criterion"] }
+pprof = {version = "0.10", features = ["flamegraph", "criterion"]}
 [dev-dependencies]
 
 # see https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
@@ -43,17 +44,17 @@ pprof = { version = "0.10", features = ["flamegraph", "criterion"] }
 bench = false
 
 [[bench]]
+harness = false
 name = "bench_storage"
-harness = false
 
 [[bench]]
+harness = false
 name = "bench_chain"
-harness = false
 
 [[bench]]
+harness = false
 name = "bench_state_tree"
-harness = false
 
 [[bench]]
-name = "bench_vm"
 harness = false
+name = "bench_vm"

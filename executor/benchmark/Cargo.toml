@@ -1,14 +1,14 @@
 [package]
-name = "starcoin-executor-benchmark"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-executor-benchmark"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
-itertools = { version = "0.10.3", default-features = false }
+itertools = {version = "0.10.3", default-features = false}
 rand = "0.8.5"
 rayon = "1"
 clap = { version = "3", features = ["derive"] }
@@ -25,4 +25,5 @@ starcoin-state-api = { path = "../../state/api" }
 starcoin-genesis = { path = "../../genesis" }
 starcoin-consensus = { path = "../../consensus" }
 starcoin-vm-types = { path = "../../vm/types" }
+starcoin-transaction-builder = {path = "../../vm/transaction-builder"}
 [features]

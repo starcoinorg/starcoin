@@ -1,10 +1,10 @@
 [package]
-name = "starcoin-rpc-client"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-rpc-client"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
@@ -15,11 +15,9 @@ hex = "~0.4"
 actix = "0.13"
 actix-rt = "2.6"
 tokio = "^1"
-log = "0.4.16"
-parking_lot = "0.12.1"
+futures = "0.3.12"
 jsonrpc-core = { version = "18", features = ["arbitrary_precision"] }
 jsonrpc-derive = "18"
-jsonrpc-server-utils = "18"
 jsonrpc-pubsub = "18"
 jsonrpc-core-client = { version = "18", features = [
     "http",
@@ -33,7 +31,6 @@ jsonrpc-client-transports = { version = "18", features = [
     "ws",
     "arbitrary_precision",
 ] }
-futures = "0.3.12"
 parity-tokio-ipc = "0.9"
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-types = { path = "../../types" }
@@ -52,6 +49,10 @@ network-p2p-types = { path = "../../network-p2p/types" }
 network-api = { path = "../../network/api", package = "network-api" }
 futures-timer = "3.0"
 starcoin-abi-types = { path = "../../abi/types" }
+jsonrpc-server-utils = "18"
+log = "0.4.16"
+network-types = { path = "../../network/types" }
+parking_lot = "0.12.1"
 
 [dev-dependencies]
 starcoin-rpc-server = { path = "../server" }

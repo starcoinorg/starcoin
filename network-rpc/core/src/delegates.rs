@@ -4,7 +4,7 @@
 use anyhow::Result;
 use futures::prelude::future::BoxFuture;
 use futures::Future;
-use starcoin_types::peer_info::PeerId;
+use network_types::peer_info::PeerId;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::Arc;

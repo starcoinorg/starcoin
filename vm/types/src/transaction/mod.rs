@@ -577,7 +577,7 @@ impl SignedUserTransaction {
 
     pub fn id(&self) -> HashValue {
         self.id
-            .expect("SignedUserTransaction's id should bean Some after init.")
+            .expect("SignedUserTransaction's id should be Some after init.")
     }
 }
 

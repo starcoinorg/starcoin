@@ -1,26 +1,25 @@
 [package]
-name = "starcoin-node"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-node"
+publish = false
+version = "1.12.5"
 
 [dependencies]
-anyhow = "1.0.41"
-thiserror = "1.0"
-backtrace = "0.3"
 actix = "0.13"
 actix-rt = "2.6"
 tokio = { version = "^1", features = ["full"] }
 futures = "0.3.12"
 futures-timer = "3.0"
 async-trait = "0.1"
+anyhow = "1.0.41"
 async-std = "1.12"
+backtrace = "0.3"
 chrono = "0.4.19"
 serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 timeout-join-handler = { path = "../commons/timeout-join-handler" }
-starcoin-metrics = { path = "../commons/metrics" }
+starcoin-metrics = { path = "../commons/metrics", features = ["server"] }
 starcoin-config = { path = "../config" }
 starcoin-consensus = { path = "../consensus" }
 starcoin-executor = { path = "../executor" }
@@ -54,5 +53,7 @@ starcoin-service-registry = { path = "../commons/service-registry" }
 starcoin-rpc-client = { path = "../rpc/client" }
 starcoin-stratum = { path = "../stratum" }
 starcoin-miner-client = { path = "../cmd/miner_client" }
+starcoin-vm-runtime = { path = "../vm/vm-runtime" }
+thiserror = "1.0"
 [dev-dependencies]
 stest = { path = "../commons/stest" }

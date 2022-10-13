@@ -1,14 +1,13 @@
 [package]
-name = "starcoin-faucet"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-faucet"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
-tiny_http = "0.8.2"
 futures = "0.3.12"
 hex = { version = "0.4.3", default-features = false }
 tokio = { version = "^1", features = ["full"] }
@@ -28,6 +27,8 @@ starcoin-account-api = { path = "../../account/api" }
 starcoin-executor = { path = "../../executor" }
 starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
 clap = { version = "3", features = ["derive"] }
+starcoin-transaction-builder = { path = "../../vm/transaction-builder" }
+tiny_http = "0.8.2"
 [[bin]]
 name = "starcoin_faucet"
 path = "src/main.rs"

@@ -25,7 +25,7 @@ use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
 };
 use starcoin_vm_types::identifier::Identifier;
-use starcoin_vm_types::language_storage::StructTag;
+use starcoin_vm_types::language_storage::{struct_tag_match, StructTag};
 use starcoin_vm_types::state_store::state_key::StateKey;
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -57,6 +57,15 @@ where
     fn get(&self, access_path: AccessPath) -> FutureResult<Option<Vec<u8>>> {
         let fut = self.service.clone().get(access_path).map_err(map_err);
         Box::pin(fut)
+    }
+
+    fn get_state_node_by_node_hash(&self, key_hash: HashValue) -> FutureResult<Option<Vec<u8>>> {
+        let state_store = self.state_store.clone();
+        let f = async move {
+            let node = state_store.get(&key_hash)?.map(|n| n.0);
+            Ok(node)
+        };
+        Box::pin(f.map_err(map_err).boxed())
     }
 
     fn get_with_proof(&self, access_path: AccessPath) -> FutureResult<StateWithProofView> {
@@ -288,8 +297,13 @@ where
                 .state_root
                 .unwrap_or(state_service.state_root().await?);
             let statedb = ChainStateDB::new(db, Some(state_root));
-            //TODO implement list state by iter, and pagination
+
             let state = statedb.get_account_state_set(&addr)?;
+            let filter_types = option.resource_types;
+            if filter_types.is_some() && filter_types.as_ref().unwrap().len() > 10 {
+                return Err(anyhow::anyhow!("Query resources is limited by 10"));
+            }
+
             match state {
                 None => Ok(ListResourceView::default()),
                 Some(s) => {
@@ -298,6 +312,19 @@ where
                         .cloned()
                         .unwrap_or_default()
                         .iter()
+                        .filter(|(k, _)| {
+                            if filter_types.is_none() {
+                                return true;
+                            }
+
+                            let resource_struct_tag = StructTag::decode(k.as_slice()).unwrap();
+                            for filter_type in filter_types.as_ref().unwrap() {
+                                if struct_tag_match(&filter_type.0, &resource_struct_tag) {
+                                    return true;
+                                }
+                            }
+                            false
+                        })
                         .skip(option.start_index)
                         .take(option.max_size)
                         .map(|(k, v)| {

@@ -1,29 +1,29 @@
 [package]
-name = "starcoin-x"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-x"
+publish = false
+version = "1.12.5"
 
 [dependencies]
-determinator = "0.4.0"
-serde = { version = "1.0.130", features = ["derive"] }
-serde_json = "1.0.61"
-clap = { version = "3", features = ["derive"] }
 anyhow = "1.0.41"
-colored-diff = "0.2.2"
-guppy = { version = "0.9.0", features = ["summaries"] }
-indoc = "1.0.3"
-toml = "0.5.9"
-env_logger = "0.9.0"
-log = "0.4.16"
 chrono = "0.4.19"
+clap = {version = "3", features = ["derive"]}
+colored-diff = "0.2.2"
+determinator = "0.4.0"
+env_logger = "0.9.0"
 globset = "0.4.8"
-regex = "1.6.0"
-rayon = "1.5.1"
+guppy = {version = "0.9.0", features = ["summaries"]}
 indexmap = "1.6.2"
 camino = { version = "1" }
-x-core = { package = "x-core", git = "https://github.com/starcoinorg/move", rev = "161e732bc875a568421513e761dc4d39d301838a" }
-x-lint = { package = "x-lint", git = "https://github.com/starcoinorg/move", rev = "161e732bc875a568421513e761dc4d39d301838a" }
-x = { package = "x", git = "https://github.com/starcoinorg/move", rev = "161e732bc875a568421513e761dc4d39d301838a" }
+x-core = { package = "x-core", git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
+x-lint = { package = "x-lint", git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
+x = { package = "x", git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
+indoc = "1.0.3"
+log = "0.4.16"
+rayon = "1.5.1"
+regex = "1.6.0"
+serde = {version = "1.0.130", features = ["derive"]}
+serde_json = "1.0.61"
+toml = "0.5.9"

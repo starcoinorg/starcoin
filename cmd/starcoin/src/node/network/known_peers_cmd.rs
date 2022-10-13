@@ -5,8 +5,8 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use clap::Parser;
+use network_types::peer_info::PeerId;
 use scmd::{CommandAction, ExecContext};
-use starcoin_types::peer_info::PeerId;
 
 #[derive(Debug, Parser, Default)]
 #[clap(name = "known_peers")]

@@ -1,10 +1,10 @@
 [package]
-name = "starcoin-chain"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-chain"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
@@ -19,7 +19,6 @@ consensus = { package = "starcoin-consensus", path = "../consensus" }
 bcs-ext = { package = "bcs-ext", path = "../commons/bcs_ext" }
 starcoin-state-api = { path = "../state/api" }
 starcoin-chain-api = { path = "./api" }
-starcoin-accumulator = { path = "../commons/accumulator", package = "starcoin-accumulator" }
 starcoin-service-registry = { path = "../commons/service-registry" }
 storage = { package = "starcoin-storage", path = "../storage" }
 logger = { path = "../commons/logger", package = "starcoin-logger" }
@@ -31,6 +30,8 @@ proptest-derive = { version = "0.3.0", default-features = false, optional = true
 sp-utils = { path = "../commons/utils" }
 rand = "0.8.5"
 rand_core = { version = "0.6.3", default-features = false }
+starcoin-accumulator = { path = "../commons/accumulator", package = "starcoin-accumulator" }
+starcoin-time-service = { path = "../commons/time-service" }
 
 [dev-dependencies]
 stdlib = { path = "../vm/stdlib" }

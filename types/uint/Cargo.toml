@@ -1,17 +1,17 @@
 [package]
-name = "starcoin-uint"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-uint"
+publish = false
+version = "1.12.5"
 
 [dependencies]
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-serde = { version = "1.0.130", default-features = false }
+hex = {version = "0.4.3", default-features = false}
+serde = {version = "1.0.130", default-features = false}
+starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 uint = "0.9.3"
-hex = { version = "0.4.3", default-features = false }
 [dev-dependencies]
-bcs-ext = { path = "../../commons/bcs_ext" }
-starcoin-types = { path = "../../types/"}
+bcs-ext = {path = "../../commons/bcs_ext"}
 serde_json = "1.0"
+starcoin-types = {path = "../../types/"}

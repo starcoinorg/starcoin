@@ -1,9 +1,9 @@
 name: Sync Blocks Cron
 
 on:
-  # workflow_dispatch:
+  workflow_dispatch:
   schedule:
-    - cron: '0 5,17 * * *'
+    - cron: "0 5,17 * * *"
 
 jobs:
   syncBlocks:
@@ -17,22 +17,67 @@ jobs:
       - name: setup environment
         run: bash ./scripts/dev_setup.sh  -b -t -y
       - name: install skbn
-        run : |
+        run: |
           wget https://github.com/nuvo/skbn/releases/download/0.4.2/skbn-0.4.2-linux.tar.gz
           tar -xzf skbn-0.4.2-linux.tar.gz
           sudo cp ./skbn-0.4.2-linux/skbn /usr/local/bin/
-      - name: run sync main
+      - name: sync blocks main
         run: python3 ./scripts/sync_block.py --net main
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      - name: run sync proxima
+      - name: sync blocks barnard
+        run: python3 ./scripts/sync_block.py --net barnard
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: sync blocks proxima
         run: python3 ./scripts/sync_block.py --net proxima
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      - name: run sync barnard
-        run: python3 ./scripts/sync_block.py --net barnard
+      - name: backup snapshot main
+        run: python3 ./scripts/backup_snapshot.py --net main
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: sync snapshot main
+        run: python3 ./scripts/sync_snapshot.py --net main
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: check sync main result
+        run: python3 ./scripts/check_sync_snapshot_result.py --net main
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: backup snapshot barnard
+        run: python3 ./scripts/backup_snapshot.py --net barnard
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: sync snapshot barnard
+        run: python3 ./scripts/sync_snapshot.py --net barnard
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: check sync barnard result
+        run: python3 ./scripts/check_sync_snapshot_result.py --net barnard
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: backup snapshot proxima
+        run: python3 ./scripts/backup_snapshot.py --net proxima
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: sync snapshot proxima
+        run: python3 ./scripts/sync_snapshot.py --net proxima
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: check sync proxima result
+        run: python3 ./scripts/check_sync_snapshot_result.py --net proxima
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

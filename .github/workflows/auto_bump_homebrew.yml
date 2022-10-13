@@ -1,0 +1,34 @@
+name: Auto Bump Homebrew formula
+on:
+  push:
+    tags: 'v*'
+  workflow_dispatch:
+    inputs:
+      tag-name:
+        description: 'The git tag name to bump the formula to'
+        required: true
+
+jobs:
+  homebrew:
+    name: Bump Homebrew formula
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract version
+        id: extract-version
+        run: |
+          printf "::set-output name=%s::%s\n" tag-name "${GITHUB_REF#refs/tags/}"
+      - uses: mislav/bump-homebrew-formula-action@v2
+        if: "!contains(github.ref, '-')" # skip prereleases
+        with:
+          formula-name: starcoin
+          formula-path: Formula/starcoin.rb
+          homebrew-tap: starcoinorg/homebrew-starcoin
+          base-branch: master
+          download-url: https://github.com/starcoinorg/starcoin/releases/download/${{ steps.extract-version.outputs.tag-name }}/starcoin-macos-latest.zip
+          commit-message: |
+            {{formulaName}} {{version}}
+
+            Created by https://github.com/mislav/bump-homebrew-formula-action
+        env:
+          COMMITTER_TOKEN: ${{ secrets.BUMP_FORMULA_TOKEN }}
+          # GITHUB_TOKEN: ${{ secrets.BUMP_FORMULA_TOKEN }}

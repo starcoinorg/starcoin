@@ -29,7 +29,7 @@ impl ServiceFactory<Self> for GenerateBlockEventPacemaker {
 
 impl GenerateBlockEventPacemaker {
     pub fn send_event(&mut self, force: bool, ctx: &mut ServiceContext<Self>) {
-        ctx.broadcast(GenerateBlockEvent::new(force));
+        ctx.broadcast(GenerateBlockEvent::new_break(force));
     }
 
     pub fn is_synced(&self) -> bool {

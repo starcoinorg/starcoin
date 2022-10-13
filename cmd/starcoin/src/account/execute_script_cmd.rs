@@ -9,7 +9,7 @@ use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_move_compiler::load_bytecode_file;
 use starcoin_types::transaction::{
-    parse_transaction_argument, Script, TransactionArgument, TransactionPayload,
+    parse_transaction_argument_advance, Script, TransactionArgument, TransactionPayload,
 };
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
@@ -31,7 +31,7 @@ pub struct ExecuteScriptOpt {
     )]
     type_tags: Option<Vec<TypeTag>>,
 
-    #[clap(long = "arg", name = "transaction-args", help = "can specify multi arg", parse(try_from_str = parse_transaction_argument))]
+    #[clap(long = "arg", name = "transaction-args", help = "can specify multi arg", parse(try_from_str = parse_transaction_argument_advance))]
     args: Option<Vec<TransactionArgument>>,
 
     #[clap(flatten)]

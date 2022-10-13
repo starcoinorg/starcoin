@@ -1,22 +1,22 @@
 [package]
-name = "starcoin-types"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-types"
+publish = false
+version = "1.12.5"
 
 [dependencies]
 anyhow = "1.0.41"
-byteorder = { version = "1.4.3", default-features = false }
+byteorder = {version = "1.4.3", default-features = false}
 bytes = "1"
 hex = { version = "0.4.3", default-features = false, features = ["serde"] }
 itertools = { version = "0.10.3", default-features = false }
 proptest = { version = "1.0.0", default-features = false, optional = true }
 proptest-derive = { version = "0.3.0", default-features = false, optional = true }
 rand = "0.8.5"
-rand_core = { version = "0.6.3", default-features = false }
-serde = { version = "1.0.130", default-features = false }
+rand_core = {version = "0.6.3", default-features = false}
+serde = {version = "1.0.130", default-features = false}
 serde_json = "1.0"
 thiserror = "1.0.30"
 num_enum = "0.5.7"

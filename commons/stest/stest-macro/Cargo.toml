@@ -1,18 +1,18 @@
 [package]
-name = "stest-macro"
-version = "1.11.11"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-license = "Apache-2.0"
-publish = false
 edition = "2021"
+license = "Apache-2.0"
+name = "stest-macro"
+publish = false
+version = "1.12.5"
 
 [lib]
 proc-macro = true
 
 [dependencies]
-quote = "^1"
-syn = { version = "^1", features = ["full"] }
 darling = "0.10.2"
+quote = "^1"
+syn = {version = "^1", features = ["full"]}
 
 [dev-dependencies]
 actix = "0.13"

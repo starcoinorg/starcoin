@@ -7,6 +7,7 @@ use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
+use starcoin_transaction_builder::encode_nft_transfer_script;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::on_chain_resource::nft::{IdentifierNFT, NFTGallery, NFT, NFTUUID};
 use starcoin_vm_types::transaction::TransactionPayload;
@@ -94,6 +95,7 @@ impl CommandAction for NFTCommand {
                     None,
                     0,
                     std::usize::MAX,
+                    None,
                 )?;
                 let galleries: Result<Vec<NFTGallery>> = all_resources
                     .resources
@@ -128,6 +130,7 @@ impl CommandAction for NFTCommand {
                     None,
                     0,
                     std::usize::MAX,
+                    None,
                 )?;
                 let ident_nfts: Result<Vec<IdentifierNFT>> = all_resources
                     .resources
@@ -151,8 +154,7 @@ impl CommandAction for NFTCommand {
                 receiver,
             } => {
                 println!("{}", uuid);
-                let script_function =
-                    starcoin_executor::encode_nft_transfer_script(uuid.clone(), *receiver);
+                let script_function = encode_nft_transfer_script(uuid.clone(), *receiver);
                 println!("{:?}", script_function);
                 let result = ctx.state().build_and_execute_transaction(
                     transaction_opts.clone(),

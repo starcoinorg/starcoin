@@ -4,7 +4,7 @@
 pub use self::gen_client::Client as StateClient;
 use crate::types::{
     AccountStateSetView, CodeView, ListCodeView, ListResourceView, ResourceView,
-    StateWithProofView, StateWithTableItemProofView, StrView,
+    StateWithProofView, StateWithTableItemProofView, StrView, StructTagView,
 };
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
@@ -20,6 +20,10 @@ use starcoin_types::{
 pub trait StateApi {
     #[rpc(name = "state.get")]
     fn get(&self, access_path: AccessPath) -> FutureResult<Option<Vec<u8>>>;
+
+    /// Return state from StateTree storage directly by tree node key.
+    #[rpc(name = "state.get_state_node_by_node_hash")]
+    fn get_state_node_by_node_hash(&self, key_hash: HashValue) -> FutureResult<Option<Vec<u8>>>;
 
     /// Return the Resource Or Code at the `access_path`, and provide a State Proof.
     #[rpc(name = "state.get_with_proof")]
@@ -131,7 +135,7 @@ pub struct ListResourceOption {
     pub state_root: Option<HashValue>,
     pub start_index: usize,
     pub max_size: usize,
-    //TODO support filter by type
+    pub resource_types: Option<Vec<StructTagView>>,
 }
 
 impl Default for ListResourceOption {
@@ -141,6 +145,7 @@ impl Default for ListResourceOption {
             state_root: None,
             start_index: 0,
             max_size: std::usize::MAX,
+            resource_types: None,
         }
     }
 }

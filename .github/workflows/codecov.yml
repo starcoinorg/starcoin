@@ -11,27 +11,53 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v3
         with:
           submodules: recursive
-      - name: setup rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          components: rustfmt,clippy
       - name: setup environment
-        run: bash ./scripts/dev_setup.sh -b -t -y
-      - name: Install grcov and lcov
-        run: |
-          sudo apt-get update
-          sudo apt-get install lcov -y
-          cargo install --force grcov
+        run: bash ./scripts/dev_setup.sh -b -t -y -m
+      - run: rustup component add llvm-tools-preview
+      - uses: taiki-e/install-action@v1.5.6
+        with:
+          tool: cargo-llvm-cov
       - name: Run code coverage
         env:
           RUST_LOG: error
-        run: ./scripts/coverage_report.sh . target/codecov --batch
-      - name: Upload coverage to Codecov
+          # CARGO_LLVM_COV_TARGET_DIR: ./target
+          # CARGO_TARGET_DIR: ./target
+          # CARGO_INCREMENTAL: 1
+        run: ./scripts/coverage_report.sh . target --batch
+      - name: Upload coverage to Codecov, attempt 1
         uses: codecov/codecov-action@v1
+        id: upload_code_coverage_report_1
+        continue-on-error: true
         with:
-          file: ./target/codecov/lcov.info
+          # file: ./target/codecov/lcov.info
+          file: ./target/lcov.info
           flags: unittests
           fail_ci_if_error: false
+      # retry upload to resolve random upload failure caused by github and codecov 
+      # https://github.com/starcoinorg/starcoin/pull/3693#issuecomment-1230963051
+      - name: Wait on failure 1
+        if: steps.upload_code_coverage_report_1.outcome == 'failure'
+        run: |
+          sleep 120s
+      - name: Upload coverage to Codecov, attempt 2
+        id: upload_code_coverage_report_2
+        if: steps.upload_code_coverage_report_1.outcome == 'failure'
+        uses: codecov/codecov-action@v3
+        continue-on-error: true
+        with:
+          fail_ci_if_error: false
+          verbose: true
+      - name: Wait on failure 2
+        if: steps.upload_code_coverage_report_2.outcome == 'failure'
+        run: |
+          sleep 360s
+      - name: Upload coverage to Codecov, attempt 3
+        id: upload_code_coverage_report_3
+        if: steps.upload_code_coverage_report_2.outcome == 'failure'
+        uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: false
+          verbose: true

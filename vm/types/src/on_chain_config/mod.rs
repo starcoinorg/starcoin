@@ -69,7 +69,7 @@ pub static G_ON_CHAIN_CONFIG_REGISTRY: Lazy<Vec<ConfigID>> = Lazy::new(|| {
     ]
 });
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct OnChainConfigPayload {
     epoch: u64,
     configs: Arc<HashMap<ConfigID, Vec<u8>>>,
