@@ -20,7 +20,7 @@ use move_core_types::{
 };
 use move_transactional_test_runner::framework;
 use move_transactional_test_runner::tasks::{
-    PrintBytecodeCommand, PublishCommand, /*RunCommand ,*/ TaskCommand, ViewCommand,
+    PrintBytecodeCommand, PublishCommand, /*RunCommand , TaskCommand,*/ ViewCommand,
 };
 use move_transactional_test_runner::{
     framework::{CompiledState, MoveTestAdapter},
@@ -1361,21 +1361,6 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             }
         }
         Ok((result_str, cmd_var_ctx))
-    }
-
-    fn handle_command(
-        &mut self,
-        _task: TaskInput<
-            TaskCommand<
-                Self::ExtraInitArgs,
-                Self::ExtraPublishArgs,
-                Self::ExtraValueArgs,
-                Self::ExtraRunArgs,
-                Self::Subcommand,
-            >,
-        >,
-    ) -> Result<(Option<String>, Option<Value>)> {
-        todo!()
     }
 }
 
