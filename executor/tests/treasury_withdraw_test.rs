@@ -33,6 +33,7 @@ pub mod readonly_function_call_test;
 #[cfg(test)]
 pub mod script_function_test;
 
+#[ignore]
 #[stest::test]
 fn test_treasury_withdraw() -> Result<()> {
     let alice = Account::new();
@@ -70,7 +71,6 @@ fn test_treasury_withdraw() -> Result<()> {
             bcs_ext::to_bytes(&proposal_id).unwrap(),
         ],
     );
-
     dao_vote_test(
         &alice,
         &chain_state,
@@ -80,7 +80,6 @@ fn test_treasury_withdraw() -> Result<()> {
         execute_script_function,
         proposal_id,
     )?;
-
     let cap = chain_state.get_resource_by_access_path::<LinearWithdrawCapability>(
         LinearWithdrawCapability::resource_path_for(
             *alice.address(),

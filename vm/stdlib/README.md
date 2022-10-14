@@ -11,7 +11,7 @@ Note: The Starcoin Move Framework code is migrate to [starcoin-framework](https:
 1. Compile stdlib and generate document:
 
     ```shell
-    cargo run —bin stdlib
+    cargo run —-bin stdlib
     ```
 
 2. Generate genesis file
@@ -19,7 +19,7 @@ Note: The Starcoin Move Framework code is migrate to [starcoin-framework](https:
     The halley network use the latest stdlib, if stdlib changed, should regenerate the halley genesis file.
 
     ```shell
-    cargo run —bin starcoin-genesis
+    cargo run —-bin starcoin-genesis
     ```
 
 ### Banard and Main
@@ -27,7 +27,7 @@ Note: The Starcoin Move Framework code is migrate to [starcoin-framework](https:
 1. Compile and upgrade stdlib and generate document
 
     ```shell
-    cargo run —bin stdlib -v 3 -m StdlibUpgradeScripts -f upgrade_from_v2_to_v3 -a 3185136000000000000u128
+    cargo run —-bin stdlib -v 3 -m StdlibUpgradeScripts -f upgrade_from_v2_to_v3 -a 3185136000000000000u128
     ```
 
     `-v` option must be an uint number, such as 3.
