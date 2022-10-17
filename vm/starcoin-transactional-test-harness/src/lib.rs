@@ -970,7 +970,11 @@ impl<'a> StarcoinTestAdapter<'a> {
             package_hash,
             hex,
         };
-        self.compiled_state().add_with_source_file(named_addr_opt, module, (data_path.to_owned(), data));
+        self.compiled_state().add_with_source_file(
+            named_addr_opt,
+            module,
+            (data_path.to_owned(), data),
+        );
         Ok((warnings_opt, Some(serde_json::to_value(&package_result)?)))
     }
 
