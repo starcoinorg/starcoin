@@ -929,7 +929,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             .add_precompiled(named_addr_opt, module.clone());
 
         let package = Self::build_package(
-            vec![module],
+            vec![module.clone()],
             init_function.map(|fid| {
                 let move_args = &args
                     .unwrap_or_default()
@@ -970,6 +970,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             package_hash,
             hex,
         };
+        self.compiled_state().add_with_source_file(named_addr_opt, module, (data_path.to_owned(), data));
         Ok((warnings_opt, Some(serde_json::to_value(&package_result)?)))
     }
 
