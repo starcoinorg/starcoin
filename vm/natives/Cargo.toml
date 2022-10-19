@@ -7,15 +7,15 @@ version = "1.12.5"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-move-errmapgen = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
-move-docgen = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
-move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
-move-prover = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
-move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
-move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
-move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
+move-errmapgen = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
+move-docgen = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
+move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
+move-prover = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
+move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
 starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
 log = "0.4.14"
 walkdir = "2.3.1"
@@ -26,7 +26,7 @@ arrayref = "0.3"
 num_enum = "0.5.7"
 starcoin-uint = { path = "../../types/uint" }
 starcoin-vm-types = { path = "../types" }
-move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
+move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
 ripemd160 = "0.9.1"
 
 [dev-dependencies]

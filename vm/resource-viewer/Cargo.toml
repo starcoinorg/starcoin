@@ -8,8 +8,8 @@ version = "1.12.5"
 
 [dependencies]
 starcoin-vm-types = { path = "../types" }
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
 serde_json = "1.0"
 serde = { version = "1.0.130", features = ["derive", "rc"] }
 anyhow = "1.0.41"

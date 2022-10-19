@@ -21,12 +21,12 @@ serde-helpers = { path = "../../commons/serde-helpers" }
 chrono = { version = "0.4.19", default-features = false, features = ["clock"] }
 proptest = { version = "1.0.0", default-features = false, optional = true }
 proptest-derive = { version = "0.3.0", default-features = false, optional = true }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
-move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
-move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
-vm = { package = "move-binary-format", git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
-move-ir-types = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
-move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
+move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
+vm = { package = "move-binary-format", git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
+move-ir-types = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
+move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
 serde_json = {version = "1.0", features = ["arbitrary_precision"]}
 starcoin-time-service = {path = "../../commons/time-service", optional = true}
 bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
@@ -38,7 +38,7 @@ schemars = { git = "https://github.com/starcoinorg/schemars", rev = "6972da92f43
 [dev-dependencies]
 proptest = "1.0.0"
 proptest-derive = "0.3.0"
-vm = { package = "move-binary-format", git = "https://github.com/starcoinorg/move", rev = "9c67dd9324b3b4b0ed6e8a916f68e6b5dd067243", features = [
+vm = { package = "move-binary-format", git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439", features = [
     "fuzzing",
 ] }
 starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
