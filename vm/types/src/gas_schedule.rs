@@ -126,7 +126,7 @@ pub static G_TEST_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
         min_transaction_gas_units: InternalGasUnits::new(600),
         large_transaction_cutoff: *G_LARGE_TRANSACTION_CUTOFF,
         intrinsic_gas_per_byte: InternalGasUnits::new(8),
-        maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
+        maximum_number_of_gas_units: GasUnits::new(40_000_000 * 10), //must less than base_block_gas_limit
         min_price_per_gas_unit: GasPrice::new(0),
         max_price_per_gas_unit: GasPrice::new(10_000),
         max_transaction_size_in_bytes: G_MAX_TRANSACTION_SIZE_IN_BYTES_V3,
