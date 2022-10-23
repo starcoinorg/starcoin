@@ -20,7 +20,7 @@ anyhow = "~1"
 bcs-ext = {path = "../commons/bcs_ext"}
 ethereum-types = "0.9"
 hex = "0.4"
-rlp = "0.4"
+rlp = "0.5"
 rlp-derive = "0.1"
 serde = "~1"
 serde_json = "~1"
