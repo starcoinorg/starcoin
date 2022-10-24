@@ -11,7 +11,8 @@ pub mod u256;
 // for support evm compat and cross chain.
 pub mod ecrecover;
 
-pub mod vector;
+
+mod helpers;
 
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::CORE_CODE_ADDRESS;

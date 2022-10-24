@@ -1,0 +1,12 @@
+[package]
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-gas"
+publish = false
+version = "1.12.5"
+
+[dependencies]
+gas-algebra-ext = { path = "../gas-algebra-ext" }
+clap = { version = "3", features = ["derive"] }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "c3bb78943ee69f6fdf1934459e982b2ea97610e5" }

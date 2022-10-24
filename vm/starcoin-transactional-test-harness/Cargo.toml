@@ -32,12 +32,12 @@ dashmap = "~5"
 serde = { version = "1" }
 serde_json = { version = "1" }
 log = { version = "0.4.16" }
-move-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
-move-compiler = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
-move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
-move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
+move-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "c3bb78943ee69f6fdf1934459e982b2ea97610e5" }
+move-compiler = { git = "https://github.com/starcoinorg/move", rev = "c3bb78943ee69f6fdf1934459e982b2ea97610e5" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "c3bb78943ee69f6fdf1934459e982b2ea97610e5" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "c3bb78943ee69f6fdf1934459e982b2ea97610e5" }
+move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "c3bb78943ee69f6fdf1934459e982b2ea97610e5" }
+move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "c3bb78943ee69f6fdf1934459e982b2ea97610e5" }
 
 bcs-ext = { path = "../../commons/bcs_ext" }
 starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
@@ -52,7 +52,7 @@ starcoin-rpc-api = { path = "../../rpc/api" }
 starcoin-vm-runtime = { path = "../../vm/vm-runtime" }
 starcoin-dev = { path = "../dev" }
 starcoin-resource-viewer = { path = "../resource-viewer" }
-move-resource-viewer = { git = "https://github.com/starcoinorg/move", rev = "204da96abcb6eb82bc50fcbcd4331f6cc3d17439" }
+move-resource-viewer = { git = "https://github.com/starcoinorg/move", rev = "c3bb78943ee69f6fdf1934459e982b2ea97610e5" }
 once_cell = "~1"
 tempfile = "3.2.0"
 async-trait = "0.1"

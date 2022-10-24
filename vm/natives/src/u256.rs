@@ -1,7 +1,8 @@
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
+use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_core_types::gas_schedule::GasAlgebra;
 use move_core_types::vm_status::StatusCode;
-use move_vm_runtime::native_functions::NativeContext;
+use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::natives::function::{native_gas, NativeResult};
 use move_vm_types::pop_arg;
@@ -13,7 +14,7 @@ use std::collections::VecDeque;
 use std::convert::TryFrom;
 
 macro_rules! impl_native {
-    ($func:ident,$cost_index: ident, $op:ident) => {
+    ($func:ident,$params: ident, $op:ident) => {
         pub fn $func(
             context: &mut NativeContext,
             _ty_args: Vec<Type>,
@@ -50,21 +51,100 @@ macro_rules! impl_native {
                 let field_ref: Reference = a_ref.borrow_field(0)?.cast()?;
                 field_ref.write_ref(Value::vector_u64(res))?;
             }
-            let cost = native_gas(context.cost_table(), $cost_index as u8, 1);
+            let cost = $params.base;
             Ok(NativeResult::ok(cost, smallvec![]))
         }
     };
 }
 
-impl_native!(native_u256_add, U256_ADD, checked_add);
-impl_native!(native_u256_sub, U256_SUB, checked_sub);
-impl_native!(native_u256_mul, U256_MUL, checked_mul);
-impl_native!(native_u256_div, U256_DIV, checked_div);
-impl_native!(native_u256_rem, U256_REM, checked_rem);
-impl_native!(native_u256_pow, U256_POW, checked_pow);
+impl_native!(native_u256_add, U256AddGasParameters, checked_add);
+impl_native!(native_u256_sub, U256SubGasParameters, checked_sub);
+impl_native!(native_u256_mul, U256MulGasParameters, checked_mul);
+impl_native!(native_u256_div, U256DivGasParameters, checked_div);
+impl_native!(native_u256_rem, U256DivGasParameters, checked_rem);
+impl_native!(native_u256_pow, U256PowGasParameters, checked_pow);
+
+/***************************************************************************************************
+ * native fun native_u256_add
+ *
+ *   gas cost: base_cost
+ *
+ **************************************************************************************************/
+#[derive(Debug, Clone)]
+pub struct U256AddGasParameters {
+    pub base: InternalGas,
+}
+
+/***************************************************************************************************
+ * native fun native_u256_sub
+ *
+ *   gas cost: base_cost
+ *
+ **************************************************************************************************/
+#[derive(Debug, Clone)]
+pub struct U256SubGasParameters {
+    pub base: InternalGas,
+}
+
+/***************************************************************************************************
+ * native fun native_u256_mul
+ *
+ *   gas cost: base_cost
+ *
+ **************************************************************************************************/
+#[derive(Debug, Clone)]
+pub struct U256MulGasParameters {
+    pub base: InternalGas,
+}
+
+/***************************************************************************************************
+ * native fun native_u256_div
+ *
+ *   gas cost: base_cost
+ *
+ **************************************************************************************************/
+#[derive(Debug, Clone)]
+pub struct U256DivGasParameters {
+    pub base: InternalGas,
+}
+
+/***************************************************************************************************
+ * native fun native_u256_rem
+ *
+ *   gas cost: base_cost
+ *
+ **************************************************************************************************/
+#[derive(Debug, Clone)]
+pub struct U256RemGasParameters {
+    pub base: InternalGas,
+}
+
+/***************************************************************************************************
+ * native fun native_u256_pow
+ *
+ *   gas cost: base_cost
+ *
+ **************************************************************************************************/
+#[derive(Debug, Clone)]
+pub struct U256PowGasParameters {
+    pub base: InternalGas,
+}
+
+/***************************************************************************************************
+ * native fun native_u256_pow
+ *
+ *   gas cost: base_cost
+ *
+ **************************************************************************************************/
+#[derive(Debug, Clone)]
+pub struct U256FromBytesGasParameters {
+    pub base: InternalGas,
+    pub per_byte: InternalGasPerByte,
+}
 
 pub fn native_u256_from_bytes(
-    context: &mut NativeContext,
+    gas_params: U256FromBytesGasParameters,
+    _context: &mut NativeContext,
     _ty_args: Vec<Type>,
     mut arguments: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
@@ -84,10 +164,56 @@ pub fn native_u256_from_bytes(
     };
 
     let ret = Value::struct_(Struct::pack(vec![Value::vector_u64(ret.0)]));
-    let cost = native_gas(
-        context.cost_table(),
-        U256_FROM_BYTES as u8,
-        ret.size().get() as usize,
-    );
+    let cost = gas_params.base + gas_params.per_byte * NumBytes::new(ret.size().get() as u64);
     Ok(NativeResult::ok(cost, smallvec![ret]))
+}
+
+/***************************************************************************************************
+ * module
+ *
+ **************************************************************************************************/
+#[derive(Debug, Clone)]
+pub struct GasParameters {
+    pub add: U256AddGasParameters,
+    pub sub: U256SubGasParameters,
+    pub mul: U256MulGasParameters,
+    pub div: U256DivGasParameters,
+    pub rem: U256RemGasParameters,
+    pub pow: U256PowGasParameters,
+    pub from_bytes: U256FromBytesGasParameters,
+}
+
+pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
+    let natives = [
+        (
+            "u256add",
+            make_native_from_func(gas_params.add, native_u256_add),
+        ),
+        (
+            "u256sub",
+            make_native_from_func(gas_params.sub, native_u256_sub),
+        ),
+        (
+            "u256mul",
+            make_native_from_func(gas_params.mul, native_u256_mul),
+        ),
+        (
+            "u256div",
+            make_native_from_func(gas_params.div, native_u256_div),
+        ),
+        (
+            "u256rem",
+            make_native_from_func(gas_params.rem, native_u256_rem),
+        ),
+        (
+            "u25pow",
+            make_native_from_func(gas_params.pow, native_u256_pow),
+        ),
+        (
+            "u256frombytes",
+            make_native_from_func(gas_params.from_bytes, native_u256_from_bytes),
+        ),
+    ];
+
+    crate::natives::helpers::make_module_natives(natives)
 }
