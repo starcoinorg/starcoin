@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    gas_schedule::{CostTable, GasConstants},
     on_chain_config::OnChainConfig,
 };
 use anyhow::{format_err, Result};
@@ -11,6 +10,7 @@ use move_core_types::language_storage::{StructTag, TypeTag, CORE_CODE_ADDRESS};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
+use gas_algebra_ext::{CostTable, GasConstants};
 
 pub const SCRIPT_HASH_LENGTH: usize = HashValue::LENGTH;
 const VM_CONFIG_MODULE_NAME: &str = "VMConfig";

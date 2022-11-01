@@ -63,7 +63,7 @@ impl<'a> ABIResolver<'a> {
         let functions = m
             .exposed_functions
             .iter()
-            .filter(|(_, func)| func.visibility == Visibility::Script) // only script functions
+           // .filter(|(_, func)| func.visibility == Visibility::Script) // only script functions
             .map(|(name, func)| self.function_to_abi(&module_id, name.as_ident_str(), func))
             .collect::<Result<Vec<_>>>()?;
         Ok(ModuleABI::new(m.module_id(), structs, functions))

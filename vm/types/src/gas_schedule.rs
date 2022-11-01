@@ -1,8 +1,6 @@
-pub use move_core_types::gas_schedule::*;
-pub use move_vm_types::gas_schedule::{
-    calculate_intrinsic_gas, new_from_instructions, zero_cost_schedule, GasStatus,
-};
+use move_core_types::gas_algebra::AbstractMemorySize;
 use once_cell::sync::Lazy;
+use gas_algebra_ext::{CostTable, GasConstants};
 
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
@@ -65,73 +63,71 @@ static G_MAX_TRANSACTION_SIZE_IN_BYTES_V2: u64 = 60000;
 static G_MAX_TRANSACTION_SIZE_IN_BYTES_V3: u64 = 128 * 1024;
 
 /// For V1 all accounts will be ~800 bytes
-pub static G_DEFAULT_ACCOUNT_SIZE: Lazy<AbstractMemorySize<GasCarrier>> =
-    Lazy::new(|| AbstractMemorySize::new(800));
+pub static G_DEFAULT_ACCOUNT_SIZE: u64 = 800;
 
 /// Any transaction over this size will be charged `INTRINSIC_GAS_PER_BYTE` per byte
-pub static G_LARGE_TRANSACTION_CUTOFF: Lazy<AbstractMemorySize<GasCarrier>> =
-    Lazy::new(|| AbstractMemorySize::new(600));
+pub static G_LARGE_TRANSACTION_CUTOFF: u64 = 600;
 
 pub static G_GAS_CONSTANTS_V1: Lazy<GasConstants> = Lazy::new(|| {
     GasConstants {
-        global_memory_per_byte_cost: InternalGasUnits::new(4),
-        global_memory_per_byte_write_cost: InternalGasUnits::new(9),
-        min_transaction_gas_units: InternalGasUnits::new(600),
-        large_transaction_cutoff: *G_LARGE_TRANSACTION_CUTOFF,
-        intrinsic_gas_per_byte: InternalGasUnits::new(8),
-        maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
-        min_price_per_gas_unit: GasPrice::new(1),
-        max_price_per_gas_unit: GasPrice::new(10_000),
-        max_transaction_size_in_bytes: G_MAX_TRANSACTION_SIZE_IN_BYTES_V1, // to pass stdlib_upgrade
-        gas_unit_scaling_factor: 1,
-        default_account_size: *G_DEFAULT_ACCOUNT_SIZE,
+        global_memory_per_byte_cost: 4.into(),
+        global_memory_per_byte_write_cost: 9.into(),
+        min_transaction_gas_units: 600.into(),
+        large_transaction_cutoff: G_DEFAULT_ACCOUNT_SIZE.into(),
+        intrinsic_gas_per_byte: 8.into(),
+        maximum_number_of_gas_units: 40_000_000.into(), //must less than base_block_gas_limit
+        min_price_per_gas_unit: 1.into(),
+        max_price_per_gas_unit: 10_000.into(),
+        max_transaction_size_in_bytes: G_MAX_TRANSACTION_SIZE_IN_BYTES_V1.into(), // to pass stdlib_upgrade
+        gas_unit_scaling_factor: 1.into(),
+        default_account_size: G_DEFAULT_ACCOUNT_SIZE.into(),
     }
 });
 
 pub static G_GAS_CONSTANTS_V2: Lazy<GasConstants> = Lazy::new(|| {
     GasConstants {
-        global_memory_per_byte_cost: InternalGasUnits::new(4),
-        global_memory_per_byte_write_cost: InternalGasUnits::new(9),
-        min_transaction_gas_units: InternalGasUnits::new(600),
-        large_transaction_cutoff: *G_LARGE_TRANSACTION_CUTOFF,
-        intrinsic_gas_per_byte: InternalGasUnits::new(8),
-        maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
-        min_price_per_gas_unit: GasPrice::new(1),
-        max_price_per_gas_unit: GasPrice::new(10_000),
-        max_transaction_size_in_bytes: G_MAX_TRANSACTION_SIZE_IN_BYTES_V2, // to pass stdlib_upgrade
-        gas_unit_scaling_factor: 1,
-        default_account_size: *G_DEFAULT_ACCOUNT_SIZE,
+        global_memory_per_byte_cost: 4.into(),
+        global_memory_per_byte_write_cost: 9.into(),
+        min_transaction_gas_units: 600.into(),
+        large_transaction_cutoff: G_LARGE_TRANSACTION_CUTOFF.into(),
+        intrinsic_gas_per_byte: 8.into(),
+        maximum_number_of_gas_units: 40_000_000.into(), //must less than base_block_gas_limit
+        min_price_per_gas_unit: 1.into(),
+        max_price_per_gas_unit: 10_000.into(),
+        max_transaction_size_in_bytes: G_MAX_TRANSACTION_SIZE_IN_BYTES_V2.into(), // to pass stdlib_upgrade
+        gas_unit_scaling_factor: 1.into(),
+        default_account_size: G_DEFAULT_ACCOUNT_SIZE.into(),
     }
 });
 pub static G_GAS_CONSTANTS_V3: Lazy<GasConstants> = Lazy::new(|| {
     GasConstants {
-        global_memory_per_byte_cost: InternalGasUnits::new(4),
-        global_memory_per_byte_write_cost: InternalGasUnits::new(9),
-        min_transaction_gas_units: InternalGasUnits::new(600),
-        large_transaction_cutoff: *G_LARGE_TRANSACTION_CUTOFF,
-        intrinsic_gas_per_byte: InternalGasUnits::new(8),
-        maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
-        min_price_per_gas_unit: GasPrice::new(1),
-        max_price_per_gas_unit: GasPrice::new(10_000),
-        max_transaction_size_in_bytes: G_MAX_TRANSACTION_SIZE_IN_BYTES_V3,
-        gas_unit_scaling_factor: 1,
-        default_account_size: *G_DEFAULT_ACCOUNT_SIZE,
+        global_memory_per_byte_cost: 4.into(),
+        global_memory_per_byte_write_cost: 9.into(),
+        min_transaction_gas_units: 600.into(),
+        large_transaction_cutoff: G_LARGE_TRANSACTION_CUTOFF.into(),
+        intrinsic_gas_per_byte: 8.into(),
+        maximum_number_of_gas_units: 40_000_000.into(), //must less than base_block_gas_limit
+        min_price_per_gas_unit: 1.into(),
+        max_price_per_gas_unit: 10_000.into(),
+        max_transaction_size_in_bytes: G_MAX_TRANSACTION_SIZE_IN_BYTES_V3.into(),
+        gas_unit_scaling_factor: 1.into(),
+        default_account_size: G_DEFAULT_ACCOUNT_SIZE.into(),
     }
 });
 
 pub static G_TEST_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
     GasConstants {
-        global_memory_per_byte_cost: InternalGasUnits::new(4),
-        global_memory_per_byte_write_cost: InternalGasUnits::new(9),
-        min_transaction_gas_units: InternalGasUnits::new(600),
-        large_transaction_cutoff: *G_LARGE_TRANSACTION_CUTOFF,
-        intrinsic_gas_per_byte: InternalGasUnits::new(8),
-        maximum_number_of_gas_units: GasUnits::new(40_000_000 * 10), //must less than base_block_gas_limit
-        min_price_per_gas_unit: GasPrice::new(0),
-        max_price_per_gas_unit: GasPrice::new(10_000),
-        max_transaction_size_in_bytes: G_MAX_TRANSACTION_SIZE_IN_BYTES_V3,
-        gas_unit_scaling_factor: 1,
-        default_account_size: *G_DEFAULT_ACCOUNT_SIZE,
+        global_memory_per_byte_cost: 4.into(),
+        global_memory_per_byte_write_cost: 9.into(),
+        min_transaction_gas_units: 600.into(),
+        large_transaction_cutoff: G_LARGE_TRANSACTION_CUTOFF.into(),
+        intrinsic_gas_per_byte: 8.into(),
+        maximum_number_of_gas_units: (40_000_000 * 10).into(), //must less than base_block_gas_limit
+        min_price_per_gas_unit: 0.into(),
+        max_price_per_gas_unit: 10_000.into(),
+        max_transaction_size_in_bytes: G_MAX_TRANSACTION_SIZE_IN_BYTES_V3.into(),
+        gas_unit_scaling_factor: 1.into(),
+        default_account_size: G_DEFAULT_ACCOUNT_SIZE.into(),
     }
 });
 

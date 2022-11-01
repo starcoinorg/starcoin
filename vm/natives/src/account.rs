@@ -3,18 +3,14 @@
 
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::account_address::AccountAddress;
+use move_core_types::gas_algebra::InternalGas;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
-    loaded_data::runtime_types::Type,
-    natives::function::{native_gas, NativeResult},
-    pop_arg,
-    values::Value,
+    loaded_data::runtime_types::Type, natives::function::NativeResult, pop_arg, values::Value,
 };
 use smallvec::smallvec;
-use starcoin_vm_types::gas_schedule::NativeCostIndex;
 use std::collections::VecDeque;
 use std::sync::Arc;
-use move_core_types::gas_algebra::InternalGas;
 
 /***************************************************************************************************
  * native fun create_signer
@@ -37,7 +33,10 @@ pub fn native_create_signer(
     debug_assert!(arguments.len() == 1);
 
     let address = pop_arg!(arguments, AccountAddress);
-    Ok(NativeResult::ok(gas_params.base, smallvec![Value::signer(address)]))
+    Ok(NativeResult::ok(
+        gas_params.base,
+        smallvec![Value::signer(address)],
+    ))
 }
 
 pub fn make_native_create_signer(gas_params: CreateSignerGasParameters) -> NativeFunction {
@@ -99,5 +98,5 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         ),
     ];
 
-    crate::natives::helpers::make_module_natives(natives)
+    crate::helpers::make_module_natives(natives)
 }

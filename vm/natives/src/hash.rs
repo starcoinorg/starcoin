@@ -1,20 +1,17 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::util::make_native_from_func;
 use move_binary_format::errors::PartialVMResult;
+use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
-    loaded_data::runtime_types::Type,
-    natives::function::{native_gas, NativeResult},
-    pop_arg,
-    values::Value,
+    loaded_data::runtime_types::Type, natives::function::NativeResult, pop_arg, values::Value,
 };
 use ripemd160::digest::Output;
 use ripemd160::{Digest, Ripemd160};
 use smallvec::smallvec;
-use starcoin_vm_types::gas_schedule::NativeCostIndex;
 use std::collections::VecDeque;
-use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 
 /***************************************************************************************************
  * native fun native_keccak_256
@@ -22,6 +19,7 @@ use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
  *   gas cost: base_cost + per_byte * data_length
  *
  **************************************************************************************************/
+#[derive(Debug, Clone)]
 pub struct Keccak256HashGasParameters {
     pub base: InternalGas,
     pub per_byte: InternalGasPerByte,
@@ -59,7 +57,7 @@ pub struct Ripemd160HashGasParameters {
 
 pub fn native_ripemd160(
     gas_params: &Ripemd160HashGasParameters,
-    context: &mut NativeContext,
+    _context: &mut NativeContext,
     _ty_args: Vec<Type>,
     mut arguments: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
@@ -69,7 +67,6 @@ pub fn native_ripemd160(
     let input_arg = pop_arg!(arguments, Vec<u8>);
 
     let cost = gas_params.base + gas_params.per_byte * NumBytes::new(input_arg.len() as u64);
-
 
     let result = ripemd160(input_arg.as_slice());
     Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(result)]))
@@ -100,10 +97,10 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         (
             "ripemd160",
             make_native_from_func(gas_params.ripemd160, native_ripemd160),
-        )
+        ),
     ];
 
-    crate::natives::helpers::make_module_natives(natives)
+    crate::helpers::make_module_natives(natives)
 }
 
 #[cfg(test)]

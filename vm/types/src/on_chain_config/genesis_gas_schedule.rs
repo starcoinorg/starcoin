@@ -3,7 +3,7 @@
 
 //! This file contains the starting gas schedule published at genesis.
 
-use crate::gas_schedule::{GasCost, NativeCostIndex as N};
+use crate::gas_schedule::{NativeCostIndex as N};
 use once_cell::sync::Lazy;
 use vm::file_format::SignatureIndex;
 use vm::{
@@ -14,6 +14,7 @@ use vm::{
     },
     file_format_common::instruction_key,
 };
+use gas_algebra_ext::GasCost;
 
 pub fn instruction_table_v1() -> Vec<GasCost> {
     use Bytecode::*;

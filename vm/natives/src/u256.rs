@@ -1,22 +1,22 @@
+use crate::util::make_native_from_func;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
-use move_core_types::gas_schedule::GasAlgebra;
 use move_core_types::vm_status::StatusCode;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::loaded_data::runtime_types::Type;
-use move_vm_types::natives::function::{native_gas, NativeResult};
+use move_vm_types::natives::function::NativeResult;
 use move_vm_types::pop_arg;
 use move_vm_types::values::{Reference, Struct, StructRef, VMValueCast, Value};
 use smallvec::smallvec;
 use starcoin_uint::U256;
-use starcoin_vm_types::gas_schedule::NativeCostIndex::*;
 use std::collections::VecDeque;
 use std::convert::TryFrom;
 
 macro_rules! impl_native {
     ($func:ident,$params: ident, $op:ident) => {
         pub fn $func(
-            context: &mut NativeContext,
+            gas_params: &$params,
+            _context: &mut NativeContext,
             _ty_args: Vec<Type>,
             mut arguments: VecDeque<Value>,
         ) -> PartialVMResult<NativeResult> {
@@ -51,7 +51,7 @@ macro_rules! impl_native {
                 let field_ref: Reference = a_ref.borrow_field(0)?.cast()?;
                 field_ref.write_ref(Value::vector_u64(res))?;
             }
-            let cost = $params.base;
+            let cost = gas_params.base;
             Ok(NativeResult::ok(cost, smallvec![]))
         }
     };
@@ -61,7 +61,7 @@ impl_native!(native_u256_add, U256AddGasParameters, checked_add);
 impl_native!(native_u256_sub, U256SubGasParameters, checked_sub);
 impl_native!(native_u256_mul, U256MulGasParameters, checked_mul);
 impl_native!(native_u256_div, U256DivGasParameters, checked_div);
-impl_native!(native_u256_rem, U256DivGasParameters, checked_rem);
+impl_native!(native_u256_rem, U256RemGasParameters, checked_rem);
 impl_native!(native_u256_pow, U256PowGasParameters, checked_pow);
 
 /***************************************************************************************************
@@ -143,7 +143,7 @@ pub struct U256FromBytesGasParameters {
 }
 
 pub fn native_u256_from_bytes(
-    gas_params: U256FromBytesGasParameters,
+    gas_params: &U256FromBytesGasParameters,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,
     mut arguments: VecDeque<Value>,
@@ -164,7 +164,7 @@ pub fn native_u256_from_bytes(
     };
 
     let ret = Value::struct_(Struct::pack(vec![Value::vector_u64(ret.0)]));
-    let cost = gas_params.base + gas_params.per_byte * NumBytes::new(ret.size().get() as u64);
+    let cost = gas_params.base + gas_params.per_byte * NumBytes::new(ret.legacy_size().into());
     Ok(NativeResult::ok(cost, smallvec![ret]))
 }
 
@@ -215,5 +215,5 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         ),
     ];
 
-    crate::natives::helpers::make_module_natives(natives)
+    crate::helpers::make_module_natives(natives)
 }

@@ -2,18 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_binary_format::errors::PartialVMResult;
+use move_core_types::gas_algebra::InternalGas;
 use move_core_types::language_storage::TypeTag;
 use move_core_types::vm_status::sub_status::NFE_TOKEN_INVALID_TYPE_ARG_FAILURE;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
-    loaded_data::runtime_types::Type,
-    natives::function::{native_gas, NativeResult},
-    values::Value,
+    loaded_data::runtime_types::Type, natives::function::NativeResult, values::Value,
 };
 use smallvec::smallvec;
-use starcoin_vm_types::gas_schedule::NativeCostIndex;
 use std::collections::VecDeque;
-use move_core_types::gas_algebra::InternalGas;
+use std::sync::Arc;
 
 /***************************************************************************************************
  * native fun token_name_of
@@ -70,6 +68,13 @@ fn format_type_params(type_params: &[TypeTag]) -> Result<String, std::fmt::Error
     Ok(f)
 }
 
+pub fn make_native_token_name_of(gas_params: TokenNameOfGasParameters) -> NativeFunction {
+    Arc::new(
+        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
+            native_token_name_of(&gas_params, context, ty_args, args)
+        },
+    )
+}
 /***************************************************************************************************
  * module
  *
@@ -80,14 +85,12 @@ pub struct GasParameters {
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [
-        (
-            "token_name_of",
-            make_native_from_func(gas_params.address, native_token_name_of),
-        ),
-    ];
+    let natives = [(
+        "token_name_of",
+        make_native_token_name_of(gas_params.address),
+    )];
 
-    crate::natives::helpers::make_module_natives(natives)
+    crate::helpers::make_module_natives(natives)
 }
 
 #[test]

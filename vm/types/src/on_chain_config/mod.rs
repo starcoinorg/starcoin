@@ -18,14 +18,16 @@ use std::{collections::HashMap, sync::Arc};
 
 mod consensus_config;
 mod dao_config;
+mod gas_schedule;
 mod genesis_gas_schedule;
 mod move_lang_version;
 mod version;
 mod vm_config;
+
 pub use self::{
     consensus_config::{consensus_config_type_tag, ConsensusConfig, G_CONSENSUS_CONFIG_IDENTIFIER},
     dao_config::DaoConfig,
-    genesis_gas_schedule::*,
+    genesis_gas_schedule::{G_LATEST_INSTRUCTION_TABLE, G_LATEST_NATIVE_TABLE},
     move_lang_version::MoveLanguageVersion,
     version::{version_config_type_tag, Version, G_VERSION_CONFIG_IDENTIFIER},
     vm_config::*,

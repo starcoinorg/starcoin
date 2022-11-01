@@ -1,19 +1,17 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::ecrecover::{make_native_ecrecover, EcrecoverGasParameters};
 use move_binary_format::errors::PartialVMResult;
+use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
-    loaded_data::runtime_types::Type,
-    natives::function::{native_gas, NativeResult},
-    pop_arg,
-    values::Value,
+    loaded_data::runtime_types::Type, natives::function::NativeResult, pop_arg, values::Value,
 };
 use smallvec::smallvec;
 use starcoin_crypto::{ed25519, traits::*};
-use starcoin_vm_types::gas_schedule::NativeCostIndex;
+use std::sync::Arc;
 use std::{collections::VecDeque, convert::TryFrom};
-use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 
 /***************************************************************************************************
  * native fun Ed25519PublickeyValidation
@@ -22,13 +20,13 @@ use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
  *
  **************************************************************************************************/
 #[derive(Debug, Clone)]
-pub struct Ed25519PublickeyValidationGasParameters {
+pub struct Ed25519ValidatePublickeyGasParameters {
     pub base: InternalGas,
     pub per_byte: InternalGasPerByte,
 }
 
 pub fn native_ed25519_publickey_validation(
-    gas_params: Ed25519PublickeyValidationGasParameters,
+    gas_params: &Ed25519ValidatePublickeyGasParameters,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,
     mut arguments: VecDeque<Value>,
@@ -45,6 +43,14 @@ pub fn native_ed25519_publickey_validation(
     Ok(NativeResult::ok(cost, smallvec![Value::bool(valid)]))
 }
 
+pub fn make_native_ed25519_validate_pubkey(
+    gas_params: Ed25519ValidatePublickeyGasParameters,
+) -> NativeFunction {
+    Arc::new(move |context, ty_args, args| {
+        native_ed25519_publickey_validation(&gas_params, context, ty_args, args)
+    })
+}
+
 /***************************************************************************************************
  * native fun Ed25519PublickeyValidation
  *
@@ -52,13 +58,13 @@ pub fn native_ed25519_publickey_validation(
  *
  **************************************************************************************************/
 #[derive(Debug, Clone)]
-pub struct Ed25519SignatureVerificationGasParameters {
+pub struct Ed25519VerifyGasParameters {
     pub base: InternalGas,
     pub per_byte: InternalGasPerByte,
 }
 
 pub fn native_ed25519_signature_verification(
-    gas_params: Ed25519SignatureVerificationGasParameters,
+    gas_params: &Ed25519VerifyGasParameters,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,
     mut arguments: VecDeque<Value>,
@@ -92,6 +98,11 @@ pub fn native_ed25519_signature_verification(
     ))
 }
 
+pub fn make_native_ed25519_verify(gas_params: Ed25519VerifyGasParameters) -> NativeFunction {
+    Arc::new(move |context, ty_args, args| {
+        native_ed25519_signature_verification(&gas_params, context, ty_args, args)
+    })
+}
 
 /***************************************************************************************************
  * module
@@ -99,21 +110,23 @@ pub fn native_ed25519_signature_verification(
  **************************************************************************************************/
 #[derive(Debug, Clone)]
 pub struct GasParameters {
-    pub ed25519_publickey_validation: Ed25519PublickeyValidationGasParameters,
-    pub ed25519_signature_verification: Ed25519SignatureVerificationGasParameters,
+    pub ed25519_validate_publickey: Ed25519ValidatePublickeyGasParameters,
+    pub ed25519_verify: Ed25519VerifyGasParameters,
+    pub ec_recover: EcrecoverGasParameters,
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [
         (
-            "ed25519_publickey_validation",
-            make_native_from_func(gas_params.ed25519_publickey_validation, native_ed25519_publickey_validation),
+            "ed25519_validate_pubkey",
+            make_native_ed25519_validate_pubkey(gas_params.ed25519_validate_publickey),
         ),
         (
-            "ed25519_signature_verification",
-            make_native_from_func(gas_params.ed25519_signature_verification, native_ed25519_signature_verification),
+            "ed25519_verify",
+            make_native_ed25519_verify(gas_params.ed25519_verify),
         ),
+        ("ec_recover", make_native_ecrecover(gas_params.ec_recover)),
     ];
 
-    crate::natives::helpers::make_module_natives(natives)
+    crate::helpers::make_module_natives(natives)
 }

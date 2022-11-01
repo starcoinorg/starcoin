@@ -6,16 +6,14 @@ use libsecp256k1::curve::Scalar;
 use libsecp256k1::{recover, Message, PublicKey, RecoveryId, Signature};
 use log::debug;
 use move_binary_format::errors::PartialVMResult;
-use move_vm_runtime::native_functions::NativeContext;
+use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
+use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
-    loaded_data::runtime_types::Type,
-    natives::function::{native_gas, NativeResult},
-    pop_arg,
-    values::Value,
+    loaded_data::runtime_types::Type, natives::function::NativeResult, pop_arg, values::Value,
 };
 use smallvec::smallvec;
-use starcoin_vm_types::gas_schedule::NativeCostIndex;
 use std::collections::VecDeque;
+use std::sync::Arc;
 use tiny_keccak::Hasher;
 
 const HASH_LENGTH: usize = 32;
@@ -24,9 +22,22 @@ const SIG_LENGTH: usize = SCALAR_LENGTH + SCALAR_LENGTH;
 const SIG_REC_LENGTH: usize = SIG_LENGTH + 1;
 const ZERO_ADDR: [u8; 0] = [0; 0];
 
+/***************************************************************************************************
+ * native fun Ecrecover
+ *
+ *   gas cost: base_cost + unit_cost * data_length
+ *
+ **************************************************************************************************/
+#[derive(Debug, Clone)]
+pub struct EcrecoverGasParameters {
+    pub base: InternalGas,
+    pub per_byte: InternalGasPerByte,
+}
+
 /// recover address from signature, if recover fail, return an zero address
 pub fn native_ecrecover(
-    context: &mut NativeContext,
+    gas_params: &EcrecoverGasParameters,
+    _context: &mut NativeContext,
     _ty_args: Vec<Type>,
     mut arguments: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
@@ -38,11 +49,7 @@ pub fn native_ecrecover(
     // first arg is hash
     let hash_arg = pop_arg!(arguments, Vec<u8>);
 
-    let cost = native_gas(
-        context.cost_table(),
-        NativeCostIndex::ECRECOVER as u8,
-        hash_arg.len(),
-    );
+    let cost = gas_params.base + gas_params.per_byte * NumBytes::new(hash_arg.len() as u64);
     if hash_arg.len() != HASH_LENGTH || sig_arg.len() != SIG_REC_LENGTH {
         debug!("ecrecover failed, invalid hash or sig");
         return Ok(NativeResult::ok(
@@ -71,6 +78,10 @@ pub fn native_ecrecover(
             ))
         }
     }
+}
+
+pub fn make_native_ecrecover(gas_params: EcrecoverGasParameters) -> NativeFunction {
+    Arc::new(move |context, ty_args, args| native_ecrecover(&gas_params, context, ty_args, args))
 }
 
 pub(crate) fn keccak(input: &[u8]) -> [u8; 32] {
