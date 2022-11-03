@@ -17,7 +17,7 @@ names = {version = "0.14.0", default-features = false}
 network-api = {path = "../network/api", package = "network-api"}
 network-p2p-types = {path = "../network-p2p/types"}
 network-types = {path = "../network/types"}
-num_cpus = "1.13"
+num_cpus = "1.14"
 num_enum = "0.5.7"
 once_cell = "1.13.0"
 parking_lot = "0.12.1"
