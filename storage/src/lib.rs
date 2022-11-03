@@ -23,12 +23,12 @@ use starcoin_accumulator::AccumulatorTreeStore;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
-use starcoin_types::table::{TableHandleKey, TableInfoValue};
 use starcoin_types::transaction::{RichTransactionInfo, Transaction};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
     startup_info::StartupInfo,
 };
+use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
@@ -648,23 +648,19 @@ impl Store for Storage {
 }
 
 impl TableInfoStore for Storage {
-    fn get_table_info(&self, key: TableHandleKey) -> Result<Option<TableInfoValue>> {
+    fn get_table_info(&self, key: TableHandle) -> Result<Option<TableInfo>> {
         self.table_info_storage.get(key)
     }
 
-    fn save_table_info(&self, key: TableHandleKey, table_info: TableInfoValue) -> Result<()> {
+    fn save_table_info(&self, key: TableHandle, table_info: TableInfo) -> Result<()> {
         self.table_info_storage.put(key, table_info)
     }
 
-    fn get_table_infos(&self, keys: Vec<TableHandleKey>) -> Result<Vec<Option<TableInfoValue>>> {
+    fn get_table_infos(&self, keys: Vec<TableHandle>) -> Result<Vec<Option<TableInfo>>> {
         self.table_info_storage.multiple_get(keys)
     }
 
-    fn save_table_infos(
-        &self,
-        keys: Vec<TableHandleKey>,
-        table_infos: Vec<TableInfoValue>,
-    ) -> Result<()> {
+    fn save_table_infos(&self, keys: Vec<TableHandle>, table_infos: Vec<TableInfo>) -> Result<()> {
         let batch = CodecWriteBatch::new_puts(keys.into_iter().zip(table_infos).collect());
         self.table_info_storage.write_batch(batch)
     }

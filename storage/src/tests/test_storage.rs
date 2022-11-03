@@ -19,11 +19,12 @@ use starcoin_config::RocksdbConfig;
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockInfo};
 use starcoin_types::language_storage::TypeTag;
 use starcoin_types::startup_info::SnapshotRange;
-use starcoin_types::table::{TableHandleKey, TableInfoValue};
 use starcoin_types::transaction::{
     RichTransactionInfo, SignedUserTransaction, Transaction, TransactionInfo,
 };
 use starcoin_types::vm_error::KeptVMStatus;
+use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::path::Path;
 
 #[test]
@@ -481,20 +482,23 @@ fn test_table_info_storage() -> Result<()> {
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None)?,
     );
     let storage = Storage::new(instance)?;
-    let key1 = TableHandleKey(1u128);
-    let table_info1 = TableInfoValue::new(TypeTag::U8, TypeTag::U8);
+    let key1 = TableHandle(AccountAddress::random());
+    let table_info1 = TableInfo::new(TypeTag::U8, TypeTag::U8);
     storage.save_table_info(key1, table_info1.clone())?;
     let val = storage.get_table_info(key1);
     assert!(val.is_ok());
     assert_eq!(val.unwrap().unwrap(), table_info1);
-    let key2 = TableHandleKey(2u128);
+    let key2 = TableHandle(AccountAddress::random());
     let val = storage.get_table_info(key2);
     assert!(val.is_ok());
     assert_eq!(val.unwrap(), None);
-    let keys = vec![TableHandleKey(2u128), TableHandleKey(3u128)];
+    let keys = vec![
+        TableHandle(AccountAddress::random()),
+        TableHandle(AccountAddress::random()),
+    ];
     let vals = vec![
-        TableInfoValue::new(TypeTag::U8, TypeTag::Address),
-        TableInfoValue::new(TypeTag::Address, TypeTag::U128),
+        TableInfo::new(TypeTag::U8, TypeTag::Address),
+        TableInfo::new(TypeTag::Address, TypeTag::U128),
     ];
     storage.save_table_infos(keys.clone(), vals.clone())?;
     let vals2 = storage.get_table_infos(keys);
@@ -503,7 +507,7 @@ fn test_table_info_storage() -> Result<()> {
         .unwrap()
         .into_iter()
         .map(|x| x.unwrap())
-        .collect::<Vec<TableInfoValue>>();
+        .collect::<Vec<TableInfo>>();
     assert_eq!(vals, vals2);
     Ok(())
 }
