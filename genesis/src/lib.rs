@@ -362,8 +362,8 @@ mod tests {
     use starcoin_types::account_config::{genesis_address, ModuleUpgradeStrategy};
     use starcoin_vm_types::account_config::association_address;
     use starcoin_vm_types::genesis_config::ChainId;
+    use starcoin_vm_types::on_chain_config::TransactionPublishOption;
     use starcoin_vm_types::on_chain_config::{ConsensusConfig, Version};
-    use starcoin_vm_types::on_chain_config::{DaoConfig, TransactionPublishOption};
     use starcoin_vm_types::on_chain_resource::Epoch;
 
     #[stest::test]
