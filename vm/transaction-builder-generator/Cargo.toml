@@ -12,7 +12,7 @@ version = "1.12.5"
 anyhow = "1.0.41"
 clap = {version = "3", features = ["derive"]}
 heck = "0.3.3"
-regex = "1.6.0"
+regex = "1.7.0"
 serde-generate = {git = "https://github.com/starcoinorg/serde-reflection", rev = "694048797338ff7385006d968e786b6d9dbdeb8b"}
 serde-reflection = {git = "https://github.com/starcoinorg/serde-reflection", rev = "694048797338ff7385006d968e786b6d9dbdeb8b"}
 serde_yaml = "0.8.26"

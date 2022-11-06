@@ -12,7 +12,7 @@ clap = {version = "3", features = ["derive"]}
 cucumber = {package = "cucumber_rust", version = "^0.6.0"}
 jpst = "0.1.1"
 jsonpath = "0.1.1"
-regex = "1.6.0"
+regex = "1.7.0"
 scmd = {path = "../commons/scmd"}
 serde = {version = "1.0.130", features = ["derive"]}
 serde_bytes = "0.11"
