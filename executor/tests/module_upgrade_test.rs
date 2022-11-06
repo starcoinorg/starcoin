@@ -448,6 +448,17 @@ fn ext_execute_after_upgrade(
                     })],
                 )
             });
+            assert_genesis_resouce_exist(
+                chain_state,
+                "TreasuryPlugin",
+                "WithdrawCapabilityHolder",
+                vec![TypeTag::Struct(StructTag {
+                    address: genesis_address(),
+                    module: Identifier::new("STC").unwrap(),
+                    name: Identifier::new("STC").unwrap(),
+                    type_params: vec![],
+                })],
+            );
 
             // DAOCustomConfigModifyCapHolder of StarcoinDAO
             vec![
@@ -457,7 +468,6 @@ fn ext_execute_after_upgrade(
                 "RewardConfig",
                 "TransactionTimeoutConfig",
                 "LanguageVersion",
-                "STC",
             ]
             .into_iter()
             .for_each(|name| {
@@ -484,13 +494,13 @@ fn ext_execute_after_upgrade(
 
             // Removed old DAO resources.
             vec![
-                ("TreasuryPlugin", "WithdrawCapabilityHolder"),
                 ("ModifyDaoConfigProposal", "DaoConfigModifyCapability"),
                 ("UpgradeModuleDaoProposal", "UpgradeModuleDaoProposal"),
+                ("TreasuryWithdrawDaoProposal", "WrappedWithdrawCapability"),
             ]
             .into_iter()
             .for_each(|(module, name)| {
-                assert_genesis_resouce_exist(
+                assert_genesis_resouce_not_exist(
                     chain_state,
                     module,
                     name,
@@ -503,12 +513,6 @@ fn ext_execute_after_upgrade(
                 )
             });
 
-            assert_genesis_resouce_not_exist(
-                chain_state,
-                "TreasuryWithdrawDaoProposal",
-                "WrappedWithdrawCapability",
-                vec![],
-            );
             vec![
                 "TransactionPublishOption",
                 "VMConfig",
