@@ -161,7 +161,7 @@ pub enum StdLibOptions {
 /// will be used.
 pub fn stdlib_modules(option: StdLibOptions) -> &'static [Vec<u8>] {
     match option {
-        StdLibOptions::Fresh => &*G_FRESH_MOVE_LANG_STDLIB,
+        StdLibOptions::Fresh => &G_FRESH_MOVE_LANG_STDLIB,
         StdLibOptions::Compiled(version) => G_COMPILED_STDLIB
             .get(&version)
             .unwrap_or_else(|| panic!("Stdlib version {:?} not exist.", version)),
