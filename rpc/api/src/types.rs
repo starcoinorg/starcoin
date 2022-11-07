@@ -1165,6 +1165,7 @@ use starcoin_chain_api::{EventWithProof, TransactionInfoWithProof};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_store::state_key::{StateKey, TableItem};
+use starcoin_vm_types::state_store::table::TableHandle;
 pub use vm_status_translator::VmStatusExplainView;
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
@@ -1886,7 +1887,7 @@ impl From<BlockInfo> for BlockInfoView {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "table_item")]
 pub struct TableItemView {
-    handle: StrView<u128>,
+    handle: TableHandle,
     #[schemars(with = "String")]
     key: Vec<u8>,
 }
@@ -1894,7 +1895,7 @@ pub struct TableItemView {
 impl From<TableItem> for TableItemView {
     fn from(table_item: TableItem) -> Self {
         Self {
-            handle: table_item.handle.into(),
+            handle: table_item.handle,
             key: table_item.key,
         }
     }

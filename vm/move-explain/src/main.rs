@@ -43,8 +43,7 @@ fn main() {
         ),
         Some(error_desc) => println!(
             "Category:\n  Name: {}\n  Description: {}",
-            error_desc.code_name,
-            error_desc.code_description,
+            error_desc.code_name, error_desc.code_description,
         ),
     }
 }

@@ -1,12 +1,32 @@
 // Copyright (c) Aptos
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::gas_algebra::{Arg, GasQuantity, InternalGas, InternalGasPerByte, InternalGasUnit, NumBytes, UnitDiv};
-use std::{
-    ops::Add,
-    u64,
+use crate::algebra::GasScalingFactor;
+use move_core_types::gas_algebra::{
+    Arg, GasQuantity, InternalGas, InternalGasPerByte, InternalGasUnit, NumBytes, UnitDiv,
 };
 use serde::{Deserialize, Serialize};
+use std::{ops::Add, u64};
+
+#[macro_use]
+pub mod natives;
+
+#[macro_use]
+pub mod params;
+
+mod algebra;
+mod gas_meter;
+mod starcoin_framework;
+//pub mod gen;
+mod instr;
+mod move_stdlib;
+mod table;
+mod transaction;
+
+pub use algebra::{FeePerGasUnit, Gas};
+pub use gas_meter::{FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule};
+pub use instr::InstructionGasParameters;
+pub use transaction::TransactionGasParameters;
 
 /// Unit of abstract value size -- a conceptual measurement of the memory space a Move value occupies.
 pub enum AbstractValueUnit {}
@@ -16,20 +36,6 @@ pub type AbstractValueSize = GasQuantity<AbstractValueUnit>;
 pub type InternalGasPerAbstractValueUnit = GasQuantity<UnitDiv<InternalGasUnit, AbstractValueUnit>>;
 
 pub type AbstractValueSizePerArg = GasQuantity<UnitDiv<AbstractValueUnit, Arg>>;
-
-/// Unit of (external) gas.
-pub enum GasUnit {}
-
-/// Unit of gas currency. 1 NanoSTC = 10^-9 Starcoin coins.
-pub enum NanoSTC {}
-
-pub type Gas = GasQuantity<GasUnit>;
-
-pub type GasScalingFactor = GasQuantity<UnitDiv<InternalGasUnit, GasUnit>>;
-
-pub type Fee = GasQuantity<NanoSTC>;
-
-pub type FeePerGasUnit = GasQuantity<UnitDiv<NanoSTC, GasUnit>>;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct GasCost {

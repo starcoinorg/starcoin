@@ -1,6 +1,6 @@
 use crate::access_path_cache::AccessPathCache;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::effects::{ChangeSet as MoveChangeSet, Event as MoveEvent};
+use move_core_types::effects::{ChangeSet as MoveChangeSet, Event as MoveEvent, Op as MoveStorageOp};
 use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::{StatusCode, VMStatus};
 use move_table_extension::TableChangeSet;
@@ -60,12 +60,8 @@ impl SessionId {
         }
     }
 
-    pub fn as_uuid(&self) -> u128 {
-        u128::from_be_bytes(
-            self.hash().as_ref()[..16]
-                .try_into()
-                .expect("Slice to array conversion failed."),
-        )
+    pub fn as_uuid(&self) -> HashValue {
+        self.hash()
     }
 }
 
@@ -86,23 +82,27 @@ impl SessionOutput {
             table_change_set,
         } = self;
 
+        // XXX FIXME YSG check write_set need upgrade? why aptos no need MoveStorageOp
         let mut write_set_mut = WriteSetMut::new(Vec::new());
         for (addr, account_changeset) in change_set.into_inner() {
             let (modules, resources) = account_changeset.into_inner();
             for (struct_tag, blob_opt) in resources {
                 let ap = ap_cache.get_resource_path(addr, struct_tag);
                 let op = match blob_opt {
-                    None => WriteOp::Deletion,
-                    Some(blob) => WriteOp::Value(blob),
+                    MoveStorageOp::Delete => WriteOp::Deletion,
+                    MoveStorageOp::New(blob) => WriteOp::Value(blob),
+                    MoveStorageOp::Modify(blob) => WriteOp::Value(blob),
                 };
                 write_set_mut.push((StateKey::AccessPath(ap), op))
             }
 
+            // XXX FIXME YSG check write_set need upgrade? why aptos no need MoveStorageOp
             for (name, blob_opt) in modules {
                 let ap = ap_cache.get_module_path(ModuleId::new(addr, name));
                 let op = match blob_opt {
-                    None => WriteOp::Deletion,
-                    Some(blob) => WriteOp::Value(blob),
+                    MoveStorageOp::Delete => WriteOp::Deletion,
+                    MoveStorageOp::New(blob) => WriteOp::Value(blob),
+                    MoveStorageOp::Modify(blob) => WriteOp::Value(blob),
                 };
 
                 write_set_mut.push((StateKey::AccessPath(ap), op))
@@ -110,12 +110,13 @@ impl SessionOutput {
         }
 
         for (handle, change) in table_change_set.changes {
-            for (key, value_opt) in change.entries {
-                let state_key = StateKey::table_item(handle.0, key);
-                if let Some(bytes) = value_opt {
-                    write_set_mut.push((state_key, WriteOp::Value(bytes)))
-                } else {
-                    write_set_mut.push((state_key, WriteOp::Deletion))
+            for (key, value_op) in change.entries {
+                let state_key = StateKey::table_item(handle.into(), key);
+                // XXX FIXME YSG check write_set need upgrade? why aptos no need MoveStorageOp
+                match value_op {
+                    MoveStorageOp::Delete => write_set_mut.push((state_key, WriteOp::Deletion)),
+                    MoveStorageOp::New(bytes) => write_set_mut.push((state_key, WriteOp::Value(bytes))),
+                    MoveStorageOp::Modify(bytes) => write_set_mut.push((state_key, WriteOp::Value(bytes)))
                 }
             }
         }

@@ -15,10 +15,3 @@ move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "97bee10b98fe
 move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "97bee10b98fee8a4b8877d0b8acf0b78a86782f0" }
 move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "97bee10b98fee8a4b8877d0b8acf0b78a86782f0" }
 starcoin-natives = { path = "../natives" }
-
-# XXX FIXME YSG -->
-serde = { version = "1.0.130", default-features = false }
-serde_bytes = "0.11.5"
-serde-helpers = { path = "../../commons/serde-helpers" }
-schemars = { git = "https://github.com/starcoinorg/schemars", rev = "6972da92f4360e1779168bb3fe0274c521d324e2" }
-# XXX FIXME YSG <---

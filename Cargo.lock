@@ -2586,8 +2586,12 @@ dependencies = [
 name = "gas-algebra-ext"
 version = "1.12.5"
 dependencies = [
+ "move-binary-format",
  "move-core-types",
+ "move-stdlib",
+ "move-table-extension",
  "serde 1.0.140",
+ "starcoin-natives",
 ]
 
 [[package]]
@@ -8887,6 +8891,7 @@ dependencies = [
  "anyhow",
  "clap 3.2.15",
  "dirs-next",
+ "gas-algebra-ext",
  "git-version",
  "hex",
  "libc",
@@ -9135,10 +9140,6 @@ dependencies = [
  "move-stdlib",
  "move-table-extension",
  "move-vm-types",
- "schemars 0.8.8",
- "serde 1.0.140",
- "serde-helpers",
- "serde_bytes",
  "starcoin-natives",
 ]
 
@@ -10010,6 +10011,7 @@ dependencies = [
  "starcoin-state-store-api",
  "starcoin-types",
  "starcoin-uint",
+ "starcoin-vm-types",
  "stest",
  "thiserror",
 ]
@@ -10338,6 +10340,7 @@ version = "1.12.5"
 dependencies = [
  "anyhow",
  "bcs-ext",
+ "gas-algebra-ext",
  "move-core-types",
  "move-stdlib",
  "move-table-extension",

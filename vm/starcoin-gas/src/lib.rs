@@ -18,25 +18,13 @@
 //!   - The on-chain gas schedule needs to be extensible and unordered so we can upgrate it easily
 //!     in the future.
 
-#[macro_use]
-mod natives;
-
-#[macro_use]
-mod params;
-mod algebra;
-mod starcoin_framework;
 mod gas_meter;
-//pub mod gen;
-mod instr;
-mod move_stdlib;
-mod table;
-mod transaction;
 
 pub use gas_meter::{
-    FromOnChainGasSchedule, InitialGasSchedule, NativeGasParameters, StarcoinGasMeter,
-    StarcoinGasParameters, ToOnChainGasSchedule, LATEST_GAS_FEATURE_VERSION,
+    NativeGasParameters,
+    StarcoinGasMeter, StarcoinGasParameters,
 };
-pub use instr::InstructionGasParameters;
+pub use gas_algebra_ext::InstructionGasParameters;
 pub use move_core_types::gas_algebra::{
     Arg, Byte, GasQuantity, InternalGas, InternalGasPerArg, InternalGasPerByte, InternalGasUnit,
     NumArgs, NumBytes, UnitDiv,

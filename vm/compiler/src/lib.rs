@@ -214,7 +214,7 @@ pub fn check_compiled_module_compat(pre: &CompiledModule, new: &CompiledModule) 
     let old = Module::new(pre);
     let new = Module::new(new);
 
-    Compatibility::check(false,&old, &new)
+    Compatibility::check(false, &old, &new)
 }
 
 /// Load bytecode file, return the bytecode bytes, and whether it's script.

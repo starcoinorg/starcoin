@@ -381,15 +381,6 @@ impl TableResolver for RemoteViewer {
         let h = self.rt.handle().clone();
         h.block_on(self.svc.resolve_table_entry_async(handle, key))
     }
-
-    fn operation_cost(
-        &self,
-        _op: TableOperation,
-        _key_size: usize,
-        _val_size: usize,
-    ) -> InternalGasUnits<GasCarrier> {
-        InternalGasUnits::new(1)
-    }
 }
 
 impl StateView for RemoteViewer {

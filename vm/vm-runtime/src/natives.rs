@@ -4,15 +4,13 @@ use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::CORE_CODE_ADDRESS;
 use move_vm_runtime::native_functions::{make_table_from_iter, NativeFunction, NativeFunctionTable};
 use starcoin_gas::NativeGasParameters;
-use starcoin_gas::AbstractValueSizeGasParameters;
 
 
 /// The function returns all native functions supported by Starcoin.
 /// NOTICE:
 /// - mostly re-use natives defined in move-stdlib.
 /// - be careful with the native cost table index used in the implementation
-pub fn starcoin_natives( gas_params: NativeGasParameters,
-                         _abs_val_size_gas_params: AbstractValueSizeGasParameters,) -> NativeFunctionTable {
+pub fn starcoin_natives( gas_params: NativeGasParameters) -> NativeFunctionTable {
     // XXX FIXME YSG
     let mut natives = vec![];
 
@@ -33,14 +31,15 @@ pub fn starcoin_natives( gas_params: NativeGasParameters,
     add_natives_from_module!("account", starcoin_natives::account::make_all(gas_params.starcoin_natives.account));
     add_natives_from_module!("signer", move_stdlib::natives::signer::make_all(gas_params.move_stdlib.signer));
     add_natives_from_module!("token", starcoin_natives::token::make_all(gas_params.starcoin_natives.token));
-    add_natives_from_module!("event", move_stdlib::natives::event::make_all(gas_params.move_stdlib.event));
-    add_natives_from_module!("debug", move_stdlib::natives::debug::make_all(gas_params.move_stdlib.debug));
+    // XXX FIXME YSG
+  //  add_natives_from_module!("event", move_stdlib::natives::event::make_all(gas_params.move_stdlib.event));
+  //  add_natives_from_module!("debug", move_stdlib::natives::debug::make_all(gas_params.move_stdlib.debug));
     add_natives_from_module!("u256", starcoin_natives::u256::make_all(gas_params.starcoin_natives.u256));
     #[cfg(feature = "testing")]
     add_natives_from_module!("unit_test", move_stdlib::natives::unit_test::make_all(gas_params.move_stdlib.unit_test));
     add_natives_from_module!("string", move_stdlib::natives::string::make_all(gas_params.move_stdlib.string));
     let natives = make_table_from_iter(CORE_CODE_ADDRESS, natives);
-    natives.into_iter().
+    natives.into_iter()
         .chain(move_table_extension::table_natives(CORE_CODE_ADDRESS, gas_params.table))
         .collect()
 }

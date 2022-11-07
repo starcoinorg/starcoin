@@ -1,6 +1,6 @@
+use gas_algebra_ext::{CostTable, GasConstants};
 use move_core_types::gas_algebra::AbstractMemorySize;
 use once_cell::sync::Lazy;
-use gas_algebra_ext::{CostTable, GasConstants};
 
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]

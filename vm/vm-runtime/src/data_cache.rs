@@ -4,7 +4,6 @@
 
 use crate::create_access_path;
 use anyhow::Error;
-use move_core_types::gas_schedule::{GasAlgebra, GasCarrier, InternalGasUnits};
 use move_core_types::resolver::{ModuleResolver, ResourceResolver};
 use move_table_extension::{TableHandle, TableOperation, TableResolver};
 use starcoin_logger::prelude::*;
@@ -158,19 +157,7 @@ impl<'a, S: StateView> TableResolver for RemoteStorage<'a, S> {
         handle: &TableHandle,
         key: &[u8],
     ) -> Result<Option<Vec<u8>>, Error> {
-        self.0.get_state_value(&StateKey::TableItem(TableItem {
-            handle: handle.0,
-            key: key.to_vec(),
-        }))
-    }
-
-    fn operation_cost(
-        &self,
-        _op: TableOperation,
-        _key_size: usize,
-        _val_size: usize,
-    ) -> InternalGasUnits<GasCarrier> {
-        InternalGasUnits::new(1)
+        self.0.get_state_value(&StateKey::table_item((*handle).into(), key.to_vec()))
     }
 }
 
@@ -229,16 +216,6 @@ impl<S: StateView> TableResolver for RemoteStorageOwned<S> {
         key: &[u8],
     ) -> Result<Option<Vec<u8>>, Error> {
         self.as_move_resolver().resolve_table_entry(handle, key)
-    }
-
-    fn operation_cost(
-        &self,
-        op: TableOperation,
-        key_size: usize,
-        val_size: usize,
-    ) -> InternalGasUnits<GasCarrier> {
-        self.as_move_resolver()
-            .operation_cost(op, key_size, val_size)
     }
 }
 

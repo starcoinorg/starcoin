@@ -5,7 +5,6 @@
 //! in the genesis and a mapping between the Rust representation and the on-chain gas schedule.
 
 /// XXX FIXME YSG
-// use crate::gas_meter::{StateKey, WriteOp};
 use crate::algebra::{ FeePerGasUnit, Gas, GasScalingFactor, GasUnit};
 use move_core_types::gas_algebra::{
     InternalGas, InternalGasPerByte, InternalGasUnit, NumBytes,
@@ -107,8 +106,11 @@ impl TransactionGasParameters {
             min_transaction_fee
         }
     }
-}
 
+    pub fn cal_write_set_gas(&self) -> InternalGas {
+        self.global_memory_per_byte_cost * self.default_account_size
+    }
+}
 
 impl ToUnitWithParams<InternalGasUnit> for GasUnit {
     type Params = TransactionGasParameters;

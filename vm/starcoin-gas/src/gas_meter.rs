@@ -4,15 +4,17 @@
 //! This module contains the official gas meter implementation, along with some top-level gas
 //! parameters and traits to help manipulate them.
 
-use crate::{
-    algebra::{Gas},
-    instr::InstructionGasParameters, transaction::TransactionGasParameters};
+use gas_algebra_ext::{FromOnChainGasSchedule, Gas, InitialGasSchedule, ToOnChainGasSchedule};
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use move_core_types::{
     gas_algebra::{InternalGas, NumBytes},
     vm_status::StatusCode,
 };
 use std::collections::BTreeMap;
+use move_core_types::gas_algebra::NumArgs;
+use move_core_types::language_storage::ModuleId;
+use move_vm_types::gas::{GasMeter, SimpleInstruction};
+use move_vm_types::views::{TypeView, ValueView};
 
 // Change log:
 // - V3
@@ -27,61 +29,10 @@ use std::collections::BTreeMap;
 //       global operations.
 // - V1
 //   - TBA
-pub const LATEST_GAS_FEATURE_VERSION: u64 = 3;
 
-pub(crate) const EXECUTION_GAS_MULTIPLIER: u64 = 20;
+use gas_algebra_ext::InstructionGasParameters;
+use gas_algebra_ext::TransactionGasParameters;
 
-use schemars::{self, JsonSchema};
-/// XXX FIXME YSG START --->
-use serde::{Deserialize, Serialize};
-#[derive(Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
-pub enum WriteOp {
-    Deletion,
-    Value(#[serde(with = "serde_bytes")] Vec<u8>),
-}
-
-#[derive(
-    Clone, Debug, Eq, PartialEq, Serialize, Deserialize, Ord, PartialOrd, Hash, JsonSchema,
-)]
-#[cfg_attr(any(test, feature = "fuzzing"), derive(proptest_derive::Arbitrary))]
-pub struct TableItem {
-    #[schemars(with = "String")]
-    pub handle: u128,
-    #[serde(with = "serde_bytes")]
-    #[schemars(with = "String")]
-    pub key: Vec<u8>,
-}
-
-#[derive(
-    Clone, Debug, Eq, PartialEq, Serialize, Deserialize, Ord, PartialOrd, Hash, JsonSchema,
-)]
-#[cfg_attr(any(test, feature = "fuzzing"), derive(proptest_derive::Arbitrary))]
-pub enum StateKey {
-    TableItem(TableItem),
-}
-/// XXX FIXME YSG END <----
-
-/// A trait for converting from a map representation of the on-chain gas schedule.
-pub trait FromOnChainGasSchedule: Sized {
-    /// Constructs a value of this type from a map representation of the on-chain gas schedule.
-    /// `None` should be returned when the gas schedule is missing some required entries.
-    /// Unused entries should be safely ignored.
-    fn from_on_chain_gas_schedule(gas_schedule: &BTreeMap<String, u64>) -> Option<Self>;
-}
-
-/// A trait for converting to a list of entries of the on-chain gas schedule.
-pub trait ToOnChainGasSchedule {
-    /// Converts `self` into a list of entries of the on-chain gas schedule.
-    /// Each entry is a key-value pair where the key is a string representing the name of the
-    /// parameter, where the value is the gas parameter itself.
-    fn to_on_chain_gas_schedule(&self) -> Vec<(String, u64)>;
-}
-
-/// A trait for defining an initial value to be used in the genesis.
-pub trait InitialGasSchedule: Sized {
-    /// Returns the initial value of this type, which is used in the genesis.
-    fn initial() -> Self;
-}
 /// Gas parameters for all native functions.
 #[derive(Debug, Clone)]
 pub struct NativeGasParameters {
@@ -183,14 +134,17 @@ impl InitialGasSchedule for StarcoinGasParameters {
 pub struct StarcoinGasMeter {
     gas_params: StarcoinGasParameters,
     balance: InternalGas,
+    charge: bool,
 }
 
+// XXX FIXME YSG StarcoinGasMeter for GasMeter
 impl StarcoinGasMeter {
     pub fn new(gas_params: StarcoinGasParameters, balance: impl Into<Gas>) -> Self {
         let balance = balance.into().to_unit_with_params(&gas_params.txn);
         Self {
             gas_params,
             balance,
+            charge: true,
         }
     }
 
@@ -212,11 +166,128 @@ impl StarcoinGasMeter {
             }
         }
     }
-}
 
-impl StarcoinGasMeter {
-    pub fn charge_intrinsic_gas(&mut self, txn_size: NumBytes) -> VMResult<()> {
+    pub fn set_metering(&mut self, enabled: bool) {
+        self.charge = enabled;
+    }
+
+    pub fn deduct_gas(&mut self, amount: InternalGas) -> PartialVMResult<()> {
+        self.charge(amount)
+    }
+
+    pub fn charge_intrinsic_gas_for_transaction(&mut self, txn_size: NumBytes) -> VMResult<()> {
         let cost = self.gas_params.txn.calculate_intrinsic_gas(txn_size);
         self.charge(cost).map_err(|e| e.finish(Location::Undefined))
+    }
+
+    pub fn cal_write_set_gas(&self) -> InternalGas {
+        self.gas_params.txn.cal_write_set_gas()
+    }
+}
+
+// XXX FIXME YSG
+impl GasMeter for StarcoinGasMeter {
+    fn charge_simple_instr(&mut self, instr: SimpleInstruction) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_call(&mut self, module_id: &ModuleId, func_name: &str, args: impl ExactSizeIterator<Item=impl ValueView>) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_call_generic(&mut self, module_id: &ModuleId, func_name: &str, ty_args: impl ExactSizeIterator<Item=impl TypeView>, args: impl ExactSizeIterator<Item=impl ValueView>) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_ld_const(&mut self, size: NumBytes) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_copy_loc(&mut self, val: impl ValueView) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_move_loc(&mut self, val: impl ValueView) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_store_loc(&mut self, val: impl ValueView) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_pack(&mut self, is_generic: bool, args: impl ExactSizeIterator<Item=impl ValueView>) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_unpack(&mut self, is_generic: bool, args: impl ExactSizeIterator<Item=impl ValueView>) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_read_ref(&mut self, val: impl ValueView) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_write_ref(&mut self, val: impl ValueView) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_eq(&mut self, lhs: impl ValueView, rhs: impl ValueView) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_neq(&mut self, lhs: impl ValueView, rhs: impl ValueView) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_borrow_global(&mut self, is_mut: bool, is_generic: bool, ty: impl TypeView, is_success: bool) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_exists(&mut self, is_generic: bool, ty: impl TypeView, exists: bool) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_move_from(&mut self, is_generic: bool, ty: impl TypeView, val: Option<impl ValueView>) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_move_to(&mut self, is_generic: bool, ty: impl TypeView, val: impl ValueView, is_success: bool) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_vec_pack<'a>(&mut self, ty: impl TypeView + 'a, args: impl ExactSizeIterator<Item=impl ValueView>) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_vec_len(&mut self, ty: impl TypeView) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_vec_borrow(&mut self, is_mut: bool, ty: impl TypeView, is_success: bool) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_vec_push_back(&mut self, ty: impl TypeView, val: impl ValueView) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_vec_pop_back(&mut self, ty: impl TypeView, val: Option<impl ValueView>) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_vec_unpack(&mut self, ty: impl TypeView, expect_num_elements: NumArgs) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_vec_swap(&mut self, ty: impl TypeView) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_load_resource(&mut self, loaded: Option<NumBytes>) -> PartialVMResult<()> {
+        todo!()
+    }
+
+    fn charge_native_function(&mut self, amount: InternalGas) -> PartialVMResult<()> {
+        todo!()
     }
 }

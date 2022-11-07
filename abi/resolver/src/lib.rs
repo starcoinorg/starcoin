@@ -12,7 +12,7 @@ use starcoin_resource_viewer::module_cache::ModuleCache;
 use starcoin_resource_viewer::resolver::Resolver;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::file_format::{
-    CompiledModule, CompiledScript, FunctionDefinitionIndex, StructDefinitionIndex, Visibility,
+    CompiledModule, CompiledScript, FunctionDefinitionIndex, StructDefinitionIndex,
 };
 use starcoin_vm_types::identifier::{IdentStr, Identifier};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag, TypeTag};
@@ -63,7 +63,7 @@ impl<'a> ABIResolver<'a> {
         let functions = m
             .exposed_functions
             .iter()
-           // .filter(|(_, func)| func.visibility == Visibility::Script) // only script functions
+            // .filter(|(_, func)| func.visibility == Visibility::Script) // only script functions
             .map(|(name, func)| self.function_to_abi(&module_id, name.as_ident_str(), func))
             .collect::<Result<Vec<_>>>()?;
         Ok(ModuleABI::new(m.module_id(), structs, functions))

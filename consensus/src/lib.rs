@@ -43,9 +43,10 @@ pub fn set_header_nonce(header: &[u8], nonce: u32, extra: &BlockHeaderExtra) -> 
     if len != 76 {
         return vec![];
     }
-    let mut header = header.to_owned();
-    let _ = header[39..].as_mut().write_u32::<LittleEndian>(nonce);
-    let _ = header[35..39].as_mut().write_all(extra.as_slice());
+    let mut header = header.to_vec();
+    // XXX FIXME YSG
+    //let _ = header[39..].as_mut().write_u32::<LittleEndian>(nonce);
+    //let _ = header[35..39].as_mut().write_all(extra.as_slice());
     header
 }
 

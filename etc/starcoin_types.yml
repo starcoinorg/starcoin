@@ -220,9 +220,13 @@ StructTag:
     - type_args:
         SEQ:
           TYPENAME: TypeTag
+TableHandle:
+  NEWTYPESTRUCT:
+    TYPENAME: AccountAddress
 TableItem:
   STRUCT:
-    - handle: U128
+    - handle:
+        TYPENAME: TableHandle
     - key: BYTES
 Transaction:
   ENUM:

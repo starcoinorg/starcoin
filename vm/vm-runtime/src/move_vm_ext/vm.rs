@@ -10,15 +10,17 @@ use move_vm_runtime::native_extensions::NativeContextExtensions;
 use move_vm_runtime::session::Session;
 use starcoin_vm_types::errors::VMResult;
 use std::ops::Deref;
+use starcoin_gas::NativeGasParameters;
 
 pub struct MoveVmExt {
     inner: MoveVM,
 }
 
 impl MoveVmExt {
-    pub fn new() -> VMResult<Self> {
+    // XXX FIXME YSG need add treat_friend_as_private?
+    pub fn new(native_gas_params: NativeGasParameters) -> VMResult<Self> {
         Ok(Self {
-            inner: MoveVM::new(natives::starcoin_natives())?,
+            inner: MoveVM::new(natives::starcoin_natives(native_gas_params))?,
         })
     }
 
@@ -28,7 +30,8 @@ impl MoveVmExt {
         session_id: SessionId,
     ) -> Session<'r, '_, S> {
         let mut extensions = NativeContextExtensions::default();
-        extensions.add(NativeTableContext::new(session_id.as_uuid(), remote));
+        // XXX FIXME YSG
+        extensions.add(NativeTableContext::new(*session_id.as_uuid(), remote));
 
         self.inner.new_session_with_extensions(remote, extensions)
     }

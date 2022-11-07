@@ -31,6 +31,7 @@ serde = { version = "1.0.130", default-features = false }
 serde_bytes = "0.11.5"
 serde-helpers = { path = "../../commons/serde-helpers" }
 starcoin-gas = { path = "../starcoin-gas" }
+gas-algebra-ext = { path = "../gas-algebra-ext" }
 
 [dev-dependencies]
 stdlib = {package = "stdlib", path = "../stdlib"}

@@ -3,10 +3,6 @@
 
 use move_core_types::gas_algebra::{GasQuantity, InternalGasUnit, UnitDiv};
 
-pub use gas_algebra_ext::{
-    AbstractValueSize, AbstractValueSizePerArg, AbstractValueUnit, InternalGasPerAbstractValueUnit,
-};
-
 /// Unit of (external) gas.
 pub enum GasUnit {}
 
@@ -17,6 +13,6 @@ pub type Gas = GasQuantity<GasUnit>;
 
 pub type GasScalingFactor = GasQuantity<UnitDiv<InternalGasUnit, GasUnit>>;
 
-pub type Fee = GasQuantity<NanoSTC>;
+// pub type Fee = GasQuantity<NanoSTC>;
 
 pub type FeePerGasUnit = GasQuantity<UnitDiv<NanoSTC, GasUnit>>;

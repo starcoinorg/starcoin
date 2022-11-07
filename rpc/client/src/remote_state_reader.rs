@@ -12,6 +12,7 @@ use starcoin_types::account_state::AccountState;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::table::TableHandle;
 use std::str::FromStr;
 
 #[derive(Debug, Clone, Copy)]
@@ -101,7 +102,7 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
 
     fn get_with_table_item_proof(
         &self,
-        handle: &u128,
+        handle: &TableHandle,
         key: &[u8],
     ) -> Result<StateWithTableItemProof> {
         self.client
