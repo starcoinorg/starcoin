@@ -26,6 +26,11 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clean
+      - name: build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --all
       - name: run cargo check
         uses: actions-rs/cargo@v1
         env:
@@ -33,11 +38,6 @@ jobs:
         with:
           command: clippy
           args: --all-targets
-      - name: build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --all
       - name: test
         run: ./scripts/nextest.sh
 #       - name: check changed files
