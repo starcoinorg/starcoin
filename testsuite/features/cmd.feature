@@ -215,7 +215,7 @@ Feature: cmd integration test
     Then cmd: "dev call --function 0x1::Block::latest_state_root"
     Then assert: "{{$.dev[3].ok[1]}} == {{$.dev[2].ok.header.state_root}}"
     # create gas oracle proposal
-    Then cmd: "account execute-function --function 0x1::GasOracleProposalPlugin::create_oracle_add_proposal -t 0x1::StarcoinDAO::StarcoinDAO -t 0x1::DummyToken::DummyToken  --arg b"desc" --arg 0 --arg {{$.account[0].ok.account.address}} -b"
+    Then cmd: "account execute-function --function 0x1::GasOracleProposalPlugin::create_oracle_add_proposal -t 0x1::StarcoinDAO::StarcoinDAO -t 0x1::DummyToken::DummyToken  --arg b"title" --arg b"intro" --arg b"desc" --arg 0 --arg {{$.account[0].ok.account.address}} -b"
     Then cmd: "dev sleep -t 60000"
     # make 0x1::Timestamp::now_seconds updated directly
     Then cmd: "dev gen-block"
