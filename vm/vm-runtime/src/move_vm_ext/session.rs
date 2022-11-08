@@ -1,6 +1,8 @@
 use crate::access_path_cache::AccessPathCache;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::effects::{ChangeSet as MoveChangeSet, Event as MoveEvent, Op as MoveStorageOp};
+use move_core_types::effects::{
+    ChangeSet as MoveChangeSet, Event as MoveEvent, Op as MoveStorageOp,
+};
 use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::{StatusCode, VMStatus};
 use move_table_extension::TableChangeSet;
@@ -115,8 +117,12 @@ impl SessionOutput {
                 // XXX FIXME YSG check write_set need upgrade? why aptos no need MoveStorageOp
                 match value_op {
                     MoveStorageOp::Delete => write_set_mut.push((state_key, WriteOp::Deletion)),
-                    MoveStorageOp::New(bytes) => write_set_mut.push((state_key, WriteOp::Value(bytes))),
-                    MoveStorageOp::Modify(bytes) => write_set_mut.push((state_key, WriteOp::Value(bytes)))
+                    MoveStorageOp::New(bytes) => {
+                        write_set_mut.push((state_key, WriteOp::Value(bytes)))
+                    }
+                    MoveStorageOp::Modify(bytes) => {
+                        write_set_mut.push((state_key, WriteOp::Value(bytes)))
+                    }
                 }
             }
         }

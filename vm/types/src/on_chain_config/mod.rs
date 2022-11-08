@@ -27,6 +27,7 @@ mod vm_config;
 pub use self::{
     consensus_config::{consensus_config_type_tag, ConsensusConfig, G_CONSENSUS_CONFIG_IDENTIFIER},
     dao_config::DaoConfig,
+    gas_schedule::GasSchedule,
     genesis_gas_schedule::{
         instruction_table_v1, instruction_table_v2, native_table_v1, native_table_v2,
         G_LATEST_INSTRUCTION_TABLE, G_LATEST_NATIVE_TABLE,
@@ -34,7 +35,6 @@ pub use self::{
     move_lang_version::MoveLanguageVersion,
     version::{version_config_type_tag, Version, G_VERSION_CONFIG_IDENTIFIER},
     vm_config::*,
-    gas_schedule::GasSchedule,
 };
 pub use crate::on_chain_resource::GlobalTimeOnChain;
 use crate::state_store::state_key::StateKey;

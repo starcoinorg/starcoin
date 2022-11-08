@@ -27,9 +27,9 @@ use starcoin_types::{
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{struct_tag_match, StructTag};
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::table::TableHandle;
 use std::collections::BTreeMap;
 use std::sync::Arc;
-use starcoin_vm_types::state_store::table::TableHandle;
 
 pub struct StateRpcImpl<S>
 where

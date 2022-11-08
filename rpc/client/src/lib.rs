@@ -55,6 +55,7 @@ use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
+use starcoin_vm_types::state_store::table::TableHandle;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::DryRunTransaction;
 use std::collections::HashMap;
@@ -62,7 +63,6 @@ use std::path::{Path, PathBuf};
 use std::thread::JoinHandle;
 use std::time::Duration;
 use tokio::runtime::Runtime;
-use starcoin_vm_types::state_store::table::TableHandle;
 
 pub mod chain_watcher;
 mod pubsub_client;

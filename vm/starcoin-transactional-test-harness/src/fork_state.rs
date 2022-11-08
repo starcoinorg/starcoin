@@ -21,8 +21,8 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_vm_types::state_store::state_key::StateKey;
-use tokio::runtime::Runtime;
 use starcoin_vm_types::state_store::table::TableHandle;
+use tokio::runtime::Runtime;
 
 pub struct MockStateNodeStore {
     local_storage: StateStorage,

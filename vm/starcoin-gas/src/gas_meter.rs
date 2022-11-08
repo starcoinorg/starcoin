@@ -6,15 +6,15 @@
 
 use gas_algebra_ext::{FromOnChainGasSchedule, Gas, InitialGasSchedule, ToOnChainGasSchedule};
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
+use move_core_types::gas_algebra::NumArgs;
+use move_core_types::language_storage::ModuleId;
 use move_core_types::{
     gas_algebra::{InternalGas, NumBytes},
     vm_status::StatusCode,
 };
-use std::collections::BTreeMap;
-use move_core_types::gas_algebra::NumArgs;
-use move_core_types::language_storage::ModuleId;
 use move_vm_types::gas::{GasMeter, SimpleInstruction};
 use move_vm_types::views::{TypeView, ValueView};
+use std::collections::BTreeMap;
 
 // Change log:
 // - V3
@@ -191,11 +191,22 @@ impl GasMeter for StarcoinGasMeter {
         todo!()
     }
 
-    fn charge_call(&mut self, module_id: &ModuleId, func_name: &str, args: impl ExactSizeIterator<Item=impl ValueView>) -> PartialVMResult<()> {
+    fn charge_call(
+        &mut self,
+        module_id: &ModuleId,
+        func_name: &str,
+        args: impl ExactSizeIterator<Item = impl ValueView>,
+    ) -> PartialVMResult<()> {
         todo!()
     }
 
-    fn charge_call_generic(&mut self, module_id: &ModuleId, func_name: &str, ty_args: impl ExactSizeIterator<Item=impl TypeView>, args: impl ExactSizeIterator<Item=impl ValueView>) -> PartialVMResult<()> {
+    fn charge_call_generic(
+        &mut self,
+        module_id: &ModuleId,
+        func_name: &str,
+        ty_args: impl ExactSizeIterator<Item = impl TypeView>,
+        args: impl ExactSizeIterator<Item = impl ValueView>,
+    ) -> PartialVMResult<()> {
         todo!()
     }
 
@@ -215,11 +226,19 @@ impl GasMeter for StarcoinGasMeter {
         todo!()
     }
 
-    fn charge_pack(&mut self, is_generic: bool, args: impl ExactSizeIterator<Item=impl ValueView>) -> PartialVMResult<()> {
+    fn charge_pack(
+        &mut self,
+        is_generic: bool,
+        args: impl ExactSizeIterator<Item = impl ValueView>,
+    ) -> PartialVMResult<()> {
         todo!()
     }
 
-    fn charge_unpack(&mut self, is_generic: bool, args: impl ExactSizeIterator<Item=impl ValueView>) -> PartialVMResult<()> {
+    fn charge_unpack(
+        &mut self,
+        is_generic: bool,
+        args: impl ExactSizeIterator<Item = impl ValueView>,
+    ) -> PartialVMResult<()> {
         todo!()
     }
 
@@ -239,23 +258,49 @@ impl GasMeter for StarcoinGasMeter {
         todo!()
     }
 
-    fn charge_borrow_global(&mut self, is_mut: bool, is_generic: bool, ty: impl TypeView, is_success: bool) -> PartialVMResult<()> {
+    fn charge_borrow_global(
+        &mut self,
+        is_mut: bool,
+        is_generic: bool,
+        ty: impl TypeView,
+        is_success: bool,
+    ) -> PartialVMResult<()> {
         todo!()
     }
 
-    fn charge_exists(&mut self, is_generic: bool, ty: impl TypeView, exists: bool) -> PartialVMResult<()> {
+    fn charge_exists(
+        &mut self,
+        is_generic: bool,
+        ty: impl TypeView,
+        exists: bool,
+    ) -> PartialVMResult<()> {
         todo!()
     }
 
-    fn charge_move_from(&mut self, is_generic: bool, ty: impl TypeView, val: Option<impl ValueView>) -> PartialVMResult<()> {
+    fn charge_move_from(
+        &mut self,
+        is_generic: bool,
+        ty: impl TypeView,
+        val: Option<impl ValueView>,
+    ) -> PartialVMResult<()> {
         todo!()
     }
 
-    fn charge_move_to(&mut self, is_generic: bool, ty: impl TypeView, val: impl ValueView, is_success: bool) -> PartialVMResult<()> {
+    fn charge_move_to(
+        &mut self,
+        is_generic: bool,
+        ty: impl TypeView,
+        val: impl ValueView,
+        is_success: bool,
+    ) -> PartialVMResult<()> {
         todo!()
     }
 
-    fn charge_vec_pack<'a>(&mut self, ty: impl TypeView + 'a, args: impl ExactSizeIterator<Item=impl ValueView>) -> PartialVMResult<()> {
+    fn charge_vec_pack<'a>(
+        &mut self,
+        ty: impl TypeView + 'a,
+        args: impl ExactSizeIterator<Item = impl ValueView>,
+    ) -> PartialVMResult<()> {
         todo!()
     }
 
@@ -263,19 +308,36 @@ impl GasMeter for StarcoinGasMeter {
         todo!()
     }
 
-    fn charge_vec_borrow(&mut self, is_mut: bool, ty: impl TypeView, is_success: bool) -> PartialVMResult<()> {
+    fn charge_vec_borrow(
+        &mut self,
+        is_mut: bool,
+        ty: impl TypeView,
+        is_success: bool,
+    ) -> PartialVMResult<()> {
         todo!()
     }
 
-    fn charge_vec_push_back(&mut self, ty: impl TypeView, val: impl ValueView) -> PartialVMResult<()> {
+    fn charge_vec_push_back(
+        &mut self,
+        ty: impl TypeView,
+        val: impl ValueView,
+    ) -> PartialVMResult<()> {
         todo!()
     }
 
-    fn charge_vec_pop_back(&mut self, ty: impl TypeView, val: Option<impl ValueView>) -> PartialVMResult<()> {
+    fn charge_vec_pop_back(
+        &mut self,
+        ty: impl TypeView,
+        val: Option<impl ValueView>,
+    ) -> PartialVMResult<()> {
         todo!()
     }
 
-    fn charge_vec_unpack(&mut self, ty: impl TypeView, expect_num_elements: NumArgs) -> PartialVMResult<()> {
+    fn charge_vec_unpack(
+        &mut self,
+        ty: impl TypeView,
+        expect_num_elements: NumArgs,
+    ) -> PartialVMResult<()> {
         todo!()
     }
 

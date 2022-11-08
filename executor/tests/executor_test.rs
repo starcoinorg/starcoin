@@ -75,7 +75,7 @@ fn test_vm_version() {
 
     let readed_version: u64 = bcs_ext::from_bytes(&value.pop().unwrap().1).unwrap();
     let version = {
-        let mut vm = StarcoinVM::new(&chain_state,None);
+        let mut vm = StarcoinVM::new(&chain_state, None);
         vm.load_configs(&chain_state).unwrap();
         vm.get_version().unwrap().major
     };
@@ -130,7 +130,7 @@ fn test_batch_transfer() -> Result<()> {
 #[stest::test]
 fn test_txn_verify_err_case() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
-    let mut vm = StarcoinVM::new(&chain_state,None);
+    let mut vm = StarcoinVM::new(&chain_state, None);
     let alice = Account::new();
     let bob = Account::new();
     let script_function = encode_create_account_script_function(
@@ -224,7 +224,7 @@ fn test_package_txn() -> Result<()> {
             .pop()
             .unwrap();
         let package = Package::new_with_module(module)?;
-        let mut vm = StarcoinVM::new(&chain_state,None);
+        let mut vm = StarcoinVM::new(&chain_state, None);
         let txn = alice.sign_txn(build_raw_txn(
             *alice.address(),
             &chain_state,
@@ -245,7 +245,7 @@ fn test_package_txn() -> Result<()> {
             .pop()
             .unwrap();
         let package = Package::new_with_module(module)?;
-        let mut vm = StarcoinVM::new(&chain_state,None);
+        let mut vm = StarcoinVM::new(&chain_state, None);
         let txn = alice.sign_txn(build_raw_txn(
             *alice.address(),
             &chain_state,

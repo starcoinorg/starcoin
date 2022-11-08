@@ -20,12 +20,12 @@ use starcoin_types::state_set::ChainStateSet;
 use starcoin_types::vm_error::StatusCode;
 use starcoin_vm_types::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::table::TableHandle as StarcoinTableHandle;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::write_set::WriteSet;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use tokio::runtime::Runtime;
-use starcoin_vm_types::state_store::table::TableHandle as StarcoinTableHandle;
 
 pub enum SelectableStateView<A, B> {
     A(A),
@@ -289,7 +289,7 @@ impl RemoteRpcAsyncClient {
         handle: &TableHandle,
         key: &[u8],
     ) -> Result<Option<Vec<u8>>> {
-        let handle1 : StarcoinTableHandle = StarcoinTableHandle(handle.0);
+        let handle1: StarcoinTableHandle = StarcoinTableHandle(handle.0);
         let state_table_item_proof: StateWithTableItemProofView = self
             .state_client
             .get_with_table_item_proof_by_root(handle1, key.to_vec(), self.state_root)
@@ -395,8 +395,10 @@ impl StateView for RemoteViewer {
                     .get_resource(&access_path.address, s)
                     .map_err(|err| err.finish(Location::Undefined).into_vm_status())?),
             },
-            StateKey::TableItem(table_item) => Ok(self
-                .resolve_table_entry(&move_table_extension::TableHandle(table_item.handle.0), table_item.key.as_slice())?),
+            StateKey::TableItem(table_item) => Ok(self.resolve_table_entry(
+                &move_table_extension::TableHandle(table_item.handle.0),
+                table_item.key.as_slice(),
+            )?),
         }
     }
 

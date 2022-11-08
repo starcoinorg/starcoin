@@ -96,7 +96,7 @@ pub fn dry_run<S: StateView>(
     txn: DryRunTransaction,
     metrics: Option<VMMetrics>,
 ) -> Result<(VMStatus, TransactionOutput)> {
-    let mut vm = StarcoinVM::new(state_view,metrics);
+    let mut vm = StarcoinVM::new(state_view, metrics);
     vm.dry_run_transaction(state_view, txn)
 }
 

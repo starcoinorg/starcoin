@@ -8,9 +8,9 @@ use move_table_extension::NativeTableContext;
 use move_vm_runtime::move_vm::MoveVM;
 use move_vm_runtime::native_extensions::NativeContextExtensions;
 use move_vm_runtime::session::Session;
+use starcoin_gas::NativeGasParameters;
 use starcoin_vm_types::errors::VMResult;
 use std::ops::Deref;
-use starcoin_gas::NativeGasParameters;
 
 pub struct MoveVmExt {
     inner: MoveVM,

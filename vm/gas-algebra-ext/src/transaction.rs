@@ -5,10 +5,10 @@
 //! in the genesis and a mapping between the Rust representation and the on-chain gas schedule.
 
 /// XXX FIXME YSG
-use crate::algebra::{ FeePerGasUnit, Gas, GasScalingFactor, GasUnit};
+use crate::algebra::{FeePerGasUnit, Gas, GasScalingFactor, GasUnit};
 use move_core_types::gas_algebra::{
-    InternalGas, InternalGasPerByte, InternalGasUnit, NumBytes,
-    ToUnitFractionalWithParams, ToUnitWithParams,
+    InternalGas, InternalGasPerByte, InternalGasUnit, NumBytes, ToUnitFractionalWithParams,
+    ToUnitWithParams,
 };
 
 // XXX FIXME YSG, this G_GAS_CONSTANTS_V1

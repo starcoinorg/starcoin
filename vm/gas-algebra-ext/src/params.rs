@@ -70,8 +70,8 @@ macro_rules! define_gas_parameters {
     };
 }
 
-pub(crate)  use define_gas_parameters;
-pub(crate)  use expand_get_for_gas_parameters;
+pub(crate) use define_gas_parameters;
+pub(crate) use expand_get_for_gas_parameters;
 
 #[cfg(test)]
 mod tests {

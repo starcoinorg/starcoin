@@ -99,8 +99,9 @@ impl StarcoinVM {
             .expect("load VMConfig fail")
             .expect("load VMConfig fail");
         let gas_schedule = GasSchedule::from(vm_config.clone());
-        let gas_params = StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map())
-            .expect("load gas schedule fail");
+        let gas_params =
+            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map())
+                .expect("load gas schedule fail");
         let inner = MoveVmExt::new(gas_params.clone().natives)
             .expect("should be able to create Move VM; check if there are duplicated natives");
         Self {
@@ -679,8 +680,8 @@ impl StarcoinVM {
         );
         let txn_sequence_number = txn_data.sequence_number();
         let authentication_key_preimage = txn_data.authentication_key_preimage().to_vec();
-        let txn_gas_price = txn_data.gas_unit_price().into();
-        let txn_max_gas_amount = txn_data.max_gas_amount().into();
+        let txn_gas_price = u64::from(txn_data.gas_unit_price());
+        let txn_max_gas_amount = u64::from(txn_data.max_gas_amount());
         let txn_expiration_time = txn_data.expiration_time_secs();
         let chain_id = txn_data.chain_id().id();
         let (payload_type, script_or_package_hash, package_address) = match txn_data.payload() {
@@ -741,9 +742,9 @@ impl StarcoinVM {
         );
         let txn_sequence_number = txn_data.sequence_number();
         let txn_authentication_key_preimage = txn_data.authentication_key_preimage().to_vec();
-        let txn_gas_price = txn_data.gas_unit_price().into();
-        let txn_max_gas_amount = txn_data.max_gas_amount().into();
-        let gas_remaining = gas_meter.balance().into();
+        let txn_gas_price = u64::from(txn_data.gas_unit_price());
+        let txn_max_gas_amount = u64::from(txn_data.max_gas_amount());
+        let gas_remaining = u64::from(gas_meter.balance());
         let (payload_type, script_or_package_hash, package_address) = match txn_data.payload() {
             TransactionPayloadMetadata::Script(hash) => {
                 (TransactionPayloadType::Script, *hash, AccountAddress::ZERO)
@@ -1359,8 +1360,9 @@ pub(crate) fn charge_global_write_gas_usage<R: MoveResolverExt>(
     session: &SessionAdapter<R>,
     sender: &AccountAddress,
 ) -> Result<(), VMStatus> {
-    let write_set_gas :u64 = gas_meter.cal_write_set_gas().into();
-    let total_cost = InternalGasPerByte::from(write_set_gas) * NumBytes::new(session.as_ref().num_mutated_accounts(sender));
+    let write_set_gas = u64::from(gas_meter.cal_write_set_gas());
+    let total_cost = InternalGasPerByte::from(write_set_gas)
+        * NumBytes::new(session.as_ref().num_mutated_accounts(sender));
     gas_meter
         .deduct_gas(total_cost)
         .map_err(|p_err| p_err.finish(Location::Undefined).into_vm_status())
@@ -1416,7 +1418,7 @@ pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolverExt>(
     Ok(TransactionOutput::new(
         write_set,
         events,
-        gas_used.into(),
+        u64::from(gas_used),
         TransactionStatus::Keep(status),
     ))
 }

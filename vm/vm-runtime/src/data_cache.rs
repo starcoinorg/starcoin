@@ -157,7 +157,8 @@ impl<'a, S: StateView> TableResolver for RemoteStorage<'a, S> {
         handle: &TableHandle,
         key: &[u8],
     ) -> Result<Option<Vec<u8>>, Error> {
-        self.0.get_state_value(&StateKey::table_item((*handle).into(), key.to_vec()))
+        self.0
+            .get_state_value(&StateKey::table_item((*handle).into(), key.to_vec()))
     }
 }
 
