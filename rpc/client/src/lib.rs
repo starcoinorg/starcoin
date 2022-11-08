@@ -62,6 +62,7 @@ use std::path::{Path, PathBuf};
 use std::thread::JoinHandle;
 use std::time::Duration;
 use tokio::runtime::Runtime;
+use starcoin_vm_types::state_store::table::TableHandle;
 
 pub mod chain_watcher;
 mod pubsub_client;
@@ -640,7 +641,7 @@ impl RpcClient {
 
     pub fn state_get_with_table_item_proof_by_root(
         &self,
-        handle: u128,
+        handle: TableHandle,
         key: Vec<u8>,
         state_root: HashValue,
     ) -> anyhow::Result<StateWithTableItemProofView> {

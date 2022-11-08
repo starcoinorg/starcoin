@@ -49,13 +49,13 @@ starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-move-explain = { path = "../../vm/move-explain" }
 vm-status-translator = { path = "../../vm/vm-status-translator" }
-move-errmapgen = { git = "https://github.com/starcoinorg/move", rev = "97bee10b98fee8a4b8877d0b8acf0b78a86782f0" }
+move-errmapgen = { git = "https://github.com/starcoinorg/move", rev = "e2282776b8a6642a68e7ac1a0c819bda76d64d95" }
 network-api = { path = "../../network/api", package = "network-api" }
 starcoin-network-rpc-api = { path = "../../network-rpc/api" }
 starcoin-abi-decoder = { path = "../../abi/decoder" }
 starcoin-abi-resolver = { path = "../../abi/resolver" }
 starcoin-abi-types = { path = "../../abi/types" }
-move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "97bee10b98fee8a4b8877d0b8acf0b78a86782f0" }
+move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "e2282776b8a6642a68e7ac1a0c819bda76d64d95" }
 
 [dev-dependencies]
 test-helper = { path = "../../test-helper" }

@@ -8,8 +8,8 @@ use crate::errors::{
 };
 use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
 use anyhow::{format_err, Error, Result};
-use gas_algebra_ext::{CostTable, Gas, GasConstants, GasCost};
-use move_core_types::gas_algebra::{GasQuantity, InternalGas};
+use gas_algebra_ext::{CostTable, FromOnChainGasSchedule, Gas, GasConstants, GasCost};
+use move_core_types::gas_algebra::{GasQuantity, InternalGas, InternalGasPerByte, NumBytes};
 use move_table_extension::NativeTableContext;
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
 use move_vm_runtime::session::Session;
@@ -44,8 +44,8 @@ use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::on_chain_config::{
-    MoveLanguageVersion, G_GAS_CONSTANTS_IDENTIFIER, G_INSTRUCTION_SCHEDULE_IDENTIFIER,
-    G_NATIVE_SCHEDULE_IDENTIFIER, G_VM_CONFIG_IDENTIFIER,
+    GasSchedule, MoveLanguageVersion, G_GAS_CONSTANTS_IDENTIFIER,
+    G_INSTRUCTION_SCHEDULE_IDENTIFIER, G_NATIVE_SCHEDULE_IDENTIFIER, G_VM_CONFIG_IDENTIFIER,
 };
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateReaderExt;
@@ -93,26 +93,42 @@ const VMCONFIG_UPGRADE_VERSION_MARK: u64 = 10;
 impl StarcoinVM {
     #[cfg(feature = "metrics")]
     pub fn new<S: StateView>(state: &S, metrics: Option<VMMetrics>) -> Self {
-        let inner = MoveVmExt::new()
+        let remote_storage = RemoteStorage::new(state);
+        // XXX FIXME YSG use match gas_schedule, then vm_config
+        let vm_config = VMConfig::fetch_config(&remote_storage)
+            .expect("load VMConfig fail")
+            .expect("load VMConfig fail");
+        let gas_schedule = GasSchedule::from(vm_config.clone());
+        let gas_params = StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map())
+            .expect("load gas schedule fail");
+        let inner = MoveVmExt::new(gas_params.clone().natives)
             .expect("should be able to create Move VM; check if there are duplicated natives");
         Self {
             move_vm: Arc::new(inner),
-            vm_config: None,
+            vm_config: Some(vm_config),
             version: None,
             move_version: None,
             metrics,
-            gas_params: None,
+            gas_params: Some(gas_params),
         }
     }
     #[cfg(not(feature = "metrics"))]
-    pub fn new() -> Self {
-        let inner = MoveVmExt::new()
+    pub fn new<S: StateView>(state_view: &S) -> Self {
+        let remote_storage = RemoteStorage::new(state);
+        let vm_config = VMConfig::fetch_config(&remote_storage)
+            .expect("load VMConfig fail")
+            .expect("load VMConfig fail");
+        let gas_schedule = GasSchedule::from(vm_config);
+        let gas_params = StarcoinGasParameters::from_on_chain_gas_schedule(gas_schedule)
+            .expect("load gas schedule fail");
+        let inner = MoveVmExt::new(gas_params.clone().natives)
             .expect("should be able to create Move VM; check if there are duplicated natives");
         Self {
             move_vm: Arc::new(inner),
-            vm_config: None,
+            vm_config: Some(vm_config),
             version: None,
             move_version: None,
+            gas_params: Some(gas_params),
         }
     }
 
@@ -1343,8 +1359,8 @@ pub(crate) fn charge_global_write_gas_usage<R: MoveResolverExt>(
     session: &SessionAdapter<R>,
     sender: &AccountAddress,
 ) -> Result<(), VMStatus> {
-    let total_cost = InternalGas::new(session.as_ref().num_mutated_accounts(sender))
-        * mul(gas_meter.cal_write_set_gas());
+    let write_set_gas :u64 = gas_meter.cal_write_set_gas().into();
+    let total_cost = InternalGasPerByte::from(write_set_gas) * NumBytes::new(session.as_ref().num_mutated_accounts(sender));
     gas_meter
         .deduct_gas(total_cost)
         .map_err(|p_err| p_err.finish(Location::Undefined).into_vm_status())

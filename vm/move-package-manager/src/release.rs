@@ -64,7 +64,7 @@ pub fn handle_release(
     let pkg_version = move_args
         .build_config
         .clone()
-        .resolution_graph_for_package(&move_args.package_path)
+        .resolution_graph_for_package(&move_args.package_path.as_ref().unwrap())
         .unwrap()
         .root_package
         .package

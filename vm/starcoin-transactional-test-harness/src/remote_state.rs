@@ -7,8 +7,7 @@ use move_binary_format::errors::VMError;
 use move_core_types::resolver::{ModuleResolver, ResourceResolver};
 use starcoin_crypto::HashValue;
 
-use move_core_types::gas_schedule::{GasAlgebra, GasCarrier, InternalGasUnits};
-use move_table_extension::{TableHandle, TableOperation, TableResolver};
+use move_table_extension::{TableHandle, TableResolver};
 use starcoin_rpc_api::chain::ChainApiClient;
 use starcoin_rpc_api::state::StateApiClient;
 use starcoin_rpc_api::types::{BlockView, StateWithProofView, StateWithTableItemProofView};
@@ -26,6 +25,7 @@ use starcoin_vm_types::write_set::WriteSet;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use tokio::runtime::Runtime;
+use starcoin_vm_types::state_store::table::TableHandle as StarcoinTableHandle;
 
 pub enum SelectableStateView<A, B> {
     A(A),
@@ -289,9 +289,10 @@ impl RemoteRpcAsyncClient {
         handle: &TableHandle,
         key: &[u8],
     ) -> Result<Option<Vec<u8>>> {
+        let handle1 : StarcoinTableHandle = StarcoinTableHandle(handle.0);
         let state_table_item_proof: StateWithTableItemProofView = self
             .state_client
-            .get_with_table_item_proof_by_root(handle.0, key.to_vec(), self.state_root)
+            .get_with_table_item_proof_by_root(handle1, key.to_vec(), self.state_root)
             .await
             .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))?;
         Ok(state_table_item_proof.key_proof.0.map(|v| v.0))
@@ -395,7 +396,7 @@ impl StateView for RemoteViewer {
                     .map_err(|err| err.finish(Location::Undefined).into_vm_status())?),
             },
             StateKey::TableItem(table_item) => Ok(self
-                .resolve_table_entry(&TableHandle(table_item.handle), table_item.key.as_slice())?),
+                .resolve_table_entry(&move_table_extension::TableHandle(table_item.handle.0), table_item.key.as_slice())?),
         }
     }
 

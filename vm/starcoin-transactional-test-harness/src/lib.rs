@@ -14,7 +14,6 @@ use move_core_types::language_storage::StructTag;
 use move_core_types::value::MoveValue;
 use move_core_types::{
     account_address::AccountAddress,
-    gas_schedule::GasAlgebra,
     identifier::{IdentStr, Identifier},
     language_storage::{ModuleId, TypeTag},
 };
@@ -609,12 +608,12 @@ impl<'a> StarcoinTestAdapter<'a> {
             .maximum_number_of_gas_units;
         let gas_unit_price = 1;
         let max_gas_amount = if gas_unit_price == 0 {
-            max_number_of_gas_units.get()
+            u64::from(max_number_of_gas_units)
         } else {
             let account_balance =
                 self.fetch_balance_resource(signer_addr, stc_type_tag().to_string())?;
             std::cmp::min(
-                max_number_of_gas_units.get(),
+                u64::from(max_number_of_gas_units),
                 (account_balance.token() / gas_unit_price as u128) as u64,
             )
         };
@@ -633,7 +632,7 @@ impl<'a> StarcoinTestAdapter<'a> {
     /// Should error if the transaction ends up being discarded, or having a status other than
     /// EXECUTED.
     fn run_blockmeta(&mut self, meta: BlockMetadata) -> Result<()> {
-        let mut vm = StarcoinVM::new(None);
+        let mut vm = StarcoinVM::new(&self.context.storage,None);
         let mut outputs = vm.execute_block_transactions(
             &self.context.storage,
             vec![Transaction::BlockMetadata(meta.clone())],
@@ -667,7 +666,7 @@ impl<'a> StarcoinTestAdapter<'a> {
     /// Should error if the transaction ends up being discarded, or having a status other than
     /// EXECUTED.
     fn run_transaction(&mut self, txn: RawUserTransaction) -> Result<TransactionWithOutput> {
-        let mut vm = StarcoinVM::new(None);
+        let mut vm = StarcoinVM::new(&self.context.storage, None);
         let signed_txn = self.sign(txn);
 
         let (_status, output) = vm
@@ -1051,7 +1050,6 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
     }
 
     fn init(
-        _test_path: &Path,
         default_syntax: SyntaxChoice,
         pre_compiled_deps: Option<&'a FullyCompiledProgram>,
         task_opt: Option<TaskInput<(InitCommand, Self::ExtraInitArgs)>>,

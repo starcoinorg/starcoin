@@ -1,4 +1,4 @@
-use crate::on_chain_config::OnChainConfig;
+use crate::on_chain_config::{OnChainConfig, VMConfig};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -165,4 +165,18 @@ pub fn move_stdlib_native_gas_schedule_v4() -> BTreeMap<String, u64> {
     ]);
     natives.append(&mut natives_delta);
     natives
+}
+
+// XXX FIXME YSG, check wether we need add gas_schedule in storage
+impl OnChainConfig for GasSchedule {
+    const MODULE_IDENTIFIER: &'static str = "gas_schedule";
+    const CONF_IDENTIFIER: &'static str = "GasScheduleConfig";
+}
+
+// XXX FIXME YSG
+impl From<VMConfig> for GasSchedule {
+    fn from(_vm_config: VMConfig) -> Self {
+        let entries: Vec<(String, u64)> = vec![("hello".to_owned(), 1)];
+        Self { entries }
+    }
 }

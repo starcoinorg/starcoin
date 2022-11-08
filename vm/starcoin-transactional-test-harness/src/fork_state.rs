@@ -22,6 +22,7 @@ use starcoin_types::account_state::AccountState;
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use tokio::runtime::Runtime;
+use starcoin_vm_types::state_store::table::TableHandle;
 
 pub struct MockStateNodeStore {
     local_storage: StateStorage,
@@ -141,7 +142,7 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
 
     async fn get_with_table_item_proof(
         self,
-        handle: u128,
+        handle: TableHandle,
         key: Vec<u8>,
     ) -> Result<StateWithTableItemProof> {
         let reader = self.state_db();
@@ -150,7 +151,7 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
 
     async fn get_with_table_item_proof_by_root(
         self,
-        handle: u128,
+        handle: TableHandle,
         key: Vec<u8>,
         state_root: HashValue,
     ) -> Result<StateWithTableItemProof> {

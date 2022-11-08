@@ -34,6 +34,7 @@ pub use self::{
     move_lang_version::MoveLanguageVersion,
     version::{version_config_type_tag, Version, G_VERSION_CONFIG_IDENTIFIER},
     vm_config::*,
+    gas_schedule::GasSchedule,
 };
 pub use crate::on_chain_resource::GlobalTimeOnChain;
 use crate::state_store::state_key::StateKey;
