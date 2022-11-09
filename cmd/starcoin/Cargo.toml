@@ -15,8 +15,8 @@ forkable-jellyfish-merkle = {path = "../../commons/forkable-jellyfish-merkle"}
 futures = "0.3.12"
 hex = {version = "0.4.3", default-features = false}
 itertools = "0.10.3"
-move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "c6dc63d3da2bfc625073536001a50b0d2fd093f5"}
-move-errmapgen = {git = "https://github.com/starcoinorg/move", rev = "c6dc63d3da2bfc625073536001a50b0d2fd093f5"}
+move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "40bd57fb3823419e6e48bc08a2483a3f680e7f82"}
+move-errmapgen = {git = "https://github.com/starcoinorg/move", rev = "40bd57fb3823419e6e48bc08a2483a3f680e7f82"}
 network-api = {path = "../../network/api", package = "network-api"}
 network-p2p-types = {path = "../../network-p2p/types"}
 network-types = {path = "../../network/types"}

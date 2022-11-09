@@ -10,15 +10,15 @@ version = "1.12.5"
 arrayref = "0.3"
 libsecp256k1 = "0.7.1"
 log = "0.4.14"
-move-binary-format = {git = "https://github.com/starcoinorg/move", rev = "c6dc63d3da2bfc625073536001a50b0d2fd093f5"}
-move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "c6dc63d3da2bfc625073536001a50b0d2fd093f5"}
-move-core-types = {git = "https://github.com/starcoinorg/move", rev = "c6dc63d3da2bfc625073536001a50b0d2fd093f5"}
-move-docgen = {git = "https://github.com/starcoinorg/move", rev = "c6dc63d3da2bfc625073536001a50b0d2fd093f5"}
-move-errmapgen = {git = "https://github.com/starcoinorg/move", rev = "c6dc63d3da2bfc625073536001a50b0d2fd093f5"}
-move-prover = {git = "https://github.com/starcoinorg/move", rev = "c6dc63d3da2bfc625073536001a50b0d2fd093f5"}
-move-stdlib = {git = "https://github.com/starcoinorg/move", rev = "c6dc63d3da2bfc625073536001a50b0d2fd093f5"}
-move-vm-runtime = {git = "https://github.com/starcoinorg/move", rev = "c6dc63d3da2bfc625073536001a50b0d2fd093f5"}
-move-vm-types = {git = "https://github.com/starcoinorg/move", rev = "c6dc63d3da2bfc625073536001a50b0d2fd093f5"}
+move-binary-format = {git = "https://github.com/starcoinorg/move", rev = "40bd57fb3823419e6e48bc08a2483a3f680e7f82"}
+move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "40bd57fb3823419e6e48bc08a2483a3f680e7f82"}
+move-core-types = {git = "https://github.com/starcoinorg/move", rev = "40bd57fb3823419e6e48bc08a2483a3f680e7f82"}
+move-docgen = {git = "https://github.com/starcoinorg/move", rev = "40bd57fb3823419e6e48bc08a2483a3f680e7f82"}
+move-errmapgen = {git = "https://github.com/starcoinorg/move", rev = "40bd57fb3823419e6e48bc08a2483a3f680e7f82"}
+move-prover = {git = "https://github.com/starcoinorg/move", rev = "40bd57fb3823419e6e48bc08a2483a3f680e7f82"}
+move-stdlib = {git = "https://github.com/starcoinorg/move", rev = "40bd57fb3823419e6e48bc08a2483a3f680e7f82"}
+move-vm-runtime = {git = "https://github.com/starcoinorg/move", rev = "40bd57fb3823419e6e48bc08a2483a3f680e7f82"}
+move-vm-types = {git = "https://github.com/starcoinorg/move", rev = "40bd57fb3823419e6e48bc08a2483a3f680e7f82"}
 num_enum = "0.5.7"
 ripemd160 = "0.9.1"
 smallvec = "1.10.0"
