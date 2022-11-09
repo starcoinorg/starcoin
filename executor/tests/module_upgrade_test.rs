@@ -178,7 +178,7 @@ fn test_upgrade_stdlib_with_incremental_package() -> Result<()> {
     Ok(())
 }
 
-#[stest::test(timeout = 300)]
+#[stest::test(timeout = 30000)]
 fn test_stdlib_upgrade() -> Result<()> {
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
     let stdlib_versions = G_STDLIB_VERSIONS.clone();
@@ -354,6 +354,196 @@ fn ext_execute_after_upgrade(
                 "expect 0x1::GenesisNFT::GenesisNFTInfo in global storage, but go none."
             );
         }
+        StdlibVersion::Version(12) => {
+            // New resources at genesis_account.
+            assert_genesis_resouce_exist(chain_state, "Block", "Checkpoints", vec![]);
+            assert_genesis_resouce_exist(chain_state, "DAORegistry", "DAORegistry", vec![]);
+            assert_genesis_resouce_exist(
+                chain_state,
+                "DAOExtensionPoint",
+                "NFTMintCapHolder",
+                vec![],
+            );
+            assert_genesis_resouce_exist(chain_state, "DAOExtensionPoint", "Registry", vec![]);
+            assert_genesis_resouce_exist(
+                chain_state,
+                "DAOExtensionPoint",
+                "RegistryEventHandlers",
+                vec![],
+            );
+            assert_genesis_resouce_exist(
+                chain_state,
+                "DAOPluginMarketplace",
+                "PluginRegistry",
+                vec![],
+            );
+            assert_genesis_resouce_exist(
+                chain_state,
+                "DAOPluginMarketplace",
+                "RegistryEventHandlers",
+                vec![],
+            );
+            assert_genesis_resouce_exist(
+                chain_state,
+                "DAOPluginMarketplace",
+                "PluginRegistry",
+                vec![],
+            );
+
+            // DAOSpace plugins
+            let plugin_names = vec![
+                "AnyMemberPlugin",
+                "ConfigProposalPlugin",
+                "GrantProposalPlugin",
+                "InstallPluginProposalPlugin",
+                "MemberProposalPlugin",
+                "MintProposalPlugin",
+                "StakeToSBTPlugin",
+                "UpgradeModulePlugin",
+                "GasOracleProposalPlugin",
+                "TreasuryPlugin",
+            ];
+            plugin_names.into_iter().for_each(|name| {
+                let any_member_tag = TypeTag::Struct(StructTag {
+                    address: genesis_address(),
+                    module: Identifier::new(name).unwrap(),
+                    name: Identifier::new(name).unwrap(),
+                    type_params: vec![],
+                });
+                assert_genesis_resouce_exist(
+                    chain_state,
+                    "DAOPluginMarketplace",
+                    "PluginEntry",
+                    vec![any_member_tag.clone()],
+                );
+                assert_genesis_resouce_exist(
+                    chain_state,
+                    "DAOPluginMarketplace",
+                    "PluginEventHandlers",
+                    vec![any_member_tag],
+                );
+            });
+
+            // New resources of StarcoinDAO
+            assert_genesis_resouce_exist(chain_state, "DAOAccount", "DAOAccount", vec![]);
+            vec![
+                "InstallPluginProposalPlugin",
+                "UpgradeModulePlugin",
+                "ConfigProposalPlugin",
+                "StakeToSBTPlugin",
+                "GasOracleProposalPlugin",
+                "TreasuryPlugin",
+            ]
+            .into_iter()
+            .for_each(|name| {
+                assert_genesis_resouce_exist(
+                    chain_state,
+                    "DAOSpace",
+                    "InstalledPluginInfo",
+                    vec![TypeTag::Struct(StructTag {
+                        address: genesis_address(),
+                        module: Identifier::new(name).unwrap(),
+                        name: Identifier::new(name).unwrap(),
+                        type_params: vec![],
+                    })],
+                )
+            });
+            assert_genesis_resouce_exist(
+                chain_state,
+                "TreasuryPlugin",
+                "WithdrawCapabilityHolder",
+                vec![TypeTag::Struct(StructTag {
+                    address: genesis_address(),
+                    module: Identifier::new("STC").unwrap(),
+                    name: Identifier::new("STC").unwrap(),
+                    type_params: vec![],
+                })],
+            );
+
+            // DAOCustomConfigModifyCapHolder of StarcoinDAO
+            vec![
+                "TransactionPublishOption",
+                "VMConfig",
+                "ConsensusConfig",
+                "RewardConfig",
+                "TransactionTimeoutConfig",
+                "LanguageVersion",
+            ]
+            .into_iter()
+            .for_each(|name| {
+                assert_genesis_resouce_exist(
+                    chain_state,
+                    "DAOSpace",
+                    "DAOCustomConfigModifyCapHolder",
+                    vec![
+                        TypeTag::Struct(StructTag {
+                            address: genesis_address(),
+                            module: Identifier::new("StarcoinDAO").unwrap(),
+                            name: Identifier::new("StarcoinDAO").unwrap(),
+                            type_params: vec![],
+                        }),
+                        TypeTag::Struct(StructTag {
+                            address: genesis_address(),
+                            module: Identifier::new(name).unwrap(),
+                            name: Identifier::new(name).unwrap(),
+                            type_params: vec![],
+                        }),
+                    ],
+                );
+            });
+
+            // Removed old DAO resources.
+            vec![
+                ("ModifyDaoConfigProposal", "DaoConfigModifyCapability"),
+                ("UpgradeModuleDaoProposal", "UpgradeModuleDaoProposal"),
+                ("TreasuryWithdrawDaoProposal", "WrappedWithdrawCapability"),
+            ]
+            .into_iter()
+            .for_each(|(module, name)| {
+                assert_genesis_resouce_not_exist(
+                    chain_state,
+                    module,
+                    name,
+                    vec![TypeTag::Struct(StructTag {
+                        address: genesis_address(),
+                        module: Identifier::new("STC").unwrap(),
+                        name: Identifier::new("STC").unwrap(),
+                        type_params: vec![],
+                    })],
+                )
+            });
+
+            vec![
+                "TransactionPublishOption",
+                "VMConfig",
+                "ConsensusConfig",
+                "RewardConfig",
+                "TransactionTimeoutConfig",
+                "LanguageVersion",
+            ]
+            .into_iter()
+            .for_each(|name| {
+                assert_genesis_resouce_not_exist(
+                    chain_state,
+                    "OnChainConfigDao",
+                    "WrappedConfigModifyCapability",
+                    vec![
+                        TypeTag::Struct(StructTag {
+                            address: genesis_address(),
+                            module: Identifier::new("STC").unwrap(),
+                            name: Identifier::new("STC").unwrap(),
+                            type_params: vec![],
+                        }),
+                        TypeTag::Struct(StructTag {
+                            address: genesis_address(),
+                            module: Identifier::new(name).unwrap(),
+                            name: Identifier::new(name).unwrap(),
+                            type_params: vec![],
+                        }),
+                    ],
+                );
+            });
+        }
         _ => {
             //do nothing.
         }
@@ -428,4 +618,54 @@ where
         .get_resource::<TwoPhaseUpgradeV2Resource>(genesis_address())?
         .map(|tpu| tpu.enforced())
         .unwrap_or(false))
+}
+
+fn assert_genesis_resouce_exist(
+    chain_state: &ChainStateDB,
+    module: &str,
+    name: &str,
+    type_params: Vec<TypeTag>,
+) {
+    let checkpoint = chain_state
+        .get(&AccessPath::new(
+            genesis_address(),
+            DataPath::Resource(StructTag {
+                address: genesis_address(),
+                module: Identifier::new(module).unwrap(),
+                name: Identifier::new(name).unwrap(),
+                type_params,
+            }),
+        ))
+        .unwrap();
+    assert!(
+        checkpoint.is_some(),
+        "expect genesis_account has resource 0x1::{:?}::{:?}, but got none.",
+        module,
+        name
+    );
+}
+
+fn assert_genesis_resouce_not_exist(
+    chain_state: &ChainStateDB,
+    module: &str,
+    name: &str,
+    type_params: Vec<TypeTag>,
+) {
+    let checkpoint = chain_state
+        .get(&AccessPath::new(
+            genesis_address(),
+            DataPath::Resource(StructTag {
+                address: genesis_address(),
+                module: Identifier::new(module).unwrap(),
+                name: Identifier::new(name).unwrap(),
+                type_params,
+            }),
+        ))
+        .unwrap();
+    assert!(
+        checkpoint.is_none(),
+        "expect genesis_account has no resource 0x1::{:?}::{:?}, but got it.",
+        module,
+        name
+    );
 }
