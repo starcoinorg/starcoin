@@ -81,13 +81,13 @@ pub fn make_native_token_name_of(gas_params: TokenNameOfGasParameters) -> Native
  **************************************************************************************************/
 #[derive(Debug, Clone)]
 pub struct GasParameters {
-    pub address: TokenNameOfGasParameters,
+    pub token_name_of: TokenNameOfGasParameters,
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [(
         "token_name_of",
-        make_native_token_name_of(gas_params.address),
+        make_native_token_name_of(gas_params.token_name_of),
     )];
 
     crate::helpers::make_module_natives(natives)

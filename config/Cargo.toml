@@ -40,3 +40,4 @@ starcoin-time-service = { path = "../commons/time-service" }
 thiserror = "1.0"
 toml = { version = "0.5.9", default-features = false }
 gas-algebra-ext = { path = "../vm/gas-algebra-ext" }
+starcoin-gas = { path = "../vm/starcoin-gas" }

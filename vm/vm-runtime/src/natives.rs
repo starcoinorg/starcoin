@@ -55,9 +55,6 @@ pub fn starcoin_natives(gas_params: NativeGasParameters) -> NativeFunctionTable 
         "token",
         starcoin_natives::token::make_all(gas_params.starcoin_natives.token)
     );
-    // XXX FIXME YSG
-    //  add_natives_from_module!("event", move_stdlib::natives::event::make_all(gas_params.move_stdlib.event));
-    //  add_natives_from_module!("debug", move_stdlib::natives::debug::make_all(gas_params.move_stdlib.debug));
     add_natives_from_module!(
         "u256",
         starcoin_natives::u256::make_all(gas_params.starcoin_natives.u256)
@@ -73,7 +70,13 @@ pub fn starcoin_natives(gas_params: NativeGasParameters) -> NativeFunctionTable 
     );
     let natives = make_table_from_iter(CORE_CODE_ADDRESS, natives);
     natives
-        .into_iter()
+        .into_iter().
+    chain(
+        move_stdlib::natives::nursery_natives(
+            CORE_CODE_ADDRESS,
+            // XXX FIXME YSG
+            move_stdlib::natives::NurseryGasParameters::zeros(),
+        ))
         .chain(move_table_extension::table_natives(
             CORE_CODE_ADDRESS,
             gas_params.table,

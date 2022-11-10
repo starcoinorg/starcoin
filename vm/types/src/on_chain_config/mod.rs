@@ -27,7 +27,12 @@ mod vm_config;
 pub use self::{
     consensus_config::{consensus_config_type_tag, ConsensusConfig, G_CONSENSUS_CONFIG_IDENTIFIER},
     dao_config::DaoConfig,
-    gas_schedule::GasSchedule,
+    gas_schedule::{
+        instruction_gas_schedule_v1, instruction_gas_schedule_v2,
+        move_stdlib_native_gas_schedule_v4, native_gas_schedule_v1, native_gas_schedule_v2,
+        native_gas_schedule_v3, txn_gas_schedule_test, txn_gas_schedule_v1, txn_gas_schedule_v2,
+        txn_gas_schedule_v3, GasSchedule,
+    },
     genesis_gas_schedule::{
         instruction_table_v1, instruction_table_v2, native_table_v1, native_table_v2,
         G_LATEST_INSTRUCTION_TABLE, G_LATEST_NATIVE_TABLE,

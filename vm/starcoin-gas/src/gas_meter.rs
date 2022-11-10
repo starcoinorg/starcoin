@@ -39,6 +39,7 @@ pub struct NativeGasParameters {
     pub move_stdlib: move_stdlib::natives::GasParameters,
     pub starcoin_natives: starcoin_natives::GasParameters,
     pub table: move_table_extension::GasParameters,
+    // XXX FIXME YSG add nursely
 }
 
 impl FromOnChainGasSchedule for NativeGasParameters {
@@ -137,7 +138,6 @@ pub struct StarcoinGasMeter {
     charge: bool,
 }
 
-// XXX FIXME YSG StarcoinGasMeter for GasMeter
 impl StarcoinGasMeter {
     pub fn new(gas_params: StarcoinGasParameters, balance: impl Into<Gas>) -> Self {
         let balance = balance.into().to_unit_with_params(&gas_params.txn);

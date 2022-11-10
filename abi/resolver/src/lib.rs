@@ -388,8 +388,7 @@ mod tests {
                     }))
                 }
                 StateKey::TableItem(_table_item) => {
-                    // XXX FIXME YSG
-                    unimplemented!()
+                    anyhow::bail!("no need table_item")
                 }
             }
         }

@@ -4,14 +4,13 @@
 //! This module defines all the gas parameters for transactions, along with their initial values
 //! in the genesis and a mapping between the Rust representation and the on-chain gas schedule.
 
-/// XXX FIXME YSG
 use crate::algebra::{FeePerGasUnit, Gas, GasScalingFactor, GasUnit};
 use move_core_types::gas_algebra::{
     InternalGas, InternalGasPerByte, InternalGasUnit, NumBytes, ToUnitFractionalWithParams,
     ToUnitWithParams,
 };
-
-// XXX FIXME YSG, this G_GAS_CONSTANTS_V1
+// see starcoin/config/src/genesis_config.rs G_GAS_CONSTANTS_V2
+// convert from https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#GasConstants
 crate::params::define_gas_parameters!(
     TransactionGasParameters,
     "txn",
@@ -71,7 +70,7 @@ crate::params::define_gas_parameters!(
         [
             max_transaction_size_in_bytes: NumBytes,
             "max_transaction_size_in_bytes",
-            4096 * 10
+            1024 * 128
         ],
         [
             gas_unit_scaling_factor: GasScalingFactor,

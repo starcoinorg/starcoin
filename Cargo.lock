@@ -8911,6 +8911,7 @@ dependencies = [
  "serde_json",
  "starcoin-account-api",
  "starcoin-crypto",
+ "starcoin-gas",
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-system",

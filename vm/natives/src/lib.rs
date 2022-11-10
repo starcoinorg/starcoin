@@ -39,7 +39,7 @@ impl GasParameters {
                 },
             },
             signature: signature::GasParameters {
-                ed25519_validate_publickey: signature::Ed25519ValidatePublickeyGasParameters {
+                ed25519_validate_key: signature::Ed25519ValidateKeyGasParameters {
                     base: 0.into(),
                     per_byte: 0.into(),
                 },
@@ -53,7 +53,7 @@ impl GasParameters {
                 },
             },
             token: token::GasParameters {
-                address: token::TokenNameOfGasParameters { base: 0.into() },
+                token_name_of: token::TokenNameOfGasParameters { base: 0.into() },
             },
             u256: u256::GasParameters {
                 add: u256::U256AddGasParameters { base: 0.into() },

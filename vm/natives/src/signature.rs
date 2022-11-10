@@ -20,13 +20,13 @@ use std::{collections::VecDeque, convert::TryFrom};
  *
  **************************************************************************************************/
 #[derive(Debug, Clone)]
-pub struct Ed25519ValidatePublickeyGasParameters {
+pub struct Ed25519ValidateKeyGasParameters {
     pub base: InternalGas,
     pub per_byte: InternalGasPerByte,
 }
 
 pub fn native_ed25519_publickey_validation(
-    gas_params: &Ed25519ValidatePublickeyGasParameters,
+    gas_params: &Ed25519ValidateKeyGasParameters,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,
     mut arguments: VecDeque<Value>,
@@ -44,7 +44,7 @@ pub fn native_ed25519_publickey_validation(
 }
 
 pub fn make_native_ed25519_validate_pubkey(
-    gas_params: Ed25519ValidatePublickeyGasParameters,
+    gas_params: Ed25519ValidateKeyGasParameters,
 ) -> NativeFunction {
     Arc::new(move |context, ty_args, args| {
         native_ed25519_publickey_validation(&gas_params, context, ty_args, args)
@@ -110,7 +110,7 @@ pub fn make_native_ed25519_verify(gas_params: Ed25519VerifyGasParameters) -> Nat
  **************************************************************************************************/
 #[derive(Debug, Clone)]
 pub struct GasParameters {
-    pub ed25519_validate_publickey: Ed25519ValidatePublickeyGasParameters,
+    pub ed25519_validate_key: Ed25519ValidateKeyGasParameters,
     pub ed25519_verify: Ed25519VerifyGasParameters,
     pub ec_recover: EcrecoverGasParameters,
 }
@@ -118,8 +118,8 @@ pub struct GasParameters {
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [
         (
-            "ed25519_validate_pubkey",
-            make_native_ed25519_validate_pubkey(gas_params.ed25519_validate_publickey),
+            "ed25519_validate_key",
+            make_native_ed25519_validate_pubkey(gas_params.ed25519_validate_key),
         ),
         (
             "ed25519_verify",
