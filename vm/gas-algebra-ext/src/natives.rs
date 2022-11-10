@@ -171,8 +171,8 @@ pub(crate) use extract_path_for_native_gas_params;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use move_core_types::gas_algebra::InternalGas;
     use crate::gas_meter::FromOnChainGasSchedule;
+    use move_core_types::gas_algebra::InternalGas;
 
     #[derive(Debug, Clone)]
     struct GasParameters {
