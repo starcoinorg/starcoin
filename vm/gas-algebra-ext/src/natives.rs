@@ -172,7 +172,7 @@ pub(crate) use extract_path_for_native_gas_params;
 mod tests {
     use super::*;
     use move_core_types::gas_algebra::InternalGas;
-    use starcoin_gas::gas_meter::FromOnChainGasSchedule;
+    use crate::gas_meter::FromOnChainGasSchedule;
 
     #[derive(Debug, Clone)]
     struct GasParameters {

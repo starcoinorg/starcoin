@@ -30,7 +30,7 @@ pub fn test_native_function_matches() -> Result<()> {
         })
         .collect();
 
-    let mut native_function_table = starcoin_vm_runtime::natives::starcoin_natives()
+    let mut native_function_table = starcoin_vm_runtime::natives::starcoin_natives(starcoin_gas::NativeGasParameters::zeros())
         .iter()
         .map(|(addr, m_name, f_name, _)| (*addr, m_name.to_string(), f_name.to_string()))
         .collect::<HashSet<_>>();
