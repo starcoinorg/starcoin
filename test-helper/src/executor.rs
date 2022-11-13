@@ -124,7 +124,8 @@ pub fn compile_script(code: impl AsRef<str>) -> Result<Vec<u8>> {
         &stdlib_files(),
         genesis_address(),
     )?
-    .1.map_err(|e| anyhow::anyhow!("{:?}", e))?;
+    .1
+    .map_err(|e| anyhow::anyhow!("{:?}", e))?;
     Ok(compile_unit
         .0
         .pop()
@@ -133,12 +134,13 @@ pub fn compile_script(code: impl AsRef<str>) -> Result<Vec<u8>> {
         .serialize())
 }
 
-pub fn compile_ir_script(
-    code: impl AsRef<str>,
-) -> Result<Vec<u8>> {
+pub fn compile_ir_script(code: impl AsRef<str>) -> Result<Vec<u8>> {
     use move_ir_compiler::Compiler as IRCompiler;
-    let modules = stdlib_compiled_modules(starcoin_transaction_builder::StdLibOptions::Compiled(StdlibVersion::Latest));
-    let (script, _) = IRCompiler::new(modules.iter().collect()).into_compiled_script_and_source_map(code.as_ref())?;
+    let modules = stdlib_compiled_modules(starcoin_transaction_builder::StdLibOptions::Compiled(
+        StdlibVersion::Latest,
+    ));
+    let (script, _) = IRCompiler::new(modules.iter().collect())
+        .into_compiled_script_and_source_map(code.as_ref())?;
     let mut bytes = vec![];
     script.serialize(&mut bytes)?;
     Ok(bytes)

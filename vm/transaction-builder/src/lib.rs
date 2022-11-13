@@ -27,7 +27,7 @@ use starcoin_vm_types::transaction::{
 use starcoin_vm_types::value::MoveValue;
 use std::convert::TryInto;
 use stdlib::{module_to_package, stdlib_package};
-pub use stdlib::{stdlib_modules, StdLibOptions, StdlibVersion, stdlib_compiled_modules};
+pub use stdlib::{stdlib_compiled_modules, stdlib_modules, StdLibOptions, StdlibVersion};
 
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
 pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 40000000;
