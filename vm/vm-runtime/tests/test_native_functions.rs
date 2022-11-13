@@ -1,4 +1,5 @@
 use anyhow::Result;
+use starcoin_config::genesis_config::G_LATEST_GAS_PARASM;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::normalized::Function;
 use std::collections::HashSet;
@@ -31,7 +32,7 @@ pub fn test_native_function_matches() -> Result<()> {
         .collect();
 
     let mut native_function_table =
-        starcoin_vm_runtime::natives::starcoin_natives(starcoin_gas::NativeGasParameters::zeros())
+        starcoin_vm_runtime::natives::starcoin_natives(G_LATEST_GAS_PARASM.clone().natives)
             .iter()
             .map(|(addr, m_name, f_name, _)| (*addr, m_name.to_string(), f_name.to_string()))
             .collect::<HashSet<_>>();
