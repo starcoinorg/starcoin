@@ -30,9 +30,7 @@ impl MoveVmExt {
         session_id: SessionId,
     ) -> Session<'r, '_, S> {
         let mut extensions = NativeContextExtensions::default();
-        // XXX FIXME YSG
         extensions.add(NativeTableContext::new(*session_id.as_uuid(), remote));
-
         self.inner.new_session_with_extensions(remote, extensions)
     }
 }

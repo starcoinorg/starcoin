@@ -1,10 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::CORE_CODE_ADDRESS;
-use move_vm_runtime::native_functions::{
-    make_table_from_iter, NativeFunction, NativeFunctionTable,
-};
+use move_vm_runtime::native_functions::{make_table_from_iter, NativeFunctionTable};
 use starcoin_gas::NativeGasParameters;
 
 /// The function returns all native functions supported by Starcoin.
@@ -12,7 +9,6 @@ use starcoin_gas::NativeGasParameters;
 /// - mostly re-use natives defined in move-stdlib.
 /// - be careful with the native cost table index used in the implementation
 pub fn starcoin_natives(gas_params: NativeGasParameters) -> NativeFunctionTable {
-    // XXX FIXME YSG
     let mut natives = vec![];
 
     macro_rules! add_natives_from_module {
@@ -70,12 +66,10 @@ pub fn starcoin_natives(gas_params: NativeGasParameters) -> NativeFunctionTable 
     );
     let natives = make_table_from_iter(CORE_CODE_ADDRESS, natives);
     natives
-        .into_iter().
-    chain(
-        move_stdlib::natives::nursery_natives(
+        .into_iter()
+        .chain(move_stdlib::natives::nursery_natives(
             CORE_CODE_ADDRESS,
-            // XXX FIXME YSG
-            move_stdlib::natives::NurseryGasParameters::zeros(),
+            gas_params.nursery,
         ))
         .chain(move_table_extension::table_natives(
             CORE_CODE_ADDRESS,

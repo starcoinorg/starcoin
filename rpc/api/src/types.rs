@@ -1914,7 +1914,7 @@ impl From<StateKey> for StateKeyView {
         match state_key {
             StateKey::AccessPath(access_path) => Self::AccessPath(access_path),
             StateKey::TableItem(table_item) => Self::TableItem(TableItemView {
-                handle: table_item.handle.into(),
+                handle: table_item.handle,
                 key: table_item.key,
             }),
         }

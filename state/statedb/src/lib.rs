@@ -619,10 +619,8 @@ impl ChainStateWriter for ChainStateDB {
             let table_handle_state_object = self.get_table_handle_state_object(handle)?;
             table_handle_state_object.commit()?;
             // put table_handle_state_object commit
-            self.state_tree_table_handles.put(
-                handle.clone(),
-                table_handle_state_object.root_hash().to_vec(),
-            );
+            self.state_tree_table_handles
+                .put(*handle, table_handle_state_object.root_hash().to_vec());
         }
         if len > 0 {
             self.state_tree_table_handles.commit()?;

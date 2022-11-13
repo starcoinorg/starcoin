@@ -27,10 +27,9 @@ use starcoin_vm_types::gas_schedule::{
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy, StdlibVersion};
 use starcoin_vm_types::on_chain_config::{
     instruction_gas_schedule_v1, instruction_gas_schedule_v2, instruction_table_v1,
-    move_stdlib_native_gas_schedule_v4, native_gas_schedule_v1, native_gas_schedule_v2,
-    native_table_v1, native_table_v2, txn_gas_schedule_test, txn_gas_schedule_v1,
-    txn_gas_schedule_v2, txn_gas_schedule_v3, ConsensusConfig, DaoConfig, TransactionPublishOption,
-    VMConfig, Version,
+    native_gas_schedule_v1, native_gas_schedule_v2, native_gas_schedule_v4, native_table_v1,
+    native_table_v2, txn_gas_schedule_test, txn_gas_schedule_v1, txn_gas_schedule_v2,
+    txn_gas_schedule_v3, ConsensusConfig, DaoConfig, TransactionPublishOption, VMConfig, Version,
 };
 use starcoin_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::token::stc::STCUnit;
@@ -592,7 +591,7 @@ pub enum GenesisBlockParameterConfig {
 }
 
 /// GenesisConfig is a config for initialize a chain genesis.
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct GenesisConfig {
     /// Parameter for init genesis block
     pub genesis_block_parameter: GenesisBlockParameterConfig,
@@ -787,7 +786,7 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 pub static G_TEST_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
     let params = concat_map(
         instruction_gas_schedule_v2(),
-        move_stdlib_native_gas_schedule_v4(),
+        native_gas_schedule_v4(),
         txn_gas_schedule_test(),
     );
     StarcoinGasParameters::from_on_chain_gas_schedule(&params).unwrap()
@@ -845,7 +844,7 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 pub static G_DEV_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
     let params = concat_map(
         instruction_gas_schedule_v2(),
-        move_stdlib_native_gas_schedule_v4(),
+        native_gas_schedule_v4(),
         txn_gas_schedule_test(),
     );
     StarcoinGasParameters::from_on_chain_gas_schedule(&params).unwrap()
@@ -910,7 +909,7 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 pub static G_HALLEY_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
     let params = concat_map(
         instruction_gas_schedule_v2(),
-        move_stdlib_native_gas_schedule_v4(),
+        native_gas_schedule_v4(),
         txn_gas_schedule_v3(),
     );
     StarcoinGasParameters::from_on_chain_gas_schedule(&params).unwrap()
@@ -975,7 +974,7 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 pub static G_PROXIMA_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
     let params = concat_map(
         instruction_gas_schedule_v2(),
-        move_stdlib_native_gas_schedule_v4(),
+        native_gas_schedule_v4(),
         txn_gas_schedule_v3(),
     );
     StarcoinGasParameters::from_on_chain_gas_schedule(&params).unwrap()
@@ -1119,6 +1118,15 @@ pub static G_MAIN_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
         instruction_gas_schedule_v1(),
         native_gas_schedule_v2(),
         txn_gas_schedule_v2(),
+    );
+    StarcoinGasParameters::from_on_chain_gas_schedule(&params).unwrap()
+});
+
+pub static G_LATEST_GAS_PARASM: Lazy<StarcoinGasParameters> = Lazy::new(|| {
+    let params = concat_map(
+        instruction_gas_schedule_v2(),
+        native_gas_schedule_v4(),
+        txn_gas_schedule_v3(),
     );
     StarcoinGasParameters::from_on_chain_gas_schedule(&params).unwrap()
 });

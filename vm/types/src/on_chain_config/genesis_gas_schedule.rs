@@ -331,6 +331,7 @@ pub fn native_table_v2() -> Vec<GasCost> {
         .collect::<Vec<_>>()
 }
 
+#[allow(dead_code)]
 pub fn v3_native_table() -> Vec<GasCost> {
     let mut raw_native_table = vec![
         (N::SHA2_256, GasCost::new(21, 1)),

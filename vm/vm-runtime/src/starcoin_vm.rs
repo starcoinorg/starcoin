@@ -9,11 +9,11 @@ use crate::errors::{
 use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
 use anyhow::{format_err, Error, Result};
 use gas_algebra_ext::{CostTable, FromOnChainGasSchedule, Gas, GasConstants, GasCost};
-use move_core_types::gas_algebra::{GasQuantity, InternalGas, InternalGasPerByte, NumBytes};
+use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
 use move_table_extension::NativeTableContext;
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
 use move_vm_runtime::session::Session;
-use once_cell::sync::Lazy;
+use starcoin_config::genesis_config::G_LATEST_GAS_PARASM;
 use starcoin_crypto::HashValue;
 use starcoin_gas::{StarcoinGasMeter, StarcoinGasParameters};
 use starcoin_logger::prelude::*;
@@ -38,7 +38,6 @@ use starcoin_vm_types::account_config::{
     G_EPILOGUE_NAME, G_EPILOGUE_V2_NAME, G_PROLOGUE_NAME,
 };
 use starcoin_vm_types::file_format::{CompiledModule, CompiledScript};
-use starcoin_vm_types::gas_schedule::NativeCostIndex;
 use starcoin_vm_types::gas_schedule::G_LATEST_GAS_SCHEDULE;
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::identifier::IdentStr;
@@ -55,7 +54,6 @@ use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::{
     errors::Location,
-    gas_schedule,
     language_storage::TypeTag,
     on_chain_config::{OnChainConfig, VMConfig, Version},
     state_view::StateView,
@@ -67,12 +65,6 @@ use std::sync::Arc;
 
 #[cfg(feature = "metrics")]
 use crate::metrics::VMMetrics;
-
-// XXX FIXME YSG
-
-/*
-static G_ZERO_COST_SCHEDULE: Lazy<CostTable> =
-    Lazy::new(|| zero_cost_schedule(NativeCostIndex::NUMBER_OF_NATIVE_FUNCTIONS)); */
 
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
@@ -816,10 +808,7 @@ impl StarcoinVM {
         let txn_sender = account_config::genesis_address();
         // always use 0 gas for system.
         let max_gas_amount: Gas = 0.into();
-        // XXX FIXME YSG
-        // let cost_table = &G_ZERO_COST_SCHEDULE;
-        let gas_params = self.get_gas_parameters()?;
-        let mut gas_meter = StarcoinGasMeter::new(gas_params.clone(), max_gas_amount.clone());
+        let mut gas_meter = StarcoinGasMeter::new(StarcoinGasParameters::zeros(), max_gas_amount);
         gas_meter.set_metering(false);
         let session_id = SessionId::block_meta(&block_metadata);
         let (
@@ -881,23 +870,14 @@ impl StarcoinVM {
                 return discard_error_vm_status(e);
             }
         };
-        // XXX FIXME YSG
-        /*
-                let gas_schedule = match self.get_gas_schedule() {
-            Ok(gas_schedule) => gas_schedule,
-            Err(e) => {
-                if remote_cache.is_genesis() {
-                    &G_LATEST_GAS_SCHEDULE
-                } else {
-                    return discard_error_vm_status(e);
-                }
-            }
-        };
-         */
         let gas_params = match self.get_gas_parameters() {
             Ok(gas_params) => gas_params,
             Err(e) => {
-                return discard_error_vm_status(e);
+                if remote_cache.is_genesis() {
+                    &G_LATEST_GAS_PARASM
+                } else {
+                    return discard_error_vm_status(e);
+                }
             }
         };
 
@@ -963,19 +943,16 @@ impl StarcoinVM {
         let remote_cache = StateViewCache::new(state_view);
         //TODO load config by config change event.
         self.load_configs(&remote_cache)?;
-
-        // XXX FIXME YSG
-        /*
-        let gas_schedule = match self.get_gas_schedule() {
-            Ok(gas_schedule) => gas_schedule,
+        let gas_params = match self.get_gas_parameters() {
+            Ok(gas_params) => gas_params,
             Err(e) => {
                 if remote_cache.is_genesis() {
-                    &G_LATEST_GAS_SCHEDULE
+                    &G_LATEST_GAS_PARASM
                 } else {
                     return Ok(discard_error_vm_status(e));
                 }
             }
-        }; */
+        };
         let txn_data = match TransactionMetadata::from_raw_txn_and_preimage(
             &txn.raw_txn,
             txn.public_key.authentication_key_preimage(),
@@ -983,7 +960,6 @@ impl StarcoinVM {
             Ok(txn_data) => txn_data,
             Err(e) => return Ok(discard_error_vm_status(e)),
         };
-        let gas_params = self.get_gas_parameters()?;
         let mut gas_meter = StarcoinGasMeter::new(gas_params.clone(), txn_data.max_gas_amount());
         gas_meter.set_metering(false);
         let result = match txn.raw_txn.payload() {
@@ -1188,26 +1164,17 @@ impl StarcoinVM {
                 );
                 return Err(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE));
             }
-            // XXX FIXME YSG
-            /*
-            let gas_constants = &self.get_gas_schedule()?.gas_constants;
-            let mut gas_meter = GasStatus::new(
-                &G_LATEST_GAS_SCHEDULE,
-                GasUnits::new(gas_constants.maximum_number_of_gas_units.get()),
-            );*/
             let gas_params = self.get_gas_parameters()?;
             let mut gas_meter = StarcoinGasMeter::new(
-                gas_params.clone(),
+                G_LATEST_GAS_PARASM.clone(),
                 gas_params.txn.maximum_number_of_gas_units,
             );
             gas_meter.set_metering(true);
             gas_meter
         } else {
-            // let mut gas_meter = GasStatus::new(&G_ZERO_COST_SCHEDULE, GasUnits::new(0));
-            // XXX FIXME YSG
-            let gas_params = self.get_gas_parameters()?;
             let max_gas_amount: Gas = 0.into();
-            let mut gas_meter = StarcoinGasMeter::new(gas_params.clone(), max_gas_amount);
+            let mut gas_meter =
+                StarcoinGasMeter::new(StarcoinGasParameters::zeros(), max_gas_amount);
             gas_meter.set_metering(false);
             gas_meter
         };
@@ -1274,7 +1241,7 @@ impl StarcoinVM {
         txn_data: &TransactionMetadata,
         remote_cache: &StateViewCache<'_, S>,
     ) -> (VMStatus, TransactionOutput) {
-        // XXX FIXME YSG
+        // XXX FIXME YSG, confirm whether is right
         gas_meter.set_metering(false);
         let data_cache = remote_cache.as_move_resolver();
         let mut session: SessionAdapter<_> = self
@@ -1354,7 +1321,6 @@ pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock>
     blocks
 }
 
-// XXX FIXME YSG
 pub(crate) fn charge_global_write_gas_usage<R: MoveResolverExt>(
     gas_meter: &mut StarcoinGasMeter,
     session: &SessionAdapter<R>,
@@ -1399,7 +1365,7 @@ pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolverExt>(
     max_gas_amount: Gas,
     status: KeptVMStatus,
 ) -> Result<TransactionOutput, VMStatus> {
-    // XXX FIXME YSG, confirm these code
+    // original code use sub, now we use checked_sub
     let gas_used = max_gas_amount
         .checked_sub(gas_left)
         .expect("Balance should always be less than or equal to max gas amount");

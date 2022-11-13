@@ -5,8 +5,8 @@ use crate::algebra::GasScalingFactor;
 use move_core_types::gas_algebra::{
     Arg, GasQuantity, InternalGas, InternalGasPerByte, InternalGasUnit, NumBytes, UnitDiv,
 };
+pub use move_vm_test_utils::gas_schedule::GasCost;
 use serde::{Deserialize, Serialize};
-use std::{ops::Add, u64};
 
 #[macro_use]
 pub mod natives;
@@ -20,6 +20,7 @@ mod starcoin_framework;
 //pub mod gen;
 mod instr;
 mod move_stdlib;
+mod nursery;
 mod table;
 mod transaction;
 
@@ -36,30 +37,6 @@ pub type AbstractValueSize = GasQuantity<AbstractValueUnit>;
 pub type InternalGasPerAbstractValueUnit = GasQuantity<UnitDiv<InternalGasUnit, AbstractValueUnit>>;
 
 pub type AbstractValueSizePerArg = GasQuantity<UnitDiv<AbstractValueUnit, Arg>>;
-
-/// The  `GasCost` tracks:
-/// - instruction cost: how much time/computational power is needed to perform the instruction
-/// - memory cost: how much memory is required for the instruction, and storage overhead
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub struct GasCost {
-    pub instruction_gas: u64,
-    pub memory_gas: u64,
-}
-
-impl GasCost {
-    pub fn new(instruction_gas: u64, memory_gas: u64) -> Self {
-        Self {
-            instruction_gas,
-            memory_gas,
-        }
-    }
-
-    /// Convert a GasCost to a total gas charge in `InternalGas`.
-    #[inline]
-    pub fn total(&self) -> u64 {
-        self.instruction_gas.add(self.memory_gas)
-    }
-}
 
 #[derive(Clone, Debug, Serialize, PartialEq, Eq, Deserialize)]
 pub struct GasConstants {

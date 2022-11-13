@@ -12,8 +12,10 @@ use move_package_manager::compatibility_check_cmd::{
 use move_package_manager::deployment::{handle_deployment, DeploymentCommand};
 use move_package_manager::release::{handle_release, Release};
 use move_package_manager::{run_integration_test, IntegrationTestCommand};
+use move_vm_test_utils::gas_schedule::CostTable;
+use starcoin_config::genesis_config::G_LATEST_GAS_PARASM;
 use starcoin_vm_runtime::natives::starcoin_natives;
-use starcoin_vm_types::gas_schedule::G_LATEST_GAS_SCHEDULE;
+use starcoin_vm_types::on_chain_config::G_LATEST_INSTRUCTION_TABLE;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -78,28 +80,31 @@ fn main() -> Result<()> {
     let args: CliOptions = CliOptions::parse();
 
     let move_args = &args.move_args;
-    // let natives = starcoin_natives(starcoin_gas::NativeGasParameters::zeros());
+    let gas_params = G_LATEST_GAS_PARASM.clone();
+    let natives = starcoin_natives(gas_params.natives);
+    let cost_table = CostTable {
+        instruction_table: G_LATEST_INSTRUCTION_TABLE.clone(),
+    };
     match args.cmd {
         Commands::IntegrationTest(cmd) => run_integration_test(args.move_args, cmd),
-        // XXX FIXME YSG
+        // XXX FIXME YSG, no Package command
         /*
         Commands::Package { cmd } => handle_package_commands(
             &move_args.package_path,
             move_args.build_config.clone(),
             &cmd,
             natives,
-        ),
+        ),*/
         Commands::Sandbox { storage_dir, cmd } => cmd.handle_command(
             natives,
-            &G_LATEST_GAS_SCHEDULE,
+            &cost_table,
             &error_descriptions,
             move_args,
             &storage_dir,
-        ),*/
+        ),
         Commands::Experimental { storage_dir, cmd } => cmd.handle_command(move_args, &storage_dir),
         Commands::Release(release) => handle_release(move_args, release),
         Commands::CompatibilityCheck(cmd) => handle_compatibility_check(move_args, cmd),
         Commands::Deploy(cmd) => handle_deployment(move_args, cmd),
-        _ => Ok(()),
     }
 }

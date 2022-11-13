@@ -16,7 +16,7 @@ use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::transaction::SignatureCheckedTransaction;
 use starcoin_vm_types::transaction_metadata::TransactionMetadata;
 use starcoin_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub enum SessionId {

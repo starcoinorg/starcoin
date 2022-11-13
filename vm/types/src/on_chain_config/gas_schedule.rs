@@ -2,7 +2,7 @@ use crate::on_chain_config::{OnChainConfig, VMConfig};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct GasSchedule {
     pub entries: Vec<(String, u64)>,
 }
@@ -105,7 +105,10 @@ pub fn native_gas_schedule_v1() -> BTreeMap<String, u64> {
     BTreeMap::from([
         ("move_stdlib.hash.sha2_256.base".to_string(), 21),
         ("move_stdlib.hash.sha3_256.base".to_string(), 64),
-        ("starcoin_natives.signature.ed25519_verify.base".to_string(), 61),
+        (
+            "starcoin_natives.signature.ed25519_verify.base".to_string(),
+            61,
+        ),
         // ED25519_THRESHOLD_VERIFY 3 this native funciton is deprecated
         (
             "move_stdlib.bcs.to_bytes.per_byte_serialized".to_string(),
@@ -118,7 +121,10 @@ pub fn native_gas_schedule_v1() -> BTreeMap<String, u64> {
         ("move_stdlib.vec.pop_back.base".to_string(), 227),
         ("move_stdlib.vec.destroy_empty.base".to_string(), 572),
         ("move_stdlib.vec.swap.base".to_string(), 1436),
-        ("starcoin_natives.signature.ed25519_validate_key.base".to_string(),26),
+        (
+            "starcoin_natives.signature.ed25519_validate_key.base".to_string(),
+            26,
+        ),
         ("move_stdlib.signer.borrow_address.base".to_string(), 353),
         (
             "starcoin_natives.account.create_signer.base".to_string(),
@@ -133,7 +139,10 @@ pub fn native_gas_schedule_v1() -> BTreeMap<String, u64> {
             52,
         ),
         ("move_stdlib.bcs.to_address.base".to_string(), 26),
-        ("starcoin_natives.token.token_name_of.base".to_string(), 2002),
+        (
+            "starcoin_natives.token.token_name_of.base".to_string(),
+            2002,
+        ),
     ])
 }
 
@@ -168,7 +177,7 @@ pub fn native_gas_schedule_v3() -> BTreeMap<String, u64> {
 }
 
 // v4_native_table
-pub fn move_stdlib_native_gas_schedule_v4() -> BTreeMap<String, u64> {
+pub fn native_gas_schedule_v4() -> BTreeMap<String, u64> {
     let mut natives = native_gas_schedule_v3();
     let mut natives_delta = BTreeMap::from([
         ("table.new_table_handle.base".to_string(), 4),
@@ -276,7 +285,8 @@ impl OnChainConfig for GasSchedule {
     const CONF_IDENTIFIER: &'static str = "GasScheduleConfig";
 }
 
-// XXX FIXME YSG
+// XXX FIXME YSG, see genesis_gas_schedule.rs gas-algebra-ext/{instr.rs move_stdlib.rs nursery.rs starcoin_framework.rs}
+// https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move
 impl From<VMConfig> for GasSchedule {
     fn from(_vm_config: VMConfig) -> Self {
         let entries: Vec<(String, u64)> = vec![("hello".to_owned(), 1)];
