@@ -11,6 +11,7 @@ use starcoin_executor::{execute_readonly_function, execute_transactions};
 use starcoin_state_api::{ChainStateReader, StateReaderExt, StateView};
 use starcoin_statedb::{ChainStateDB, ChainStateWriter};
 use starcoin_transaction_builder::DEFAULT_MAX_GAS_AMOUNT;
+use starcoin_transaction_builder::{stdlib_compiled_modules, StdlibVersion};
 use starcoin_types::account_config::{association_address, genesis_address};
 use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::identifier::Identifier;
@@ -116,22 +117,33 @@ pub fn compile_modules_with_address(address: AccountAddress, code: &str) -> Vec<
         .map(|m| Module::new(m.serialize()))
         .collect()
 }
-#[allow(unused)]
-pub fn compile_script(code: impl AsRef<str>) -> Vec<u8> {
+
+pub fn compile_script(code: impl AsRef<str>) -> Result<Vec<u8>> {
     let mut compile_unit = starcoin_move_compiler::compile_source_string_no_report(
         code.as_ref(),
         &stdlib_files(),
         genesis_address(),
-    )
-    .expect("compile fail")
+    )?
     .1
-    .expect("compile fail");
-    compile_unit
+    .map_err(|e| anyhow::anyhow!("{:?}", e))?;
+    Ok(compile_unit
         .0
         .pop()
         .expect("at least contain one script")
         .into_compiled_unit()
-        .serialize()
+        .serialize())
+}
+
+pub fn compile_ir_script(code: impl AsRef<str>) -> Result<Vec<u8>> {
+    use move_ir_compiler::Compiler as IRCompiler;
+    let modules = stdlib_compiled_modules(starcoin_transaction_builder::StdLibOptions::Compiled(
+        StdlibVersion::Latest,
+    ));
+    let (script, _) = IRCompiler::new(modules.iter().collect())
+        .into_compiled_script_and_source_map(code.as_ref())?;
+    let mut bytes = vec![];
+    script.serialize(&mut bytes)?;
+    Ok(bytes)
 }
 
 pub fn association_execute(

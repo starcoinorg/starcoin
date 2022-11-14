@@ -168,6 +168,13 @@ pub fn stdlib_modules(option: StdLibOptions) -> &'static [Vec<u8>] {
     }
 }
 
+pub fn stdlib_compiled_modules(option: StdLibOptions) -> Vec<CompiledModule> {
+    stdlib_modules(option)
+        .iter()
+        .map(|bytes| CompiledModule::deserialize(bytes).unwrap())
+        .collect()
+}
+
 pub fn stdlib_package(
     stdlib_option: StdLibOptions,
     init_script: Option<ScriptFunction>,
