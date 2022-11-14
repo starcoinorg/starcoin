@@ -6,6 +6,7 @@ use move_stdlib::natives::GasParameters;
 
 // see starcoin/vm/types/src/on_chain_config/genesis_gas_schedule.rs
 // convert from https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#native_schedule
+// modify should with impl From<VMConfig> for GasSchedule
 crate::natives::define_gas_parameters_for_natives!(GasParameters, "move_stdlib", [
 
 

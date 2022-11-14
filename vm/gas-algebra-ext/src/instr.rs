@@ -10,6 +10,7 @@ use move_core_types::gas_algebra::InternalGas;
 
 // see starcoin/vm/types/src/on_chain_config/genesis_gas_schedule.rs
 // convert from https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#instruction_schedule
+// modify should with impl From<VMConfig> for GasSchedule
 crate::params::define_gas_parameters!(
     InstructionGasParameters,
     "instr",

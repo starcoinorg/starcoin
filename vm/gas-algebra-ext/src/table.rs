@@ -4,6 +4,7 @@
 use crate::gas_meter::EXECUTION_GAS_MULTIPLIER as MUL;
 use move_table_extension::GasParameters;
 
+// modify should with impl From<VMConfig> for GasSchedule
 crate::natives::define_gas_parameters_for_natives!(GasParameters, "table", [
     // Note(Gas): These are legacy parameters for loading from storage so they do not
     //            need to be multiplied.

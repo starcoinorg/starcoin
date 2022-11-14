@@ -6,6 +6,7 @@ use starcoin_natives::GasParameters;
 
 // see starcoin/vm/types/src/on_chain_config/genesis_gas_schedule.rs
 // convert from https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#native_schedule
+// modify should with impl From<VMConfig> for GasSchedule
 crate::natives::define_gas_parameters_for_natives!(GasParameters, "starcoin_natives", [
     [.signature.ed25519_verify.base,  "signature.ed25519_validate_key.base", 61 * MUL],
     [.signature.ed25519_verify.per_byte, optional "signature.ed25519_validate_key.per_byte", MUL],
