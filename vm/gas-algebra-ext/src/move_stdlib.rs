@@ -11,12 +11,12 @@ crate::natives::define_gas_parameters_for_natives!(GasParameters, "move_stdlib",
 
 
     [.hash.sha2_256.base, "hash.sha2_256.base", 21 * MUL],
-    [.hash.sha2_256.per_byte, "hash.sha2_256.per_byte", MUL],
+    [.hash.sha2_256.per_byte, optional "hash.sha2_256.per_byte", MUL],
     [.hash.sha3_256.base, "hash.sha3_256.base", 64 * MUL],
-    [.hash.sha3_256.per_byte, "hash.sha3_256.per_byte",  MUL],
+    [.hash.sha3_256.per_byte, optional "hash.sha3_256.per_byte",  MUL],
 
     [.bcs.to_bytes.per_byte_serialized, "bcs.to_bytes.per_byte_serialized", 10 * MUL],
-    [.bcs.to_bytes.failure, "bcs.to_bytes.failure", 1000 * MUL],
+    [.bcs.to_bytes.failure, optional "bcs.to_bytes.failure", 1000 * MUL],
 
     [.vector.length.base, "vector.length.base", 98 * MUL],
     [.vector.empty.base, "vector.empty.base", 84 * MUL],
@@ -35,11 +35,11 @@ crate::natives::define_gas_parameters_for_natives!(GasParameters, "move_stdlib",
 
     // Note(Gas): these initial values are guesswork.
     [.string.check_utf8.base, "string.check_utf8.base", 4 * MUL],
-    [.string.check_utf8.per_byte, "string.check_utf8.per_byte",  MUL],
+    [.string.check_utf8.per_byte, optional "string.check_utf8.per_byte",  MUL],
     [.string.is_char_boundary.base, "string.is_char_boundary.base", 4 * MUL],
     [.string.sub_string.base, "string.sub_string.base", 4 * MUL],
-    [.string.sub_string.per_byte, "string.sub_string.per_byte",  MUL],
+    [.string.sub_string.per_byte, optional "string.sub_string.per_byte",  MUL],
     [.string.index_of.base, "string.index_of.base", 4 * MUL],
-    [.string.index_of.per_byte_pattern, "string.index_of.per_byte_pattern", MUL],
-    [.string.index_of.per_byte_searched, "string.index_of.per_byte_searched", MUL],
+    [.string.index_of.per_byte_pattern, optional "string.index_of.per_byte_pattern", MUL],
+    [.string.index_of.per_byte_searched, optional "string.index_of.per_byte_searched", MUL],
 ]);

@@ -25,7 +25,7 @@ serde = {version = "1.0.130", default-features = false}
 sha2 = "0.10.2"
 simplelog = "0.9.0"
 tempfile = "3.2.0"
-starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "8720b1ccf013af476df1772ad63f45297beec66b" }
+starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "e5c39604cf240966d653691476587ce5ef94f971" }
 walkdir = "2.3"
 
 [dev-dependencies]

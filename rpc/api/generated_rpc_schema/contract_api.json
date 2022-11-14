@@ -1177,7 +1177,8 @@
                     ],
                     "properties": {
                       "handle": {
-                        "type": "string"
+                        "type": "string",
+                        "format": "AccountAddress"
                       },
                       "key": {
                         "type": "string"
@@ -2454,7 +2455,8 @@
                     ],
                     "properties": {
                       "handle": {
-                        "type": "string"
+                        "type": "string",
+                        "format": "AccountAddress"
                       },
                       "key": {
                         "type": "string"

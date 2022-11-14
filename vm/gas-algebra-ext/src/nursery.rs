@@ -5,6 +5,6 @@ use move_stdlib::natives::NurseryGasParameters;
 // convert from https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#native_schedule
 crate::natives::define_gas_parameters_for_natives!(NurseryGasParameters, "nursery", [
     [.event.write_to_event_store.unit_cost, "event.write_to_event_store.unit_cost", 52 * MUL],
-    [.debug.print.base_cost, "debug.print.base_cost", MUL],
-    [.debug.print_stack_trace.base_cost, "debug.print_stack_trace.base_cost",  MUL],
+    [.debug.print.base_cost, optional "debug.print.base_cost", MUL],
+    [.debug.print_stack_trace.base_cost, optional "debug.print_stack_trace.base_cost",  MUL],
 ]);

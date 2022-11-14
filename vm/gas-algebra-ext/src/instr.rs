@@ -43,7 +43,7 @@ crate::params::define_gas_parameters!(
         [div: InternalGas, "div", 3 * MUL],
         [bit_or: InternalGas, "bit_or", 2 * MUL],
         [bit_and: InternalGas, "bit_and", 2 * MUL],
-        [xor: InternalGas, "bit_xor", MUL],
+        [xor: InternalGas, "xor", MUL],
         [or: InternalGas, "or", 2 * MUL],
         [and: InternalGas, "and", MUL],
         [not: InternalGas, "not", MUL],
@@ -71,8 +71,8 @@ crate::params::define_gas_parameters!(
         [move_from_base: InternalGas, "move_from.base", 459 * MUL],
         [move_to_base: InternalGas, "move_to.base", 13 * MUL],
         [freeze_ref: InternalGas, "freeze_ref", MUL],
-        [shl: InternalGas, "bit_shl", 2 * MUL],
-        [shr: InternalGas, "bit_shr", MUL],
+        [shl: InternalGas, "shl", 2 * MUL],
+        [shr: InternalGas, "shr", MUL],
         [ld_u8: InternalGas, "ld_u8", MUL],
         [ld_u128: InternalGas, "ld_u128", MUL],
         // casting
@@ -81,7 +81,12 @@ crate::params::define_gas_parameters!(
         [cast_u128: InternalGas, "cast_u128", MUL],
         [
             mut_borrow_field_generic: InternalGas,
-            "mut_borrow_field_generic",
+            "mut_borrow_field_generic.base",
+            MUL
+        ],
+        [
+            imm_borrow_field_generic: InternalGas,
+            "imm_borrow_field_generic.base",
             MUL
         ],
         [

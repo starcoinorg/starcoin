@@ -41,20 +41,19 @@ pub enum NativeCostIndex {
     TABLE_NEW = 33,
     TABLE_INSERT = 34,
     TABLE_BORROW = 35,
-    TABLE_BORROW_MUT = 36,
-    TABLE_REMOVE = 37,
-    TABLE_CONTAINS = 38,
-    TABLE_DESTROY = 39,
-    TABLE_DROP = 40,
-    STRING_CHECK_UT8 = 41,
-    STRING_SUB_STR = 42,
-    SRING_CHAR_BOUNDARY = 43,
-    STRING_INDEX_OF = 44,
+    TABLE_REMOVE = 36,
+    TABLE_CONTAINS = 37,
+    TABLE_DESTROY = 38,
+    TABLE_DROP = 39,
+    STRING_CHECK_UT8 = 40,
+    STRING_SUB_STR = 41,
+    SRING_CHAR_BOUNDARY = 42,
+    STRING_INDEX_OF = 43,
 }
 
 impl NativeCostIndex {
     //note: should change this value when add new native function.
-    pub const NUMBER_OF_NATIVE_FUNCTIONS: usize = 45;
+    pub const NUMBER_OF_NATIVE_FUNCTIONS: usize = 44;
 }
 
 static G_MAX_TRANSACTION_SIZE_IN_BYTES_V1: u64 = 4096 * 10;

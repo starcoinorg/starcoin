@@ -24,6 +24,7 @@ fn main() {
         None => BuiltinNetworkID::networks(),
     };
     for id in networks {
+        println!("id {}", id);
         // skip test && dev network generate.
         if id.is_test() || id.is_dev() {
             continue;

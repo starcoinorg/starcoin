@@ -413,12 +413,11 @@ pub fn v4_native_table() -> Vec<GasCost> {
         // XXX FIXME YSG instr_gas
         (N::TABLE_NEW, GasCost::new(4, 1)),
         (N::TABLE_INSERT, GasCost::new(4, 1)),
-        (N::TABLE_BORROW, GasCost::new(4, 1)),
-        (N::TABLE_BORROW_MUT, GasCost::new(4, 1)),
-        (N::TABLE_REMOVE, GasCost::new(4, 1)),
-        (N::TABLE_CONTAINS, GasCost::new(4, 1)),
-        (N::TABLE_DESTROY, GasCost::new(4, 1)),
-        (N::TABLE_DROP, GasCost::new(4, 1)),
+        (N::TABLE_BORROW, GasCost::new(10, 1)),
+        (N::TABLE_REMOVE, GasCost::new(8, 1)),
+        (N::TABLE_CONTAINS, GasCost::new(40, 1)),
+        (N::TABLE_DESTROY, GasCost::new(20, 1)),
+        (N::TABLE_DROP, GasCost::new(73, 1)),
         //TODO  WGB inst_gas
         (N::STRING_CHECK_UT8, GasCost::new(4, 1)),
         (N::STRING_SUB_STR, GasCost::new(4, 1)),

@@ -31,9 +31,9 @@ pub fn instruction_gas_schedule_v1() -> BTreeMap<String, u64> {
         ("instr.read_ref.base".to_string(), 1),
         ("instr.sub".to_string(), 1),
         ("instr.mut_borrow_field".to_string(), 1),
-        ("instr.mut_borrow_field_generic".to_string(), 1),
+        ("instr.mut_borrow_field_generic.base".to_string(), 1),
         ("instr.imm_borrow_field".to_string(), 1),
-        ("instr.imm_borrow_field_generic".to_string(), 1),
+        ("instr.imm_borrow_field_generic.base".to_string(), 1),
         ("instr.add".to_string(), 1),
         ("instr.copy_loc.base".to_string(), 1),
         ("instr.st_loc.base".to_string(), 1),
@@ -53,7 +53,7 @@ pub fn instruction_gas_schedule_v1() -> BTreeMap<String, u64> {
         ("instr.xor".to_string(), 1),
         ("instr.shl".to_string(), 2),
         ("instr.shr".to_string(), 1),
-        ("instr.neq".to_string(), 1),
+        ("instr.neq.base".to_string(), 1),
         ("instr.not".to_string(), 1),
         ("instr.call.base".to_string(), 1132),
         ("instr.call_generic.base".to_string(), 582),
@@ -75,10 +75,10 @@ pub fn instruction_gas_schedule_v1() -> BTreeMap<String, u64> {
         ("instr.imm_borrow_global.base".to_string(), 23),
         ("instr.imm_borrow_global_generic.base".to_string(), 14),
         ("instr.div".to_string(), 3),
-        ("instr.eq".to_string(), 1),
+        ("instr.eq.base".to_string(), 1),
         ("instr.gt".to_string(), 1),
-        ("instr.pack".to_string(), 2),
-        ("instr.pack_generic".to_string(), 2),
+        ("instr.pack.base".to_string(), 2),
+        ("instr.pack_generic.base".to_string(), 2),
         ("instr.nop".to_string(), 1),
     ])
 }
@@ -114,13 +114,13 @@ pub fn native_gas_schedule_v1() -> BTreeMap<String, u64> {
             "move_stdlib.bcs.to_bytes.per_byte_serialized".to_string(),
             181,
         ),
-        ("move_stdlib.vec.length.base".to_string(), 98),
-        ("move_stdlib.vec.empty.base".to_string(), 84),
-        ("move_stdlib.vec.borrow.base".to_string(), 1334),
-        ("move_stdlib.vec.push_back.base".to_string(), 53),
-        ("move_stdlib.vec.pop_back.base".to_string(), 227),
-        ("move_stdlib.vec.destroy_empty.base".to_string(), 572),
-        ("move_stdlib.vec.swap.base".to_string(), 1436),
+        ("move_stdlib.vector.length.base".to_string(), 98),
+        ("move_stdlib.vector.empty.base".to_string(), 84),
+        ("move_stdlib.vector.borrow.base".to_string(), 1334),
+        ("move_stdlib.vector.push_back.base".to_string(), 53),
+        ("move_stdlib.vector.pop_back.base".to_string(), 227),
+        ("move_stdlib.vector.destroy_empty.base".to_string(), 572),
+        ("move_stdlib.vector.swap.base".to_string(), 1436),
         (
             "starcoin_natives.signature.ed25519_validate_key.base".to_string(),
             26,
@@ -168,9 +168,9 @@ pub fn native_gas_schedule_v3() -> BTreeMap<String, u64> {
         ("starcoin_natives.u256.div.base".to_string(), 10),
         ("starcoin_natives.u256.rem.base".to_string(), 4),
         ("starcoin_natives.u256.pow.base".to_string(), 8),
-        ("move_stdlib.vec.append.base".to_string(), 40),
-        ("move_stdlib.vec.remove.base".to_string(), 20),
-        ("move_stdlib.vec.reverse.base".to_string(), 10),
+        ("move_stdlib.vector.append.base".to_string(), 40),
+        ("move_stdlib.vector.remove.base".to_string(), 20),
+        ("move_stdlib.vector.reverse.base".to_string(), 10),
     ]);
     natives.append(&mut natives_delta);
     natives
@@ -188,7 +188,7 @@ pub fn native_gas_schedule_v4() -> BTreeMap<String, u64> {
         ("table.destroy_empty_box.base".to_string(), 4),
         ("table.drop_unchecked_box.base".to_string(), 4),
         ("move_stdlib.string.check_utf8.base".to_string(), 4),
-        ("move_stdlib.string.sub_str.base".to_string(), 4),
+        ("move_stdlib.string.sub_string.base".to_string(), 4),
         ("move_stdlib.string.is_char_boundary.base".to_string(), 4),
         ("move_stdlib.string.index_of.base".to_string(), 4),
     ]);
@@ -285,6 +285,7 @@ impl OnChainConfig for GasSchedule {
     const CONF_IDENTIFIER: &'static str = "GasScheduleConfig";
 }
 
+// XXX FIXME YSG, have some bug, should confirm
 // https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move
 impl From<VMConfig> for GasSchedule {
     fn from(vm_config: VMConfig) -> Self {
@@ -321,8 +322,8 @@ impl From<VMConfig> for GasSchedule {
             "instr.mod",
             "instr.div",
             "instr.bit_or",
-            "instr.bit_add",
-            "instr.bit_xor",
+            "instr.bit_and",
+            "instr.xor",
             "instr.or",
             "instr.and",
             "instr.not",
@@ -340,15 +341,21 @@ impl From<VMConfig> for GasSchedule {
             "instr.move_from.base",
             "instr.move_to.base",
             "instr.freeze_ref",
-            "instr.bit_shl",
-            "instr.bit_shr",
+            "instr.shl",
+            "instr.shr",
             "instr.ld_u8",
             "instr.ld_u128",
             "instr.cast_u8",
             "instr.cast_u64",
             "instr.cast_u128",
-            "instr.mut_borrow_field_generic",
-            "instr.imm_borrow_field_generic",
+            "instr.imm_borrow_field_generic.base",
+            "instr.mut_borrow_field_generic.base",
+            "instr.call_generic.base",
+            "instr.pack_generic.base",
+            "instr.unpack_generic.base",
+            "instr.exists_generic.base",
+            "instr.mut_borrow_global_generic.base",
+            "instr.imm_borrow_global_generic.base",
             "instr.move_from_generic.base",
             "instr.move_to_generic.base",
             "instr.vec_pack.base",
@@ -374,15 +381,15 @@ impl From<VMConfig> for GasSchedule {
             // ED25519_THRESHOLD_VERIFY 3 this native funciton is deprecated, ignore, use ""
             "",
             "move_stdlib.bcs.to_bytes.per_byte_serialized",
-            "move_stdlib.vec.length.base",
-            "move_stdlib.vec.empty.base",
-            "move_stdlib.vec.borrow.base",
+            "move_stdlib.vector.length.base",
+            "move_stdlib.vector.empty.base",
+            "move_stdlib.vector.borrow.base",
             // Vector::borrow_mut is same Vector::borrow ignore ""
             "",
-            "move_stdlib.vec.push_back.base",
-            "move_stdlib.vec.pop_back.base",
-            "move_stdlib.vec.destroy_empty.base",
-            "move_stdlib.vec.swap.base",
+            "move_stdlib.vector.push_back.base",
+            "move_stdlib.vector.pop_back.base",
+            "move_stdlib.vector.destroy_empty.base",
+            "move_stdlib.vector.swap.base",
             "starcoin_natives.signature.ed25519_validate_key.base",
             "move_stdlib.signer.borrow_address.base",
             "starcoin_natives.account.create_signer.base",
@@ -400,9 +407,9 @@ impl From<VMConfig> for GasSchedule {
             "starcoin_natives.u256.div.base",
             "starcoin_natives.u256.rem.base",
             "starcoin_natives.u256.pow.base",
-            "move_stdlib.vec.append.base",
-            "move_stdlib.vec.remove.base",
-            "move_stdlib.vec.reverse.base",
+            "move_stdlib.vector.append.base",
+            "move_stdlib.vector.remove.base",
+            "move_stdlib.vector.reverse.base",
             "table.new_table_handle.base",
             "table.add_box.base",
             "table.borrow_box.base",
@@ -411,12 +418,12 @@ impl From<VMConfig> for GasSchedule {
             "table.destroy_empty_box.base",
             "table.drop_unchecked_box.base",
             "move_stdlib.string.check_utf8.base",
-            "move_stdlib.string.sub_str.base",
+            "move_stdlib.string.sub_string.base",
             "move_stdlib.string.is_char_boundary.base",
             "move_stdlib.string.index_of.base",
         ];
         for (idx, cost) in natives.into_iter().enumerate() {
-            if native_strs[idx] == "" {
+            if native_strs[idx].is_empty() {
                 continue;
             }
             entries.push((native_strs[idx].to_string(), cost.instruction_gas));
