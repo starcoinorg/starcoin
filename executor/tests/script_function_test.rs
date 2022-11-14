@@ -48,7 +48,7 @@ fn prepare_module(chain_state: &ChainStateDB, net: &ChainNetwork) -> ModuleId {
         .unwrap();
 
     let txn = create_signed_txn_with_association_account(
-        TransactionPayload::Package(Package::new_with_module(compiled_module.clone()).unwrap()),
+        TransactionPayload::Package(Package::new_with_module(compiled_module).unwrap()),
         0,
         DEFAULT_MAX_GAS_AMOUNT,
         1,
