@@ -7,7 +7,7 @@ license = "Apache-2.0"
 name = "move-package-manager"
 publish = false
 repository = "https://github.com/starcoinorg/starcion"
-version = "1.12.5"
+version = "1.12.6"
 
 [dependencies]
 anyhow = "1.0.41"

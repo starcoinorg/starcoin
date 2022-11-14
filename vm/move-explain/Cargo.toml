@@ -7,7 +7,7 @@ license = "Apache-2.0"
 name = "starcoin-move-explain"
 publish = false
 repository = "https://github.com/diem/diem"
-version = "1.12.5"
+version = "1.12.6"
 
 [dependencies]
 bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
