@@ -139,10 +139,7 @@ pub fn native_gas_schedule_v1() -> BTreeMap<String, u64> {
             52,
         ),
         ("move_stdlib.bcs.to_address.base".to_string(), 26),
-        (
-            "starcoin_natives.token.token_name_of.base".to_string(),
-            2002,
-        ),
+        ("starcoin_natives.token.name_of.base".to_string(), 2002),
     ])
 }
 
@@ -399,7 +396,7 @@ impl From<VMConfig> for GasSchedule {
             "starcoin_natives.account.destroy_signer.base",
             "nursery.event.write_to_event_store.unit_cost",
             "move_stdlib.bcs.to_address.base",
-            "starcoin_natives.token.token_name_of.base",
+            "starcoin_natives.token.name_of.base",
             "starcoin_natives.hash.keccak256.base",
             "starcoin_natives.hash.ripemd160.base",
             "starcoin_natives.signature.ec_recover.base",
