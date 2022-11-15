@@ -91,7 +91,7 @@ pub struct GasParameters {
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [
         (
-            "keccak256",
+            "keccak_256",
             make_native_from_func(gas_params.keccak256, native_keccak_256),
         ),
         (

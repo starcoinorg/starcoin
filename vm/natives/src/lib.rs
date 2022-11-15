@@ -53,7 +53,7 @@ impl GasParameters {
                 },
             },
             token: token::GasParameters {
-                token_name_of: token::TokenNameOfGasParameters { base: 0.into() },
+                name_of: token::NameOfGasParameters { base: 0.into() },
             },
             u256: u256::GasParameters {
                 add: u256::U256AddGasParameters { base: 0.into() },

@@ -118,14 +118,17 @@ pub struct GasParameters {
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [
         (
-            "ed25519_validate_key",
+            "ed25519_validate_pubkey",
             make_native_ed25519_validate_pubkey(gas_params.ed25519_validate_key),
         ),
         (
             "ed25519_verify",
             make_native_ed25519_verify(gas_params.ed25519_verify),
         ),
-        ("ec_recover", make_native_ecrecover(gas_params.ec_recover)),
+        (
+            "native_ecrecover",
+            make_native_ecrecover(gas_params.ec_recover),
+        ),
     ];
 
     crate::helpers::make_module_natives(natives)

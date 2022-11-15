@@ -22,7 +22,7 @@ crate::natives::define_gas_parameters_for_natives!(GasParameters, "starcoin_nati
     [.hash.keccak256.per_byte, optional "hash.keccak256.per_byte",  MUL],
     [.signature.ec_recover.base,  "signature.ec_recover.base", 128 * MUL],
     [.signature.ec_recover.per_byte,  optional "signature.ec_recover.per_byte",  MUL],
-    [.token.token_name_of.base,  "token.token_name_of.base", 2002 * MUL],
+    [.token.name_of.base,  "token.name_of.base", 2002 * MUL],
 
     [.u256.add.base,  "u256.add.base", 4 * MUL],
     [.u256.sub.base,  "u256.sub.base", 4 * MUL],

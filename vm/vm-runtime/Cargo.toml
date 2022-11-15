@@ -10,10 +10,10 @@ version = "1.12.5"
 anyhow = "1.0.41"
 once_cell = "1.13.0"
 starcoin-types = { path = "../../types" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "54a90b627e38875bda8b8b4809faa21e88df10a2" }
-move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "54a90b627e38875bda8b8b4809faa21e88df10a2" }
-move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "54a90b627e38875bda8b8b4809faa21e88df10a2" }
-move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "54a90b627e38875bda8b8b4809faa21e88df10a2" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "5afc6975a23160b06eb14b57d37258c59df8ced7" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "5afc6975a23160b06eb14b57d37258c59df8ced7" }
+move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "5afc6975a23160b06eb14b57d37258c59df8ced7" }
+move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "5afc6975a23160b06eb14b57d37258c59df8ced7" }
 tracing = "0.1.34"
 starcoin-config = { path = "../../config" }
 starcoin-logger = { path = "../../commons/logger" }

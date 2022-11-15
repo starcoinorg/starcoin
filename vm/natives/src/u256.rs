@@ -186,31 +186,31 @@ pub struct GasParameters {
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [
         (
-            "u256add",
+            "native_add",
             make_native_from_func(gas_params.add, native_u256_add),
         ),
         (
-            "u256sub",
+            "native_sub",
             make_native_from_func(gas_params.sub, native_u256_sub),
         ),
         (
-            "u256mul",
+            "native_mul",
             make_native_from_func(gas_params.mul, native_u256_mul),
         ),
         (
-            "u256div",
+            "native_div",
             make_native_from_func(gas_params.div, native_u256_div),
         ),
         (
-            "u256rem",
+            "native_rem",
             make_native_from_func(gas_params.rem, native_u256_rem),
         ),
         (
-            "u25pow",
+            "native_pow",
             make_native_from_func(gas_params.pow, native_u256_pow),
         ),
         (
-            "u256frombytes",
+            "from_bytes",
             make_native_from_func(gas_params.from_bytes, native_u256_from_bytes),
         ),
     ];

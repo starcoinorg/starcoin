@@ -161,6 +161,9 @@ impl StarcoinGasMeter {
 
     #[inline]
     fn charge(&mut self, amount: InternalGas) -> PartialVMResult<()> {
+        if !self.charge {
+            return Ok(());
+        }
         match self.balance.checked_sub(amount) {
             Some(new_balance) => {
                 self.balance = new_balance;

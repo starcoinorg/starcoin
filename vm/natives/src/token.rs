@@ -20,13 +20,13 @@ use std::sync::Arc;
  *
  **************************************************************************************************/
 #[derive(Debug, Clone)]
-pub struct TokenNameOfGasParameters {
+pub struct NameOfGasParameters {
     pub base: InternalGas,
 }
 
 /// Return Token types ModuleAddress, ModuleName and StructName
 pub fn native_token_name_of(
-    gas_params: &TokenNameOfGasParameters,
+    gas_params: &NameOfGasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     arguments: VecDeque<Value>,
@@ -68,7 +68,7 @@ fn format_type_params(type_params: &[TypeTag]) -> Result<String, std::fmt::Error
     Ok(f)
 }
 
-pub fn make_native_token_name_of(gas_params: TokenNameOfGasParameters) -> NativeFunction {
+pub fn make_native_token_name_of(gas_params: NameOfGasParameters) -> NativeFunction {
     Arc::new(
         move |context, ty_args, args| -> PartialVMResult<NativeResult> {
             native_token_name_of(&gas_params, context, ty_args, args)
@@ -81,14 +81,11 @@ pub fn make_native_token_name_of(gas_params: TokenNameOfGasParameters) -> Native
  **************************************************************************************************/
 #[derive(Debug, Clone)]
 pub struct GasParameters {
-    pub token_name_of: TokenNameOfGasParameters,
+    pub name_of: NameOfGasParameters,
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [(
-        "token_name_of",
-        make_native_token_name_of(gas_params.token_name_of),
-    )];
+    let natives = [("name_of", make_native_token_name_of(gas_params.name_of))];
 
     crate::helpers::make_module_natives(natives)
 }
