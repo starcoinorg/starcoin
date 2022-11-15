@@ -160,7 +160,10 @@ pub fn native_gas_schedule_v3() -> BTreeMap<String, u64> {
     let mut natives = native_gas_schedule_v2();
     let mut natives_delta = BTreeMap::from([
         ("starcoin_natives.hash.ripemd160.base".to_string(), 64),
-        ("starcoin_natives.hash.ec_recover.base".to_string(), 128),
+        (
+            "starcoin_natives.signature.ec_recover.base".to_string(),
+            128,
+        ),
         ("starcoin_natives.u256.from_bytes.base".to_string(), 2),
         ("starcoin_natives.u256.add.base".to_string(), 4),
         ("starcoin_natives.u256.sub.base".to_string(), 4),
@@ -399,7 +402,7 @@ impl From<VMConfig> for GasSchedule {
             "starcoin_natives.token.token_name_of.base",
             "starcoin_natives.hash.keccak256.base",
             "starcoin_natives.hash.ripemd160.base",
-            "starcoin_natives.hash.ec_recover.base",
+            "starcoin_natives.signature.ec_recover.base",
             "starcoin_natives.u256.from_bytes.base",
             "starcoin_natives.u256.add.base",
             "starcoin_natives.u256.sub.base",

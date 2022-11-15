@@ -27,4 +27,4 @@ crate::natives::define_gas_parameters_for_natives!(GasParameters, "table", [
     [.destroy_empty_box.base, "destroy_empty_box.base", 20 * MUL],
 
     [.drop_unchecked_box.base, "drop_unchecked_box.base", 73 * MUL],
-]);
+], allow_unmapped = 3 /* common */);

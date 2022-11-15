@@ -20,7 +20,8 @@ crate::natives::define_gas_parameters_for_natives!(GasParameters, "starcoin_nati
     [.hash.ripemd160.per_byte, optional "hash.ripemd160.per_byte", MUL],
     [.hash.keccak256.base,  "hash.keccak256.base", 64 * MUL],
     [.hash.keccak256.per_byte, optional "hash.keccak256.per_byte",  MUL],
-    [.hash.keccak256.base,  "hash.ec_recover.base", 128 * MUL],
+    [.signature.ec_recover.base,  "signature.ec_recover.base", 128 * MUL],
+    [.signature.ec_recover.per_byte,  optional "signature.ec_recover.per_byte",  MUL],
     [.token.token_name_of.base,  "token.token_name_of.base", 2002 * MUL],
 
     [.u256.add.base,  "u256.add.base", 4 * MUL],
@@ -30,4 +31,5 @@ crate::natives::define_gas_parameters_for_natives!(GasParameters, "starcoin_nati
     [.u256.rem.base,  "u256.rem.base", 4 * MUL],
     [.u256.pow.base,  "u256.pow.base", 4 * MUL],
     [.u256.from_bytes.base,  "u256.from_bytes.base", 4 * MUL],
+    [.u256.from_bytes.per_byte,  optional "u256.from_bytes.per_byte", MUL],
 ]);
