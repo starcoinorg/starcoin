@@ -50,7 +50,7 @@ spec:
   scaleTargetRef:
     name: starcoin-runner-deployment
   minReplicas: 0
-  maxReplicas: 6
+  maxReplicas: 3
   scaleDownDelaySecondsAfterScaleOut: 120
   scaleUpTriggers:
   - githubEvent:
