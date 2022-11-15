@@ -433,47 +433,47 @@ impl From<VMConfig> for GasSchedule {
         let txn = vm_config.gas_schedule.gas_constants;
         entries.push((
             "txn.global_memory_per_byte_cost".to_string(),
-            u64::from(txn.global_memory_per_byte_cost),
+            txn.global_memory_per_byte_cost,
         ));
         entries.push((
             "txn.global_memory_per_byte_write_cost".to_string(),
-            u64::from(txn.global_memory_per_byte_write_cost),
+            txn.global_memory_per_byte_write_cost,
         ));
         entries.push((
             "txn.min_transaction_gas_units".to_string(),
-            u64::from(txn.min_transaction_gas_units),
+            txn.min_transaction_gas_units,
         ));
         entries.push((
             "txn.large_transaction_cutoff".to_string(),
-            u64::from(txn.large_transaction_cutoff),
+            txn.large_transaction_cutoff,
         ));
         entries.push((
             "txn.intrinsic_gas_per_byte".to_string(),
-            u64::from(txn.intrinsic_gas_per_byte),
+            txn.intrinsic_gas_per_byte,
         ));
         entries.push((
             "txn.maximum_number_of_gas_units".to_string(),
-            u64::from(txn.maximum_number_of_gas_units),
+            txn.maximum_number_of_gas_units,
         ));
         entries.push((
             "txn.min_price_per_gas_unit".to_string(),
-            u64::from(txn.min_price_per_gas_unit),
+            txn.min_price_per_gas_unit,
         ));
         entries.push((
             "txn.max_price_per_gas_unit".to_string(),
-            u64::from(txn.max_price_per_gas_unit),
+            txn.max_price_per_gas_unit,
         ));
         entries.push((
             "txn.max_transaction_size_in_bytes".to_string(),
-            u64::from(txn.max_transaction_size_in_bytes),
+            txn.max_transaction_size_in_bytes,
         ));
         entries.push((
             "txn.gas_unit_scaling_factor".to_string(),
-            u64::from(txn.gas_unit_scaling_factor),
+            txn.gas_unit_scaling_factor,
         ));
         entries.push((
             "txn.default_account_size".to_string(),
-            u64::from(txn.default_account_size),
+            txn.default_account_size,
         ));
 
         Self { entries }

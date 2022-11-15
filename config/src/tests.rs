@@ -159,23 +159,21 @@ fn test_genesis_config_security() {
         let genesis_config = net.genesis_config().clone();
         // min_price_per_gas_unit must be great than 0
         assert!(
-            u64::from(
-                genesis_config
-                    .vm_config
-                    .gas_schedule
-                    .gas_constants
-                    .min_price_per_gas_unit
-            ) > 0
+            genesis_config
+                .vm_config
+                .gas_schedule
+                .gas_constants
+                .min_price_per_gas_unit
+                > 0
         );
         // maximum_number_of_gas_units must be less than base_block_gas_limit
         assert!(
-            u64::from(
-                genesis_config
-                    .vm_config
-                    .gas_schedule
-                    .gas_constants
-                    .maximum_number_of_gas_units
-            ) < genesis_config.consensus_config.base_block_gas_limit
+            genesis_config
+                .vm_config
+                .gas_schedule
+                .gas_constants
+                .maximum_number_of_gas_units
+                < genesis_config.consensus_config.base_block_gas_limit
         );
     }
 }

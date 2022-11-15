@@ -608,12 +608,12 @@ impl<'a> StarcoinTestAdapter<'a> {
             .maximum_number_of_gas_units;
         let gas_unit_price = 1;
         let max_gas_amount = if gas_unit_price == 0 {
-            u64::from(max_number_of_gas_units)
+            max_number_of_gas_units
         } else {
             let account_balance =
                 self.fetch_balance_resource(signer_addr, stc_type_tag().to_string())?;
             std::cmp::min(
-                u64::from(max_number_of_gas_units),
+                max_number_of_gas_units,
                 (account_balance.token() / gas_unit_price as u128) as u64,
             )
         };

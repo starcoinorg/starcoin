@@ -400,6 +400,7 @@ impl BaseConfig {
             );
             // generate default config and merge with opt, the init opt item will persistence to config
             let mut config = NodeConfig::default();
+            println!("YSG {:#?}", base.clone());
             config.merge_with_opt(opt, base.clone())?;
             save_config(&config, &config_file_path)?;
             config
