@@ -11,8 +11,8 @@ use starcoin_transaction_builder::{
 };
 use starcoin_types::{account_address, account_config, U256};
 use std::{convert::TryInto, sync::Arc};
-
-#[stest::test]
+// XXX FIXME YSG check why cargo nextest so slow (29s vs 450s)
+#[stest::test(timeout = 480)]
 pub fn test_open_block() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
     let chain = test_helper::gen_blockchain_for_test(config.net())?;
