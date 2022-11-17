@@ -6,7 +6,10 @@
 //! gas schedule.
 
 use crate::gas_meter::EXECUTION_GAS_MULTIPLIER as MUL;
-use move_core_types::gas_algebra::InternalGas;
+use crate::InternalGasPerAbstractValueUnit;
+use move_binary_format::errors::PartialVMResult;
+use move_core_types::gas_algebra::{InternalGas, InternalGasPerArg, InternalGasPerByte};
+use move_vm_types::gas::SimpleInstruction;
 
 // see starcoin/vm/types/src/on_chain_config/genesis_gas_schedule.rs
 // same order as https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#instruction_schedule
@@ -22,9 +25,19 @@ crate::params::define_gas_parameters!(
         [branch: InternalGas, "branch", MUL],
         [ld_u64: InternalGas, "ld_u64", MUL],
         [ld_const_base: InternalGas, "ld_const.base", MUL],
+        [
+            ld_const_per_byte: InternalGasPerByte,
+            optional "ld_const.per_byte",
+            35 * MUL
+        ],
         [ld_true: InternalGas, "ld_true", MUL],
         [ld_false: InternalGas, "ld_false", MUL],
         [copy_loc_base: InternalGas, "copy_loc.base", MUL],
+        [
+            copy_loc_per_abs_val_unit: InternalGasPerAbstractValueUnit,
+            optional "copy_loc.per_abs_val_unit",
+            4 * MUL
+        ],
         [move_loc_base: InternalGas, "move_loc.base", MUL],
         [st_loc_base: InternalGas, "st_loc.base", MUL],
         [mut_borrow_loc: InternalGas, "mut_borrow_loc", 2 * MUL],
@@ -32,9 +45,17 @@ crate::params::define_gas_parameters!(
         [mut_borrow_field: InternalGas, "mut_borrow_field", MUL],
         [imm_borrow_field: InternalGas, "imm_borrow_field", MUL],
         [call_base: InternalGas, "call.base", 1132 * MUL],
+        [call_per_arg: InternalGasPerArg, optional "call.per_arg", 100 * MUL],
         [pack_base: InternalGas, "pack.base", 2 * MUL],
+        [pack_per_field: InternalGasPerArg, optional "pack.per_field", 40 * MUL],
         [unpack_base: InternalGas, "unpack.base", 2 * MUL],
+        [unpack_per_field: InternalGasPerArg, optional "unpack.per_field", 40 * MUL],
         [read_ref_base: InternalGas, "read_ref.base", MUL],
+        [
+            read_ref_per_abs_val_unit: InternalGasPerAbstractValueUnit,
+            optional "read_ref.per_abs_val_unit",
+            4 * MUL
+        ],
         [write_ref_base: InternalGas, "write_ref.base", MUL],
         [add: InternalGas, "add", MUL],
         [sub: InternalGas, "sub", MUL],
@@ -48,7 +69,17 @@ crate::params::define_gas_parameters!(
         [and: InternalGas, "and", MUL],
         [not: InternalGas, "not", MUL],
         [eq_base: InternalGas, "eq.base", MUL],
+        [
+            eq_per_abs_val_unit: InternalGasPerAbstractValueUnit,
+           optional "eq.per_abs_val_unit",
+            4 * MUL
+        ],
         [neq_base: InternalGas, "neq.base", MUL],
+        [
+            neq_per_abs_val_unit: InternalGasPerAbstractValueUnit,
+            optional "neq.per_abs_val_unit",
+            4 * MUL
+        ],
         // comparison
         [lt: InternalGas, "lt", 2 * MUL],
         [gt: InternalGas, "gt", MUL],
@@ -94,11 +125,31 @@ crate::params::define_gas_parameters!(
             "call_generic.base",
             582 * MUL
         ],
+        [
+            call_generic_per_ty_arg: InternalGasPerArg,
+            optional "call_generic.per_ty_arg",
+            100 * MUL
+        ],
+        [
+            call_generic_per_arg: InternalGasPerArg,
+            optional "call_generic.per_arg",
+            100 * MUL
+        ],
         [pack_generic_base: InternalGas, "pack_generic.base", 2 * MUL],
+        [
+            pack_generic_per_field: InternalGasPerArg,
+            optional "pack_generic.per_field",
+            40 * MUL
+        ],
         [
             unpack_generic_base: InternalGas,
             "unpack_generic.base",
             2 * MUL
+        ],
+        [
+            unpack_generic_per_field: InternalGasPerArg,
+            optional "unpack_generic.per_field",
+            40 * MUL
         ],
         [
             exists_generic_base: InternalGas,
@@ -127,6 +178,11 @@ crate::params::define_gas_parameters!(
         ],
         // vec
         [vec_pack_base: InternalGas, optional "vec_pack.base", 84 * MUL],
+        [
+            vec_pack_per_elem: InternalGasPerArg,
+            optional "vec_pack.per_elem",
+            40 * MUL
+        ],
         [vec_len_base: InternalGas, optional "vec_len.base", 98 * MUL],
         [
             vec_imm_borrow_base: InternalGas,
@@ -152,3 +208,60 @@ crate::params::define_gas_parameters!(
         [vec_swap_base: InternalGas, optional "vec_swap.base", 1436 * MUL],
     ]
 );
+
+impl InstructionGasParameters {
+    pub fn simple_instr_cost(&self, instr: SimpleInstruction) -> PartialVMResult<InternalGas> {
+        use SimpleInstruction::*;
+
+        Ok(match instr {
+            Nop => self.nop,
+
+            Abort => self.abort,
+            Ret => self.ret,
+
+            BrTrue => self.br_true,
+            BrFalse => self.br_false,
+            Branch => self.branch,
+
+            Pop => self.pop,
+            LdU8 => self.ld_u8,
+            LdU64 => self.ld_u64,
+            LdU128 => self.ld_u128,
+            LdTrue => self.ld_true,
+            LdFalse => self.ld_false,
+
+            ImmBorrowLoc => self.imm_borrow_loc,
+            MutBorrowLoc => self.mut_borrow_loc,
+            ImmBorrowField => self.imm_borrow_field,
+            MutBorrowField => self.mut_borrow_field,
+            ImmBorrowFieldGeneric => self.imm_borrow_field_generic,
+            MutBorrowFieldGeneric => self.mut_borrow_field_generic,
+            FreezeRef => self.freeze_ref,
+
+            CastU8 => self.cast_u8,
+            CastU64 => self.cast_u64,
+            CastU128 => self.cast_u128,
+
+            Add => self.add,
+            Sub => self.sub,
+            Mul => self.mul,
+            Mod => self.mod_,
+            Div => self.div,
+
+            BitOr => self.bit_or,
+            BitAnd => self.bit_and,
+            Xor => self.xor,
+            Shl => self.shl,
+            Shr => self.shr,
+
+            Or => self.or,
+            And => self.and,
+            Not => self.not,
+
+            Lt => self.lt,
+            Gt => self.gt,
+            Le => self.le,
+            Ge => self.ge,
+        })
+    }
+}

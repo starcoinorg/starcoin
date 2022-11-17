@@ -4,7 +4,10 @@
 //! This module contains the official gas meter implementation, along with some top-level gas
 //! parameters and traits to help manipulate them.
 
-use gas_algebra_ext::{FromOnChainGasSchedule, Gas, InitialGasSchedule, ToOnChainGasSchedule};
+use backtrace::Backtrace;
+use gas_algebra_ext::{
+    FromOnChainGasSchedule, Gas, InitialGasSchedule, MiscGasParameters, ToOnChainGasSchedule,
+};
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use move_core_types::gas_algebra::NumArgs;
 use move_core_types::language_storage::ModuleId;
@@ -45,11 +48,10 @@ pub struct NativeGasParameters {
 impl FromOnChainGasSchedule for NativeGasParameters {
     fn from_on_chain_gas_schedule(gas_schedule: &BTreeMap<String, u64>) -> Option<Self> {
         Some(Self {
-            move_stdlib: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
-            nursery: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
-            starcoin_natives: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)
-                .unwrap(),
-            table: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
+            move_stdlib: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
+            nursery: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
+            starcoin_natives: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
+            table: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
         })
     }
 }
@@ -90,6 +92,7 @@ impl InitialGasSchedule for NativeGasParameters {
 /// instructions, transactions and native functions from various packages.
 #[derive(Debug, Clone)]
 pub struct StarcoinGasParameters {
+    pub misc: MiscGasParameters,
     pub instr: InstructionGasParameters,
     pub txn: TransactionGasParameters,
     pub natives: NativeGasParameters,
@@ -98,9 +101,10 @@ pub struct StarcoinGasParameters {
 impl FromOnChainGasSchedule for StarcoinGasParameters {
     fn from_on_chain_gas_schedule(gas_schedule: &BTreeMap<String, u64>) -> Option<Self> {
         Some(Self {
-            natives: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
-            instr: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
-            txn: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
+            misc: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
+            natives: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
+            instr: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
+            txn: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
         })
     }
 }
@@ -119,6 +123,7 @@ impl StarcoinGasParameters {
     // don't have a genesis storage state.
     pub fn zeros() -> Self {
         Self {
+            misc: MiscGasParameters::zeros(),
             instr: InstructionGasParameters::zeros(),
             txn: TransactionGasParameters::zeros(),
             natives: NativeGasParameters::zeros(),
@@ -129,6 +134,7 @@ impl StarcoinGasParameters {
 impl InitialGasSchedule for StarcoinGasParameters {
     fn initial() -> Self {
         Self {
+            misc: InitialGasSchedule::initial(),
             instr: InitialGasSchedule::initial(),
             txn: InitialGasSchedule::initial(),
             natives: InitialGasSchedule::initial(),
@@ -165,6 +171,9 @@ impl StarcoinGasMeter {
         if !self.charge {
             return Ok(());
         }
+        println!("YSG cost {}", amount);
+        let backtrace = format!("{:#?}", Backtrace::new());
+        println!("backtrace: {}", backtrace);
         match self.balance.checked_sub(amount) {
             Some(new_balance) => {
                 self.balance = new_balance;
@@ -197,144 +206,258 @@ impl StarcoinGasMeter {
 
 // XXX FIXME YSG, wheather need see language/move-vm/test-utils/src/gas_schedule.rs
 impl GasMeter for StarcoinGasMeter {
-    fn charge_simple_instr(&mut self, _instr: SimpleInstruction) -> PartialVMResult<()> {
-        Ok(())
+    #[inline]
+    fn charge_simple_instr(&mut self, instr: SimpleInstruction) -> PartialVMResult<()> {
+        let cost = self.gas_params.instr.simple_instr_cost(instr)?;
+        self.charge(cost)
     }
 
+    #[inline]
     fn charge_call(
         &mut self,
         _module_id: &ModuleId,
         _func_name: &str,
-        _args: impl ExactSizeIterator<Item = impl ValueView>,
+        args: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
-        Ok(())
+        let params = &self.gas_params.instr;
+
+        let cost = params.call_base + params.call_per_arg * NumArgs::new(args.len() as u64);
+
+        self.charge(cost)
     }
 
+    #[inline]
     fn charge_call_generic(
         &mut self,
         _module_id: &ModuleId,
         _func_name: &str,
-        _ty_args: impl ExactSizeIterator<Item = impl TypeView>,
-        _args: impl ExactSizeIterator<Item = impl ValueView>,
+        ty_args: impl ExactSizeIterator<Item = impl TypeView>,
+        args: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
-        Ok(())
+        let params = &self.gas_params.instr;
+
+        let cost = params.call_generic_base
+            + params.call_generic_per_ty_arg * NumArgs::new(ty_args.len() as u64)
+            + params.call_generic_per_arg * NumArgs::new(args.len() as u64);
+        self.charge(cost)
     }
 
-    fn charge_ld_const(&mut self, _size: NumBytes) -> PartialVMResult<()> {
-        Ok(())
+    #[inline]
+    fn charge_ld_const(&mut self, size: NumBytes) -> PartialVMResult<()> {
+        let instr = &self.gas_params.instr;
+        self.charge(instr.ld_const_base + instr.ld_const_per_byte * size)
     }
 
-    fn charge_copy_loc(&mut self, _val: impl ValueView) -> PartialVMResult<()> {
-        Ok(())
+    #[inline]
+    fn charge_copy_loc(&mut self, val: impl ValueView) -> PartialVMResult<()> {
+        let (stack_size, heap_size) = self
+            .gas_params
+            .misc
+            .abs_val
+            .abstract_value_size_stack_and_heap(val);
+
+        // Note(Gas): this makes a deep copy so we need to charge for the full value size
+        let instr_params = &self.gas_params.instr;
+        let cost = instr_params.copy_loc_base
+            + instr_params.copy_loc_per_abs_val_unit * (stack_size + heap_size);
+
+        self.charge(cost)
     }
 
+    #[inline]
     fn charge_move_loc(&mut self, _val: impl ValueView) -> PartialVMResult<()> {
-        Ok(())
+        self.charge(self.gas_params.instr.move_loc_base)
     }
 
+    #[inline]
     fn charge_store_loc(&mut self, _val: impl ValueView) -> PartialVMResult<()> {
-        Ok(())
+        self.charge(self.gas_params.instr.st_loc_base)
     }
 
+    #[inline]
     fn charge_pack(
         &mut self,
-        _is_generic: bool,
-        _args: impl ExactSizeIterator<Item = impl ValueView>,
+        is_generic: bool,
+        args: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
-        Ok(())
+        let num_args = NumArgs::new(args.len() as u64);
+        let params = &self.gas_params.instr;
+        let cost = match is_generic {
+            false => params.pack_base + params.pack_per_field * num_args,
+            true => params.pack_generic_base + params.pack_generic_per_field * num_args,
+        };
+        self.charge(cost)
     }
 
+    #[inline]
     fn charge_unpack(
         &mut self,
-        _is_generic: bool,
-        _args: impl ExactSizeIterator<Item = impl ValueView>,
+        is_generic: bool,
+        args: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
-        Ok(())
+        let num_args = NumArgs::new(args.len() as u64);
+        let params = &self.gas_params.instr;
+        let cost = match is_generic {
+            false => params.unpack_base + params.unpack_per_field * num_args,
+            true => params.unpack_generic_base + params.unpack_generic_per_field * num_args,
+        };
+        self.charge(cost)
     }
 
-    fn charge_read_ref(&mut self, _val: impl ValueView) -> PartialVMResult<()> {
-        Ok(())
+    #[inline]
+    fn charge_read_ref(&mut self, val: impl ValueView) -> PartialVMResult<()> {
+        let (stack_size, heap_size) = self
+            .gas_params
+            .misc
+            .abs_val
+            .abstract_value_size_stack_and_heap(val);
+
+        // Note(Gas): this makes a deep copy so we need to charge for the full value size
+        let instr_params = &self.gas_params.instr;
+        let cost = instr_params.read_ref_base
+            + instr_params.read_ref_per_abs_val_unit * (stack_size + heap_size);
+        self.charge(cost)
     }
 
+    #[inline]
     fn charge_write_ref(&mut self, _val: impl ValueView) -> PartialVMResult<()> {
-        Ok(())
+        self.charge(self.gas_params.instr.write_ref_base)
     }
 
-    fn charge_eq(&mut self, _lhs: impl ValueView, _rhs: impl ValueView) -> PartialVMResult<()> {
-        Ok(())
+    #[inline]
+    fn charge_eq(&mut self, lhs: impl ValueView, rhs: impl ValueView) -> PartialVMResult<()> {
+        let instr_params = &self.gas_params.instr;
+        let abs_val_params = &self.gas_params.misc.abs_val;
+        let per_unit = instr_params.eq_per_abs_val_unit;
+
+        let cost = instr_params.eq_base
+            + per_unit
+                * (abs_val_params.abstract_value_size_dereferenced(lhs)
+                    + abs_val_params.abstract_value_size_dereferenced(rhs));
+
+        self.charge(cost)
     }
 
-    fn charge_neq(&mut self, _lhs: impl ValueView, _rhs: impl ValueView) -> PartialVMResult<()> {
-        Ok(())
+    #[inline]
+    fn charge_neq(&mut self, lhs: impl ValueView, rhs: impl ValueView) -> PartialVMResult<()> {
+        let instr_params = &self.gas_params.instr;
+        let abs_val_params = &self.gas_params.misc.abs_val;
+        let per_unit = instr_params.neq_per_abs_val_unit;
+
+        let cost = instr_params.neq_base
+            + per_unit
+                * (abs_val_params.abstract_value_size_dereferenced(lhs)
+                    + abs_val_params.abstract_value_size_dereferenced(rhs));
+
+        self.charge(cost)
     }
 
+    #[inline]
     fn charge_borrow_global(
         &mut self,
-        _is_mut: bool,
-        _is_generic: bool,
+        is_mut: bool,
+        is_generic: bool,
         _ty: impl TypeView,
         _is_success: bool,
     ) -> PartialVMResult<()> {
-        Ok(())
+        let params = &self.gas_params.instr;
+        let cost = match (is_mut, is_generic) {
+            (false, false) => params.imm_borrow_global_base,
+            (false, true) => params.imm_borrow_global_generic_base,
+            (true, false) => params.mut_borrow_global_base,
+            (true, true) => params.mut_borrow_global_generic_base,
+        };
+        self.charge(cost)
     }
 
+    #[inline]
     fn charge_exists(
         &mut self,
-        _is_generic: bool,
+        is_generic: bool,
         _ty: impl TypeView,
         _exists: bool,
     ) -> PartialVMResult<()> {
-        Ok(())
+        let params = &self.gas_params.instr;
+        let cost = match is_generic {
+            false => params.exists_base,
+            true => params.exists_generic_base,
+        };
+        self.charge(cost)
     }
 
+    #[inline]
     fn charge_move_from(
         &mut self,
-        _is_generic: bool,
+        is_generic: bool,
         _ty: impl TypeView,
         _val: Option<impl ValueView>,
     ) -> PartialVMResult<()> {
-        Ok(())
+        let params = &self.gas_params.instr;
+        let cost = match is_generic {
+            false => params.move_from_base,
+            true => params.move_from_generic_base,
+        };
+        self.charge(cost)
     }
 
+    #[inline]
     fn charge_move_to(
         &mut self,
-        _is_generic: bool,
+        is_generic: bool,
         _ty: impl TypeView,
         _val: impl ValueView,
         _is_success: bool,
     ) -> PartialVMResult<()> {
-        Ok(())
+        let params = &self.gas_params.instr;
+        let cost = match is_generic {
+            false => params.move_to_base,
+            true => params.move_to_generic_base,
+        };
+        self.charge(cost)
     }
 
+    #[inline]
     fn charge_vec_pack<'a>(
         &mut self,
         _ty: impl TypeView + 'a,
-        _args: impl ExactSizeIterator<Item = impl ValueView>,
+        args: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
-        Ok(())
+        let num_args = NumArgs::new(args.len() as u64);
+        let params = &self.gas_params.instr;
+        let cost = params.vec_pack_base + params.vec_pack_per_elem * num_args;
+        self.charge(cost)
     }
 
+    #[inline]
     fn charge_vec_len(&mut self, _ty: impl TypeView) -> PartialVMResult<()> {
-        Ok(())
+        self.charge(self.gas_params.instr.vec_len_base)
     }
 
+    #[inline]
     fn charge_vec_borrow(
         &mut self,
-        _is_mut: bool,
+        is_mut: bool,
         _ty: impl TypeView,
         _is_success: bool,
     ) -> PartialVMResult<()> {
-        Ok(())
+        let params = &self.gas_params.instr;
+        let cost = match is_mut {
+            false => params.vec_imm_borrow_base,
+            true => params.vec_mut_borrow_base,
+        };
+        self.charge(cost)
     }
 
+    #[inline]
     fn charge_vec_push_back(
         &mut self,
         _ty: impl TypeView,
         _val: impl ValueView,
     ) -> PartialVMResult<()> {
-        Ok(())
+        self.charge(self.gas_params.instr.vec_push_back_base)
     }
 
+    #[inline]
     fn charge_vec_pop_back(
         &mut self,
         _ty: impl TypeView,
@@ -343,23 +466,27 @@ impl GasMeter for StarcoinGasMeter {
         Ok(())
     }
 
+    #[inline]
     fn charge_vec_unpack(
         &mut self,
         _ty: impl TypeView,
         _expect_num_elements: NumArgs,
     ) -> PartialVMResult<()> {
-        Ok(())
+        self.charge(self.gas_params.instr.vec_pop_back_base)
     }
 
+    #[inline]
     fn charge_vec_swap(&mut self, _ty: impl TypeView) -> PartialVMResult<()> {
-        Ok(())
+        self.charge(self.gas_params.instr.vec_swap_base)
     }
 
+    #[inline]
     fn charge_load_resource(&mut self, _loaded: Option<NumBytes>) -> PartialVMResult<()> {
         Ok(())
     }
 
-    fn charge_native_function(&mut self, _amount: InternalGas) -> PartialVMResult<()> {
-        Ok(())
+    #[inline]
+    fn charge_native_function(&mut self, amount: InternalGas) -> PartialVMResult<()> {
+        self.charge(amount)
     }
 }

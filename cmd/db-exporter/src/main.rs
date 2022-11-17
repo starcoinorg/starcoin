@@ -672,6 +672,7 @@ pub fn apply_block(
     network: BuiltinNetworkID,
     verifier: Verifier,
 ) -> anyhow::Result<()> {
+    ::logger::init();
     let net = ChainNetwork::new_builtin(network);
     let db_storage = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(

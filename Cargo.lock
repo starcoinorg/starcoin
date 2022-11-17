@@ -2591,6 +2591,7 @@ dependencies = [
  "move-stdlib",
  "move-table-extension",
  "move-vm-test-utils",
+ "move-vm-types",
  "serde 1.0.140",
  "starcoin-natives",
 ]
@@ -9137,6 +9138,7 @@ dependencies = [
 name = "starcoin-gas"
 version = "1.12.5"
 dependencies = [
+ "backtrace",
  "clap 3.2.15",
  "gas-algebra-ext",
  "move-binary-format",
