@@ -9138,7 +9138,6 @@ dependencies = [
 name = "starcoin-gas"
 version = "1.12.5"
 dependencies = [
- "backtrace",
  "clap 3.2.15",
  "gas-algebra-ext",
  "move-binary-format",

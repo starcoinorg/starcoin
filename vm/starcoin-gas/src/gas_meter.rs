@@ -4,7 +4,6 @@
 //! This module contains the official gas meter implementation, along with some top-level gas
 //! parameters and traits to help manipulate them.
 
-use backtrace::Backtrace;
 use gas_algebra_ext::{
     FromOnChainGasSchedule, Gas, InitialGasSchedule, MiscGasParameters, ToOnChainGasSchedule,
 };
@@ -171,9 +170,6 @@ impl StarcoinGasMeter {
         if !self.charge {
             return Ok(());
         }
-        println!("YSG cost {}", amount);
-        let backtrace = format!("{:#?}", Backtrace::new());
-        println!("backtrace: {}", backtrace);
         match self.balance.checked_sub(amount) {
             Some(new_balance) => {
                 self.balance = new_balance;
@@ -204,7 +200,6 @@ impl StarcoinGasMeter {
     }
 }
 
-// XXX FIXME YSG, wheather need see language/move-vm/test-utils/src/gas_schedule.rs
 impl GasMeter for StarcoinGasMeter {
     #[inline]
     fn charge_simple_instr(&mut self, instr: SimpleInstruction) -> PartialVMResult<()> {

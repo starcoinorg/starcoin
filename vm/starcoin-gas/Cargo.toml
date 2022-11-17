@@ -15,4 +15,3 @@ move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "5afc6975a231
 move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "5afc6975a23160b06eb14b57d37258c59df8ced7" }
 move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "5afc6975a23160b06eb14b57d37258c59df8ced7" }
 starcoin-natives = { path = "../natives" }
-backtrace = "0.3"
