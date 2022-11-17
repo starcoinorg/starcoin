@@ -26,16 +26,13 @@ use starcoin_vm_types::gas_schedule::{
 };
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy, StdlibVersion};
 use starcoin_vm_types::on_chain_config::{
-    instruction_gas_schedule_v1, instruction_gas_schedule_v2, instruction_table_v1,
-    native_gas_schedule_v1, native_gas_schedule_v2, native_gas_schedule_v4, native_table_v1,
-    native_table_v2, txn_gas_schedule_test, txn_gas_schedule_v1, txn_gas_schedule_v2,
-    txn_gas_schedule_v3, ConsensusConfig, DaoConfig, TransactionPublishOption, VMConfig, Version,
+    instruction_table_v1, native_table_v1, native_table_v2, ConsensusConfig, DaoConfig,
+    GasSchedule, TransactionPublishOption, VMConfig, Version,
 };
 use starcoin_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::token::stc::STCUnit;
 use starcoin_vm_types::token::token_value::TokenValue;
 use starcoin_vm_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::fmt::{self, Display, Formatter};
@@ -720,19 +717,6 @@ pub static G_BASE_BLOCK_GAS_LIMIT: u64 = 50_000_000; //must big than maximum_num
 static G_EMPTY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(Vec::new);
 const ONE_DAY: u64 = 86400;
 
-fn concat_map(
-    instrs: BTreeMap<String, u64>,
-    natives: BTreeMap<String, u64>,
-    constants: BTreeMap<String, u64>,
-) -> BTreeMap<String, u64> {
-    let mut res = instrs;
-    let mut natives = natives;
-    let mut constants = constants;
-    res.append(&mut natives);
-    res.append(&mut constants);
-    res
-}
-
 pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_multi_key_pair();
     let (genesis_private_key, genesis_public_key) = genesis_key_pair();
@@ -783,15 +767,6 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-pub static G_TEST_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
-    let params = concat_map(
-        instruction_gas_schedule_v2(),
-        native_gas_schedule_v4(),
-        txn_gas_schedule_test(),
-    );
-    StarcoinGasParameters::from_on_chain_gas_schedule(&params).unwrap()
-});
-
 pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_multi_key_pair();
     let (genesis_private_key, genesis_public_key) = genesis_key_pair();
@@ -839,15 +814,6 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         transaction_timeout: ONE_DAY,
     }
-});
-
-pub static G_DEV_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
-    let params = concat_map(
-        instruction_gas_schedule_v2(),
-        native_gas_schedule_v4(),
-        txn_gas_schedule_test(),
-    );
-    StarcoinGasParameters::from_on_chain_gas_schedule(&params).unwrap()
 });
 
 pub static G_HALLEY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
@@ -906,15 +872,6 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-pub static G_HALLEY_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
-    let params = concat_map(
-        instruction_gas_schedule_v2(),
-        native_gas_schedule_v4(),
-        txn_gas_schedule_v3(),
-    );
-    StarcoinGasParameters::from_on_chain_gas_schedule(&params).unwrap()
-});
-
 pub static G_PROXIMA_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
     vec!["/dns4/proxima1.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"),
          "/dns4/proxima2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
@@ -969,15 +926,6 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         transaction_timeout: ONE_DAY,
     }
-});
-
-pub static G_PROXIMA_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
-    let params = concat_map(
-        instruction_gas_schedule_v2(),
-        native_gas_schedule_v4(),
-        txn_gas_schedule_v3(),
-    );
-    StarcoinGasParameters::from_on_chain_gas_schedule(&params).unwrap()
 });
 
 pub static G_BARNARD_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
@@ -1038,15 +986,6 @@ pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         transaction_timeout: ONE_DAY,
     }
-});
-
-pub static G_BARNARD_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
-    let params = concat_map(
-        instruction_gas_schedule_v1(),
-        native_gas_schedule_v1(),
-        txn_gas_schedule_v1(),
-    );
-    StarcoinGasParameters::from_on_chain_gas_schedule(&params).unwrap()
 });
 
 pub static G_MAIN_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
@@ -1113,20 +1052,140 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-pub static G_MAIN_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
-    let params = concat_map(
-        instruction_gas_schedule_v1(),
-        native_gas_schedule_v2(),
-        txn_gas_schedule_v2(),
-    );
-    StarcoinGasParameters::from_on_chain_gas_schedule(&params).unwrap()
+pub static G_LATEST_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
+    let vm_config = VMConfig {
+        gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
+    };
+    let gas_schedule = GasSchedule::from(vm_config);
+    StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map()).unwrap()
 });
 
-pub static G_LATEST_GAS_PARASM: Lazy<StarcoinGasParameters> = Lazy::new(|| {
-    let params = concat_map(
-        instruction_gas_schedule_v2(),
-        native_gas_schedule_v4(),
-        txn_gas_schedule_v3(),
-    );
-    StarcoinGasParameters::from_on_chain_gas_schedule(&params).unwrap()
-});
+#[cfg(test)]
+mod tests {
+    use gas_algebra_ext::{CostTable, FromOnChainGasSchedule};
+    use starcoin_gas::StarcoinGasParameters;
+    use starcoin_vm_types::gas_schedule::{
+        latest_cost_table, G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_LATEST_GAS_SCHEDULE,
+        G_TEST_GAS_CONSTANTS,
+    };
+    use starcoin_vm_types::on_chain_config::{
+        instruction_gas_schedule_v1, instruction_gas_schedule_v2, instruction_table_v1,
+        native_gas_schedule_v1, native_gas_schedule_v2, native_gas_schedule_v4, native_table_v1,
+        native_table_v2, txn_gas_schedule_test, txn_gas_schedule_v1, txn_gas_schedule_v2,
+        txn_gas_schedule_v3, GasSchedule, VMConfig,
+    };
+
+    fn config_entries(
+        instrs: Vec<(String, u64)>,
+        natives: Vec<(String, u64)>,
+        constants: Vec<(String, u64)>,
+    ) -> Vec<(String, u64)> {
+        let mut res = instrs;
+        let mut natives = natives;
+        let mut constants = constants;
+        res.append(&mut natives);
+        res.append(&mut constants);
+        res
+    }
+
+    #[test]
+    fn test_dev_config() {
+        let vm_config = VMConfig {
+            gas_schedule: latest_cost_table(G_TEST_GAS_CONSTANTS.clone()),
+        };
+
+        let entries = config_entries(
+            instruction_gas_schedule_v2(),
+            native_gas_schedule_v4(),
+            txn_gas_schedule_test(),
+        );
+
+        let gas_schedule = GasSchedule::from(vm_config);
+        assert_eq!(entries, gas_schedule.entries);
+        let gas_params =
+            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
+        assert!(gas_params.is_some());
+    }
+
+    #[test]
+    fn test_halley_config() {
+        let vm_config = VMConfig {
+            gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
+        };
+
+        let entries = config_entries(
+            instruction_gas_schedule_v2(),
+            native_gas_schedule_v4(),
+            txn_gas_schedule_v3(),
+        );
+
+        let gas_schedule = GasSchedule::from(vm_config);
+        assert_eq!(entries, gas_schedule.entries);
+        let gas_params =
+            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
+        assert!(gas_params.is_some());
+    }
+
+    #[test]
+    fn test_proxima_config() {
+        let vm_config = VMConfig {
+            gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
+        };
+
+        let entries = config_entries(
+            instruction_gas_schedule_v2(),
+            native_gas_schedule_v4(),
+            txn_gas_schedule_v3(),
+        );
+        let gas_schedule = GasSchedule::from(vm_config);
+        assert_eq!(entries, gas_schedule.entries);
+        let gas_params =
+            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
+        assert!(gas_params.is_some());
+    }
+
+    #[test]
+    fn test_barnard_config() {
+        let vm_config = VMConfig {
+            gas_schedule: CostTable {
+                instruction_table: instruction_table_v1(),
+                native_table: native_table_v1(),
+                gas_constants: G_GAS_CONSTANTS_V1.clone(),
+            },
+        };
+
+        let entries = config_entries(
+            instruction_gas_schedule_v1(),
+            native_gas_schedule_v1(),
+            txn_gas_schedule_v1(),
+        );
+        let gas_schedule = GasSchedule::from(vm_config);
+        assert_eq!(entries, gas_schedule.entries);
+        let gas_params =
+            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
+        assert!(gas_params.is_some());
+    }
+
+    #[test]
+    fn test_main_config() {
+        let vm_config = VMConfig {
+            gas_schedule: CostTable {
+                instruction_table: instruction_table_v1(),
+                native_table: native_table_v2(),
+                gas_constants: G_GAS_CONSTANTS_V2.clone(),
+            },
+        };
+
+        let entries = config_entries(
+            instruction_gas_schedule_v1(),
+            native_gas_schedule_v2(),
+            txn_gas_schedule_v2(),
+        );
+
+        let gas_schedule = GasSchedule::from(vm_config);
+        assert_eq!(entries, gas_schedule.entries);
+        let gas_params =
+            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
+        assert!(gas_params.is_some());
+    }
+}

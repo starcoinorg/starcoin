@@ -5,7 +5,7 @@ use crate::gas_meter::EXECUTION_GAS_MULTIPLIER as MUL;
 use move_stdlib::natives::GasParameters;
 
 // see starcoin/vm/types/src/on_chain_config/genesis_gas_schedule.rs
-// convert from https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#native_schedule
+// same order as https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#native_schedule
 // modify should with impl From<VMConfig> for GasSchedule
 crate::natives::define_gas_parameters_for_natives!(GasParameters, "move_stdlib", [
 
@@ -35,19 +35,19 @@ crate::natives::define_gas_parameters_for_natives!(GasParameters, "move_stdlib",
     [.bcs.to_address.base, "bcs.to_address.base", 26 * MUL],
     //  [.bcs.to_address.per_byte, "bcs.to_address.per_byte", MUL],
 
-    [.vector.append.base, "vector.append.base", 40 * MUL],
+    [.vector.append.base, optional "vector.append.base", 40 * MUL],
     //    [.vector.append.legacy_per_abstract_memory_unit, "vector.append.legacy_per_abstract_memory_unit", 40 * MUL],
-    [.vector.remove.base, "vector.remove.base", 20 * MUL],
+    [.vector.remove.base, optional "vector.remove.base", 20 * MUL],
     //  [.vector.remove.legacy_per_abstract_memory_unit, "vector.remove.legacy_per_abstract_memory_unit", 20 * MUL],
-    [.vector.reverse.base, "vector.reverse.base", 10 * MUL],
+    [.vector.reverse.base, optional "vector.reverse.base", 10 * MUL],
     //     [.vector.reverse.legacy_per_abstract_memory_unit, "vector.reverse.legacy_per_abstract_memory_unit", 20 * MUL],
     // Note(Gas): these initial values are guesswork.
-    [.string.check_utf8.base, "string.check_utf8.base", 4 * MUL],
+    [.string.check_utf8.base, optional "string.check_utf8.base", 4 * MUL],
     [.string.check_utf8.per_byte, optional "string.check_utf8.per_byte",  MUL],
-    [.string.is_char_boundary.base, "string.is_char_boundary.base", 4 * MUL],
-    [.string.sub_string.base, "string.sub_string.base", 4 * MUL],
+    [.string.is_char_boundary.base, optional "string.is_char_boundary.base", 4 * MUL],
+    [.string.sub_string.base, optional "string.sub_string.base", 4 * MUL],
     [.string.sub_string.per_byte, optional "string.sub_string.per_byte",  MUL],
-    [.string.index_of.base, "string.index_of.base", 4 * MUL],
+    [.string.index_of.base, optional "string.index_of.base", 4 * MUL],
     [.string.index_of.per_byte_pattern, optional "string.index_of.per_byte_pattern", MUL],
     [.string.index_of.per_byte_searched, optional "string.index_of.per_byte_searched", MUL],
-], allow_unmapped = 2 /* bcs */ + 2 /* hash */ + 4 /* vector */ + 2 /* XXX FIXME YSG for nextestß*/);
+], allow_unmapped = 2 /* bcs */ + 2 /* hash */ + 4 /* vector */ + 2 /* XXX FIXME YSG for nextest*/);

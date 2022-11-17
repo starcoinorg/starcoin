@@ -9,7 +9,7 @@ use crate::gas_meter::EXECUTION_GAS_MULTIPLIER as MUL;
 use move_core_types::gas_algebra::InternalGas;
 
 // see starcoin/vm/types/src/on_chain_config/genesis_gas_schedule.rs
-// convert from https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#instruction_schedule
+// same order as https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#instruction_schedule
 // modify should with impl From<VMConfig> for GasSchedule
 crate::params::define_gas_parameters!(
     InstructionGasParameters,
@@ -126,29 +126,29 @@ crate::params::define_gas_parameters!(
             27 * MUL
         ],
         // vec
-        [vec_pack_base: InternalGas, "vec_pack.base", 84 * MUL],
-        [vec_len_base: InternalGas, "vec_len.base", 98 * MUL],
+        [vec_pack_base: InternalGas, optional "vec_pack.base", 84 * MUL],
+        [vec_len_base: InternalGas, optional "vec_len.base", 98 * MUL],
         [
             vec_imm_borrow_base: InternalGas,
-            "vec_imm_borrow.base",
+            optional "vec_imm_borrow.base",
             1334 * MUL
         ],
         [
             vec_mut_borrow_base: InternalGas,
-            "vec_mut_borrow.base",
+           optional "vec_mut_borrow.base",
             1902 * MUL
         ],
         [
             vec_push_back_base: InternalGas,
-            "vec_push_back.base",
+            optional "vec_push_back.base",
             53 * MUL
         ],
         [
             vec_pop_back_base: InternalGas,
-            "vec_pop_back.base",
+            optional "vec_pop_back.base",
             227 * MUL
         ],
-        [vec_unpack_base: InternalGas, "vec_unpack.base", 572 * MUL],
-        [vec_swap_base: InternalGas, "vec_swap.base", 1436 * MUL],
+        [vec_unpack_base: InternalGas, optional "vec_unpack.base", 572 * MUL],
+        [vec_swap_base: InternalGas, optional "vec_swap.base", 1436 * MUL],
     ]
 );

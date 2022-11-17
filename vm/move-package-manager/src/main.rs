@@ -13,7 +13,7 @@ use move_package_manager::deployment::{handle_deployment, DeploymentCommand};
 use move_package_manager::release::{handle_release, Release};
 use move_package_manager::{run_integration_test, IntegrationTestCommand};
 use move_vm_test_utils::gas_schedule::CostTable;
-use starcoin_config::genesis_config::G_LATEST_GAS_PARASM;
+use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_vm_runtime::natives::starcoin_natives;
 use starcoin_vm_types::on_chain_config::G_LATEST_INSTRUCTION_TABLE;
 use std::path::PathBuf;
@@ -80,7 +80,7 @@ fn main() -> Result<()> {
     let args: CliOptions = CliOptions::parse();
 
     let move_args = &args.move_args;
-    let gas_params = G_LATEST_GAS_PARASM.clone();
+    let gas_params = G_LATEST_GAS_PARAMS.clone();
     let natives = starcoin_natives(gas_params.natives);
     let cost_table = CostTable {
         instruction_table: G_LATEST_INSTRUCTION_TABLE.clone(),

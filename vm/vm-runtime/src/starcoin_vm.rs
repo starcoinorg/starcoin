@@ -13,7 +13,7 @@ use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
 use move_table_extension::NativeTableContext;
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
 use move_vm_runtime::session::Session;
-use starcoin_config::genesis_config::G_LATEST_GAS_PARASM;
+use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_crypto::HashValue;
 use starcoin_gas::{StarcoinGasMeter, StarcoinGasParameters};
 use starcoin_logger::prelude::*;
@@ -102,7 +102,7 @@ impl StarcoinVM {
                 let stdlib_version = v.clone().into_stdlib_version();
                 vm_config =
                     if stdlib_version < StdlibVersion::Version(VMCONFIG_UPGRADE_VERSION_MARK) {
-                        println!(
+                        debug!(
                             "stdlib version: {}, fetch vmconfig from onchain resource",
                             stdlib_version
                         );
@@ -112,6 +112,10 @@ impl StarcoinVM {
                                 .expect("Load Version fail, Version resource not exist."),
                         )
                     } else {
+                        debug!(
+                            "stdlib version: {}, fetch vmconfig from onchain module",
+                            stdlib_version
+                        );
                         // XXX FIXME YSG, can read directly
                         /*
                           .execute_readonly_function_internal(
@@ -968,7 +972,7 @@ impl StarcoinVM {
             Ok(gas_params) => gas_params,
             Err(e) => {
                 if remote_cache.is_genesis() {
-                    &G_LATEST_GAS_PARASM
+                    &G_LATEST_GAS_PARAMS
                 } else {
                     return discard_error_vm_status(e);
                 }
@@ -1041,7 +1045,7 @@ impl StarcoinVM {
             Ok(gas_params) => gas_params,
             Err(e) => {
                 if remote_cache.is_genesis() {
-                    &G_LATEST_GAS_PARASM
+                    &G_LATEST_GAS_PARAMS
                 } else {
                     return Ok(discard_error_vm_status(e));
                 }
@@ -1260,7 +1264,7 @@ impl StarcoinVM {
             }
             let gas_params = self.get_gas_parameters()?;
             let mut gas_meter = StarcoinGasMeter::new(
-                G_LATEST_GAS_PARASM.clone(),
+                G_LATEST_GAS_PARAMS.clone(),
                 gas_params.txn.maximum_number_of_gas_units,
             );
             gas_meter.set_metering(true);

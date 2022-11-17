@@ -45,10 +45,11 @@ pub struct NativeGasParameters {
 impl FromOnChainGasSchedule for NativeGasParameters {
     fn from_on_chain_gas_schedule(gas_schedule: &BTreeMap<String, u64>) -> Option<Self> {
         Some(Self {
-            move_stdlib: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
-            nursery: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
-            starcoin_natives: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
-            table: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
+            move_stdlib: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
+            nursery: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
+            starcoin_natives: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)
+                .unwrap(),
+            table: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
         })
     }
 }
@@ -97,9 +98,9 @@ pub struct StarcoinGasParameters {
 impl FromOnChainGasSchedule for StarcoinGasParameters {
     fn from_on_chain_gas_schedule(gas_schedule: &BTreeMap<String, u64>) -> Option<Self> {
         Some(Self {
-            instr: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
-            txn: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
-            natives: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
+            natives: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
+            instr: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
+            txn: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
         })
     }
 }

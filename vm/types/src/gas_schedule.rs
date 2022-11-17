@@ -56,9 +56,9 @@ impl NativeCostIndex {
     pub const NUMBER_OF_NATIVE_FUNCTIONS: usize = 44;
 }
 
-static G_MAX_TRANSACTION_SIZE_IN_BYTES_V1: u64 = 4096 * 10;
-static G_MAX_TRANSACTION_SIZE_IN_BYTES_V2: u64 = 60000;
-static G_MAX_TRANSACTION_SIZE_IN_BYTES_V3: u64 = 128 * 1024;
+pub static G_MAX_TRANSACTION_SIZE_IN_BYTES_V1: u64 = 4096 * 10;
+pub static G_MAX_TRANSACTION_SIZE_IN_BYTES_V2: u64 = 60000;
+pub static G_MAX_TRANSACTION_SIZE_IN_BYTES_V3: u64 = 128 * 1024;
 
 /// For V1 all accounts will be ~800 bytes
 pub static G_DEFAULT_ACCOUNT_SIZE: u64 = 800;
