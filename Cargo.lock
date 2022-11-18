@@ -9145,6 +9145,7 @@ dependencies = [
  "move-stdlib",
  "move-table-extension",
  "move-vm-types",
+ "starcoin-logger",
  "starcoin-natives",
 ]
 

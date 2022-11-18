@@ -360,7 +360,7 @@ pub fn init_with_default_level(
 static G_LOG_INIT: Once = Once::new();
 
 pub fn init_for_test() -> Arc<LoggerHandle> {
-    init_with_default_level("debug", Some(LogPattern::WithLine))
+    init_with_default_level("info", Some(LogPattern::WithLine))
 }
 
 #[derive(Default, Eq, PartialEq, Clone, Debug)]

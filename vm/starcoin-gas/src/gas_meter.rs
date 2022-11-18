@@ -16,6 +16,7 @@ use move_core_types::{
 };
 use move_vm_types::gas::{GasMeter, SimpleInstruction};
 use move_vm_types::views::{TypeView, ValueView};
+use starcoin_logger::prelude::*;
 use std::collections::BTreeMap;
 
 // Change log:
@@ -192,6 +193,7 @@ impl StarcoinGasMeter {
 
     pub fn charge_intrinsic_gas_for_transaction(&mut self, txn_size: NumBytes) -> VMResult<()> {
         let cost = self.gas_params.txn.calculate_intrinsic_gas(txn_size);
+        info!("charge_intrinsic_gas cost InternalGasUnits({})", cost);
         self.charge(cost).map_err(|e| e.finish(Location::Undefined))
     }
 
@@ -204,6 +206,10 @@ impl GasMeter for StarcoinGasMeter {
     #[inline]
     fn charge_simple_instr(&mut self, instr: SimpleInstruction) -> PartialVMResult<()> {
         let cost = self.gas_params.instr.simple_instr_cost(instr)?;
+        info!(
+            "charge_simple_instr instr {:#?} cost InternalGasUnits({})",
+            instr, cost
+        );
         self.charge(cost)
     }
 
@@ -217,6 +223,7 @@ impl GasMeter for StarcoinGasMeter {
         let params = &self.gas_params.instr;
 
         let cost = params.call_base + params.call_per_arg * NumArgs::new(args.len() as u64);
+        info!("charge_CALL cost InternalGasUnits({})", cost);
 
         self.charge(cost)
     }
@@ -234,13 +241,16 @@ impl GasMeter for StarcoinGasMeter {
         let cost = params.call_generic_base
             + params.call_generic_per_ty_arg * NumArgs::new(ty_args.len() as u64)
             + params.call_generic_per_arg * NumArgs::new(args.len() as u64);
+        info!("charge_CALL_GENERIC cost InternalGasUnits({})", cost);
         self.charge(cost)
     }
 
     #[inline]
     fn charge_ld_const(&mut self, size: NumBytes) -> PartialVMResult<()> {
         let instr = &self.gas_params.instr;
-        self.charge(instr.ld_const_base + instr.ld_const_per_byte * size)
+        let cost = instr.ld_const_base + instr.ld_const_per_byte * size;
+        info!("charge_LD_CONST cost InternalGasUnits({})", cost);
+        self.charge(cost)
     }
 
     #[inline]
@@ -255,18 +265,22 @@ impl GasMeter for StarcoinGasMeter {
         let instr_params = &self.gas_params.instr;
         let cost = instr_params.copy_loc_base
             + instr_params.copy_loc_per_abs_val_unit * (stack_size + heap_size);
-
+        info!("charge_COPY_LOC cost InternalGasUnits({})", cost);
         self.charge(cost)
     }
 
     #[inline]
     fn charge_move_loc(&mut self, _val: impl ValueView) -> PartialVMResult<()> {
-        self.charge(self.gas_params.instr.move_loc_base)
+        let cost = self.gas_params.instr.move_loc_base;
+        info!("charge_MOVE_LOC cost InternalGasUnits({})", cost);
+        self.charge(cost)
     }
 
     #[inline]
     fn charge_store_loc(&mut self, _val: impl ValueView) -> PartialVMResult<()> {
-        self.charge(self.gas_params.instr.st_loc_base)
+        let cost = self.gas_params.instr.st_loc_base;
+        info!("charge_STORE_LOC cost InternalGasUnits({})", cost);
+        self.charge(cost)
     }
 
     #[inline]
@@ -281,6 +295,11 @@ impl GasMeter for StarcoinGasMeter {
             false => params.pack_base + params.pack_per_field * num_args,
             true => params.pack_generic_base + params.pack_generic_per_field * num_args,
         };
+        if is_generic {
+            info!("charge_PACK_GENERIC cost InternalGasUnits({})", cost);
+        } else {
+            info!("charge_PACK cost InternalGasUnits({})", cost);
+        }
         self.charge(cost)
     }
 
@@ -296,6 +315,11 @@ impl GasMeter for StarcoinGasMeter {
             false => params.unpack_base + params.unpack_per_field * num_args,
             true => params.unpack_generic_base + params.unpack_generic_per_field * num_args,
         };
+        if is_generic {
+            info!("charge_UNPACK_GENERIC cost InternalGasUnits({})", cost);
+        } else {
+            info!("charge_UNPACK cost InternalGasUnits({})", cost);
+        }
         self.charge(cost)
     }
 
@@ -311,11 +335,14 @@ impl GasMeter for StarcoinGasMeter {
         let instr_params = &self.gas_params.instr;
         let cost = instr_params.read_ref_base
             + instr_params.read_ref_per_abs_val_unit * (stack_size + heap_size);
+        info!("charge_READ_REF cost InternalGasUnits({})", cost);
         self.charge(cost)
     }
 
     #[inline]
     fn charge_write_ref(&mut self, _val: impl ValueView) -> PartialVMResult<()> {
+        let cost = self.gas_params.instr.write_ref_base;
+        info!("charge_WRITE_REF cost InternalGasUnits({})", cost);
         self.charge(self.gas_params.instr.write_ref_base)
     }
 
@@ -329,7 +356,7 @@ impl GasMeter for StarcoinGasMeter {
             + per_unit
                 * (abs_val_params.abstract_value_size_dereferenced(lhs)
                     + abs_val_params.abstract_value_size_dereferenced(rhs));
-
+        info!("charge_EQ cost InternalGasUnits({})", cost);
         self.charge(cost)
     }
 
@@ -343,7 +370,7 @@ impl GasMeter for StarcoinGasMeter {
             + per_unit
                 * (abs_val_params.abstract_value_size_dereferenced(lhs)
                     + abs_val_params.abstract_value_size_dereferenced(rhs));
-
+        info!("charge_NEQ cost InternalGasUnits({})", cost);
         self.charge(cost)
     }
 
@@ -362,6 +389,10 @@ impl GasMeter for StarcoinGasMeter {
             (true, false) => params.mut_borrow_global_base,
             (true, true) => params.mut_borrow_global_generic_base,
         };
+        info!(
+            "charge_BORROW_GLOBAL {} {} InternalGasUnits({})",
+            is_mut, is_generic, cost
+        );
         self.charge(cost)
     }
 
@@ -377,6 +408,10 @@ impl GasMeter for StarcoinGasMeter {
             false => params.exists_base,
             true => params.exists_generic_base,
         };
+        info!(
+            "charge_EXISTS {} cost InternalGasUnits({})",
+            is_generic, cost
+        );
         self.charge(cost)
     }
 
@@ -392,6 +427,10 @@ impl GasMeter for StarcoinGasMeter {
             false => params.move_from_base,
             true => params.move_from_generic_base,
         };
+        info!(
+            "charge_MOVE_FROM {} cost InternalGasUnits({})",
+            is_generic, cost
+        );
         self.charge(cost)
     }
 
@@ -408,6 +447,10 @@ impl GasMeter for StarcoinGasMeter {
             false => params.move_to_base,
             true => params.move_to_generic_base,
         };
+        info!(
+            "charge_MOVE_TO {} cost InternalGasUnits({})",
+            is_generic, cost
+        );
         self.charge(cost)
     }
 
@@ -420,11 +463,14 @@ impl GasMeter for StarcoinGasMeter {
         let num_args = NumArgs::new(args.len() as u64);
         let params = &self.gas_params.instr;
         let cost = params.vec_pack_base + params.vec_pack_per_elem * num_args;
+        info!("charge_VEC_PACK cost InternalGasUnits({})", cost);
         self.charge(cost)
     }
 
     #[inline]
     fn charge_vec_len(&mut self, _ty: impl TypeView) -> PartialVMResult<()> {
+        let cost = self.gas_params.instr.vec_len_base;
+        info!("charge_VEC_LEN cost InternalGasUnits({})", cost);
         self.charge(self.gas_params.instr.vec_len_base)
     }
 
@@ -440,6 +486,10 @@ impl GasMeter for StarcoinGasMeter {
             false => params.vec_imm_borrow_base,
             true => params.vec_mut_borrow_base,
         };
+        info!(
+            "charge_VEC_BORROW {} cost InternalGasUnits({})",
+            is_mut, cost
+        );
         self.charge(cost)
     }
 
@@ -449,7 +499,9 @@ impl GasMeter for StarcoinGasMeter {
         _ty: impl TypeView,
         _val: impl ValueView,
     ) -> PartialVMResult<()> {
-        self.charge(self.gas_params.instr.vec_push_back_base)
+        let cost = self.gas_params.instr.vec_push_back_base;
+        info!("charge_VEC_PUSH_BACK cost InternalGasUnits({})", cost);
+        self.charge(cost)
     }
 
     #[inline]
@@ -458,7 +510,9 @@ impl GasMeter for StarcoinGasMeter {
         _ty: impl TypeView,
         _val: Option<impl ValueView>,
     ) -> PartialVMResult<()> {
-        Ok(())
+        let cost = self.gas_params.instr.vec_pop_back_base;
+        info!("charge_VEC_POP_BACK cost InternalGasUnits({})", cost);
+        self.charge(cost)
     }
 
     #[inline]
@@ -467,21 +521,27 @@ impl GasMeter for StarcoinGasMeter {
         _ty: impl TypeView,
         _expect_num_elements: NumArgs,
     ) -> PartialVMResult<()> {
-        self.charge(self.gas_params.instr.vec_pop_back_base)
+        let cost = self.gas_params.instr.vec_pop_back_base;
+        info!("charge_VEC_UNPACK cost InternalGasUnits({})", cost);
+        self.charge(cost)
     }
 
     #[inline]
     fn charge_vec_swap(&mut self, _ty: impl TypeView) -> PartialVMResult<()> {
-        self.charge(self.gas_params.instr.vec_swap_base)
+        let cost = self.gas_params.instr.vec_swap_base;
+        info!("charge_VEC_SWAP cost InternalGasUnits({})", cost);
+        self.charge(cost)
     }
 
     #[inline]
     fn charge_load_resource(&mut self, _loaded: Option<NumBytes>) -> PartialVMResult<()> {
+        info!("charge_load_resource cost");
         Ok(())
     }
 
     #[inline]
     fn charge_native_function(&mut self, amount: InternalGas) -> PartialVMResult<()> {
+        info!("charge_NATIVE_FUNCTION cost InternalGasUnits({})", amount);
         self.charge(amount)
     }
 }

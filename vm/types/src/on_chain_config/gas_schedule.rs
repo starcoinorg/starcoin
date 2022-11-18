@@ -21,85 +21,99 @@ impl GasSchedule {
 
 // instruction_table_v1
 pub fn instruction_gas_schedule_v1() -> Vec<(String, u64)> {
+    let gas_total = |x: u64, y: u64| -> u64 { x + y };
     vec![
-        ("instr.pop".to_string(), 1),
-        ("instr.ret".to_string(), 638),
-        ("instr.br_true".to_string(), 1),
-        ("instr.br_false".to_string(), 1),
-        ("instr.branch".to_string(), 1),
-        ("instr.ld_u64".to_string(), 1),
-        ("instr.ld_const.base".to_string(), 1),
-        ("instr.ld_true".to_string(), 1),
-        ("instr.ld_false".to_string(), 1),
-        ("instr.copy_loc.base".to_string(), 1),
-        ("instr.move_loc.base".to_string(), 1),
-        ("instr.st_loc.base".to_string(), 1),
-        ("instr.mut_borrow_loc".to_string(), 2),
-        ("instr.imm_borrow_loc".to_string(), 1),
-        ("instr.mut_borrow_field".to_string(), 1),
-        ("instr.imm_borrow_field".to_string(), 1),
-        ("instr.call.base".to_string(), 1132),
-        ("instr.pack.base".to_string(), 2),
-        ("instr.unpack.base".to_string(), 2),
-        ("instr.read_ref.base".to_string(), 1),
-        ("instr.write_ref.base".to_string(), 1),
-        ("instr.add".to_string(), 1),
-        ("instr.sub".to_string(), 1),
-        ("instr.mul".to_string(), 1),
-        ("instr.mod".to_string(), 1),
-        ("instr.div".to_string(), 3),
-        ("instr.bit_or".to_string(), 2),
-        ("instr.bit_and".to_string(), 2),
-        ("instr.xor".to_string(), 1),
-        ("instr.or".to_string(), 2),
-        ("instr.and".to_string(), 1),
-        ("instr.not".to_string(), 1),
-        ("instr.eq.base".to_string(), 1),
-        ("instr.neq.base".to_string(), 1),
-        ("instr.lt".to_string(), 1),
-        ("instr.gt".to_string(), 1),
-        ("instr.le".to_string(), 2),
-        ("instr.ge".to_string(), 1),
-        ("instr.abort".to_string(), 1),
-        ("instr.nop".to_string(), 1),
-        ("instr.exists.base".to_string(), 41),
-        ("instr.mut_borrow_global.base".to_string(), 21),
-        ("instr.imm_borrow_global.base".to_string(), 23),
-        ("instr.move_from.base".to_string(), 459),
-        ("instr.move_to.base".to_string(), 13),
-        ("instr.freeze_ref".to_string(), 1),
-        ("instr.shl".to_string(), 2),
-        ("instr.shr".to_string(), 1),
-        ("instr.ld_u8".to_string(), 1),
-        ("instr.ld_u128".to_string(), 1),
-        ("instr.cast_u8".to_string(), 2),
-        ("instr.cast_u64".to_string(), 1),
-        ("instr.cast_u128".to_string(), 1),
-        ("instr.mut_borrow_field_generic.base".to_string(), 1),
-        ("instr.imm_borrow_field_generic.base".to_string(), 1),
-        ("instr.call_generic.base".to_string(), 582),
-        ("instr.pack_generic.base".to_string(), 2),
-        ("instr.unpack_generic.base".to_string(), 2),
-        ("instr.exists_generic.base".to_string(), 34),
-        ("instr.mut_borrow_global_generic.base".to_string(), 15),
-        ("instr.imm_borrow_global_generic.base".to_string(), 14),
-        ("instr.move_from_generic.base".to_string(), 13),
-        ("instr.move_to_generic.base".to_string(), 27),
+        ("instr.pop".to_string(), gas_total(1, 1)),
+        ("instr.ret".to_string(), gas_total(638, 1)),
+        ("instr.br_true".to_string(), gas_total(1, 1)),
+        ("instr.br_false".to_string(), gas_total(1, 1)),
+        ("instr.branch".to_string(), gas_total(1, 1)),
+        ("instr.ld_u64".to_string(), gas_total(1, 1)),
+        ("instr.ld_const.base".to_string(), gas_total(1, 1)),
+        ("instr.ld_true".to_string(), gas_total(1, 1)),
+        ("instr.ld_false".to_string(), gas_total(1, 1)),
+        ("instr.copy_loc.base".to_string(), gas_total(1, 1)),
+        ("instr.move_loc.base".to_string(), gas_total(1, 1)),
+        ("instr.st_loc.base".to_string(), gas_total(1, 1)),
+        ("instr.mut_borrow_loc".to_string(), gas_total(2, 1)),
+        ("instr.imm_borrow_loc".to_string(), gas_total(1, 1)),
+        ("instr.mut_borrow_field".to_string(), gas_total(1, 1)),
+        ("instr.imm_borrow_field".to_string(), gas_total(1, 1)),
+        ("instr.call.base".to_string(), gas_total(1132, 1)),
+        ("instr.pack.base".to_string(), gas_total(2, 1)),
+        ("instr.unpack.base".to_string(), gas_total(2, 1)),
+        ("instr.read_ref.base".to_string(), gas_total(1, 1)),
+        ("instr.write_ref.base".to_string(), gas_total(1, 1)),
+        ("instr.add".to_string(), gas_total(1, 1)),
+        ("instr.sub".to_string(), gas_total(1, 1)),
+        ("instr.mul".to_string(), gas_total(1, 1)),
+        ("instr.mod".to_string(), gas_total(1, 1)),
+        ("instr.div".to_string(), gas_total(3, 1)),
+        ("instr.bit_or".to_string(), gas_total(2, 1)),
+        ("instr.bit_and".to_string(), gas_total(2, 1)),
+        ("instr.xor".to_string(), gas_total(1, 1)),
+        ("instr.or".to_string(), gas_total(2, 1)),
+        ("instr.and".to_string(), gas_total(1, 1)),
+        ("instr.not".to_string(), gas_total(1, 1)),
+        ("instr.eq.base".to_string(), gas_total(1, 1)),
+        ("instr.neq.base".to_string(), gas_total(1, 1)),
+        ("instr.lt".to_string(), gas_total(1, 1)),
+        ("instr.gt".to_string(), gas_total(1, 1)),
+        ("instr.le".to_string(), gas_total(2, 1)),
+        ("instr.ge".to_string(), gas_total(1, 1)),
+        ("instr.abort".to_string(), gas_total(1, 1)),
+        ("instr.nop".to_string(), gas_total(1, 1)),
+        ("instr.exists.base".to_string(), gas_total(41, 1)),
+        ("instr.mut_borrow_global.base".to_string(), gas_total(21, 1)),
+        ("instr.imm_borrow_global.base".to_string(), gas_total(23, 1)),
+        ("instr.move_from.base".to_string(), gas_total(459, 1)),
+        ("instr.move_to.base".to_string(), gas_total(13, 1)),
+        ("instr.freeze_ref".to_string(), gas_total(1, 1)),
+        ("instr.shl".to_string(), gas_total(2, 1)),
+        ("instr.shr".to_string(), gas_total(1, 1)),
+        ("instr.ld_u8".to_string(), gas_total(1, 1)),
+        ("instr.ld_u128".to_string(), gas_total(1, 1)),
+        ("instr.cast_u8".to_string(), gas_total(2, 1)),
+        ("instr.cast_u64".to_string(), gas_total(1, 1)),
+        ("instr.cast_u128".to_string(), gas_total(1, 1)),
+        (
+            "instr.mut_borrow_field_generic.base".to_string(),
+            gas_total(1, 1),
+        ),
+        (
+            "instr.imm_borrow_field_generic.base".to_string(),
+            gas_total(1, 1),
+        ),
+        ("instr.call_generic.base".to_string(), gas_total(582, 1)),
+        ("instr.pack_generic.base".to_string(), gas_total(2, 1)),
+        ("instr.unpack_generic.base".to_string(), gas_total(2, 1)),
+        ("instr.exists_generic.base".to_string(), gas_total(34, 1)),
+        (
+            "instr.mut_borrow_global_generic.base".to_string(),
+            gas_total(15, 1),
+        ),
+        (
+            "instr.imm_borrow_global_generic.base".to_string(),
+            gas_total(14, 1),
+        ),
+        ("instr.move_from_generic.base".to_string(), gas_total(13, 1)),
+        ("instr.move_to_generic.base".to_string(), gas_total(27, 1)),
     ]
 }
 
 // instruction_table_v2
 pub fn instruction_gas_schedule_v2() -> Vec<(String, u64)> {
+    let gas_total = |x: u64, y: u64| -> u64 { x + y };
     let mut instrs = instruction_gas_schedule_v1();
     let mut instrs_delta = vec![
-        ("instr.vec_pack.base".to_string(), 84),
-        ("instr.vec_len.base".to_string(), 98),
-        ("instr.vec_imm_borrow.base".to_string(), 1334),
-        ("instr.vec_mut_borrow.base".to_string(), 1902),
-        ("instr.vec_push_back.base".to_string(), 53),
-        ("instr.vec_pop_back.base".to_string(), 227),
-        ("instr.vec_unpack.base".to_string(), 572),
-        ("instr.vec_swap.base".to_string(), 1436),
+        ("instr.vec_pack.base".to_string(), gas_total(84, 1)),
+        ("instr.vec_len.base".to_string(), gas_total(98, 1)),
+        ("instr.vec_imm_borrow.base".to_string(), gas_total(1334, 1)),
+        ("instr.vec_mut_borrow.base".to_string(), gas_total(1902, 1)),
+        ("instr.vec_push_back.base".to_string(), gas_total(53, 1)),
+        ("instr.vec_pop_back.base".to_string(), gas_total(227, 1)),
+        ("instr.vec_unpack.base".to_string(), gas_total(572, 1)),
+        ("instr.vec_swap.base".to_string(), gas_total(1436, 1)),
     ];
     instrs.append(&mut instrs_delta);
     instrs
@@ -107,74 +121,150 @@ pub fn instruction_gas_schedule_v2() -> Vec<(String, u64)> {
 
 // native_table_v1
 pub fn native_gas_schedule_v1() -> Vec<(String, u64)> {
+    let gas_total = |x: u64, y: u64| -> u64 { x + y };
     vec![
-        ("move_stdlib.hash.sha2_256.base".to_string(), 21),
-        ("move_stdlib.hash.sha3_256.base".to_string(), 64),
+        (
+            "move_stdlib.hash.sha2_256.base".to_string(),
+            gas_total(21, 1),
+        ),
+        (
+            "move_stdlib.hash.sha3_256.base".to_string(),
+            gas_total(64, 1),
+        ),
         (
             "starcoin_natives.signature.ed25519_verify.base".to_string(),
-            61,
+            gas_total(61, 1),
         ),
         // ED25519_THRESHOLD_VERIFY 3 this native funciton is deprecated
         (
             "move_stdlib.bcs.to_bytes.per_byte_serialized".to_string(),
-            181,
+            gas_total(181, 1),
         ),
-        ("move_stdlib.vector.length.base".to_string(), 98),
-        ("move_stdlib.vector.empty.base".to_string(), 84),
-        ("move_stdlib.vector.borrow.base".to_string(), 1334),
-        ("move_stdlib.vector.push_back.base".to_string(), 53),
-        ("move_stdlib.vector.pop_back.base".to_string(), 227),
-        ("move_stdlib.vector.destroy_empty.base".to_string(), 572),
-        ("move_stdlib.vector.swap.base".to_string(), 1436),
+        (
+            "move_stdlib.vector.length.base".to_string(),
+            gas_total(98, 1),
+        ),
+        (
+            "move_stdlib.vector.empty.base".to_string(),
+            gas_total(84, 1),
+        ),
+        (
+            "move_stdlib.vector.borrow.base".to_string(),
+            gas_total(1334, 1),
+        ),
+        // Vector::borrow_mut is same as Vector::borrow
+        (
+            "move_stdlib.vector.push_back.base".to_string(),
+            gas_total(53, 1),
+        ),
+        (
+            "move_stdlib.vector.pop_back.base".to_string(),
+            gas_total(227, 1),
+        ),
+        (
+            "move_stdlib.vector.destroy_empty.base".to_string(),
+            gas_total(572, 1),
+        ),
+        (
+            "move_stdlib.vector.swap.base".to_string(),
+            gas_total(1436, 1),
+        ),
         (
             "starcoin_natives.signature.ed25519_validate_key.base".to_string(),
-            26,
+            gas_total(26, 1),
         ),
-        ("move_stdlib.signer.borrow_address.base".to_string(), 353),
+        (
+            "move_stdlib.signer.borrow_address.base".to_string(),
+            gas_total(353, 1),
+        ),
         (
             "starcoin_natives.account.create_signer.base".to_string(),
-            24,
+            gas_total(24, 1),
         ),
         (
             "starcoin_natives.account.destroy_signer.base".to_string(),
-            212,
+            gas_total(212, 1),
         ),
         (
             "nursery.event.write_to_event_store.unit_cost".to_string(),
-            52,
+            gas_total(52, 1),
         ),
-        ("move_stdlib.bcs.to_address.base".to_string(), 26),
-        ("starcoin_natives.token.name_of.base".to_string(), 2002),
+        (
+            "move_stdlib.bcs.to_address.base".to_string(),
+            gas_total(26, 1),
+        ),
+        (
+            "starcoin_natives.token.name_of.base".to_string(),
+            gas_total(2002, 1),
+        ),
     ]
 }
 
 // native_table_v2
 pub fn native_gas_schedule_v2() -> Vec<(String, u64)> {
+    let gas_total = |x: u64, y: u64| -> u64 { x + y };
     let mut natives = native_gas_schedule_v1();
-    let mut natives_delta = vec![("starcoin_natives.hash.keccak256.base".to_string(), 64)];
+    let mut natives_delta = vec![(
+        "starcoin_natives.hash.keccak256.base".to_string(),
+        gas_total(64, 1),
+    )];
     natives.append(&mut natives_delta);
     natives
 }
 
 // v3_native_table
 pub fn native_gas_schedule_v3() -> Vec<(String, u64)> {
+    let gas_total = |x: u64, y: u64| -> u64 { x + y };
     let mut natives = native_gas_schedule_v2();
     let mut natives_delta = vec![
-        ("starcoin_natives.hash.ripemd160.base".to_string(), 64),
+        (
+            "starcoin_natives.hash.ripemd160.base".to_string(),
+            gas_total(64, 1),
+        ),
         (
             "starcoin_natives.signature.ec_recover.base".to_string(),
-            128,
+            gas_total(128, 1),
         ),
-        ("starcoin_natives.u256.from_bytes.base".to_string(), 2),
-        ("starcoin_natives.u256.add.base".to_string(), 4),
-        ("starcoin_natives.u256.sub.base".to_string(), 4),
-        ("starcoin_natives.u256.mul.base".to_string(), 4),
-        ("starcoin_natives.u256.div.base".to_string(), 10),
-        ("starcoin_natives.u256.rem.base".to_string(), 4),
-        ("starcoin_natives.u256.pow.base".to_string(), 8),
-        ("move_stdlib.vector.append.base".to_string(), 40),
-        ("move_stdlib.vector.remove.base".to_string(), 20),
-        ("move_stdlib.vector.reverse.base".to_string(), 10),
+        (
+            "starcoin_natives.u256.from_bytes.base".to_string(),
+            gas_total(2, 1),
+        ),
+        (
+            "starcoin_natives.u256.add.base".to_string(),
+            gas_total(4, 1),
+        ),
+        (
+            "starcoin_natives.u256.sub.base".to_string(),
+            gas_total(4, 1),
+        ),
+        (
+            "starcoin_natives.u256.mul.base".to_string(),
+            gas_total(4, 1),
+        ),
+        (
+            "starcoin_natives.u256.div.base".to_string(),
+            gas_total(10, 1),
+        ),
+        (
+            "starcoin_natives.u256.rem.base".to_string(),
+            gas_total(4, 1),
+        ),
+        (
+            "starcoin_natives.u256.pow.base".to_string(),
+            gas_total(8, 1),
+        ),
+        (
+            "move_stdlib.vector.append.base".to_string(),
+            gas_total(40, 1),
+        ),
+        (
+            "move_stdlib.vector.remove.base".to_string(),
+            gas_total(20, 1),
+        ),
+        (
+            "move_stdlib.vector.reverse.base".to_string(),
+            gas_total(10, 1),
+        ),
     ];
     natives.append(&mut natives_delta);
     natives
@@ -182,19 +272,35 @@ pub fn native_gas_schedule_v3() -> Vec<(String, u64)> {
 
 // v4_native_table
 pub fn native_gas_schedule_v4() -> Vec<(String, u64)> {
+    let gas_total = |x: u64, y: u64| -> u64 { x + y };
     let mut natives = native_gas_schedule_v3();
     let mut natives_delta = vec![
-        ("table.new_table_handle.base".to_string(), 4),
-        ("table.add_box.base".to_string(), 4),
-        ("table.borrow_box.base".to_string(), 10),
-        ("table.remove_box.base".to_string(), 8),
-        ("table.contains_box.base".to_string(), 40),
-        ("table.destroy_empty_box.base".to_string(), 20),
-        ("table.drop_unchecked_box.base".to_string(), 73),
-        ("move_stdlib.string.check_utf8.base".to_string(), 4),
-        ("move_stdlib.string.sub_string.base".to_string(), 4),
-        ("move_stdlib.string.is_char_boundary.base".to_string(), 4),
-        ("move_stdlib.string.index_of.base".to_string(), 4),
+        ("table.new_table_handle.base".to_string(), gas_total(4, 1)),
+        ("table.add_box.base".to_string(), gas_total(4, 1)),
+        ("table.borrow_box.base".to_string(), gas_total(10, 1)),
+        ("table.remove_box.base".to_string(), gas_total(8, 1)),
+        ("table.contains_box.base".to_string(), gas_total(40, 1)),
+        ("table.destroy_empty_box.base".to_string(), gas_total(20, 1)),
+        (
+            "table.drop_unchecked_box.base".to_string(),
+            gas_total(73, 1),
+        ),
+        (
+            "move_stdlib.string.check_utf8.base".to_string(),
+            gas_total(4, 1),
+        ),
+        (
+            "move_stdlib.string.sub_string.base".to_string(),
+            gas_total(4, 1),
+        ),
+        (
+            "move_stdlib.string.is_char_boundary.base".to_string(),
+            gas_total(4, 1),
+        ),
+        (
+            "move_stdlib.string.index_of.base".to_string(),
+            gas_total(4, 1),
+        ),
     ];
     natives.append(&mut natives_delta);
     natives
@@ -425,7 +531,7 @@ impl From<VMConfig> for GasSchedule {
         // see https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#instruction_schedule
         let instrs = vm_config.gas_schedule.instruction_table.clone();
         for (idx, cost) in instrs.into_iter().enumerate() {
-            entries.push((G_INSTR_STRS[idx].to_string(), cost.instruction_gas));
+            entries.push((G_INSTR_STRS[idx].to_string(), cost.total()));
         }
 
         // see vm/gas_algebra-ext/src/{move_stdlib.rs starcoin_framework.rs nursery.rs table.rs}
@@ -435,7 +541,7 @@ impl From<VMConfig> for GasSchedule {
             if G_NATIVE_STRS[idx].is_empty() {
                 continue;
             }
-            entries.push((G_NATIVE_STRS[idx].to_string(), cost.instruction_gas));
+            entries.push((G_NATIVE_STRS[idx].to_string(), cost.total()));
         }
 
         // see vm/gas_algebra-ext/src/transaction.rs
