@@ -4,9 +4,7 @@
 //! This module contains the official gas meter implementation, along with some top-level gas
 //! parameters and traits to help manipulate them.
 
-use gas_algebra_ext::{
-    FromOnChainGasSchedule, Gas, InitialGasSchedule, MiscGasParameters, ToOnChainGasSchedule,
-};
+use gas_algebra_ext::{FromOnChainGasSchedule, Gas, InitialGasSchedule, ToOnChainGasSchedule};
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use move_core_types::gas_algebra::{AbstractMemorySize, NumArgs};
 use move_core_types::language_storage::ModuleId;
@@ -92,7 +90,6 @@ impl InitialGasSchedule for NativeGasParameters {
 /// instructions, transactions and native functions from various packages.
 #[derive(Debug, Clone)]
 pub struct StarcoinGasParameters {
-    pub misc: MiscGasParameters,
     pub instr: InstructionGasParameters,
     pub txn: TransactionGasParameters,
     pub natives: NativeGasParameters,
@@ -101,7 +98,6 @@ pub struct StarcoinGasParameters {
 impl FromOnChainGasSchedule for StarcoinGasParameters {
     fn from_on_chain_gas_schedule(gas_schedule: &BTreeMap<String, u64>) -> Option<Self> {
         Some(Self {
-            misc: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
             natives: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
             instr: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
             txn: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
@@ -123,7 +119,6 @@ impl StarcoinGasParameters {
     // don't have a genesis storage state.
     pub fn zeros() -> Self {
         Self {
-            misc: MiscGasParameters::zeros(),
             instr: InstructionGasParameters::zeros(),
             txn: TransactionGasParameters::zeros(),
             natives: NativeGasParameters::zeros(),
@@ -134,7 +129,6 @@ impl StarcoinGasParameters {
 impl InitialGasSchedule for StarcoinGasParameters {
     fn initial() -> Self {
         Self {
-            misc: InitialGasSchedule::initial(),
             instr: InitialGasSchedule::initial(),
             txn: InitialGasSchedule::initial(),
             natives: InitialGasSchedule::initial(),

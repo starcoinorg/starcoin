@@ -16,7 +16,6 @@ mod gas_meter;
 mod starcoin_framework;
 //pub mod gen;
 mod instr;
-mod misc;
 mod move_stdlib;
 mod nursery;
 mod table;
@@ -25,7 +24,6 @@ mod transaction;
 pub use algebra::{FeePerGasUnit, Gas};
 pub use gas_meter::{FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule};
 pub use instr::InstructionGasParameters;
-pub use misc::MiscGasParameters;
 pub use transaction::TransactionGasParameters;
 
 /// Unit of abstract value size -- a conceptual measurement of the memory space a Move value occupies.
