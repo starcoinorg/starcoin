@@ -29,21 +29,33 @@ pub fn instruction_gas_schedule_v1() -> Vec<(String, u64)> {
         ("instr.br_false".to_string(), gas_total(1, 1)),
         ("instr.branch".to_string(), gas_total(1, 1)),
         ("instr.ld_u64".to_string(), gas_total(1, 1)),
-        ("instr.ld_const.base".to_string(), gas_total(1, 1)),
+        ("instr.ld_const.per_byte".to_string(), gas_total(1, 1)),
         ("instr.ld_true".to_string(), gas_total(1, 1)),
         ("instr.ld_false".to_string(), gas_total(1, 1)),
-        ("instr.copy_loc.base".to_string(), gas_total(1, 1)),
-        ("instr.move_loc.base".to_string(), gas_total(1, 1)),
-        ("instr.st_loc.base".to_string(), gas_total(1, 1)),
+        (
+            "instr.copy_loc.per_abs_mem_unit".to_string(),
+            gas_total(1, 1),
+        ),
+        (
+            "instr.move_loc.per_abs_mem_unit".to_string(),
+            gas_total(1, 1),
+        ),
+        ("instr.st_loc.per_abs_mem_unit".to_string(), gas_total(1, 1)),
         ("instr.mut_borrow_loc".to_string(), gas_total(2, 1)),
         ("instr.imm_borrow_loc".to_string(), gas_total(1, 1)),
         ("instr.mut_borrow_field".to_string(), gas_total(1, 1)),
         ("instr.imm_borrow_field".to_string(), gas_total(1, 1)),
-        ("instr.call.base".to_string(), gas_total(1132, 1)),
-        ("instr.pack.base".to_string(), gas_total(2, 1)),
-        ("instr.unpack.base".to_string(), gas_total(2, 1)),
-        ("instr.read_ref.base".to_string(), gas_total(1, 1)),
-        ("instr.write_ref.base".to_string(), gas_total(1, 1)),
+        ("instr.call.per_arg".to_string(), gas_total(1132, 1)),
+        ("instr.pack.per_abs_mem_unit".to_string(), gas_total(2, 1)),
+        ("instr.unpack.per_abs_mem_unit".to_string(), gas_total(2, 1)),
+        (
+            "instr.read_ref.per_abs_mem_unit".to_string(),
+            gas_total(1, 1),
+        ),
+        (
+            "instr.write_ref.per_abs_mem_unit".to_string(),
+            gas_total(1, 1),
+        ),
         ("instr.add".to_string(), gas_total(1, 1)),
         ("instr.sub".to_string(), gas_total(1, 1)),
         ("instr.mul".to_string(), gas_total(1, 1)),
@@ -55,19 +67,28 @@ pub fn instruction_gas_schedule_v1() -> Vec<(String, u64)> {
         ("instr.or".to_string(), gas_total(2, 1)),
         ("instr.and".to_string(), gas_total(1, 1)),
         ("instr.not".to_string(), gas_total(1, 1)),
-        ("instr.eq.base".to_string(), gas_total(1, 1)),
-        ("instr.neq.base".to_string(), gas_total(1, 1)),
+        ("instr.eq.per_abs_mem_unit".to_string(), gas_total(1, 1)),
+        ("instr.neq.per_abs_mem_unit".to_string(), gas_total(1, 1)),
         ("instr.lt".to_string(), gas_total(1, 1)),
         ("instr.gt".to_string(), gas_total(1, 1)),
         ("instr.le".to_string(), gas_total(2, 1)),
         ("instr.ge".to_string(), gas_total(1, 1)),
         ("instr.abort".to_string(), gas_total(1, 1)),
         ("instr.nop".to_string(), gas_total(1, 1)),
-        ("instr.exists.base".to_string(), gas_total(41, 1)),
+        (
+            "instr.exists.per_abs_mem_unit".to_string(),
+            gas_total(41, 1),
+        ),
         ("instr.mut_borrow_global.base".to_string(), gas_total(21, 1)),
         ("instr.imm_borrow_global.base".to_string(), gas_total(23, 1)),
-        ("instr.move_from.base".to_string(), gas_total(459, 1)),
-        ("instr.move_to.base".to_string(), gas_total(13, 1)),
+        (
+            "instr.move_from.per_abs_mem_unit".to_string(),
+            gas_total(459, 1),
+        ),
+        (
+            "instr.move_to.per_abs_mem_unit".to_string(),
+            gas_total(13, 1),
+        ),
         ("instr.freeze_ref".to_string(), gas_total(1, 1)),
         ("instr.shl".to_string(), gas_total(2, 1)),
         ("instr.shr".to_string(), gas_total(1, 1)),
@@ -84,10 +105,19 @@ pub fn instruction_gas_schedule_v1() -> Vec<(String, u64)> {
             "instr.imm_borrow_field_generic.base".to_string(),
             gas_total(1, 1),
         ),
-        ("instr.call_generic.base".to_string(), gas_total(582, 1)),
-        ("instr.pack_generic.base".to_string(), gas_total(2, 1)),
-        ("instr.unpack_generic.base".to_string(), gas_total(2, 1)),
-        ("instr.exists_generic.base".to_string(), gas_total(34, 1)),
+        ("instr.call_generic.per_arg".to_string(), gas_total(582, 1)),
+        (
+            "instr.pack_generic.per_abs_mem_unit".to_string(),
+            gas_total(2, 1),
+        ),
+        (
+            "instr.unpack_generic.per_abs_mem_unit".to_string(),
+            gas_total(2, 1),
+        ),
+        (
+            "instr.exists_generic.per_abs_mem_unit".to_string(),
+            gas_total(34, 1),
+        ),
         (
             "instr.mut_borrow_global_generic.base".to_string(),
             gas_total(15, 1),
@@ -96,8 +126,14 @@ pub fn instruction_gas_schedule_v1() -> Vec<(String, u64)> {
             "instr.imm_borrow_global_generic.base".to_string(),
             gas_total(14, 1),
         ),
-        ("instr.move_from_generic.base".to_string(), gas_total(13, 1)),
-        ("instr.move_to_generic.base".to_string(), gas_total(27, 1)),
+        (
+            "instr.move_from_generic.per_abs_mem_unit".to_string(),
+            gas_total(13, 1),
+        ),
+        (
+            "instr.move_to_generic.per_abs_mem_unit".to_string(),
+            gas_total(27, 1),
+        ),
     ]
 }
 
@@ -106,13 +142,19 @@ pub fn instruction_gas_schedule_v2() -> Vec<(String, u64)> {
     let gas_total = |x: u64, y: u64| -> u64 { x + y };
     let mut instrs = instruction_gas_schedule_v1();
     let mut instrs_delta = vec![
-        ("instr.vec_pack.base".to_string(), gas_total(84, 1)),
+        ("instr.vec_pack.per_elem".to_string(), gas_total(84, 1)),
         ("instr.vec_len.base".to_string(), gas_total(98, 1)),
         ("instr.vec_imm_borrow.base".to_string(), gas_total(1334, 1)),
         ("instr.vec_mut_borrow.base".to_string(), gas_total(1902, 1)),
-        ("instr.vec_push_back.base".to_string(), gas_total(53, 1)),
+        (
+            "instr.vec_push_back.per_abs_mem_unit".to_string(),
+            gas_total(53, 1),
+        ),
         ("instr.vec_pop_back.base".to_string(), gas_total(227, 1)),
-        ("instr.vec_unpack.base".to_string(), gas_total(572, 1)),
+        (
+            "instr.vec_unpack.per_expected_elem".to_string(),
+            gas_total(572, 1),
+        ),
         ("instr.vec_swap.base".to_string(), gas_total(1436, 1)),
     ];
     instrs.append(&mut instrs_delta);
@@ -124,15 +166,15 @@ pub fn native_gas_schedule_v1() -> Vec<(String, u64)> {
     let gas_total = |x: u64, y: u64| -> u64 { x + y };
     vec![
         (
-            "move_stdlib.hash.sha2_256.base".to_string(),
+            "move_stdlib.hash.sha2_256.per_byte".to_string(),
             gas_total(21, 1),
         ),
         (
-            "move_stdlib.hash.sha3_256.base".to_string(),
+            "move_stdlib.hash.sha3_256.per_byte".to_string(),
             gas_total(64, 1),
         ),
         (
-            "starcoin_natives.signature.ed25519_verify.base".to_string(),
+            "starcoin_natives.signature.ed25519_verify.per_byte".to_string(),
             gas_total(61, 1),
         ),
         // ED25519_THRESHOLD_VERIFY 3 this native funciton is deprecated
@@ -154,7 +196,7 @@ pub fn native_gas_schedule_v1() -> Vec<(String, u64)> {
         ),
         // Vector::borrow_mut is same as Vector::borrow
         (
-            "move_stdlib.vector.push_back.base".to_string(),
+            "move_stdlib.vector.push_back.legacy_per_abstract_memory_unit".to_string(),
             gas_total(53, 1),
         ),
         (
@@ -170,7 +212,7 @@ pub fn native_gas_schedule_v1() -> Vec<(String, u64)> {
             gas_total(1436, 1),
         ),
         (
-            "starcoin_natives.signature.ed25519_validate_key.base".to_string(),
+            "starcoin_natives.signature.ed25519_validate_key.per_byte".to_string(),
             gas_total(26, 1),
         ),
         (
@@ -190,7 +232,7 @@ pub fn native_gas_schedule_v1() -> Vec<(String, u64)> {
             gas_total(52, 1),
         ),
         (
-            "move_stdlib.bcs.to_address.base".to_string(),
+            "move_stdlib.bcs.to_address.per_byte".to_string(),
             gas_total(26, 1),
         ),
         (
@@ -205,7 +247,7 @@ pub fn native_gas_schedule_v2() -> Vec<(String, u64)> {
     let gas_total = |x: u64, y: u64| -> u64 { x + y };
     let mut natives = native_gas_schedule_v1();
     let mut natives_delta = vec![(
-        "starcoin_natives.hash.keccak256.base".to_string(),
+        "starcoin_natives.hash.keccak256.per_byte".to_string(),
         gas_total(64, 1),
     )];
     natives.append(&mut natives_delta);
@@ -218,15 +260,15 @@ pub fn native_gas_schedule_v3() -> Vec<(String, u64)> {
     let mut natives = native_gas_schedule_v2();
     let mut natives_delta = vec![
         (
-            "starcoin_natives.hash.ripemd160.base".to_string(),
+            "starcoin_natives.hash.ripemd160.per_byte".to_string(),
             gas_total(64, 1),
         ),
         (
-            "starcoin_natives.signature.ec_recover.base".to_string(),
+            "starcoin_natives.signature.ec_recover.per_byte".to_string(),
             gas_total(128, 1),
         ),
         (
-            "starcoin_natives.u256.from_bytes.base".to_string(),
+            "starcoin_natives.u256.from_bytes.per_byte".to_string(),
             gas_total(2, 1),
         ),
         (
@@ -254,15 +296,15 @@ pub fn native_gas_schedule_v3() -> Vec<(String, u64)> {
             gas_total(8, 1),
         ),
         (
-            "move_stdlib.vector.append.base".to_string(),
+            "move_stdlib.vector.append.legacy_per_abstract_memory_unit".to_string(),
             gas_total(40, 1),
         ),
         (
-            "move_stdlib.vector.remove.base".to_string(),
+            "move_stdlib.vector.remove.legacy_per_abstract_memory_unit".to_string(),
             gas_total(20, 1),
         ),
         (
-            "move_stdlib.vector.reverse.base".to_string(),
+            "move_stdlib.vector.reverse.legacy_per_abstract_memory_unit".to_string(),
             gas_total(10, 1),
         ),
     ];
@@ -286,11 +328,11 @@ pub fn native_gas_schedule_v4() -> Vec<(String, u64)> {
             gas_total(73, 1),
         ),
         (
-            "move_stdlib.string.check_utf8.base".to_string(),
+            "move_stdlib.string.check_utf8.per_byte".to_string(),
             gas_total(4, 1),
         ),
         (
-            "move_stdlib.string.sub_string.base".to_string(),
+            "move_stdlib.string.sub_string.per_byte".to_string(),
             gas_total(4, 1),
         ),
         (
@@ -298,7 +340,7 @@ pub fn native_gas_schedule_v4() -> Vec<(String, u64)> {
             gas_total(4, 1),
         ),
         (
-            "move_stdlib.string.index_of.base".to_string(),
+            "move_stdlib.string.index_of.per_byte_searched".to_string(),
             gas_total(4, 1),
         ),
     ];
@@ -403,21 +445,21 @@ static G_INSTR_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
         "instr.br_false",
         "instr.branch",
         "instr.ld_u64",
-        "instr.ld_const.base",
+        "instr.ld_const.per_byte",
         "instr.ld_true",
         "instr.ld_false",
-        "instr.copy_loc.base",
-        "instr.move_loc.base",
-        "instr.st_loc.base",
+        "instr.copy_loc.per_abs_mem_unit",
+        "instr.move_loc.per_abs_mem_unit",
+        "instr.st_loc.per_abs_mem_unit",
         "instr.mut_borrow_loc",
         "instr.imm_borrow_loc",
         "instr.mut_borrow_field",
         "instr.imm_borrow_field",
-        "instr.call.base",
-        "instr.pack.base",
-        "instr.unpack.base",
-        "instr.read_ref.base",
-        "instr.write_ref.base",
+        "instr.call.per_arg",
+        "instr.pack.per_abs_mem_unit",
+        "instr.unpack.per_abs_mem_unit",
+        "instr.read_ref.per_abs_mem_unit",
+        "instr.write_ref.per_abs_mem_unit",
         "instr.add",
         "instr.sub",
         "instr.mul",
@@ -429,19 +471,19 @@ static G_INSTR_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
         "instr.or",
         "instr.and",
         "instr.not",
-        "instr.eq.base",
-        "instr.neq.base",
+        "instr.eq.per_abs_mem_unit",
+        "instr.neq.per_abs_mem_unit",
         "instr.lt",
         "instr.gt",
         "instr.le",
         "instr.ge",
         "instr.abort",
         "instr.nop",
-        "instr.exists.base",
+        "instr.exists.per_abs_mem_unit",
         "instr.mut_borrow_global.base",
         "instr.imm_borrow_global.base",
-        "instr.move_from.base",
-        "instr.move_to.base",
+        "instr.move_from.per_abs_mem_unit",
+        "instr.move_to.per_abs_mem_unit",
         "instr.freeze_ref",
         "instr.shl",
         "instr.shr",
@@ -452,30 +494,30 @@ static G_INSTR_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
         "instr.cast_u128",
         "instr.mut_borrow_field_generic.base",
         "instr.imm_borrow_field_generic.base",
-        "instr.call_generic.base",
-        "instr.pack_generic.base",
-        "instr.unpack_generic.base",
-        "instr.exists_generic.base",
+        "instr.call_generic.per_arg",
+        "instr.pack_generic.per_abs_mem_unit",
+        "instr.unpack_generic.per_abs_mem_unit",
+        "instr.exists_generic.per_abs_mem_unit",
         "instr.mut_borrow_global_generic.base",
         "instr.imm_borrow_global_generic.base",
-        "instr.move_from_generic.base",
-        "instr.move_to_generic.base",
-        "instr.vec_pack.base",
+        "instr.move_from_generic.per_abs_mem_unit",
+        "instr.move_to_generic.per_abs_mem_unit",
+        "instr.vec_pack.per_elem",
         "instr.vec_len.base",
         "instr.vec_imm_borrow.base",
         "instr.vec_mut_borrow.base",
-        "instr.vec_push_back.base",
+        "instr.vec_push_back.per_abs_mem_unit",
         "instr.vec_pop_back.base",
-        "instr.vec_unpack.base",
+        "instr.vec_unpack.per_expected_elem",
         "instr.vec_swap.base",
     ]
 });
 
 static G_NATIVE_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
     vec![
-        "move_stdlib.hash.sha2_256.base",
-        "move_stdlib.hash.sha3_256.base",
-        "starcoin_natives.signature.ed25519_verify.base",
+        "move_stdlib.hash.sha2_256.per_byte",
+        "move_stdlib.hash.sha3_256.per_byte",
+        "starcoin_natives.signature.ed25519_verify.per_byte",
         // ED25519_THRESHOLD_VERIFY 3 this native funciton is deprecated, ignore, use ""
         "",
         "move_stdlib.bcs.to_bytes.per_byte_serialized",
@@ -484,30 +526,30 @@ static G_NATIVE_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
         "move_stdlib.vector.borrow.base",
         // Vector::borrow_mut is same Vector::borrow ignore ""
         "",
-        "move_stdlib.vector.push_back.base",
+        "move_stdlib.vector.push_back.legacy_per_abstract_memory_unit",
         "move_stdlib.vector.pop_back.base",
         "move_stdlib.vector.destroy_empty.base",
         "move_stdlib.vector.swap.base",
-        "starcoin_natives.signature.ed25519_validate_key.base",
+        "starcoin_natives.signature.ed25519_validate_key.per_byte",
         "move_stdlib.signer.borrow_address.base",
         "starcoin_natives.account.create_signer.base",
         "starcoin_natives.account.destroy_signer.base",
         "nursery.event.write_to_event_store.unit_cost",
-        "move_stdlib.bcs.to_address.base",
+        "move_stdlib.bcs.to_address.per_byte",
         "starcoin_natives.token.name_of.base",
-        "starcoin_natives.hash.keccak256.base",
-        "starcoin_natives.hash.ripemd160.base",
-        "starcoin_natives.signature.ec_recover.base",
-        "starcoin_natives.u256.from_bytes.base",
+        "starcoin_natives.hash.keccak256.per_byte",
+        "starcoin_natives.hash.ripemd160.per_byte",
+        "starcoin_natives.signature.ec_recover.per_byte",
+        "starcoin_natives.u256.from_bytes.per_byte",
         "starcoin_natives.u256.add.base",
         "starcoin_natives.u256.sub.base",
         "starcoin_natives.u256.mul.base",
         "starcoin_natives.u256.div.base",
         "starcoin_natives.u256.rem.base",
         "starcoin_natives.u256.pow.base",
-        "move_stdlib.vector.append.base",
-        "move_stdlib.vector.remove.base",
-        "move_stdlib.vector.reverse.base",
+        "move_stdlib.vector.append.legacy_per_abstract_memory_unit",
+        "move_stdlib.vector.remove.legacy_per_abstract_memory_unit",
+        "move_stdlib.vector.reverse.legacy_per_abstract_memory_unit",
         "table.new_table_handle.base",
         "table.add_box.base",
         "table.borrow_box.base",
@@ -515,10 +557,10 @@ static G_NATIVE_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
         "table.contains_box.base",
         "table.destroy_empty_box.base",
         "table.drop_unchecked_box.base",
-        "move_stdlib.string.check_utf8.base",
-        "move_stdlib.string.sub_string.base",
+        "move_stdlib.string.check_utf8.per_byte",
+        "move_stdlib.string.sub_string.per_byte",
         "move_stdlib.string.is_char_boundary.base",
-        "move_stdlib.string.index_of.base",
+        "move_stdlib.string.index_of.per_byte_searched",
     ]
 });
 

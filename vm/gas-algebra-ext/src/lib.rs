@@ -1,7 +1,7 @@
 // Copyright (c) Aptos
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::gas_algebra::{Arg, GasQuantity, InternalGasUnit, UnitDiv};
+use move_core_types::gas_algebra::{Arg, GasQuantity, UnitDiv};
 pub use move_vm_test_utils::gas_schedule::GasCost;
 use serde::{Deserialize, Serialize};
 
@@ -32,8 +32,6 @@ pub use transaction::TransactionGasParameters;
 pub enum AbstractValueUnit {}
 
 pub type AbstractValueSize = GasQuantity<AbstractValueUnit>;
-
-pub type InternalGasPerAbstractValueUnit = GasQuantity<UnitDiv<InternalGasUnit, AbstractValueUnit>>;
 
 pub type AbstractValueSizePerArg = GasQuantity<UnitDiv<AbstractValueUnit, Arg>>;
 

@@ -6,9 +6,10 @@
 //! gas schedule.
 
 use crate::gas_meter::EXECUTION_GAS_MULTIPLIER as MUL;
-use crate::InternalGasPerAbstractValueUnit;
 use move_binary_format::errors::PartialVMResult;
-use move_core_types::gas_algebra::{InternalGas, InternalGasPerArg, InternalGasPerByte};
+use move_core_types::gas_algebra::{
+    InternalGas, InternalGasPerAbstractMemoryUnit, InternalGasPerArg, InternalGasPerByte,
+};
 use move_vm_types::gas::SimpleInstruction;
 
 // see starcoin/vm/types/src/on_chain_config/genesis_gas_schedule.rs
@@ -24,39 +25,33 @@ crate::params::define_gas_parameters!(
         [br_false: InternalGas, "br_false", (1 + 1) * MUL],
         [branch: InternalGas, "branch", (1 + 1)* MUL],
         [ld_u64: InternalGas, "ld_u64", (1 + 1)* MUL],
-        [ld_const_base: InternalGas, "ld_const.base", (1 + 1)* MUL],
         [
             ld_const_per_byte: InternalGasPerByte,
-            optional "ld_const.per_byte",
-            35 * MUL
+            "ld_const.per_byte",
+            (1 + 1) * MUL
         ],
         [ld_true: InternalGas, "ld_true", (1 + 1)* MUL],
         [ld_false: InternalGas, "ld_false", (1 + 1)* MUL],
-        [copy_loc_base: InternalGas, "copy_loc.base", (1 + 1)* MUL],
         [
-            copy_loc_per_abs_val_unit: InternalGasPerAbstractValueUnit,
-            optional "copy_loc.per_abs_val_unit",
-            4 * MUL
+            copy_loc_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit,
+             "copy_loc.per_abs_mem_unit",
+             (1 + 1) * MUL
         ],
-        [move_loc_base: InternalGas, "move_loc.base", (1 + 1)* MUL],
-        [st_loc_base: InternalGas, "st_loc.base", (1 + 1)* MUL],
+        [move_loc_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit, "move_loc.per_abs_mem_unit", (1 + 1)* MUL],
+        [st_loc_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit, "st_loc.per_abs_mem_unit", (1 + 1)* MUL],
         [mut_borrow_loc: InternalGas, "mut_borrow_loc", (2 + 1) * MUL],
         [imm_borrow_loc: InternalGas, "imm_borrow_loc", (1 + 1)* MUL],
         [mut_borrow_field: InternalGas, "mut_borrow_field", (1 + 1)* MUL],
         [imm_borrow_field: InternalGas, "imm_borrow_field", (1 + 1)* MUL],
-        [call_base: InternalGas, "call.base", (1132 + 1) * MUL],
-        [call_per_arg: InternalGasPerArg, optional "call.per_arg", 100 * MUL],
-        [pack_base: InternalGas, "pack.base", (2 + 1) * MUL],
-        [pack_per_field: InternalGasPerArg, optional "pack.per_field", 40 * MUL],
-        [unpack_base: InternalGas, "unpack.base", (2 + 1) * MUL],
-        [unpack_per_field: InternalGasPerArg, optional "unpack.per_field", 40 * MUL],
-        [read_ref_base: InternalGas, "read_ref.base", (1 + 1)* MUL],
+        [call_per_arg: InternalGasPerArg,  "call.per_arg", (1132 + 1) * MUL],
+        [pack_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit,  "pack.per_abs_mem_unit", (2 + 1) * MUL],
+        [unpack_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit, "unpack.per_abs_mem_unit", (2 + 1) * MUL],
         [
-            read_ref_per_abs_val_unit: InternalGasPerAbstractValueUnit,
-            optional "read_ref.per_abs_val_unit",
-            4 * MUL
+            read_ref_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit,
+             "read_ref.per_abs_mem_unit",
+            (1 + 1) * MUL
         ],
-        [write_ref_base: InternalGas, "write_ref.base", (1 + 1)* MUL],
+        [write_ref_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit, "write_ref.per_abs_mem_unit", (1 + 1)* MUL],
         [add: InternalGas, "add", (1 + 1)* MUL],
         [sub: InternalGas, "sub", (1 + 1)* MUL],
         [mul: InternalGas, "mul", (1 + 1)* MUL],
@@ -68,17 +63,15 @@ crate::params::define_gas_parameters!(
         [or: InternalGas, "or", (2 + 1) * MUL],
         [and: InternalGas, "and", (1 + 1)* MUL],
         [not: InternalGas, "not", (1 + 1)* MUL],
-        [eq_base: InternalGas, "eq.base", (1 + 1)* MUL],
         [
-            eq_per_abs_val_unit: InternalGasPerAbstractValueUnit,
-           optional "eq.per_abs_val_unit",
-            4 * MUL
+            eq_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit,
+            "eq.per_abs_mem_unit",
+            (1 + 1) * MUL
         ],
-        [neq_base: InternalGas, "neq.base", (1 + 1)* MUL],
         [
-            neq_per_abs_val_unit: InternalGasPerAbstractValueUnit,
-            optional "neq.per_abs_val_unit",
-            4 * MUL
+            neq_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit,
+             "neq.per_abs_mem_unit",
+            (1 + 1) * MUL
         ],
         // comparison
         [lt: InternalGas, "lt", (2 + 1) * MUL],
@@ -88,7 +81,7 @@ crate::params::define_gas_parameters!(
         [abort: InternalGas, "abort", (1 + 1)* MUL],
         // nop
         [nop: InternalGas, "nop", (1 + 1)* MUL],
-        [exists_base: InternalGas, "exists.base", (41 + 1) * MUL],
+        [exists_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit, "exists.per_abs_mem_unit", (41 + 1) * MUL],
         [
             mut_borrow_global_base: InternalGas,
             "mut_borrow_global.base",
@@ -99,8 +92,8 @@ crate::params::define_gas_parameters!(
             "imm_borrow_global.base",
             (23 + 1) * MUL
         ],
-        [move_from_base: InternalGas, "move_from.base", (459 + 1) * MUL],
-        [move_to_base: InternalGas, "move_to.base", (13 + 1) * MUL],
+        [move_from_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit, "move_from.per_abs_mem_unit", (459 + 1) * MUL],
+        [move_to_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit, "move_to.per_abs_mem_unit", (13 + 1) * MUL],
         [freeze_ref: InternalGas, "freeze_ref", (1 + 1)* MUL],
         [shl: InternalGas, "shl", (2 + 1) * MUL],
         [shr: InternalGas, "shr", (1 + 1)* MUL],
@@ -121,39 +114,23 @@ crate::params::define_gas_parameters!(
             (1 + 1)* MUL
         ],
         [
-            call_generic_base: InternalGas,
-            "call_generic.base",
+            call_generic_per_arg: InternalGasPerArg,
+            "call_generic.per_arg",
             (1 + 1) * MUL
         ],
         [
-            call_generic_per_ty_arg: InternalGasPerArg,
-            optional "call_generic.per_ty_arg",
-            100 * MUL
-        ],
-        [
-            call_generic_per_arg: InternalGasPerArg,
-            optional "call_generic.per_arg",
-            100 * MUL
-        ],
-        [pack_generic_base: InternalGas, "pack_generic.base", (2 + 1) * MUL],
-        [
-            pack_generic_per_field: InternalGasPerArg,
-            optional "pack_generic.per_field",
-            40 * MUL
-        ],
-        [
-            unpack_generic_base: InternalGas,
-            "unpack_generic.base",
+            pack_generic_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit,
+             "pack_generic.per_abs_mem_unit",
             (2 + 1) * MUL
         ],
         [
-            unpack_generic_per_field: InternalGasPerArg,
-            optional "unpack_generic.per_field",
-            40 * MUL
+            unpack_generic_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit,
+             "unpack_generic.per_abs_mem_unit",
+            (2 + 1) * MUL
         ],
         [
-            exists_generic_base: InternalGas,
-            "exists_generic.base",
+            exists_generic_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit,
+            "exists_generic.per_abs_mem_unit",
             (34 + 1) * MUL
         ],
         [
@@ -167,21 +144,19 @@ crate::params::define_gas_parameters!(
             (14 + 1) * MUL
         ],
         [
-            move_from_generic_base: InternalGas,
-            "move_from_generic.base",
+            move_from_generic_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit,
+            "move_from_generic.per_abs_mem_unit",
             (13 + 1) * MUL
         ],
         [
-            move_to_generic_base: InternalGas,
-            "move_to_generic.base",
+            move_to_generic_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit,
+            "move_to_generic.per_abs_mem_unit",
             (27 + 1) * MUL
         ],
-        // vec
-        [vec_pack_base: InternalGas, optional "vec_pack.base", (84 + 1) * MUL],
         [
             vec_pack_per_elem: InternalGasPerArg,
             optional "vec_pack.per_elem",
-            40 * MUL
+            (84 + 1) * MUL
         ],
         [vec_len_base: InternalGas, optional "vec_len.base", (98 + 1) * MUL],
         [
@@ -191,12 +166,12 @@ crate::params::define_gas_parameters!(
         ],
         [
             vec_mut_borrow_base: InternalGas,
-           optional "vec_mut_borrow.base",
+            optional "vec_mut_borrow.base",
             (1902 + 1) * MUL
         ],
         [
-            vec_push_back_base: InternalGas,
-            optional "vec_push_back.base",
+            vec_push_back_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit,
+            optional "vec_push_back.per_abs_mem_unit",
             (52 + 1) * MUL
         ],
         [
@@ -204,7 +179,11 @@ crate::params::define_gas_parameters!(
             optional "vec_pop_back.base",
             (227 + 1) * MUL
         ],
-        [vec_unpack_base: InternalGas, optional "vec_unpack.base", (572 + 1) * MUL],
+         [
+            vec_unpack_per_expected_elem: InternalGasPerArg,
+            optional "vec_unpack.per_expected_elem",
+            (572 + 1) * MUL
+        ],
         [vec_swap_base: InternalGas, optional "vec_swap.base", (1436 + 1) * MUL],
     ]
 );

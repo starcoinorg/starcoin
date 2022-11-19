@@ -8,7 +8,7 @@ use gas_algebra_ext::{
     FromOnChainGasSchedule, Gas, InitialGasSchedule, MiscGasParameters, ToOnChainGasSchedule,
 };
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
-use move_core_types::gas_algebra::NumArgs;
+use move_core_types::gas_algebra::{AbstractMemorySize, NumArgs};
 use move_core_types::language_storage::ModuleId;
 use move_core_types::{
     gas_algebra::{InternalGas, NumBytes},
@@ -166,8 +166,7 @@ impl StarcoinGasMeter {
             .to_unit_round_down_with_params(&self.gas_params.txn)
     }
 
-    #[inline]
-    fn charge(&mut self, amount: InternalGas) -> PartialVMResult<()> {
+    pub fn deduct_gas(&mut self, amount: InternalGas) -> PartialVMResult<()> {
         if !self.charge {
             return Ok(());
         }
@@ -187,14 +186,11 @@ impl StarcoinGasMeter {
         self.charge = enabled;
     }
 
-    pub fn deduct_gas(&mut self, amount: InternalGas) -> PartialVMResult<()> {
-        self.charge(amount)
-    }
-
     pub fn charge_intrinsic_gas_for_transaction(&mut self, txn_size: NumBytes) -> VMResult<()> {
         let cost = self.gas_params.txn.calculate_intrinsic_gas(txn_size);
         info!("charge_intrinsic_gas cost InternalGasUnits({})", cost);
-        self.charge(cost).map_err(|e| e.finish(Location::Undefined))
+        self.deduct_gas(cost)
+            .map_err(|e| e.finish(Location::Undefined))
     }
 
     pub fn cal_write_set_gas(&self) -> InternalGas {
@@ -210,7 +206,7 @@ impl GasMeter for StarcoinGasMeter {
             "charge_simple_instr instr {:#?} cost InternalGasUnits({})",
             instr, cost
         );
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
@@ -222,10 +218,10 @@ impl GasMeter for StarcoinGasMeter {
     ) -> PartialVMResult<()> {
         let params = &self.gas_params.instr;
 
-        let cost = params.call_base + params.call_per_arg * NumArgs::new(args.len() as u64);
+        let cost = params.call_per_arg * NumArgs::new(args.len() as u64 + 1);
         info!("charge_CALL cost InternalGasUnits({})", cost);
 
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
@@ -238,49 +234,42 @@ impl GasMeter for StarcoinGasMeter {
     ) -> PartialVMResult<()> {
         let params = &self.gas_params.instr;
 
-        let cost = params.call_generic_base
-            + params.call_generic_per_ty_arg * NumArgs::new(ty_args.len() as u64)
-            + params.call_generic_per_arg * NumArgs::new(args.len() as u64);
+        let cost =
+            params.call_generic_per_arg * NumArgs::new((ty_args.len() + args.len() + 1) as u64);
         info!("charge_CALL_GENERIC cost InternalGasUnits({})", cost);
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
     fn charge_ld_const(&mut self, size: NumBytes) -> PartialVMResult<()> {
         let instr = &self.gas_params.instr;
-        let cost = instr.ld_const_base + instr.ld_const_per_byte * size;
+        let cost = instr.ld_const_per_byte * size;
         info!("charge_LD_CONST cost InternalGasUnits({})", cost);
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
     fn charge_copy_loc(&mut self, val: impl ValueView) -> PartialVMResult<()> {
-        let (stack_size, heap_size) = self
-            .gas_params
-            .misc
-            .abs_val
-            .abstract_value_size_stack_and_heap(val);
-
-        // Note(Gas): this makes a deep copy so we need to charge for the full value size
         let instr_params = &self.gas_params.instr;
-        let cost = instr_params.copy_loc_base
-            + instr_params.copy_loc_per_abs_val_unit * (stack_size + heap_size);
+        let cost = instr_params.copy_loc_per_abs_mem_unit * val.legacy_abstract_memory_size();
         info!("charge_COPY_LOC cost InternalGasUnits({})", cost);
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
-    fn charge_move_loc(&mut self, _val: impl ValueView) -> PartialVMResult<()> {
-        let cost = self.gas_params.instr.move_loc_base;
+    fn charge_move_loc(&mut self, val: impl ValueView) -> PartialVMResult<()> {
+        let cost =
+            self.gas_params.instr.move_loc_per_abs_mem_unit * val.legacy_abstract_memory_size();
         info!("charge_MOVE_LOC cost InternalGasUnits({})", cost);
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
-    fn charge_store_loc(&mut self, _val: impl ValueView) -> PartialVMResult<()> {
-        let cost = self.gas_params.instr.st_loc_base;
+    fn charge_store_loc(&mut self, val: impl ValueView) -> PartialVMResult<()> {
+        let cost =
+            self.gas_params.instr.st_loc_per_abs_mem_unit * val.legacy_abstract_memory_size();
         info!("charge_STORE_LOC cost InternalGasUnits({})", cost);
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
@@ -289,18 +278,21 @@ impl GasMeter for StarcoinGasMeter {
         is_generic: bool,
         args: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
-        let num_args = NumArgs::new(args.len() as u64);
+        let field_count = AbstractMemorySize::new(args.len() as u64);
         let params = &self.gas_params.instr;
+        let size = args.fold(field_count, |acc, val| {
+            acc + val.legacy_abstract_memory_size()
+        });
         let cost = match is_generic {
-            false => params.pack_base + params.pack_per_field * num_args,
-            true => params.pack_generic_base + params.pack_generic_per_field * num_args,
+            false => params.pack_per_abs_mem_unit * size,
+            true => params.pack_generic_per_abs_mem_unit * size,
         };
         if is_generic {
             info!("charge_PACK_GENERIC cost InternalGasUnits({})", cost);
         } else {
             info!("charge_PACK cost InternalGasUnits({})", cost);
         }
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
@@ -309,69 +301,55 @@ impl GasMeter for StarcoinGasMeter {
         is_generic: bool,
         args: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
-        let num_args = NumArgs::new(args.len() as u64);
+        let field_count = AbstractMemorySize::new(args.len() as u64);
         let params = &self.gas_params.instr;
+        let size = args.fold(field_count, |acc, val| {
+            acc + val.legacy_abstract_memory_size()
+        });
         let cost = match is_generic {
-            false => params.unpack_base + params.unpack_per_field * num_args,
-            true => params.unpack_generic_base + params.unpack_generic_per_field * num_args,
+            false => params.unpack_per_abs_mem_unit * size,
+            true => params.unpack_generic_per_abs_mem_unit * size,
         };
         if is_generic {
             info!("charge_UNPACK_GENERIC cost InternalGasUnits({})", cost);
         } else {
             info!("charge_UNPACK cost InternalGasUnits({})", cost);
         }
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
     fn charge_read_ref(&mut self, val: impl ValueView) -> PartialVMResult<()> {
-        let (stack_size, heap_size) = self
-            .gas_params
-            .misc
-            .abs_val
-            .abstract_value_size_stack_and_heap(val);
-
-        // Note(Gas): this makes a deep copy so we need to charge for the full value size
-        let instr_params = &self.gas_params.instr;
-        let cost = instr_params.read_ref_base
-            + instr_params.read_ref_per_abs_val_unit * (stack_size + heap_size);
+        let cost =
+            self.gas_params.instr.read_ref_per_abs_mem_unit * val.legacy_abstract_memory_size();
         info!("charge_READ_REF cost InternalGasUnits({})", cost);
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
-    fn charge_write_ref(&mut self, _val: impl ValueView) -> PartialVMResult<()> {
-        let cost = self.gas_params.instr.write_ref_base;
+    fn charge_write_ref(&mut self, val: impl ValueView) -> PartialVMResult<()> {
+        let cost =
+            self.gas_params.instr.write_ref_per_abs_mem_unit * val.legacy_abstract_memory_size();
         info!("charge_WRITE_REF cost InternalGasUnits({})", cost);
-        self.charge(self.gas_params.instr.write_ref_base)
+        self.deduct_gas(cost)
     }
 
     #[inline]
     fn charge_eq(&mut self, lhs: impl ValueView, rhs: impl ValueView) -> PartialVMResult<()> {
         let instr_params = &self.gas_params.instr;
-        let abs_val_params = &self.gas_params.misc.abs_val;
-        let per_unit = instr_params.eq_per_abs_val_unit;
-
-        let cost = instr_params.eq_base
-            + per_unit
-                * (abs_val_params.abstract_value_size_dereferenced(lhs)
-                    + abs_val_params.abstract_value_size_dereferenced(rhs));
+        let cost = instr_params.eq_per_abs_mem_unit
+            * (lhs.legacy_abstract_memory_size() + rhs.legacy_abstract_memory_size());
         info!("charge_EQ cost InternalGasUnits({})", cost);
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
     fn charge_neq(&mut self, lhs: impl ValueView, rhs: impl ValueView) -> PartialVMResult<()> {
         let instr_params = &self.gas_params.instr;
-        let abs_val_params = &self.gas_params.misc.abs_val;
-        let per_unit = instr_params.neq_per_abs_val_unit;
-
-        let cost = instr_params.neq_base
-            + per_unit
-                * (abs_val_params.abstract_value_size_dereferenced(lhs)
-                    + abs_val_params.abstract_value_size_dereferenced(rhs));
+        let cost = instr_params.eq_per_abs_mem_unit
+            * (lhs.legacy_abstract_memory_size() + rhs.legacy_abstract_memory_size());
         info!("charge_NEQ cost InternalGasUnits({})", cost);
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
@@ -393,7 +371,7 @@ impl GasMeter for StarcoinGasMeter {
             "charge_BORROW_GLOBAL {} {} InternalGasUnits({})",
             is_mut, is_generic, cost
         );
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
@@ -401,18 +379,26 @@ impl GasMeter for StarcoinGasMeter {
         &mut self,
         is_generic: bool,
         _ty: impl TypeView,
-        _exists: bool,
+        exists: bool,
     ) -> PartialVMResult<()> {
+        // XXX FIXME YSG, confirm it
+        let reference_size: AbstractMemorySize = AbstractMemorySize::new(8);
+        let min_exists_data_size: AbstractMemorySize = AbstractMemorySize::new(100);
         let params = &self.gas_params.instr;
-        let cost = match is_generic {
-            false => params.exists_base,
-            true => params.exists_generic_base,
+        let param = match is_generic {
+            false => params.exists_per_abs_mem_unit,
+            true => params.exists_generic_per_abs_mem_unit,
         };
+        let size = match exists {
+            false => min_exists_data_size,
+            true => reference_size,
+        };
+        let cost = param * size;
         info!(
             "charge_EXISTS {} cost InternalGasUnits({})",
             is_generic, cost
         );
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
@@ -420,18 +406,22 @@ impl GasMeter for StarcoinGasMeter {
         &mut self,
         is_generic: bool,
         _ty: impl TypeView,
-        _val: Option<impl ValueView>,
+        val: Option<impl ValueView>,
     ) -> PartialVMResult<()> {
-        let params = &self.gas_params.instr;
-        let cost = match is_generic {
-            false => params.move_from_base,
-            true => params.move_from_generic_base,
-        };
-        info!(
-            "charge_MOVE_FROM {} cost InternalGasUnits({})",
-            is_generic, cost
-        );
-        self.charge(cost)
+        if let Some(val) = val {
+            let params = &self.gas_params.instr;
+            let param = match is_generic {
+                false => params.move_from_per_abs_mem_unit,
+                true => params.move_from_generic_per_abs_mem_unit,
+            };
+            let cost = param * val.legacy_abstract_memory_size();
+            info!(
+                "charge_MOVE_FROM {} cost InternalGasUnits({})",
+                is_generic, cost
+            );
+            return self.deduct_gas(cost);
+        }
+        Ok(())
     }
 
     #[inline]
@@ -439,19 +429,20 @@ impl GasMeter for StarcoinGasMeter {
         &mut self,
         is_generic: bool,
         _ty: impl TypeView,
-        _val: impl ValueView,
+        val: impl ValueView,
         _is_success: bool,
     ) -> PartialVMResult<()> {
         let params = &self.gas_params.instr;
-        let cost = match is_generic {
-            false => params.move_to_base,
-            true => params.move_to_generic_base,
+        let param = match is_generic {
+            false => params.move_to_per_abs_mem_unit,
+            true => params.move_to_generic_per_abs_mem_unit,
         };
+        let cost = param * val.legacy_abstract_memory_size();
         info!(
             "charge_MOVE_TO {} cost InternalGasUnits({})",
             is_generic, cost
         );
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
@@ -462,16 +453,16 @@ impl GasMeter for StarcoinGasMeter {
     ) -> PartialVMResult<()> {
         let num_args = NumArgs::new(args.len() as u64);
         let params = &self.gas_params.instr;
-        let cost = params.vec_pack_base + params.vec_pack_per_elem * num_args;
+        let cost = params.vec_pack_per_elem * num_args;
         info!("charge_VEC_PACK cost InternalGasUnits({})", cost);
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
     fn charge_vec_len(&mut self, _ty: impl TypeView) -> PartialVMResult<()> {
         let cost = self.gas_params.instr.vec_len_base;
         info!("charge_VEC_LEN cost InternalGasUnits({})", cost);
-        self.charge(self.gas_params.instr.vec_len_base)
+        self.deduct_gas(self.gas_params.instr.vec_len_base)
     }
 
     #[inline]
@@ -490,18 +481,19 @@ impl GasMeter for StarcoinGasMeter {
             "charge_VEC_BORROW {} cost InternalGasUnits({})",
             is_mut, cost
         );
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
     fn charge_vec_push_back(
         &mut self,
         _ty: impl TypeView,
-        _val: impl ValueView,
+        val: impl ValueView,
     ) -> PartialVMResult<()> {
-        let cost = self.gas_params.instr.vec_push_back_base;
+        let cost = self.gas_params.instr.vec_push_back_per_abs_mem_unit
+            * val.legacy_abstract_memory_size();
         info!("charge_VEC_PUSH_BACK cost InternalGasUnits({})", cost);
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
@@ -512,25 +504,25 @@ impl GasMeter for StarcoinGasMeter {
     ) -> PartialVMResult<()> {
         let cost = self.gas_params.instr.vec_pop_back_base;
         info!("charge_VEC_POP_BACK cost InternalGasUnits({})", cost);
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
     fn charge_vec_unpack(
         &mut self,
         _ty: impl TypeView,
-        _expect_num_elements: NumArgs,
+        expect_num_elements: NumArgs,
     ) -> PartialVMResult<()> {
-        let cost = self.gas_params.instr.vec_pop_back_base;
+        let cost = self.gas_params.instr.vec_unpack_per_expected_elem * expect_num_elements;
         info!("charge_VEC_UNPACK cost InternalGasUnits({})", cost);
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
     fn charge_vec_swap(&mut self, _ty: impl TypeView) -> PartialVMResult<()> {
         let cost = self.gas_params.instr.vec_swap_base;
         info!("charge_VEC_SWAP cost InternalGasUnits({})", cost);
-        self.charge(cost)
+        self.deduct_gas(cost)
     }
 
     #[inline]
@@ -542,6 +534,6 @@ impl GasMeter for StarcoinGasMeter {
     #[inline]
     fn charge_native_function(&mut self, amount: InternalGas) -> PartialVMResult<()> {
         info!("charge_NATIVE_FUNCTION cost InternalGasUnits({})", amount);
-        self.charge(amount)
+        self.deduct_gas(amount)
     }
 }
