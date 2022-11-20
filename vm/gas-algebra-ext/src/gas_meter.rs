@@ -6,20 +6,6 @@
 
 use std::collections::BTreeMap;
 
-// Change log:
-// - V3
-//   - Add memory quota
-//   - Storage charges:
-//     - Distinguish between new and existing resources
-//     - One item write comes with 1K free bytes
-//     - abort with STORATGE_WRITE_LIMIT_REACHED if WriteOps or Events are too large
-// - V2
-//   - Table
-//     - Fix the gas formula for loading resources so that they are consistent with other
-//       global operations.
-// - V1
-//   - TBA
-
 pub(crate) const EXECUTION_GAS_MULTIPLIER: u64 = 1;
 
 /// A trait for converting from a map representation of the on-chain gas schedule.
