@@ -83,13 +83,13 @@ crate::params::define_gas_parameters!(
         [nop: InternalGas, "nop", (1 + 1)* MUL],
         [exists_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit, "exists.per_abs_mem_unit", (41 + 1) * MUL],
         [
-            mut_borrow_global_base: InternalGas,
-            "mut_borrow_global.base",
+            mut_borrow_global_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit,
+            "mut_borrow_global.per_abs_mem_unit",
             (21 + 1) * MUL
         ],
         [
-            imm_borrow_global_base: InternalGas,
-            "imm_borrow_global.base",
+            imm_borrow_global_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit,
+            "imm_borrow_global.per_abs_mem_unit",
             (23 + 1) * MUL
         ],
         [move_from_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit, "move_from.per_abs_mem_unit", (459 + 1) * MUL],
@@ -116,7 +116,7 @@ crate::params::define_gas_parameters!(
         [
             call_generic_per_arg: InternalGasPerArg,
             "call_generic.per_arg",
-            (1 + 1) * MUL
+            (582 + 1) * MUL
         ],
         [
             pack_generic_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit,
@@ -134,13 +134,13 @@ crate::params::define_gas_parameters!(
             (34 + 1) * MUL
         ],
         [
-            mut_borrow_global_generic_base: InternalGas,
-            "mut_borrow_global_generic.base",
+            mut_borrow_global_generic_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit,
+            "mut_borrow_global_generic.per_abs_mem_unit",
             (15 + 1) * MUL
         ],
         [
-            imm_borrow_global_generic_base: InternalGas,
-            "imm_borrow_global_generic.base",
+            imm_borrow_global_generic_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit,
+            "imm_borrow_global_generic.per_abs_mem_unit",
             (14 + 1) * MUL
         ],
         [

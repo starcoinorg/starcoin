@@ -1,4 +1,4 @@
-// Copyright (c) Aptos
+// Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::move_vm_ext::session::SessionId;

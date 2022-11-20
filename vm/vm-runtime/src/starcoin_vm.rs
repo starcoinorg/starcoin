@@ -13,6 +13,7 @@ use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
 use move_table_extension::NativeTableContext;
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
 use move_vm_runtime::session::Session;
+use move_vm_types::gas::UnmeteredGasMeter;
 use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_crypto::HashValue;
 use starcoin_gas::{StarcoinGasMeter, StarcoinGasParameters};
@@ -906,8 +907,7 @@ impl StarcoinVM {
         let txn_sender = account_config::genesis_address();
         // always use 0 gas for system.
         let max_gas_amount: Gas = 0.into();
-        let mut gas_meter = StarcoinGasMeter::new(StarcoinGasParameters::zeros(), max_gas_amount);
-        gas_meter.set_metering(false);
+        let mut gas_meter = UnmeteredGasMeter;
         let session_id = SessionId::block_meta(&block_metadata);
         let (
             parent_id,
@@ -950,7 +950,7 @@ impl StarcoinVM {
         get_transaction_output(
             &mut (),
             session,
-            gas_meter.balance(),
+            0.into(),
             max_gas_amount,
             KeptVMStatus::Executed,
         )
@@ -1427,6 +1427,8 @@ pub(crate) fn charge_global_write_gas_usage<R: MoveResolverExt>(
     let write_set_gas = u64::from(gas_meter.cal_write_set_gas());
     let total_cost = InternalGasPerByte::from(write_set_gas)
         * NumBytes::new(session.as_ref().num_mutated_accounts(sender));
+    #[cfg(debug_assertions)]
+    info!("charge_global_write_gas_usage {}", total_cost);
     gas_meter
         .deduct_gas(total_cost)
         .map_err(|p_err| p_err.finish(Location::Undefined).into_vm_status())

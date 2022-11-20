@@ -108,7 +108,7 @@ impl TransactionGasParameters {
     }
 
     pub fn cal_write_set_gas(&self) -> InternalGas {
-        self.global_memory_per_byte_cost * self.default_account_size
+        self.global_memory_per_byte_write_cost * self.default_account_size
     }
 }
 

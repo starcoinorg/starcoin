@@ -1,14 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-//! This crate is the core of the gas metering system of the Aptos blockchain.
+//! This crate is the core of the gas metering system of the Starcoin blockchain.
 //!
 //! More specifically, it
 //!   - Is home to the gas meter implementation
 //!   - Defines the gas parameters and formulae for instructions
 //!   - Defines the gas parameters for transactions
 //!   - Sets the initial values for all gas parameters, including the instruction, transaction
-//!     move-stdlib and aptos-framework ones.
+//!     move-stdlib and starcoin-framework ones.
 //!   - Defines a bi-directional mapping between the (Rust) gas parameter structs and their
 //!     corresponding representation on-chain.
 //!

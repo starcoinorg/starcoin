@@ -79,8 +79,14 @@ pub fn instruction_gas_schedule_v1() -> Vec<(String, u64)> {
             "instr.exists.per_abs_mem_unit".to_string(),
             gas_total(41, 1),
         ),
-        ("instr.mut_borrow_global.base".to_string(), gas_total(21, 1)),
-        ("instr.imm_borrow_global.base".to_string(), gas_total(23, 1)),
+        (
+            "instr.mut_borrow_global.per_abs_mem_unit".to_string(),
+            gas_total(21, 1),
+        ),
+        (
+            "instr.imm_borrow_global.per_abs_mem_unit".to_string(),
+            gas_total(23, 1),
+        ),
         (
             "instr.move_from.per_abs_mem_unit".to_string(),
             gas_total(459, 1),
@@ -119,11 +125,11 @@ pub fn instruction_gas_schedule_v1() -> Vec<(String, u64)> {
             gas_total(34, 1),
         ),
         (
-            "instr.mut_borrow_global_generic.base".to_string(),
+            "instr.mut_borrow_global_generic.per_abs_mem_unit".to_string(),
             gas_total(15, 1),
         ),
         (
-            "instr.imm_borrow_global_generic.base".to_string(),
+            "instr.imm_borrow_global_generic.per_abs_mem_unit".to_string(),
             gas_total(14, 1),
         ),
         (
@@ -480,8 +486,8 @@ static G_INSTR_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
         "instr.abort",
         "instr.nop",
         "instr.exists.per_abs_mem_unit",
-        "instr.mut_borrow_global.base",
-        "instr.imm_borrow_global.base",
+        "instr.mut_borrow_global.per_abs_mem_unit",
+        "instr.imm_borrow_global.per_abs_mem_unit",
         "instr.move_from.per_abs_mem_unit",
         "instr.move_to.per_abs_mem_unit",
         "instr.freeze_ref",
@@ -498,8 +504,8 @@ static G_INSTR_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
         "instr.pack_generic.per_abs_mem_unit",
         "instr.unpack_generic.per_abs_mem_unit",
         "instr.exists_generic.per_abs_mem_unit",
-        "instr.mut_borrow_global_generic.base",
-        "instr.imm_borrow_global_generic.base",
+        "instr.mut_borrow_global_generic.per_abs_mem_unit",
+        "instr.imm_borrow_global_generic.per_abs_mem_unit",
         "instr.move_from_generic.per_abs_mem_unit",
         "instr.move_to_generic.per_abs_mem_unit",
         "instr.vec_pack.per_elem",

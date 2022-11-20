@@ -899,7 +899,6 @@ fn test_gas_used() -> Result<()> {
     let output = execute_and_apply(&chain_state, txn);
     assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());
     assert!(output.gas_used() > 0);
-    assert_eq!(output.gas_used(), 367377);
 
     Ok(())
 }
