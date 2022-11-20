@@ -1427,7 +1427,7 @@ pub(crate) fn charge_global_write_gas_usage<R: MoveResolverExt>(
     let write_set_gas = u64::from(gas_meter.cal_write_set_gas());
     let total_cost = InternalGasPerByte::from(write_set_gas)
         * NumBytes::new(session.as_ref().num_mutated_accounts(sender));
-    #[cfg(debug_assertions)]
+    #[cfg(testing)]
     info!("charge_global_write_gas_usage {}", total_cost);
     gas_meter
         .deduct_gas(total_cost)
