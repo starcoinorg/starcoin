@@ -8,7 +8,8 @@ use crate::db_storage::DBStorage;
 use crate::storage::{CodecKVStore, InnerStore, StorageInstance, ValueCodec};
 use crate::transaction_info::{BlockTransactionInfo, OldTransactionInfoStorage};
 use crate::{
-    BlockInfoStore, BlockStore, BlockTransactionInfoStore, Storage, StorageVersion, TableInfoStore,
+    BlockInfoStore, BlockStore, BlockTransactionInfoStore, Storage,
+    StorageVersion, /*TableInfoStore,*/
     TransactionStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
     TRANSACTION_INFO_PREFIX_NAME_V2,
 };
@@ -17,14 +18,14 @@ use crypto::HashValue;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_config::RocksdbConfig;
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockInfo};
-use starcoin_types::language_storage::TypeTag;
+//use starcoin_types::language_storage::TypeTag;
 use starcoin_types::startup_info::SnapshotRange;
 use starcoin_types::transaction::{
     RichTransactionInfo, SignedUserTransaction, Transaction, TransactionInfo,
 };
 use starcoin_types::vm_error::KeptVMStatus;
-use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+//use starcoin_vm_types::account_address::AccountAddress;
+//use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::path::Path;
 
 #[test]
@@ -474,6 +475,8 @@ pub fn test_cache_evict_multi_get() -> Result<()> {
     Ok(())
 }
 
+/*
+XXX FIXME YSG temp comment
 #[test]
 fn test_table_info_storage() -> Result<()> {
     let tmpdir = starcoin_config::temp_dir();
@@ -511,3 +514,4 @@ fn test_table_info_storage() -> Result<()> {
     assert_eq!(vals, vals2);
     Ok(())
 }
+*/
