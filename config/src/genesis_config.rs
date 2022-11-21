@@ -1084,6 +1084,9 @@ mod tests {
         let mut natives = natives;
         let mut constants = constants;
         res.append(&mut natives);
+        // instruction_schedule don't have this two
+        res.push(("nursery.debug.print.base_cost".to_string(), 1));
+        res.push(("nursery.debug.print_stack_trace.base_cost".to_string(), 1));
         res.append(&mut constants);
         res
     }
@@ -1104,7 +1107,10 @@ mod tests {
         assert_eq!(entries, gas_schedule.entries);
         let gas_params =
             StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
-        assert!(gas_params.is_some());
+        assert_eq!(
+            gas_params.unwrap().natives.nursery.debug.print.base_cost,
+            1.into()
+        );
     }
 
     #[test]
@@ -1123,7 +1129,10 @@ mod tests {
         assert_eq!(entries, gas_schedule.entries);
         let gas_params =
             StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
-        assert!(gas_params.is_some());
+        assert_eq!(
+            gas_params.unwrap().natives.nursery.debug.print.base_cost,
+            1.into()
+        );
     }
 
     #[test]
@@ -1141,7 +1150,10 @@ mod tests {
         assert_eq!(entries, gas_schedule.entries);
         let gas_params =
             StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
-        assert!(gas_params.is_some());
+        assert_eq!(
+            gas_params.unwrap().natives.nursery.debug.print.base_cost,
+            1.into()
+        );
     }
 
     #[test]
@@ -1163,7 +1175,10 @@ mod tests {
         assert_eq!(entries, gas_schedule.entries);
         let gas_params =
             StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
-        assert!(gas_params.is_some());
+        assert_eq!(
+            gas_params.unwrap().natives.nursery.debug.print.base_cost,
+            1.into()
+        );
     }
 
     #[test]
@@ -1186,6 +1201,9 @@ mod tests {
         assert_eq!(entries, gas_schedule.entries);
         let gas_params =
             StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
-        assert!(gas_params.is_some());
+        assert_eq!(
+            gas_params.unwrap().natives.nursery.debug.print.base_cost,
+            1.into()
+        );
     }
 }

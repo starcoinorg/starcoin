@@ -10,6 +10,7 @@ use move_package_manager::compatibility_check_cmd::{
     handle_compatibility_check, CompatibilityCheckCommand,
 };
 use move_package_manager::deployment::{handle_deployment, DeploymentCommand};
+use move_package_manager::package::{handle_package_commands, PackageCommand};
 use move_package_manager::release::{handle_release, Release};
 use move_package_manager::{run_integration_test, IntegrationTestCommand};
 use move_vm_test_utils::gas_schedule::CostTable;
@@ -32,12 +33,11 @@ pub struct CliOptions {
 pub enum Commands {
     /// Execute a package command. Executed in the current directory or the closest containing Move
     /// package.
-    /*
     #[clap(name = "package")]
     Package {
         #[clap(subcommand)]
-        cmd: package::cli::PackageCommand,
-    } ,*/
+        cmd: PackageCommand,
+    },
     /// Release the package.
     #[clap(name = "release")]
     Release(Release),
@@ -87,14 +87,12 @@ fn main() -> Result<()> {
     };
     match args.cmd {
         Commands::IntegrationTest(cmd) => run_integration_test(args.move_args, cmd),
-        // XXX FIXME YSG, no Package command
-        /*
         Commands::Package { cmd } => handle_package_commands(
             &move_args.package_path,
             move_args.build_config.clone(),
             &cmd,
             natives,
-        ),*/
+        ),
         Commands::Sandbox { storage_dir, cmd } => cmd.handle_command(
             natives,
             &cost_table,

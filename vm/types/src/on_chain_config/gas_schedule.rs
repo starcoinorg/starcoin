@@ -592,6 +592,10 @@ impl From<&VMConfig> for GasSchedule {
             entries.push((G_NATIVE_STRS[idx].to_string(), cost.total()));
         }
 
+        // instruction_schedule don't have this two
+        entries.push(("nursery.debug.print.base_cost".to_string(), 1));
+        entries.push(("nursery.debug.print_stack_trace.base_cost".to_string(), 1));
+
         // see vm/gas_algebra-ext/src/transaction.rs
         let txn = &vm_config.gas_schedule.gas_constants;
         entries.push((

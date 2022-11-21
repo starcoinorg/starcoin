@@ -65,6 +65,7 @@ starcoin-cmd = { path = "../../cmd/starcoin" }
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 vm-status-translator = { path = "../../vm/vm-status-translator" }
 starcoin-gas = { path = "../starcoin-gas" }
+gas-algebra-ext = { path = "../gas-algebra-ext" }
 
 [dev-dependencies]
 

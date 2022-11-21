@@ -5098,6 +5098,7 @@ dependencies = [
  "datatest-stable 0.1.1",
  "difference",
  "futures 0.3.21",
+ "gas-algebra-ext",
  "include_dir",
  "itertools",
  "jsonrpc-client-transports 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",

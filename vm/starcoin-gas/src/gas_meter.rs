@@ -419,15 +419,19 @@ impl GasMeter for StarcoinGasMeter {
         is_mut: bool,
         is_generic: bool,
         _ty: impl TypeView,
-        _is_success: bool,
+        is_success: bool,
     ) -> PartialVMResult<()> {
-        let params = &self.gas_params.instr;
-        // NOTE only use mut see https://github.com/starcoinorg/move/blob/starcoin-main/language/move-vm/runtime/src/interpreter.rs#L1018-L1030
-        let param = match (is_mut, is_generic) {
-            (_, false) => params.mut_borrow_global_per_abs_mem_unit,
-            (_, true) => params.mut_borrow_global_generic_per_abs_mem_unit,
+        let cost = if !is_success {
+            0.into()
+        } else {
+            let params = &self.gas_params.instr;
+            // NOTE only use mut see https://github.com/starcoinorg/move/blob/starcoin-main/language/move-vm/runtime/src/interpreter.rs#L1018-L1030
+            let param = match (is_mut, is_generic) {
+                (_, false) => params.mut_borrow_global_per_abs_mem_unit,
+                (_, true) => params.mut_borrow_global_generic_per_abs_mem_unit,
+            };
+            cal_instr_with_size(param, REFERENCE_SIZE)
         };
-        let cost = cal_instr_with_size(param, REFERENCE_SIZE);
         #[cfg(testing)]
         info!(
             "charge_BORROW_GLOBAL {} {} InternalGasUnits({})",
@@ -491,14 +495,18 @@ impl GasMeter for StarcoinGasMeter {
         is_generic: bool,
         _ty: impl TypeView,
         val: impl ValueView,
-        _is_success: bool,
+        is_success: bool,
     ) -> PartialVMResult<()> {
-        let params = &self.gas_params.instr;
-        let param = match is_generic {
-            false => params.move_to_per_abs_mem_unit,
-            true => params.move_to_generic_per_abs_mem_unit,
+        let cost = if !is_success {
+            0.into()
+        } else {
+            let params = &self.gas_params.instr;
+            let param = match is_generic {
+                false => params.move_to_per_abs_mem_unit,
+                true => params.move_to_generic_per_abs_mem_unit,
+            };
+            cal_instr_with_size(param, val.legacy_abstract_memory_size())
         };
-        let cost = cal_instr_with_size(param, val.legacy_abstract_memory_size());
         #[cfg(testing)]
         info!(
             "charge_MOVE_TO {} cost InternalGasUnits({})",
@@ -534,12 +542,16 @@ impl GasMeter for StarcoinGasMeter {
         &mut self,
         is_mut: bool,
         _ty: impl TypeView,
-        _is_success: bool,
+        is_success: bool,
     ) -> PartialVMResult<()> {
-        let params = &self.gas_params.instr;
-        let cost = match is_mut {
-            false => params.vec_imm_borrow_base,
-            true => params.vec_mut_borrow_base,
+        let cost = if !is_success {
+            0.into()
+        } else {
+            let params = &self.gas_params.instr;
+            match is_mut {
+                false => params.vec_imm_borrow_base,
+                true => params.vec_mut_borrow_base,
+            }
         };
         #[cfg(testing)]
         info!(
