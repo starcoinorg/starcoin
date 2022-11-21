@@ -8,7 +8,9 @@ use crate::errors::{
 };
 use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
 use anyhow::{format_err, Error, Result};
-use gas_algebra_ext::{CostTable, FromOnChainGasSchedule, Gas, GasConstants, GasCost};
+use gas_algebra_ext::{
+    CostTable, FromOnChainGasSchedule, Gas, GasConstants, GasCost, InitialGasSchedule,
+};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
 use move_table_extension::NativeTableContext;
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
@@ -16,7 +18,7 @@ use move_vm_runtime::session::Session;
 use move_vm_types::gas::UnmeteredGasMeter;
 use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_crypto::HashValue;
-use starcoin_gas::{StarcoinGasMeter, StarcoinGasParameters};
+use starcoin_gas::{NativeGasParameters, StarcoinGasMeter, StarcoinGasParameters};
 use starcoin_logger::prelude::*;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::account_config::{
@@ -75,9 +77,10 @@ pub struct StarcoinVM {
     vm_config: Option<VMConfig>,
     version: Option<Version>,
     move_version: Option<MoveLanguageVersion>,
+    native_params: NativeGasParameters,
+    gas_params: Option<StarcoinGasParameters>,
     #[cfg(feature = "metrics")]
     metrics: Option<VMMetrics>,
-    gas_params: Option<StarcoinGasParameters>,
 }
 
 /// marking of stdlib version which includes vmconfig upgrades.
@@ -85,141 +88,33 @@ const VMCONFIG_UPGRADE_VERSION_MARK: u64 = 10;
 
 impl StarcoinVM {
     #[cfg(feature = "metrics")]
-    pub fn new<S: StateView>(state: &S, metrics: Option<VMMetrics>) -> Self {
-        let mut vm_config = Some(VMConfig {
-            gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
-        });
-        let mut version = Some(Version { major: 1 });
-        // XXX FIXME YSG use match gas_schedule, then vm_config
-        if !state.is_genesis() {
-            let remote_storage = RemoteStorage::new(state);
-            version = Some(
-                Version::fetch_config(&remote_storage)
-                    .expect("Load Version fail, Version resource not exist.")
-                    .expect("Load Version fail, Version resource not exist."),
-            );
-            if let Some(v) = &version {
-                // if version is 0, it represent latest version. we should consider it.
-                let stdlib_version = v.clone().into_stdlib_version();
-                vm_config =
-                    if stdlib_version < StdlibVersion::Version(VMCONFIG_UPGRADE_VERSION_MARK) {
-                        debug!(
-                            "stdlib version: {}, fetch vmconfig from onchain resource",
-                            stdlib_version
-                        );
-                        Some(
-                            VMConfig::fetch_config(&remote_storage)
-                                .expect("Load Version fail, Version resource not exist.")
-                                .expect("Load Version fail, Version resource not exist."),
-                        )
-                    } else {
-                        debug!(
-                            "stdlib version: {}, fetch vmconfig from onchain module",
-                            stdlib_version
-                        );
-                        // XXX FIXME YSG, can read directly
-                        /*
-                          .execute_readonly_function_internal(
-                            state,
-                            &ModuleId::new(core_code_address(), G_VM_CONFIG_IDENTIFIER.to_owned()),
-                            G_INSTRUCTION_SCHEDULE_IDENTIFIER.as_ident_str(),
-                            vec![],
-                            vec![],
-                            false,
-                        )?
-                         */
-                        Some(
-                            VMConfig::fetch_config(&remote_storage)
-                                .expect("Load Version fail, Version resource not exist.")
-                                .expect("Load Version fail, Version resource not exist."),
-                        )
-                    }
-            }
-        }
-
-        let gas_schedule = GasSchedule::from(
-            vm_config
-                .clone()
-                .expect("Load Version fail, Version resource not exist."),
-        );
-        let gas_params =
-            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map())
-                .expect("load gas schedule fail");
-        let inner = MoveVmExt::new(gas_params.clone().natives)
+    pub fn new(metrics: Option<VMMetrics>) -> Self {
+        let gas_params = StarcoinGasParameters::initial();
+        let native_params = gas_params.natives.clone();
+        let inner = MoveVmExt::new(native_params.clone())
             .expect("should be able to create Move VM; check if there are duplicated natives");
         Self {
             move_vm: Arc::new(inner),
-            vm_config,
-            version,
+            vm_config: None,
+            version: None,
             move_version: None,
-            metrics,
+            native_params,
             gas_params: Some(gas_params),
+            metrics,
         }
     }
     #[cfg(not(feature = "metrics"))]
-    pub fn new<S: StateView>(state_view: &S) -> Self {
-        let mut vm_config = Some(VMConfig {
-            gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
-        });
-        let mut version = Some(Version { major: 1 });
-        // XXX FIXME YSG use match gas_schedule, then vm_config
-        if !state.is_genesis() {
-            let remote_storage = RemoteStorage::new(state);
-            version = Some(
-                Version::fetch_config(&remote_storage)
-                    .expect("Load Version fail, Version resource not exist.")
-                    .expect("Load Version fail, Version resource not exist."),
-            );
-            if let Some(v) = &version {
-                // if version is 0, it represent latest version. we should consider it.
-                let stdlib_version = v.clone().into_stdlib_version();
-                vm_config =
-                    if stdlib_version < StdlibVersion::Version(VMCONFIG_UPGRADE_VERSION_MARK) {
-                        println!(
-                            "stdlib version: {}, fetch vmconfig from onchain resource",
-                            stdlib_version
-                        );
-                        Some(
-                            VMConfig::fetch_config(&remote_storage)
-                                .expect("Load Version fail, Version resource not exist.")
-                                .expect("Load Version fail, Version resource not exist."),
-                        )
-                    } else {
-                        // XXX FIXME YSG, can read directly
-                        /*
-                          .execute_readonly_function_internal(
-                            state,
-                            &ModuleId::new(core_code_address(), G_VM_CONFIG_IDENTIFIER.to_owned()),
-                            G_INSTRUCTION_SCHEDULE_IDENTIFIER.as_ident_str(),
-                            vec![],
-                            vec![],
-                            false,
-                        )?
-                         */
-                        Some(
-                            VMConfig::fetch_config(&remote_storage)
-                                .expect("Load Version fail, Version resource not exist.")
-                                .expect("Load Version fail, Version resource not exist."),
-                        )
-                    }
-            }
-        }
-
-        let gas_schedule = GasSchedule::from(
-            vm_config
-                .clone()
-                .expect("Load Version fail, Version resource not exist."),
-        );
-        let gas_params =
-            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map())
-                .expect("load gas schedule fail");
-        let inner = MoveVmExt::new(gas_params.clone().natives)
+    pub fn new() -> Self {
+        let gas_params = StarcoinGasParameters::initial();
+        let native_params = gas_params.natives.clone();
+        let inner = MoveVmExt::new(native_params.clone())
             .expect("should be able to create Move VM; check if there are duplicated natives");
         Self {
             move_vm: Arc::new(inner),
-            vm_config: Some(vm_config),
+            vm_config: None,
             version: None,
             move_version: None,
+            native_params,
             gas_params: Some(gas_params),
         }
     }
@@ -230,10 +125,24 @@ impl StarcoinVM {
                 gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
             });
             self.version = Some(Version { major: 1 });
-            Ok(())
         } else {
-            self.load_configs_impl(state)
+            self.load_configs_impl(state)?;
         }
+        if let Some(ref vm_config) = self.vm_config {
+            let gas_schedule = GasSchedule::from(vm_config);
+            let gas_params =
+                StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
+            if let Some(ref params) = gas_params {
+                if params.natives != self.native_params {
+                    let inner = MoveVmExt::new(params.natives.clone()).expect(
+                        "should be able to create Move VM; check if there are duplicated natives",
+                    );
+                    self.move_vm = Arc::new(inner);
+                }
+                self.gas_params = gas_params;
+            }
+        }
+        Ok(())
     }
 
     fn load_configs_impl<S: StateView>(&mut self, state: &S) -> Result<(), Error> {

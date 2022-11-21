@@ -31,7 +31,7 @@ const REFERENCE_SIZE: AbstractMemorySize = AbstractMemorySize::new(8);
 const MIN_EXISTS_DATA_SIZE: AbstractMemorySize = AbstractMemorySize::new(100);
 
 /// Gas parameters for all native functions.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NativeGasParameters {
     pub move_stdlib: move_stdlib::natives::GasParameters,
     pub nursery: move_stdlib::natives::NurseryGasParameters,

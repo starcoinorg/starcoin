@@ -28,7 +28,7 @@ const ZERO_ADDR: [u8; 0] = [0; 0];
  *   gas cost: base_cost + unit_cost * data_length
  *
  **************************************************************************************************/
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EcrecoverGasParameters {
     pub base: InternalGas,
     pub per_byte: InternalGasPerByte,

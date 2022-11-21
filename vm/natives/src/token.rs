@@ -19,7 +19,7 @@ use std::sync::Arc;
  *   gas cost: base_cost
  *
  **************************************************************************************************/
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NameOfGasParameters {
     pub base: InternalGas,
 }
@@ -79,7 +79,7 @@ pub fn make_native_token_name_of(gas_params: NameOfGasParameters) -> NativeFunct
  * module
  *
  **************************************************************************************************/
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GasParameters {
     pub name_of: NameOfGasParameters,
 }

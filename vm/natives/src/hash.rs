@@ -19,7 +19,7 @@ use std::collections::VecDeque;
  *   gas cost: base_cost + per_byte * data_length
  *
  **************************************************************************************************/
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Keccak256HashGasParameters {
     pub base: InternalGas,
     pub per_byte: InternalGasPerByte,
@@ -49,7 +49,7 @@ pub fn native_keccak_256(
  *   gas cost: base_cost + per_byte * data_length
  *
  **************************************************************************************************/
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ripemd160HashGasParameters {
     pub base: InternalGas,
     pub per_byte: InternalGasPerByte,
@@ -82,7 +82,7 @@ fn ripemd160(input: &[u8]) -> Output<Ripemd160> {
  * module
  *
  **************************************************************************************************/
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GasParameters {
     pub keccak256: Keccak256HashGasParameters,
     pub ripemd160: Ripemd160HashGasParameters,

@@ -70,7 +70,7 @@ impl_native!(native_u256_pow, U256PowGasParameters, checked_pow);
  *   gas cost: base_cost
  *
  **************************************************************************************************/
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct U256AddGasParameters {
     pub base: InternalGas,
 }
@@ -81,7 +81,7 @@ pub struct U256AddGasParameters {
  *   gas cost: base_cost
  *
  **************************************************************************************************/
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct U256SubGasParameters {
     pub base: InternalGas,
 }
@@ -92,7 +92,7 @@ pub struct U256SubGasParameters {
  *   gas cost: base_cost
  *
  **************************************************************************************************/
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct U256MulGasParameters {
     pub base: InternalGas,
 }
@@ -103,7 +103,7 @@ pub struct U256MulGasParameters {
  *   gas cost: base_cost
  *
  **************************************************************************************************/
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct U256DivGasParameters {
     pub base: InternalGas,
 }
@@ -114,7 +114,7 @@ pub struct U256DivGasParameters {
  *   gas cost: base_cost
  *
  **************************************************************************************************/
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct U256RemGasParameters {
     pub base: InternalGas,
 }
@@ -125,7 +125,7 @@ pub struct U256RemGasParameters {
  *   gas cost: base_cost
  *
  **************************************************************************************************/
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct U256PowGasParameters {
     pub base: InternalGas,
 }
@@ -136,7 +136,7 @@ pub struct U256PowGasParameters {
  *   gas cost: base_cost
  *
  **************************************************************************************************/
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct U256FromBytesGasParameters {
     pub base: InternalGas,
     pub per_byte: InternalGasPerByte,
@@ -172,7 +172,7 @@ pub fn native_u256_from_bytes(
  * module
  *
  **************************************************************************************************/
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GasParameters {
     pub add: U256AddGasParameters,
     pub sub: U256SubGasParameters,

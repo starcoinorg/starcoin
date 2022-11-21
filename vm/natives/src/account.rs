@@ -18,7 +18,7 @@ use std::sync::Arc;
  *   gas cost: base_cost
  *
  **************************************************************************************************/
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CreateSignerGasParameters {
     pub base: InternalGas,
 }
@@ -51,7 +51,7 @@ pub fn make_native_create_signer(gas_params: CreateSignerGasParameters) -> Nativ
  *   gas cost: base_cost
  *
  **************************************************************************************************/
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DestroySignerGasParameters {
     pub base: InternalGas,
 }
@@ -80,7 +80,7 @@ pub fn make_native_destroy_signer(gas_params: DestroySignerGasParameters) -> Nat
  * module
  *
  **************************************************************************************************/
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GasParameters {
     pub create_signer: CreateSignerGasParameters,
     pub destroy_signer: DestroySignerGasParameters,

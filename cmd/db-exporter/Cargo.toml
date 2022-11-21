@@ -33,8 +33,8 @@ logger = { path = "../../commons/logger", package = "starcoin-logger" }
 clap = { version = "3", features = ["derive"] }
 atomic-counter = "1.0.1"
 tokio = { version = "^1", features = ["full"] }
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "5afc6975a23160b06eb14b57d37258c59df8ced7" }
-move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "5afc6975a23160b06eb14b57d37258c59df8ced7" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "22a1bb0e9a1dcedaa8546d4ee1d31293320ce34a" }
+move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "22a1bb0e9a1dcedaa8546d4ee1d31293320ce34a" }
 starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 starcoin-state-tree = { path = "../../state/state-tree" }
 [target."cfg(target_os=\"linux\")".dependencies]

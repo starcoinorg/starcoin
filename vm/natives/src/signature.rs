@@ -19,7 +19,7 @@ use std::{collections::VecDeque, convert::TryFrom};
  *   gas cost: base_cost + unit_cost * data_length
  *
  **************************************************************************************************/
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ed25519ValidateKeyGasParameters {
     pub base: InternalGas,
     pub per_byte: InternalGasPerByte,
@@ -57,7 +57,7 @@ pub fn make_native_ed25519_validate_pubkey(
  *   gas cost: base_cost + unit_cost * data_length
  *
  **************************************************************************************************/
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ed25519VerifyGasParameters {
     pub base: InternalGas,
     pub per_byte: InternalGasPerByte,
@@ -108,7 +108,7 @@ pub fn make_native_ed25519_verify(gas_params: Ed25519VerifyGasParameters) -> Nat
  * module
  *
  **************************************************************************************************/
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GasParameters {
     pub ed25519_validate_key: Ed25519ValidateKeyGasParameters,
     pub ed25519_verify: Ed25519VerifyGasParameters,

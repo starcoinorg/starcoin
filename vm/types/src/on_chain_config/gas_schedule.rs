@@ -571,8 +571,8 @@ static G_NATIVE_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
 });
 
 // https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move
-impl From<VMConfig> for GasSchedule {
-    fn from(vm_config: VMConfig) -> Self {
+impl From<&VMConfig> for GasSchedule {
+    fn from(vm_config: &VMConfig) -> Self {
         let mut entries = vec![];
 
         // see vm/gas_algebra-ext/src/instr.rs
@@ -593,7 +593,7 @@ impl From<VMConfig> for GasSchedule {
         }
 
         // see vm/gas_algebra-ext/src/transaction.rs
-        let txn = vm_config.gas_schedule.gas_constants;
+        let txn = &vm_config.gas_schedule.gas_constants;
         entries.push((
             "txn.global_memory_per_byte_cost".to_string(),
             txn.global_memory_per_byte_cost,

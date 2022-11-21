@@ -632,7 +632,7 @@ impl<'a> StarcoinTestAdapter<'a> {
     /// Should error if the transaction ends up being discarded, or having a status other than
     /// EXECUTED.
     fn run_blockmeta(&mut self, meta: BlockMetadata) -> Result<()> {
-        let mut vm = StarcoinVM::new(&self.context.storage, None);
+        let mut vm = StarcoinVM::new(None);
         let mut outputs = vm.execute_block_transactions(
             &self.context.storage,
             vec![Transaction::BlockMetadata(meta.clone())],
@@ -666,7 +666,7 @@ impl<'a> StarcoinTestAdapter<'a> {
     /// Should error if the transaction ends up being discarded, or having a status other than
     /// EXECUTED.
     fn run_transaction(&mut self, txn: RawUserTransaction) -> Result<TransactionWithOutput> {
-        let mut vm = StarcoinVM::new(&self.context.storage, None);
+        let mut vm = StarcoinVM::new(None);
         let signed_txn = self.sign(txn);
 
         let (_status, output) = vm

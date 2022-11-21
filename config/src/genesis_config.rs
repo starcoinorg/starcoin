@@ -1056,7 +1056,7 @@ pub static G_LATEST_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
     let vm_config = VMConfig {
         gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
     };
-    let gas_schedule = GasSchedule::from(vm_config);
+    let gas_schedule = GasSchedule::from(&vm_config);
     StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map()).unwrap()
 });
 
@@ -1100,7 +1100,7 @@ mod tests {
             txn_gas_schedule_test(),
         );
 
-        let gas_schedule = GasSchedule::from(vm_config);
+        let gas_schedule = GasSchedule::from(&vm_config);
         assert_eq!(entries, gas_schedule.entries);
         let gas_params =
             StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
@@ -1119,7 +1119,7 @@ mod tests {
             txn_gas_schedule_v3(),
         );
 
-        let gas_schedule = GasSchedule::from(vm_config);
+        let gas_schedule = GasSchedule::from(&vm_config);
         assert_eq!(entries, gas_schedule.entries);
         let gas_params =
             StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
@@ -1137,7 +1137,7 @@ mod tests {
             native_gas_schedule_v4(),
             txn_gas_schedule_v3(),
         );
-        let gas_schedule = GasSchedule::from(vm_config);
+        let gas_schedule = GasSchedule::from(&vm_config);
         assert_eq!(entries, gas_schedule.entries);
         let gas_params =
             StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
@@ -1159,7 +1159,7 @@ mod tests {
             native_gas_schedule_v1(),
             txn_gas_schedule_v1(),
         );
-        let gas_schedule = GasSchedule::from(vm_config);
+        let gas_schedule = GasSchedule::from(&vm_config);
         assert_eq!(entries, gas_schedule.entries);
         let gas_params =
             StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
@@ -1182,7 +1182,7 @@ mod tests {
             txn_gas_schedule_v2(),
         );
 
-        let gas_schedule = GasSchedule::from(vm_config);
+        let gas_schedule = GasSchedule::from(&vm_config);
         assert_eq!(entries, gas_schedule.entries);
         let gas_params =
             StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());

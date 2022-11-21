@@ -12,7 +12,7 @@ pub mod ecrecover;
 mod helpers;
 pub mod util;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GasParameters {
     pub account: account::GasParameters,
     pub hash: hash::GasParameters,
