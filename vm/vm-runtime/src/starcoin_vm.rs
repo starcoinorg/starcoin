@@ -813,6 +813,7 @@ impl StarcoinVM {
         remote_cache: &mut StateViewCache<'_, S>,
         block_metadata: BlockMetadata,
     ) -> Result<TransactionOutput, VMStatus> {
+        #[cfg(testing)]
         info!("process_block_meta begin");
         let txn_sender = account_config::genesis_address();
         // always use 0 gas for system.
@@ -860,6 +861,7 @@ impl StarcoinVM {
             )
             .map(|_return_vals| ())
             .or_else(convert_prologue_runtime_error)?;
+        #[cfg(testing)]
         info!("process_block_meta end");
         get_transaction_output(
             &mut (),

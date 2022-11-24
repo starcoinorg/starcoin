@@ -8,8 +8,8 @@ use move_binary_format::{file_format::CompiledScript, CompiledModule};
 use move_command_line_common::address::ParsedAddress;
 use move_command_line_common::files::verify_and_create_named_address_mapping;
 use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
-use move_compiler::shared::{NumberFormat, NumericalAddress};
-use move_compiler::FullyCompiledProgram;
+use move_compiler::shared::{NumberFormat, NumericalAddress, PackagePaths};
+use move_compiler::{construct_pre_compiled_lib, FullyCompiledProgram};
 use move_core_types::language_storage::StructTag;
 use move_core_types::value::MoveValue;
 use move_core_types::{
@@ -26,6 +26,7 @@ use move_transactional_test_runner::{
     tasks::{InitCommand, SyntaxChoice, TaskInput},
     vm_test_harness::view_resource_in_move_storage,
 };
+use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
@@ -76,7 +77,7 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::sync::Mutex;
 use std::{collections::BTreeMap, convert::TryInto, path::Path, str::FromStr};
-use stdlib::{starcoin_framework_named_addresses, G_PRECOMPILED_STARCOIN_FRAMEWORK};
+use stdlib::{starcoin_framework_named_addresses, stdlib_files};
 use tempfile::{NamedTempFile, TempDir};
 
 pub mod context;
@@ -1377,14 +1378,14 @@ fn convert_txn_args(args: &[MoveValue]) -> Vec<Vec<u8>> {
 }
 
 /// Run the Starcoin transactional test flow, using the given file as input.
-pub fn run_test(path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run_test(path: &Path) -> Result<(), Box<dyn std::error::Error + 'static>> {
     run_test_impl(path, Some(&*G_PRECOMPILED_STARCOIN_FRAMEWORK))
 }
 
-pub fn run_test_impl(
+pub fn run_test_impl<'a>(
     path: &Path,
-    fully_compiled_program_opt: Option<&FullyCompiledProgram>,
-) -> Result<(), Box<dyn std::error::Error>> {
+    fully_compiled_program_opt: Option<&'a FullyCompiledProgram>,
+) -> Result<(), Box<dyn std::error::Error + 'static>> {
     framework::run_test_impl::<StarcoinTestAdapter>(path, fully_compiled_program_opt)
 }
 
@@ -1399,6 +1400,7 @@ pub fn print_help(task_name: Option<String>) -> Result<()> {
         PrintBytecodeCommand::command().name("print-bytecode"),
     );
     tasks.insert("publish", PublishCommand::command().name("publish"));
+    // XXX FIXME YSG
     // tasks.insert("run", RunCommand::<ExtraValueArgs>::command().name("run"));
     tasks.insert("view", ViewCommand::command().name("view"));
     tasks.insert("faucet", FaucetSub::command().name("faucet"));
@@ -1430,31 +1432,23 @@ pub fn print_help(task_name: Option<String>) -> Result<()> {
     }
 }
 
-/*
-fn convert_write_set(result: &mut TransactionResult, output: &TransactionOutput) {
-    let mut access_write_set = vec![];
-    let mut table_item_write_set = vec![];
-    for (state_key, op) in output.write_set().clone() {
-        match state_key {
-            StateKey::AccessPath(access_path) => {
-                access_write_set.push((access_path, op));
-            }
-            StateKey::TableItem(table_item) => {
-                table_item_write_set.push((table_item, op));
-            }
+pub static G_PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<FullyCompiledProgram> = Lazy::new(|| {
+    let sources = stdlib_files();
+    let program_res = construct_pre_compiled_lib(
+        vec![PackagePaths {
+            name: None,
+            paths: sources,
+            named_address_map: starcoin_framework_named_addresses(),
+        }],
+        None,
+        move_compiler::Flags::empty(),
+    )
+    .unwrap();
+    match program_res {
+        Ok(df) => df,
+        Err((files, errors)) => {
+            eprintln!("!!!Starcoin Framework failed to compile!!!");
+            move_compiler::diagnostics::report_diagnostics(&files, errors)
         }
     }
-    result.write_set = Some(
-        access_write_set
-            .into_iter()
-            .map(TransactionOutputAction::from)
-            .collect(),
-    );
-    result.table_item_write_set = Some(
-        table_item_write_set
-            .into_iter()
-            .map(TransactionOutputTableItemAction::from)
-            .collect(),
-    );
-}
-*/
+});

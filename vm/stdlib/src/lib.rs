@@ -7,9 +7,6 @@ use anyhow::{bail, ensure, format_err, Result};
 use include_dir::{include_dir, Dir};
 use log::{debug, info, LevelFilter};
 use move_bytecode_verifier::{dependencies, verify_module};
-use move_compiler::command_line::compiler::construct_pre_compiled_lib;
-use move_compiler::shared::PackagePaths;
-use move_compiler::FullyCompiledProgram;
 use once_cell::sync::Lazy;
 use sha2::{Digest, Sha256};
 use starcoin_crypto::hash::PlainCryptoHash;
@@ -104,30 +101,6 @@ pub static G_COMPILED_STDLIB: Lazy<HashMap<StdlibVersion, Vec<Vec<u8>>>> = Lazy:
 });
 
 pub const SCRIPT_HASH_LENGTH: usize = HashValue::LENGTH;
-
-pub static G_PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<FullyCompiledProgram> = Lazy::new(|| {
-    let sources = stdlib_files();
-    let program_res = construct_pre_compiled_lib(
-        vec![PackagePaths {
-            name: None,
-            paths: sources,
-            named_address_map: starcoin_framework_named_addresses(),
-        }],
-        None,
-        move_compiler::Flags::empty(),
-    );
-    match program_res {
-        Ok(Ok(df)) => df,
-        Ok(Err((files, errors))) => {
-            eprintln!("!!!Starcoin Framework failed to compile!!!");
-            move_compiler::diagnostics::report_diagnostics(&files, errors)
-        }
-        Err(e) => {
-            eprintln!("!!!Starcoin Framework failed to compile {:?}!!!", e);
-            panic!()
-        }
-    }
-});
 
 pub use starcoin_framework::STARCOIN_FRAMEWORK_SOURCES;
 

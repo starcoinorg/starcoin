@@ -18,7 +18,7 @@ serde_yaml = "0.8.26"
 serde-generate = { git = "https://github.com/starcoinorg/serde-reflection", rev = "694048797338ff7385006d968e786b6d9dbdeb8b" }
 serde-reflection = { git = "https://github.com/starcoinorg/serde-reflection", rev = "694048797338ff7385006d968e786b6d9dbdeb8b" }
 starcoin-vm-types = { path = "../types" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "22a1bb0e9a1dcedaa8546d4ee1d31293320ce34a" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "ce25568b2486f54cc04b7a184091ec510576eaee" }
 bcs = "0.1.3"
 [dev-dependencies]
 tempfile = "3.2.0"

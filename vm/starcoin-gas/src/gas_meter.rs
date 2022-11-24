@@ -522,7 +522,7 @@ impl GasMeter for StarcoinGasMeter {
             true => Opcodes::EXISTS_GENERIC,
         };
         #[cfg(testing)]
-        info!("EXISTS {:#?} cost InternalGasUnits({})", opcode, cost);
+        info!("{:#?} cost InternalGasUnits({})", opcode, cost);
         self.deduct_gas(cost)
     }
 

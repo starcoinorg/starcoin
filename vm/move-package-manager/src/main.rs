@@ -87,12 +87,7 @@ fn main() -> Result<()> {
     };
     match args.cmd {
         Commands::IntegrationTest(cmd) => run_integration_test(args.move_args, cmd),
-        Commands::Package { cmd } => handle_package_commands(
-            &move_args.package_path,
-            move_args.build_config.clone(),
-            &cmd,
-            natives,
-        ),
+        Commands::Package { cmd } => handle_package_commands(natives, args.move_args, cmd),
         Commands::Sandbox { storage_dir, cmd } => cmd.handle_command(
             natives,
             &cost_table,
