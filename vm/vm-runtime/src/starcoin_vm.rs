@@ -15,7 +15,7 @@ use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
 use move_table_extension::NativeTableContext;
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
 use move_vm_runtime::session::Session;
-use move_vm_types::gas::UnmeteredGasMeter;
+// use move_vm_types::gas::UnmeteredGasMeter;
 use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_crypto::HashValue;
 use starcoin_gas::{NativeGasParameters, StarcoinGasMeter, StarcoinGasParameters};
@@ -813,10 +813,14 @@ impl StarcoinVM {
         remote_cache: &mut StateViewCache<'_, S>,
         block_metadata: BlockMetadata,
     ) -> Result<TransactionOutput, VMStatus> {
+        info!("process_block_meta begin");
         let txn_sender = account_config::genesis_address();
         // always use 0 gas for system.
         let max_gas_amount: Gas = 0.into();
-        let mut gas_meter = UnmeteredGasMeter;
+        // let mut gas_meter = UnmeteredGasMeter;
+        // for debug
+        let mut gas_meter = StarcoinGasMeter::new(StarcoinGasParameters::zeros(), max_gas_amount);
+        gas_meter.set_metering(false);
         let session_id = SessionId::block_meta(&block_metadata);
         let (
             parent_id,
@@ -856,6 +860,7 @@ impl StarcoinVM {
             )
             .map(|_return_vals| ())
             .or_else(convert_prologue_runtime_error)?;
+        info!("process_block_meta end");
         get_transaction_output(
             &mut (),
             session,
