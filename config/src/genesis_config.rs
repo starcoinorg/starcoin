@@ -1080,15 +1080,18 @@ mod tests {
         natives: Vec<(String, u64)>,
         constants: Vec<(String, u64)>,
     ) -> Vec<(String, u64)> {
-        let mut res = instrs;
+        let mut entries = instrs;
         let mut natives = natives;
         let mut constants = constants;
-        res.append(&mut natives);
+        entries.append(&mut natives);
         // instruction_schedule don't have this two
-        res.push(("nursery.debug.print.base_cost".to_string(), 1));
-        res.push(("nursery.debug.print_stack_trace.base_cost".to_string(), 1));
-        res.append(&mut constants);
-        res
+        entries.push(("nursery.debug.print.base_cost".to_string(), 1));
+        entries.push(("nursery.debug.print_stack_trace.base_cost".to_string(), 1));
+
+        entries.push(("move_stdlib.hash.sha2_256.legacy_min_input_len".to_string(), 1));
+        entries.push(("move_stdlib.hash.sha3_256.legacy_min_input_len".to_string(), 1));
+        entries.append(&mut constants);
+        entries
     }
 
     #[test]

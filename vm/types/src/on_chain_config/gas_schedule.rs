@@ -596,6 +596,9 @@ impl From<&VMConfig> for GasSchedule {
         entries.push(("nursery.debug.print.base_cost".to_string(), 1));
         entries.push(("nursery.debug.print_stack_trace.base_cost".to_string(), 1));
 
+        entries.push(("move_stdlib.hash.sha2_256.legacy_min_input_len".to_string(), 1));
+        entries.push(("move_stdlib.hash.sha3_256.legacy_min_input_len".to_string(), 1));
+
         // see vm/gas_algebra-ext/src/transaction.rs
         let txn = &vm_config.gas_schedule.gas_constants;
         entries.push((

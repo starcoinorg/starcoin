@@ -12,10 +12,10 @@ crate::natives::define_gas_parameters_for_natives!(GasParameters, "move_stdlib",
 
     // [.hash.sha2_256.base, "hash.sha2_256.base", 0 * MUL],
     [.hash.sha2_256.per_byte,  "hash.sha2_256.per_byte", (21 + 1) * MUL],
-   // [.hash.sha2_256.legacy_min_input_len, optional "hash.sha2_256.legacy_min_input_len", MUL],
+    [.hash.sha2_256.legacy_min_input_len, optional "hash.sha2_256.legacy_min_input_len", MUL],
    // [.hash.sha3_256.base, "hash.sha3_256.base", 0 * MUL],
     [.hash.sha3_256.per_byte,  "hash.sha3_256.per_byte",  (64 + 1) * MUL],
-  //  [.hash.sha3_256.legacy_min_input_len, optional "hash.sha3_256.legacy_min_input_len",  MUL],
+    [.hash.sha3_256.legacy_min_input_len, optional "hash.sha3_256.legacy_min_input_len",  MUL],
 
     [.bcs.to_bytes.per_byte_serialized, "bcs.to_bytes.per_byte_serialized", (181 + 1) * MUL],
     [.bcs.to_bytes.failure, optional "bcs.to_bytes.failure", (181 + 1) * MUL],
@@ -50,4 +50,4 @@ crate::natives::define_gas_parameters_for_natives!(GasParameters, "move_stdlib",
     // [.string.index_of.base, optional "string.index_of.base", 0 * MUL],
     [.string.index_of.per_byte_pattern, optional "string.index_of.per_byte_pattern",(4 + 1) * MUL],
     [.string.index_of.per_byte_searched, optional "string.index_of.per_byte_searched", (4 + 1)  * MUL],
-], allow_unmapped = 2 /* bcs */ + 4 /* hash */ + 4 /* vector */ + 3 /* string*/ +  2 /* XXX FIXME YSG for nextest*/);
+], allow_unmapped = 2 /* bcs */ + 2 /* hash */ + 4 /* vector */ + 3 /* string*/ +  2 /* XXX FIXME YSG for nextest*/);
