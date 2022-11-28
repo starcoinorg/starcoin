@@ -8,6 +8,7 @@ pub mod executor;
 pub mod network;
 pub mod node;
 pub mod protest;
+pub mod starcoin_dao;
 pub mod txn;
 pub mod txpool;
 
