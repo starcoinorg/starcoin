@@ -1,11 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use std::hash::Hash;
-use std::option;
 use std::str::FromStr;
 
-use crate::dao;
 use crate::executor::{
     account_execute_should_success, association_execute_should_success, blockmeta_execute,
     current_block_number, get_balance,
@@ -21,7 +18,6 @@ use starcoin_state_api::{
     ChainStateReader, ChainStateWriter, StateReaderExt, StateView, StateWithProof,
 };
 use starcoin_statedb::ChainStateDB;
-use starcoin_transaction_builder::build_empty_script;
 use starcoin_transaction_builder::encode_create_account_script_function;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
@@ -30,12 +26,9 @@ use starcoin_types::block::{Block, BlockHeader, BlockHeaderExtra};
 use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
-use starcoin_types::transaction::{Script, ScriptFunction, TransactionPayload};
+use starcoin_types::transaction::{ScriptFunction, TransactionPayload};
 use starcoin_types::U256;
 use starcoin_vm_types::account_config::core_code_address;
-use starcoin_vm_types::gas_schedule::GasAlgebra;
-use starcoin_vm_types::loaded_data::runtime_types::Type;
-use starcoin_vm_types::on_chain_config::VMConfig;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
 
 //TODO transfer to enum
@@ -241,7 +234,7 @@ fn execute_cast_vote(
         chain_state,
         TransactionPayload::ScriptFunction(script_function),
     )?;
-    let quorum = quorum_vote(chain_state, dao_type_tag.clone());
+    let quorum = quorum_vote(chain_state, dao_type_tag);
     debug!("proposer_id:{}, quorum: {}", proposal_id, quorum);
 
     let state = proposal_state(chain_state, proposal_id);
@@ -410,7 +403,7 @@ fn stake_to_be_member_function(
         bcs_ext::to_bytes(&amount).unwrap(),
         bcs_ext::to_bytes(&lock_time).unwrap(),
     ];
-    let stake_script_fun = ScriptFunction::new(
+    ScriptFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("StakeToSBTPlugin").unwrap(),
@@ -418,13 +411,12 @@ fn stake_to_be_member_function(
         Identifier::new("stake_entry").unwrap(),
         vec![dao_type, token_type],
         args,
-    );
-    stake_script_fun
+    )
 }
 
 fn block_from_metadata(block_meta: BlockMetadata, chain_state: &ChainStateDB) -> Result<Block> {
     let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _) =
-        block_meta.clone().into_inner();
+        block_meta.into_inner();
     let block_body = BlockBody::new(vec![], None);
     let block_header = BlockHeader::new(
         parent_hash,
@@ -589,9 +581,6 @@ pub fn dao_vote_test(
         block_timestamp,
     )?;
     {
-        let parent_block_num = current_block_number(chain_state) - 1;
-        let parent_hash = get_parent_hash(chain_state);
-
         let script_fun = ScriptFunction::new(
             ModuleId::new(core_code_address(), Identifier::new("Block").unwrap()),
             Identifier::new("checkpoint_entry").unwrap(),

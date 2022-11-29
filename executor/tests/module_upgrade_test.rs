@@ -198,7 +198,7 @@ fn test_stdlib_upgrade_before_v12() -> Result<()> {
     let alice = Account::new();
 
     for new_version in stdlib_versions.into_iter().skip(1) {
-        if &current_version >= &StdlibVersion::Version(12) {
+        if current_version >= StdlibVersion::Version(12) {
             break;
         }
         // if upgrade from 7 to later, we need to update language version to 3.
@@ -306,7 +306,7 @@ fn test_stdlib_upgrade_since_v12() -> Result<()> {
     let alice = Account::new();
 
     for new_version in stdlib_versions.into_iter().skip(1) {
-        if &current_version < &StdlibVersion::Version(12) {
+        if current_version < StdlibVersion::Version(12) {
             current_version = new_version;
             continue;
         }
