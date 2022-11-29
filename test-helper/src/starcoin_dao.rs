@@ -17,7 +17,9 @@ use starcoin_crypto::HashValue;
 use starcoin_executor::execute_readonly_function;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::BlockBody;
-use starcoin_state_api::{ChainStateReader, StateReaderExt, StateView, StateWithProof};
+use starcoin_state_api::{
+    ChainStateReader, ChainStateWriter, StateReaderExt, StateView, StateWithProof,
+};
 use starcoin_statedb::ChainStateDB;
 use starcoin_transaction_builder::build_empty_script;
 use starcoin_transaction_builder::encode_create_account_script_function;
@@ -223,7 +225,6 @@ fn execute_cast_vote(
     let voting_power = get_balance(*alice.address(), chain_state);
     debug!("{} voting power: {}", alice.address(), voting_power);
     let proof_bytes = bcs_ext::to_bytes(&snapshot_proofs).unwrap();
-    println!("raw proof: {}", hex::encode(&proof_bytes));
     let script_function = ScriptFunction::new(
         ModuleId::new(core_code_address(), Identifier::new("DAOSpace").unwrap()),
         Identifier::new("cast_vote_entry").unwrap(),
@@ -501,6 +502,8 @@ fn execute_block(
         0,
     );
     blockmeta_execute(chain_state, block_meta.clone())?;
+    let _ = chain_state.commit();
+    chain_state.flush()?;
     block_from_metadata(block_meta, chain_state)
 }
 
@@ -574,18 +577,6 @@ pub fn dao_vote_test(
     )?;
     let snapshot = block.clone();
 
-    // block 4
-    // let block_number = current_block_number(chain_state) + 1;
-    // let block_timestamp = net.time_service().now_millis() + one_day * block_number;
-    // let block = execute_block(
-    //     net,
-    //     chain_state,
-    //     alice,
-    //     block.id(),
-    //     block_number,
-    //     block_timestamp,
-    // )?;
-
     // block 5: Block::checkpoint
     let block_number = current_block_number(chain_state) + 1;
     let block_timestamp = net.time_service().now_millis() + one_day * block_number;
@@ -600,15 +591,7 @@ pub fn dao_vote_test(
     {
         let parent_block_num = current_block_number(chain_state) - 1;
         let parent_hash = get_parent_hash(chain_state);
-        println!(
-            "block_number: {:?}, parent_block_num: {:?}, parent_hash: {:?}",
-            block_number, parent_block_num, parent_hash
-        );
-        println!(
-            "snapshot block_number: {:?}, block_hash: {:?}",
-            snapshot.header().number(),
-            snapshot.id().as_slice().to_vec(),
-        );
+
         let script_fun = ScriptFunction::new(
             ModuleId::new(core_code_address(), Identifier::new("Block").unwrap()),
             Identifier::new("checkpoint_entry").unwrap(),
@@ -683,7 +666,6 @@ pub fn dao_vote_test(
     let access_path_bytes = snapshot_access_path(chain_state, alice.address());
     let access_path_str = std::str::from_utf8(&access_path_bytes)?;
     let access_path = AccessPath::from_str(access_path_str)?;
-    println!("state root: {:?}", snapshot.header.state_root());
     let proof = get_with_proof_by_root(chain_state, access_path, snapshot.header.state_root())?;
     execute_cast_vote(
         chain_state,
@@ -741,7 +723,7 @@ pub fn dao_vote_test(
 
     // block: UpgradeModulePlugin::execute_proposal
     let block_number = current_block_number(chain_state) + 1;
-    let block_timestamp = block_timestamp + min_action_delay(chain_state, stc_type_tag());
+    let block_timestamp = block_timestamp + min_action_delay(chain_state, starcoin_dao_type_tag());
     let block = execute_block(
         net,
         chain_state,
