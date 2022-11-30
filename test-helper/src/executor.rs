@@ -74,6 +74,7 @@ pub fn execute_and_apply(chain_state: &ChainStateDB, txn: Transaction) -> Transa
         chain_state
             .apply_write_set(output.write_set().clone())
             .expect("apply write_set should success.");
+        chain_state.commit().expect("commit should success.");
     }
 
     output
