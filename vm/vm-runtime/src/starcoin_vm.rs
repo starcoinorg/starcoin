@@ -1344,7 +1344,11 @@ pub(crate) fn charge_global_write_gas_usage<R: MoveResolverExt>(
     let total_cost = InternalGasPerByte::from(write_set_gas)
         * NumBytes::new(session.as_ref().num_mutated_accounts(sender));
     #[cfg(testing)]
-    info!("charge_global_write_gas_usage {} {}", total_cost, gas_meter.get_metering());
+    info!(
+        "charge_global_write_gas_usage {} {}",
+        total_cost,
+        gas_meter.get_metering()
+    );
     gas_meter
         .deduct_gas(total_cost)
         .map_err(|p_err| p_err.finish(Location::Undefined).into_vm_status())

@@ -178,7 +178,7 @@ impl StarcoinGasMeter {
     }
 
     pub fn get_metering(&self) -> bool {
-        return self.charge
+        self.charge
     }
 
     pub fn charge_intrinsic_gas_for_transaction(&mut self, txn_size: NumBytes) -> VMResult<()> {
