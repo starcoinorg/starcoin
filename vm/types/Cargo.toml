@@ -20,14 +20,14 @@ serde = {version = "1.0.130", default-features = false}
 serde_bytes = "0.11.5"
 serde_json = {version = "1.0", features = ["arbitrary_precision"]}
 
-move-bytecode-verifier = {git = "https://github.com/starcoinorg/move", rev = "1844005dcfc828ff009b7af2cc7a1eeda87995f9"}
-move-core-types = {git = "https://github.com/starcoinorg/move", rev = "1844005dcfc828ff009b7af2cc7a1eeda87995f9"}
-move-ir-types = {git = "https://github.com/starcoinorg/move", rev = "1844005dcfc828ff009b7af2cc7a1eeda87995f9"}
-move-vm-types = {git = "https://github.com/starcoinorg/move", rev = "1844005dcfc828ff009b7af2cc7a1eeda87995f9"}
+move-bytecode-verifier = {git = "https://github.com/starcoinorg/move", rev = "8a38b689ea033de63c444f4519e2254a9cee7f40"}
+move-core-types = {git = "https://github.com/starcoinorg/move", rev = "8a38b689ea033de63c444f4519e2254a9cee7f40"}
+move-ir-types = {git = "https://github.com/starcoinorg/move", rev = "8a38b689ea033de63c444f4519e2254a9cee7f40"}
+move-vm-types = {git = "https://github.com/starcoinorg/move", rev = "8a38b689ea033de63c444f4519e2254a9cee7f40"}
 proptest = {version = "1.0.0", default-features = false, optional = true}
 proptest-derive = {version = "0.3.0", default-features = false, optional = true}
 starcoin-time-service = {path = "../../commons/time-service", optional = true}
-vm = {package = "move-binary-format", git = "https://github.com/starcoinorg/move", rev = "1844005dcfc828ff009b7af2cc7a1eeda87995f9"}
+vm = {package = "move-binary-format", git = "https://github.com/starcoinorg/move", rev = "8a38b689ea033de63c444f4519e2254a9cee7f40"}
 
 bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
 #starcoin-proptest-helpers = { path = "../../commons/proptest-helpers", optional = true }
@@ -41,7 +41,7 @@ proptest = "1.0.0"
 proptest-derive = "0.3.0"
 starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 starcoin-time-service = {path = "../../commons/time-service"}
-vm = {package = "move-binary-format", git = "https://github.com/starcoinorg/move", rev = "1844005dcfc828ff009b7af2cc7a1eeda87995f9", features = [
+vm = {package = "move-binary-format", git = "https://github.com/starcoinorg/move", rev = "8a38b689ea033de63c444f4519e2254a9cee7f40", features = [
   "fuzzing",
 ]}
 #starcoin-proptest-helpers = { path = "../../commons/proptest-helpers"}

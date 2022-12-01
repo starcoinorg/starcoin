@@ -12,7 +12,7 @@ anyhow = "1.0.41"
 bcs = "0.1"
 bcs-ext = {path = "../../commons/bcs_ext"}
 hex = "0.4.3"
-move-binary-format = {git = "https://github.com/starcoinorg/move", rev = "1844005dcfc828ff009b7af2cc7a1eeda87995f9"}
+move-binary-format = {git = "https://github.com/starcoinorg/move", rev = "8a38b689ea033de63c444f4519e2254a9cee7f40"}
 ordinal = "0.3.1"
 schemars = {git = "https://github.com/starcoinorg/schemars", rev = "6972da92f4360e1779168bb3fe0274c521d324e2"}
 serde = {version = "1.0.130", features = ["derive", "rc"]}
