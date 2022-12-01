@@ -4,7 +4,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "starcoin-rpc-server"
 publish = false
-version = "1.12.6"
+version = "1.12.7"
 
 [dependencies]
 actix = "0.13"

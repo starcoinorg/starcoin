@@ -4,7 +4,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "starcoin-accumulator"
 publish = false
-version = "1.12.6"
+version = "1.12.7"
 
 [dependencies]
 anyhow = "1.0.41"

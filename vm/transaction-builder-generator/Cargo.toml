@@ -6,7 +6,7 @@ homepage = "https://diem.org"
 license = "Apache-2.0"
 name = "transaction-builder-generator"
 repository = "https://github.com/diem/diem"
-version = "1.12.6"
+version = "1.12.7"
 
 [dependencies]
 anyhow = "1.0.41"

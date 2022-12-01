@@ -3,7 +3,7 @@ authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
 license = "Apache-2.0"
 name = "starcoin-abi-decoder"
-version = "1.12.6"
+version = "1.12.7"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
