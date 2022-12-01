@@ -60,5 +60,5 @@ spec:
       checkRun:
         types: ["created"]
         status: "queued"
-    amount: 2
+    amount: 3
     duration: "2m"
