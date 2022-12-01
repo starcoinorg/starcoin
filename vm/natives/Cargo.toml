@@ -2,7 +2,7 @@
 authors = ["caojiafeng <funfriendcjf@gmail.com>"]
 edition = "2021"
 name = "starcoin-natives"
-version = "1.12.6"
+version = "1.12.7"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
