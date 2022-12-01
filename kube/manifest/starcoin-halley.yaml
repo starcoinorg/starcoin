@@ -11,7 +11,7 @@ spec:
     matchLabels:
       app: starcoin
   serviceName: starcoin-svc
-  replicas: 3
+  replicas: 1
   template:
     metadata:
       name: starcoin
