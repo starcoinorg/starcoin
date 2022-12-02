@@ -324,10 +324,10 @@ pub fn native_gas_schedule_v4() -> Vec<(String, u64)> {
     let mut natives = native_gas_schedule_v3();
     let mut natives_delta = vec![
         ("table.new_table_handle.base".to_string(), gas_total(4, 1)),
-        ("table.add_box.base".to_string(), gas_total(4, 1)),
-        ("table.borrow_box.base".to_string(), gas_total(10, 1)),
-        ("table.remove_box.base".to_string(), gas_total(8, 1)),
-        ("table.contains_box.base".to_string(), gas_total(40, 1)),
+        ("table.add_box.per_byte_serialized".to_string(), gas_total(4, 1)),
+        ("table.borrow_box.per_byte_serialized".to_string(), gas_total(10, 1)),
+        ("table.remove_box.per_byte_serialized".to_string(), gas_total(8, 1)),
+        ("table.contains_box.per_byte_serialized".to_string(), gas_total(40, 1)),
         ("table.destroy_empty_box.base".to_string(), gas_total(20, 1)),
         (
             "table.drop_unchecked_box.base".to_string(),
@@ -557,10 +557,10 @@ static G_NATIVE_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
         "move_stdlib.vector.remove.legacy_per_abstract_memory_unit",
         "move_stdlib.vector.reverse.legacy_per_abstract_memory_unit",
         "table.new_table_handle.base",
-        "table.add_box.base",
-        "table.borrow_box.base",
-        "table.remove_box.base",
-        "table.contains_box.base",
+        "table.add_box.per_byte_serialized",
+        "table.borrow_box.per_byte_serialized",
+        "table.remove_box.per_byte_serialized",
+        "table.contains_box.per_byte_serialized",
         "table.destroy_empty_box.base",
         "table.drop_unchecked_box.base",
         "move_stdlib.string.check_utf8.per_byte",
@@ -604,6 +604,8 @@ impl From<&VMConfig> for GasSchedule {
             "move_stdlib.hash.sha3_256.legacy_min_input_len".to_string(),
             1,
         ));
+        entries.push(("move_stdlib.bcs.to_bytes.failure".to_string(), 182));
+        entries.push(("move_stdlib.bcs.to_bytes.legacy_min_output_size".to_string(), 1));
 
         // see vm/gas_algebra-ext/src/transaction.rs
         let txn = &vm_config.gas_schedule.gas_constants;

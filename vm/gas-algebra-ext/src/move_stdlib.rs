@@ -12,14 +12,14 @@ crate::natives::define_gas_parameters_for_natives!(GasParameters, "move_stdlib",
 
     // [.hash.sha2_256.base, "hash.sha2_256.base", 0 * MUL],
     [.hash.sha2_256.per_byte,  "hash.sha2_256.per_byte", (21 + 1) * MUL],
-    [.hash.sha2_256.legacy_min_input_len, optional "hash.sha2_256.legacy_min_input_len", MUL],
+    [.hash.sha2_256.legacy_min_input_len,  "hash.sha2_256.legacy_min_input_len", MUL],
    // [.hash.sha3_256.base, "hash.sha3_256.base", 0 * MUL],
     [.hash.sha3_256.per_byte,  "hash.sha3_256.per_byte",  (64 + 1) * MUL],
-    [.hash.sha3_256.legacy_min_input_len, optional "hash.sha3_256.legacy_min_input_len",  MUL],
+    [.hash.sha3_256.legacy_min_input_len,  "hash.sha3_256.legacy_min_input_len",  MUL],
 
     [.bcs.to_bytes.per_byte_serialized, "bcs.to_bytes.per_byte_serialized", (181 + 1) * MUL],
-    [.bcs.to_bytes.failure, optional "bcs.to_bytes.failure", (181 + 1) * MUL],
-    //[.bcs.to_bytes.legacy_min_output_size, optional "bcs.to_bytes.legacy_min_output_size", 1000 * MUL],
+    [.bcs.to_bytes.failure, "bcs.to_bytes.failure", (181 + 1) * MUL],
+    [.bcs.to_bytes.legacy_min_output_size,  "bcs.to_bytes.legacy_min_output_size",  MUL],
 
     [.vector.length.base, "vector.length.base", (98 + 1) * MUL],
     [.vector.empty.base, "vector.empty.base", (84 + 1) * MUL],
@@ -48,6 +48,5 @@ crate::natives::define_gas_parameters_for_natives!(GasParameters, "move_stdlib",
     // [.string.sub_string.base, optional "string.sub_string.base", 0 * MUL],
     [.string.sub_string.per_byte, optional "string.sub_string.per_byte", (4 + 1) *  MUL],
     // [.string.index_of.base, optional "string.index_of.base", 0 * MUL],
-    [.string.index_of.per_byte_pattern, optional "string.index_of.per_byte_pattern",(4 + 1) * MUL],
     [.string.index_of.per_byte_searched, optional "string.index_of.per_byte_searched", (4 + 1)  * MUL],
-], allow_unmapped = 2 /* bcs */ + 2 /* hash */ + 4 /* vector */ + 3 /* string*/ +  2 /* XXX FIXME YSG for nextest*/);
+], allow_unmapped = 2 /* bcs */ + 2 /* hash */ + 4 /* vector */ + 4 /* string*/ +  2 /* XXX FIXME YSG for nextest*/);

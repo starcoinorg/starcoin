@@ -137,6 +137,7 @@ impl StarcoinVM {
                     let inner = MoveVmExt::new(params.natives.clone()).expect(
                         "should be able to create Move VM; check if there are duplicated natives",
                     );
+                    self.native_params = params.natives.clone();
                     self.move_vm = Arc::new(inner);
                 }
                 self.gas_params = gas_params;
