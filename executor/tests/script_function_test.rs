@@ -10,7 +10,7 @@ use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::transaction::{
     Package, ScriptFunction, TransactionPayload, TransactionStatus,
 };
-use starcoin_vm_types::vm_status::{KeptVMStatus};
+use starcoin_vm_types::vm_status::KeptVMStatus;
 use statedb::ChainStateDB;
 use test_helper::executor::{compile_modules_with_address, execute_and_apply, prepare_genesis};
 use test_helper::txn::create_account_txn_sent_as_association;
@@ -219,7 +219,9 @@ fn test_signer_cap_internal_type_error() -> Result<()> {
     );
     let txn = Transaction::UserTransaction(alice.create_signed_txn_impl(
         *alice.address(),
-        TransactionPayload::Package(Package::new(vec![compiled_module], Some(init_script)).unwrap()),
+        TransactionPayload::Package(
+            Package::new(vec![compiled_module], Some(init_script)).unwrap(),
+        ),
         0,
         10_000_000,
         1,

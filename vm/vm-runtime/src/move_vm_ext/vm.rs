@@ -34,7 +34,7 @@ impl MoveVmExt {
         self.inner.new_session_with_extensions(remote, extensions)
     }
 
-    pub fn mark_loader_cache_as_invalid(&self){
+    pub fn mark_loader_cache_as_invalid(&self) {
         self.inner.mark_loader_cache_as_invalid();
     }
 }
