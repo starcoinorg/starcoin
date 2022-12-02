@@ -33,6 +33,10 @@ impl MoveVmExt {
         extensions.add(NativeTableContext::new(*session_id.as_uuid(), remote));
         self.inner.new_session_with_extensions(remote, extensions)
     }
+
+    pub fn mark_loader_cache_as_invalid(&self){
+        self.inner.mark_loader_cache_as_invalid();
+    }
 }
 
 impl Deref for MoveVmExt {
