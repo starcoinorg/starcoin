@@ -1097,7 +1097,10 @@ mod tests {
             1,
         ));
         entries.push(("move_stdlib.bcs.to_bytes.failure".to_string(), 182));
-        entries.push(("move_stdlib.bcs.to_bytes.legacy_min_output_size".to_string(), 1));
+        entries.push((
+            "move_stdlib.bcs.to_bytes.legacy_min_output_size".to_string(),
+            1,
+        ));
         entries.append(&mut constants);
         entries
     }

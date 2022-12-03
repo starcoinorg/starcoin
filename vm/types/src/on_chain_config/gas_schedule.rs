@@ -324,10 +324,22 @@ pub fn native_gas_schedule_v4() -> Vec<(String, u64)> {
     let mut natives = native_gas_schedule_v3();
     let mut natives_delta = vec![
         ("table.new_table_handle.base".to_string(), gas_total(4, 1)),
-        ("table.add_box.per_byte_serialized".to_string(), gas_total(4, 1)),
-        ("table.borrow_box.per_byte_serialized".to_string(), gas_total(10, 1)),
-        ("table.remove_box.per_byte_serialized".to_string(), gas_total(8, 1)),
-        ("table.contains_box.per_byte_serialized".to_string(), gas_total(40, 1)),
+        (
+            "table.add_box.per_byte_serialized".to_string(),
+            gas_total(4, 1),
+        ),
+        (
+            "table.borrow_box.per_byte_serialized".to_string(),
+            gas_total(10, 1),
+        ),
+        (
+            "table.remove_box.per_byte_serialized".to_string(),
+            gas_total(8, 1),
+        ),
+        (
+            "table.contains_box.per_byte_serialized".to_string(),
+            gas_total(40, 1),
+        ),
         ("table.destroy_empty_box.base".to_string(), gas_total(20, 1)),
         (
             "table.drop_unchecked_box.base".to_string(),
@@ -605,7 +617,10 @@ impl From<&VMConfig> for GasSchedule {
             1,
         ));
         entries.push(("move_stdlib.bcs.to_bytes.failure".to_string(), 182));
-        entries.push(("move_stdlib.bcs.to_bytes.legacy_min_output_size".to_string(), 1));
+        entries.push((
+            "move_stdlib.bcs.to_bytes.legacy_min_output_size".to_string(),
+            1,
+        ));
 
         // see vm/gas_algebra-ext/src/transaction.rs
         let txn = &vm_config.gas_schedule.gas_constants;
