@@ -11,7 +11,7 @@ starcoin-vm-types = { path = "../../vm/types" }
 starcoin-abi-types = { path = "../types" }
 anyhow = "~1"
 starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
-move-model = { git = "https://github.com/starcoinorg/move", rev = "3676113c649fc08763d463af6f3af75a22ac66f5" }
+move-model = { git = "https://github.com/starcoinorg/move", rev = "f582d0469acf6eb4fe9a690499e24f13765751a2" }
 [dev-dependencies]
 stdlib = { path = "../../vm/stdlib" }
 serde_json = "1"

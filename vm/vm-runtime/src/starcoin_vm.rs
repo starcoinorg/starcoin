@@ -134,11 +134,11 @@ impl StarcoinVM {
                 StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
             if let Some(ref params) = gas_params {
                 if params.natives != self.native_params {
-                    let inner = MoveVmExt::new(params.natives.clone()).expect(
-                        "should be able to create Move VM; check if there are duplicated natives",
-                    );
+                    debug!("update native_params");
+                    Arc::get_mut(&mut self.move_vm)
+                        .unwrap()
+                        .update_native_functions(params.clone().natives)?;
                     self.native_params = params.natives.clone();
-                    self.move_vm = Arc::new(inner);
                 }
                 self.gas_params = gas_params;
             }

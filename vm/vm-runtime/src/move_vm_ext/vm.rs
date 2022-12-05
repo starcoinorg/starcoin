@@ -9,7 +9,7 @@ use move_vm_runtime::move_vm::MoveVM;
 use move_vm_runtime::native_extensions::NativeContextExtensions;
 use move_vm_runtime::session::Session;
 use starcoin_gas::NativeGasParameters;
-use starcoin_vm_types::errors::VMResult;
+use starcoin_vm_types::errors::{PartialVMResult, VMResult};
 use std::ops::Deref;
 
 pub struct MoveVmExt {
@@ -34,8 +34,12 @@ impl MoveVmExt {
         self.inner.new_session_with_extensions(remote, extensions)
     }
 
-    pub fn mark_loader_cache_as_invalid(&self) {
-        self.inner.mark_loader_cache_as_invalid();
+    pub fn update_native_functions(
+        &mut self,
+        native_gas_params: NativeGasParameters,
+    ) -> PartialVMResult<()> {
+        let native_functions = natives::starcoin_natives(native_gas_params);
+        self.inner.update_native_functions(native_functions)
     }
 }
 

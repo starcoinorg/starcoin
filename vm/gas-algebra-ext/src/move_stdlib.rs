@@ -49,4 +49,4 @@ crate::natives::define_gas_parameters_for_natives!(GasParameters, "move_stdlib",
     [.string.sub_string.per_byte, optional "string.sub_string.per_byte", (4 + 1) *  MUL],
     // [.string.index_of.base, optional "string.index_of.base", 0 * MUL],
     [.string.index_of.per_byte_searched, optional "string.index_of.per_byte_searched", (4 + 1)  * MUL],
-], allow_unmapped = 2 /* bcs */ + 2 /* hash */ + 4 /* vector */ + 4 /* string*/ +  2 /* XXX FIXME YSG for nextest*/);
+], allow_unmapped = 2 /* bcs */ + 2 /* hash */ + 4 /* vector */ + 3 /* string*/);
