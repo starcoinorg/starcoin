@@ -21,8 +21,8 @@ serde = "~1"
 serde_json = {version = "~1", features = ["arbitrary_precision"]}
 tokio = {version = "^1", features = ["full"]}
 
-move-binary-format = {git = "https://github.com/starcoinorg/move", rev = "8a38b689ea033de63c444f4519e2254a9cee7f40"}
-move-bytecode-verifier = {git = "https://github.com/starcoinorg/move", rev = "8a38b689ea033de63c444f4519e2254a9cee7f40"}
+move-binary-format = {git = "https://github.com/starcoinorg/move", rev = "6b81a354bb805f8e3e89f4a29b99f02bcdaf1872"}
+move-bytecode-verifier = {git = "https://github.com/starcoinorg/move", rev = "6b81a354bb805f8e3e89f4a29b99f02bcdaf1872"}
 
 starcoin-account-api = {path = "../../account/api"}
 starcoin-accumulator = {path = "../../commons/accumulator", package = "starcoin-accumulator"}
