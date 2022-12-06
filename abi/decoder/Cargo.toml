@@ -10,7 +10,7 @@ version = "1.12.5"
 [dependencies]
 anyhow = "1.0.41"
 hex = "0.4.3"
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "afad8bc0a5e257ea7fa908035759a79efaa62866" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "3594cb10bdbb7e95974b916f5cddfb3b8ae1fdf5" }
 starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 starcoin-vm-types = { path = "../../vm/types" }
 starcoin-abi-types = { path = "../types" }
