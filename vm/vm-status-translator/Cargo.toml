@@ -2,7 +2,7 @@
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
 name = "vm-status-translator"
-version = "1.12.7"
+version = "1.12.8"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
