@@ -21,13 +21,13 @@ rule_files:
 scrape_configs:
   - job_name: 'halley'
     static_configs:
-    - targets: ['halley1.seed.starcoin.org:9101', 'halley2.seed.starcoin.org:9101', 'halley3.seed.starcoin.org:9101']
+    - targets: ['halley1.seed.starcoin.org:9101']
   - job_name: 'proxima'
     static_configs:
-      - targets: [ 'proxima1.seed.starcoin.org:9101', 'proxima2.seed.starcoin.org:9101', 'proxima3.seed.starcoin.org:9101' ]
+      - targets: ['proxima1.seed.starcoin.org:9101']
   - job_name: 'barnard'
     static_configs:
-      - targets: [ 'barnard1.seed.starcoin.org:9101', 'barnard2.seed.starcoin.org:9101', 'barnard3.seed.starcoin.org:9101','barnard4.seed.starcoin.org:9101', 'barnard5.seed.starcoin.org:9101', 'barnard6.seed.starcoin.org:9101' ]
+      - targets: ['barnard4.seed.starcoin.org:9101', 'barnard5.seed.starcoin.org:9101', 'barnard6.seed.starcoin.org:9101' ]
   - job_name: 'main'
     static_configs:
       - targets: [ 'main1.seed.starcoin.org:9101', 'main2.seed.starcoin.org:9101', 'main3.seed.starcoin.org:9101','main4.seed.starcoin.org:9101', 'main5.seed.starcoin.org:9101', 'main6.seed.starcoin.org:9101','main7.seed.starcoin.org:9101', 'main8.seed.starcoin.org:9101', 'main9.seed.starcoin.org:9101'  ]
