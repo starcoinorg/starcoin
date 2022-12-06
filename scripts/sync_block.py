@@ -30,7 +30,7 @@ def check_or_do(network):
 
     # get last_export_height
     last_export_height = ""
-    down_last_export_height_file_cmd = "wget https://s3.ap-northeast-1.amazonaws.com/main.starcoin.org/%s/last_export_height.txt -O ./last_export_height.txt" % network
+    down_last_export_height_file_cmd = "wget https://s3.ap-northeast-1.amazonaws.com/main1.starcoin.org/%s/last_export_height.txt -O ./last_export_height.txt" % network
     os.system(down_last_export_height_file_cmd)
     with open('./last_export_height.txt', 'r') as f:
         last_export_height = int(f.readline())
@@ -74,18 +74,18 @@ def check_or_do(network):
         os.system(tar_block_list_cmd)
 
         # cp block file tar to s3
-        cp_file_tar_cmd = "timeout 30 bash -c 'export AWS_REGION=ap-northeast-1;skbn cp --src k8s://starcoin-%s/starcoin-1/starcoin/sc-data/%s --dst s3://main.starcoin.org/%s/%s '" % (
+        cp_file_tar_cmd = "timeout 30 bash -c 'export AWS_REGION=ap-northeast-1;skbn cp --src k8s://starcoin-%s/starcoin-1/starcoin/sc-data/%s --dst s3://main1.starcoin.org/%s/%s '" % (
             network, file_compress_name, network, file_compress_name)
         os.system(cp_file_tar_cmd)
 
         # cp block list tar to s3
-        cp_blocklist_tar_cmd = "timeout 30 bash -c 'export AWS_REGION=ap-northeast-1;skbn cp --src k8s://starcoin-%s/starcoin-1/starcoin/sc-data/%s --dst s3://main.starcoin.org/%s/%s '" % (
+        cp_blocklist_tar_cmd = "timeout 30 bash -c 'export AWS_REGION=ap-northeast-1;skbn cp --src k8s://starcoin-%s/starcoin-1/starcoin/sc-data/%s --dst s3://main1.starcoin.org/%s/%s '" % (
             network, block_list_file_tar_name, network, block_list_file_tar_name)
         os.system(cp_blocklist_tar_cmd)
 
         # update the last_export_height
         os.system("echo %s > ./last_export_height.txt" % end)
-        os.system("aws s3api put-object --bucket main.starcoin.org --key %s/last_export_height.txt --body ./last_export_height.txt" % network)
+        os.system("aws s3api put-object --bucket main1.starcoin.org --key %s/last_export_height.txt --body ./last_export_height.txt" % network)
 
 
 if __name__ == "__main__":

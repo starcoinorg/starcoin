@@ -7,7 +7,7 @@ function download() {
     return 0
   fi
   compress_name=$name.tar.gz
-  url=https://s3.ap-northeast-1.amazonaws.com/main.starcoin.org/$net/$compress_name
+  url=https://s3.ap-northeast-1.amazonaws.com/main1.starcoin.org/$net/$compress_name
   for ((i = 0; i < 3; i++)); do
     rm -f "$compress_name"
     wget $url
