@@ -12,7 +12,7 @@ version = "1.12.5"
 [dependencies]
 clap = { version = "3", features = ["derive"] }
 stdlib = { package = "stdlib", path = "../stdlib" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "f582d0469acf6eb4fe9a690499e24f13765751a2" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "afad8bc0a5e257ea7fa908035759a79efaa62866" }
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 
 [features]
