@@ -1,12 +1,12 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-//use move_compiler::construct_pre_compiled_lib;
-//use move_compiler::shared::PackagePaths;
-//use starcoin_move_compiler::starcoin_framework_named_addresses;
+use move_compiler::construct_pre_compiled_lib;
+use move_compiler::shared::PackagePaths;
+use starcoin_move_compiler::starcoin_framework_named_addresses;
 use std::path::PathBuf;
 use std::process::Command;
-//use stdlib::stdlib_files;
+use stdlib::stdlib_files;
 
 fn assert_that_version_control_has_no_unstaged_changes() {
     let output = Command::new("git")
@@ -49,7 +49,6 @@ fn test_that_generated_file_are_up_to_date_in_git() {
 
 #[test]
 fn test_stdlib_pre_compiled() {
-    /*
     let sources = stdlib_files();
     let program_res = construct_pre_compiled_lib(
         vec![PackagePaths {
@@ -62,5 +61,4 @@ fn test_stdlib_pre_compiled() {
     )
     .unwrap();
     assert!(program_res.is_ok());
-     */
 }
