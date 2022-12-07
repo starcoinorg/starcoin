@@ -559,7 +559,7 @@ impl StarcoinVM {
 
             // after publish the modules, we need to clear loader cache, to make init script function and
             // epilogue use the new modules.
-            self.move_vm.mark_loader_cache_as_invalid();
+            // clear logic move in publish_module_bundle_with_option
 
             if let Some(init_script) = package.init_script() {
                 let genesis_address = genesis_address();

@@ -768,12 +768,6 @@ pub fn startup_info_back(
 
     let cur_num = chain.status().head().number();
     let back_size = back_size.unwrap_or(BACK_SIZE);
-    let back_size = if back_size < BACK_SIZE {
-        BACK_SIZE
-    } else {
-        back_size
-    };
-
     if cur_num <= back_size {
         println!(
             "startup_info block number {} <= back_size {}",
