@@ -7,7 +7,7 @@ license = "Apache-2.0"
 name = "starcoin-move-explain"
 publish = false
 repository = "https://github.com/diem/diem"
-version = "1.12.5"
+version = "1.12.9"
 
 [dependencies]
 clap = { version = "3", features = ["derive"] }

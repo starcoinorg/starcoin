@@ -4,7 +4,7 @@ documentation = "https://docs.rs/sc-peerset"
 homepage = "http://parity.io"
 license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 name = "sc-peerset"
-version = "1.12.5"
+version = "1.12.9"
 authors = [
     "Parity Technologies <admin@parity.io>",
     "Starcoin Core Dev <dev@starcoin.org>",

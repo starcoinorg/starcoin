@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-stratum"
-version = "1.12.5"
+version = "1.12.9"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
 

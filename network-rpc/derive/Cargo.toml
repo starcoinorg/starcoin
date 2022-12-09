@@ -4,7 +4,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "network-rpc-derive"
 publish = false
-version = "1.12.5"
+version = "1.12.8"
 
 [lib]
 proc-macro = true

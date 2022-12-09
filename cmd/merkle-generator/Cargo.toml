@@ -2,7 +2,7 @@
 authors = ["caojiafeng <funfriendcjf@gmail.com>"]
 edition = "2021"
 name = "merkle-generator"
-version = "1.12.5"
+version = "1.12.8"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

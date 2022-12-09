@@ -11,7 +11,7 @@ spec:
     matchLabels:
       app: starcoin
   serviceName: starcoin-svc
-  replicas: 6
+  replicas: 3
   template:
     metadata:
       name: starcoin
@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: starcoin/starcoin:v1.12.5
+        image: starcoin/starcoin:v1.12.8
         imagePullPolicy: Always
         command:
           - bash
@@ -92,4 +92,4 @@ spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: 50Gi
+          storage: 300Gi

@@ -4,7 +4,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "test-helper"
 publish = false
-version = "1.12.5"
+version = "1.12.9"
 
 [dependencies]
 anyhow = "1.0.41"
@@ -58,6 +58,7 @@ state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }
 bcs-ext = { package = "bcs-ext", path = "../commons/bcs_ext" }
 starcoin-transaction-builder = { path = "../vm/transaction-builder" }
 thiserror = "1.0"
+move-ir-compiler = {git = "https://github.com/starcoinorg/move", rev = "e5a7e90a2fcfec1abd50bdfcf1d7a59f4de91790"}
 
 
 [dev-dependencies]

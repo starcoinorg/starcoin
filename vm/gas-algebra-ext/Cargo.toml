@@ -4,7 +4,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "gas-algebra-ext"
 publish = false
-version = "1.12.5"
+version = "1.12.9"
 
 [dependencies]
 move-core-types = { git = "https://github.com/starcoinorg/move", rev = "e5a7e90a2fcfec1abd50bdfcf1d7a59f4de91790" }

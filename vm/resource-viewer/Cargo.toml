@@ -4,7 +4,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "starcoin-resource-viewer"
 publish = false
-version = "1.12.5"
+version = "1.12.9"
 
 [dependencies]
 starcoin-vm-types = { path = "../types" }
