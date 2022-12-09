@@ -19,6 +19,7 @@ use std::path::PathBuf;
 
 pub const DEFAULT_RELEASE_DIR: &str = "release";
 
+// XXX FIXME YSG, mpm release use v4, v5, v6
 #[derive(Parser)]
 pub struct Release {
     #[clap(name = "move-version", long = "move-version", default_value="4", possible_values=&["3", "4"])]
@@ -74,6 +75,7 @@ pub fn handle_release(
     for m in pkg.root_compiled_units.as_slice() {
         let m = module(&m.unit)?;
         println!("\t {}", m.self_id());
+        // XXX FIXME YSG, mpm release
         let code = if language_version as u32 == VERSION_3 {
             ModuleBytecodeDowngrader::to_v3(m)?
         } else {

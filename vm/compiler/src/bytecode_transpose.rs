@@ -1,7 +1,7 @@
 use anyhow::Result;
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::{Bytecode, CompiledScript};
-use move_binary_format::file_format_common::{VERSION_3, VERSION_4};
+use move_binary_format::file_format_common::{VERSION_3, VERSION_4, VERSION_5};
 use move_binary_format::CompiledModule;
 
 pub struct ModuleBytecodeDowngrader;
@@ -47,6 +47,24 @@ impl ModuleBytecodeDowngrader {
         m.serialize_for_version(Some(VERSION_3), &mut bytes)?;
         Ok(bytes)
     }
+
+    pub fn to_v4(m: &CompiledModule) -> Result<Vec<u8>> {
+        match m.version {
+            VERSION_5 => Self::from_v5_to_v4(m),
+            VERSION_4 => {
+                let mut bytes = vec![];
+                m.serialize_for_version(Some(VERSION_4), &mut bytes)?;
+                Ok(bytes)
+            }
+            _ => anyhow::bail!("unsupport module bytecode version {}", m.version),
+        }
+    }
+    pub fn from_v5_to_v4(m: &CompiledModule) -> Result<Vec<u8>> {
+        anyhow::ensure!(m.version() == VERSION_5, "bytecode version is not v5");
+        let mut bytes = vec![];
+        m.serialize_for_version(Some(VERSION_4), &mut bytes)?;
+        Ok(bytes)
+    }
 }
 
 pub struct ScriptBytecodeDowgrader;
@@ -72,6 +90,13 @@ impl ScriptBytecodeDowgrader {
 
         let mut bytes = vec![];
         s.serialize_for_version(Some(VERSION_3), &mut bytes)?;
+        Ok(bytes)
+    }
+
+    pub fn from_v5_to_v4(s: &CompiledScript) -> Result<Vec<u8>> {
+        anyhow::ensure!(s.version == VERSION_5, "bytecode version is not v5");
+        let mut bytes = vec![];
+        s.serialize_for_version(Some(VERSION_4), &mut bytes)?;
         Ok(bytes)
     }
 }
