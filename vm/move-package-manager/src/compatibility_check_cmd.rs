@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::release::module;
-use anyhow::{ensure, Ok};
+use anyhow::{ensure, format_err, Ok};
 use clap::Parser;
 use itertools::Itertools;
 use move_binary_format::CompiledModule;
@@ -62,7 +62,8 @@ pub fn handle_compatibility_check(
             .map_err(|e| e.into_vm_status())?;
         if let Some(old) = old_module {
             let old_module = CompiledModule::deserialize(&old)?;
-            let compatibility = check_compiled_module_compat(&old_module, m);
+            let compatibility = check_compiled_module_compat(&old_module, m)
+                .map_err(|_| format_err!("get module {:?} failed", m))?;
             if !compatibility.is_fully_compatible() {
                 incompatible_module_ids.push((m.self_id(), compatibility));
             }
@@ -129,8 +130,9 @@ fn handle_pre_version_compatibility_check(
             let new_module = module(&m.unit).unwrap();
             let module_id = new_module.self_id();
             if let Some(old_module) = pre_stable_modules.get(&module_id) {
-                let compatibility =
-                    check_compiled_module_compat(old_module, new_module).is_fully_compatible();
+                let compatibility = check_compiled_module_compat(old_module, new_module)
+                    .ok()?
+                    .is_fully_compatible();
                 if !compatibility {
                     Some(module_id)
                 } else {

@@ -53,7 +53,8 @@ impl<'a> ABIResolver<'a> {
     }
 
     fn resolve_compiled_module(&self, module: &CompiledModule) -> Result<ModuleABI> {
-        let m = Module::new(module);
+        let m = Module::new(module)
+            .map_err(|err| anyhow!("get module {:?} {:?} error", module, err))?;
         let module_id = m.module_id();
         let structs = m
             .structs
@@ -73,7 +74,7 @@ impl<'a> ABIResolver<'a> {
         let script = CompiledScript::deserialize(&script_code)?;
         let script_mod = script_into_module(script);
 
-        let m = Module::new(&script_mod);
+        let m = Module::new(&script_mod).map_err(|err| anyhow!("get module {:?} error", err))?;
         anyhow::ensure!(
             m.exposed_functions.len() == 1,
             "script should only contain one function"
@@ -127,9 +128,11 @@ impl<'a> ABIResolver<'a> {
             .resolver
             .get_module(module_id.address(), module_id.name())?;
         let struct_def = find_struct_def_in_module(module.as_ref(), name)?;
-        let (name, s) = Struct::new(&module, module.struct_def_at(struct_def));
+        let (name, s) = Struct::new(&module, module.struct_def_at(struct_def))
+            .map_err(|err| anyhow!("get module {} {:?} error", module_id, err))?;
         self.struct_to_abi(module_id, &name, &s)
     }
+
     pub fn resolve_type(&self, ty: &Type) -> Result<TypeInstantiation> {
         Ok(match ty {
             Type::Bool => TypeInstantiation::Bool,
@@ -182,7 +185,8 @@ impl<'a> ABIResolver<'a> {
             ));
         }
         let function_def = module.function_def_at(FunctionDefinitionIndex::new(function_idx));
-        let (func_name, func) = Function::new(&module, function_def);
+        let (func_name, func) = Function::new(&module, function_def)
+            .map_err(|err| anyhow!("get module {} {:?} error", module_id, err))?;
         self.function_to_abi(module_id, &func_name, &func)
     }
 
@@ -196,7 +200,8 @@ impl<'a> ABIResolver<'a> {
             .get_module(module_id.address(), module_id.name())?;
         let function_def_idx = find_function_def_in_module(module.as_ref(), function_name)?;
         let function_def = module.function_def_at(function_def_idx);
-        let (_func_name, func) = Function::new(module.as_ref(), function_def);
+        let (_func_name, func) = Function::new(module.as_ref(), function_def)
+            .map_err(|err| anyhow!("get module {} {:?} error", module_id, err))?;
         self.function_to_abi(module_id, function_name, &func)
     }
 

@@ -14,7 +14,7 @@ pub fn test_native_function_matches() -> Result<()> {
                 .iter()
                 .filter_map(|func_def| {
                     if func_def.is_native() {
-                        Some(Function::new(m, func_def).0)
+                        Some(Function::new(m, func_def).unwrap().0)
                     } else {
                         None
                     }

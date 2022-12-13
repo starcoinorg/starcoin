@@ -58,7 +58,7 @@ state-tree = {path = "../state/state-tree", package = "starcoin-state-tree"}
 stdlib = {path = "../vm/stdlib"}
 thiserror = "1.0"
 tokio = {version = "^1", features = ["full"]}
-move-ir-compiler = {git = "https://github.com/starcoinorg/move", rev = "6b81a354bb805f8e3e89f4a29b99f02bcdaf1872"}
+move-ir-compiler = {git = "https://github.com/starcoinorg/move", rev = "b3012ddd9cbb248b92e32de350abadfc93b1dc4d"}
 
 [dev-dependencies]
 stest = {path = "../commons/stest"}
