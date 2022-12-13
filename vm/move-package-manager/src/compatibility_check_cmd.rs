@@ -62,11 +62,8 @@ pub fn handle_compatibility_check(
             .map_err(|e| e.into_vm_status())?;
         if let Some(old) = old_module {
             let old_module = CompiledModule::deserialize(&old)?;
-            let compatibility = check_compiled_module_compat(&old_module, m);
-            let compatibility = match compatibility {
-                std::result::Result::Ok(compatibility) => compatibility,
-                _ => return Err(format_err!("get module {:?} failed", m)),
-            };
+            let compatibility = check_compiled_module_compat(&old_module, m)
+                .map_err(|_| format_err!("get module {:?} failed", m))?;
             if !compatibility.is_fully_compatible() {
                 incompatible_module_ids.push((m.self_id(), compatibility));
             }
