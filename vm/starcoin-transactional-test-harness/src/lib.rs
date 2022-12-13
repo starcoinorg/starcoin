@@ -18,9 +18,7 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
 };
 use move_transactional_test_runner::framework;
-use move_transactional_test_runner::tasks::{
-    PrintBytecodeCommand, PublishCommand, /*RunCommand , TaskCommand,*/ ViewCommand,
-};
+use move_transactional_test_runner::tasks::{PrintBytecodeCommand, PublishCommand, RunCommand, ViewCommand};
 use move_transactional_test_runner::{
     framework::{CompiledState, MoveTestAdapter},
     tasks::{InitCommand, SyntaxChoice, TaskInput},
@@ -1400,8 +1398,7 @@ pub fn print_help(task_name: Option<String>) -> Result<()> {
         PrintBytecodeCommand::command().name("print-bytecode"),
     );
     tasks.insert("publish", PublishCommand::command().name("publish"));
-    // XXX FIXME YSG
-    // tasks.insert("run", RunCommand::<ExtraValueArgs>::command().name("run"));
+    tasks.insert("run", RunCommand::<()>::command().name("run"));
     tasks.insert("view", ViewCommand::command().name("view"));
     tasks.insert("faucet", FaucetSub::command().name("faucet"));
     tasks.insert("block", BlockSub::command().name("block"));
