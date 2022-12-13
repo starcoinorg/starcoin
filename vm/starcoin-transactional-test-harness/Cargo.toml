@@ -29,11 +29,11 @@ jsonrpc-core-client = {version = "18", features = [
   "arbitrary_precision",
 ]}
 log = {version = "0.4.16"}
-move-binary-format = {git = "https://github.com/starcoinorg/move", rev = "3d76c1bd622bcb1eba8dd8952447fffe10944acc"}
-move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "3d76c1bd622bcb1eba8dd8952447fffe10944acc"}
-move-compiler = {git = "https://github.com/starcoinorg/move", rev = "3d76c1bd622bcb1eba8dd8952447fffe10944acc"}
-move-core-types = {git = "https://github.com/starcoinorg/move", rev = "3d76c1bd622bcb1eba8dd8952447fffe10944acc"}
-move-transactional-test-runner = {git = "https://github.com/starcoinorg/move", rev = "3d76c1bd622bcb1eba8dd8952447fffe10944acc"}
+move-binary-format = {git = "https://github.com/starcoinorg/move", rev = "b3012ddd9cbb248b92e32de350abadfc93b1dc4d"}
+move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "b3012ddd9cbb248b92e32de350abadfc93b1dc4d"}
+move-compiler = {git = "https://github.com/starcoinorg/move", rev = "b3012ddd9cbb248b92e32de350abadfc93b1dc4d"}
+move-core-types = {git = "https://github.com/starcoinorg/move", rev = "b3012ddd9cbb248b92e32de350abadfc93b1dc4d"}
+move-transactional-test-runner = {git = "https://github.com/starcoinorg/move", rev = "b3012ddd9cbb248b92e32de350abadfc93b1dc4d"}
 once_cell = "~1"
 serde = {version = "1"}
 serde_json = {version = "1"}
@@ -46,7 +46,7 @@ futures = "0.3.12"
 jsonrpc-core = {version = "18", features = ["arbitrary_precision"]}
 jsonrpc-derive = "18"
 jsonrpc-http-server = "18"
-move-resource-viewer = {git = "https://github.com/starcoinorg/move", rev = "3d76c1bd622bcb1eba8dd8952447fffe10944acc"}
+move-resource-viewer = {git = "https://github.com/starcoinorg/move", rev = "b3012ddd9cbb248b92e32de350abadfc93b1dc4d"}
 starcoin-abi-decoder = {path = "../../abi/decoder"}
 starcoin-accumulator = {package = "starcoin-accumulator", path = "../../commons/accumulator"}
 starcoin-chain-api = {path = "../../chain/api"}
