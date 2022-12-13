@@ -54,6 +54,10 @@ impl<'a> ABIResolver<'a> {
 
     fn resolve_compiled_module(&self, module: &CompiledModule) -> Result<ModuleABI> {
         let m = Module::new(module);
+        let m = match m {
+            Ok(m) => m,
+            e => return Err(anyhow!("get module {:?} {:?} error", module, e)),
+        };
         let module_id = m.module_id();
         let structs = m
             .structs
@@ -74,6 +78,10 @@ impl<'a> ABIResolver<'a> {
         let script_mod = script_into_module(script);
 
         let m = Module::new(&script_mod);
+        let m = match m {
+            Ok(m) => m,
+            e => return Err(anyhow!("get module {:?} error", e)),
+        };
         anyhow::ensure!(
             m.exposed_functions.len() == 1,
             "script should only contain one function"
@@ -127,9 +135,14 @@ impl<'a> ABIResolver<'a> {
             .resolver
             .get_module(module_id.address(), module_id.name())?;
         let struct_def = find_struct_def_in_module(module.as_ref(), name)?;
-        let (name, s) = Struct::new(&module, module.struct_def_at(struct_def));
+        let m = Struct::new(&module, module.struct_def_at(struct_def));
+        let (name, s) = match m {
+            Ok(m) => (m.0, m.1),
+            e => return Err(anyhow!("get module {} {:?} error", module_id, e)),
+        };
         self.struct_to_abi(module_id, &name, &s)
     }
+
     pub fn resolve_type(&self, ty: &Type) -> Result<TypeInstantiation> {
         Ok(match ty {
             Type::Bool => TypeInstantiation::Bool,
@@ -182,7 +195,11 @@ impl<'a> ABIResolver<'a> {
             ));
         }
         let function_def = module.function_def_at(FunctionDefinitionIndex::new(function_idx));
-        let (func_name, func) = Function::new(&module, function_def);
+        let f = Function::new(&module, function_def);
+        let (func_name, func) = match f {
+            Ok(f) => (f.0, f.1),
+            e => return Err(anyhow!("get module {} {:?} error", module_id, e)),
+        };
         self.function_to_abi(module_id, &func_name, &func)
     }
 
@@ -196,7 +213,11 @@ impl<'a> ABIResolver<'a> {
             .get_module(module_id.address(), module_id.name())?;
         let function_def_idx = find_function_def_in_module(module.as_ref(), function_name)?;
         let function_def = module.function_def_at(function_def_idx);
-        let (_func_name, func) = Function::new(module.as_ref(), function_def);
+        let f = Function::new(module.as_ref(), function_def);
+        let (_func_name, func) = match f {
+            Ok(f) => (f.0, f.1),
+            e => return Err(anyhow!("get module {} {:?} error", module_id, e)),
+        };
         self.function_to_abi(module_id, function_name, &func)
     }
 

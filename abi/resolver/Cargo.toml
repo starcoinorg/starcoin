@@ -8,7 +8,7 @@ version = "1.12.8"
 
 [dependencies]
 anyhow = "~1"
-move-model = {git = "https://github.com/starcoinorg/move", rev = "6b81a354bb805f8e3e89f4a29b99f02bcdaf1872"}
+move-model = {git = "https://github.com/starcoinorg/move", rev = "3d76c1bd622bcb1eba8dd8952447fffe10944acc"}
 starcoin-abi-types = {path = "../types"}
 starcoin-resource-viewer = {path = "../../vm/resource-viewer"}
 starcoin-vm-types = {path = "../../vm/types"}
