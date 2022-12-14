@@ -38,4 +38,4 @@ starcoin-vm-types = {path = "../vm/types"}
 stdlib = {path = "../vm/stdlib"}
 tempfile = "3.2.0"
 thiserror = "1.0"
-toml = {version = "0.5.9", default-features = false}
+toml = {version = "0.5.10", default-features = false}
