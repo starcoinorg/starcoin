@@ -2,7 +2,7 @@
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
 name = "starcoin-miner-client-api"
-version = "1.12.8"
+version = "1.12.9"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

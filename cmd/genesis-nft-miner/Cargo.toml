@@ -4,7 +4,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "genesis-nft-miner"
 publish = false
-version = "1.12.8"
+version = "1.12.9"
 
 [dependencies]
 anyhow = "~1"
