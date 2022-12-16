@@ -8,7 +8,7 @@ version = "1.12.9"
 
 [dependencies]
 ## move dependencies
-move-prover = {git = "https://github.com/starcoinorg/move", rev = "b3012ddd9cbb248b92e32de350abadfc93b1dc4d"}
+move-prover = {git = "https://github.com/starcoinorg/move", rev = "2b85bf33378a4469e40b10e7bed815bdbefc5d03"}
 
 # external dependencies
 anyhow = "1.0.41"
@@ -18,8 +18,8 @@ tempfile = "3.2.0"
 
 [dev-dependencies]
 datatest-stable = "0.1.1"
-move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "b3012ddd9cbb248b92e32de350abadfc93b1dc4d"}
-move-prover-test-utils = {git = "https://github.com/starcoinorg/move", rev = "b3012ddd9cbb248b92e32de350abadfc93b1dc4d"}
+move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "2b85bf33378a4469e40b10e7bed815bdbefc5d03"}
+move-prover-test-utils = {git = "https://github.com/starcoinorg/move", rev = "2b85bf33378a4469e40b10e7bed815bdbefc5d03"}
 once_cell = "1.13.0"
 shell-words = "1.0.0"
 tempfile = "3.2"
