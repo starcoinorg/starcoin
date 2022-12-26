@@ -229,7 +229,6 @@ fn simple_instr_to_opcode(instr: SimpleInstruction) -> Opcodes {
         SimpleInstruction::BrFalse => Opcodes::BR_FALSE,
         SimpleInstruction::Branch => Opcodes::BRANCH,
 
-        SimpleInstruction::Pop => Opcodes::POP,
         SimpleInstruction::LdU8 => Opcodes::LD_U8,
         SimpleInstruction::LdU64 => Opcodes::LD_U64,
         SimpleInstruction::LdU128 => Opcodes::LD_U128,
@@ -270,6 +269,14 @@ fn simple_instr_to_opcode(instr: SimpleInstruction) -> Opcodes {
         SimpleInstruction::Ge => Opcodes::GE,
 
         SimpleInstruction::Abort => Opcodes::ABORT,
+
+        SimpleInstruction::LdU16 => Opcodes::LD_U16,
+        SimpleInstruction::LdU32 => Opcodes::LD_U32,
+        SimpleInstruction::LdU256 => Opcodes::LD_U256,
+
+        SimpleInstruction::CastU16 => Opcodes::CAST_U16,
+        SimpleInstruction::CastU32 => Opcodes::CAST_U32,
+        SimpleInstruction::CastU256 => Opcodes::CAST_U256,
     }
 }
 
@@ -287,12 +294,24 @@ impl GasMeter for StarcoinGasMeter {
         self.deduct_gas(cost)
     }
 
+    fn charge_pop(&mut self, _popped_val: impl ValueView) -> PartialVMResult<()> {
+        let params = &self.gas_params.instr;
+        let cost = params.pop;
+        #[cfg(testing)]
+        info!(
+            "simple_instr pop cost InternalGasUnits({}) {}",
+            cost, self.charge
+        );
+        self.deduct_gas(cost)
+    }
+
     #[inline]
     fn charge_call(
         &mut self,
         _module_id: &ModuleId,
         _func_name: &str,
         args: impl ExactSizeIterator<Item = impl ValueView>,
+        _num_locals: NumArgs,
     ) -> PartialVMResult<()> {
         let params = &self.gas_params.instr;
         // Note args.len() may be zero, can't use args.len() + 1 directly
@@ -312,6 +331,7 @@ impl GasMeter for StarcoinGasMeter {
         _func_name: &str,
         ty_args: impl ExactSizeIterator<Item = impl TypeView>,
         args: impl ExactSizeIterator<Item = impl ValueView>,
+        _num_locals: NumArgs,
     ) -> PartialVMResult<()> {
         let params = &self.gas_params.instr;
         // Note args.len() may be zero, can't use ty_args.len() + args.len() + 1 directly
@@ -341,6 +361,13 @@ impl GasMeter for StarcoinGasMeter {
         #[cfg(testing)]
         info!("LD_CONST cost InternalGasUnits({}) {}", cost, self.charge);
         self.deduct_gas(cost)
+    }
+
+    fn charge_ld_const_after_deserialization(
+        &mut self,
+        _val: impl ValueView,
+    ) -> PartialVMResult<()> {
+        Ok(())
     }
 
     #[inline]
@@ -459,7 +486,11 @@ impl GasMeter for StarcoinGasMeter {
     }
 
     #[inline]
-    fn charge_write_ref(&mut self, val: impl ValueView) -> PartialVMResult<()> {
+    fn charge_write_ref(
+        &mut self,
+        val: impl ValueView,
+        _old_val: impl ValueView,
+    ) -> PartialVMResult<()> {
         let cost = cal_instr_with_size(
             self.gas_params.instr.write_ref_per_abs_mem_unit,
             val.legacy_abstract_memory_size(),
@@ -704,6 +735,7 @@ impl GasMeter for StarcoinGasMeter {
         &mut self,
         _ty: impl TypeView,
         expect_num_elements: NumArgs,
+        _elems: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
         let cost = cal_instr_with_arg(
             self.gas_params.instr.vec_unpack_per_expected_elem,
@@ -723,17 +755,39 @@ impl GasMeter for StarcoinGasMeter {
     }
 
     #[inline]
-    fn charge_load_resource(&mut self, _loaded: Option<NumBytes>) -> PartialVMResult<()> {
+    fn charge_load_resource(
+        &mut self,
+        _loaded: Option<(NumBytes, impl ValueView)>,
+    ) -> PartialVMResult<()> {
         Ok(())
     }
 
     #[inline]
-    fn charge_native_function(&mut self, amount: InternalGas) -> PartialVMResult<()> {
+    fn charge_native_function(
+        &mut self,
+        amount: InternalGas,
+        _ret_vals: Option<impl ExactSizeIterator<Item = impl ValueView>>,
+    ) -> PartialVMResult<()> {
         #[cfg(testing)]
         info!(
             "NATIVE_FUNCTION cost InternalGasUnits({}) {}",
             amount, self.charge
         );
         self.deduct_gas(amount)
+    }
+
+    fn charge_native_function_before_execution(
+        &mut self,
+        _ty_args: impl ExactSizeIterator<Item = impl TypeView>,
+        _args: impl ExactSizeIterator<Item = impl ValueView>,
+    ) -> PartialVMResult<()> {
+        Ok(())
+    }
+
+    fn charge_drop_frame(
+        &mut self,
+        _locals: impl Iterator<Item = impl ValueView>,
+    ) -> PartialVMResult<()> {
+        Ok(())
     }
 }

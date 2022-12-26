@@ -205,7 +205,7 @@ pub fn raw_accept_token_txn(
     let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
         Identifier::new("accept_token").unwrap(),
-        vec![TypeTag::Struct(token_code.try_into().unwrap())],
+        vec![TypeTag::Struct(Box::new(token_code.try_into().unwrap()))],
         vec![],
     ));
 
@@ -254,7 +254,7 @@ pub fn encode_transfer_script_by_token_code(
             Identifier::new("TransferScripts").unwrap(),
         ),
         Identifier::new("peer_to_peer_v2").unwrap(),
-        vec![TypeTag::Struct(token_code.try_into().unwrap())],
+        vec![TypeTag::Struct(Box::new(token_code.try_into().unwrap()))],
         vec![
             bcs_ext::to_bytes(&recipient).unwrap(),
             bcs_ext::to_bytes(&amount).unwrap(),
@@ -781,19 +781,19 @@ pub fn build_module_upgrade_queue(
     stdlib_version: StdlibVersion,
 ) -> ScriptFunction {
     let upgrade_module = if stdlib_version >= StdlibVersion::Version(2) {
-        TypeTag::Struct(StructTag {
+        TypeTag::Struct(Box::new(StructTag {
             address: genesis_address(),
             module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
             name: Identifier::new("UpgradeModuleV2").unwrap(),
             type_params: vec![],
-        })
+        }))
     } else {
-        TypeTag::Struct(StructTag {
+        TypeTag::Struct(Box::new(StructTag {
             address: genesis_address(),
             module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
             name: Identifier::new("UpgradeModule").unwrap(),
             type_params: vec![],
-        })
+        }))
     };
 
     ScriptFunction::new(

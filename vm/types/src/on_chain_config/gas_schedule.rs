@@ -593,6 +593,12 @@ impl From<&VMConfig> for GasSchedule {
         for (idx, cost) in instrs.into_iter().enumerate() {
             entries.push((G_INSTR_STRS[idx].to_string(), cost.total()));
         }
+        entries.push(("instr.ld_u16".to_string(), 3));
+        entries.push(("instr.ld_u32".to_string(), 2));
+        entries.push(("instr.ld_u256".to_string(), 3));
+        entries.push(("instr.cast_u16".to_string(), 3));
+        entries.push(("instr.cast_u32".to_string(), 2));
+        entries.push(("instr.cast_u256".to_string(), 3));
 
         // see vm/gas_algebra-ext/src/{move_stdlib.rs starcoin_framework.rs nursery.rs table.rs}
         // see https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#native_schedule
@@ -604,7 +610,7 @@ impl From<&VMConfig> for GasSchedule {
             entries.push((G_NATIVE_STRS[idx].to_string(), cost.total()));
         }
 
-        // instruction_schedule don't have this two
+        // native_table don't have these
         entries.push(("nursery.debug.print.base_cost".to_string(), 1));
         entries.push(("nursery.debug.print_stack_trace.base_cost".to_string(), 1));
 

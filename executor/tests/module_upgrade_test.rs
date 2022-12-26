@@ -45,12 +45,12 @@ fn test_init_script() -> Result<()> {
     )?;
     let chain_state = prepare_customized_genesis(&net);
 
-    let dao_action_type_tag = TypeTag::Struct(StructTag {
+    let dao_action_type_tag = TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
         module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
         name: Identifier::new("UpgradeModule").unwrap(),
         type_params: vec![],
-    });
+    }));
 
     let init_script = ScriptFunction::new(
         ModuleId::new(
@@ -123,12 +123,12 @@ fn test_upgrade_stdlib_with_incremental_package() -> Result<()> {
     )?;
     let chain_state = prepare_customized_genesis(&net);
 
-    let dao_action_type_tag = TypeTag::Struct(StructTag {
+    let dao_action_type_tag = TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
         module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
         name: Identifier::new("UpgradeModule").unwrap(),
         type_params: vec![],
-    });
+    }));
     let path = std::path::PathBuf::from("../vm/stdlib/compiled/2/1-2/stdlib.blob")
         .canonicalize()
         .unwrap();

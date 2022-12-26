@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
-use move_binary_format::file_format_common::VERSION_3;
+use move_binary_format::file_format_common::VERSION_4;
 use move_binary_format::CompiledModule;
 use move_cli::sandbox::utils::PackageContext;
 use move_cli::Move;
@@ -22,7 +22,7 @@ pub const DEFAULT_RELEASE_DIR: &str = "release";
 // XXX FIXME YSG, mpm release use v4, v5, v6
 #[derive(Parser)]
 pub struct Release {
-    #[clap(name = "move-version", long = "move-version", default_value="4", possible_values=&["3", "4"])]
+    #[clap(name = "move-version", long = "move-version", default_value="4", possible_values=&["4", "6"])]
     /// specify the move lang version for the release.
     /// currently, only v3, v4 are supported.
     language_version: u8,
@@ -65,7 +65,10 @@ pub fn handle_release(
     let pkg_version = move_args
         .build_config
         .clone()
-        .resolution_graph_for_package(move_args.package_path.as_ref().unwrap())
+        .resolution_graph_for_package(
+            move_args.package_path.as_ref().unwrap(),
+            &mut std::io::stdout(),
+        )
         .unwrap()
         .root_package
         .package
@@ -76,8 +79,8 @@ pub fn handle_release(
         let m = module(&m.unit)?;
         println!("\t {}", m.self_id());
         // XXX FIXME YSG, mpm release
-        let code = if language_version as u32 == VERSION_3 {
-            ModuleBytecodeDowngrader::to_v3(m)?
+        let code = if language_version as u32 == VERSION_4 {
+            ModuleBytecodeDowngrader::to_v4(m)?
         } else {
             let mut data = vec![];
             m.serialize(&mut data)?;

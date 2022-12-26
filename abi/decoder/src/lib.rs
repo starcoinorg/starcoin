@@ -82,8 +82,12 @@ fn value_to_json(origin: AnnotatedMoveValue) -> serde_json::Value {
     use serde_json::Value;
     match origin {
         AnnotatedMoveValue::U8(v) => Value::Number(v.into()),
+        AnnotatedMoveValue::U16(v) => Value::Number(v.into()),
+        AnnotatedMoveValue::U32(v) => Value::Number(v.into()),
         AnnotatedMoveValue::U64(v) => Value::Number(v.into()),
         AnnotatedMoveValue::U128(v) => Value::Number(v.into()),
+        // XXX FIXME YSG
+        AnnotatedMoveValue::U256(v) => Value::String(v.to_string()),
         AnnotatedMoveValue::Bool(v) => Value::Bool(v),
         AnnotatedMoveValue::Address(v) => Value::String(v.to_string()),
         AnnotatedMoveValue::Vector(v) => Value::Array(v.into_iter().map(value_to_json).collect()),

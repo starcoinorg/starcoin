@@ -108,7 +108,7 @@ fn test_type_params_formatting() {
             "<vector<u8>, u64>",
         ),
         (
-            vec![TypeTag::U64, TypeTag::Struct(a_struct)],
+            vec![TypeTag::U64, TypeTag::Struct(Box::new(a_struct))],
             "<u64, 0x00000000000000000000000000000000::TestModule::TestStruct<address>>",
         ),
     ];

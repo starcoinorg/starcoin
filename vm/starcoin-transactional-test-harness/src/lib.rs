@@ -18,7 +18,9 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
 };
 use move_transactional_test_runner::framework;
-use move_transactional_test_runner::tasks::{PrintBytecodeCommand, PublishCommand, RunCommand, ViewCommand};
+use move_transactional_test_runner::tasks::{
+    PrintBytecodeCommand, PublishCommand, RunCommand, ViewCommand,
+};
 use move_transactional_test_runner::{
     framework::{CompiledState, MoveTestAdapter},
     tasks::{InitCommand, SyntaxChoice, TaskInput},

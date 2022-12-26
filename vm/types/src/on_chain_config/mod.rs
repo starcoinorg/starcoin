@@ -191,12 +191,12 @@ pub fn access_path_for_config(
             address: CORE_CODE_ADDRESS,
             module: Identifier::new("Config").unwrap(),
             name: Identifier::new("Config").unwrap(),
-            type_params: vec![TypeTag::Struct(StructTag {
+            type_params: vec![TypeTag::Struct(Box::new(StructTag {
                 address: CORE_CODE_ADDRESS,
                 module: module_name,
                 name: config_name,
                 type_params: params,
-            })],
+            }))],
         },
     )
 }

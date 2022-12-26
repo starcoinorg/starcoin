@@ -74,7 +74,7 @@ pub fn starcoin_natives(gas_params: NativeGasParameters) -> NativeFunctionTable 
     );
     add_natives_from_module!(
         "Debug",
-        move_stdlib::natives::debug::make_all(gas_params.nursery.debug)
+        move_stdlib::natives::debug::make_all(gas_params.nursery.debug, CORE_CODE_ADDRESS)
     );
     let natives = make_table_from_iter(CORE_CODE_ADDRESS, natives);
     natives

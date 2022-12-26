@@ -261,14 +261,7 @@ pub fn instruction_table_v2() -> Vec<GasCost> {
 }
 
 /// return latest instruction table, as `initial_instruction_table` function should not be modified.
-pub static G_LATEST_INSTRUCTION_TABLE: Lazy<Vec<GasCost>> = Lazy::new(|| {
-    let latest_ins = instruction_table_v2();
-    debug_assert!(
-        latest_ins.len() == Bytecode::VARIANT_COUNT,
-        "all instructions must be in the cost table"
-    );
-    latest_ins
-});
+pub static G_LATEST_INSTRUCTION_TABLE: Lazy<Vec<GasCost>> = Lazy::new(instruction_table_v2);
 
 pub fn native_table_v1() -> Vec<GasCost> {
     let mut raw_native_table = vec![

@@ -129,10 +129,10 @@ impl OnChainConfig for VMConfig {
 }
 
 pub fn vm_config_type_tag() -> TypeTag {
-    TypeTag::Struct(StructTag {
+    TypeTag::Struct(Box::new(StructTag {
         address: CORE_CODE_ADDRESS,
         module: G_VM_CONFIG_IDENTIFIER.clone(),
         name: G_VM_CONFIG_IDENTIFIER.clone(),
         type_params: vec![],
-    })
+    }))
 }

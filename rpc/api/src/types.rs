@@ -135,8 +135,12 @@ impl From<AnnotatedMoveStruct> for AnnotatedMoveStructView {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub enum AnnotatedMoveValueView {
     U8(u8),
+    // XXX FIXME YSG
+    //   U16(StrView<u16>),
+    // U32(Strview<u32>),
     U64(StrView<u64>),
     U128(StrView<u128>),
+    //  U256(StrView<u256::U256>),
     Bool(bool),
     Address(AccountAddress),
     Vector(Vec<AnnotatedMoveValueView>),
@@ -148,8 +152,11 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
     fn from(origin: AnnotatedMoveValue) -> Self {
         match origin {
             AnnotatedMoveValue::U8(u) => AnnotatedMoveValueView::U8(u),
+            //   AnnotatedMoveValue::U16(u) => AnnotatedMoveValueView::U16(StrView(u)),
+            //  AnnotatedMoveValue::U32(u) => AnnotatedMoveValueView::U32(StrView(u)),
             AnnotatedMoveValue::U64(u) => AnnotatedMoveValueView::U64(StrView(u)),
             AnnotatedMoveValue::U128(u) => AnnotatedMoveValueView::U128(StrView(u)),
+            //  AnnotatedMoveValue::U256(u) => AnnotatedMoveValueView::U256(StrView(u)),
             AnnotatedMoveValue::Bool(b) => AnnotatedMoveValueView::Bool(b),
             AnnotatedMoveValue::Address(data) => AnnotatedMoveValueView::Address(data),
             AnnotatedMoveValue::Vector(data) => {
@@ -157,6 +164,7 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
             }
             AnnotatedMoveValue::Bytes(data) => AnnotatedMoveValueView::Bytes(StrView(data)),
             AnnotatedMoveValue::Struct(data) => AnnotatedMoveValueView::Struct(data.into()),
+            _ => todo!("XXX FIXME YSG"),
         }
     }
 }
@@ -1654,7 +1662,7 @@ impl FromStr for StructTagView {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let type_tag = parse_type_tag(s)?;
         match type_tag {
-            TypeTag::Struct(s) => Ok(Self(s)),
+            TypeTag::Struct(s) => Ok(Self(*s)),
             t => anyhow::bail!("expect struct tag, actual: {}", t),
         }
     }

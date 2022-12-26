@@ -36,6 +36,9 @@ fn quote_type_as_format(type_tag: &TypeTag) -> Format {
         },
 
         Struct(_) | Signer => type_not_allowed(type_tag),
+        U16 => Format::U16,
+        U32 => Format::U32,
+        U256 => todo!("XXX FIXME YSG"),
     }
 }
 
@@ -89,6 +92,9 @@ pub(crate) fn mangle_type(type_tag: &TypeTag) -> String {
         },
 
         Struct(_) | Signer => type_not_allowed(type_tag),
+        U16 => "st.uint16".into(),
+        U32 => "st.uint32".into(),
+        U256 => "st.uint256".into(),
     }
 }
 

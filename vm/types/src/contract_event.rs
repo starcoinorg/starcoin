@@ -102,7 +102,7 @@ impl ContractEventV0 {
     }
 
     pub fn is<EventType: MoveResource>(&self) -> bool {
-        self.type_tag == TypeTag::Struct(EventType::struct_tag())
+        self.type_tag == TypeTag::Struct(Box::new(EventType::struct_tag()))
     }
 }
 

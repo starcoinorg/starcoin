@@ -142,13 +142,14 @@ impl serde::Serialize for MoveValue {
             }
             AnnotatedMoveValue::Bytes(v) => hex::encode(v).serialize(serializer),
             AnnotatedMoveValue::Struct(v) => MoveStruct(v.clone()).serialize(serializer),
+            _ => todo!("XXX FIXME YSG"),
         }
     }
 }
 
 fn parse_struct_tag(input: &str) -> anyhow::Result<StructTag> {
     match parse_type_tag(input)? {
-        TypeTag::Struct(s) => Ok(s),
+        TypeTag::Struct(s) => Ok(*s),
         _ => {
             anyhow::bail!("invalid struct tag")
         }

@@ -66,6 +66,10 @@ pub(crate) enum FatType {
     Reference(Box<FatType>),
     MutableReference(Box<FatType>),
     TyParam(usize),
+    // NOTE: Added in bytecode version v6, do not reorder!
+    U16,
+    U32,
+    U256,
 }
 
 impl FatStructType {
@@ -124,8 +128,11 @@ impl FatType {
 
             Bool => Bool,
             U8 => U8,
+            U16 => U16,
+            U32 => U32,
             U64 => U64,
             U128 => U128,
+            U256 => U256,
             Address => Address,
             Signer => Signer,
             Vector(ty) => Vector(Box::new(ty.subst(ty_args)?)),
@@ -144,12 +151,15 @@ impl FatType {
         let res = match self {
             Bool => TypeTag::Bool,
             U8 => TypeTag::U8,
+            U16 => TypeTag::U16,
+            U32 => TypeTag::U32,
             U64 => TypeTag::U64,
             U128 => TypeTag::U128,
+            U256 => TypeTag::U256,
             Address => TypeTag::Address,
             Signer => TypeTag::Signer,
             Vector(ty) => TypeTag::Vector(Box::new(ty.type_tag()?)),
-            Struct(struct_ty) => TypeTag::Struct(struct_ty.struct_tag()?),
+            Struct(struct_ty) => TypeTag::Struct(Box::new(struct_ty.struct_tag()?)),
 
             Reference(_) | MutableReference(_) | TyParam(_) => {
                 return Err(
@@ -183,8 +193,11 @@ impl TryInto<MoveTypeLayout> for &FatType {
         Ok(match self {
             FatType::Address => MoveTypeLayout::Address,
             FatType::U8 => MoveTypeLayout::U8,
+            FatType::U16 => MoveTypeLayout::U16,
+            FatType::U32 => MoveTypeLayout::U32,
             FatType::U64 => MoveTypeLayout::U64,
             FatType::U128 => MoveTypeLayout::U128,
+            FatType::U256 => MoveTypeLayout::U256,
             FatType::Bool => MoveTypeLayout::Bool,
             FatType::Vector(v) => MoveTypeLayout::Vector(Box::new(v.as_ref().try_into()?)),
             FatType::Struct(s) => MoveTypeLayout::Struct(MoveStructLayout::new(

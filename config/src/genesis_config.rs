@@ -1083,8 +1083,14 @@ mod tests {
         let mut entries = instrs;
         let mut natives = natives;
         let mut constants = constants;
+        entries.push(("instr.ld_u16".to_string(), 3));
+        entries.push(("instr.ld_u32".to_string(), 2));
+        entries.push(("instr.ld_u256".to_string(), 3));
+        entries.push(("instr.cast_u16".to_string(), 3));
+        entries.push(("instr.cast_u32".to_string(), 2));
+        entries.push(("instr.cast_u256".to_string(), 3));
         entries.append(&mut natives);
-        // instruction_schedule don't have this two
+        // native_table don't have these
         entries.push(("nursery.debug.print.base_cost".to_string(), 1));
         entries.push(("nursery.debug.print_stack_trace.base_cost".to_string(), 1));
 

@@ -87,36 +87,36 @@ pub fn proposal_exist<S: StateView>(
 }
 
 pub fn on_chain_config_type_tag(params_type_tag: TypeTag) -> TypeTag {
-    TypeTag::Struct(StructTag {
+    TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
         module: Identifier::new("OnChainConfigDao").unwrap(),
         name: Identifier::new("OnChainConfigUpdate").unwrap(),
         type_params: vec![params_type_tag],
-    })
+    }))
 }
 pub fn reward_config_type_tag() -> TypeTag {
-    TypeTag::Struct(StructTag {
+    TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
         module: Identifier::new("RewardConfig").unwrap(),
         name: Identifier::new("RewardConfig").unwrap(),
         type_params: vec![],
-    })
+    }))
 }
 pub fn transaction_timeout_type_tag() -> TypeTag {
-    TypeTag::Struct(StructTag {
+    TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
         module: Identifier::new("TransactionTimeoutConfig").unwrap(),
         name: Identifier::new("TransactionTimeoutConfig").unwrap(),
         type_params: vec![],
-    })
+    }))
 }
 pub fn txn_publish_config_type_tag() -> TypeTag {
-    TypeTag::Struct(StructTag {
+    TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
         module: Identifier::new("TransactionPublishOption").unwrap(),
         name: Identifier::new("TransactionPublishOption").unwrap(),
         type_params: vec![],
-    })
+    }))
 }
 
 fn execute_create_account(

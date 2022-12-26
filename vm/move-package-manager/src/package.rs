@@ -49,9 +49,12 @@ pub fn handle_package_commands(
         PackageCommand::Errmap(c) => c.execute(move_args.package_path, move_args.build_config),
         PackageCommand::Prove(c) => c.execute(move_args.package_path, move_args.build_config),
         PackageCommand::Coverage(c) => c.execute(move_args.package_path, move_args.build_config),
-        PackageCommand::Test(c) => {
-            c.execute(move_args.package_path, move_args.build_config, natives)
-        }
+        PackageCommand::Test(c) => c.execute(
+            move_args.package_path,
+            move_args.build_config,
+            natives,
+            None,
+        ),
         PackageCommand::Disassemble(c) => c.execute(move_args.package_path, move_args.build_config),
     }
 }

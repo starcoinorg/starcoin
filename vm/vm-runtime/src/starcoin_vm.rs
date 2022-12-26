@@ -673,12 +673,10 @@ impl StarcoinVM {
         txn_data: &TransactionMetadata,
     ) -> Result<(), VMStatus> {
         let genesis_address = genesis_address();
-        let gas_token_ty = TypeTag::Struct(
-            txn_data
-                .gas_token_code()
-                .try_into()
-                .map_err(|_e| VMStatus::Error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY))?,
-        );
+        let gas_token_ty =
+            TypeTag::Struct(Box::new(txn_data.gas_token_code().try_into().map_err(
+                |_e| VMStatus::Error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY),
+            )?));
         let txn_sequence_number = txn_data.sequence_number();
         let authentication_key_preimage = txn_data.authentication_key_preimage().to_vec();
         let txn_gas_price = u64::from(txn_data.gas_unit_price());
@@ -735,12 +733,10 @@ impl StarcoinVM {
         success: bool,
     ) -> Result<(), VMStatus> {
         let genesis_address = genesis_address();
-        let gas_token_ty = TypeTag::Struct(
-            txn_data
-                .gas_token_code()
-                .try_into()
-                .map_err(|_e| VMStatus::Error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY))?,
-        );
+        let gas_token_ty =
+            TypeTag::Struct(Box::new(txn_data.gas_token_code().try_into().map_err(
+                |_e| VMStatus::Error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY),
+            )?));
         let txn_sequence_number = txn_data.sequence_number();
         let txn_authentication_key_preimage = txn_data.authentication_key_preimage().to_vec();
         let txn_gas_price = u64::from(txn_data.gas_unit_price());

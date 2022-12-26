@@ -142,7 +142,8 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
         // force move to rebuild all packages, so that we can use compile_driver to generate the full compiled program.
         let mut build_config = move_arg.build_config;
         build_config.force_recompilation = true;
-        let resolved_graph = build_config.resolution_graph_for_package(&rerooted_path)?;
+        let resolved_graph =
+            build_config.resolution_graph_for_package(&rerooted_path, &mut std::io::stdout())?;
         let mut pre_compiled_lib = FullyCompiledProgram {
             files: Default::default(),
             parser: parser::ast::Program {

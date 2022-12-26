@@ -185,62 +185,74 @@ crate::params::define_gas_parameters!(
             (572 + 1) * MUL
         ],
         [vec_swap_base: InternalGas, optional "vec_swap.base", (1436 + 1) * MUL],
+        // XXX FIXME YSG, check v6 bytecode cost
+        [cast_u16: InternalGas,  "cast_u16", (2 + 1) * MUL],
+        [cast_u32: InternalGas,  "cast_u32", (1 + 1)* MUL],
+        [cast_u256: InternalGas,  "cast_u256", (2 + 1)* MUL],
+        [ld_u16: InternalGas,  "ld_u16", (2 + 1) * MUL],
+        [ld_u32: InternalGas,  "ld_u32", (1 + 1)* MUL],
+        [ld_u256: InternalGas,  "ld_u256", (2 + 1)* MUL],
     ]
 );
 
 impl InstructionGasParameters {
     pub fn simple_instr_cost(&self, instr: SimpleInstruction) -> PartialVMResult<InternalGas> {
-        use SimpleInstruction::*;
-
         Ok(match instr {
-            Nop => self.nop,
+            SimpleInstruction::Nop => self.nop,
 
-            Abort => self.abort,
-            Ret => self.ret,
+            SimpleInstruction::Abort => self.abort,
+            SimpleInstruction::Ret => self.ret,
 
-            BrTrue => self.br_true,
-            BrFalse => self.br_false,
-            Branch => self.branch,
+            SimpleInstruction::BrTrue => self.br_true,
+            SimpleInstruction::BrFalse => self.br_false,
+            SimpleInstruction::Branch => self.branch,
 
-            Pop => self.pop,
-            LdU8 => self.ld_u8,
-            LdU64 => self.ld_u64,
-            LdU128 => self.ld_u128,
-            LdTrue => self.ld_true,
-            LdFalse => self.ld_false,
+            SimpleInstruction::LdU8 => self.ld_u8,
+            SimpleInstruction::LdU64 => self.ld_u64,
+            SimpleInstruction::LdU128 => self.ld_u128,
+            SimpleInstruction::LdTrue => self.ld_true,
+            SimpleInstruction::LdFalse => self.ld_false,
 
-            ImmBorrowLoc => self.imm_borrow_loc,
-            MutBorrowLoc => self.mut_borrow_loc,
-            ImmBorrowField => self.imm_borrow_field,
-            MutBorrowField => self.mut_borrow_field,
-            ImmBorrowFieldGeneric => self.imm_borrow_field_generic,
-            MutBorrowFieldGeneric => self.mut_borrow_field_generic,
-            FreezeRef => self.freeze_ref,
+            SimpleInstruction::ImmBorrowLoc => self.imm_borrow_loc,
+            SimpleInstruction::MutBorrowLoc => self.mut_borrow_loc,
+            SimpleInstruction::ImmBorrowField => self.imm_borrow_field,
+            SimpleInstruction::MutBorrowField => self.mut_borrow_field,
+            SimpleInstruction::ImmBorrowFieldGeneric => self.imm_borrow_field_generic,
+            SimpleInstruction::MutBorrowFieldGeneric => self.mut_borrow_field_generic,
+            SimpleInstruction::FreezeRef => self.freeze_ref,
 
-            CastU8 => self.cast_u8,
-            CastU64 => self.cast_u64,
-            CastU128 => self.cast_u128,
+            SimpleInstruction::CastU8 => self.cast_u8,
+            SimpleInstruction::CastU64 => self.cast_u64,
+            SimpleInstruction::CastU128 => self.cast_u128,
 
-            Add => self.add,
-            Sub => self.sub,
-            Mul => self.mul,
-            Mod => self.mod_,
-            Div => self.div,
+            SimpleInstruction::Add => self.add,
+            SimpleInstruction::Sub => self.sub,
+            SimpleInstruction::Mul => self.mul,
+            SimpleInstruction::Mod => self.mod_,
+            SimpleInstruction::Div => self.div,
 
-            BitOr => self.bit_or,
-            BitAnd => self.bit_and,
-            Xor => self.xor,
-            Shl => self.shl,
-            Shr => self.shr,
+            SimpleInstruction::BitOr => self.bit_or,
+            SimpleInstruction::BitAnd => self.bit_and,
+            SimpleInstruction::Xor => self.xor,
+            SimpleInstruction::Shl => self.shl,
+            SimpleInstruction::Shr => self.shr,
 
-            Or => self.or,
-            And => self.and,
-            Not => self.not,
+            SimpleInstruction::Or => self.or,
+            SimpleInstruction::And => self.and,
+            SimpleInstruction::Not => self.not,
 
-            Lt => self.lt,
-            Gt => self.gt,
-            Le => self.le,
-            Ge => self.ge,
+            SimpleInstruction::Lt => self.lt,
+            SimpleInstruction::Gt => self.gt,
+            SimpleInstruction::Le => self.le,
+            SimpleInstruction::Ge => self.ge,
+
+            SimpleInstruction::LdU16 => self.ld_u16,
+            SimpleInstruction::LdU32 => self.ld_u32,
+            SimpleInstruction::LdU256 => self.ld_u256,
+
+            SimpleInstruction::CastU16 => self.cast_u16,
+            SimpleInstruction::CastU32 => self.cast_u32,
+            SimpleInstruction::CastU256 => self.cast_u256,
         })
     }
 }
