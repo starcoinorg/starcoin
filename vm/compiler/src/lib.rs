@@ -206,10 +206,14 @@ pub fn check_module_compat(pre_code: &[u8], new_code: &[u8]) -> VMResult<bool> {
 
     let old = Module::new(&pre_module);
     let new = Module::new(&new_module);
-    Compatibility::new(true, true, false)
+    if Compatibility::new(true, true, false)
         .check(&old, &new)
-        .map_err(|e| e.finish(Location::Undefined))?;
-    Ok(true)
+        .is_err()
+    {
+        Ok(false)
+    } else {
+        Ok(true)
+    }
 }
 
 /// check module compatibility
