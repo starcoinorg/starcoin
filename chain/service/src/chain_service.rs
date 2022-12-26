@@ -147,8 +147,8 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetTransactionInfo(hash) => Ok(ChainResponse::TransactionInfo(
                 self.inner.get_transaction_info(hash)?,
             )),
-            ChainRequest::GetBlocksByNumber(number, count) => Ok(ChainResponse::BlockVec(
-                self.inner.main_blocks_by_number(number, count)?,
+            ChainRequest::GetBlocksByNumber(number, reverse, count) => Ok(ChainResponse::BlockVec(
+                self.inner.main_blocks_by_number(number, reverse, count)?,
             )),
             ChainRequest::GetBlockTransactionInfos(block_id) => Ok(
                 ChainResponse::TransactionInfos(self.inner.get_block_txn_infos(block_id)?),
@@ -366,8 +366,8 @@ impl ReadableChainService for ChainReaderServiceInner {
     fn main_startup_info(&self) -> StartupInfo {
         self.startup_info.clone()
     }
-    fn main_blocks_by_number(&self, number: Option<BlockNumber>, count: u64) -> Result<Vec<Block>> {
-        self.main.get_blocks_by_number(number, count)
+    fn main_blocks_by_number(&self, number: Option<BlockNumber>, reverse:bool, count: u64) -> Result<Vec<Block>> {
+        self.main.get_blocks_by_number(number, reverse, count)
     }
 
     fn get_main_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>> {

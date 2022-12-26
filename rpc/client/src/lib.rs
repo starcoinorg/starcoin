@@ -21,7 +21,7 @@ use starcoin_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_logger::{prelude::*, LogPattern};
-use starcoin_rpc_api::chain::{GetBlockOption, GetEventOption, GetTransactionOption};
+use starcoin_rpc_api::chain::{GetBlockOption, GetBlocksOption, GetEventOption, GetTransactionOption};
 use starcoin_rpc_api::node::NodeInfo;
 use starcoin_rpc_api::service::RpcAsyncService;
 use starcoin_rpc_api::state::{
@@ -753,8 +753,9 @@ impl RpcClient {
         &self,
         number: Option<BlockNumber>,
         count: u64,
+        option: Option<GetBlocksOption>,
     ) -> anyhow::Result<Vec<BlockView>> {
-        self.call_rpc_blocking(|inner| inner.chain_client.get_blocks_by_number(number, count))
+        self.call_rpc_blocking(|inner| inner.chain_client.get_blocks_by_number(number, count, option))
             .map_err(map_err)
     }
 

@@ -298,6 +298,7 @@ impl ChainApi for MockChainApi {
     fn get_blocks_by_number(
         &self,
         _number: Option<BlockNumber>,
+        _reverse: bool,
         _count: u64,
     ) -> FutureResult<Vec<BlockView>> {
         let fut = async move {
