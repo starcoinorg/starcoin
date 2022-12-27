@@ -366,7 +366,12 @@ impl ReadableChainService for ChainReaderServiceInner {
     fn main_startup_info(&self) -> StartupInfo {
         self.startup_info.clone()
     }
-    fn main_blocks_by_number(&self, number: Option<BlockNumber>, reverse:bool, count: u64) -> Result<Vec<Block>> {
+    fn main_blocks_by_number(
+        &self,
+        number: Option<BlockNumber>,
+        reverse: bool,
+        count: u64,
+    ) -> Result<Vec<Block>> {
         self.main.get_blocks_by_number(number, reverse, count)
     }
 

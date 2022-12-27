@@ -561,14 +561,16 @@ impl ChainReader for BlockChain {
             })
     }
 
-    fn get_blocks_by_number(&self, number: Option<BlockNumber>, reverse: bool, count: u64) -> Result<Vec<Block>> {
-
-
+    fn get_blocks_by_number(
+        &self,
+        number: Option<BlockNumber>,
+        reverse: bool,
+        count: u64,
+    ) -> Result<Vec<Block>> {
         let end_num = match number {
             None => self.current_header().number(),
             Some(number) => number,
         };
-
 
         let num_leaves = self.block_accumulator.num_leaves();
 
@@ -576,9 +578,9 @@ impl ChainReader for BlockChain {
             bail!("Can not find block by number {}", end_num);
         };
 
-        let len =  if ( end_num.saturating_add(count) > num_leaves.saturating_sub(1) ) || reverse {
-           num_leaves.saturating_sub(end_num)
-        }else {
+        let len = if (end_num.saturating_add(count) > num_leaves.saturating_sub(1)) || reverse {
+            num_leaves.saturating_sub(end_num)
+        } else {
             count
         };
 

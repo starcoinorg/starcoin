@@ -36,9 +36,13 @@ impl CommandAction for ListBlockCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let blocks = client.chain_get_blocks_by_number(opt.number, opt.count, Some(GetBlocksOption {
-            reverse: opt.reverse
-        }))?;
+        let blocks = client.chain_get_blocks_by_number(
+            opt.number,
+            opt.count,
+            Some(GetBlocksOption {
+                reverse: opt.reverse,
+            }),
+        )?;
         let block_view = blocks.into_iter().map(|block| block.header).collect();
         Ok(block_view)
     }

@@ -36,7 +36,12 @@ pub trait ChainReader {
     fn get_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>>;
     /// Get latest `count` blocks before `number`. if `number` is absent, use head block number.
     /// the block of `number` is inclusive.
-    fn get_blocks_by_number(&self, number: Option<BlockNumber>, reverse: bool, count: u64) -> Result<Vec<Block>>;
+    fn get_blocks_by_number(
+        &self,
+        number: Option<BlockNumber>,
+        reverse: bool,
+        count: u64,
+    ) -> Result<Vec<Block>>;
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>>;
     /// Get block hash by block number, if not exist, return None
     fn get_hash_by_number(&self, number: BlockNumber) -> Result<Option<HashValue>>;

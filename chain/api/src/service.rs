@@ -42,7 +42,12 @@ pub trait ReadableChainService {
     fn main_block_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>>;
     fn main_block_info_by_number(&self, number: BlockNumber) -> Result<Option<BlockInfo>>;
     fn main_startup_info(&self) -> StartupInfo;
-    fn main_blocks_by_number(&self, number: Option<BlockNumber>, reverse:bool, count: u64) -> Result<Vec<Block>>;
+    fn main_blocks_by_number(
+        &self,
+        number: Option<BlockNumber>,
+        reverse: bool,
+        count: u64,
+    ) -> Result<Vec<Block>>;
     fn get_main_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>>;
     fn get_block_ids(
         &self,

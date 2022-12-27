@@ -1366,6 +1366,23 @@
             "format": "uint64",
             "minimum": 0.0
           }
+        },
+        {
+          "name": "option",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Nullable_GetBlocksOption",
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "reverse": {
+                "default": false,
+                "type": "boolean"
+              }
+            }
+          }
         }
       ],
       "result": {
