@@ -464,20 +464,21 @@ fn test_get_blocks_by_number() -> Result<()> {
     let mut mock_chain = MockChain::new(ChainNetwork::new_test()).unwrap();
     let blocks = mock_chain
         .head()
-        .get_blocks_by_number(None, true,u64::max_value())?;
+        .get_blocks_by_number(None, true, u64::max_value())?;
     assert_eq!(blocks.len(), 1, "at least genesis block should contains.");
     let times = 10;
     mock_chain.produce_and_apply_times(times).unwrap();
 
     let blocks = mock_chain
         .head()
-        .get_blocks_by_number(None, true,u64::max_value())?;
+        .get_blocks_by_number(None, true, u64::max_value())?;
     assert_eq!(blocks.len(), 11);
 
     let number = blocks.len() as u64;
-    let result = mock_chain
-        .head()
-        .get_blocks_by_number(Some(blocks.len() as u64), true,u64::max_value());
+    let result =
+        mock_chain
+            .head()
+            .get_blocks_by_number(Some(blocks.len() as u64), true, u64::max_value());
     assert!(
         result.is_err(),
         "result cannot find block by number {}",

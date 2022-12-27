@@ -11,8 +11,8 @@ use starcoin_abi_decoder::decode_txn_payload;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_config::{BuiltinNetworkID, ChainNetworkID};
 use starcoin_crypto::HashValue;
-use starcoin_rpc_api::chain::{ChainApiClient, GetBlocksOption};
 use starcoin_rpc_api::chain::{ChainApi, GetBlockOption};
+use starcoin_rpc_api::chain::{ChainApiClient, GetBlocksOption};
 use starcoin_rpc_api::types::{
     BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
     SignedUserTransactionView, TransactionInfoView, TransactionView,
@@ -299,7 +299,7 @@ impl ChainApi for MockChainApi {
         &self,
         _number: Option<BlockNumber>,
         _count: u64,
-        _option: Option<GetBlocksOption>
+        _option: Option<GetBlocksOption>,
     ) -> FutureResult<Vec<BlockView>> {
         let fut = async move {
             bail!("not implemented.");
