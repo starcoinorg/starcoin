@@ -561,17 +561,30 @@ impl ChainReader for BlockChain {
             })
     }
 
-    fn get_blocks_by_number(&self, number: Option<BlockNumber>, count: u64) -> Result<Vec<Block>> {
+    fn get_blocks_by_number(
+        &self,
+        number: Option<BlockNumber>,
+        reverse: bool,
+        count: u64,
+    ) -> Result<Vec<Block>> {
         let end_num = match number {
             None => self.current_header().number(),
             Some(number) => number,
         };
 
         let num_leaves = self.block_accumulator.num_leaves();
-        if end_num > num_leaves {
+
+        if end_num > num_leaves.saturating_sub(1) {
             bail!("Can not find block by number {}", end_num);
-        }
-        let ids = self.get_block_ids(end_num, true, count)?;
+        };
+
+        let len = if !reverse && (end_num.saturating_add(count) > num_leaves.saturating_sub(1)) {
+            num_leaves.saturating_sub(end_num)
+        } else {
+            count
+        };
+
+        let ids = self.get_block_ids(end_num, reverse, len)?;
         let block_opts = self.storage.get_blocks(ids)?;
         let mut blocks = vec![];
         for (idx, block) in block_opts.into_iter().enumerate() {

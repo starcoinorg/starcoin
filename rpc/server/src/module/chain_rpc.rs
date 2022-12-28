@@ -9,7 +9,9 @@ use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_resource_viewer::MoveValueAnnotator;
-use starcoin_rpc_api::chain::{ChainApi, GetBlockOption, GetEventOption, GetTransactionOption};
+use starcoin_rpc_api::chain::{
+    ChainApi, GetBlockOption, GetBlocksOption, GetEventOption, GetTransactionOption,
+};
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     BlockHeaderView, BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
@@ -141,6 +143,7 @@ where
         &self,
         number: Option<BlockNumber>,
         count: u64,
+        option: Option<GetBlocksOption>,
     ) -> FutureResult<Vec<BlockView>> {
         let service = self.service.clone();
         let config = self.config.clone();
@@ -153,8 +156,9 @@ where
             let max_return_num = count
                 .min(end_block_number + 1)
                 .min(config.rpc.block_query_max_range());
+            let reverse = !option.unwrap_or_default().reverse;
             let block = service
-                .main_blocks_by_number(number, max_return_num)
+                .main_blocks_by_number(number, reverse, max_return_num)
                 .await?;
 
             block

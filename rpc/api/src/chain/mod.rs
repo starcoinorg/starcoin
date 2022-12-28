@@ -45,6 +45,7 @@ pub trait ChainApi {
         &self,
         number: Option<BlockNumber>,
         count: u64,
+        option: Option<GetBlocksOption>,
     ) -> FutureResult<Vec<BlockView>>;
     #[rpc(name = "chain.get_block_info_by_number")]
     fn get_block_info_by_number(&self, number: BlockNumber) -> FutureResult<Option<BlockInfoView>>;
@@ -136,6 +137,16 @@ pub struct GetBlockOption {
 
     #[serde(default)]
     pub raw: bool,
+}
+
+#[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]
+pub struct GetBlocksOption {
+    #[serde(default = "defautl_true")]
+    pub reverse: bool,
+}
+
+fn defautl_true() -> bool {
+    true
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]
