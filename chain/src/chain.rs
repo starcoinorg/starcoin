@@ -578,7 +578,7 @@ impl ChainReader for BlockChain {
             bail!("Can not find block by number {}", end_num);
         };
 
-        let len = if (end_num.saturating_add(count) > num_leaves.saturating_sub(1)) || reverse {
+        let len = if !reverse && (end_num.saturating_add(count) > num_leaves.saturating_sub(1)) {
             num_leaves.saturating_sub(end_num)
         } else {
             count

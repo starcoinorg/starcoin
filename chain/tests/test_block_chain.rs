@@ -484,5 +484,28 @@ fn test_get_blocks_by_number() -> Result<()> {
         "result cannot find block by number {}",
         number
     );
+
+    let number = blocks.len() as u64;
+    let number = number.saturating_add(2);
+    let result = mock_chain
+        .head()
+        .get_blocks_by_number(Some(number), true, u64::max_value());
+    assert!(
+        result.is_err(),
+        "result cannot find block by number {}",
+        number
+    );
+
+    let blocks = mock_chain
+        .head()
+        .get_blocks_by_number(Some(0), false, u64::max_value())?;
+    assert_eq!(blocks.len(), 11);
+
+    let blocks = mock_chain
+        .head()
+        .get_blocks_by_number(Some(9), false, u64::max_value())?;
+    assert_eq!(blocks.len(), 2);
+    println!("{:?}", blocks);
+
     Ok(())
 }
