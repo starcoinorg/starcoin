@@ -506,6 +506,5 @@ fn test_get_blocks_by_number() -> Result<()> {
         .get_blocks_by_number(Some(9), false, u64::max_value())?;
     assert_eq!(blocks.len(), 2);
     println!("{:?}", blocks);
-
     Ok(())
 }

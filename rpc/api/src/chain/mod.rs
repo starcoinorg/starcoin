@@ -141,8 +141,12 @@ pub struct GetBlockOption {
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]
 pub struct GetBlocksOption {
-    #[serde(default)]
+    #[serde(default = "defautl_true")]
     pub reverse: bool,
+}
+
+fn defautl_true() -> bool {
+    true
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]
