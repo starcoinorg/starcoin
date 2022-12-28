@@ -30,6 +30,7 @@ starcoin-miner = {path = "../miner"}
 starcoin-network = {path = "../network"}
 starcoin-node = {path = "../node"}
 starcoin-rpc-client = {path = "../rpc/client"}
+starcoin-rpc-api = {path = "../rpc/api"}
 starcoin-rpc-server = {path = "../rpc/server"}
 starcoin-state-api = {path = "../state/api"}
 starcoin-storage = {path = "../storage"}
