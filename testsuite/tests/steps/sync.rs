@@ -22,7 +22,9 @@ pub fn steps() -> Steps<MyWorld> {
             let local_client = world.rpc_client2.as_ref().take().unwrap();
             let status = client.clone().node_status();
             assert!(status.is_ok());
-            let list_block = client.chain_get_blocks_by_number(None, true, 1).unwrap();
+            let list_block = client
+                .chain_get_blocks_by_number(None, 1, Some(GetBlocksOption { reverse: true }))
+                .unwrap();
             let max_num = list_block[0].header.number.0;
             let local_max_block = local_client
                 .chain_get_block_by_number(max_num, None)
