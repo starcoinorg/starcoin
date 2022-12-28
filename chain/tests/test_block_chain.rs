@@ -496,6 +496,9 @@ fn test_get_blocks_by_number() -> Result<()> {
         number
     );
 
+    let blocks = mock_chain.head().get_blocks_by_number(Some(9), true, 3)?;
+    assert_eq!(blocks.len(), 3);
+
     let blocks = mock_chain
         .head()
         .get_blocks_by_number(Some(0), false, u64::max_value())?;
@@ -505,6 +508,9 @@ fn test_get_blocks_by_number() -> Result<()> {
         .head()
         .get_blocks_by_number(Some(9), false, u64::max_value())?;
     assert_eq!(blocks.len(), 2);
-    println!("{:?}", blocks);
+
+    let blocks = mock_chain.head().get_blocks_by_number(Some(6), false, 3)?;
+    assert_eq!(blocks.len(), 3);
+
     Ok(())
 }
