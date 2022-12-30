@@ -1,17 +1,25 @@
 [package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
 name = "starcoin-abi-resolver"
 version = "1.12.9"
+
+# Workspace inherited keys
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "~1"
-move-model = {git = "https://github.com/starcoinorg/move", rev = "2b85bf33378a4469e40b10e7bed815bdbefc5d03"}
-starcoin-abi-types = {path = "../types"}
-starcoin-resource-viewer = {path = "../../vm/resource-viewer"}
-starcoin-vm-types = {path = "../../vm/types"}
+anyhow = { workspace = true }
+move-model = { workspace = true }
+starcoin-abi-types = { workspace = true }
+starcoin-resource-viewer = { workspace = true }
+starcoin-vm-types = { workspace = true }
+
 [dev-dependencies]
 serde_json = "1"
 stdlib = {path = "../../vm/stdlib"}

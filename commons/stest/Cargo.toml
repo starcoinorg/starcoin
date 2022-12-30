@@ -1,18 +1,23 @@
 [package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
 name = "stest"
-publish = false
 version = "1.12.9"
 
+# Workspace inherited keys
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
 [dependencies]
-actix = "0.13"
-actix-rt = "2.6"
-anyhow = "1.0.41"
-futures = "0.3.12"
-log = "0.4.16"
-starcoin-logger = {path = "../logger"}
-stest-macro = {path = "./stest-macro"}
-timeout-join-handler = {path = "../timeout-join-handler"}
-tokio = {version = "^1", features = ["full"]}
+actix = { workspace = true }
+actix-rt = { workspace = true }
+anyhow = { workspace = true }
+futures = { workspace = true }
+log = { workspace = true }
+starcoin-logger = { workspace = true }
+stest-macro = { workspace = true }
+timeout-join-handler = { workspace = true }
+tokio = { workspace = true }

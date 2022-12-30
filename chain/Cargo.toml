@@ -1,13 +1,18 @@
 [package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
 name = "starcoin-chain"
-publish = false
 version = "1.12.9"
 
+# Workspace inherited keys
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
 [dependencies]
-anyhow = "1.0.41"
+anyhow = { workspace = true }
 bcs-ext = {package = "bcs-ext", path = "../commons/bcs_ext"}
 clap = {version = "3", features = ["derive"]}
 consensus = {package = "starcoin-consensus", path = "../consensus"}
