@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
-use consensus::{Consensus, ConsensusVerifyError};
-use logger::prelude::debug;
+use starcoin_consensus::{Consensus, ConsensusVerifyError};
+use starcoin_logger::prelude::debug;
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_chain_api::{
     verify_block, ChainReader, ConnectBlockError, VerifiedBlock, VerifyBlockField,

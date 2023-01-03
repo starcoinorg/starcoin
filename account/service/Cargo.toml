@@ -1,26 +1,31 @@
 [package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
 name = "starcoin-account-service"
-publish = false
 version = "1.12.9"
 
+# Workspace inherited keys
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
 [dependencies]
-anyhow = "1.0.41"
-async-trait = "0.1"
-bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
-futures = "0.3.12"
-starcoin-account = {path = "../"}
-starcoin-account-api = {path = "../api", features = ["mock"]}
-starcoin-chain-notify = {path = "../../chain/chain-notify"}
-starcoin-config = {path = "../../config"}
-starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-logger = {path = "../../commons/logger"}
-starcoin-service-registry = {path = "../../commons/service-registry"}
-starcoin-types = {path = "../../types"}
-tokio = "1"
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+bcs-ext = { workspace = true }
+futures = { workspace = true }
+starcoin-account = { workspace = true }
+starcoin-account-api = { workspace = true }
+starcoin-chain-notify = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-service-registry = { workspace = true }
+starcoin-types = { workspace = true }
+tokio = { workspace = true }
 
 [dev-dependencies]
-stest = {path = "../../commons/stest"}
-tempfile = "3"
+stest = { workspace = true }
+tempfile = { workspace = true }

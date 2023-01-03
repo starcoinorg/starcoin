@@ -21,6 +21,6 @@ starcoin-resource-viewer = { workspace = true }
 starcoin-vm-types = { workspace = true }
 
 [dev-dependencies]
-serde_json = "1"
-stdlib = {path = "../../vm/stdlib"}
-test-helper = {path = "../../test-helper"}
+serde_json = { workspace = true }
+stdlib = { workspace = true }
+test-helper = { workspace = true }

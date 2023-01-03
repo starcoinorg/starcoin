@@ -21,7 +21,7 @@ parking_lot = { workspace = true }
 proptest = { workspace = true }
 rand = { workspace = true }
 rand_core = { workspace = true }
-crypto = { workspace = true }
+starcoin-crypto = { workspace = true }
 starcoin-executor-benchmark = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 starcoin-account-api = { workspace = true }
@@ -40,7 +40,7 @@ starcoin-storage = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
-types = { workspace = true }
+starcoin-types = { workspace = true }
 
 [target."cfg(target_os=\"linux\")".dependencies]
 pprof = { workspace = true }

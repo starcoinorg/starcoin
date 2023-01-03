@@ -3,10 +3,10 @@
 
 use crate::verifier::{BlockVerifier, FullVerifier};
 use anyhow::{bail, ensure, format_err, Result};
-use consensus::Consensus;
-use crypto::hash::PlainCryptoHash;
-use crypto::HashValue;
-use logger::prelude::*;
+use starcoin_consensus::Consensus;
+use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::*;
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
 use starcoin_accumulator::{
@@ -42,7 +42,7 @@ use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::{collections::HashMap, sync::Arc};
-use storage::Store;
+use starcoin_storage::Store;
 
 pub struct ChainStatusWithBlock {
     pub status: ChainStatus,

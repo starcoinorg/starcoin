@@ -1,15 +1,23 @@
 [package]
-edition = "2021"
 name = "starcoin-account-provider"
 version = "1.12.9"
+
+# Workspace inherited keys
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.41"
-starcoin-account = {path = "../"}
-starcoin-account-api = {path = "../api", features = ["mock"]}
-starcoin-config = {path = "../../config"}
-starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-rpc-client = {path = "../../rpc/client"}
-starcoin-types = {path = "../../types"}
+anyhow = { workspace = true }
+starcoin-account = { workspace = true }
+starcoin-account-api = { workspace = true, features = ["mock"]}
+starcoin-config = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-rpc-client = { workspace = true }
+starcoin-types = { workspace = true }

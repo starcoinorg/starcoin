@@ -1,16 +1,22 @@
 [package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
 name = "starcoin-decrypt"
 version = "1.12.9"
 
+# Workspace inherited keys
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
 [dependencies]
-aes-gcm = "0.9"
-anyhow = "1.0.41"
-byteorder = "1.4"
-hmac = "0.12.1"
-pbkdf2 = "0.11"
-rand = "0.8.5"
-rand_core = {version = "0.6.3", default-features = false}
-sha2 = "0.10.2"
+aes-gcm = { workspace = true }
+anyhow = { workspace = true }
+byteorder = { workspace = true }
+hmac = { workspace = true }
+pbkdf2 = { workspace = true }
+rand = { workspace = true }
+rand_core = { workspace = true }
+sha2 = { workspace = true }
