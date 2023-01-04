@@ -1,22 +1,25 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-logger"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-anyhow = "1.0.41"
-arc-swap = "1.5.1"
-chrono = "0.4.19"
-lazy_static = "1.4.0"
-log = "0.4.16"
-log4rs = {version = "1.0.0", features = ["background_rotation", "gzip"]}
-once_cell = "1.13.0"
-parking_lot = "0.12.1"
-schemars = {git = "https://github.com/starcoinorg/schemars", rev = "6972da92f4360e1779168bb3fe0274c521d324e2"}
-serde = {version = "1.0.130", features = ["derive"]}
-slog = "2.7.0"
-slog-async = "2.7.0"
-slog-term = "2.9.0"
+anyhow = { workspace = true }
+arc-swap = { workspace = true }
+chrono = { workspace = true }
+lazy_static = { workspace = true }
+log = { workspace = true }
+log4rs = { features = [ "background_rotation", "gzip",], workspace = true }
+once_cell = { workspace = true }
+parking_lot = { workspace = true }
+schemars = { workspace = true }
+serde = { features = [ "derive",], workspace = true }
+slog = { workspace = true }
+slog-async = { workspace = true }
+slog-term = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-logger"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

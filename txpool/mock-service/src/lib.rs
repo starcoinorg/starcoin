@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use crypto::hash::HashValue;
+use starcoin_crypto::hash::HashValue;
 use futures_channel::mpsc;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
 use std::{
     iter::Iterator,
     sync::{Arc, Mutex},
 };
-use types::{
+use starcoin_types::{
     account_address::AccountAddress, block::Block, transaction, transaction::SignedUserTransaction,
 };
 

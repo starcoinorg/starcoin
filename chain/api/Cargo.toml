@@ -1,29 +1,33 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-chain-api"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-anyhow = "1.0.41"
-async-trait = "0.1"
-futures = "0.3.12"
-network-api = {package = "network-api", path = "../../network/api"}
-rand = "0.8.5"
-rand_core = {version = "0.6.3", default-features = false}
-serde = {version = "1.0.130", default-features = false}
-starcoin-accumulator = {path = "../../commons/accumulator"}
-starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-service-registry = {path = "../../commons/service-registry"}
-starcoin-state-api = {path = "../../state/api"}
-starcoin-statedb = {path = "../../state/statedb"}
-starcoin-time-service = {path = "../../commons/time-service"}
-starcoin-types = {path = "../../types"}
-starcoin-vm-types = {path = "../../vm/types"}
-thiserror = "1.0"
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+network-api = { package = "network-api", workspace = true }
+rand = { workspace = true }
+rand_core = { default-features = false, workspace = true }
+serde = { default-features = false, workspace = true }
+starcoin-accumulator = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-service-registry = { workspace = true }
+starcoin-state-api = { workspace = true }
+starcoin-statedb = { workspace = true }
+starcoin-time-service = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-vm-types = { workspace = true }
+thiserror = { workspace = true }
+
 [dev-dependencies]
 
 [features]
 mock = []
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-chain-api"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

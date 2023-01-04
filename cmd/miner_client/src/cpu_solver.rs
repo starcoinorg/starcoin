@@ -1,10 +1,10 @@
 use crate::SealEvent;
-use consensus::{difficult_to_target, Consensus};
+use starcoin_consensus::{difficult_to_target, Consensus};
 use futures::executor::block_on;
 use futures::{SinkExt, StreamExt};
 use futures_channel::mpsc;
 use futures_channel::mpsc::{unbounded, UnboundedSender};
-use logger::prelude::*;
+use starcoin_logger::prelude::*;
 use rand::Rng;
 use starcoin_config::{MinerClientConfig, TimeService};
 use starcoin_miner_client_api::Solver;

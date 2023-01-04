@@ -1,5 +1,5 @@
 use anyhow::Result;
-use logger::prelude::*;
+use starcoin_logger::prelude::*;
 use starcoin_config::genesis_config::G_TOTAL_STC_AMOUNT;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::hash::PlainCryptoHash;

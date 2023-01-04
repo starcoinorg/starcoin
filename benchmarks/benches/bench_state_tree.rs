@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use crypto::hash::*;
+use starcoin_crypto::hash::*;
 use forkable_jellyfish_merkle::blob::Blob;
 use forkable_jellyfish_merkle::HashValueKey;
 #[cfg(target_os = "linux")]

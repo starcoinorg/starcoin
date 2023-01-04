@@ -5,7 +5,7 @@ use crate::tasks::BlockIdFetcher;
 use anyhow::{ensure, format_err, Result};
 use futures::future::BoxFuture;
 use futures::FutureExt;
-use logger::prelude::*;
+use starcoin_logger::prelude::*;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::{Accumulator, AccumulatorTreeStore, MerkleAccumulator};
 use starcoin_crypto::HashValue;

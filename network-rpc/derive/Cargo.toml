@@ -1,16 +1,19 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "network-rpc-derive"
-publish = false
-version = "1.12.9"
+[dependencies]
+anyhow = { workspace = true }
+proc-macro2 = { workspace = true }
+quote = { workspace = true }
+syn = { features = [ "full", "extra-traits", "visit", "fold",], workspace = true }
 
 [lib]
 proc-macro = true
 
-[dependencies]
-anyhow = "1.0.41"
-proc-macro2 = "1.0"
-quote = "1.0.16"
-syn = {version = "1.0", features = ["full", "extra-traits", "visit", "fold"]}
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "network-rpc-derive"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

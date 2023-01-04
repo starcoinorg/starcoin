@@ -9,7 +9,7 @@
 
 use super::{SeqNumber, UnverifiedUserTransaction};
 use std::{any::Any, fmt};
-use types::{account_address::AccountAddress as Address, transaction};
+use starcoin_types::{account_address::AccountAddress as Address, transaction};
 
 /// State sequence number client
 pub trait AccountSeqNumberClient: fmt::Debug + Clone + Any {

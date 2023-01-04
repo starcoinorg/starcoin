@@ -5,7 +5,7 @@ extern crate chrono;
 
 use bcs_ext::BCSCodec;
 use chrono::prelude::*;
-use crypto::HashValue;
+use starcoin_crypto::HashValue;
 
 use crate::block::{FailedBlock, OldFailedBlock};
 use crate::cache_storage::CacheStorage;

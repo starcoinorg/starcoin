@@ -1,52 +1,56 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-name = "starcoin-miner-client"
-version = "1.12.9"
-
-[dependencies]
-actix = "0.13"
-actix-rt = "2.6"
-anyhow = "1.0.41"
-async-std = "1.12"
-consensus = {path = "../../consensus", package = "starcoin-consensus"}
-crypto = {package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-futures = "0.3.12"
-futures-channel = "0.3"
-jsonrpc-core = {version = "18", features = ["arbitrary_precision"]}
-jsonrpc-core-client = {version = "18"}
-jsonrpc-server-utils = {version = "18"}
-logger = {path = "../../commons/logger", package = "starcoin-logger"}
-starcoin-config = {path = "../../config"}
-starcoin-time-service = {path = "../../commons/time-service"}
-starcoin-types = {path = "../../types"}
-tokio = {version = "^1", features = ["full"]}
-
-async-trait = "0.1.53"
-byteorder = "1.4.3"
-clap = {version = "3", features = ["derive"]}
-dyn-clone = "1.0.8"
-futures-timer = "3.0"
-hex = {version = "0.4.3", default-features = false}
-libloading = "0.7.2"
-parking_lot = "0.12.1"
-rand = "0.8.5"
-rand_core = {version = "0.6.3", default-features = false}
-rust-argon2 = "0.8"
-serde = {version = "1.0.130", features = ["derive"]}
-serde_json = {version = "1.0", features = ["arbitrary_precision"]}
-starcoin-miner = {path = "../../miner"}
-starcoin-miner-client-api = {path = "./api"}
-starcoin-rpc-api = {path = "../../rpc/api"}
-starcoin-rpc-client = {path = "../../rpc/client"}
-starcoin-service-registry = {path = "../../commons/service-registry"}
-starcoin-stratum = {path = "../../stratum"}
-stest = {path = "../../commons/stest"}
-thiserror = "1.0"
-
 [[bin]]
 name = "starcoin_miner"
 path = "src/main.rs"
 
+[dependencies]
+actix = { workspace = true }
+actix-rt = { workspace = true }
+anyhow = { workspace = true }
+async-std = { workspace = true }
+starcoin-consensus = { package = "starcoin-consensus", workspace = true }
+starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+futures = { workspace = true }
+futures-channel = { workspace = true }
+jsonrpc-core = { features = [ "arbitrary_precision",], workspace = true }
+jsonrpc-core-client = { workspace = true }
+jsonrpc-server-utils = { workspace = true }
+starcoin-logger = { package = "starcoin-logger", workspace = true }
+starcoin-config = { workspace = true }
+starcoin-time-service = { workspace = true }
+starcoin-types = { workspace = true }
+tokio = { features = [ "full",], workspace = true }
+async-trait = { workspace = true }
+byteorder = { workspace = true }
+clap = { features = [ "derive",], workspace = true }
+dyn-clone = { workspace = true }
+futures-timer = { workspace = true }
+hex = { default-features = false, workspace = true }
+libloading = { workspace = true }
+parking_lot = { workspace = true }
+rand = { workspace = true }
+rand_core = { default-features = false, workspace = true }
+rust-argon2 = { workspace = true }
+serde = { features = [ "derive",], workspace = true }
+serde_json = { features = [ "arbitrary_precision",], workspace = true }
+starcoin-miner = { workspace = true }
+starcoin-miner-client-api = { workspace = true }
+starcoin-rpc-api = { workspace = true }
+starcoin-rpc-client = { workspace = true }
+starcoin-service-registry = { workspace = true }
+starcoin-stratum = { workspace = true }
+stest = { workspace = true }
+thiserror = { workspace = true }
+
 [dev-dependencies]
-starcoin-miner = {path = "../../miner"}
+starcoin-miner = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+name = "starcoin-miner-client"
+version = "1.12.9"
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

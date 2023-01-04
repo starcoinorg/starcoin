@@ -1,26 +1,24 @@
-[package]
-name = "sp-utils"
-#for unify version with project.
-authors = [
-  "Parity Technologies <admin@parity.io>",
-  "Starcoin Core Dev <dev@starcoin.org>",
-]
-description = "I/O for Substrate runtimes"
-edition = "2021"
-homepage = "https://substrate.dev"
-license = "Apache-2.0"
-repository = "https://github.com/paritytech/substrate/"
-version = "1.12.9"
-
 [dependencies]
-futures = "0.3.12"
-futures-core = "0.3.4"
-lazy_static = "1.4.0"
-once_cell = "1.13.0"
-parking_lot = "0.12.1"
-prometheus = "0.13.0"
-simple-stopwatch = "0.1.4"
+futures = { workspace = true }
+futures-core = { workspace = true }
+lazy_static = { workspace = true }
+once_cell = { workspace = true }
+parking_lot = { workspace = true }
+prometheus = { workspace = true }
+simple-stopwatch = { workspace = true }
 
 [features]
-default = ["metered"]
+default = [ "metered",]
 metered = []
+
+[package]
+name = "sp-utils"
+authors = { workspace = true }
+description = "I/O for Substrate runtimes"
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+version = "1.12.9"
+publish = { workspace = true }
+rust-version = { workspace = true }

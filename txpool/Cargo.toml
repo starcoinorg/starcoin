@@ -1,54 +1,57 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-txpool"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-anyhow = "1.0.41"
-async-trait = "0.1"
-crypto = {package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-forkable-jellyfish-merkle = {path = "../commons/forkable-jellyfish-merkle"}
-futures = "0.3.12"
-futures-channel = "0.3"
-linked-hash-map = "0.5"
-log = "0.4.16"
-network-api = {package = "network-api", path = "../network/api"}
-parking_lot = "0.12"
-rand = "0.8.5"
-rand_core = {version = "0.6.3", default-features = false}
-serde = "1.0.130"
-serde_derive = "1.0"
-starcoin-config = {path = "../config"}
-starcoin-executor = {path = "../executor"}
-starcoin-logger = {path = "../commons/logger"}
-starcoin-metrics = {path = "../commons/metrics"}
-starcoin-service-registry = {path = "../commons/service-registry"}
-starcoin-state-api = {path = "../state/api"}
-starcoin-state-tree = {path = "../state/state-tree"}
-starcoin-statedb = {path = "../state/statedb"}
-starcoin-txpool-api = {package = "starcoin-txpool-api", path = "api"}
-stest = {path = "../commons/stest"}
-storage = {path = "../storage", package = "starcoin-storage"}
-tokio = {version = "^1", features = ["full"]}
-trace-time = "0.1"
-transaction-pool = "2.0.3"
-types = {package = "starcoin-types", path = "../types"}
-
-proptest = {version = "1.0.0", default-features = false, optional = true}
-proptest-derive = {version = "0.3.0", default-features = false, optional = true}
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+forkable-jellyfish-merkle = { workspace = true }
+futures = { workspace = true }
+futures-channel = { workspace = true }
+linked-hash-map = { workspace = true }
+log = { workspace = true }
+network-api = { package = "network-api", workspace = true }
+parking_lot = { workspace = true }
+rand = { workspace = true }
+rand_core = { default-features = false, workspace = true }
+serde = { workspace = true }
+serde_derive = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+starcoin-executor = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-metrics = { workspace = true }
+starcoin-service-registry = { workspace = true }
+starcoin-state-api = { workspace = true }
+starcoin-state-tree = { workspace = true }
+starcoin-statedb = { workspace = true }
+starcoin-types = { package = "starcoin-types", workspace = true }
+starcoin-storage = { workspace = true }
+starcoin-txpool-api = { package = "starcoin-txpool-api", workspace = true }
+stest = { workspace = true }
+tokio = { workspace = true }
+trace-time = { workspace = true }
+transaction-pool = { workspace = true }
+proptest = { default-features = false, optional = true, workspace = true }
+proptest-derive = { default-features = false, optional = true, workspace = true }
 
 [dev-dependencies]
-proptest = "1.0.0"
-proptest-derive = {version = "0.3.0"}
-starcoin-genesis = {path = "../genesis"}
-starcoin-open-block = {path = "../chain/open-block"}
-starcoin-transaction-builder = {path = "../vm/transaction-builder"}
-stdlib = {path = "../vm/stdlib"}
-tempfile = "3"
-test-helper = {path = "../test-helper"}
+proptest = { workspace = true }
+proptest-derive = { workspace = true }
+starcoin-genesis = { workspace = true }
+starcoin-open-block = { workspace = true }
+starcoin-transaction-builder = { workspace = true }
+stdlib = { workspace = true }
+tempfile = { workspace = true }
+test-helper = { workspace = true }
+
 [features]
 default = []
-fuzzing = ["proptest", "proptest-derive", "types/fuzzing"]
+fuzzing = ["proptest", "proptest-derive", "starcoin-types/fuzzing"]
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-txpool"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

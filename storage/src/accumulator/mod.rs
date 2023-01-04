@@ -7,7 +7,7 @@ use crate::StorageInstance;
 use crate::{BLOCK_ACCUMULATOR_NODE_PREFIX_NAME, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME};
 use anyhow::Result;
 use bcs_ext::BCSCodec;
-use crypto::hash::HashValue;
+use starcoin_crypto::hash::HashValue;
 use starcoin_accumulator::{AccumulatorNode, AccumulatorTreeStore};
 
 define_storage!(

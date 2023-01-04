@@ -16,7 +16,7 @@ use futures::channel::mpsc::unbounded;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use futures_timer::Delay;
-use logger::prelude::*;
+use starcoin_logger::prelude::*;
 use network_api::{PeerId, PeerInfo, PeerSelector, PeerStrategy};
 use pin_utils::core_reexport::time::Duration;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;

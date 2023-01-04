@@ -13,7 +13,7 @@ use crate::pool::{
     VerifiedTransaction,
 };
 use std::sync::{atomic::AtomicUsize, Arc};
-use types::transaction;
+use starcoin_types::transaction;
 
 /// Verification options.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]

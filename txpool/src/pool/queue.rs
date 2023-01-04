@@ -9,7 +9,7 @@ use super::{
 };
 use crate::pool::ready::Expiration;
 use crate::{pool, pool::PoolTransaction};
-use crypto::hash::HashValue;
+use starcoin_crypto::hash::HashValue;
 use futures_channel::mpsc;
 use parking_lot::RwLock;
 use starcoin_txpool_api::TxPoolStatus;
@@ -23,7 +23,7 @@ use std::{
     },
 };
 use tx_pool::{self, Verifier};
-use types::{account_address::AccountAddress as Address, transaction};
+use starcoin_types::{account_address::AccountAddress as Address, transaction};
 
 type Listener = (
     LocalTransactionsList,

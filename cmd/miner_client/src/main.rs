@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 use actix::System;
 use clap::Parser;
-use logger::prelude::*;
+use starcoin_logger::prelude::*;
 use starcoin_config::MinerClientConfig;
 use starcoin_miner_client::miner::MinerClientService;
 use starcoin_miner_client::stratum_client::StratumJobClient;

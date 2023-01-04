@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, format_err, Result};
-use crypto::HashValue;
-use logger::prelude::*;
+use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::*;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
@@ -22,7 +22,7 @@ use starcoin_types::{
     U256,
 };
 use std::{convert::TryInto, sync::Arc};
-use storage::Store;
+use starcoin_storage::Store;
 
 pub struct OpenedBlock {
     previous_block_info: BlockInfo,

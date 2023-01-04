@@ -7,7 +7,7 @@ use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
 use anyhow::{format_err, Error, Result};
-use crypto::HashValue;
+use starcoin_crypto::HashValue;
 use move_core_types::resolver::MoveResolver;
 use move_vm_runtime::move_vm::MoveVM;
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};

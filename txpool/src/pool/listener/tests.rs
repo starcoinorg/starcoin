@@ -1,10 +1,10 @@
 use super::*;
-use crypto::{ed25519, Uniform};
+use starcoin_crypto::{ed25519, Uniform};
 use rand::SeedableRng;
 
 use tx_pool::Listener;
-use types::genesis_config::ChainId;
-use types::{
+use starcoin_types::genesis_config::ChainId;
+use starcoin_types::{
     account_address::AccountAddress,
     transaction,
     transaction::helpers::get_current_timestamp,

@@ -1,21 +1,22 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-name = "starcoin-dataformat-generator"
-version = "1.12.9"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-build = "build.rs"
+[build-dependencies]
+serde-reflection = "~0.3"
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
+starcoin-types = { path = "../types" }
+anyhow = "1.0"
+bcs-ext = { package = "bcs-ext", path = "../commons/bcs_ext" }
+serde = "1.0.130"
+serde_yaml = "0.8"
 
 [dependencies]
 
-[build-dependencies]
-
-serde-reflection = "~0.3"
-starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-types = {path = "../types"}
-#starcoin-rpc-api = {path = "../rpc/api" }
-anyhow = "1.0"
-bcs-ext = {package = "bcs-ext", path = "../commons/bcs_ext"}
-serde = "1.0.130"
-serde_yaml = "0.8"
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+name = "starcoin-dataformat-generator"
+version = "1.12.9"
+build = "build.rs"
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

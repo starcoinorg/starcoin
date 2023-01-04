@@ -1,7 +1,7 @@
 use anyhow::{format_err, Result};
-use consensus::Consensus;
-use crypto::HashValue;
-use logger::prelude::debug;
+use starcoin_consensus::Consensus;
+use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::debug;
 use rand::Rng;
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;

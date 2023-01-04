@@ -1,25 +1,28 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-service-registry"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-actix = "0.13"
-actix-rt = "2.6"
-anyhow = "1.0"
-async-trait = "0.1"
-futures = "0.3.12"
-futures-timer = "3.0"
-log = "0.4.16"
-once_cell = "1.13.0"
-schemars = {git = "https://github.com/starcoinorg/schemars", rev = "6972da92f4360e1779168bb3fe0274c521d324e2"}
-serde = {version = "1.0.130", features = ["derive"]}
-thiserror = "1.0"
-tokio = "^1"
+actix = { workspace = true }
+actix-rt = { workspace = true }
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+futures-timer = { workspace = true }
+log = { workspace = true }
+once_cell = { workspace = true }
+schemars = { workspace = true }
+serde = { features = [ "derive",], workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
 
 [dev-dependencies]
-async-std = "1.12"
-stest = {path = "../../commons/stest"}
+async-std = { workspace = true }
+stest = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-service-registry"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

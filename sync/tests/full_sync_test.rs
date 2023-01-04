@@ -2,7 +2,7 @@ mod test_sync;
 
 use config::NodeConfig;
 use futures::executor::block_on;
-use logger::prelude::*;
+use starcoin_logger::prelude::*;
 use rand::random;
 use starcoin_chain_api::ChainAsyncService;
 use starcoin_node::NodeHandle;

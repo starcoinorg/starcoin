@@ -1,35 +1,38 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-genesis"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-anyhow = "1.0.41"
-bcs-ext = {package = "bcs-ext", path = "../commons/bcs_ext"}
-clap = {version = "3", features = ["derive"]}
-include_dir = "0.6.2"
-once_cell = "1.13.0"
-serde = {version = "1.0.130"}
-starcoin-accumulator = {path = "../commons/accumulator"}
-starcoin-chain = {path = "../chain"}
-starcoin-config = {path = "../config"}
-starcoin-consensus = {path = "../consensus"}
-starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-executor = {path = "../executor"}
-starcoin-logger = {path = "../commons/logger"}
-starcoin-state-api = {path = "../state/api"}
-starcoin-statedb = {path = "../state/statedb"}
-starcoin-storage = {path = "../storage"}
-starcoin-transaction-builder = {path = "../vm/transaction-builder"}
-starcoin-types = {path = "../types", features = ["fuzzing"]}
-starcoin-vm-types = {path = "../vm/types"}
-stdlib = {path = "../vm/stdlib"}
-stest = {path = "../commons/stest"}
-thiserror = "1.0"
+anyhow = { workspace = true }
+bcs-ext = { package = "bcs-ext", workspace = true }
+clap = { features = [ "derive",], workspace = true }
+include_dir = { workspace = true }
+once_cell = { workspace = true }
+serde = { workspace = true }
+starcoin-accumulator = { workspace = true }
+starcoin-chain = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-consensus = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-executor = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-state-api = { workspace = true }
+starcoin-statedb = { workspace = true }
+starcoin-storage = { workspace = true }
+starcoin-transaction-builder = { workspace = true }
+starcoin-types = { features = [ "fuzzing",], workspace = true }
+starcoin-vm-types = { workspace = true }
+stdlib = { workspace = true }
+stest = { workspace = true }
+thiserror = { workspace = true }
 
 [features]
 default = []
-fuzzing = ["starcoin-types/fuzzing"]
+fuzzing = [ "starcoin-types/fuzzing",]
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-genesis"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

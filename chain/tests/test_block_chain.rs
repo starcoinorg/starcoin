@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use consensus::Consensus;
-use crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
+use starcoin_consensus::Consensus;
+use starcoin_crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;

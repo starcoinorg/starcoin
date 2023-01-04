@@ -1,17 +1,21 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-uint"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-hex = {version = "0.4.3", default-features = false}
-serde = {version = "1.0.130", default-features = false}
-starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-uint = "0.9.3"
+hex = { default-features = false, workspace = true }
+serde = { default-features = false, workspace = true }
+starcoin-crypto = { workspace = true }
+uint = { workspace = true }
+
 [dev-dependencies]
-bcs-ext = {path = "../../commons/bcs_ext"}
-serde_json = "1.0"
-starcoin-types = {path = "../../types/"}
+bcs-ext = { workspace = true }
+serde_json = { workspace = true }
+starcoin-types = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-uint"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

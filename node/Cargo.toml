@@ -1,59 +1,63 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-node"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-actix = "0.13"
-actix-rt = "2.6"
-anyhow = "1.0.41"
-async-std = "1.12"
-async-trait = "0.1"
-backtrace = "0.3"
-chrono = "0.4.19"
-futures = "0.3.12"
-futures-timer = "3.0"
-network-api = {path = "../network/api"}
-network-rpc-core = {path = "../network-rpc/core"}
-serde_json = {version = "1.0", features = ["arbitrary_precision"]}
-starcoin-account-api = {path = "../account/api"}
-starcoin-account-service = {path = "../account/service"}
-starcoin-block-relayer = {path = "../block-relayer"}
-starcoin-chain-notify = {path = "../chain/chain-notify"}
-starcoin-chain-service = {path = "../chain/service"}
-starcoin-config = {path = "../config"}
-starcoin-consensus = {path = "../consensus"}
-starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-dev = {path = "../vm/dev"}
-starcoin-executor = {path = "../executor"}
-starcoin-genesis = {path = "../genesis"}
-starcoin-logger = {path = "../commons/logger"}
-starcoin-metrics = {path = "../commons/metrics", features = ["server"]}
-starcoin-miner = {path = "../miner"}
-starcoin-miner-client = {path = "../cmd/miner_client"}
-starcoin-network = {path = "../network"}
-starcoin-network-rpc = {path = "../network-rpc"}
-starcoin-network-rpc-api = {path = "../network-rpc/api"}
-starcoin-node-api = {path = "./api"}
-starcoin-rpc-client = {path = "../rpc/client"}
-starcoin-rpc-server = {path = "../rpc/server"}
-starcoin-service-registry = {path = "../commons/service-registry"}
-starcoin-state-api = {path = "../state/api"}
-starcoin-state-service = {path = "../state/service"}
-starcoin-statedb = {path = "../state/statedb"}
-starcoin-storage = {path = "../storage"}
-starcoin-stratum = {path = "../stratum"}
-starcoin-sync = {path = "../sync"}
-starcoin-sync-api = {package = "starcoin-sync-api", path = "../sync/api"}
-starcoin-txpool = {path = "../txpool"}
-starcoin-txpool-api = {path = "../txpool/api"}
-starcoin-types = {path = "../types"}
-starcoin-vm-runtime = {path = "../vm/vm-runtime"}
-thiserror = "1.0"
-timeout-join-handler = {path = "../commons/timeout-join-handler"}
-tokio = {version = "^1", features = ["full"]}
+actix = { workspace = true }
+actix-rt = { workspace = true }
+anyhow = { workspace = true }
+async-std = { workspace = true }
+async-trait = { workspace = true }
+backtrace = { workspace = true }
+chrono = { workspace = true }
+futures = { workspace = true }
+futures-timer = { workspace = true }
+network-api = { workspace = true }
+network-rpc-core = { workspace = true }
+serde_json = { features = [ "arbitrary_precision",], workspace = true }
+starcoin-account-api = { workspace = true }
+starcoin-account-service = { workspace = true }
+starcoin-block-relayer = { workspace = true }
+starcoin-chain-notify = { workspace = true }
+starcoin-chain-service = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-consensus = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-dev = { workspace = true }
+starcoin-executor = { workspace = true }
+starcoin-genesis = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-metrics = { features = [ "server",], workspace = true }
+starcoin-miner = { workspace = true }
+starcoin-miner-client = { workspace = true }
+starcoin-network = { workspace = true }
+starcoin-network-rpc = { workspace = true }
+starcoin-network-rpc-api = { workspace = true }
+starcoin-node-api = { workspace = true }
+starcoin-rpc-client = { workspace = true }
+starcoin-rpc-server = { workspace = true }
+starcoin-service-registry = { workspace = true }
+starcoin-state-api = { workspace = true }
+starcoin-state-service = { workspace = true }
+starcoin-statedb = { workspace = true }
+starcoin-storage = { workspace = true }
+starcoin-stratum = { workspace = true }
+starcoin-sync = { workspace = true }
+starcoin-sync-api = { package = "starcoin-sync-api", workspace = true }
+starcoin-txpool = { workspace = true }
+starcoin-txpool-api = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-vm-runtime = { workspace = true }
+thiserror = { workspace = true }
+timeout-join-handler = { workspace = true }
+tokio = { features = [ "full",], workspace = true }
+
 [dev-dependencies]
-stest = {path = "../commons/stest"}
+stest = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-node"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

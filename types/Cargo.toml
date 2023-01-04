@@ -1,32 +1,35 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-types"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-anyhow = "1.0.41"
-bcs-ext = {package = "bcs-ext", path = "../commons/bcs_ext"}
-byteorder = {version = "1.4.3", default-features = false}
-bytes = "1"
-forkable-jellyfish-merkle = {path = "../commons/forkable-jellyfish-merkle"}
-hex = {version = "0.4.3", default-features = false, features = ["serde"]}
-num_enum = "0.5.7"
-proptest = {version = "1.0.0", default-features = false, optional = true}
-proptest-derive = {version = "0.3.0", default-features = false, optional = true}
-rand = "0.8.5"
-rand_core = {version = "0.6.3", default-features = false}
-schemars = {git = "https://github.com/starcoinorg/schemars", rev = "6972da92f4360e1779168bb3fe0274c521d324e2"}
-serde = {version = "1.0.130", default-features = false}
-serde_json = "1.0"
-starcoin-accumulator = {path = "../commons/accumulator"}
-starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-uint = {path = "uint"}
-starcoin-vm-types = {path = "../vm/types"}
-thiserror = "1.0.30"
+anyhow = { workspace = true }
+bcs-ext = { package = "bcs-ext", workspace = true }
+byteorder = { default-features = false, workspace = true }
+bytes = { workspace = true }
+forkable-jellyfish-merkle = { workspace = true }
+hex = { default-features = false, features = [ "serde",], workspace = true }
+num_enum = { workspace = true }
+proptest = { default-features = false, optional = true, workspace = true }
+proptest-derive = { default-features = false, optional = true, workspace = true }
+rand = { workspace = true }
+rand_core = { default-features = false, workspace = true }
+schemars = { workspace = true }
+serde = { default-features = false, workspace = true }
+serde_json = { workspace = true }
+starcoin-accumulator = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-uint = { workspace = true }
+starcoin-vm-types = { workspace = true }
+thiserror = { workspace = true }
 
 [features]
 default = []
-fuzzing = ["proptest", "proptest-derive", "starcoin-vm-types/fuzzing"]
+fuzzing = [ "proptest", "proptest-derive", "starcoin-vm-types/fuzzing",]
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-types"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

@@ -3,7 +3,7 @@
 #![allow(clippy::integer_arithmetic)]
 use crate::block_connector::WriteBlockChainService;
 use config::NodeConfig;
-use consensus::Consensus;
+use starcoin_consensus::Consensus;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_chain_service::WriteableChainService;

@@ -3,11 +3,11 @@
 
 use crate::metrics::BlockRelayerMetrics;
 use anyhow::{ensure, format_err, Result};
-use config::NodeConfig;
-use config::G_CRATE_VERSION;
-use crypto::HashValue;
+use starcoin_config::NodeConfig;
+use starcoin_config::G_CRATE_VERSION;
+use starcoin_crypto::HashValue;
 use futures::FutureExt;
-use logger::prelude::*;
+use starcoin_logger::prelude::*;
 use network_api::messages::{CompactBlockMessage, NotificationMessage, PeerCompactBlockMessage};
 use network_api::{NetworkService, PeerId, PeerProvider, PeerSelector, PeerStrategy};
 use starcoin_chain::verifier::StaticVerifier;

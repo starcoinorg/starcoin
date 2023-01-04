@@ -4,7 +4,7 @@
 use crate::PeerId;
 use accumulator::AccumulatorNode;
 use anyhow::Result;
-use crypto::HashValue;
+use starcoin_crypto::HashValue;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use network_rpc_core::NetRpcError;

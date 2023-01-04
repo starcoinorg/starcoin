@@ -1,12 +1,12 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crypto::keygen::KeyGen;
-use crypto::{
+use starcoin_crypto::keygen::KeyGen;
+use starcoin_crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     HashValue, PrivateKey, Uniform,
 };
-use logger::prelude::*;
+use starcoin_logger::prelude::*;
 use rand::{rngs::StdRng, SeedableRng};
 use starcoin_config::ChainNetwork;
 use starcoin_genesis::Genesis;
@@ -22,9 +22,9 @@ use starcoin_vm_types::transaction::ScriptFunction;
 use statedb::ChainStateDB;
 use std::sync::mpsc;
 use std::sync::Arc;
-use storage::storage::StorageInstance;
-use storage::Storage;
-use types::{
+use starcoin_storage::storage::StorageInstance;
+use starcoin_storage::Storage;
+use starcoin_types::{
     account_address,
     account_address::AccountAddress,
     block_metadata::BlockMetadata,

@@ -7,7 +7,7 @@ use crate::tasks::{BlockConnectedEvent, BlockDiskCheckEvent};
 use anyhow::{format_err, Result};
 use config::{NodeConfig, G_CRATE_VERSION};
 use executor::VMMetrics;
-use logger::prelude::*;
+use starcoin_logger::prelude::*;
 use network::NetworkServiceRef;
 use network_api::PeerProvider;
 use starcoin_chain_api::{ConnectBlockError, WriteableChainService};

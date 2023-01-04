@@ -1,42 +1,41 @@
-[package]
-authors = ["Diem Association <opensource@diem.com>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-move-prover"
-publish = false
-version = "1.12.9"
-
-[dependencies]
-## move dependencies
-move-prover = {git = "https://github.com/starcoinorg/move", rev = "2b85bf33378a4469e40b10e7bed815bdbefc5d03"}
-
-# external dependencies
-anyhow = "1.0.41"
-atty = "0.2.14"
-codespan-reporting = "0.11"
-tempfile = "3.2.0"
-
-[dev-dependencies]
-datatest-stable = "0.1.1"
-move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "2b85bf33378a4469e40b10e7bed815bdbefc5d03"}
-move-prover-test-utils = {git = "https://github.com/starcoinorg/move", rev = "2b85bf33378a4469e40b10e7bed815bdbefc5d03"}
-once_cell = "1.13.0"
-shell-words = "1.0.0"
-tempfile = "3.2"
-walkdir = "2.3"
-
-clap = {version = "3", features = ["derive"]}
-hex = "0.4.3"
-itertools = "0.10.3"
-log = "0.4.16"
-num = "0.4.0"
-pretty = "0.10.0"
-rand = "0.8.5"
-serde = {version = "1.0.130", features = ["derive"]}
-serde_json = "1.0.61"
-simplelog = "0.9.0"
-toml = "0.5.9"
-
 [[test]]
 harness = false
 name = "testsuite"
+
+[dependencies]
+move-prover = { workspace = true }
+anyhow = { workspace = true }
+atty = { workspace = true }
+codespan-reporting = { workspace = true }
+tempfile = { workspace = true }
+
+[dev-dependencies]
+datatest-stable = { workspace = true }
+move-command-line-common = { workspace = true }
+move-prover-test-utils = { workspace = true }
+once_cell = { workspace = true }
+shell-words = { workspace = true }
+tempfile = { workspace = true }
+walkdir = { workspace = true }
+clap = { features = [ "derive",], workspace = true }
+hex = { workspace = true }
+itertools = { workspace = true }
+log = { workspace = true }
+num = { workspace = true }
+pretty = { workspace = true }
+rand = { workspace = true }
+serde = { features = [ "derive",], workspace = true }
+serde_json = { workspace = true }
+simplelog = { workspace = true }
+toml = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-move-prover"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

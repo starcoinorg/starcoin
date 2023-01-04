@@ -1,29 +1,32 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-account"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-anyhow = "1.0.41"
-async-trait = "0.1"
-bcs-ext = {package = "bcs-ext", path = "../commons/bcs_ext"}
-futures = "0.3.12"
-parking_lot = "0.12"
-rand = "0.8.5"
-rand_core = {version = "0.6.3", default-features = false}
-serde = "1.0.130"
-serde_json = "~1"
-starcoin-account-api = {path = "./api"}
-starcoin-config = {path = "../config"}
-starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-decrypt = {path = "../commons/decrypt"}
-starcoin-logger = {path = "../commons/logger"}
-starcoin-storage = {path = "../storage"}
-starcoin-types = {path = "../types"}
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+bcs-ext = { package = "bcs-ext", workspace = true }
+futures = { workspace = true }
+parking_lot = { workspace = true }
+rand = { workspace = true }
+rand_core = { default-features = false, workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+starcoin-account-api = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-decrypt = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-storage = { workspace = true }
+starcoin-types = { workspace = true }
 
 [dev-dependencies]
-hex = "0.4.3"
-tempfile = "3"
+hex = { workspace = true }
+tempfile = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-account"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use consensus::Consensus;
+use starcoin_consensus::Consensus;
 use starcoin_account_service::AccountService;
 use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
@@ -14,7 +14,7 @@ use starcoin_txpool::TxPoolService;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::sleep;
-use types::{system_events::GenerateBlockEvent, U256};
+use starcoin_types::{system_events::GenerateBlockEvent, U256};
 
 #[stest::test]
 async fn test_miner_service() {

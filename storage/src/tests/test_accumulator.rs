@@ -4,7 +4,7 @@
 use crate::db_storage::DBStorage;
 use crate::storage::StorageInstance;
 use crate::Storage;
-use crypto::HashValue;
+use starcoin_crypto::HashValue;
 use starcoin_accumulator::node_index::NodeIndex;
 use starcoin_accumulator::{AccumulatorNode, AccumulatorTreeStore};
 use starcoin_config::RocksdbConfig;

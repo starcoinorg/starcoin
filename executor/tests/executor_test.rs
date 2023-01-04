@@ -3,7 +3,7 @@
 
 use anyhow::anyhow;
 use anyhow::Result;
-use logger::prelude::*;
+use starcoin_logger::prelude::*;
 use starcoin_executor::validate_transaction;
 use starcoin_transaction_builder::{
     build_batch_script_function_same_amount, build_transfer_txn,
@@ -42,8 +42,8 @@ use starcoin_state_api::StateReaderExt;
 use starcoin_types::account::Account;
 use starcoin_types::account_config::G_STC_TOKEN_CODE;
 use starcoin_vm_types::account_config::core_code_address;
+use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use test_helper::txn::create_account_txn_sent_as_association;
-use vm_runtime::starcoin_vm::StarcoinVM;
 
 #[derive(Default)]
 pub struct NullStateView;

@@ -1,35 +1,38 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-chain-service"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-anyhow = "1.0.41"
-async-trait = "0.1"
-futures = "0.3.12"
-rand = "0.8.5"
-rand_core = {version = "0.6.3", default-features = false}
-serde = {version = "1.0.130", default-features = false}
-starcoin-chain = {path = "../"}
-starcoin-chain-api = {path = "../api"}
-starcoin-config = {path = "../../config"}
-starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-logger = {path = "../../commons/logger"}
-starcoin-service-registry = {path = "../../commons/service-registry"}
-starcoin-state-api = {path = "../../state/api"}
-starcoin-storage = {path = "../../storage"}
-starcoin-types = {path = "../../types"}
-starcoin-vm-runtime = {path = "../../vm/vm-runtime"}
-starcoin-vm-types = {path = "../../vm/types"}
-thiserror = "1.0"
-tokio = "1"
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+rand = { workspace = true }
+rand_core = { default-features = false, workspace = true }
+serde = { default-features = false, workspace = true }
+starcoin-chain = { workspace = true }
+starcoin-chain-api = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-service-registry = { workspace = true }
+starcoin-state-api = { workspace = true }
+starcoin-storage = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-vm-runtime = { workspace = true }
+starcoin-vm-types = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
 
 [dev-dependencies]
-stest = {path = "../../commons/stest"}
-test-helper = {path = "../../test-helper"}
+stest = { workspace = true }
+test-helper = { workspace = true }
 
 [features]
 mock = []
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-chain-service"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

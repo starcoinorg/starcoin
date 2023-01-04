@@ -9,8 +9,8 @@ use config::{
     BuiltinNetworkID, ChainNetwork, GenesisBlockParameter, GenesisBlockParameterConfig, NodeConfig,
     G_TEST_CONFIG,
 };
-use consensus::Consensus;
-use logger::prelude::*;
+use starcoin_consensus::Consensus;
+use starcoin_logger::prelude::*;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};

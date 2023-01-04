@@ -1,52 +1,54 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-chain"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-anyhow = "1.0.41"
-bcs-ext = {package = "bcs-ext", path = "../commons/bcs_ext"}
-clap = {version = "3", features = ["derive"]}
-consensus = {package = "starcoin-consensus", path = "../consensus"}
-crypto = {package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-logger = {path = "../commons/logger", package = "starcoin-logger"}
-proptest = {version = "1.0.0", default-features = false, optional = true}
-proptest-derive = {version = "0.3.0", default-features = false, optional = true}
-rand = "0.8.5"
-rand_core = {version = "0.6.3", default-features = false}
-sp-utils = {path = "../commons/utils"}
-starcoin-accumulator = {path = "../commons/accumulator", package = "starcoin-accumulator"}
-starcoin-chain-api = {path = "./api"}
-starcoin-config = {path = "../config"}
-starcoin-executor = {path = "../executor", package = "starcoin-executor"}
-starcoin-open-block = {path = "./open-block"}
-starcoin-service-registry = {path = "../commons/service-registry"}
-starcoin-state-api = {path = "../state/api"}
-starcoin-statedb = {path = "../state/statedb"}
-starcoin-time-service = {path = "../commons/time-service"}
-starcoin-types = {path = "../types", package = "starcoin-types"}
-starcoin-vm-types = {path = "../vm/types"}
-state-tree = {path = "../state/state-tree", package = "starcoin-state-tree"}
-storage = {package = "starcoin-storage", path = "../storage"}
-thiserror = "1.0"
+anyhow = { workspace = true }
+bcs-ext = { package = "bcs-ext", workspace = true }
+clap = { features = [ "derive",], workspace = true }
+starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+starcoin-logger = { package = "starcoin-logger", workspace = true }
+proptest = { default-features = false, optional = true, workspace = true }
+proptest-derive = { default-features = false, optional = true, workspace = true }
+rand = { workspace = true }
+rand_core = { default-features = false, workspace = true }
+sp-utils = { workspace = true }
+starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
+starcoin-consensus = { workspace = true }
+starcoin-chain-api = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-executor = { package = "starcoin-executor", workspace = true }
+starcoin-open-block = { workspace = true }
+starcoin-service-registry = { workspace = true }
+starcoin-state-api = { workspace = true }
+starcoin-statedb = { workspace = true }
+starcoin-time-service = { workspace = true }
+starcoin-types = { package = "starcoin-types", workspace = true }
+starcoin-vm-types = { workspace = true }
+starcoin-storage = { workspace = true }
+thiserror = { workspace = true }
 
 [dev-dependencies]
-proptest = "1.0.0"
-proptest-derive = {version = "0.3.0"}
-starcoin-account-api = {path = "../account/api"}
-starcoin-chain-mock = {path = "./mock"}
-starcoin-genesis = {path = "../genesis"}
-starcoin-resource-viewer = {path = "../vm/resource-viewer"}
-starcoin-transaction-builder = {path = "../vm/transaction-builder"}
-starcoin-types = {path = "../types", package = "starcoin-types", features = ["fuzzing"]}
-stdlib = {path = "../vm/stdlib"}
-stest = {path = "../commons/stest"}
-test-helper = {path = "../test-helper"}
-tokio = {version = "^1", features = ["full"]}
+proptest = { workspace = true }
+proptest-derive = { workspace = true }
+starcoin-account-api = { workspace = true }
+starcoin-chain-mock = { workspace = true }
+starcoin-genesis = { workspace = true }
+starcoin-resource-viewer = { workspace = true }
+starcoin-transaction-builder = { workspace = true }
+starcoin-types = { package = "starcoin-types", features = [ "fuzzing",], workspace = true }
+stdlib = { workspace = true }
+stest = { workspace = true }
+test-helper = { workspace = true }
+tokio = { features = [ "full",], workspace = true }
 
 [features]
 default = []
-fuzzing = ["proptest", "proptest-derive", "starcoin-types/fuzzing"]
+fuzzing = [ "proptest", "proptest-derive", "starcoin-types/fuzzing",]
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-chain"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

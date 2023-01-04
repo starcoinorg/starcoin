@@ -17,7 +17,7 @@ use tx_pool::{
     scoring::{Choice, Scoring},
     ReplaceTransaction, VerifiedTransaction,
 };
-use types::account_address::AccountAddress as Address;
+use starcoin_types::account_address::AccountAddress as Address;
 
 /// Choose whether to replace based on the sender, the score and finally the
 /// `Readiness` of the transactions being compared.

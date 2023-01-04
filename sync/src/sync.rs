@@ -10,7 +10,7 @@ use config::NodeConfig;
 use executor::VMMetrics;
 use futures::FutureExt;
 use futures_timer::Delay;
-use logger::prelude::*;
+use starcoin_logger::prelude::*;
 use network::NetworkServiceRef;
 use network::PeerEvent;
 use network_api::peer_score::PeerScoreMetrics;

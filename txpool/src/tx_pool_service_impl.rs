@@ -13,7 +13,7 @@ use crate::{
 use crate::metrics::TxPoolMetrics;
 use crate::pool::{Client, TransactionQueue};
 use anyhow::Result;
-use crypto::hash::HashValue;
+use starcoin_crypto::hash::HashValue;
 use futures_channel::mpsc;
 use parking_lot::RwLock;
 use starcoin_config::NodeConfig;
@@ -21,8 +21,8 @@ use starcoin_executor::VMMetrics;
 use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
 use std::sync::Arc;
-use storage::Store;
-use types::{
+use starcoin_storage::Store;
+use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader},
     transaction,

@@ -1,16 +1,19 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-txpool-api"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-anyhow = "1.0.41"
-async-trait = "0.1"
-futures-channel = "0.3"
-schemars = {git = "https://github.com/starcoinorg/schemars", rev = "6972da92f4360e1779168bb3fe0274c521d324e2"}
-serde = {version = "1.0.130", default-features = false}
-starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-types = {path = "../../types", package = "starcoin-types"}
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+futures-channel = { workspace = true }
+schemars = { workspace = true }
+serde = { default-features = false, workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-types = { package = "starcoin-types", workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-txpool-api"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

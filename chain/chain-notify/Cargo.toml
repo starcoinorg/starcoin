@@ -1,15 +1,18 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-chain-notify"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-anyhow = "1.0.41"
-starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-logger = {path = "../../commons/logger"}
-starcoin-service-registry = {path = "../../commons/service-registry"}
-starcoin-storage = {path = "../../storage"}
-starcoin-types = {path = "../../types"}
+anyhow = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-service-registry = { workspace = true }
+starcoin-storage = { workspace = true }
+starcoin-types = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-chain-notify"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

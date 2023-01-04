@@ -4,7 +4,7 @@
 use std::{fmt, sync::Arc};
 
 use super::{TxStatus, VerifiedTransaction as Transaction};
-use crypto::hash::HashValue as H256;
+use starcoin_crypto::hash::HashValue as H256;
 use futures_channel::mpsc;
 use starcoin_logger::prelude::*;
 use transaction_pool as tx_pool;

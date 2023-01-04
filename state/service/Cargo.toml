@@ -1,26 +1,29 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-state-service"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-anyhow = "1.0.41"
-async-trait = "0.1"
-futures = "0.3.12"
-starcoin-config = {path = "../../config"}
-starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-logger = {path = "../../commons/logger"}
-starcoin-service-registry = {path = "../../commons/service-registry"}
-starcoin-state-api = {path = "../api"}
-starcoin-state-tree = {path = "../state-tree"}
-starcoin-statedb = {path = "../statedb"}
-starcoin-storage = {path = "../../storage"}
-starcoin-types = {path = "../../types"}
-stest = {path = "../../commons/stest"}
-tokio = "1"
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-service-registry = { workspace = true }
+starcoin-state-api = { workspace = true }
+starcoin-state-tree = { workspace = true }
+starcoin-statedb = { workspace = true }
+starcoin-storage = { workspace = true }
+starcoin-types = { workspace = true }
+stest = { workspace = true }
+tokio = { workspace = true }
 
 [dev-dependencies]
-test-helper = {path = "../../test-helper"}
+test-helper = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-state-service"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

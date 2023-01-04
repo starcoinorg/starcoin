@@ -7,7 +7,7 @@ use futures::channel::mpsc;
 use futures::channel::mpsc::unbounded;
 use futures::executor::block_on;
 use futures::SinkExt;
-use logger::prelude::*;
+use starcoin_logger::prelude::*;
 use parking_lot::Mutex;
 use starcoin_config::MinerClientConfig;
 use starcoin_miner_client_api::Solver;
