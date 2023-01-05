@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use starcoin_consensus::Consensus;
-use starcoin_crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
@@ -11,6 +9,8 @@ use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_chain_mock::MockChain;
 use starcoin_config::NodeConfig;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
+use starcoin_consensus::Consensus;
+use starcoin_crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
 use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::account_address;
 use starcoin_types::block::{Block, BlockHeader};

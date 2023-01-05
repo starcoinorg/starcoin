@@ -1,18 +1,22 @@
 [dependencies]
 anyhow = { workspace = true }
 clap = { features = [ "derive",], workspace = true }
-starcoin-crypto = { package = "starcoin-crypto", workspace = true }
 itertools = { default-features = false, workspace = true }
-starcoin-logger = { package = "starcoin-logger", workspace = true }
 rand = { workspace = true }
 rayon = { workspace = true }
 starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
+starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+starcoin-logger = { package = "starcoin-logger", workspace = true }
 starcoin-config = { workspace = true }
 starcoin-consensus = { workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
 starcoin-vm-types = { workspace = true }
+starcoin-storage = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-statedb = { workspace = true }
+starcoin-executor = { workspace = true }
 
 [features]
 

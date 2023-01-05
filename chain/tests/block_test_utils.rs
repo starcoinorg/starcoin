@@ -1,15 +1,17 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::*;
 use proptest::{collection::vec, prelude::*};
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::ChainWriter;
 use starcoin_config::{ChainNetwork, NodeConfig};
+use starcoin_crypto::HashValue;
 use starcoin_executor::block_execute;
 use starcoin_genesis::Genesis;
+use starcoin_logger::prelude::*;
 use starcoin_statedb::ChainStateDB;
+use starcoin_storage::storage::StorageInstance;
+use starcoin_storage::Storage;
 use starcoin_transaction_builder::{build_empty_script, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::proptest_types::{AccountInfoUniverse, Index, SignatureCheckedTransactionGen};
@@ -21,8 +23,6 @@ use starcoin_types::{
 };
 use std::convert::TryFrom;
 use std::sync::Arc;
-use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::Storage;
 
 type LinearizedBlockForest = Vec<Block>;
 

@@ -3,14 +3,14 @@
 
 use crate::metrics::BlockRelayerMetrics;
 use anyhow::{ensure, format_err, Result};
-use starcoin_config::NodeConfig;
-use starcoin_config::G_CRATE_VERSION;
-use starcoin_crypto::HashValue;
 use futures::FutureExt;
-use starcoin_logger::prelude::*;
 use network_api::messages::{CompactBlockMessage, NotificationMessage, PeerCompactBlockMessage};
 use network_api::{NetworkService, PeerId, PeerProvider, PeerSelector, PeerStrategy};
 use starcoin_chain::verifier::StaticVerifier;
+use starcoin_config::NodeConfig;
+use starcoin_config::G_CRATE_VERSION;
+use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
 use starcoin_network_rpc_api::GetTxnsWithHash;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};

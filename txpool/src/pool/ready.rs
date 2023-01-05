@@ -27,8 +27,8 @@
 
 use std::{cmp, collections::HashMap};
 
-use tx_pool::{self, VerifiedTransaction as PoolVerifiedTransaction};
 use starcoin_types::{account_address::AccountAddress as Address, transaction};
+use tx_pool::{self, VerifiedTransaction as PoolVerifiedTransaction};
 
 use super::{client::AccountSeqNumberClient, SeqNumber, VerifiedTransaction};
 

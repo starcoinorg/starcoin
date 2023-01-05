@@ -15,14 +15,19 @@ network-p2p-types = { workspace = true }
 network-rpc-core = { workspace = true }
 network-rpc-derive = { package = "network-rpc-derive", workspace = true }
 prometheus = { workspace = true }
+starcoin-accumulator = { workspace = true }
 starcoin-chain-service = { workspace = true }
 starcoin-logger = { workspace = true }
+starcoin-config = { workspace = true }
 starcoin-network-rpc-api = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-state-service = { workspace = true }
+starcoin-txpool = { workspace = true }
+starcoin-txpool-api = { workspace = true }
 starcoin-storage = { package = "starcoin-storage", workspace = true }
 starcoin-types = { package = "starcoin-types", workspace = true }
+starcoin-state-tree = { workspace = true }
 
 [dev-dependencies]
 starcoin-account-api = { package = "starcoin-account-api", workspace = true }
@@ -33,7 +38,10 @@ starcoin-miner = { package = "starcoin-miner", workspace = true }
 starcoin-network = { package = "starcoin-network", workspace = true }
 starcoin-node = { workspace = true }
 starcoin-statedb = { package = "starcoin-statedb", workspace = true }
+starcoin-txpool = { workspace = true }
+starcoin-txpool-api = { workspace = true }
 starcoin-vm-types = { package = "starcoin-vm-types", workspace = true }
+starcoin-storage = { package = "starcoin-storage", workspace = true }
 stest = { workspace = true }
 test-helper = { workspace = true }
 

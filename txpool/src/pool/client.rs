@@ -8,8 +8,8 @@
 //! any consensus-required structure of the transaction.
 
 use super::{SeqNumber, UnverifiedUserTransaction};
-use std::{any::Any, fmt};
 use starcoin_types::{account_address::AccountAddress as Address, transaction};
+use std::{any::Any, fmt};
 
 /// State sequence number client
 pub trait AccountSeqNumberClient: fmt::Debug + Clone + Any {

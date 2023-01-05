@@ -1,8 +1,7 @@
 use super::*;
-use starcoin_crypto::{ed25519, Uniform};
 use rand::SeedableRng;
+use starcoin_crypto::{ed25519, Uniform};
 
-use tx_pool::Listener;
 use starcoin_types::genesis_config::ChainId;
 use starcoin_types::{
     account_address::AccountAddress,
@@ -10,6 +9,7 @@ use starcoin_types::{
     transaction::helpers::get_current_timestamp,
     transaction::{Script, TransactionPayload},
 };
+use tx_pool::Listener;
 
 #[test]
 fn should_notify_listeners() {

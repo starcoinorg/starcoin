@@ -13,9 +13,9 @@ use crate::{
     TRANSACTION_INFO_PREFIX_NAME_V2,
 };
 use anyhow::Result;
-use starcoin_crypto::HashValue;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_config::RocksdbConfig;
+use starcoin_crypto::HashValue;
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockInfo};
 use starcoin_types::startup_info::SnapshotRange;
 use starcoin_types::transaction::{

@@ -2,12 +2,12 @@ use config::NodeConfig;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_service_registry::RegistryAsyncService;
 use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
+use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::{account_address, transaction::SignedUserTransaction};
 use std::sync::Arc;
 use std::time::Duration;
 use test_helper::run_node_by_config;
-use txpool::TxPoolService;
 
 //TODO
 #[ignore]

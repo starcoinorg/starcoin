@@ -12,8 +12,8 @@ use crate::pool::{
     client::Client, scoring, PoolTransaction, Priority, UnverifiedUserTransaction,
     VerifiedTransaction,
 };
-use std::sync::{atomic::AtomicUsize, Arc};
 use starcoin_types::transaction;
+use std::sync::{atomic::AtomicUsize, Arc};
 
 /// Verification options.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]

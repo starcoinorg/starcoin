@@ -1,7 +1,8 @@
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
-starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-types = { workspace = true }
 futures-channel = { workspace = true }
 starcoin-txpool-api = { package = "starcoin-txpool-api", workspace = true }
 stest = { workspace = true }

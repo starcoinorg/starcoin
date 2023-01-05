@@ -36,6 +36,7 @@ unsigned-varint = { features = [ "futures", "asynchronous_codec",], workspace = 
 void = { workspace = true }
 wasm-timer = { workspace = true }
 zeroize = { workspace = true }
+libp2p = { workspace = true }
 
 [dev-dependencies]
 async-std = { workspace = true }
@@ -56,5 +57,3 @@ homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }
 
-[dependencies.libp2p]
-workspace = true

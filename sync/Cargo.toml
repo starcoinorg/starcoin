@@ -9,8 +9,9 @@ futures-retry = { workspace = true }
 futures-timer = { workspace = true }
 itertools = { default-features = false, workspace = true }
 starcoin-logger = { package = "starcoin-logger", workspace = true }
+starcoin-config = { workspace = true }
 starcoin-network = { package = "starcoin-network", workspace = true }
-network-api = { package = "network-api", workspace = true }
+network-api = { workspace = true }
 network-rpc-core = { workspace = true }
 parking_lot = { workspace = true }
 pin-project = { workspace = true }
@@ -32,6 +33,7 @@ starcoin-storage = { workspace = true }
 starcoin-sync-api = { package = "starcoin-sync-api", workspace = true }
 starcoin-time-service = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
+starcoin-txpool = { workspace = true }
 starcoin-txpool-api = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
@@ -42,7 +44,7 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 hex = { workspace = true }
-starcoin-miner = { package = "starcoin-miner", workspace = true }
+starcoin-miner = { workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-block-relayer = { workspace = true }
 starcoin-chain-mock = { workspace = true }

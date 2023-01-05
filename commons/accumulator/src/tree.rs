@@ -6,11 +6,11 @@ use crate::node_index::{NodeIndex, MAX_ACCUMULATOR_PROOF_DEPTH};
 use crate::tree_store::NodeCacheKey;
 use crate::{AccumulatorNode, AccumulatorTreeStore, LeafCount, NodeCount, MAC_CACHE_SIZE};
 use anyhow::{bail, format_err, Result};
-use starcoin_logger::prelude::*;
 use lru::LruCache;
 use mirai_annotations::*;
 use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::*;
 use std::collections::HashMap;
 use std::sync::Arc;
 

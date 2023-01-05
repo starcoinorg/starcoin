@@ -3,15 +3,15 @@
 
 use crate::GenerateBlockEvent;
 use anyhow::Result;
-use starcoin_logger::prelude::*;
 use starcoin_config::NodeConfig;
+use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_txpool_api::PropagateTransactions;
-use std::sync::Arc;
 use starcoin_types::{
     sync_status::SyncStatus,
     system_events::{NewHeadBlock, SyncStatusChangeEvent},
 };
+use std::sync::Arc;
 
 pub struct GenerateBlockEventPacemaker {
     config: Arc<NodeConfig>,

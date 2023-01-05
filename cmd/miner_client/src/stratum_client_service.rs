@@ -7,9 +7,9 @@ use jsonrpc_core::{Params, Version};
 use jsonrpc_server_utils::codecs::StreamCodec;
 use jsonrpc_server_utils::tokio::net::TcpStream;
 use jsonrpc_server_utils::tokio_util::codec::Decoder;
-use starcoin_logger::prelude::*;
 use serde::{Deserialize, Serialize};
 use starcoin_config::MinerClientConfig;
+use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
 };

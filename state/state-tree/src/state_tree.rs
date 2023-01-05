@@ -6,9 +6,9 @@ use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::{
     JellyfishMerkleTree, RawKey, StaleNodeIndex, TreeReader, TreeUpdateBatch,
 };
-use starcoin_logger::prelude::debug;
 use parking_lot::{Mutex, RwLock};
 use starcoin_crypto::hash::*;
+use starcoin_logger::prelude::debug;
 use starcoin_state_store_api::*;
 use starcoin_types::access_path::DataType;
 use starcoin_types::account_address::AccountAddress;

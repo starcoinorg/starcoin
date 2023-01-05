@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
-members = [ "benchmarks", "commons/stest", "commons/bcs_ext", "commons/decrypt", "commons/logger", "commons/scmd", "commons/metrics", "commons/utils", "commons/service-registry", "commons/timeout-join-handler", "commons/serde-helpers", "commons/stream-task", "commons/api-limiter", "commons/accumulator", "commons/forkable-jellyfish-merkle", "commons/time-service", "types", "types/uint", "genesis", "state/api", "state/state-tree", "state/statedb", "state/state-store-api", "state/service", "config", "storage", "consensus", "consensus/cryptonight-rs", "testsuite", "txpool", "txpool/api", "txpool/mock-service", "executor", "executor/benchmark", "contrib-contracts", "chain", "chain/api", "chain/open-block", "chain/mock", "chain/chain-notify", "chain/service", "node/api", "node", "sync", "sync/api", "block-relayer", "miner", "node", "network-p2p", "network-p2p/types", "network-p2p/peerset", "network", "network/types", "network/api", "network-rpc", "network-rpc/derive", "network-rpc/core", "network-rpc/api", "account/api", "account", "account/service", "account/provider", "rpc/api", "rpc/middleware", "rpc/client", "rpc/server", "vm/types", "vm/vm-runtime", "vm/natives", "vm/stdlib", "vm/compiler", "vm/move-prover", "vm/transaction-builder", "vm/transaction-builder-generator", "vm/move-coverage", "vm/resource-viewer", "vm/dev", "vm/move-explain", "vm/move-package-manager", "vm/vm-status-translator", "vm/starcoin-transactional-test-harness", "abi/types", "abi/decoder", "abi/resolver", "test-helper", "cmd/starcoin", "cmd/faucet", "cmd/tx-factory", "cmd/miner_client", "cmd/generator", "dataformat-generator", "cmd/indexer", "cmd/resource-exporter", "cmd/merkle-generator", "cmd/peer-watcher", "cmd/airdrop", "cmd/replay", "stratum", "cmd/miner_client/api", "cmd/db-exporter", "cmd/genesis-nft-miner",]
-default-members = [ "benchmarks", "commons/stest", "commons/bcs_ext", "commons/decrypt", "commons/logger", "commons/scmd", "commons/metrics", "commons/utils", "commons/service-registry", "commons/timeout-join-handler", "commons/serde-helpers", "commons/stream-task", "commons/api-limiter", "commons/accumulator", "commons/forkable-jellyfish-merkle", "types", "types/uint", "genesis", "state/api", "state/state-tree", "state/statedb", "state/state-store-api", "state/service", "config", "storage", "consensus", "consensus/cryptonight-rs", "testsuite", "txpool", "txpool/api", "txpool/mock-service", "executor", "executor/benchmark", "contrib-contracts", "chain", "chain/api", "chain/open-block", "chain/mock", "chain/chain-notify", "chain/service", "node/api", "node", "sync", "sync/api", "block-relayer", "miner", "node", "network-p2p", "network-p2p/types", "network-p2p/peerset", "network", "network/api", "network-rpc", "network-rpc/derive", "network-rpc/core", "network-rpc/api", "account/api", "account", "account/service", "rpc/api", "rpc/middleware", "rpc/client", "rpc/server", "vm/types", "vm/vm-runtime", "vm/natives", "vm/stdlib", "vm/compiler", "vm/move-prover", "vm/transaction-builder", "vm/transaction-builder-generator", "vm/move-coverage", "vm/resource-viewer", "vm/dev", "vm/move-explain", "vm/move-package-manager", "vm/vm-status-translator", "vm/starcoin-transactional-test-harness", "abi/types", "abi/decoder", "abi/resolver", "test-helper", "cmd/starcoin", "cmd/faucet", "cmd/tx-factory", "cmd/miner_client", "cmd/generator", "dataformat-generator", "cmd/indexer", "cmd/resource-exporter", "cmd/merkle-generator", "cmd/peer-watcher", "cmd/airdrop", "cmd/replay", "cmd/genesis-nft-miner", "stratum", "cmd/miner_client/api", "cmd/db-exporter",]
+members = ["benchmarks", "commons/stest", "commons/bcs_ext", "commons/decrypt", "commons/logger", "commons/scmd", "commons/metrics", "commons/utils", "commons/service-registry", "commons/timeout-join-handler", "commons/serde-helpers", "commons/stream-task", "commons/api-limiter", "commons/accumulator", "commons/forkable-jellyfish-merkle", "commons/time-service", "types", "types/uint", "genesis", "state/api", "state/state-tree", "state/statedb", "state/state-store-api", "state/service", "config", "storage", "consensus", "consensus/cryptonight-rs", "testsuite", "txpool", "txpool/api", "txpool/mock-service", "executor", "executor/benchmark", "contrib-contracts", "chain", "chain/api", "chain/open-block", "chain/mock", "chain/chain-notify", "chain/service", "node/api", "node", "sync", "sync/api", "block-relayer", "miner", "node", "network-p2p", "network-p2p/types", "network-p2p/peerset", "network", "network/types", "network/api", "network-rpc", "network-rpc/derive", "network-rpc/core", "network-rpc/api", "account/api", "account", "account/service", "account/provider", "rpc/api", "rpc/middleware", "rpc/client", "rpc/server", "vm/types", "vm/vm-runtime", "vm/natives", "vm/stdlib", "vm/compiler", "vm/move-prover", "vm/transaction-builder", "vm/transaction-builder-generator", "vm/move-coverage", "vm/resource-viewer", "vm/dev", "vm/move-explain", "vm/move-package-manager", "vm/vm-status-translator", "vm/starcoin-transactional-test-harness", "abi/types", "abi/decoder", "abi/resolver", "test-helper", "cmd/starcoin", "cmd/faucet", "cmd/tx-factory", "cmd/miner_client", "cmd/generator", "dataformat-generator", "cmd/indexer", "cmd/resource-exporter", "cmd/merkle-generator", "cmd/peer-watcher", "cmd/airdrop", "cmd/replay", "stratum", "cmd/miner_client/api", "cmd/db-exporter", "cmd/genesis-nft-miner", ]
+default-members = ["benchmarks", "commons/stest", "commons/bcs_ext", "commons/decrypt", "commons/logger", "commons/scmd", "commons/metrics", "commons/utils", "commons/service-registry", "commons/timeout-join-handler", "commons/serde-helpers", "commons/stream-task", "commons/api-limiter", "commons/accumulator", "commons/forkable-jellyfish-merkle", "types", "types/uint", "genesis", "state/api", "state/state-tree", "state/statedb", "state/state-store-api", "state/service", "config", "storage", "consensus", "consensus/cryptonight-rs", "testsuite", "txpool", "txpool/api", "txpool/mock-service", "executor", "executor/benchmark", "contrib-contracts", "chain", "chain/api", "chain/open-block", "chain/mock", "chain/chain-notify", "chain/service", "node/api", "node", "sync", "sync/api", "block-relayer", "miner", "node", "network-p2p", "network-p2p/types", "network-p2p/peerset", "network", "network/api", "network-rpc", "network-rpc/derive", "network-rpc/core", "network-rpc/api", "account/api", "account", "account/service", "rpc/api", "rpc/middleware", "rpc/client", "rpc/server", "vm/types", "vm/vm-runtime", "vm/natives", "vm/stdlib", "vm/compiler", "vm/move-prover", "vm/transaction-builder", "vm/transaction-builder-generator", "vm/move-coverage", "vm/resource-viewer", "vm/dev", "vm/move-explain", "vm/move-package-manager", "vm/vm-status-translator", "vm/starcoin-transactional-test-harness", "abi/types", "abi/decoder", "abi/resolver", "test-helper", "cmd/starcoin", "cmd/faucet", "cmd/tx-factory", "cmd/miner_client", "cmd/generator", "dataformat-generator", "cmd/indexer", "cmd/resource-exporter", "cmd/merkle-generator", "cmd/peer-watcher", "cmd/airdrop", "cmd/replay", "cmd/genesis-nft-miner", "stratum", "cmd/miner_client/api", "cmd/db-exporter", ]
 
 [profile.dev]
 panic = "unwind"
@@ -13,7 +13,7 @@ debug-assertions = false
 codegen-units = 1
 
 [workspace.package]
-authors = [ "Starcoin Core Dev <dev@starcoin.org>",]
+authors = ["Starcoin Core Dev <dev@starcoin.org>", ]
 edition = "2021"
 homepage = "https://starcoin.org"
 license = "Apache-2.0"
@@ -44,18 +44,18 @@ bitflags = "1.3.2"
 bs58 = "0.3.1"
 byteorder = "1.3.4"
 bytes = "1"
-chrono = { version = "0.4.19", default-features = false, features = [ "clock",] }
-clap = { version = "3", features = [ "derive",] }
+chrono = { version = "0.4.19", default-features = false, features = ["clock", ] }
+clap = { version = "3", features = ["derive", ] }
 cli-table = "0.3.2"
 coarsetime = "0.1.22"
-codespan = { version = "0.8.0", features = [ "serialization",] }
+codespan = { version = "0.8.0", features = ["serialization", ] }
 codespan-reporting = "0.11"
 colored = "2.0.0"
 criterion = "0.3"
 crossbeam-channel = "0.5.6"
 cryptonight-rs = { path = "consensus/cryptonight-rs" }
 csv = "~1"
-ctrlc = { version = "3.2.2", features = [ "termination",] }
+ctrlc = { version = "3.2.2", features = ["termination", ] }
 cucumber = { package = "cucumber_rust", version = "^0.6.0" }
 darling = "0.10.2"
 dashmap = "~5"
@@ -67,7 +67,7 @@ dyn-clone = "1.0.8"
 either = "~1"
 elasticsearch = "7.10.0-alpha.1"
 ethereum-types = "0.9"
-executor-benchmark = { path = "executor/benchmark", package = "starcoin-executor-benchmark" }
+starcoin-executor-benchmark = { path = "executor/benchmark" }
 fnv = "1.0.6"
 forkable-jellyfish-merkle = { path = "commons/forkable-jellyfish-merkle" }
 fs_extra = "1.2.0"
@@ -78,19 +78,20 @@ futures-retry = "0.6"
 futures-timer = "3.0"
 futures-util = "~0.3"
 git-version = "0.3.5"
-governor = { version = "0.4.2", features = [ "dashmap",] }
+governor = { version = "0.4.2", features = ["dashmap", ] }
 heck = "0.3.3"
 hex = "0.4"
 hmac = "0.12.1"
-hyper = { version = "0.14.12", features = [ "full",] }
-include_dir = { version = "0.6.2", features = [ "search",] }
+hyper = { version = "0.14.12", features = ["full", ] }
+include_dir = { version = "0.6.2", features = ["search", ] }
 indicatif = "0.16.2"
 ip_network = "0.3.4"
+io-lifetimes = "0.7.2"
 itertools = "0.10.3"
 jpst = "0.1.1"
 jsonpath = "0.1.1"
-jsonrpc-client-transports = { version = "18", features = [ "http", "ipc", "ws", "arbitrary_precision",] }
-jsonrpc-core = { git = "https://github.com/starcoinorg/jsonrpc", rev = "8f457b18921c1723db6349a1bdbb14b8e376e756", features = [ "arbitrary_precision",] }
+jsonrpc-client-transports = { version = "18", features = ["http", "ipc", "ws", "arbitrary_precision", ] }
+jsonrpc-core = { git = "https://github.com/starcoinorg/jsonrpc", rev = "8f457b18921c1723db6349a1bdbb14b8e376e756", features = ["arbitrary_precision", ] }
 jsonrpc-core-client = "18"
 jsonrpc-derive = { git = "https://github.com/starcoinorg/jsonrpc", rev = "8f457b18921c1723db6349a1bdbb14b8e376e756" }
 jsonrpc-http-server = "18"
@@ -102,12 +103,13 @@ jsonrpc-ws-server = "18"
 lazy_static = "1.4.0"
 libc = "^0.2"
 libloading = "0.7.2"
-libp2p = { version = "0.42.2", default-features = false }
+libp2p = { version = "0.42.2" }
+libp2p-core = { version = "0.31.1" }
 libsecp256k1 = "0.7.1"
 linked-hash-map = "0.5.6"
 linked_hash_set = "0.1.3"
 log = { version = "0.4.16" }
-log4rs = { version = "1.0.0", features = [ "background_rotation", "gzip",] }
+log4rs = { version = "1.0.0", features = ["background_rotation", "gzip", ] }
 lru = "0.7.8"
 merkletree = { git = "https://github.com/filecoin-project/merkletree", rev = "3b1d98c43b341aed935152c5c1535c17d1b21d20" }
 mirai-annotations = "1.10.1"
@@ -168,7 +170,7 @@ regex = "1.6.0"
 ripemd160 = "0.9.1"
 rlp = "0.4"
 rlp-derive = "0.1"
-rocksdb = { default-features = false, features = [ "lz4",], version = "0.18" }
+rocksdb = { default-features = false, features = ["lz4", ], version = "0.18" }
 rpassword = "~5"
 rust-argon2 = "0.8"
 rust-embed = "6.3.0"
@@ -264,24 +266,24 @@ stdlib = { path = "vm/stdlib" }
 stest = { path = "commons/stest" }
 stest-macro = { path = "commons/stest/stest-macro" }
 stream-task = { path = "commons/stream-task" }
-syn = { version = "1.0", features = [ "full", "extra-traits", "visit", "fold",] }
+syn = { version = "1.0", features = ["full", "extra-traits", "visit", "fold", ] }
 sysinfo = "0.25.1"
 tempfile = "3.2.0"
 test-helper = { path = "test-helper" }
 textwrap = "0.14.0"
 thiserror = "1.0"
 timeout-join-handler = { path = "commons/timeout-join-handler" }
-tiny-keccak = { version = "2", features = [ "keccak",] }
+tiny-keccak = { version = "2", features = ["keccak", ] }
 tiny_http = "0.8.2"
-tokio = { version = "^1", features = [ "full",] }
-tokio-executor = { version = "0.2.0-alpha.6", features = [ "blocking",] }
+tokio = { version = "^1", features = ["full", ] }
+tokio-executor = { version = "0.2.0-alpha.6", features = ["blocking", ] }
 toml = "0.5.9"
 trace-time = "0.1"
 tracing = "0.1.34"
 transaction-pool = "2.0.3"
 uint = "0.9.3"
-unsigned-varint = { version = "0.6.0", features = [ "futures", "asynchronous_codec",] }
-vm = { package = "move-binary-format", git = "https://github.com/starcoinorg/move", rev = "2b85bf33378a4469e40b10e7bed815bdbefc5d03", features = [ "fuzzing",] }
+unsigned-varint = { version = "0.6.0", features = ["futures", "asynchronous_codec", ] }
+vm = { package = "move-binary-format", git = "https://github.com/starcoinorg/move", rev = "2b85bf33378a4469e40b10e7bed815bdbefc5d03", features = ["fuzzing", ] }
 vm-status-translator = { path = "vm/vm-status-translator" }
 void = "1.0.2"
 walkdir = "2.3.1"

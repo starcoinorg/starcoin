@@ -9,8 +9,8 @@ use crate::{
 };
 use anyhow::{Error, Result};
 use bcs_ext::BCSCodec;
-use starcoin_crypto::HashValue;
 use serde::{Deserialize, Serialize};
+use starcoin_crypto::HashValue;
 use starcoin_types::transaction::{RichTransactionInfo, TransactionInfo};
 
 // This column family is deprecated

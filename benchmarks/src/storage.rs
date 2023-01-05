@@ -5,9 +5,9 @@ use criterion::{BatchSize, Bencher};
 use starcoin_crypto::HashValue;
 use starcoin_storage::BlockTransactionInfoStore;
 use starcoin_storage::Storage;
+use starcoin_types::transaction::TransactionInfo;
 use starcoin_vm_types::transaction::RichTransactionInfo;
 use starcoin_vm_types::vm_status::KeptVMStatus;
-use starcoin_types::transaction::TransactionInfo;
 
 /// Benchmarking support for storage.
 pub struct StorageBencher {

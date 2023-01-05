@@ -7,8 +7,8 @@ use starcoin_types::error::BlockExecutorError;
 use starcoin_types::error::ExecutorResult;
 use starcoin_types::transaction::TransactionStatus;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
-use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_runtime::metrics::VMMetrics;
+use starcoin_vm_types::contract_event::ContractEvent;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BlockExecutedData {

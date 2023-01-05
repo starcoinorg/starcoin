@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 use benchmarks::storage::StorageBencher;
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
-use starcoin_crypto::HashValue;
 #[cfg(target_os = "linux")]
 use pprof::criterion::{Output, PProfProfiler};
 use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator};
 use starcoin_config::RocksdbConfig;
+use starcoin_crypto::HashValue;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;

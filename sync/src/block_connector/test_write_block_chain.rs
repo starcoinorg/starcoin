@@ -3,10 +3,10 @@
 #![allow(clippy::integer_arithmetic)]
 use crate::block_connector::WriteBlockChainService;
 use config::NodeConfig;
-use starcoin_consensus::Consensus;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_chain_service::WriteableChainService;
+use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
