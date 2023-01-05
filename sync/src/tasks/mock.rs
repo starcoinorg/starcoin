@@ -6,7 +6,7 @@ use crate::tasks::{
 };
 use anyhow::{format_err, Context, Result};
 use async_std::task::JoinHandle;
-use config::ChainNetwork;
+use starcoin_config::ChainNetwork;
 use futures::channel::mpsc::UnboundedReceiver;
 use futures::future::BoxFuture;
 use futures::{FutureExt, StreamExt};

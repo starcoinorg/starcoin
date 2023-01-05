@@ -6,7 +6,7 @@ use pprof::criterion::{Output, PProfProfiler};
 use starcoin_executor_benchmark::run_benchmark;
 
 pub fn transaction_execution(c: &mut Criterion) {
-    ::logger::init();
+    ::starcoin_logger::init();
     let mut group = c.benchmark_group("vm");
     group.sample_size(10);
     let bench_id = "transaction_execution";

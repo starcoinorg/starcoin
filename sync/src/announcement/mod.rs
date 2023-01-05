@@ -1,7 +1,7 @@
 use crate::verified_rpc_client::VerifiedRpcClient;
 use anyhow::Result;
 use async_std::sync::Arc;
-use network::NetworkServiceRef;
+use starcoin_network::NetworkServiceRef;
 use network_api::messages::PeerAnnouncementMessage;
 use network_api::{PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
 use starcoin_crypto::HashValue;

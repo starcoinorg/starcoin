@@ -22,6 +22,7 @@ starcoin-chain = { workspace = true }
 starcoin-chain-api = { workspace = true }
 starcoin-chain-service = { workspace = true }
 starcoin-crypto = { workspace = true }
+starcoin-executor = { workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-metrics = { workspace = true }
 starcoin-network-rpc = { package = "starcoin-network-rpc", workspace = true }
@@ -52,6 +53,7 @@ starcoin-node = { workspace = true }
 starcoin-state-service = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-txpool-mock-service = { workspace = true }
+starcoin-executor = { workspace = true }
 test-helper = { workspace = true }
 tokio = { features = [ "full",], workspace = true }
 

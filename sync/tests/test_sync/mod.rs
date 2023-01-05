@@ -1,4 +1,4 @@
-use config::NodeConfig;
+use starcoin_config::NodeConfig;
 use futures::executor::block_on;
 use starcoin_chain_service::ChainAsyncService;
 use starcoin_logger::prelude::*;

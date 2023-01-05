@@ -514,7 +514,7 @@ mod tests;
 use crate::sync_metrics::SyncMetrics;
 pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
-use executor::VMMetrics;
+use starcoin_executor::VMMetrics;
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
 
 pub fn full_sync_task<H, A, F, N>(

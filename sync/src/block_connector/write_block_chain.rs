@@ -3,8 +3,8 @@
 
 use crate::block_connector::metrics::ChainMetrics;
 use anyhow::{format_err, Result};
-use config::NodeConfig;
-use executor::VMMetrics;
+use starcoin_config::NodeConfig;
+use starcoin_executor::VMMetrics;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 use starcoin_crypto::HashValue;

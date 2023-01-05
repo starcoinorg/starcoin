@@ -11,7 +11,7 @@ use crate::tasks::{
 use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::Context;
 use anyhow::{format_err, Result};
-use config::{BuiltinNetworkID, ChainNetwork};
+use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use futures::channel::mpsc::unbounded;
 use futures::future::BoxFuture;
 use futures::FutureExt;

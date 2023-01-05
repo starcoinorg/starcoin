@@ -9,7 +9,7 @@ use pprof::criterion::{Output, PProfProfiler};
 
 #[allow(deprecated)]
 fn block_apply(c: &mut Criterion) {
-    ::logger::init();
+    ::starcoin_logger::init();
     for i in &[10u64, 1000] {
         c.bench(
             "block_apply",
@@ -24,7 +24,7 @@ fn block_apply(c: &mut Criterion) {
 
 #[allow(deprecated)]
 fn query_block(c: &mut Criterion) {
-    ::logger::init();
+    ::starcoin_logger::init();
     for block_num in &[10u64, 1000u64] {
         let bencher = ChainBencher::new(Some(*block_num));
         bencher.execute();

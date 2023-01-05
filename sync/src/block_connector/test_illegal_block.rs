@@ -5,7 +5,7 @@ use crate::block_connector::{
     create_writeable_block_chain, gen_blocks, new_block, WriteBlockChainService,
 };
 use anyhow::Result;
-use config::{
+use starcoin_config::{
     BuiltinNetworkID, ChainNetwork, GenesisBlockParameter, GenesisBlockParameterConfig, NodeConfig,
     G_TEST_CONFIG,
 };

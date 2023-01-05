@@ -28,7 +28,7 @@ pub struct StarcoinOpt {
 }
 
 fn main() {
-    let _logger_handle = logger::init();
+    let _logger_handle = starcoin_logger::init();
     let opts: StarcoinOpt = StarcoinOpt::parse();
     let config = {
         MinerClientConfig {

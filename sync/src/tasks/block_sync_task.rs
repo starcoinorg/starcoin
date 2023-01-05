@@ -4,7 +4,7 @@
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{format_err, Result};
-use config::G_CRATE_VERSION;
+use starcoin_config::G_CRATE_VERSION;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use network_api::PeerId;

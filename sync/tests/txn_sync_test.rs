@@ -1,4 +1,4 @@
-use config::NodeConfig;
+use starcoin_config::NodeConfig;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_service_registry::RegistryAsyncService;
 use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};

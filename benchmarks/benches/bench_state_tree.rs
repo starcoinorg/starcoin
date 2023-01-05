@@ -20,7 +20,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 fn bench_get_with_proof(c: &mut Criterion) {
-    ::logger::init();
+    ::starcoin_logger::init();
     let tmp_dir = starcoin_config::temp_dir();
     let db_store = new_empty_store(tmp_dir.as_ref()) as Arc<dyn StateNodeStore>;
 
