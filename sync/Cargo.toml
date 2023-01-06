@@ -49,6 +49,7 @@ starcoin-miner = { workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-block-relayer = { workspace = true }
 starcoin-chain-mock = { workspace = true }
+starcoin-consensus = { workspace = true }
 starcoin-node = { workspace = true }
 starcoin-state-service = { workspace = true }
 starcoin-statedb = { workspace = true }

@@ -17,7 +17,7 @@ use std::sync::Arc;
 // Storage benchmarks
 //
 fn storage_transaction(c: &mut Criterion) {
-    ::logger::init_for_test();
+    ::starcoin_logger::init_for_test();
     let path = starcoin_config::temp_dir();
     c.bench_function("storage_transaction", |b| {
         let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
@@ -32,7 +32,7 @@ fn storage_transaction(c: &mut Criterion) {
 
 /// accumulator benchmarks
 fn accumulator_append(c: &mut Criterion) {
-    ::logger::init_for_test();
+    ::starcoin_logger::init_for_test();
     let path = starcoin_config::temp_dir();
     c.bench_function("accumulator_append", |b| {
         let storage = Arc::new(

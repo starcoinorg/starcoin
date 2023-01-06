@@ -7,6 +7,7 @@ starcoin-state-api = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
+starcoin-statedb = { workspace = true }
 
 [dev-dependencies]
 bcs-ext = { package = "bcs-ext", workspace = true }
@@ -22,6 +23,7 @@ starcoin-dev = { workspace = true }
 starcoin-resource-viewer = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
 starcoin-state-tree = { workspace = true }
+starcoin-statedb = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
 stdlib = { package = "stdlib", workspace = true }
 stest = { workspace = true }

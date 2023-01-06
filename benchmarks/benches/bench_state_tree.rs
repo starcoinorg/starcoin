@@ -54,7 +54,7 @@ fn bench_get_with_proof(c: &mut Criterion) {
 }
 
 fn bench_put_and_commit(c: &mut Criterion) {
-    ::logger::init_for_test();
+    ::starcoin_logger::init_for_test();
     let mut group = c.benchmark_group("put_and_commit");
     group.sample_size(80);
     for i in vec![1u64, 5, 10, 50, 100].into_iter() {

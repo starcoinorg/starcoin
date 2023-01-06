@@ -13,8 +13,8 @@ use starcoin_node::NodeHandle;
 use starcoin_state_api::StateWithProof;
 use starcoin_types::{access_path, account_config::genesis_address, block::BlockHeader};
 use std::sync::Arc;
-use vm_types::move_resource::MoveResource;
-use vm_types::on_chain_resource::Epoch;
+use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::on_chain_resource::Epoch;
 
 #[stest::test]
 fn test_network_rpc() {

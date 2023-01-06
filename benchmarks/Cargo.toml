@@ -42,6 +42,7 @@ starcoin-transaction-builder = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-types = { workspace = true }
+starcoin-executor-benchmark = { workspace = true }
 
 [dev-dependencies]
 
@@ -60,4 +61,4 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 
 [target."cfg(target_os=\"linux\")".dependencies]
-pprof = { version = "0.10", features = [ "flamegraph", "criterion",] }
+pprof = { version = "0.10", features = ["flamegraph", "criterion", ] }
