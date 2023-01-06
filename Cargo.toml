@@ -1,7 +1,209 @@
 [workspace]
 resolver = "2"
-members = ["benchmarks", "commons/stest", "commons/bcs_ext", "commons/decrypt", "commons/logger", "commons/scmd", "commons/metrics", "commons/utils", "commons/service-registry", "commons/timeout-join-handler", "commons/serde-helpers", "commons/stream-task", "commons/api-limiter", "commons/accumulator", "commons/forkable-jellyfish-merkle", "commons/time-service", "types", "types/uint", "genesis", "state/api", "state/state-tree", "state/statedb", "state/state-store-api", "state/service", "config", "storage", "consensus", "consensus/cryptonight-rs", "testsuite", "txpool", "txpool/api", "txpool/mock-service", "executor", "executor/benchmark", "contrib-contracts", "chain", "chain/api", "chain/open-block", "chain/mock", "chain/chain-notify", "chain/service", "node/api", "node", "sync", "sync/api", "block-relayer", "miner", "node", "network-p2p", "network-p2p/types", "network-p2p/peerset", "network", "network/types", "network/api", "network-rpc", "network-rpc/derive", "network-rpc/core", "network-rpc/api", "account/api", "account", "account/service", "account/provider", "rpc/api", "rpc/middleware", "rpc/client", "rpc/server", "vm/types", "vm/vm-runtime", "vm/natives", "vm/stdlib", "vm/compiler", "vm/move-prover", "vm/transaction-builder", "vm/transaction-builder-generator", "vm/move-coverage", "vm/resource-viewer", "vm/dev", "vm/move-explain", "vm/move-package-manager", "vm/vm-status-translator", "vm/starcoin-transactional-test-harness", "abi/types", "abi/decoder", "abi/resolver", "test-helper", "cmd/starcoin", "cmd/faucet", "cmd/tx-factory", "cmd/miner_client", "cmd/generator", "dataformat-generator", "cmd/indexer", "cmd/resource-exporter", "cmd/merkle-generator", "cmd/peer-watcher", "cmd/airdrop", "cmd/replay", "stratum", "cmd/miner_client/api", "cmd/db-exporter", "cmd/genesis-nft-miner", ]
-default-members = ["benchmarks", "commons/stest", "commons/bcs_ext", "commons/decrypt", "commons/logger", "commons/scmd", "commons/metrics", "commons/utils", "commons/service-registry", "commons/timeout-join-handler", "commons/serde-helpers", "commons/stream-task", "commons/api-limiter", "commons/accumulator", "commons/forkable-jellyfish-merkle", "types", "types/uint", "genesis", "state/api", "state/state-tree", "state/statedb", "state/state-store-api", "state/service", "config", "storage", "consensus", "consensus/cryptonight-rs", "testsuite", "txpool", "txpool/api", "txpool/mock-service", "executor", "executor/benchmark", "contrib-contracts", "chain", "chain/api", "chain/open-block", "chain/mock", "chain/chain-notify", "chain/service", "node/api", "node", "sync", "sync/api", "block-relayer", "miner", "node", "network-p2p", "network-p2p/types", "network-p2p/peerset", "network", "network/api", "network-rpc", "network-rpc/derive", "network-rpc/core", "network-rpc/api", "account/api", "account", "account/service", "rpc/api", "rpc/middleware", "rpc/client", "rpc/server", "vm/types", "vm/vm-runtime", "vm/natives", "vm/stdlib", "vm/compiler", "vm/move-prover", "vm/transaction-builder", "vm/transaction-builder-generator", "vm/move-coverage", "vm/resource-viewer", "vm/dev", "vm/move-explain", "vm/move-package-manager", "vm/vm-status-translator", "vm/starcoin-transactional-test-harness", "abi/types", "abi/decoder", "abi/resolver", "test-helper", "cmd/starcoin", "cmd/faucet", "cmd/tx-factory", "cmd/miner_client", "cmd/generator", "dataformat-generator", "cmd/indexer", "cmd/resource-exporter", "cmd/merkle-generator", "cmd/peer-watcher", "cmd/airdrop", "cmd/replay", "cmd/genesis-nft-miner", "stratum", "cmd/miner_client/api", "cmd/db-exporter", ]
+members = [
+    "benchmarks",
+    "commons/stest",
+    "commons/bcs_ext",
+    "commons/decrypt",
+    "commons/logger",
+    "commons/scmd",
+    "commons/metrics",
+    "commons/utils",
+    "commons/service-registry",
+    "commons/timeout-join-handler",
+    "commons/serde-helpers",
+    "commons/stream-task",
+    "commons/api-limiter",
+    "commons/accumulator",
+    "commons/forkable-jellyfish-merkle",
+    "commons/time-service",
+    "types",
+    "types/uint",
+    "genesis",
+    "state/api",
+    "state/state-tree",
+    "state/statedb",
+    "state/state-store-api",
+    "state/service",
+    "config",
+    "storage",
+    "consensus",
+    "consensus/cryptonight-rs",
+    "testsuite",
+    "txpool",
+    "txpool/api",
+    "txpool/mock-service",
+    "executor",
+    "executor/benchmark",
+    "contrib-contracts",
+    "chain",
+    "chain/api",
+    "chain/open-block",
+    "chain/mock",
+    "chain/chain-notify",
+    "chain/service",
+    "node/api",
+    "node",
+    "sync",
+    "sync/api",
+    "block-relayer",
+    "miner",
+    "node",
+    "network-p2p",
+    "network-p2p/types",
+    "network-p2p/peerset",
+    "network",
+    "network/types",
+    "network/api",
+    "network-rpc",
+    "network-rpc/derive",
+    "network-rpc/core",
+    "network-rpc/api",
+    "account/api",
+    "account",
+    "account/service",
+    "account/provider",
+    "rpc/api",
+    "rpc/middleware",
+    "rpc/client",
+    "rpc/server",
+    "vm/types",
+    "vm/vm-runtime",
+    "vm/natives",
+    "vm/stdlib",
+    "vm/compiler",
+    "vm/move-prover",
+    "vm/transaction-builder",
+    "vm/transaction-builder-generator",
+    "vm/move-coverage",
+    "vm/resource-viewer",
+    "vm/dev",
+    "vm/move-explain",
+    "vm/move-package-manager",
+    "vm/vm-status-translator",
+    "vm/starcoin-transactional-test-harness",
+    "abi/types",
+    "abi/decoder",
+    "abi/resolver",
+    "test-helper",
+    "cmd/starcoin",
+    "cmd/faucet",
+    "cmd/tx-factory",
+    "cmd/miner_client",
+    "cmd/generator",
+    "dataformat-generator",
+    "cmd/indexer",
+    "cmd/resource-exporter",
+    "cmd/merkle-generator",
+    "cmd/peer-watcher",
+    "cmd/airdrop",
+    "cmd/replay",
+    "stratum",
+    "cmd/miner_client/api",
+    "cmd/db-exporter",
+    "cmd/genesis-nft-miner",
+]
+
+default-members = [
+    "benchmarks",
+    "commons/stest",
+    "commons/bcs_ext",
+    "commons/decrypt",
+    "commons/logger",
+    "commons/scmd",
+    "commons/metrics",
+    "commons/utils",
+    "commons/service-registry",
+    "commons/timeout-join-handler",
+    "commons/serde-helpers",
+    "commons/stream-task",
+    "commons/api-limiter",
+    "commons/accumulator",
+    "commons/forkable-jellyfish-merkle",
+    "types",
+    "types/uint",
+    "genesis",
+    "state/api",
+    "state/state-tree",
+    "state/statedb",
+    "state/state-store-api",
+    "state/service",
+    "config",
+    "storage",
+    "consensus",
+    "consensus/cryptonight-rs",
+    "testsuite",
+    "txpool",
+    "txpool/api",
+    "txpool/mock-service",
+    "executor",
+    "executor/benchmark",
+    "contrib-contracts",
+    "chain",
+    "chain/api",
+    "chain/open-block",
+    "chain/mock",
+    "chain/chain-notify",
+    "chain/service",
+    "node/api",
+    "node",
+    "sync",
+    "sync/api",
+    "block-relayer",
+    "miner",
+    "node",
+    "network-p2p",
+    "network-p2p/types",
+    "network-p2p/peerset",
+    "network",
+    "network/api",
+    "network-rpc",
+    "network-rpc/derive",
+    "network-rpc/core",
+    "network-rpc/api",
+    "account/api",
+    "account",
+    "account/service",
+    "rpc/api",
+    "rpc/middleware",
+    "rpc/client",
+    "rpc/server",
+    "vm/types",
+    "vm/vm-runtime",
+    "vm/natives",
+    "vm/stdlib",
+    "vm/compiler",
+    "vm/move-prover",
+    "vm/transaction-builder",
+    "vm/transaction-builder-generator",
+    "vm/move-coverage",
+    "vm/resource-viewer",
+    "vm/dev",
+    "vm/move-explain",
+    "vm/move-package-manager",
+    "vm/vm-status-translator",
+    "vm/starcoin-transactional-test-harness",
+    "abi/types",
+    "abi/decoder",
+    "abi/resolver",
+    "test-helper",
+    "cmd/starcoin",
+    "cmd/faucet",
+    "cmd/tx-factory",
+    "cmd/miner_client",
+    "cmd/generator",
+    "dataformat-generator",
+    "cmd/indexer",
+    "cmd/resource-exporter",
+    "cmd/merkle-generator",
+    "cmd/peer-watcher",
+    "cmd/airdrop",
+    "cmd/replay",
+    "cmd/genesis-nft-miner",
+    "stratum",
+    "cmd/miner_client/api",
+    "cmd/db-exporter",
+]
 
 [profile.dev]
 panic = "unwind"
@@ -291,47 +493,21 @@ wasm-timer = "0.2"
 which = "4.1.0"
 zeroize = "1.3.0"
 
-[profile.release.package.starcoin-service-registry]
-debug = 1
-
-[profile.release.package.starcoin-chain]
-debug = 1
-
-[profile.release.package.starcoin-consensus]
-debug = 1
-
-[profile.release.package.starcoin-miner]
-debug = 1
-
-[profile.release.package.starcoin-network]
-debug = 1
-
-[profile.release.package.network-p2p]
-debug = 1
-
-[profile.release.package.starcoin-network-rpc]
-debug = 1
-
-[profile.release.package.starcoin-node]
-debug = 1
-
-[profile.release.package.starcoin-storage]
-debug = 1
-
-[profile.release.package.starcoin-sync]
-debug = 1
-
-[profile.release.package.starcoin-txpool]
-debug = 1
-
-[profile.release.package.starcoin-executor]
-debug = 1
-
-[profile.release.package.starcoin-genesis]
-debug = 1
-
-[profile.release.package.starcoin-vm-runtime]
-debug = 1
+[profile.release.package]
+starcoin-service-registry.debug = 1
+starcoin-chain.debug = 1
+starcoin-consensus.debug = 1
+starcoin-miner.debug = 1
+starcoin-network.debug = 1
+network-p2p.debug = 1
+starcoin-network-rpc.debug = 1
+starcoin-node.debug = 1
+starcoin-storage.debug = 1
+starcoin-sync.debug = 1
+starcoin-txpool.debug = 1
+starcoin-executor.debug = 1
+starcoin-genesis.debug = 1
+starcoin-vm-runtime.debug = 1
 
 [profile.release.package."*"]
 debug = false
