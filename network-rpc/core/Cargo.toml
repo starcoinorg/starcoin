@@ -1,24 +1,24 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "network-rpc-core"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-anyhow = "1.0.41"
-bcs-ext = {path = "../../commons/bcs_ext", package = "bcs-ext"}
-futures = "0.3.12"
-log = "0.4.16"
-network-rpc-derive = {path = "../derive"}
-num_enum = "0.5.7"
-serde = {version = "1.0.130", features = ["derive"]}
-
-#todo remove this dependency.
-starcoin-types = {path = "../../types", package = "starcoin-types"}
-
-network-types = {path = "../../network/types"}
+anyhow = { workspace = true }
+bcs-ext = { package = "bcs-ext", workspace = true }
+futures = { workspace = true }
+log = { workspace = true }
+network-rpc-derive = { workspace = true }
+num_enum = { workspace = true }
+serde = { features = [ "derive",], workspace = true }
+starcoin-types = { package = "starcoin-types", workspace = true }
+network-types = { workspace = true }
 
 [dev-dependencies]
-stest = {path = "../../commons/stest"}
+stest = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "network-rpc-core"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

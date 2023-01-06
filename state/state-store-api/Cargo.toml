@@ -1,13 +1,16 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-state-store-api"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-anyhow = "1.0.41"
-forkable-jellyfish-merkle = {path = "../../commons/forkable-jellyfish-merkle"}
-serde = {version = "1.0.130"}
-starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+anyhow = { workspace = true }
+forkable-jellyfish-merkle = { workspace = true }
+serde = { workspace = true }
+starcoin-crypto = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-state-store-api"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

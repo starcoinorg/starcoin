@@ -1,27 +1,26 @@
-[package]
-authors = [
-  "Parity Technologies <admin@parity.io>",
-  "Starcoin Core Dev <dev@starcoin.org>",
-]
-description = "Connectivity manager based on reputation"
-documentation = "https://docs.rs/sc-peerset"
-edition = "2021"
-homepage = "http://parity.io"
-license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
-name = "sc-peerset"
-repository = "https://github.com/paritytech/substrate/"
-version = "1.12.9"
-
-[package.metadata.docs.rs]
-targets = ["x86_64-unknown-linux-gnu"]
-
 [dependencies]
-futures = "0.3.12"
-libp2p = {version = "0.42.2", default-features = false}
-log = "0.4.16"
-serde_json = {version = "1.0", features = ["arbitrary_precision"]}
-sp-utils = {path = "../../commons/utils"}
-wasm-timer = "0.2"
+futures = { workspace = true }
+libp2p = { default-features = false, workspace = true }
+log = { workspace = true }
+serde_json = { features = [ "arbitrary_precision",], workspace = true }
+sp-utils = { workspace = true }
+wasm-timer = { workspace = true }
 
 [dev-dependencies]
-rand = "0.8.5"
+rand = { workspace = true }
+
+[package]
+authors = { workspace = true }
+description = "Connectivity manager based on reputation"
+documentation = "https://docs.rs/sc-peerset"
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+name = "sc-peerset"
+repository = { workspace = true }
+version = "1.12.9"
+publish = { workspace = true }
+rust-version = { workspace = true }
+
+[package.metadata.docs.rs]
+targets = [ "x86_64-unknown-linux-gnu",]

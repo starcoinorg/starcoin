@@ -1,51 +1,52 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-name = "starcoin-miner"
-version = "1.12.9"
-
 [dependencies]
-anyhow = "1.0.41"
-futures = "0.3.12"
-futures-timer = "3.0"
-hex = {version = "0.4.3"}
-once_cell = "1.13.0"
-parking_lot = "0.12.1"
-thiserror = "1.0"
-
-bcs-ext = {package = "bcs-ext", path = "../commons/bcs_ext"}
-consensus = {path = "../consensus", package = "starcoin-consensus"}
-crypto = {package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-executor = {path = "../executor", package = "starcoin-executor"}
-logger = {path = "../commons/logger", package = "starcoin-logger"}
-serde = "1.0.130"
-starcoin-account-api = {path = "../account/api"}
-starcoin-account-service = {path = "../account/service"}
-starcoin-accumulator = {path = "../commons/accumulator", package = "starcoin-accumulator"}
-starcoin-chain = {path = "../chain"}
-starcoin-config = {path = "../config"}
-starcoin-metrics = {path = "../commons/metrics"}
-starcoin-open-block = {path = "../chain/open-block"}
-starcoin-service-registry = {path = "../commons/service-registry"}
-starcoin-state-api = {path = "../state/api"}
-starcoin-storage = {path = "../storage"}
-starcoin-txpool = {path = "../txpool"}
-starcoin-txpool-api = {path = "../txpool/api"}
-starcoin-vm-types = {path = "../vm/types"}
-
-state_tree = {path = "../state/state-tree", package = "starcoin-state-tree"}
-statedb = {path = "../state/statedb", package = "starcoin-statedb"}
-tokio = {version = "^1", features = ["full"]}
-types = {path = "../types", package = "starcoin-types"}
+anyhow = { workspace = true }
+futures = { workspace = true }
+futures-timer = { workspace = true }
+hex = { workspace = true }
+once_cell = { workspace = true }
+parking_lot = { workspace = true }
+thiserror = { workspace = true }
+bcs-ext = { package = "bcs-ext", workspace = true }
+starcoin-consensus = { package = "starcoin-consensus", workspace = true }
+starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+starcoin-logger = { package = "starcoin-logger", workspace = true }
+serde = { workspace = true }
+starcoin-account-api = { workspace = true }
+starcoin-account-service = { workspace = true }
+starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
+starcoin-chain = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-executor = { workspace = true }
+starcoin-metrics = { workspace = true }
+starcoin-open-block = { workspace = true }
+starcoin-service-registry = { workspace = true }
+starcoin-state-api = { workspace = true }
+starcoin-storage = { workspace = true }
+starcoin-txpool = { workspace = true }
+starcoin-txpool-api = { workspace = true }
+starcoin-vm-types = { workspace = true }
+tokio = { features = [ "full",], workspace = true }
+starcoin-types = { package = "starcoin-types", workspace = true }
 
 [dev-dependencies]
-network-rpc = {path = "../network-rpc", package = "starcoin-network-rpc"}
-starcoin-genesis = {path = "../genesis"}
-starcoin-network-rpc-api = {path = "../network-rpc/api"}
-starcoin-node = {path = "../node"}
-starcoin-state-service = {path = "../state/service"}
-starcoin-sync-api = {package = "starcoin-sync-api", path = "../sync/api"}
-starcoin-time-service = {path = "../commons/time-service"}
-stest = {path = "../commons/stest"}
-sync = {path = "../sync", package = "starcoin-sync"}
-test-helper = {path = "../test-helper"}
+starcoin-network-rpc = { package = "starcoin-network-rpc", workspace = true }
+starcoin-genesis = { workspace = true }
+starcoin-network-rpc-api = { workspace = true }
+starcoin-node = { workspace = true }
+starcoin-state-service = { workspace = true }
+starcoin-sync-api = { package = "starcoin-sync-api", workspace = true }
+starcoin-time-service = { workspace = true }
+stest = { workspace = true }
+starcoin-sync = { package = "starcoin-sync", workspace = true }
+test-helper = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+name = "starcoin-miner"
+version = "1.12.9"
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

@@ -1,48 +1,3 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "benchmarks"
-publish = false
-version = "1.12.9"
-
-[dependencies]
-anyhow = "1.0.41"
-criterion = "0.3.6"
-crypto = {package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-executor-benchmark = {path = "../executor/benchmark", package = "starcoin-executor-benchmark"}
-forkable-jellyfish-merkle = {path = "../commons/forkable-jellyfish-merkle"}
-futures = "0.3.12"
-futures-timer = "3.0"
-logger = {path = "../commons/logger", package = "starcoin-logger"}
-parking_lot = "0.12"
-proptest = "1.0.0"
-rand = "0.8.5"
-rand_core = {version = "0.6.3", default-features = false}
-starcoin-account-api = {path = "../account/api"}
-starcoin-accumulator = {package = "starcoin-accumulator", path = "../commons/accumulator"}
-starcoin-chain = {path = "../chain"}
-starcoin-config = {path = "../config"}
-starcoin-consensus = {path = "../consensus"}
-starcoin-executor = {path = "../executor", package = "starcoin-executor"}
-starcoin-genesis = {path = "../genesis"}
-starcoin-network-api = {path = "../network/api", package = "network-api"}
-starcoin-service-registry = {path = "../commons/service-registry"}
-starcoin-state-store-api = {path = "../state/state-store-api"}
-starcoin-state-tree = {path = "../state/state-tree"}
-starcoin-storage = {path = "../storage"}
-starcoin-transaction-builder = {path = "../vm/transaction-builder"}
-starcoin-vm-runtime = {path = "../vm/vm-runtime"}
-starcoin-vm-types = {path = "../vm/types"}
-types = {path = "../types", package = "starcoin-types"}
-[target."cfg(target_os=\"linux\")".dependencies]
-pprof = {version = "0.10", features = ["flamegraph", "criterion"]}
-[dev-dependencies]
-
-# see https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
-[lib]
-bench = false
-
 [[bench]]
 harness = false
 name = "bench_storage"
@@ -58,3 +13,52 @@ name = "bench_state_tree"
 [[bench]]
 harness = false
 name = "bench_vm"
+
+[dependencies]
+anyhow = { workspace = true }
+criterion = { workspace = true }
+starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+forkable-jellyfish-merkle = { workspace = true }
+futures = { workspace = true }
+futures-timer = { workspace = true }
+starcoin-logger = { package = "starcoin-logger", workspace = true }
+parking_lot = { workspace = true }
+proptest = { workspace = true }
+rand = { workspace = true }
+rand_core = { default-features = false, workspace = true }
+starcoin-account-api = { workspace = true }
+starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
+starcoin-chain = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-consensus = { workspace = true }
+starcoin-executor = { package = "starcoin-executor", workspace = true }
+starcoin-genesis = { workspace = true }
+network-api = { workspace = true }
+starcoin-service-registry = { workspace = true }
+starcoin-state-store-api = { workspace = true }
+starcoin-state-tree = { workspace = true }
+starcoin-storage = { workspace = true }
+starcoin-transaction-builder = { workspace = true }
+starcoin-vm-runtime = { workspace = true }
+starcoin-vm-types = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-executor-benchmark = { workspace = true }
+
+[dev-dependencies]
+
+[lib]
+bench = false
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "benchmarks"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[target."cfg(target_os=\"linux\")".dependencies]
+pprof = { version = "0.10", features = ["flamegraph", "criterion", ] }

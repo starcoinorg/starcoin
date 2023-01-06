@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
-use logger::prelude::*;
 use network_api::peer_score::{InverseScore, Score};
 use network_api::PeerId;
 use network_api::PeerInfo;
@@ -10,6 +9,7 @@ use network_api::PeerSelector;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::hash::HashValue;
+use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::{
     gen_client::NetworkRpcClient, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeadersByNumber,
     GetBlockIds, GetTxnsWithHash, RawRpcClient,

@@ -1,29 +1,31 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-name = "contrib-contracts"
-version = "1.12.9"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 
 [dev-dependencies]
-starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-executor = {path = "../executor"}
-starcoin-state-api = {path = "../state/api"}
-starcoin-types = {path = "../types"}
-starcoin-vm-types = {path = "../vm/types"}
-test-helper = {path = "../test-helper"}
-#starcoin-move-compiler= {path = "../vm/compiler"}
-anyhow = "~1"
-bcs-ext = {path = "../commons/bcs_ext"}
-ethereum-types = "0.9"
-hex = "0.4"
-rlp = "0.4"
-rlp-derive = "0.1"
-serde = "~1"
-serde_json = "~1"
-stdlib = {path = "../vm/stdlib"}
-stest = {path = "../commons/stest"}
-tempfile = "~3"
+starcoin-crypto = { workspace = true }
+starcoin-executor = { workspace = true }
+starcoin-state-api = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-vm-types = { workspace = true }
+test-helper = { workspace = true }
+anyhow = { workspace = true }
+bcs-ext = { workspace = true }
+ethereum-types = { workspace = true }
+hex = { workspace = true }
+rlp = { workspace = true }
+rlp-derive = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+stdlib = { workspace = true }
+stest = { workspace = true }
+tempfile = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+name = "contrib-contracts"
+version = "1.12.9"
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

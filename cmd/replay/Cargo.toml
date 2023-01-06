@@ -1,23 +1,26 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-replay"
-publish = false
-version = "1.12.9"
-
 [[bin]]
 name = "starcoin-replay"
 path = "src/main.rs"
 
 [dependencies]
-anyhow = "~1"
-clap = {version = "3", features = ["derive"]}
-sp-utils = {path = "../../commons/utils"}
-starcoin-chain = {path = "../../chain"}
-starcoin-config = {path = "../../config"}
-starcoin-genesis = {path = "../../genesis"}
-starcoin-logger = {path = "../../commons/logger"}
-starcoin-storage = {path = "../../storage"}
-starcoin-types = {path = "../../types"}
-starcoin-vm-types = {path = "../../vm/types"}
+anyhow = { workspace = true }
+clap = { features = [ "derive",], workspace = true }
+sp-utils = { workspace = true }
+starcoin-chain = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-genesis = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-storage = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-vm-types = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-replay"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

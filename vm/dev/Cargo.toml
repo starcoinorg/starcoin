@@ -1,24 +1,27 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-dev"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-anyhow = "1.0.41"
-bcs-ext = {path = "../../commons/bcs_ext"}
-starcoin-abi-decoder = {path = "../../abi/decoder"}
-starcoin-abi-resolver = {path = "../../abi/resolver"}
-starcoin-abi-types = {path = "../../abi/types"}
-starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-logger = {path = "../../commons/logger"}
-starcoin-resource-viewer = {path = "../resource-viewer"}
-starcoin-rpc-api = {path = "../../rpc/api"}
-starcoin-state-api = {path = "../../state/api"}
-starcoin-statedb = {path = "../../state/statedb"}
-starcoin-vm-runtime = {path = "../vm-runtime"}
-starcoin-vm-types = {path = "../types"}
-thiserror = "1.0"
-vm-status-translator = {path = "../vm-status-translator"}
+anyhow = { workspace = true }
+bcs-ext = { workspace = true }
+starcoin-abi-decoder = { workspace = true }
+starcoin-abi-resolver = { workspace = true }
+starcoin-abi-types = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-resource-viewer = { workspace = true }
+starcoin-rpc-api = { workspace = true }
+starcoin-state-api = { workspace = true }
+starcoin-statedb = { workspace = true }
+starcoin-vm-runtime = { workspace = true }
+starcoin-vm-types = { workspace = true }
+thiserror = { workspace = true }
+vm-status-translator = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-dev"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

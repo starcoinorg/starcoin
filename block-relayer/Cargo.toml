@@ -1,34 +1,37 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-block-relayer"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-anyhow = "1.0.41"
-async-trait = "0.1"
-bcs-ext = {package = "bcs-ext", path = "../commons/bcs_ext"}
-config = {path = "../config", package = "starcoin-config"}
-crypto = {package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-futures = "0.3.12"
-logger = {path = "../commons/logger", package = "starcoin-logger"}
-network-api = {package = "network-api", path = "../network/api"}
-starcoin-chain = {path = "../chain"}
-starcoin-chain-api = {path = "../chain/api"}
-starcoin-metrics = {path = "../commons/metrics"}
-starcoin-network = {path = "../network"}
-starcoin-network-rpc-api = {path = "../network-rpc/api"}
-starcoin-service-registry = {path = "../commons/service-registry"}
-starcoin-sync = {package = "starcoin-sync", path = "../sync"}
-starcoin-sync-api = {package = "starcoin-sync-api", path = "../sync/api"}
-starcoin-time-service = {path = "../commons/time-service"}
-starcoin-txpool = {path = "../txpool"}
-starcoin-txpool-api = {path = "../txpool/api"}
-starcoin-types = {path = "../types", package = "starcoin-types"}
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+bcs-ext = { package = "bcs-ext", workspace = true }
+starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+futures = { workspace = true }
+starcoin-logger = { package = "starcoin-logger", workspace = true }
+network-api = { package = "network-api", workspace = true }
+starcoin-chain = { workspace = true }
+starcoin-chain-api = { workspace = true }
+starcoin-metrics = { workspace = true }
+starcoin-network = { workspace = true }
+starcoin-network-rpc-api = { workspace = true }
+starcoin-service-registry = { workspace = true }
+starcoin-sync = { package = "starcoin-sync", workspace = true }
+starcoin-sync-api = { package = "starcoin-sync-api", workspace = true }
+starcoin-time-service = { workspace = true }
+starcoin-txpool = { workspace = true }
+starcoin-txpool-api = { workspace = true }
+starcoin-types = { package = "starcoin-types", workspace = true }
+starcoin-config = { workspace = true }
 
 [dev-dependencies]
-hex = "0.4.3"
-stest = {path = "../commons/stest"}
-tokio = {version = "^1", features = ["full"]}
+hex = { workspace = true }
+stest = { workspace = true }
+tokio = { features = [ "full",], workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-block-relayer"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

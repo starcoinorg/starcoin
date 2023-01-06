@@ -11,11 +11,11 @@ pub(crate) mod scoring;
 pub(crate) mod verifier;
 
 pub use client::{AccountSeqNumberClient, Client};
-use crypto::hash::HashValue;
 pub use queue::{Status, TransactionQueue};
+use starcoin_crypto::hash::HashValue;
+use starcoin_types::{account_address::AccountAddress, transaction};
 use std::ops::Deref;
 use transaction_pool as tx_pool;
-use types::{account_address::AccountAddress, transaction};
 pub use verifier::Options as VerifierOptions;
 
 pub type SeqNumber = u64;
@@ -284,4 +284,4 @@ impl PendingSettings {
     }
 }
 
-pub type TxStatus = types::transaction::TxStatus;
+pub type TxStatus = starcoin_types::transaction::TxStatus;

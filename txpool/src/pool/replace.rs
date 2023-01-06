@@ -11,13 +11,13 @@
 //! on the `Readiness` of the transactions when comparing them
 
 use crate::pool::{client, ScoredTransaction};
+use starcoin_types::account_address::AccountAddress as Address;
 use std::cmp;
 use tx_pool::{
     self,
     scoring::{Choice, Scoring},
     ReplaceTransaction, VerifiedTransaction,
 };
-use types::account_address::AccountAddress as Address;
 
 /// Choose whether to replace based on the sender, the score and finally the
 /// `Readiness` of the transactions being compared.

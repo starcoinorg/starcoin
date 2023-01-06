@@ -3,12 +3,12 @@
 
 use crate::block_connector::metrics::ChainMetrics;
 use anyhow::{format_err, Result};
-use config::NodeConfig;
-use executor::VMMetrics;
-use logger::prelude::*;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
+use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
+use starcoin_executor::VMMetrics;
+use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
 use starcoin_storage::Store;

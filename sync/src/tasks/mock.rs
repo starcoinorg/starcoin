@@ -6,7 +6,6 @@ use crate::tasks::{
 };
 use anyhow::{format_err, Context, Result};
 use async_std::task::JoinHandle;
-use config::ChainNetwork;
 use futures::channel::mpsc::UnboundedReceiver;
 use futures::future::BoxFuture;
 use futures::{FutureExt, StreamExt};
@@ -19,6 +18,7 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
+use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
 use starcoin_network_rpc_api::G_RPC_INFO;
 use starcoin_sync_api::SyncTarget;

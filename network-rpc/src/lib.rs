@@ -4,15 +4,15 @@
 use crate::rpc::NetworkRpcImpl;
 use anyhow::Result;
 use api_limiter::{ApiLimiters, Quota};
-use config::ApiQuotaConfig;
-use config::NetworkRpcQuotaConfiguration;
-use config::NodeConfig;
-use config::QuotaDuration;
 use network_api::{PeerId, RpcInfo};
 use network_p2p_types::{OutgoingResponse, ProtocolRequest};
 use network_rpc_core::server::NetworkRpcServer;
 use network_rpc_core::{NetRpcError, RawRpcServer, RpcErrorCode};
 use starcoin_chain_service::ChainReaderService;
+use starcoin_config::ApiQuotaConfig;
+use starcoin_config::NetworkRpcQuotaConfiguration;
+use starcoin_config::NodeConfig;
+use starcoin_config::QuotaDuration;
 use starcoin_logger::prelude::*;
 pub use starcoin_network_rpc_api::gen_client;
 use starcoin_network_rpc_api::gen_server::NetworkRpc;
@@ -21,8 +21,8 @@ use starcoin_service_registry::{
 };
 use starcoin_state_service::ChainStateService;
 use starcoin_storage::{Storage, Store};
+use starcoin_txpool::TxPoolService;
 use std::sync::Arc;
-use txpool::TxPoolService;
 
 mod rpc;
 #[cfg(test)]

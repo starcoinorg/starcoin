@@ -1,63 +1,70 @@
+[dependencies]
+anyhow = { workspace = true }
+async-std = { workspace = true }
+async-trait = { workspace = true }
+bcs-ext = { package = "bcs-ext", workspace = true }
+forkable-jellyfish-merkle = { workspace = true }
+futures = { workspace = true }
+futures-retry = { workspace = true }
+futures-timer = { workspace = true }
+itertools = { default-features = false, workspace = true }
+starcoin-logger = { package = "starcoin-logger", workspace = true }
+starcoin-config = { workspace = true }
+starcoin-network = { package = "starcoin-network", workspace = true }
+network-api = { workspace = true }
+network-rpc-core = { workspace = true }
+parking_lot = { workspace = true }
+pin-project = { workspace = true }
+pin-utils = { workspace = true }
+rand = { workspace = true }
+starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
+starcoin-chain = { workspace = true }
+starcoin-chain-api = { workspace = true }
+starcoin-chain-service = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-executor = { workspace = true }
+starcoin-genesis = { workspace = true }
+starcoin-metrics = { workspace = true }
+starcoin-network-rpc = { package = "starcoin-network-rpc", workspace = true }
+starcoin-network-rpc-api = { workspace = true }
+starcoin-service-registry = { workspace = true }
+starcoin-state-api = { workspace = true }
+starcoin-state-tree = { package = "starcoin-state-tree", workspace = true }
+starcoin-storage = { workspace = true }
+starcoin-sync-api = { package = "starcoin-sync-api", workspace = true }
+starcoin-time-service = { workspace = true }
+starcoin-transaction-builder = { workspace = true }
+starcoin-txpool = { workspace = true }
+starcoin-txpool-api = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-vm-types = { workspace = true }
+stest = { workspace = true }
+stream-task = { workspace = true }
+sysinfo = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+hex = { workspace = true }
+starcoin-miner = { workspace = true }
+starcoin-account-api = { workspace = true }
+starcoin-block-relayer = { workspace = true }
+starcoin-chain-mock = { workspace = true }
+starcoin-consensus = { workspace = true }
+starcoin-node = { workspace = true }
+starcoin-state-service = { workspace = true }
+starcoin-statedb = { workspace = true }
+starcoin-txpool-mock-service = { workspace = true }
+starcoin-executor = { workspace = true }
+test-helper = { workspace = true }
+tokio = { features = [ "full",], workspace = true }
+
 [package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
+authors = { workspace = true }
+edition = { workspace = true }
 name = "starcoin-sync"
 version = "1.12.9"
-
-[dependencies]
-anyhow = "1.0.41"
-async-std = "1.12"
-async-trait = "0.1"
-bcs-ext = {package = "bcs-ext", path = "../commons/bcs_ext"}
-config = {path = "../config", package = "starcoin-config"}
-consensus = {path = "../consensus", package = "starcoin-consensus"}
-executor = {path = "../executor", package = "starcoin-executor"}
-forkable-jellyfish-merkle = {path = "../commons/forkable-jellyfish-merkle"}
-futures = "0.3.12"
-futures-retry = "0.6"
-futures-timer = "3.0"
-itertools = {version = "0.10.3", default-features = false}
-logger = {path = "../commons/logger", package = "starcoin-logger"}
-network = {path = "../network", package = "starcoin-network"}
-network-api = {package = "network-api", path = "../network/api"}
-network-rpc-core = {path = "../network-rpc/core"}
-parking_lot = "0.12"
-pin-project = "1.0.1"
-pin-utils = "0.1.0"
-rand = "0.8.5"
-starcoin-accumulator = {package = "starcoin-accumulator", path = "../commons/accumulator"}
-starcoin-chain = {path = "../chain"}
-starcoin-chain-api = {path = "../chain/api"}
-starcoin-chain-service = {path = "../chain/service"}
-starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-genesis = {path = "../genesis"}
-starcoin-metrics = {path = "../commons/metrics"}
-starcoin-network-rpc = {path = "../network-rpc/", package = "starcoin-network-rpc"}
-starcoin-network-rpc-api = {path = "../network-rpc/api"}
-starcoin-service-registry = {path = "../commons/service-registry"}
-starcoin-state-api = {path = "../state/api"}
-starcoin-state-tree = {package = "starcoin-state-tree", path = "../state/state-tree"}
-starcoin-storage = {path = "../storage"}
-starcoin-sync-api = {package = "starcoin-sync-api", path = "../sync/api"}
-starcoin-time-service = {path = "../commons/time-service"}
-starcoin-transaction-builder = {path = "../vm/transaction-builder"}
-starcoin-txpool-api = {path = "../txpool/api"}
-starcoin-types = {path = "../types"}
-starcoin-vm-types = {path = "../vm/types"}
-stest = {path = "../commons/stest"}
-stream-task = {path = "../commons/stream-task"}
-sysinfo = "0.25.1"
-thiserror = "1.0"
-txpool = {path = "../txpool", package = "starcoin-txpool"}
-[dev-dependencies]
-hex = "0.4.3"
-miner = {path = "../miner", package = "starcoin-miner"}
-starcoin-account-api = {path = "../account/api"}
-starcoin-block-relayer = {path = "../block-relayer"}
-starcoin-chain-mock = {path = "../chain/mock"}
-starcoin-node = {path = "../node"}
-starcoin-state-service = {path = "../state/service"}
-starcoin-statedb = {path = "../state/statedb"}
-starcoin-txpool-mock-service = {path = "../txpool/mock-service"}
-test-helper = {path = "../test-helper"}
-tokio = {version = "^1", features = ["full"]}
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

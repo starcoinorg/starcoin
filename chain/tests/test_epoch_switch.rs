@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use consensus::Consensus;
 use starcoin_chain::BlockChain;
 use starcoin_chain::ChainWriter;
 use starcoin_config::{ChainNetwork, NodeConfig};
+use starcoin_consensus::Consensus;
 use starcoin_transaction_builder::{encode_create_account_script_function, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_types::account::Account;
 use starcoin_types::account_address::AccountAddress;

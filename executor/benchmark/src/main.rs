@@ -21,7 +21,7 @@ struct Opt {
 fn main() {
     let opt = Opt::parse();
 
-    logger::init();
+    starcoin_logger::init();
 
     rayon::ThreadPoolBuilder::new()
         .thread_name(|index| format!("rayon-global-{}", index))

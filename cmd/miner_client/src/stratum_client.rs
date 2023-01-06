@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use byteorder::{LittleEndian, WriteBytesExt};
 use futures::future;
 use futures::stream::{BoxStream, StreamExt};
-use logger::prelude::error;
+use starcoin_logger::prelude::error;
 use starcoin_service_registry::ServiceRef;
 use starcoin_stratum::rpc::LoginRequest;
 use starcoin_stratum::target_hex_to_difficulty;

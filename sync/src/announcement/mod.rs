@@ -1,17 +1,17 @@
 use crate::verified_rpc_client::VerifiedRpcClient;
 use anyhow::Result;
 use async_std::sync::Arc;
-use logger::prelude::*;
-use network::NetworkServiceRef;
 use network_api::messages::PeerAnnouncementMessage;
 use network_api::{PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::*;
+use starcoin_network::NetworkServiceRef;
 use starcoin_network_rpc_api::GetTxnsWithHash;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_storage::{BlockTransactionInfoStore, Storage};
+use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::transaction::TransactionError;
-use txpool::TxPoolService;
 
 /// Service which handle Announcement message
 pub struct AnnouncementService {
@@ -104,10 +104,10 @@ impl EventHandler<Self, PeerAnnouncementMessage> for AnnouncementService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use config::NodeConfig;
     use futures::executor::block_on;
     use network_api::messages::TXN_PROTOCOL_NAME;
     use network_api::MultiaddrWithPeerId;
+    use starcoin_config::NodeConfig;
     use starcoin_txpool_api::TxPoolSyncService;
     use std::time::Duration;
 

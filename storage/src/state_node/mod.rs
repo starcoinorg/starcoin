@@ -5,7 +5,7 @@ use crate::define_storage;
 use crate::storage::ValueCodec;
 use crate::STATE_NODE_PREFIX_NAME;
 use anyhow::Result;
-use crypto::HashValue;
+use starcoin_crypto::HashValue;
 use starcoin_state_store_api::StateNode;
 
 define_storage!(StateStorage, HashValue, StateNode, STATE_NODE_PREFIX_NAME);

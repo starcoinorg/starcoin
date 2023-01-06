@@ -1,27 +1,30 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-open-block"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-anyhow = "1.0.41"
-async-trait = "0.1"
-bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
-crypto = {package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-futures = "0.3.12"
-logger = {path = "../../commons/logger", package = "starcoin-logger"}
-parking_lot = "0.12"
-starcoin-accumulator = {path = "../../commons/accumulator", package = "starcoin-accumulator"}
-starcoin-chain-api = {path = "../api"}
-starcoin-executor = {path = "../../executor", package = "starcoin-executor"}
-starcoin-state-api = {path = "../../state/api"}
-starcoin-statedb = {path = "../../state/statedb"}
-starcoin-types = {path = "../../types"}
-storage = {package = "starcoin-storage", path = "../../storage"}
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+bcs-ext = { package = "bcs-ext", workspace = true }
+starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+futures = { workspace = true }
+starcoin-logger = { package = "starcoin-logger", workspace = true }
+parking_lot = { workspace = true }
+starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
+starcoin-chain-api = { workspace = true }
+starcoin-executor = { package = "starcoin-executor", workspace = true }
+starcoin-state-api = { workspace = true }
+starcoin-statedb = { workspace = true }
+starcoin-storage = { workspace = true }
+starcoin-types = { workspace = true }
 
 [dev-dependencies]
-starcoin-genesis = {path = "../../genesis"}
-stest = {path = "../../commons/stest"}
+starcoin-genesis = { workspace = true }
+stest = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-open-block"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

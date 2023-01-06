@@ -1,28 +1,29 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "resource-exporter"
-publish = false
-version = "1.12.9"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-anyhow = "~1"
-bcs-ext = {package = "bcs-ext", path = "../../commons/bcs_ext"}
-clap = {version = "3", features = ["derive"]}
-csv = "~1"
-hex = "~0.4"
-serde = "~1"
-serde_json = {version = "~1", features = ["arbitrary_precision"]}
-starcoin-crypto = {git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
-starcoin-resource-viewer = {path = "../../vm/resource-viewer"}
-starcoin-state-tree = {path = "../../state/state-tree"}
-starcoin-statedb = {path = "../../state/statedb"}
-starcoin-storage = {path = "../../storage"}
-starcoin-types = {path = "../../types"}
-starcoin-vm-types = {path = "../../vm/types"}
+anyhow = { workspace = true }
+bcs-ext = { package = "bcs-ext", workspace = true }
+clap = { features = [ "derive",], workspace = true }
+csv = { workspace = true }
+hex = { workspace = true }
+serde = { workspace = true }
+serde_json = { features = [ "arbitrary_precision",], workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-resource-viewer = { workspace = true }
+starcoin-state-tree = { workspace = true }
+starcoin-statedb = { workspace = true }
+starcoin-storage = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-vm-types = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "resource-exporter"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
 
 [target."cfg(target_os=\"linux\")".dependencies]
-pprof = {version = "0.10", features = ["flamegraph"]}
+pprof = { version = "0.10", features = [ "flamegraph"] }

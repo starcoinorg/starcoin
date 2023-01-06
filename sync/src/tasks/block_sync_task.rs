@@ -4,15 +4,15 @@
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{format_err, Result};
-use config::G_CRATE_VERSION;
 use futures::future::BoxFuture;
 use futures::FutureExt;
-use logger::prelude::*;
 use network_api::PeerId;
 use network_api::PeerProvider;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
+use starcoin_config::G_CRATE_VERSION;
+use starcoin_logger::prelude::*;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use std::collections::HashMap;

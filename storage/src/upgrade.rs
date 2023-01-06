@@ -12,7 +12,7 @@ use crate::{
     BLOCK_BODY_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
 };
 use anyhow::{bail, ensure, format_err, Result};
-use logger::prelude::{debug, info, warn};
+use starcoin_logger::prelude::{debug, info, warn};
 use starcoin_types::transaction::Transaction;
 use std::cmp::Ordering;
 

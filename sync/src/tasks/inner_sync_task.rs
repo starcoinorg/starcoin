@@ -3,10 +3,10 @@ use crate::tasks::{
     BlockFetcher, BlockIdFetcher, BlockSyncTask, PeerOperator,
 };
 use anyhow::format_err;
-use executor::VMMetrics;
 use network_api::PeerProvider;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
+use starcoin_executor::VMMetrics;
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
 use starcoin_time_service::TimeService;

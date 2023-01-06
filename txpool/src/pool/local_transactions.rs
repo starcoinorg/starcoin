@@ -9,8 +9,8 @@
 use std::{fmt, sync::Arc};
 
 use crate::pool::{ScoredTransaction, VerifiedTransaction as Transaction};
-use crypto::hash::HashValue;
 use linked_hash_map::LinkedHashMap;
+use starcoin_crypto::hash::HashValue;
 use tx_pool::{self, VerifiedTransaction};
 
 /// Status of local transaction.

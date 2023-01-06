@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{ensure, Result};
-use merkle_tree::{blob::Blob, proof::SparseMerkleProof, RawKey};
+use forkable_jellyfish_merkle::{blob::Blob, proof::SparseMerkleProof, RawKey};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;

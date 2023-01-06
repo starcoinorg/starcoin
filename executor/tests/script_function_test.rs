@@ -4,6 +4,7 @@
 use anyhow::Result;
 use move_transactional_test_runner::tasks::SyntaxChoice;
 use starcoin_config::ChainNetwork;
+use starcoin_statedb::ChainStateDB;
 use starcoin_transaction_builder::{
     create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT,
 };
@@ -14,7 +15,6 @@ use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::transaction::{Package, Script, ScriptFunction, TransactionPayload};
 use starcoin_vm_types::vm_status::KeptVMStatus;
-use statedb::ChainStateDB;
 use test_helper::executor::{
     compile_ir_script, compile_modules_with_address, compile_script, execute_and_apply,
     prepare_genesis,

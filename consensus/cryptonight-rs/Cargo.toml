@@ -1,24 +1,27 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "cryptonight-rs"
-publish = false
-version = "1.12.9"
-
-[dependencies]
-libc = "^0.2"
+[[bench]]
+harness = false
+name = "bench"
 
 [build-dependencies]
 cc = "1.0"
 
+[dependencies]
+libc = { workspace = true }
+
+[dev-dependencies]
+bencher = { workspace = true }
+rustc-serialize = { workspace = true }
+
 [lib]
 name = "cryptonight"
 
-[dev-dependencies]
-bencher = "0.1.5"
-rustc-serialize = "^0.3"
-
-[[bench]]
-harness = false
-name = "bench"
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "cryptonight-rs"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

@@ -1,35 +1,36 @@
-[package]
-authors = ["Diem Association <opensource@diem.org>"]
-description = "Diem transaction-builder"
-edition = "2021"
-homepage = "https://diem.org"
-license = "Apache-2.0"
-name = "transaction-builder-generator"
-repository = "https://github.com/diem/diem"
-version = "1.12.9"
-
-[dependencies]
-anyhow = "1.0.41"
-clap = {version = "3", features = ["derive"]}
-heck = "0.3.3"
-regex = "1.6.0"
-serde-generate = {git = "https://github.com/starcoinorg/serde-reflection", rev = "694048797338ff7385006d968e786b6d9dbdeb8b"}
-serde-reflection = {git = "https://github.com/starcoinorg/serde-reflection", rev = "694048797338ff7385006d968e786b6d9dbdeb8b"}
-serde_yaml = "0.8.26"
-textwrap = "0.14.0"
-
-bcs = "0.1.3"
-move-core-types = {git = "https://github.com/starcoinorg/move", rev = "2b85bf33378a4469e40b10e7bed815bdbefc5d03"}
-starcoin-vm-types = {path = "../types"}
-
-[dev-dependencies]
-tempfile = "3.2.0"
-which = "4.1.0"
-
-[features]
-default = []
-
 [[bin]]
 name = "generate-transaction-builders"
 path = "src/generate.rs"
 test = false
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { features = [ "derive",], workspace = true }
+heck = { workspace = true }
+regex = { workspace = true }
+serde-generate = { workspace = true }
+serde-reflection = { workspace = true }
+serde_yaml = { workspace = true }
+textwrap = { workspace = true }
+bcs = { workspace = true }
+move-core-types = { workspace = true }
+starcoin-vm-types = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+which = { workspace = true }
+
+[features]
+default = []
+
+[package]
+authors = { workspace = true }
+description = "Diem transaction-builder"
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+name = "transaction-builder-generator"
+repository = { workspace = true }
+version = "1.12.9"
+publish = { workspace = true }
+rust-version = { workspace = true }

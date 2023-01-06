@@ -1,14 +1,16 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "timeout-join-handler"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-
-thiserror = "1.0"
+thiserror = { workspace = true }
 
 [dev-dependencies]
-anyhow = "1.0.41"
+anyhow = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "timeout-join-handler"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

@@ -4,14 +4,14 @@ use parking_lot::RwLock;
 use starcoin_executor::VMMetrics;
 use starcoin_state_api::AccountStateReader;
 use starcoin_statedb::ChainStateDB;
-use std::{collections::HashMap, fmt::Debug, sync::Arc};
-use storage::Store;
-use types::{
+use starcoin_storage::Store;
+use starcoin_types::{
     account_address::AccountAddress,
     block::BlockHeader,
     transaction,
     transaction::{CallError, SignedUserTransaction, TransactionError},
 };
+use std::{collections::HashMap, fmt::Debug, sync::Arc};
 
 /// Cache for state nonces.
 #[derive(Clone)]

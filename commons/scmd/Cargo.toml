@@ -1,27 +1,30 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "scmd"
-publish = false
-version = "1.12.9"
-
 [dependencies]
-anyhow = "1.0.41"
-clap = {version = "3", features = ["derive"]}
-cli-table = "0.3.2"
-jpst = "0.1.1"
-once_cell = "1.13.0"
-rust-flatten-json = "0.2.0"
-rustyline = "9.1.2"
-rustyline-derive = "0.6.0"
-serde = {version = "1.0.130", features = ["derive"]}
-serde_json = {version = "1.0", features = ["arbitrary_precision"]}
-thiserror = "1.0"
+anyhow = { workspace = true }
+clap = { features = [ "derive",], workspace = true }
+cli-table = { workspace = true }
+jpst = { workspace = true }
+once_cell = { workspace = true }
+rust-flatten-json = { workspace = true }
+rustyline = { workspace = true }
+rustyline-derive = { workspace = true }
+serde = { features = [ "derive",], workspace = true }
+serde_json = { features = [ "arbitrary_precision",], workspace = true }
+thiserror = { workspace = true }
 
 [dev-dependencies]
-ctrlc = "3.2.2"
-rand = "0.8.5"
+ctrlc = { workspace = true }
+rand = { workspace = true }
 
 [features]
 default = []
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "scmd"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
