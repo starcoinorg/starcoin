@@ -11,7 +11,6 @@ use crate::tasks::{
 use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::Context;
 use anyhow::{format_err, Result};
-use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use futures::channel::mpsc::unbounded;
 use futures::future::BoxFuture;
 use futures::FutureExt;
@@ -24,6 +23,7 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
+use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;

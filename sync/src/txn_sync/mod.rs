@@ -1,7 +1,7 @@
 use anyhow::{bail, Result};
-use starcoin_network::NetworkServiceRef;
 use network_api::{NetworkService, PeerId, PeerProvider, PeerSelector, PeerStrategy, RpcInfo};
 use starcoin_logger::prelude::*;
+use starcoin_network::NetworkServiceRef;
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxnsWithSize, RawRpcClient};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext};
 use starcoin_txpool::TxPoolService;

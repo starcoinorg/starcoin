@@ -1,11 +1,11 @@
 use crate::verified_rpc_client::VerifiedRpcClient;
 use anyhow::Result;
 use async_std::sync::Arc;
-use starcoin_network::NetworkServiceRef;
 use network_api::messages::PeerAnnouncementMessage;
 use network_api::{PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
+use starcoin_network::NetworkServiceRef;
 use starcoin_network_rpc_api::GetTxnsWithHash;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_storage::{BlockTransactionInfoStore, Storage};

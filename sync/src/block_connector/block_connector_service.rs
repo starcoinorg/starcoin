@@ -5,12 +5,12 @@ use crate::block_connector::{ExecuteRequest, ResetRequest, WriteBlockChainServic
 use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::{BlockConnectedEvent, BlockDiskCheckEvent};
 use anyhow::{format_err, Result};
-use starcoin_config::{NodeConfig, G_CRATE_VERSION};
-use starcoin_executor::VMMetrics;
-use starcoin_network::NetworkServiceRef;
 use network_api::PeerProvider;
 use starcoin_chain_api::{ConnectBlockError, WriteableChainService};
+use starcoin_config::{NodeConfig, G_CRATE_VERSION};
+use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
+use starcoin_network::NetworkServiceRef;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };

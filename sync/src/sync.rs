@@ -6,17 +6,17 @@ use crate::sync_metrics::SyncMetrics;
 use crate::tasks::{full_sync_task, AncestorEvent, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
-use starcoin_config::NodeConfig;
-use starcoin_executor::VMMetrics;
 use futures::FutureExt;
 use futures_timer::Delay;
-use starcoin_network::NetworkServiceRef;
-use starcoin_network::PeerEvent;
 use network_api::peer_score::PeerScoreMetrics;
 use network_api::{PeerId, PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
+use starcoin_config::NodeConfig;
+use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
+use starcoin_network::NetworkServiceRef;
+use starcoin_network::PeerEvent;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };

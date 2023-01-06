@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use starcoin_config::*;
 use futures::executor::block_on;
+use starcoin_config::*;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::{
     gen_client as starcoin_gen_client, GetBlockHeadersByNumber, GetBlockIds, GetStateWithProof,

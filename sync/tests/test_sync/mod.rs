@@ -1,6 +1,6 @@
-use starcoin_config::NodeConfig;
 use futures::executor::block_on;
 use starcoin_chain_service::ChainAsyncService;
+use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_sync_api::SyncAsyncService;
 use std::thread::sleep;
