@@ -3,7 +3,8 @@
 
 //! This file contains the starting gas schedule published at genesis.
 
-use crate::gas_schedule::{GasCost, NativeCostIndex as N};
+use crate::gas_schedule::NativeCostIndex as N;
+use gas_algebra_ext::GasCost;
 use once_cell::sync::Lazy;
 use vm::file_format::SignatureIndex;
 use vm::{
@@ -260,14 +261,7 @@ pub fn instruction_table_v2() -> Vec<GasCost> {
 }
 
 /// return latest instruction table, as `initial_instruction_table` function should not be modified.
-pub static G_LATEST_INSTRUCTION_TABLE: Lazy<Vec<GasCost>> = Lazy::new(|| {
-    let latest_ins = instruction_table_v2();
-    debug_assert!(
-        latest_ins.len() == Bytecode::VARIANT_COUNT,
-        "all instructions must be in the cost table"
-    );
-    latest_ins
-});
+pub static G_LATEST_INSTRUCTION_TABLE: Lazy<Vec<GasCost>> = Lazy::new(instruction_table_v2);
 
 pub fn native_table_v1() -> Vec<GasCost> {
     let mut raw_native_table = vec![
@@ -330,6 +324,7 @@ pub fn native_table_v2() -> Vec<GasCost> {
         .collect::<Vec<_>>()
 }
 
+#[allow(dead_code)]
 pub fn v3_native_table() -> Vec<GasCost> {
     let mut raw_native_table = vec![
         (N::SHA2_256, GasCost::new(21, 1)),
@@ -411,12 +406,11 @@ pub fn v4_native_table() -> Vec<GasCost> {
         // XXX FIXME YSG instr_gas
         (N::TABLE_NEW, GasCost::new(4, 1)),
         (N::TABLE_INSERT, GasCost::new(4, 1)),
-        (N::TABLE_BORROW, GasCost::new(4, 1)),
-        (N::TABLE_BORROW_MUT, GasCost::new(4, 1)),
-        (N::TABLE_REMOVE, GasCost::new(4, 1)),
-        (N::TABLE_CONTAINS, GasCost::new(4, 1)),
-        (N::TABLE_DESTROY, GasCost::new(4, 1)),
-        (N::TABLE_DROP, GasCost::new(4, 1)),
+        (N::TABLE_BORROW, GasCost::new(10, 1)),
+        (N::TABLE_REMOVE, GasCost::new(8, 1)),
+        (N::TABLE_CONTAINS, GasCost::new(40, 1)),
+        (N::TABLE_DESTROY, GasCost::new(20, 1)),
+        (N::TABLE_DROP, GasCost::new(73, 1)),
         //TODO  WGB inst_gas
         (N::STRING_CHECK_UT8, GasCost::new(4, 1)),
         (N::STRING_SUB_STR, GasCost::new(4, 1)),

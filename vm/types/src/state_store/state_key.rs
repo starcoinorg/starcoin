@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::access_path::AccessPath;
+use crate::state_store::table::TableHandle;
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 
@@ -13,8 +14,7 @@ use serde::{Deserialize, Serialize};
 )]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(proptest_derive::Arbitrary))]
 pub struct TableItem {
-    #[schemars(with = "String")]
-    pub handle: u128,
+    pub handle: TableHandle,
     #[serde(with = "serde_bytes")]
     #[schemars(with = "String")]
     pub key: Vec<u8>,
@@ -30,7 +30,7 @@ pub enum StateKey {
 }
 
 impl StateKey {
-    pub fn table_item(handle: u128, key: Vec<u8>) -> Self {
+    pub fn table_item(handle: TableHandle, key: Vec<u8>) -> Self {
         StateKey::TableItem(TableItem { handle, key })
     }
 }

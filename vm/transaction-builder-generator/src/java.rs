@@ -660,6 +660,9 @@ private static java.util.Map<String, ScriptFunctionDecodingHelper> initDecoderMa
                 _ => common::type_not_allowed(type_tag),
             },
             Struct(_) | Signer => common::type_not_allowed(type_tag),
+            U16 => ("U16", String::new()),
+            U32 => ("U32", String::new()),
+            U256 => ("U256", String::new()),
         };
         writeln!(
             self.out,
@@ -760,6 +763,9 @@ private static {} decode_{}_argument(TransactionArgument arg) {{
             },
 
             Struct(_) | Signer => common::type_not_allowed(type_tag),
+            U16 => "@Unsigned Char".into(),
+            U32 => "@Unsigned Int".into(),
+            U256 => "@Unsigned @Int256 BigInteger".into(),
         }
     }
 
@@ -777,6 +783,9 @@ private static {} decode_{}_argument(TransactionArgument arg) {{
             },
 
             Struct(_) | Signer => common::type_not_allowed(type_tag),
+            U16 => format!("new TransactionArgument.U16({})", name),
+            U32 => format!("new TransactionArgument.U32({})", name),
+            U256 => format!("new TransactionArgument.U256({})", name),
         }
     }
 }

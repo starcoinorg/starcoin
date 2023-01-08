@@ -16,6 +16,8 @@ use starcoin_types::language_storage::{ModuleId, StructTag};
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
 };
+use starcoin_vm_types::state_store::table::TableHandle;
+
 #[rpc(client, server, schema)]
 pub trait StateApi {
     #[rpc(name = "state.get")]
@@ -66,7 +68,7 @@ pub trait StateApi {
     #[rpc(name = "state.get_with_table_item_proof")]
     fn get_with_table_item_proof(
         &self,
-        handle: u128,
+        handle: TableHandle,
         key: Vec<u8>,
     ) -> FutureResult<StateWithTableItemProofView>;
 
@@ -74,7 +76,7 @@ pub trait StateApi {
     #[rpc(name = "state.get_with_table_item_proof_by_root")]
     fn get_with_table_item_proof_by_root(
         &self,
-        handle: u128,
+        handle: TableHandle,
         key: Vec<u8>,
         state_root: HashValue,
     ) -> FutureResult<StateWithTableItemProofView>;

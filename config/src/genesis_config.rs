@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, ensure, format_err, Result};
+use gas_algebra_ext::{CostTable, FromOnChainGasSchedule};
 use network_p2p_types::MultiaddrWithPeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
@@ -14,18 +15,19 @@ use starcoin_crypto::{
     multi_ed25519::{genesis_multi_key_pair, MultiEd25519PublicKey},
     HashValue, ValidCryptoMaterialStringExt,
 };
+use starcoin_gas::StarcoinGasParameters;
 use starcoin_time_service::{TimeService, TimeServiceType};
 use starcoin_uint::U256;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::event::EventHandle;
 use starcoin_vm_types::gas_schedule::{
-    latest_cost_table, CostTable, G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_LATEST_GAS_SCHEDULE,
+    latest_cost_table, G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_LATEST_GAS_SCHEDULE,
     G_TEST_GAS_CONSTANTS,
 };
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy, StdlibVersion};
 use starcoin_vm_types::on_chain_config::{
     instruction_table_v1, native_table_v1, native_table_v2, ConsensusConfig, DaoConfig,
-    TransactionPublishOption, VMConfig, Version,
+    GasSchedule, TransactionPublishOption, VMConfig, Version,
 };
 use starcoin_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::token::stc::STCUnit;
@@ -586,7 +588,7 @@ pub enum GenesisBlockParameterConfig {
 }
 
 /// GenesisConfig is a config for initialize a chain genesis.
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct GenesisConfig {
     /// Parameter for init genesis block
     pub genesis_block_parameter: GenesisBlockParameterConfig,
@@ -1049,3 +1051,179 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         transaction_timeout: ONE_DAY,
     }
 });
+
+pub static G_LATEST_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
+    let vm_config = VMConfig {
+        gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
+    };
+    let gas_schedule = GasSchedule::from(&vm_config);
+    StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map()).unwrap()
+});
+
+#[cfg(test)]
+mod tests {
+    use gas_algebra_ext::{CostTable, FromOnChainGasSchedule};
+    use starcoin_gas::StarcoinGasParameters;
+    use starcoin_vm_types::gas_schedule::{
+        latest_cost_table, G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_LATEST_GAS_SCHEDULE,
+        G_TEST_GAS_CONSTANTS,
+    };
+    use starcoin_vm_types::on_chain_config::{
+        instruction_gas_schedule_v1, instruction_gas_schedule_v2, instruction_table_v1,
+        native_gas_schedule_v1, native_gas_schedule_v2, native_gas_schedule_v4, native_table_v1,
+        native_table_v2, txn_gas_schedule_test, txn_gas_schedule_v1, txn_gas_schedule_v2,
+        txn_gas_schedule_v3, GasSchedule, VMConfig,
+    };
+
+    fn config_entries(
+        instrs: Vec<(String, u64)>,
+        natives: Vec<(String, u64)>,
+        constants: Vec<(String, u64)>,
+    ) -> Vec<(String, u64)> {
+        let mut entries = instrs;
+        let mut natives = natives;
+        let mut constants = constants;
+        entries.push(("instr.ld_u16".to_string(), 3));
+        entries.push(("instr.ld_u32".to_string(), 2));
+        entries.push(("instr.ld_u256".to_string(), 3));
+        entries.push(("instr.cast_u16".to_string(), 3));
+        entries.push(("instr.cast_u32".to_string(), 2));
+        entries.push(("instr.cast_u256".to_string(), 3));
+        entries.append(&mut natives);
+        // native_table don't have these
+        entries.push(("nursery.debug.print.base_cost".to_string(), 1));
+        entries.push(("nursery.debug.print_stack_trace.base_cost".to_string(), 1));
+
+        entries.push((
+            "move_stdlib.hash.sha2_256.legacy_min_input_len".to_string(),
+            1,
+        ));
+        entries.push((
+            "move_stdlib.hash.sha3_256.legacy_min_input_len".to_string(),
+            1,
+        ));
+        entries.push(("move_stdlib.bcs.to_bytes.failure".to_string(), 182));
+        entries.push((
+            "move_stdlib.bcs.to_bytes.legacy_min_output_size".to_string(),
+            1,
+        ));
+        entries.append(&mut constants);
+        entries
+    }
+
+    #[test]
+    fn test_dev_config() {
+        let vm_config = VMConfig {
+            gas_schedule: latest_cost_table(G_TEST_GAS_CONSTANTS.clone()),
+        };
+
+        let entries = config_entries(
+            instruction_gas_schedule_v2(),
+            native_gas_schedule_v4(),
+            txn_gas_schedule_test(),
+        );
+
+        let gas_schedule = GasSchedule::from(&vm_config);
+        assert_eq!(entries, gas_schedule.entries);
+        let gas_params =
+            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
+        assert_eq!(
+            gas_params.unwrap().natives.nursery.debug.print.base_cost,
+            1.into()
+        );
+    }
+
+    #[test]
+    fn test_halley_config() {
+        let vm_config = VMConfig {
+            gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
+        };
+
+        let entries = config_entries(
+            instruction_gas_schedule_v2(),
+            native_gas_schedule_v4(),
+            txn_gas_schedule_v3(),
+        );
+
+        let gas_schedule = GasSchedule::from(&vm_config);
+        assert_eq!(entries, gas_schedule.entries);
+        let gas_params =
+            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
+        assert_eq!(
+            gas_params.unwrap().natives.nursery.debug.print.base_cost,
+            1.into()
+        );
+    }
+
+    #[test]
+    fn test_proxima_config() {
+        let vm_config = VMConfig {
+            gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
+        };
+
+        let entries = config_entries(
+            instruction_gas_schedule_v2(),
+            native_gas_schedule_v4(),
+            txn_gas_schedule_v3(),
+        );
+        let gas_schedule = GasSchedule::from(&vm_config);
+        assert_eq!(entries, gas_schedule.entries);
+        let gas_params =
+            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
+        assert_eq!(
+            gas_params.unwrap().natives.nursery.debug.print.base_cost,
+            1.into()
+        );
+    }
+
+    #[test]
+    fn test_barnard_config() {
+        let vm_config = VMConfig {
+            gas_schedule: CostTable {
+                instruction_table: instruction_table_v1(),
+                native_table: native_table_v1(),
+                gas_constants: G_GAS_CONSTANTS_V1.clone(),
+            },
+        };
+
+        let entries = config_entries(
+            instruction_gas_schedule_v1(),
+            native_gas_schedule_v1(),
+            txn_gas_schedule_v1(),
+        );
+        let gas_schedule = GasSchedule::from(&vm_config);
+        assert_eq!(entries, gas_schedule.entries);
+        let gas_params =
+            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
+        assert_eq!(
+            gas_params.unwrap().natives.nursery.debug.print.base_cost,
+            1.into()
+        );
+    }
+
+    #[test]
+    fn test_main_config() {
+        let vm_config = VMConfig {
+            gas_schedule: CostTable {
+                instruction_table: instruction_table_v1(),
+                native_table: native_table_v2(),
+                gas_constants: G_GAS_CONSTANTS_V2.clone(),
+            },
+        };
+
+        let entries = config_entries(
+            instruction_gas_schedule_v1(),
+            native_gas_schedule_v2(),
+            txn_gas_schedule_v2(),
+        );
+
+        let gas_schedule = GasSchedule::from(&vm_config);
+        assert_eq!(entries, gas_schedule.entries);
+        let gas_params =
+            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
+        assert_eq!(
+            gas_params.unwrap().natives.nursery.debug.print.base_cost,
+            1.into()
+        );
+    }
+}

@@ -135,8 +135,12 @@ impl From<AnnotatedMoveStruct> for AnnotatedMoveStructView {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub enum AnnotatedMoveValueView {
     U8(u8),
+    // XXX FIXME YSG
+    //   U16(StrView<u16>),
+    // U32(Strview<u32>),
     U64(StrView<u64>),
     U128(StrView<u128>),
+    //  U256(StrView<u256::U256>),
     Bool(bool),
     Address(AccountAddress),
     Vector(Vec<AnnotatedMoveValueView>),
@@ -148,8 +152,11 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
     fn from(origin: AnnotatedMoveValue) -> Self {
         match origin {
             AnnotatedMoveValue::U8(u) => AnnotatedMoveValueView::U8(u),
+            //   AnnotatedMoveValue::U16(u) => AnnotatedMoveValueView::U16(StrView(u)),
+            //  AnnotatedMoveValue::U32(u) => AnnotatedMoveValueView::U32(StrView(u)),
             AnnotatedMoveValue::U64(u) => AnnotatedMoveValueView::U64(StrView(u)),
             AnnotatedMoveValue::U128(u) => AnnotatedMoveValueView::U128(StrView(u)),
+            //  AnnotatedMoveValue::U256(u) => AnnotatedMoveValueView::U256(StrView(u)),
             AnnotatedMoveValue::Bool(b) => AnnotatedMoveValueView::Bool(b),
             AnnotatedMoveValue::Address(data) => AnnotatedMoveValueView::Address(data),
             AnnotatedMoveValue::Vector(data) => {
@@ -157,6 +164,7 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
             }
             AnnotatedMoveValue::Bytes(data) => AnnotatedMoveValueView::Bytes(StrView(data)),
             AnnotatedMoveValue::Struct(data) => AnnotatedMoveValueView::Struct(data.into()),
+            _ => todo!("XXX FIXME YSG"),
         }
     }
 }
@@ -1165,6 +1173,7 @@ use starcoin_chain_api::{EventWithProof, TransactionInfoWithProof};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_store::state_key::{StateKey, TableItem};
+use starcoin_vm_types::state_store::table::TableHandle;
 pub use vm_status_translator::VmStatusExplainView;
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
@@ -1653,7 +1662,7 @@ impl FromStr for StructTagView {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let type_tag = parse_type_tag(s)?;
         match type_tag {
-            TypeTag::Struct(s) => Ok(Self(s)),
+            TypeTag::Struct(s) => Ok(Self(*s)),
             t => anyhow::bail!("expect struct tag, actual: {}", t),
         }
     }
@@ -1886,7 +1895,7 @@ impl From<BlockInfo> for BlockInfoView {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "table_item")]
 pub struct TableItemView {
-    handle: StrView<u128>,
+    handle: TableHandle,
     #[schemars(with = "String")]
     key: Vec<u8>,
 }
@@ -1894,7 +1903,7 @@ pub struct TableItemView {
 impl From<TableItem> for TableItemView {
     fn from(table_item: TableItem) -> Self {
         Self {
-            handle: table_item.handle.into(),
+            handle: table_item.handle,
             key: table_item.key,
         }
     }
@@ -1913,7 +1922,7 @@ impl From<StateKey> for StateKeyView {
         match state_key {
             StateKey::AccessPath(access_path) => Self::AccessPath(access_path),
             StateKey::TableItem(table_item) => Self::TableItem(TableItemView {
-                handle: table_item.handle.into(),
+                handle: table_item.handle,
                 key: table_item.key,
             }),
         }

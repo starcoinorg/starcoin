@@ -25,6 +25,7 @@ pub use network_rpc_core::RawRpcClient;
 pub use remote_chain_state::RemoteChainStateReader;
 
 pub use starcoin_types::block::BlockBody;
+use starcoin_vm_types::state_store::table::TableHandle;
 
 pub const MAX_BLOCK_REQUEST_SIZE: u64 = 50;
 pub const MAX_BLOCK_HEADER_REQUEST_SIZE: u64 = 1000;
@@ -289,6 +290,6 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetStateWithTableItemProof {
     pub state_root: HashValue,
-    pub handle: u128,
+    pub handle: TableHandle,
     pub key: Vec<u8>,
 }

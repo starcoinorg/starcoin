@@ -571,8 +571,11 @@ impl FieldABI {
 pub enum TypeInstantiation {
     Bool,
     U8,
+    U16,
+    U32,
     U64,
     U128,
+    U256,
     Address,
     Signer,
     Vector(Box<TypeInstantiation>),
@@ -591,9 +594,11 @@ impl TypeInstantiation {
         Ok(match self {
             Self::Bool => MoveTypeLayout::Bool,
             Self::U8 => MoveTypeLayout::U8,
-
+            Self::U16 => MoveTypeLayout::U16,
+            Self::U32 => MoveTypeLayout::U32,
             Self::U64 => MoveTypeLayout::U64,
             Self::U128 => MoveTypeLayout::U128,
+            Self::U256 => MoveTypeLayout::U256,
             Self::Address => MoveTypeLayout::Address,
             Self::Signer => MoveTypeLayout::Signer,
 
@@ -607,14 +612,16 @@ impl TypeInstantiation {
         Ok(match self {
             Self::Bool => TypeTag::Bool,
             Self::U8 => TypeTag::U8,
-
+            Self::U16 => TypeTag::U16,
+            Self::U32 => TypeTag::U32,
             Self::U64 => TypeTag::U64,
             Self::U128 => TypeTag::U128,
+            Self::U256 => TypeTag::U256,
             Self::Address => TypeTag::Address,
             Self::Signer => TypeTag::Signer,
 
             Self::Vector(t) => TypeTag::Vector(Box::new(t.type_tag()?)),
-            Self::Struct(s) => TypeTag::Struct(s.struct_tag()?),
+            Self::Struct(s) => TypeTag::Struct(Box::new(s.struct_tag()?)),
             Self::TypeParameter(_) => anyhow::bail!("get type tag failed -- {:?}", self),
             Self::Reference(_, _) => anyhow::bail!("get type tag failed -- {:?}", self),
         })
@@ -650,8 +657,12 @@ impl<'d> serde::de::DeserializeSeed<'d> for &TypeInstantiation {
         match &self {
             T::Bool => bool::deserialize(deserializer).map(V::Bool),
             T::U8 => u8::deserialize(deserializer).map(Into::into),
+            T::U16 => u16::deserialize(deserializer).map(Into::into),
+            T::U32 => u32::deserialize(deserializer).map(Into::into),
             T::U64 => u64::deserialize(deserializer).map(Into::into),
             T::U128 => u128::deserialize(deserializer).map(Into::into),
+            // XXX FIXME YSG
+            T::U256 => Err(D::Error::custom("type U256 not process variant")),
             T::Address => {
                 AccountAddress::deserialize(deserializer).map(|addr| V::String(addr.to_string()))
             }

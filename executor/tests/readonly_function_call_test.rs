@@ -89,12 +89,12 @@ fn test_readonly_function_call() -> Result<()> {
         None,
     )?;
 
-    let ty = TypeTag::Struct(StructTag {
+    let ty = TypeTag::Struct(Box::new(StructTag {
         address: *account1.address(),
         module: Identifier::new("A").unwrap(),
         name: Identifier::new("S").unwrap(),
         type_params: vec![],
-    });
+    }));
     assert_eq!(result[0].0, ty);
     #[derive(Serialize, Deserialize)]
     struct S {

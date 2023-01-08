@@ -527,6 +527,9 @@ SCRIPT_FUNCTION_ENCODER_MAP: typing.Dict[typing.Type[ScriptFunctionCall], typing
             },
 
             Struct(_) | Signer => common::type_not_allowed(type_tag),
+            U16 => "st.uint16".into(),
+            U32 => "st.uint32".into(),
+            U256 => "st.uint256".into(),
         }
     }
 
@@ -544,6 +547,9 @@ SCRIPT_FUNCTION_ENCODER_MAP: typing.Dict[typing.Type[ScriptFunctionCall], typing
             },
 
             Struct(_) | Signer => common::type_not_allowed(type_tag),
+            U16 => format!("bcs.serialize({}, st.uint16)", name),
+            U32 => format!("bcs.serialize({}, st.uint32)", name),
+            U256 => format!("bcs.serialize({}, st.uint256)", name),
         }
     }
 }

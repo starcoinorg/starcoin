@@ -45,12 +45,12 @@ fn test_init_script() -> Result<()> {
     )?;
     let chain_state = prepare_customized_genesis(&net);
 
-    let dao_action_type_tag = TypeTag::Struct(StructTag {
+    let dao_action_type_tag = TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
         module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
         name: Identifier::new("UpgradeModule").unwrap(),
         type_params: vec![],
-    });
+    }));
 
     let init_script = ScriptFunction::new(
         ModuleId::new(
@@ -123,12 +123,12 @@ fn test_upgrade_stdlib_with_incremental_package() -> Result<()> {
     )?;
     let chain_state = prepare_customized_genesis(&net);
 
-    let dao_action_type_tag = TypeTag::Struct(StructTag {
+    let dao_action_type_tag = TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
         module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
         name: Identifier::new("UpgradeModule").unwrap(),
         type_params: vec![],
-    });
+    }));
     let path = std::path::PathBuf::from("../vm/stdlib/compiled/2/1-2/stdlib.blob")
         .canonicalize()
         .unwrap();
@@ -221,13 +221,13 @@ fn test_stdlib_upgrade() -> Result<()> {
             )?;
             proposal_id += 1;
         }
-        // if upgrade from 11 to later, we need to update language version to 5.
+        // if upgrade from 11 to later, we need to update language version to 6.
         if let StdlibVersion::Version(11) = current_version {
             dao_vote_test(
                 &alice,
                 &chain_state,
                 &net,
-                vote_language_version(&net, 5),
+                vote_language_version(&net, 6),
                 on_chain_config_type_tag(MoveLanguageVersion::type_tag()),
                 execute_script_on_chain_config(&net, MoveLanguageVersion::type_tag(), proposal_id),
                 proposal_id,

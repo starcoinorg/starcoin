@@ -55,6 +55,7 @@ use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
+use starcoin_vm_types::state_store::table::TableHandle;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::DryRunTransaction;
 use std::collections::HashMap;
@@ -640,7 +641,7 @@ impl RpcClient {
 
     pub fn state_get_with_table_item_proof_by_root(
         &self,
-        handle: u128,
+        handle: TableHandle,
         key: Vec<u8>,
         state_root: HashValue,
     ) -> anyhow::Result<StateWithTableItemProofView> {

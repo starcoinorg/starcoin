@@ -53,7 +53,7 @@ impl TryFrom<TypeTag> for TokenCode {
 
     fn try_from(value: TypeTag) -> Result<Self, Self::Error> {
         match value {
-            TypeTag::Struct(struct_tag) => Ok(TokenCode::from(struct_tag)),
+            TypeTag::Struct(struct_tag) => Ok(TokenCode::from(*struct_tag)),
             type_tag => bail!("{:?} is not a Token's type tag", type_tag),
         }
     }
@@ -86,7 +86,7 @@ impl TryInto<StructTag> for TokenCode {
 
     fn try_into(self) -> Result<StructTag, Self::Error> {
         match parse_type_tag(self.to_string().as_str())? {
-            TypeTag::Struct(s) => Ok(s),
+            TypeTag::Struct(s) => Ok(*s),
             t => bail!("expect token code to be a struct tag, but receive {}", t),
         }
     }
@@ -96,7 +96,7 @@ impl TryInto<TypeTag> for TokenCode {
     type Error = anyhow::Error;
 
     fn try_into(self) -> Result<TypeTag, Self::Error> {
-        Ok(TypeTag::Struct(self.try_into()?))
+        Ok(TypeTag::Struct(Box::new(self.try_into()?)))
     }
 }
 
@@ -161,7 +161,7 @@ mod test {
         assert_eq!(token.to_string(), tc.to_string());
         assert_eq!(
             parse_type_tag(token).unwrap(),
-            TypeTag::Struct(type_tag.clone())
+            TypeTag::Struct(Box::new(type_tag.clone()))
         );
         assert_eq!(tc, type_tag.try_into().unwrap());
     }

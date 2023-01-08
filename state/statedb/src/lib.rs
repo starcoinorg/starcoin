@@ -7,7 +7,6 @@ use bcs_ext::BCSCodec;
 use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::RawKey;
 use lru::LruCache;
-use move_table_extension::TableHandle;
 use parking_lot::{Mutex, RwLock};
 use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use starcoin_crypto::HashValue;
@@ -17,7 +16,6 @@ use starcoin_state_api::{StateWithTableItemProof, TABLE_PATH};
 use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_state_tree::{StateNodeStore, StateTree};
-use starcoin_types::table::TableHandleKey;
 use starcoin_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 use starcoin_types::{
     access_path::{AccessPath, DataType},
@@ -28,7 +26,7 @@ use starcoin_types::{
 use starcoin_vm_types::access_path::{DataPath, ModuleName};
 use starcoin_vm_types::account_config::table_handle_address;
 use starcoin_vm_types::language_storage::StructTag;
-use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::{state_key::StateKey, table::TableHandle};
 use starcoin_vm_types::state_view::StateView;
 use std::collections::HashSet;
 use std::convert::TryInto;
@@ -221,7 +219,7 @@ pub struct ChainStateDB {
     cache_table_handle: Mutex<LruCache<TableHandle, Arc<TableHandleStateObject>>>,
     /// state_tree_table_handles root_hash save in table_handle_address() TABLE_PATH
     /// state_tree_table_handles SMT save TableHandle -> TableHandleState.root_hash
-    state_tree_table_handles: StateTree<TableHandleKey>,
+    state_tree_table_handles: StateTree<TableHandle>,
 }
 
 static G_DEFAULT_CACHE_SIZE: usize = 10240;
@@ -336,9 +334,7 @@ impl ChainStateDB {
         let object = match item {
             Some(item) => item.clone(),
             None => {
-                let val = self
-                    .state_tree_table_handles
-                    .get(&TableHandleKey(handle.0))?;
+                let val = self.state_tree_table_handles.get(handle)?;
                 let hash = match val {
                     Some(val) => HashValue::from_slice(val)?,
                     None => *SPARSE_MERKLE_PLACEHOLDER_HASH,
@@ -386,7 +382,7 @@ impl StateView for ChainStateDB {
             }
             StateKey::TableItem(table_item) => {
                 let table_handle_state_object =
-                    self.get_table_handle_state_object(&TableHandle(table_item.handle))?;
+                    self.get_table_handle_state_object(&table_item.handle)?;
                 table_handle_state_object.get(&table_item.key)
             }
         }
@@ -501,16 +497,13 @@ impl ChainStateReader for ChainStateDB {
 
     fn get_with_table_item_proof(
         &self,
-        handle: &u128,
+        handle: &TableHandle,
         key: &[u8],
     ) -> Result<StateWithTableItemProof> {
         let table_path_proof =
             self.get_with_proof(&AccessPath::new(table_handle_address(), TABLE_PATH.clone()))?;
-        let table_handle_proof = self
-            .state_tree_table_handles
-            .get_with_proof(&TableHandleKey(*handle))?;
-        let table_handle_state_object =
-            self.get_table_handle_state_object(&TableHandle(*handle))?;
+        let table_handle_proof = self.state_tree_table_handles.get_with_proof(handle)?;
+        let table_handle_state_object = self.get_table_handle_state_object(handle)?;
         let key_proof = table_handle_state_object.get_with_proof(&key.to_vec())?;
         Ok(StateWithTableItemProof::new(
             (table_path_proof, self.state_root()),
@@ -601,9 +594,9 @@ impl ChainStateWriter for ChainStateDB {
                 }
                 StateKey::TableItem(table_item) => {
                     debug!("{:?}", table_item);
-                    lock_table_handle.insert(TableHandle(table_item.handle));
+                    lock_table_handle.insert(table_item.handle);
                     let table_handle_state_object =
-                        self.get_table_handle_state_object(&TableHandle(table_item.handle))?;
+                        self.get_table_handle_state_object(&table_item.handle)?;
                     match write_op {
                         WriteOp::Value(value) => {
                             table_handle_state_object.set(table_item.key, value);
@@ -626,10 +619,8 @@ impl ChainStateWriter for ChainStateDB {
             let table_handle_state_object = self.get_table_handle_state_object(handle)?;
             table_handle_state_object.commit()?;
             // put table_handle_state_object commit
-            self.state_tree_table_handles.put(
-                TableHandleKey(handle.0),
-                table_handle_state_object.root_hash().to_vec(),
-            );
+            self.state_tree_table_handles
+                .put(*handle, table_handle_state_object.root_hash().to_vec());
         }
         if len > 0 {
             self.state_tree_table_handles.commit()?;

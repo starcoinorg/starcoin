@@ -1177,7 +1177,8 @@
                     ],
                     "properties": {
                       "handle": {
-                        "type": "string"
+                        "type": "string",
+                        "format": "AccountAddress"
                       },
                       "key": {
                         "type": "string"
@@ -1321,8 +1322,11 @@
                                                         "enum": [
                                                           "Bool",
                                                           "U8",
+                                                          "U16",
+                                                          "U32",
                                                           "U64",
                                                           "U128",
+                                                          "U256",
                                                           "Address",
                                                           "Signer"
                                                         ]
@@ -1497,8 +1501,11 @@
                                                     "enum": [
                                                       "Bool",
                                                       "U8",
+                                                      "U16",
+                                                      "U32",
                                                       "U64",
                                                       "U128",
+                                                      "U256",
                                                       "Address",
                                                       "Signer"
                                                     ]
@@ -1724,8 +1731,11 @@
                                                         "enum": [
                                                           "Bool",
                                                           "U8",
+                                                          "U16",
+                                                          "U32",
                                                           "U64",
                                                           "U128",
+                                                          "U256",
                                                           "Address",
                                                           "Signer"
                                                         ]
@@ -1966,8 +1976,11 @@
                   "enum": [
                     "Bool",
                     "U8",
+                    "U16",
+                    "U32",
                     "U64",
                     "U128",
+                    "U256",
                     "Address",
                     "Signer"
                   ]
@@ -2454,7 +2467,8 @@
                     ],
                     "properties": {
                       "handle": {
-                        "type": "string"
+                        "type": "string",
+                        "format": "AccountAddress"
                       },
                       "key": {
                         "type": "string"
@@ -2598,8 +2612,11 @@
                                                         "enum": [
                                                           "Bool",
                                                           "U8",
+                                                          "U16",
+                                                          "U32",
                                                           "U64",
                                                           "U128",
+                                                          "U256",
                                                           "Address",
                                                           "Signer"
                                                         ]
@@ -2774,8 +2791,11 @@
                                                     "enum": [
                                                       "Bool",
                                                       "U8",
+                                                      "U16",
+                                                      "U32",
                                                       "U64",
                                                       "U128",
+                                                      "U256",
                                                       "Address",
                                                       "Signer"
                                                     ]
@@ -3001,8 +3021,11 @@
                                                         "enum": [
                                                           "Bool",
                                                           "U8",
+                                                          "U16",
+                                                          "U32",
                                                           "U64",
                                                           "U128",
+                                                          "U256",
                                                           "Address",
                                                           "Signer"
                                                         ]
@@ -3243,8 +3266,11 @@
                   "enum": [
                     "Bool",
                     "U8",
+                    "U16",
+                    "U32",
                     "U64",
                     "U128",
+                    "U256",
                     "Address",
                     "Signer"
                   ]
@@ -3430,8 +3456,11 @@
                         "enum": [
                           "Bool",
                           "U8",
+                          "U16",
+                          "U32",
                           "U64",
                           "U128",
+                          "U256",
                           "Address",
                           "Signer"
                         ]
@@ -3606,8 +3635,11 @@
                     "enum": [
                       "Bool",
                       "U8",
+                      "U16",
+                      "U32",
                       "U64",
                       "U128",
+                      "U256",
                       "Address",
                       "Signer"
                     ]
@@ -3792,8 +3824,11 @@
                   "enum": [
                     "Bool",
                     "U8",
+                    "U16",
+                    "U32",
                     "U64",
                     "U128",
+                    "U256",
                     "Address",
                     "Signer"
                   ]
@@ -4012,8 +4047,11 @@
                         "enum": [
                           "Bool",
                           "U8",
+                          "U16",
+                          "U32",
                           "U64",
                           "U128",
+                          "U256",
                           "Address",
                           "Signer"
                         ]
@@ -4188,8 +4226,11 @@
                     "enum": [
                       "Bool",
                       "U8",
+                      "U16",
+                      "U32",
                       "U64",
                       "U128",
+                      "U256",
                       "Address",
                       "Signer"
                     ]
@@ -4374,8 +4415,11 @@
                   "enum": [
                     "Bool",
                     "U8",
+                    "U16",
+                    "U32",
                     "U64",
                     "U128",
+                    "U256",
                     "Address",
                     "Signer"
                   ]
@@ -4590,8 +4634,11 @@
                         "enum": [
                           "Bool",
                           "U8",
+                          "U16",
+                          "U32",
                           "U64",
                           "U128",
+                          "U256",
                           "Address",
                           "Signer"
                         ]
@@ -4698,8 +4745,11 @@
                         "enum": [
                           "Bool",
                           "U8",
+                          "U16",
+                          "U32",
                           "U64",
                           "U128",
+                          "U256",
                           "Address",
                           "Signer"
                         ]
@@ -4842,8 +4892,11 @@
                   "enum": [
                     "Bool",
                     "U8",
+                    "U16",
+                    "U32",
                     "U64",
                     "U128",
+                    "U256",
                     "Address",
                     "Signer"
                   ]
@@ -5007,8 +5060,11 @@
                               "enum": [
                                 "Bool",
                                 "U8",
+                                "U16",
+                                "U32",
                                 "U64",
                                 "U128",
+                                "U256",
                                 "Address",
                                 "Signer"
                               ]
@@ -5183,8 +5239,11 @@
                           "enum": [
                             "Bool",
                             "U8",
+                            "U16",
+                            "U32",
                             "U64",
                             "U128",
+                            "U256",
                             "Address",
                             "Signer"
                           ]
@@ -5410,8 +5469,11 @@
                               "enum": [
                                 "Bool",
                                 "U8",
+                                "U16",
+                                "U32",
                                 "U64",
                                 "U128",
+                                "U256",
                                 "Address",
                                 "Signer"
                               ]
@@ -5611,8 +5673,11 @@
                   "enum": [
                     "Bool",
                     "U8",
+                    "U16",
+                    "U32",
                     "U64",
                     "U128",
+                    "U256",
                     "Address",
                     "Signer"
                   ]

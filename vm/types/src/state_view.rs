@@ -35,7 +35,7 @@ use serde::de::DeserializeOwned;
 /// the VM for transaction execution, during which the VM is guaranteed to read anything at the
 /// given state.
 pub trait StateView {
-    /// Gets the state for a single access path.
+    /// Gets the state value for a given state key.
     fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>>;
 
     /// VM needs this method to know whether the current state view is for genesis state creation.

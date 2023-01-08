@@ -9,6 +9,7 @@ use crate::{
     resolver::Resolver,
 };
 use anyhow::{anyhow, Result};
+use move_core_types::u256;
 use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateView;
@@ -56,6 +57,10 @@ pub enum AnnotatedMoveValue {
     Vector(Vec<AnnotatedMoveValue>),
     Bytes(Vec<u8>),
     Struct(AnnotatedMoveStruct),
+    // NOTE: Added in bytecode version v6, do not reorder!
+    U16(u16),
+    U32(u32),
+    U256(u256::U256),
 }
 
 // impl Serialize for AnnotatedMoveValue {
@@ -173,8 +178,11 @@ impl<'a> MoveValueAnnotator<'a> {
         Ok(match (value, ty) {
             (MoveValue::Bool(b), FatType::Bool) => AnnotatedMoveValue::Bool(*b),
             (MoveValue::U8(i), FatType::U8) => AnnotatedMoveValue::U8(*i),
+            (MoveValue::U16(i), FatType::U16) => AnnotatedMoveValue::U16(*i),
+            (MoveValue::U32(i), FatType::U32) => AnnotatedMoveValue::U32(*i),
             (MoveValue::U64(i), FatType::U64) => AnnotatedMoveValue::U64(*i),
             (MoveValue::U128(i), FatType::U128) => AnnotatedMoveValue::U128(*i),
+            (MoveValue::U256(i), FatType::U256) => AnnotatedMoveValue::U256(*i),
             (MoveValue::Address(a), FatType::Address) => AnnotatedMoveValue::Address(*a),
             (MoveValue::Vector(a), FatType::Vector(ty)) => match ty.as_ref() {
                 FatType::U8 => AnnotatedMoveValue::Bytes(
@@ -194,7 +202,17 @@ impl<'a> MoveValueAnnotator<'a> {
             (MoveValue::Struct(s), FatType::Struct(ty)) => {
                 AnnotatedMoveValue::Struct(self.annotate_struct(s, ty.as_ref())?)
             }
-            _ => {
+            (MoveValue::U8(_), _)
+            | (MoveValue::U64(_), _)
+            | (MoveValue::U128(_), _)
+            | (MoveValue::Bool(_), _)
+            | (MoveValue::Address(_), _)
+            | (MoveValue::Vector(_), _)
+            | (MoveValue::Struct(_), _)
+            | (MoveValue::Signer(_), _)
+            | (MoveValue::U16(_), _)
+            | (MoveValue::U32(_), _)
+            | (MoveValue::U256(_), _) => {
                 return Err(anyhow!(
                     "Cannot annotate value {:?} with type {:?}",
                     value,
@@ -220,8 +238,11 @@ fn pretty_print_value(
     match value {
         AnnotatedMoveValue::Bool(b) => write!(f, "{}", b),
         AnnotatedMoveValue::U8(v) => write!(f, "{}u8", v),
+        AnnotatedMoveValue::U16(v) => write!(f, "{}u16", v),
+        AnnotatedMoveValue::U32(v) => write!(f, "{}u32", v),
         AnnotatedMoveValue::U64(v) => write!(f, "{}", v),
         AnnotatedMoveValue::U128(v) => write!(f, "{}u128", v),
+        AnnotatedMoveValue::U256(v) => write!(f, "{}u256", v),
         AnnotatedMoveValue::Address(a) => write!(f, "0x{:#x}", a),
         AnnotatedMoveValue::Vector(v) => {
             writeln!(f, "[")?;

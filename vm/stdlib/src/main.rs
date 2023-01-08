@@ -330,9 +330,8 @@ fn main() {
                 .filter_map(|module| {
                     let module_id = module.self_id();
                     if let Some(old_module) = pre_stable_modules.get(&module_id) {
-                        let compatibility =
-                            check_compiled_module_compat(old_module, module).is_fully_compatible();
-                        if !compatibility {
+                        let compatibility = check_compiled_module_compat(old_module, module);
+                        if compatibility.is_err() {
                             Some(module_id)
                         } else {
                             None

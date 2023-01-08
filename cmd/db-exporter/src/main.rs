@@ -672,6 +672,7 @@ pub fn apply_block(
     network: BuiltinNetworkID,
     verifier: Verifier,
 ) -> anyhow::Result<()> {
+    ::logger::init();
     let net = ChainNetwork::new_builtin(network);
     let db_storage = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
@@ -767,12 +768,6 @@ pub fn startup_info_back(
 
     let cur_num = chain.status().head().number();
     let back_size = back_size.unwrap_or(BACK_SIZE);
-    let back_size = if back_size < BACK_SIZE {
-        BACK_SIZE
-    } else {
-        back_size
-    };
-
     if cur_num <= back_size {
         println!(
             "startup_info block number {} <= back_size {}",
@@ -1838,12 +1833,13 @@ impl serde::Serialize for MoveValue {
             }
             AnnotatedMoveValue::Bytes(v) => hex::encode(v).serialize(serializer),
             AnnotatedMoveValue::Struct(v) => MoveStruct(v.clone()).serialize(serializer),
+            _ => todo!("XXX FXIME YSG"),
         }
     }
 }
 fn parse_struct_tag(input: &str) -> anyhow::Result<StructTag> {
     match parse_type_tag(input)? {
-        TypeTag::Struct(s) => Ok(s),
+        TypeTag::Struct(s) => Ok(*s),
         _ => {
             anyhow::bail!("invalid struct tag")
         }

@@ -32,6 +32,7 @@ starcoin-config = { path = "../config" }
 starcoin-uint = { path = "../types/uint" }
 coarsetime = "0.1.22"
 network-types = { path = "../network/types" }
+starcoin-vm-types = { path = "../vm/types" }
 
 [dependencies.rocksdb]
 default-features = false

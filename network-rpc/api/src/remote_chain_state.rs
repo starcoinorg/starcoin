@@ -14,6 +14,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::table::TableHandle;
 
 #[derive(Clone)]
 pub struct RemoteChainStateReader {
@@ -99,7 +100,7 @@ impl ChainStateReader for RemoteChainStateReader {
 
     fn get_with_table_item_proof(
         &self,
-        handle: &u128,
+        handle: &TableHandle,
         key: &[u8],
     ) -> Result<StateWithTableItemProof> {
         let peer_id = self

@@ -1,0 +1,18 @@
+[package]
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+edition = "2021"
+license = "Apache-2.0"
+name = "starcoin-gas"
+publish = false
+version = "1.12.5"
+
+[dependencies]
+gas-algebra-ext = { path = "../gas-algebra-ext" }
+clap = { version = "3", features = ["derive"] }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
+move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
+move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
+starcoin-natives = { path = "../natives" }
+starcoin-logger = {path = "../../commons/logger"}
