@@ -7,7 +7,7 @@ use bcs_ext::Sample;
 use clap::IntoApp;
 use clap::Parser;
 use csv::Writer;
-use db_exporter::verify_modules_via_export_file;
+use db_exporter::{barnard_hard_fork_info, verify_modules_via_export_file};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
@@ -233,6 +233,7 @@ enum Cmd {
     ApplySnapshot(ApplySnapshotOptions),
     ExportResource(ExportResourceOptions),
     VerifyModules(VerifyModulesOptions),
+    BarnardHardForkInfo(BarnardHardForkInfoOptions),
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -425,6 +426,17 @@ pub struct VerifyModulesOptions {
     pub input_path: PathBuf,
 }
 
+#[derive(Debug, Parser)]
+#[clap(
+    name = "barnard-hard-fork_info",
+    about = "get barnard first stdlib v12 block number"
+)]
+pub struct BarnardHardForkInfoOptions {
+    #[clap(long, short = 'i', parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/barnard
+    pub db_path: PathBuf,
+}
+
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     let opt = Opt::parse();
@@ -576,7 +588,12 @@ async fn main() -> anyhow::Result<()> {
             let result = verify_modules_via_export_file(option.input_path);
             return result;
         }
+        Cmd::BarnardHardForkInfo(option) => {
+            let result = barnard_hard_fork_info(option.db_path);
+            return result;
+        }
     }
+
     Ok(())
 }
 

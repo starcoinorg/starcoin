@@ -12,11 +12,20 @@ use crate::{
     BLOCK_BODY_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
 };
 use anyhow::{bail, ensure, format_err, Result};
+use once_cell::sync::Lazy;
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::{debug, info, warn};
+use starcoin_types::block::BlockNumber;
+use starcoin_types::startup_info::{BarnardHardFork, StartupInfo};
 use starcoin_types::transaction::Transaction;
 use std::cmp::Ordering;
 
 pub struct DBUpgrade;
+
+// XXX FIXME YSG
+pub static BARNARD_HARD_FORK_HEIGHT: BlockNumber = 1112;
+pub static BARNARD_HARD_FORK_HASH: Lazy<HashValue> =
+    Lazy::new(|| HashValue::from_hex_literal("0x1112").expect(""));
 
 impl DBUpgrade {
     pub fn check_upgrade(instance: &mut StorageInstance) -> Result<()> {
@@ -178,6 +187,28 @@ impl DBUpgrade {
                 version_in_db,
                 version_in_code
             ),
+        }
+        Ok(())
+    }
+
+    pub fn barnard_hard_fork(instance: &mut StorageInstance) -> Result<()> {
+        let block_storage = BlockStorage::new(instance.clone());
+        let chain_info_storage = ChainInfoStorage::new(instance.clone());
+        let barnard_hard_fork = chain_info_storage.get_barnard_hard_fork()?;
+
+        let barnard_info = BarnardHardFork::new(BARNARD_HARD_FORK_HEIGHT, *BARNARD_HARD_FORK_HASH);
+        if barnard_hard_fork == Some(barnard_info.clone()) {
+            return Ok(());
+        }
+
+        let block = block_storage.get_block_by_hash(*BARNARD_HARD_FORK_HASH)?;
+        if let Some(block) = block {
+            if block.header().number() == BARNARD_HARD_FORK_HEIGHT {
+                println!("barnard hard fork");
+                let main_hash = block.header().parent_hash();
+                chain_info_storage.save_barnard_hard_fork(barnard_info)?;
+                chain_info_storage.save_startup_info(StartupInfo::new(main_hash))?;
+            }
         }
         Ok(())
     }

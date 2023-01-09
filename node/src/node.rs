@@ -305,6 +305,7 @@ impl NodeService {
 
         let start_time = SystemTime::now();
         storage_instance.check_upgrade()?;
+        storage_instance.barnard_hard_fork(config.clone())?;
         let upgrade_time = SystemTime::now().duration_since(start_time)?;
         let storage = Arc::new(Storage::new(storage_instance)?);
         registry.put_shared(storage.clone()).await?;

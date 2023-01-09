@@ -1,15 +1,26 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::bail;
+use anyhow::{bail, format_err};
 use atomic_counter::AtomicCounter;
 use indicatif::{ProgressBar, ProgressStyle};
 use move_binary_format::errors::Location;
+use starcoin_chain::{BlockChain, ChainReader};
+use starcoin_config::BuiltinNetworkID;
+use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
+use starcoin_genesis::Genesis;
+use starcoin_statedb::ChainStateDB;
+use starcoin_storage::cache_storage::CacheStorage;
+use starcoin_storage::db_storage::DBStorage;
+use starcoin_storage::storage::StorageInstance;
+use starcoin_storage::{Storage, StorageVersion};
 use starcoin_types::block::Block;
 use starcoin_types::transaction::TransactionPayload;
 use starcoin_vm_types::errors::VMError;
 use starcoin_vm_types::file_format::CompiledModule;
+use starcoin_vm_types::on_chain_config::Version;
+use starcoin_vm_types::state_view::StateReaderExt;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
@@ -130,4 +141,78 @@ fn verify_block_modules(block: Block) -> (usize, Vec<VerifyModuleError>) {
         }
     }
     (success_modules, errors)
+}
+
+pub fn barnard_hard_fork_info(db_path: PathBuf) -> anyhow::Result<()> {
+    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Barnard);
+    let db_storage = DBStorage::open_with_cfs(
+        db_path.join("starcoindb/db/starcoindb"),
+        StorageVersion::current_version()
+            .get_column_family_names()
+            .to_vec(),
+        true,
+        Default::default(),
+        None,
+    )?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_storage,
+    ))?);
+    let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), db_path.as_ref())?;
+    let chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+    let mut left = 1;
+    let mut right = chain.status().head().number() as u64;
+    println!("cur_num {}", right);
+    let mut mid = left;
+    while left < right {
+        mid = (left + right) / 2;
+        let block = chain
+            .get_block_by_number(mid)?
+            .ok_or_else(|| anyhow::anyhow!("block number {} not exist", mid))?;
+
+        let root = block.header.state_root();
+        let statedb = ChainStateDB::new(storage.clone(), Some(root));
+        let stdlib_verson = statedb
+            .get_on_chain_config::<Version>()?
+            .map(|version| version.major)
+            .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
+        if stdlib_verson == 12 {
+            right = mid;
+        } else {
+            left = mid + 1;
+        }
+    }
+
+    let block = chain
+        .get_block_by_number(mid + 1)?
+        .ok_or_else(|| anyhow::anyhow!("block number {} not exist", mid + 1))?;
+    let root = block.header.state_root();
+    let statedb = ChainStateDB::new(storage.clone(), Some(root));
+    let stdlib_verson = statedb
+        .get_on_chain_config::<Version>()?
+        .map(|version| version.major)
+        .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
+    println!(
+        "stdlib_version {} number {} block hash {}",
+        stdlib_verson,
+        mid + 1,
+        block.header.id()
+    );
+    let block = chain
+        .get_block_by_number(mid)?
+        .ok_or_else(|| anyhow::anyhow!("block number {} not exist", mid))?;
+    let root = block.header.state_root();
+    let statedb = ChainStateDB::new(storage, Some(root));
+    let stdlib_verson = statedb
+        .get_on_chain_config::<Version>()?
+        .map(|version| version.major)
+        .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
+    println!("parent block stdlib_version {}", stdlib_verson);
+    Ok(())
 }

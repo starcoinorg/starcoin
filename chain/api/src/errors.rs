@@ -61,6 +61,8 @@ pub enum ConnectBlockError {
     ParentNotExist(Box<BlockHeader>),
     #[error("Verify block {0} failed: {1:?}")]
     VerifyBlockFailed(VerifyBlockField, Error),
+    #[error("Barnard hard fork block: {:?} ", .0.header())]
+    BarnardHardFork(Box<Block>),
 }
 
 impl ConnectBlockError {
@@ -71,11 +73,15 @@ impl ConnectBlockError {
     pub const REP_VERIFY_BLOCK_FAILED: ReputationChange =
         ReputationChange::new_fatal("VerifyBlockFailed");
 
+    pub const REP_BARNARD_HARD_FORK: ReputationChange =
+        ReputationChange::new_fatal("BarnardHardFork");
+
     pub fn reason(&self) -> &str {
         match self {
             ConnectBlockError::FutureBlock(_) => "FutureBlock",
             ConnectBlockError::ParentNotExist(_) => "ParentNotExist",
             ConnectBlockError::VerifyBlockFailed(_, _) => "VerifyBlockFailed",
+            ConnectBlockError::BarnardHardFork(_) => "BarnardHardFork",
         }
     }
 
@@ -86,6 +92,7 @@ impl ConnectBlockError {
             ConnectBlockError::VerifyBlockFailed(_, _) => {
                 ConnectBlockError::REP_VERIFY_BLOCK_FAILED
             }
+            ConnectBlockError::BarnardHardFork(_) => ConnectBlockError::REP_BARNARD_HARD_FORK,
         }
     }
 }
