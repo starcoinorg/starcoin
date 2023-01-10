@@ -5,12 +5,12 @@ pub use self::gen_client::Client as NetworkManagerClient;
 use crate::types::StrView;
 use crate::FutureResult;
 use jsonrpc_core::Result;
-use jsonrpc_derive::rpc;
 use network_p2p_types::network_state::NetworkState;
 use network_types::peer_info::{Multiaddr, PeerId};
+use openrpc_derive::openrpc;
 use std::borrow::Cow;
 
-#[rpc(client, server, schema)]
+#[openrpc]
 pub trait NetworkManagerApi {
     #[rpc(name = "network_manager.state")]
     fn state(&self) -> FutureResult<NetworkState>;
@@ -44,7 +44,7 @@ pub trait NetworkManagerApi {
 
 #[test]
 fn test() {
-    let schema = rpc_impl_NetworkManagerApi::gen_client::Client::gen_schema();
+    let schema = self::gen_schema();
     let j = serde_json::to_string_pretty(&schema).unwrap();
     println!("{}", j);
 }

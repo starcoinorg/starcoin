@@ -5,12 +5,13 @@ pub use self::gen_client::Client as NodeClient;
 use crate::types::PeerInfoView;
 use crate::FutureResult;
 use jsonrpc_core::Result;
-use jsonrpc_derive::rpc;
+use openrpc_derive::openrpc;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_config::ChainNetworkID;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::collections::HashMap;
+
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct NodeInfo {
     /// Node self peer info
@@ -39,7 +40,7 @@ impl NodeInfo {
     }
 }
 
-#[rpc(client, server, schema)]
+#[openrpc]
 pub trait NodeApi {
     /// Get node run status, just for api available check.
     #[rpc(name = "node.status")]
@@ -58,7 +59,7 @@ pub trait NodeApi {
 }
 #[test]
 fn test() {
-    let schema = rpc_impl_NodeApi::gen_client::Client::gen_schema();
+    let schema = self::gen_schema();
     let j = serde_json::to_string_pretty(&schema).unwrap();
     println!("{}", j);
 }

@@ -1898,7 +1898,7 @@ dependencies = [
  "proptest-derive",
  "rand 0.8.5",
  "rand_core 0.6.3",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.140",
  "serde-name 0.1.2",
  "serde_bytes",
@@ -3441,10 +3441,10 @@ dependencies = [
 
 [[package]]
 name = "jsonrpc-derive"
-version = "17.0.0"
-source = "git+https://github.com/starcoinorg/jsonrpc?rev=2f6c2b33d3048d57a85347ee735b312df0117b15#2f6c2b33d3048d57a85347ee735b312df0117b15"
+version = "18.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b939a78fa820cdfcb7ee7484466746a7377760970f6f9c6fe19f9edcc8a38d2"
 dependencies = [
- "openrpc-rs 0.1.0 (git+https://github.com/fikgol/openrpc-rs)",
  "proc-macro-crate 0.1.5",
  "proc-macro2 1.0.42",
  "quote 1.0.20",
@@ -4731,7 +4731,7 @@ dependencies = [
  "proptest-derive",
  "rand 0.8.5",
  "ref-cast",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.140",
  "serde_bytes",
 ]
@@ -5467,7 +5467,7 @@ dependencies = [
  "network-types",
  "parking_lot 0.12.1",
  "rand 0.8.5",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.140",
  "starcoin-crypto",
  "starcoin-logger",
@@ -5533,7 +5533,7 @@ dependencies = [
  "libp2p",
  "rand 0.8.5",
  "sc-peerset",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.140",
  "serde_json",
 ]
@@ -5570,7 +5570,7 @@ version = "1.12.9"
 dependencies = [
  "anyhow",
  "network-p2p-types",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.140",
  "starcoin-crypto",
  "starcoin-types",
@@ -5872,21 +5872,35 @@ dependencies = [
 ]
 
 [[package]]
-name = "openrpc-rs"
+name = "openrpc-derive"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/openrpc-rs?rev=077761500ff6fabe2f20da1bdf429575931e3048#077761500ff6fabe2f20da1bdf429575931e3048"
+source = "git+https://github.com/starcoinorg/openrpc-rs?rev=42e9fdc00036a24c560c2827e84cf4e078edbd0d#42e9fdc00036a24c560c2827e84cf4e078edbd0d"
 dependencies = [
- "schemars 0.8.8",
- "serde 1.0.140",
- "serde_json",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "openrpc-schema",
+ "proc-macro-crate 0.1.5",
+ "proc-macro2 1.0.42",
+ "quote 1.0.20",
+ "syn 1.0.98",
 ]
 
 [[package]]
 name = "openrpc-rs"
 version = "0.1.0"
-source = "git+https://github.com/fikgol/openrpc-rs#441712a652250c933b961a46306d9b6031c4591f"
+source = "git+https://github.com/starcoinorg/openrpc-rs?rev=077761500ff6fabe2f20da1bdf429575931e3048#077761500ff6fabe2f20da1bdf429575931e3048"
 dependencies = [
- "schemars 0.8.11",
+ "schemars",
+ "serde 1.0.140",
+ "serde_json",
+]
+
+[[package]]
+name = "openrpc-schema"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/openrpc-rs?rev=42e9fdc00036a24c560c2827e84cf4e078edbd0d#42e9fdc00036a24c560c2827e84cf4e078edbd0d"
+dependencies = [
+ "schemars",
  "serde 1.0.140",
  "serde_json",
 ]
@@ -7658,19 +7672,7 @@ source = "git+https://github.com/starcoinorg/schemars?rev=6972da92f4360e1779168b
 dependencies = [
  "dyn-clone",
  "multiaddr",
- "schemars_derive 0.8.8",
- "serde 1.0.140",
- "serde_json",
-]
-
-[[package]]
-name = "schemars"
-version = "0.8.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a5fb6c61f29e723026dc8e923d94c694313212abbecbbe5f55a7748eec5b307"
-dependencies = [
- "dyn-clone",
- "schemars_derive 0.8.11",
+ "schemars_derive",
  "serde 1.0.140",
  "serde_json",
 ]
@@ -7682,19 +7684,7 @@ source = "git+https://github.com/starcoinorg/schemars?rev=6972da92f4360e1779168b
 dependencies = [
  "proc-macro2 1.0.42",
  "quote 1.0.20",
- "serde_derive_internals 0.25.0",
- "syn 1.0.98",
-]
-
-[[package]]
-name = "schemars_derive"
-version = "0.8.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f188d036977451159430f3b8dc82ec76364a42b7e289c2b18a9a18f4470058e9"
-dependencies = [
- "proc-macro2 1.0.42",
- "quote 1.0.20",
- "serde_derive_internals 0.26.0",
+ "serde_derive_internals",
  "syn 1.0.98",
 ]
 
@@ -7936,17 +7926,6 @@ name = "serde_derive_internals"
 version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1dbab34ca63057a1f15280bdf3c39f2b1eb1b54c17e98360e511637aef7418c6"
-dependencies = [
- "proc-macro2 1.0.42",
- "quote 1.0.20",
- "syn 1.0.98",
-]
-
-[[package]]
-name = "serde_derive_internals"
-version = "0.26.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85bf8229e7920a9f636479437026331ce11aa132b4dde37d121944a44d6e5f3c"
 dependencies = [
  "proc-macro2 1.0.42",
  "quote 1.0.20",
@@ -8350,7 +8329,7 @@ dependencies = [
  "hex",
  "move-binary-format",
  "ordinal",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.140",
  "serde_bytes",
  "serde_json",
@@ -8380,7 +8359,7 @@ version = "1.12.9"
 dependencies = [
  "anyhow",
  "hex",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.140",
  "serde_bytes",
  "serde_json",
@@ -8422,7 +8401,7 @@ dependencies = [
  "hex",
  "rand 0.8.5",
  "rand_core 0.6.3",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.140",
  "serde_bytes",
  "serde_json",
@@ -8482,7 +8461,7 @@ dependencies = [
  "proptest-derive",
  "rand 0.8.5",
  "rand_core 0.6.3",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.140",
  "starcoin-crypto",
  "starcoin-logger",
@@ -8724,7 +8703,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "rand 0.8.5",
  "rand_core 0.6.3",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.140",
  "serde_json",
  "starcoin-account-api",
@@ -9028,7 +9007,7 @@ dependencies = [
  "log4rs",
  "once_cell",
  "parking_lot 0.12.1",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.140",
  "slog",
  "slog-async",
@@ -9253,7 +9232,7 @@ dependencies = [
  "network-p2p",
  "network-p2p-types",
  "network-rpc-core",
- "openrpc-rs 0.1.0 (git+https://github.com/starcoinorg/openrpc-rs?rev=077761500ff6fabe2f20da1bdf429575931e3048)",
+ "openrpc-rs",
  "parking_lot 0.12.1",
  "prometheus",
  "rand 0.8.5",
@@ -9507,8 +9486,10 @@ dependencies = [
  "network-api",
  "network-p2p-types",
  "network-types",
- "openrpc-rs 0.1.0 (git+https://github.com/starcoinorg/openrpc-rs?rev=077761500ff6fabe2f20da1bdf429575931e3048)",
- "schemars 0.8.8",
+ "openrpc-derive",
+ "openrpc-rs",
+ "openrpc-schema",
+ "schemars",
  "serde 1.0.140",
  "serde-helpers",
  "serde_json",
@@ -9684,7 +9665,7 @@ dependencies = [
  "futures-timer",
  "log 0.4.17",
  "once_cell",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.140",
  "stest",
  "thiserror",
@@ -9820,7 +9801,7 @@ dependencies = [
  "jsonrpc-derive",
  "jsonrpc-pubsub",
  "jsonrpc-tcp-server",
- "openrpc-rs 0.1.0 (git+https://github.com/starcoinorg/openrpc-rs?rev=077761500ff6fabe2f20da1bdf429575931e3048)",
+ "openrpc-rs",
  "serde 1.0.140",
  "serde_json",
  "starcoin-config",
@@ -9900,7 +9881,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "network-api",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.140",
  "starcoin-accumulator",
  "starcoin-crypto",
@@ -10064,7 +10045,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "futures-channel",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.140",
  "starcoin-crypto",
  "starcoin-types",
@@ -10099,7 +10080,7 @@ dependencies = [
  "proptest-derive",
  "rand 0.8.5",
  "rand_core 0.6.3",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.140",
  "serde_json",
  "starcoin-accumulator",
@@ -10167,7 +10148,7 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "rand 0.8.5",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.140",
  "serde_bytes",
  "serde_json",
@@ -10261,7 +10242,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "pin-project 0.4.30",
  "pin-utils",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.140",
  "starcoin-logger",
  "stest",
@@ -11561,7 +11542,7 @@ name = "vm-status-translator"
 version = "1.12.9"
 dependencies = [
  "anyhow",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.140",
  "starcoin-move-explain",
  "starcoin-vm-types",

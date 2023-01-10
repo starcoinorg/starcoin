@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2
 
 use crate::FutureResult;
-use jsonrpc_derive::rpc;
+use openrpc_derive::openrpc;
 use starcoin_types::transaction::SignedUserTransaction;
 
 pub use self::gen_client::Client as TxPoolClient;
@@ -11,7 +11,7 @@ use starcoin_crypto::HashValue;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::account_address::AccountAddress;
 
-#[rpc(client, server, schema)]
+#[openrpc]
 pub trait TxPoolApi {
     #[rpc(name = "txpool.submit_transaction")]
     fn submit_transaction(&self, tx: SignedUserTransaction) -> FutureResult<HashValue>;
@@ -46,7 +46,7 @@ pub trait TxPoolApi {
 }
 #[test]
 fn test() {
-    let schema = rpc_impl_TxPoolApi::gen_client::Client::gen_schema();
+    let schema = self::gen_schema();
     let j = serde_json::to_string_pretty(&schema).unwrap();
     println!("{}", j);
 }
