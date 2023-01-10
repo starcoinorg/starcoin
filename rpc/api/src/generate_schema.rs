@@ -6,7 +6,6 @@ use starcoin_rpc_api::{
 };
 use std::fs::{create_dir_all, File};
 use std::path::Path;
-
 #[derive(Debug, Parser)]
 #[clap(name = "genesis_generator")]
 pub struct RpcSchemaGenerateOpt {
@@ -18,7 +17,7 @@ pub struct RpcSchemaGenerateOpt {
 macro_rules! generate_rpc_schema_docs {
     ($data_dir: expr,$($name: ident),+) => {
         ||->Result<()>{
-            $(let schema = $name::gen_client::Client::gen_schema();
+            $(let schema = $name::gen_schema();
               let file_name = format!("{}.json", stringify!($name));
               let file = File::create($data_dir.join(file_name))?;
               serde_json::to_writer_pretty(file, &schema)?;)*

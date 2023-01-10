@@ -3,13 +3,13 @@
 
 pub use self::gen_client::Client as SyncManagerClient;
 use crate::FutureResult;
-use jsonrpc_derive::rpc;
 use network_api::PeerStrategy;
 use network_types::peer_info::PeerId;
+use openrpc_derive::openrpc;
 use starcoin_sync_api::{PeerScoreResponse, SyncProgressReport};
 use starcoin_types::sync_status::SyncStatus;
 
-#[rpc(client, server, schema)]
+#[openrpc]
 pub trait SyncManagerApi {
     #[rpc(name = "sync.status")]
     fn status(&self) -> FutureResult<SyncStatus>;
@@ -36,7 +36,7 @@ pub trait SyncManagerApi {
 }
 #[test]
 fn test() {
-    let schema = rpc_impl_SyncManagerApi::gen_client::Client::gen_schema();
+    let schema = self::gen_schema();
     let j = serde_json::to_string_pretty(&schema).unwrap();
     println!("{}", j);
 }
