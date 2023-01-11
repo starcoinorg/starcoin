@@ -24,8 +24,12 @@ pub struct DBUpgrade;
 
 // XXX FIXME YSG
 pub static BARNARD_HARD_FORK_HEIGHT: BlockNumber = 482197;
-pub static BARNARD_HARD_FORK_HASH: Lazy<HashValue> =
-    Lazy::new(|| HashValue::from_hex_literal("0x9b5081485ebfa155f6276be8edd8b9ef4bc94b80d1b3ff42a119810b274cf659").expect(""));
+pub static BARNARD_HARD_FORK_HASH: Lazy<HashValue> = Lazy::new(|| {
+    HashValue::from_hex_literal(
+        "0x9b5081485ebfa155f6276be8edd8b9ef4bc94b80d1b3ff42a119810b274cf659",
+    )
+    .expect("")
+});
 //0xab8d4b4faeb27b4e4912bf4341ff8dbe5fb467f4909e2ba333f02eb908245d38
 impl DBUpgrade {
     pub fn check_upgrade(instance: &mut StorageInstance) -> Result<()> {
