@@ -11,9 +11,20 @@ use starcoin_transaction_builder::{
 use starcoin_types::account::Account;
 use starcoin_types::account_config::association_address;
 use starcoin_types::transaction::Transaction;
+use starcoin_vm_types::file_format::Visibility::Public;
+use starcoin_vm_types::file_format::{
+    Ability, AbilitySet, AddressIdentifierIndex, Bytecode, CodeUnit, CompiledModule, Constant,
+    FieldDefinition, FunctionDefinition, FunctionHandle, FunctionHandleIndex,
+    FunctionInstantiation, IdentifierIndex, ModuleHandle, ModuleHandleIndex, Signature,
+    SignatureIndex, SignatureToken, StructDefInstantiation, StructDefinition,
+    StructDefinitionIndex, StructFieldInformation, StructHandle, StructHandleIndex,
+    StructTypeParameter, TypeSignature,
+};
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::transaction::{Package, Script, ScriptFunction, TransactionPayload};
+use starcoin_vm_types::transaction::{
+    Module, Package, Script, ScriptFunction, TransactionPayload, TransactionStatus,
+};
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use test_helper::executor::{
     compile_ir_script, compile_modules_with_address, compile_script, execute_and_apply,
@@ -253,6 +264,183 @@ fn test_execute_script_verify() -> Result<()> {
     assert_eq!(
         KeptVMStatus::MiscellaneousError,
         output.status().status().unwrap()
+    );
+    Ok(())
+}
+
+#[stest::test]
+fn test_struct_republish_backward_incompatible() -> Result<()> {
+    let (chain_state, net) = prepare_genesis();
+    let alice = Account::new();
+    let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+        &alice, 0, 50_000_000, 1, &net,
+    ));
+    let output1 = execute_and_apply(&chain_state, txn1);
+    assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
+    let module1 = CompiledModule {
+        version: move_binary_format::file_format_common::VERSION_MAX,
+        self_module_handle_idx: ModuleHandleIndex(0),
+        module_handles: vec![ModuleHandle {
+            address: AddressIdentifierIndex(0),
+            name: IdentifierIndex(0),
+        }],
+        struct_handles: vec![StructHandle {
+            module: ModuleHandleIndex(0),
+            name: IdentifierIndex(0),
+            abilities: AbilitySet::from_u8(Ability::Copy as u8).unwrap(),
+            type_parameters: vec![StructTypeParameter {
+                constraints: AbilitySet::EMPTY,
+                is_phantom: true,
+            }],
+        }],
+        function_handles: vec![FunctionHandle {
+            module: ModuleHandleIndex(0),
+            name: IdentifierIndex(1),
+            parameters: SignatureIndex(1),
+            return_: SignatureIndex(0),
+            type_parameters: vec![AbilitySet::from_u8(Ability::Copy as u8).unwrap()],
+        }],
+        field_handles: vec![],
+        friend_decls: vec![],
+        struct_def_instantiations: vec![StructDefInstantiation {
+            def: StructDefinitionIndex(0),
+            type_parameters: SignatureIndex(0),
+        }],
+        function_instantiations: vec![FunctionInstantiation {
+            handle: FunctionHandleIndex(0),
+            type_parameters: SignatureIndex(0),
+        }],
+        field_instantiations: vec![],
+        signatures: vec![
+            Signature(vec![]),
+            Signature(vec![SignatureToken::Bool, SignatureToken::Bool]),
+            Signature(vec![SignatureToken::Bool]),
+        ],
+        identifiers: vec![
+            Identifier::new("zf_hello").unwrap(),
+            Identifier::new("hello").unwrap(),
+            Identifier::new("a").unwrap(),
+        ],
+        address_identifiers: vec![*alice.address()],
+        constant_pool: vec![Constant {
+            type_: SignatureToken::Bool,
+            data: vec![1u8],
+        }],
+        struct_defs: vec![StructDefinition {
+            struct_handle: StructHandleIndex(0),
+            field_information: StructFieldInformation::Declared(vec![FieldDefinition {
+                name: IdentifierIndex(2),
+                signature: TypeSignature(SignatureToken::Bool),
+            }]),
+        }],
+        function_defs: vec![FunctionDefinition {
+            function: FunctionHandleIndex(0),
+            visibility: Public,
+            acquires_global_resources: vec![],
+            code: Some(CodeUnit {
+                locals: SignatureIndex(1),
+                code: vec![Bytecode::Ret],
+            }),
+        }],
+    };
+    let mut code1 = vec![];
+    module1.serialize(&mut code1)?;
+    let compiled_module1 = Module::new(code1);
+    let txn1 = Transaction::UserTransaction(alice.create_signed_txn_impl(
+        *alice.address(),
+        TransactionPayload::Package(Package::new(vec![compiled_module1], None).unwrap()),
+        0,
+        10_000_000,
+        1,
+        1,
+        net.chain_id(),
+    ));
+
+    let output1 = execute_and_apply(&chain_state, txn1);
+    assert_eq!(
+        TransactionStatus::Keep(KeptVMStatus::Executed),
+        output1.status().clone()
+    );
+
+    let module2 = CompiledModule {
+        version: move_binary_format::file_format_common::VERSION_MAX,
+        self_module_handle_idx: ModuleHandleIndex(0),
+        module_handles: vec![ModuleHandle {
+            address: AddressIdentifierIndex(0),
+            name: IdentifierIndex(0),
+        }],
+        struct_handles: vec![StructHandle {
+            module: ModuleHandleIndex(0),
+            name: IdentifierIndex(0),
+            abilities: AbilitySet::from_u8(Ability::Copy as u8).unwrap(),
+            type_parameters: vec![StructTypeParameter {
+                constraints: AbilitySet::EMPTY,
+                is_phantom: true,
+            }],
+        }],
+        function_handles: vec![FunctionHandle {
+            module: ModuleHandleIndex(0),
+            name: IdentifierIndex(1),
+            parameters: SignatureIndex(1),
+            return_: SignatureIndex(0),
+            type_parameters: vec![AbilitySet::from_u8(Ability::Copy as u8).unwrap()],
+        }],
+        field_handles: vec![],
+        friend_decls: vec![],
+        struct_def_instantiations: vec![StructDefInstantiation {
+            def: StructDefinitionIndex(0),
+            type_parameters: SignatureIndex(0),
+        }],
+        function_instantiations: vec![FunctionInstantiation {
+            handle: FunctionHandleIndex(0),
+            type_parameters: SignatureIndex(0),
+        }],
+        field_instantiations: vec![],
+        signatures: vec![
+            Signature(vec![]),
+            Signature(vec![SignatureToken::Bool, SignatureToken::Bool]),
+            Signature(vec![SignatureToken::Bool]),
+        ],
+        identifiers: vec![
+            Identifier::new("zf_hello").unwrap(),
+            Identifier::new("hello").unwrap(),
+        ],
+        address_identifiers: vec![*alice.address()],
+        constant_pool: vec![Constant {
+            type_: SignatureToken::Bool,
+            data: vec![1u8],
+        }],
+        struct_defs: vec![StructDefinition {
+            struct_handle: StructHandleIndex(0),
+            field_information: StructFieldInformation::Native,
+        }],
+        function_defs: vec![FunctionDefinition {
+            function: FunctionHandleIndex(0),
+            visibility: Public,
+            acquires_global_resources: vec![],
+            code: Some(CodeUnit {
+                locals: SignatureIndex(1),
+                code: vec![Bytecode::Ret],
+            }),
+        }],
+    };
+    let mut code2 = vec![];
+    module2.serialize(&mut code2)?;
+    let compiled_module2 = Module::new(code2);
+    let txn2 = Transaction::UserTransaction(alice.create_signed_txn_impl(
+        *alice.address(),
+        TransactionPayload::Package(Package::new(vec![compiled_module2], None).unwrap()),
+        1,
+        10_000_000,
+        1,
+        1,
+        net.chain_id(),
+    ));
+
+    let output2 = execute_and_apply(&chain_state, txn2);
+    assert_eq!(
+        TransactionStatus::Keep(KeptVMStatus::MiscellaneousError),
+        output2.status().clone()
     );
     Ok(())
 }
