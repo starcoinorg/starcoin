@@ -295,7 +295,10 @@ jsonpath = "0.1.1"
 jsonrpc-client-transports = "18"
 jsonrpc-core = "18"
 jsonrpc-core-client = "18"
-jsonrpc-derive = { git = "https://github.com/starcoinorg/jsonrpc", rev = "2f6c2b33d3048d57a85347ee735b312df0117b15" }
+jsonrpc-derive = "18"
+openrpc-derive = {git = "https://github.com/starcoinorg/openrpc-rs",rev = "42e9fdc00036a24c560c2827e84cf4e078edbd0d",features=["jsonrpc"]}
+openrpc-schema = {git = "https://github.com/starcoinorg/openrpc-rs",rev = "42e9fdc00036a24c560c2827e84cf4e078edbd0d"}
+
 jsonrpc-http-server = "18"
 jsonrpc-ipc-server = "18"
 jsonrpc-pubsub = "18"
