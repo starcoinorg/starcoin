@@ -9,14 +9,14 @@ use crate::types::{
 };
 use crate::FutureResult;
 use jsonrpc_core::Result;
-use jsonrpc_derive::rpc;
+use openrpc_derive::openrpc;
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockNumber;
 use starcoin_vm_types::access_path::AccessPath;
 
-#[rpc(client, server, schema)]
+#[openrpc]
 pub trait ChainApi {
     #[rpc(name = "chain.id")]
     fn id(&self) -> Result<ChainId>;
@@ -157,7 +157,7 @@ pub struct GetEventOption {
 
 #[test]
 fn test() {
-    let schema = rpc_impl_ChainApi::gen_client::Client::gen_schema();
+    let schema = self::gen_schema();
     let j = serde_json::to_string_pretty(&schema).unwrap();
     println!("{}", j);
 }
