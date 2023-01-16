@@ -403,7 +403,7 @@ where
         if block_id == *starcoin_storage::BARNARD_HARD_FORK_HASH
             && block.header().number() == starcoin_storage::BARNARD_HARD_FORK_HEIGHT
         {
-            debug!("halley hard fork {}", block_id);
+            debug!("barnard hard fork {}", block_id);
             return Err(ConnectBlockError::BarnardHardFork(Box::new(block)).into());
         }
         if self.main.current_header().id() == block_id {
