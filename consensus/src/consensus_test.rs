@@ -7,9 +7,12 @@ use crate::consensus::Consensus;
 use crate::difficulty::{get_next_target_helper, BlockDiffInfo};
 use crate::{difficult_to_target, target_to_difficulty, G_CRYPTONIGHT};
 use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_crypto::HashValue;
 use starcoin_time_service::{duration_since_epoch, MockTimeService, TimeService, TimeServiceType};
-use starcoin_types::block::{BlockHeader, BlockHeaderBuilder, RawBlockHeader};
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::block::{BlockHeader, BlockHeaderBuilder, BlockHeaderExtra, RawBlockHeader};
 use starcoin_types::U256;
+use starcoin_vm_types::genesis_config::ChainId;
 use std::collections::VecDeque;
 
 #[stest::test]
@@ -53,6 +56,43 @@ fn test_get_next_target() {
     assert!((time_used as i64 - 20_000).abs() <= 1000);
     let time_used = simulate_blocks(5_000, 1000.into());
     assert!((time_used as i64 - 5_000).abs() <= 1000);
+}
+
+#[stest::test]
+fn verify_header_test_barnard_block3_ubuntu22() {
+    let header = BlockHeader::new(
+        HashValue::from_hex_literal(
+            "0xae1c7990f16e056bbaa7eb82ad0aec905a4ea0c559ca623f13c2a91403f81ecc",
+        )
+        .unwrap(),
+        1616847038282,
+        3,
+        AccountAddress::from_hex_literal("0x94e957321e7bb2d3eb08ff6be81a6fcd").unwrap(),
+        HashValue::from_hex_literal(
+            "0x3da1d80128ea59c683cd1ca88f77b239fb46afa28e9f4b25753b147ca0cefaba",
+        )
+        .unwrap(),
+        HashValue::from_hex_literal(
+            "0x3df88e7a7b0ae0064fa284f71a3777c76aa83b30f16e8875a5b3ba1d94ca83b1",
+        )
+        .unwrap(),
+        HashValue::from_hex_literal(
+            "0x610596802d69223d593b5f708e5803c53f1b5958a25097ae7f8fe8cd52ce6e51",
+        )
+        .unwrap(),
+        0,
+        478.into(),
+        HashValue::from_hex_literal(
+            "0xc01e0329de6d899348a8ef4bd51db56175b3fa0988e57c3dcec8eaf13a164d97",
+        )
+        .unwrap(),
+        ChainId::new(251),
+        2894404328,
+        BlockHeaderExtra::new([0u8; 4]),
+    );
+    G_CRYPTONIGHT
+        .verify_header_difficulty(header.difficulty(), &header)
+        .unwrap()
 }
 
 fn simulate_blocks(time_plan: u64, init_difficulty: U256) -> u64 {
