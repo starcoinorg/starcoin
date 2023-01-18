@@ -50,7 +50,7 @@ jobs:
           labels: ${{ steps.docker_meta.outputs.labels }}
       - name: deploy cluster
         # Only deploy on master.
-        if: github.tag == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master'
         shell: bash
         env:
           IMAGE_VERSION: ${{steps.docker_meta.outputs.version}}
