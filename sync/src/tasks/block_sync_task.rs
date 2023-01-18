@@ -13,6 +13,7 @@ use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
 use starcoin_config::G_CRATE_VERSION;
 use starcoin_logger::prelude::*;
+use starcoin_storage::BARNARD_HARD_FORK_HASH;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use std::collections::HashMap;
@@ -235,6 +236,9 @@ where
                 }
                 return Err(format_err!("collect previous failed block:{}", block.id()));
             }
+        }
+        if block.id() == *BARNARD_HARD_FORK_HASH {
+            return Err(format_err!("reject barnard hard fork block:{}", block.id()));
         }
         let apply_result = if self.skip_pow_verify {
             self.chain

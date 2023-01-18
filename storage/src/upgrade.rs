@@ -201,14 +201,32 @@ impl DBUpgrade {
 
         let barnard_info = BarnardHardFork::new(BARNARD_HARD_FORK_HEIGHT, *BARNARD_HARD_FORK_HASH);
         if barnard_hard_fork == Some(barnard_info.clone()) {
-            println!("is have forked");
+            info!("barnard is have forked");
             return Ok(());
         }
 
         let block = block_storage.get_block_by_hash(*BARNARD_HARD_FORK_HASH)?;
         if let Some(block) = block {
             if block.header().number() == BARNARD_HARD_FORK_HEIGHT {
-                println!("barnard hard fork");
+                info!("barnard hard fork rollback height");
+                let mut processed_count = 0;
+                let block_info_storage = BlockInfoStorage::new(instance.clone());
+                let mut iter = block_storage.header_store.iter()?;
+                iter.seek_to_first();
+                for item in iter {
+                    let (id, block_header) = item?;
+                    if block_header.number() >= BARNARD_HARD_FORK_HEIGHT {
+                        block_info_storage.remove(id)?;
+                        block_storage.delete_block(id)?;
+                        processed_count += 1;
+                        if processed_count % 10000 == 0 {
+                            info!(
+                                "barnard hard fork rollback height processed items: {}",
+                                processed_count
+                            );
+                        }
+                    }
+                }
                 let main_hash = block.header().parent_hash();
                 chain_info_storage.save_barnard_hard_fork(barnard_info)?;
                 chain_info_storage.save_startup_info(StartupInfo::new(main_hash))?;

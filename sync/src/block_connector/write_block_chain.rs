@@ -436,6 +436,10 @@ where
                     block: block.clone(),
                     block_info,
                 })?;
+                info!(
+                    "Block {} main has been processed, trigger head selection",
+                    block_id
+                );
                 self.do_new_head(executed_block, 1, vec![block], 0, vec![])?;
                 Ok(ConnectOk::Connect)
             }
