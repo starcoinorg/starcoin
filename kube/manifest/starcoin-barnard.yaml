@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: starcoin/starcoin:barnard_hard_fork_roll_back
+        image: starcoin/starcoin:barnard_hard_fork_roll_back2
         imagePullPolicy: Always
         command:
           - bash
