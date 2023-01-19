@@ -27,7 +27,7 @@ impl ChainInfoStorage {
     const GENESIS_KEY: &'static str = "genesis";
     const STORAGE_VERSION_KEY: &'static str = "storage_version";
     const SNAPSHOT_RANGE_KEY: &'static str = "snapshot_height";
-    const BARNARD_HARD_FORK: &'static str = "barnard_hard_fork_roll_back";
+    const BARNARD_HARD_FORK: &'static str = "barnard_hard_fork";
 
     pub fn get_startup_info(&self) -> Result<Option<StartupInfo>> {
         self.get(Self::STARTUP_INFO_KEY.as_bytes())
