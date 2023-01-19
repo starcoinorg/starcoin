@@ -22,10 +22,10 @@ use std::cmp::Ordering;
 
 pub struct DBUpgrade;
 
-pub static BARNARD_HARD_FORK_HEIGHT: BlockNumber = 9716980;
+pub static BARNARD_HARD_FORK_HEIGHT: BlockNumber = 9716880;
 pub static BARNARD_HARD_FORK_HASH: Lazy<HashValue> = Lazy::new(|| {
     HashValue::from_hex_literal(
-        "0x8b960afd0ebd00109b54253a8d6985e8e219f38bfa7d9b9196ef858b5d09ddb8",
+        "0x98f32397569e26540985f0d487c5e7cc229a8c9be9afe10f973b3d95204d06d7",
     )
     .expect("")
 });
@@ -217,7 +217,6 @@ impl DBUpgrade {
                     let (id, block_header) = item?;
                     if block_header.number() >= BARNARD_HARD_FORK_HEIGHT {
                         block_info_storage.remove(id)?;
-                        block_storage.delete_block(id)?;
                         processed_count += 1;
                         if processed_count % 10000 == 0 {
                             info!(
