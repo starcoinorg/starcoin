@@ -68,7 +68,7 @@ spec:
           tcpSocket:
             port: 9840
           initialDelaySeconds: 10
-          periodSeconds: 1800
+          periodSeconds: 600
           timeoutSeconds: 2
           failureThreshold: 3
           successThreshold: 1
