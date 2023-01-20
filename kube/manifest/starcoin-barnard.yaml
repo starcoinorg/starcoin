@@ -69,7 +69,7 @@ spec:
             port: 9840
           initialDelaySeconds: 10
           periodSeconds: 600
-          timeoutSeconds: 2
+          timeoutSeconds: 600
           failureThreshold: 3
           successThreshold: 1
         readinessProbe:
