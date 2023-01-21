@@ -238,6 +238,10 @@ where
             }
         }
         if block.id() == *BARNARD_HARD_FORK_HASH {
+            if let Some(peer) = peer_id {
+                warn!("[barnard hard fork] ban peer {}", peer);
+                self.peer_provider.ban_peer(peer, true);
+            }
             return Err(format_err!("reject barnard hard fork block:{}", block.id()));
         }
         let apply_result = if self.skip_pow_verify {
