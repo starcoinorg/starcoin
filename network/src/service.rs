@@ -36,6 +36,8 @@ use std::collections::HashMap;
 use std::ops::RangeInclusive;
 use std::sync::Arc;
 
+const BARNARD_HARD_FORK_PEER_VERSION_STRING_PREFIX: &str = "barnard_rollback_block_fix";
+
 pub struct NetworkActorService {
     worker: Option<NetworkWorker>,
     inner: Inner,
@@ -135,6 +137,16 @@ impl EventHandler<Self, Event> for NetworkActorService {
                     "Connected peer {:?}, protocol: {}, notif_protocols: {:?}, rpc_protocols: {:?}",
                     remote, protocol, notif_protocols, rpc_protocols
                 );
+                if let Some(ref ver_str) = version_string {
+                    if !ver_str.contains(BARNARD_HARD_FORK_PEER_VERSION_STRING_PREFIX) {
+                        debug!(
+                            "ban {} peer {:?}",
+                            BARNARD_HARD_FORK_PEER_VERSION_STRING_PREFIX, remote
+                        );
+                        self.inner.network_service.ban_peer(remote, true);
+                        return;
+                    }
+                }
                 let peer_event = PeerEvent::Open(remote.into(), info.clone());
                 self.inner.on_peer_connected(
                     remote.into(),
