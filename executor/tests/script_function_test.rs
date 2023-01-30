@@ -11,18 +11,10 @@ use starcoin_transaction_builder::{
 use starcoin_types::account::Account;
 use starcoin_types::account_config::association_address;
 use starcoin_types::transaction::Transaction;
-use starcoin_vm_types::file_format::{
-    Ability, AbilitySet, AddressIdentifierIndex, Bytecode, CodeUnit, CompiledModule, Constant,
-    FieldDefinition, FunctionDefinition, FunctionHandle, FunctionHandleIndex,
-    FunctionInstantiation, IdentifierIndex, ModuleHandle, ModuleHandleIndex, Signature,
-    SignatureIndex, SignatureToken, StructDefInstantiation, StructDefinition,
-    StructDefinitionIndex, StructFieldInformation, StructHandle, StructHandleIndex,
-    StructTypeParameter, TypeSignature,
-};
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::transaction::{
-    Module, Package, Script, ScriptFunction, TransactionPayload, TransactionStatus,
+    Package, Script, ScriptFunction, TransactionPayload, TransactionStatus,
 };
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use test_helper::executor::{
