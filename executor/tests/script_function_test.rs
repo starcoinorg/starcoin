@@ -13,7 +13,9 @@ use starcoin_types::account_config::association_address;
 use starcoin_types::transaction::Transaction;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::transaction::{Package, Script, ScriptFunction, TransactionPayload};
+use starcoin_vm_types::transaction::{
+    Package, Script, ScriptFunction, TransactionPayload, TransactionStatus,
+};
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use test_helper::executor::{
     compile_ir_script, compile_modules_with_address, compile_script, execute_and_apply,
@@ -254,5 +256,60 @@ fn test_execute_script_verify() -> Result<()> {
         KeptVMStatus::MiscellaneousError,
         output.status().status().unwrap()
     );
+    Ok(())
+}
+
+#[stest::test]
+fn test_struct_republish_backward_incompatible() -> Result<()> {
+    let (chain_state, net) = prepare_genesis();
+    let module_source = r#"
+        module 0xA550C18::A {
+            struct R { f: bool}
+            struct R2 { f: R}
+        }
+        "#;
+    let compiled_module = compile_modules_with_address(association_address(), module_source)
+        .pop()
+        .unwrap();
+
+    let txn = create_signed_txn_with_association_account(
+        TransactionPayload::Package(Package::new_with_module(compiled_module).unwrap()),
+        0,
+        DEFAULT_MAX_GAS_AMOUNT,
+        1,
+        1,
+        &net,
+    );
+
+    //publish the module
+    let output = execute_and_apply(&chain_state, Transaction::UserTransaction(txn));
+    assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());
+
+    let module_source2 = r#"
+        module 0xA550C18::A {
+            native struct R;
+            struct R2 { f: R}
+        }
+        "#;
+    let compiled_module2 = compile_modules_with_address(association_address(), module_source2)
+        .pop()
+        .unwrap();
+
+    let txn2 = create_signed_txn_with_association_account(
+        TransactionPayload::Package(Package::new_with_module(compiled_module2).unwrap()),
+        1,
+        DEFAULT_MAX_GAS_AMOUNT,
+        1,
+        1,
+        &net,
+    );
+
+    //publish the module
+    let output2 = execute_and_apply(&chain_state, Transaction::UserTransaction(txn2));
+    assert_eq!(
+        TransactionStatus::Keep(KeptVMStatus::MiscellaneousError),
+        output2.status().clone()
+    );
+
     Ok(())
 }

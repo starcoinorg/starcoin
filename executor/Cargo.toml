@@ -30,6 +30,7 @@ stest = { workspace = true }
 tempfile = { workspace = true }
 test-helper = { workspace = true }
 move-transactional-test-runner = { workspace = true }
+move-binary-format = { workspace = true }
 
 [features]
 default = []
