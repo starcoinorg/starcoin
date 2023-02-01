@@ -1,19 +1,19 @@
 /.github/ @sanlee42 @nkysg
-/abi @nkysg @WGB5445
+/abi @nkysg
 /account @welbon
 /cmd @welbon
 /chain @nkysg
 
-/commons @WGB5445
+/commons @nkysg
 /commons/scmd @nkysg
 /commons/accumulator @welbon
 /commons/service-registry @sanlee42
 
 /consensus @sanlee42 @welbon
-/executor @nkysg @WGB5445
-/genesis @WGB5445 @nkysg
+/executor @nkysg
+/genesis  @nkysg
 /kube @sanlee42 @nkysg
-/miner @sanlee42 @WGB5445
+/miner @sanlee42
 /network @sanlee42
 /network-p2p @sanlee42
 /network-rpc @sanlee42
@@ -21,11 +21,11 @@
 /rpc @sanlee42
 /state @welbon @nkysg
 /storage @welbon @nkysg
-/stratum @sanlee42 @WGB5445
+/stratum @sanlee42
 /sync @sanlee42
-/testsuite @WGB5445
+/testsuite @nkysg
 /txpool @sanlee42 @welbon
 /types @nkysg @welbon
 /vm @nkysg
-/vm/stdlib @WGB5445
+/vm/stdlib @nkysg @sanlee42
 /vm/move-prover @nkysg
