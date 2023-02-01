@@ -21,42 +21,21 @@ pub trait StdlibCompat {
         exec_delay: u64,
         enforced: bool,
     ) -> ScriptFunction;
-
-    // propose method before stdlib since 12
-    fn propose_module_upgrade_function_since_v12(
-        &self,
-        dao_type: TypeTag,
-        title: &str,
-        introduction: &str,
-        extend: &str,
-        action_delay: u64,
-        package_hash: HashValue,
-        enforced: bool,
-    ) -> ScriptFunction;
 }
 
 impl StdlibCompat for StdlibVersion {
     fn upgrade_module_type_tag(&self) -> TypeTag {
-        if self <= &StdlibVersion::Version(12) {
-            let struct_name = if self > &StdlibVersion::Version(2) {
-                "UpgradeModuleV2"
-            } else {
-                "UpgradeModule"
-            };
-            TypeTag::Struct(StructTag {
-                address: genesis_address(),
-                module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
-                name: Identifier::new(struct_name).unwrap(),
-                type_params: vec![],
-            })
+        let struct_name = if self > &StdlibVersion::Version(2) {
+            "UpgradeModuleV2"
         } else {
-            TypeTag::Struct(StructTag {
-                address: genesis_address(),
-                module: Identifier::new("UpgradeModulePlugin").unwrap(),
-                name: Identifier::new("UpgradeModuleAction").unwrap(),
-                type_params: vec![],
-            })
-        }
+            "UpgradeModule"
+        };
+        TypeTag::Struct(StructTag {
+            address: genesis_address(),
+            module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
+            name: Identifier::new(struct_name).unwrap(),
+            type_params: vec![],
+        })
     }
 
     fn propose_module_upgrade_function(
@@ -67,10 +46,6 @@ impl StdlibCompat for StdlibVersion {
         exec_delay: u64,
         enforced: bool,
     ) -> ScriptFunction {
-        assert!(
-            self <= &StdlibVersion::Version(12),
-            "Expect stdlib version <= 12."
-        );
         // propose_module_upgrade_v2 is available after v2 upgrade.
         // 'self' is the target stdlib version to be upgraded to.
         let (function_name, args) = if self > &StdlibVersion::Version(2) {
@@ -103,42 +78,6 @@ impl StdlibCompat for StdlibVersion {
             ),
             Identifier::new(function_name).unwrap(),
             vec![token_type],
-            args,
-        )
-    }
-
-    fn propose_module_upgrade_function_since_v12(
-        &self,
-        dao_type: TypeTag,
-        title: &str,
-        introduction: &str,
-        extend: &str,
-        action_delay: u64,
-        package_hash: HashValue,
-        enforced: bool,
-    ) -> ScriptFunction {
-        assert!(
-            self > &StdlibVersion::Version(12),
-            "Expect stdlib version > 12."
-        );
-
-        let args = vec![
-            bcs_ext::to_bytes(title).unwrap(),
-            bcs_ext::to_bytes(introduction).unwrap(),
-            bcs_ext::to_bytes(extend).unwrap(),
-            bcs_ext::to_bytes(&action_delay).unwrap(),
-            bcs_ext::to_bytes(&package_hash.to_vec()).unwrap(),
-            bcs_ext::to_bytes(&self.version()).unwrap(),
-            bcs_ext::to_bytes(&enforced).unwrap(),
-        ];
-
-        ScriptFunction::new(
-            ModuleId::new(
-                core_code_address(),
-                Identifier::new("UpgradeModulePlugin").unwrap(),
-            ),
-            Identifier::new("create_proposal_entry").unwrap(),
-            vec![dao_type],
             args,
         )
     }

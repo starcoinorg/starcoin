@@ -120,7 +120,7 @@ pub fn txn_publish_config_type_tag() -> TypeTag {
     })
 }
 
-pub fn execute_create_account(
+fn execute_create_account(
     chain_state: &ChainStateDB,
     net: &ChainNetwork,
     alice: &Account,
@@ -435,7 +435,6 @@ pub fn empty_txn_payload() -> TransactionPayload {
     TransactionPayload::ScriptFunction(build_empty_script())
 }
 
-// Vote methods before stdlib version 12.
 pub fn dao_vote_test(
     alice: &Account,
     chain_state: &ChainStateDB,
