@@ -22,6 +22,9 @@ pub trait StdlibCompat {
         enforced: bool,
     ) -> ScriptFunction;
 
+    // this method use only in starcoin-framework daospace-v12,
+    // https://github.com/starcoinorg/starcoin-framework/releases/tag/daospace-v12
+    // in starcoin master we don't use it
     // propose method before stdlib since 12
     fn propose_module_upgrade_function_since_v12(
         &self,
@@ -37,26 +40,17 @@ pub trait StdlibCompat {
 
 impl StdlibCompat for StdlibVersion {
     fn upgrade_module_type_tag(&self) -> TypeTag {
-        if self <= &StdlibVersion::Version(12) {
-            let struct_name = if self > &StdlibVersion::Version(2) {
-                "UpgradeModuleV2"
-            } else {
-                "UpgradeModule"
-            };
-            TypeTag::Struct(StructTag {
-                address: genesis_address(),
-                module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
-                name: Identifier::new(struct_name).unwrap(),
-                type_params: vec![],
-            })
+        let struct_name = if self > &StdlibVersion::Version(2) {
+            "UpgradeModuleV2"
         } else {
-            TypeTag::Struct(StructTag {
-                address: genesis_address(),
-                module: Identifier::new("UpgradeModulePlugin").unwrap(),
-                name: Identifier::new("UpgradeModuleAction").unwrap(),
-                type_params: vec![],
-            })
-        }
+            "UpgradeModule"
+        };
+        TypeTag::Struct(StructTag {
+            address: genesis_address(),
+            module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
+            name: Identifier::new(struct_name).unwrap(),
+            type_params: vec![],
+        })
     }
 
     fn propose_module_upgrade_function(
@@ -67,10 +61,6 @@ impl StdlibCompat for StdlibVersion {
         exec_delay: u64,
         enforced: bool,
     ) -> ScriptFunction {
-        assert!(
-            self <= &StdlibVersion::Version(12),
-            "Expect stdlib version <= 12."
-        );
         // propose_module_upgrade_v2 is available after v2 upgrade.
         // 'self' is the target stdlib version to be upgraded to.
         let (function_name, args) = if self > &StdlibVersion::Version(2) {
@@ -107,6 +97,9 @@ impl StdlibCompat for StdlibVersion {
         )
     }
 
+    // this method use only in starcoin-framework daospace-v12,
+    // https://github.com/starcoinorg/starcoin-framework/releases/tag/daospace-v12
+    // in starcoin master we don't use it
     fn propose_module_upgrade_function_since_v12(
         &self,
         dao_type: TypeTag,

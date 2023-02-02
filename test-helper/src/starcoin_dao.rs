@@ -499,9 +499,9 @@ fn execute_block(
     block_from_metadata(block_meta, chain_state)
 }
 
-// Vote methods since stdlib version 12.
+// Vote methods use in daospace-v12, master not use it
 // The proposal process is based on:
-// https://github.com/starcoinorg/starcoin-framework/blob/main/integration-tests/starcoin_dao/starcoin_upgrade_module.move
+// https://github.com/starcoinorg/starcoin-framework/blob/daospace-v12/integration-tests/starcoin_dao/starcoin_upgrade_module.move
 pub fn dao_vote_test(
     alice: &Account,
     chain_state: &ChainStateDB,

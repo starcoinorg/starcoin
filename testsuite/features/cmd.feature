@@ -186,7 +186,7 @@ Feature: cmd integration test
 
 
   #StarcoinFramework checkpoint
-  Scenario Outline: [cmd] starcoin-framework checkpoint
+  Scenario Outline: [ignore] starcoin-framework checkpoint
     Then cmd: "dev get-coin"
     Then cmd: "account unlock"
     Then cmd: "account execute-function --function 0x1::Block::checkpoint_entry -b"
@@ -200,7 +200,7 @@ Feature: cmd integration test
 
 
   #easy gas testing
-  Scenario Outline: [cmd] starcoin easy gas test
+  Scenario Outline: [ignore] starcoin easy gas test
     Then cmd: "dev get-coin -v 1000000"
     Then cmd: "account show"
     Then cmd: "account unlock"

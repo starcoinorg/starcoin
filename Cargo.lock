@@ -8833,7 +8833,6 @@ dependencies = [
  "bcs-ext",
  "hex",
  "log 0.4.17",
- "move-binary-format",
  "move-transactional-test-runner",
  "once_cell",
  "serde 1.0.140",
@@ -8914,7 +8913,7 @@ dependencies = [
 [[package]]
 name = "starcoin-framework"
 version = "11.0.0"
-source = "git+https://github.com/starcoinorg/starcoin-framework?rev=e618173d44fb4e57b8c735cb3eda6844de22d930#e618173d44fb4e57b8c735cb3eda6844de22d930"
+source = "git+https://github.com/starcoinorg/starcoin-framework?rev=cf1deda180af40a8b3e26c0c7b548c4c290cd7e7#cf1deda180af40a8b3e26c0c7b548c4c290cd7e7"
 dependencies = [
  "anyhow",
  "include_dir",
