@@ -1,15 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::Result;
-// use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_state_api::StateReaderExt;
-// use starcoin_types::account_config::core_code_address;
-// use starcoin_types::account_config::genesis_address;
-// use starcoin_types::identifier::Identifier;
-// use starcoin_types::language_storage::ModuleId;
-// use starcoin_types::transaction::{Package, ScriptFunction, TransactionPayload};
 use starcoin_vm_types::sips::{G_SIPS, SIP};
-// use test_helper::dao::dao_vote_test;
 use test_helper::executor::*;
 use test_helper::Account;
 

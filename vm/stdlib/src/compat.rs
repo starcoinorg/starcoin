@@ -21,6 +21,21 @@ pub trait StdlibCompat {
         exec_delay: u64,
         enforced: bool,
     ) -> ScriptFunction;
+
+    // this method use only in starcoin-framework daospace-v12,
+    // https://github.com/starcoinorg/starcoin-framework/releases/tag/daospace-v12
+    // in starcoin master we don't use it
+    // propose method before stdlib since 12
+    fn propose_module_upgrade_function_since_v12(
+        &self,
+        dao_type: TypeTag,
+        title: &str,
+        introduction: &str,
+        extend: &str,
+        action_delay: u64,
+        package_hash: HashValue,
+        enforced: bool,
+    ) -> ScriptFunction;
 }
 
 impl StdlibCompat for StdlibVersion {
@@ -78,6 +93,45 @@ impl StdlibCompat for StdlibVersion {
             ),
             Identifier::new(function_name).unwrap(),
             vec![token_type],
+            args,
+        )
+    }
+
+    // this method use only in starcoin-framework daospace-v12,
+    // https://github.com/starcoinorg/starcoin-framework/releases/tag/daospace-v12
+    // in starcoin master we don't use it
+    fn propose_module_upgrade_function_since_v12(
+        &self,
+        dao_type: TypeTag,
+        title: &str,
+        introduction: &str,
+        extend: &str,
+        action_delay: u64,
+        package_hash: HashValue,
+        enforced: bool,
+    ) -> ScriptFunction {
+        assert!(
+            self > &StdlibVersion::Version(12),
+            "Expect stdlib version > 12."
+        );
+
+        let args = vec![
+            bcs_ext::to_bytes(title).unwrap(),
+            bcs_ext::to_bytes(introduction).unwrap(),
+            bcs_ext::to_bytes(extend).unwrap(),
+            bcs_ext::to_bytes(&action_delay).unwrap(),
+            bcs_ext::to_bytes(&package_hash.to_vec()).unwrap(),
+            bcs_ext::to_bytes(&self.version()).unwrap(),
+            bcs_ext::to_bytes(&enforced).unwrap(),
+        ];
+
+        ScriptFunction::new(
+            ModuleId::new(
+                core_code_address(),
+                Identifier::new("UpgradeModulePlugin").unwrap(),
+            ),
+            Identifier::new("create_proposal_entry").unwrap(),
+            vec![dao_type],
             args,
         )
     }
