@@ -5,7 +5,7 @@ on:
   release:
     types: [published]
 jobs:
-  test_llvm_install˚:
+  test_llvm_install:
     name: Build release asset
     continue-on-error: true
     strategy:
