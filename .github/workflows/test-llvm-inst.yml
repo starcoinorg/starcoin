@@ -1,0 +1,29 @@
+name: Test LLVM install
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+jobs:
+  test_llvm_install˚:
+    name: Build release asset
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - ubuntu-latest
+    runs-on: ${{matrix.platform}}
+    steps:
+      - name: Install LLVM to Ubuntu 22
+        uses: KyleMayes/install-llvm-action@v1
+        with:
+          version: "11.0"
+
+      - name: Symlink libclang.so (Linux)
+        if: contains(matrix.os, 'ubuntu')
+        run: sudo ln -s libclang-11.so.1 /lib/x86_64-linux-gnu/libclang.so
+        working-directory: ${{ env.LLVM_PATH }}/lib
+
+      - name: Check LLVM Ubuntu 22
+        run: echo "cc --version"
