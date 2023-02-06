@@ -24,7 +24,7 @@ jobs:
         
       - name: Install LLVM and Clang # required for bindgen to work, see https://github.com/rust-lang/rust-bindgen/issues/1797
         uses: KyleMayes/install-llvm-action@v1
-        if: matrix.platform == 'windows-latest'
+        if: matrix.platform == 'windows-latest' || matrix.platform == 'ubuntu-22.04'
         with:
           version: "11.0"
           directory: ${{ runner.temp }}/llvm
