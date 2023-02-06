@@ -52,7 +52,7 @@ jobs:
 
       - name: upload artifact asset
         uses: actions/upload-artifact@v2
-        if: ${{ github.event_name != 'release'}}
+        #if: ${{ github.event_name != 'release'}}
         with:
           name: starcoin-${{ matrix.platform }}.zip
           path: ./starcoin-${{ matrix.platform }}.zip
