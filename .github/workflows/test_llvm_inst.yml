@@ -26,4 +26,5 @@ jobs:
         working-directory: ${{ env.LLVM_PATH }}/lib
 
       - name: Check LLVM Ubuntu 22
-        run: echo "cc --version"
+        run: cc --version
+      
