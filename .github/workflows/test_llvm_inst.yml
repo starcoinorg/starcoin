@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   release:
     types: [published]
+    
 jobs:
   test_llvm_install:
     name: Build release asset
@@ -13,6 +14,7 @@ jobs:
       matrix:
         platform:
           - ubuntu-latest
+          
     runs-on: ${{matrix.platform}}
     steps:
       - name: Install LLVM to Ubuntu 22
