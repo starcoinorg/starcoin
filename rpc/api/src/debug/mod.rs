@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2
 
 use jsonrpc_core::Result;
-use jsonrpc_derive::rpc;
+use openrpc_derive::openrpc;
 use starcoin_logger::LogPattern;
 
 pub use self::gen_client::Client as DebugClient;
 use crate::types::FactoryAction;
-#[rpc(client, server, schema)]
+#[openrpc]
 pub trait DebugApi {
     /// Update log level, if logger_name is none, update global log level.
     #[rpc(name = "debug.set_log_level")]
@@ -31,7 +31,7 @@ pub trait DebugApi {
 }
 #[test]
 fn test() {
-    let schema = rpc_impl_DebugApi::gen_client::Client::gen_schema();
+    let schema = self::gen_schema();
     let j = serde_json::to_string_pretty(&schema).unwrap();
     println!("{}", j);
 }

@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use consensus::Consensus;
-use crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
@@ -11,6 +9,8 @@ use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_chain_mock::MockChain;
 use starcoin_config::NodeConfig;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
+use starcoin_consensus::Consensus;
+use starcoin_crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
 use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::account_address;
 use starcoin_types::block::{Block, BlockHeader};
@@ -464,25 +464,53 @@ fn test_get_blocks_by_number() -> Result<()> {
     let mut mock_chain = MockChain::new(ChainNetwork::new_test()).unwrap();
     let blocks = mock_chain
         .head()
-        .get_blocks_by_number(None, u64::max_value())?;
+        .get_blocks_by_number(None, true, u64::max_value())?;
     assert_eq!(blocks.len(), 1, "at least genesis block should contains.");
     let times = 10;
     mock_chain.produce_and_apply_times(times).unwrap();
 
     let blocks = mock_chain
         .head()
-        .get_blocks_by_number(None, u64::max_value())?;
+        .get_blocks_by_number(None, true, u64::max_value())?;
     assert_eq!(blocks.len(), 11);
 
     let number = blocks.len() as u64;
-    let number = number.saturating_add(1);
-    let result = mock_chain
-        .head()
-        .get_blocks_by_number(Some(blocks.len() as u64 + 1), u64::max_value());
+    let result =
+        mock_chain
+            .head()
+            .get_blocks_by_number(Some(blocks.len() as u64), true, u64::max_value());
     assert!(
         result.is_err(),
         "result cannot find block by number {}",
         number
     );
+
+    let number = blocks.len() as u64;
+    let number = number.saturating_add(2);
+    let result = mock_chain
+        .head()
+        .get_blocks_by_number(Some(number), true, u64::max_value());
+    assert!(
+        result.is_err(),
+        "result cannot find block by number {}",
+        number
+    );
+
+    let blocks = mock_chain.head().get_blocks_by_number(Some(9), true, 3)?;
+    assert_eq!(blocks.len(), 3);
+
+    let blocks = mock_chain
+        .head()
+        .get_blocks_by_number(Some(0), false, u64::max_value())?;
+    assert_eq!(blocks.len(), 11);
+
+    let blocks = mock_chain
+        .head()
+        .get_blocks_by_number(Some(9), false, u64::max_value())?;
+    assert_eq!(blocks.len(), 2);
+
+    let blocks = mock_chain.head().get_blocks_by_number(Some(6), false, 3)?;
+    assert_eq!(blocks.len(), 3);
+
     Ok(())
 }

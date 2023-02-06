@@ -1,28 +1,31 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-tx-factory"
-publish = false
-version = "1.12.5"
-
 [[bin]]
 name = "starcoin_txfactory"
 path = "src/main.rs"
 
 [dependencies]
-anyhow = "1.0.41"
-clap = {version = "3", features = ["derive"]}
-ctrlc = {version = "3.2.2", features = ["termination"]}
-futures = "0.3.12"
-tokio = { version = "^1", features = ["full"] }
-starcoin-logger = { path = "../../commons/logger" }
-starcoin-config = { path = "../../config" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-starcoin-state-api = { path = "../../state/api" }
-starcoin-types = { path = "../../types" }
-starcoin-rpc-client = { path = "../../rpc/client" }
-starcoin-rpc-api = { path = "../../rpc/api" }
-starcoin-account-api = { path = "../../account/api" }
-starcoin-executor = { path = "../../executor" }
-starcoin-transaction-builder = {path = "../../vm/transaction-builder"}
+anyhow = { workspace = true }
+clap = { features = ["derive"], workspace = true }
+ctrlc = { features = ["termination"], workspace = true }
+futures = { workspace = true }
+starcoin-account-api = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-executor = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-rpc-api = { workspace = true }
+starcoin-rpc-client = { workspace = true }
+starcoin-state-api = { workspace = true }
+starcoin-transaction-builder = { workspace = true }
+starcoin-types = { workspace = true }
+tokio = { features = ["full"], workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-tx-factory"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

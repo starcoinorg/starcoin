@@ -1,43 +1,41 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-vm-runtime"
-publish = false
-version = "1.12.5"
-
 [dependencies]
-anyhow = "1.0.41"
-once_cell = "1.13.0"
-starcoin-types = { path = "../../types" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-tracing = "0.1.34"
-starcoin-config = { path = "../../config" }
-starcoin-logger = { path = "../../commons/logger" }
-num_enum = "0.5.7"
-starcoin-crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-rand = "0.8.5"
-rand_core = { version = "0.6.3", default-features = false }
-bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
-stdlib = { package = "stdlib", path = "../stdlib" }
-starcoin-vm-types = { path = "../types" }
-starcoin-move-compiler = { path = "../compiler" }
-starcoin-natives = { path = "../natives" }
-starcoin-metrics = { path = "../../commons/metrics", optional = true }
-serde = { version = "1.0.130", default-features = false }
-serde_bytes = "0.11.5"
-serde-helpers = { path = "../../commons/serde-helpers" }
-starcoin-gas = { path = "../starcoin-gas" }
-gas-algebra-ext = { path = "../gas-algebra-ext" }
+anyhow = { workspace = true }
+bcs-ext = { package = "bcs-ext", workspace = true }
+starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+starcoin-config = { workspace = true }
+move-core-types = { workspace = true }
+once_cell = { workspace = true }
+tracing = { workspace = true }
+move-vm-runtime = { workspace = true }
+num_enum = { workspace = true }
+rand = { workspace = true }
+rand_core = { default-features = false, workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-natives = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-vm-types = { workspace = true }
+move-stdlib = { workspace = true }
+move-table-extension = { workspace = true }
+starcoin-metrics = { optional = true, workspace = true }
+starcoin-gas = { workspace = true }
+starcoin-gas-algebra-ext = { workspace = true }
+serde = { features = ["derive"], workspace = true }
 
 [dev-dependencies]
-stdlib = {package = "stdlib", path = "../stdlib"}
+stdlib = { package = "stdlib", workspace = true }
 
 [features]
 default = ["metrics"]
 metrics = ["starcoin-metrics"]
 testing = ["move-stdlib/testing", "starcoin-natives/testing"]
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-vm-runtime"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

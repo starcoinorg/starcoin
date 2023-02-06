@@ -1,14 +1,17 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-name = "starcoin-miner-client-api"
-version = "1.12.5"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-anyhow = "1.0.41"
-async-trait = "0.1.53"
-dyn-clone = "1.0.8"
-futures = "0.3.12"
-starcoin-types = {path = "../../../types"}
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+dyn-clone = { workspace = true }
+futures = { workspace = true }
+starcoin-types = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+name = "starcoin-miner-client-api"
+version = "1.12.9"
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

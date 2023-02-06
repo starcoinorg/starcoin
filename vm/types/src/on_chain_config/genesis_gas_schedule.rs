@@ -4,8 +4,8 @@
 //! This file contains the starting gas schedule published at genesis.
 
 use crate::gas_schedule::NativeCostIndex as N;
-use gas_algebra_ext::GasCost;
 use once_cell::sync::Lazy;
+use starcoin_gas_algebra_ext::GasCost;
 use vm::file_format::SignatureIndex;
 use vm::{
     file_format::{

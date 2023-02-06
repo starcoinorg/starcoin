@@ -7,7 +7,7 @@ from datetime import datetime
 def trigger_scale():
     # get last scaler pod name
     last_pod = ""
-    get_last_scaler_pod_cmd = "wget https://s3.ap-northeast-1.amazonaws.com/main.starcoin.org/main/last_scaler_pod.txt -O ./last_scaler_pod.txt"
+    get_last_scaler_pod_cmd = "wget https://s3.ap-northeast-1.amazonaws.com/main1.starcoin.org/main/last_scaler_pod.txt -O ./last_scaler_pod.txt"
     os.system(get_last_scaler_pod_cmd)
     with open('./last_scaler_pod.txt', 'r') as f:
         last_pod = f.read().strip()
@@ -28,7 +28,7 @@ def trigger_scale():
         # update last_scaler_pod.txt
         last_pod = lastest_scalerpod
         os.system("echo %s > ./last_scaler_pod.txt" % lastest_scalerpod)
-        os.system("aws s3api put-object --bucket main.starcoin.org --key main/last_scaler_pod.txt --body ./last_scaler_pod.txt")
+        os.system("aws s3api put-object --bucket main1.starcoin.org --key main/last_scaler_pod.txt --body ./last_scaler_pod.txt")
 
 
 if __name__ == "__main__":

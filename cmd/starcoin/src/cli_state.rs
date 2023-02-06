@@ -210,6 +210,7 @@ impl CliState {
             txn_opts.max_gas_amount,
             txn_opts.expiration_time_secs,
             payload,
+            txn_opts.gas_token,
         )?;
         if future_transaction {
             //TODO figure out more graceful method to handle future transaction.
@@ -226,6 +227,7 @@ impl CliState {
         max_gas_amount: Option<u64>,
         expiration_time_secs: Option<u64>,
         payload: TransactionPayload,
+        gas_token: Option<String>,
     ) -> Result<(RawUserTransaction, bool)> {
         let chain_id = self.net().chain_id();
         let sender = self.get_account_or_default(sender)?;
@@ -251,6 +253,7 @@ impl CliState {
         let expiration_timestamp_secs = expiration_time_secs
             .unwrap_or(Self::DEFAULT_EXPIRATION_TIME_SECS)
             + node_info.now_seconds;
+        let gas_token_code = gas_token.unwrap_or_else(|| Self::DEFAULT_GAS_TOKEN.to_string());
         Ok((
             RawUserTransaction::new(
                 sender.address,
@@ -260,7 +263,7 @@ impl CliState {
                 gas_price.unwrap_or(Self::DEFAULT_GAS_PRICE),
                 expiration_timestamp_secs,
                 chain_id,
-                Self::DEFAULT_GAS_TOKEN.to_string(),
+                gas_token_code,
             ),
             future_transaction,
         ))

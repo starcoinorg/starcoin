@@ -59,6 +59,10 @@ pub struct TransactionOptions {
     #[clap(long = "dry-run")]
     /// dry-run mode, only get transaction output, do not change chain state.
     pub dry_run: bool,
+
+    #[clap(name = "gas-token", long = "gas-token", name = "token code of gas")]
+    /// "token code of gas to pay, for example: 0x1::STC::STC, default is STC."
+    pub gas_token: Option<String>,
 }
 
 #[derive(Debug, Clone)]

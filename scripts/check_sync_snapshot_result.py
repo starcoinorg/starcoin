@@ -45,7 +45,7 @@ def check_or_do(network):
     os.system(tar_snapshot_cmd)
 
     # cp snapshot.tar.gz to s3
-    cp_snapshot_tar_cmd = "bash -c 'export AWS_REGION=ap-northeast-1;skbn cp --src k8s://starcoin-%s/starcoin-1/starcoin/sc-data/%s --dst s3://main.starcoin.org/%s/%s '" % (
+    cp_snapshot_tar_cmd = "bash -c 'export AWS_REGION=ap-northeast-1;skbn cp --src k8s://starcoin-%s/starcoin-1/starcoin/sc-data/%s --dst s3://main1.starcoin.org/%s/%s '" % (
         network, "snapshot.tar.gz", network, "snapshot.tar.gz")
     os.system(cp_snapshot_tar_cmd)
 

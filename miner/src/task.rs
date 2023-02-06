@@ -4,7 +4,7 @@
 use crate::metrics::MinerMetrics;
 use crate::BlockHeaderExtra;
 use starcoin_metrics::HistogramTimer;
-use types::block::{Block, BlockTemplate};
+use starcoin_types::block::{Block, BlockTemplate};
 
 pub struct MintTask {
     pub(crate) minting_blob: Vec<u8>,

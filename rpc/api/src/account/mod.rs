@@ -1,17 +1,17 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use jsonrpc_derive::rpc;
-
 pub use self::gen_client::Client as AccountClient;
 use crate::types::{SignedMessageView, StrView, TransactionRequest};
 use crate::FutureResult;
+use openrpc_derive::openrpc;
 use starcoin_account_api::AccountInfo;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_vm_types::token::token_code::TokenCode;
-#[rpc(client, server, schema)]
+
+#[openrpc]
 pub trait AccountApi {
     /// Get default account
     #[rpc(name = "account.default")]
@@ -98,7 +98,7 @@ pub trait AccountApi {
 
 #[test]
 fn test() {
-    let schema = rpc_impl_AccountApi::gen_client::Client::gen_schema();
+    let schema = self::gen_schema();
     let j = serde_json::to_string_pretty(&schema).unwrap();
     println!("{}", j);
 }

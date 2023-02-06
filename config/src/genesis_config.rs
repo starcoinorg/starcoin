@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, ensure, format_err, Result};
-use gas_algebra_ext::{CostTable, FromOnChainGasSchedule};
 use network_p2p_types::MultiaddrWithPeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
@@ -16,6 +15,7 @@ use starcoin_crypto::{
     HashValue, ValidCryptoMaterialStringExt,
 };
 use starcoin_gas::StarcoinGasParameters;
+use starcoin_gas_algebra_ext::{CostTable, FromOnChainGasSchedule};
 use starcoin_time_service::{TimeService, TimeServiceType};
 use starcoin_uint::U256;
 use starcoin_vm_types::account_config::genesis_address;
@@ -817,9 +817,7 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 });
 
 pub static G_HALLEY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
-    vec!["/dns4/halley1.seed.starcoin.org/tcp/9840/p2p/12D3KooW9yQoKZrByqrUjmmPHXtR23qCXRQvF5KowYgoqypuhuCn".parse().expect("parse multi addr should be ok"),
-         "/dns4/halley2.seed.starcoin.org/tcp/9840/p2p/12D3KooWCqWbB2Abp6co6vMGG7VcEC9yYJU3yB1VhVYvpRQAr3sv".parse().expect("parse multi addr should be ok"),
-         "/dns4/halley3.seed.starcoin.org/tcp/9840/p2p/12D3KooWRiF6ZtUouCHgrgoCJ2jL4LCzzTEwopPbzVvTTRY3c2mf".parse().expect("parse multi addr should be ok"), ]
+    vec!["/dns4/halley1.seed.starcoin.org/tcp/9840/p2p/12D3KooW9yQoKZrByqrUjmmPHXtR23qCXRQvF5KowYgoqypuhuCn".parse().expect("parse multi addr should be ok"), ]
 });
 
 pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
@@ -874,8 +872,6 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 
 pub static G_PROXIMA_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
     vec!["/dns4/proxima1.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"),
-         "/dns4/proxima2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
-         "/dns4/proxima3.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"),
       ]
 });
 
@@ -930,9 +926,6 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 
 pub static G_BARNARD_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
     vec![
-        "/dns4/barnard1.seed.starcoin.org/tcp/9840/p2p/12D3KooWJcsd9JQngZFsHgYgkHymk7anN8fKqBtD1x8jEbq64QET".parse().expect("parse multi addr should be ok"),
-        "/dns4/barnard2.seed.starcoin.org/tcp/9840/p2p/12D3KooWMKgVbWRQain4Sbw4DUnAJMykjdFanAcePn5xsTZihGTo".parse().expect("parse multi addr should be ok"),
-        "/dns4/barnard3.seed.starcoin.org/tcp/9840/p2p/12D3KooWAcg5cxPnnLNUcYR9WdyTBL1Sotr7W1Suq8b48x2F33Vx".parse().expect("parse multi addr should be ok"),
         "/dns4/barnard4.seed.starcoin.org/tcp/9840/p2p/12D3KooWRUQ4CZ6tiy2kZo5vVjm27ksYJAqMwB2QPfqpB5WEfzy4".parse().expect("parse multi addr should be ok"),
         "/dns4/barnard5.seed.starcoin.org/tcp/9840/p2p/12D3KooWPwRSY555ycvo8BNiEqWqaJRvgtkv7BfJhq9JWHty6e2R".parse().expect("parse multi addr should be ok"),
         "/dns4/barnard6.seed.starcoin.org/tcp/9840/p2p/12D3KooWSMJRCgT4inuEZNxvjSCHY1d3DwVX3SQ6qrvqAZCLLMwJ".parse().expect("parse multi addr should be ok"),
@@ -1062,8 +1055,8 @@ pub static G_LATEST_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
 
 #[cfg(test)]
 mod tests {
-    use gas_algebra_ext::{CostTable, FromOnChainGasSchedule};
     use starcoin_gas::StarcoinGasParameters;
+    use starcoin_gas_algebra_ext::{CostTable, FromOnChainGasSchedule};
     use starcoin_vm_types::gas_schedule::{
         latest_cost_table, G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_LATEST_GAS_SCHEDULE,
         G_TEST_GAS_CONSTANTS,

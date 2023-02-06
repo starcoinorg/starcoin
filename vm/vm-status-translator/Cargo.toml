@@ -1,14 +1,17 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-name = "vm-status-translator"
-version = "1.12.5"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-anyhow = "~1"
-serde = "~1"
-starcoin-vm-types = { path = "../types" }
-starcoin-move-explain = { path = "../move-explain" }
-schemars = { git = "https://github.com/starcoinorg/schemars", rev = "6972da92f4360e1779168bb3fe0274c521d324e2" }
+anyhow = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+starcoin-move-explain = { workspace = true }
+starcoin-vm-types = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+name = "vm-status-translator"
+version = "1.12.9"
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

@@ -1,13 +1,13 @@
 use anyhow::{bail, Result};
-use logger::prelude::*;
-use network::NetworkServiceRef;
 use network_api::{NetworkService, PeerId, PeerProvider, PeerSelector, PeerStrategy, RpcInfo};
+use starcoin_logger::prelude::*;
+use starcoin_network::NetworkServiceRef;
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxnsWithSize, RawRpcClient};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext};
+use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::system_events::SyncStatusChangeEvent;
 use std::sync::Arc;
-use txpool::TxPoolService;
 
 #[derive(Clone, Default)]
 pub struct TxnSyncService {}

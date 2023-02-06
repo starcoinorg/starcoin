@@ -9,14 +9,14 @@ use crate::types::{
 };
 use crate::FutureResult;
 use jsonrpc_core::Result;
-use jsonrpc_derive::rpc;
+use openrpc_derive::openrpc;
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockNumber;
 use starcoin_vm_types::access_path::AccessPath;
 
-#[rpc(client, server, schema)]
+#[openrpc]
 pub trait ChainApi {
     #[rpc(name = "chain.id")]
     fn id(&self) -> Result<ChainId>;
@@ -45,6 +45,7 @@ pub trait ChainApi {
         &self,
         number: Option<BlockNumber>,
         count: u64,
+        option: Option<GetBlocksOption>,
     ) -> FutureResult<Vec<BlockView>>;
     #[rpc(name = "chain.get_block_info_by_number")]
     fn get_block_info_by_number(&self, number: BlockNumber) -> FutureResult<Option<BlockInfoView>>;
@@ -139,6 +140,16 @@ pub struct GetBlockOption {
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]
+pub struct GetBlocksOption {
+    #[serde(default = "defautl_true")]
+    pub reverse: bool,
+}
+
+fn defautl_true() -> bool {
+    true
+}
+
+#[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]
 pub struct GetEventOption {
     #[serde(default)]
     pub decode: bool,
@@ -146,7 +157,7 @@ pub struct GetEventOption {
 
 #[test]
 fn test() {
-    let schema = rpc_impl_ChainApi::gen_client::Client::gen_schema();
+    let schema = self::gen_schema();
     let j = serde_json::to_string_pretty(&schema).unwrap();
     println!("{}", j);
 }

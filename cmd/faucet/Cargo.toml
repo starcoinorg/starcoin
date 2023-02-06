@@ -1,37 +1,41 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-faucet"
-publish = false
-version = "1.12.5"
-
-[dependencies]
-anyhow = "1.0.41"
-futures = "0.3.12"
-hex = { version = "0.4.3", default-features = false }
-tokio = { version = "^1", features = ["full"] }
-tokio-executor = { version = "0.2.0-alpha.6", features = ["blocking"] }
-futures-timer = "3.0"
-ascii = "1.0.0"
-rust-embed = "6.3.0"
-serde = { version = "1.0.130" }
-serde_json = { version = "1.0", features = ["arbitrary_precision"] }
-once_cell = "1.13.0"
-starcoin-logger = { path = "../../commons/logger" }
-starcoin-config = { path = "../../config" }
-starcoin-state-api = { path = "../../state/api" }
-starcoin-types = { path = "../../types" }
-starcoin-rpc-client = { path = "../../rpc/client" }
-starcoin-account-api = { path = "../../account/api" }
-starcoin-executor = { path = "../../executor" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-clap = { version = "3", features = ["derive"] }
-starcoin-transaction-builder = { path = "../../vm/transaction-builder" }
-tiny_http = "0.8.2"
 [[bin]]
 name = "starcoin_faucet"
 path = "src/main.rs"
 
+[dependencies]
+anyhow = { workspace = true }
+ascii = { workspace = true }
+clap = { features = ["derive"], workspace = true }
+futures = { workspace = true }
+futures-timer = { workspace = true }
+hex = { default-features = false, workspace = true }
+once_cell = { workspace = true }
+rust-embed = { workspace = true }
+serde = { workspace = true }
+serde_json = { features = ["arbitrary_precision"], workspace = true }
+starcoin-account-api = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-executor = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-rpc-client = { workspace = true }
+starcoin-state-api = { workspace = true }
+starcoin-transaction-builder = { workspace = true }
+starcoin-types = { workspace = true }
+tiny_http = { workspace = true }
+tokio = { features = ["full"], workspace = true }
+tokio-executor = { features = ["blocking"], workspace = true }
+
 [features]
 default = []
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-faucet"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

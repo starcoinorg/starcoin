@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use config::*;
 use futures::executor::block_on;
+use starcoin_config::*;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::{
     gen_client as starcoin_gen_client, GetBlockHeadersByNumber, GetBlockIds, GetStateWithProof,
@@ -12,9 +12,9 @@ use starcoin_network_rpc_api::{
 use starcoin_node::NodeHandle;
 use starcoin_state_api::StateWithProof;
 use starcoin_types::{access_path, account_config::genesis_address, block::BlockHeader};
+use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::on_chain_resource::Epoch;
 use std::sync::Arc;
-use vm_types::move_resource::MoveResource;
-use vm_types::on_chain_resource::Epoch;
 
 #[stest::test]
 fn test_network_rpc() {

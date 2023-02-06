@@ -3,7 +3,7 @@
 
 use crate::TABLE_PATH;
 use anyhow::{ensure, format_err, Result};
-use merkle_tree::{blob::Blob, proof::SparseMerkleProof, RawKey};
+use forkable_jellyfish_merkle::{blob::Blob, proof::SparseMerkleProof, RawKey};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;

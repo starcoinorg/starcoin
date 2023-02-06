@@ -4,10 +4,10 @@
 pub use self::gen_client::Client as MinerClient;
 use crate::types::MintedBlockView;
 use crate::FutureResult;
-use jsonrpc_derive::rpc;
+use openrpc_derive::openrpc;
 use starcoin_types::system_events::MintBlockEvent;
 
-#[rpc(client, server, schema)]
+#[openrpc]
 pub trait MinerApi {
     /// submit mining seal
     #[rpc(name = "mining.submit")]
@@ -24,7 +24,7 @@ pub trait MinerApi {
 
 #[test]
 fn test() {
-    let schema = rpc_impl_MinerApi::gen_client::Client::gen_schema();
+    let schema = self::gen_schema();
     let j = serde_json::to_string_pretty(&schema).unwrap();
     println!("{}", j);
 }

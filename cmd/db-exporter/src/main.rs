@@ -672,7 +672,7 @@ pub fn apply_block(
     network: BuiltinNetworkID,
     verifier: Verifier,
 ) -> anyhow::Result<()> {
-    ::logger::init();
+    ::starcoin_logger::init();
     let net = ChainNetwork::new_builtin(network);
     let db_storage = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
@@ -795,7 +795,7 @@ pub fn gen_block_transactions(
     trans_num: Option<u64>,
     txn_type: Txntype,
 ) -> anyhow::Result<()> {
-    ::logger::init();
+    starcoin_logger::init();
     let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
     let db_storage = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(

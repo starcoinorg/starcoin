@@ -1,22 +1,25 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-state-api"
-publish = false
-version = "1.12.5"
-
 [dependencies]
-anyhow = "1.0.41"
-async-trait = "0.1"
-serde = { version = "1.0.130", features = ["derive"] }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-starcoin-types = { path = "../../types" }
-starcoin-vm-types = { path = "../../vm/types" }
-merkle-tree = { package = "forkable-jellyfish-merkle", path = "../../commons/forkable-jellyfish-merkle" }
-starcoin-state-tree = { path = "../state-tree" }
-bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
-starcoin-service-registry = { path = "../../commons/service-registry" }
-move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-once_cell = "1.12.0"
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+bcs-ext = { package = "bcs-ext", workspace = true }
+serde = { features = ["derive"], workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-service-registry = { workspace = true }
+starcoin-state-tree = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-vm-types = { workspace = true }
+forkable-jellyfish-merkle = { workspace = true }
+once_cell = { workspace = true }
+
 [dev-dependencies]
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-state-api"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

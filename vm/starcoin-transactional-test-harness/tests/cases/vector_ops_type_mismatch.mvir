@@ -1,0 +1,11 @@
+//# init -n dev
+
+//# faucet --addr default --amount 12345000000
+
+//# run --signers default
+main() {
+    let v: vector<u8>;
+label b0:
+    v = vec_pack_0<bool>();
+    return;
+}

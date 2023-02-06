@@ -1,11 +1,14 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-time-service"
-publish = false
-version = "1.12.5"
-
 [dependencies]
-log = { version = "0.4" }
-serde = { version = "1" }
+log = { workspace = true }
+serde = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-time-service"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

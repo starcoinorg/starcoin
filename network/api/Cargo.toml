@@ -1,25 +1,29 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-name = "network-api"
-version = "1.12.5"
-
 [dependencies]
-anyhow = "1.0.41"
-async-trait = "0.1.51"
-futures = "0.3.12"
-hex = "0.4.3"
-itertools = "0.10.3"
-parking_lot = "0.12.1"
-rand = "0.8.5"
-serde = {version = "1.0.130", default-features = false}
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+hex = { workspace = true }
+itertools = { workspace = true }
+parking_lot = { workspace = true }
+rand = { workspace = true }
+serde = { default-features = false, workspace = true }
+bcs-ext = { package = "bcs-ext", workspace = true }
+network-p2p-types = { workspace = true }
+network-types = { workspace = true }
+schemars = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-metrics = { workspace = true }
+starcoin-service-registry = { workspace = true }
+starcoin-types = { workspace = true }
 
-starcoin-logger = { path = "../../commons/logger" }
-starcoin-types = { path = "../../types" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
-starcoin-service-registry = { path = "../../commons/service-registry" }
-network-p2p-types = { path = "../../network-p2p/types" }
-schemars = { git = "https://github.com/starcoinorg/schemars", rev = "6972da92f4360e1779168bb3fe0274c521d324e2" }
-starcoin-metrics = { path = "../../commons/metrics" }
-network-types = {path = "../types"}
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+name = "network-api"
+version = "1.12.9"
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

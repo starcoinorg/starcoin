@@ -1,5 +1,5 @@
-use gas_algebra_ext::{CostTable, GasConstants};
 use once_cell::sync::Lazy;
+use starcoin_gas_algebra_ext::{CostTable, GasConstants};
 
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]

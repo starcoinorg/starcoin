@@ -1,35 +1,35 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crypto::keygen::KeyGen;
-use crypto::{
+use rand::{rngs::StdRng, SeedableRng};
+use starcoin_config::ChainNetwork;
+use starcoin_crypto::keygen::KeyGen;
+use starcoin_crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     HashValue, PrivateKey, Uniform,
 };
-use logger::prelude::*;
-use rand::{rngs::StdRng, SeedableRng};
-use starcoin_config::ChainNetwork;
 use starcoin_genesis::Genesis;
+use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
+use starcoin_statedb::ChainStateDB;
+use starcoin_storage::storage::StorageInstance;
+use starcoin_storage::Storage;
 use starcoin_transaction_builder::{
     create_signed_txn_with_association_account, encode_create_account_script_function,
     encode_transfer_script_function,
 };
-use starcoin_vm_types::genesis_config::StdlibVersion;
-use starcoin_vm_types::token::stc;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
-use starcoin_vm_types::transaction::ScriptFunction;
-use statedb::ChainStateDB;
-use std::sync::mpsc;
-use std::sync::Arc;
-use storage::storage::StorageInstance;
-use storage::Storage;
-use types::{
+use starcoin_types::{
     account_address,
     account_address::AccountAddress,
     block_metadata::BlockMetadata,
     transaction::{Transaction, TransactionPayload},
 };
+use starcoin_vm_types::genesis_config::StdlibVersion;
+use starcoin_vm_types::token::stc;
+use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm_types::transaction::ScriptFunction;
+use std::sync::mpsc;
+use std::sync::Arc;
 
 struct AccountData {
     public_key: Ed25519PublicKey,
@@ -222,8 +222,9 @@ impl<'test, S: ChainStateReader + ChainStateWriter> TxnExecutor<'test, S> {
             let num_txns = transactions.len();
             version += num_txns as u64;
 
-            let _ = executor::block_execute(self.chain_state, transactions, u64::MAX, None)
-                .expect("Execute transactions fail.");
+            let _ =
+                starcoin_executor::block_execute(self.chain_state, transactions, u64::MAX, None)
+                    .expect("Execute transactions fail.");
             self.chain_state.flush().expect("flush state should be ok");
 
             let execute_time = std::time::Instant::now().duration_since(execute_start);

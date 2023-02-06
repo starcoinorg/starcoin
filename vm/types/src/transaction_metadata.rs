@@ -12,10 +12,10 @@ use crate::{
     transaction::{TransactionPayload, TransactionPayloadType},
 };
 use anyhow::Result;
-use gas_algebra_ext::{FeePerGasUnit, Gas};
 use move_core_types::gas_algebra::NumBytes;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
+use starcoin_gas_algebra_ext::{FeePerGasUnit, Gas};
 use std::str::FromStr;
 
 pub enum TransactionPayloadMetadata {

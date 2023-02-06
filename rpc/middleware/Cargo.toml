@@ -1,23 +1,26 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-rpc-middleware"
-publish = false
-version = "1.12.5"
-
 [dependencies]
-anyhow = "1.0.41"
-futures = "0.3.12"
-thiserror = "1.0"
-once_cell = "1.13.0"
-starcoin-logger = { path = "../../commons/logger" }
-starcoin-metrics = { path = "../../commons/metrics" }
-starcoin-rpc-api = { path = "../api" }
-serde_json = { version = "1.0", features = ["arbitrary_precision"] }
-starcoin-config = { path = "../../config" }
-jsonrpc-core = { version = "18", features = ["arbitrary_precision"] }
+anyhow = { workspace = true }
+futures = { workspace = true }
+jsonrpc-core = { features = ["arbitrary_precision"], workspace = true }
+once_cell = { workspace = true }
+serde_json = { features = ["arbitrary_precision"], workspace = true }
+starcoin-config = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-metrics = { workspace = true }
+starcoin-rpc-api = { workspace = true }
+thiserror = { workspace = true }
 
 [dev-dependencies]
-rand = "0.8.5"
-stest = { path = "../../commons/stest" }
+rand = { workspace = true }
+stest = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-rpc-middleware"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

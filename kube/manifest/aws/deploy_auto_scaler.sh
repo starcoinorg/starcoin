@@ -14,4 +14,4 @@ kubectl -n kube-system edit deployment.apps/cluster-autoscaler
 
 kubectl set image deployment cluster-autoscaler \
   -n kube-system \
-  cluster-autoscaler=k8s.gcr.io/autoscaling/cluster-autoscaler:v1.19.1
+  cluster-autoscaler=k8s.gcr.io/autoscaling/cluster-autoscaler:v1.23.0

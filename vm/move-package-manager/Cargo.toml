@@ -1,74 +1,71 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-description = "CLI frontend for the Move compiler and VM"
-edition = "2021"
-homepage = "https://starcoin.org"
-license = "Apache-2.0"
-name = "move-package-manager"
-publish = false
-repository = "https://github.com/starcoinorg/starcion"
-version = "1.12.5"
-
-[dependencies]
-anyhow = "1.0.41"
-bcs = "0.1.2"
-clap = {version = "3", features = ["derive"]}
-difference = "2.0.0"
-include_dir = {version = "0.6.2", features = ["search"]}
-once_cell = "1.13.0"
-walkdir = "2.3.1"
-itertools = "0.10"
-jsonrpc-core-client = { version = "18", features = [
-    "http",
-    "ipc",
-    "ws",
-    "arbitrary_precision",
-] }
-jsonrpc-client-transports = { version = "18", features = [
-    "http",
-    "ipc",
-    "ws",
-    "arbitrary_precision",
-] }
-
-futures = "0.3"
-tokio = { version = "^1", features = ["full"] }
-tempfile = "~3"
-move-cli = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-move-package = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-move-disassembler = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-move-errmapgen = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-move-coverage = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-move-compiler = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-resource-viewer = { path = "../resource-viewer", package = "starcoin-resource-viewer" }
-move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c", features = ["table-extension"] }
-move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-move-vm-test-utils = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-datatest-stable = { git = "https://github.com/starcoinorg/diem-devtools", branch = "feature/pub-test-opts" }
-starcoin-vm-types = { path = "../../vm/types" }
-starcoin-logger = { path = "../../commons/logger" }
-starcoin-types = { path = "../../types" }
-starcoin-config = { path = "../../config" }
-stdlib = { path = "../stdlib" }
-starcoin-vm-runtime = { path = "../vm-runtime", features = ["testing"] }
-starcoin-move-compiler = { path = "../compiler" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-starcoin-rpc-client = { path = "../../rpc/client" }
-starcoin-rpc-api = { path = "../../rpc/api" }
-starcoin-transactional-test-harness = { path = "../starcoin-transactional-test-harness" }
-starcoin-account-provider = { path = "../../account/provider" }
-starcoin-cmd = { path = "../../cmd/starcoin" }
-bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
-vm-status-translator = { path = "../../vm/vm-status-translator" }
-starcoin-gas = { path = "../starcoin-gas" }
-gas-algebra-ext = { path = "../gas-algebra-ext" }
-
-[dev-dependencies]
-
 [[bin]]
 name = "mpm"
 path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+bcs = { workspace = true }
+clap = { features = ["derive"], workspace = true }
+difference = { workspace = true }
+include_dir = { features = ["search"], workspace = true }
+itertools = { workspace = true }
+jsonrpc-client-transports = { features = [
+    "http",
+    "ipc",
+    "ws",
+    "arbitrary_precision",
+], workspace = true }
+jsonrpc-core-client = { features = [
+    "http",
+    "ipc",
+    "ws",
+    "arbitrary_precision",
+], workspace = true }
+once_cell = { workspace = true }
+walkdir = { workspace = true }
+futures = { workspace = true }
+tempfile = { workspace = true }
+tokio = { features = ["full"], workspace = true }
+bcs-ext = { package = "bcs-ext", workspace = true }
+datatest-stable = { git = "https://github.com/starcoinorg/diem-devtools", branch = "feature/pub-test-opts" }
+move-binary-format = { workspace = true }
+move-bytecode-verifier = { workspace = true }
+move-cli = { workspace = true }
+move-command-line-common = { workspace = true }
+move-compiler = { workspace = true }
+move-core-types = { workspace = true }
+move-coverage = { workspace = true }
+move-disassembler = { workspace = true }
+move-errmapgen = { workspace = true }
+move-package = { workspace = true }
+move-unit-test = { workspace = true }
+move-vm-runtime = { workspace = true }
+starcoin-account-provider = { workspace = true }
+starcoin-cmd = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-move-compiler = { workspace = true }
+starcoin-rpc-api = { workspace = true }
+starcoin-rpc-client = { workspace = true }
+starcoin-transactional-test-harness = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-vm-runtime = { features = ["testing"], workspace = true }
+starcoin-vm-types = { workspace = true }
+stdlib = { workspace = true }
+vm-status-translator = { workspace = true }
+move-vm-test-utils = { workspace = true }
+
+[dev-dependencies]
+
+[package]
+authors = { workspace = true }
+description = "CLI frontend for the Move compiler and VM"
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+name = "move-package-manager"
+publish = { workspace = true }
+repository = { workspace = true }
+version = "1.12.9"
+rust-version = { workspace = true }

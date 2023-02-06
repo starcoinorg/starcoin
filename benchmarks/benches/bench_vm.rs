@@ -1,12 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use executor_benchmark::run_benchmark;
 #[cfg(target_os = "linux")]
 use pprof::criterion::{Output, PProfProfiler};
+use starcoin_executor_benchmark::run_benchmark;
 
 pub fn transaction_execution(c: &mut Criterion) {
-    ::logger::init();
+    ::starcoin_logger::init();
     let mut group = c.benchmark_group("vm");
     group.sample_size(10);
     let bench_id = "transaction_execution";

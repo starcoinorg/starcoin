@@ -35,6 +35,7 @@ kind: Service
 metadata:
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-type: nlb-ip
+    service.beta.kubernetes.io/aws-load-balancer-internal: "false"
   labels:
     app: starcoin
     network: main
@@ -74,6 +75,7 @@ kind: Service
 metadata:
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-type: nlb-ip
+    service.beta.kubernetes.io/aws-load-balancer-internal: "false"
   labels:
     app: starcoin
     network: main
@@ -113,6 +115,7 @@ kind: Service
 metadata:
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-type: nlb-ip
+    service.beta.kubernetes.io/aws-load-balancer-internal: "false"
   labels:
     app: starcoin
     network: main
@@ -152,6 +155,7 @@ kind: Service
 metadata:
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-type: nlb-ip
+    service.beta.kubernetes.io/aws-load-balancer-internal: "false"
   labels:
     app: starcoin
     network: main
@@ -191,6 +195,7 @@ kind: Service
 metadata:
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-type: nlb-ip
+    service.beta.kubernetes.io/aws-load-balancer-internal: "false"
   labels:
     app: starcoin
     network: main
@@ -230,6 +235,7 @@ kind: Service
 metadata:
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-type: nlb-ip
+    service.beta.kubernetes.io/aws-load-balancer-internal: "false"
   labels:
     app: starcoin
     network: main
@@ -269,6 +275,7 @@ kind: Service
 metadata:
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-type: nlb-ip
+    service.beta.kubernetes.io/aws-load-balancer-internal: "false"
   labels:
     app: starcoin
     network: main
@@ -308,6 +315,7 @@ kind: Service
 metadata:
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-type: nlb-ip
+    service.beta.kubernetes.io/aws-load-balancer-internal: "false"
   labels:
     app: starcoin
     network: main
@@ -347,6 +355,7 @@ kind: Service
 metadata:
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-type: nlb-ip
+    service.beta.kubernetes.io/aws-load-balancer-internal: "false"
   labels:
     app: starcoin
     network: main

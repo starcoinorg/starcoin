@@ -11,12 +11,10 @@ use crate::tasks::{
 use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::Context;
 use anyhow::{format_err, Result};
-use config::{BuiltinNetworkID, ChainNetwork};
 use futures::channel::mpsc::unbounded;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use futures_timer::Delay;
-use logger::prelude::*;
 use network_api::{PeerId, PeerInfo, PeerSelector, PeerStrategy};
 use pin_utils::core_reexport::time::Duration;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
@@ -25,8 +23,10 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
+use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
+use starcoin_logger::prelude::*;
 use starcoin_storage::BlockStore;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::{

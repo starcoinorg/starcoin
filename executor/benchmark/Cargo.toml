@@ -1,29 +1,32 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "starcoin-executor-benchmark"
-publish = false
-version = "1.12.5"
-
 [dependencies]
-anyhow = "1.0.41"
-itertools = {version = "0.10.3", default-features = false}
-rand = "0.8.5"
-rayon = "1"
-clap = { version = "3", features = ["derive"] }
-executor = { path = "../../executor", package = "starcoin-executor" }
-crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-logger = { path = "../../commons/logger", package = "starcoin-logger" }
-types = { package = "starcoin-types", path = "../../types" }
-vm-runtime = { package = "starcoin-vm-runtime", path = "../../vm/vm-runtime" }
-starcoin-accumulator = { path = "../../commons/accumulator", package = "starcoin-accumulator" }
-storage = { package = "starcoin-storage", path = "../../storage" }
-starcoin-config = { path = "../../config" }
-statedb = { path = "../../state/statedb", package = "starcoin-statedb" }
-starcoin-state-api = { path = "../../state/api" }
-starcoin-genesis = { path = "../../genesis" }
-starcoin-consensus = { path = "../../consensus" }
-starcoin-vm-types = { path = "../../vm/types" }
-starcoin-transaction-builder = {path = "../../vm/transaction-builder"}
+anyhow = { workspace = true }
+clap = { features = ["derive"], workspace = true }
+itertools = { default-features = false, workspace = true }
+rand = { workspace = true }
+rayon = { workspace = true }
+starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
+starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+starcoin-logger = { package = "starcoin-logger", workspace = true }
+starcoin-config = { workspace = true }
+starcoin-consensus = { workspace = true }
+starcoin-genesis = { workspace = true }
+starcoin-state-api = { workspace = true }
+starcoin-transaction-builder = { workspace = true }
+starcoin-vm-types = { workspace = true }
+starcoin-storage = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-statedb = { workspace = true }
+starcoin-executor = { workspace = true }
+
 [features]
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-executor-benchmark"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

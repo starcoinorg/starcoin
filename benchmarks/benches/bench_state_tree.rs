@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use crypto::hash::*;
 use forkable_jellyfish_merkle::blob::Blob;
 use forkable_jellyfish_merkle::HashValueKey;
 #[cfg(target_os = "linux")]
 use pprof::criterion::{Output, PProfProfiler};
 use rand::{rngs::StdRng, SeedableRng};
 use starcoin_config::RocksdbConfig;
+use starcoin_crypto::hash::*;
 use starcoin_state_store_api::StateNodeStore;
 use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_state_tree::StateTree;
@@ -20,7 +20,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 fn bench_get_with_proof(c: &mut Criterion) {
-    ::logger::init();
+    ::starcoin_logger::init();
     let tmp_dir = starcoin_config::temp_dir();
     let db_store = new_empty_store(tmp_dir.as_ref()) as Arc<dyn StateNodeStore>;
 
@@ -54,7 +54,7 @@ fn bench_get_with_proof(c: &mut Criterion) {
 }
 
 fn bench_put_and_commit(c: &mut Criterion) {
-    ::logger::init_for_test();
+    ::starcoin_logger::init_for_test();
     let mut group = c.benchmark_group("put_and_commit");
     group.sample_size(80);
     for i in vec![1u64, 5, 10, 50, 100].into_iter() {

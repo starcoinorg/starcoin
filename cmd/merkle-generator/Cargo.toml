@@ -1,21 +1,23 @@
-[package]
-authors = ["caojiafeng <funfriendcjf@gmail.com>"]
-edition = "2021"
-name = "merkle-generator"
-version = "1.12.5"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
-csv = "~1"
-hex = "~0.4"
-merkletree = { git = "https://github.com/filecoin-project/merkletree", rev = "3b1d98c43b341aed935152c5c1535c17d1b21d20" }
-serde = "~1"
-serde_json = { version = "~1", features = ["arbitrary_precision"] }
-anyhow = "~1"
-rust-crypto = "~0.2"
-starcoin-vm-types = { path = "../../vm/types" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-clap = { version = "3", features = ["derive"] }
-sha3 = "0.9.1"
+anyhow = { workspace = true }
+bcs-ext = { package = "bcs-ext", workspace = true }
+clap = { features = ["derive"], workspace = true }
+csv = { workspace = true }
+hex = { workspace = true }
+merkletree = { workspace = true }
+serde = { workspace = true }
+serde_json = { features = ["arbitrary_precision"], workspace = true }
+sha3 = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-vm-types = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+name = "merkle-generator"
+version = "1.12.9"
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

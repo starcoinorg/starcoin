@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 use actix::System;
 use clap::Parser;
-use logger::prelude::*;
 use starcoin_config::MinerClientConfig;
+use starcoin_logger::prelude::*;
 use starcoin_miner_client::miner::MinerClientService;
 use starcoin_miner_client::stratum_client::StratumJobClient;
 use starcoin_miner_client::stratum_client_service::{
@@ -28,7 +28,7 @@ pub struct StarcoinOpt {
 }
 
 fn main() {
-    let _logger_handle = logger::init();
+    let _logger_handle = starcoin_logger::init();
     let opts: StarcoinOpt = StarcoinOpt::parse();
     let config = {
         MinerClientConfig {

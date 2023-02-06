@@ -3,11 +3,11 @@
 
 use anyhow::Result;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionOutput};
+use starcoin_vm_runtime::metrics::VMMetrics;
+use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{ModuleId, TypeTag};
 use starcoin_vm_types::{state_view::StateView, vm_status::VMStatus};
-use vm_runtime::metrics::VMMetrics;
-use vm_runtime::starcoin_vm::StarcoinVM;
 
 pub fn execute_transactions<S: StateView>(
     chain_state: &S,

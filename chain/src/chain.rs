@@ -3,10 +3,6 @@
 
 use crate::verifier::{BlockVerifier, FullVerifier};
 use anyhow::{bail, ensure, format_err, Result};
-use consensus::Consensus;
-use crypto::hash::PlainCryptoHash;
-use crypto::HashValue;
-use logger::prelude::*;
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
 use starcoin_accumulator::{
@@ -16,10 +12,15 @@ use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
     ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
+use starcoin_consensus::Consensus;
+use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
+use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
+use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
@@ -42,7 +43,6 @@ use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::{collections::HashMap, sync::Arc};
-use storage::Store;
 
 pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
@@ -561,17 +561,30 @@ impl ChainReader for BlockChain {
             })
     }
 
-    fn get_blocks_by_number(&self, number: Option<BlockNumber>, count: u64) -> Result<Vec<Block>> {
+    fn get_blocks_by_number(
+        &self,
+        number: Option<BlockNumber>,
+        reverse: bool,
+        count: u64,
+    ) -> Result<Vec<Block>> {
         let end_num = match number {
             None => self.current_header().number(),
             Some(number) => number,
         };
 
         let num_leaves = self.block_accumulator.num_leaves();
-        if end_num > num_leaves {
+
+        if end_num > num_leaves.saturating_sub(1) {
             bail!("Can not find block by number {}", end_num);
-        }
-        let ids = self.get_block_ids(end_num, true, count)?;
+        };
+
+        let len = if !reverse && (end_num.saturating_add(count) > num_leaves.saturating_sub(1)) {
+            num_leaves.saturating_sub(end_num)
+        } else {
+            count
+        };
+
+        let ids = self.get_block_ids(end_num, reverse, len)?;
         let block_opts = self.storage.get_blocks(ids)?;
         let mut blocks = vec![];
         for (idx, block) in block_opts.into_iter().enumerate() {

@@ -7,7 +7,7 @@ use crate::types::{
     StateWithProofView, StateWithTableItemProofView, StrView, StructTagView,
 };
 use crate::FutureResult;
-use jsonrpc_derive::rpc;
+use openrpc_derive::openrpc;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
@@ -17,8 +17,7 @@ use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
 };
 use starcoin_vm_types::state_store::table::TableHandle;
-
-#[rpc(client, server, schema)]
+#[openrpc]
 pub trait StateApi {
     #[rpc(name = "state.get")]
     fn get(&self, access_path: AccessPath) -> FutureResult<Option<Vec<u8>>>;
@@ -162,7 +161,7 @@ pub struct ListCodeOption {
 }
 #[test]
 fn test() {
-    let schema = rpc_impl_StateApi::gen_client::Client::gen_schema();
+    let schema = self::gen_schema();
     let j = serde_json::to_string_pretty(&schema).unwrap();
     println!("{}", j);
 }

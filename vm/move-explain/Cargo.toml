@@ -1,19 +1,20 @@
-[package]
-authors = ["Diem Association <opensource@diem.org>"]
-description = "Diem Move abort code explanations"
-edition = "2021"
-homepage = "https://diem.org"
-license = "Apache-2.0"
-name = "starcoin-move-explain"
-publish = false
-repository = "https://github.com/diem/diem"
-version = "1.12.5"
-
 [dependencies]
-clap = { version = "3", features = ["derive"] }
-stdlib = { package = "stdlib", path = "../stdlib" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
+bcs-ext = { package = "bcs-ext", workspace = true }
+clap = { features = ["derive"], workspace = true }
+move-core-types = { workspace = true }
+stdlib = { package = "stdlib", workspace = true }
 
 [features]
 default = []
+
+[package]
+authors = { workspace = true }
+description = "Diem Move abort code explanations"
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+name = "starcoin-move-explain"
+publish = { workspace = true }
+repository = { workspace = true }
+version = "1.12.9"
+rust-version = { workspace = true }

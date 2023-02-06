@@ -1,26 +1,27 @@
-[package]
-name = "move-coverage"
-authors = [
-    "Diem Association <opensource@diem.org>",
-    "Starcoin Core Dev <dev@starcoin.org>",
-]
-description = "starcoin Move VM code coverage"
-edition = "2021"
-license = "Apache-2.0"
-publish = false
-version = "1.12.5"
-
 [dependencies]
-anyhow = "1.0.41"
-bcs = "0.1.2"
-clap = {version = "3", features = ["derive"]}
-codespan = {version = "0.8.0", features = ["serialization"]}
-colored = "2.0.0"
-petgraph = "0.5.1"
-serde = {version = "1.0.130", default-features = false}
-move-bytecode-source-map = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-move-coverage = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
-move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "a781b641dd345c3e8f3e83ed080597f6c23a157c" }
+anyhow = { workspace = true }
+bcs = { workspace = true }
+clap = { features = ["derive"], workspace = true }
+codespan = { features = ["serialization"], workspace = true }
+colored = { workspace = true }
+petgraph = { workspace = true }
+serde = { default-features = false, workspace = true }
+move-binary-format = { workspace = true }
+move-bytecode-source-map = { workspace = true }
+move-command-line-common = { workspace = true }
+move-coverage = { workspace = true }
+
 [features]
 default = []
+
+[package]
+authors = { workspace = true }
+description = "starcoin Move VM code coverage"
+edition = { workspace = true }
+license = { workspace = true }
+name = "move-coverage"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

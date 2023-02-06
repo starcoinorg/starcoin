@@ -362,8 +362,8 @@ mod tests {
     use starcoin_types::account_config::{genesis_address, ModuleUpgradeStrategy};
     use starcoin_vm_types::account_config::association_address;
     use starcoin_vm_types::genesis_config::ChainId;
+    use starcoin_vm_types::on_chain_config::TransactionPublishOption;
     use starcoin_vm_types::on_chain_config::{ConsensusConfig, Version};
-    use starcoin_vm_types::on_chain_config::{DaoConfig, TransactionPublishOption};
     use starcoin_vm_types::on_chain_resource::Epoch;
 
     #[stest::test]
@@ -489,11 +489,12 @@ mod tests {
             &net.genesis_config().consensus_config
         );
 
-        let dao_config = account_state_reader.get_on_chain_config::<DaoConfig>()?;
-        assert!(
-            dao_config.is_some(),
-            "DaoConfig on_chain_config should exist."
-        );
+        // Removed at https://github.com/starcoinorg/starcoin-framework/pull/181
+        // let dao_config = account_state_reader.get_on_chain_config::<DaoConfig>()?;
+        // assert!(
+        //     dao_config.is_some(),
+        //     "DaoConfig on_chain_config should exist."
+        // );
 
         let version = account_state_reader.get_on_chain_config::<Version>()?;
         assert!(version.is_some(), "Version on_chain_config should exist.");

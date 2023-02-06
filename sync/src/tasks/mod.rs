@@ -8,13 +8,13 @@ use anyhow::{format_err, Error, Result};
 use futures::channel::mpsc::UnboundedSender;
 use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
-use logger::prelude::*;
 use network_api::{PeerId, PeerProvider, PeerSelector};
 use network_rpc_core::{NetRpcError, RpcErrorCode};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::MerkleAccumulator;
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
@@ -514,8 +514,8 @@ mod tests;
 use crate::sync_metrics::SyncMetrics;
 pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
-use executor::VMMetrics;
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
+use starcoin_executor::VMMetrics;
 
 pub fn full_sync_task<H, A, F, N>(
     current_block_id: HashValue,

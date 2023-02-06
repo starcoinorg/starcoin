@@ -4,17 +4,17 @@
 use crate::metrics::MinerMetrics;
 use crate::task::MintTask;
 use anyhow::Result;
-use consensus::Consensus;
 use futures::executor::block_on;
-use logger::prelude::*;
 use starcoin_config::NodeConfig;
+use starcoin_consensus::Consensus;
+use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
     ServiceRequest,
 };
+use starcoin_types::block::BlockTemplate;
 use std::sync::Arc;
 use std::time::Duration;
-use types::block::BlockTemplate;
 
 mod create_block_template;
 pub mod generate_block_event_pacemaker;
@@ -22,11 +22,11 @@ mod metrics;
 pub mod task;
 
 pub use create_block_template::{BlockBuilderService, BlockTemplateRequest};
-use crypto::HashValue;
+use starcoin_crypto::HashValue;
+pub use starcoin_types::block::BlockHeaderExtra;
+pub use starcoin_types::system_events::{GenerateBlockEvent, MinedBlock, MintBlockEvent};
 use std::fmt;
 use thiserror::Error;
-pub use types::block::BlockHeaderExtra;
-pub use types::system_events::{GenerateBlockEvent, MinedBlock, MintBlockEvent};
 
 #[derive(Debug, Error)]
 pub enum MinerError {

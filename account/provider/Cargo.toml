@@ -1,15 +1,19 @@
-[package]
-edition = "2021"
-name = "starcoin-account-provider"
-version = "1.12.5"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-anyhow = "1.0.41"
-starcoin-account = { path = "../" }
-starcoin-account-api = { path = "../api", features = ["mock"] }
-starcoin-types = { path = "../../types" }
-starcoin-rpc-client = { path = "../../rpc/client" }
-starcoin-config = { path = "../../config" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
+anyhow = { workspace = true }
+starcoin-account = { workspace = true }
+starcoin-account-api = { features = ["mock"], workspace = true }
+starcoin-config = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-rpc-client = { workspace = true }
+starcoin-types = { workspace = true }
+
+[package]
+edition = { workspace = true }
+name = "starcoin-account-provider"
+version = "1.12.9"
+authors = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

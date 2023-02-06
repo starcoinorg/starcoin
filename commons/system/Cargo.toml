@@ -4,8 +4,8 @@ edition = "2021"
 license = "Apache-2.0"
 name = "starcoin-system"
 publish = false
-version = "1.12.5"
+version = "1.12.9"
 
 [dependencies]
-anyhow = "1.0.37"
+anyhow = { workspace = true }
 systemstat = "0.1.6"

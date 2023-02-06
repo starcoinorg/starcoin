@@ -1,13 +1,15 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "api-limiter"
-version = "1.12.5"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-anyhow = "~1"
-governor = { version = "~0.4", features = ["dashmap"] }
-dashmap = "~5.3"
+anyhow = { workspace = true }
+dashmap = { workspace = true }
+governor = { features = ["dashmap"], workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "api-limiter"
+version = "1.12.9"
+homepage = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

@@ -190,7 +190,7 @@ dependencies = [
 
 [[package]]
 name = "airdrop"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -201,7 +201,7 @@ dependencies = [
  "futures-retry",
  "futures-util",
  "hex",
- "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core-client",
  "rpassword",
  "serde 1.0.151",
  "serde_json",
@@ -236,7 +236,7 @@ checksum = "bb07d2053ccdbe10e2af2995a2f116c1330396493dc1269f6a91d0ae82e19704"
 
 [[package]]
 name = "api-limiter"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "dashmap",
@@ -451,9 +451,9 @@ dependencies = [
 
 [[package]]
 name = "asynchronous-codec"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0de5164e5edbf51c45fb8c2d9664ae1c095cce1b265ecf7569093c0d66ef690"
+checksum = "06a0daa378f5fd10634e44b0a29b2a87b890657658e072a30d6f26e57ddee182"
 dependencies = [
  "bytes 1.2.1",
  "futures-sink",
@@ -573,7 +573,7 @@ dependencies = [
 
 [[package]]
 name = "bcs-ext"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs",
@@ -594,7 +594,7 @@ checksum = "7dfdb4953a096c551ce9ace855a604d702e6e62d77fac690575ae347571717f5"
 
 [[package]]
 name = "benchmarks"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "criterion",
@@ -1075,6 +1075,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "cipher"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1873270f8f7942c191139cb8a40fd228da6c3fd2fc376d7e92d47aa14aeb59e"
+dependencies = [
+ "crypto-common",
+ "inout",
+]
+
+[[package]]
 name = "clang-sys"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1279,7 +1289,7 @@ checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
 
 [[package]]
 name = "contrib-contracts"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -1535,7 +1545,7 @@ dependencies = [
 
 [[package]]
 name = "cryptonight-rs"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "bencher",
  "cc",
@@ -1813,9 +1823,9 @@ dependencies = [
 
 [[package]]
 name = "datatest-stable"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b205281eb7972a6e3a1aa8d55aef938bea2ba9b9ba1bc4ae52539e392386372d"
+checksum = "4eaf86e44e9f0a21f6e42d8e7f83c9ee049f081745eeed1c6f47a613c76e5977"
 dependencies = [
  "libtest-mimic",
  "regex",
@@ -1824,7 +1834,7 @@ dependencies = [
 
 [[package]]
 name = "db-exporter"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "atomic-counter",
@@ -1956,7 +1966,7 @@ dependencies = [
  "proptest-derive",
  "rand 0.8.5",
  "rand_core 0.6.3",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.151",
  "serde-name 0.1.2",
  "serde_bytes",
@@ -2076,9 +2086,9 @@ dependencies = [
 
 [[package]]
 name = "dtoa"
-version = "1.0.2"
+version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5caaa75cbd2b960ff1e5392d2cfb1f44717fffe12fc1f32b7b5d1267f99732a6"
+checksum = "c00704156a7de8df8da0911424e30c2049957b0a714542a44e05fe693dd85313"
 
 [[package]]
 name = "dyn-clone"
@@ -2410,7 +2420,7 @@ checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
 name = "forkable-jellyfish-merkle"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -2586,9 +2596,9 @@ dependencies = [
 
 [[package]]
 name = "futures-rustls"
-version = "0.22.1"
+version = "0.22.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e01fe9932a224b72b45336d96040aa86386d674a31d0af27d800ea7bc8ca97fe"
+checksum = "d2411eed028cdf8c8034eaf21f9915f956b6c3abec4d4c7949ee67f0721127bd"
 dependencies = [
  "futures-io",
  "rustls",
@@ -2645,26 +2655,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gas-algebra-ext"
-version = "1.12.5"
-dependencies = [
- "move-binary-format",
- "move-core-types",
- "move-stdlib",
- "move-table-extension",
- "move-vm-test-utils",
- "move-vm-types",
- "serde 1.0.151",
- "starcoin-natives",
-]
-
-[[package]]
-name = "gcc"
-version = "0.3.55"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f5f3913fa0bfe7ee1fd8248b6b9f42a5af4b9d65ec2dd2c3c26132b950ecfc2"
-
-[[package]]
 name = "generic-array"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2685,13 +2675,13 @@ dependencies = [
 
 [[package]]
 name = "genesis-nft-miner"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
  "clap 3.2.15",
  "hex",
- "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core-client",
  "rpassword",
  "serde 1.0.151",
  "serde_json",
@@ -3362,6 +3352,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "inout"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0c10553d664a4d0bcff9f4215d0aac67a639cc68ef660840afe309b807bc9f5"
+dependencies = [
+ "generic-array 0.14.5",
+]
+
+[[package]]
 name = "instant"
 version = "0.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3509,9 +3508,9 @@ dependencies = [
  "futures 0.3.21",
  "hyper 0.14.20",
  "hyper-tls 0.5.0",
- "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-pubsub 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-server-utils 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core",
+ "jsonrpc-pubsub",
+ "jsonrpc-server-utils",
  "log 0.4.17",
  "parity-tokio-ipc",
  "serde 1.0.151",
@@ -3519,21 +3518,6 @@ dependencies = [
  "tokio 1.20.1",
  "url 1.7.2",
  "websocket",
-]
-
-[[package]]
-name = "jsonrpc-client-transports"
-version = "18.0.0"
-source = "git+https://github.com/lemonhx/jsonrpc?rev=1d8a58e642a919af65a3d9d5ee94bca3eef321e9#1d8a58e642a919af65a3d9d5ee94bca3eef321e9"
-dependencies = [
- "derive_more",
- "futures 0.3.21",
- "jsonrpc-core 18.0.0 (git+https://github.com/lemonhx/jsonrpc?rev=1d8a58e642a919af65a3d9d5ee94bca3eef321e9)",
- "jsonrpc-pubsub 18.0.0 (git+https://github.com/lemonhx/jsonrpc?rev=1d8a58e642a919af65a3d9d5ee94bca3eef321e9)",
- "log 0.4.17",
- "serde 1.0.151",
- "serde_json",
- "url 1.7.2",
 ]
 
 [[package]]
@@ -3552,48 +3536,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "jsonrpc-core"
-version = "18.0.0"
-source = "git+https://github.com/lemonhx/jsonrpc?rev=1d8a58e642a919af65a3d9d5ee94bca3eef321e9#1d8a58e642a919af65a3d9d5ee94bca3eef321e9"
-dependencies = [
- "futures 0.3.21",
- "futures-executor",
- "futures-util",
- "log 0.4.17",
- "serde 1.0.151",
- "serde_derive",
- "serde_json",
-]
-
-[[package]]
 name = "jsonrpc-core-client"
 version = "18.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b51da17abecbdab3e3d4f26b01c5ec075e88d3abe3ab3b05dc9aa69392764ec0"
 dependencies = [
  "futures 0.3.21",
- "jsonrpc-client-transports 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "jsonrpc-core-client"
-version = "18.0.0"
-source = "git+https://github.com/lemonhx/jsonrpc?rev=1d8a58e642a919af65a3d9d5ee94bca3eef321e9#1d8a58e642a919af65a3d9d5ee94bca3eef321e9"
-dependencies = [
- "futures 0.3.21",
- "jsonrpc-client-transports 18.0.0 (git+https://github.com/lemonhx/jsonrpc?rev=1d8a58e642a919af65a3d9d5ee94bca3eef321e9)",
-]
-
-[[package]]
-name = "jsonrpc-derive"
-version = "17.0.0"
-source = "git+https://github.com/starcoinorg/jsonrpc?rev=2f6c2b33d3048d57a85347ee735b312df0117b15#2f6c2b33d3048d57a85347ee735b312df0117b15"
-dependencies = [
- "openrpc-rs 0.1.0 (git+https://github.com/fikgol/openrpc-rs)",
- "proc-macro-crate 0.1.5",
- "proc-macro2 1.0.49",
- "quote 1.0.20",
- "syn 1.0.107",
+ "jsonrpc-client-transports",
 ]
 
 [[package]]
@@ -3609,17 +3558,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "jsonrpc-derive"
-version = "18.0.0"
-source = "git+https://github.com/lemonhx/jsonrpc?rev=1d8a58e642a919af65a3d9d5ee94bca3eef321e9#1d8a58e642a919af65a3d9d5ee94bca3eef321e9"
-dependencies = [
- "proc-macro-crate 0.1.5",
- "proc-macro2 1.0.49",
- "quote 1.0.20",
- "syn 1.0.107",
-]
-
-[[package]]
 name = "jsonrpc-http-server"
 version = "18.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3627,8 +3565,8 @@ checksum = "e1dea6e07251d9ce6a552abfb5d7ad6bc290a4596c8dcc3d795fae2bbdc1f3ff"
 dependencies = [
  "futures 0.3.21",
  "hyper 0.14.20",
- "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-server-utils 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core",
+ "jsonrpc-server-utils",
  "log 0.4.17",
  "net2",
  "parking_lot 0.11.2",
@@ -3642,8 +3580,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "382bb0206323ca7cda3dcd7e245cea86d37d02457a02a975e3378fb149a48845"
 dependencies = [
  "futures 0.3.21",
- "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-server-utils 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core",
+ "jsonrpc-server-utils",
  "log 0.4.17",
  "parity-tokio-ipc",
  "parking_lot 0.11.2",
@@ -3657,27 +3595,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "240f87695e6c6f62fb37f05c02c04953cf68d6408b8c1c89de85c7a0125b1011"
 dependencies = [
  "futures 0.3.21",
- "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core",
  "lazy_static 1.4.0",
  "log 0.4.17",
  "parking_lot 0.11.2",
  "rand 0.7.3",
  "serde 1.0.151",
-]
-
-[[package]]
-name = "jsonrpc-pubsub"
-version = "18.0.0"
-source = "git+https://github.com/lemonhx/jsonrpc?rev=1d8a58e642a919af65a3d9d5ee94bca3eef321e9#1d8a58e642a919af65a3d9d5ee94bca3eef321e9"
-dependencies = [
- "futures 0.3.21",
- "jsonrpc-core 18.0.0 (git+https://github.com/lemonhx/jsonrpc?rev=1d8a58e642a919af65a3d9d5ee94bca3eef321e9)",
- "lazy_static 1.4.0",
- "log 0.4.17",
- "parking_lot 0.11.2",
- "rand 0.7.3",
- "serde 1.0.151",
- "serde_json",
 ]
 
 [[package]]
@@ -3689,24 +3612,7 @@ dependencies = [
  "bytes 1.2.1",
  "futures 0.3.21",
  "globset",
- "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static 1.4.0",
- "log 0.4.17",
- "tokio 1.20.1",
- "tokio-stream",
- "tokio-util 0.6.10",
- "unicase 2.6.0",
-]
-
-[[package]]
-name = "jsonrpc-server-utils"
-version = "18.0.0"
-source = "git+https://github.com/lemonhx/jsonrpc?rev=1d8a58e642a919af65a3d9d5ee94bca3eef321e9#1d8a58e642a919af65a3d9d5ee94bca3eef321e9"
-dependencies = [
- "bytes 1.2.1",
- "futures 0.3.21",
- "globset",
- "jsonrpc-core 18.0.0 (git+https://github.com/lemonhx/jsonrpc?rev=1d8a58e642a919af65a3d9d5ee94bca3eef321e9)",
+ "jsonrpc-core",
  "lazy_static 1.4.0",
  "log 0.4.17",
  "tokio 1.20.1",
@@ -3721,20 +3627,8 @@ version = "18.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "60a0a0d35558123e93743d467285196905da1368500378cb5352b71856377874"
 dependencies = [
- "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-server-utils 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.4.17",
- "parking_lot 0.11.2",
- "tower-service",
-]
-
-[[package]]
-name = "jsonrpc-tcp-server"
-version = "18.0.0"
-source = "git+https://github.com/lemonhx/jsonrpc?rev=1d8a58e642a919af65a3d9d5ee94bca3eef321e9#1d8a58e642a919af65a3d9d5ee94bca3eef321e9"
-dependencies = [
- "jsonrpc-core 18.0.0 (git+https://github.com/lemonhx/jsonrpc?rev=1d8a58e642a919af65a3d9d5ee94bca3eef321e9)",
- "jsonrpc-server-utils 18.0.0 (git+https://github.com/lemonhx/jsonrpc?rev=1d8a58e642a919af65a3d9d5ee94bca3eef321e9)",
+ "jsonrpc-core",
+ "jsonrpc-server-utils",
  "log 0.4.17",
  "parking_lot 0.11.2",
  "tower-service",
@@ -3747,8 +3641,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f892c7d766369475ab7b0669f417906302d7c0fb521285c0a0c92e52e7c8e946"
 dependencies = [
  "futures 0.3.21",
- "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-server-utils 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core",
+ "jsonrpc-server-utils",
  "log 0.4.17",
  "parity-ws",
  "parking_lot 0.11.2",
@@ -3981,7 +3875,7 @@ version = "0.35.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "385ae5f44e84f51e17014c9f1d98464121d3b1b182c167a0b4482d6250c61926"
 dependencies = [
- "asynchronous-codec 0.6.0",
+ "asynchronous-codec 0.6.1",
  "base64 0.13.0",
  "byteorder 1.4.3",
  "bytes 1.2.1",
@@ -4028,7 +3922,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0eeaa28a4c7a8c574874e090c2a731ecc7b81595911fee425b552c799a20abbb"
 dependencies = [
  "arrayvec 0.5.2",
- "asynchronous-codec 0.6.0",
+ "asynchronous-codec 0.6.1",
  "bytes 1.2.1",
  "either",
  "fnv",
@@ -4092,7 +3986,7 @@ version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49d470ee73a74340e429fa278469ed274a648738e3fb8de2e8d113482441732f"
 dependencies = [
- "asynchronous-codec 0.6.0",
+ "asynchronous-codec 0.6.1",
  "bytes 1.2.1",
  "futures 0.3.21",
  "libp2p-core",
@@ -4148,7 +4042,7 @@ version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "83203abb14ae77de42c49be8dbed7ea8dfb83e76773226aa664a96e6c5e18c5d"
 dependencies = [
- "asynchronous-codec 0.6.0",
+ "asynchronous-codec 0.6.1",
  "bytes 1.2.1",
  "futures 0.3.21",
  "libp2p-core",
@@ -4161,16 +4055,16 @@ dependencies = [
 
 [[package]]
 name = "libp2p-pnet"
-version = "0.22.0"
+version = "0.22.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f1a458bbda880107b5b36fcb9b5a1ef0c329685da0e203ed692a8ebe64cc92c"
+checksum = "de160c5631696cea22be326c19bd9d306e254c4964945263aea10f25f6e0864e"
 dependencies = [
  "futures 0.3.21",
  "log 0.4.17",
  "pin-project 1.0.11",
- "rand 0.7.3",
+ "rand 0.8.5",
  "salsa20",
- "sha3 0.9.1",
+ "sha3 0.10.4",
 ]
 
 [[package]]
@@ -4179,7 +4073,7 @@ version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adb41d0408839f0975af3e5820bdc3ceea308a7282785d7ca77d28ea33dbb62a"
 dependencies = [
- "asynchronous-codec 0.6.0",
+ "asynchronous-codec 0.6.1",
  "bytes 1.2.1",
  "either",
  "futures 0.3.21",
@@ -4205,7 +4099,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec166a822f4167929c8e1673c05106f7c86a42b8e9e917b569e1d86f06b9d8b5"
 dependencies = [
- "asynchronous-codec 0.6.0",
+ "asynchronous-codec 0.6.1",
  "bimap",
  "futures 0.3.21",
  "futures-timer",
@@ -4405,14 +4299,13 @@ dependencies = [
 
 [[package]]
 name = "libtest-mimic"
-version = "0.4.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc195aab5b803465bf614a5a4765741abce6c8d64e7d8ca57acd2923661fba9f"
+checksum = "79529479c298f5af41375b0c1a77ef670d450b4c9cd7949d2b43af08121b20ec"
 dependencies = [
  "clap 3.2.15",
- "crossbeam-channel",
- "rayon",
  "termcolor",
+ "threadpool",
 ]
 
 [[package]]
@@ -4596,7 +4489,7 @@ dependencies = [
 
 [[package]]
 name = "merkle-generator"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -4604,7 +4497,6 @@ dependencies = [
  "csv",
  "hex",
  "merkletree",
- "rust-crypto",
  "serde 1.0.151",
  "serde_json",
  "sha3 0.9.1",
@@ -4955,7 +4847,7 @@ dependencies = [
  "proptest-derive",
  "rand 0.8.5",
  "ref-cast",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.151",
  "serde_bytes",
  "uint 0.9.5",
@@ -4983,7 +4875,7 @@ dependencies = [
 
 [[package]]
 name = "move-coverage"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs",
@@ -5177,7 +5069,7 @@ dependencies = [
 
 [[package]]
 name = "move-package-manager"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs",
@@ -5186,11 +5078,10 @@ dependencies = [
  "datatest-stable 0.1.1",
  "difference",
  "futures 0.3.21",
- "gas-algebra-ext",
  "include_dir",
  "itertools",
- "jsonrpc-client-transports 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-client-transports",
+ "jsonrpc-core-client",
  "move-binary-format",
  "move-bytecode-verifier",
  "move-cli",
@@ -5209,10 +5100,8 @@ dependencies = [
  "starcoin-cmd",
  "starcoin-config",
  "starcoin-crypto",
- "starcoin-gas",
  "starcoin-logger",
  "starcoin-move-compiler",
- "starcoin-resource-viewer",
  "starcoin-rpc-api",
  "starcoin-rpc-client",
  "starcoin-transactional-test-harness",
@@ -5513,7 +5402,6 @@ dependencies = [
  "anyhow",
  "move-binary-format",
  "move-core-types",
- "move-table-extension",
  "move-vm-types",
  "once_cell",
  "serde 1.0.151",
@@ -5717,7 +5605,7 @@ dependencies = [
 
 [[package]]
 name = "network-api"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5729,7 +5617,7 @@ dependencies = [
  "network-types",
  "parking_lot 0.12.1",
  "rand 0.8.5",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.151",
  "starcoin-crypto",
  "starcoin-logger",
@@ -5740,7 +5628,7 @@ dependencies = [
 
 [[package]]
 name = "network-p2p"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-std",
@@ -5772,6 +5660,7 @@ dependencies = [
  "serde 1.0.151",
  "serde_json",
  "smallvec 1.10.0",
+ "starcoin-config",
  "starcoin-crypto",
  "starcoin-metrics",
  "starcoin-types",
@@ -5786,7 +5675,7 @@ dependencies = [
 
 [[package]]
 name = "network-p2p-types"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "bitflags",
  "bytes 1.2.1",
@@ -5794,14 +5683,14 @@ dependencies = [
  "libp2p",
  "rand 0.8.5",
  "sc-peerset",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.151",
  "serde_json",
 ]
 
 [[package]]
 name = "network-rpc-core"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -5817,7 +5706,7 @@ dependencies = [
 
 [[package]]
 name = "network-rpc-derive"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "proc-macro2 1.0.49",
@@ -5827,11 +5716,11 @@ dependencies = [
 
 [[package]]
 name = "network-types"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "network-p2p-types",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.151",
  "starcoin-crypto",
  "starcoin-types",
@@ -6133,21 +6022,35 @@ dependencies = [
 ]
 
 [[package]]
-name = "openrpc-rs"
+name = "openrpc-derive"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/openrpc-rs?rev=077761500ff6fabe2f20da1bdf429575931e3048#077761500ff6fabe2f20da1bdf429575931e3048"
+source = "git+https://github.com/starcoinorg/openrpc-rs?rev=42e9fdc00036a24c560c2827e84cf4e078edbd0d#42e9fdc00036a24c560c2827e84cf4e078edbd0d"
 dependencies = [
- "schemars 0.8.8",
- "serde 1.0.151",
- "serde_json",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "openrpc-schema",
+ "proc-macro-crate 0.1.5",
+ "proc-macro2 1.0.49",
+ "quote 1.0.20",
+ "syn 1.0.107",
 ]
 
 [[package]]
 name = "openrpc-rs"
 version = "0.1.0"
-source = "git+https://github.com/fikgol/openrpc-rs#441712a652250c933b961a46306d9b6031c4591f"
+source = "git+https://github.com/starcoinorg/openrpc-rs?rev=077761500ff6fabe2f20da1bdf429575931e3048#077761500ff6fabe2f20da1bdf429575931e3048"
 dependencies = [
- "schemars 0.8.10",
+ "schemars",
+ "serde 1.0.151",
+ "serde_json",
+]
+
+[[package]]
+name = "openrpc-schema"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/openrpc-rs?rev=42e9fdc00036a24c560c2827e84cf4e078edbd0d#42e9fdc00036a24c560c2827e84cf4e078edbd0d"
+dependencies = [
+ "schemars",
  "serde 1.0.151",
  "serde_json",
 ]
@@ -7130,29 +7033,6 @@ dependencies = [
 
 [[package]]
 name = "rand"
-version = "0.3.23"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64ac302d8f83c0c1974bf758f6b041c6c8ada916fbb44a609158ca8b064cc76c"
-dependencies = [
- "libc",
- "rand 0.4.6",
-]
-
-[[package]]
-name = "rand"
-version = "0.4.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "552840b97013b1a26992c11eac34bdd778e464601a4c2054b5f0bff7c6761293"
-dependencies = [
- "fuchsia-cprng",
- "libc",
- "rand_core 0.3.1",
- "rdrand",
- "winapi 0.3.9",
-]
-
-[[package]]
-name = "rand"
 version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6d71dacdc3c88c1fde3885a3be3fbab9f35724e6ce99467f7d9c5026132184ca"
@@ -7590,7 +7470,7 @@ dependencies = [
 
 [[package]]
 name = "resource-exporter"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -7712,19 +7592,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust-crypto"
-version = "0.2.36"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f76d05d3993fd5f4af9434e8e436db163a12a9d40e1a58a726f27a01dfd12a2a"
-dependencies = [
- "gcc",
- "libc",
- "rand 0.3.23",
- "rustc-serialize",
- "time 0.1.44",
-]
-
-[[package]]
 name = "rust-embed"
 version = "6.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7842,9 +7709,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.20.6"
+version = "0.20.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5aab8ee6c7097ed6057f43c187a62418d0c05a4bd5f18b3571db50ee0f9ce033"
+checksum = "539a2bfe908f471bfa933876bd1eb6a19cf2176d375f82ef7f99530a40e48c2c"
 dependencies = [
  "log 0.4.17",
  "ring",
@@ -7929,11 +7796,11 @@ checksum = "ef703b7cb59335eae2eb93ceb664c0eb7ea6bf567079d843e09420219668e072"
 
 [[package]]
 name = "salsa20"
-version = "0.9.0"
+version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c0fbb5f676da676c260ba276a8f43a8dc67cf02d1438423aeb1c677a7212686"
+checksum = "97a22f5af31f73a954c10289c93e8a50cc23d971e80ee446f1f6f7137a088213"
 dependencies = [
- "cipher 0.3.0",
+ "cipher 0.4.3",
 ]
 
 [[package]]
@@ -7947,7 +7814,7 @@ dependencies = [
 
 [[package]]
 name = "sc-peerset"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "futures 0.3.21",
  "libp2p",
@@ -7975,19 +7842,7 @@ source = "git+https://github.com/starcoinorg/schemars?rev=6972da92f4360e1779168b
 dependencies = [
  "dyn-clone",
  "multiaddr",
- "schemars_derive 0.8.8",
- "serde 1.0.151",
- "serde_json",
-]
-
-[[package]]
-name = "schemars"
-version = "0.8.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1847b767a3d62d95cbf3d8a9f0e421cf57a0d8aa4f411d4b16525afb0284d4ed"
-dependencies = [
- "dyn-clone",
- "schemars_derive 0.8.10",
+ "schemars_derive",
  "serde 1.0.151",
  "serde_json",
 ]
@@ -7999,25 +7854,13 @@ source = "git+https://github.com/starcoinorg/schemars?rev=6972da92f4360e1779168b
 dependencies = [
  "proc-macro2 1.0.49",
  "quote 1.0.20",
- "serde_derive_internals 0.25.0",
- "syn 1.0.107",
-]
-
-[[package]]
-name = "schemars_derive"
-version = "0.8.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af4d7e1b012cb3d9129567661a63755ea4b8a7386d339dc945ae187e403c6743"
-dependencies = [
- "proc-macro2 1.0.49",
- "quote 1.0.20",
- "serde_derive_internals 0.26.0",
+ "serde_derive_internals",
  "syn 1.0.107",
 ]
 
 [[package]]
 name = "scmd"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "clap 3.2.15",
@@ -8147,7 +7990,7 @@ dependencies = [
 
 [[package]]
 name = "serde-helpers"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "bcs-ext",
  "hex",
@@ -8253,17 +8096,6 @@ name = "serde_derive_internals"
 version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1dbab34ca63057a1f15280bdf3c39f2b1eb1b54c17e98360e511637aef7418c6"
-dependencies = [
- "proc-macro2 1.0.49",
- "quote 1.0.20",
- "syn 1.0.107",
-]
-
-[[package]]
-name = "serde_derive_internals"
-version = "0.26.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85bf8229e7920a9f636479437026331ce11aa132b4dde37d121944a44d6e5f3c"
 dependencies = [
  "proc-macro2 1.0.49",
  "quote 1.0.20",
@@ -8405,9 +8237,9 @@ dependencies = [
 
 [[package]]
 name = "sha3"
-version = "0.10.1"
+version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "881bf8156c87b6301fc5ca6b27f11eeb2761224c7081e69b409d5a1951a70c86"
+checksum = "eaedf34ed289ea47c2b741bb72e5357a209512d67bcd4bda44359e5bf0470f56"
 dependencies = [
  "digest 0.10.3",
  "keccak",
@@ -8634,7 +8466,7 @@ dependencies = [
 
 [[package]]
 name = "sp-utils"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "futures 0.3.21",
  "futures-core",
@@ -8659,7 +8491,7 @@ checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 
 [[package]]
 name = "starcoin-abi-decoder"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs",
@@ -8667,7 +8499,7 @@ dependencies = [
  "hex",
  "move-binary-format",
  "ordinal",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.151",
  "serde_bytes",
  "serde_json",
@@ -8679,7 +8511,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-abi-resolver"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "move-model",
@@ -8693,12 +8525,11 @@ dependencies = [
 
 [[package]]
 name = "starcoin-abi-types"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "hex",
- "move-core-types",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.151",
  "serde_bytes",
  "serde_json",
@@ -8707,7 +8538,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-account"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8731,7 +8562,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-account-api"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8740,7 +8571,7 @@ dependencies = [
  "hex",
  "rand 0.8.5",
  "rand_core 0.6.3",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.151",
  "serde_bytes",
  "serde_json",
@@ -8752,7 +8583,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-account-provider"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "starcoin-account",
@@ -8765,7 +8596,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-account-service"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8786,7 +8617,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-accumulator"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -8800,7 +8631,7 @@ dependencies = [
  "proptest-derive",
  "rand 0.8.5",
  "rand_core 0.6.3",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.151",
  "starcoin-crypto",
  "starcoin-logger",
@@ -8808,7 +8639,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-block-relayer"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8837,7 +8668,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-chain"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -8861,7 +8692,6 @@ dependencies = [
  "starcoin-resource-viewer",
  "starcoin-service-registry",
  "starcoin-state-api",
- "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-time-service",
@@ -8877,7 +8707,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-chain-api"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8899,7 +8729,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-chain-mock"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8920,7 +8750,6 @@ dependencies = [
  "starcoin-logger",
  "starcoin-open-block",
  "starcoin-state-api",
- "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-types",
@@ -8930,7 +8759,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-chain-notify"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "starcoin-crypto",
@@ -8942,7 +8771,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-chain-service"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8969,7 +8798,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-cmd"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -9026,12 +8855,11 @@ dependencies = [
 
 [[package]]
 name = "starcoin-config"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "clap 3.2.15",
  "dirs-next",
- "gas-algebra-ext",
  "git-version",
  "hex",
  "libc",
@@ -9045,12 +8873,13 @@ dependencies = [
  "parking_lot 0.12.1",
  "rand 0.8.5",
  "rand_core 0.6.3",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.151",
  "serde_json",
  "starcoin-account-api",
  "starcoin-crypto",
  "starcoin-gas",
+ "starcoin-gas-algebra-ext",
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-system",
@@ -9066,7 +8895,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-consensus"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "byteorder 1.4.3",
@@ -9079,7 +8908,7 @@ dependencies = [
  "rand 0.8.5",
  "rand_core 0.6.3",
  "rust-argon2",
- "sha3 0.10.1",
+ "sha3 0.9.1",
  "starcoin-chain-api",
  "starcoin-crypto",
  "starcoin-logger",
@@ -9122,12 +8951,12 @@ dependencies = [
 
 [[package]]
 name = "starcoin-dataformat-generator"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
  "serde 1.0.151",
- "serde-reflection 0.3.6",
+ "serde-reflection 0.3.2",
  "serde_yaml",
  "starcoin-crypto",
  "starcoin-types",
@@ -9136,7 +8965,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-decrypt"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "aes-gcm 0.9.4",
  "anyhow",
@@ -9150,7 +8979,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-dev"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -9171,25 +9000,24 @@ dependencies = [
 
 [[package]]
 name = "starcoin-executor"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
  "hex",
  "log 0.4.17",
+ "move-binary-format",
+ "move-transactional-test-runner",
  "once_cell",
  "serde 1.0.151",
  "serde_json",
  "starcoin-abi-resolver",
  "starcoin-abi-types",
- "starcoin-account-api",
- "starcoin-accumulator",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-dev",
  "starcoin-logger",
- "starcoin-move-compiler",
  "starcoin-resource-viewer",
  "starcoin-state-api",
  "starcoin-state-tree",
@@ -9206,7 +9034,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-executor-benchmark"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "clap 3.2.15",
@@ -9225,13 +9053,12 @@ dependencies = [
  "starcoin-storage",
  "starcoin-transaction-builder",
  "starcoin-types",
- "starcoin-vm-runtime",
  "starcoin-vm-types",
 ]
 
 [[package]]
 name = "starcoin-faucet"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "ascii",
@@ -9260,7 +9087,7 @@ dependencies = [
 [[package]]
 name = "starcoin-framework"
 version = "11.0.0"
-source = "git+https://github.com/starcoinorg/starcoin-framework?rev=51c35cb719353ccd9ec67f77d4ac4d4860cb6581#51c35cb719353ccd9ec67f77d4ac4d4860cb6581"
+source = "git+https://github.com/starcoinorg/starcoin-framework?rev=a7eff4fa3e08cecfed09edf3dbf9d216832d7414#a7eff4fa3e08cecfed09edf3dbf9d216832d7414"
 dependencies = [
  "anyhow",
  "include_dir",
@@ -9272,22 +9099,36 @@ dependencies = [
 
 [[package]]
 name = "starcoin-gas"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "clap 3.2.15",
- "gas-algebra-ext",
  "move-binary-format",
  "move-core-types",
  "move-stdlib",
  "move-table-extension",
  "move-vm-types",
+ "starcoin-gas-algebra-ext",
  "starcoin-logger",
  "starcoin-natives",
 ]
 
 [[package]]
+name = "starcoin-gas-algebra-ext"
+version = "1.12.9"
+dependencies = [
+ "move-binary-format",
+ "move-core-types",
+ "move-stdlib",
+ "move-table-extension",
+ "move-vm-test-utils",
+ "move-vm-types",
+ "serde 1.0.151",
+ "starcoin-natives",
+]
+
+[[package]]
 name = "starcoin-generator"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "clap 3.2.15",
@@ -9311,7 +9152,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-genesis"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -9339,7 +9180,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-indexer"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9347,7 +9188,7 @@ dependencies = [
  "elasticsearch",
  "futures-retry",
  "futures-util",
- "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core-client",
  "serde 1.0.151",
  "serde_json",
  "starcoin-crypto",
@@ -9359,7 +9200,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-logger"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "arc-swap",
@@ -9369,7 +9210,7 @@ dependencies = [
  "log4rs",
  "once_cell",
  "parking_lot 0.12.1",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.151",
  "slog",
  "slog-async",
@@ -9378,7 +9219,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-metrics"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "futures 0.3.21",
@@ -9392,7 +9233,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-miner"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -9420,8 +9261,6 @@ dependencies = [
  "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-state-service",
- "starcoin-state-tree",
- "starcoin-statedb",
  "starcoin-storage",
  "starcoin-sync",
  "starcoin-sync-api",
@@ -9438,7 +9277,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-miner-client"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "actix",
  "actix-rt",
@@ -9452,9 +9291,9 @@ dependencies = [
  "futures-channel",
  "futures-timer",
  "hex",
- "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-server-utils 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-server-utils",
  "libloading",
  "parking_lot 0.12.1",
  "rand 0.8.5",
@@ -9481,7 +9320,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-miner-client-api"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9492,16 +9331,14 @@ dependencies = [
 
 [[package]]
 name = "starcoin-move-compiler"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
- "itertools",
  "move-binary-format",
  "move-command-line-common",
  "move-compiler",
  "once_cell",
  "petgraph 0.5.1",
- "rayon",
  "regex",
  "starcoin-crypto",
  "starcoin-logger",
@@ -9513,7 +9350,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-move-explain"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "bcs-ext",
  "clap 3.2.15",
@@ -9523,13 +9360,13 @@ dependencies = [
 
 [[package]]
 name = "starcoin-move-prover"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "atty",
  "clap 3.2.15",
  "codespan-reporting",
- "datatest-stable 0.1.2",
+ "datatest-stable 0.1.3",
  "hex",
  "itertools",
  "log 0.4.17",
@@ -9551,7 +9388,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-natives"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "arrayref",
  "hex",
@@ -9564,7 +9401,6 @@ dependencies = [
  "move-errmapgen",
  "move-prover",
  "move-stdlib",
- "move-table-extension",
  "move-vm-runtime",
  "move-vm-types",
  "num_enum",
@@ -9579,7 +9415,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-network"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-std",
@@ -9598,6 +9434,7 @@ dependencies = [
  "network-p2p",
  "network-p2p-types",
  "network-rpc-core",
+ "openrpc-rs",
  "parking_lot 0.12.1",
  "prometheus",
  "rand 0.8.5",
@@ -9622,7 +9459,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-network-rpc"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "api-limiter",
@@ -9668,7 +9505,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-network-rpc-api"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -9689,7 +9526,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-node"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "actix",
  "actix-rt",
@@ -9744,7 +9581,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-node-api"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9765,7 +9602,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-open-block"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9787,7 +9624,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-peer-watcher"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-std",
@@ -9807,7 +9644,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-replay"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "clap 3.2.15",
@@ -9823,7 +9660,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-resource-viewer"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "hex",
@@ -9836,7 +9673,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-rpc-api"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9844,16 +9681,18 @@ dependencies = [
  "clap 3.2.15",
  "futures 0.3.21",
  "hex",
- "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-derive 17.0.0",
- "jsonrpc-pubsub 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-server-utils 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "jsonrpc-pubsub",
+ "jsonrpc-server-utils",
  "network-api",
  "network-p2p-types",
  "network-types",
- "openrpc-rs 0.1.0 (git+https://github.com/starcoinorg/openrpc-rs?rev=077761500ff6fabe2f20da1bdf429575931e3048)",
- "schemars 0.8.8",
+ "openrpc-derive",
+ "openrpc-rs",
+ "openrpc-schema",
+ "schemars",
  "serde 1.0.151",
  "serde-helpers",
  "serde_json",
@@ -9878,7 +9717,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-rpc-client"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "actix",
  "actix-rt",
@@ -9888,12 +9727,12 @@ dependencies = [
  "futures 0.3.21",
  "futures-timer",
  "hex",
- "jsonrpc-client-transports 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-derive 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-pubsub 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-server-utils 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-client-transports",
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "jsonrpc-pubsub",
+ "jsonrpc-server-utils",
  "log 0.4.17",
  "network-api",
  "network-p2p-types",
@@ -9924,11 +9763,11 @@ dependencies = [
 
 [[package]]
 name = "starcoin-rpc-middleware"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "futures 0.3.21",
- "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core",
  "once_cell",
  "rand 0.8.5",
  "serde_json",
@@ -9942,7 +9781,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-rpc-server"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "actix",
  "actix-rt",
@@ -9955,14 +9794,14 @@ dependencies = [
  "futures-channel",
  "governor",
  "hex",
- "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-derive 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
  "jsonrpc-http-server",
  "jsonrpc-ipc-server",
- "jsonrpc-pubsub 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-server-utils 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-tcp-server 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-pubsub",
+ "jsonrpc-server-utils",
+ "jsonrpc-tcp-server",
  "jsonrpc-ws-server",
  "log 0.4.17",
  "network-api",
@@ -10018,7 +9857,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-service-registry"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "actix",
  "actix-rt",
@@ -10029,7 +9868,7 @@ dependencies = [
  "futures-timer",
  "log 0.4.17",
  "once_cell",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.151",
  "stest",
  "thiserror",
@@ -10038,13 +9877,12 @@ dependencies = [
 
 [[package]]
 name = "starcoin-state-api"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
  "bcs-ext",
  "forkable-jellyfish-merkle",
- "move-table-extension",
  "once_cell",
  "serde 1.0.151",
  "starcoin-crypto",
@@ -10056,7 +9894,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-state-service"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10078,7 +9916,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-state-store-api"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "forkable-jellyfish-merkle",
@@ -10088,7 +9926,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-state-tree"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -10106,14 +9944,12 @@ dependencies = [
 
 [[package]]
 name = "starcoin-statedb"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
  "forkable-jellyfish-merkle",
  "lru",
- "move-table-extension",
- "once_cell",
  "parking_lot 0.12.1",
  "serde 1.0.151",
  "starcoin-crypto",
@@ -10127,7 +9963,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-storage"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -10160,17 +9996,18 @@ dependencies = [
 
 [[package]]
 name = "starcoin-stratum"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "byteorder 1.4.3",
  "futures 0.3.21",
  "hex",
- "jsonrpc-core 18.0.0 (git+https://github.com/lemonhx/jsonrpc?rev=1d8a58e642a919af65a3d9d5ee94bca3eef321e9)",
- "jsonrpc-core-client 18.0.0 (git+https://github.com/lemonhx/jsonrpc?rev=1d8a58e642a919af65a3d9d5ee94bca3eef321e9)",
- "jsonrpc-derive 18.0.0 (git+https://github.com/lemonhx/jsonrpc?rev=1d8a58e642a919af65a3d9d5ee94bca3eef321e9)",
- "jsonrpc-pubsub 18.0.0 (git+https://github.com/lemonhx/jsonrpc?rev=1d8a58e642a919af65a3d9d5ee94bca3eef321e9)",
- "jsonrpc-tcp-server 18.0.0 (git+https://github.com/lemonhx/jsonrpc?rev=1d8a58e642a919af65a3d9d5ee94bca3eef321e9)",
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "jsonrpc-pubsub",
+ "jsonrpc-tcp-server",
+ "openrpc-rs",
  "serde 1.0.151",
  "serde_json",
  "starcoin-config",
@@ -10184,7 +10021,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-sync"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-std",
@@ -10199,7 +10036,7 @@ dependencies = [
  "network-api",
  "network-rpc-core",
  "parking_lot 0.12.1",
- "pin-project 1.0.11",
+ "pin-project 0.4.30",
  "pin-utils",
  "rand 0.8.5",
  "starcoin-account-api",
@@ -10245,12 +10082,12 @@ dependencies = [
 
 [[package]]
 name = "starcoin-sync-api"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
  "network-api",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.151",
  "starcoin-accumulator",
  "starcoin-crypto",
@@ -10262,7 +10099,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-system"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "systemstat",
@@ -10270,7 +10107,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-time-service"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "log 0.4.17",
  "serde 1.0.151",
@@ -10278,7 +10115,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-transaction-builder"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -10292,7 +10129,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-transactional-test-harness"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10300,15 +10137,15 @@ dependencies = [
  "bcs-ext",
  "clap 3.2.15",
  "dashmap",
- "datatest-stable 0.1.2",
+ "datatest-stable 0.1.3",
  "either",
  "futures 0.3.21",
  "hex",
  "itertools",
- "jsonrpc-client-transports 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-derive 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-client-transports",
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
  "jsonrpc-http-server",
  "log 0.4.17",
  "move-binary-format",
@@ -10346,7 +10183,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-tx-factory"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "clap 3.2.15",
@@ -10367,7 +10204,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-txpool"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10410,12 +10247,12 @@ dependencies = [
 
 [[package]]
 name = "starcoin-txpool-api"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
  "futures-channel",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.151",
  "starcoin-crypto",
  "starcoin-types",
@@ -10423,7 +10260,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-txpool-mock-service"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10437,23 +10274,20 @@ dependencies = [
 
 [[package]]
 name = "starcoin-types"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
  "byteorder 1.4.3",
  "bytes 1.2.1",
  "forkable-jellyfish-merkle",
- "futures 0.3.21",
  "hex",
- "itertools",
- "network-p2p-types",
  "num_enum",
  "proptest",
  "proptest-derive",
  "rand 0.8.5",
  "rand_core 0.6.3",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.151",
  "serde_json",
  "starcoin-accumulator",
@@ -10465,7 +10299,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-uint"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "bcs-ext",
  "hex",
@@ -10478,29 +10312,25 @@ dependencies = [
 
 [[package]]
 name = "starcoin-vm-runtime"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "gas-algebra-ext",
  "move-core-types",
  "move-stdlib",
  "move-table-extension",
  "move-vm-runtime",
- "move-vm-types",
  "num_enum",
  "once_cell",
  "rand 0.8.5",
  "rand_core 0.6.3",
  "serde 1.0.151",
- "serde-helpers",
- "serde_bytes",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-gas",
+ "starcoin-gas-algebra-ext",
  "starcoin-logger",
  "starcoin-metrics",
- "starcoin-move-compiler",
  "starcoin-natives",
  "starcoin-types",
  "starcoin-vm-types",
@@ -10510,14 +10340,13 @@ dependencies = [
 
 [[package]]
 name = "starcoin-vm-types"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
  "bech32",
  "chrono",
  "forkable-jellyfish-merkle",
- "gas-algebra-ext",
  "hex",
  "log 0.4.17",
  "mirai-annotations",
@@ -10532,13 +10361,13 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "rand 0.8.5",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.151",
- "serde-helpers",
  "serde_bytes",
  "serde_json",
  "starcoin-accumulator",
  "starcoin-crypto",
+ "starcoin-gas-algebra-ext",
  "starcoin-time-service",
 ]
 
@@ -10550,12 +10379,12 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "stdlib"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs-ext",
  "clap 3.2.15",
- "datatest-stable 0.1.2",
+ "datatest-stable 0.1.3",
  "fs_extra",
  "include_dir",
  "itertools",
@@ -10577,7 +10406,7 @@ dependencies = [
 
 [[package]]
 name = "stest"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "actix",
  "actix-rt",
@@ -10592,7 +10421,7 @@ dependencies = [
 
 [[package]]
 name = "stest-macro"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "actix",
  "actix-rt",
@@ -10616,7 +10445,7 @@ checksum = "9091b6114800a5f2141aee1d1b9d6ca3592ac062dc5decb3764ec5895a47b4eb"
 
 [[package]]
 name = "stream-task"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-std",
@@ -10627,7 +10456,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "pin-project 0.4.30",
  "pin-utils",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.151",
  "starcoin-logger",
  "stest",
@@ -10939,7 +10768,7 @@ dependencies = [
 
 [[package]]
 name = "test-helper"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10948,6 +10777,7 @@ dependencies = [
  "futures 0.3.21",
  "futures-timer",
  "hex",
+ "move-ir-compiler",
  "network-api",
  "network-p2p-types",
  "network-rpc-core",
@@ -10956,7 +10786,6 @@ dependencies = [
  "serde_json",
  "starcoin-account-api",
  "starcoin-account-service",
- "starcoin-accumulator",
  "starcoin-block-relayer",
  "starcoin-chain",
  "starcoin-chain-notify",
@@ -10979,7 +10808,6 @@ dependencies = [
  "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-state-service",
- "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-sync",
@@ -10997,14 +10825,13 @@ dependencies = [
 
 [[package]]
 name = "testsuite"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "clap 3.2.15",
  "cucumber_rust",
  "jpst",
  "jsonpath",
- "lazy_static 1.4.0",
  "regex",
  "scmd",
  "serde 1.0.151",
@@ -11022,6 +10849,7 @@ dependencies = [
  "starcoin-miner",
  "starcoin-network",
  "starcoin-node",
+ "starcoin-rpc-api",
  "starcoin-rpc-client",
  "starcoin-rpc-server",
  "starcoin-state-api",
@@ -11111,6 +10939,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "threadpool"
+version = "1.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d050e60b33d41c19108b32cea32164033a9013fe3b46cbd4457559bfbf77afaa"
+dependencies = [
+ "num_cpus",
+]
+
+[[package]]
 name = "time"
 version = "0.1.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11141,7 +10978,7 @@ checksum = "42657b1a6f4d817cda8e7a0ace261fe0cc946cf3a80314390b22cc61ae080792"
 
 [[package]]
 name = "timeout-join-handler"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "thiserror",
@@ -11520,7 +11357,7 @@ checksum = "efd1f82c56340fdf16f2a953d7bda4f8fdffba13d93b00844c25572110b26079"
 
 [[package]]
 name = "transaction-builder-generator"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
  "bcs",
@@ -11841,7 +11678,7 @@ version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d86a8dc7f45e4c1b0d30e43038c38f274e77af056aa5f74b93c2cf9eb3c1c836"
 dependencies = [
- "asynchronous-codec 0.6.0",
+ "asynchronous-codec 0.6.1",
  "bytes 1.2.1",
  "futures-io",
  "futures-util",
@@ -11934,10 +11771,10 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "vm-status-translator"
-version = "1.12.5"
+version = "1.12.9"
 dependencies = [
  "anyhow",
- "schemars 0.8.8",
+ "schemars",
  "serde 1.0.151",
  "starcoin-move-explain",
  "starcoin-vm-types",
@@ -12108,9 +11945,9 @@ dependencies = [
 
 [[package]]
 name = "webpki-roots"
-version = "0.22.4"
+version = "0.22.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1c760f0d366a6c24a02ed7816e23e691f5d92291f94d15e836006fd11b04daf"
+checksum = "b6c71e40d7d2c34a5106301fb632274ca37242cd0c9d3e64dbece371a40a2d87"
 dependencies = [
  "webpki",
 ]
@@ -12404,9 +12241,9 @@ dependencies = [
 
 [[package]]
 name = "yamux"
-version = "0.10.1"
+version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c0608f53c1dc0bad505d03a34bbd49fbf2ad7b51eb036123e896365532745a1"
+checksum = "e5d9ba232399af1783a58d8eb26f6b5006fbefe2dc9ef36bd283324792d03ea5"
 dependencies = [
  "futures 0.3.21",
  "log 0.4.17",

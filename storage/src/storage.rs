@@ -7,7 +7,7 @@ use crate::db_storage::{DBStorage, SchemaIterator};
 use crate::upgrade::DBUpgrade;
 use anyhow::{bail, format_err, Result};
 use byteorder::{BigEndian, ReadBytesExt};
-use crypto::HashValue;
+use starcoin_crypto::HashValue;
 use starcoin_vm_types::state_store::table::TableHandle;
 use std::convert::TryInto;
 use std::fmt::Debug;

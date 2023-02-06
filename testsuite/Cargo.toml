@@ -1,48 +1,51 @@
-[package]
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2021"
-license = "Apache-2.0"
-name = "testsuite"
-publish = false
-version = "1.12.5"
-
-[dependencies]
-anyhow = "1.0.41"
-lazy_static = "1.4.0"
-serde = { version = "1.0.130", features = ["derive"] }
-serde_bytes = "0.11"
-serde_json = { version = "1.0", features = ["arbitrary_precision"] }
-clap = { version = "3", features = ["derive"] }
-regex = "1.6.0"
-starcoin-config = { path = "../config" }
-starcoin-consensus = { path = "../consensus" }
-starcoin-executor = { path = "../executor" }
-starcoin-network = { path = "../network" }
-starcoin-txpool = { path = "../txpool" }
-starcoin-chain = { path = "../chain" }
-starcoin-rpc-server = { path = "../rpc/server" }
-starcoin-rpc-client = { path = "../rpc/client" }
-starcoin-storage = { path = "../storage" }
-starcoin-miner = { path = "../miner" }
-starcoin-node = { path = "../node" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-starcoin-logger = { path = "../commons/logger" }
-starcoin-cmd = { package = "starcoin-cmd", path = "../cmd/starcoin" }
-scmd = { path = "../commons/scmd" }
-starcoin-types = { path = "../types" }
-starcoin-vm-runtime = { path = "../vm/vm-runtime" }
-starcoin-vm-types = { path = "../vm/types" }
-starcoin-account-api = { path = "../account/api" }
-starcoin-account-provider = { path = "../account/provider" }
-starcoin-state-api = { path = "../state/api" }
-cucumber = { package = "cucumber_rust", version = "^0.6.0" }
-jsonpath = "0.1.1"
-jpst = "0.1.1"
-
-[dev-dependencies]
-starcoin-transaction-builder = {path = "../vm/transaction-builder"}
-
 [[test]]
 harness = false
 name = "integration"
 test = false
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { features = ["derive"], workspace = true }
+cucumber = { workspace = true }
+jpst = { workspace = true }
+jsonpath = { workspace = true }
+regex = { workspace = true }
+scmd = { workspace = true }
+serde = { features = ["derive"], workspace = true }
+serde_bytes = { workspace = true }
+serde_json = { features = ["arbitrary_precision"], workspace = true }
+starcoin-account-api = { workspace = true }
+starcoin-account-provider = { workspace = true }
+starcoin-chain = { workspace = true }
+starcoin-cmd = { package = "starcoin-cmd", workspace = true }
+starcoin-config = { workspace = true }
+starcoin-consensus = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-executor = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-miner = { workspace = true }
+starcoin-network = { workspace = true }
+starcoin-node = { workspace = true }
+starcoin-rpc-client = { workspace = true }
+starcoin-rpc-api = { workspace = true }
+starcoin-rpc-server = { workspace = true }
+starcoin-state-api = { workspace = true }
+starcoin-storage = { workspace = true }
+starcoin-txpool = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-vm-runtime = { workspace = true }
+starcoin-vm-types = { workspace = true }
+
+[dev-dependencies]
+starcoin-transaction-builder = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "testsuite"
+publish = { workspace = true }
+version = "1.12.9"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

@@ -6,7 +6,7 @@ use crate::TRANSACTION_PREFIX_NAME;
 use crate::{define_storage, TransactionStore};
 use anyhow::Result;
 use bcs_ext::BCSCodec;
-use crypto::HashValue;
+use starcoin_crypto::HashValue;
 use starcoin_types::transaction::Transaction;
 
 define_storage!(
