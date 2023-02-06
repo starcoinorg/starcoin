@@ -21,7 +21,6 @@ jobs:
           version: "11.0"
 
       - name: Symlink libclang.so (Linux)
-        if: contains(matrix.os, 'ubuntu')
         run: sudo ln -s libclang-11.so.1 /lib/x86_64-linux-gnu/libclang.so
         working-directory: ${{ env.LLVM_PATH }}/lib
 
