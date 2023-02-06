@@ -18,7 +18,7 @@ jobs:
       - name: Install LLVM to Ubuntu 22
         uses: KyleMayes/install-llvm-action@v1
         with:
-          version: "11.0"
+          version: "14.0"
 
       - name: Symlink libclang.so (Linux)
         run: sudo ln -s libclang-11.so.1 /lib/x86_64-linux-gnu/libclang.so
