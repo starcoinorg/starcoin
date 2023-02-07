@@ -22,6 +22,9 @@ pub trait StdlibCompat {
         enforced: bool,
     ) -> ScriptFunction;
 
+    // this method use only in starcoin-framework daospace-v12,
+    // https://github.com/starcoinorg/starcoin-framework/releases/tag/daospace-v12
+    // in starcoin master we don't use it
     // propose method before stdlib since 12
     fn propose_module_upgrade_function_since_v12(
         &self,

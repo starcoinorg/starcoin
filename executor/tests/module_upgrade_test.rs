@@ -458,6 +458,200 @@ fn ext_execute_after_upgrade(
                 "expect 0x1::GenesisNFT::GenesisNFTInfo in global storage, but go none."
             );
         }
+
+        // this is old daospace-v12 starcoin-framework,
+        // https://github.com/starcoinorg/starcoin-framework/releases/tag/daospace-v12
+        // master don't use it
+        // StdlibVersion::Version(12) => {
+        //     // New resources at genesis_account.
+        //     assert_genesis_resouce_exist(chain_state, "Block", "Checkpoints", vec![]);
+        //     assert_genesis_resouce_exist(chain_state, "DAORegistry", "DAORegistry", vec![]);
+        //     assert_genesis_resouce_exist(
+        //         chain_state,
+        //         "DAOExtensionPoint",
+        //         "NFTMintCapHolder",
+        //         vec![],
+        //     );
+        //     assert_genesis_resouce_exist(chain_state, "DAOExtensionPoint", "Registry", vec![]);
+        //     assert_genesis_resouce_exist(
+        //         chain_state,
+        //         "DAOExtensionPoint",
+        //         "RegistryEventHandlers",
+        //         vec![],
+        //     );
+        //     assert_genesis_resouce_exist(
+        //         chain_state,
+        //         "DAOPluginMarketplace",
+        //         "PluginRegistry",
+        //         vec![],
+        //     );
+        //     assert_genesis_resouce_exist(
+        //         chain_state,
+        //         "DAOPluginMarketplace",
+        //         "RegistryEventHandlers",
+        //         vec![],
+        //     );
+        //     assert_genesis_resouce_exist(
+        //         chain_state,
+        //         "DAOPluginMarketplace",
+        //         "PluginRegistry",
+        //         vec![],
+        //     );
+        //
+        //     // DAOSpace plugins
+        //     let plugin_names = vec![
+        //         "AnyMemberPlugin",
+        //         "ConfigProposalPlugin",
+        //         "GrantProposalPlugin",
+        //         "InstallPluginProposalPlugin",
+        //         "MemberProposalPlugin",
+        //         "MintProposalPlugin",
+        //         "StakeToSBTPlugin",
+        //         "UpgradeModulePlugin",
+        //         "GasOracleProposalPlugin",
+        //         "TreasuryPlugin",
+        //     ];
+        //     plugin_names.into_iter().for_each(|name| {
+        //         let any_member_tag = TypeTag::Struct(StructTag {
+        //             address: genesis_address(),
+        //             module: Identifier::new(name).unwrap(),
+        //             name: Identifier::new(name).unwrap(),
+        //             type_params: vec![],
+        //         });
+        //         assert_genesis_resouce_exist(
+        //             chain_state,
+        //             "DAOPluginMarketplace",
+        //             "PluginEntry",
+        //             vec![any_member_tag.clone()],
+        //         );
+        //         assert_genesis_resouce_exist(
+        //             chain_state,
+        //             "DAOPluginMarketplace",
+        //             "PluginEventHandlers",
+        //             vec![any_member_tag],
+        //         );
+        //     });
+        //
+        //     // New resources of StarcoinDAO
+        //     assert_genesis_resouce_exist(chain_state, "DAOAccount", "DAOAccount", vec![]);
+        //     vec![
+        //         "InstallPluginProposalPlugin",
+        //         "UpgradeModulePlugin",
+        //         "ConfigProposalPlugin",
+        //         "StakeToSBTPlugin",
+        //         "GasOracleProposalPlugin",
+        //         "TreasuryPlugin",
+        //     ]
+        //     .into_iter()
+        //     .for_each(|name| {
+        //         assert_genesis_resouce_exist(
+        //             chain_state,
+        //             "DAOSpace",
+        //             "InstalledPluginInfo",
+        //             vec![TypeTag::Struct(StructTag {
+        //                 address: genesis_address(),
+        //                 module: Identifier::new(name).unwrap(),
+        //                 name: Identifier::new(name).unwrap(),
+        //                 type_params: vec![],
+        //             })],
+        //         )
+        //     });
+        //     assert_genesis_resouce_exist(
+        //         chain_state,
+        //         "TreasuryPlugin",
+        //         "WithdrawCapabilityHolder",
+        //         vec![TypeTag::Struct(StructTag {
+        //             address: genesis_address(),
+        //             module: Identifier::new("STC").unwrap(),
+        //             name: Identifier::new("STC").unwrap(),
+        //             type_params: vec![],
+        //         })],
+        //     );
+        //
+        //     // DAOCustomConfigModifyCapHolder of StarcoinDAO
+        //     vec![
+        //         "TransactionPublishOption",
+        //         "VMConfig",
+        //         "ConsensusConfig",
+        //         "RewardConfig",
+        //         "TransactionTimeoutConfig",
+        //         "LanguageVersion",
+        //     ]
+        //     .into_iter()
+        //     .for_each(|name| {
+        //         assert_genesis_resouce_exist(
+        //             chain_state,
+        //             "DAOSpace",
+        //             "DAOCustomConfigModifyCapHolder",
+        //             vec![
+        //                 TypeTag::Struct(StructTag {
+        //                     address: genesis_address(),
+        //                     module: Identifier::new("StarcoinDAO").unwrap(),
+        //                     name: Identifier::new("StarcoinDAO").unwrap(),
+        //                     type_params: vec![],
+        //                 }),
+        //                 TypeTag::Struct(StructTag {
+        //                     address: genesis_address(),
+        //                     module: Identifier::new(name).unwrap(),
+        //                     name: Identifier::new(name).unwrap(),
+        //                     type_params: vec![],
+        //                 }),
+        //             ],
+        //         );
+        //     });
+        //
+        //     // Removed old DAO resources.
+        //     vec![
+        //         ("ModifyDaoConfigProposal", "DaoConfigModifyCapability"),
+        //         ("UpgradeModuleDaoProposal", "UpgradeModuleDaoProposal"),
+        //         ("TreasuryWithdrawDaoProposal", "WrappedWithdrawCapability"),
+        //     ]
+        //     .into_iter()
+        //     .for_each(|(module, name)| {
+        //         assert_genesis_resouce_not_exist(
+        //             chain_state,
+        //             module,
+        //             name,
+        //             vec![TypeTag::Struct(StructTag {
+        //                 address: genesis_address(),
+        //                 module: Identifier::new("STC").unwrap(),
+        //                 name: Identifier::new("STC").unwrap(),
+        //                 type_params: vec![],
+        //             })],
+        //         )
+        //     });
+        //
+        //     vec![
+        //         "TransactionPublishOption",
+        //         "VMConfig",
+        //         "ConsensusConfig",
+        //         "RewardConfig",
+        //         "TransactionTimeoutConfig",
+        //         "LanguageVersion",
+        //     ]
+        //     .into_iter()
+        //     .for_each(|name| {
+        //         assert_genesis_resouce_not_exist(
+        //             chain_state,
+        //             "OnChainConfigDao",
+        //             "WrappedConfigModifyCapability",
+        //             vec![
+        //                 TypeTag::Struct(StructTag {
+        //                     address: genesis_address(),
+        //                     module: Identifier::new("STC").unwrap(),
+        //                     name: Identifier::new("STC").unwrap(),
+        //                     type_params: vec![],
+        //                 }),
+        //                 TypeTag::Struct(StructTag {
+        //                     address: genesis_address(),
+        //                     module: Identifier::new(name).unwrap(),
+        //                     name: Identifier::new(name).unwrap(),
+        //                     type_params: vec![],
+        //                 }),
+        //             ],
+        //         );
+        //     });
+        // }
         _ => {
             //do nothing.
         }
