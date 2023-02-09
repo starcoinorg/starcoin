@@ -1,14 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-
 use anyhow::{bail, format_err, Result};
 use bcs_ext::BCSCodec;
 use bcs_ext::Sample;
 use clap::IntoApp;
 use clap::Parser;
 use csv::Writer;
-use db_exporter::verify_module::verify_modules_via_export_file;
+use db_exporter::verify_module;
+use db_exporter::verify_module::{verify_modules_via_export_file, VerifyModulesOptions};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
@@ -70,7 +70,6 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::SystemTime;
 use std::{thread, thread::JoinHandle};
-
 
 const BLOCK_GAP: u64 = 1000;
 const BACK_SIZE: u64 = 10000;
@@ -234,7 +233,7 @@ enum Cmd {
     ExportSnapshot(ExportSnapshotOptions),
     ApplySnapshot(ApplySnapshotOptions),
     ExportResource(ExportResourceOptions),
-    VerifyModules(VerifyModulesOptions),
+    VerifyModules(verify_module::Options),
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -415,17 +414,6 @@ pub struct ExportResourceOptions {
     /// fields of the struct to output. it use pointer syntax of serde_json.
     /// like: /authentication_key /sequence_number /deposit_events/counter /token/value
     pub fields: Vec<String>,
-}
-
-#[derive(Debug, Parser)]
-#[clap(
-    name = "verify-modules",
-    about = "fast verify all modules, do not execute the transactions"
-)]
-pub struct VerifyModulesOptions {
-    #[clap(long, short = 'i', parse(from_os_str))]
-    /// input file, like accounts.csv
-    pub input_path: PathBuf,
 }
 
 #[tokio::main(flavor = "multi_thread")]

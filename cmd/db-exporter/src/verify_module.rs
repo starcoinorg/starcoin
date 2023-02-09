@@ -1,5 +1,6 @@
 use anyhow::bail;
 use atomic_counter::AtomicCounter;
+use clap::Parser;
 use indicatif::{ProgressBar, ProgressStyle};
 use move_binary_format::errors::Location;
 use starcoin_crypto::HashValue;
@@ -7,12 +8,24 @@ use starcoin_types::block::Block;
 use starcoin_types::transaction::TransactionPayload;
 use starcoin_vm_types::errors::VMError;
 use starcoin_vm_types::file_format::CompiledModule;
+use std::fmt::Debug;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::SystemTime;
 use tokio::task;
+
+#[derive(Debug, Parser)]
+#[clap(
+    name = "verify-modules",
+    about = "fast verify all modules, do not execute the transactions"
+)]
+pub struct Options {
+    #[clap(long, short = 'i', parse(from_os_str))]
+    /// input file, like accounts.csv
+    pub input_path: PathBuf,
+}
 
 #[derive(Debug)]
 pub struct VerifyModuleError {
@@ -64,7 +77,6 @@ fn verify_block_modules(block: Block) -> (usize, Vec<VerifyModuleError>) {
     }
     (success_modules, errors)
 }
-
 
 pub fn verify_modules_via_export_file(input_path: PathBuf) -> anyhow::Result<()> {
     let start_time = SystemTime::now();
