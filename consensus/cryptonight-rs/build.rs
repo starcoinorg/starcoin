@@ -27,7 +27,7 @@ fn main() {
     }
     if target_os.contains("linux") || target_os.contains("macos") {
         config
-            // .flag("-Ofast")
+            .flag("-Ofast")
             .flag("-fexceptions")
             .flag("-std=gnu99");
     }
