@@ -184,6 +184,42 @@
                           }
                         },
                         "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "U16"
+                        ],
+                        "properties": {
+                          "U16": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "U32"
+                        ],
+                        "properties": {
+                          "U32": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "U256"
+                        ],
+                        "properties": {
+                          "U256": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
                       }
                     ]
                   }
@@ -328,6 +364,42 @@
                   "properties": {
                     "Struct": {
                       "$ref": "#/definitions/AnnotatedMoveStructView"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "U16"
+                  ],
+                  "properties": {
+                    "U16": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "U32"
+                  ],
+                  "properties": {
+                    "U32": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "U256"
+                  ],
+                  "properties": {
+                    "U256": {
+                      "type": "string"
                     }
                   },
                   "additionalProperties": false
@@ -512,6 +584,42 @@
                   }
                 },
                 "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "required": [
+                  "U16"
+                ],
+                "properties": {
+                  "U16": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "required": [
+                  "U32"
+                ],
+                "properties": {
+                  "U32": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "required": [
+                  "U256"
+                ],
+                "properties": {
+                  "U256": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
               }
             ]
           },
@@ -647,6 +755,42 @@
                           }
                         }
                       }
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "U16"
+                  ],
+                  "properties": {
+                    "U16": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "U32"
+                  ],
+                  "properties": {
+                    "U32": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "U256"
+                  ],
+                  "properties": {
+                    "U256": {
+                      "type": "string"
                     }
                   },
                   "additionalProperties": false
@@ -1322,13 +1466,13 @@
                                                         "enum": [
                                                           "Bool",
                                                           "U8",
-                                                          "U16",
-                                                          "U32",
                                                           "U64",
                                                           "U128",
-                                                          "U256",
                                                           "Address",
-                                                          "Signer"
+                                                          "Signer",
+                                                          "U16",
+                                                          "U32",
+                                                          "U256"
                                                         ]
                                                       },
                                                       {
@@ -1501,13 +1645,13 @@
                                                     "enum": [
                                                       "Bool",
                                                       "U8",
-                                                      "U16",
-                                                      "U32",
                                                       "U64",
                                                       "U128",
-                                                      "U256",
                                                       "Address",
-                                                      "Signer"
+                                                      "Signer",
+                                                      "U16",
+                                                      "U32",
+                                                      "U256"
                                                     ]
                                                   },
                                                   {
@@ -1731,13 +1875,13 @@
                                                         "enum": [
                                                           "Bool",
                                                           "U8",
-                                                          "U16",
-                                                          "U32",
                                                           "U64",
                                                           "U128",
-                                                          "U256",
                                                           "Address",
-                                                          "Signer"
+                                                          "Signer",
+                                                          "U16",
+                                                          "U32",
+                                                          "U256"
                                                         ]
                                                       },
                                                       {
@@ -1976,13 +2120,13 @@
                   "enum": [
                     "Bool",
                     "U8",
-                    "U16",
-                    "U32",
                     "U64",
                     "U128",
-                    "U256",
                     "Address",
-                    "Signer"
+                    "Signer",
+                    "U16",
+                    "U32",
+                    "U256"
                   ]
                 },
                 {
@@ -2612,13 +2756,13 @@
                                                         "enum": [
                                                           "Bool",
                                                           "U8",
-                                                          "U16",
-                                                          "U32",
                                                           "U64",
                                                           "U128",
-                                                          "U256",
                                                           "Address",
-                                                          "Signer"
+                                                          "Signer",
+                                                          "U16",
+                                                          "U32",
+                                                          "U256"
                                                         ]
                                                       },
                                                       {
@@ -2791,13 +2935,13 @@
                                                     "enum": [
                                                       "Bool",
                                                       "U8",
-                                                      "U16",
-                                                      "U32",
                                                       "U64",
                                                       "U128",
-                                                      "U256",
                                                       "Address",
-                                                      "Signer"
+                                                      "Signer",
+                                                      "U16",
+                                                      "U32",
+                                                      "U256"
                                                     ]
                                                   },
                                                   {
@@ -3021,13 +3165,13 @@
                                                         "enum": [
                                                           "Bool",
                                                           "U8",
-                                                          "U16",
-                                                          "U32",
                                                           "U64",
                                                           "U128",
-                                                          "U256",
                                                           "Address",
-                                                          "Signer"
+                                                          "Signer",
+                                                          "U16",
+                                                          "U32",
+                                                          "U256"
                                                         ]
                                                       },
                                                       {
@@ -3266,13 +3410,13 @@
                   "enum": [
                     "Bool",
                     "U8",
-                    "U16",
-                    "U32",
                     "U64",
                     "U128",
-                    "U256",
                     "Address",
-                    "Signer"
+                    "Signer",
+                    "U16",
+                    "U32",
+                    "U256"
                   ]
                 },
                 {
@@ -3456,13 +3600,13 @@
                         "enum": [
                           "Bool",
                           "U8",
-                          "U16",
-                          "U32",
                           "U64",
                           "U128",
-                          "U256",
                           "Address",
-                          "Signer"
+                          "Signer",
+                          "U16",
+                          "U32",
+                          "U256"
                         ]
                       },
                       {
@@ -3635,13 +3779,13 @@
                     "enum": [
                       "Bool",
                       "U8",
-                      "U16",
-                      "U32",
                       "U64",
                       "U128",
-                      "U256",
                       "Address",
-                      "Signer"
+                      "Signer",
+                      "U16",
+                      "U32",
+                      "U256"
                     ]
                   },
                   {
@@ -3824,13 +3968,13 @@
                   "enum": [
                     "Bool",
                     "U8",
-                    "U16",
-                    "U32",
                     "U64",
                     "U128",
-                    "U256",
                     "Address",
-                    "Signer"
+                    "Signer",
+                    "U16",
+                    "U32",
+                    "U256"
                   ]
                 },
                 {
@@ -4047,13 +4191,13 @@
                         "enum": [
                           "Bool",
                           "U8",
-                          "U16",
-                          "U32",
                           "U64",
                           "U128",
-                          "U256",
                           "Address",
-                          "Signer"
+                          "Signer",
+                          "U16",
+                          "U32",
+                          "U256"
                         ]
                       },
                       {
@@ -4226,13 +4370,13 @@
                     "enum": [
                       "Bool",
                       "U8",
-                      "U16",
-                      "U32",
                       "U64",
                       "U128",
-                      "U256",
                       "Address",
-                      "Signer"
+                      "Signer",
+                      "U16",
+                      "U32",
+                      "U256"
                     ]
                   },
                   {
@@ -4415,13 +4559,13 @@
                   "enum": [
                     "Bool",
                     "U8",
-                    "U16",
-                    "U32",
                     "U64",
                     "U128",
-                    "U256",
                     "Address",
-                    "Signer"
+                    "Signer",
+                    "U16",
+                    "U32",
+                    "U256"
                   ]
                 },
                 {
@@ -4634,13 +4778,13 @@
                         "enum": [
                           "Bool",
                           "U8",
-                          "U16",
-                          "U32",
                           "U64",
                           "U128",
-                          "U256",
                           "Address",
-                          "Signer"
+                          "Signer",
+                          "U16",
+                          "U32",
+                          "U256"
                         ]
                       },
                       {
@@ -4745,13 +4889,13 @@
                         "enum": [
                           "Bool",
                           "U8",
-                          "U16",
-                          "U32",
                           "U64",
                           "U128",
-                          "U256",
                           "Address",
-                          "Signer"
+                          "Signer",
+                          "U16",
+                          "U32",
+                          "U256"
                         ]
                       },
                       {
@@ -4892,13 +5036,13 @@
                   "enum": [
                     "Bool",
                     "U8",
-                    "U16",
-                    "U32",
                     "U64",
                     "U128",
-                    "U256",
                     "Address",
-                    "Signer"
+                    "Signer",
+                    "U16",
+                    "U32",
+                    "U256"
                   ]
                 },
                 {
@@ -5060,13 +5204,13 @@
                               "enum": [
                                 "Bool",
                                 "U8",
-                                "U16",
-                                "U32",
                                 "U64",
                                 "U128",
-                                "U256",
                                 "Address",
-                                "Signer"
+                                "Signer",
+                                "U16",
+                                "U32",
+                                "U256"
                               ]
                             },
                             {
@@ -5239,13 +5383,13 @@
                           "enum": [
                             "Bool",
                             "U8",
-                            "U16",
-                            "U32",
                             "U64",
                             "U128",
-                            "U256",
                             "Address",
-                            "Signer"
+                            "Signer",
+                            "U16",
+                            "U32",
+                            "U256"
                           ]
                         },
                         {
@@ -5469,13 +5613,13 @@
                               "enum": [
                                 "Bool",
                                 "U8",
-                                "U16",
-                                "U32",
                                 "U64",
                                 "U128",
-                                "U256",
                                 "Address",
-                                "Signer"
+                                "Signer",
+                                "U16",
+                                "U32",
+                                "U256"
                               ]
                             },
                             {
@@ -5673,13 +5817,13 @@
                   "enum": [
                     "Bool",
                     "U8",
-                    "U16",
-                    "U32",
                     "U64",
                     "U128",
-                    "U256",
                     "Address",
-                    "Signer"
+                    "Signer",
+                    "U16",
+                    "U32",
+                    "U256"
                   ]
                 },
                 {
