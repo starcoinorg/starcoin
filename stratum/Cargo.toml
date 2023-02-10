@@ -25,7 +25,7 @@ stest = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 name = "starcoin-stratum"
-version = "1.12.9"
+version = "1.13.0-alpha"
 homepage = { workspace = true }
 license = { workspace = true }
 publish = { workspace = true }

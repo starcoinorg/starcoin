@@ -10,7 +10,7 @@ starcoin-types = { workspace = true }
 [package]
 edition = { workspace = true }
 name = "starcoin-account-provider"
-version = "1.12.9"
+version = "1.13.0-alpha"
 authors = { workspace = true }
 homepage = { workspace = true }
 license = { workspace = true }
