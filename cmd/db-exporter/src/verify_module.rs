@@ -21,7 +21,7 @@ use tokio::task;
     name = "verify-modules",
     about = "fast verify all modules, do not execute the transactions"
 )]
-pub struct Options {
+pub struct VerifyModuleOptions {
     #[clap(long, short = 'i', parse(from_os_str))]
     /// input file, like accounts.csv
     pub input_path: PathBuf,

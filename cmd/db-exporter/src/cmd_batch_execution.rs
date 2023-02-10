@@ -2,6 +2,7 @@ use anyhow::bail;
 use atomic_counter::AtomicCounter;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::fs::File;
+use std::future::Future;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -29,7 +30,9 @@ impl CmdBatchExecution {
         }
     }
 
-    pub fn progress<T: Send + for<'a> serde::Deserializer<'a> + for<'a> serde::Deserialize<'a>>(
+    pub fn progress<
+        T: for<'a> serde::Deserializer<'a> + for<'a> serde::Deserialize<'a> + Future + Send + 'static,
+    >(
         &self,
     ) -> anyhow::Result<()> {
         let start_time = SystemTime::now();
@@ -38,7 +41,7 @@ impl CmdBatchExecution {
         let mut execs = vec![];
         for record in reader.lines() {
             let record = record?;
-            let exec_item: T = record.decode()?;
+            let exec_item: T = serde_json::from_str::<T>(record.as_str())?;
             execs.push(exec_item);
         }
         if execs.is_empty() {
@@ -50,9 +53,10 @@ impl CmdBatchExecution {
 
         let use_time = SystemTime::now().duration_since(start_time)?;
         println!("load blocks from file use time: {:?}", use_time.as_millis());
+
         let start_time = SystemTime::now();
 
-        let bar = if self.show_progress_bar {
+        let mut bar = if self.show_progress_bar {
             let bar = ProgressBar::new(execs.len() as u64);
             bar.set_style(
                 ProgressStyle::default_bar()
@@ -87,7 +91,7 @@ impl CmdBatchExecution {
                 //     "verify block {} , total_modules: {}",
                 //     block_number, total_modules
                 // ));
-                bar.unwrap().inc(1);
+                bar.as_mut().unwrap().inc(1);
             };
         }
 
@@ -105,19 +109,19 @@ impl CmdBatchExecution {
     }
 }
 
-pub trait Codec {
-    fn decode<'a, T: serde::Deserializer<'a> + serde::Deserialize<'a>>(
-        &self,
-    ) -> Result<T, anyhow::Error>;
-}
-
-impl Codec for String {
-    fn decode<'a, T: serde::Deserializer<'a> + serde::Deserialize<'a>>(
-        &self,
-    ) -> Result<T, anyhow::Error> {
-        Ok(serde_json::from_str::<'a, T>(self)?)
-    }
-}
+// pub trait Codec {
+//     fn decode<'a, T: serde::Deserializer<'a> + serde::Deserialize<'a>>(
+//         &self,
+//     ) -> anyhow::Result<()>;
+// }
+//
+// impl Codec for String {
+//     fn decode<'a, T: serde::Deserializer<'a> + serde::Deserialize<'a>>(
+//         &self,
+//     ) -> anyhow::Result<()> {
+//         Ok(serde_json::from_str::<T>(self)?)
+//     }
+// }
 
 pub trait Exec<'a, T: serde::Deserializer<'a> + serde::Deserialize<'a>> {
     fn execute(&self) -> (usize, Vec<BatchProcessError<T>>);
