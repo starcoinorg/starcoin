@@ -3,6 +3,7 @@
 
 /// How to call a particular Move script (aka. an "ABI").
 use anyhow::Result;
+use move_core_types::u256;
 use schemars::JsonSchema;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -12,7 +13,6 @@ use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag, TypeTag};
 use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use std::fmt;
-use move_core_types::u256;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
@@ -614,10 +614,12 @@ impl TypeInstantiation {
         Ok(match self {
             Self::Bool => TypeTag::Bool,
             Self::U8 => TypeTag::U8,
+
             Self::U64 => TypeTag::U64,
             Self::U128 => TypeTag::U128,
             Self::Address => TypeTag::Address,
             Self::Signer => TypeTag::Signer,
+
             Self::Vector(t) => TypeTag::Vector(Box::new(t.type_tag()?)),
             Self::Struct(s) => TypeTag::Struct(Box::new(s.struct_tag()?)),
             Self::TypeParameter(_) => anyhow::bail!("get type tag failed -- {:?}", self),
@@ -680,7 +682,7 @@ impl<'d> serde::de::DeserializeSeed<'d> for &TypeInstantiation {
             T::Reference(_, _) => Err(D::Error::custom("type abi cannot be Reference variant")),
             T::U16 => u16::deserialize(deserializer).map(Into::into),
             T::U32 => u32::deserialize(deserializer).map(Into::into),
-            // XXX FIXME YSG
+            // XXX FIXME YSG is it right?
             T::U256 => u256::U256::deserialize(deserializer).map(|val| V::String(val.to_string())),
         }
     }

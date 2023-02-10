@@ -75,12 +75,12 @@ impl<'a> Resolver<'a> {
             TypeTag::Bool => FatType::Bool,
             TypeTag::Struct(st) => FatType::Struct(Box::new(self.resolve_struct(st)?)),
             TypeTag::U8 => FatType::U8,
-            TypeTag::U16 => FatType::U16,
-            TypeTag::U32 => FatType::U32,
             TypeTag::U64 => FatType::U64,
             TypeTag::U128 => FatType::U128,
-            TypeTag::U256 => FatType::U256,
             TypeTag::Vector(ty) => FatType::Vector(Box::new(self.resolve_type(ty)?)),
+            TypeTag::U16 => FatType::U16,
+            TypeTag::U32 => FatType::U32,
+            TypeTag::U256 => FatType::U256,
         })
     }
 
@@ -121,11 +121,8 @@ impl<'a> Resolver<'a> {
         Ok(match sig {
             SignatureToken::Bool => FatType::Bool,
             SignatureToken::U8 => FatType::U8,
-            SignatureToken::U16 => FatType::U16,
-            SignatureToken::U32 => FatType::U32,
             SignatureToken::U64 => FatType::U64,
             SignatureToken::U128 => FatType::U128,
-            SignatureToken::U256 => FatType::U256,
             SignatureToken::Address => FatType::Address,
             SignatureToken::Signer => FatType::Signer,
             SignatureToken::Vector(ty) => {
@@ -150,6 +147,9 @@ impl<'a> Resolver<'a> {
             SignatureToken::MutableReference(_) | SignatureToken::Reference(_) => {
                 return Err(anyhow!("Unexpected Reference"))
             }
+            SignatureToken::U16 => FatType::U16,
+            SignatureToken::U32 => FatType::U32,
+            SignatureToken::U256 => FatType::U256,
         })
     }
 

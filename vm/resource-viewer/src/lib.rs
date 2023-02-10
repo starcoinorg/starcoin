@@ -54,7 +54,7 @@ pub enum AnnotatedMoveValue {
     U128(u128),
     Bool(bool),
     Address(AccountAddress),
-    // XXX FIXME YSG, move/language/tools/move-resource-viewer is  Vector(TypeTag, Vec<AnnotatedMoveValue>)
+    // XXX FIXME YSG, why move/language/tools/move-resource-viewer is  Vector(TypeTag, Vec<AnnotatedMoveValue>)
     Vector(Vec<AnnotatedMoveValue>),
     Bytes(Vec<u8>),
     Struct(AnnotatedMoveStruct),
@@ -179,11 +179,8 @@ impl<'a> MoveValueAnnotator<'a> {
         Ok(match (value, ty) {
             (MoveValue::Bool(b), FatType::Bool) => AnnotatedMoveValue::Bool(*b),
             (MoveValue::U8(i), FatType::U8) => AnnotatedMoveValue::U8(*i),
-            (MoveValue::U16(i), FatType::U16) => AnnotatedMoveValue::U16(*i),
-            (MoveValue::U32(i), FatType::U32) => AnnotatedMoveValue::U32(*i),
             (MoveValue::U64(i), FatType::U64) => AnnotatedMoveValue::U64(*i),
             (MoveValue::U128(i), FatType::U128) => AnnotatedMoveValue::U128(*i),
-            (MoveValue::U256(i), FatType::U256) => AnnotatedMoveValue::U256(*i),
             (MoveValue::Address(a), FatType::Address) => AnnotatedMoveValue::Address(*a),
             (MoveValue::Vector(a), FatType::Vector(ty)) => match ty.as_ref() {
                 FatType::U8 => AnnotatedMoveValue::Bytes(
@@ -203,6 +200,9 @@ impl<'a> MoveValueAnnotator<'a> {
             (MoveValue::Struct(s), FatType::Struct(ty)) => {
                 AnnotatedMoveValue::Struct(self.annotate_struct(s, ty.as_ref())?)
             }
+            (MoveValue::U16(i), FatType::U16) => AnnotatedMoveValue::U16(*i),
+            (MoveValue::U32(i), FatType::U32) => AnnotatedMoveValue::U32(*i),
+            (MoveValue::U256(i), FatType::U256) => AnnotatedMoveValue::U256(*i),
             (MoveValue::U8(_), _)
             | (MoveValue::U64(_), _)
             | (MoveValue::U128(_), _)
@@ -239,11 +239,8 @@ fn pretty_print_value(
     match value {
         AnnotatedMoveValue::Bool(b) => write!(f, "{}", b),
         AnnotatedMoveValue::U8(v) => write!(f, "{}u8", v),
-        AnnotatedMoveValue::U16(v) => write!(f, "{}u16", v),
-        AnnotatedMoveValue::U32(v) => write!(f, "{}u32", v),
         AnnotatedMoveValue::U64(v) => write!(f, "{}", v),
         AnnotatedMoveValue::U128(v) => write!(f, "{}u128", v),
-        AnnotatedMoveValue::U256(v) => write!(f, "{}u256", v),
         AnnotatedMoveValue::Address(a) => write!(f, "0x{:#x}", a),
         AnnotatedMoveValue::Vector(v) => {
             writeln!(f, "[")?;
@@ -257,6 +254,9 @@ fn pretty_print_value(
         }
         AnnotatedMoveValue::Bytes(v) => write!(f, "{}", hex::encode(&v)),
         AnnotatedMoveValue::Struct(s) => pretty_print_struct(f, s, indent),
+        AnnotatedMoveValue::U16(v) => write!(f, "{}u16", v),
+        AnnotatedMoveValue::U32(v) => write!(f, "{}u32", v),
+        AnnotatedMoveValue::U256(v) => write!(f, "{}u256", v),
     }
 }
 
