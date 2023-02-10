@@ -47,6 +47,7 @@ starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
 vm-status-translator = { workspace = true }
+move-core-types = { workspace = true }
 
 [package]
 authors = { workspace = true }

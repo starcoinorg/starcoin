@@ -17,10 +17,12 @@ pub struct ProcessCollector {
 }
 
 impl ProcessCollector {
+    #[allow(dead_code)]
     pub fn for_self() -> Result<Self> {
         let pid = std::process::id();
         Self::new(pid)
     }
+    #[allow(dead_code)]
     pub fn new(pid: u32) -> Result<ProcessCollector> {
         let vsize = Gauge::with_opts(Opts::new(
             "process_virtual_memory_bytes",

@@ -133,11 +133,8 @@ impl serde::Serialize for MoveValue {
         match &self.0 {
             AnnotatedMoveValue::Bool(b) => serializer.serialize_bool(*b),
             AnnotatedMoveValue::U8(v) => serializer.serialize_u8(*v),
-            AnnotatedMoveValue::U16(v) => serializer.serialize_u16(*v),
-            AnnotatedMoveValue::U32(v) => serializer.serialize_u32(*v),
             AnnotatedMoveValue::U64(v) => serializer.serialize_u64(*v),
             AnnotatedMoveValue::U128(v) => serializer.serialize_u128(*v),
-            //AnnotatedMoveValue::U256(v) => serializer.serialize(*v),
             AnnotatedMoveValue::Address(v) => v.serialize(serializer),
             AnnotatedMoveValue::Vector(v) => {
                 let vs: Vec<_> = v.clone().into_iter().map(MoveValue).collect();
@@ -145,7 +142,9 @@ impl serde::Serialize for MoveValue {
             }
             AnnotatedMoveValue::Bytes(v) => hex::encode(v).serialize(serializer),
             AnnotatedMoveValue::Struct(v) => MoveStruct(v.clone()).serialize(serializer),
-            _ => todo!("XXX FIXME YSG"),
+            AnnotatedMoveValue::U16(v) => serializer.serialize_u16(*v),
+            AnnotatedMoveValue::U32(v) => serializer.serialize_u32(*v),
+            AnnotatedMoveValue::U256(v) => v.serialize(serializer),
         }
     }
 }

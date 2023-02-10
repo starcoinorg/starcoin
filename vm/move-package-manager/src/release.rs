@@ -19,7 +19,7 @@ use std::path::PathBuf;
 
 pub const DEFAULT_RELEASE_DIR: &str = "release";
 
-// XXX FIXME YSG, mpm release use v4, v5, v6
+// XXX FIXME YSG, mpm release use v4, v6
 #[derive(Parser)]
 pub struct Release {
     #[clap(name = "move-version", long = "move-version", default_value="4", possible_values=&["4", "6"])]

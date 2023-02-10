@@ -8529,6 +8529,7 @@ version = "1.12.9"
 dependencies = [
  "anyhow",
  "hex",
+ "move-core-types",
  "schemars",
  "serde 1.0.151",
  "serde_bytes",
@@ -9685,6 +9686,7 @@ dependencies = [
  "jsonrpc-derive",
  "jsonrpc-pubsub",
  "jsonrpc-server-utils",
+ "move-core-types",
  "network-api",
  "network-p2p-types",
  "network-types",

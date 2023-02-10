@@ -108,13 +108,9 @@ impl<'a> ABIResolver<'a> {
         Ok(match type_tag {
             TypeTag::Bool => TypeInstantiation::Bool,
             TypeTag::U8 => TypeInstantiation::U8,
-            TypeTag::U16 => TypeInstantiation::U16,
-            TypeTag::U32 => TypeInstantiation::U32,
             TypeTag::U64 => TypeInstantiation::U64,
             TypeTag::U128 => TypeInstantiation::U128,
-            TypeTag::U256 => TypeInstantiation::U256,
             TypeTag::Address => TypeInstantiation::Address,
-
             TypeTag::Signer => TypeInstantiation::Signer,
             TypeTag::Vector(sub_type) => {
                 TypeInstantiation::new_vector(self.resolve_type_tag(sub_type)?)
@@ -122,6 +118,9 @@ impl<'a> ABIResolver<'a> {
             TypeTag::Struct(struct_type) => {
                 TypeInstantiation::new_struct_instantiation(self.resolve_struct_tag(struct_type)?)
             }
+            TypeTag::U16 => TypeInstantiation::U16,
+            TypeTag::U32 => TypeInstantiation::U32,
+            TypeTag::U256 => TypeInstantiation::U256,
         })
     }
 

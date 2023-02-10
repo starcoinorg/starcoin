@@ -5,6 +5,7 @@ use anyhow::bail;
 use bcs_ext::BCSCodec;
 use hex::FromHex;
 use jsonrpc_core_client::RpcChannel;
+use move_core_types::u256;
 use network_types::peer_info::{PeerId, PeerInfo};
 pub use node_api_types::*;
 use schemars::{self, JsonSchema};
@@ -135,28 +136,24 @@ impl From<AnnotatedMoveStruct> for AnnotatedMoveStructView {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub enum AnnotatedMoveValueView {
     U8(u8),
-    // XXX FIXME YSG
-    //   U16(StrView<u16>),
-    // U32(Strview<u32>),
     U64(StrView<u64>),
     U128(StrView<u128>),
-    //  U256(StrView<u256::U256>),
     Bool(bool),
     Address(AccountAddress),
     Vector(Vec<AnnotatedMoveValueView>),
     Bytes(StrView<Vec<u8>>),
     Struct(AnnotatedMoveStructView),
+    U16(StrView<u16>),
+    U32(StrView<u32>),
+    U256(StrView<u256::U256>),
 }
 
 impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
     fn from(origin: AnnotatedMoveValue) -> Self {
         match origin {
             AnnotatedMoveValue::U8(u) => AnnotatedMoveValueView::U8(u),
-            //   AnnotatedMoveValue::U16(u) => AnnotatedMoveValueView::U16(StrView(u)),
-            //  AnnotatedMoveValue::U32(u) => AnnotatedMoveValueView::U32(StrView(u)),
             AnnotatedMoveValue::U64(u) => AnnotatedMoveValueView::U64(StrView(u)),
             AnnotatedMoveValue::U128(u) => AnnotatedMoveValueView::U128(StrView(u)),
-            //  AnnotatedMoveValue::U256(u) => AnnotatedMoveValueView::U256(StrView(u)),
             AnnotatedMoveValue::Bool(b) => AnnotatedMoveValueView::Bool(b),
             AnnotatedMoveValue::Address(data) => AnnotatedMoveValueView::Address(data),
             AnnotatedMoveValue::Vector(data) => {
@@ -164,7 +161,9 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
             }
             AnnotatedMoveValue::Bytes(data) => AnnotatedMoveValueView::Bytes(StrView(data)),
             AnnotatedMoveValue::Struct(data) => AnnotatedMoveValueView::Struct(data.into()),
-            _ => todo!("XXX FIXME YSG"),
+            AnnotatedMoveValue::U16(u) => AnnotatedMoveValueView::U16(StrView(u)),
+            AnnotatedMoveValue::U32(u) => AnnotatedMoveValueView::U32(StrView(u)),
+            AnnotatedMoveValue::U256(u) => AnnotatedMoveValueView::U256(StrView(u)),
         }
     }
 }
@@ -1733,7 +1732,7 @@ macro_rules! impl_str_view_for {
     }
     )*}
 }
-impl_str_view_for! {u64 i64 u128 i128}
+impl_str_view_for! {u64 i64 u128 i128 u16 i16 u32 i32 u256::U256}
 impl_str_view_for! {ByteCodeOrScriptFunction AccessPath}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -1931,7 +1930,8 @@ impl From<StateKey> for StateKeyView {
 
 #[cfg(test)]
 mod tests {
-    use crate::types::{ByteCodeOrScriptFunction, FunctionId};
+    use crate::types::{ByteCodeOrScriptFunction, FunctionId, StrView};
+    use move_core_types::u256;
     use starcoin_types::account_address::AccountAddress;
 
     #[test]
@@ -1951,5 +1951,14 @@ mod tests {
 
         let bytecode: ByteCodeOrScriptFunction = "0x123432ab34".parse().unwrap();
         assert!(matches!(bytecode, ByteCodeOrScriptFunction::ByteCode(_)));
+    }
+
+    #[test]
+    fn test_str_view_u256() {
+        let str = "115792089237316195423570985008687907853269984665640564039457584007913129638801";
+        let b = u256::U256::from_str_radix(str, 10).unwrap();
+        let val: StrView<u256::U256> = b.into();
+        let val_str = format!("{}", val);
+        assert_eq!(str, val_str.as_str());
     }
 }

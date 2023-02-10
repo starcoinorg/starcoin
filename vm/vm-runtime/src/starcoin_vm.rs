@@ -1251,7 +1251,6 @@ impl StarcoinVM {
         txn_data: &TransactionMetadata,
         remote_cache: &StateViewCache<'_, S>,
     ) -> (VMStatus, TransactionOutput) {
-        // XXX FIXME YSG, confirm whether is right
         gas_meter.set_metering(false);
         let data_cache = remote_cache.as_move_resolver();
         let mut session: SessionAdapter<_> = self

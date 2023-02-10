@@ -181,7 +181,6 @@ fn test_execute_transfer_txn_with_dummy_gas_token_code() -> Result<()> {
     let txn2 = Transaction::UserTransaction(account1.sign_txn(raw_txn));
     let output = execute_and_apply(&chain_state, txn2);
     //FIXME:: More detailed error code
-    // XXX FIXME YSG for test
     assert_eq!(
         TransactionStatus::Discard(StatusCode::BAD_TRANSACTION_FEE_CURRENCY),
         *output.status()

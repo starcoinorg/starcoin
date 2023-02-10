@@ -54,6 +54,7 @@ pub enum AnnotatedMoveValue {
     U128(u128),
     Bool(bool),
     Address(AccountAddress),
+    // XXX FIXME YSG, move/language/tools/move-resource-viewer is  Vector(TypeTag, Vec<AnnotatedMoveValue>)
     Vector(Vec<AnnotatedMoveValue>),
     Bytes(Vec<u8>),
     Struct(AnnotatedMoveStruct),

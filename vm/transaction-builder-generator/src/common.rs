@@ -9,6 +9,9 @@ use starcoin_vm_types::transaction::{
 };
 use std::collections::{BTreeMap, BTreeSet};
 
+/// Name of the Move `u256` type in the serde registry
+const U256_SERDE_NAME: &str = "u256";
+
 /// Useful error message.
 pub(crate) fn type_not_allowed(type_tag: &TypeTag) -> ! {
     panic!(
@@ -38,7 +41,7 @@ fn quote_type_as_format(type_tag: &TypeTag) -> Format {
         Struct(_) | Signer => type_not_allowed(type_tag),
         U16 => Format::U16,
         U32 => Format::U32,
-        U256 => todo!("XXX FIXME YSG"),
+        U256 => Format::TypeName(U256_SERDE_NAME.to_string()),
     }
 }
 
