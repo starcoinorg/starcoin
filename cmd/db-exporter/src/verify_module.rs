@@ -107,7 +107,6 @@ pub fn verify_modules_via_export_file(input_path: PathBuf) -> anyhow::Result<()>
         ProgressStyle::default_bar()
             .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
     );
-
     let success_counter = Arc::new(atomic_counter::RelaxedCounter::new(0));
     let error_counter = Arc::new(atomic_counter::RelaxedCounter::new(0));
     for block in blocks {
