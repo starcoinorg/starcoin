@@ -13,7 +13,7 @@ num-derive = { workspace = true }
 num-traits = { workspace = true }
 proptest = { optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }
-serde = { features = [ "derive",], workspace = true }
+serde = { features = ["derive"], workspace = true }
 serde_bytes = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
@@ -30,7 +30,7 @@ starcoin-crypto = { workspace = true }
 
 [features]
 default = []
-fuzzing = [ "proptest", "proptest-derive", "starcoin-crypto/fuzzing",]
+fuzzing = ["proptest", "proptest-derive", "starcoin-crypto/fuzzing"]
 
 [package]
 authors = { workspace = true }

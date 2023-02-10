@@ -22,18 +22,19 @@ network-types = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-metrics = { workspace = true }
 starcoin-uint = { workspace = true }
+starcoin-vm-types = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
 proptest-derive = { workspace = true }
 rand = { workspace = true }
-starcoin-types = { features = [ "fuzzing",], workspace = true }
+starcoin-types = { features = ["fuzzing"], workspace = true }
 starcoin-crypto = { workspace = true }
 stest = { workspace = true }
 
 [features]
 default = []
-fuzzing = [ "proptest", "proptest-derive", "starcoin-types/fuzzing",]
+fuzzing = ["proptest", "proptest-derive", "starcoin-types/fuzzing"]
 
 [package]
 authors = { workspace = true }
@@ -48,5 +49,5 @@ rust-version = { workspace = true }
 
 [dependencies.rocksdb]
 default-features = false
-features = [ "lz4",]
+features = ["lz4"]
 workspace = true

@@ -23,7 +23,7 @@ starcoin-config = { workspace = true }
 [dev-dependencies]
 hex = { workspace = true }
 stest = { workspace = true }
-tokio = { features = [ "full",], workspace = true }
+tokio = { features = ["full"], workspace = true }
 
 [package]
 authors = { workspace = true }

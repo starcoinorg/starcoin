@@ -4,7 +4,7 @@
 
 //# call-api chain.get_block_by_number [1]
 
-//# run --signers creator --args {{$.call-api[0].header.number}}u64  --args {{$.call-api[0].header.block_hash}}
+//# run --signers creator --args {{$.call-api[0].header.number}}u64  --args b"{{$.call-api[0].header.block_hash}}"
 script{
     use StarcoinFramework::Vector;
     fun main(_sender: signer, block_number: u64, block_hash: vector<u8>){

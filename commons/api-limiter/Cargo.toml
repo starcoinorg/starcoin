@@ -1,7 +1,7 @@
 [dependencies]
 anyhow = { workspace = true }
 dashmap = { workspace = true }
-governor = { features = [ "dashmap",], workspace = true }
+governor = { features = ["dashmap"], workspace = true }
 
 [package]
 authors = { workspace = true }

@@ -1,6 +1,6 @@
 [dependencies]
 bcs-ext = { package = "bcs-ext", workspace = true }
-clap = { features = [ "derive",], workspace = true }
+clap = { features = ["derive"], workspace = true }
 move-core-types = { workspace = true }
 stdlib = { package = "stdlib", workspace = true }
 

@@ -1,11 +1,12 @@
 [build-dependencies]
-serde-reflection = "~0.3"
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
-starcoin-types = { path = "../types" }
-anyhow = "1.0"
-bcs-ext = { package = "bcs-ext", path = "../commons/bcs_ext" }
-serde = "1.0.130"
-serde_yaml = "0.8"
+serde-reflection = { workspace = true }
+starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+starcoin-types = { package = "starcoin-types", workspace = true }
+anyhow = { workspace = true }
+bcs-ext = { package = "bcs-ext", workspace = true }
+serde = { features = ["derive"], workspace = true }
+serde_yaml = { workspace = true }
+starcoin-vm-types = { workspace = true }
 
 [dependencies]
 

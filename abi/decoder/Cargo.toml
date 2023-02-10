@@ -6,7 +6,7 @@ hex = { workspace = true }
 move-binary-format = { workspace = true }
 ordinal = { workspace = true }
 schemars = { workspace = true }
-serde = { features = [ "derive", "rc",], workspace = true }
+serde = { features = ["derive", "rc"], workspace = true }
 serde_bytes = { workspace = true }
 serde_json = { workspace = true }
 starcoin-abi-resolver = { workspace = true }

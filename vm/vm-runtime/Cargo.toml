@@ -2,6 +2,7 @@
 anyhow = { workspace = true }
 bcs-ext = { package = "bcs-ext", workspace = true }
 starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+starcoin-config = { workspace = true }
 move-core-types = { workspace = true }
 once_cell = { workspace = true }
 tracing = { workspace = true }
@@ -13,16 +14,20 @@ starcoin-logger = { workspace = true }
 starcoin-natives = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
-move-stdlib = { optional = true, workspace = true }
+move-stdlib = { workspace = true }
+move-table-extension = { workspace = true }
 starcoin-metrics = { optional = true, workspace = true }
+starcoin-gas = { workspace = true }
+starcoin-gas-algebra-ext = { workspace = true }
+serde = { features = ["derive"], workspace = true }
 
 [dev-dependencies]
 stdlib = { package = "stdlib", workspace = true }
 
 [features]
-default = [ "metrics",]
-metrics = [ "starcoin-metrics",]
-testing = [ "move-stdlib/testing", "starcoin-natives/testing",]
+default = ["metrics"]
+metrics = ["starcoin-metrics"]
+testing = ["move-stdlib/testing", "starcoin-natives/testing"]
 
 [package]
 authors = { workspace = true }

@@ -437,12 +437,12 @@ fn block_from_metadata(block_meta: BlockMetadata, chain_state: &ChainStateDB) ->
 }
 
 pub fn starcoin_dao_type_tag() -> TypeTag {
-    TypeTag::Struct(StructTag {
+    TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
         module: Identifier::new("StarcoinDAO").unwrap(),
         name: Identifier::new("StarcoinDAO").unwrap(),
         type_params: vec![],
-    })
+    }))
 }
 
 pub fn execute_create_account(

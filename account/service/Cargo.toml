@@ -4,7 +4,7 @@ async-trait = { workspace = true }
 bcs-ext = { package = "bcs-ext", workspace = true }
 futures = { workspace = true }
 starcoin-account = { workspace = true }
-starcoin-account-api = { features = [ "mock",], workspace = true }
+starcoin-account-api = { features = ["mock"], workspace = true }
 starcoin-chain-notify = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }

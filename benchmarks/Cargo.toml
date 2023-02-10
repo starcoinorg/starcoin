@@ -61,4 +61,4 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 
 [target."cfg(target_os=\"linux\")".dependencies]
-pprof = { version = "0.10", features = ["flamegraph", "criterion", ] }
+pprof = { version = "0.10", features = ["flamegraph", "criterion"] }

@@ -1,11 +1,11 @@
 [dependencies]
 hex = { workspace = true }
-serde = { features = [ "derive",], workspace = true }
+serde = { features = ["derive"], workspace = true }
 serde_bytes = { workspace = true }
 
 [dev-dependencies]
 bcs-ext = { package = "bcs-ext", workspace = true }
-serde_json = { features = [ "arbitrary_precision",], workspace = true }
+serde_json = { features = ["arbitrary_precision"], workspace = true }
 
 [package]
 authors = { workspace = true }

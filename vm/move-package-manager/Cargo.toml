@@ -5,19 +5,29 @@ path = "src/main.rs"
 [dependencies]
 anyhow = { workspace = true }
 bcs = { workspace = true }
-clap = { features = [ "derive",], workspace = true }
+clap = { features = ["derive"], workspace = true }
 difference = { workspace = true }
-include_dir = { features = [ "search",], workspace = true }
+include_dir = { features = ["search"], workspace = true }
 itertools = { workspace = true }
-jsonrpc-client-transports = { features = [ "http", "ipc", "ws", "arbitrary_precision",], workspace = true }
-jsonrpc-core-client = { features = [ "http", "ipc", "ws", "arbitrary_precision",], workspace = true }
+jsonrpc-client-transports = { features = [
+    "http",
+    "ipc",
+    "ws",
+    "arbitrary_precision",
+], workspace = true }
+jsonrpc-core-client = { features = [
+    "http",
+    "ipc",
+    "ws",
+    "arbitrary_precision",
+], workspace = true }
 once_cell = { workspace = true }
 walkdir = { workspace = true }
 futures = { workspace = true }
 tempfile = { workspace = true }
-tokio = { features = [ "full",], workspace = true }
+tokio = { features = ["full"], workspace = true }
 bcs-ext = { package = "bcs-ext", workspace = true }
-datatest-stable = {git = "https://github.com/starcoinorg/diem-devtools", branch = "feature/pub-test-opts"}
+datatest-stable = { git = "https://github.com/starcoinorg/diem-devtools", branch = "feature/pub-test-opts" }
 move-binary-format = { workspace = true }
 move-bytecode-verifier = { workspace = true }
 move-cli = { workspace = true }
@@ -40,10 +50,11 @@ starcoin-rpc-api = { workspace = true }
 starcoin-rpc-client = { workspace = true }
 starcoin-transactional-test-harness = { workspace = true }
 starcoin-types = { workspace = true }
-starcoin-vm-runtime = { features = [ "testing",], workspace = true }
+starcoin-vm-runtime = { features = ["testing"], workspace = true }
 starcoin-vm-types = { workspace = true }
 stdlib = { workspace = true }
 vm-status-translator = { workspace = true }
+move-vm-test-utils = { workspace = true }
 
 [dev-dependencies]
 

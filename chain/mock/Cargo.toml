@@ -30,7 +30,7 @@ proptest-derive = { workspace = true }
 
 [features]
 default = []
-fuzzing = [ "proptest", "proptest-derive", "starcoin-types/fuzzing",]
+fuzzing = ["proptest", "proptest-derive", "starcoin-types/fuzzing"]
 
 [package]
 authors = { workspace = true }

@@ -4,7 +4,7 @@
 pub use self::gen_client::Client as StateClient;
 use crate::types::{
     AccountStateSetView, CodeView, ListCodeView, ListResourceView, ResourceView,
-    StateWithProofView, StrView, StructTagView,
+    StateWithProofView, StateWithTableItemProofView, StrView, StructTagView,
 };
 use crate::FutureResult;
 use openrpc_derive::openrpc;
@@ -16,6 +16,7 @@ use starcoin_types::language_storage::{ModuleId, StructTag};
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
 };
+use starcoin_vm_types::state_store::table::TableHandle;
 #[openrpc]
 pub trait StateApi {
     #[rpc(name = "state.get")]
@@ -61,6 +62,23 @@ pub trait StateApi {
         access_path: AccessPath,
         state_root: HashValue,
     ) -> FutureResult<StrView<Vec<u8>>>;
+
+    /// Return the TableItem value  and provide a State Proof at `state_root`
+    #[rpc(name = "state.get_with_table_item_proof")]
+    fn get_with_table_item_proof(
+        &self,
+        handle: TableHandle,
+        key: Vec<u8>,
+    ) -> FutureResult<StateWithTableItemProofView>;
+
+    /// Return the TableItem value  and provide a State Proof at `state_root`
+    #[rpc(name = "state.get_with_table_item_proof_by_root")]
+    fn get_with_table_item_proof_by_root(
+        &self,
+        handle: TableHandle,
+        key: Vec<u8>,
+        state_root: HashValue,
+    ) -> FutureResult<StateWithTableItemProofView>;
 
     /// get code of module
     #[rpc(name = "state.get_code")]

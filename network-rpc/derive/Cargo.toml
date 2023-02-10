@@ -2,7 +2,7 @@
 anyhow = { workspace = true }
 proc-macro2 = { workspace = true }
 quote = { workspace = true }
-syn = { features = [ "full", "extra-traits", "visit", "fold",], workspace = true }
+syn = { features = ["full", "extra-traits", "visit", "fold"], workspace = true }
 
 [lib]
 proc-macro = true

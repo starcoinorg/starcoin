@@ -1,7 +1,7 @@
 [dependencies]
 anyhow = { workspace = true }
 starcoin-account = { workspace = true }
-starcoin-account-api = { features = [ "mock",], workspace = true }
+starcoin-account-api = { features = ["mock"], workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-rpc-client = { workspace = true }

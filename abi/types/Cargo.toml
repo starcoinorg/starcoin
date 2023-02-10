@@ -6,6 +6,7 @@ serde = { workspace = true }
 serde_bytes = { workspace = true }
 serde_json = { workspace = true }
 starcoin-vm-types = { workspace = true }
+move-core-types = { workspace = true }
 
 [package]
 authors = { workspace = true }

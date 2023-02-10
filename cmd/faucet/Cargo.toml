@@ -5,14 +5,14 @@ path = "src/main.rs"
 [dependencies]
 anyhow = { workspace = true }
 ascii = { workspace = true }
-clap = { features = [ "derive",], workspace = true }
+clap = { features = ["derive"], workspace = true }
 futures = { workspace = true }
 futures-timer = { workspace = true }
 hex = { default-features = false, workspace = true }
 once_cell = { workspace = true }
 rust-embed = { workspace = true }
 serde = { workspace = true }
-serde_json = { features = [ "arbitrary_precision",], workspace = true }
+serde_json = { features = ["arbitrary_precision"], workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
@@ -23,8 +23,8 @@ starcoin-state-api = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
 starcoin-types = { workspace = true }
 tiny_http = { workspace = true }
-tokio = { features = [ "full",], workspace = true }
-tokio-executor = { features = [ "blocking",], workspace = true }
+tokio = { features = ["full"], workspace = true }
+tokio-executor = { features = ["blocking"], workspace = true }
 
 [features]
 default = []

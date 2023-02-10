@@ -40,6 +40,6 @@ key 0x00000000000000000000000000000001::Account::Account {
 
 task 5 'run'. lines 11-17:
 {
-  "gas_used": 8639,
+  "gas_used": 8643,
   "status": "Executed"
 }

@@ -20,7 +20,7 @@ rand_core = { default-features = false, workspace = true }
 
 [features]
 default = []
-fuzzing = [ "starcoin-crypto/fuzzing",]
+fuzzing = ["starcoin-crypto/fuzzing"]
 
 [package]
 authors = { workspace = true }

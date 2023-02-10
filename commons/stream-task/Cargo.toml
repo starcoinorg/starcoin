@@ -9,7 +9,7 @@ parking_lot = { workspace = true }
 pin-project = { workspace = true }
 pin-utils = { workspace = true }
 schemars = { workspace = true }
-serde = { features = [ "derive",], workspace = true }
+serde = { features = ["derive"], workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 

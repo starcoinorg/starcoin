@@ -56,7 +56,7 @@ starcoin-statedb = { workspace = true }
 starcoin-txpool-mock-service = { workspace = true }
 starcoin-executor = { workspace = true }
 test-helper = { workspace = true }
-tokio = { features = [ "full",], workspace = true }
+tokio = { features = ["full"], workspace = true }
 
 [package]
 authors = { workspace = true }

@@ -5,7 +5,7 @@ test = false
 
 [dependencies]
 anyhow = { workspace = true }
-clap = { features = [ "derive",], workspace = true }
+clap = { features = ["derive"], workspace = true }
 heck = { workspace = true }
 regex = { workspace = true }
 serde-generate = { workspace = true }

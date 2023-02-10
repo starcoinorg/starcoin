@@ -3,7 +3,7 @@ anyhow = { workspace = true }
 async-trait = { workspace = true }
 backtrace = { workspace = true }
 futures = { workspace = true }
-serde = { features = [ "derive",], workspace = true }
+serde = { features = ["derive"], workspace = true }
 starcoin-config = { workspace = true }
 starcoin-consensus = { workspace = true }
 starcoin-crypto = { workspace = true }

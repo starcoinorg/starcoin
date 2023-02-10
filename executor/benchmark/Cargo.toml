@@ -1,6 +1,6 @@
 [dependencies]
 anyhow = { workspace = true }
-clap = { features = [ "derive",], workspace = true }
+clap = { features = ["derive"], workspace = true }
 itertools = { default-features = false, workspace = true }
 rand = { workspace = true }
 rayon = { workspace = true }

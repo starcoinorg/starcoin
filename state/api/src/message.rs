@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::StateWithProof;
+use crate::{StateWithProof, StateWithTableItemProof};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
@@ -9,6 +9,7 @@ use starcoin_types::state_set::AccountStateSet;
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
 };
+use starcoin_vm_types::state_store::table::TableHandle;
 
 #[derive(Debug, Clone)]
 pub enum StateRequest {
@@ -22,6 +23,8 @@ pub enum StateRequest {
     },
     GetAccountStateByRoot(AccountAddress, HashValue),
     StateRoot(),
+    GetWithTableItemProof(TableHandle, Vec<u8>),
+    GetWithTableItemProofByRoot(TableHandle, Vec<u8>, HashValue),
 }
 
 impl ServiceRequest for StateRequest {
@@ -36,4 +39,5 @@ pub enum StateResponse {
     AccountState(Option<AccountState>),
     AccountStateSet(Option<AccountStateSet>),
     None,
+    StateWithTableItemProof(Box<StateWithTableItemProof>),
 }

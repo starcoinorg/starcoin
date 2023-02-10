@@ -8,6 +8,7 @@ use crate::upgrade::DBUpgrade;
 use anyhow::{bail, format_err, Result};
 use byteorder::{BigEndian, ReadBytesExt};
 use starcoin_crypto::HashValue;
+use starcoin_vm_types::state_store::table::TableHandle;
 use std::convert::TryInto;
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -548,6 +549,16 @@ impl ValueCodec for Vec<u8> {
 
     fn decode_value(data: &[u8]) -> Result<Self> {
         Ok(data.to_vec())
+    }
+}
+
+impl KeyCodec for TableHandle {
+    fn encode_key(&self) -> Result<Vec<u8>> {
+        bcs_ext::to_bytes(self)
+    }
+
+    fn decode_key(data: &[u8]) -> Result<Self> {
+        bcs_ext::from_bytes(data)
     }
 }
 

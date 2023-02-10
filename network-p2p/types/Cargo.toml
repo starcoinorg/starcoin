@@ -2,12 +2,14 @@
 bitflags = { workspace = true }
 bytes = { workspace = true }
 derive_more = { workspace = true }
-libp2p = { default-features = false, features = [ "request-response",], workspace = true }
+libp2p = { default-features = false, features = [
+    "request-response",
+], workspace = true }
 rand = { workspace = true }
 sc-peerset = { workspace = true }
 schemars = { workspace = true }
-serde = { features = [ "derive",], workspace = true }
-serde_json = { features = [ "arbitrary_precision",], workspace = true }
+serde = { features = ["derive"], workspace = true }
+serde_json = { features = ["arbitrary_precision"], workspace = true }
 
 [features]
 default = []

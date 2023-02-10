@@ -5,7 +5,7 @@ futures = { workspace = true }
 log = { workspace = true }
 network-rpc-derive = { workspace = true }
 num_enum = { workspace = true }
-serde = { features = [ "derive",], workspace = true }
+serde = { features = ["derive"], workspace = true }
 starcoin-types = { package = "starcoin-types", workspace = true }
 network-types = { workspace = true }
 

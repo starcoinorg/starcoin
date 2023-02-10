@@ -142,13 +142,16 @@ impl serde::Serialize for MoveValue {
             }
             AnnotatedMoveValue::Bytes(v) => hex::encode(v).serialize(serializer),
             AnnotatedMoveValue::Struct(v) => MoveStruct(v.clone()).serialize(serializer),
+            AnnotatedMoveValue::U16(v) => serializer.serialize_u16(*v),
+            AnnotatedMoveValue::U32(v) => serializer.serialize_u32(*v),
+            AnnotatedMoveValue::U256(v) => v.serialize(serializer),
         }
     }
 }
 
 fn parse_struct_tag(input: &str) -> anyhow::Result<StructTag> {
     match parse_type_tag(input)? {
-        TypeTag::Struct(s) => Ok(s),
+        TypeTag::Struct(s) => Ok(*s),
         _ => {
             anyhow::bail!("invalid struct tag")
         }

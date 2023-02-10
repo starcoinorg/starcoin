@@ -24,6 +24,6 @@ where
     const STRUCT_NAME: &'static str = "ConfigChangeEvent";
 
     fn type_params() -> Vec<TypeTag> {
-        vec![TypeTag::Struct(V::config_id().struct_tag())]
+        vec![TypeTag::Struct(Box::new(V::config_id().struct_tag()))]
     }
 }

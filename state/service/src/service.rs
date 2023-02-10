@@ -11,6 +11,7 @@ use starcoin_service_registry::{
 use starcoin_state_api::message::{StateRequest, StateResponse};
 use starcoin_state_api::{
     ChainStateReader, StateNodeStore, StateReaderExt, StateView, StateWithProof,
+    StateWithTableItemProof,
 };
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_statedb::ChainStateDB;
@@ -21,6 +22,8 @@ use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
     state_set::ChainStateSet,
 };
+use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::table::TableHandle;
 use std::sync::Arc;
 
 pub struct ChainStateService {
@@ -77,7 +80,10 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
         _ctx: &mut ServiceContext<ChainStateService>,
     ) -> Result<StateResponse> {
         let response = match msg {
-            StateRequest::Get(access_path) => StateResponse::State(self.service.get(&access_path)?),
+            StateRequest::Get(access_path) => StateResponse::State(
+                self.service
+                    .get_state_value(&StateKey::AccessPath(access_path))?,
+            ),
             StateRequest::GetWithProof(access_path) => {
                 StateResponse::StateWithProof(Box::new(self.service.get_with_proof(&access_path)?))
             }
@@ -104,6 +110,17 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
                 self.service
                     .get_account_state_set_with_root(address, state_root)?,
             ),
+            StateRequest::GetWithTableItemProof(handle, key) => {
+                StateResponse::StateWithTableItemProof(Box::new(
+                    self.service.get_with_table_item_proof(&handle, &key)?,
+                ))
+            }
+            StateRequest::GetWithTableItemProofByRoot(handle, key, state_root) => {
+                StateResponse::StateWithTableItemProof(Box::new(
+                    self.service
+                        .get_with_table_item_proof_by_root(handle, key, state_root)?,
+                ))
+            }
         };
         Ok(response)
     }
@@ -160,6 +177,16 @@ impl Inner {
         reader.get_with_proof(&access_path)
     }
 
+    pub(crate) fn get_with_table_item_proof_by_root(
+        &self,
+        handle: TableHandle,
+        key: Vec<u8>,
+        state_root: HashValue,
+    ) -> Result<StateWithTableItemProof> {
+        let reader = self.state_db.fork_at(state_root);
+        reader.get_with_table_item_proof(&handle, &key)
+    }
+
     pub(crate) fn get_account_state_by_root(
         &self,
         account: AccountAddress,
@@ -209,11 +236,19 @@ impl ChainStateReader for Inner {
     fn dump_iter(&self) -> Result<AccountStateSetIterator> {
         unimplemented!()
     }
+
+    fn get_with_table_item_proof(
+        &self,
+        handle: &TableHandle,
+        key: &[u8],
+    ) -> Result<StateWithTableItemProof> {
+        self.state_db.get_with_table_item_proof(handle, key)
+    }
 }
 
 impl StateView for Inner {
-    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        self.state_db.get(access_path)
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+        self.state_db.get_state_value(state_key)
     }
 
     fn is_genesis(&self) -> bool {

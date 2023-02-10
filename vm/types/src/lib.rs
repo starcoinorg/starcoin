@@ -5,9 +5,7 @@
 mod language_storage_ext;
 
 pub mod account_address;
-
 pub mod gas_schedule;
-
 pub mod location {
     pub use move_ir_types::location::Loc;
 }
@@ -161,7 +159,7 @@ pub mod parser {
     pub fn parse_struct_tag(s: &str) -> Result<StructTag> {
         let type_tag = parse_type_tag(s)?;
         match type_tag {
-            TypeTag::Struct(st) => Ok(st),
+            TypeTag::Struct(st) => Ok(*st),
             t => bail!("expect a struct tag, found: {:?}", t),
         }
     }
@@ -250,6 +248,8 @@ pub mod on_chain_resource;
 pub mod serde_helper;
 pub mod sign_message;
 pub mod sips;
+pub mod state_store;
+pub mod time;
 pub mod token;
 #[cfg(test)]
 mod unit_tests;

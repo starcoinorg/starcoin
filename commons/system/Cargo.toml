@@ -7,5 +7,5 @@ publish = false
 version = "1.12.9"
 
 [dependencies]
-anyhow = "1.0.37"
+anyhow = { workspace = true }
 systemstat = "0.1.6"

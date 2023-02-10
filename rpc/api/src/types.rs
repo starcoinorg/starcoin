@@ -5,6 +5,7 @@ use anyhow::bail;
 use bcs_ext::BCSCodec;
 use hex::FromHex;
 use jsonrpc_core_client::RpcChannel;
+use move_core_types::u256;
 use network_types::peer_info::{PeerId, PeerInfo};
 pub use node_api_types::*;
 use schemars::{self, JsonSchema};
@@ -20,7 +21,7 @@ use starcoin_accumulator::proof::AccumulatorProof;
 use starcoin_crypto::{CryptoMaterialError, HashValue, ValidCryptoMaterialStringExt};
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_service_registry::ServiceRequest;
-use starcoin_state_api::{StateProof, StateWithProof};
+use starcoin_state_api::{StateProof, StateWithProof, StateWithTableItemProof};
 use starcoin_types::block::{
     Block, BlockBody, BlockHeader, BlockHeaderExtra, BlockInfo, BlockNumber,
 };
@@ -142,6 +143,9 @@ pub enum AnnotatedMoveValueView {
     Vector(Vec<AnnotatedMoveValueView>),
     Bytes(StrView<Vec<u8>>),
     Struct(AnnotatedMoveStructView),
+    U16(StrView<u16>),
+    U32(StrView<u32>),
+    U256(StrView<u256::U256>),
 }
 
 impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
@@ -157,6 +161,9 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
             }
             AnnotatedMoveValue::Bytes(data) => AnnotatedMoveValueView::Bytes(StrView(data)),
             AnnotatedMoveValue::Struct(data) => AnnotatedMoveValueView::Struct(data.into()),
+            AnnotatedMoveValue::U16(u) => AnnotatedMoveValueView::U16(StrView(u)),
+            AnnotatedMoveValue::U32(u) => AnnotatedMoveValueView::U32(StrView(u)),
+            AnnotatedMoveValue::U256(u) => AnnotatedMoveValueView::U256(StrView(u)),
         }
     }
 }
@@ -1164,6 +1171,8 @@ use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_chain_api::{EventWithProof, TransactionInfoWithProof};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::state_store::state_key::{StateKey, TableItem};
+use starcoin_vm_types::state_store::table::TableHandle;
 pub use vm_status_translator::VmStatusExplainView;
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
@@ -1179,18 +1188,35 @@ pub struct TransactionOutputView {
     pub gas_used: StrView<u64>,
     pub write_set: Vec<TransactionOutputAction>,
     pub events: Vec<TransactionEventView>,
+    pub table_item_write_set: Vec<TransactionOutputTableItemAction>,
 }
 
 impl From<TransactionOutput> for TransactionOutputView {
     fn from(txn_output: TransactionOutput) -> Self {
         let (write_set, events, gas_used, status) = txn_output.into_inner();
+        let mut access_write_set = vec![];
+        let mut table_item_write_set = vec![];
+        for (state_key, op) in write_set {
+            match state_key {
+                StateKey::AccessPath(access_path) => {
+                    access_write_set.push((access_path, op));
+                }
+                StateKey::TableItem(table_item) => {
+                    table_item_write_set.push((table_item, op));
+                }
+            }
+        }
         Self {
             events: events.into_iter().map(Into::into).collect(),
             gas_used: gas_used.into(),
             status: status.into(),
-            write_set: write_set
+            write_set: access_write_set
                 .into_iter()
                 .map(TransactionOutputAction::from)
+                .collect(),
+            table_item_write_set: table_item_write_set
+                .into_iter()
+                .map(TransactionOutputTableItemAction::from)
                 .collect(),
         }
     }
@@ -1234,6 +1260,29 @@ pub enum WriteOpValueView {
 pub enum WriteOpView {
     Deletion,
     Value,
+}
+
+impl From<(TableItem, WriteOp)> for TransactionOutputTableItemAction {
+    fn from((table_item, op): (TableItem, WriteOp)) -> Self {
+        let (action, value) = match op {
+            WriteOp::Deletion => (WriteOpView::Deletion, None),
+            WriteOp::Value(v) => (WriteOpView::Value, Some(StrView(v))),
+        };
+
+        TransactionOutputTableItemAction {
+            table_item: table_item.into(),
+            action,
+            value,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct TransactionOutputTableItemAction {
+    pub table_item: TableItemView,
+    pub action: WriteOpView,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value: Option<StrView<Vec<u8>>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
@@ -1350,6 +1399,57 @@ impl From<StateWithProofView> for StateWithProof {
             view.account_state_proof.into(),
         );
         StateWithProof::new(state, proof)
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct StateWithTableItemProofView {
+    pub state_proof: (StateWithProofView, HashValue),
+    pub table_handle_proof: (Option<StrView<Vec<u8>>>, SparseMerkleProofView, HashValue),
+    pub key_proof: (Option<StrView<Vec<u8>>>, SparseMerkleProofView, HashValue),
+}
+
+impl StateWithTableItemProofView {
+    pub fn into_state_table_item_proof(self) -> StateWithTableItemProof {
+        self.into()
+    }
+}
+
+impl From<StateWithTableItemProof> for StateWithTableItemProofView {
+    fn from(state_table_item_proof: StateWithTableItemProof) -> Self {
+        Self {
+            state_proof: (
+                state_table_item_proof.state_proof.0.into(),
+                state_table_item_proof.state_proof.1,
+            ),
+            table_handle_proof: (
+                state_table_item_proof.table_handle_proof.0.map(StrView),
+                state_table_item_proof.table_handle_proof.1.into(),
+                state_table_item_proof.table_handle_proof.2,
+            ),
+            key_proof: (
+                state_table_item_proof.key_proof.0.map(StrView),
+                state_table_item_proof.key_proof.1.into(),
+                state_table_item_proof.key_proof.2,
+            ),
+        }
+    }
+}
+
+impl From<StateWithTableItemProofView> for StateWithTableItemProof {
+    fn from(view: StateWithTableItemProofView) -> Self {
+        let state_proof = (StateWithProof::from(view.state_proof.0), view.state_proof.1);
+        let table_handle_proof = (
+            view.table_handle_proof.0.map(|v| v.0),
+            SparseMerkleProof::from(view.table_handle_proof.1),
+            view.table_handle_proof.2,
+        );
+        let key_proof = (
+            view.key_proof.0.map(|v| v.0),
+            SparseMerkleProof::from(view.key_proof.1),
+            view.key_proof.2,
+        );
+        StateWithTableItemProof::new(state_proof, table_handle_proof, key_proof)
     }
 }
 
@@ -1561,7 +1661,7 @@ impl FromStr for StructTagView {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let type_tag = parse_type_tag(s)?;
         match type_tag {
-            TypeTag::Struct(s) => Ok(Self(s)),
+            TypeTag::Struct(s) => Ok(Self(*s)),
             t => anyhow::bail!("expect struct tag, actual: {}", t),
         }
     }
@@ -1632,7 +1732,7 @@ macro_rules! impl_str_view_for {
     }
     )*}
 }
-impl_str_view_for! {u64 i64 u128 i128}
+impl_str_view_for! {u64 i64 u128 i128 u16 i16 u32 i32 u256::U256}
 impl_str_view_for! {ByteCodeOrScriptFunction AccessPath}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -1791,9 +1891,47 @@ impl From<BlockInfo> for BlockInfoView {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename = "table_item")]
+pub struct TableItemView {
+    handle: TableHandle,
+    #[schemars(with = "String")]
+    key: Vec<u8>,
+}
+
+impl From<TableItem> for TableItemView {
+    fn from(table_item: TableItem) -> Self {
+        Self {
+            handle: table_item.handle,
+            key: table_item.key,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub enum StateKeyView {
+    #[serde(rename = "access_path")]
+    AccessPath(AccessPath),
+    #[serde(rename = "table_item")]
+    TableItem(TableItemView),
+}
+
+impl From<StateKey> for StateKeyView {
+    fn from(state_key: StateKey) -> Self {
+        match state_key {
+            StateKey::AccessPath(access_path) => Self::AccessPath(access_path),
+            StateKey::TableItem(table_item) => Self::TableItem(TableItemView {
+                handle: table_item.handle,
+                key: table_item.key,
+            }),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::types::{ByteCodeOrScriptFunction, FunctionId};
+    use crate::types::{ByteCodeOrScriptFunction, FunctionId, StrView};
+    use move_core_types::u256;
     use starcoin_types::account_address::AccountAddress;
 
     #[test]
@@ -1813,5 +1951,14 @@ mod tests {
 
         let bytecode: ByteCodeOrScriptFunction = "0x123432ab34".parse().unwrap();
         assert!(matches!(bytecode, ByteCodeOrScriptFunction::ByteCode(_)));
+    }
+
+    #[test]
+    fn test_str_view_u256() {
+        let str = "115792089237316195423570985008687907853269984665640564039457584007913129638801";
+        let b = u256::U256::from_str_radix(str, 10).unwrap();
+        let val: StrView<u256::U256> = b.into();
+        let val_str = format!("{}", val);
+        assert_eq!(str, val_str.as_str());
     }
 }

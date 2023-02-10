@@ -12,11 +12,10 @@ use crate::{
     transaction::{TransactionPayload, TransactionPayloadType},
 };
 use anyhow::Result;
-use move_core_types::gas_schedule::{
-    AbstractMemorySize, GasAlgebra, GasCarrier, GasPrice, GasUnits,
-};
+use move_core_types::gas_algebra::NumBytes;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
+use starcoin_gas_algebra_ext::{FeePerGasUnit, Gas};
 use std::str::FromStr;
 
 pub enum TransactionPayloadMetadata {
@@ -39,10 +38,10 @@ pub struct TransactionMetadata {
     pub sender: AccountAddress,
     pub authentication_key_preimage: Vec<u8>,
     pub sequence_number: u64,
-    pub max_gas_amount: GasUnits<GasCarrier>,
-    pub gas_unit_price: GasPrice<GasCarrier>,
+    pub max_gas_amount: Gas,
+    pub gas_unit_price: FeePerGasUnit,
     pub gas_token_code: TokenCode,
-    pub transaction_size: AbstractMemorySize<GasCarrier>,
+    pub transaction_size: NumBytes,
     pub expiration_timestamp_secs: u64,
     pub chain_id: ChainId,
     pub payload: TransactionPayloadMetadata,
@@ -64,11 +63,11 @@ impl TransactionMetadata {
             sender: txn.sender(),
             authentication_key_preimage: auth_preimage.into_vec(),
             sequence_number: txn.sequence_number(),
-            max_gas_amount: GasUnits::new(txn.max_gas_amount()),
-            gas_unit_price: GasPrice::new(txn.gas_unit_price()),
+            max_gas_amount: txn.max_gas_amount().into(),
+            gas_unit_price: txn.gas_unit_price().into(),
             gas_token_code: TokenCode::from_str(txn.gas_token_code().as_str())
                 .map_err(|_e| VMStatus::Error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY))?,
-            transaction_size: AbstractMemorySize::new(txn.txn_size() as u64),
+            transaction_size: (txn.txn_size() as u64).into(),
             expiration_timestamp_secs: txn.expiration_timestamp_secs(),
             chain_id: txn.chain_id(),
             payload: match txn.payload() {
@@ -83,11 +82,11 @@ impl TransactionMetadata {
             },
         })
     }
-    pub fn max_gas_amount(&self) -> GasUnits<GasCarrier> {
+    pub fn max_gas_amount(&self) -> Gas {
         self.max_gas_amount
     }
 
-    pub fn gas_unit_price(&self) -> GasPrice<GasCarrier> {
+    pub fn gas_unit_price(&self) -> FeePerGasUnit {
         self.gas_unit_price
     }
 
@@ -107,7 +106,7 @@ impl TransactionMetadata {
         self.sequence_number
     }
 
-    pub fn transaction_size(&self) -> AbstractMemorySize<GasCarrier> {
+    pub fn transaction_size(&self) -> NumBytes {
         self.transaction_size
     }
 

@@ -7,6 +7,7 @@ use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::file_format::{CompiledModule, FunctionDefinitionIndex};
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::vm_status::{AbortLocation, StatusCode, VMStatus};
 use std::convert::TryFrom;
@@ -22,7 +23,7 @@ pub fn locate_execution_failure(
             let ap =
                 AccessPath::code_access_path(*module_id.address(), module_id.name().to_owned());
 
-            match state.get(&ap)? {
+            match state.get_state_value(&StateKey::AccessPath(ap))? {
                 Some(bytes) => CompiledModule::deserialize(&bytes).ok(),
                 None => None,
             }
@@ -53,18 +54,18 @@ pub fn explain_move_abort(abort_location: AbortLocation, abort_code: u64) -> Mov
     let category = abort_code & 0xFFu64;
     let reason_code = abort_code >> 8;
 
-    let err_context = match abort_location {
+    let err_description = match abort_location {
         AbortLocation::Module(module_id) => {
             starcoin_move_explain::get_explanation(&module_id, abort_code)
         }
         AbortLocation::Script => None,
     };
-    match err_context {
-        Some(ctx) => MoveAbortExplain {
+    match err_description {
+        Some(description) => MoveAbortExplain {
             category_code: category,
-            category_name: Some(ctx.category.code_name),
+            category_name: Some(description.code_name.clone()),
             reason_code,
-            reason_name: Some(ctx.reason.code_name),
+            reason_name: Some(description.code_name),
         },
         None => MoveAbortExplain {
             category_code: category,

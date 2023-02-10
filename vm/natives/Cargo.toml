@@ -16,8 +16,7 @@ ripemd160 = { workspace = true }
 smallvec = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-uint = { workspace = true }
-starcoin-vm-types = { workspace = true }
-tiny-keccak = { features = [ "keccak",], workspace = true }
+tiny-keccak = { features = ["keccak"], workspace = true }
 walkdir = { workspace = true }
 
 [dev-dependencies]
@@ -25,7 +24,7 @@ hex = { workspace = true }
 rand = { workspace = true }
 
 [features]
-testing = [ "move-stdlib/testing",]
+testing = ["move-stdlib/testing"]
 
 [package]
 authors = { workspace = true }

@@ -14,7 +14,7 @@ use starcoin_rpc_api::state::{
 };
 use starcoin_rpc_api::types::{
     AccountStateSetView, AnnotatedMoveStructView, CodeView, ListCodeView, ListResourceView,
-    ResourceView, StateWithProofView, StrView, StructTagView,
+    ResourceView, StateWithProofView, StateWithTableItemProofView, StrView, StructTagView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::{ChainStateAsyncService, StateView};
@@ -26,6 +26,8 @@ use starcoin_types::{
 };
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{struct_tag_match, StructTag};
+use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::table::TableHandle;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -183,6 +185,35 @@ where
         Box::pin(fut)
     }
 
+    fn get_with_table_item_proof(
+        &self,
+        handle: TableHandle,
+        key: Vec<u8>,
+    ) -> FutureResult<StateWithTableItemProofView> {
+        let fut = self
+            .service
+            .clone()
+            .get_with_table_item_proof(handle, key)
+            .map_ok(|p| p.into())
+            .map_err(map_err);
+        Box::pin(fut)
+    }
+
+    fn get_with_table_item_proof_by_root(
+        &self,
+        handle: TableHandle,
+        key: Vec<u8>,
+        state_root: HashValue,
+    ) -> FutureResult<StateWithTableItemProofView> {
+        let fut = self
+            .service
+            .clone()
+            .get_with_table_item_proof_by_root(handle, key, state_root)
+            .map_ok(|p| p.into())
+            .map_err(map_err);
+        Box::pin(fut)
+    }
+
     fn get_code(
         &self,
         module_id: StrView<ModuleId>,
@@ -196,7 +227,8 @@ where
                 .state_root
                 .unwrap_or(service.clone().state_root().await?);
             let chain_state = ChainStateDB::new(state_store, Some(state_root));
-            let code = chain_state.get(&AccessPath::from(&module_id.0))?;
+            let code = chain_state
+                .get_state_value(&StateKey::AccessPath(AccessPath::from(&module_id.0)))?;
             Ok(match code {
                 None => None,
                 Some(c) => {
@@ -230,9 +262,8 @@ where
                 .state_root
                 .unwrap_or(service.clone().state_root().await?);
             let chain_state = ChainStateDB::new(state_store, Some(state_root));
-            let data = chain_state.get(&AccessPath::resource_access_path(
-                addr,
-                resource_type.0.clone(),
+            let data = chain_state.get_state_value(&StateKey::AccessPath(
+                AccessPath::resource_access_path(addr, resource_type.0.clone()),
             ))?;
             Ok(match data {
                 None => None,

@@ -17,14 +17,14 @@ once_cell = { workspace = true }
 shell-words = { workspace = true }
 tempfile = { workspace = true }
 walkdir = { workspace = true }
-clap = { features = [ "derive",], workspace = true }
+clap = { features = ["derive"], workspace = true }
 hex = { workspace = true }
 itertools = { workspace = true }
 log = { workspace = true }
 num = { workspace = true }
 pretty = { workspace = true }
 rand = { workspace = true }
-serde = { features = [ "derive",], workspace = true }
+serde = { features = ["derive"], workspace = true }
 serde_json = { workspace = true }
 simplelog = { workspace = true }
 toml = { workspace = true }

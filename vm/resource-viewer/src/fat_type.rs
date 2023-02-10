@@ -66,6 +66,10 @@ pub(crate) enum FatType {
     Reference(Box<FatType>),
     MutableReference(Box<FatType>),
     TyParam(usize),
+    // NOTE: Added in bytecode version v6, do not reorder!
+    U16,
+    U32,
+    U256,
 }
 
 impl FatStructType {
@@ -133,6 +137,10 @@ impl FatType {
             MutableReference(ty) => MutableReference(Box::new(ty.subst(ty_args)?)),
 
             Struct(struct_ty) => Struct(Box::new(struct_ty.subst(ty_args)?)),
+
+            U16 => U16,
+            U32 => U32,
+            U256 => U256,
         };
 
         Ok(res)
@@ -149,7 +157,7 @@ impl FatType {
             Address => TypeTag::Address,
             Signer => TypeTag::Signer,
             Vector(ty) => TypeTag::Vector(Box::new(ty.type_tag()?)),
-            Struct(struct_ty) => TypeTag::Struct(struct_ty.struct_tag()?),
+            Struct(struct_ty) => TypeTag::Struct(Box::new(struct_ty.struct_tag()?)),
 
             Reference(_) | MutableReference(_) | TyParam(_) => {
                 return Err(
@@ -157,6 +165,10 @@ impl FatType {
                         .with_message(format!("cannot derive type tag for {:?}", self)),
                 )
             }
+
+            U16 => TypeTag::U16,
+            U32 => TypeTag::U32,
+            U256 => TypeTag::U256,
         };
 
         Ok(res)
@@ -194,7 +206,9 @@ impl TryInto<MoveTypeLayout> for &FatType {
                     .collect::<PartialVMResult<Vec<_>>>()?,
             )),
             FatType::Signer => MoveTypeLayout::Signer,
-
+            FatType::U16 => MoveTypeLayout::U16,
+            FatType::U32 => MoveTypeLayout::U32,
+            FatType::U256 => MoveTypeLayout::U256,
             _ => return Err(PartialVMError::new(StatusCode::ABORT_TYPE_MISMATCH_ERROR)),
         })
     }

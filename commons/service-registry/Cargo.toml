@@ -8,7 +8,7 @@ futures-timer = { workspace = true }
 log = { workspace = true }
 once_cell = { workspace = true }
 schemars = { workspace = true }
-serde = { features = [ "derive",], workspace = true }
+serde = { features = ["derive"], workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 

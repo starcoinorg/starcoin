@@ -7,9 +7,19 @@ bcs-ext = { package = "bcs-ext", workspace = true }
 futures = { workspace = true }
 futures-timer = { workspace = true }
 hex = { workspace = true }
-jsonrpc-client-transports = { features = [ "http", "ipc", "ws", "arbitrary_precision",], workspace = true }
-jsonrpc-core = { features = [ "arbitrary_precision",], workspace = true }
-jsonrpc-core-client = { features = [ "http", "ipc", "ws", "arbitrary_precision",], workspace = true }
+jsonrpc-client-transports = { features = [
+    "http",
+    "ipc",
+    "ws",
+    "arbitrary_precision",
+], workspace = true }
+jsonrpc-core = { features = ["arbitrary_precision"], workspace = true }
+jsonrpc-core-client = { features = [
+    "http",
+    "ipc",
+    "ws",
+    "arbitrary_precision",
+], workspace = true }
 jsonrpc-derive = { workspace = true }
 jsonrpc-pubsub = { workspace = true }
 jsonrpc-server-utils = { workspace = true }
@@ -19,8 +29,8 @@ network-p2p-types = { workspace = true }
 network-types = { workspace = true }
 parity-tokio-ipc = { workspace = true }
 parking_lot = { workspace = true }
-serde = { features = [ "derive",], workspace = true }
-serde_json = { features = [ "arbitrary_precision",], workspace = true }
+serde = { features = ["derive"], workspace = true }
+serde_json = { features = ["arbitrary_precision"], workspace = true }
 starcoin-abi-types = { workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-crypto = { workspace = true }

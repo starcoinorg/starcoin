@@ -3,25 +3,39 @@
 
 use crate::message::{StateRequest, StateResponse};
 use anyhow::Result;
+use once_cell::sync::Lazy;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
 };
+use std::str::FromStr;
 
 pub use chain_state::{
     AccountStateReader, ChainStateReader, ChainStateWriter, StateProof, StateReaderExt,
-    StateWithProof,
+    StateWithProof, StateWithTableItemProof,
 };
 use serde::de::DeserializeOwned;
 pub use starcoin_state_tree::StateNodeStore;
 use starcoin_types::state_set::AccountStateSet;
+use starcoin_vm_types::access_path::DataPath;
+use starcoin_vm_types::account_config::table_handle_address;
 use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::state_store::table::TableHandle;
 pub use starcoin_vm_types::state_view::StateView;
 
 mod chain_state;
 pub mod message;
 pub mod mock;
+
+pub static TABLE_PATH: Lazy<DataPath> = Lazy::new(|| {
+    let str = format!(
+        "{}/1/{}::TableHandles::TableHandles",
+        table_handle_address(),
+        table_handle_address()
+    );
+    AccessPath::from_str(str.as_str()).unwrap().path
+});
 
 #[async_trait::async_trait]
 pub trait ChainStateAsyncService: Clone + std::marker::Unpin + Send + Sync {
@@ -63,6 +77,18 @@ pub trait ChainStateAsyncService: Clone + std::marker::Unpin + Send + Sync {
         address: AccountAddress,
         state_root: HashValue,
     ) -> Result<Option<AccountState>>;
+
+    async fn get_with_table_item_proof(
+        self,
+        handle: TableHandle,
+        key: Vec<u8>,
+    ) -> Result<StateWithTableItemProof>;
+    async fn get_with_table_item_proof_by_root(
+        self,
+        handle: TableHandle,
+        key: Vec<u8>,
+        state_root: HashValue,
+    ) -> Result<StateWithTableItemProof>;
 }
 
 #[async_trait::async_trait]
@@ -150,6 +176,39 @@ where
             .await??;
         if let StateResponse::AccountState(state) = response {
             Ok(state)
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
+
+    async fn get_with_table_item_proof(
+        self,
+        handle: TableHandle,
+        key: Vec<u8>,
+    ) -> Result<StateWithTableItemProof> {
+        let response = self
+            .send(StateRequest::GetWithTableItemProof(handle, key))
+            .await??;
+        if let StateResponse::StateWithTableItemProof(state) = response {
+            Ok(*state)
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
+
+    async fn get_with_table_item_proof_by_root(
+        self,
+        handle: TableHandle,
+        key: Vec<u8>,
+        state_root: HashValue,
+    ) -> Result<StateWithTableItemProof> {
+        let response = self
+            .send(StateRequest::GetWithTableItemProofByRoot(
+                handle, key, state_root,
+            ))
+            .await??;
+        if let StateResponse::StateWithTableItemProof(state) = response {
+            Ok(*state)
         } else {
             panic!("Unexpect response type.")
         }

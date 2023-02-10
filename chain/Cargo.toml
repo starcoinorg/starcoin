@@ -1,7 +1,7 @@
 [dependencies]
 anyhow = { workspace = true }
 bcs-ext = { package = "bcs-ext", workspace = true }
-clap = { features = [ "derive",], workspace = true }
+clap = { features = ["derive"], workspace = true }
 starcoin-crypto = { package = "starcoin-crypto", workspace = true }
 starcoin-logger = { package = "starcoin-logger", workspace = true }
 proptest = { default-features = false, optional = true, workspace = true }
@@ -32,15 +32,17 @@ starcoin-chain-mock = { workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-resource-viewer = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
-starcoin-types = { package = "starcoin-types", features = [ "fuzzing",], workspace = true }
+starcoin-types = { package = "starcoin-types", features = [
+    "fuzzing",
+], workspace = true }
 stdlib = { workspace = true }
 stest = { workspace = true }
 test-helper = { workspace = true }
-tokio = { features = [ "full",], workspace = true }
+tokio = { features = ["full"], workspace = true }
 
 [features]
 default = []
-fuzzing = [ "proptest", "proptest-derive", "starcoin-types/fuzzing",]
+fuzzing = ["proptest", "proptest-derive", "starcoin-types/fuzzing"]
 
 [package]
 authors = { workspace = true }

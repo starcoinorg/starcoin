@@ -518,6 +518,7 @@ var script_function_decoder_map = map[string]func(diemtypes.TransactionPayload) 
                 _ => common::type_not_allowed(type_tag),
             },
             Struct(_) | Signer => common::type_not_allowed(type_tag),
+            &U16 | &U32 | &U256 => todo!(),
         };
         writeln!(
             self.out,
@@ -625,6 +626,9 @@ func decode_{0}_argument(arg diemtypes.TransactionArgument) (value {1}, err erro
             },
 
             Struct(_) | Signer => common::type_not_allowed(type_tag),
+            U16 => "uint16".into(),
+            U32 => "uint32".into(),
+            U256 => "serde.Uint256".into(),
         }
     }
 
@@ -642,6 +646,7 @@ func decode_{0}_argument(arg diemtypes.TransactionArgument) (value {1}, err erro
             },
 
             Struct(_) | Signer => common::type_not_allowed(type_tag),
+            &U16 | &U32 | &U256 => todo!(),
         }
     }
 }
