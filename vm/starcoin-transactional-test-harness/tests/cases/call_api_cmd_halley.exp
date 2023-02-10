@@ -2,11 +2,6 @@ processed 4 tasks
 
 task 3 'run'. lines 7-14:
 {
-  "gas_used": 0,
-  "status": {
-    "Discard": {
-      "status_code": "26",
-      "status_code_name": "FEATURE_UNDER_GATING"
-    }
-  }
+  "gas_used": 10399,
+  "status": "Executed"
 }
