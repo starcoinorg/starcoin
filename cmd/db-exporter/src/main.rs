@@ -8,6 +8,7 @@ use clap::IntoApp;
 use clap::Parser;
 use csv::Writer;
 use db_exporter::verify_module::{verify_modules_via_export_file, VerifyModuleOptions};
+use db_exporter::verify_header::{verify_header_via_export_file, VerifyHeaderOptions};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
@@ -233,6 +234,7 @@ enum Cmd {
     ApplySnapshot(ApplySnapshotOptions),
     ExportResource(ExportResourceOptions),
     VerifyModules(VerifyModuleOptions),
+    VerifyHeader(VerifyHeaderOptions)
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -563,8 +565,11 @@ async fn main() -> anyhow::Result<()> {
             }
         }
         Cmd::VerifyModules(option) => {
-            let result = verify_modules_via_export_file(option.input_path);
-            return result;
+            return verify_modules_via_export_file(option.input_path);
+        }
+
+        Cmd::VerifyHeader(option) => {
+            return verify_header_via_export_file(option.input_path);
         }
     }
     Ok(())

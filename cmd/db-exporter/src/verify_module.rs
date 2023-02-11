@@ -1,26 +1,19 @@
-use anyhow::bail;
-use atomic_counter::AtomicCounter;
 use clap::Parser;
-use indicatif::{ProgressBar, ProgressStyle};
 use move_binary_format::errors::Location;
 use starcoin_crypto::HashValue;
-use starcoin_types::block::{Block, BlockHeader};
+use starcoin_types::block::Block;
 use starcoin_types::transaction::TransactionPayload;
 use starcoin_vm_types::errors::VMError;
 use starcoin_vm_types::file_format::CompiledModule;
 use std::fmt::Debug;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
-use std::sync::Arc;
-use std::time::SystemTime;
-use tokio::task;
-//use crate::cmd_batch_execution::{BatchCmdExec, BatchProcessError};
+//use starcoin_accumulator::node::AccumulatorStoreType::Block;
+use crate::cmd_batch_execution::{BatchCmdExec, CmdBatchExecution};
 
 #[derive(Debug, Parser)]
 #[clap(
-name = "verify-modules",
-about = "fast verify all modules, do not execute the transactions"
+    name = "verify-modules",
+    about = "fast verify all modules, do not execute the transactions"
 )]
 pub struct VerifyModuleOptions {
     #[clap(long, short = 'i', parse(from_os_str))]
@@ -34,54 +27,55 @@ pub struct VerifyModuleError {
     pub transaction_hash: HashValue,
     pub error: VMError,
 }
-//
-// pub struct VerifyModulesType;
-//
-// impl BatchCmdExec<Block, VerifyModulesType, VerifyModuleError> for Block {
-//     fn execute(&self) -> (usize, Vec<BatchProcessError<Block>>) {
-//         let mut errors = vec![];
-//         let mut success_modules = 0;
-//
-//         for txn in block.transactions() {
-//             match txn.payload() {
-//                 TransactionPayload::Package(package) => {
-//                     for module in package.modules() {
-//                         match CompiledModule::deserialize(module.code()) {
-//                             Ok(compiled_module) => {
-//                                 match move_bytecode_verifier::verify_module(&compiled_module) {
-//                                     Err(e) => {
-//                                         errors.push(VerifyModuleError {
-//                                             block_number: block.header().number(),
-//                                             transaction_hash: txn.id(),
-//                                             error: e,
-//                                         });
-//                                     }
-//                                     Ok(_) => {
-//                                         success_modules += 1;
-//                                     }
-//                                 }
-//                             }
-//                             Err(e) => {
-//                                 errors.push(VerifyModuleError {
-//                                     block_number: block.header().number(),
-//                                     transaction_hash: txn.id(),
-//                                     error: e.finish(Location::Undefined),
-//                                 });
-//                             }
-//                         }
-//                     }
-//                 }
-//                 TransactionPayload::Script(_) => {
-//                     //TODO
-//                 }
-//                 TransactionPayload::ScriptFunction(_) => {
-//                     //continue
-//                 }
-//             }
-//         }
-//         (success_modules, errors)
-//     }
-// }
+
+pub struct VerifyModulesType;
+
+impl BatchCmdExec<VerifyModulesType, Block, VerifyModuleError> for Block {
+    fn execute(&self) -> (usize, Vec<VerifyModuleError>) {
+        let mut errors = vec![];
+        let mut success_modules = 0;
+        let block = self;
+
+        for txn in block.transactions() {
+            match txn.payload() {
+                TransactionPayload::Package(package) => {
+                    for module in package.modules() {
+                        match CompiledModule::deserialize(module.code()) {
+                            Ok(compiled_module) => {
+                                match move_bytecode_verifier::verify_module(&compiled_module) {
+                                    Err(e) => {
+                                        errors.push(VerifyModuleError {
+                                            block_number: block.header().number(),
+                                            transaction_hash: txn.id(),
+                                            error: e,
+                                        });
+                                    }
+                                    Ok(_) => {
+                                        success_modules += 1;
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                errors.push(VerifyModuleError {
+                                    block_number: block.header().number(),
+                                    transaction_hash: txn.id(),
+                                    error: e.finish(Location::Undefined),
+                                });
+                            }
+                        }
+                    }
+                }
+                TransactionPayload::Script(_) => {
+                    //TODO
+                }
+                TransactionPayload::ScriptFunction(_) => {
+                    //continue
+                }
+            }
+        }
+        (success_modules, errors)
+    }
+}
 
 // fn verify_block_modules(block: Block) -> (usize, Vec<VerifyModuleError>) {
 //     let mut errors = vec![];
@@ -128,7 +122,8 @@ pub struct VerifyModuleError {
 // }
 
 pub fn verify_modules_via_export_file(input_path: PathBuf) -> anyhow::Result<()> {
-    Ok(())
+    let batch_cmd = CmdBatchExecution::new(String::from("verify_module"), input_path, true);
+    batch_cmd.progress::<VerifyModulesType, Block, VerifyModuleError>()
     // let start_time = SystemTime::now();
     // let file_name = input_path.display().to_string();
     // let reader = BufReader::new(File::open(input_path)?);
