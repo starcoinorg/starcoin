@@ -26,9 +26,18 @@ pub struct VerifyHeadOptions {
     /// input file, like accounts.csv
     pub input_path: PathBuf,
 }
-
-impl BatchCmdExec<BlockHeader> for BlockHeader {
-    fn execute(&self) -> (usize, Vec<BatchProcessError<BlockHeader>>) {
-        (0, vec![])
-    }
-}
+//
+// #[derive(Debug)]
+// pub struct VerifyHeadError {
+//     pub block_number: u64,
+//     pub transaction_hash: HashValue,
+//     pub error: VMError,
+// }
+//
+// pub struct VerifyHeaderType;
+//
+// impl BatchCmdExec<BlockHeader, VerifyHeaderType> for BlockHeader {
+//     fn execute(&self) -> (usize, Vec<VerifyHeadError>) {
+//         (0, vec![])
+//     }
+// }
