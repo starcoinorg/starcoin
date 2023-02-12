@@ -1790,6 +1790,7 @@ dependencies = [
  "move-binary-format",
  "move-bytecode-verifier",
  "pprof",
+ "rayon",
  "serde 1.0.140",
  "serde_json",
  "starcoin-account-api",

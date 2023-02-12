@@ -569,7 +569,7 @@ async fn main() -> anyhow::Result<()> {
         }
 
         Cmd::VerifyHeader(option) => {
-            return verify_header_via_export_file(option.input_path);
+            return verify_header_via_export_file(option.input_path, option.batch_size);
         }
     }
     Ok(())
