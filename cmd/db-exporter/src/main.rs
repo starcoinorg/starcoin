@@ -7,8 +7,8 @@ use bcs_ext::Sample;
 use clap::IntoApp;
 use clap::Parser;
 use csv::Writer;
-use db_exporter::verify_module::{verify_modules_via_export_file, VerifyModuleOptions};
 use db_exporter::verify_header::{verify_header_via_export_file, VerifyHeaderOptions};
+use db_exporter::verify_module::{verify_modules_via_export_file, VerifyModuleOptions};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
@@ -234,7 +234,7 @@ enum Cmd {
     ApplySnapshot(ApplySnapshotOptions),
     ExportResource(ExportResourceOptions),
     VerifyModules(VerifyModuleOptions),
-    VerifyHeader(VerifyHeaderOptions)
+    VerifyHeader(VerifyHeaderOptions),
 }
 
 #[derive(Debug, Clone, Parser)]

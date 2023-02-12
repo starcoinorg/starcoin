@@ -122,7 +122,7 @@ impl BatchCmdExec<VerifyModulesType, Block, VerifyModuleError> for Block {
 // }
 
 pub fn verify_modules_via_export_file(input_path: PathBuf) -> anyhow::Result<()> {
-    let batch_cmd = CmdBatchExecution::new(String::from("verify_module"), input_path, true);
+    let batch_cmd = CmdBatchExecution::new(String::from("verify_module"), input_path, true, 10);
     batch_cmd.progress::<VerifyModulesType, Block, VerifyModuleError>()
     // let start_time = SystemTime::now();
     // let file_name = input_path.display().to_string();

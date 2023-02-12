@@ -1784,6 +1784,7 @@ dependencies = [
  "bcs-ext",
  "clap 3.2.15",
  "csv",
+ "futures 0.3.21",
  "hex",
  "indicatif",
  "move-binary-format",

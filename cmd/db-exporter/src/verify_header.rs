@@ -24,7 +24,7 @@ pub struct VerifyHeaderError {
 pub struct VerifyHeaderCmdType;
 
 pub fn verify_header_via_export_file(path: PathBuf) -> anyhow::Result<()> {
-    let batch_cmd = CmdBatchExecution::new(String::from("verify_block_header"), path, true);
+    let batch_cmd = CmdBatchExecution::new(String::from("verify_block_header"), path, true, 10);
     batch_cmd.progress::<VerifyHeaderCmdType, Block, VerifyHeaderError>()
 }
 
