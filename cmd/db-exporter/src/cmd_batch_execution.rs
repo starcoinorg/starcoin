@@ -64,7 +64,7 @@ impl CmdBatchExecution {
         start_time = SystemTime::now();
         let lines = reader.lines().collect::<Result<Vec<_>, _>>()?;
 
-        let mut all_items = lines
+        let all_items = lines
             .par_iter()
             .map(|line| Ok(serde_json::from_str::<BodyT>(line.as_str()))?)
             .collect::<Result<Vec<BodyT>, _>>()?;
@@ -91,7 +91,6 @@ impl CmdBatchExecution {
                     .map(|item| {
                         let (succeed, failed) = item.execute();
                         progress_bar.inc(1);
-                        //println!("Total processed items: {}", counter.get());
                         ExecutionResult::new(succeed, failed.len())
                     })
                     .collect::<Vec<ExecutionResult>>()
@@ -124,37 +123,3 @@ pub trait BatchCmdExec<CmdT, BodyT, ErrorT> {
     fn execute(&self) -> (usize, Vec<ErrorT>);
 }
 
-/// Progress bar extension
-///
-trait ProgressBarExtension {
-    fn start(self, capcity: usize) -> SystemTime;
-    fn advance(self, cnt: usize);
-    fn end(&self);
-}
-
-impl ProgressBarExtension for ProgressBar {
-    fn start(self, capcity: usize) -> SystemTime {
-        println!("Start progress count: {}", capcity);
-        //let use_time = SystemTime::now().duration_since(start_time)?;
-        //println!("load blocks from file use time: {:?}", use_time.as_millis());
-
-        self.set_length(capcity as u64);
-        self.set_style(
-            ProgressStyle::default_bar()
-                .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
-        );
-        SystemTime::now()
-    }
-
-    fn advance(self, cnt: usize) {
-        // self.set_message(format!(
-        //     "verify item: {} , total_modules: {}",
-        //     block_number, total_modules
-        // ));
-        self.inc(cnt as u64);
-    }
-
-    fn end(&self) {
-        self.finish();
-    }
-}

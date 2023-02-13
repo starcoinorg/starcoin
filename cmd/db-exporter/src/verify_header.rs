@@ -38,9 +38,12 @@ impl BatchCmdExec<VerifyHeaderCmdType, Block, VerifyHeaderError> for Block {
             .verify_header_difficulty(self.header.difficulty(), &self.header);
         match ret {
             Ok(ret) => (1, vec![]),
-            Err(e) => (0, vec![VerifyHeaderError {
-                block_number: self.header.number(),
-            }])
+            Err(e) => {
+                println!("Failed for block, block num: {} ", self.header.number());
+                (0, vec![VerifyHeaderError {
+                    block_number: self.header.number(),
+                }])
+            }
         }
     }
 }
