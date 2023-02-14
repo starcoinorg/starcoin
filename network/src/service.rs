@@ -154,7 +154,7 @@ fn greater_barnard_fork_version(ver_str: &str) -> bool {
     let nums = nums.unwrap();
     for (a, b) in nums.iter().zip(BARNARD_HARD_FORK_VERSION.iter()) {
         match a.cmp(b) {
-            Ordering::Greater=> return true,
+            Ordering::Greater => return true,
             Ordering::Less => return false,
             Ordering::Equal => continue,
         }
