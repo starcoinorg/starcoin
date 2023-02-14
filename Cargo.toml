@@ -300,10 +300,8 @@ jsonrpc-client-transports = "18"
 jsonrpc-core = "18"
 jsonrpc-core-client = "18"
 jsonrpc-derive = "18"
-openrpc-derive = { git = "https://github.com/starcoinorg/openrpc-rs", rev = "42e9fdc00036a24c560c2827e84cf4e078edbd0d", features = [
-    "jsonrpc",
-] }
-openrpc-schema = { git = "https://github.com/starcoinorg/openrpc-rs", rev = "42e9fdc00036a24c560c2827e84cf4e078edbd0d" }
+openrpc-derive = {git = "https://github.com/starcoinorg/openrpc-rs",rev = "f8ab047e30927cdf2f605b61a219c975d6c4f666",features=["jsonrpc"]}
+openrpc-schema = {git = "https://github.com/starcoinorg/openrpc-rs",rev = "f8ab047e30927cdf2f605b61a219c975d6c4f666"}
 
 jsonrpc-http-server = "18"
 jsonrpc-ipc-server = "18"
@@ -314,8 +312,8 @@ jsonrpc-ws-server = "18"
 lazy_static = "1.4.0"
 libc = "^0.2"
 libloading = "0.7.2"
-libp2p = { version = "0.42.2" }
-libp2p-core = { version = "0.31.1" }
+libp2p = { version = "0.50.0", features = ["dns", "identify", "kad", "macros", "mdns", "mplex", "noise", "ping", "tcp",  "tokio", "yamux", "websocket", "secp256k1"] }
+libp2p-core = { version = "0.50.0" }
 libsecp256k1 = "0.7.1"
 linked-hash-map = "0.5.6"
 linked_hash_set = "0.1.3"
@@ -363,7 +361,6 @@ num-traits = "0.2"
 num_cpus = "1.13"
 num_enum = "0.5.7"
 once_cell = "1.13.0"
-openrpc-rs = { git = "https://github.com/starcoinorg/openrpc-rs", rev = "077761500ff6fabe2f20da1bdf429575931e3048" }
 ordinal = "0.3.1"
 parity-tokio-ipc = "0.9"
 parking_lot = "0.12.1"
@@ -393,7 +390,7 @@ rustc-serialize = "^0.3"
 rustyline = "9.1.2"
 rustyline-derive = "0.6.0"
 sc-peerset = { path = "network-p2p/peerset" }
-schemars = { git = "https://github.com/starcoinorg/schemars", rev = "6972da92f4360e1779168bb3fe0274c521d324e2" }
+schemars = { git = "https://github.com/starcoinorg/schemars", rev = "9b3705780b8fe9c8676ff82919869ba7405b1062" }
 scmd = { path = "commons/scmd" }
 serde = "1.0.130"
 serde-generate = { git = "https://github.com/starcoinorg/serde-reflection", rev = "694048797338ff7385006d968e786b6d9dbdeb8b" }
@@ -430,7 +427,7 @@ starcoin-chain-service = { path = "chain/service" }
 starcoin-cmd = { path = "cmd/starcoin" }
 starcoin-config = { path = "config" }
 starcoin-consensus = { path = "consensus" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "a02de6d0b83abe0abff088683e891df0238102fe" }
 starcoin-decrypt = { path = "commons/decrypt" }
 starcoin-dev = { path = "vm/dev" }
 starcoin-executor = { path = "executor" }
