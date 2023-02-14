@@ -23,7 +23,6 @@ jsonrpc-server-utils = { workspace = true }
 network-api = { package = "network-api", workspace = true }
 network-p2p-types = { workspace = true }
 network-types = { workspace = true }
-openrpc-rs = { workspace = true }
 openrpc-derive = { workspace = true }
 openrpc-schema = { workspace = true }
 schemars = { workspace = true }

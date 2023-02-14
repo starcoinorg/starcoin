@@ -16,7 +16,6 @@ starcoin-logger = { workspace = true }
 starcoin-miner = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-types = { workspace = true }
-openrpc-rs = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }

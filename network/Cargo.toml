@@ -34,7 +34,6 @@ starcoin-network-rpc = { workspace = true }
 starcoin-network-rpc-api = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-storage = { workspace = true }
-openrpc-rs = { workspace = true }
 
 [dev-dependencies]
 test-helper = { workspace = true }

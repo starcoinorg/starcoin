@@ -9,11 +9,9 @@ use crate::{errors, DiscoveryNetBehaviour, Multiaddr};
 use bcs_ext::BCSCodec;
 use bytes::Bytes;
 use futures::prelude::*;
-use libp2p::core::{
-    connection::{ConnectionId, ListenerId},
-    ConnectedPoint,
-};
-use libp2p::swarm::{IntoProtocolsHandler, ProtocolsHandler};
+use libp2p::core::connection::ConnectionId;
+use libp2p::swarm::behaviour::FromSwarm;
+use libp2p::swarm::{ConnectionHandler, IntoConnectionHandler};
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
 use log::Level;
@@ -133,90 +131,36 @@ pub struct Protocol {
 }
 
 impl NetworkBehaviour for Protocol {
-    type ProtocolsHandler = <GenericProto as NetworkBehaviour>::ProtocolsHandler;
+    type ConnectionHandler = <GenericProto as NetworkBehaviour>::ConnectionHandler;
     type OutEvent = CustomMessageOutcome;
 
-    fn new_handler(&mut self) -> Self::ProtocolsHandler {
+    fn new_handler(&mut self) -> Self::ConnectionHandler {
         self.behaviour.new_handler()
     }
 
     fn addresses_of_peer(&mut self, peer_id: &PeerId) -> Vec<Multiaddr> {
         self.behaviour.addresses_of_peer(peer_id)
     }
-
-    fn inject_connected(&mut self, peer_id: &PeerId) {
-        self.behaviour.inject_connected(peer_id)
+    fn on_swarm_event(&mut self, event: FromSwarm<Self::ConnectionHandler>) {
+        self.behaviour.on_swarm_event(event);
     }
 
-    fn inject_disconnected(&mut self, peer_id: &PeerId) {
-        self.behaviour.inject_disconnected(peer_id)
-    }
-
-    fn inject_connection_established(
-        &mut self,
-        peer_id: &PeerId,
-        conn: &ConnectionId,
-        endpoint: &ConnectedPoint,
-        failed_addresses: Option<&Vec<Multiaddr>>,
-    ) {
-        self.behaviour
-            .inject_connection_established(peer_id, conn, endpoint, failed_addresses)
-    }
-
-    fn inject_connection_closed(
-        &mut self,
-        peer_id: &PeerId,
-        conn: &ConnectionId,
-        endpoint: &ConnectedPoint,
-        handler: <Self::ProtocolsHandler as IntoProtocolsHandler>::Handler,
-    ) {
-        self.behaviour
-            .inject_connection_closed(peer_id, conn, endpoint, handler)
-    }
-
-    fn inject_event(
+    fn on_connection_handler_event(
         &mut self,
         peer_id: PeerId,
-        connection: ConnectionId,
-        event: <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::OutEvent,
+        connection_id: ConnectionId,
+        event: <<Self::ConnectionHandler as IntoConnectionHandler>::Handler as
+        ConnectionHandler>::OutEvent,
     ) {
-        self.behaviour.inject_event(peer_id, connection, event)
-    }
-
-    fn inject_dial_failure(
-        &mut self,
-        peer_id: Option<PeerId>,
-        handler: Self::ProtocolsHandler,
-        error: &libp2p::swarm::DialError,
-    ) {
-        self.behaviour.inject_dial_failure(peer_id, handler, error);
-    }
-
-    fn inject_new_listen_addr(&mut self, id: ListenerId, addr: &Multiaddr) {
-        self.behaviour.inject_new_listen_addr(id, addr)
-    }
-
-    fn inject_expired_listen_addr(&mut self, id: ListenerId, addr: &Multiaddr) {
-        self.behaviour.inject_expired_listen_addr(id, addr)
-    }
-
-    fn inject_new_external_addr(&mut self, addr: &Multiaddr) {
-        self.behaviour.inject_new_external_addr(addr)
-    }
-
-    fn inject_listener_error(&mut self, id: ListenerId, err: &(dyn std::error::Error + 'static)) {
-        self.behaviour.inject_listener_error(id, err);
-    }
-
-    fn inject_listener_closed(&mut self, id: ListenerId, reason: Result<(), &std::io::Error>) {
-        self.behaviour.inject_listener_closed(id, reason);
+        self.behaviour
+            .on_connection_handler_event(peer_id, connection_id, event);
     }
 
     fn poll(
         &mut self,
         cx: &mut std::task::Context,
         params: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ProtocolsHandler>> {
+    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
         while let Poll::Ready(Some(())) = self.tick_timeout.poll_next_unpin(cx) {
             self.tick();
         }
@@ -604,6 +548,15 @@ impl Protocol {
             );
         }
         out
+    }
+    /// Notify the protocol that we have learned about the existence of nodes on the default set.
+    ///
+    /// Can be called multiple times with the same `PeerId`s.
+    pub fn add_default_set_discovered_nodes(&mut self, peer_ids: impl Iterator<Item = PeerId>) {
+        for peer_id in peer_ids {
+            self.peerset_handle
+                .add_to_peers_set(HARD_CORE_PROTOCOL_ID, peer_id);
+        }
     }
 }
 
