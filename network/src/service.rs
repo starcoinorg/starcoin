@@ -183,6 +183,7 @@ impl EventHandler<Self, Event> for NetworkActorService {
                     remote, protocol, notif_protocols, rpc_protocols
                 );
                 if info.chain_id().is_barnard() {
+                    info!("Connected peer ver_string {:?}", version_string);
                     if let Some(ref ver_str) = version_string {
                         if !ver_str.contains(BARNARD_HARD_FORK_PEER_VERSION_STRING_PREFIX)
                             && !greater_barnard_fork_version(ver_str)
