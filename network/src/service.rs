@@ -37,6 +37,7 @@ use std::ops::RangeInclusive;
 use std::sync::Arc;
 
 const BARNARD_HARD_FORK_PEER_VERSION_STRING_PREFIX: &str = "barnard_rollback_block_fix";
+const BARNARD_HARD_FORK_VERSION: [i32; 3] = [1, 12, 9];
 
 pub struct NetworkActorService {
     worker: Option<NetworkWorker>,
@@ -116,6 +117,49 @@ impl EventHandler<Self, SyncStatusChangeEvent> for NetworkActorService {
         self.inner.update_chain_status(msg.0);
     }
 }
+// ver_str like starcoin/1.12.6 (build:v1.12.6) (kele01)
+fn greater_barnard_fork_version(ver_str: &String) -> bool {
+    let start = ver_str.find("build:v");
+    if start.is_none() {
+        return false;
+    }
+    let end = ver_str.find(") ");
+    if end.is_none() {
+        return false;
+    }
+    if start.unwrap() + 7 >= end.unwrap() {
+        return false;
+    }
+    let i = start.unwrap() + 7;
+    let j = end.unwrap();
+    let str = &ver_str[i..j];
+
+    let mut ver = String::from("");
+    for c in str.chars() {
+        if !c.is_numeric() && c != '.' {
+            break;
+        } else {
+            ver.push(c);
+        }
+    }
+    let str_list: Vec<&str> = ver.split('.').collect();
+    if str_list.len() != 3 {
+        return false;
+    }
+    let nums: Result<Vec<i32>, _> = str_list.iter().map(|x| x.parse()).collect();
+    if nums.is_err() {
+        return false;
+    }
+    let nums = nums.unwrap();
+    for (a, b) in nums.iter().zip(BARNARD_HARD_FORK_VERSION.iter()) {
+        if a > b {
+            return true;
+        } else if a < b {
+            return false;
+        }
+    }
+    false
+}
 
 impl EventHandler<Self, Event> for NetworkActorService {
     fn handle_event(&mut self, event: Event, ctx: &mut ServiceContext<NetworkActorService>) {
@@ -138,9 +182,10 @@ impl EventHandler<Self, Event> for NetworkActorService {
                     remote, protocol, notif_protocols, rpc_protocols
                 );
                 if info.chain_id().is_barnard() {
-                    // XXX FIXME YSG
                     if let Some(ref ver_str) = version_string {
-                        if !ver_str.contains(BARNARD_HARD_FORK_PEER_VERSION_STRING_PREFIX) {
+                        if !ver_str.contains(BARNARD_HARD_FORK_PEER_VERSION_STRING_PREFIX)
+                            && !greater_barnard_fork_version(ver_str)
+                        {
                             info!(
                                 "ban {} peer {:?} ver_str {}",
                                 BARNARD_HARD_FORK_PEER_VERSION_STRING_PREFIX, remote, ver_str
@@ -817,6 +862,7 @@ where
 
 #[cfg(test)]
 mod test {
+    use crate::service::greater_barnard_fork_version;
     use crate::service::select_random_peers;
     use network_api::PeerId;
 
@@ -849,5 +895,19 @@ mod test {
             8
         );
         assert_eq!(select_random_peers(3..=3, create_peers(3).iter()).len(), 3);
+    }
+
+    #[test]
+    fn greater_version_test() {
+        let v1 = String::from("starcoin/1.12.6 (build:v1.12.6) (kele01)");
+        assert!(!greater_barnard_fork_version(&v1));
+        let v2 = String::from("starcoin 1.13.0-alpha (build:halley-v1.13.1-alpha-dirty)");
+        assert!(!greater_barnard_fork_version(&v2));
+        let v3 = String::from("starcoin/1.13.0-alpha (build:v1.13.0-alpha) (kele01)");
+        assert!(greater_barnard_fork_version(&v3));
+        let v4 = String::from("starcoin/1.12.9 (build:v1.12.9) (kele01)");
+        assert!(!greater_barnard_fork_version(&v4));
+        let v5 = String::from("starcoin/1.13.1 (build:v1.13.1) (kele01)");
+        assert!(greater_barnard_fork_version(&v5));
     }
 }
