@@ -32,6 +32,8 @@ use starcoin_types::{
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
+pub use upgrade::BARNARD_HARD_FORK_HASH;
+pub use upgrade::BARNARD_HARD_FORK_HEIGHT;
 
 pub mod accumulator;
 pub mod batch;

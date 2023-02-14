@@ -234,3 +234,40 @@ impl TryInto<Vec<u8>> for SnapshotRange {
         self.encode()
     }
 }
+
+#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
+pub struct BarnardHardFork {
+    // [number, ...) block will remove
+    number: BlockNumber,
+    hash: HashValue,
+}
+
+impl BarnardHardFork {
+    pub fn new(number: BlockNumber, hash: HashValue) -> Self {
+        Self { number, hash }
+    }
+
+    pub fn get_number(&self) -> BlockNumber {
+        self.number
+    }
+
+    pub fn get_hash(&self) -> HashValue {
+        self.hash
+    }
+}
+
+impl TryFrom<Vec<u8>> for BarnardHardFork {
+    type Error = anyhow::Error;
+
+    fn try_from(value: Vec<u8>) -> Result<Self> {
+        BarnardHardFork::decode(value.as_slice())
+    }
+}
+
+impl TryInto<Vec<u8>> for BarnardHardFork {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+}
