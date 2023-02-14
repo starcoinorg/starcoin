@@ -32,6 +32,7 @@ use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::SyncStatusChangeEvent;
 use std::borrow::Cow;
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::ops::RangeInclusive;
 use std::sync::Arc;
@@ -118,7 +119,7 @@ impl EventHandler<Self, SyncStatusChangeEvent> for NetworkActorService {
     }
 }
 // ver_str like starcoin/1.12.6 (build:v1.12.6) (kele01)
-fn greater_barnard_fork_version(ver_str: &String) -> bool {
+fn greater_barnard_fork_version(ver_str: &str) -> bool {
     let start = ver_str.find("build:v");
     if start.is_none() {
         return false;
@@ -127,11 +128,11 @@ fn greater_barnard_fork_version(ver_str: &String) -> bool {
     if end.is_none() {
         return false;
     }
-    if start.unwrap() + 7 >= end.unwrap() {
+    let i = start.unwrap().saturating_add(7);
+    let j = end.unwrap();
+    if i >= j {
         return false;
     }
-    let i = start.unwrap() + 7;
-    let j = end.unwrap();
     let str = &ver_str[i..j];
 
     let mut ver = String::from("");
@@ -152,10 +153,10 @@ fn greater_barnard_fork_version(ver_str: &String) -> bool {
     }
     let nums = nums.unwrap();
     for (a, b) in nums.iter().zip(BARNARD_HARD_FORK_VERSION.iter()) {
-        if a > b {
-            return true;
-        } else if a < b {
-            return false;
+        match a.cmp(b) {
+            Ordering::Greater=> return true,
+            Ordering::Less => return false,
+            Ordering::Equal => continue,
         }
     }
     false
