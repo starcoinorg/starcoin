@@ -284,7 +284,8 @@ impl NetworkWorker {
                 };
                 transport::build_transport(local_identity, config_mem)
             };
-            let builder = SwarmBuilder::without_executor(transport, behaviour, local_peer_id)
+            //FIXME: with tokio executor
+            let builder = SwarmBuilder::new(transport, behaviour, local_peer_id)
                 .connection_limits(
                     ConnectionLimits::default()
                         .with_max_established_per_peer(Some(crate::MAX_CONNECTIONS_PER_PEER as u32))
@@ -1516,18 +1517,6 @@ impl Future for NetworkWorker {
         }
 
         if let Some(metrics) = this.metrics.as_ref() {
-            if let Some(buckets) = this
-                .network_service
-                .behaviour_mut()
-                .num_entries_per_kbucket()
-            {
-                for (lower_ilog2_bucket_bound, num_entries) in buckets {
-                    metrics
-                        .kbuckets_num_nodes
-                        .with_label_values(&[&lower_ilog2_bucket_bound.to_string()])
-                        .set(num_entries as u64);
-                }
-            }
             metrics.peerset_num_discovered.set(
                 this.network_service
                     .behaviour_mut()

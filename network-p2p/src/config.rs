@@ -365,7 +365,6 @@ mod tests {
         match kp {
             Keypair::Ed25519(p) => p.secret().as_ref().to_vec(),
             Keypair::Secp256k1(p) => p.secret().to_bytes().to_vec(),
-            _ => panic!("Unexpected keypair."),
         }
     }
 
