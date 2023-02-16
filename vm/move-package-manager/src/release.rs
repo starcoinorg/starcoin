@@ -24,7 +24,7 @@ pub const DEFAULT_RELEASE_DIR: &str = "release";
 pub struct Release {
     #[clap(name = "move-version", long = "move-version", default_value="4", possible_values=&["4", "6"])]
     /// specify the move lang version for the release.
-    /// currently, only v3, v4 are supported.
+    /// currently, only v4, v6 are supported.
     language_version: u8,
 
     #[clap(name="release-dir", long, parse(from_os_str), default_value=DEFAULT_RELEASE_DIR)]

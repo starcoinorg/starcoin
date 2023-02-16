@@ -7,7 +7,9 @@ use crate::db_storage::{DBStorage, SchemaIterator};
 use crate::upgrade::DBUpgrade;
 use anyhow::{bail, format_err, Result};
 use byteorder::{BigEndian, ReadBytesExt};
+use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::info;
 use starcoin_vm_types::state_store::table::TableHandle;
 use std::convert::TryInto;
 use std::fmt::Debug;
@@ -107,6 +109,14 @@ impl StorageInstance {
 
     pub fn check_upgrade(&mut self) -> Result<()> {
         DBUpgrade::check_upgrade(self)
+    }
+
+    pub fn barnard_hard_fork(&mut self, config: Arc<NodeConfig>) -> Result<()> {
+        if config.net().id().chain_id().is_barnard() {
+            info!("barnard_hard_fork in");
+            return DBUpgrade::barnard_hard_fork(self);
+        }
+        Ok(())
     }
 }
 

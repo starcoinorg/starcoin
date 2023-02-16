@@ -110,7 +110,7 @@ define_storage!(
 #[derive(Clone)]
 pub struct BlockStorage {
     block_store: BlockInnerStorage,
-    header_store: BlockHeaderStorage,
+    pub(crate) header_store: BlockHeaderStorage,
     body_store: BlockBodyStorage,
     block_txns_store: BlockTransactionsStorage,
     block_txn_infos_store: BlockTransactionInfosStorage,

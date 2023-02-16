@@ -12,11 +12,23 @@ use crate::{
     BLOCK_BODY_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
 };
 use anyhow::{bail, ensure, format_err, Result};
+use once_cell::sync::Lazy;
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::{debug, info, warn};
+use starcoin_types::block::BlockNumber;
+use starcoin_types::startup_info::{BarnardHardFork, StartupInfo};
 use starcoin_types::transaction::Transaction;
 use std::cmp::Ordering;
 
 pub struct DBUpgrade;
+
+pub static BARNARD_HARD_FORK_HEIGHT: BlockNumber = 9716880;
+pub static BARNARD_HARD_FORK_HASH: Lazy<HashValue> = Lazy::new(|| {
+    HashValue::from_hex_literal(
+        "0x98f32397569e26540985f0d487c5e7cc229a8c9be9afe10f973b3d95204d06d7",
+    )
+    .expect("")
+});
 
 impl DBUpgrade {
     pub fn check_upgrade(instance: &mut StorageInstance) -> Result<()> {
@@ -178,6 +190,46 @@ impl DBUpgrade {
                 version_in_db,
                 version_in_code
             ),
+        }
+        Ok(())
+    }
+
+    pub fn barnard_hard_fork(instance: &mut StorageInstance) -> Result<()> {
+        let block_storage = BlockStorage::new(instance.clone());
+        let chain_info_storage = ChainInfoStorage::new(instance.clone());
+        let barnard_hard_fork = chain_info_storage.get_barnard_hard_fork()?;
+
+        let barnard_info = BarnardHardFork::new(BARNARD_HARD_FORK_HEIGHT, *BARNARD_HARD_FORK_HASH);
+        if barnard_hard_fork == Some(barnard_info.clone()) {
+            info!("barnard had forked");
+            return Ok(());
+        }
+
+        let block = block_storage.get_block_by_hash(*BARNARD_HARD_FORK_HASH)?;
+        if let Some(block) = block {
+            if block.header().number() == BARNARD_HARD_FORK_HEIGHT {
+                info!("barnard hard fork rollback height");
+                let mut processed_count = 0;
+                let block_info_storage = BlockInfoStorage::new(instance.clone());
+                let mut iter = block_storage.header_store.iter()?;
+                iter.seek_to_first();
+                for item in iter {
+                    let (id, block_header) = item?;
+                    if block_header.number() >= BARNARD_HARD_FORK_HEIGHT {
+                        block_info_storage.remove(id)?;
+                        processed_count += 1;
+                        if processed_count % 10000 == 0 {
+                            info!(
+                                "barnard hard fork rollback height processed items: {}",
+                                processed_count
+                            );
+                        }
+                    }
+                }
+                let main_hash = block.header().parent_hash();
+                chain_info_storage.save_barnard_hard_fork(barnard_info)?;
+                chain_info_storage.save_startup_info(StartupInfo::new(main_hash))?;
+            }
         }
         Ok(())
     }
