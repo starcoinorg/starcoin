@@ -127,8 +127,8 @@ impl DiscoveryConfig {
 
     /// Set custom nodes which never expire, e.g. bootstrap or reserved nodes.
     pub fn with_permanent_addresses<I>(&mut self, permanent_addresses: I) -> &mut Self
-        where
-            I: IntoIterator<Item=(PeerId, Multiaddr)>,
+    where
+        I: IntoIterator<Item = (PeerId, Multiaddr)>,
     {
         self.permanent_addresses.extend(permanent_addresses);
         self
@@ -382,10 +382,8 @@ impl DiscoveryBehaviour {
         if let Some(k) = self.kademlia.as_mut() {
             if let Err(e) = k.put_record(Record::new(key.clone(), value), Quorum::All) {
                 warn!(target: "sub-libp2p", "Libp2p => Failed to put record: {:?}", e);
-                self.pending_events.push_back(DiscoveryOut::ValuePutFailed(
-                    key,
-                    Duration::from_secs(0),
-                ));
+                self.pending_events
+                    .push_back(DiscoveryOut::ValuePutFailed(key, Duration::from_secs(0)));
             }
         }
     }
@@ -734,8 +732,8 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                                 )
                             }
                             Ok(GetRecordOk::FinishedWithNoAdditionalRecord {
-                                   cache_candidates,
-                               }) => {
+                                cache_candidates,
+                            }) => {
                                 // We always need to remove the record to not leak any data!
                                 if let Some(record) = self.records_to_publish.remove(&id) {
                                     if cache_candidates.is_empty() {
@@ -959,7 +957,7 @@ mod tests {
                     config.finish()
                 };
 
-                let mut swarm = Swarm::with_threadpool_executor(transport, behaviour, keypair.public().to_peer_id());
+                let mut swarm = Swarm::new(transport, behaviour, keypair.public().to_peer_id());
                 let listen_addr: Multiaddr = format!("/memory/{}", rand::random::<u64>())
                     .parse()
                     .unwrap();
@@ -1094,7 +1092,9 @@ mod tests {
             let kademlia = discovery.kademlia.as_mut().unwrap();
             assert_eq!(
                 1,
-                kademlia.kbuckets().fold(0, |acc, bucket| acc + bucket.num_entries()),
+                kademlia
+                    .kbuckets()
+                    .fold(0, |acc, bucket| acc + bucket.num_entries()),
                 "Expect peers with supported protocol to be added."
             );
         }

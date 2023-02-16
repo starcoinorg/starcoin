@@ -21,19 +21,19 @@
 use crate::protocol::generic_proto::{GenericProto, GenericProtoOut};
 
 use futures::prelude::*;
-use libp2p::core::{
-    connection::ConnectionId,
-    transport::MemoryTransport,
-    upgrade, ConnectedPoint,
+use libp2p::core::{connection::ConnectionId, transport::MemoryTransport, upgrade};
+use libp2p::swarm::behaviour::FromSwarm;
+use libp2p::swarm::{
+    ConnectionHandler, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction,
+    PollParameters, Swarm, SwarmEvent,
 };
-use libp2p::swarm::{ConnectionHandler, DialError, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters, Swarm, SwarmEvent};
 use libp2p::{identity, noise, yamux};
 use libp2p::{Multiaddr, PeerId, Transport};
-use std::{iter,
+use std::{
+    iter,
     task::{Context, Poll},
     time::Duration,
 };
-use libp2p::swarm::behaviour::FromSwarm;
 
 /// Builds two nodes that have each other as bootstrap nodes.
 /// This is to be used only for testing, and a panic will happen if something goes wrong.
@@ -101,7 +101,11 @@ fn build_nodes() -> (Swarm<CustomProtoWithAddr>, Swarm<CustomProtoWithAddr>) {
                 .collect(),
         };
 
-        let mut swarm = Swarm::with_threadpool_executor(transport, behaviour, keypairs[index].public().to_peer_id());
+        let mut swarm = Swarm::with_threadpool_executor(
+            transport,
+            behaviour,
+            keypairs[index].public().to_peer_id(),
+        );
         Swarm::listen_on(&mut swarm, addrs[index].clone()).unwrap();
         out.push(swarm);
     }
@@ -160,7 +164,10 @@ impl NetworkBehaviour for CustomProtoWithAddr {
         connection_id: ConnectionId,
         event: <<Self::ConnectionHandler as IntoConnectionHandler>::Handler as
         ConnectionHandler>::OutEvent,
-    ){ self.inner.on_connection_handler_event(peer_id, connection_id, event);}
+    ) {
+        self.inner
+            .on_connection_handler_event(peer_id, connection_id, event);
+    }
 
     fn poll(
         &mut self,
@@ -169,7 +176,6 @@ impl NetworkBehaviour for CustomProtoWithAddr {
     ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
         self.inner.poll(cx, params)
     }
-
 }
 
 #[test]
