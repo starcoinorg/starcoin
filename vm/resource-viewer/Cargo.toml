@@ -13,7 +13,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-resource-viewer"
 publish = { workspace = true }
-version = "1.13.0-alpha"
+version = "1.13.0"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }
