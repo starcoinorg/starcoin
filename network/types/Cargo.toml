@@ -10,7 +10,7 @@ starcoin-types = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 name = "network-types"
-version = "1.13.0-alpha"
+version = "1.13.0"
 homepage = { workspace = true }
 license = { workspace = true }
 publish = { workspace = true }
