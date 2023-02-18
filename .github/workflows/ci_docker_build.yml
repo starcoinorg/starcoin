@@ -15,7 +15,7 @@ jobs:
         id: docker_meta
         uses: crazy-max/ghaction-docker-meta@v1
         with:
-          images: starcoin/starcoin-builder
+          images: ghcr.io/starcoinorg/starcoin-builder:latest
           tag-sha: true # add git short SHA as Docker tag
 #      -
 #        name: Set up QEMU

@@ -320,7 +320,7 @@ linked_hash_set = "0.1.3"
 log = { version = "0.4.16" }
 log4rs = { version = "1.2.0", features = ["background_rotation", "gzip"] }
 lru = "0.7.8"
-merkletree = { version = "0.22.1" }
+merkletree = { version ="0.22.1" }
 mirai-annotations = "1.10.1"
 move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "203555ae3ae3e373581381c8ccee165721261e02" }
 move-bytecode-source-map = { git = "https://github.com/starcoinorg/move", rev = "203555ae3ae3e373581381c8ccee165721261e02" }
