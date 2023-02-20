@@ -9,6 +9,7 @@ use anyhow::{anyhow, Result};
 use move_core_types::account_address::AccountAddress;
 use starcoin_state_api::{
     ChainStateAsyncService, ChainStateReader, StateNodeStore, StateView, StateWithProof,
+    StateWithTableItemProof,
 };
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::state_node::StateStorage;
@@ -19,6 +20,8 @@ use starcoin_state_tree::StateNode;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::state_set::AccountStateSet;
+use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::table::TableHandle;
 use tokio::runtime::Runtime;
 
 pub struct MockStateNodeStore {
@@ -91,7 +94,8 @@ impl MockChainStateAsyncService {
 #[async_trait::async_trait]
 impl ChainStateAsyncService for MockChainStateAsyncService {
     async fn get(self, access_path: AccessPath) -> Result<Option<Vec<u8>>> {
-        self.state_db().get(&access_path)
+        self.state_db()
+            .get_state_value(&StateKey::AccessPath(access_path))
     }
 
     async fn get_with_proof(self, access_path: AccessPath) -> Result<StateWithProof> {
@@ -134,5 +138,24 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
     ) -> Result<Option<AccountState>> {
         let reader = self.state_db().fork_at(state_root);
         reader.get_account_state(&account_address)
+    }
+
+    async fn get_with_table_item_proof(
+        self,
+        handle: TableHandle,
+        key: Vec<u8>,
+    ) -> Result<StateWithTableItemProof> {
+        let reader = self.state_db();
+        reader.get_with_table_item_proof(&handle, &key)
+    }
+
+    async fn get_with_table_item_proof_by_root(
+        self,
+        handle: TableHandle,
+        key: Vec<u8>,
+        state_root: HashValue,
+    ) -> Result<StateWithTableItemProof> {
+        let reader = self.state_db().fork_at(state_root);
+        reader.get_with_table_item_proof(&handle, &key)
     }
 }

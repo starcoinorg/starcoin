@@ -5,28 +5,39 @@ name = "tests"
 [dependencies]
 anyhow = { workspace = true }
 bcs = { workspace = true }
-clap = { features = [ "derive",], workspace = true }
+clap = { features = ["derive"], workspace = true }
 dashmap = { workspace = true }
 either = { workspace = true }
 hex = { workspace = true }
 itertools = { workspace = true }
-jsonrpc-client-transports = { features = [ "http", "ipc", "ws", "arbitrary_precision",], workspace = true }
-jsonrpc-core-client = { features = [ "http", "ipc", "ws", "arbitrary_precision",], workspace = true }
+jsonrpc-client-transports = { features = [
+    "http",
+    "ipc",
+    "ws",
+    "arbitrary_precision",
+], workspace = true }
+jsonrpc-core-client = { features = [
+    "http",
+    "ipc",
+    "ws",
+    "arbitrary_precision",
+], workspace = true }
 log = { workspace = true }
 move-binary-format = { workspace = true }
 move-command-line-common = { workspace = true }
 move-compiler = { workspace = true }
 move-core-types = { workspace = true }
 move-transactional-test-runner = { workspace = true }
+move-table-extension = { workspace = true }
 once_cell = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tempfile = { workspace = true }
-tokio = { features = [ "full",], workspace = true }
+tokio = { features = ["full"], workspace = true }
 async-trait = { workspace = true }
 bcs-ext = { workspace = true }
 futures = { workspace = true }
-jsonrpc-core = { features = [ "arbitrary_precision",], workspace = true }
+jsonrpc-core = { features = ["arbitrary_precision"], workspace = true }
 jsonrpc-derive = { workspace = true }
 jsonrpc-http-server = { workspace = true }
 move-resource-viewer = { workspace = true }
@@ -59,7 +70,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-transactional-test-harness"
 publish = { workspace = true }
-version = "1.12.9"
+version = "1.13.0"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

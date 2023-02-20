@@ -4,8 +4,8 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = { workspace = true }
-clap = { features = [ "derive",], workspace = true }
-ctrlc = { features = [ "termination",], workspace = true }
+clap = { features = ["derive"], workspace = true }
+ctrlc = { features = ["termination"], workspace = true }
 futures = { workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-config = { workspace = true }
@@ -17,7 +17,7 @@ starcoin-rpc-client = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
 starcoin-types = { workspace = true }
-tokio = { features = [ "full",], workspace = true }
+tokio = { features = ["full"], workspace = true }
 
 [package]
 authors = { workspace = true }
@@ -25,7 +25,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-tx-factory"
 publish = { workspace = true }
-version = "1.12.9"
+version = "1.13.0"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

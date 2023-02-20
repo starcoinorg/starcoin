@@ -184,6 +184,42 @@
                           }
                         },
                         "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "U16"
+                        ],
+                        "properties": {
+                          "U16": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "U32"
+                        ],
+                        "properties": {
+                          "U32": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "U256"
+                        ],
+                        "properties": {
+                          "U256": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
                       }
                     ]
                   }
@@ -328,6 +364,42 @@
                   "properties": {
                     "Struct": {
                       "$ref": "#/definitions/AnnotatedMoveStructView"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "U16"
+                  ],
+                  "properties": {
+                    "U16": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "U32"
+                  ],
+                  "properties": {
+                    "U32": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "U256"
+                  ],
+                  "properties": {
+                    "U256": {
+                      "type": "string"
                     }
                   },
                   "additionalProperties": false
@@ -512,6 +584,42 @@
                   }
                 },
                 "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "required": [
+                  "U16"
+                ],
+                "properties": {
+                  "U16": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "required": [
+                  "U32"
+                ],
+                "properties": {
+                  "U32": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "required": [
+                  "U256"
+                ],
+                "properties": {
+                  "U256": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
               }
             ]
           },
@@ -647,6 +755,42 @@
                           }
                         }
                       }
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "U16"
+                  ],
+                  "properties": {
+                    "U16": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "U32"
+                  ],
+                  "properties": {
+                    "U32": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "U256"
+                  ],
+                  "properties": {
+                    "U256": {
+                      "type": "string"
                     }
                   },
                   "additionalProperties": false
@@ -852,6 +996,7 @@
             "explained_status",
             "gas_used",
             "status",
+            "table_item_write_set",
             "write_set"
           ],
           "properties": {
@@ -1152,6 +1297,47 @@
                 }
               ]
             },
+            "table_item_write_set": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "action",
+                  "table_item"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "Deletion",
+                      "Value"
+                    ]
+                  },
+                  "table_item": {
+                    "type": "object",
+                    "required": [
+                      "handle",
+                      "key"
+                    ],
+                    "properties": {
+                      "handle": {
+                        "type": "string",
+                        "format": "AccountAddress"
+                      },
+                      "key": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "value": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            },
             "write_set": {
               "type": "array",
               "items": {
@@ -1283,7 +1469,10 @@
                                                           "U64",
                                                           "U128",
                                                           "Address",
-                                                          "Signer"
+                                                          "Signer",
+                                                          "U16",
+                                                          "U32",
+                                                          "U256"
                                                         ]
                                                       },
                                                       {
@@ -1459,7 +1648,10 @@
                                                       "U64",
                                                       "U128",
                                                       "Address",
-                                                      "Signer"
+                                                      "Signer",
+                                                      "U16",
+                                                      "U32",
+                                                      "U256"
                                                     ]
                                                   },
                                                   {
@@ -1686,7 +1878,10 @@
                                                           "U64",
                                                           "U128",
                                                           "Address",
-                                                          "Signer"
+                                                          "Signer",
+                                                          "U16",
+                                                          "U32",
+                                                          "U256"
                                                         ]
                                                       },
                                                       {
@@ -1928,7 +2123,10 @@
                     "U64",
                     "U128",
                     "Address",
-                    "Signer"
+                    "Signer",
+                    "U16",
+                    "U32",
+                    "U256"
                   ]
                 },
                 {
@@ -2088,6 +2286,7 @@
             "explained_status",
             "gas_used",
             "status",
+            "table_item_write_set",
             "write_set"
           ],
           "properties": {
@@ -2388,6 +2587,47 @@
                 }
               ]
             },
+            "table_item_write_set": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "action",
+                  "table_item"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "Deletion",
+                      "Value"
+                    ]
+                  },
+                  "table_item": {
+                    "type": "object",
+                    "required": [
+                      "handle",
+                      "key"
+                    ],
+                    "properties": {
+                      "handle": {
+                        "type": "string",
+                        "format": "AccountAddress"
+                      },
+                      "key": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "value": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            },
             "write_set": {
               "type": "array",
               "items": {
@@ -2519,7 +2759,10 @@
                                                           "U64",
                                                           "U128",
                                                           "Address",
-                                                          "Signer"
+                                                          "Signer",
+                                                          "U16",
+                                                          "U32",
+                                                          "U256"
                                                         ]
                                                       },
                                                       {
@@ -2695,7 +2938,10 @@
                                                       "U64",
                                                       "U128",
                                                       "Address",
-                                                      "Signer"
+                                                      "Signer",
+                                                      "U16",
+                                                      "U32",
+                                                      "U256"
                                                     ]
                                                   },
                                                   {
@@ -2922,7 +3168,10 @@
                                                           "U64",
                                                           "U128",
                                                           "Address",
-                                                          "Signer"
+                                                          "Signer",
+                                                          "U16",
+                                                          "U32",
+                                                          "U256"
                                                         ]
                                                       },
                                                       {
@@ -3164,7 +3413,10 @@
                     "U64",
                     "U128",
                     "Address",
-                    "Signer"
+                    "Signer",
+                    "U16",
+                    "U32",
+                    "U256"
                   ]
                 },
                 {
@@ -3351,7 +3603,10 @@
                           "U64",
                           "U128",
                           "Address",
-                          "Signer"
+                          "Signer",
+                          "U16",
+                          "U32",
+                          "U256"
                         ]
                       },
                       {
@@ -3527,7 +3782,10 @@
                       "U64",
                       "U128",
                       "Address",
-                      "Signer"
+                      "Signer",
+                      "U16",
+                      "U32",
+                      "U256"
                     ]
                   },
                   {
@@ -3713,7 +3971,10 @@
                     "U64",
                     "U128",
                     "Address",
-                    "Signer"
+                    "Signer",
+                    "U16",
+                    "U32",
+                    "U256"
                   ]
                 },
                 {
@@ -3933,7 +4194,10 @@
                           "U64",
                           "U128",
                           "Address",
-                          "Signer"
+                          "Signer",
+                          "U16",
+                          "U32",
+                          "U256"
                         ]
                       },
                       {
@@ -4109,7 +4373,10 @@
                       "U64",
                       "U128",
                       "Address",
-                      "Signer"
+                      "Signer",
+                      "U16",
+                      "U32",
+                      "U256"
                     ]
                   },
                   {
@@ -4295,7 +4562,10 @@
                     "U64",
                     "U128",
                     "Address",
-                    "Signer"
+                    "Signer",
+                    "U16",
+                    "U32",
+                    "U256"
                   ]
                 },
                 {
@@ -4511,7 +4781,10 @@
                           "U64",
                           "U128",
                           "Address",
-                          "Signer"
+                          "Signer",
+                          "U16",
+                          "U32",
+                          "U256"
                         ]
                       },
                       {
@@ -4619,7 +4892,10 @@
                           "U64",
                           "U128",
                           "Address",
-                          "Signer"
+                          "Signer",
+                          "U16",
+                          "U32",
+                          "U256"
                         ]
                       },
                       {
@@ -4763,7 +5039,10 @@
                     "U64",
                     "U128",
                     "Address",
-                    "Signer"
+                    "Signer",
+                    "U16",
+                    "U32",
+                    "U256"
                   ]
                 },
                 {
@@ -4928,7 +5207,10 @@
                                 "U64",
                                 "U128",
                                 "Address",
-                                "Signer"
+                                "Signer",
+                                "U16",
+                                "U32",
+                                "U256"
                               ]
                             },
                             {
@@ -5104,7 +5386,10 @@
                             "U64",
                             "U128",
                             "Address",
-                            "Signer"
+                            "Signer",
+                            "U16",
+                            "U32",
+                            "U256"
                           ]
                         },
                         {
@@ -5331,7 +5616,10 @@
                                 "U64",
                                 "U128",
                                 "Address",
-                                "Signer"
+                                "Signer",
+                                "U16",
+                                "U32",
+                                "U256"
                               ]
                             },
                             {
@@ -5532,7 +5820,10 @@
                     "U64",
                     "U128",
                     "Address",
-                    "Signer"
+                    "Signer",
+                    "U16",
+                    "U32",
+                    "U256"
                   ]
                 },
                 {

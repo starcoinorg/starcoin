@@ -8,6 +8,7 @@
 
 //! This crate defines [`trait StateView`](StateView).
 
+use crate::state_store::state_key::StateKey;
 use crate::{
     access_path::AccessPath,
     account_config::{
@@ -34,8 +35,8 @@ use serde::de::DeserializeOwned;
 /// the VM for transaction execution, during which the VM is guaranteed to read anything at the
 /// given state.
 pub trait StateView {
-    /// Gets the state for a single access path.
-    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>>;
+    /// Gets the state value for a given state key.
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>>;
 
     /// VM needs this method to know whether the current state view is for genesis state creation.
     /// Currently TransactionPayload::WriteSet is only valid for genesis state creation.
@@ -63,10 +64,12 @@ pub trait StateReaderExt: StateView {
     where
         R: MoveResource + DeserializeOwned,
     {
-        let r = self.get(&access_path).and_then(|state| match state {
-            Some(state) => Ok(Some(bcs_ext::from_bytes::<R>(state.as_slice())?)),
-            None => Ok(None),
-        })?;
+        let r = self
+            .get_state_value(&StateKey::AccessPath(access_path))
+            .and_then(|state| match state {
+                Some(state) => Ok(Some(bcs_ext::from_bytes::<R>(state.as_slice())?)),
+                None => Ok(None),
+            })?;
         Ok(r)
     }
 
@@ -95,10 +98,10 @@ pub trait StateReaderExt: StateView {
         type_tag: StructTag,
     ) -> Result<Option<u128>> {
         Ok(self
-            .get(&AccessPath::new(
+            .get_state_value(&StateKey::AccessPath(AccessPath::new(
                 address,
                 BalanceResource::access_path_for(type_tag),
-            ))
+            )))
             .and_then(|bytes| match bytes {
                 Some(bytes) => Ok(Some(bcs_ext::from_bytes::<BalanceResource>(
                     bytes.as_slice(),
@@ -150,7 +153,7 @@ pub trait StateReaderExt: StateView {
     }
 
     fn get_code(&self, module_id: ModuleId) -> Result<Option<Vec<u8>>> {
-        self.get(&AccessPath::from(&module_id))
+        self.get_state_value(&StateKey::AccessPath(AccessPath::from(&module_id)))
     }
 
     /// Check the sip is activated. if the sip module exist, think it is activated.

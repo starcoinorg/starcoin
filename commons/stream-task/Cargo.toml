@@ -9,7 +9,7 @@ parking_lot = { workspace = true }
 pin-project = { workspace = true }
 pin-utils = { workspace = true }
 schemars = { workspace = true }
-serde = { features = [ "derive",], workspace = true }
+serde = { features = ["derive"], workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 
@@ -21,7 +21,7 @@ stest = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 name = "stream-task"
-version = "1.12.9"
+version = "1.13.0"
 homepage = { workspace = true }
 license = { workspace = true }
 publish = { workspace = true }

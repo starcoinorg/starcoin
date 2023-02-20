@@ -327,6 +327,23 @@ function install_shellcheck {
   fi
 }
 
+function install_protoc {
+  PACKAGE_MANAGER=$1
+  #Differently named packages for protoc
+  if [[ "$PACKAGE_MANAGER" == "apk" ]]; then
+    install_pkg protobuf-compiler "$PACKAGE_MANAGER"
+  fi
+  if [[ "$PACKAGE_MANAGER" == "apt-get" ]]; then
+    install_pkg protobuf-compiler "$PACKAGE_MANAGER"
+  fi
+  if [[ "$PACKAGE_MANAGER" == "yum" ]] || [[ "$PACKAGE_MANAGER" == "dnf" ]]; then
+    install_pkg protobuf-compiler "$PACKAGE_MANAGER"
+  fi
+  if [[ "$PACKAGE_MANAGER" == "pacman" ]] || [[ "$PACKAGE_MANAGER" == "brew" ]]; then
+    install_pkg protobuf "$PACKAGE_MANAGER"
+  fi
+}
+
 function install_openssl_dev {
   PACKAGE_MANAGER=$1
   #Differently named packages for openssl dev
@@ -910,6 +927,7 @@ if [[ "$INSTALL_BUILD_TOOLS" == "true" ]]; then
 
   install_gcc_powerpc_linux_gnu "$PACKAGE_MANAGER"
   install_openssl_dev "$PACKAGE_MANAGER"
+  install_protoc "$PACKAGE_MANAGER"
   install_pkg_config "$PACKAGE_MANAGER"
 
   install_rustup "$BATCH_MODE"

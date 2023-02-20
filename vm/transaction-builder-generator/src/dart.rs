@@ -675,6 +675,9 @@ typedef ScriptEncodingHelper = Script Function(
                 _ => common::type_not_allowed(type_tag),
             },
             Struct(_) | Signer => common::type_not_allowed(type_tag),
+            U16 => ("U16", String::new()),
+            U32 => ("U32", String::new()),
+            U256 => ("U256", String::new()),
         };
         writeln!(
             self.out,
@@ -775,6 +778,9 @@ static {} decode_{}_argument(TransactionArgument arg) {{
             },
 
             Struct(_) | Signer => common::type_not_allowed(type_tag),
+            U16 => "int".into(),
+            U32 => "int".into(),
+            U256 => "Int256".into(),
         }
     }
 
@@ -792,6 +798,9 @@ static {} decode_{}_argument(TransactionArgument arg) {{
             },
 
             Struct(_) | Signer => common::type_not_allowed(type_tag),
+            U16 => format!("new TransactionArgumentU16Item({})", name),
+            U32 => format!("new TransactionArgumentU32Item({})", name),
+            U256 => format!("new TransactionArgumentU256Item({})", name),
         }
     }
 }

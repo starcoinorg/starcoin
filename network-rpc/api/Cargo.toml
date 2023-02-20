@@ -6,13 +6,14 @@ futures = { workspace = true }
 network-rpc-core = { workspace = true }
 network-rpc-derive = { workspace = true }
 network-types = { workspace = true }
-serde = { features = [ "derive",], workspace = true }
+serde = { features = ["derive"], workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-state-tree = { workspace = true }
 starcoin-types = { workspace = true }
+starcoin-vm-types = { workspace = true }
 
 [package]
 authors = { workspace = true }
@@ -20,7 +21,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-network-rpc-api"
 publish = { workspace = true }
-version = "1.12.9"
+version = "1.13.0"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

@@ -90,6 +90,9 @@ fn value_to_json(origin: AnnotatedMoveValue) -> serde_json::Value {
         // try bytes to string, or else to hex string.
         AnnotatedMoveValue::Bytes(v) => Value::String(format!("0x{}", hex::encode(v.as_slice()))),
         AnnotatedMoveValue::Struct(v) => struct_to_json(v),
+        AnnotatedMoveValue::U16(v) => Value::Number(v.into()),
+        AnnotatedMoveValue::U32(v) => Value::Number(v.into()),
+        AnnotatedMoveValue::U256(v) => Value::String(v.to_string() + "u256"),
     }
 }
 impl From<AnnotatedMoveStruct> for DecodedMoveValue {

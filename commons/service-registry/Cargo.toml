@@ -8,7 +8,7 @@ futures-timer = { workspace = true }
 log = { workspace = true }
 once_cell = { workspace = true }
 schemars = { workspace = true }
-serde = { features = [ "derive",], workspace = true }
+serde = { features = ["derive"], workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 
@@ -22,7 +22,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-service-registry"
 publish = { workspace = true }
-version = "1.12.9"
+version = "1.13.0"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

@@ -10,7 +10,7 @@ futures = { workspace = true }
 futures-timer = { workspace = true }
 network-api = { workspace = true }
 network-rpc-core = { workspace = true }
-serde_json = { features = [ "arbitrary_precision",], workspace = true }
+serde_json = { features = ["arbitrary_precision"], workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-account-service = { workspace = true }
 starcoin-block-relayer = { workspace = true }
@@ -23,7 +23,7 @@ starcoin-dev = { workspace = true }
 starcoin-executor = { workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-logger = { workspace = true }
-starcoin-metrics = { features = [ "server",], workspace = true }
+starcoin-metrics = { features = ["server"], workspace = true }
 starcoin-miner = { workspace = true }
 starcoin-miner-client = { workspace = true }
 starcoin-network = { workspace = true }
@@ -46,7 +46,7 @@ starcoin-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
 thiserror = { workspace = true }
 timeout-join-handler = { workspace = true }
-tokio = { features = [ "full",], workspace = true }
+tokio = { features = ["full"], workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }
@@ -57,7 +57,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-node"
 publish = { workspace = true }
-version = "1.12.9"
+version = "1.13.0"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

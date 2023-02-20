@@ -20,6 +20,7 @@ use starcoin_vm_types::genesis_config::{ChainId, StdlibVersion};
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::on_chain_config::{MoveLanguageVersion, TransactionPublishOption, Version};
 use starcoin_vm_types::on_chain_resource::LinearWithdrawCapability;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::token::stc::G_STC_TOKEN_CODE;
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
 use std::convert::TryInto;
@@ -45,12 +46,12 @@ fn test_init_script() -> Result<()> {
     )?;
     let chain_state = prepare_customized_genesis(&net);
 
-    let dao_action_type_tag = TypeTag::Struct(StructTag {
+    let dao_action_type_tag = TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
         module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
         name: Identifier::new("UpgradeModule").unwrap(),
         type_params: vec![],
-    });
+    }));
 
     let init_script = ScriptFunction::new(
         ModuleId::new(
@@ -123,12 +124,12 @@ fn test_upgrade_stdlib_with_incremental_package() -> Result<()> {
     )?;
     let chain_state = prepare_customized_genesis(&net);
 
-    let dao_action_type_tag = TypeTag::Struct(StructTag {
+    let dao_action_type_tag = TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
         module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
         name: Identifier::new("UpgradeModule").unwrap(),
         type_params: vec![],
-    });
+    }));
     let path = std::path::PathBuf::from("../vm/stdlib/compiled/2/1-2/stdlib.blob")
         .canonicalize()
         .unwrap();
@@ -221,8 +222,20 @@ fn test_stdlib_upgrade() -> Result<()> {
             )?;
             proposal_id += 1;
         }
+        // if upgrade from 11 to later, we need to update language version to 6.
+        if let StdlibVersion::Version(11) = current_version {
+            dao_vote_test(
+                &alice,
+                &chain_state,
+                &net,
+                vote_language_version(&net, 6),
+                on_chain_config_type_tag(MoveLanguageVersion::type_tag()),
+                execute_script_on_chain_config(&net, MoveLanguageVersion::type_tag(), proposal_id),
+                proposal_id,
+            )?;
+            proposal_id += 1;
+        }
         verify_version_state(current_version, &chain_state)?;
-
         let dao_action_type_tag = new_version.upgrade_module_type_tag();
         let package = match load_upgrade_package(current_version, new_version)? {
             Some(package) => package,
@@ -283,6 +296,7 @@ fn test_stdlib_upgrade() -> Result<()> {
 
     Ok(())
 }
+
 // this is daospace-v12 starcoin-framework
 // https://github.com/starcoinorg/starcoin-framework/releases/tag/daospace-v12
 // in starcoin master we don't use it
@@ -320,12 +334,12 @@ fn test_stdlib_upgrade_since_v12() -> Result<()> {
         };
         let package_hash = package.crypto_hash();
 
-        let starcoin_dao_type = TypeTag::Struct(StructTag {
+        let starcoin_dao_type = TypeTag::Struct(Box::new(StructTag {
             address: genesis_address(),
             module: Identifier::new("StarcoinDAO").unwrap(),
             name: Identifier::new("StarcoinDAO").unwrap(),
             type_params: vec![],
-        });
+        }));
         let vote_script_function = new_version.propose_module_upgrade_function_since_v12(
             starcoin_dao_type.clone(),
             "upgrade stdlib",
@@ -401,7 +415,7 @@ fn ext_execute_after_upgrade(
             )?;
         }
         StdlibVersion::Version(6) => {
-            let resource = chain_state.get(&AccessPath::new(
+            let resource = chain_state.get_state_value(&StateKey::AccessPath(AccessPath::new(
                 genesis_address(),
                 DataPath::Resource(StructTag {
                     address: genesis_address(),
@@ -409,7 +423,7 @@ fn ext_execute_after_upgrade(
                     name: Identifier::new("SignerDelegated").unwrap(),
                     type_params: vec![],
                 }),
-            ))?;
+            )))?;
             assert!(resource.is_some());
             let genesis_account = chain_state
                 .get_account_resource(genesis_address())?
@@ -429,20 +443,22 @@ fn ext_execute_after_upgrade(
             assert!(version_resource.is_some());
             let version = version_resource.unwrap();
             assert_eq!(version.major, 2, "expect language version is 2");
-            let genesis_nft_info = chain_state.get(&AccessPath::new(
-                genesis_address(),
-                DataPath::Resource(StructTag {
-                    address: genesis_address(),
-                    module: Identifier::new("GenesisNFT").unwrap(),
-                    name: Identifier::new("GenesisNFTInfo").unwrap(),
-                    type_params: vec![],
-                }),
-            ))?;
+            let genesis_nft_info =
+                chain_state.get_state_value(&StateKey::AccessPath(AccessPath::new(
+                    genesis_address(),
+                    DataPath::Resource(StructTag {
+                        address: genesis_address(),
+                        module: Identifier::new("GenesisNFT").unwrap(),
+                        name: Identifier::new("GenesisNFTInfo").unwrap(),
+                        type_params: vec![],
+                    }),
+                )))?;
             assert!(
                 genesis_nft_info.is_some(),
                 "expect 0x1::GenesisNFT::GenesisNFTInfo in global storage, but go none."
             );
         }
+
         // this is old daospace-v12 starcoin-framework,
         // https://github.com/starcoinorg/starcoin-framework/releases/tag/daospace-v12
         // master don't use it
@@ -720,7 +736,7 @@ fn assert_genesis_resouce_exist(
     type_params: Vec<TypeTag>,
 ) {
     let checkpoint = chain_state
-        .get(&AccessPath::new(
+        .get_state_value(&StateKey::AccessPath(AccessPath::new(
             genesis_address(),
             DataPath::Resource(StructTag {
                 address: genesis_address(),
@@ -728,7 +744,7 @@ fn assert_genesis_resouce_exist(
                 name: Identifier::new(name).unwrap(),
                 type_params,
             }),
-        ))
+        )))
         .unwrap();
     assert!(
         checkpoint.is_some(),
@@ -746,7 +762,7 @@ fn assert_genesis_resouce_not_exist(
     type_params: Vec<TypeTag>,
 ) {
     let checkpoint = chain_state
-        .get(&AccessPath::new(
+        .get_state_value(&StateKey::AccessPath(AccessPath::new(
             genesis_address(),
             DataPath::Resource(StructTag {
                 address: genesis_address(),
@@ -754,7 +770,7 @@ fn assert_genesis_resouce_not_exist(
                 name: Identifier::new(name).unwrap(),
                 type_params,
             }),
-        ))
+        )))
         .unwrap();
     assert!(
         checkpoint.is_none(),

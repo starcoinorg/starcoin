@@ -1,14 +1,14 @@
 [dependencies]
 anyhow = { workspace = true }
-clap = { features = [ "derive",], workspace = true }
+clap = { features = ["derive"], workspace = true }
 cli-table = { workspace = true }
 jpst = { workspace = true }
 once_cell = { workspace = true }
 rust-flatten-json = { workspace = true }
 rustyline = { workspace = true }
 rustyline-derive = { workspace = true }
-serde = { features = [ "derive",], workspace = true }
-serde_json = { features = [ "arbitrary_precision",], workspace = true }
+serde = { features = ["derive"], workspace = true }
+serde_json = { features = ["arbitrary_precision"], workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
@@ -24,7 +24,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "scmd"
 publish = { workspace = true }
-version = "1.12.9"
+version = "1.13.0"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

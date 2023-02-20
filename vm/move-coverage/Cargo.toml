@@ -1,8 +1,8 @@
 [dependencies]
 anyhow = { workspace = true }
 bcs = { workspace = true }
-clap = { features = [ "derive",], workspace = true }
-codespan = { features = [ "serialization",], workspace = true }
+clap = { features = ["derive"], workspace = true }
+codespan = { features = ["serialization"], workspace = true }
 colored = { workspace = true }
 petgraph = { workspace = true }
 serde = { default-features = false, workspace = true }
@@ -21,7 +21,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "move-coverage"
 publish = { workspace = true }
-version = "1.12.9"
+version = "1.13.0"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

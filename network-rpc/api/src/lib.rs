@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::HashValue;
-use starcoin_state_api::StateWithProof;
+use starcoin_state_api::{StateWithProof, StateWithTableItemProof};
 use starcoin_state_tree::StateNode;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
@@ -25,6 +25,7 @@ pub use network_rpc_core::RawRpcClient;
 pub use remote_chain_state::RemoteChainStateReader;
 
 pub use starcoin_types::block::BlockBody;
+use starcoin_vm_types::state_store::table::TableHandle;
 
 pub const MAX_BLOCK_REQUEST_SIZE: u64 = 50;
 pub const MAX_BLOCK_HEADER_REQUEST_SIZE: u64 = 1000;
@@ -278,4 +279,17 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         peer_id: PeerId,
         ids: Vec<HashValue>,
     ) -> BoxFuture<Result<Vec<Option<Block>>>>;
+
+    fn get_state_with_table_item_proof(
+        &self,
+        peer_id: PeerId,
+        request: GetStateWithTableItemProof,
+    ) -> BoxFuture<Result<StateWithTableItemProof>>;
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetStateWithTableItemProof {
+    pub state_root: HashValue,
+    pub handle: TableHandle,
+    pub key: Vec<u8>,
 }

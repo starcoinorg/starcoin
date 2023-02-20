@@ -1,6 +1,6 @@
 // This file is part of Substrate.
 
-// Copyright (C) 2018-2020 Parity Technologies (UK) Ltd.
+// Copyright (C) 2018-2022 Parity Technologies (UK) Ltd.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
 // This program is free software: you can redistribute it and/or modify
@@ -20,15 +20,13 @@ use libp2p::{
     bandwidth,
     core::{
         self,
-        either::{EitherOutput, EitherTransport},
+        either::EitherTransport,
         muxing::StreamMuxerBox,
         transport::{Boxed, OptionalTransport},
         upgrade,
     },
-    identity, mplex, noise, wasm_ext, InboundUpgradeExt, OutboundUpgradeExt, PeerId, Transport,
+    dns, identity, mplex, noise, tcp, websocket, PeerId, Transport,
 };
-#[cfg(not(target_os = "unknown"))]
-use libp2p::{dns, tcp, websocket};
 use std::{sync::Arc, time::Duration};
 
 pub use self::bandwidth::BandwidthSinks;
@@ -38,39 +36,49 @@ pub use self::bandwidth::BandwidthSinks;
 /// If `memory_only` is true, then only communication within the same process are allowed. Only
 /// addresses with the format `/memory/...` are allowed.
 ///
+/// `yamux_window_size` is the maximum size of the Yamux receive windows. `None` to leave the
+/// default (256kiB).
+///
+/// `yamux_maximum_buffer_size` is the maximum allowed size of the Yamux buffer. This should be
+/// set either to the maximum of all the maximum allowed sizes of messages frames of all
+/// high-level protocols combined, or to some generously high value if you are sure that a maximum
+/// size is enforced on all high-level protocols.
+///
 /// Returns a `BandwidthSinks` object that allows querying the average bandwidth produced by all
 /// the connections spawned with this transport.
 pub fn build_transport(
     keypair: identity::Keypair,
     memory_only: bool,
-    wasm_external_transport: Option<wasm_ext::ExtTransport>,
 ) -> (Boxed<(PeerId, StreamMuxerBox)>, Arc<BandwidthSinks>) {
     // Build the base layer of the transport.
-    let transport = if let Some(t) = wasm_external_transport {
-        OptionalTransport::some(t)
-    } else {
-        OptionalTransport::none()
-    };
-    #[cfg(not(target_os = "unknown"))]
-    let transport = transport.or_transport(if !memory_only {
-        let desktop_trans = tcp::TcpConfig::new();
-        let desktop_trans =
-            websocket::WsConfig::new(desktop_trans.clone()).or_transport(desktop_trans);
-        let dns_init = futures::executor::block_on(dns::DnsConfig::system(desktop_trans.clone()));
-        OptionalTransport::some(OptionalTransport::some(if let Ok(dns) = dns_init {
-            EitherTransport::Left(dns)
-        } else {
-            EitherTransport::Right(desktop_trans.map_err(dns::DnsErr::Transport))
-        }))
-    } else {
-        OptionalTransport::none()
-    });
+    let transport = if !memory_only {
+        // Main transport: DNS(TCP)
+        let tcp_config = tcp::Config::new().nodelay(true);
+        let tcp_trans = tcp::tokio::Transport::new(tcp_config.clone());
+        let dns_init = dns::TokioDnsConfig::system(tcp_trans);
 
-    let transport = transport.or_transport(if memory_only {
-        OptionalTransport::some(libp2p::core::transport::MemoryTransport::default())
+        EitherTransport::Left(if let Ok(dns) = dns_init {
+            // WS + WSS transport
+            //
+            // Main transport can't be used for `/wss` addresses because WSS transport needs
+            // unresolved addresses (BUT WSS transport itself needs an instance of DNS transport to
+            // resolve and dial addresses).
+            let tcp_trans = tcp::tokio::Transport::new(tcp_config);
+            let dns_for_wss = dns::TokioDnsConfig::system(tcp_trans)
+                .expect("same system_conf & resolver to work");
+            EitherTransport::Left(websocket::WsConfig::new(dns_for_wss).or_transport(dns))
+        } else {
+            // In case DNS can't be constructed, fallback to TCP + WS (WSS won't work)
+            let tcp_trans = tcp::tokio::Transport::new(tcp_config.clone());
+            let desktop_trans = websocket::WsConfig::new(tcp_trans)
+                .or_transport(tcp::tokio::Transport::new(tcp_config));
+            EitherTransport::Right(desktop_trans)
+        })
     } else {
-        OptionalTransport::none()
-    });
+        EitherTransport::Right(OptionalTransport::some(
+            libp2p::core::transport::MemoryTransport::default(),
+        ))
+    };
 
     let (transport, bandwidth) = bandwidth::BandwidthLogging::new(transport);
 
@@ -78,14 +86,7 @@ pub fn build_transport(
         // For more information about these two panics, see in "On the Importance of
         // Checking Cryptographic Protocols for Faults" by Dan Boneh, Richard A. DeMillo,
         // and Richard J. Lipton.
-        let noise_keypair_legacy = noise::Keypair::<noise::X25519>::new()
-            .into_authentic(&keypair)
-            .expect(
-                "can only fail in case of a hardware bug; since this signing is performed only \
-				once and at initialization, we're taking the bet that the inconvenience of a very \
-				rare panic here is basically zero",
-            );
-        let noise_keypair_spec = noise::Keypair::<noise::X25519Spec>::new()
+        let noise_keypair = noise::Keypair::<noise::X25519Spec>::new()
             .into_authentic(&keypair)
             .expect(
                 "can only fail in case of a hardware bug; since this signing is performed only \
@@ -99,38 +100,26 @@ pub fn build_transport(
             ..Default::default()
         };
 
-        let mut xx_config = noise::NoiseConfig::xx(noise_keypair_spec);
-        xx_config.set_legacy_config(noise_legacy.clone());
-        let mut ix_config = noise::NoiseConfig::ix(noise_keypair_legacy);
-        ix_config.set_legacy_config(noise_legacy);
-
-        let extract_peer_id = |result| match result {
-            EitherOutput::First((peer_id, o)) => (peer_id, EitherOutput::First(o)),
-            EitherOutput::Second((peer_id, o)) => (peer_id, EitherOutput::Second(o)),
-        };
-
-        core::upgrade::SelectUpgrade::new(
-            xx_config.into_authenticated(),
-            ix_config.into_authenticated(),
-        )
-        .map_inbound(extract_peer_id)
-        .map_outbound(extract_peer_id)
+        let mut xx_config = noise::NoiseConfig::xx(noise_keypair);
+        xx_config.set_legacy_config(noise_legacy);
+        xx_config.into_authenticated()
     };
 
     let multiplexing_config = {
         let mut mplex_config = mplex::MplexConfig::new();
         mplex_config.set_max_buffer_behaviour(mplex::MaxBufferBehaviour::Block);
         mplex_config.set_max_buffer_size(usize::MAX);
+
         let mut yamux_config = libp2p::yamux::YamuxConfig::default();
         // Enable proper flow-control: window updates are only sent when
         // buffered data has been consumed.
         yamux_config.set_window_update_mode(libp2p::yamux::WindowUpdateMode::on_read());
-
+        yamux_config.set_max_buffer_size(usize::MAX);
         core::upgrade::SelectUpgrade::new(yamux_config, mplex_config)
     };
 
     let transport = transport
-        .upgrade(upgrade::Version::V1)
+        .upgrade(upgrade::Version::V1Lazy)
         .authenticate(authentication_config)
         .multiplex(multiplexing_config)
         .timeout(Duration::from_secs(20))

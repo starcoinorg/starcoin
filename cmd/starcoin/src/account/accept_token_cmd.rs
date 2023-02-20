@@ -46,7 +46,9 @@ impl CommandAction for AcceptTokenCommand {
             TransactionPayload::ScriptFunction(ScriptFunction::new(
                 ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
                 Identifier::new("accept_token").unwrap(),
-                vec![TypeTag::Struct(opt.token_code.clone().try_into().unwrap())],
+                vec![TypeTag::Struct(Box::new(
+                    opt.token_code.clone().try_into().unwrap(),
+                ))],
                 vec![],
             )),
         )

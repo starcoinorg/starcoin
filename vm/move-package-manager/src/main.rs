@@ -3,17 +3,20 @@
 
 use anyhow::Result;
 use clap::Parser;
-use move_cli::package::cli::handle_package_commands;
-use move_cli::{experimental, package, sandbox, Move, DEFAULT_STORAGE_DIR};
+// use move_cli::package::cli::handle_package_commands;
+use move_cli::{experimental, sandbox, Move, DEFAULT_STORAGE_DIR};
 use move_core_types::errmap::ErrorMapping;
 use move_package_manager::compatibility_check_cmd::{
     handle_compatibility_check, CompatibilityCheckCommand,
 };
 use move_package_manager::deployment::{handle_deployment, DeploymentCommand};
+use move_package_manager::package::{handle_package_commands, PackageCommand};
 use move_package_manager::release::{handle_release, Release};
 use move_package_manager::{run_integration_test, IntegrationTestCommand};
+use move_vm_test_utils::gas_schedule::CostTable;
+use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_vm_runtime::natives::starcoin_natives;
-use starcoin_vm_types::gas_schedule::G_LATEST_GAS_SCHEDULE;
+use starcoin_vm_types::on_chain_config::G_LATEST_INSTRUCTION_TABLE;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -33,7 +36,7 @@ pub enum Commands {
     #[clap(name = "package")]
     Package {
         #[clap(subcommand)]
-        cmd: package::cli::PackageCommand,
+        cmd: PackageCommand,
     },
     /// Release the package.
     #[clap(name = "release")]
@@ -77,18 +80,17 @@ fn main() -> Result<()> {
     let args: CliOptions = CliOptions::parse();
 
     let move_args = &args.move_args;
-    let natives = starcoin_natives();
+    let gas_params = G_LATEST_GAS_PARAMS.clone();
+    let natives = starcoin_natives(gas_params.natives);
+    let cost_table = CostTable {
+        instruction_table: G_LATEST_INSTRUCTION_TABLE.clone(),
+    };
     match args.cmd {
         Commands::IntegrationTest(cmd) => run_integration_test(args.move_args, cmd),
-        Commands::Package { cmd } => handle_package_commands(
-            &move_args.package_path,
-            move_args.build_config.clone(),
-            &cmd,
-            natives,
-        ),
+        Commands::Package { cmd } => handle_package_commands(natives, args.move_args, cmd),
         Commands::Sandbox { storage_dir, cmd } => cmd.handle_command(
             natives,
-            &G_LATEST_GAS_SCHEDULE,
+            &cost_table,
             &error_descriptions,
             move_args,
             &storage_dir,

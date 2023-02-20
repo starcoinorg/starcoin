@@ -20,6 +20,7 @@ pub use libp2p::{
 pub mod behaviour;
 pub mod config;
 //TODO change to private
+#[allow(deprecated)]
 pub mod discovery;
 mod errors;
 mod metrics;
@@ -31,6 +32,7 @@ mod peer_info;
 pub mod protocol;
 #[allow(clippy::single_match)]
 mod request_responses;
+#[allow(deprecated)]
 mod service;
 #[cfg(test)]
 mod service_test;

@@ -17,14 +17,14 @@ once_cell = { workspace = true }
 shell-words = { workspace = true }
 tempfile = { workspace = true }
 walkdir = { workspace = true }
-clap = { features = [ "derive",], workspace = true }
+clap = { features = ["derive"], workspace = true }
 hex = { workspace = true }
 itertools = { workspace = true }
 log = { workspace = true }
 num = { workspace = true }
 pretty = { workspace = true }
 rand = { workspace = true }
-serde = { features = [ "derive",], workspace = true }
+serde = { features = ["derive"], workspace = true }
 serde_json = { workspace = true }
 simplelog = { workspace = true }
 toml = { workspace = true }
@@ -35,7 +35,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-move-prover"
 publish = { workspace = true }
-version = "1.12.9"
+version = "1.13.0"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

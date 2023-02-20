@@ -5,7 +5,7 @@ path = "src/main.rs"
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
-clap = { features = [ "derive",], workspace = true }
+clap = { features = ["derive"], workspace = true }
 elasticsearch = { workspace = true }
 futures-retry = { workspace = true }
 futures-util = { workspace = true }
@@ -16,7 +16,7 @@ starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-rpc-api = { workspace = true }
 starcoin-types = { workspace = true }
-tokio = { features = [ "full",], workspace = true }
+tokio = { features = ["full"], workspace = true }
 
 [package]
 authors = { workspace = true }
@@ -24,7 +24,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-indexer"
 publish = { workspace = true }
-version = "1.12.9"
+version = "1.13.0"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

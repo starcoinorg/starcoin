@@ -27,7 +27,7 @@ impl AutoAcceptToken {
             && struct_tag.name.as_str() == Self::STRUCT_NAME
         {
             if let Some(TypeTag::Struct(token_tag)) = struct_tag.type_params.get(0) {
-                Some(token_tag.clone().into())
+                Some((*(token_tag.clone())).into())
             } else {
                 None
             }

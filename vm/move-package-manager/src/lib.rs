@@ -8,6 +8,7 @@ use move_command_line_common::testing::UPDATE_BASELINE;
 use move_compiler::command_line::compiler::construct_pre_compiled_lib_from_compiler;
 use move_compiler::diagnostics::report_diagnostics;
 use move_compiler::shared::unique_map::UniqueMap;
+use move_compiler::shared::NamedAddressMaps;
 use move_compiler::{
     cfgir, expansion, hlir, naming, parser, typing, Compiler, FullyCompiledProgram,
 };
@@ -22,6 +23,7 @@ use std::sync::Mutex;
 
 pub mod compatibility_check_cmd;
 pub mod deployment;
+pub mod package;
 pub mod release;
 
 // use `integration-tests` rather than `tests`, for avoid conflict with `mpm package test`
@@ -131,7 +133,8 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
     let rerooted_path = {
         let path = &move_arg.package_path;
         // Always root ourselves to the package root, and then compile relative to that.
-        let rooted_path = SourcePackageLayout::try_find_root(&path.canonicalize()?)?;
+        let rooted_path =
+            SourcePackageLayout::try_find_root(&path.as_ref().unwrap().canonicalize()?)?;
         std::env::set_current_dir(&rooted_path).unwrap();
         PathBuf::from(".")
     };
@@ -139,10 +142,12 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
         // force move to rebuild all packages, so that we can use compile_driver to generate the full compiled program.
         let mut build_config = move_arg.build_config;
         build_config.force_recompilation = true;
-        let resolved_graph = build_config.resolution_graph_for_package(&rerooted_path)?;
+        let resolved_graph =
+            build_config.resolution_graph_for_package(&rerooted_path, &mut std::io::stdout())?;
         let mut pre_compiled_lib = FullyCompiledProgram {
             files: Default::default(),
             parser: parser::ast::Program {
+                named_address_maps: NamedAddressMaps::new(),
                 source_definitions: vec![],
                 lib_definitions: vec![],
             },
@@ -168,78 +173,79 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
             },
             compiled: vec![],
         };
-        let compiled = BuildPlan::create(resolved_graph)?
-            .compile_with_driver(
-                &mut std::io::stdout(),
-                |compiler: Compiler, _is_root: bool| {
-                    let full_program = match construct_pre_compiled_lib_from_compiler(compiler)? {
-                        Ok(full_program) => full_program,
-                        Err((file, s)) => report_diagnostics(&file, s),
-                    };
-                    pre_compiled_lib.files.extend(full_program.files.clone());
-                    pre_compiled_lib
-                        .parser
-                        .lib_definitions
-                        .extend(full_program.parser.source_definitions);
-                    pre_compiled_lib.expansion.modules =
-                        pre_compiled_lib.expansion.modules.union_with(
-                            &full_program.expansion.modules.filter_map(|_k, v| {
-                                if v.is_source_module {
-                                    Some(v)
-                                } else {
-                                    None
-                                }
-                            }),
-                            |_k, v1, _v2| v1.clone(),
-                        );
-                    pre_compiled_lib.naming.modules = pre_compiled_lib.naming.modules.union_with(
-                        &full_program.naming.modules.filter_map(|_k, v| {
-                            if v.is_source_module {
-                                Some(v)
-                            } else {
-                                None
-                            }
-                        }),
-                        |_k, v1, _v2| v1.clone(),
-                    );
-                    pre_compiled_lib.typing.modules = pre_compiled_lib.typing.modules.union_with(
-                        &full_program.typing.modules.filter_map(|_k, v| {
-                            if v.is_source_module {
-                                Some(v)
-                            } else {
-                                None
-                            }
-                        }),
-                        |_k, v1, _v2| v1.clone(),
-                    );
-                    pre_compiled_lib.hlir.modules = pre_compiled_lib.hlir.modules.union_with(
-                        &full_program.hlir.modules.filter_map(|_k, v| {
-                            if v.is_source_module {
-                                Some(v)
-                            } else {
-                                None
-                            }
-                        }),
-                        |_k, v1, _v2| v1.clone(),
-                    );
-                    pre_compiled_lib.cfgir.modules = pre_compiled_lib.cfgir.modules.union_with(
-                        &full_program.cfgir.modules.filter_map(|_k, v| {
-                            if v.is_source_module {
-                                Some(v)
-                            } else {
-                                None
-                            }
-                        }),
-                        |_k, v1, _v2| v1.clone(),
-                    );
-                    pre_compiled_lib
-                        .compiled
-                        .extend(full_program.compiled.clone());
+        let compiled = BuildPlan::create(resolved_graph)?.compile_with_driver(
+            &mut std::io::stdout(),
+            |compiler: Compiler| {
+                let full_program = match construct_pre_compiled_lib_from_compiler(compiler)? {
+                    Ok(full_program) => full_program,
+                    Err((file, s)) => report_diagnostics(&file, s),
+                };
+                pre_compiled_lib.files.extend(full_program.files.clone());
+                pre_compiled_lib
+                    .parser
+                    .source_definitions
+                    .extend(full_program.parser.source_definitions);
+                pre_compiled_lib
+                    .parser
+                    .named_address_maps
+                    .extend(&full_program.parser.named_address_maps);
+                pre_compiled_lib.expansion.modules = pre_compiled_lib.expansion.modules.union_with(
+                    &full_program.expansion.modules.filter_map(|_k, v| {
+                        if v.is_source_module {
+                            Some(v)
+                        } else {
+                            None
+                        }
+                    }),
+                    |_k, v1, _v2| v1.clone(),
+                );
+                pre_compiled_lib.naming.modules = pre_compiled_lib.naming.modules.union_with(
+                    &full_program.naming.modules.filter_map(|_k, v| {
+                        if v.is_source_module {
+                            Some(v)
+                        } else {
+                            None
+                        }
+                    }),
+                    |_k, v1, _v2| v1.clone(),
+                );
+                pre_compiled_lib.typing.modules = pre_compiled_lib.typing.modules.union_with(
+                    &full_program.typing.modules.filter_map(|_k, v| {
+                        if v.is_source_module {
+                            Some(v)
+                        } else {
+                            None
+                        }
+                    }),
+                    |_k, v1, _v2| v1.clone(),
+                );
+                pre_compiled_lib.hlir.modules = pre_compiled_lib.hlir.modules.union_with(
+                    &full_program.hlir.modules.filter_map(|_k, v| {
+                        if v.is_source_module {
+                            Some(v)
+                        } else {
+                            None
+                        }
+                    }),
+                    |_k, v1, _v2| v1.clone(),
+                );
+                pre_compiled_lib.cfgir.modules = pre_compiled_lib.cfgir.modules.union_with(
+                    &full_program.cfgir.modules.filter_map(|_k, v| {
+                        if v.is_source_module {
+                            Some(v)
+                        } else {
+                            None
+                        }
+                    }),
+                    |_k, v1, _v2| v1.clone(),
+                );
+                pre_compiled_lib
+                    .compiled
+                    .extend(full_program.compiled.clone());
 
-                    Ok((full_program.files, full_program.compiled))
-                },
-            )?
-            .0;
+                Ok((full_program.files, full_program.compiled))
+            },
+        )?;
         (pre_compiled_lib, compiled)
     };
 
@@ -266,7 +272,6 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
         eprintln!("No integration tests file in the dir `integration-tests`.");
         return Ok(());
     }
-
     *starcoin_transactional_test_harness::G_FLAG_RELOAD_STDLIB
         .lock()
         .unwrap() = cmd.current_as_stdlib;

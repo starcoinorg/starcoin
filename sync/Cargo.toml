@@ -56,13 +56,13 @@ starcoin-statedb = { workspace = true }
 starcoin-txpool-mock-service = { workspace = true }
 starcoin-executor = { workspace = true }
 test-helper = { workspace = true }
-tokio = { features = [ "full",], workspace = true }
+tokio = { features = ["full"], workspace = true }
 
 [package]
 authors = { workspace = true }
 edition = { workspace = true }
 name = "starcoin-sync"
-version = "1.12.9"
+version = "1.13.0"
 homepage = { workspace = true }
 license = { workspace = true }
 publish = { workspace = true }

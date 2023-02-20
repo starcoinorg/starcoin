@@ -38,10 +38,10 @@ impl MoveResource for Version {
     const STRUCT_NAME: &'static str = "Version";
 }
 pub fn version_config_type_tag() -> TypeTag {
-    TypeTag::Struct(StructTag {
+    TypeTag::Struct(Box::new(StructTag {
         address: CORE_CODE_ADDRESS,
         module: G_VERSION_CONFIG_IDENTIFIER.clone(),
         name: G_VERSION_CONFIG_IDENTIFIER.clone(),
         type_params: vec![],
-    })
+    }))
 }

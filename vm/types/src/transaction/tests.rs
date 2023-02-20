@@ -2,6 +2,7 @@ use crate::transaction::Script;
 use crate::transaction_argument::convert_txn_args;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::transaction_argument::TransactionArgument;
+use move_core_types::u256;
 
 #[test]
 fn test_transaction_argument_to_json() {
@@ -15,6 +16,9 @@ fn test_transaction_argument_to_json() {
             TransactionArgument::Bool(true),
             TransactionArgument::Address(AccountAddress::random()),
             TransactionArgument::U8Vector(vec![0u8]),
+            TransactionArgument::U16(u16::max_value()),
+            TransactionArgument::U32(u32::max_value()),
+            TransactionArgument::U256(u256::U256::max_value()),
         ]),
     );
     let raw_json = serde_json::to_string(&script).expect("json to_string should success.");

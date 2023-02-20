@@ -20,6 +20,7 @@ use starcoin_vm_types::account_config::{core_code_address, stc_type_tag, STC_TOK
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::ScriptFunction;
 use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
@@ -558,7 +559,10 @@ impl AccountData {
             .unwrap()
             .simple_serialize(&AccountData::layout())
             .unwrap();
-        write_set.push((self.make_account_access_path(), WriteOp::Value(account)));
+        write_set.push((
+            StateKey::AccessPath(self.make_account_access_path()),
+            WriteOp::Value(account),
+        ));
         for (code, balance_blob) in balance_blobs.into_iter() {
             let balance = balance_blob
                 .value_as::<Struct>()
@@ -566,7 +570,7 @@ impl AccountData {
                 .simple_serialize(&Balance::layout())
                 .unwrap();
             write_set.push((
-                self.make_balance_access_path(code.as_str()),
+                StateKey::AccessPath(self.make_balance_access_path(code.as_str())),
                 WriteOp::Value(balance),
             ));
         }
@@ -577,7 +581,7 @@ impl AccountData {
             .simple_serialize(&EventHandleGenerator::layout())
             .unwrap();
         write_set.push((
-            self.make_event_generator_access_path(),
+            StateKey::AccessPath(self.make_event_generator_access_path()),
             WriteOp::Value(event_generator),
         ));
         WriteSetMut::new(write_set).freeze().unwrap()

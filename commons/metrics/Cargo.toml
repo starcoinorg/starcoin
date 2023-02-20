@@ -1,13 +1,13 @@
 [dependencies]
 anyhow = { workspace = true }
 prometheus = { default-features = false, workspace = true }
-serde_json = { features = ["arbitrary_precision", ], workspace = true }
+serde_json = { features = ["arbitrary_precision"], workspace = true }
 starcoin-logger = { workspace = true }
 futures = { optional = true, workspace = true }
-hyper = { features = ["full", ], optional = true, workspace = true }
+hyper = { features = ["full"], optional = true, workspace = true }
 
 [features]
-server = ["prometheus/push", "hyper", "futures", ]
+server = ["prometheus/push", "hyper", "futures"]
 
 [package]
 authors = { workspace = true }
@@ -16,11 +16,15 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-metrics"
 publish = { workspace = true }
-version = "1.12.9"
+version = "1.13.0"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }
 
 [target."cfg(any(target_os = \"macos\", target_os=\"linux\"))".dependencies]
-psutil = { version = "3.2", default-features = false, features = ["cpu", "memory", "process", ] }
+psutil = { version = "3.2", default-features = false, features = [
+    "cpu",
+    "memory",
+    "process",
+] }
 timeout-join-handler = { workspace = true }

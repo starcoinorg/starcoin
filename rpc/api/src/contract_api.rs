@@ -42,7 +42,6 @@ pub trait ContractApi {
         raw_txn: String,
         sender_public_key: StrView<AccountPublicKey>,
     ) -> FutureResult<DryRunOutputView>;
-
     #[rpc(name = "contract.resolve_function")]
     fn resolve_function(&self, function_id: FunctionIdView) -> FutureResult<FunctionABI>;
     #[rpc(name = "contract.resolve_module_function_index")]

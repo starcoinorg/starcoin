@@ -13,6 +13,7 @@ starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
 stest = { workspace = true }
 tokio = { workspace = true }
+starcoin-vm-types = { workspace = true }
 
 [dev-dependencies]
 test-helper = { workspace = true }
@@ -23,7 +24,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-state-service"
 publish = { workspace = true }
-version = "1.12.9"
+version = "1.13.0"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

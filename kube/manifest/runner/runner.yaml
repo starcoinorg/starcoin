@@ -7,7 +7,7 @@ spec:
     spec:
       nodeSelector:
         node-pool: ci-pool-200g
-      image: starcoin/starcoin-builder:sha-cbd4ad4
+      image: ghcr.io/starcoinorg/starcoin-builder:latest
       repository: starcoinorg/starcoin
       ephemeral: true
       tolerations:

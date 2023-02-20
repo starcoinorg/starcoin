@@ -1,0 +1,22 @@
+[dependencies]
+move-core-types = { workspace = true }
+move-binary-format = { workspace = true }
+move-stdlib = { workspace = true }
+move-table-extension = { workspace = true }
+move-vm-types = { workspace = true }
+move-vm-test-utils = { workspace = true }
+starcoin-natives = { workspace = true }
+serde = { workspace = true }
+
+
+[package]
+authors = { workspace = true }
+description = "starcoin Move VM gas algebra ext"
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-gas-algebra-ext"
+publish = { workspace = true }
+version = "1.13.0"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

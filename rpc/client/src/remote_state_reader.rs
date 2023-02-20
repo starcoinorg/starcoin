@@ -4,13 +4,15 @@
 use crate::RpcClient;
 use anyhow::{format_err, Result};
 use starcoin_crypto::HashValue;
-use starcoin_state_api::{ChainStateReader, StateView, StateWithProof};
+use starcoin_state_api::{ChainStateReader, StateView, StateWithProof, StateWithTableItemProof};
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
+use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::table::TableHandle;
 use std::str::FromStr;
 
 #[derive(Debug, Clone, Copy)]
@@ -82,13 +84,13 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
         //TODO implement get_account_state by root
     }
 
+    fn get_account_state_set(&self, _address: &AccountAddress) -> Result<Option<AccountStateSet>> {
+        unimplemented!()
+    }
+
     fn state_root(&self) -> HashValue {
         //TODO change trait api to return Result<HashValue>
         self.state_root
-    }
-
-    fn get_account_state_set(&self, _address: &AccountAddress) -> Result<Option<AccountStateSet>> {
-        unimplemented!()
     }
     fn dump(&self) -> Result<ChainStateSet> {
         unimplemented!()
@@ -97,15 +99,37 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
     fn dump_iter(&self) -> Result<AccountStateSetIterator> {
         unimplemented!()
     }
+
+    fn get_with_table_item_proof(
+        &self,
+        handle: &TableHandle,
+        key: &[u8],
+    ) -> Result<StateWithTableItemProof> {
+        self.client
+            .state_get_with_table_item_proof_by_root(*handle, key.to_vec(), self.state_root)
+            .map(Into::into)
+    }
 }
 
 impl<'a> StateView for RemoteStateReader<'a> {
-    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        Ok(self
-            .client
-            .state_get_with_proof_by_root(access_path.clone(), self.state_root())?
-            .state
-            .map(|v| v.0))
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+        match state_key {
+            StateKey::AccessPath(access_path) => Ok(self
+                .client
+                .state_get_with_proof_by_root(access_path.clone(), self.state_root())?
+                .state
+                .map(|v| v.0)),
+            StateKey::TableItem(table_item) => Ok(self
+                .client
+                .state_get_with_table_item_proof_by_root(
+                    table_item.handle,
+                    table_item.key.clone(),
+                    self.state_root(),
+                )?
+                .key_proof
+                .0
+                .map(|v| v.0)),
+        }
     }
 
     fn is_genesis(&self) -> bool {

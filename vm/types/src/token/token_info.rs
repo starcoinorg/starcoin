@@ -37,7 +37,7 @@ impl TokenInfo {
             address: CORE_CODE_ADDRESS,
             module: TokenInfo::module_identifier(),
             name: TokenInfo::struct_identifier(),
-            type_params: vec![TypeTag::Struct(token_type_tag)],
+            type_params: vec![TypeTag::Struct(Box::new(token_type_tag))],
         }
     }
 

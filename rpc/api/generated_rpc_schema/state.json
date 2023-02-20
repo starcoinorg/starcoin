@@ -519,6 +519,42 @@
                                 }
                               },
                               "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "required": [
+                                "U16"
+                              ],
+                              "properties": {
+                                "U16": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "required": [
+                                "U32"
+                              ],
+                              "properties": {
+                                "U32": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "required": [
+                                "U256"
+                              ],
+                              "properties": {
+                                "U256": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
                             }
                           ]
                         }
@@ -666,6 +702,42 @@
                   "properties": {
                     "Struct": {
                       "$ref": "#/definitions/AnnotatedMoveStructView"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "U16"
+                  ],
+                  "properties": {
+                    "U16": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "U32"
+                  ],
+                  "properties": {
+                    "U32": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "U256"
+                  ],
+                  "properties": {
+                    "U256": {
+                      "type": "string"
                     }
                   },
                   "additionalProperties": false
@@ -914,6 +986,511 @@
       }
     },
     {
+      "name": "state.get_with_table_item_proof",
+      "params": [
+        {
+          "name": "handle",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "TableHandle",
+            "type": "string",
+            "format": "AccountAddress"
+          }
+        },
+        {
+          "name": "key",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Array_of_uint8",
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "StateWithTableItemProofView",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "StateWithTableItemProofView",
+          "type": "object",
+          "required": [
+            "key_proof",
+            "state_proof",
+            "table_handle_proof"
+          ],
+          "properties": {
+            "key_proof": {
+              "type": "array",
+              "items": [
+                {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "siblings"
+                  ],
+                  "properties": {
+                    "leaf": {
+                      "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding account blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": [
+                        {
+                          "type": "string",
+                          "format": "HashValue"
+                        },
+                        {
+                          "type": "string",
+                          "format": "HashValue"
+                        }
+                      ],
+                      "maxItems": 2,
+                      "minItems": 2
+                    },
+                    "siblings": {
+                      "description": "All siblings in this proof, including the default ones. Siblings are ordered from the bottom level to the root level.",
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "HashValue"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "string",
+                  "format": "HashValue"
+                }
+              ],
+              "maxItems": 3,
+              "minItems": 3
+            },
+            "state_proof": {
+              "type": "array",
+              "items": [
+                {
+                  "type": "object",
+                  "required": [
+                    "account_proof",
+                    "account_state_proof"
+                  ],
+                  "properties": {
+                    "account_proof": {
+                      "type": "object",
+                      "required": [
+                        "siblings"
+                      ],
+                      "properties": {
+                        "leaf": {
+                          "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding account blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
+                          "type": [
+                            "array",
+                            "null"
+                          ],
+                          "items": [
+                            {
+                              "type": "string",
+                              "format": "HashValue"
+                            },
+                            {
+                              "type": "string",
+                              "format": "HashValue"
+                            }
+                          ],
+                          "maxItems": 2,
+                          "minItems": 2
+                        },
+                        "siblings": {
+                          "description": "All siblings in this proof, including the default ones. Siblings are ordered from the bottom level to the root level.",
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "HashValue"
+                          }
+                        }
+                      }
+                    },
+                    "account_state": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "account_state_proof": {
+                      "type": "object",
+                      "required": [
+                        "siblings"
+                      ],
+                      "properties": {
+                        "leaf": {
+                          "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding account blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
+                          "type": [
+                            "array",
+                            "null"
+                          ],
+                          "items": [
+                            {
+                              "type": "string",
+                              "format": "HashValue"
+                            },
+                            {
+                              "type": "string",
+                              "format": "HashValue"
+                            }
+                          ],
+                          "maxItems": 2,
+                          "minItems": 2
+                        },
+                        "siblings": {
+                          "description": "All siblings in this proof, including the default ones. Siblings are ordered from the bottom level to the root level.",
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "HashValue"
+                          }
+                        }
+                      }
+                    },
+                    "state": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "string",
+                  "format": "HashValue"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "table_handle_proof": {
+              "type": "array",
+              "items": [
+                {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "siblings"
+                  ],
+                  "properties": {
+                    "leaf": {
+                      "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding account blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": [
+                        {
+                          "type": "string",
+                          "format": "HashValue"
+                        },
+                        {
+                          "type": "string",
+                          "format": "HashValue"
+                        }
+                      ],
+                      "maxItems": 2,
+                      "minItems": 2
+                    },
+                    "siblings": {
+                      "description": "All siblings in this proof, including the default ones. Siblings are ordered from the bottom level to the root level.",
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "HashValue"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "string",
+                  "format": "HashValue"
+                }
+              ],
+              "maxItems": 3,
+              "minItems": 3
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "state.get_with_table_item_proof_by_root",
+      "params": [
+        {
+          "name": "handle",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "TableHandle",
+            "type": "string",
+            "format": "AccountAddress"
+          }
+        },
+        {
+          "name": "key",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Array_of_uint8",
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            }
+          }
+        },
+        {
+          "name": "state_root",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "type": "string",
+            "format": "HashValue"
+          }
+        }
+      ],
+      "result": {
+        "name": "StateWithTableItemProofView",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "StateWithTableItemProofView",
+          "type": "object",
+          "required": [
+            "key_proof",
+            "state_proof",
+            "table_handle_proof"
+          ],
+          "properties": {
+            "key_proof": {
+              "type": "array",
+              "items": [
+                {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "siblings"
+                  ],
+                  "properties": {
+                    "leaf": {
+                      "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding account blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": [
+                        {
+                          "type": "string",
+                          "format": "HashValue"
+                        },
+                        {
+                          "type": "string",
+                          "format": "HashValue"
+                        }
+                      ],
+                      "maxItems": 2,
+                      "minItems": 2
+                    },
+                    "siblings": {
+                      "description": "All siblings in this proof, including the default ones. Siblings are ordered from the bottom level to the root level.",
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "HashValue"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "string",
+                  "format": "HashValue"
+                }
+              ],
+              "maxItems": 3,
+              "minItems": 3
+            },
+            "state_proof": {
+              "type": "array",
+              "items": [
+                {
+                  "type": "object",
+                  "required": [
+                    "account_proof",
+                    "account_state_proof"
+                  ],
+                  "properties": {
+                    "account_proof": {
+                      "type": "object",
+                      "required": [
+                        "siblings"
+                      ],
+                      "properties": {
+                        "leaf": {
+                          "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding account blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
+                          "type": [
+                            "array",
+                            "null"
+                          ],
+                          "items": [
+                            {
+                              "type": "string",
+                              "format": "HashValue"
+                            },
+                            {
+                              "type": "string",
+                              "format": "HashValue"
+                            }
+                          ],
+                          "maxItems": 2,
+                          "minItems": 2
+                        },
+                        "siblings": {
+                          "description": "All siblings in this proof, including the default ones. Siblings are ordered from the bottom level to the root level.",
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "HashValue"
+                          }
+                        }
+                      }
+                    },
+                    "account_state": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "account_state_proof": {
+                      "type": "object",
+                      "required": [
+                        "siblings"
+                      ],
+                      "properties": {
+                        "leaf": {
+                          "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding account blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
+                          "type": [
+                            "array",
+                            "null"
+                          ],
+                          "items": [
+                            {
+                              "type": "string",
+                              "format": "HashValue"
+                            },
+                            {
+                              "type": "string",
+                              "format": "HashValue"
+                            }
+                          ],
+                          "maxItems": 2,
+                          "minItems": 2
+                        },
+                        "siblings": {
+                          "description": "All siblings in this proof, including the default ones. Siblings are ordered from the bottom level to the root level.",
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "HashValue"
+                          }
+                        }
+                      }
+                    },
+                    "state": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "string",
+                  "format": "HashValue"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "table_handle_proof": {
+              "type": "array",
+              "items": [
+                {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "siblings"
+                  ],
+                  "properties": {
+                    "leaf": {
+                      "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding account blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": [
+                        {
+                          "type": "string",
+                          "format": "HashValue"
+                        },
+                        {
+                          "type": "string",
+                          "format": "HashValue"
+                        }
+                      ],
+                      "maxItems": 2,
+                      "minItems": 2
+                    },
+                    "siblings": {
+                      "description": "All siblings in this proof, including the default ones. Siblings are ordered from the bottom level to the root level.",
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "HashValue"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "string",
+                  "format": "HashValue"
+                }
+              ],
+              "maxItems": 3,
+              "minItems": 3
+            }
+          }
+        }
+      }
+    },
+    {
       "name": "state.get_code",
       "params": [
         {
@@ -1021,7 +1598,10 @@
                                     "U64",
                                     "U128",
                                     "Address",
-                                    "Signer"
+                                    "Signer",
+                                    "U16",
+                                    "U32",
+                                    "U256"
                                   ]
                                 },
                                 {
@@ -1197,7 +1777,10 @@
                                 "U64",
                                 "U128",
                                 "Address",
-                                "Signer"
+                                "Signer",
+                                "U16",
+                                "U32",
+                                "U256"
                               ]
                             },
                             {
@@ -1424,7 +2007,10 @@
                                     "U64",
                                     "U128",
                                     "Address",
-                                    "Signer"
+                                    "Signer",
+                                    "U16",
+                                    "U32",
+                                    "U256"
                                   ]
                                 },
                                 {
@@ -1630,7 +2216,10 @@
                     "U64",
                     "U128",
                     "Address",
-                    "Signer"
+                    "Signer",
+                    "U16",
+                    "U32",
+                    "U256"
                   ]
                 },
                 {

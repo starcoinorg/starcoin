@@ -10,7 +10,6 @@ use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config;
 use starcoin_vm_types::account_config::{core_code_address, genesis_address};
 use starcoin_vm_types::file_format::CompiledModule;
-use starcoin_vm_types::gas_schedule::GasAlgebra;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
@@ -206,7 +205,7 @@ pub fn raw_accept_token_txn(
     let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
         Identifier::new("accept_token").unwrap(),
-        vec![TypeTag::Struct(token_code.try_into().unwrap())],
+        vec![TypeTag::Struct(Box::new(token_code.try_into().unwrap()))],
         vec![],
     ));
 
@@ -255,7 +254,7 @@ pub fn encode_transfer_script_by_token_code(
             Identifier::new("TransferScripts").unwrap(),
         ),
         Identifier::new("peer_to_peer_v2").unwrap(),
-        vec![TypeTag::Struct(token_code.try_into().unwrap())],
+        vec![TypeTag::Struct(Box::new(token_code.try_into().unwrap()))],
         vec![
             bcs_ext::to_bytes(&recipient).unwrap(),
             bcs_ext::to_bytes(&amount).unwrap(),
@@ -406,8 +405,7 @@ pub fn build_init_script_v1(net: &ChainNetwork) -> ScriptFunction {
                     .vm_config
                     .gas_schedule
                     .gas_constants
-                    .global_memory_per_byte_cost
-                    .get(),
+                    .global_memory_per_byte_cost,
             )
             .unwrap(),
             bcs_ext::to_bytes(
@@ -415,8 +413,7 @@ pub fn build_init_script_v1(net: &ChainNetwork) -> ScriptFunction {
                     .vm_config
                     .gas_schedule
                     .gas_constants
-                    .global_memory_per_byte_write_cost
-                    .get(),
+                    .global_memory_per_byte_write_cost,
             )
             .unwrap(),
             bcs_ext::to_bytes(
@@ -424,8 +421,7 @@ pub fn build_init_script_v1(net: &ChainNetwork) -> ScriptFunction {
                     .vm_config
                     .gas_schedule
                     .gas_constants
-                    .min_transaction_gas_units
-                    .get(),
+                    .min_transaction_gas_units,
             )
             .unwrap(),
             bcs_ext::to_bytes(
@@ -433,8 +429,7 @@ pub fn build_init_script_v1(net: &ChainNetwork) -> ScriptFunction {
                     .vm_config
                     .gas_schedule
                     .gas_constants
-                    .large_transaction_cutoff
-                    .get(),
+                    .large_transaction_cutoff,
             )
             .unwrap(),
             bcs_ext::to_bytes(
@@ -442,8 +437,7 @@ pub fn build_init_script_v1(net: &ChainNetwork) -> ScriptFunction {
                     .vm_config
                     .gas_schedule
                     .gas_constants
-                    .intrinsic_gas_per_byte
-                    .get(),
+                    .intrinsic_gas_per_byte,
             )
             .unwrap(),
             bcs_ext::to_bytes(
@@ -451,8 +445,7 @@ pub fn build_init_script_v1(net: &ChainNetwork) -> ScriptFunction {
                     .vm_config
                     .gas_schedule
                     .gas_constants
-                    .maximum_number_of_gas_units
-                    .get(),
+                    .maximum_number_of_gas_units,
             )
             .unwrap(),
             bcs_ext::to_bytes(
@@ -460,8 +453,7 @@ pub fn build_init_script_v1(net: &ChainNetwork) -> ScriptFunction {
                     .vm_config
                     .gas_schedule
                     .gas_constants
-                    .min_price_per_gas_unit
-                    .get(),
+                    .min_price_per_gas_unit,
             )
             .unwrap(),
             bcs_ext::to_bytes(
@@ -469,8 +461,7 @@ pub fn build_init_script_v1(net: &ChainNetwork) -> ScriptFunction {
                     .vm_config
                     .gas_schedule
                     .gas_constants
-                    .max_price_per_gas_unit
-                    .get(),
+                    .max_price_per_gas_unit,
             )
             .unwrap(),
             bcs_ext::to_bytes(
@@ -494,8 +485,7 @@ pub fn build_init_script_v1(net: &ChainNetwork) -> ScriptFunction {
                     .vm_config
                     .gas_schedule
                     .gas_constants
-                    .default_account_size
-                    .get(),
+                    .default_account_size,
             )
             .unwrap(),
             // dao config params
@@ -579,8 +569,7 @@ pub fn build_init_script_v2(net: &ChainNetwork) -> ScriptFunction {
                     .vm_config
                     .gas_schedule
                     .gas_constants
-                    .global_memory_per_byte_cost
-                    .get(),
+                    .global_memory_per_byte_cost,
             )
             .unwrap(),
             bcs_ext::to_bytes(
@@ -588,8 +577,7 @@ pub fn build_init_script_v2(net: &ChainNetwork) -> ScriptFunction {
                     .vm_config
                     .gas_schedule
                     .gas_constants
-                    .global_memory_per_byte_write_cost
-                    .get(),
+                    .global_memory_per_byte_write_cost,
             )
             .unwrap(),
             bcs_ext::to_bytes(
@@ -597,8 +585,7 @@ pub fn build_init_script_v2(net: &ChainNetwork) -> ScriptFunction {
                     .vm_config
                     .gas_schedule
                     .gas_constants
-                    .min_transaction_gas_units
-                    .get(),
+                    .min_transaction_gas_units,
             )
             .unwrap(),
             bcs_ext::to_bytes(
@@ -606,8 +593,7 @@ pub fn build_init_script_v2(net: &ChainNetwork) -> ScriptFunction {
                     .vm_config
                     .gas_schedule
                     .gas_constants
-                    .large_transaction_cutoff
-                    .get(),
+                    .large_transaction_cutoff,
             )
             .unwrap(),
             bcs_ext::to_bytes(
@@ -615,8 +601,7 @@ pub fn build_init_script_v2(net: &ChainNetwork) -> ScriptFunction {
                     .vm_config
                     .gas_schedule
                     .gas_constants
-                    .intrinsic_gas_per_byte
-                    .get(),
+                    .intrinsic_gas_per_byte,
             )
             .unwrap(),
             bcs_ext::to_bytes(
@@ -624,8 +609,7 @@ pub fn build_init_script_v2(net: &ChainNetwork) -> ScriptFunction {
                     .vm_config
                     .gas_schedule
                     .gas_constants
-                    .maximum_number_of_gas_units
-                    .get(),
+                    .maximum_number_of_gas_units,
             )
             .unwrap(),
             bcs_ext::to_bytes(
@@ -633,8 +617,7 @@ pub fn build_init_script_v2(net: &ChainNetwork) -> ScriptFunction {
                     .vm_config
                     .gas_schedule
                     .gas_constants
-                    .min_price_per_gas_unit
-                    .get(),
+                    .min_price_per_gas_unit,
             )
             .unwrap(),
             bcs_ext::to_bytes(
@@ -642,8 +625,7 @@ pub fn build_init_script_v2(net: &ChainNetwork) -> ScriptFunction {
                     .vm_config
                     .gas_schedule
                     .gas_constants
-                    .max_price_per_gas_unit
-                    .get(),
+                    .max_price_per_gas_unit,
             )
             .unwrap(),
             bcs_ext::to_bytes(
@@ -667,8 +649,7 @@ pub fn build_init_script_v2(net: &ChainNetwork) -> ScriptFunction {
                     .vm_config
                     .gas_schedule
                     .gas_constants
-                    .default_account_size
-                    .get(),
+                    .default_account_size,
             )
             .unwrap(),
             // dao config params
@@ -800,19 +781,19 @@ pub fn build_module_upgrade_queue(
     stdlib_version: StdlibVersion,
 ) -> ScriptFunction {
     let upgrade_module = if stdlib_version >= StdlibVersion::Version(2) {
-        TypeTag::Struct(StructTag {
+        TypeTag::Struct(Box::new(StructTag {
             address: genesis_address(),
             module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
             name: Identifier::new("UpgradeModuleV2").unwrap(),
             type_params: vec![],
-        })
+        }))
     } else {
-        TypeTag::Struct(StructTag {
+        TypeTag::Struct(Box::new(StructTag {
             address: genesis_address(),
             module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
             name: Identifier::new("UpgradeModule").unwrap(),
             type_params: vec![],
-        })
+        }))
     };
 
     ScriptFunction::new(
@@ -847,17 +828,17 @@ pub fn build_vm_config_upgrade_proposal(vm_config: VMConfig, exec_delay: u64) ->
             .unwrap(),
             bcs_ext::to_bytes(&bcs_ext::to_bytes(&vm_config.gas_schedule.native_table).unwrap())
                 .unwrap(),
-            bcs_ext::to_bytes(&gas_constants.global_memory_per_byte_cost.get()).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.global_memory_per_byte_write_cost.get()).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.min_transaction_gas_units.get()).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.large_transaction_cutoff.get()).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.intrinsic_gas_per_byte.get()).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.maximum_number_of_gas_units.get()).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.min_price_per_gas_unit.get()).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.max_price_per_gas_unit.get()).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.global_memory_per_byte_cost).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.global_memory_per_byte_write_cost).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.min_transaction_gas_units).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.large_transaction_cutoff).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.intrinsic_gas_per_byte).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.maximum_number_of_gas_units).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.min_price_per_gas_unit).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.max_price_per_gas_unit).unwrap(),
             bcs_ext::to_bytes(&gas_constants.max_transaction_size_in_bytes).unwrap(),
             bcs_ext::to_bytes(&gas_constants.gas_unit_scaling_factor).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.default_account_size.get()).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.default_account_size).unwrap(),
             bcs_ext::to_bytes(&exec_delay).unwrap(),
         ],
     )

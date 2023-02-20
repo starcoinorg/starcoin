@@ -26,6 +26,7 @@ use starcoin_types::transaction::{
     TransactionPayload,
 };
 use starcoin_types::write_set::{WriteOp, WriteSet};
+use starcoin_vm_types::state_store::state_key::StateKey;
 
 fn main() {
     generate().unwrap();
@@ -72,6 +73,7 @@ fn generate() -> Result<(), Error> {
     )?;
     tracer.trace_type::<ContractEventV0>(&samples)?;
     tracer.trace_type::<ContractEvent>(&samples)?;
+    tracer.trace_type::<StateKey>(&samples)?;
     tracer.trace_type::<WriteSet>(&samples)?;
 
     tracer.trace_type::<TransactionArgument>(&samples)?;

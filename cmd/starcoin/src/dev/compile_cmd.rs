@@ -99,8 +99,7 @@ impl CommandAction for CompileCommand {
             )?
         } else {
             let targets = vec![source_file_or_dir.to_string_lossy().to_string()];
-            Compiler::new(&targets, &deps)
-                .set_named_address_values(starcoin_framework_named_addresses())
+            Compiler::from_files(targets, deps, starcoin_framework_named_addresses())
                 .set_flags(Flags::empty().set_sources_shadow_deps(true))
                 .build()?
         };
@@ -165,7 +164,7 @@ impl CommandAction for CompileCommand {
             file_path.set_extension(MOVE_COMPILED_EXTENSION);
             let mut file = File::create(file_path.as_path())
                 .map_err(|e| format_err!("create file({:?} error: {:?})", file_path, e))?;
-            file.write_all(&unit.serialize())
+            file.write_all(&unit.serialize(None))
                 .map_err(|e| format_err!("write file({:?} error: {:?})", file_path, e))?;
             results.push(file_path.to_string_lossy().to_string());
         }

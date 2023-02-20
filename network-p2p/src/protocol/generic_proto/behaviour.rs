@@ -22,17 +22,17 @@ use crate::protocol::generic_proto::handler::{
 use bytes::BytesMut;
 use fnv::FnvHashMap;
 use futures::prelude::*;
-use libp2p::core::{connection::ConnectionId, ConnectedPoint, Multiaddr, PeerId};
+use libp2p::core::{connection::ConnectionId, Multiaddr, PeerId};
+use libp2p::swarm::behaviour::{ConnectionClosed, ConnectionEstablished, FromSwarm};
 use libp2p::swarm::dial_opts::DialOpts;
 use libp2p::swarm::{
-    dial_opts::PeerCondition, DialError, IntoProtocolsHandler, NetworkBehaviour,
-    NetworkBehaviourAction, NotifyHandler, PollParameters,
+    dial_opts::PeerCondition, NetworkBehaviour, NetworkBehaviourAction, NotifyHandler,
+    PollParameters,
 };
 use log::{debug, error, trace, warn};
 use parking_lot::RwLock;
 use rand::distributions::{Distribution as _, Uniform};
 use sc_peerset::peersstate::PeersState;
-use sc_peerset::DropReason;
 use smallvec::SmallVec;
 use std::task::{Context, Poll};
 use std::{
@@ -1171,10 +1171,10 @@ impl GenericProto {
 }
 
 impl NetworkBehaviour for GenericProto {
-    type ProtocolsHandler = NotifsHandlerProto;
+    type ConnectionHandler = NotifsHandlerProto;
     type OutEvent = GenericProtoOut;
 
-    fn new_handler(&mut self) -> Self::ProtocolsHandler {
+    fn new_handler(&mut self) -> Self::ConnectionHandler {
         NotifsHandlerProto::new(self.notif_protocols.clone())
     }
 
@@ -1182,450 +1182,385 @@ impl NetworkBehaviour for GenericProto {
         Vec::new()
     }
 
-    fn inject_connected(&mut self, _: &PeerId) {}
+    fn on_swarm_event(&mut self, event: FromSwarm<Self::ConnectionHandler>) {
+        match event {
+            FromSwarm::ConnectionEstablished(ConnectionEstablished {
+                peer_id,
+                endpoint,
+                connection_id,
+                ..
+            }) => {
+                for set_id in (0..self.notif_protocols.len()).map(sc_peerset::SetId::from) {
+                    match self
+                        .peers
+                        .entry((peer_id, set_id))
+                        .or_insert(PeerState::Poisoned)
+                    {
+                        // Requested | PendingRequest => Enabled
+                        st @ &mut PeerState::Requested
+                        | st @ &mut PeerState::PendingRequest { .. } => {
+                            debug!(target: "sub-libp2p",
+                                   "Libp2p => Connected({}, {:?}, {:?}): Connection was requested by PSM.",
+                                   peer_id, set_id, endpoint
+                            );
+                            debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Open({:?})", peer_id, connection_id, set_id);
+                            self.events
+                                .push_back(NetworkBehaviourAction::NotifyHandler {
+                                    peer_id,
+                                    handler: NotifyHandler::One(connection_id),
+                                    event: NotifsHandlerIn::Open {
+                                        protocol_index: set_id.into(),
+                                    },
+                                });
 
-    fn inject_connection_established(
-        &mut self,
-        peer_id: &PeerId,
-        conn: &ConnectionId,
-        endpoint: &ConnectedPoint,
-        _failed_addresses: Option<&Vec<Multiaddr>>,
-    ) {
-        for set_id in (0..self.notif_protocols.len()).map(sc_peerset::SetId::from) {
-            match self
-                .peers
-                .entry((*peer_id, set_id))
-                .or_insert(PeerState::Poisoned)
-            {
-                // Requested | PendingRequest => Enabled
-                st @ &mut PeerState::Requested | st @ &mut PeerState::PendingRequest { .. } => {
-                    debug!(target: "sub-libp2p",
-                           "Libp2p => Connected({}, {:?}, {:?}): Connection was requested by PSM.",
-                           peer_id, set_id, endpoint
-                    );
-                    debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Open({:?})", peer_id, *conn, set_id);
-                    self.events
-                        .push_back(NetworkBehaviourAction::NotifyHandler {
-                            peer_id: *peer_id,
-                            handler: NotifyHandler::One(*conn),
-                            event: NotifsHandlerIn::Open {
-                                protocol_index: set_id.into(),
-                            },
-                        });
+                            let mut connections = SmallVec::new();
+                            connections.push((connection_id, ConnectionState::Opening));
+                            *st = PeerState::Enabled { connections };
+                        }
 
-                    let mut connections = SmallVec::new();
-                    connections.push((*conn, ConnectionState::Opening));
-                    *st = PeerState::Enabled { connections };
-                }
-
-                // Poisoned gets inserted above if the entry was missing.
-                // Ø | Backoff => Disabled
-                st @ &mut PeerState::Poisoned | st @ &mut PeerState::Backoff { .. } => {
-                    let backoff_until = if let PeerState::Backoff { timer_deadline, .. } = st {
-                        Some(*timer_deadline)
-                    } else {
-                        None
-                    };
-                    debug!(target: "sub-libp2p",
+                        // Poisoned gets inserted above if the entry was missing.
+                        // Ø | Backoff => Disabled
+                        st @ &mut PeerState::Poisoned | st @ &mut PeerState::Backoff { .. } => {
+                            let backoff_until =
+                                if let PeerState::Backoff { timer_deadline, .. } = st {
+                                    Some(*timer_deadline)
+                                } else {
+                                    None
+                                };
+                            debug!(target: "sub-libp2p",
                            "Libp2p => Connected({}, {:?}, {:?}, {:?}): Not requested by PSM, disabling.",
-                           peer_id, set_id, endpoint, *conn);
+                           peer_id, set_id, endpoint, connection_id);
 
-                    let mut connections = SmallVec::new();
-                    connections.push((*conn, ConnectionState::Closed));
-                    *st = PeerState::Disabled {
-                        connections,
-                        backoff_until,
-                    };
-                }
-
-                // In all other states, add this new connection to the list of closed inactive
-                // connections.
-                PeerState::Incoming { connections, .. }
-                | PeerState::Disabled { connections, .. }
-                | PeerState::DisabledPendingEnable { connections, .. }
-                | PeerState::Enabled { connections, .. } => {
-                    debug!(target: "sub-libp2p",
-                           "Libp2p => Connected({}, {:?}, {:?}, {:?}): Secondary connection. Leaving closed.",
-                           peer_id, set_id, endpoint, *conn);
-                    connections.push((*conn, ConnectionState::Closed));
-                }
-            }
-        }
-    }
-
-    fn inject_connection_closed(
-        &mut self,
-        peer_id: &PeerId,
-        conn: &ConnectionId,
-        _endpoint: &ConnectedPoint,
-        _handler: <Self::ProtocolsHandler as IntoProtocolsHandler>::Handler,
-    ) {
-        let handler = self.new_handler();
-        for set_id in (0..self.notif_protocols.len()).map(sc_peerset::SetId::from) {
-            let mut entry = if let Entry::Occupied(entry) = self.peers.entry((*peer_id, set_id)) {
-                entry
-            } else {
-                return;
-            };
-            match mem::replace(entry.get_mut(), PeerState::Poisoned) {
-                // Disabled => Disabled | Backoff | Ø
-                PeerState::Disabled {
-                    mut connections,
-                    backoff_until,
-                } => {
-                    debug!(target: "sub-libp2p", "Libp2p => Disconnected({}, {:?}, {:?}): Disabled.",
-                           peer_id, set_id, *conn);
-
-                    if let Some(pos) = connections.iter().position(|(c, _)| *c == *conn) {
-                        connections.remove(pos);
-                    } else {
-                        debug_assert!(false);
-                        error!(target: "sub-libp2p",
-                               "inject_connection_closed: State mismatch in the custom protos handler");
-                    }
-
-                    if connections.is_empty() {
-                        if let Some(until) = backoff_until {
-                            let now = Instant::now();
-                            if until > now {
-                                let delay_id = self.next_delay_id;
-                                self.next_delay_id.0 += 1;
-                                let delay = futures_timer::Delay::new(until - now);
-                                let peer_id = *peer_id;
-                                self.delays.push(
-                                    async move {
-                                        delay.await;
-                                        (delay_id, peer_id, set_id)
-                                    }
-                                    .boxed(),
-                                );
-
-                                *entry.get_mut() = PeerState::Backoff {
-                                    timer: delay_id,
-                                    timer_deadline: until,
-                                };
-                            } else {
-                                entry.remove();
-                            }
-                        } else {
-                            entry.remove();
-                        }
-                    } else {
-                        *entry.get_mut() = PeerState::Disabled {
-                            connections,
-                            backoff_until,
-                        };
-                    }
-                }
-
-                // DisabledPendingEnable => DisabledPendingEnable | Backoff
-                PeerState::DisabledPendingEnable {
-                    mut connections,
-                    timer_deadline,
-                    timer,
-                } => {
-                    debug!(
-                        target: "sub-libp2p",
-                        "Libp2p => Disconnected({}, {:?}, {:?}): Disabled but pending enable.",
-                        peer_id, set_id, *conn
-                    );
-
-                    if let Some(pos) = connections.iter().position(|(c, _)| *c == *conn) {
-                        connections.remove(pos);
-                    } else {
-                        error!(target: "sub-libp2p",
-                               "inject_connection_closed: State mismatch in the custom protos handler");
-                        debug_assert!(false);
-                    }
-
-                    if connections.is_empty() {
-                        debug!(target: "sub-libp2p", "PSM <= Dropped({}, {:?})", peer_id, set_id);
-                        self.peerset
-                            .dropped(set_id, *peer_id, sc_peerset::DropReason::Unknown);
-                        *entry.get_mut() = PeerState::Backoff {
-                            timer,
-                            timer_deadline,
-                        };
-                    } else {
-                        *entry.get_mut() = PeerState::DisabledPendingEnable {
-                            connections,
-                            timer_deadline,
-                            timer,
-                        };
-                    }
-                }
-
-                // Incoming => Incoming | Disabled | Backoff | Ø
-                PeerState::Incoming {
-                    mut connections,
-                    backoff_until,
-                } => {
-                    debug!(
-                        target: "sub-libp2p",
-                        "Libp2p => Disconnected({}, {:?}, {:?}): OpenDesiredByRemote.",
-                        peer_id, set_id, *conn
-                    );
-
-                    debug_assert!(connections
-                        .iter()
-                        .any(|(_, s)| matches!(s, ConnectionState::OpenDesiredByRemote)));
-
-                    if let Some(pos) = connections.iter().position(|(c, _)| *c == *conn) {
-                        connections.remove(pos);
-                    } else {
-                        debug_assert!(false);
-                        error!(target: "sub-libp2p",
-                               "inject_connection_closed: State mismatch in the custom protos handler");
-                    }
-
-                    let no_desired_left = !connections
-                        .iter()
-                        .any(|(_, s)| matches!(s, ConnectionState::OpenDesiredByRemote));
-
-                    // If no connection is `OpenDesiredByRemote` anymore, clean up the peerset incoming
-                    // request.
-                    if no_desired_left {
-                        // In the incoming state, we don't report "Dropped". Instead we will just
-                        // ignore the corresponding Accept/Reject.
-                        if let Some(state) = self
-                            .incoming
-                            .iter_mut()
-                            .find(|i| i.alive && i.set_id == set_id && i.peer_id == *peer_id)
-                        {
-                            state.alive = false;
-                        } else {
-                            error!(target: "sub-libp2p", "State mismatch in libp2p: no entry in \
-								incoming corresponding to an incoming state in peers");
-                            debug_assert!(false);
-                        }
-                    }
-
-                    if connections.is_empty() {
-                        if let Some(until) = backoff_until {
-                            let now = Instant::now();
-                            if until > now {
-                                let delay_id = self.next_delay_id;
-                                self.next_delay_id.0 += 1;
-                                let delay = futures_timer::Delay::new(until - now);
-                                let peer_id = *peer_id;
-                                self.delays.push(
-                                    async move {
-                                        delay.await;
-                                        (delay_id, peer_id, set_id)
-                                    }
-                                    .boxed(),
-                                );
-
-                                *entry.get_mut() = PeerState::Backoff {
-                                    timer: delay_id,
-                                    timer_deadline: until,
-                                };
-                            } else {
-                                entry.remove();
-                            }
-                        } else {
-                            entry.remove();
-                        }
-                    } else if no_desired_left {
-                        // If no connection is `OpenDesiredByRemote` anymore, switch to `Disabled`.
-                        *entry.get_mut() = PeerState::Disabled {
-                            connections,
-                            backoff_until,
-                        };
-                    } else {
-                        *entry.get_mut() = PeerState::Incoming {
-                            connections,
-                            backoff_until,
-                        };
-                    }
-                }
-
-                // Enabled => Enabled | Backoff
-                // Peers are always backed-off when disconnecting while Enabled.
-                PeerState::Enabled { mut connections } => {
-                    debug!(
-                        target: "sub-libp2p",
-                        "Libp2p => Disconnected({}, {:?}, {:?}): Enabled.",
-                        peer_id, set_id, *conn
-                    );
-
-                    debug_assert!(connections.iter().any(|(_, s)| matches!(
-                        s,
-                        ConnectionState::Opening | ConnectionState::Open(_)
-                    )));
-
-                    if let Some(pos) = connections.iter().position(|(c, _)| *c == *conn) {
-                        let (_, state) = connections.remove(pos);
-                        if let ConnectionState::Open(_) = state {
-                            if let Some((replacement_pos, replacement_sink)) = connections
-                                .iter()
-                                .enumerate()
-                                .filter_map(|(num, (_, s))| match s {
-                                    ConnectionState::Open(s) => Some((num, s.clone())),
-                                    _ => None,
-                                })
-                                .next()
-                            {
-                                if pos <= replacement_pos {
-                                    debug!(
-                                        target: "sub-libp2p",
-                                        "External API <= Sink replaced({}, {:?})",
-                                        peer_id, set_id
-                                    );
-                                    let event = GenericProtoOut::CustomProtocolReplaced {
-                                        peer_id: *peer_id,
-                                        set_id,
-                                        notifications_sink: replacement_sink,
-                                    };
-                                    self.events
-                                        .push_back(NetworkBehaviourAction::GenerateEvent(event));
-                                }
-                            } else {
-                                debug!(
-                                    target: "sub-libp2p", "External API <= Closed({}, {:?})",
-                                    peer_id, set_id
-                                );
-                                let event = GenericProtoOut::CustomProtocolClosed {
-                                    peer_id: *peer_id,
-                                    set_id,
-                                };
-                                self.events
-                                    .push_back(NetworkBehaviourAction::GenerateEvent(event));
-                            }
-                        }
-                    } else {
-                        error!(target: "sub-libp2p",
-                               "inject_connection_closed: State mismatch in the custom protos handler");
-                        debug_assert!(false);
-                    }
-
-                    if connections.is_empty() {
-                        debug!(target: "sub-libp2p", "PSM <= Dropped({}, {:?})", peer_id, set_id);
-                        self.peerset
-                            .dropped(set_id, *peer_id, sc_peerset::DropReason::Unknown);
-                        let ban_dur = Uniform::new(5, 10).sample(&mut rand::thread_rng());
-
-                        let delay_id = self.next_delay_id;
-                        self.next_delay_id.0 += 1;
-                        let delay = futures_timer::Delay::new(Duration::from_secs(ban_dur));
-                        let peer_id = *peer_id;
-                        self.delays.push(
-                            async move {
-                                delay.await;
-                                (delay_id, peer_id, set_id)
-                            }
-                            .boxed(),
-                        );
-
-                        *entry.get_mut() = PeerState::Backoff {
-                            timer: delay_id,
-                            timer_deadline: Instant::now() + Duration::from_secs(ban_dur),
-                        };
-                    } else if !connections.iter().any(|(_, s)| {
-                        matches!(s, ConnectionState::Opening | ConnectionState::Open(_))
-                    }) {
-                        debug!(target: "sub-libp2p", "PSM <= Dropped({}, {:?})", peer_id, set_id);
-                        self.peerset
-                            .dropped(set_id, *peer_id, sc_peerset::DropReason::Unknown);
-
-                        *entry.get_mut() = PeerState::Disabled {
-                            connections,
-                            backoff_until: None,
-                        };
-                    } else {
-                        *entry.get_mut() = PeerState::Enabled { connections };
-                    }
-                }
-
-                PeerState::Requested
-                | PeerState::PendingRequest { .. }
-                | PeerState::Backoff { .. } => {
-                    // This is a serious bug either in this state machine or in libp2p.
-                    error!(target: "sub-libp2p",
-                           "`inject_connection_closed` called for unknown peer {}",
-                           peer_id);
-                    debug_assert!(false);
-                }
-                PeerState::Poisoned => {
-                    warn!(target: "sub-libp2p", "State of {:?} is poisoned reconnected", entry.key());
-                    self.events.push_back(NetworkBehaviourAction::Dial {
-                        opts: DialOpts::peer_id(entry.key().0)
-                            .condition(PeerCondition::Disconnected)
-                            .build(),
-                        handler: handler.clone(),
-                    });
-                    *entry.into_mut() = PeerState::Requested;
-                }
-            }
-        }
-    }
-
-    fn inject_disconnected(&mut self, _peer_id: &PeerId) {}
-
-    fn inject_dial_failure(
-        &mut self,
-        peer_id: Option<PeerId>,
-        _: Self::ProtocolsHandler,
-        error: &DialError,
-    ) {
-        if let DialError::Transport(errors) = error {
-            for (addr, error) in errors.iter() {
-                trace!(target: "sub-libp2p", "Libp2p => Reach failure for {:?} through {:?}: {:?}", peer_id, addr, error);
-            }
-        }
-        let handler = self.new_handler();
-        if let Some(peer_id) = peer_id {
-            trace!(target: "sub-libp2p", "Libp2p => Dial failure for {:?}", peer_id);
-            for set_id in (0..self.notif_protocols.len()).map(sc_peerset::SetId::from) {
-                if let Entry::Occupied(mut entry) = self.peers.entry((peer_id, set_id)) {
-                    match mem::replace(entry.get_mut(), PeerState::Poisoned) {
-                        // The peer is not in our list.
-                        st @ PeerState::Backoff { .. } => {
-                            *entry.into_mut() = st;
-                        }
-
-                        // "Basic" situation: we failed to reach a peer that the peerset requested.
-                        st @ PeerState::Requested | st @ PeerState::PendingRequest { .. } => {
-                            trace!(target: "sub-libp2p", "PSM <= Dropped({}, {:?})", peer_id, set_id);
-                            self.peerset.dropped(set_id, peer_id, DropReason::Unknown);
-
-                            let now = Instant::now();
-                            let ban_duration = match st {
-                                PeerState::PendingRequest { timer_deadline, .. }
-                                    if timer_deadline > now =>
-                                {
-                                    cmp::max(timer_deadline - now, Duration::from_secs(5))
-                                }
-                                _ => Duration::from_secs(5),
+                            let mut connections = SmallVec::new();
+                            connections.push((connection_id, ConnectionState::Closed));
+                            *st = PeerState::Disabled {
+                                connections,
+                                backoff_until,
                             };
+                        }
 
-                            let delay_id = self.next_delay_id;
-                            self.next_delay_id.0 += 1;
-                            let delay = futures_timer::Delay::new(ban_duration);
-                            let peer_id = peer_id;
-                            self.delays.push(
-                                async move {
-                                    delay.await;
-                                    (delay_id, peer_id, set_id)
+                        // In all other states, add this new connection to the list of closed inactive
+                        // connections.
+                        PeerState::Incoming { connections, .. }
+                        | PeerState::Disabled { connections, .. }
+                        | PeerState::DisabledPendingEnable { connections, .. }
+                        | PeerState::Enabled { connections, .. } => {
+                            debug!(target: "sub-libp2p",
+                           "Libp2p => Connected({}, {:?}, {:?}, {:?}): Secondary connection. Leaving closed.",
+                           peer_id, set_id, endpoint, connection_id);
+                            connections.push((connection_id, ConnectionState::Closed));
+                        }
+                    }
+                }
+            }
+            FromSwarm::ConnectionClosed(ConnectionClosed {
+                peer_id,
+                connection_id,
+                ..
+            }) => {
+                let handler = self.new_handler();
+                for set_id in (0..self.notif_protocols.len()).map(sc_peerset::SetId::from) {
+                    let mut entry =
+                        if let Entry::Occupied(entry) = self.peers.entry((peer_id, set_id)) {
+                            entry
+                        } else {
+                            return;
+                        };
+                    match mem::replace(entry.get_mut(), PeerState::Poisoned) {
+                        // Disabled => Disabled | Backoff | Ø
+                        PeerState::Disabled {
+                            mut connections,
+                            backoff_until,
+                        } => {
+                            debug!(target: "sub-libp2p", "Libp2p => Disconnected({}, {:?}, {:?}): Disabled.",
+                           peer_id, set_id, connection_id);
+
+                            if let Some(pos) =
+                                connections.iter().position(|(c, _)| *c == connection_id)
+                            {
+                                connections.remove(pos);
+                            } else {
+                                debug_assert!(false);
+                                error!(target: "sub-libp2p",
+                               "inject_connection_closed: State mismatch in the custom protos handler");
+                            }
+
+                            if connections.is_empty() {
+                                if let Some(until) = backoff_until {
+                                    let now = Instant::now();
+                                    if until > now {
+                                        let delay_id = self.next_delay_id;
+                                        self.next_delay_id.0 += 1;
+                                        let delay = futures_timer::Delay::new(until - now);
+                                        self.delays.push(
+                                            async move {
+                                                delay.await;
+                                                (delay_id, peer_id, set_id)
+                                            }
+                                            .boxed(),
+                                        );
+
+                                        *entry.get_mut() = PeerState::Backoff {
+                                            timer: delay_id,
+                                            timer_deadline: until,
+                                        };
+                                    } else {
+                                        entry.remove();
+                                    }
+                                } else {
+                                    entry.remove();
                                 }
-                                .boxed(),
+                            } else {
+                                *entry.get_mut() = PeerState::Disabled {
+                                    connections,
+                                    backoff_until,
+                                };
+                            }
+                        }
+
+                        // DisabledPendingEnable => DisabledPendingEnable | Backoff
+                        PeerState::DisabledPendingEnable {
+                            mut connections,
+                            timer_deadline,
+                            timer,
+                        } => {
+                            debug!(
+                                target: "sub-libp2p",
+                                "Libp2p => Disconnected({}, {:?}, {:?}): Disabled but pending enable.",
+                                peer_id, set_id, connection_id
                             );
 
-                            *entry.into_mut() = PeerState::Backoff {
-                                timer: delay_id,
-                                timer_deadline: now + ban_duration,
-                            };
+                            if let Some(pos) =
+                                connections.iter().position(|(c, _)| *c == connection_id)
+                            {
+                                connections.remove(pos);
+                            } else {
+                                error!(target: "sub-libp2p",
+                               "inject_connection_closed: State mismatch in the custom protos handler");
+                                debug_assert!(false);
+                            }
+
+                            if connections.is_empty() {
+                                debug!(target: "sub-libp2p", "PSM <= Dropped({}, {:?})", peer_id, set_id);
+                                self.peerset.dropped(
+                                    set_id,
+                                    peer_id,
+                                    sc_peerset::DropReason::Unknown,
+                                );
+                                *entry.get_mut() = PeerState::Backoff {
+                                    timer,
+                                    timer_deadline,
+                                };
+                            } else {
+                                *entry.get_mut() = PeerState::DisabledPendingEnable {
+                                    connections,
+                                    timer_deadline,
+                                    timer,
+                                };
+                            }
                         }
 
-                        // We can still get dial failures even if we are already connected to the
-                        // peer, as an extra diagnostic for an earlier attempt.
-                        st @ PeerState::Disabled { .. }
-                        | st @ PeerState::Enabled { .. }
-                        | st @ PeerState::DisabledPendingEnable { .. }
-                        | st @ PeerState::Incoming { .. } => {
-                            *entry.into_mut() = st;
+                        // Incoming => Incoming | Disabled | Backoff | Ø
+                        PeerState::Incoming {
+                            mut connections,
+                            backoff_until,
+                        } => {
+                            debug!(
+                                target: "sub-libp2p",
+                                "Libp2p => Disconnected({}, {:?}, {:?}): OpenDesiredByRemote.",
+                                peer_id, set_id, connection_id
+                            );
+
+                            debug_assert!(connections
+                                .iter()
+                                .any(|(_, s)| matches!(s, ConnectionState::OpenDesiredByRemote)));
+
+                            if let Some(pos) =
+                                connections.iter().position(|(c, _)| *c == connection_id)
+                            {
+                                connections.remove(pos);
+                            } else {
+                                debug_assert!(false);
+                                error!(target: "sub-libp2p",
+                               "inject_connection_closed: State mismatch in the custom protos handler");
+                            }
+
+                            let no_desired_left = !connections
+                                .iter()
+                                .any(|(_, s)| matches!(s, ConnectionState::OpenDesiredByRemote));
+
+                            // If no connection is `OpenDesiredByRemote` anymore, clean up the peerset incoming
+                            // request.
+                            if no_desired_left {
+                                // In the incoming state, we don't report "Dropped". Instead we will just
+                                // ignore the corresponding Accept/Reject.
+                                if let Some(state) = self
+                                    .incoming
+                                    .iter_mut()
+                                    .find(|i| i.alive && i.set_id == set_id && i.peer_id == peer_id)
+                                {
+                                    state.alive = false;
+                                } else {
+                                    error!(target: "sub-libp2p", "State mismatch in libp2p: no entry in \
+								incoming corresponding to an incoming state in peers");
+                                    debug_assert!(false);
+                                }
+                            }
+
+                            if connections.is_empty() {
+                                if let Some(until) = backoff_until {
+                                    let now = Instant::now();
+                                    if until > now {
+                                        let delay_id = self.next_delay_id;
+                                        self.next_delay_id.0 += 1;
+                                        let delay = futures_timer::Delay::new(until - now);
+                                        self.delays.push(
+                                            async move {
+                                                delay.await;
+                                                (delay_id, peer_id, set_id)
+                                            }
+                                            .boxed(),
+                                        );
+
+                                        *entry.get_mut() = PeerState::Backoff {
+                                            timer: delay_id,
+                                            timer_deadline: until,
+                                        };
+                                    } else {
+                                        entry.remove();
+                                    }
+                                } else {
+                                    entry.remove();
+                                }
+                            } else if no_desired_left {
+                                // If no connection is `OpenDesiredByRemote` anymore, switch to `Disabled`.
+                                *entry.get_mut() = PeerState::Disabled {
+                                    connections,
+                                    backoff_until,
+                                };
+                            } else {
+                                *entry.get_mut() = PeerState::Incoming {
+                                    connections,
+                                    backoff_until,
+                                };
+                            }
                         }
 
+                        // Enabled => Enabled | Backoff
+                        // Peers are always backed-off when disconnecting while Enabled.
+                        PeerState::Enabled { mut connections } => {
+                            debug!(
+                                target: "sub-libp2p",
+                                "Libp2p => Disconnected({}, {:?}, {:?}): Enabled.",
+                                peer_id, set_id, connection_id
+                            );
+
+                            debug_assert!(connections.iter().any(|(_, s)| matches!(
+                                s,
+                                ConnectionState::Opening | ConnectionState::Open(_)
+                            )));
+
+                            if let Some(pos) =
+                                connections.iter().position(|(c, _)| *c == connection_id)
+                            {
+                                let (_, state) = connections.remove(pos);
+                                if let ConnectionState::Open(_) = state {
+                                    if let Some((replacement_pos, replacement_sink)) = connections
+                                        .iter()
+                                        .enumerate()
+                                        .filter_map(|(num, (_, s))| match s {
+                                            ConnectionState::Open(s) => Some((num, s.clone())),
+                                            _ => None,
+                                        })
+                                        .next()
+                                    {
+                                        if pos <= replacement_pos {
+                                            debug!(
+                                                target: "sub-libp2p",
+                                                "External API <= Sink replaced({}, {:?})",
+                                                peer_id, set_id
+                                            );
+                                            let event = GenericProtoOut::CustomProtocolReplaced {
+                                                peer_id,
+                                                set_id,
+                                                notifications_sink: replacement_sink,
+                                            };
+                                            self.events.push_back(
+                                                NetworkBehaviourAction::GenerateEvent(event),
+                                            );
+                                        }
+                                    } else {
+                                        debug!(
+                                            target: "sub-libp2p", "External API <= Closed({}, {:?})",
+                                            peer_id, set_id
+                                        );
+                                        let event = GenericProtoOut::CustomProtocolClosed {
+                                            peer_id,
+                                            set_id,
+                                        };
+                                        self.events.push_back(
+                                            NetworkBehaviourAction::GenerateEvent(event),
+                                        );
+                                    }
+                                }
+                            } else {
+                                error!(target: "sub-libp2p",
+                               "inject_connection_closed: State mismatch in the custom protos handler");
+                                debug_assert!(false);
+                            }
+
+                            if connections.is_empty() {
+                                debug!(target: "sub-libp2p", "PSM <= Dropped({}, {:?})", peer_id, set_id);
+                                self.peerset.dropped(
+                                    set_id,
+                                    peer_id,
+                                    sc_peerset::DropReason::Unknown,
+                                );
+                                let ban_dur = Uniform::new(5, 10).sample(&mut rand::thread_rng());
+
+                                let delay_id = self.next_delay_id;
+                                self.next_delay_id.0 += 1;
+                                let delay = futures_timer::Delay::new(Duration::from_secs(ban_dur));
+                                self.delays.push(
+                                    async move {
+                                        delay.await;
+                                        (delay_id, peer_id, set_id)
+                                    }
+                                    .boxed(),
+                                );
+
+                                *entry.get_mut() = PeerState::Backoff {
+                                    timer: delay_id,
+                                    timer_deadline: Instant::now() + Duration::from_secs(ban_dur),
+                                };
+                            } else if !connections.iter().any(|(_, s)| {
+                                matches!(s, ConnectionState::Opening | ConnectionState::Open(_))
+                            }) {
+                                debug!(target: "sub-libp2p", "PSM <= Dropped({}, {:?})", peer_id, set_id);
+                                self.peerset.dropped(
+                                    set_id,
+                                    peer_id,
+                                    sc_peerset::DropReason::Unknown,
+                                );
+
+                                *entry.get_mut() = PeerState::Disabled {
+                                    connections,
+                                    backoff_until: None,
+                                };
+                            } else {
+                                *entry.get_mut() = PeerState::Enabled { connections };
+                            }
+                        }
+
+                        PeerState::Requested
+                        | PeerState::PendingRequest { .. }
+                        | PeerState::Backoff { .. } => {
+                            // This is a serious bug either in this state machine or in libp2p.
+                            error!(target: "sub-libp2p",
+                           "`inject_connection_closed` called for unknown peer {}",
+                           peer_id);
+                            debug_assert!(false);
+                        }
                         PeerState::Poisoned => {
                             warn!(target: "sub-libp2p", "State of {:?} is poisoned reconnected", entry.key());
                             self.events.push_back(NetworkBehaviourAction::Dial {
@@ -1639,10 +1574,25 @@ impl NetworkBehaviour for GenericProto {
                     }
                 }
             }
+            FromSwarm::AddressChange(_) => {}
+            FromSwarm::DialFailure(_) => {}
+            FromSwarm::ListenFailure(_) => {}
+            FromSwarm::NewListener(_) => {}
+            FromSwarm::NewListenAddr(_) => {}
+            FromSwarm::ExpiredListenAddr(_) => {}
+            FromSwarm::ListenerError(_) => {}
+            FromSwarm::ListenerClosed(_) => {}
+            FromSwarm::NewExternalAddr(_) => {}
+            FromSwarm::ExpiredExternalAddr(_) => {}
         }
     }
 
-    fn inject_event(&mut self, source: PeerId, connection: ConnectionId, event: NotifsHandlerOut) {
+    fn on_connection_handler_event(
+        &mut self,
+        source: PeerId,
+        connection: ConnectionId,
+        event: NotifsHandlerOut,
+    ) {
         match event {
             NotifsHandlerOut::OpenDesiredByRemote { protocol_index } => {
                 let set_id = sc_peerset::SetId::from(protocol_index);
@@ -2203,7 +2153,7 @@ impl NetworkBehaviour for GenericProto {
         &mut self,
         cx: &mut Context,
         _params: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ProtocolsHandler>> {
+    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
         if let Some(event) = self.events.pop_front() {
             return Poll::Ready(event);
         }
