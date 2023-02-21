@@ -998,3 +998,42 @@ fn test_block_metadata() -> Result<()> {
 
     Ok(())
 }
+
+#[stest::test]
+fn test_insufficient_balance_for_transaction_fee() -> Result<()> {
+    let (chain_state, net) = prepare_genesis();
+
+    let alice = Account::new();
+    let txn1 = starcoin_transaction_builder::build_transfer_from_association(
+        *alice.address(),
+        0,
+        20000000,
+        1,
+        &net,
+    );
+    let output1 = execute_and_apply(&chain_state, txn1);
+    assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
+    assert!(output1.gas_used() > 0);
+
+    let bob = Account::new();
+    let raw_txn = starcoin_transaction_builder::build_transfer_txn(
+        *alice.address(),
+        *bob.address(),
+        0,
+        10000000,
+        1,
+        DEFAULT_MAX_GAS_AMOUNT,
+        net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+        net.chain_id(),
+    );
+    let txn2 = Transaction::UserTransaction(alice.sign_txn(raw_txn));
+    let output2 = execute_and_apply(&chain_state, txn2);
+    assert_eq!(
+        TransactionStatus::Discard(StatusCode::INSUFFICIENT_BALANCE_FOR_TRANSACTION_FEE),
+        *output2.status()
+    );
+    //assert_eq!(KeptVMStatus::Executed, output2.status().status().unwrap());
+    //assert!(output2.gas_used() > 0);
+
+    Ok(())
+}
