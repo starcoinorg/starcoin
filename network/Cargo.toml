@@ -23,8 +23,8 @@ tempfile = { workspace = true }
 async-std = { workspace = true }
 async-trait = { workspace = true }
 derive_more = { workspace = true }
-serde = { features = ["derive", ], workspace = true }
-serde_json = { features = ["arbitrary_precision", ], workspace = true }
+serde = { features = ["derive"], workspace = true }
+serde_json = { features = ["arbitrary_precision"], workspace = true }
 stest = { workspace = true }
 prometheus = { workspace = true }
 network-api = { workspace = true }
@@ -34,11 +34,10 @@ starcoin-network-rpc = { workspace = true }
 starcoin-network-rpc-api = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-storage = { workspace = true }
-openrpc-rs = { workspace = true }
 
 [dev-dependencies]
 test-helper = { workspace = true }
-tokio = { features = ["full", ], workspace = true }
+tokio = { features = ["full"], workspace = true }
 
 [package]
 authors = { workspace = true }
@@ -46,7 +45,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-network"
 publish = { workspace = true }
-version = "1.12.9"
+version = "1.13.0"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

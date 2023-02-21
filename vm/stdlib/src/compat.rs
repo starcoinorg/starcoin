@@ -45,12 +45,12 @@ impl StdlibCompat for StdlibVersion {
         } else {
             "UpgradeModule"
         };
-        TypeTag::Struct(StructTag {
+        TypeTag::Struct(Box::new(StructTag {
             address: genesis_address(),
             module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
             name: Identifier::new(struct_name).unwrap(),
             type_params: vec![],
-        })
+        }))
     }
 
     fn propose_module_upgrade_function(

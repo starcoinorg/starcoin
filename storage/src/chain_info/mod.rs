@@ -5,7 +5,7 @@ use crate::storage::{ColumnFamily, InnerStorage, KVStore};
 use crate::{StorageVersion, CHAIN_INFO_PREFIX_NAME};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
-use starcoin_types::startup_info::{SnapshotRange, StartupInfo};
+use starcoin_types::startup_info::{BarnardHardFork, SnapshotRange, StartupInfo};
 use std::convert::{TryFrom, TryInto};
 
 #[derive(Clone)]
@@ -27,6 +27,7 @@ impl ChainInfoStorage {
     const GENESIS_KEY: &'static str = "genesis";
     const STORAGE_VERSION_KEY: &'static str = "storage_version";
     const SNAPSHOT_RANGE_KEY: &'static str = "snapshot_height";
+    const BARNARD_HARD_FORK: &'static str = "barnard_hard_fork";
 
     pub fn get_startup_info(&self) -> Result<Option<StartupInfo>> {
         self.get(Self::STARTUP_INFO_KEY.as_bytes())
@@ -93,6 +94,21 @@ impl ChainInfoStorage {
         self.put_sync(
             Self::SNAPSHOT_RANGE_KEY.as_bytes().to_vec(),
             snapshot_range.try_into()?,
+        )
+    }
+
+    pub fn get_barnard_hard_fork(&self) -> Result<Option<BarnardHardFork>> {
+        self.get(Self::BARNARD_HARD_FORK.as_bytes())
+            .and_then(|bytes| match bytes {
+                Some(bytes) => Ok(Some(bytes.try_into()?)),
+                None => Ok(None),
+            })
+    }
+
+    pub fn save_barnard_hard_fork(&self, barnard_hard_fork: BarnardHardFork) -> Result<()> {
+        self.put_sync(
+            Self::BARNARD_HARD_FORK.as_bytes().to_vec(),
+            barnard_hard_fork.try_into()?,
         )
     }
 }

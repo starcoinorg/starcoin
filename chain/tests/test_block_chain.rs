@@ -28,12 +28,12 @@ fn test_chain_filter_events() {
     let times = 10;
     mock_chain.produce_and_apply_times(times).unwrap();
 
-    let event_type_tag = TypeTag::Struct(StructTag {
+    let event_type_tag = TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
         module: Identifier::from_str("Block").unwrap(),
         name: Identifier::from_str("NewBlockEvent").unwrap(),
         type_params: vec![],
-    });
+    }));
 
     // Origin block event index is 4, after https://github.com/starcoinorg/starcoin-framework/pull/42 , Genesis account create more event_handles, so the block event index is 7.
     // So we should use type_tags to filter event, do not dependent on event key.

@@ -3,20 +3,19 @@ anyhow = { workspace = true }
 byteorder = { workspace = true }
 futures = { workspace = true }
 hex = { default-features = false, workspace = true }
-jsonrpc-core = { features = ["arbitrary_precision", ], workspace = true }
+jsonrpc-core = { features = ["arbitrary_precision"], workspace = true }
 jsonrpc-core-client = { workspace = true }
 jsonrpc-derive = { workspace = true }
 jsonrpc-pubsub = { workspace = true }
 jsonrpc-tcp-server = { workspace = true }
 serde = { workspace = true }
-serde_json = { features = ["arbitrary_precision", ], workspace = true }
+serde_json = { features = ["arbitrary_precision"], workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-miner = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-types = { workspace = true }
-openrpc-rs = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }
@@ -25,7 +24,7 @@ stest = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 name = "starcoin-stratum"
-version = "1.12.9"
+version = "1.13.0"
 homepage = { workspace = true }
 license = { workspace = true }
 publish = { workspace = true }

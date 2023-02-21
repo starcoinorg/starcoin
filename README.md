@@ -9,6 +9,8 @@
 
 Starcoin - a smart contract blockchain network that scales by layering
 
+net proxima using move with table extension feature. If you want to use it, you should compile dev branch. 
+
 [Report a Bug](https://github.com/starcoinorg/starcoin/issues/new?assignees=&labels=bug&template=01_BUG_REPORT.md&title=bug%3A+")
 ·
 [Request a Feature](https://github.com/starcoinorg/starcoin/issues/new?assignees=&labels=enhancement&template=02_FEATURE_REQUEST.md&title=feat%3A+")

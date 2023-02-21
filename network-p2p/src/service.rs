@@ -31,7 +31,7 @@ use std::sync::{
     Arc,
 };
 use std::task::Poll;
-use std::{borrow::Cow, collections::HashSet, io};
+use std::{borrow::Cow, collections::HashSet, io, iter};
 
 use crate::config::{Params, TransportConfig};
 use crate::discovery::DiscoveryConfig;
@@ -41,7 +41,7 @@ use crate::network_state::{
     NetworkState, NotConnectedPeer as NetworkStateNotConnectedPeer, Peer as NetworkStatePeer,
 };
 use crate::protocol::event::Event;
-use crate::protocol::generic_proto::{NotificationsSink, Ready};
+use crate::protocol::generic_proto::{NotificationsSink, NotifsHandlerError, Ready};
 use crate::protocol::{Protocol, HARD_CORE_PROTOCOL_ID};
 use crate::request_responses::{InboundFailure, OutboundFailure, RequestFailure, ResponseFailure};
 use crate::{
@@ -56,13 +56,17 @@ use futures::{
     channel::{mpsc, oneshot},
     prelude::*,
 };
-use libp2p::core::network::ConnectionLimits;
-use libp2p::core::{connection::ConnectionError, ConnectedPoint};
-use libp2p::swarm::{
-    protocols_handler::NodeHandlerWrapperError, AddressScore, DialError, NetworkBehaviour,
-    SwarmBuilder, SwarmEvent,
+use libp2p::{
+    core::{either::EitherError, ConnectedPoint},
+    identify::Info as IdentifyInfo,
+    kad::record::Key as KademliaKey,
+    ping::Failure as PingFailure,
+    swarm::{
+        AddressScore, ConnectionError, ConnectionLimits, DialError, NetworkBehaviour, Swarm,
+        SwarmBuilder, SwarmEvent,
+    },
+    PeerId,
 };
-use libp2p::{kad::record, PeerId};
 use log::{error, info, trace, warn};
 use network_p2p_types::IfDisconnected;
 use parking_lot::Mutex;
@@ -229,7 +233,7 @@ impl NetworkWorker {
         )?;
 
         // Build the swarm.
-        let (mut swarm, bandwidth): (Swarm, _) = {
+        let (mut swarm, bandwidth): (Swarm<Behaviour>, _) = {
             let user_agent = format!(
                 "{} ({})",
                 params.network_config.client_version, params.network_config.node_name
@@ -237,24 +241,23 @@ impl NetworkWorker {
 
             let discovery_config = {
                 let mut config = DiscoveryConfig::new(local_public.clone());
-                config.with_user_defined(known_addresses);
+                config.with_permanent_addresses(known_addresses);
                 config.discovery_limit(u64::from(params.network_config.out_peers) + 15);
-                config.add_protocol(params.protocol_id.clone());
+                config.with_kademlia(&params.protocol_id);
                 config.allow_non_globals_in_dht(params.network_config.allow_non_globals_in_dht);
-                config.max_connections_per_address(params.network_config.in_peers / 2);
 
                 match params.network_config.transport {
                     TransportConfig::MemoryOnly => {
                         config.with_mdns(false);
-                        config.allow_private_ipv4(false);
+                        config.allow_private_ip(false);
                     }
                     TransportConfig::Normal {
                         enable_mdns,
-                        allow_private_ipv4,
+                        allow_private_ip,
                         ..
                     } => {
                         config.with_mdns(enable_mdns);
-                        config.allow_private_ipv4(allow_private_ipv4);
+                        config.allow_private_ip(allow_private_ip);
                     }
                 }
 
@@ -275,15 +278,13 @@ impl NetworkWorker {
             };
 
             let (transport, bandwidth) = {
-                let (config_mem, config_wasm) = match params.network_config.transport {
-                    TransportConfig::MemoryOnly => (true, None),
-                    TransportConfig::Normal {
-                        wasm_external_transport,
-                        ..
-                    } => (false, wasm_external_transport),
+                let config_mem = match params.network_config.transport {
+                    TransportConfig::MemoryOnly => true,
+                    TransportConfig::Normal { .. } => false,
                 };
-                transport::build_transport(local_identity, config_mem, config_wasm)
+                transport::build_transport(local_identity, config_mem)
             };
+            //FIXME: with tokio executor
             let builder = SwarmBuilder::new(transport, behaviour, local_peer_id)
                 .connection_limits(
                     ConnectionLimits::default()
@@ -810,7 +811,7 @@ impl NetworkService {
     ///
     /// This will generate either a `ValueFound` or a `ValueNotFound` event and pass it as an
     /// item on the [`NetworkWorker`] stream.
-    pub fn get_value(&self, key: &record::Key) {
+    pub fn get_value(&self, key: &KademliaKey) {
         let _ = self
             .to_worker
             .unbounded_send(ServiceToWorkerMsg::GetValue(key.clone()));
@@ -820,7 +821,7 @@ impl NetworkService {
     ///
     /// This will generate either a `ValuePut` or a `ValuePutFailed` event and pass it as an
     /// item on the [`NetworkWorker`] stream.
-    pub fn put_value(&self, key: record::Key, value: Vec<u8>) {
+    pub fn put_value(&self, key: KademliaKey, value: Vec<u8>) {
         let _ = self
             .to_worker
             .unbounded_send(ServiceToWorkerMsg::PutValue(key, value));
@@ -976,8 +977,8 @@ pub enum NotificationSenderError {
 ///
 /// Each entry corresponds to a method of `NetworkService`.
 enum ServiceToWorkerMsg {
-    GetValue(record::Key),
-    PutValue(record::Key, Vec<u8>),
+    GetValue(KademliaKey),
+    PutValue(KademliaKey, Vec<u8>),
     AddKnownAddress(PeerId, Multiaddr),
     EventStream(out_events::Sender),
     Request {
@@ -1004,7 +1005,7 @@ pub struct NetworkWorker {
     /// The network service that can be extracted and shared through the codebase.
     service: Arc<NetworkService>,
     /// The *actual* network.
-    network_service: Swarm,
+    network_service: Swarm<Behaviour>,
     /// Messages from the `NetworkService` and that must be processed.
     from_worker: mpsc::UnboundedReceiver<ServiceToWorkerMsg>,
     /// Senders for events that happen on the network.
@@ -1035,7 +1036,7 @@ impl Future for NetworkWorker {
 
             match msg {
                 ServiceToWorkerMsg::GetValue(key) => {
-                    this.network_service.behaviour_mut().get_value(&key)
+                    this.network_service.behaviour_mut().get_value(key)
                 }
                 ServiceToWorkerMsg::PutValue(key, value) => {
                     this.network_service.behaviour_mut().put_value(key, value)
@@ -1117,6 +1118,29 @@ impl Future for NetworkWorker {
 
             match poll_value {
                 Poll::Pending => break,
+                Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::Discovered(peer_id))) => {
+                    this.network_service
+                        .behaviour_mut()
+                        .user_protocol_mut()
+                        .add_default_set_discovered_nodes(iter::once(peer_id));
+                }
+
+                Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::ReputationChanges {
+                    peer,
+                    changes,
+                })) => {
+                    for change in changes {
+                        this.network_service
+                            .behaviour()
+                            .user_protocol()
+                            .report_peer(peer, change);
+                    }
+                }
+
+                Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::None)) => {
+                    //Ignore
+                }
+
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::BannedRequest(
                     peer_id,
                     duration,
@@ -1211,7 +1235,9 @@ impl Future for NetworkWorker {
                         }
                     }
                 }
-                Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::RandomKademliaStarted(_))) => {}
+                Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::RandomKademliaStarted)) => {
+                    //TODO: add metric
+                }
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::NotificationStreamOpened {
                     remote,
                     protocol,
@@ -1363,31 +1389,14 @@ impl Future for NetworkWorker {
                         };
                         let reason = match cause {
                             Some(ConnectionError::IO(_)) => "transport-error",
-                            // Some(ConnectionError::Handler(NodeHandlerWrapperError::Handler(
-                            //     EitherError::A(EitherError::A(EitherError::B(EitherError::A(
-                            //         PingFailure::Timeout,
-                            //     )))),
-                            // ))) => "ping-timeout",
-                            // Some(ConnectionError::Handler(NodeHandlerWrapperError::Handler(
-                            //     EitherError::A(EitherError::A(EitherError::A(EitherError::A(
-                            //         EitherError::A(EitherError::A(NotifsHandlerError::Legacy(
-                            //             LegacyConnectionKillError,
-                            //         ))),
-                            //     )))),
-                            // ))) => "force-closed",
-                            // Some(ConnectionError::Handler(NodeHandlerWrapperError::Handler(
-                            //     EitherError::A(EitherError::A(EitherError::A(EitherError::A(
-                            //         EitherError::A(EitherError::A(
-                            //             NotifsHandlerError::SyncNotificationsClogged,
-                            //         )),
-                            //     )))),
-                            // ))) => "sync-notifications-clogged",
-                            Some(ConnectionError::Handler(NodeHandlerWrapperError::Handler(_))) => {
-                                "protocol-error"
-                            }
-                            Some(ConnectionError::Handler(
-                                NodeHandlerWrapperError::KeepAliveTimeout,
-                            )) => "keep-alive-timeout",
+                            Some(ConnectionError::Handler(EitherError::A(EitherError::A(
+                                EitherError::B(EitherError::A(PingFailure::Timeout)),
+                            )))) => "ping-timeout",
+                            Some(ConnectionError::Handler(EitherError::A(EitherError::A(
+                                EitherError::A(NotifsHandlerError::SyncNotificationsClogged),
+                            )))) => "sync-notifications-clogged",
+                            Some(ConnectionError::Handler(_)) => "protocol-error",
+                            Some(ConnectionError::KeepAliveTimeout) => "keep-alive-timeout",
                             None => "actively-closed",
                         };
                         metrics
@@ -1475,57 +1484,51 @@ impl Future for NetworkWorker {
                 Poll::Ready(SwarmEvent::ListenerError { error, .. }) => {
                     trace!(target: "sub-libp2p", "Libp2p => ListenerError: {}", error);
                 }
+                Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::PeerIdentify {
+                    peer_id,
+                    info:
+                        IdentifyInfo {
+                            protocol_version,
+                            agent_version,
+                            mut listen_addrs,
+                            protocols,
+                            ..
+                        },
+                })) => {
+                    if listen_addrs.len() > 30 {
+                        debug!(
+                            target: "sub-libp2p",
+                            "Node {:?} has reported more than 30 addresses; it is identified by {:?} and {:?}",
+                            peer_id, protocol_version, agent_version
+                        );
+                        listen_addrs.truncate(30);
+                    }
+                    for addr in listen_addrs {
+                        this.network_service
+                            .behaviour_mut()
+                            .add_self_reported_address_to_dht(&peer_id, &protocols, addr);
+                    }
+                    this.network_service
+                        .behaviour_mut()
+                        .user_protocol_mut()
+                        .add_default_set_discovered_nodes(iter::once(peer_id));
+                }
             };
         }
 
         if let Some(metrics) = this.metrics.as_ref() {
-            for (proto, buckets) in this
-                .network_service
-                .behaviour_mut()
-                .num_entries_per_kbucket()
-            {
-                for (lower_ilog2_bucket_bound, num_entries) in buckets {
-                    metrics
-                        .kbuckets_num_nodes
-                        .with_label_values(&[proto.as_ref(), &lower_ilog2_bucket_bound.to_string()])
-                        .set(num_entries as u64);
-                }
-            }
-            for (proto, num_entries) in this.network_service.behaviour_mut().num_kademlia_records()
-            {
-                metrics
-                    .kademlia_records_count
-                    .with_label_values(&[proto.as_ref()])
-                    .set(num_entries as u64);
-            }
-            for (proto, num_entries) in this
-                .network_service
-                .behaviour_mut()
-                .kademlia_records_total_size()
-            {
-                metrics
-                    .kademlia_records_sizes_total
-                    .with_label_values(&[proto.as_ref()])
-                    .set(num_entries as u64);
-            }
             metrics.peerset_num_discovered.set(
-                this.network_service
-                    .behaviour()
-                    .user_protocol()
-                    .num_discovered_peers() as u64,
-            );
-            metrics.peerset_num_requested.set(
                 this.network_service
                     .behaviour_mut()
                     .user_protocol()
-                    .requested_peers()
-                    .count() as u64,
+                    .num_discovered_peers() as u64,
             );
             metrics.pending_connections.set(
                 Swarm::network_info(&this.network_service)
                     .connection_counters()
                     .num_pending() as u64,
             );
+
             let mut peers_state = this
                 .network_service
                 .behaviour_mut()
@@ -1558,9 +1561,6 @@ impl Future for NetworkWorker {
 }
 
 impl Unpin for NetworkWorker {}
-
-/// The libp2p swarm, customized for our needs.
-type Swarm = libp2p::swarm::Swarm<Behaviour>;
 
 fn ensure_addresses_consistent_with_transport<'a>(
     addresses: impl Iterator<Item = &'a Multiaddr>,

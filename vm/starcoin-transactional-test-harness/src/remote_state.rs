@@ -7,9 +7,10 @@ use move_binary_format::errors::VMError;
 use move_core_types::resolver::{ModuleResolver, ResourceResolver};
 use starcoin_crypto::HashValue;
 
+use move_table_extension::{TableHandle, TableResolver};
 use starcoin_rpc_api::chain::ChainApiClient;
 use starcoin_rpc_api::state::StateApiClient;
-use starcoin_rpc_api::types::{BlockView, StateWithProofView};
+use starcoin_rpc_api::types::{BlockView, StateWithProofView, StateWithTableItemProofView};
 use starcoin_state_api::ChainStateWriter;
 use starcoin_types::access_path::{AccessPath, DataPath};
 use starcoin_types::account_address::AccountAddress;
@@ -18,6 +19,8 @@ use starcoin_types::language_storage::{ModuleId, StructTag};
 use starcoin_types::state_set::ChainStateSet;
 use starcoin_types::vm_error::StatusCode;
 use starcoin_vm_types::errors::{Location, PartialVMError, PartialVMResult, VMResult};
+use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::table::TableHandle as StarcoinTableHandle;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::write_set::WriteSet;
 use std::collections::BTreeMap;
@@ -65,10 +68,10 @@ where
     A: StateView,
     B: StateView,
 {
-    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
         match self {
-            SelectableStateView::A(a) => a.get(access_path),
-            SelectableStateView::B(b) => b.get(access_path),
+            SelectableStateView::A(a) => a.get_state_value(state_key),
+            SelectableStateView::B(b) => b.get_state_value(state_key),
         }
     }
 
@@ -171,9 +174,9 @@ where
     A: StateView,
     B: StateView,
 {
-    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        match self.a.get(access_path)? {
-            None => self.b.get(access_path),
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+        match self.a.get_state_value(state_key)? {
+            None => self.b.get_state_value(state_key),
             Some(d) => Ok(Some(d)),
         }
     }
@@ -281,7 +284,19 @@ impl RemoteRpcAsyncClient {
             .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))?;
         Ok(state_with_proof.state.map(|v| v.0))
     }
-
+    pub async fn resolve_table_entry_async(
+        &self,
+        handle: &TableHandle,
+        key: &[u8],
+    ) -> Result<Option<Vec<u8>>> {
+        let handle1: StarcoinTableHandle = StarcoinTableHandle(handle.0);
+        let state_table_item_proof: StateWithTableItemProofView = self
+            .state_client
+            .get_with_table_item_proof_by_root(handle1, key.to_vec(), self.state_root)
+            .await
+            .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))?;
+        Ok(state_table_item_proof.key_proof.0.map(|v| v.0))
+    }
     pub fn get_chain_client(&self) -> &ChainApiClient {
         &self.chain_client
     }
@@ -362,15 +377,28 @@ impl ResourceResolver for RemoteViewer {
     }
 }
 
+impl TableResolver for RemoteViewer {
+    fn resolve_table_entry(&self, handle: &TableHandle, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        let h = self.rt.handle().clone();
+        h.block_on(self.svc.resolve_table_entry_async(handle, key))
+    }
+}
+
 impl StateView for RemoteViewer {
-    fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        match &access_path.path {
-            DataPath::Code(m) => Ok(self
-                .get_module(&ModuleId::new(access_path.address, m.clone()))
-                .map_err(|err| err.into_vm_status())?),
-            DataPath::Resource(s) => Ok(self
-                .get_resource(&access_path.address, s)
-                .map_err(|err| err.finish(Location::Undefined).into_vm_status())?),
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+        match state_key {
+            StateKey::AccessPath(access_path) => match &access_path.path {
+                DataPath::Code(m) => Ok(self
+                    .get_module(&ModuleId::new(access_path.address, m.clone()))
+                    .map_err(|err| err.into_vm_status())?),
+                DataPath::Resource(s) => Ok(self
+                    .get_resource(&access_path.address, s)
+                    .map_err(|err| err.finish(Location::Undefined).into_vm_status())?),
+            },
+            StateKey::TableItem(table_item) => Ok(self.resolve_table_entry(
+                &move_table_extension::TableHandle(table_item.handle.0),
+                table_item.key.as_slice(),
+            )?),
         }
     }
 

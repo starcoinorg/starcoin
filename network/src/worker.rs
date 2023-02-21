@@ -38,8 +38,7 @@ pub fn build_network_worker(
     } else {
         TransportConfig::Normal {
             enable_mdns: discover_local,
-            allow_private_ipv4: true,
-            wasm_external_transport: None,
+            allow_private_ip: true,
         }
     };
     //TODO define RequestResponseConfig by rpc api

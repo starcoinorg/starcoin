@@ -35,8 +35,8 @@ use starcoin_rpc_api::types::{
     ChainId, ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputView,
     DryRunTransactionRequest, FactoryAction, FunctionIdView, ListCodeView, ListResourceView,
     MintedBlockView, ModuleIdView, PeerInfoView, ResourceView, SignedMessageView,
-    SignedUserTransactionView, StateWithProofView, StrView, StructTagView,
-    TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView,
+    SignedUserTransactionView, StateWithProofView, StateWithTableItemProofView, StrView,
+    StructTagView, TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView,
     TransactionRequest, TransactionView,
 };
 use starcoin_rpc_api::{
@@ -57,6 +57,7 @@ use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
+use starcoin_vm_types::state_store::table::TableHandle;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::DryRunTransaction;
 use std::collections::HashMap;
@@ -636,6 +637,20 @@ impl RpcClient {
                     state_root,
                 }),
             )
+        })
+        .map_err(map_err)
+    }
+
+    pub fn state_get_with_table_item_proof_by_root(
+        &self,
+        handle: TableHandle,
+        key: Vec<u8>,
+        state_root: HashValue,
+    ) -> anyhow::Result<StateWithTableItemProofView> {
+        self.call_rpc_blocking(|inner| {
+            inner
+                .state_client
+                .get_with_table_item_proof_by_root(handle, key, state_root)
         })
         .map_err(map_err)
     }

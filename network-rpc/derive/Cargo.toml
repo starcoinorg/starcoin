@@ -2,7 +2,7 @@
 anyhow = { workspace = true }
 proc-macro2 = { workspace = true }
 quote = { workspace = true }
-syn = { features = [ "full", "extra-traits", "visit", "fold",], workspace = true }
+syn = { features = ["full", "extra-traits", "visit", "fold"], workspace = true }
 
 [lib]
 proc-macro = true
@@ -13,7 +13,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "network-rpc-derive"
 publish = { workspace = true }
-version = "1.12.9"
+version = "1.13.0"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

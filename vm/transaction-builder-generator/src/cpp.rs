@@ -314,6 +314,9 @@ using namespace diem_types;
                 _ => common::type_not_allowed(type_tag),
             },
             Struct(_) | Signer => common::type_not_allowed(type_tag),
+            U16 => "uint16_t".into(),
+            U32 => "uint32_t".into(),
+            U256 => "u256_t".into(),
         }
     }
 
@@ -332,6 +335,9 @@ using namespace diem_types;
             },
 
             Struct(_) | Signer => common::type_not_allowed(type_tag),
+            U16 => format!("{{TransactionArgument::U16 {{{}}} }}", name),
+            U32 => format!("{{TransactionArgument::U32 {{{}}} }}", name),
+            U256 => format!("{{TransactionArgument::U256 {{{}}} }}", name),
         }
     }
 }

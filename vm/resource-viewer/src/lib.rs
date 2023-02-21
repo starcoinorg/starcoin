@@ -9,11 +9,12 @@ use crate::{
     resolver::Resolver,
 };
 use anyhow::{anyhow, Result};
+use move_core_types::u256;
 use starcoin_vm_types::language_storage::TypeTag;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::value::MoveTypeLayout;
 use starcoin_vm_types::{
-    access_path::AccessPath,
     account_address::AccountAddress,
     contract_event::ContractEvent,
     errors::{Location, PartialVMError},
@@ -53,9 +54,14 @@ pub enum AnnotatedMoveValue {
     U128(u128),
     Bool(bool),
     Address(AccountAddress),
+    // XXX FIXME YSG, why move/language/tools/move-resource-viewer is  Vector(TypeTag, Vec<AnnotatedMoveValue>)
     Vector(Vec<AnnotatedMoveValue>),
     Bytes(Vec<u8>),
     Struct(AnnotatedMoveStruct),
+    // NOTE: Added in bytecode version v6, do not reorder!
+    U16(u16),
+    U32(u32),
+    U256(u256::U256),
 }
 
 // impl Serialize for AnnotatedMoveValue {
@@ -194,7 +200,20 @@ impl<'a> MoveValueAnnotator<'a> {
             (MoveValue::Struct(s), FatType::Struct(ty)) => {
                 AnnotatedMoveValue::Struct(self.annotate_struct(s, ty.as_ref())?)
             }
-            _ => {
+            (MoveValue::U16(i), FatType::U16) => AnnotatedMoveValue::U16(*i),
+            (MoveValue::U32(i), FatType::U32) => AnnotatedMoveValue::U32(*i),
+            (MoveValue::U256(i), FatType::U256) => AnnotatedMoveValue::U256(*i),
+            (MoveValue::U8(_), _)
+            | (MoveValue::U64(_), _)
+            | (MoveValue::U128(_), _)
+            | (MoveValue::Bool(_), _)
+            | (MoveValue::Address(_), _)
+            | (MoveValue::Vector(_), _)
+            | (MoveValue::Struct(_), _)
+            | (MoveValue::Signer(_), _)
+            | (MoveValue::U16(_), _)
+            | (MoveValue::U32(_), _)
+            | (MoveValue::U256(_), _) => {
                 return Err(anyhow!(
                     "Cannot annotate value {:?} with type {:?}",
                     value,
@@ -235,6 +254,9 @@ fn pretty_print_value(
         }
         AnnotatedMoveValue::Bytes(v) => write!(f, "{}", hex::encode(&v)),
         AnnotatedMoveValue::Struct(s) => pretty_print_struct(f, s, indent),
+        AnnotatedMoveValue::U16(v) => write!(f, "{}u16", v),
+        AnnotatedMoveValue::U32(v) => write!(f, "{}u32", v),
+        AnnotatedMoveValue::U256(v) => write!(f, "{}u256", v),
     }
 }
 
@@ -295,7 +317,7 @@ pub struct NullStateView;
 
 //
 impl StateView for NullStateView {
-    fn get(&self, _access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
+    fn get_state_value(&self, _state_key: &StateKey) -> Result<Option<Vec<u8>>> {
         Ok(None)
     }
 

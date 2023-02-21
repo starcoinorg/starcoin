@@ -22,7 +22,6 @@ use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
 use starcoin_types::transaction::{ScriptFunction, TransactionPayload};
 use starcoin_vm_types::account_config::core_code_address;
-use starcoin_vm_types::gas_schedule::GasAlgebra;
 use starcoin_vm_types::on_chain_config::VMConfig;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
 
@@ -88,36 +87,36 @@ pub fn proposal_exist<S: StateView>(
 }
 
 pub fn on_chain_config_type_tag(params_type_tag: TypeTag) -> TypeTag {
-    TypeTag::Struct(StructTag {
+    TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
         module: Identifier::new("OnChainConfigDao").unwrap(),
         name: Identifier::new("OnChainConfigUpdate").unwrap(),
         type_params: vec![params_type_tag],
-    })
+    }))
 }
 pub fn reward_config_type_tag() -> TypeTag {
-    TypeTag::Struct(StructTag {
+    TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
         module: Identifier::new("RewardConfig").unwrap(),
         name: Identifier::new("RewardConfig").unwrap(),
         type_params: vec![],
-    })
+    }))
 }
 pub fn transaction_timeout_type_tag() -> TypeTag {
-    TypeTag::Struct(StructTag {
+    TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
         module: Identifier::new("TransactionTimeoutConfig").unwrap(),
         name: Identifier::new("TransactionTimeoutConfig").unwrap(),
         type_params: vec![],
-    })
+    }))
 }
 pub fn txn_publish_config_type_tag() -> TypeTag {
-    TypeTag::Struct(StructTag {
+    TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
         module: Identifier::new("TransactionPublishOption").unwrap(),
         name: Identifier::new("TransactionPublishOption").unwrap(),
         type_params: vec![],
-    })
+    }))
 }
 
 fn execute_create_account(
@@ -383,17 +382,17 @@ pub fn vote_vm_config_script(_net: &ChainNetwork, vm_config: VMConfig) -> Script
             .unwrap(),
             bcs_ext::to_bytes(&bcs_ext::to_bytes(&vm_config.gas_schedule.native_table).unwrap())
                 .unwrap(),
-            bcs_ext::to_bytes(&gas_constants.global_memory_per_byte_cost.get()).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.global_memory_per_byte_write_cost.get()).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.min_transaction_gas_units.get()).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.large_transaction_cutoff.get()).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.intrinsic_gas_per_byte.get()).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.maximum_number_of_gas_units.get()).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.min_price_per_gas_unit.get()).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.max_price_per_gas_unit.get()).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.global_memory_per_byte_cost).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.global_memory_per_byte_write_cost).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.min_transaction_gas_units).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.large_transaction_cutoff).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.intrinsic_gas_per_byte).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.maximum_number_of_gas_units).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.min_price_per_gas_unit).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.max_price_per_gas_unit).unwrap(),
             bcs_ext::to_bytes(&gas_constants.max_transaction_size_in_bytes).unwrap(),
             bcs_ext::to_bytes(&gas_constants.gas_unit_scaling_factor).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.default_account_size.get()).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.default_account_size).unwrap(),
             bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     )

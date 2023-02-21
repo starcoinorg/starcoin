@@ -9,6 +9,7 @@ use crate::{
     module_cache::ModuleCache,
 };
 use anyhow::{anyhow, Result};
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::{
     access::ModuleAccess,
     access_path::AccessPath,
@@ -55,7 +56,7 @@ impl<'a> Resolver<'a> {
         let access_path = AccessPath::from(&module_id);
         let blob = self
             .state
-            .get(&access_path)?
+            .get_state_value(&StateKey::AccessPath(access_path))?
             .ok_or_else(|| anyhow!("Module {:?} can't be found", module_id))?;
         let compiled_module = CompiledModule::deserialize(&blob).map_err(|status| {
             anyhow!(
@@ -77,6 +78,9 @@ impl<'a> Resolver<'a> {
             TypeTag::U64 => FatType::U64,
             TypeTag::U128 => FatType::U128,
             TypeTag::Vector(ty) => FatType::Vector(Box::new(self.resolve_type(ty)?)),
+            TypeTag::U16 => FatType::U16,
+            TypeTag::U32 => FatType::U32,
+            TypeTag::U256 => FatType::U256,
         })
     }
 
@@ -143,6 +147,9 @@ impl<'a> Resolver<'a> {
             SignatureToken::MutableReference(_) | SignatureToken::Reference(_) => {
                 return Err(anyhow!("Unexpected Reference"))
             }
+            SignatureToken::U16 => FatType::U16,
+            SignatureToken::U32 => FatType::U32,
+            SignatureToken::U256 => FatType::U256,
         })
     }
 

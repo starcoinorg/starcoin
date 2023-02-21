@@ -199,6 +199,16 @@ SignedUserTransaction:
 SigningMessage:
   NEWTYPESTRUCT:
     SEQ: U8
+StateKey:
+  ENUM:
+    0:
+      AccessPath:
+        NEWTYPE:
+          TYPENAME: AccessPath
+    1:
+      TableItem:
+        NEWTYPE:
+          TYPENAME: TableItem
 StructTag:
   STRUCT:
     - address:
@@ -210,6 +220,14 @@ StructTag:
     - type_args:
         SEQ:
           TYPENAME: TypeTag
+TableHandle:
+  NEWTYPESTRUCT:
+    TYPENAME: AccountAddress
+TableItem:
+  STRUCT:
+    - handle:
+        TYPENAME: TableHandle
+    - key: BYTES
 Transaction:
   ENUM:
     0:
@@ -241,6 +259,18 @@ TransactionArgument:
     5:
       Bool:
         NEWTYPE: BOOL
+    6:
+      U16:
+        NEWTYPE: U16
+    7:
+      U32:
+        NEWTYPE: U32
+    8:
+      U256:
+        NEWTYPE:
+          TUPLEARRAY:
+            CONTENT: U8
+            SIZE: 32
 TransactionAuthenticator:
   ENUM:
     0:
@@ -307,6 +337,12 @@ TypeTag:
       struct:
         NEWTYPE:
           TYPENAME: StructTag
+    8:
+      u16: UNIT
+    9:
+      u32: UNIT
+    10:
+      u256: UNIT
 WithdrawCapabilityResource:
   STRUCT:
     - account_address:
@@ -326,5 +362,5 @@ WriteSetMut:
     - write_set:
         SEQ:
           TUPLE:
-            - TYPENAME: AccessPath
+            - TYPENAME: StateKey
             - TYPENAME: WriteOp

@@ -40,7 +40,6 @@ fn test_sip_flags() -> Result<()> {
     //     .unwrap();
     // let package = Package::new_with_module(module)?;
     // let package_hash = package.crypto_hash();
-
     // let vote_script_function = ScriptFunction::new(
     //     ModuleId::new(
     //         core_code_address(),
@@ -78,7 +77,6 @@ fn test_sip_flags() -> Result<()> {
     //     0,
     // )?;
     // association_execute_should_success(&net, &chain_state, TransactionPayload::Package(package))?;
-
     // assert!(chain_state.is_activated(sip_10000)?);
     Ok(())
 }

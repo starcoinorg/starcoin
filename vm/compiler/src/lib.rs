@@ -9,6 +9,7 @@ pub use move_compiler::Compiler;
 use crate::diagnostics::report_diagnostics_to_color_buffer;
 /// A wrap to move-lang compiler
 use anyhow::{bail, ensure, Result};
+use move_binary_format::errors::PartialVMResult;
 use move_compiler::compiled_unit::AnnotatedCompiledUnit;
 use move_compiler::diagnostics::{unwrap_or_report_diagnostics, Diagnostics, FilesSourceText};
 use move_compiler::shared::{Flags, NumericalAddress};
@@ -187,9 +188,12 @@ pub fn compile_source_string_no_report(
     for dep in deps {
         windows_line_ending_to_unix_in_file(dep)?;
     }
-    let compiler = move_compiler::Compiler::new(&targets, deps)
-        .set_named_address_values(starcoin_framework_named_addresses())
-        .set_flags(Flags::empty().set_sources_shadow_deps(true));
+    let compiler = move_compiler::Compiler::from_files(
+        targets,
+        deps.to_vec(),
+        starcoin_framework_named_addresses(),
+    )
+    .set_flags(Flags::empty().set_sources_shadow_deps(true));
     compiler.build()
 }
 
@@ -202,16 +206,25 @@ pub fn check_module_compat(pre_code: &[u8], new_code: &[u8]) -> VMResult<bool> {
 
     let old = Module::new(&pre_module);
     let new = Module::new(&new_module);
-
-    Ok(Compatibility::check(&old, &new).is_fully_compatible())
+    if Compatibility::new(true, true, false)
+        .check(&old, &new)
+        .is_err()
+    {
+        Ok(false)
+    } else {
+        Ok(true)
+    }
 }
 
 /// check module compatibility
-pub fn check_compiled_module_compat(pre: &CompiledModule, new: &CompiledModule) -> Compatibility {
+pub fn check_compiled_module_compat(
+    pre: &CompiledModule,
+    new: &CompiledModule,
+) -> PartialVMResult<()> {
     let old = Module::new(pre);
     let new = Module::new(new);
 
-    Compatibility::check(&old, &new)
+    Compatibility::new(true, true, false).check(&old, &new)
 }
 
 /// Load bytecode file, return the bytecode bytes, and whether it's script.
@@ -353,7 +366,7 @@ mod tests {
             .pop()
             .unwrap()
             .into_compiled_unit()
-            .serialize();
+            .serialize(None);
         let new_code = compile_source_string_no_report(new_source_code, &[], CORE_CODE_ADDRESS)
             .unwrap()
             .1
@@ -362,7 +375,7 @@ mod tests {
             .pop()
             .unwrap()
             .into_compiled_unit()
-            .serialize();
+            .serialize(None);
         let compatible = check_module_compat(pre_code.as_slice(), new_code.as_slice()).unwrap();
         assert_eq!(compatible, expect);
     }

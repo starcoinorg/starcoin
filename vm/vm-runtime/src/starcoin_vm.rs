@@ -2,17 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::access_path_cache::AccessPathCache;
-use crate::data_cache::{RemoteStorage, StateViewCache};
+use crate::data_cache::{AsMoveResolver, RemoteStorage, StateViewCache};
 use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
+use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
 use anyhow::{format_err, Error, Result};
-use move_core_types::resolver::MoveResolver;
-use move_vm_runtime::move_vm::MoveVM;
+use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
+use move_table_extension::NativeTableContext;
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
 use move_vm_runtime::session::Session;
-use once_cell::sync::Lazy;
+use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_crypto::HashValue;
+use starcoin_gas::{NativeGasParameters, StarcoinGasMeter, StarcoinGasParameters};
+use starcoin_gas_algebra_ext::{
+    CostTable, FromOnChainGasSchedule, Gas, GasConstants, GasCost, InitialGasSchedule,
+};
 use starcoin_logger::prelude::*;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::account_config::{
@@ -34,29 +39,23 @@ use starcoin_vm_types::account_config::{
     core_code_address, genesis_address, ModuleUpgradeStrategy, TwoPhaseUpgradeV2Resource,
     G_EPILOGUE_NAME, G_EPILOGUE_V2_NAME, G_PROLOGUE_NAME,
 };
-use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::file_format::{CompiledModule, CompiledScript};
-use starcoin_vm_types::gas_schedule::NativeCostIndex;
 use starcoin_vm_types::gas_schedule::G_LATEST_GAS_SCHEDULE;
-use starcoin_vm_types::gas_schedule::{zero_cost_schedule, GasConstants, GasCost, GasStatus};
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::on_chain_config::{
-    MoveLanguageVersion, G_GAS_CONSTANTS_IDENTIFIER, G_INSTRUCTION_SCHEDULE_IDENTIFIER,
-    G_NATIVE_SCHEDULE_IDENTIFIER, G_VM_CONFIG_IDENTIFIER,
+    GasSchedule, MoveLanguageVersion, G_GAS_CONSTANTS_IDENTIFIER,
+    G_INSTRUCTION_SCHEDULE_IDENTIFIER, G_NATIVE_SCHEDULE_IDENTIFIER, G_VM_CONFIG_IDENTIFIER,
 };
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateReaderExt;
 use starcoin_vm_types::transaction::{DryRunTransaction, Package, TransactionPayloadType};
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::vm_status::KeptVMStatus;
-use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_vm_types::{
-    effects::{ChangeSet as MoveChangeSet, Event as MoveEvent},
     errors::Location,
-    event::EventKey,
-    gas_schedule::{self, CostTable, GasAlgebra, GasCarrier, GasUnits, InternalGasUnits},
     language_storage::TypeTag,
     on_chain_config::{OnChainConfig, VMConfig, Version},
     state_view::StateView,
@@ -64,23 +63,21 @@ use starcoin_vm_types::{
     values::Value,
     vm_status::{StatusCode, VMStatus},
 };
-use std::convert::{TryFrom, TryInto};
 use std::sync::Arc;
 
 #[cfg(feature = "metrics")]
 use crate::metrics::VMMetrics;
 
-static G_ZERO_COST_SCHEDULE: Lazy<CostTable> =
-    Lazy::new(|| zero_cost_schedule(NativeCostIndex::NUMBER_OF_NATIVE_FUNCTIONS));
-
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
 /// Wrapper of MoveVM
 pub struct StarcoinVM {
-    move_vm: Arc<MoveVM>,
+    move_vm: Arc<MoveVmExt>,
     vm_config: Option<VMConfig>,
     version: Option<Version>,
     move_version: Option<MoveLanguageVersion>,
+    native_params: NativeGasParameters,
+    gas_params: Option<StarcoinGasParameters>,
     #[cfg(feature = "metrics")]
     metrics: Option<VMMetrics>,
 }
@@ -91,25 +88,33 @@ const VMCONFIG_UPGRADE_VERSION_MARK: u64 = 10;
 impl StarcoinVM {
     #[cfg(feature = "metrics")]
     pub fn new(metrics: Option<VMMetrics>) -> Self {
-        let inner = MoveVM::new(super::natives::starcoin_natives())
+        let gas_params = StarcoinGasParameters::initial();
+        let native_params = gas_params.natives.clone();
+        let inner = MoveVmExt::new(native_params.clone())
             .expect("should be able to create Move VM; check if there are duplicated natives");
         Self {
             move_vm: Arc::new(inner),
             vm_config: None,
             version: None,
             move_version: None,
+            native_params,
+            gas_params: Some(gas_params),
             metrics,
         }
     }
     #[cfg(not(feature = "metrics"))]
     pub fn new() -> Self {
-        let inner = MoveVM::new(super::natives::starcoin_natives())
+        let gas_params = StarcoinGasParameters::initial();
+        let native_params = gas_params.natives.clone();
+        let inner = MoveVmExt::new(native_params.clone())
             .expect("should be able to create Move VM; check if there are duplicated natives");
         Self {
             move_vm: Arc::new(inner),
             vm_config: None,
             version: None,
             move_version: None,
+            native_params,
+            gas_params: Some(gas_params),
         }
     }
 
@@ -119,10 +124,25 @@ impl StarcoinVM {
                 gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
             });
             self.version = Some(Version { major: 1 });
-            Ok(())
         } else {
-            self.load_configs_impl(state)
+            self.load_configs_impl(state)?;
         }
+        if let Some(ref vm_config) = self.vm_config {
+            let gas_schedule = GasSchedule::from(vm_config);
+            let gas_params =
+                StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
+            if let Some(ref params) = gas_params {
+                if params.natives != self.native_params {
+                    debug!("update native_params");
+                    Arc::get_mut(&mut self.move_vm)
+                        .unwrap()
+                        .update_native_functions(params.clone().natives)?;
+                    self.native_params = params.natives.clone();
+                }
+                self.gas_params = gas_params;
+            }
+        }
+        Ok(())
     }
 
     fn load_configs_impl<S: StateView>(&mut self, state: &S) -> Result<(), Error> {
@@ -244,14 +264,13 @@ impl StarcoinVM {
     }
 
     fn check_gas(&self, txn_data: &TransactionMetadata) -> Result<(), VMStatus> {
-        let gas_constants = &self.get_gas_schedule()?.gas_constants;
+        let txn_gas_params = &self.get_gas_parameters()?.txn;
         let raw_bytes_len = txn_data.transaction_size;
         // The transaction is too large.
-        if raw_bytes_len.get() > gas_constants.max_transaction_size_in_bytes {
+        if raw_bytes_len > txn_gas_params.max_transaction_size_in_bytes {
             warn!(
                 "[VM] Transaction size too big {} (max {})",
-                raw_bytes_len.get(),
-                gas_constants.max_transaction_size_in_bytes
+                raw_bytes_len, txn_gas_params.max_transaction_size_in_bytes
             );
             return Err(VMStatus::Error(StatusCode::EXCEEDED_MAX_TRANSACTION_SIZE));
         }
@@ -259,12 +278,12 @@ impl StarcoinVM {
         // The submitted max gas units that the transaction can consume is greater than the
         // maximum number of gas units bound that we have set for any
         // transaction.
-        if txn_data.max_gas_amount().get() > gas_constants.maximum_number_of_gas_units.get() {
+        if txn_data.max_gas_amount() > txn_gas_params.maximum_number_of_gas_units {
             warn!(
                 "[VM] Gas unit error; max {}, submitted {}, with scaling_factor {}",
-                gas_constants.maximum_number_of_gas_units.get(),
-                txn_data.max_gas_amount().get(),
-                gas_constants.gas_unit_scaling_factor
+                txn_gas_params.maximum_number_of_gas_units,
+                txn_data.max_gas_amount(),
+                txn_gas_params.gas_unit_scaling_factor
             );
             return Err(VMStatus::Error(
                 StatusCode::MAX_GAS_UNITS_EXCEEDS_MAX_GAS_UNITS_BOUND,
@@ -274,17 +293,15 @@ impl StarcoinVM {
         // The submitted transactions max gas units needs to be at least enough to cover the
         // intrinsic cost of the transaction as calculated against the size of the
         // underlying `RawTransaction`
-        let min_txn_fee = gas_schedule::calculate_intrinsic_gas(raw_bytes_len, gas_constants);
-        if gas_constants
-            .to_internal_units(txn_data.max_gas_amount())
-            .get()
-            < min_txn_fee.get()
-        {
+        let intrinsic_gas = txn_gas_params
+            .calculate_intrinsic_gas(raw_bytes_len)
+            .to_unit_round_up_with_params(txn_gas_params);
+        if txn_data.max_gas_amount() < intrinsic_gas {
             warn!(
                 "[VM] Gas unit error; min {}, submitted {}, with scaling_factor {}",
-                min_txn_fee.get(),
-                txn_data.max_gas_amount().get(),
-                gas_constants.gas_unit_scaling_factor
+                intrinsic_gas,
+                txn_data.max_gas_amount(),
+                txn_gas_params.gas_unit_scaling_factor
             );
             return Err(VMStatus::Error(
                 StatusCode::MAX_GAS_UNITS_BELOW_MIN_TRANSACTION_GAS_UNITS,
@@ -295,23 +312,22 @@ impl StarcoinVM {
         // NB: MIN_PRICE_PER_GAS_UNIT may equal zero, but need not in the future. Hence why
         // we turn off the clippy warning.
         #[allow(clippy::absurd_extreme_comparisons)]
-        let below_min_bound =
-            txn_data.gas_unit_price().get() < gas_constants.min_price_per_gas_unit.get();
+        let below_min_bound = txn_data.gas_unit_price() < txn_gas_params.min_price_per_gas_unit;
         if below_min_bound {
             warn!(
                 "[VM] Gas unit error; min {}, submitted {}",
-                gas_constants.min_price_per_gas_unit.get(),
-                txn_data.gas_unit_price().get()
+                txn_gas_params.min_price_per_gas_unit,
+                txn_data.gas_unit_price()
             );
             return Err(VMStatus::Error(StatusCode::GAS_UNIT_PRICE_BELOW_MIN_BOUND));
         }
 
         // The submitted gas price is greater than the maximum gas unit price set by the VM.
-        if txn_data.gas_unit_price().get() > gas_constants.max_price_per_gas_unit.get() {
+        if txn_data.gas_unit_price() > txn_gas_params.max_price_per_gas_unit {
             warn!(
                 "[VM] Gas unit error; min {}, submitted {}",
-                gas_constants.max_price_per_gas_unit.get(),
-                txn_data.gas_unit_price().get()
+                txn_gas_params.max_price_per_gas_unit,
+                txn_data.gas_unit_price()
             );
             return Err(VMStatus::Error(StatusCode::GAS_UNIT_PRICE_ABOVE_MAX_BOUND));
         }
@@ -324,13 +340,14 @@ impl StarcoinVM {
         remote_cache: &StateViewCache<S>,
     ) -> Result<(), VMStatus> {
         let txn_data = TransactionMetadata::new(transaction)?;
-        let mut session: SessionAdapter<_> = self.move_vm.new_session(remote_cache).into();
-        let mut gas_status = {
-            let mut gas_status = GasStatus::new(self.get_gas_schedule()?, GasUnits::new(0));
-            gas_status.set_metering(false);
-            gas_status
-        };
-
+        let data_cache = remote_cache.as_move_resolver();
+        let mut session: SessionAdapter<_> = self
+            .move_vm
+            .new_session(&data_cache, SessionId::txn(transaction))
+            .into();
+        let gas_params = self.get_gas_parameters()?;
+        let mut gas_meter = StarcoinGasMeter::new(gas_params.clone(), txn_data.max_gas_amount());
+        gas_meter.set_metering(false);
         self.check_gas(&txn_data)?;
         match transaction.payload() {
             TransactionPayload::Package(package) => {
@@ -362,7 +379,7 @@ impl StarcoinVM {
                             .map(|m| m.code().to_vec())
                             .collect(),
                         package.package_address(),
-                        &mut gas_status,
+                        &mut gas_meter,
                         PublishModuleBundleOption {
                             force_publish: enforced,
                             only_new_module,
@@ -379,7 +396,7 @@ impl StarcoinVM {
                         s.code().to_vec(),
                         s.ty_args().to_vec(),
                         s.args().to_vec(),
-                        vec![txn_data.sender()],
+                        txn_data.sender(),
                     )
                     .map_err(|e| e.into_vm_status())?;
             }
@@ -390,12 +407,12 @@ impl StarcoinVM {
                         s.function(),
                         s.ty_args().to_vec(),
                         s.args().to_vec(),
-                        vec![txn_data.sender()],
+                        txn_data.sender(),
                     )
                     .map_err(|e| e.into_vm_status())?;
             }
         }
-        self.run_prologue(&mut session, &mut gas_status, &txn_data)
+        self.run_prologue(&mut session, &mut gas_meter, &txn_data)
     }
 
     pub fn verify_transaction<S: StateView>(
@@ -436,7 +453,9 @@ impl StarcoinVM {
         package_address: AccountAddress,
     ) -> Result<bool> {
         let strategy_access_path = access_path_for_module_upgrade_strategy(package_address);
-        if let Some(data) = remote_cache.get(&strategy_access_path)? {
+        if let Some(data) =
+            remote_cache.get_state_value(&StateKey::AccessPath(strategy_access_path))?
+        {
             Ok(bcs_ext::from_bytes::<ModuleUpgradeStrategy>(&data)?.only_new_module())
         } else {
             Ok(false)
@@ -455,7 +474,9 @@ impl StarcoinVM {
             || (chain_id.is_barnard() && block_meta.number < 8311392)
         {
             let two_phase_upgrade_v2_path = access_path_for_two_phase_upgrade_v2(package_address);
-            if let Some(data) = remote_cache.get(&two_phase_upgrade_v2_path)? {
+            if let Some(data) =
+                remote_cache.get_state_value(&StateKey::AccessPath(two_phase_upgrade_v2_path))?
+            {
                 let enforced = bcs_ext::from_bytes::<TwoPhaseUpgradeV2Resource>(&data)?.enforced();
                 Ok(enforced)
             } else {
@@ -469,32 +490,34 @@ impl StarcoinVM {
     fn execute_package<S: StateView>(
         &self,
         remote_cache: &StateViewCache<'_, S>,
-        gas_schedule: &CostTable,
-        cost_strategy: &mut GasStatus,
+        gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
         package: &Package,
     ) -> Result<(VMStatus, TransactionOutput), VMStatus> {
-        let mut session: SessionAdapter<_> = self.move_vm.new_session(remote_cache).into();
+        let data_cache = remote_cache.as_move_resolver();
+        let mut session: SessionAdapter<_> = self
+            .move_vm
+            .new_session(&data_cache, SessionId::txn_meta(txn_data))
+            .into();
 
         {
             // Run the validation logic
-            cost_strategy.set_metering(false);
+            gas_meter.set_metering(false);
             // genesis txn skip check gas and txn prologue.
             if !remote_cache.is_genesis() {
                 //let _timer = TXN_VERIFICATION_SECONDS.start_timer();
                 self.check_gas(txn_data)?;
-                self.run_prologue(&mut session, cost_strategy, txn_data)?;
+                self.run_prologue(&mut session, gas_meter, txn_data)?;
             }
         }
         {
             // Genesis txn not enable gas charge.
             if !remote_cache.is_genesis() {
-                cost_strategy.set_metering(true);
+                gas_meter.set_metering(true);
             }
-            cost_strategy
-                .charge_intrinsic_gas(txn_data.transaction_size())
+            gas_meter
+                .charge_intrinsic_gas_for_transaction(txn_data.transaction_size())
                 .map_err(|e| e.into_vm_status())?;
-
             let package_address = package.package_address();
             for module in package.modules() {
                 if let Ok(compiled_module) = CompiledModule::deserialize(module.code()) {
@@ -514,7 +537,6 @@ impl StarcoinVM {
                     }
                     Ok(only_new_module) => only_new_module,
                 };
-
             session
                 .publish_module_bundle_with_option(
                     package
@@ -523,7 +545,7 @@ impl StarcoinVM {
                         .map(|m| m.code().to_vec())
                         .collect(),
                     package.package_address(), // be careful with the sender.
-                    cost_strategy,
+                     gas_meter,
                     PublishModuleBundleOption {
                         force_publish: enforced,
                         only_new_module,
@@ -536,7 +558,7 @@ impl StarcoinVM {
 
             // after publish the modules, we need to clear loader cache, to make init script function and
             // epilogue use the new modules.
-            session.empty_loader_cache()?;
+            // clear logic move in publish_module_bundle_with_option
 
             if let Some(init_script) = package.init_script() {
                 let genesis_address = genesis_address();
@@ -544,7 +566,7 @@ impl StarcoinVM {
                 // instead of the txn sender address. It provides the opportunity to add new resource
                 // under the genesis address through DAO.
                 let sender = if package_address == genesis_address {
-                    cost_strategy.set_metering(false);
+                    gas_meter.set_metering(false);
                     genesis_address
                 } else {
                     txn_data.sender
@@ -556,53 +578,49 @@ impl StarcoinVM {
                     sender
                 );
                 session
-                    .as_mut()
-                    .execute_script_function(
+                    .execute_entry_function(
                         init_script.module(),
                         init_script.function(),
                         init_script.ty_args().to_vec(),
                         init_script.args().to_vec(),
-                        vec![sender],
-                        cost_strategy,
+                        gas_meter,
+                        sender,
                     )
                     .map_err(|e| e.into_vm_status())?;
             }
-            charge_global_write_gas_usage(cost_strategy, &session, &txn_data.sender())?;
+            charge_global_write_gas_usage(gas_meter, &session, &txn_data.sender())?;
 
-            cost_strategy.set_metering(false);
-            self.success_transaction_cleanup(
-                session,
-                gas_schedule,
-                cost_strategy.remaining_gas(),
-                txn_data,
-            )
+            gas_meter.set_metering(false);
+            self.success_transaction_cleanup(session, gas_meter, txn_data)
         }
     }
 
     fn execute_script_or_script_function<S: StateView>(
         &self,
         remote_cache: &StateViewCache<'_, S>,
-        gas_schedule: &CostTable,
-        cost_strategy: &mut GasStatus,
+        gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
         payload: &TransactionPayload,
     ) -> Result<(VMStatus, TransactionOutput), VMStatus> {
-        let mut session: SessionAdapter<_> = self.move_vm.new_session(remote_cache).into();
+        let data_cache = remote_cache.as_move_resolver();
+        let mut session: SessionAdapter<_> = self
+            .move_vm
+            .new_session(&data_cache, SessionId::txn_meta(txn_data))
+            .into();
 
         // Run the validation logic
         {
-            cost_strategy.set_metering(false);
-            //let _timer = TXN_VERIFICATION_SECONDS.start_timer();
+            gas_meter.set_metering(false);
             self.check_gas(txn_data)?;
-            self.run_prologue(&mut session, cost_strategy, txn_data)?;
+            self.run_prologue(&mut session, gas_meter, txn_data)?;
         }
 
         // Run the execution logic
         {
             //let _timer = TXN_EXECUTION_SECONDS.start_timer();
-            cost_strategy.set_metering(true);
-            cost_strategy
-                .charge_intrinsic_gas(txn_data.transaction_size())
+            gas_meter.set_metering(true);
+            gas_meter
+                .charge_intrinsic_gas_for_transaction(txn_data.transaction_size())
                 .map_err(|e| e.into_vm_status())?;
             match payload {
                 TransactionPayload::Script(script) => {
@@ -610,23 +628,24 @@ impl StarcoinVM {
                     if let Ok(s) = CompiledScript::deserialize(script.code()) {
                         self.check_move_version(s.version() as u64)?;
                     };
-
-                    session.as_mut().execute_script(
+                    debug!("TransactionPayload::{:?}", script);
+                    session.execute_script(
                         script.code().to_vec(),
                         script.ty_args().to_vec(),
                         script.args().to_vec(),
-                        vec![txn_data.sender()],
-                        cost_strategy,
+                        gas_meter,
+                        txn_data.sender(),
                     )
                 }
                 TransactionPayload::ScriptFunction(script_function) => {
-                    session.as_mut().execute_script_function(
+                    debug!("TransactionPayload::{:?}", script_function);
+                    session.execute_entry_function(
                         script_function.module(),
                         script_function.function(),
                         script_function.ty_args().to_vec(),
                         script_function.args().to_vec(),
-                        vec![txn_data.sender()],
-                        cost_strategy,
+                        gas_meter,
+                        txn_data.sender(),
                     )
                 }
                 TransactionPayload::Package(_) => {
@@ -638,38 +657,29 @@ impl StarcoinVM {
                     warn!("[VM] execute_script_function error, status_type: {:?}, status_code:{:?}, message:{:?}, location:{:?}", e.status_type(), e.major_status(), e.message(), e.location());
                     e.into_vm_status()
                 })?;
+            charge_global_write_gas_usage(gas_meter, &session, &txn_data.sender())?;
 
-            charge_global_write_gas_usage(cost_strategy, &session, &txn_data.sender())?;
-
-            cost_strategy.set_metering(false);
-            self.success_transaction_cleanup(
-                session,
-                gas_schedule,
-                cost_strategy.remaining_gas(),
-                txn_data,
-            )
+            self.success_transaction_cleanup(session, gas_meter, txn_data)
         }
     }
 
     /// Run the prologue of a transaction by calling into `PROLOGUE_NAME` function stored
     /// in the `ACCOUNT_MODULE` on chain.
-    fn run_prologue<R: MoveResolver>(
+    fn run_prologue<R: MoveResolverExt>(
         &self,
         session: &mut SessionAdapter<R>,
-        gas_status: &mut GasStatus,
+        gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
     ) -> Result<(), VMStatus> {
         let genesis_address = genesis_address();
-        let gas_token_ty = TypeTag::Struct(
-            txn_data
-                .gas_token_code()
-                .try_into()
-                .map_err(|_e| VMStatus::Error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY))?,
-        );
+        let gas_token_ty =
+            TypeTag::Struct(Box::new(txn_data.gas_token_code().try_into().map_err(
+                |_e| VMStatus::Error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY),
+            )?));
         let txn_sequence_number = txn_data.sequence_number();
         let authentication_key_preimage = txn_data.authentication_key_preimage().to_vec();
-        let txn_gas_price = txn_data.gas_unit_price().get();
-        let txn_max_gas_amount = txn_data.max_gas_amount().get();
+        let txn_gas_price = u64::from(txn_data.gas_unit_price());
+        let txn_max_gas_amount = u64::from(txn_data.max_gas_amount());
         let txn_expiration_time = txn_data.expiration_time_secs();
         let chain_id = txn_data.chain_id().id();
         let (payload_type, script_or_package_hash, package_address) = match txn_data.payload() {
@@ -689,7 +699,7 @@ impl StarcoinVM {
         // Run prologue by genesis account
         session
             .as_mut()
-            .execute_function(
+            .execute_function_bypass_visibility(
                 &account_config::G_TRANSACTION_MANAGER_MODULE,
                 &G_PROLOGUE_NAME,
                 vec![gas_token_ty],
@@ -706,7 +716,7 @@ impl StarcoinVM {
                     MoveValue::vector_u8(script_or_package_hash.to_vec()),
                     MoveValue::Address(package_address),
                 ]),
-                gas_status,
+                gas_meter,
             )
             .map(|_return_vals| ())
             .or_else(convert_prologue_runtime_error)
@@ -714,25 +724,23 @@ impl StarcoinVM {
 
     /// Run the epilogue of a transaction by calling into `EPILOGUE_NAME` function stored
     /// in the `ACCOUNT_MODULE` on chain.
-    fn run_epilogue<R: MoveResolver>(
+    fn run_epilogue<R: MoveResolverExt>(
         &self,
         session: &mut SessionAdapter<R>,
-        gas_status: &mut GasStatus,
+        gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
         success: bool,
     ) -> Result<(), VMStatus> {
         let genesis_address = genesis_address();
-        let gas_token_ty = TypeTag::Struct(
-            txn_data
-                .gas_token_code()
-                .try_into()
-                .map_err(|_e| VMStatus::Error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY))?,
-        );
+        let gas_token_ty =
+            TypeTag::Struct(Box::new(txn_data.gas_token_code().try_into().map_err(
+                |_e| VMStatus::Error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY),
+            )?));
         let txn_sequence_number = txn_data.sequence_number();
         let txn_authentication_key_preimage = txn_data.authentication_key_preimage().to_vec();
-        let txn_gas_price = txn_data.gas_unit_price().get();
-        let txn_max_gas_amount = txn_data.max_gas_amount().get();
-        let gas_remaining = gas_status.remaining_gas().get();
+        let txn_gas_price = u64::from(txn_data.gas_unit_price());
+        let txn_max_gas_amount = u64::from(txn_data.max_gas_amount());
+        let gas_remaining = u64::from(gas_meter.balance());
         let (payload_type, script_or_package_hash, package_address) = match txn_data.payload() {
             TransactionPayloadMetadata::Script(hash) => {
                 (TransactionPayloadType::Script, *hash, AccountAddress::ZERO)
@@ -785,12 +793,12 @@ impl StarcoinVM {
         };
         session
             .as_mut()
-            .execute_function(
+            .execute_function_bypass_visibility(
                 &account_config::G_TRANSACTION_MANAGER_MODULE,
                 function_name,
                 vec![gas_token_ty],
                 args,
-                gas_status,
+                gas_meter,
             )
             .map(|_return_vals| ())
             .or_else(convert_normal_success_epilogue_error)
@@ -801,16 +809,16 @@ impl StarcoinVM {
         remote_cache: &mut StateViewCache<'_, S>,
         block_metadata: BlockMetadata,
     ) -> Result<TransactionOutput, VMStatus> {
+        #[cfg(testing)]
+        info!("process_block_meta begin");
         let txn_sender = account_config::genesis_address();
         // always use 0 gas for system.
-        let max_gas_amount = GasUnits::new(0);
-        let cost_table = &G_ZERO_COST_SCHEDULE;
-        let mut gas_status = {
-            let mut gas_status = GasStatus::new(cost_table, max_gas_amount);
-            gas_status.set_metering(false);
-            gas_status
-        };
-
+        let max_gas_amount: Gas = 0.into();
+        // let mut gas_meter = UnmeteredGasMeter;
+        // for debug
+        let mut gas_meter = StarcoinGasMeter::new(StarcoinGasParameters::zeros(), max_gas_amount);
+        gas_meter.set_metering(false);
+        let session_id = SessionId::block_meta(&block_metadata);
         let (
             parent_id,
             timestamp,
@@ -835,22 +843,26 @@ impl StarcoinVM {
             MoveValue::U8(chain_id.id()),
             MoveValue::U64(parent_gas_used),
         ]);
-        let mut session: SessionAdapter<_> = self.move_vm.new_session(remote_cache).into();
+        let data_cache = remote_cache.as_move_resolver();
+        let mut session: SessionAdapter<_> =
+            self.move_vm.new_session(&data_cache, session_id).into();
         session
             .as_mut()
-            .execute_function(
+            .execute_function_bypass_visibility(
                 &account_config::G_TRANSACTION_MANAGER_MODULE,
                 &account_config::G_BLOCK_PROLOGUE_NAME,
                 vec![],
                 args,
-                &mut gas_status,
+                &mut gas_meter,
             )
             .map(|_return_vals| ())
             .or_else(convert_prologue_runtime_error)?;
+        #[cfg(testing)]
+        info!("process_block_meta end");
         get_transaction_output(
             &mut (),
             session,
-            &gas_status,
+            0.into(),
             max_gas_amount,
             KeptVMStatus::Executed,
         )
@@ -861,16 +873,6 @@ impl StarcoinVM {
         txn: SignedUserTransaction,
         remote_cache: &mut StateViewCache<'_, S>,
     ) -> (VMStatus, TransactionOutput) {
-        let gas_schedule = match self.get_gas_schedule() {
-            Ok(gas_schedule) => gas_schedule,
-            Err(e) => {
-                if remote_cache.is_genesis() {
-                    &G_LATEST_GAS_SCHEDULE
-                } else {
-                    return discard_error_vm_status(e);
-                }
-            }
-        };
         let txn_id = txn.id();
         let txn_data = match TransactionMetadata::new(&txn) {
             Ok(txn_data) => txn_data,
@@ -878,12 +880,19 @@ impl StarcoinVM {
                 return discard_error_vm_status(e);
             }
         };
-
-        let mut gas_status = {
-            let mut gas_status = GasStatus::new(gas_schedule, txn_data.max_gas_amount());
-            gas_status.set_metering(false);
-            gas_status
+        let gas_params = match self.get_gas_parameters() {
+            Ok(gas_params) => gas_params,
+            Err(e) => {
+                if remote_cache.is_genesis() {
+                    &G_LATEST_GAS_PARAMS
+                } else {
+                    return discard_error_vm_status(e);
+                }
+            }
         };
+
+        let mut gas_meter = StarcoinGasMeter::new(gas_params.clone(), txn_data.max_gas_amount());
+        gas_meter.set_metering(false);
         // check signature
         let signature_checked_txn = match txn.check_signature() {
             Ok(t) => Ok(t),
@@ -897,18 +906,13 @@ impl StarcoinVM {
                     | payload @ TransactionPayload::ScriptFunction(_) => self
                         .execute_script_or_script_function(
                             remote_cache,
-                            gas_schedule,
-                            &mut gas_status,
+                            &mut gas_meter,
                             &txn_data,
                             payload,
                         ),
-                    TransactionPayload::Package(p) => self.execute_package(
-                        remote_cache,
-                        gas_schedule,
-                        &mut gas_status,
-                        &txn_data,
-                        p,
-                    ),
+                    TransactionPayload::Package(p) => {
+                        self.execute_package(remote_cache, &mut gas_meter, &txn_data, p)
+                    }
                 };
                 match result {
                     Ok(status_and_output) => {
@@ -928,8 +932,7 @@ impl StarcoinVM {
                         } else {
                             self.failed_transaction_cleanup(
                                 err,
-                                gas_schedule,
-                                gas_status.remaining_gas(),
+                                &mut gas_meter,
                                 &txn_data,
                                 remote_cache,
                             )
@@ -950,12 +953,11 @@ impl StarcoinVM {
         let remote_cache = StateViewCache::new(state_view);
         //TODO load config by config change event.
         self.load_configs(&remote_cache)?;
-
-        let gas_schedule = match self.get_gas_schedule() {
-            Ok(gas_schedule) => gas_schedule,
+        let gas_params = match self.get_gas_parameters() {
+            Ok(gas_params) => gas_params,
             Err(e) => {
                 if remote_cache.is_genesis() {
-                    &G_LATEST_GAS_SCHEDULE
+                    &G_LATEST_GAS_PARAMS
                 } else {
                     return Ok(discard_error_vm_status(e));
                 }
@@ -968,23 +970,19 @@ impl StarcoinVM {
             Ok(txn_data) => txn_data,
             Err(e) => return Ok(discard_error_vm_status(e)),
         };
-        let mut gas_status = {
-            let mut gas_status = GasStatus::new(gas_schedule, txn_data.max_gas_amount());
-            gas_status.set_metering(false);
-            gas_status
-        };
+        let mut gas_meter = StarcoinGasMeter::new(gas_params.clone(), txn_data.max_gas_amount());
+        gas_meter.set_metering(false);
         let result = match txn.raw_txn.payload() {
             payload @ TransactionPayload::Script(_)
             | payload @ TransactionPayload::ScriptFunction(_) => self
                 .execute_script_or_script_function(
                     &remote_cache,
-                    gas_schedule,
-                    &mut gas_status,
+                    &mut gas_meter,
                     &txn_data,
                     payload,
                 ),
             TransactionPayload::Package(p) => {
-                self.execute_package(&remote_cache, gas_schedule, &mut gas_status, &txn_data, p)
+                self.execute_package(&remote_cache, &mut gas_meter, &txn_data, p)
             }
         };
         Ok(match result {
@@ -994,13 +992,7 @@ impl StarcoinVM {
                 if txn_status.is_discarded() {
                     discard_error_vm_status(err)
                 } else {
-                    self.failed_transaction_cleanup(
-                        err,
-                        gas_schedule,
-                        gas_status.remaining_gas(),
-                        &txn_data,
-                        &remote_cache,
-                    )
+                    self.failed_transaction_cleanup(err, &mut gas_meter, &txn_data, &remote_cache)
                 }
             }
         })
@@ -1021,6 +1013,8 @@ impl StarcoinVM {
         }
         Ok(())
     }
+
+    /// XXX FIXME YSG add delta_change_set for TransactionOutput
 
     /// Execute a block transactions with gas_limit,
     /// if gas is used up when executing some txn, only return the outputs of previous succeed txns.
@@ -1170,9 +1164,9 @@ impl StarcoinVM {
                 .with_label_values(&["execute_readonly_function"])
                 .start_timer()
         });
-        let data_cache = StateViewCache::new(state_view);
+        let data_cache = state_view.as_move_resolver();
 
-        let mut gas_status = if check_gas {
+        let mut gas_meter = if check_gas {
             if let Err(err) = self.load_configs(state_view) {
                 warn!(
                     "Load config error at execute_readonly_function_internal: {}",
@@ -1180,52 +1174,70 @@ impl StarcoinVM {
                 );
                 return Err(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE));
             }
-            let gas_constants = &self.get_gas_schedule()?.gas_constants;
-            let mut gas_status = GasStatus::new(
-                &G_LATEST_GAS_SCHEDULE,
-                GasUnits::new(gas_constants.maximum_number_of_gas_units.get()),
+            let gas_params = self.get_gas_parameters()?;
+            let mut gas_meter = StarcoinGasMeter::new(
+                G_LATEST_GAS_PARAMS.clone(),
+                gas_params.txn.maximum_number_of_gas_units,
             );
-            gas_status.set_metering(true);
-            gas_status
+            gas_meter.set_metering(true);
+            gas_meter
         } else {
-            let mut gas_status = GasStatus::new(&G_ZERO_COST_SCHEDULE, GasUnits::new(0));
-            gas_status.set_metering(false);
-            gas_status
+            let max_gas_amount: Gas = 0.into();
+            let mut gas_meter =
+                StarcoinGasMeter::new(StarcoinGasParameters::zeros(), max_gas_amount);
+            gas_meter.set_metering(false);
+            gas_meter
         };
-        let mut session = self.move_vm.new_session(&data_cache);
+        let mut session = self.move_vm.new_session(&data_cache, SessionId::void());
         let result = session
-            .execute_function(module, function_name, type_params, args, &mut gas_status)
-            .map_err(|e| e.into_vm_status())?;
+            .execute_function_bypass_visibility(
+                module,
+                function_name,
+                type_params,
+                args,
+                &mut gas_meter,
+            )
+            .map_err(|e| e.into_vm_status())?
+            .return_values
+            .into_iter()
+            .map(|(a, _)| a)
+            .collect();
 
-        let (changeset, events) = session.finish().map_err(|e| e.into_vm_status())?;
-        let (writeset, _events) = convert_changeset_and_events(changeset, events)?;
-        if !writeset.is_empty() {
+        let (change_set, events, mut extensions) = session
+            .finish_with_extensions()
+            .map_err(|e| e.into_vm_status())?;
+        let table_context: NativeTableContext = extensions.remove();
+        let table_change_set = table_context
+            .into_change_set()
+            .map_err(|e| e.finish(Location::Undefined))?;
+        let (write_set, _events) = SessionOutput {
+            change_set,
+            events,
+            table_change_set,
+        }
+        .into_change_set(&mut ())?;
+        if !write_set.is_empty() {
             warn!("Readonly function {} changes state", function_name);
             return Err(VMStatus::Error(StatusCode::REJECTED_WRITE_SET));
         }
         Ok(result)
     }
 
-    fn success_transaction_cleanup<R: MoveResolver>(
+    fn success_transaction_cleanup<R: MoveResolverExt>(
         &self,
         mut session: SessionAdapter<R>,
-        gas_schedule: &CostTable,
-        gas_left: GasUnits<GasCarrier>,
+        gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
     ) -> Result<(VMStatus, TransactionOutput), VMStatus> {
-        let mut gas_status = {
-            let mut gas_status = GasStatus::new(gas_schedule, gas_left);
-            gas_status.set_metering(false);
-            gas_status
-        };
-        self.run_epilogue(&mut session, &mut gas_status, txn_data, true)?;
+        gas_meter.set_metering(false);
+        self.run_epilogue(&mut session, gas_meter, txn_data, true)?;
 
         Ok((
             VMStatus::Executed,
             get_transaction_output(
                 &mut (),
                 session,
-                &gas_status,
+                gas_meter.balance(),
                 txn_data.max_gas_amount,
                 KeptVMStatus::Executed,
             )?,
@@ -1235,17 +1247,16 @@ impl StarcoinVM {
     fn failed_transaction_cleanup<S: StateView>(
         &self,
         error_code: VMStatus,
-        gas_schedule: &CostTable,
-        gas_left: GasUnits<GasCarrier>,
+        gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
         remote_cache: &StateViewCache<'_, S>,
     ) -> (VMStatus, TransactionOutput) {
-        let mut gas_status = {
-            let mut gas_status = GasStatus::new(gas_schedule, gas_left);
-            gas_status.set_metering(false);
-            gas_status
-        };
-        let mut session: SessionAdapter<_> = self.move_vm.new_session(remote_cache).into();
+        gas_meter.set_metering(false);
+        let data_cache = remote_cache.as_move_resolver();
+        let mut session: SessionAdapter<_> = self
+            .move_vm
+            .new_session(&data_cache, SessionId::txn_meta(txn_data))
+            .into();
 
         // init_script doesn't need run epilogue
         if remote_cache.is_genesis() {
@@ -1254,13 +1265,13 @@ impl StarcoinVM {
 
         match TransactionStatus::from(error_code.clone()) {
             TransactionStatus::Keep(status) => {
-                if let Err(e) = self.run_epilogue(&mut session, &mut gas_status, txn_data, false) {
+                if let Err(e) = self.run_epilogue(&mut session, gas_meter, txn_data, false) {
                     return discard_error_vm_status(e);
                 }
                 let txn_output = get_transaction_output(
                     &mut (),
                     session,
-                    &gas_status,
+                    gas_meter.balance(),
                     txn_data.max_gas_amount,
                     status,
                 )
@@ -1271,6 +1282,13 @@ impl StarcoinVM {
                 (VMStatus::Error(status), discard_error_output(status))
             }
         }
+    }
+
+    pub fn get_gas_parameters(&self) -> Result<&StarcoinGasParameters, VMStatus> {
+        self.gas_params.as_ref().ok_or_else(|| {
+            debug!("VM Startup Failed. Gas Parameters Not Found");
+            VMStatus::Error(StatusCode::VM_STARTUP_FAILURE)
+        })
     }
 }
 
@@ -1312,25 +1330,22 @@ pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock>
     blocks
 }
 
-pub(crate) fn charge_global_write_gas_usage<R: MoveResolver>(
-    cost_strategy: &mut GasStatus,
+pub(crate) fn charge_global_write_gas_usage<R: MoveResolverExt>(
+    gas_meter: &mut StarcoinGasMeter,
     session: &SessionAdapter<R>,
     sender: &AccountAddress,
 ) -> Result<(), VMStatus> {
-    let total_cost = session.as_ref().num_mutated_accounts(sender)
-        * cost_strategy
-            .cost_table()
-            .gas_constants
-            .global_memory_per_byte_write_cost
-            .mul(
-                cost_strategy
-                    .cost_table()
-                    .gas_constants
-                    .default_account_size,
-            )
-            .get();
-    cost_strategy
-        .deduct_gas(InternalGasUnits::new(total_cost))
+    let write_set_gas = u64::from(gas_meter.cal_write_set_gas());
+    let total_cost = InternalGasPerByte::from(write_set_gas)
+        * NumBytes::new(session.as_ref().num_mutated_accounts(sender));
+    #[cfg(testing)]
+    info!(
+        "charge_global_write_gas_usage {} {}",
+        total_cost,
+        gas_meter.get_metering()
+    );
+    gas_meter
+        .deduct_gas(total_cost)
         .map_err(|p_err| p_err.finish(Location::Undefined).into_vm_status())
 }
 
@@ -1358,76 +1373,33 @@ pub(crate) fn discard_error_output(err: StatusCode) -> TransactionOutput {
     )
 }
 
-pub fn convert_changeset_and_events_cached<C: AccessPathCache>(
-    ap_cache: &mut C,
-    changeset: MoveChangeSet,
-    events: Vec<MoveEvent>,
-) -> Result<(WriteSet, Vec<ContractEvent>), VMStatus> {
-    // TODO: Cache access path computations if necessary.
-    let mut ops = vec![];
-
-    for (addr, account_changeset) in changeset.into_inner() {
-        let (modules, resources) = account_changeset.into_inner();
-        for (struct_tag, blob_opt) in resources {
-            let ap = ap_cache.get_resource_path(addr, struct_tag);
-            let op = match blob_opt {
-                None => WriteOp::Deletion,
-                Some(blob) => WriteOp::Value(blob),
-            };
-            ops.push((ap, op))
-        }
-
-        for (name, blob_opt) in modules {
-            let ap = ap_cache.get_module_path(ModuleId::new(addr, name));
-            let op = match blob_opt {
-                None => WriteOp::Deletion,
-                Some(blob) => WriteOp::Value(blob),
-            };
-
-            ops.push((ap, op))
-        }
-    }
-
-    let ws = WriteSetMut::new(ops)
-        .freeze()
-        .map_err(|_| VMStatus::Error(StatusCode::DATA_FORMAT_ERROR))?;
-
-    let events = events
-        .into_iter()
-        .map(|(guid, seq_num, ty_tag, blob)| {
-            let key = EventKey::try_from(guid.as_slice())
-                .map_err(|_| VMStatus::Error(StatusCode::EVENT_KEY_MISMATCH))?;
-            Ok(ContractEvent::new(key, seq_num, ty_tag, blob))
-        })
-        .collect::<Result<Vec<_>, VMStatus>>()?;
-
-    Ok((ws, events))
-}
-
-pub fn convert_changeset_and_events(
-    changeset: MoveChangeSet,
-    events: Vec<MoveEvent>,
-) -> Result<(WriteSet, Vec<ContractEvent>), VMStatus> {
-    convert_changeset_and_events_cached(&mut (), changeset, events)
-}
-
-pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolver>(
+pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolverExt>(
     ap_cache: &mut A,
     session: SessionAdapter<R>,
-    cost_strategy: &GasStatus,
-    max_gas_amount: GasUnits<GasCarrier>,
+    gas_left: Gas,
+    max_gas_amount: Gas,
     status: KeptVMStatus,
 ) -> Result<TransactionOutput, VMStatus> {
-    let gas_used: u64 = max_gas_amount.sub(cost_strategy.remaining_gas()).get();
-
-    let (changeset, events) = Into::<Session<R>>::into(session)
-        .finish()
-        .map_err(|e| e.into_vm_status())?;
-    let (write_set, events) = convert_changeset_and_events_cached(ap_cache, changeset, events)?;
+    // original code use sub, now we use checked_sub
+    let gas_used = max_gas_amount
+        .checked_sub(gas_left)
+        .expect("Balance should always be less than or equal to max gas amount");
+    let (change_set, events, mut extensions) =
+        Into::<Session<R>>::into(session).finish_with_extensions()?;
+    let table_context: NativeTableContext = extensions.remove();
+    let table_change_set = table_context
+        .into_change_set()
+        .map_err(|e| e.finish(Location::Undefined))?;
+    let (write_set, events) = SessionOutput {
+        change_set,
+        events,
+        table_change_set,
+    }
+    .into_change_set(ap_cache)?;
     Ok(TransactionOutput::new(
         write_set,
         events,
-        gas_used,
+        u64::from(gas_used),
         TransactionStatus::Keep(status),
     ))
 }

@@ -4,9 +4,9 @@ bytes = { workspace = true }
 futures = { workspace = true }
 hex = { workspace = true }
 once_cell = { workspace = true }
-serde = { features = ["derive", ], workspace = true }
+serde = { features = ["derive"], workspace = true }
 serde_json = { workspace = true }
-tokio = { features = ["full", ], workspace = true }
+tokio = { features = ["full"], workspace = true }
 api-limiter = { workspace = true }
 bcs-ext = { package = "bcs-ext", workspace = true }
 starcoin-crypto = { package = "starcoin-crypto", workspace = true }
@@ -40,7 +40,7 @@ starcoin-node = { workspace = true }
 starcoin-statedb = { package = "starcoin-statedb", workspace = true }
 starcoin-txpool = { workspace = true }
 starcoin-txpool-api = { workspace = true }
-starcoin-vm-types = { package = "starcoin-vm-types", workspace = true }
+starcoin-vm-types = { workspace = true }
 starcoin-storage = { package = "starcoin-storage", workspace = true }
 stest = { workspace = true }
 test-helper = { workspace = true }
@@ -52,7 +52,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-network-rpc"
 publish = { workspace = true }
-version = "1.12.9"
+version = "1.13.0"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

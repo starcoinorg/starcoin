@@ -7,7 +7,6 @@ use libp2p::{
     core::Multiaddr,
     identity::{ed25519, Keypair},
     multiaddr::Protocol,
-    wasm_ext,
 };
 use prometheus::Registry;
 use std::borrow::Cow;
@@ -23,7 +22,7 @@ use std::{
 use zeroize::Zeroize;
 
 pub use crate::request_responses::{IncomingRequest, ProtocolConfig as RequestResponseConfig};
-pub use libp2p::{build_multiaddr, core::PublicKey, identity, wasm_ext::ExtTransport};
+pub use libp2p::{build_multiaddr, core::PublicKey, identity};
 pub use network_p2p_types::{parse_addr, parse_str_addr, MultiaddrWithPeerId};
 use starcoin_types::startup_info::ChainInfo;
 
@@ -125,15 +124,7 @@ pub enum TransportConfig {
         /// If true, allow connecting to private IPv4 addresses (as defined in
         /// [RFC1918](https://tools.ietf.org/html/rfc1918)), unless the address has been passed in
         /// [`NetworkConfiguration::reserved_nodes`] or [`NetworkConfiguration::boot_nodes`].
-        allow_private_ipv4: bool,
-
-        /// Optional external implementation of a libp2p transport. Used in WASM contexts where we
-        /// need some binding between the networking provided by the operating system or environment
-        /// and libp2p.
-        ///
-        /// This parameter exists whatever the target platform is, but it is expected to be set to
-        /// `Some` only when compiling for WASM.
-        wasm_external_transport: Option<wasm_ext::ExtTransport>,
+        allow_private_ip: bool,
     },
 
     /// Only allow connections within the same process.
@@ -156,8 +147,7 @@ impl Default for NetworkConfiguration {
             node_name: "unknown".into(),
             transport: TransportConfig::Normal {
                 enable_mdns: false,
-                allow_private_ipv4: false,
-                wasm_external_transport: None,
+                allow_private_ip: false,
             },
             notifications_protocols: vec![],
             request_response_protocols: vec![],
@@ -187,8 +177,7 @@ impl NetworkConfiguration {
             node_name: node_name.into(),
             transport: TransportConfig::Normal {
                 enable_mdns: false,
-                allow_private_ipv4: true,
-                wasm_external_transport: None,
+                allow_private_ip: true,
             },
             notifications_protocols: vec![],
             request_response_protocols: vec![],
@@ -376,7 +365,6 @@ mod tests {
         match kp {
             Keypair::Ed25519(p) => p.secret().as_ref().to_vec(),
             Keypair::Secp256k1(p) => p.secret().to_bytes().to_vec(),
-            _ => panic!("Unexpected keypair."),
         }
     }
 

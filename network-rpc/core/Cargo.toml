@@ -5,7 +5,7 @@ futures = { workspace = true }
 log = { workspace = true }
 network-rpc-derive = { workspace = true }
 num_enum = { workspace = true }
-serde = { features = [ "derive",], workspace = true }
+serde = { features = ["derive"], workspace = true }
 starcoin-types = { package = "starcoin-types", workspace = true }
 network-types = { workspace = true }
 
@@ -18,7 +18,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "network-rpc-core"
 publish = { workspace = true }
-version = "1.12.9"
+version = "1.13.0"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

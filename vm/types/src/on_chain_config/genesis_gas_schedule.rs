@@ -3,8 +3,9 @@
 
 //! This file contains the starting gas schedule published at genesis.
 
-use crate::gas_schedule::{GasCost, NativeCostIndex as N};
+use crate::gas_schedule::NativeCostIndex as N;
 use once_cell::sync::Lazy;
+use starcoin_gas_algebra_ext::GasCost;
 use vm::file_format::SignatureIndex;
 use vm::{
     file_format::{
@@ -260,14 +261,7 @@ pub fn instruction_table_v2() -> Vec<GasCost> {
 }
 
 /// return latest instruction table, as `initial_instruction_table` function should not be modified.
-pub static G_LATEST_INSTRUCTION_TABLE: Lazy<Vec<GasCost>> = Lazy::new(|| {
-    let latest_ins = instruction_table_v2();
-    debug_assert!(
-        latest_ins.len() == Bytecode::VARIANT_COUNT,
-        "all instructions must be in the cost table"
-    );
-    latest_ins
-});
+pub static G_LATEST_INSTRUCTION_TABLE: Lazy<Vec<GasCost>> = Lazy::new(instruction_table_v2);
 
 pub fn native_table_v1() -> Vec<GasCost> {
     let mut raw_native_table = vec![
@@ -330,6 +324,7 @@ pub fn native_table_v2() -> Vec<GasCost> {
         .collect::<Vec<_>>()
 }
 
+#[allow(dead_code)]
 pub fn v3_native_table() -> Vec<GasCost> {
     let mut raw_native_table = vec![
         (N::SHA2_256, GasCost::new(21, 1)),
@@ -373,8 +368,64 @@ pub fn v3_native_table() -> Vec<GasCost> {
         .collect::<Vec<_>>()
 }
 
+pub fn v4_native_table() -> Vec<GasCost> {
+    let mut raw_native_table = vec![
+        (N::SHA2_256, GasCost::new(21, 1)),
+        (N::SHA3_256, GasCost::new(64, 1)),
+        (N::ED25519_VERIFY, GasCost::new(61, 1)),
+        (N::ED25519_THRESHOLD_VERIFY, GasCost::new(3351, 1)),
+        (N::BCS_TO_BYTES, GasCost::new(181, 1)),
+        (N::LENGTH, GasCost::new(98, 1)),
+        (N::EMPTY, GasCost::new(84, 1)),
+        (N::BORROW, GasCost::new(1334, 1)),
+        (N::BORROW_MUT, GasCost::new(1902, 1)),
+        (N::PUSH_BACK, GasCost::new(53, 1)),
+        (N::POP_BACK, GasCost::new(227, 1)),
+        (N::DESTROY_EMPTY, GasCost::new(572, 1)),
+        (N::SWAP, GasCost::new(1436, 1)),
+        (N::ED25519_VALIDATE_KEY, GasCost::new(26, 1)),
+        (N::SIGNER_BORROW, GasCost::new(353, 1)),
+        (N::CREATE_SIGNER, GasCost::new(24, 1)),
+        (N::DESTROY_SIGNER, GasCost::new(212, 1)),
+        (N::EMIT_EVENT, GasCost::new(52, 1)),
+        (N::BCS_TO_ADDRESS, GasCost::new(26, 1)),
+        (N::TOKEN_NAME_OF, GasCost::new(2002, 1)),
+        (N::KECCAK_256, GasCost::new(64, 1)),
+        (N::RIPEMD160, GasCost::new(64, 1)),
+        (N::ECRECOVER, GasCost::new(128, 1)),
+        (N::U256_FROM_BYTES, GasCost::new(2, 1)),
+        (N::U256_ADD, GasCost::new(4, 1)),
+        (N::U256_SUB, GasCost::new(4, 1)),
+        (N::U256_MUL, GasCost::new(4, 1)),
+        (N::U256_DIV, GasCost::new(10, 1)),
+        (N::U256_REM, GasCost::new(4, 1)),
+        (N::U256_POW, GasCost::new(8, 1)),
+        (N::VEC_APPEND, GasCost::new(40, 1)),
+        (N::VEC_REMOVE, GasCost::new(20, 1)),
+        (N::VEC_REVERSE, GasCost::new(10, 1)),
+        // XXX FIXME YSG instr_gas
+        (N::TABLE_NEW, GasCost::new(4, 1)),
+        (N::TABLE_INSERT, GasCost::new(4, 1)),
+        (N::TABLE_BORROW, GasCost::new(10, 1)),
+        (N::TABLE_REMOVE, GasCost::new(8, 1)),
+        (N::TABLE_CONTAINS, GasCost::new(40, 1)),
+        (N::TABLE_DESTROY, GasCost::new(20, 1)),
+        (N::TABLE_DROP, GasCost::new(73, 1)),
+        //TODO  WGB inst_gas
+        (N::STRING_CHECK_UT8, GasCost::new(4, 1)),
+        (N::STRING_SUB_STR, GasCost::new(4, 1)),
+        (N::SRING_CHAR_BOUNDARY, GasCost::new(4, 1)),
+        (N::STRING_INDEX_OF, GasCost::new(4, 1)),
+    ];
+    raw_native_table.sort_by_key(|cost| cost.0 as u64);
+    raw_native_table
+        .into_iter()
+        .map(|(_, cost)| cost)
+        .collect::<Vec<_>>()
+}
+
 pub static G_LATEST_NATIVE_TABLE: Lazy<Vec<GasCost>> = Lazy::new(|| {
-    let native_table = v3_native_table();
+    let native_table = v4_native_table();
 
     debug_assert!(
         native_table.len() == N::NUMBER_OF_NATIVE_FUNCTIONS,

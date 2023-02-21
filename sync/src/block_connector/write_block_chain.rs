@@ -400,6 +400,12 @@ where
 
     fn connect_inner(&mut self, block: Block) -> Result<ConnectOk> {
         let block_id = block.id();
+        if block_id == *starcoin_storage::BARNARD_HARD_FORK_HASH
+            && block.header().number() == starcoin_storage::BARNARD_HARD_FORK_HEIGHT
+        {
+            debug!("barnard hard fork {}", block_id);
+            return Err(ConnectBlockError::BarnardHardFork(Box::new(block)).into());
+        }
         if self.main.current_header().id() == block_id {
             debug!("Repeat connect, current header is {} already.", block_id);
             return Ok(ConnectOk::Duplicate);
@@ -430,6 +436,10 @@ where
                     block: block.clone(),
                     block_info,
                 })?;
+                info!(
+                    "Block {} main has been processed, trigger head selection",
+                    block_id
+                );
                 self.do_new_head(executed_block, 1, vec![block], 0, vec![])?;
                 Ok(ConnectOk::Connect)
             }

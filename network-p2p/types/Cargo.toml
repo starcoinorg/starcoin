@@ -2,12 +2,14 @@
 bitflags = { workspace = true }
 bytes = { workspace = true }
 derive_more = { workspace = true }
-libp2p = { default-features = false, features = [ "request-response",], workspace = true }
+libp2p = { default-features = false, features = [
+    "request-response",
+], workspace = true }
 rand = { workspace = true }
 sc-peerset = { workspace = true }
 schemars = { workspace = true }
-serde = { features = [ "derive",], workspace = true }
-serde_json = { features = [ "arbitrary_precision",], workspace = true }
+serde = { features = ["derive"], workspace = true }
+serde_json = { features = ["arbitrary_precision"], workspace = true }
 
 [features]
 default = []
@@ -18,7 +20,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "network-p2p-types"
 publish = { workspace = true }
-version = "1.12.9"
+version = "1.13.0"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

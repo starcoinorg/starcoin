@@ -193,6 +193,9 @@ pub fn call_contract<S: StateView>(
                 (TypeInstantiation::U8, TransactionArgument::U8(_))
                 | (TypeInstantiation::U64, TransactionArgument::U64(_))
                 | (TypeInstantiation::U128, TransactionArgument::U128(_))
+                | (TypeInstantiation::U16, TransactionArgument::U16(_))
+                | (TypeInstantiation::U32, TransactionArgument::U32(_))
+                | (TypeInstantiation::U256, TransactionArgument::U256(_))
                 | (TypeInstantiation::Address, TransactionArgument::Address(_))
                 | (TypeInstantiation::Bool, TransactionArgument::Bool(_)) => {}
                 (TypeInstantiation::Vector(sub_ty), TransactionArgument::U8Vector(_))
