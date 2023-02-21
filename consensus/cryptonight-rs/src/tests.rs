@@ -21,6 +21,7 @@ fn test_slow4() {
 // add a test for amd ryzen cpu
 // add -Ofast in build.rs, this test will failed on amd ryzen cpu.
 // the data is run main net block2
+// The test with 'ofast' flag passes using clang compiler under ubuntu22, but fails with using gcc
 #[test]
 fn test_amd_ryzen() {
     let data = TestCase {
@@ -34,6 +35,7 @@ fn test_amd_ryzen() {
 // add a test for ubuntu22
 // add -Ofast in build.rs, this test will failed on unbuntu22
 // the data is gen from verify_header_test_barnard_block3_ubuntu22
+// The test with 'ofast' flag passes using clang compiler under ubuntu22, but fails with using gcc
 #[test]
 fn test_barnard_block3_on_ubuntu22() {
     let data = TestCase {
