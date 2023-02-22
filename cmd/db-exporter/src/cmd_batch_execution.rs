@@ -1,15 +1,10 @@
 use anyhow::bail;
-use atomic_counter::AtomicCounter;
-use futures::executor::block_on;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
-use std::collections::VecDeque;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::time::SystemTime;
-use tokio::{join, task};
 
 pub struct CmdBatchExecution {
     name: String,
@@ -55,7 +50,7 @@ impl CmdBatchExecution {
 
         let mut start_time = SystemTime::now();
         let file_name = self.file_path.display().to_string();
-        let mut reader = BufReader::new(File::open(file_name.clone())?);
+        let reader = BufReader::new(File::open(file_name.clone())?);
         println!(
             "Reading file process expire mini seconds time: {:?}",
             SystemTime::now().duration_since(start_time)?.as_micros()
@@ -81,7 +76,6 @@ impl CmdBatchExecution {
         // so that they can be divided into several threads for the following operations
         start_time = SystemTime::now();
 
-        let counter = Arc::new(atomic_counter::RelaxedCounter::new(0));
         let excution_result = all_items
             .into_par_iter()
             .chunks(self.batch_size)
