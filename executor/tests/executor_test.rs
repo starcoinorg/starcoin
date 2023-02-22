@@ -1016,7 +1016,7 @@ fn test_insufficient_balance_for_transaction_fee() -> Result<()> {
     assert!(output1.gas_used() > 0);
 
     let bob = Account::new();
-    let raw_txn = starcoin_transaction_builder::build_transfer_txn(
+    let raw_txn1 = starcoin_transaction_builder::build_transfer_txn(
         *alice.address(),
         *bob.address(),
         0,
@@ -1026,14 +1026,28 @@ fn test_insufficient_balance_for_transaction_fee() -> Result<()> {
         net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
         net.chain_id(),
     );
-    let txn2 = Transaction::UserTransaction(alice.sign_txn(raw_txn));
+    let txn2 = Transaction::UserTransaction(alice.sign_txn(raw_txn1));
     let output2 = execute_and_apply(&chain_state, txn2);
     assert_eq!(
         TransactionStatus::Discard(StatusCode::INSUFFICIENT_BALANCE_FOR_TRANSACTION_FEE),
         *output2.status()
     );
-    //assert_eq!(KeptVMStatus::Executed, output2.status().status().unwrap());
-    //assert!(output2.gas_used() > 0);
+
+    let tom = Account::new();
+    let raw_txn2 = starcoin_transaction_builder::build_transfer_txn(
+        *alice.address(),
+        *tom.address(),
+        0,
+        10000000,
+        1,
+        DEFAULT_MAX_GAS_AMOUNT / 4,
+        net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+        net.chain_id(),
+    );
+    let txn3 = Transaction::UserTransaction(alice.sign_txn(raw_txn2));
+    let output3 = execute_and_apply(&chain_state, txn3);
+    assert_eq!(KeptVMStatus::Executed, output3.status().status().unwrap());
+    assert!(output3.gas_used() > 0);
 
     Ok(())
 }
