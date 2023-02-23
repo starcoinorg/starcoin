@@ -185,12 +185,6 @@ impl From<&ModuleId> for AccessPath {
     }
 }
 
-impl From<&ResourceKey> for AccessPath {
-    fn from(key: &ResourceKey) -> AccessPath {
-        AccessPath::resource_access_path(key.address(), key.type_().clone())
-    }
-}
-
 #[derive(
     IntoPrimitive,
     TryFromPrimitive,
