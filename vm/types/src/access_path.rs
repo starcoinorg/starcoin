@@ -43,7 +43,7 @@ use crate::identifier::Identifier;
 use crate::parser::parse_struct_tag;
 use anyhow::{bail, Result};
 use forkable_jellyfish_merkle::RawKey;
-use move_core_types::language_storage::{ModuleId, ResourceKey, StructTag};
+use move_core_types::language_storage::{ModuleId, StructTag};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::{collection::vec, prelude::*};
