@@ -24,11 +24,7 @@ impl ExecutionResult {
 }
 
 impl CmdBatchExecution {
-    pub fn new(
-        name: String,
-        file_path: PathBuf,
-        batch_size: usize,
-    ) -> CmdBatchExecution {
+    pub fn new(name: String, file_path: PathBuf, batch_size: usize) -> CmdBatchExecution {
         Self {
             file_path,
             name,
@@ -64,7 +60,10 @@ impl CmdBatchExecution {
             .map(|line| Ok(serde_json::from_str::<BodyT>(line.as_str()))?)
             .collect::<Result<Vec<BodyT>, _>>()?;
 
-        let progress_bar = ProgressBar::new(all_items.len() as u64).with_style(ProgressStyle::default_bar().template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"));
+        let progress_bar = ProgressBar::new(all_items.len() as u64).with_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+        );
 
         println!(
             "Reading lines from file expire time: {:?}",
@@ -116,4 +115,3 @@ impl CmdBatchExecution {
 pub trait BatchCmdExec<CmdT, BodyT, ErrorT> {
     fn execute(&self) -> (usize, Vec<ErrorT>);
 }
-

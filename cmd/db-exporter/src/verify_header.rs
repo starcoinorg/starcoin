@@ -34,15 +34,17 @@ pub fn verify_header_via_export_file(path: PathBuf, batch_size: usize) -> anyhow
 
 impl BatchCmdExec<VerifyHeaderCmdType, Block, VerifyHeaderError> for Block {
     fn execute(&self) -> (usize, Vec<VerifyHeaderError>) {
-        let ret = G_CRYPTONIGHT
-            .verify_header_difficulty(self.header.difficulty(), &self.header);
+        let ret = G_CRYPTONIGHT.verify_header_difficulty(self.header.difficulty(), &self.header);
         match ret {
             Ok(_) => (1, vec![]),
             Err(_) => {
                 println!("Failed for block, block num: {} ", self.header.number());
-                (0, vec![VerifyHeaderError {
-                    block_number: self.header.number(),
-                }])
+                (
+                    0,
+                    vec![VerifyHeaderError {
+                        block_number: self.header.number(),
+                    }],
+                )
             }
         }
     }
