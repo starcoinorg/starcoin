@@ -46,7 +46,7 @@ impl CmdBatchExecution {
 
         let mut start_time = SystemTime::now();
         let file_name = self.file_path.display().to_string();
-        let reader = BufReader::new(File::open(file_name.clone())?);
+        let reader = BufReader::new(File::open(file_name)?);
         println!(
             "Reading file process expire mini seconds time: {:?}",
             SystemTime::now().duration_since(start_time)?.as_micros()
