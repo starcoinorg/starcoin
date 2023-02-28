@@ -31,6 +31,8 @@ starcoin-storage = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
+futures = { workspace = true }
+rayon = { workspace = true }
 
 [package]
 authors = { workspace = true }

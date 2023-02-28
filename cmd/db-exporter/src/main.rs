@@ -7,7 +7,8 @@ use bcs_ext::Sample;
 use clap::IntoApp;
 use clap::Parser;
 use csv::Writer;
-use db_exporter::verify_modules_via_export_file;
+use db_exporter::verify_header::{verify_header_via_export_file, VerifyHeaderOptions};
+use db_exporter::verify_module::{verify_modules_via_export_file, VerifyModuleOptions};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
@@ -232,7 +233,8 @@ enum Cmd {
     ExportSnapshot(ExportSnapshotOptions),
     ApplySnapshot(ApplySnapshotOptions),
     ExportResource(ExportResourceOptions),
-    VerifyModules(VerifyModulesOptions),
+    VerifyModules(VerifyModuleOptions),
+    VerifyHeader(VerifyHeaderOptions),
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -314,6 +316,7 @@ pub struct StartupInfoBackOptions {
     #[clap(long, short = 'b')]
     pub back_size: Option<u64>,
 }
+
 #[derive(Debug, Copy, Clone)]
 pub enum Txntype {
     CreateAccount,
@@ -412,17 +415,6 @@ pub struct ExportResourceOptions {
     /// fields of the struct to output. it use pointer syntax of serde_json.
     /// like: /authentication_key /sequence_number /deposit_events/counter /token/value
     pub fields: Vec<String>,
-}
-
-#[derive(Debug, Parser)]
-#[clap(
-    name = "verify-modules",
-    about = "fast verify all modules, do not execute the transactions"
-)]
-pub struct VerifyModulesOptions {
-    #[clap(long, short = 'i', parse(from_os_str))]
-    /// input file, like accounts.csv
-    pub input_path: PathBuf,
 }
 
 #[tokio::main(flavor = "multi_thread")]
@@ -573,8 +565,11 @@ async fn main() -> anyhow::Result<()> {
             }
         }
         Cmd::VerifyModules(option) => {
-            let result = verify_modules_via_export_file(option.input_path);
-            return result;
+            return verify_modules_via_export_file(option.input_path);
+        }
+
+        Cmd::VerifyHeader(option) => {
+            return verify_header_via_export_file(option.input_path, option.batch_size);
         }
     }
     Ok(())
