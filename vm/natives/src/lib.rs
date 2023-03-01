@@ -8,6 +8,7 @@ pub mod token;
 pub mod u256;
 // for support evm compat and cross chain.
 pub mod ecrecover;
+pub mod secp256k1;
 
 mod helpers;
 pub mod util;
@@ -19,6 +20,7 @@ pub struct GasParameters {
     pub signature: signature::GasParameters,
     pub token: token::GasParameters,
     pub u256: u256::GasParameters,
+    pub secp256k1: secp256k1::GasParameters,
 }
 
 impl GasParameters {
@@ -66,6 +68,10 @@ impl GasParameters {
                     base: 0.into(),
                     per_byte: 0.into(),
                 },
+            },
+            secp256k1: secp256k1::GasParameters {
+                base: 0.into(),
+                ecdsa_recover: 0.into(),
             },
         }
     }
