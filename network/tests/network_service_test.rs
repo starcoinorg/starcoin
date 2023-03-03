@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use async_std::task;
 use futures::stream::StreamExt;
 use futures_timer::Delay;
 use network_api::messages::{
@@ -20,7 +19,7 @@ use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_types::U256;
 use std::sync::Arc;
-use std::{thread, time::Duration};
+use std::time::Duration;
 use test_helper::network::build_network_with_config;
 
 pub type NetworkComponent = (Arc<network_p2p::NetworkService>, NetworkConfig);
@@ -72,7 +71,7 @@ fn build_test_network_services(num: usize) -> Vec<NetworkComponent> {
         )
         .unwrap();
         let network_service = worker.service().clone();
-        async_std::task::spawn(worker);
+        tokio::spawn(worker);
         result.push({
             let c: NetworkComponent = (network_service, node_config.network.clone());
             c
@@ -84,14 +83,14 @@ fn build_test_network_services(num: usize) -> Vec<NetworkComponent> {
 const TEST_NOTIF_PROTOCOL_NAME: &str = "/test_notif";
 
 #[stest::test]
-fn test_send_receive() {
+async fn test_send_receive() {
     let ((service1, _), (service2, _)) = build_test_network_pair();
     let msg_peer_id_1 = *service1.peer_id();
     let msg_peer_id_2 = *service2.peer_id();
     let receiver_1 = service1.event_stream("test");
     let receiver_2 = service2.event_stream("test");
     let total_message = 1000;
-    thread::sleep(Duration::from_secs(1));
+    tokio::time::sleep(Duration::from_secs(1)).await;
     let sender_fut = async move {
         for i in 0..total_message {
             debug!("message index is {}", i);
@@ -114,28 +113,29 @@ fn test_send_receive() {
         }
     };
 
-    let peer1_receiver_handle = task::spawn(receiver_1.take(total_message / 2).collect::<Vec<_>>());
-    let peer2_receiver_handle = task::spawn(receiver_2.take(total_message / 2).collect::<Vec<_>>());
-    task::spawn(sender_fut);
+    let peer1_receiver_handle =
+        tokio::task::spawn(receiver_1.take(total_message / 2).collect::<Vec<_>>());
+    let peer2_receiver_handle =
+        tokio::task::spawn(receiver_2.take(total_message / 2).collect::<Vec<_>>());
+    tokio::task::spawn(sender_fut);
 
     let task = async move {
-        let peer1_received_events = peer1_receiver_handle.await;
-        let peer2_received_events = peer2_receiver_handle.await;
+        let peer1_received_events = peer1_receiver_handle.await.unwrap();
+        let peer2_received_events = peer2_receiver_handle.await.unwrap();
         assert_eq!(total_message / 2, peer1_received_events.len());
         assert_eq!(total_message / 2, peer2_received_events.len());
     };
-    task::block_on(async_std::future::timeout(Duration::from_secs(10), task)).unwrap();
+    tokio::time::timeout(Duration::from_secs(10), task)
+        .await
+        .unwrap();
 }
 
 #[stest::test]
-fn test_connected_nodes() {
+async fn test_connected_nodes() {
     let (service1, service2) = build_test_network_pair();
-    thread::sleep(Duration::from_secs(2));
-    let fut = async move {
-        assert!(service1.0.is_connected(*service2.0.peer_id()).await);
-        assert!(service2.0.is_connected(*service1.0.peer_id()).await);
-    };
-    task::block_on(fut);
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    assert!(service1.0.is_connected(*service2.0.peer_id()).await);
+    assert!(service2.0.is_connected(*service1.0.peer_id()).await);
 }
 
 #[stest::test]
