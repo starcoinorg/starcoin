@@ -65,7 +65,7 @@ pub fn starcoin_natives(gas_params: NativeGasParameters) -> NativeFunctionTable 
     );
     #[cfg(feature = "testing")]
     add_natives_from_module!(
-        "UnitTest",
+        "unit_test",
         move_stdlib::natives::unit_test::make_all(gas_params.move_stdlib.unit_test)
     );
     add_natives_from_module!(
