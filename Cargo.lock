@@ -5959,6 +5959,7 @@ dependencies = [
  "stest",
  "tempfile",
  "thiserror",
+ "tokio",
  "unsigned-varint 0.6.0",
  "void",
  "wasm-timer",

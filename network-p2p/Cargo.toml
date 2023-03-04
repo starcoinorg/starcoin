@@ -41,9 +41,9 @@ void = { workspace = true }
 wasm-timer = { workspace = true }
 zeroize = { workspace = true }
 libp2p = { workspace = true, features = ["identify", "kad", "macros"] }
+tokio={ workspace = true}
 
 [dev-dependencies]
-async-std = { workspace = true }
 stest = { workspace = true }
 tempfile = { workspace = true }
 
