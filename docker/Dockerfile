@@ -11,7 +11,6 @@ RUN set -eux; \
         wget \
         pkg-config \
         libclang-dev clang; \
-        protobuf-compiler; \
     rm -rf /var/lib/apt/lists/*
 
 ENV RUSTUP_HOME=/usr/local/rustup \
