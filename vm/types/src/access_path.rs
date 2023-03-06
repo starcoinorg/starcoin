@@ -43,7 +43,7 @@ use crate::identifier::Identifier;
 use crate::parser::parse_struct_tag;
 use anyhow::{bail, Result};
 use forkable_jellyfish_merkle::RawKey;
-use move_core_types::language_storage::{ModuleId, ResourceKey, StructTag};
+use move_core_types::language_storage::{ModuleId, StructTag};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::{collection::vec, prelude::*};
@@ -182,12 +182,6 @@ impl fmt::Display for AccessPath {
 impl From<&ModuleId> for AccessPath {
     fn from(id: &ModuleId) -> AccessPath {
         AccessPath::code_access_path(*id.address(), id.name().to_owned())
-    }
-}
-
-impl From<&ResourceKey> for AccessPath {
-    fn from(key: &ResourceKey) -> AccessPath {
-        AccessPath::resource_access_path(key.address(), key.type_().clone())
     }
 }
 
