@@ -6,9 +6,7 @@ use crate::protocol::message::generic::Status;
 use crate::service::NetworkStateInfo;
 use crate::{config, Event, NetworkService, NetworkWorker};
 use crate::{NetworkConfiguration, Params, ProtocolId};
-use async_std::task;
 use bcs_ext::BCSCodec;
-use futures::executor::block_on;
 use futures::prelude::*;
 use futures::stream::StreamExt;
 use libp2p::PeerId;
@@ -18,7 +16,6 @@ use starcoin_crypto::HashValue;
 use starcoin_types::genesis_config::ChainId;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use std::borrow::Cow;
-use std::thread;
 use std::{sync::Arc, time::Duration};
 use Event::NotificationStreamOpened;
 
@@ -44,7 +41,7 @@ fn build_test_full_node(
     let service = worker.service().clone();
     let event_stream = service.event_stream("test");
 
-    async_std::task::spawn(async move {
+    tokio::task::spawn(async move {
         futures::pin_mut!(worker);
         let _ = worker.await;
     });
@@ -86,7 +83,7 @@ fn build_nodes_one_proto() -> (
 }
 
 #[stest::test(timeout = 120)]
-fn lots_of_incoming_peers_works() {
+async fn lots_of_incoming_peers_works() {
     let listen_addr = config::build_multiaddr![Memory(rand::random::<u64>())];
 
     let (main_node, _) = build_test_full_node(config::NetworkConfiguration {
@@ -146,12 +143,11 @@ fn lots_of_incoming_peers_works() {
             }
         }));
     }
-
-    futures::executor::block_on(async move { future::join_all(background_tasks_to_wait).await });
+    future::join_all(background_tasks_to_wait).await;
 }
 
 #[stest::test(timeout = 600)]
-fn notifications_back_pressure() {
+async fn notifications_back_pressure() {
     // Node 1 floods node 2 with notifications. Random sleeps are done on node 2 to simulate the
     // node being busy. We make sure that all notifications are received.
 
@@ -160,7 +156,7 @@ fn notifications_back_pressure() {
     let (node1, mut events_stream1, node2, mut events_stream2) = build_nodes_one_proto();
     let node2_id = node2.local_peer_id();
 
-    let receiver = async_std::task::spawn(async move {
+    let receiver = tokio::task::spawn(async move {
         let mut received_notifications = 0;
 
         while received_notifications < TOTAL_NOTIFS {
@@ -178,35 +174,33 @@ fn notifications_back_pressure() {
             };
 
             if rand::random::<u8>() < 2 {
-                async_std::task::sleep(Duration::from_millis(rand::random::<u64>() % 750)).await;
+                tokio::time::sleep(Duration::from_millis(rand::random::<u64>() % 750)).await;
             }
         }
     });
-    async_std::task::block_on(async move {
-        // Wait for the `NotificationStreamOpened`.
-        loop {
-            match events_stream1.next().await.unwrap() {
-                NotificationStreamOpened { .. } => break,
-                e => {
-                    debug!("receive event: {:?}", e);
-                }
-            };
-        }
-        debug!("Start sending..");
-        for num in 0..TOTAL_NOTIFS {
-            let notif = node1
-                .notification_sender(node2_id, From::from(PROTOCOL_NAME))
-                .unwrap();
-            notif
-                .ready()
-                .await
-                .unwrap()
-                .send(format!("hello #{}", num))
-                .unwrap();
-        }
 
-        receiver.await;
-    });
+    // Wait for the `NotificationStreamOpened`.
+    loop {
+        match events_stream1.next().await.unwrap() {
+            NotificationStreamOpened { .. } => break,
+            e => {
+                debug!("receive event: {:?}", e);
+            }
+        };
+    }
+    debug!("Start sending..");
+    for num in 0..TOTAL_NOTIFS {
+        let notif = node1
+            .notification_sender(node2_id, From::from(PROTOCOL_NAME))
+            .unwrap();
+        notif
+            .ready()
+            .await
+            .unwrap()
+            .send(format!("hello #{}", num))
+            .unwrap();
+    }
+    receiver.await.unwrap();
 }
 
 #[test]
@@ -427,7 +421,7 @@ const PROTOCOL_NAME: &str = "/starcoin/notify/1";
 //
 
 #[stest::test]
-fn test_handshake_fail() {
+async fn test_handshake_fail() {
     let protocol = ProtocolId::from("starcoin");
     let config1 = generate_config(vec![], vec![PROTOCOL_NAME.into()], vec![]);
     let chain1 = ChainInfo::random();
@@ -435,7 +429,7 @@ fn test_handshake_fail() {
         NetworkWorker::new(Params::new(config1.clone(), protocol.clone(), chain1, None)).unwrap();
     let service1 = worker1.service().clone();
 
-    task::spawn(worker1);
+    let _ = tokio::task::spawn(worker1);
 
     let seed = config::MultiaddrWithPeerId {
         multiaddr: config1.listen_addresses[0].clone(),
@@ -448,17 +442,16 @@ fn test_handshake_fail() {
     let worker2 = NetworkWorker::new(Params::new(config2, protocol, chain2, None)).unwrap();
     let service2 = worker2.service().clone();
 
-    task::spawn(worker2);
-
-    thread::sleep(Duration::from_secs(1));
+    let _ = tokio::task::spawn(worker2);
+    tokio::time::sleep(Duration::from_secs(1)).await;
 
     debug!(
         "first peer is {:?},second peer is {:?}",
         service1.peer_id(),
         service2.peer_id()
     );
-    let state1 = block_on(async { service1.network_state().await }).unwrap();
-    let state2 = block_on(async { service2.network_state().await }).unwrap();
+    let state1 = service1.network_state().await.unwrap();
+    let state2 = service2.network_state().await.unwrap();
 
     assert_eq!(state1.connected_peers.len(), 0);
     assert_eq!(state2.connected_peers.len(), 0);
@@ -502,7 +495,7 @@ fn test_handshake_message() {
 }
 
 #[stest::test]
-fn test_support_protocol() {
+async fn test_support_protocol() {
     let protocol = ProtocolId::from("starcoin");
     let txn_v1 = "/starcoin/txn/1";
     let block_v1 = "/starcoin/block/1";
@@ -528,9 +521,9 @@ fn test_support_protocol() {
     .unwrap();
     let service1 = worker1.service().clone();
     let stream1 = service1.event_stream("test1");
-    task::spawn(worker1);
+    let _ = tokio::task::spawn(worker1);
 
-    let seed = config::MultiaddrWithPeerId {
+    let seed = MultiaddrWithPeerId {
         multiaddr: config1.listen_addresses[0].clone(),
         peer_id: service1.local_peer_id(),
     };
@@ -540,31 +533,29 @@ fn test_support_protocol() {
     let worker2 = NetworkWorker::new(Params::new(config2, protocol, chain1, None)).unwrap();
     let service2 = worker2.service().clone();
     let stream2 = service2.event_stream("test1");
-    task::spawn(worker2);
+    let _ = tokio::task::spawn(worker2);
 
-    thread::sleep(Duration::from_secs(1));
+    tokio::time::sleep(Duration::from_secs(1)).await;
 
     debug!(
         "first peer is {:?},second peer is {:?}",
         service1.peer_id(),
         service2.peer_id()
     );
-    let state1 = block_on(async { service1.network_state().await }).unwrap();
-    let state2 = block_on(async { service2.network_state().await }).unwrap();
-
+    let state1 = service1.network_state().await.unwrap();
+    let state2 = service2.network_state().await.unwrap();
     assert_eq!(state1.connected_peers.len(), 1);
     assert_eq!(state2.connected_peers.len(), 1);
 
-    let open_event1 = block_on(async {
-        stream1
-            .filter(|event| future::ready(matches!(event, Event::NotificationStreamOpened { .. })))
-            .take(1)
-            .collect::<Vec<_>>()
-            .await
-    })
-    .pop()
-    .unwrap();
-    if let Event::NotificationStreamOpened {
+    let open_event1 = stream1
+        .filter(|event| future::ready(matches!(event, Event::NotificationStreamOpened { .. })))
+        .take(1)
+        .collect::<Vec<_>>()
+        .await
+        .pop()
+        .unwrap();
+
+    if let NotificationStreamOpened {
         remote,
         protocol: _,
         info: _,
@@ -580,15 +571,13 @@ fn test_support_protocol() {
         panic!("Unexpected event type: {:?}", open_event1)
     }
 
-    let open_event2 = block_on(async {
-        stream2
-            .filter(|event| future::ready(matches!(event, Event::NotificationStreamOpened { .. })))
-            .take(1)
-            .collect::<Vec<_>>()
-            .await
-    })
-    .pop()
-    .unwrap();
+    let open_event2 = stream2
+        .filter(|event| future::ready(matches!(event, Event::NotificationStreamOpened { .. })))
+        .take(1)
+        .collect::<Vec<_>>()
+        .await
+        .pop()
+        .unwrap();
     if let Event::NotificationStreamOpened {
         remote,
         protocol: _,
