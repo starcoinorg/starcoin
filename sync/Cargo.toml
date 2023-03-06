@@ -62,7 +62,7 @@ tokio = { features = ["full"], workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 name = "starcoin-sync"
-version = "1.13.0"
+version = "1.13.1"
 homepage = { workspace = true }
 license = { workspace = true }
 publish = { workspace = true }
