@@ -56,6 +56,7 @@ use futures::{
     channel::{mpsc, oneshot},
     prelude::*,
 };
+use libp2p::swarm::Executor;
 use libp2p::{
     core::{either::EitherError, ConnectedPoint},
     identify::Info as IdentifyInfo,
@@ -76,7 +77,6 @@ use starcoin_types::startup_info::ChainStatus;
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
 use std::time::Duration;
-
 const REQUEST_RESPONSE_TIMEOUT_SECONDS: u64 = 60 * 5;
 
 /// Minimum Requirements for a Hash within Networking
@@ -284,8 +284,21 @@ impl NetworkWorker {
                 };
                 transport::build_transport(local_identity, config_mem)
             };
-            //FIXME: with tokio executor
-            let builder = SwarmBuilder::new(transport, behaviour, local_peer_id)
+            let builder = {
+                struct SpawnImpl<F>(F);
+                impl<F: Fn(Pin<Box<dyn Future<Output = ()> + Send>>)> Executor for SpawnImpl<F> {
+                    fn exec(&self, f: Pin<Box<dyn Future<Output = ()> + Send>>) {
+                        (self.0)(f)
+                    }
+                }
+                SwarmBuilder::with_executor(
+                    transport,
+                    behaviour,
+                    local_peer_id,
+                    SpawnImpl(Box::new(|f| {
+                        tokio::spawn(f);
+                    })),
+                )
                 .connection_limits(
                     ConnectionLimits::default()
                         .with_max_established_per_peer(Some(crate::MAX_CONNECTIONS_PER_PEER as u32))
@@ -294,8 +307,8 @@ impl NetworkWorker {
                         )),
                 )
                 .notify_handler_buffer_size(NonZeroUsize::new(32).expect("32 != 0; qed"))
-                .connection_event_buffer_size(1024);
-
+                .connection_event_buffer_size(1024)
+            };
             (builder.build(), bandwidth)
         };
 
