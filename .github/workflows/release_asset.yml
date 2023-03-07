@@ -39,6 +39,11 @@ jobs:
         with:
           platform: x64
 
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+        with:
+        version: '3.x'
+
       - name: build for ${{ matrix.platform }}
         uses: actions-rs/cargo@v1
         with:
