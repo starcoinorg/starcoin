@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: starcoin/starcoin:v1.12.9
+        image: starcoin/starcoin:v1.13.1
         imagePullPolicy: Always
         command:
           - bash
@@ -92,4 +92,4 @@ spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: 300Gi
+          storage: 600Gi
