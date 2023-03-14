@@ -43,7 +43,7 @@ pub fn handle_package_commands(
     cmd: PackageCommand,
 ) -> anyhow::Result<()> {
     match cmd {
-        PackageCommand::New(c) => c.execute_with_defaults(move_args.package_path),
+        PackageCommand::New(c) => c.execute(move_args.package_path, "0.0.0", [], [], ""),
         PackageCommand::Build(c) => c.execute(move_args.package_path, move_args.build_config),
         PackageCommand::Info(c) => c.execute(move_args.package_path, move_args.build_config),
         PackageCommand::Errmap(c) => c.execute(move_args.package_path, move_args.build_config),
