@@ -6,6 +6,13 @@ use move_cli::base::{
 use move_cli::Move;
 use move_vm_runtime::native_functions::NativeFunctionTable;
 
+pub const STARCOIN_STDLIB_PACKAGE_NAME: &str = "StarcoinFraework";
+pub const STARCOIN_STDLIB_PACKAGE_PATH: &str = "{ \
+    git = \"https://github.com/starcoinorg/starcoin-framework.git\", rev = \"main\" \
+}";
+pub const STARCOIN_STDLIB_ADDR_NAME: &str = "StarcoinFraework";
+pub const STARCOIN_STDLIB_ADDR_VALUE: &str = "0x1";
+
 #[derive(Parser)]
 pub enum PackageCommand {
     /// Create a new Move package with name `name` at `path`. If `path` is not provided the package
@@ -43,7 +50,13 @@ pub fn handle_package_commands(
     cmd: PackageCommand,
 ) -> anyhow::Result<()> {
     match cmd {
-        PackageCommand::New(c) => c.execute(move_args.package_path, "0.0.0", [], [], ""),
+        PackageCommand::New(c) => c.execute(
+            move_args.package_path,
+            "0.0.0",
+            [(STARCOIN_STDLIB_PACKAGE_NAME, STARCOIN_STDLIB_PACKAGE_PATH)],
+            [(STARCOIN_STDLIB_ADDR_NAME, STARCOIN_STDLIB_ADDR_VALUE)],
+            "",
+        ),
         PackageCommand::Build(c) => c.execute(move_args.package_path, move_args.build_config),
         PackageCommand::Info(c) => c.execute(move_args.package_path, move_args.build_config),
         PackageCommand::Errmap(c) => c.execute(move_args.package_path, move_args.build_config),
