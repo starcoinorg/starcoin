@@ -21,15 +21,15 @@ static G_EVENT_HANDLE_GENERATOR_STRUCT_NAME: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("EventHandleGenerator").unwrap());
 
 pub fn event_module_name() -> &'static IdentStr {
-    &*G_EVENT_MODULE_NAME
+    &G_EVENT_MODULE_NAME
 }
 
 pub fn event_handle_generator_struct_name() -> &'static IdentStr {
-    &*G_EVENT_HANDLE_GENERATOR_STRUCT_NAME
+    &G_EVENT_HANDLE_GENERATOR_STRUCT_NAME
 }
 
 pub fn event_handle_struct_name() -> &'static IdentStr {
-    &*G_EVENT_HANDLE_STRUCT_NAME
+    &G_EVENT_HANDLE_STRUCT_NAME
 }
 
 pub fn event_handle_generator_struct_tag() -> StructTag {

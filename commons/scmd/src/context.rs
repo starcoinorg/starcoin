@@ -268,7 +268,7 @@ where
                     .arg(
                         Arg::new("format")
                             .takes_value(true)
-                            .possible_values(&["json", "table"])
+                            .possible_values(["json", "table"])
                             .ignore_case(true)
                             .default_value("json")
                             .help("Output format should be json or table."),
