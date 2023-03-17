@@ -19,12 +19,11 @@ use std::path::PathBuf;
 
 pub const DEFAULT_RELEASE_DIR: &str = "release";
 
-// XXX FIXME YSG, mpm release use v4, v6
 #[derive(Parser)]
 pub struct Release {
-    #[clap(name = "move-version", long = "move-version", default_value="4", possible_values=&["4", "6"])]
+    #[clap(name = "move-version", long = "move-version", default_value="6", possible_values=&["5", "6"])]
     /// specify the move lang version for the release.
-    /// currently, only v4, v6 are supported.
+    /// currently, only v5, v6 are supported.
     language_version: u8,
 
     #[clap(name="release-dir", long, parse(from_os_str), default_value=DEFAULT_RELEASE_DIR)]
@@ -60,15 +59,16 @@ pub fn handle_release(
     }: Release,
 ) -> anyhow::Result<()> {
     let mut ms = vec![];
-    let pkg_ctx = PackageContext::new(&move_args.package_path, &move_args.build_config)?;
+    let package_path = match move_args.package_path {
+        Some(_) => move_args.package_path.clone(),
+        None => Some(std::env::current_dir()?),
+    };
+    let pkg_ctx = PackageContext::new(&package_path, &move_args.build_config)?;
     let pkg = pkg_ctx.package();
     let pkg_version = move_args
         .build_config
         .clone()
-        .resolution_graph_for_package(
-            move_args.package_path.as_ref().unwrap(),
-            &mut std::io::stdout(),
-        )
+        .resolution_graph_for_package(package_path.as_ref().unwrap(), &mut std::io::stdout())
         .unwrap()
         .root_package
         .package
