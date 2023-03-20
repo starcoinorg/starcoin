@@ -278,7 +278,7 @@ impl NodeKeyConfig {
 
             Ed25519(Secret::File(f)) => get_secret(
                 f,
-                |mut b| ed25519::SecretKey::from_bytes(b),
+                |b| ed25519::SecretKey::from_bytes(b),
                 ed25519::SecretKey::generate,
                 |b| b.as_ref().to_vec(),
             )
