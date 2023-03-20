@@ -41,9 +41,9 @@ void = { workspace = true }
 wasm-timer = { workspace = true }
 zeroize = { workspace = true }
 libp2p = { workspace = true, features = ["identify", "kad", "macros"] }
+tokio={ workspace = true}
 
 [dev-dependencies]
-async-std = { workspace = true }
 stest = { workspace = true }
 tempfile = { workspace = true }
 
@@ -56,7 +56,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "network-p2p"
 publish = { workspace = true }
-version = "1.13.0"
+version = "1.13.2"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

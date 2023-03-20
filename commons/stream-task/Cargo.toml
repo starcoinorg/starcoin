@@ -21,7 +21,7 @@ stest = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 name = "stream-task"
-version = "1.13.0"
+version = "1.13.2"
 homepage = { workspace = true }
 license = { workspace = true }
 publish = { workspace = true }

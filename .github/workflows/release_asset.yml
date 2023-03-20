@@ -21,15 +21,30 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
       - name: Install LLVM and Clang # required for bindgen to work, see https://github.com/rust-lang/rust-bindgen/issues/1797
         uses: KyleMayes/install-llvm-action@v1
         if: matrix.platform == 'windows-latest'
         with:
           version: "11.0"
           directory: ${{ runner.temp }}/llvm
+
       - name: Set LIBCLANG_PATH
         run: echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
         if: matrix.platform == 'windows-latest'
+
+      - name: Install LLVM and Clang for Ubuntu22.04
+        uses: egor-tensin/setup-clang@v1
+        if: matrix.platform == 'ubuntu-22.04'
+        with:
+          platform: x64
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          version: '3.x'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: build for ${{ matrix.platform }}
         uses: actions-rs/cargo@v1
         with:

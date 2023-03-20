@@ -6,11 +6,12 @@ RUN set -eux; \
         ca-certificates \
         gcc \
         libc6-dev \
-	git \
+        git \
         libssl-dev \
         wget \
         pkg-config \
-        libclang-dev clang; \
+        libclang-dev clang \
+        protobuf-compiler; \
     rm -rf /var/lib/apt/lists/*
 
 ENV RUSTUP_HOME=/usr/local/rustup \

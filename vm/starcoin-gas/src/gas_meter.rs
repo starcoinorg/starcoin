@@ -283,6 +283,10 @@ fn simple_instr_to_opcode(instr: SimpleInstruction) -> Opcodes {
 }
 
 impl GasMeter for StarcoinGasMeter {
+    fn balance_internal(&self) -> InternalGas {
+        self.balance
+    }
+
     #[inline]
     fn charge_simple_instr(&mut self, instr: SimpleInstruction) -> PartialVMResult<()> {
         let cost = self.gas_params.instr.simple_instr_cost(instr)?;
