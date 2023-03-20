@@ -165,7 +165,7 @@ where
 
     /// Execute command by parse std::env::args_os() and print result.
     pub fn exec(self) -> Result<()> {
-        let (output_format, result) = self.exec_inner(&mut std::env::args_os())?;
+        let (output_format, result) = self.exec_inner(std::env::args_os())?;
         print_action_result(output_format, &result_to_json(&result))
     }
 

@@ -135,7 +135,7 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
         // Always root ourselves to the package root, and then compile relative to that.
         let rooted_path =
             SourcePackageLayout::try_find_root(&path.as_ref().unwrap().canonicalize()?)?;
-        std::env::set_current_dir(&rooted_path).unwrap();
+        std::env::set_current_dir(rooted_path).unwrap();
         PathBuf::from(".")
     };
     let (pre_compiled_lib, _compiled_package) = {

@@ -72,7 +72,7 @@ fn main() {
                 .unwrap()
                 .join("../../genesis");
 
-            std::env::set_current_dir(&base_path).expect("failed to change directory");
+            std::env::set_current_dir(base_path).expect("failed to change directory");
 
             let path = Path::new(G_GENESIS_GENERATED_DIR).join(net.to_string());
             new_genesis.save(path.as_path()).expect("save genesis fail");

@@ -868,7 +868,7 @@ async fn test_block_sync_with_local() -> Result<()> {
             current
         });
 
-    assert_eq!(last_block_number as u64, total_blocks - 1);
+    assert_eq!(last_block_number, total_blocks - 1);
 
     let report = event_handle.get_reports().pop().unwrap();
     debug!("report: {}", report);

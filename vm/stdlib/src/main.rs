@@ -305,7 +305,7 @@ fn main() {
         .parent()
         .unwrap()
         .join("../../vm/stdlib");
-    std::env::set_current_dir(&base_path).expect("failed to change directory");
+    std::env::set_current_dir(base_path).expect("failed to change directory");
 
     let sources = &STARCOIN_FRAMEWORK_SOURCES;
     let new_modules = build_stdlib(&sources.files);

@@ -177,7 +177,7 @@ impl Accumulator for MerkleAccumulator {
 
     fn get_proof(&self, leaf_index: u64) -> Result<Option<AccumulatorProof>> {
         let mut tree_guard = self.tree.lock();
-        if leaf_index > tree_guard.num_leaves as u64 {
+        if leaf_index > tree_guard.num_leaves {
             return Ok(None);
         }
 

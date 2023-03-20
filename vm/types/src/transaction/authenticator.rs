@@ -278,8 +278,8 @@ impl fmt::Display for TransactionAuthenticator {
             f,
             "TransactionAuthenticator[scheme id: {:?}, public key: {}, signature: {}]",
             self.scheme(),
-            hex::encode(&self.public_key_bytes()),
-            hex::encode(&self.signature_bytes())
+            hex::encode(self.public_key_bytes()),
+            hex::encode(self.signature_bytes())
         )
     }
 }

@@ -167,17 +167,6 @@ impl AccountInfoUniverse {
         }
     }
 
-    pub fn default() -> Result<Self> {
-        let (private_key, public_key) = starcoin_crypto::ed25519::genesis_key_pair();
-        let account = AccountInfo::new(private_key, public_key);
-        Ok(Self {
-            accounts: vec![account],
-            epoch: 0,
-            chain_id: ChainId::test(),
-            time_service: Arc::new(MockTimeService::new()),
-        })
-    }
-
     fn get_account_info(&self, account_index: Index) -> &AccountInfo {
         account_index.get(&self.accounts)
     }
@@ -202,6 +191,19 @@ impl AccountInfoUniverse {
 
     pub fn chain_id(&self) -> ChainId {
         self.chain_id
+    }
+}
+
+impl std::default::Default for AccountInfoUniverse {
+    fn default() -> Self {
+        let (private_key, public_key) = starcoin_crypto::ed25519::genesis_key_pair();
+        let account = AccountInfo::new(private_key, public_key);
+        Self {
+            accounts: vec![account],
+            epoch: 0,
+            chain_id: ChainId::test(),
+            time_service: Arc::new(MockTimeService::new()),
+        }
     }
 }
 

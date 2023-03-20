@@ -83,7 +83,7 @@ impl TimeService for RealTimeService {
     }
 
     fn now_secs(&self) -> u64 {
-        duration_since_epoch().as_secs() as u64
+        duration_since_epoch().as_secs()
     }
 
     fn now_millis(&self) -> u64 {

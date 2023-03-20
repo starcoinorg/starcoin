@@ -164,7 +164,7 @@ impl RawRpcClient for InmemoryRpcClient {
         Box::pin(
             self.server
                 .handle_raw_request(self.self_peer_id.clone(), rpc_path, message)
-                .then(|result| async move { anyhow::Result::Ok(bcs_ext::to_bytes(&result)?) }),
+                .then(|result| async move { bcs_ext::to_bytes(&result) }),
         )
     }
 }
