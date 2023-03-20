@@ -225,7 +225,7 @@ homepage = "https://starcoin.org"
 license = "Apache-2.0"
 publish = false
 repository = "https://github.com/starcoinorg/starcoin"
-rust-version = "1.65"
+rust-version = "1.66"
 
 [workspace.dependencies]
 actix = "0.13"
