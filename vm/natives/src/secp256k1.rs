@@ -95,7 +95,7 @@ pub struct GasParameters {
     pub ecdsa_recover: InternalGasPerArg,
 }
 
-pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item=(String, NativeFunction)> {
+cpub fn make_all(gas_params: GasParameters) -> impl Iterator<Item=(String, NativeFunction)> {
     let natives = [(
         "ecdsa_recover_internal",
         make_native_from_func(gas_params, native_ecdsa_recover),
