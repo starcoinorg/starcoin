@@ -136,7 +136,7 @@ impl AccumulatorTree {
         // placeholder hash nodes as needed on the right, and left siblings that have either
         // been newly created or read from storage.
         let (mut pos, mut hash) = left_siblings.pop().expect("Must have at least one node");
-        for _ in pos.level()..root_level as u32 {
+        for _ in pos.level()..root_level {
             hash = if pos.is_left_child() {
                 let not_frozen = AccumulatorNode::new_internal(
                     pos.parent(),
@@ -378,7 +378,7 @@ impl AccumulatorTree {
         if self.num_leaves == 0 {
             0_u64
         } else {
-            (self.num_leaves - 1) as u64
+            self.num_leaves - 1
         }
     }
 

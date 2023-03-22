@@ -880,7 +880,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         params: Params,
     ) -> Result<(Option<String>, Option<Value>)> {
         let output = self.context.call_api(method.as_str(), params)?;
-        Ok((None, Some(serde_json::to_value(&output)?)))
+        Ok((None, Some(serde_json::to_value(output)?)))
     }
 
     fn build_package(
@@ -1026,7 +1026,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         vars: Vec<(String, String)>,
     ) -> Result<(Option<String>, Option<Value>)> {
         let var_dict: HashMap<String, String> = vars.into_iter().collect();
-        Ok((None, Some(serde_json::to_value(&var_dict)?)))
+        Ok((None, Some(serde_json::to_value(var_dict)?)))
     }
 
     fn handle_read_json(&mut self, file: &Path) -> Result<(Option<String>, Option<Value>)> {

@@ -74,7 +74,7 @@ impl Account {
             None
         } else {
             let decrypted_key = storage
-                .decrypt_private_key(addr, password.unwrap_or_else(|| "".to_string()))
+                .decrypt_private_key(addr, password.unwrap_or_default())
                 .map_err(|e| {
                     warn!(
                         "Try to unlock {} with a invalid password, err: {:?}",

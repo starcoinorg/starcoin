@@ -252,7 +252,7 @@ fn pretty_print_value(
             write_indent(f, indent)?;
             write!(f, "]")
         }
-        AnnotatedMoveValue::Bytes(v) => write!(f, "{}", hex::encode(&v)),
+        AnnotatedMoveValue::Bytes(v) => write!(f, "{}", hex::encode(v)),
         AnnotatedMoveValue::Struct(s) => pretty_print_struct(f, s, indent),
         AnnotatedMoveValue::U16(v) => write!(f, "{}u16", v),
         AnnotatedMoveValue::U32(v) => write!(f, "{}u32", v),

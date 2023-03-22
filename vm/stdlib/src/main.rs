@@ -146,9 +146,9 @@ fn replace_stdlib_by_path(
     new_modules: BTreeMap<String, CompiledModule>,
 ) {
     if module_path.exists() {
-        std::fs::remove_dir_all(&module_path).unwrap();
+        std::fs::remove_dir_all(module_path).unwrap();
     }
-    std::fs::create_dir_all(&module_path).unwrap();
+    std::fs::create_dir_all(module_path).unwrap();
     for (name, module) in new_modules {
         let mut bytes = Vec::new();
         module.serialize(&mut bytes).unwrap();
@@ -269,7 +269,7 @@ fn main() {
                 .collect();
             let type_args: Vec<TypeTag> = type_args_str
                 .iter()
-                .map(|s| parse_type_tag(*s).unwrap())
+                .map(|s| parse_type_tag(s).unwrap())
                 .collect();
             type_args
         } else {
@@ -279,7 +279,7 @@ fn main() {
             let args_strings: Vec<&str> = matches.values_of("init-script-args").unwrap().collect();
             let args: Vec<TransactionArgument> = args_strings
                 .iter()
-                .map(|s| parse_transaction_argument(*s).unwrap())
+                .map(|s| parse_transaction_argument(s).unwrap())
                 .collect();
             args
         } else {
@@ -305,7 +305,7 @@ fn main() {
         .parent()
         .unwrap()
         .join("../../vm/stdlib");
-    std::env::set_current_dir(&base_path).expect("failed to change directory");
+    std::env::set_current_dir(base_path).expect("failed to change directory");
 
     let sources = &STARCOIN_FRAMEWORK_SOURCES;
     let new_modules = build_stdlib(&sources.files);

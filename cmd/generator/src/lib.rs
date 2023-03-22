@@ -40,7 +40,7 @@ pub fn init_or_load_data_dir(
     let account = match manager.default_account_info()? {
         Some(account) => account,
         None => manager
-            .create_account(&password.unwrap_or_else(|| "".to_string()))?
+            .create_account(&password.unwrap_or_default())?
             .info(),
     };
     Ok((config, storage, chain_info, account))

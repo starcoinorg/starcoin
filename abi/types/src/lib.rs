@@ -672,7 +672,7 @@ impl<'d> serde::de::DeserializeSeed<'d> for &TypeInstantiation {
             T::Vector(layout) => Ok(match layout.as_ref() {
                 T::U8 => {
                     let bytes = <Vec<u8>>::deserialize(deserializer)?;
-                    V::String(format!("0x{}", hex::encode(&bytes)))
+                    V::String(format!("0x{}", hex::encode(bytes)))
                 }
                 _ => V::Array(deserializer.deserialize_seq(VectorElementVisitor(layout.as_ref()))?),
             }),

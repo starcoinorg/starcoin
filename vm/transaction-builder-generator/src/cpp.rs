@@ -363,10 +363,10 @@ impl crate::SourceInstaller for Installer {
         let dir_path = &self.install_dir;
         std::fs::create_dir_all(dir_path)?;
         let header_path = dir_path.join(name.to_string() + ".hpp");
-        let mut header = std::fs::File::create(&header_path)?;
+        let mut header = std::fs::File::create(header_path)?;
         output_library_header(&mut header, abis, Some(name))?;
         let body_path = dir_path.join(name.to_string() + ".cpp");
-        let mut body = std::fs::File::create(&body_path)?;
+        let mut body = std::fs::File::create(body_path)?;
         output_library_body(&mut body, abis, name, Some(name))?;
         Ok(())
     }

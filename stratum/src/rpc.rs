@@ -208,7 +208,7 @@ impl StratumJobResponse {
     pub fn from(e: &MintBlockEvent, login: Option<LoginRequest>, worker_id: [u8; 4]) -> Self {
         let mut minting_blob = e.minting_blob.clone();
         let _ = minting_blob[35..39].borrow_mut().write_all(&worker_id);
-        let worker_id_hex = hex::encode(&worker_id);
+        let worker_id_hex = hex::encode(worker_id);
         let job_id = hex::encode(&e.minting_blob[0..8]);
         Self {
             login,

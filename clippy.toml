@@ -4,3 +4,6 @@ cognitive-complexity-threshold = 100
 type-complexity-threshold = 10000
 # manipulating complex states machines in consensus
 too-many-arguments-threshold = 13
+# a Result is at least as large as the Err-variant. 
+# the default value 128 is too small
+large-error-threshold = 256

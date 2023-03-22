@@ -54,7 +54,7 @@ fn test_that_python_code_parses_and_passes_pyre_check() {
     std::fs::create_dir_all(stdlib_dir_path.clone()).unwrap();
     let source_path = stdlib_dir_path.join("__init__.py");
 
-    let mut source = std::fs::File::create(&source_path).unwrap();
+    let mut source = std::fs::File::create(source_path).unwrap();
     buildgen::python3::output(&mut source, None, None, &abis).unwrap();
 
     std::fs::copy(
@@ -129,7 +129,7 @@ fn test_that_rust_code_compiles() {
     let stdlib_dir_path = dir.path().join("starcoin-stdlib");
     std::fs::create_dir_all(stdlib_dir_path.clone()).unwrap();
 
-    let mut cargo = std::fs::File::create(&stdlib_dir_path.join("Cargo.toml")).unwrap();
+    let mut cargo = std::fs::File::create(stdlib_dir_path.join("Cargo.toml")).unwrap();
     write!(
         cargo,
         r#"[package]
@@ -153,7 +153,7 @@ test = false
     .unwrap();
     std::fs::create_dir(stdlib_dir_path.join("src")).unwrap();
     let source_path = stdlib_dir_path.join("src/lib.rs");
-    let mut source = std::fs::File::create(&source_path).unwrap();
+    let mut source = std::fs::File::create(source_path).unwrap();
     buildgen::rust::output(&mut source, &abis, /* local types */ false).unwrap();
 
     std::fs::copy(

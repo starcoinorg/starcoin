@@ -389,7 +389,7 @@ impl InternalNode {
 
     /// Get all child hash
     pub fn all_child(&self) -> Vec<HashValue> {
-        self.children.iter().map(|(_, c)| c.hash).collect()
+        self.children.values().map(|c| c.hash).collect()
     }
 }
 

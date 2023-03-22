@@ -174,7 +174,7 @@ pub struct GetBlockIds {
 
 impl RpcRequest for GetBlockIds {
     fn verify(&self) -> Result<()> {
-        if self.max_size as u64 > MAX_BLOCK_IDS_REQUEST_SIZE {
+        if self.max_size > MAX_BLOCK_IDS_REQUEST_SIZE {
             return Err(NetRpcError::new(
                 RpcErrorCode::BadRequest,
                 format!("max_size is too big > {}", MAX_BLOCK_IDS_REQUEST_SIZE),
