@@ -61,7 +61,7 @@ pub const STDLIB_DIR: Dir = starcoin_framework::SOURCES_DIR;
 // The current stdlib that is freshly built. This will never be used in deployment so we don't need
 // to pull the same trick here in order to include this in the Rust binary.
 static G_FRESH_MOVE_LANG_STDLIB: Lazy<Vec<Vec<u8>>> = Lazy::new(|| {
-    build_stdlib(STARCOIN_FRAMEWORK_SOURCES.files.as_slice())
+    build_stdlib(STARCOIN_FRAMEWORK_SOURCES.files().as_slice())
         .values()
         .map(|m| {
             let mut blob = vec![];
@@ -161,7 +161,7 @@ pub fn module_to_package(
 }
 
 pub fn stdlib_files() -> Vec<String> {
-    STARCOIN_FRAMEWORK_SOURCES.files.clone()
+    STARCOIN_FRAMEWORK_SOURCES.files().clone()
 }
 
 pub fn build_stdlib(targets: &[String]) -> BTreeMap<String, CompiledModule> {
