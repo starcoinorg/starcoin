@@ -36,6 +36,10 @@ pub fn starcoin_natives(gas_params: NativeGasParameters) -> NativeFunctionTable 
         move_stdlib::natives::bcs::make_all(gas_params.move_stdlib.bcs)
     );
     add_natives_from_module!(
+        "FromBCS",
+        starcoin_natives::from_bcs::make_all(gas_params.starcoin_natives.from_bcs)
+    );
+    add_natives_from_module!(
         "Signature",
         starcoin_natives::signature::make_all(gas_params.starcoin_natives.signature)
     );
