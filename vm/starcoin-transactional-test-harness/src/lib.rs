@@ -1493,7 +1493,7 @@ pub static G_PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<FullyCompiledProgram> = Lazy::
 
 fn convert_u8(val: u8) -> u8 {
     // val >= 'a' && val <= 'z'
-    if val >= 97 && val <= 122 {
+    if (97..=122).contains(&val) {
         val - 97 + 10
     } else {
         // val >= '0' && val <= '9'
