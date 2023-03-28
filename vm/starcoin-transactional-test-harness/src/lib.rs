@@ -1245,7 +1245,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                             _ => is_vec_u8 = false,
                         }
                     }
-                    if vals.len() % 2 == 1 {
+                    if vals.len() % 2 == 1 || vals.is_empty() {
                         is_vec_u8 = false;
                     }
                     match is_vec_u8 {
