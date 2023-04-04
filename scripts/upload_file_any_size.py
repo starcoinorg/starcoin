@@ -29,7 +29,7 @@ def upload_file_big_file(file_name, bucket):
         count = 1
         parts = []
         while content:
-            print(count)
+            # print(count)
             response = client.upload_part(Body = content, Bucket = bucket, Key = object_name, PartNumber = count, UploadId = upload_id)
             parts.append({'ETag': response["ETag"], 'PartNumber': count})
             count += 1
