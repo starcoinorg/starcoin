@@ -13,7 +13,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "network-rpc-derive"
 publish = { workspace = true }
-version = "1.13.2"
+version = "1.13.3"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }
