@@ -19,7 +19,6 @@ def upload_file(file_name, bucket, key):
 def upload_file_big_file(file_name, bucket, key):
     client = boto3.client('s3')
     try:
-        create_bucket(bucket)
         response = client.create_multipart_upload(Bucket = bucket, Key = key)
         upload_id = response["UploadId"]
         file_obj = open(file_name, "rb")
