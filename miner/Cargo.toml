@@ -44,7 +44,7 @@ test-helper = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 name = "starcoin-miner"
-version = "1.13.2"
+version = "1.13.3"
 homepage = { workspace = true }
 license = { workspace = true }
 publish = { workspace = true }
