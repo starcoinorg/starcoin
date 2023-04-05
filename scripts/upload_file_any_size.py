@@ -16,25 +16,22 @@ def upload_file(file_name, bucket, key):
         return False
     return True
 
-def upload_file_big_file(file_name, bucket):
+def upload_file_big_file(file_name, bucket, key):
     client = boto3.client('s3')
-    object_name = os.path.basename(file_name)
     try:
         create_bucket(bucket)
-        upload_file_big_file(file_name, bucket)
-        response = client.create_multipart_upload(Bucket = bucket, Key = object_name)
+        response = client.create_multipart_upload(Bucket = bucket, Key = key)
         upload_id = response["UploadId"]
         file_obj = open(file_name, "rb")
         content = file_obj.read(PER_UPLOADING) 
         count = 1
         parts = []
         while content:
-            # print(count)
-            response = client.upload_part(Body = content, Bucket = bucket, Key = object_name, PartNumber = count, UploadId = upload_id)
+            response = client.upload_part(Body = content, Bucket = bucket, Key = key, PartNumber = count, UploadId = upload_id)
             parts.append({'ETag': response["ETag"], 'PartNumber': count})
             count += 1
             content = file_obj.read(PER_UPLOADING)
-        response = client.complete_multipart_upload(Bucket = bucket, Key = object_name, MultipartUpload = {'Parts': parts,}, UploadId = upload_id)
+        response = client.complete_multipart_upload(Bucket = bucket, Key = key, MultipartUpload = {'Parts': parts,}, UploadId = upload_id)
         print(str(response))
     except ClientError as e:
         print(str(e))
@@ -82,6 +79,9 @@ def main():
     key = sys.argv[2]
     test_file = sys.argv[3]
 
+    print(f"bucket_name: {bucket_name}")
+    print(f"key: {key}")
+    print(f"test_file: {test_file}")
     upload_file_any_size(test_file, bucket_name, key)
     # list_bucket(bucket_name, 10)
 
