@@ -23,14 +23,13 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: starcoin/starcoin:v1.13.2
+        image: starcoin/starcoin:v1.13.5-alpha.1
         imagePullPolicy: Always
         command:
           - bash
           - -c
         args:
-          -
-            rm -rf /sc-data/proxima/starcoin.ipc /sc-data/proxima/starcoindb/db/starcoindb/LOCK;
+          - rm -rf /sc-data/proxima/starcoin.ipc /sc-data/proxima/starcoindb/db/starcoindb/LOCK;
             id=$(echo -e $POD_NAME|awk -F'-' '{print $2}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
             node_key=${node_keys[$id]};
             if [ ! -z $node_key ]; then
@@ -38,14 +37,14 @@ spec:
             fi;
             /starcoin/starcoin -n proxima -d /sc-data --discover-local=true $node_key_flag;
             ret=$?;
-            if [ $ret -ne 0 ]; then
+            echo "Now ret is - $ret";
+            if [ $ret -eq 120 ] || [ $ret -eq 139 ]; then
+            echo "Start failed with gensis mismatch code 120, clean data...";
+            rm -rf /sc-data/proxima/ &>/dev/null;
+            elif [ $ret -ne 0 ]; then
             echo "Node start fail, try to remove config.";
             rm /sc-data/proxima/config.toml;
             rm /sc-data/proxima/genesis_config.json;
-            fi;
-            if [ $ret -eq 120 ]; then
-            echo "Start failed with gensis mismatch code 120, clean data...";
-            rm -rf /sc-data/proxima/ &>/dev/null;
             fi;
         ports:
           - containerPort: 9840
