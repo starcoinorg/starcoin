@@ -40,13 +40,14 @@ use starcoin_vm_types::account_config::{
     G_EPILOGUE_NAME, G_EPILOGUE_V2_NAME, G_PROLOGUE_NAME,
 };
 use starcoin_vm_types::file_format::{CompiledModule, CompiledScript};
-use starcoin_vm_types::gas_schedule::G_LATEST_GAS_SCHEDULE;
+use starcoin_vm_types::gas_schedule::G_LATEST_GAS_COST_TABLE;
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::on_chain_config::{
-    GasSchedule, MoveLanguageVersion, G_GAS_CONSTANTS_IDENTIFIER,
-    G_INSTRUCTION_SCHEDULE_IDENTIFIER, G_NATIVE_SCHEDULE_IDENTIFIER, G_VM_CONFIG_IDENTIFIER,
+    GasSchedule, MoveLanguageVersion, G_GAS_CONSTANTS_IDENTIFIER, G_GAS_SCHEDULE_IDENTIFIER,
+    G_GAS_SCHEDULE_INITIALIZE, G_INSTRUCTION_SCHEDULE_IDENTIFIER, G_NATIVE_SCHEDULE_IDENTIFIER,
+    G_VM_CONFIG_IDENTIFIER,
 };
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateReaderExt;
@@ -78,12 +79,14 @@ pub struct StarcoinVM {
     move_version: Option<MoveLanguageVersion>,
     native_params: NativeGasParameters,
     gas_params: Option<StarcoinGasParameters>,
+    gas_schedule: Option<GasSchedule>,
     #[cfg(feature = "metrics")]
     metrics: Option<VMMetrics>,
 }
 
 /// marking of stdlib version which includes vmconfig upgrades.
 const VMCONFIG_UPGRADE_VERSION_MARK: u64 = 10;
+const GAS_SCHEDULE_UPGRADE_VERSION_MARK: u64 = 12;
 
 impl StarcoinVM {
     #[cfg(feature = "metrics")]
@@ -99,6 +102,7 @@ impl StarcoinVM {
             move_version: None,
             native_params,
             gas_params: Some(gas_params),
+            gas_schedule: None,
             metrics,
         }
     }
@@ -121,26 +125,30 @@ impl StarcoinVM {
     pub fn load_configs<S: StateView>(&mut self, state: &S) -> Result<(), Error> {
         if state.is_genesis() {
             self.vm_config = Some(VMConfig {
-                gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
+                gas_schedule: G_LATEST_GAS_COST_TABLE.clone(),
             });
             self.version = Some(Version { major: 1 });
+            self.gas_schedule = Some(GasSchedule::from(
+                &self.vm_config.as_ref().unwrap().gas_schedule,
+            ));
+
+            #[cfg(feature = "print_gas_info")]
+            self.gas_schedule.as_ref().unwrap().info("from is_genesis");
         } else {
             self.load_configs_impl(state)?;
         }
-        if let Some(ref vm_config) = self.vm_config {
-            let gas_schedule = GasSchedule::from(vm_config);
-            let gas_params =
-                StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
-            if let Some(ref params) = gas_params {
-                if params.natives != self.native_params {
-                    debug!("update native_params");
-                    Arc::get_mut(&mut self.move_vm)
-                        .unwrap()
-                        .update_native_functions(params.clone().natives)?;
-                    self.native_params = params.natives.clone();
-                }
-                self.gas_params = gas_params;
+        let gas_params = StarcoinGasParameters::from_on_chain_gas_schedule(
+            &self.gas_schedule.as_ref().unwrap().clone().to_btree_map(),
+        );
+        if let Some(ref params) = gas_params {
+            if params.natives != self.native_params {
+                debug!("update native_params");
+                Arc::get_mut(&mut self.move_vm)
+                    .unwrap()
+                    .update_native_functions(params.clone().natives)?;
+                self.native_params = params.natives.clone();
             }
+            self.gas_params = gas_params;
         }
         Ok(())
     }
@@ -157,17 +165,24 @@ impl StarcoinVM {
         if let Some(v) = &self.version {
             // if version is 0, it represent latest version. we should consider it.
             let stdlib_version = v.clone().into_stdlib_version();
-            self.vm_config = if stdlib_version
+            let _message;
+            (self.gas_schedule, _message) = if stdlib_version
                 < StdlibVersion::Version(VMCONFIG_UPGRADE_VERSION_MARK)
             {
                 debug!(
                     "stdlib version: {}, fetch vmconfig from onchain resource",
                     stdlib_version
                 );
-                Some(VMConfig::fetch_config(&remote_storage)?.ok_or_else(|| {
-                    format_err!("Load VMConfig fail, VMConfig resource not exist.")
-                })?)
-            } else {
+                let gas_cost_table = VMConfig::fetch_config(&remote_storage)?
+                    .ok_or_else(|| format_err!("Load VMConfig fail, VMConfig resource not exist."))?
+                    .gas_schedule;
+                (
+                    Some(GasSchedule::from(&gas_cost_table)),
+                    "gas schedule from gensis",
+                )
+            } else if stdlib_version >= StdlibVersion::Version(VMCONFIG_UPGRADE_VERSION_MARK)
+                && stdlib_version < StdlibVersion::Version(GAS_SCHEDULE_UPGRADE_VERSION_MARK)
+            {
                 debug!(
                     "stdlib version: {}, fetch vmconfig from onchain module",
                     stdlib_version
@@ -222,15 +237,43 @@ impl StarcoinVM {
                         })?;
                     bcs_ext::from_bytes::<GasConstants>(&data)?
                 };
-
-                Some(VMConfig {
-                    gas_schedule: CostTable {
-                        instruction_table: instruction_schedule,
-                        native_table: native_schedule,
-                        gas_constants,
-                    },
-                })
-            }
+                let cost_table = CostTable {
+                    instruction_table: instruction_schedule,
+                    native_table: native_schedule,
+                    gas_constants,
+                };
+                (
+                    Some(GasSchedule::from(&cost_table)),
+                    "gas schedule from vm config",
+                )
+            } else {
+                debug!(
+                    "stdlib version: {}, fetch gas schedule from onchain module",
+                    stdlib_version
+                );
+                let gas_schedule = {
+                    let data = self
+                        .execute_readonly_function_internal(
+                            state,
+                            &ModuleId::new(
+                                core_code_address(),
+                                G_GAS_SCHEDULE_IDENTIFIER.to_owned(),
+                            ),
+                            G_GAS_SCHEDULE_INITIALIZE.as_ident_str(),
+                            vec![],
+                            vec![],
+                            false,
+                        )?
+                        .pop()
+                        .ok_or_else(|| {
+                            anyhow::anyhow!("Expect 0x1::GasSchedule::initialize() return value")
+                        })?;
+                    bcs_ext::from_bytes::<GasSchedule>(&data)?
+                };
+                (Some(gas_schedule), "gas schedule from gas schedule in move")
+            };
+            #[cfg(feature = "print_gas_info")]
+            self.gas_schedule.as_ref().unwrap().info(_message);
         }
         Ok(())
     }
