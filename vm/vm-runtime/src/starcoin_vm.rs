@@ -7,7 +7,7 @@ use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
 use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
-use anyhow::{format_err, Error, Result};
+use anyhow::{bail, format_err, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
 use move_table_extension::NativeTableContext;
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
@@ -40,7 +40,7 @@ use starcoin_vm_types::account_config::{
     G_EPILOGUE_NAME, G_EPILOGUE_V2_NAME, G_PROLOGUE_NAME,
 };
 use starcoin_vm_types::file_format::{CompiledModule, CompiledScript};
-use starcoin_vm_types::gas_schedule::G_LATEST_GAS_COST_TABLE;
+use starcoin_vm_types::gas_schedule::{self, G_LATEST_GAS_COST_TABLE};
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
@@ -129,27 +129,36 @@ impl StarcoinVM {
                 gas_schedule: G_LATEST_GAS_COST_TABLE.clone(),
             });
             self.version = Some(Version { major: 1 });
-            self.gas_schedule = Some(GasSchedule::from(
-                &self.vm_config.as_ref().unwrap().gas_schedule,
-            ));
+            self.gas_schedule = Some(GasSchedule::from(&G_LATEST_GAS_COST_TABLE.clone()));
 
             #[cfg(feature = "print_gas_info")]
             self.gas_schedule.as_ref().unwrap().info("from is_genesis");
         } else {
             self.load_configs_impl(state)?;
         }
-        let gas_params = StarcoinGasParameters::from_on_chain_gas_schedule(
-            &self.gas_schedule.as_ref().unwrap().clone().to_btree_map(),
-        );
-        if let Some(ref params) = gas_params {
-            if params.natives != self.native_params {
-                debug!("update native_params");
-                Arc::get_mut(&mut self.move_vm)
-                    .unwrap()
-                    .update_native_functions(params.clone().natives)?;
-                self.native_params = params.natives.clone();
+        match self.gas_schedule.as_ref() {
+            None => {
+                bail!("failed to load gas schedule!");
             }
-            self.gas_params = gas_params;
+            Some(gs) => {
+                let gas_params =
+                    StarcoinGasParameters::from_on_chain_gas_schedule(&gs.clone().to_btree_map());
+                if let Some(ref params) = gas_params {
+                    if params.natives != self.native_params {
+                        debug!("update native_params");
+                        match Arc::get_mut(&mut self.move_vm) {
+                            None => {
+                                bail!("failed to get move vm when load config");
+                            }
+                            Some(mv) => {
+                                mv.update_native_functions(params.clone().natives)?;
+                            }
+                        }
+                        self.native_params = params.natives.clone();
+                    }
+                    self.gas_params = gas_params;
+                }
+            }
         }
         Ok(())
     }
@@ -274,7 +283,14 @@ impl StarcoinVM {
                 (Some(gas_schedule), "gas schedule from gas schedule in move")
             };
             #[cfg(feature = "print_gas_info")]
-            self.gas_schedule.as_ref().unwrap().info(_message);
+            match self.gas_schedule.as_ref() {
+                None => {
+                    bail!("failed to load the gas schedule when trying to print its info");
+                }
+                Some(gs) => {
+                    gs.info(_message);
+                }
+            }
         }
         Ok(())
     }
