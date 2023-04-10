@@ -119,6 +119,7 @@ impl StarcoinVM {
             move_version: None,
             native_params,
             gas_params: Some(gas_params),
+            gas_schedule: None,
         }
     }
 
