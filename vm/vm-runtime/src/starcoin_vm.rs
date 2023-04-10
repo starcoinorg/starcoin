@@ -40,7 +40,7 @@ use starcoin_vm_types::account_config::{
     G_EPILOGUE_NAME, G_EPILOGUE_V2_NAME, G_PROLOGUE_NAME,
 };
 use starcoin_vm_types::file_format::{CompiledModule, CompiledScript};
-use starcoin_vm_types::gas_schedule::{self, G_LATEST_GAS_COST_TABLE};
+use starcoin_vm_types::gas_schedule::G_LATEST_GAS_COST_TABLE;
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
