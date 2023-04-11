@@ -67,5 +67,5 @@ license = { workspace = true }
 name = "move-package-manager"
 publish = { workspace = true }
 repository = { workspace = true }
-version = "1.13.3"
+version = "1.13.4"
 rust-version = { workspace = true }
