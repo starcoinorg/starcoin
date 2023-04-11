@@ -51,7 +51,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-vm-types"
 publish = { workspace = true }
-version = "1.13.3"
+version = "1.13.4"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

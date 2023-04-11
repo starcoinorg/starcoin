@@ -31,6 +31,6 @@ homepage = { workspace = true }
 license = { workspace = true }
 name = "transaction-builder-generator"
 repository = { workspace = true }
-version = "1.13.3"
+version = "1.13.4"
 publish = { workspace = true }
 rust-version = { workspace = true }
