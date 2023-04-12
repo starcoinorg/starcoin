@@ -243,7 +243,7 @@ impl ChainStateDB {
             .get_account_state_object(&table_handle_address(), true)
             .expect("get account state success");
         let state_root = account_state_object
-            .get(&*TABLE_PATH)
+            .get(&TABLE_PATH)
             .expect("get state_root success");
         if let Some(state_root) = state_root {
             let hash = HashValue::from_slice(state_root.as_slice()).expect("hash value success");
@@ -362,7 +362,7 @@ impl ChainStateDB {
             .get_account_state_object(&table_handle_address(), true)
             .expect("get account state success");
         let state_root = account_state_object
-            .get(&*TABLE_PATH)
+            .get(&TABLE_PATH)
             .expect("get state_root success");
         HashValue::from_slice(state_root.unwrap()).unwrap()
     }

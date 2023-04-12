@@ -125,7 +125,7 @@ prop_compose! {
         storage in Just(storage),
     ) -> Block {
     //transfer transactions
-    let mut account = AccountInfoUniverse::default().unwrap();
+    let mut account = AccountInfoUniverse::default();
     let mut txns = txn_transfer(&mut account, gens);
     let user_txns = {
             let mut t=   vec![];
@@ -274,7 +274,7 @@ proptest! {
                 1..2
             ), ) {
         let chain_state = ChainStateDB::new(Arc::new(storage), None);
-        let mut account = AccountInfoUniverse::default().unwrap();
+        let mut account = AccountInfoUniverse::default();
         let txns = txn_transfer(&mut account, gens);
         let result = block_execute(&chain_state, txns, 0, None);
         info!("execute result: {:?}", result);

@@ -15,7 +15,7 @@ stream-task = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 name = "starcoin-sync-api"
-version = "1.13.2"
+version = "1.13.4"
 homepage = { workspace = true }
 license = { workspace = true }
 publish = { workspace = true }

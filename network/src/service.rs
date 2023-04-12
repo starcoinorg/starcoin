@@ -348,8 +348,8 @@ impl ServiceHandler<Self, GetPeerSet> for NetworkActorService {
     ) -> <GetPeerSet as ServiceRequest>::Response {
         self.inner
             .peers
-            .iter()
-            .map(|(_, peer)| peer.get_peer_info().clone())
+            .values()
+            .map(|peer| peer.get_peer_info().clone())
             .collect::<Vec<_>>()
     }
 }
@@ -853,7 +853,7 @@ where
     let peers_len = peers.len();
     // take sqrt(x) peers
     let mut count = (peers_len as f64).powf(0.5).round() as u32;
-    count = count.min(max_peers).max(min_peers);
+    count = count.clamp(min_peers, max_peers);
 
     let mut random = rand::thread_rng();
     let mut peer_ids: Vec<_> = peers.cloned().collect();

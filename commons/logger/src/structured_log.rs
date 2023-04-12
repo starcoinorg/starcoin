@@ -114,5 +114,5 @@ pub fn with_logger<F, R>(f: F) -> R
 where
     F: FnOnce(&Logger) -> R,
 {
-    f(&(*G_GLOBAL_SLOG_LOGGER.load()))
+    f(&G_GLOBAL_SLOG_LOGGER.load())
 }

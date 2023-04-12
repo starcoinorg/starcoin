@@ -69,7 +69,7 @@ impl TaskState for BlockAccumulatorSyncTask {
     }
 
     fn next(&self) -> Option<Self> {
-        let next_start_number = self.start_number.saturating_add(self.batch_size as u64);
+        let next_start_number = self.start_number.saturating_add(self.batch_size);
         if next_start_number >= self.target.num_leaves {
             None
         } else {

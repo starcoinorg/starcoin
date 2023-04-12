@@ -80,12 +80,12 @@ impl NodeIndex {
 
     pub fn root_from_leaf_count(leaf_count: LeafCount) -> Self {
         assert!(leaf_count > 0);
-        Self::root_from_leaf_index((leaf_count - 1) as u64)
+        Self::root_from_leaf_index(leaf_count - 1)
     }
 
     pub fn root_level_from_leaf_count(leaf_count: LeafCount) -> u32 {
         assert!(leaf_count > 0);
-        let index = (leaf_count - 1) as u64;
+        let index = leaf_count - 1;
         MAX_ACCUMULATOR_PROOF_DEPTH as u32 + 1 - index.leading_zeros()
     }
 
@@ -350,7 +350,7 @@ impl Iterator for FrozenSubtreeSiblingIterator {
         self.remaining_new_leaves -= next_subtree_leaves;
 
         Some(NodeIndex::from_inorder_index(
-            (first_leaf_index + last_leaf_index) as u64,
+            first_leaf_index + last_leaf_index,
         ))
     }
 }

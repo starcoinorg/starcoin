@@ -880,7 +880,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         params: Params,
     ) -> Result<(Option<String>, Option<Value>)> {
         let output = self.context.call_api(method.as_str(), params)?;
-        Ok((None, Some(serde_json::to_value(&output)?)))
+        Ok((None, Some(serde_json::to_value(output)?)))
     }
 
     fn build_package(
@@ -1026,7 +1026,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         vars: Vec<(String, String)>,
     ) -> Result<(Option<String>, Option<Value>)> {
         let var_dict: HashMap<String, String> = vars.into_iter().collect();
-        Ok((None, Some(serde_json::to_value(&var_dict)?)))
+        Ok((None, Some(serde_json::to_value(var_dict)?)))
     }
 
     fn handle_read_json(&mut self, file: &Path) -> Result<(Option<String>, Option<Value>)> {
@@ -1233,10 +1233,49 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
 
         let params = self.fetch_default_transaction_parameters(&sender)?;
 
+        // orignal 0xc867 become 0x0c383637, this convert 0x0c383637 => 0xc867
+        let mut args_vec = vec![];
+        for arg in args.into_iter() {
+            match arg {
+                MoveValue::Vector(vals) => {
+                    let mut is_vec_u8 = true;
+                    for val in vals.iter() {
+                        match val {
+                            MoveValue::U8(_) => {}
+                            _ => is_vec_u8 = false,
+                        }
+                    }
+                    if vals.len() % 2 == 1 || vals.is_empty() {
+                        is_vec_u8 = false;
+                    }
+                    match is_vec_u8 {
+                        true => {
+                            assert_eq!(vals.get(0), Some(&MoveValue::U8(48)));
+                            assert_eq!(vals.get(1), Some(&MoveValue::U8(120)));
+                            let mut vals_compress = vec![];
+                            for i in (2..vals.len()).step_by(2) {
+                                let x = vals.get(i).cloned();
+                                let y = vals.get(i + 1).cloned();
+                                match (x, y) {
+                                    (Some(MoveValue::U8(a)), Some(MoveValue::U8(b))) => {
+                                        let val = (convert_u8(a) << 4) | convert_u8(b);
+                                        vals_compress.push(MoveValue::U8(val));
+                                    }
+                                    _ => panic!("is not possible"),
+                                }
+                            }
+                            args_vec.push(MoveValue::Vector(vals_compress));
+                        }
+                        false => args_vec.push(MoveValue::Vector(vals)),
+                    }
+                }
+                _ => args_vec.push(arg),
+            }
+        }
         let txn = RawUserTransaction::new_script(
             sender,
             params.sequence_number,
-            Script::new(script_blob, type_args, convert_txn_args(&args)),
+            Script::new(script_blob, type_args, convert_txn_args(&args_vec)),
             gas_budget.unwrap_or(params.max_gas_amount),
             params.gas_unit_price,
             params.expiration_timestamp_secs,
@@ -1451,3 +1490,13 @@ pub static G_PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<FullyCompiledProgram> = Lazy::
         }
     }
 });
+
+fn convert_u8(val: u8) -> u8 {
+    // val >= 'a' && val <= 'z'
+    if (97..=122).contains(&val) {
+        val - 97 + 10
+    } else {
+        // val >= '0' && val <= '9'
+        val - 48
+    }
+}

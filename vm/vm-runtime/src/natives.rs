@@ -1,6 +1,6 @@
-use move_core_types::account_address::AccountAddress;
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
+use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::CORE_CODE_ADDRESS;
 use move_vm_runtime::native_functions;
 use move_vm_runtime::native_functions::{

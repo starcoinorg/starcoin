@@ -100,7 +100,7 @@ fn generate() -> Result<(), Error> {
     tracer.trace_type::<SignedMessage>(&samples)?;
     let registry = tracer.registry()?;
     let data = serde_yaml::to_string(&registry).unwrap();
-    std::fs::write("../etc/starcoin_types.yml", &data).unwrap();
+    std::fs::write("../etc/starcoin_types.yml", data).unwrap();
 
     {
         let mut tracer = Tracer::new(TracerConfig::default());
@@ -116,7 +116,7 @@ fn generate() -> Result<(), Error> {
         tracer.trace_type::<NewBlockEvent>(&samples)?;
         let registry = tracer.registry()?;
         let data = serde_yaml::to_string(&registry).unwrap();
-        std::fs::write("../etc/onchain_events.yml", &data).unwrap();
+        std::fs::write("../etc/onchain_events.yml", data).unwrap();
     }
     // println!("{}", data);
     Ok(())

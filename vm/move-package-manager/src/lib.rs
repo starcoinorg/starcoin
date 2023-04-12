@@ -131,11 +131,14 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
         return starcoin_transactional_test_harness::print_help(cmd.task_name);
     };
     let rerooted_path = {
-        let path = &move_arg.package_path;
+        let path = match move_arg.package_path {
+            Some(_) => move_arg.package_path.clone(),
+            None => Some(std::env::current_dir()?),
+        };
         // Always root ourselves to the package root, and then compile relative to that.
         let rooted_path =
             SourcePackageLayout::try_find_root(&path.as_ref().unwrap().canonicalize()?)?;
-        std::env::set_current_dir(&rooted_path).unwrap();
+        std::env::set_current_dir(rooted_path).unwrap();
         PathBuf::from(".")
     };
     let (pre_compiled_lib, _compiled_package) = {

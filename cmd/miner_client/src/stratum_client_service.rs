@@ -315,7 +315,7 @@ impl ServiceFactory<StratumClientService> for StratumClientServiceServiceFactory
     fn create(ctx: &mut ServiceContext<StratumClientService>) -> Result<StratumClientService> {
         let cfg = ctx.get_shared::<MinerClientConfig>()?;
         let addr = cfg.server.unwrap_or_else(|| "127.0.0.1:9880".into());
-        let tcp_stream = Some(std::net::TcpStream::connect(&addr)?);
+        let tcp_stream = Some(std::net::TcpStream::connect(addr)?);
         Ok(StratumClientService {
             sender: None,
             tcp_stream,
