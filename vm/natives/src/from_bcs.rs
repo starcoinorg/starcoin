@@ -68,10 +68,11 @@ pub struct GasParameters {
     pub per_byte: InternalGasPerByte,
 }
 
-pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item=(String, NativeFunction)> {
+pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [(
         "from_bytes",
         make_native_from_func(gas_params, native_from_bytes),
     )];
     crate::helpers::make_module_natives(natives)
 }
+

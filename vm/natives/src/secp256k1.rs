@@ -21,6 +21,7 @@ use std::collections::VecDeque;
 
 /// Abort code when deserialization fails (0x01 == INVALID_ARGUMENT)
 /// NOTE: This must match the code in the Move implementation
+///
 pub mod abort_codes {
     pub const NFE_DESERIALIZE: u64 = 0x01_0001;
 }
@@ -95,7 +96,7 @@ pub struct GasParameters {
     pub ecdsa_recover: InternalGasPerArg,
 }
 
-pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item=(String, NativeFunction)> {
+pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [(
         "ecdsa_recover_internal",
         make_native_from_func(gas_params, native_ecdsa_recover),
