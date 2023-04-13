@@ -75,4 +75,3 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
     )];
     crate::helpers::make_module_natives(natives)
 }
-

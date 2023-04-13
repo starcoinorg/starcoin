@@ -941,9 +941,9 @@ pub static G_BARNARD_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 
 pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let cost_table = CostTable {
-                instruction_table: instruction_table_v1(),
-                native_table: native_table_v1(),
-                gas_constants: G_GAS_CONSTANTS_V1.clone(),
+        instruction_table: instruction_table_v1(),
+        native_table: native_table_v1(),
+        gas_constants: G_GAS_CONSTANTS_V1.clone(),
     };
 
     // This is a test config,
@@ -1009,9 +1009,9 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let stdlib_version = StdlibVersion::Version(4);
     let publishing_option = TransactionPublishOption::locked();
     let cost_table = CostTable {
-                instruction_table: instruction_table_v1(),
-                native_table: native_table_v2(),
-                gas_constants: G_GAS_CONSTANTS_V2.clone(),
+        instruction_table: instruction_table_v1(),
+        native_table: native_table_v2(),
+        gas_constants: G_GAS_CONSTANTS_V2.clone(),
     };
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter{
