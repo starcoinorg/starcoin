@@ -385,6 +385,18 @@ pub fn native_gas_schedule_v4() -> Vec<(String, u64)> {
             "move_stdlib.string.index_of.per_byte_searched".to_string(),
             gas_total(4, 1),
         ),
+        (
+            "move_stdlib.frombcs.from_bytes.per_byte".to_string(),
+            gas_total(4, 1),
+        ),
+        (
+            "move_stdlib.ecdsa_recover_internal.base".to_string(),
+            gas_total(4, 1),
+        ),
+        (
+            "move_stdlib.vector.spawn_from.per_byte".to_string(),
+            gas_total(4, 1),
+        ),
     ];
     natives.append(&mut natives_delta);
     natives
