@@ -631,7 +631,7 @@ impl StarcoinVM {
                 } else {
                     txn_data.sender
                 };
-                println!(
+                debug!(
                     "execute init script({}::{}) by account {:?}",
                     init_script.module(),
                     init_script.function(),
