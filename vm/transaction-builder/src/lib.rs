@@ -545,7 +545,7 @@ pub fn build_init_script_with_function(net: &ChainNetwork, function: &str) -> Sc
                 .consensus_config
                 .base_reward_per_uncle_percent,
         )
-            .unwrap(),
+        .unwrap(),
         bcs_ext::to_bytes(&genesis_config.consensus_config.min_block_time_target).unwrap(),
         bcs_ext::to_bytes(&genesis_config.consensus_config.max_block_time_target).unwrap(),
         bcs_ext::to_bytes(&genesis_config.consensus_config.base_max_uncles_per_block).unwrap(),
