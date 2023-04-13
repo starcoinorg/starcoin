@@ -620,6 +620,8 @@ pub struct GenesisConfig {
     pub time_service_type: TimeServiceType,
     /// transaction timeout
     pub transaction_timeout: u64,
+    /// gas schedule
+    pub gas_schedule: GasSchedule,
 }
 
 impl GenesisConfig {
@@ -720,7 +722,7 @@ const ONE_DAY: u64 = 86400;
 pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_multi_key_pair();
     let (genesis_private_key, genesis_public_key) = genesis_key_pair();
-
+    let latest_cost_table = latest_cost_table(G_TEST_GAS_CONSTANTS.clone());
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
             parent_hash: HashValue::sha3_256_of(b"starcoin_test"),
@@ -734,7 +736,7 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
-            gas_schedule: latest_cost_table(G_TEST_GAS_CONSTANTS.clone()),
+            gas_schedule: latest_cost_table.clone(),
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
@@ -764,12 +766,14 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
+        gas_schedule: GasSchedule::from(&latest_cost_table),
     }
 });
 
 pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_multi_key_pair();
     let (genesis_private_key, genesis_public_key) = genesis_key_pair();
+    let latest_cost_table = latest_cost_table(G_TEST_GAS_CONSTANTS.clone());
 
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
@@ -783,7 +787,7 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: 3600 * 24,
         vm_config: VMConfig {
-            gas_schedule: latest_cost_table(G_TEST_GAS_CONSTANTS.clone()),
+            gas_schedule: latest_cost_table.clone(),
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
@@ -813,6 +817,7 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
+        gas_schedule: GasSchedule::from(&latest_cost_table),
     }
 });
 
@@ -867,6 +872,7 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
+        gas_schedule: GasSchedule::from(&G_LATEST_GAS_COST_TABLE.clone()),
     }
 });
 
@@ -921,6 +927,7 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 1000, // 1 minute
         },
         transaction_timeout: ONE_DAY,
+        gas_schedule: GasSchedule::from(&G_LATEST_GAS_COST_TABLE.clone()),
     }
 });
 
@@ -933,6 +940,12 @@ pub static G_BARNARD_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 });
 
 pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
+    let cost_table = CostTable {
+                instruction_table: instruction_table_v1(),
+                native_table: native_table_v1(),
+                gas_constants: G_GAS_CONSTANTS_V1.clone(),
+    };
+
     // This is a test config,
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter{
@@ -946,11 +959,7 @@ pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: STCUnit::STC.value_of(47777040).scaling(),
         time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
-            gas_schedule: CostTable {
-                instruction_table: instruction_table_v1(),
-                native_table: native_table_v1(),
-                gas_constants: G_GAS_CONSTANTS_V1.clone(),
-            },
+            gas_schedule: cost_table.clone(),
         },
         publishing_option: TransactionPublishOption::locked(),
         consensus_config: ConsensusConfig {
@@ -978,6 +987,7 @@ pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 24 * 1000, // 1d
         },
         transaction_timeout: ONE_DAY,
+        gas_schedule: GasSchedule::from(&cost_table),
     }
 });
 
@@ -998,6 +1008,11 @@ pub static G_MAIN_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let stdlib_version = StdlibVersion::Version(4);
     let publishing_option = TransactionPublishOption::locked();
+    let cost_table = CostTable {
+                instruction_table: instruction_table_v1(),
+                native_table: native_table_v2(),
+                gas_constants: G_GAS_CONSTANTS_V2.clone(),
+    };
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter{
             parent_hash: HashValue::from_hex_literal("0xb82a2c11f2df62bf87c2933d0281e5fe47ea94d5f0049eec1485b682df29529a").unwrap(),
@@ -1010,11 +1025,7 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
-            gas_schedule: CostTable {
-                instruction_table: instruction_table_v1(),
-                native_table: native_table_v2(),
-                gas_constants: G_GAS_CONSTANTS_V2.clone(),
-            },
+            gas_schedule: cost_table.clone(),
         },
         publishing_option,
         consensus_config: ConsensusConfig {
@@ -1042,6 +1053,7 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 24 * 1000, // 1d
         },
         transaction_timeout: ONE_DAY,
+        gas_schedule: GasSchedule::from(&cost_table),
     }
 });
 

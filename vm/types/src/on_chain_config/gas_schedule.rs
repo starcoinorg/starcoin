@@ -17,6 +17,8 @@ pub static G_GAS_SCHEDULE_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new(GAS_SCHEDULE_MODULE_NAME).unwrap());
 pub static G_GAS_SCHEDULE_INITIALIZE: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("initialize").unwrap());
+pub static G_GAS_SCHEDULE_GAS_SCHEDULE: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new("gas_schedule").unwrap());
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct GasSchedule {

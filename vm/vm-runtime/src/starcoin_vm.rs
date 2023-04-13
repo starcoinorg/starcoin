@@ -46,7 +46,7 @@ use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::on_chain_config::{
     GasSchedule, MoveLanguageVersion, G_GAS_CONSTANTS_IDENTIFIER, G_GAS_SCHEDULE_IDENTIFIER,
-    G_GAS_SCHEDULE_INITIALIZE, G_INSTRUCTION_SCHEDULE_IDENTIFIER, G_NATIVE_SCHEDULE_IDENTIFIER,
+    G_GAS_SCHEDULE_GAS_SCHEDULE, G_INSTRUCTION_SCHEDULE_IDENTIFIER, G_NATIVE_SCHEDULE_IDENTIFIER,
     G_VM_CONFIG_IDENTIFIER,
 };
 use starcoin_vm_types::state_store::state_key::StateKey;
@@ -269,7 +269,7 @@ impl StarcoinVM {
                                 core_code_address(),
                                 G_GAS_SCHEDULE_IDENTIFIER.to_owned(),
                             ),
-                            G_GAS_SCHEDULE_INITIALIZE.as_ident_str(),
+                            G_GAS_SCHEDULE_GAS_SCHEDULE.as_ident_str(),
                             vec![],
                             vec![],
                             false,
@@ -631,7 +631,7 @@ impl StarcoinVM {
                 } else {
                     txn_data.sender
                 };
-                debug!(
+                println!(
                     "execute init script({}::{}) by account {:?}",
                     init_script.module(),
                     init_script.function(),
