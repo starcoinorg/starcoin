@@ -1,3 +1,4 @@
+use crate::on_chain_config::GasSchedule;
 use once_cell::sync::Lazy;
 use starcoin_gas_algebra_ext::{CostTable, GasConstants};
 
@@ -140,5 +141,19 @@ pub fn latest_cost_table(gas_constants: GasConstants) -> CostTable {
 }
 
 /// only used in starcoin vm when init genesis
-pub static G_LATEST_GAS_SCHEDULE: Lazy<CostTable> =
+pub static G_LATEST_GAS_COST_TABLE: Lazy<CostTable> =
     Lazy::new(|| latest_cost_table(G_LATEST_GAS_CONSTANTS.clone()));
+
+pub fn latest_gas_schedule(gas_constants: GasConstants) -> GasSchedule {
+    let cost_table = CostTable {
+        instruction_table: crate::on_chain_config::G_LATEST_INSTRUCTION_TABLE.clone(),
+        native_table: crate::on_chain_config::G_LATEST_NATIVE_TABLE.clone(),
+        gas_constants,
+    };
+
+    GasSchedule::from(&cost_table)
+}
+
+/// only used in starcoin vm when init genesis
+pub static G_LATEST_GAS_SCHEDULE: Lazy<GasSchedule> =
+    Lazy::new(|| latest_gas_schedule(G_LATEST_GAS_CONSTANTS.clone()));
