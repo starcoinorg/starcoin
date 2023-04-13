@@ -613,6 +613,9 @@ static G_NATIVE_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
         "move_stdlib.string.sub_string.per_byte",
         "move_stdlib.string.is_char_boundary.base",
         "move_stdlib.string.index_of.per_byte_searched",
+        "move_stdlib.frombcs.from_bytes.per_byte",
+        "move_stdlib.ecdsa_recover_internal.base",
+        "move_stdlib.vector.spawn_from.per_byte",
     ]
 });
 
