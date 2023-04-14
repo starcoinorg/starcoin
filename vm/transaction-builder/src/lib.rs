@@ -14,7 +14,7 @@ use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::language_storage::{StructTag, TypeTag};
-use starcoin_vm_types::on_chain_config::{VMConfig, GasSchedule};
+use starcoin_vm_types::on_chain_config::{GasSchedule, VMConfig};
 use starcoin_vm_types::on_chain_resource::nft::NFTUUID;
 use starcoin_vm_types::token::stc::{stc_type_tag, G_STC_TOKEN_CODE};
 use starcoin_vm_types::token::token_code::TokenCode;
@@ -661,7 +661,9 @@ pub fn build_init_script_with_function(net: &ChainNetwork, function: &str) -> Sc
     ];
 
     if function == "initialize_v3" {
-        args.push(bcs_ext::to_bytes(&GasSchedule::from(&genesis_config.vm_config.gas_schedule)).unwrap());
+        args.push(
+            bcs_ext::to_bytes(&GasSchedule::from(&genesis_config.vm_config.gas_schedule)).unwrap(),
+        );
     }
 
     ScriptFunction::new(
