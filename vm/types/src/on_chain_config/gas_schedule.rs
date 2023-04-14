@@ -385,10 +385,7 @@ pub fn native_gas_schedule_v4() -> Vec<(String, u64)> {
             "move_stdlib.string.index_of.per_byte_searched".to_string(),
             gas_total(4, 1),
         ),
-        (
-            "starcoin_natives.frombcs.base".to_string(),
-            gas_total(4, 1),
-        ),
+        ("starcoin_natives.frombcs.base".to_string(), gas_total(4, 1)),
         (
             "starcoin_natives.secp256k1.base".to_string(),
             gas_total(4, 1),
