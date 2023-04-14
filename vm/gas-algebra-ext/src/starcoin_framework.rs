@@ -33,4 +33,6 @@ crate::natives::define_gas_parameters_for_natives!(GasParameters, "starcoin_nati
     [.u256.div.base,  optional "u256.div.base",  (10 + 1) * MUL],
     [.u256.rem.base,  optional "u256.rem.base",  (4 + 1) * MUL],
     [.u256.pow.base,  optional "u256.pow.base",  (8 + 1) * MUL],
-], allow_unmapped = 3 /* signature */ + 2 /* hash */ + 1 /* u256 */);
+    [.from_bcs.base, optional "frombcs.base", (4 + 1)  * MUL],
+    [.secp256k1.base, optional "secp256k1.base", (4 + 1)  * MUL],
+], allow_unmapped = 3 /* signature */ + 2 /* hash */ + 1 /* u256 */ + 1 /* from_bcs */ + 1 /* secp256k1 */);
