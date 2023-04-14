@@ -477,6 +477,18 @@
         {
           "instruction_gas": 4,
           "memory_gas": 1
+        },
+        {
+          "instruction_gas": 4,
+          "memory_gas": 1
+        },
+        {
+          "instruction_gas": 4,
+          "memory_gas": 1
+        },
+        {
+          "instruction_gas": 4,
+          "memory_gas": 1
         }
       ],
       "gas_constants": {

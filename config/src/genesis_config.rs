@@ -620,8 +620,6 @@ pub struct GenesisConfig {
     pub time_service_type: TimeServiceType,
     /// transaction timeout
     pub transaction_timeout: u64,
-    /// gas schedule
-    pub gas_schedule: GasSchedule,
 }
 
 impl GenesisConfig {
@@ -766,7 +764,6 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
-        gas_schedule: GasSchedule::from(&latest_cost_table),
     }
 });
 
@@ -817,7 +814,6 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
-        gas_schedule: GasSchedule::from(&latest_cost_table),
     }
 });
 
@@ -872,7 +868,6 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
-        gas_schedule: GasSchedule::from(&G_LATEST_GAS_COST_TABLE.clone()),
     }
 });
 
@@ -927,7 +922,6 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 1000, // 1 minute
         },
         transaction_timeout: ONE_DAY,
-        gas_schedule: GasSchedule::from(&G_LATEST_GAS_COST_TABLE.clone()),
     }
 });
 
@@ -987,7 +981,6 @@ pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 24 * 1000, // 1d
         },
         transaction_timeout: ONE_DAY,
-        gas_schedule: GasSchedule::from(&cost_table),
     }
 });
 
@@ -1053,7 +1046,6 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 24 * 1000, // 1d
         },
         transaction_timeout: ONE_DAY,
-        gas_schedule: GasSchedule::from(&cost_table),
     }
 });
 
