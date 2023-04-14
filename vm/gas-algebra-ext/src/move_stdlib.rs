@@ -32,7 +32,7 @@ crate::natives::define_gas_parameters_for_natives!(GasParameters, "move_stdlib",
 
     // Note(Gas): this initial value is guesswork.
     [.signer.borrow_address.base, "signer.borrow_address.base", (353 + 1) * MUL],
-    // [.bcs.to_address.base, "bcs.to_address.base", 0 * MUL], 111
+    // [.bcs.to_address.base, "bcs.to_address.base", 0 * MUL],
     [.bcs.to_address.per_byte, "bcs.to_address.per_byte", (26 + 1) *MUL],
 
     //[.vector.append.base, optional "vector.append.base", 0 * MUL],
