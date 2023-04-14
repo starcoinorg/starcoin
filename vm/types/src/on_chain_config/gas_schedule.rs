@@ -386,15 +386,15 @@ pub fn native_gas_schedule_v4() -> Vec<(String, u64)> {
             gas_total(4, 1),
         ),
         (
-            "move_stdlib.frombcs.from_bytes.per_byte".to_string(),
+            "starcoin_natives.frombcs.base".to_string(),
             gas_total(4, 1),
         ),
         (
-            "move_stdlib.ecdsa_recover_internal.base".to_string(),
+            "starcoin_natives.secp256k1.base".to_string(),
             gas_total(4, 1),
         ),
         (
-            "move_stdlib.vector.spawn_from.per_byte".to_string(),
+            "move_stdlib.vector.spawn_from.legacy_per_abstract_memory_unit".to_string(),
             gas_total(4, 1),
         ),
     ];
@@ -625,9 +625,9 @@ static G_NATIVE_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
         "move_stdlib.string.sub_string.per_byte",
         "move_stdlib.string.is_char_boundary.base",
         "move_stdlib.string.index_of.per_byte_searched",
-        "move_stdlib.frombcs.from_bytes.per_byte",
-        "move_stdlib.ecdsa_recover_internal.base",
-        "move_stdlib.vector.spawn_from.per_byte",
+        "starcoin_natives.frombcs.base",
+        "starcoin_natives.secp256k1.base",
+        "move_stdlib.vector.spawn_from.legacy_per_abstract_memory_unit",
     ]
 });
 
