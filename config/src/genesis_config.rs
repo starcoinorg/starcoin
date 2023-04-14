@@ -734,7 +734,7 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
-            gas_schedule: latest_cost_table.clone(),
+            gas_schedule: latest_cost_table,
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
@@ -784,7 +784,7 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: 3600 * 24,
         vm_config: VMConfig {
-            gas_schedule: latest_cost_table.clone(),
+            gas_schedule: latest_cost_table,
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
@@ -953,7 +953,7 @@ pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: STCUnit::STC.value_of(47777040).scaling(),
         time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
-            gas_schedule: cost_table.clone(),
+            gas_schedule: cost_table,
         },
         publishing_option: TransactionPublishOption::locked(),
         consensus_config: ConsensusConfig {
@@ -1018,7 +1018,7 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
-            gas_schedule: cost_table.clone(),
+            gas_schedule: cost_table,
         },
         publishing_option,
         consensus_config: ConsensusConfig {
