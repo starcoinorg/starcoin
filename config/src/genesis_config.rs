@@ -1062,7 +1062,7 @@ mod tests {
         instruction_gas_schedule_v1, instruction_gas_schedule_v2, instruction_table_v1,
         native_gas_schedule_v1, native_gas_schedule_v2, native_gas_schedule_v4, native_table_v1,
         native_table_v2, txn_gas_schedule_test, txn_gas_schedule_v1, txn_gas_schedule_v2,
-        txn_gas_schedule_v3, GasSchedule, VMConfig,
+        txn_gas_schedule_v3, GasSchedule,
     };
 
     fn config_entries(
