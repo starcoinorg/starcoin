@@ -482,7 +482,6 @@ pub fn txn_gas_schedule_test() -> Vec<(String, u64)> {
     ]
 }
 
-// XXX FIXME YSG, check wether we need add gas_schedule in storage
 impl OnChainConfig for GasSchedule {
     const MODULE_IDENTIFIER: &'static str = GAS_SCHEDULE_MODULE_NAME;
     const CONF_IDENTIFIER: &'static str = GAS_SCHEDULE_MODULE_NAME;
