@@ -5684,6 +5684,7 @@ dependencies = [
  "anyhow",
  "move-binary-format",
  "move-core-types",
+ "move-table-extension",
  "move-vm-types",
  "once_cell",
  "serde 1.0.152",
@@ -9530,14 +9531,14 @@ dependencies = [
 [[package]]
 name = "starcoin-framework"
 version = "11.0.0"
-source = "git+https://github.com/starcoinorg/starcoin-framework?rev=765cf8c187c123dd78ff3cc270eecb4fef658a26#765cf8c187c123dd78ff3cc270eecb4fef658a26"
+source = "git+https://github.com/starcoinorg/starcoin-framework?rev=3d91be39d6fc9ccffff8536a08e01e642f862577#3d91be39d6fc9ccffff8536a08e01e642f862577"
 dependencies = [
-    "anyhow",
-    "include_dir",
-    "log 0.4.17",
-    "once_cell",
-    "tempfile",
-    "walkdir",
+ "anyhow",
+ "include_dir",
+ "log 0.4.17",
+ "once_cell",
+ "tempfile",
+ "walkdir",
 ]
 
 [[package]]

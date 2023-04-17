@@ -342,11 +342,11 @@ move-prover-test-utils = { git = "https://github.com/starcoinorg/move", rev = "f
 move-resource-viewer = { git = "https://github.com/starcoinorg/move", rev = "ff59f98c88827b75ddd8ac59cd5163b26aa57155" }
 move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "ff59f98c88827b75ddd8ac59cd5163b26aa57155" }
 move-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "ff59f98c88827b75ddd8ac59cd5163b26aa57155" }
-move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "ff59f98c88827b75ddd8ac59cd5163b26aa57155" }
+move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "ff59f98c88827b75ddd8ac59cd5163b26aa57155", features = ["table-extension"] }
 move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "ff59f98c88827b75ddd8ac59cd5163b26aa57155" }
 move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "ff59f98c88827b75ddd8ac59cd5163b26aa57155" }
 move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "ff59f98c88827b75ddd8ac59cd5163b26aa57155" }
-move-vm-test-utils = { git = "https://github.com/starcoinorg/move", rev = "ff59f98c88827b75ddd8ac59cd5163b26aa57155" }
+move-vm-test-utils = { git = "https://github.com/starcoinorg/move", rev = "ff59f98c88827b75ddd8ac59cd5163b26aa57155", features = ["table-extension"] }
 
 names = { version = "0.14.0", default-features = false }
 network-api = { path = "network/api", package = "network-api" }
@@ -431,7 +431,7 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 starcoin-decrypt = { path = "commons/decrypt" }
 starcoin-dev = { path = "vm/dev" }
 starcoin-executor = { path = "executor" }
-starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "765cf8c187c123dd78ff3cc270eecb4fef658a26" }
+starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "3d91be39d6fc9ccffff8536a08e01e642f862577" }
 starcoin-genesis = { path = "genesis" }
 starcoin-logger = { path = "commons/logger" }
 starcoin-metrics = { path = "commons/metrics" }
