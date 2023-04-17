@@ -308,7 +308,7 @@ fn main() {
     std::env::set_current_dir(base_path).expect("failed to change directory");
 
     let sources = &STARCOIN_FRAMEWORK_SOURCES;
-    let new_modules = build_stdlib(&sources.files());
+    let new_modules = build_stdlib(&sources.files);
 
     if !no_check_compatibility {
         if let Some((pre_stable_version, pre_stable_modules)) = pre_version
