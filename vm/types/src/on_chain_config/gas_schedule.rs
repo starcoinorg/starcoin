@@ -2,10 +2,23 @@ use crate::gas_schedule::{
     G_MAX_TRANSACTION_SIZE_IN_BYTES_V1, G_MAX_TRANSACTION_SIZE_IN_BYTES_V2,
     G_MAX_TRANSACTION_SIZE_IN_BYTES_V3,
 };
-use crate::on_chain_config::{OnChainConfig, VMConfig};
+use crate::on_chain_config::OnChainConfig;
+use anyhow::{format_err, Result};
+#[cfg(feature = "print_gas_info")]
+use log::info;
+use move_core_types::identifier::Identifier;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use starcoin_gas_algebra_ext::CostTable;
 use std::collections::BTreeMap;
+
+const GAS_SCHEDULE_MODULE_NAME: &str = "GasSchedule";
+pub static G_GAS_SCHEDULE_IDENTIFIER: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new(GAS_SCHEDULE_MODULE_NAME).unwrap());
+pub static G_GAS_SCHEDULE_INITIALIZE: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new("initialize").unwrap());
+pub static G_GAS_SCHEDULE_GAS_SCHEDULE: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new("gas_schedule").unwrap());
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct GasSchedule {
@@ -16,6 +29,17 @@ impl GasSchedule {
     pub fn to_btree_map(self) -> BTreeMap<String, u64> {
         // TODO: what if the gas schedule contains duplicated entries?
         self.entries.into_iter().collect()
+    }
+
+    #[cfg(feature = "print_gas_info")]
+    pub fn info(&self, message: &str) {
+        let mut gas_info = String::from("GasSchedule info begin\n");
+        gas_info.push_str(&format!("{}", message));
+        self.entries.iter().for_each(|(key, value)| {
+            gas_info.push_str(&format!("key = {}, gas value = {}\n", key, value));
+        });
+        gas_info.push_str("GasSchedule info end\n");
+        info!("{}", gas_info);
     }
 }
 
@@ -361,6 +385,15 @@ pub fn native_gas_schedule_v4() -> Vec<(String, u64)> {
             "move_stdlib.string.index_of.per_byte_searched".to_string(),
             gas_total(4, 1),
         ),
+        ("starcoin_natives.frombcs.base".to_string(), gas_total(4, 1)),
+        (
+            "starcoin_natives.secp256k1.base".to_string(),
+            gas_total(4, 1),
+        ),
+        (
+            "move_stdlib.vector.spawn_from.legacy_per_abstract_memory_unit".to_string(),
+            gas_total(4, 1),
+        ),
     ];
     natives.append(&mut natives_delta);
     natives
@@ -449,10 +482,19 @@ pub fn txn_gas_schedule_test() -> Vec<(String, u64)> {
     ]
 }
 
-// XXX FIXME YSG, check wether we need add gas_schedule in storage
 impl OnChainConfig for GasSchedule {
-    const MODULE_IDENTIFIER: &'static str = "gas_schedule";
-    const CONF_IDENTIFIER: &'static str = "GasScheduleConfig";
+    const MODULE_IDENTIFIER: &'static str = GAS_SCHEDULE_MODULE_NAME;
+    const CONF_IDENTIFIER: &'static str = GAS_SCHEDULE_MODULE_NAME;
+
+    fn deserialize_into_config(bytes: &[u8]) -> Result<Self> {
+        let raw_gas_schedule = bcs_ext::from_bytes::<GasSchedule>(bytes).map_err(|e| {
+            format_err!(
+                "Failed first round of deserialization for GasSchedule: {}",
+                e
+            )
+        })?;
+        Ok(raw_gas_schedule)
+    }
 }
 
 static G_INSTR_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
@@ -579,17 +621,20 @@ static G_NATIVE_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
         "move_stdlib.string.sub_string.per_byte",
         "move_stdlib.string.is_char_boundary.base",
         "move_stdlib.string.index_of.per_byte_searched",
+        "starcoin_natives.frombcs.base",
+        "starcoin_natives.secp256k1.base",
+        "move_stdlib.vector.spawn_from.legacy_per_abstract_memory_unit",
     ]
 });
 
 // https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move
-impl From<&VMConfig> for GasSchedule {
-    fn from(vm_config: &VMConfig) -> Self {
+impl From<&CostTable> for GasSchedule {
+    fn from(cost_table: &CostTable) -> Self {
         let mut entries = vec![];
 
         // see vm/gas_algebra-ext/src/instr.rs
         // see https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#instruction_schedule
-        let instrs = vm_config.gas_schedule.instruction_table.clone();
+        let instrs = cost_table.instruction_table.clone();
         for (idx, cost) in instrs.into_iter().enumerate() {
             entries.push((G_INSTR_STRS[idx].to_string(), cost.total()));
         }
@@ -602,7 +647,7 @@ impl From<&VMConfig> for GasSchedule {
 
         // see vm/gas_algebra-ext/src/{move_stdlib.rs starcoin_framework.rs nursery.rs table.rs}
         // see https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#native_schedule
-        let natives = vm_config.gas_schedule.native_table.clone();
+        let natives = cost_table.native_table.clone();
         for (idx, cost) in natives.into_iter().enumerate() {
             if G_NATIVE_STRS[idx].is_empty() {
                 continue;
@@ -629,7 +674,7 @@ impl From<&VMConfig> for GasSchedule {
         ));
 
         // see vm/gas_algebra-ext/src/transaction.rs
-        let txn = &vm_config.gas_schedule.gas_constants;
+        let txn = &cost_table.gas_constants;
         entries.push((
             "txn.global_memory_per_byte_cost".to_string(),
             txn.global_memory_per_byte_cost,

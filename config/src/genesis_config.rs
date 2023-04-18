@@ -21,7 +21,7 @@ use starcoin_uint::U256;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::event::EventHandle;
 use starcoin_vm_types::gas_schedule::{
-    latest_cost_table, G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_LATEST_GAS_SCHEDULE,
+    latest_cost_table, G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_LATEST_GAS_COST_TABLE,
     G_TEST_GAS_CONSTANTS,
 };
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy, StdlibVersion};
@@ -836,7 +836,7 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: 3600 * 24 * 31,
         vm_config: VMConfig {
-            gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
+            gas_schedule: G_LATEST_GAS_COST_TABLE.clone(),
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
@@ -890,7 +890,7 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD / 12,
         vm_config: VMConfig {
-            gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
+            gas_schedule: G_LATEST_GAS_COST_TABLE.clone(),
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
@@ -1046,10 +1046,7 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 });
 
 pub static G_LATEST_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
-    let vm_config = VMConfig {
-        gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
-    };
-    let gas_schedule = GasSchedule::from(&vm_config);
+    let gas_schedule = GasSchedule::from(&G_LATEST_GAS_COST_TABLE.clone());
     StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map()).unwrap()
 });
 
@@ -1058,14 +1055,14 @@ mod tests {
     use starcoin_gas::StarcoinGasParameters;
     use starcoin_gas_algebra_ext::{CostTable, FromOnChainGasSchedule};
     use starcoin_vm_types::gas_schedule::{
-        latest_cost_table, G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_LATEST_GAS_SCHEDULE,
+        latest_cost_table, G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_LATEST_GAS_COST_TABLE,
         G_TEST_GAS_CONSTANTS,
     };
     use starcoin_vm_types::on_chain_config::{
         instruction_gas_schedule_v1, instruction_gas_schedule_v2, instruction_table_v1,
         native_gas_schedule_v1, native_gas_schedule_v2, native_gas_schedule_v4, native_table_v1,
         native_table_v2, txn_gas_schedule_test, txn_gas_schedule_v1, txn_gas_schedule_v2,
-        txn_gas_schedule_v3, GasSchedule, VMConfig,
+        txn_gas_schedule_v3, GasSchedule,
     };
 
     fn config_entries(
@@ -1106,17 +1103,13 @@ mod tests {
 
     #[test]
     fn test_dev_config() {
-        let vm_config = VMConfig {
-            gas_schedule: latest_cost_table(G_TEST_GAS_CONSTANTS.clone()),
-        };
-
         let entries = config_entries(
             instruction_gas_schedule_v2(),
             native_gas_schedule_v4(),
             txn_gas_schedule_test(),
         );
 
-        let gas_schedule = GasSchedule::from(&vm_config);
+        let gas_schedule = GasSchedule::from(&latest_cost_table(G_TEST_GAS_CONSTANTS.clone()));
         assert_eq!(entries, gas_schedule.entries);
         let gas_params =
             StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
@@ -1128,17 +1121,13 @@ mod tests {
 
     #[test]
     fn test_halley_config() {
-        let vm_config = VMConfig {
-            gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
-        };
-
         let entries = config_entries(
             instruction_gas_schedule_v2(),
             native_gas_schedule_v4(),
             txn_gas_schedule_v3(),
         );
 
-        let gas_schedule = GasSchedule::from(&vm_config);
+        let gas_schedule = GasSchedule::from(&G_LATEST_GAS_COST_TABLE.clone());
         assert_eq!(entries, gas_schedule.entries);
         let gas_params =
             StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
@@ -1150,16 +1139,12 @@ mod tests {
 
     #[test]
     fn test_proxima_config() {
-        let vm_config = VMConfig {
-            gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
-        };
-
         let entries = config_entries(
             instruction_gas_schedule_v2(),
             native_gas_schedule_v4(),
             txn_gas_schedule_v3(),
         );
-        let gas_schedule = GasSchedule::from(&vm_config);
+        let gas_schedule = GasSchedule::from(&G_LATEST_GAS_COST_TABLE.clone());
         assert_eq!(entries, gas_schedule.entries);
         let gas_params =
             StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
@@ -1171,20 +1156,16 @@ mod tests {
 
     #[test]
     fn test_barnard_config() {
-        let vm_config = VMConfig {
-            gas_schedule: CostTable {
-                instruction_table: instruction_table_v1(),
-                native_table: native_table_v1(),
-                gas_constants: G_GAS_CONSTANTS_V1.clone(),
-            },
-        };
-
         let entries = config_entries(
             instruction_gas_schedule_v1(),
             native_gas_schedule_v1(),
             txn_gas_schedule_v1(),
         );
-        let gas_schedule = GasSchedule::from(&vm_config);
+        let gas_schedule = GasSchedule::from(&CostTable {
+            instruction_table: instruction_table_v1(),
+            native_table: native_table_v1(),
+            gas_constants: G_GAS_CONSTANTS_V1.clone(),
+        });
         assert_eq!(entries, gas_schedule.entries);
         let gas_params =
             StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
@@ -1196,21 +1177,17 @@ mod tests {
 
     #[test]
     fn test_main_config() {
-        let vm_config = VMConfig {
-            gas_schedule: CostTable {
-                instruction_table: instruction_table_v1(),
-                native_table: native_table_v2(),
-                gas_constants: G_GAS_CONSTANTS_V2.clone(),
-            },
-        };
-
         let entries = config_entries(
             instruction_gas_schedule_v1(),
             native_gas_schedule_v2(),
             txn_gas_schedule_v2(),
         );
 
-        let gas_schedule = GasSchedule::from(&vm_config);
+        let gas_schedule = GasSchedule::from(&CostTable {
+            instruction_table: instruction_table_v1(),
+            native_table: native_table_v2(),
+            gas_constants: G_GAS_CONSTANTS_V2.clone(),
+        });
         assert_eq!(entries, gas_schedule.entries);
         let gas_params =
             StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());

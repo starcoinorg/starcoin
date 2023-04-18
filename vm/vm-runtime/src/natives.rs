@@ -36,6 +36,10 @@ pub fn starcoin_natives(gas_params: NativeGasParameters) -> NativeFunctionTable 
         move_stdlib::natives::bcs::make_all(gas_params.move_stdlib.bcs)
     );
     add_natives_from_module!(
+        "FromBCS",
+        starcoin_natives::from_bcs::make_all(gas_params.starcoin_natives.from_bcs)
+    );
+    add_natives_from_module!(
         "Signature",
         starcoin_natives::signature::make_all(gas_params.starcoin_natives.signature)
     );
@@ -76,6 +80,11 @@ pub fn starcoin_natives(gas_params: NativeGasParameters) -> NativeFunctionTable 
         "Debug",
         move_stdlib::natives::debug::make_all(gas_params.nursery.debug, CORE_CODE_ADDRESS)
     );
+    add_natives_from_module!(
+        "Secp256k1",
+        starcoin_natives::secp256k1::make_all(gas_params.starcoin_natives.secp256k1)
+    );
+
     let natives = make_table_from_iter(CORE_CODE_ADDRESS, natives);
     natives
         .into_iter()

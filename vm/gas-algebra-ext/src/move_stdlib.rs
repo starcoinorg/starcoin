@@ -49,4 +49,6 @@ crate::natives::define_gas_parameters_for_natives!(GasParameters, "move_stdlib",
     [.string.sub_string.per_byte, optional "string.sub_string.per_byte", (4 + 1) *  MUL],
     // [.string.index_of.base, optional "string.index_of.base", 0 * MUL],
     [.string.index_of.per_byte_searched, optional "string.index_of.per_byte_searched", (4 + 1)  * MUL],
-], allow_unmapped = 2 /* bcs */ + 2 /* hash */ + 4 /* vector */ + 3 /* string*/ + 4 /* XXX FIXME YSG for nextest*/);
+    // [.vector.spawn_from.base, optional "vector.spawn_from.base", 0  * MUL],
+    [.vector.spawn_from.legacy_per_abstract_memory_unit, optional "vector.spawn_from.legacy_per_abstract_memory_unit", (4 + 1)  * MUL],
+], allow_unmapped = 2 /* bcs */ + 2 /* hash */ + 5 /* vector */ + 3 /* string*/ + 4 /* XXX FIXME YSG for nextest*/);
