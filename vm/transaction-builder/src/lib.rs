@@ -538,8 +538,7 @@ pub fn build_init_script_with_function(net: &ChainNetwork, function: &str) -> Sc
         bcs_ext::to_bytes(&genesis_config.consensus_config.uncle_rate_target).unwrap(),
         bcs_ext::to_bytes(&genesis_config.consensus_config.epoch_block_count).unwrap(),
         bcs_ext::to_bytes(&genesis_config.consensus_config.base_block_time_target).unwrap(),
-        bcs_ext::to_bytes(&genesis_config.consensus_config.base_block_difficulty_window)
-            .unwrap(),
+        bcs_ext::to_bytes(&genesis_config.consensus_config.base_block_difficulty_window).unwrap(),
         bcs_ext::to_bytes(&genesis_config.consensus_config.base_reward_per_block).unwrap(),
         bcs_ext::to_bytes(
             &genesis_config
