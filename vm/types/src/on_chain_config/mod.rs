@@ -36,7 +36,7 @@ pub use self::{
     },
     genesis_gas_schedule::{
         instruction_table_v1, instruction_table_v2, native_table_v1, native_table_v2,
-        G_LATEST_INSTRUCTION_TABLE, G_LATEST_NATIVE_TABLE,
+        v4_native_table, G_LATEST_INSTRUCTION_TABLE, G_LATEST_NATIVE_TABLE,
     },
     move_lang_version::MoveLanguageVersion,
     version::{version_config_type_tag, Version, G_VERSION_CONFIG_IDENTIFIER},

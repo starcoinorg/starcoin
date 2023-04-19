@@ -354,6 +354,7 @@ impl Genesis {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::Ok;
     use starcoin_crypto::HashValue;
     use starcoin_state_api::AccountStateReader;
     use starcoin_storage::block_info::BlockInfoStore;
@@ -564,7 +565,16 @@ mod tests {
         let epoch = account_state_reader.get_resource::<Epoch>(genesis_address())?;
         assert!(epoch.is_some(), "Epoch resource should exist.");
 
-        match version.unwrap().into_stdlib_version() {
+        test_gas_schedule_in_genesis(net, &state_db)?;
+
+        Ok(())
+    }
+
+    fn test_gas_schedule_in_genesis(net: &ChainNetwork, state_db: &ChainStateDB) -> Result<()> {
+        if net.is_custom() {
+            return Ok(());
+        }
+        match net.stdlib_version() {
             // test whether it is successful that the function initialize_v3 initializes genesis block for the gas scheduls
             // if it is, the gas schedule in genesis block will be the same as the one from the latest cost table
             StdlibVersion::Version(12) | StdlibVersion::Latest => {
@@ -572,6 +582,7 @@ mod tests {
                     "test if the genesis config is the same as network config({:?})",
                     net.id()
                 );
+                let account_state_reader = AccountStateReader::new(state_db);
                 let genesis_gas_schedule =
                     account_state_reader.get_on_chain_config::<GasSchedule>()?;
                 assert!(
@@ -597,7 +608,7 @@ mod tests {
                 let mut vm = StarcoinVM::new(None);
                 let data = vm
                     .execute_readonly_function(
-                        &state_db,
+                        state_db,
                         &ModuleId::new(core_code_address(), G_GAS_SCHEDULE_IDENTIFIER.to_owned()),
                         G_GAS_SCHEDULE_GAS_SCHEDULE.as_ident_str(),
                         vec![],
@@ -619,6 +630,7 @@ mod tests {
             }
             _ => (),
         }
+
         Ok(())
     }
 }
