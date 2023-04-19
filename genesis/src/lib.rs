@@ -608,11 +608,9 @@ mod tests {
                         anyhow::anyhow!("Expect 0x1::GasSchedule::gas_schedule() return value")
                     })?;
                 let mut framework_gas_shedule = bcs_ext::from_bytes::<GasSchedule>(&data)?;
-                framework_gas_shedule.entries = framework_gas_shedule
+                framework_gas_shedule
                     .entries
-                    .into_iter()
-                    .filter(|(key, _value)| !key.is_empty())
-                    .collect();
+                    .retain(|(key, _value)| !key.is_empty());
 
                 assert!(
                     !framework_gas_shedule.is_different(genesis_gas_schedule.as_ref().unwrap()),
