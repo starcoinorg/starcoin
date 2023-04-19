@@ -836,7 +836,7 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: 3600 * 24 * 31,
         vm_config: VMConfig {
-            gas_schedule: G_LATEST_GAS_COST_TABLE.clone(),
+            gas_schedule:latest_cost_table(G_TEST_GAS_CONSTANTS.clone()),
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
