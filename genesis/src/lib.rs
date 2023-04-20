@@ -590,8 +590,14 @@ mod tests {
                     "GasSchedule config should exist."
                 );
                 let network_gas_schedule = match net.id() {
-                    &ChainNetworkID::DEV | &ChainNetworkID::TEST | &ChainNetworkID::HALLEY => {
+                    &ChainNetworkID::TEST => {
                         let cost_table = latest_cost_table(G_TEST_GAS_CONSTANTS.clone());
+                        GasSchedule::from(&cost_table)
+                    }
+                    &ChainNetworkID::DEV | &ChainNetworkID::HALLEY => {
+                        let mut gas_constant = G_TEST_GAS_CONSTANTS.clone();
+                        gas_constant.min_price_per_gas_unit = 1;
+                        let cost_table = latest_cost_table(gas_constant);
                         GasSchedule::from(&cost_table)
                     }
                     _ => GasSchedule::from(&G_LATEST_GAS_COST_TABLE.clone()),
