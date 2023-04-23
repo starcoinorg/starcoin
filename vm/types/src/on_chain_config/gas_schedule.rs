@@ -44,10 +44,10 @@ impl GasSchedule {
 
     /// check if there is any one of entry different from the other
     /// if it is, return true otherwise false
-    #[cfg(test)]
     pub fn is_different(&self, other: &GasSchedule) -> bool {
         let diff_len = self.entries.len() != other.entries.len();
         if diff_len {
+            #[cfg(test)]
             assert!(
                 !diff_len,
                 "self.entries.len() = {} not the same as other.entries.len() = {}",
@@ -62,6 +62,7 @@ impl GasSchedule {
             .any(|(index, (key, value))| {
                 let tuple = &other.entries[index];
                 let diff = &tuple.0 != key || &tuple.1 != value;
+                #[cfg(test)]
                 assert!(
                     !diff,
                     "self.entries[{}] = {} not the same as other.entries[{}] = {}",
