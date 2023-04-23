@@ -44,6 +44,7 @@ impl GasSchedule {
 
     /// check if there is any one of entry different from the other
     /// if it is, return true otherwise false
+    #[cfg(test)]
     pub fn is_different(&self, other: &GasSchedule) -> bool {
         let diff_len = self.entries.len() != other.entries.len();
         if diff_len {
