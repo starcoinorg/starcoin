@@ -19,7 +19,9 @@ use serde::de::DeserializeOwned;
 pub use starcoin_state_tree::StateNodeStore;
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_vm_types::access_path::DataPath;
-use starcoin_vm_types::account_config::table_handle_address;
+use starcoin_vm_types::account_config::{
+    table_handle_address, table_handle_address_list, TABLE_HANDLE_ADDRESS_LIST,
+};
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_store::table::TableHandle;
 pub use starcoin_vm_types::state_view::{StateReaderExt, StateView};
@@ -28,13 +30,16 @@ mod chain_state;
 pub mod message;
 pub mod mock;
 
-pub static TABLE_PATH: Lazy<DataPath> = Lazy::new(|| {
-    let str = format!(
-        "{}/1/{}::TableHandles::TableHandles",
-        table_handle_address(),
-        table_handle_address()
-    );
-    AccessPath::from_str(str.as_str()).unwrap().path
+pub static TABLE_PATH_LIST: Lazy<Vec<DataPath>> = Lazy::new(|| {
+    let mut path_list = vec![];
+    for handle_address in *TABLE_HANDLE_ADDRESS_LIST {
+        let str = format!(
+            "{}/1/{}::TableHandles::TableHandles",
+            handle_address, handle_address,
+        );
+        push_list.push(AccessPath::from_str(str.as_str()).unwrap().path);
+    }
+    path_list
 });
 
 #[async_trait::async_trait]

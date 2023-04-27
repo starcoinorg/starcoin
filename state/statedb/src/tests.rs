@@ -238,12 +238,15 @@ fn test_state_db_with_table_item_once() -> Result<()> {
     state_tree_table_handles.commit()?;
     state_tree_table_handles.flush()?;
 
+    // XXX FIXME YSG
     assert_eq!(
-        chain_state_db.table_handles_root_hash(),
+        chain_state_db.table_handles_root_hash(0),
         state_tree_table_handles.root_hash()
     );
+
+    // XXX FIXME YSG
     assert_eq!(
-        chain_state_db.table_handle_address_root_hash(),
+        chain_state_db.table_handle_address_root_hash(0),
         state_tree_table_handles.root_hash()
     );
     Ok(())
