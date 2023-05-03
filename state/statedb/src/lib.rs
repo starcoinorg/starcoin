@@ -24,9 +24,7 @@ use starcoin_types::{
     state_set::{AccountStateSet, ChainStateSet},
 };
 use starcoin_vm_types::access_path::{DataPath, ModuleName};
-use starcoin_vm_types::account_config::{
-    table_handle_address, TABLE_ADDRESS_ARR_LEN, TABLE_ADDRESS_LIST_LEN, TABLE_HANDLE_ADDRESS_LIST,
-};
+use starcoin_vm_types::account_config::TABLE_HANDLE_ADDRESS_LIST;
 use starcoin_vm_types::language_storage::StructTag;
 use starcoin_vm_types::state_store::{state_key::StateKey, table::TableHandle};
 use starcoin_vm_types::state_view::StateView;
@@ -345,12 +343,18 @@ impl ChainStateDB {
         &self,
         handle: &TableHandle,
     ) -> Result<Arc<TableHandleStateObject>> {
+        let idx = handle.get_idx();
         let mut cache = self.cache_table_handle.lock();
         let item = cache.get(handle);
         let object = match item {
             Some(item) => item.clone(),
             None => {
-                let val = self.state_tree_table_handles.get(handle)?;
+                // XXX FIXME YSG
+                let val = self
+                    .state_tree_table_handles
+                    .get(idx)
+                    .unwrap()
+                    .get(handle)?;
                 let hash = match val {
                     Some(val) => HashValue::from_slice(val)?,
                     None => *SPARSE_MERKLE_PLACEHOLDER_HASH,
@@ -369,6 +373,7 @@ impl ChainStateDB {
 
     #[cfg(test)]
     fn table_handles_root_hash(&self, idx: usize) -> HashValue {
+        use starcoin_vm_types::account_config::TABLE_ADDRESS_LIST_LEN;
         self.state_tree_table_handles
             .get(idx % TABLE_ADDRESS_LIST_LEN)
             .unwrap()
@@ -527,17 +532,18 @@ impl ChainStateReader for ChainStateDB {
         handle: &TableHandle,
         key: &[u8],
     ) -> Result<StateWithTableItemProof> {
-        // XXX FIXME YSG
+        let idx = handle.get_idx();
         let handle_address = TABLE_HANDLE_ADDRESS_LIST
-            .get(0)
+            .get(idx)
             .expect("get TABLE_HANDLE_ADDRESS_LIST should always succeed");
         let table_path = TABLE_PATH_LIST
-            .get(0)
+            .get(idx)
             .expect("get TABLE_PATH_LIST should always succeed");
-        // XXX FIXME YSG
         let table_path_proof =
             self.get_with_proof(&AccessPath::new(handle_address.clone(), table_path.clone()))?;
-        let table_handle_proof = self.state_tree_table_handles.get_with_proof(handle)?;
+        // XXX FIXME YSG
+        let state_tree_table_handle = self.state_tree_table_handles.get(idx).unwrap();
+        let table_handle_proof = state_tree_table_handle.get_with_proof(handle)?;
         let table_handle_state_object = self.get_table_handle_state_object(handle)?;
         let key_proof = table_handle_state_object.get_with_proof(&key.to_vec())?;
         Ok(StateWithTableItemProof::new(
@@ -545,7 +551,7 @@ impl ChainStateReader for ChainStateDB {
             (
                 table_handle_proof.0,
                 table_handle_proof.1,
-                self.state_tree_table_handles.root_hash(),
+                state_tree_table_handle.root_hash(),
             ),
             (
                 key_proof.0,
@@ -651,30 +657,29 @@ impl ChainStateWriter for ChainStateDB {
         for handle in self.updates_table_handle.read().iter() {
             let table_handle_state_object = self.get_table_handle_state_object(handle)?;
             table_handle_state_object.commit()?;
-            // get table_handle index
-            // XXX FIXME YSG
-            let idx = 0;
+            let idx = handle.get_idx();
             self.update_table_handle_idx_list.lock().insert(idx);
             // put table_handle_state_object commit
+            // XXX FIXME YSG
             self.state_tree_table_handles
-                .get(0)
+                .get(idx)
                 .expect("get state_tree_table_handles index should success")
                 .put(*handle, table_handle_state_object.root_hash().to_vec());
         }
-        for idx in self.update_table_handle_idx_list.lock() {
+        for idx in self.update_table_handle_idx_list.lock().iter() {
             let state_tree_table_handle = self
                 .state_tree_table_handles
-                .get(idx)
+                .get(*idx)
                 .expect("get state_tree_table_handles index should success");
             state_tree_table_handle.commit()?;
-            // update table_handle_address state
 
+            // update table_handle_address state
             // XXX FIXME YSG
-            let handle_address: &AccountAddress = TABLE_HANDLE_ADDRESS_LIST
-                .get(idx)
+            let handle_address = TABLE_HANDLE_ADDRESS_LIST
+                .get(*idx)
                 .expect("get TABLE_HANDLE_ADDRESS_LIST should always succeed");
             let table_path: &DataPath = TABLE_PATH_LIST
-                .get(idx)
+                .get(*idx)
                 .expect("get TABLE_PATH_LIST should always succeed");
             // XXX FIXME YSG
 
@@ -707,10 +712,14 @@ impl ChainStateWriter for ChainStateDB {
         locks_table_handle.clear();
 
         // XXX FIXME YSG
-        for idx in self.update_table_handle_idx_list.lock() {
-            self.state_tree_table_handles.get(idx).unwrap().flush()?;
+        for idx in self.update_table_handle_idx_list.lock().iter() {
+            let state_tree_table_handle = self
+                .state_tree_table_handles
+                .get(*idx)
+                .expect("get state_tree_table_handles index should success");
+            state_tree_table_handle.flush()?;
         }
-        self.update_table_handle_idx_list.lock().unwrap().clear();
+        self.update_table_handle_idx_list.lock().clear();
         // XXX FIXME YSG
 
         let mut locks = self.updates.write();

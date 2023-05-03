@@ -253,14 +253,13 @@ impl StateWithTableItemProof {
     }
 
     pub fn verify(&self, handle: &TableHandle, key: &[u8]) -> Result<()> {
-        // XXX FIXME YSG
+        let idx = handle.get_idx();
         let handle_address = TABLE_HANDLE_ADDRESS_LIST
-            .get(0)
+            .get(idx)
             .expect("get TABLE_HANDLE_ADDRESS_LIST should always succeed");
         let table_path = TABLE_PATH_LIST
-            .get(0)
+            .get(idx)
             .expect("get TABLE_PATH_LIST should always succeed");
-        // XXX FIXME YSG
         self.state_proof.0.proof.verify(
             self.state_proof.1,
             AccessPath::new(handle_address.clone(), table_path.clone()),

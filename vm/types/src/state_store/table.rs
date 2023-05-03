@@ -4,6 +4,7 @@
 // Copyright (c) Aptos
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::account_config::TABLE_ADDRESS_LIST_LEN;
 use move_core_types::{
     account_address::{AccountAddress, AccountAddressParseError},
     language_storage::TypeTag,
@@ -21,6 +22,16 @@ pub struct TableHandle(pub AccountAddress);
 impl TableHandle {
     pub fn size(&self) -> usize {
         std::mem::size_of_val(&self.0)
+    }
+
+    // XXX FIXME YSG add test
+    pub fn get_idx(&self) -> usize {
+        *self
+            .0
+            .into_bytes()
+            .last()
+            .expect("TableHandle array size > 0") as usize
+            % TABLE_ADDRESS_LIST_LEN
     }
 }
 
