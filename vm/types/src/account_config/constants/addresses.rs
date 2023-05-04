@@ -19,22 +19,22 @@ pub fn genesis_address() -> AccountAddress {
 
 pub const TABLE_ADDRESS_LIST_LEN: usize = 16;
 pub const TABLE_ADDRESS_LIST: [&str; TABLE_ADDRESS_LIST_LEN] = [
-    "0xA550C68",
-    "0xA550C69",
-    "0xA550C6A",
-    "0xA550C6B",
-    "0xA550C6C",
-    "0xA550C6D",
-    "0xA550C6E",
-    "0xA550C6F",
-    "0xA550C70",
-    "0xA550C71",
-    "0xA550C72",
-    "0xA550C73",
-    "0xA550C74",
-    "0xA550C75",
-    "0xA550C76",
-    "0xA550C77",
+    "0x31",
+    "0x32",
+    "0x33",
+    "0x34",
+    "0x35",
+    "0x36",
+    "0x37",
+    "0x38",
+    "0x39",
+    "0x3a",
+    "0x3b",
+    "0x3c",
+    "0x3d",
+    "0x3e",
+    "0x3f",
+    "0x40",
 ];
 
 pub static TABLE_HANDLE_ADDRESS_LIST: Lazy<Vec<AccountAddress>> = Lazy::new(|| {
