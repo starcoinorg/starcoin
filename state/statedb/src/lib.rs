@@ -369,7 +369,6 @@ impl ChainStateDB {
 
     #[cfg(test)]
     fn table_handles_root_hash(&self, idx: usize) -> Result<HashValue> {
-        use starcoin_vm_types::account_config::TABLE_ADDRESS_LIST_LEN;
         let state_tree_table_handles = self.get_state_tree_table_handles(idx)?;
         Ok(state_tree_table_handles.root_hash())
     }
@@ -384,7 +383,7 @@ impl ChainStateDB {
             .get(idx)
             .expect("get TABLE_PATH_LIST should always succeed");
         let account_state_object = self
-            .get_account_state_object(handle_addres, true)
+            .get_account_state_object(handle_address, true)
             .expect("get account state success");
         let state_root = account_state_object
             .get(table_path)
@@ -545,7 +544,7 @@ impl ChainStateReader for ChainStateDB {
             .get(idx)
             .expect("get TABLE_PATH_LIST should always succeed");
         let table_path_proof =
-            self.get_with_proof(&AccessPath::new(handle_address.clone(), table_path.clone()))?;
+            self.get_with_proof(&AccessPath::new(*handle_address, table_path.clone()))?;
         let state_tree_table_handle = self.get_state_tree_table_handles(idx)?;
         let table_handle_proof = state_tree_table_handle.get_with_proof(handle)?;
         let table_handle_state_object = self.get_table_handle_state_object(handle)?;
@@ -683,7 +682,7 @@ impl ChainStateWriter for ChainStateDB {
                 .expect("get TABLE_PATH_LIST should always succeed");
 
             let mut locks = self.updates.write();
-            locks.insert(handle_address.clone());
+            locks.insert(*handle_address);
             let table_handle_account_state_object =
                 self.get_account_state_object(handle_address, true)?;
             table_handle_account_state_object.set(

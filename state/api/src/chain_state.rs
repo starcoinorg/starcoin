@@ -262,7 +262,7 @@ impl StateWithTableItemProof {
             .expect("get TABLE_PATH_LIST should always succeed");
         self.state_proof.0.proof.verify(
             self.state_proof.1,
-            AccessPath::new(handle_address.clone(), table_path.clone()),
+            AccessPath::new(*handle_address, table_path.clone()),
             self.state_proof.0.state.as_deref(),
         )?;
         self.table_handle_proof.1.verify(

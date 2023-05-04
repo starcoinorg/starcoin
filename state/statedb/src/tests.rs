@@ -168,43 +168,135 @@ fn check_write_set(chain_state_db: &ChainStateDB, write_set: &WriteSet) -> Resul
 fn test_state_db_with_table_item_once() -> Result<()> {
     let storage = MockStateNodeStore::new();
     let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
-    let handle1 = TableHandle(AccountAddress::random());
-    let handle2 = TableHandle(AccountAddress::random());
-    let key2 = random_bytes();
-    let val2 = random_bytes();
-    let key3 = random_bytes();
-    let val3 = random_bytes();
-    let key4 = random_bytes();
-    let val4 = random_bytes();
-    let key5 = random_bytes();
-    let val5 = random_bytes();
+    let handle11 = TableHandle(AccountAddress::from_hex_literal("0x10").unwrap());
+    let handle12 = TableHandle(AccountAddress::from_hex_literal("0x20").unwrap());
+    let handle21 = TableHandle(AccountAddress::from_hex_literal("0x11").unwrap());
+    let handle22 = TableHandle(AccountAddress::from_hex_literal("0x21").unwrap());
+    let handle31 = TableHandle(AccountAddress::from_hex_literal("0x12").unwrap());
+    let handle32 = TableHandle(AccountAddress::from_hex_literal("0x22").unwrap());
+    let handle41 = TableHandle(AccountAddress::from_hex_literal("0x13").unwrap());
+    let handle42 = TableHandle(AccountAddress::from_hex_literal("0x23").unwrap());
+
+    let key11 = random_bytes();
+    let val11 = random_bytes();
+    let key13 = random_bytes();
+    let val13 = random_bytes();
+    let key12 = random_bytes();
+    let val12 = random_bytes();
+    let key14 = random_bytes();
+    let val14 = random_bytes();
+    let key21 = random_bytes();
+    let val21 = random_bytes();
+    let key23 = random_bytes();
+    let val23 = random_bytes();
+    let key22 = random_bytes();
+    let val22 = random_bytes();
+    let key24 = random_bytes();
+    let val24 = random_bytes();
+    let key31 = random_bytes();
+    let val31 = random_bytes();
+    let key33 = random_bytes();
+    let val33 = random_bytes();
+    let key32 = random_bytes();
+    let val32 = random_bytes();
+    let key34 = random_bytes();
+    let val34 = random_bytes();
+    let key41 = random_bytes();
+    let val41 = random_bytes();
+    let key43 = random_bytes();
+    let val43 = random_bytes();
+    let key42 = random_bytes();
+    let val42 = random_bytes();
+    let key44 = random_bytes();
+    let val44 = random_bytes();
+
     let state_keys = vec![
         StateKey::AccessPath(AccessPath::random_code()),
         StateKey::AccessPath(AccessPath::random_resource()),
         StateKey::TableItem(TableItem {
-            handle: handle1,
-            key: key2.clone(),
+            handle: handle11,
+            key: key11.clone(),
         }),
         StateKey::TableItem(TableItem {
-            handle: handle1,
-            key: key3.clone(),
+            handle: handle11,
+            key: key13.clone(),
         }),
         StateKey::TableItem(TableItem {
-            handle: handle2,
-            key: key4.clone(),
+            handle: handle12,
+            key: key12.clone(),
         }),
         StateKey::TableItem(TableItem {
-            handle: handle2,
-            key: key5.clone(),
+            handle: handle12,
+            key: key14.clone(),
+        }),
+        StateKey::TableItem(TableItem {
+            handle: handle21,
+            key: key21.clone(),
+        }),
+        StateKey::TableItem(TableItem {
+            handle: handle21,
+            key: key23.clone(),
+        }),
+        StateKey::TableItem(TableItem {
+            handle: handle22,
+            key: key22.clone(),
+        }),
+        StateKey::TableItem(TableItem {
+            handle: handle22,
+            key: key24.clone(),
+        }),
+        StateKey::TableItem(TableItem {
+            handle: handle31,
+            key: key31.clone(),
+        }),
+        StateKey::TableItem(TableItem {
+            handle: handle31,
+            key: key33.clone(),
+        }),
+        StateKey::TableItem(TableItem {
+            handle: handle32,
+            key: key32.clone(),
+        }),
+        StateKey::TableItem(TableItem {
+            handle: handle32,
+            key: key34.clone(),
+        }),
+        StateKey::TableItem(TableItem {
+            handle: handle41,
+            key: key41.clone(),
+        }),
+        StateKey::TableItem(TableItem {
+            handle: handle41,
+            key: key43.clone(),
+        }),
+        StateKey::TableItem(TableItem {
+            handle: handle42,
+            key: key42.clone(),
+        }),
+        StateKey::TableItem(TableItem {
+            handle: handle42,
+            key: key44.clone(),
         }),
     ];
     let values = vec![
         random_bytes(),
         random_bytes(),
-        val2.clone(),
-        val3.clone(),
-        val4.clone(),
-        val5.clone(),
+        val11.clone(),
+        val13.clone(),
+        val12.clone(),
+        val14.clone(),
+        val21.clone(),
+        val23.clone(),
+        val22.clone(),
+        val24.clone(),
+        val31.clone(),
+        val33.clone(),
+        val32.clone(),
+        val34.clone(),
+        val41.clone(),
+        val43.clone(),
+        val42.clone(),
+        val44.clone(),
     ];
     let write_set = state_keys_to_write_set(state_keys, values);
     let write_set1 = write_set.clone();
@@ -215,39 +307,149 @@ fn test_state_db_with_table_item_once() -> Result<()> {
     chain_state_db.flush()?;
     check_write_set(&chain_state_db, &write_set1)?;
 
+    let storage11 = MockStateNodeStore::new();
+    let storage12 = MockStateNodeStore::new();
+    let storage21 = MockStateNodeStore::new();
+    let storage22 = MockStateNodeStore::new();
+    let storage31 = MockStateNodeStore::new();
+    let storage32 = MockStateNodeStore::new();
+    let storage41 = MockStateNodeStore::new();
+    let storage42 = MockStateNodeStore::new();
+
     let storage1 = MockStateNodeStore::new();
     let storage2 = MockStateNodeStore::new();
-    let table_handle_state1 =
-        TableHandleStateObject::new(handle1, Arc::new(storage1), *SPARSE_MERKLE_PLACEHOLDER_HASH);
-    let table_handle_state2 =
-        TableHandleStateObject::new(handle2, Arc::new(storage2), *SPARSE_MERKLE_PLACEHOLDER_HASH);
-
-    table_handle_state1.set(key2, val2);
-    table_handle_state1.set(key3, val3);
-    table_handle_state2.set(key4, val4);
-    table_handle_state2.set(key5, val5);
-    table_handle_state1.commit()?;
-    table_handle_state1.flush()?;
-    table_handle_state2.commit()?;
-    table_handle_state2.flush()?;
-
     let storage3 = MockStateNodeStore::new();
-    let state_tree_table_handles = StateTree::new(Arc::new(storage3), None);
-    state_tree_table_handles.put(handle1, table_handle_state1.root_hash().to_vec());
-    state_tree_table_handles.put(handle2, table_handle_state2.root_hash().to_vec());
-    state_tree_table_handles.commit()?;
-    state_tree_table_handles.flush()?;
-
-    // XXX FIXME YSG
-    assert_eq!(
-        chain_state_db.table_handles_root_hash(0),
-        state_tree_table_handles.root_hash()
+    let storage4 = MockStateNodeStore::new();
+    let table_handle_state11 = TableHandleStateObject::new(
+        handle11,
+        Arc::new(storage11),
+        *SPARSE_MERKLE_PLACEHOLDER_HASH,
+    );
+    let table_handle_state12 = TableHandleStateObject::new(
+        handle12,
+        Arc::new(storage12),
+        *SPARSE_MERKLE_PLACEHOLDER_HASH,
+    );
+    let table_handle_state21 = TableHandleStateObject::new(
+        handle11,
+        Arc::new(storage21),
+        *SPARSE_MERKLE_PLACEHOLDER_HASH,
+    );
+    let table_handle_state22 = TableHandleStateObject::new(
+        handle12,
+        Arc::new(storage22),
+        *SPARSE_MERKLE_PLACEHOLDER_HASH,
+    );
+    let table_handle_state31 = TableHandleStateObject::new(
+        handle11,
+        Arc::new(storage31),
+        *SPARSE_MERKLE_PLACEHOLDER_HASH,
+    );
+    let table_handle_state32 = TableHandleStateObject::new(
+        handle12,
+        Arc::new(storage32),
+        *SPARSE_MERKLE_PLACEHOLDER_HASH,
+    );
+    let table_handle_state41 = TableHandleStateObject::new(
+        handle11,
+        Arc::new(storage41),
+        *SPARSE_MERKLE_PLACEHOLDER_HASH,
+    );
+    let table_handle_state42 = TableHandleStateObject::new(
+        handle12,
+        Arc::new(storage42),
+        *SPARSE_MERKLE_PLACEHOLDER_HASH,
     );
 
-    // XXX FIXME YSG
+    table_handle_state11.set(key11, val11);
+    table_handle_state11.set(key13, val13);
+    table_handle_state12.set(key12, val12);
+    table_handle_state12.set(key14, val14);
+    table_handle_state21.set(key21, val21);
+    table_handle_state21.set(key23, val23);
+    table_handle_state22.set(key22, val22);
+    table_handle_state22.set(key24, val24);
+    table_handle_state31.set(key31, val31);
+    table_handle_state31.set(key33, val33);
+    table_handle_state32.set(key32, val32);
+    table_handle_state32.set(key34, val34);
+    table_handle_state41.set(key41, val41);
+    table_handle_state41.set(key43, val43);
+    table_handle_state42.set(key42, val42);
+    table_handle_state42.set(key44, val44);
+    table_handle_state11.commit()?;
+    table_handle_state11.flush()?;
+    table_handle_state12.commit()?;
+    table_handle_state12.flush()?;
+    table_handle_state21.commit()?;
+    table_handle_state21.flush()?;
+    table_handle_state22.commit()?;
+    table_handle_state22.flush()?;
+    table_handle_state31.commit()?;
+    table_handle_state31.flush()?;
+    table_handle_state32.commit()?;
+    table_handle_state32.flush()?;
+    table_handle_state41.commit()?;
+    table_handle_state41.flush()?;
+    table_handle_state42.commit()?;
+    table_handle_state42.flush()?;
+
+    let state_tree_table_handles1 = StateTree::new(Arc::new(storage1), None);
+    state_tree_table_handles1.put(handle11, table_handle_state11.root_hash().to_vec());
+    state_tree_table_handles1.put(handle12, table_handle_state12.root_hash().to_vec());
+    state_tree_table_handles1.commit()?;
+    state_tree_table_handles1.flush()?;
+
+    let state_tree_table_handles2 = StateTree::new(Arc::new(storage2), None);
+    state_tree_table_handles2.put(handle21, table_handle_state21.root_hash().to_vec());
+    state_tree_table_handles2.put(handle22, table_handle_state22.root_hash().to_vec());
+    state_tree_table_handles2.commit()?;
+    state_tree_table_handles2.flush()?;
+
+    let state_tree_table_handles3 = StateTree::new(Arc::new(storage3), None);
+    state_tree_table_handles3.put(handle31, table_handle_state31.root_hash().to_vec());
+    state_tree_table_handles3.put(handle32, table_handle_state32.root_hash().to_vec());
+    state_tree_table_handles3.commit()?;
+    state_tree_table_handles3.flush()?;
+
+    let state_tree_table_handles4 = StateTree::new(Arc::new(storage4), None);
+    state_tree_table_handles4.put(handle41, table_handle_state41.root_hash().to_vec());
+    state_tree_table_handles4.put(handle42, table_handle_state42.root_hash().to_vec());
+    state_tree_table_handles4.commit()?;
+    state_tree_table_handles4.flush()?;
+
     assert_eq!(
         chain_state_db.table_handle_address_root_hash(0),
-        state_tree_table_handles.root_hash()
+        state_tree_table_handles1.root_hash()
+    );
+    assert_eq!(
+        chain_state_db.table_handle_address_root_hash(1),
+        state_tree_table_handles2.root_hash()
+    );
+    assert_eq!(
+        chain_state_db.table_handle_address_root_hash(2),
+        state_tree_table_handles3.root_hash()
+    );
+    assert_eq!(
+        chain_state_db.table_handle_address_root_hash(3),
+        state_tree_table_handles4.root_hash()
+    );
+
+    assert_eq!(
+        chain_state_db.table_handles_root_hash(0).unwrap(),
+        state_tree_table_handles1.root_hash()
+    );
+    assert_eq!(
+        chain_state_db.table_handles_root_hash(1).unwrap(),
+        state_tree_table_handles2.root_hash()
+    );
+    assert_eq!(
+        chain_state_db.table_handles_root_hash(2).unwrap(),
+        state_tree_table_handles3.root_hash()
+    );
+    assert_eq!(
+        chain_state_db.table_handles_root_hash(3).unwrap(),
+        state_tree_table_handles4.root_hash()
     );
     Ok(())
 }
