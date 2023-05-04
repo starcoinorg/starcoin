@@ -226,10 +226,22 @@ mod tests {
     fn test_table_path_list() {
         let mut path_list = vec![];
         let str_list = vec![
-            "1/0x0000000000000000000000000a550c68::TableHandles::TableHandles",
-            "1/0x0000000000000000000000000a550c69::TableHandles::TableHandles",
-            "1/0x0000000000000000000000000a550c6a::TableHandles::TableHandles",
-            "1/0x0000000000000000000000000a550c6b::TableHandles::TableHandles",
+            "1/0x00000000000000000000000000000031::TableHandles::TableHandles",
+            "1/0x00000000000000000000000000000032::TableHandles::TableHandles",
+            "1/0x00000000000000000000000000000033::TableHandles::TableHandles",
+            "1/0x00000000000000000000000000000034::TableHandles::TableHandles",
+            "1/0x00000000000000000000000000000035::TableHandles::TableHandles",
+            "1/0x00000000000000000000000000000036::TableHandles::TableHandles",
+            "1/0x00000000000000000000000000000037::TableHandles::TableHandles",
+            "1/0x00000000000000000000000000000038::TableHandles::TableHandles",
+            "1/0x00000000000000000000000000000039::TableHandles::TableHandles",
+            "1/0x0000000000000000000000000000003a::TableHandles::TableHandles",
+            "1/0x0000000000000000000000000000003b::TableHandles::TableHandles",
+            "1/0x0000000000000000000000000000003c::TableHandles::TableHandles",
+            "1/0x0000000000000000000000000000003d::TableHandles::TableHandles",
+            "1/0x0000000000000000000000000000003e::TableHandles::TableHandles",
+            "1/0x0000000000000000000000000000003f::TableHandles::TableHandles",
+            "1/0x00000000000000000000000000000040::TableHandles::TableHandles",
         ];
         for table_path in TABLE_PATH_LIST.iter() {
             path_list.push(format!("{}", table_path));
