@@ -28,7 +28,6 @@ mod chain_state;
 pub mod message;
 pub mod mock;
 
-// XXX FIXME YSG add test
 pub static TABLE_PATH_LIST: Lazy<Vec<DataPath>> = Lazy::new(|| {
     let mut path_list = vec![];
     for handle_address in &*TABLE_HANDLE_ADDRESS_LIST {
@@ -216,5 +215,25 @@ where
         } else {
             panic!("Unexpect response type.")
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::TABLE_PATH_LIST;
+
+    #[test]
+    fn test_table_path_list() {
+        let mut path_list = vec![];
+        let str_list = vec![
+            "1/0x0000000000000000000000000a550c68::TableHandles::TableHandles",
+            "1/0x0000000000000000000000000a550c69::TableHandles::TableHandles",
+            "1/0x0000000000000000000000000a550c6a::TableHandles::TableHandles",
+            "1/0x0000000000000000000000000a550c6b::TableHandles::TableHandles",
+        ];
+        for table_path in TABLE_PATH_LIST.iter() {
+            path_list.push(format!("{}", table_path));
+        }
+        assert_eq!(path_list, str_list);
     }
 }

@@ -253,7 +253,7 @@ impl StateWithTableItemProof {
     }
 
     pub fn verify(&self, handle: &TableHandle, key: &[u8]) -> Result<()> {
-        let idx = handle.get_idx();
+        let idx = handle.get_idx()?;
         let handle_address = TABLE_HANDLE_ADDRESS_LIST
             .get(idx)
             .expect("get TABLE_HANDLE_ADDRESS_LIST should always succeed");

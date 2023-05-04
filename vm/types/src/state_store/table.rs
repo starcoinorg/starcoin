@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_config::TABLE_ADDRESS_LIST_LEN;
+use anyhow::format_err;
 use move_core_types::{
     account_address::{AccountAddress, AccountAddressParseError},
     language_storage::TypeTag,
@@ -24,14 +25,13 @@ impl TableHandle {
         std::mem::size_of_val(&self.0)
     }
 
-    // XXX FIXME YSG add test
-    pub fn get_idx(&self) -> usize {
-        *self
-            .0
-            .into_bytes()
-            .last()
-            .expect("TableHandle array size > 0") as usize
-            % TABLE_ADDRESS_LIST_LEN
+    pub fn get_idx(&self) -> Result<usize, anyhow::Error> {
+        let binding = self.0.into_bytes();
+        let val = binding.last();
+        match val {
+            Some(val) => Ok(*val as usize % TABLE_ADDRESS_LIST_LEN),
+            _ => Err(format_err!("TableHandle array size > 0")),
+        }
     }
 }
 
@@ -62,5 +62,27 @@ impl TableInfo {
             key_type,
             value_type,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::state_store::table::TableHandle;
+    use move_core_types::account_address::AccountAddress;
+
+    #[test]
+    fn test_get_idx() -> Result<(), anyhow::Error> {
+        let hdl1 = TableHandle(AccountAddress::ZERO);
+        let idx1 = hdl1.get_idx()?;
+        assert_eq!(idx1, 0);
+
+        let hdl2 = TableHandle(AccountAddress::ONE);
+        let idx2 = hdl2.get_idx()?;
+        assert_eq!(idx2, 1);
+
+        let hdl3 = TableHandle(AccountAddress::TWO);
+        let idx3 = hdl3.get_idx()?;
+        assert_eq!(idx3, 2);
+        Ok(())
     }
 }
