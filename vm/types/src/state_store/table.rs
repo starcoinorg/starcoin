@@ -29,7 +29,7 @@ impl TableHandle {
         let binding = self.0.into_bytes();
         let val = binding.last();
         match val {
-            Some(val) => Ok(*val as usize % TABLE_ADDRESS_LIST_LEN),
+            Some(val) => Ok(*val as usize & (TABLE_ADDRESS_LIST_LEN - 1)),
             _ => Err(format_err!("TableHandle array size > 0")),
         }
     }

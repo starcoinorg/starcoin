@@ -375,7 +375,7 @@ impl ChainStateDB {
 
     #[cfg(test)]
     fn table_handle_address_root_hash(&self, idx: usize) -> HashValue {
-        let idx = idx % TABLE_ADDRESS_LIST_LEN;
+        let idx = idx & (TABLE_ADDRESS_LIST_LEN - 1);
         let handle_address = TABLE_HANDLE_ADDRESS_LIST
             .get(idx)
             .expect("get TABLE_HANDLE_ADDRESS_LIST should always succeed");
@@ -392,7 +392,7 @@ impl ChainStateDB {
     }
 
     fn get_state_tree_table_handles(&self, idx: usize) -> Result<&StateTree<TableHandle>> {
-        let idx = idx % TABLE_ADDRESS_LIST_LEN;
+        let idx = idx & (TABLE_ADDRESS_LIST_LEN - 1);
         let state_tree_table_handles = self.state_tree_table_handles_list.get(idx);
         match state_tree_table_handles {
             Some(state_tree_table_handles) => Ok(state_tree_table_handles),
