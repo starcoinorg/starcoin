@@ -168,14 +168,14 @@ fn check_write_set(chain_state_db: &ChainStateDB, write_set: &WriteSet) -> Resul
 fn test_state_db_with_table_item_once() -> Result<()> {
     let storage = MockStateNodeStore::new();
     let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
-    let handle11 = TableHandle(AccountAddress::from_hex_literal("0x10").unwrap());
-    let handle12 = TableHandle(AccountAddress::from_hex_literal("0x20").unwrap());
-    let handle21 = TableHandle(AccountAddress::from_hex_literal("0x11").unwrap());
-    let handle22 = TableHandle(AccountAddress::from_hex_literal("0x21").unwrap());
-    let handle31 = TableHandle(AccountAddress::from_hex_literal("0x12").unwrap());
-    let handle32 = TableHandle(AccountAddress::from_hex_literal("0x22").unwrap());
-    let handle41 = TableHandle(AccountAddress::from_hex_literal("0x13").unwrap());
-    let handle42 = TableHandle(AccountAddress::from_hex_literal("0x23").unwrap());
+    let handle11 = TableHandle(AccountAddress::from_hex_literal("0x20").unwrap());
+    let handle12 = TableHandle(AccountAddress::from_hex_literal("0x40").unwrap());
+    let handle21 = TableHandle(AccountAddress::from_hex_literal("0x21").unwrap());
+    let handle22 = TableHandle(AccountAddress::from_hex_literal("0x41").unwrap());
+    let handle31 = TableHandle(AccountAddress::from_hex_literal("0x22").unwrap());
+    let handle32 = TableHandle(AccountAddress::from_hex_literal("0x42").unwrap());
+    let handle41 = TableHandle(AccountAddress::from_hex_literal("0x23").unwrap());
+    let handle42 = TableHandle(AccountAddress::from_hex_literal("0x43").unwrap());
 
     let key11 = random_bytes();
     let val11 = random_bytes();

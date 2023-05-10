@@ -34,3 +34,18 @@ pub static TABLE_HANDLE_ADDRESS_LIST: Lazy<Vec<AccountAddress>> = Lazy::new(|| {
     }
     arr
 });
+
+#[cfg(test)]
+mod tests {
+    use crate::account_config::{TABLE_ADDRESS_LIST, TABLE_ADDRESS_LIST_LEN};
+    use std::collections::HashSet;
+
+    #[test]
+    fn test_table_handle_address_list_unique() {
+        let table_address_set: HashSet<String> = TABLE_ADDRESS_LIST
+            .iter()
+            .map(|str| String::from(*str))
+            .collect();
+        assert_eq!(table_address_set.len(), TABLE_ADDRESS_LIST_LEN);
+    }
+}
