@@ -485,7 +485,7 @@ syn = { version = "1.0.107", features = [
     "visit",
     "fold",
 ] }
-sysinfo = "0.25.1"
+sysinfo = "0.29.0"
 tempfile = "3.2.0"
 test-helper = { path = "test-helper" }
 textwrap = "0.14.0"
