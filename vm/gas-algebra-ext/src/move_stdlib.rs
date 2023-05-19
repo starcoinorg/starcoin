@@ -4,6 +4,12 @@
 use crate::gas_meter::EXECUTION_GAS_MULTIPLIER as MUL;
 use move_stdlib::natives::GasParameters;
 
+#[cfg(all(test, not(feature = "testing")))]
+const UNIT_TEST_ENTRIES: usize = 0;
+
+#[cfg(all(test, feature = "testing"))]
+const UNIT_TEST_ENTRIES: usize = 2;
+
 // see starcoin/vm/types/src/on_chain_config/genesis_gas_schedule.rs
 // same order as https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#native_schedule
 // modify should with impl From<VMConfig> for GasSchedule
@@ -51,4 +57,4 @@ crate::natives::define_gas_parameters_for_natives!(GasParameters, "move_stdlib",
     [.string.index_of.per_byte_searched, optional "string.index_of.per_byte_searched", (4 + 1)  * MUL],
     // [.vector.spawn_from.base, optional "vector.spawn_from.base", 0  * MUL],
     [.vector.spawn_from.legacy_per_abstract_memory_unit, optional "vector.spawn_from.legacy_per_abstract_memory_unit", (4 + 1)  * MUL],
-], allow_unmapped = 2 /* bcs */ + 2 /* hash */ + 5 /* vector */ + 3 /* string*/ + 4 /* XXX FIXME YSG for nextest*/);
+], allow_unmapped = 2 /* bcs */ + 2 /* hash */ + 5 /* vector */ + 3 /* string */ + 2 /* type_name */ + UNIT_TEST_ENTRIES);
