@@ -33,6 +33,7 @@ proptest-derive = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-time-service = { workspace = true }
 vm = { workspace = true }
+starcoin-gas-algebra-ext = { workspace = true, features = ["testing"] }
 
 [features]
 default = []
