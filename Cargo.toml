@@ -73,6 +73,7 @@ members = [
     "vm/stdlib",
     "vm/compiler",
     "vm/move-prover",
+    "vm/mvhashmap",
     "vm/transaction-builder",
     "vm/transaction-builder-generator",
     "vm/move-coverage",
@@ -176,6 +177,7 @@ default-members = [
     "vm/stdlib",
     "vm/compiler",
     "vm/move-prover",
+    "vm/mvhashmap",
     "vm/transaction-builder",
     "vm/transaction-builder-generator",
     "vm/move-coverage",
@@ -258,6 +260,7 @@ codespan = { version = "0.8.0", features = ["serialization"] }
 codespan-reporting = "0.11"
 colored = "2.0.0"
 criterion = "0.3"
+crossbeam = "0.8.1"
 crossbeam-channel = "0.5.6"
 cryptonight-rs = { path = "consensus/cryptonight-rs" }
 csv = "~1"
@@ -376,7 +379,7 @@ proptest-derive = "0.3.0"
 quote = "1.0.16"
 rand = "0.8.5"
 rand_core = { version = "0.6.3", default-features = false }
-rayon = "1"
+rayon = "1.6.1"
 regex = "1.6.0"
 ripemd160 = "0.9.1"
 rlp = "0.4"
