@@ -17,6 +17,7 @@ members = [
     "commons/accumulator",
     "commons/forkable-jellyfish-merkle",
     "commons/time-service",
+    "commons/infallible",
     "types",
     "types/uint",
     "genesis",
@@ -74,6 +75,7 @@ members = [
     "vm/compiler",
     "vm/move-prover",
     "vm/mvhashmap",
+    "vm/parallel-executor",
     "vm/transaction-builder",
     "vm/transaction-builder-generator",
     "vm/move-coverage",
@@ -123,6 +125,7 @@ default-members = [
     "commons/api-limiter",
     "commons/accumulator",
     "commons/forkable-jellyfish-merkle",
+    "commons/infallible",
     "types",
     "types/uint",
     "genesis",
@@ -178,6 +181,7 @@ default-members = [
     "vm/compiler",
     "vm/move-prover",
     "vm/mvhashmap",
+    "vm/parallel-executor",
     "vm/transaction-builder",
     "vm/transaction-builder-generator",
     "vm/move-coverage",
@@ -482,6 +486,9 @@ stdlib = { path = "vm/stdlib" }
 stest = { path = "commons/stest" }
 stest-macro = { path = "commons/stest/stest-macro" }
 stream-task = { path = "commons/stream-task" }
+starcoin-mvhashmap = { path = "vm/mvhashmap" }
+starcoin-parallel-executor = { path = "vm/parallel-executor" }
+starcoin-infallible = { path = "commons/infallible" }
 syn = { version = "1.0.107", features = [
     "full",
     "extra-traits",
