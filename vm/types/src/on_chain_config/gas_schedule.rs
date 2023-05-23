@@ -34,12 +34,40 @@ impl GasSchedule {
     #[cfg(feature = "print_gas_info")]
     pub fn info(&self, message: &str) {
         let mut gas_info = String::from("GasSchedule info begin\n");
-        gas_info.push_str(&format!("{}", message));
+        gas_info.push_str(&format!("{}\n", message));
         self.entries.iter().for_each(|(key, value)| {
             gas_info.push_str(&format!("key = {}, gas value = {}\n", key, value));
         });
         gas_info.push_str("GasSchedule info end\n");
         info!("{}", gas_info);
+    }
+
+    /// check if there is any one of entry different from the other
+    /// if it is, return true otherwise false
+    pub fn is_different(&self, other: &GasSchedule) -> bool {
+        let diff_len = self.entries.len() != other.entries.len();
+        if diff_len {
+            debug_assert!(
+                !diff_len,
+                "self.entries.len() = {} not the same as other.entries.len() = {}",
+                self.entries.len(),
+                other.entries.len()
+            );
+            return true;
+        }
+        self.entries
+            .iter()
+            .enumerate()
+            .any(|(index, (key, value))| {
+                let tuple = &other.entries[index];
+                let diff = &tuple.0 != key || &tuple.1 != value;
+                debug_assert!(
+                    !diff,
+                    "self.entries[{}] = {} not the same as other.entries[{}] = {}",
+                    key, value, tuple.0, tuple.1
+                );
+                diff
+            })
     }
 }
 

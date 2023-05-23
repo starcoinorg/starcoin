@@ -329,9 +329,11 @@ impl BaseConfig {
                 if config_in_file.is_ready() && net.genesis_config().is_ready() {
                     ensure!(
                         &config_in_file == net.genesis_config(),
-                        "GenesisConfig in file:{:?} is not same with builtin config: {:?}",
+                        "GenesisConfig in file:{:?} is not same with builtin config: {:?}\n{:?}\n*****\n{:?}",
                         config_path.as_path(),
-                        net
+                        net,
+                        config_in_file,
+                        net.genesis_config(),
                     );
                 }
                 config_in_file
