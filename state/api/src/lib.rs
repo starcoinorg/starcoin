@@ -12,8 +12,8 @@ use starcoin_types::{
 use std::str::FromStr;
 
 pub use chain_state::{
-    AccountStateReader, ChainStateReader, ChainStateWriter, StateProof, StateReaderExt,
-    StateWithProof, StateWithTableItemProof,
+    AccountStateReader, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,
+    StateWithTableItemProof,
 };
 use serde::de::DeserializeOwned;
 pub use starcoin_state_tree::StateNodeStore;
@@ -22,7 +22,7 @@ use starcoin_vm_types::access_path::DataPath;
 use starcoin_vm_types::account_config::table_handle_address;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_store::table::TableHandle;
-pub use starcoin_vm_types::state_view::StateView;
+pub use starcoin_vm_types::state_view::{StateReaderExt, StateView};
 
 mod chain_state;
 pub mod message;
