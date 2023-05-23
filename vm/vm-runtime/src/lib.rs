@@ -5,6 +5,7 @@ pub mod data_cache;
 #[cfg(feature = "metrics")]
 pub mod metrics;
 pub mod natives;
+mod adapter_common;
 pub mod starcoin_vm;
 pub use move_vm_runtime::move_vm;
 pub use move_vm_runtime::session;
