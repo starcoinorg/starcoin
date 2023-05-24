@@ -10890,6 +10890,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-natives",
+ "starcoin-parallel-executor",
  "starcoin-types",
  "starcoin-vm-types",
  "stdlib",

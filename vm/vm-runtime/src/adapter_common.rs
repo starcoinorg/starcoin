@@ -1,4 +1,4 @@
-// Copyright (c) Aptos
+// Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{counters::*, data_cache::StateViewCache};
@@ -15,19 +15,21 @@ use crate::{
     logging::AdapterLogSchema,
     move_vm_ext::{SessionExt, SessionId},
 };
-use aptos_logger::prelude::*;
-use aptos_types::{
+use starcoin_logger::prelude::*;
+use starcoin_vm_types::{
     access_path::AccessPath,
     block_metadata::BlockMetadata,
     state_store::state_key::StateKey,
     transaction::{
         Transaction, TransactionArgument, TransactionOutput, TransactionPayload, TransactionStatus,
-        WriteSetPayload,
+        WriteSetPayload,SignedUserTransaction,
     },
     write_set::WriteSet,
 };
 use rayon::prelude::*;
 use std::collections::HashSet;
+use move_core_types::vm_status::{StatusCode, VMStatus};
+use starcoin_vm_types::state_view::StateView;
 
 /// This trait describes the VM adapter's interface.
 /// TODO: bring more of the execution logic in aptos_vm into this file.
@@ -252,16 +254,12 @@ pub(crate) fn execute_block_impl<A: VMAdapter, S: StateView>(
 }
 
 /// Transactions after signature checking:
-/// Waypoints and BlockPrologues are not signed and are unaffected by signature checking,
-/// but a user transaction or writeset transaction is transformed to a SignatureCheckedTransaction.
+/// BlockPrologues are not signed and are unaffected by signature checking,
+/// but a user transaction transformed to a SignatureCheckedTransaction.
 #[derive(Debug)]
 pub enum PreprocessedTransaction {
-    UserTransaction(Box<SignatureCheckedTransaction>),
-    WaypointWriteSet(WriteSetPayload),
+    UserTransaction(Box<SignedUserTransaction>),
     BlockMetadata(BlockMetadata),
-    WriteSet(Box<SignatureCheckedTransaction>),
-    InvalidSignature,
-    StateCheckpoint,
 }
 
 /// Check the signature (if any) of a transaction. If the signature is OK, the result
@@ -271,7 +269,6 @@ pub enum PreprocessedTransaction {
 pub(crate) fn preprocess_transaction<A: VMAdapter>(txn: Transaction) -> PreprocessedTransaction {
     match txn {
         Transaction::BlockMetadata(b) => PreprocessedTransaction::BlockMetadata(b),
-        Transaction::GenesisTransaction(ws) => PreprocessedTransaction::WaypointWriteSet(ws),
         Transaction::UserTransaction(txn) => {
             let checked_txn = match A::check_signature(txn) {
                 Ok(checked_txn) => checked_txn,
@@ -280,13 +277,9 @@ pub(crate) fn preprocess_transaction<A: VMAdapter>(txn: Transaction) -> Preproce
                 }
             };
             match checked_txn.payload() {
-                TransactionPayload::WriteSet(_) => {
-                    PreprocessedTransaction::WriteSet(Box::new(checked_txn))
-                }
                 _ => PreprocessedTransaction::UserTransaction(Box::new(checked_txn)),
             }
         }
-        Transaction::StateCheckpoint => PreprocessedTransaction::StateCheckpoint,
     }
 }
 

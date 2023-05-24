@@ -7,22 +7,22 @@ mod vm_wrapper;
 
 use crate::{
     adapter_common::{preprocess_transaction, PreprocessedTransaction},
-    aptos_vm::AptosVM,
-    parallel_executor::vm_wrapper::AptosVMWrapper,
+    parallel_executor::vm_wrapper::StarcoinVMWrapper,
+    starcoin_vm::StarcoinVM,
 };
-use aptos_parallel_executor::{
+use move_core_types::vm_status::{StatusCode, VMStatus};
+use rayon::prelude::*;
+use starcoin_parallel_executor::{
     errors::Error,
     executor::ParallelTransactionExecutor,
     task::{Transaction as PTransaction, TransactionOutput as PTransactionOutput},
 };
-use aptos_state_view::StateView;
-use aptos_types::{
+use starcoin_vm_types::{
     state_store::state_key::StateKey,
+    state_view::StateView,
     transaction::{Transaction, TransactionOutput, TransactionStatus},
     write_set::{WriteOp, WriteSet},
 };
-use move_core_types::vm_status::{StatusCode, VMStatus};
-use rayon::prelude::*;
 
 impl PTransaction for PreprocessedTransaction {
     type Key = StateKey;
@@ -30,9 +30,9 @@ impl PTransaction for PreprocessedTransaction {
 }
 
 // Wrapper to avoid orphan rule
-pub(crate) struct AptosTransactionOutput(TransactionOutput);
+pub(crate) struct StarcoinTransactionOutput(TransactionOutput);
 
-impl AptosTransactionOutput {
+impl StarcoinTransactionOutput {
     pub fn new(output: TransactionOutput) -> Self {
         Self(output)
     }
@@ -41,7 +41,7 @@ impl AptosTransactionOutput {
     }
 }
 
-impl PTransactionOutput for AptosTransactionOutput {
+impl PTransactionOutput for StarcoinTransactionOutput {
     type T = PreprocessedTransaction;
 
     fn get_writes(&self) -> Vec<(StateKey, WriteOp)> {
@@ -59,9 +59,9 @@ impl PTransactionOutput for AptosTransactionOutput {
     }
 }
 
-pub struct ParallelAptosVM();
+pub struct ParallelStarcoinVM();
 
-impl ParallelAptosVM {
+impl ParallelStarcoinVM {
     pub fn execute_block<S: StateView>(
         transactions: Vec<Transaction>,
         state_view: &S,
@@ -71,21 +71,22 @@ impl ParallelAptosVM {
         // sequentially while executing the transactions.
         let signature_verified_block: Vec<PreprocessedTransaction> = transactions
             .par_iter()
-            .map(|txn| preprocess_transaction::<AptosVM>(txn.clone()))
+            .map(|txn| preprocess_transaction::<StarcoinVM>(txn.clone()))
             .collect();
 
-        match ParallelTransactionExecutor::<PreprocessedTransaction, AptosVMWrapper<S>>::new()
+        match ParallelTransactionExecutor::<PreprocessedTransaction, StarcoinVMWrapper<S>>::new()
             .execute_transactions_parallel(state_view, signature_verified_block)
         {
             Ok(results) => Ok((
                 results
                     .into_iter()
-                    .map(AptosTransactionOutput::into)
+                    .map(StarcoinTransactionOutput::into)
                     .collect(),
                 None,
             )),
             Err(err @ Error::InferencerError) | Err(err @ Error::UnestimatedWrite) => {
-                let output = AptosVM::execute_block_and_keep_vm_status(transactions, state_view)?;
+                // XXX FIXME YSG
+                let output = StarcoinVM::execute_block_and_keep_vm_status(transactions, state_view)?;
                 Ok((
                     output
                         .into_iter()
