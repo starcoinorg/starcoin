@@ -5,8 +5,8 @@ use crate::{
     adapter_common::PreprocessedTransaction, read_write_set_analysis::ReadWriteSetAnalysis,
 };
 use anyhow::Result;
-use aptos_parallel_executor::task::{Accesses, ReadWriteSetInferencer};
-use aptos_types::{access_path::AccessPath, state_store::state_key::StateKey};
+use starcoin_parallel_executor::task::{Accesses, ReadWriteSetInferencer};
+use starcoin_vm_types::{access_path::AccessPath, state_store::state_key::StateKey};
 use move_core_types::resolver::MoveResolver;
 use read_write_set_dynamic::NormalizedReadWriteSetAnalysis;
 

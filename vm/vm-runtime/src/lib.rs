@@ -1,17 +1,18 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+mod adapter_common;
 pub mod data_cache;
 #[cfg(feature = "metrics")]
 pub mod metrics;
 pub mod natives;
-mod adapter_common;
 pub mod starcoin_vm;
 pub use move_vm_runtime::move_vm;
 pub use move_vm_runtime::session;
 mod access_path_cache;
 mod errors;
 pub mod move_vm_ext;
+pub mod parallel_executor;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::language_storage::StructTag;
