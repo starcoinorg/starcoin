@@ -4,6 +4,7 @@
 use crate::network_metrics::NetworkMetrics;
 use crate::{build_network_worker, Announcement};
 use anyhow::{format_err, Result};
+use bcs_ext::BCSCodec;
 use bytes::Bytes;
 use futures::future::{abortable, AbortHandle};
 use futures::{
@@ -18,6 +19,7 @@ use network_api::messages::{
 use network_api::{
     BroadcastProtocolFilter, NetworkActor, PeerId, PeerInfo, PeerMessageHandler, RpcInfo,
 };
+use network_p2p::protocol::BusinessLayerHandle;
 use network_p2p::{Event, NetworkWorker};
 use rand::prelude::SliceRandom;
 use starcoin_config::NodeConfig;
@@ -36,6 +38,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::ops::RangeInclusive;
 use std::sync::Arc;
+use crate::network_business_handle::NetworkBusinessHandle;
 
 const BARNARD_HARD_FORK_PEER_VERSION_STRING_PREFIX: &str = "barnard_rollback_block_fix";
 const BARNARD_HARD_FORK_VERSION: [i32; 3] = [1, 12, 9];
@@ -45,6 +48,8 @@ pub struct NetworkActorService {
     inner: Inner,
 
     network_worker_handle: Option<AbortHandle>,
+
+    network_business_handle: Option<NetworkBusinessHandle>
 }
 
 impl NetworkActor for NetworkActorService {}
@@ -59,6 +64,7 @@ impl NetworkActorService {
     where
         H: PeerMessageHandler + 'static,
     {
+        let business_handle = NetworkBusinessHandle::new(chain_info);
         let (self_info, worker) = build_network_worker(
             &config.network,
             chain_info,
@@ -73,6 +79,7 @@ impl NetworkActorService {
             worker: Some(worker),
             inner,
             network_worker_handle: None,
+            chain_info,
         })
     }
 
@@ -171,7 +178,7 @@ impl EventHandler<Self, Event> for NetworkActorService {
             Event::NotificationStreamOpened {
                 remote,
                 protocol,
-                info,
+                generic_data,
                 notif_protocols,
                 rpc_protocols,
                 version_string,
@@ -182,6 +189,10 @@ impl EventHandler<Self, Event> for NetworkActorService {
                     "Connected peer {:?}, protocol: {}, notif_protocols: {:?}, rpc_protocols: {:?}",
                     remote, protocol, notif_protocols, rpc_protocols
                 );
+                let info = match ChainInfo::decode(&generic_data) {
+                    Ok(data) => data,
+                    Err(err) => return,
+                };
                 if info.chain_id().is_barnard() {
                     info!("Connected peer ver_string {:?}", version_string);
                     if let Some(ref ver_str) = version_string {
@@ -197,10 +208,10 @@ impl EventHandler<Self, Event> for NetworkActorService {
                         }
                     }
                 }
-                let peer_event = PeerEvent::Open(remote.into(), info.clone());
+                let peer_event = PeerEvent::Open(remote.into(), Box::new(info));
                 self.inner.on_peer_connected(
                     remote.into(),
-                    *info,
+                    info,
                     notif_protocols,
                     rpc_protocols,
                     version_string,
@@ -433,6 +444,7 @@ pub(crate) struct Inner {
     peers: HashMap<PeerId, Peer>,
     peer_message_handler: Arc<dyn PeerMessageHandler>,
     metrics: Option<NetworkMetrics>,
+    chain_info: ChainInfo,
 }
 
 impl BroadcastProtocolFilter for Inner {
@@ -480,7 +492,14 @@ impl Inner {
         self.self_peer
             .peer_info
             .update_chain_status(chain_status.clone());
-        self.network_service.update_chain_status(chain_status);
+        match chain_status.encode() {
+            Ok(status) => {
+                self.network_service.update_business_status(status);
+            },
+            Err(error) => {
+                error!("failed to chain_status.encode(), reason: {}", error.to_string());
+            },
+        }
     }
 
     pub(crate) fn handle_network_message(
@@ -695,10 +714,10 @@ impl Inner {
                 //1. New Block broadcast
                 //2. Sync status change.
                 // may be update by repeat message, but can not find a more good way.
-                self.network_service.update_chain_status(ChainStatus::new(
+                self.network_service.update_business_status(ChainStatus::new(
                     msg.compact_block.header.clone(),
                     msg.block_info.clone(),
-                ));
+                ).encode().unwrap());
 
                 self.self_peer.known_blocks.put(id, ());
                 let (protocol_name, message) = notification
@@ -912,4 +931,32 @@ mod test {
         let v5 = String::from("starcoin/1.13.1 (build:v1.13.1) (kele01)");
         assert!(greater_barnard_fork_version(&v5));
     }
+}
+
+
+impl BusinessLayerHandle for NetworkActorService {
+    fn handshake(&self, peer_info: &[u8]) -> Result<(), (&'static str, String)> {
+        let other_chain_info = ChainInfo::decode(peer_info).unwrap();
+        if self.chain_info.genesis_hash() == other_chain_info.genesis_hash() {
+            return std::result::Result::Ok(());
+        }
+        return Err(("the genesis hash is different", format!("the genesis hash from other peer is different, self: {}, remote: {}", 
+                            self.chain_info.genesis_hash(), 
+                            other_chain_info.genesis_hash())));
+    }
+
+    fn get_generic_data(&self) -> Result<Vec<u8>, anyhow::Error> {
+        Ok(self.chain_info.encode().unwrap())
+    }
+
+    fn update_generic_data(&mut self, peer_info: &[u8]) -> Result<(), anyhow::Error> {
+        self.chain_info = ChainInfo::decode(peer_info).unwrap();
+        Ok(())
+    }
+
+    fn update_status(mut self: Pin<&mut Self>, peer_status: &[u8]) -> Result<(), anyhow::Error> {
+        self.chain_info.update_status(ChainStatus::decode(peer_status).unwrap());
+        Ok(())
+    }
+
 }

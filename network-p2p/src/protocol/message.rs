@@ -11,7 +11,6 @@ pub mod generic {
         /// Message payload.
         pub data: Vec<u8>,
     }
-
     /// Status sent on connection.
     #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
     pub struct Status {
@@ -23,7 +22,7 @@ pub mod generic {
         pub notif_protocols: Vec<Cow<'static, str>>,
         /// Tell other peer which rpc api we support.
         pub rpc_protocols: Vec<Cow<'static, str>>,
-        /// The info of the chain
-        pub info: ChainInfo,
+        /// the generic data related to the peer
+        pub generic_data: Vec<u8>,
     }
 }
