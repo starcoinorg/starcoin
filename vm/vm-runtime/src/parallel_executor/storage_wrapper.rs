@@ -2,9 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::data_cache::{IntoMoveResolver, RemoteStorageOwned};
-use aptos_parallel_executor::executor::MVHashMapView;
-use aptos_state_view::{StateView, StateViewId};
-use aptos_types::{state_store::state_key::StateKey, write_set::WriteOp};
+use starcoin_parallel_executor::{
+    executor::MVHashMapView,
+    task::{ExecutionStatus, ExecutorTask},
+};
+use starcoin_vm_types::{
+    state_store::state_key::StateKey, state_view::StateView, write_set::WriteOp,
+};
 
 pub(crate) struct VersionedView<'a, S: StateView> {
     base_view: &'a S,
@@ -20,17 +24,14 @@ impl<'a, S: StateView> VersionedView<'a, S> {
             base_view,
             hashmap_view,
         }
-            .into_move_resolver()
+        .into_move_resolver()
     }
 }
 
 impl<'a, S: StateView> StateView for VersionedView<'a, S> {
-    fn id(&self) -> StateViewId {
-        self.base_view.id()
-    }
-
     // Get some data either through the cache or the `StateView` on a cache miss.
     fn get_state_value(&self, state_key: &StateKey) -> anyhow::Result<Option<Vec<u8>>> {
+        // XXX FIXME YSG
         match self.hashmap_view.read(state_key) {
             Some(v) => Ok(match v.as_ref() {
                 WriteOp::Value(w) => Some(w.clone()),

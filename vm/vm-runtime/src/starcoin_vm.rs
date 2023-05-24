@@ -64,6 +64,7 @@ use starcoin_vm_types::{
     vm_status::{StatusCode, VMStatus},
 };
 use std::sync::Arc;
+use crate::adapter_common::PreprocessedTransaction;
 
 #[cfg(feature = "metrics")]
 use crate::metrics::VMMetrics;
@@ -1347,6 +1348,30 @@ impl StarcoinVM {
         self.gas_params.as_ref().ok_or_else(|| {
             debug!("VM Startup Failed. Gas Parameters Not Found");
             VMStatus::Error(StatusCode::VM_STARTUP_FAILURE)
+        })
+    }
+
+    // XXX FIXME YSG
+    pub fn execute_single_transaction<S: MoveResolverExt + StateView>(&self, txn: PreprocessedTransaction, mut state_view: &S) -> Result<(VMStatus, TransactionOutputExt, Option<String>), VMStatus> {
+        let mut data_cache = StateViewCache::new(state_view);
+        Ok(match txn {
+            PreprocessedTransaction::UserTransaction(txn) => {
+                let gas_unit_price = txn.gas_unit_price();
+                let sender = txn.sender().to_string();
+                // XXX FIXME YSG
+                let (status, output) = self.execute_user_transaction(*txn, &mut data_cache);
+                (vm_status, output, Some(sender))
+            },
+            PreprocessedTransaction::BlockMetadata(block_meta) => {
+                // XXX FIXME YSG
+                let (status, output) = match self.process_block_metadata( &mut data_cache, block_meta) {
+                    Ok(output) => (VMStatus::Executed, output, Some("block_prologue".to_string())),
+                    Err(vm_status) => {
+                        let (status, output) = discard_error_vm_status(vm_status);
+                        (status, output, Some("block_prologue".to_string()))
+                    },
+                }
+            }
         })
     }
 }

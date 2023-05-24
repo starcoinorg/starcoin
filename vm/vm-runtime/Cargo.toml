@@ -20,6 +20,7 @@ starcoin-metrics = { optional = true, workspace = true }
 starcoin-gas = { workspace = true }
 starcoin-gas-algebra-ext = { workspace = true }
 serde = { features = ["derive"], workspace = true }
+starcoin-parallel-executor = { workspace = true }
 
 [dev-dependencies]
 stdlib = { package = "stdlib", workspace = true }

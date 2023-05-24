@@ -3,22 +3,24 @@
 
 use crate::{
     adapter_common::{PreprocessedTransaction, VMAdapter},
-    aptos_vm::AptosVM,
     data_cache::RemoteStorage,
-    logging::AdapterLogSchema,
-    parallel_executor::{storage_wrapper::VersionedView, AptosTransactionOutput},
+    parallel_executor::{storage_wrapper::VersionedView, StarcoinTransactionOutput},
+    starcoin_vm::StarcoinVM,
 };
-use aptos_logger::prelude::*;
-use aptos_parallel_executor::{
+
+use starcoin_parallel_executor::{
     executor::MVHashMapView,
     task::{ExecutionStatus, ExecutorTask},
 };
-use aptos_state_view::StateView;
-use aptos_types::{state_store::state_key::StateKey, write_set::WriteOp};
+
 use move_core_types::{
     ident_str,
     language_storage::{ModuleId, CORE_CODE_ADDRESS},
     vm_status::VMStatus,
+};
+use starcoin_logger::prelude::*;
+use starcoin_vm_types::{
+    state_store::state_key::StateKey, state_view::StateView, write_set::WriteOp,
 };
 
 pub(crate) struct StarcoinVMWrapper<'a, S> {
@@ -28,14 +30,17 @@ pub(crate) struct StarcoinVMWrapper<'a, S> {
 
 impl<'a, S: 'a + StateView> ExecutorTask for StarcoinVMWrapper<'a, S> {
     type T = PreprocessedTransaction;
-    type Output = AptosTransactionOutput;
+    type Output = StarcoinTransactionOutput;
     type Error = VMStatus;
     type Argument = &'a S;
 
+    // XXX FIXME YSG
     fn init(argument: &'a S) -> Self {
-        let vm = AptosVM::new(argument);
+        // XXX FIXME YSG
+        let vm = StarcoinVM::new(None);
 
-        // Loading `0x1::AptosAccount` and its transitive dependency into the code cache.
+        // XXX FIXME YSG
+        // Loading `0x1::Account` and its transitive dependency into the code cache.
         //
         // This should give us a warm VM to avoid the overhead of VM cold start.
         // Result of this load could be omitted as this is a best effort approach and won't hurt if that fails.
@@ -43,8 +48,9 @@ impl<'a, S: 'a + StateView> ExecutorTask for StarcoinVMWrapper<'a, S> {
         // Loading up `0x1::AptosAccount` should be sufficient as this is the most common module
         // used for prologue, epilogue and transfer functionality.
 
+        // XXX FIXME YSG
         let _ = vm.load_module(
-            &ModuleId::new(CORE_CODE_ADDRESS, ident_str!("AptosAccount").to_owned()),
+            &ModuleId::new(CORE_CODE_ADDRESS, ident_str!("Account").to_owned()),
             &RemoteStorage::new(argument),
         );
 
@@ -58,8 +64,7 @@ impl<'a, S: 'a + StateView> ExecutorTask for StarcoinVMWrapper<'a, S> {
         &self,
         view: &MVHashMapView<StateKey, WriteOp>,
         txn: &PreprocessedTransaction,
-    ) -> ExecutionStatus<AptosTransactionOutput, VMStatus> {
-        let log_context = AdapterLogSchema::new(self.base_view.id(), view.txn_idx());
+    ) -> ExecutionStatus<StarcoinTransactionOutput, VMStatus> {
         let versioned_view = VersionedView::new_view(self.base_view, view);
 
         match self
@@ -70,20 +75,20 @@ impl<'a, S: 'a + StateView> ExecutorTask for StarcoinVMWrapper<'a, S> {
                 if output.status().is_discarded() {
                     match sender {
                         Some(s) => trace!(
-                            log_context,
                             "Transaction discarded, sender: {}, error: {:?}",
                             s,
                             vm_status,
                         ),
                         None => {
-                            trace!(log_context, "Transaction malformed, error: {:?}", vm_status,)
+                            trace!("Transaction malformed, error: {:?}", vm_status,)
                         }
                     };
                 }
-                if AptosVM::should_restart_execution(&output) {
-                    ExecutionStatus::SkipRest(AptosTransactionOutput::new(output))
+                // XXX FIXME YSG
+                if StarcoinVM::should_restart_execution(&output) {
+                    ExecutionStatus::SkipRest(StarcoinTransactionOutput::new(output))
                 } else {
-                    ExecutionStatus::Success(AptosTransactionOutput::new(output))
+                    ExecutionStatus::Success(StarcoinTransactionOutput::new(output))
                 }
             }
             Err(err) => ExecutionStatus::Abort(err),
