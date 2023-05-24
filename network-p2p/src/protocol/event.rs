@@ -55,7 +55,7 @@ pub enum Event {
         remote: PeerId,
         /// The concerned protocol. Each protocol uses a different substream.
         protocol: Cow<'static, str>,
-        info: Box<ChainInfo>,
+        generic_data: Vec<u8>,
         notif_protocols: Vec<Cow<'static, str>>,
         rpc_protocols: Vec<Cow<'static, str>>,
         version_string: Option<String>,

@@ -221,7 +221,7 @@ impl NetworkWorker {
 
         let (protocol, peerset_handle) = Protocol::new(
             peerset_config,
-            params.chain_info,
+            params.business_layer_handle,
             boot_node_ids.clone(),
             notif_protocols,
             params
@@ -723,12 +723,10 @@ impl NetworkService {
         }
     }
 
-    pub fn update_chain_status(&self, chain_status: ChainStatus) {
+    pub fn update_business_status(&self, status: Vec<u8>) {
         let _ = self
             .to_worker
-            .unbounded_send(ServiceToWorkerMsg::UpdateChainStatus(Box::new(
-                chain_status,
-            )));
+            .unbounded_send(ServiceToWorkerMsg::UpdateBusinessLayerStatus(status));
     }
 
     /// Returns a stream containing the events that happen on the network.
@@ -1005,7 +1003,7 @@ enum ServiceToWorkerMsg {
     IsConnected(PeerId, oneshot::Sender<bool>),
     NetworkState(oneshot::Sender<NetworkState>),
     KnownPeers(oneshot::Sender<HashSet<PeerId>>),
-    UpdateChainStatus(Box<ChainStatus>),
+    UpdateBusinessLayerStatus(Vec<u8>),
     AddressByPeerId(PeerId, oneshot::Sender<Vec<Multiaddr>>),
     BanPeer(bool, PeerId),
 }
@@ -1095,11 +1093,11 @@ impl Future for NetworkWorker {
                     }
                     let _ = tx.send(result);
                 }
-                ServiceToWorkerMsg::UpdateChainStatus(status) => {
-                    this.network_service
+                ServiceToWorkerMsg::UpdateBusinessLayerStatus(status) => {
+                    let protocol = Pin::new(this.network_service
                         .behaviour_mut()
-                        .user_protocol_mut()
-                        .update_chain_status(*status);
+                        .user_protocol_mut());
+                    protocol.update_status(&status);
                 }
                 ServiceToWorkerMsg::AddressByPeerId(peer_id, tx) => {
                     let _ = tx.send(this.network_service.behaviour_mut().get_address(&peer_id));
@@ -1255,7 +1253,7 @@ impl Future for NetworkWorker {
                     remote,
                     protocol,
                     notifications_sink,
-                    info,
+                    generic_data,
                     notif_protocols,
                     rpc_protocols,
                 })) => {
@@ -1270,7 +1268,7 @@ impl Future for NetworkWorker {
                     this.event_streams.send(Event::NotificationStreamOpened {
                         remote,
                         protocol,
-                        info,
+                        generic_data,
                         notif_protocols,
                         rpc_protocols,
                         version_string: this

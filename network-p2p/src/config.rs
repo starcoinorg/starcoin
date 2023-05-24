@@ -9,7 +9,7 @@ use libp2p::{
     multiaddr::Protocol,
 };
 use prometheus::Registry;
-use std::borrow::Cow;
+use std::{borrow::Cow, pin::Pin};
 use std::fmt;
 use std::{
     error::Error,
@@ -21,6 +21,7 @@ use std::{
 };
 use zeroize::Zeroize;
 
+use crate::protocol::BusinessLayerHandle;
 pub use crate::request_responses::{IncomingRequest, ProtocolConfig as RequestResponseConfig};
 pub use libp2p::{build_multiaddr, core::PublicKey, identity};
 pub use network_p2p_types::{parse_addr, parse_str_addr, MultiaddrWithPeerId};
@@ -57,7 +58,7 @@ pub struct Params {
     /// Name of the protocol to use on the wire. Should be different for each chain.
     pub protocol_id: ProtocolId,
 
-    pub chain_info: ChainInfo,
+    pub business_layer_handle: Pin<Box<dyn BusinessLayerHandle + Send>>,
     pub metrics_registry: Option<Registry>,
 }
 
@@ -65,13 +66,13 @@ impl Params {
     pub fn new(
         network_config: NetworkConfiguration,
         protocol_id: ProtocolId,
-        chain_info: ChainInfo,
+        business_layer_handle: Pin<Box<dyn BusinessLayerHandle + Send>>,
         metrics_registry: Option<Registry>,
     ) -> Self {
         Self {
             network_config,
             protocol_id,
-            chain_info,
+            business_layer_handle,
             metrics_registry,
         }
     }

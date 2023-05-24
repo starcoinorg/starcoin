@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::config::RequestResponseConfig;
+use crate::protocol::BusinessLayerHandle;
 use crate::protocol::message::generic::Status;
 use crate::service::NetworkStateInfo;
 use crate::{config, Event, NetworkService, NetworkWorker};
 use crate::{NetworkConfiguration, Params, ProtocolId};
+use anyhow::{anyhow, Result, Ok};
 use bcs_ext::BCSCodec;
 use futures::prelude::*;
 use futures::stream::StreamExt;
@@ -16,11 +18,50 @@ use starcoin_crypto::HashValue;
 use starcoin_types::genesis_config::ChainId;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use std::borrow::Cow;
+use std::pin::Pin;
 use std::{sync::Arc, time::Duration};
 use Event::NotificationStreamOpened;
 
 static G_TEST_CHAIN_INFO: Lazy<ChainInfo> =
     Lazy::new(|| ChainInfo::new(ChainId::new(0), HashValue::zero(), ChainStatus::random()));
+
+struct TestChainInfoHandle {
+    chain_info: ChainInfo
+}
+
+impl TestChainInfoHandle {
+    pub fn new(chain_info: ChainInfo) -> Self {
+        TestChainInfoHandle { 
+            chain_info 
+        }
+    }
+}
+
+impl BusinessLayerHandle for TestChainInfoHandle {
+    fn handshake(&self, peer_info: &[u8]) -> Result<(), (&'static str, String)> {
+        let other_chain_info = ChainInfo::decode(peer_info).unwrap();
+        if self.chain_info.genesis_hash() == other_chain_info.genesis_hash() {
+            return std::result::Result::Ok(());
+        }
+        return Err(("the genesis hash is different", format!("the genesis hash from other peer is different, self: {}, remote: {}", 
+                            self.chain_info.genesis_hash(), 
+                            other_chain_info.genesis_hash())));
+    }
+
+    fn get_generic_data(&self) -> Result<Vec<u8>, anyhow::Error> {
+        Ok(self.chain_info.encode().unwrap())
+    }
+
+    fn update_generic_data(&mut self, peer_info: &[u8]) -> Result<(), anyhow::Error> {
+        self.chain_info = ChainInfo::decode(peer_info).unwrap();
+        Ok(())
+    }
+
+    fn update_status(mut self: Pin<&mut Self>, peer_status: &[u8]) -> Result<(), anyhow::Error> {
+        self.chain_info.update_status(ChainStatus::decode(peer_status).unwrap());
+        Ok(())
+    }
+} 
 
 /// Builds a full node to be used for testing. Returns the node service and its associated events
 /// stream.
@@ -33,7 +74,7 @@ fn build_test_full_node(
     let worker = NetworkWorker::new(config::Params {
         network_config: config,
         protocol_id: config::ProtocolId::from("/test-protocol-name"),
-        chain_info: G_TEST_CHAIN_INFO.clone(),
+        business_layer_handle: Box::pin(TestChainInfoHandle::new(G_TEST_CHAIN_INFO.clone())),
         metrics_registry: None,
     })
     .unwrap();
@@ -426,7 +467,7 @@ async fn test_handshake_fail() {
     let config1 = generate_config(vec![], vec![PROTOCOL_NAME.into()], vec![]);
     let chain1 = ChainInfo::random();
     let worker1 =
-        NetworkWorker::new(Params::new(config1.clone(), protocol.clone(), chain1, None)).unwrap();
+        NetworkWorker::new(Params::new(config1.clone(), protocol.clone(), Box::pin(TestChainInfoHandle::new(chain1)), None)).unwrap();
     let service1 = worker1.service().clone();
 
     let _ = tokio::task::spawn(worker1);
@@ -439,7 +480,7 @@ async fn test_handshake_fail() {
     let config2 = generate_config(vec![seed], vec![PROTOCOL_NAME.into()], vec![]);
     let chain2 = ChainInfo::random();
 
-    let worker2 = NetworkWorker::new(Params::new(config2, protocol, chain2, None)).unwrap();
+    let worker2 = NetworkWorker::new(Params::new(config2, protocol, Box::pin(TestChainInfoHandle::new(chain2)), None)).unwrap();
     let service2 = worker2.service().clone();
 
     let _ = tokio::task::spawn(worker2);
@@ -515,7 +556,7 @@ async fn test_support_protocol() {
     let worker1 = NetworkWorker::new(Params::new(
         config1.clone(),
         protocol.clone(),
-        chain1.clone(),
+        Box::pin(TestChainInfoHandle::new(chain1.clone())),
         None,
     ))
     .unwrap();
@@ -530,7 +571,7 @@ async fn test_support_protocol() {
 
     let config2 = generate_config(vec![seed], vec![block_v1.into()], vec![]);
 
-    let worker2 = NetworkWorker::new(Params::new(config2, protocol, chain1, None)).unwrap();
+    let worker2 = NetworkWorker::new(Params::new(config2, protocol, Box::pin(TestChainInfoHandle::new(chain1)), None)).unwrap();
     let service2 = worker2.service().clone();
     let stream2 = service2.event_stream("test1");
     let _ = tokio::task::spawn(worker2);
@@ -558,7 +599,7 @@ async fn test_support_protocol() {
     if let NotificationStreamOpened {
         remote,
         protocol: _,
-        info: _,
+        generic_data: _,
         notif_protocols,
         rpc_protocols,
         version_string: _,
@@ -581,7 +622,7 @@ async fn test_support_protocol() {
     if let Event::NotificationStreamOpened {
         remote,
         protocol: _,
-        info: _,
+        generic_data: _,
         notif_protocols,
         rpc_protocols,
         version_string: _,

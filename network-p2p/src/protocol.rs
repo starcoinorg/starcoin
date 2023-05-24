@@ -6,6 +6,7 @@ use crate::protocol::generic_proto::{GenericProto, GenericProtoOut, Notification
 use crate::protocol::message::generic::Status;
 use crate::utils::interval;
 use crate::{errors, DiscoveryNetBehaviour, Multiaddr};
+use anyhow::Error;
 use bcs_ext::BCSCodec;
 use bytes::Bytes;
 use futures::prelude::*;
@@ -15,6 +16,7 @@ use libp2p::swarm::{ConnectionHandler, IntoConnectionHandler};
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
 use log::Level;
+use sc_peerset::ReputationChange;
 use sc_peerset::{peersstate::PeersState, SetId};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use std::borrow::Cow;
@@ -50,7 +52,7 @@ pub mod rep {
     /// We received a message that failed to decode.
     pub const BAD_MESSAGE: Rep = Rep::new(-(1 << 12), "Bad message");
     /// Peer has different genesis.
-    pub const GENESIS_MISMATCH: Rep = Rep::new_fatal("Genesis mismatch");
+    // pub const GENESIS_MISMATCH: Rep = Rep::new_fatal("Genesis mismatch");
     /// Peer is on unsupported protocol version.
     pub const BAD_PROTOCOL: Rep = Rep::new_fatal("Unsupported protocol");
 }
@@ -62,7 +64,7 @@ pub enum CustomMessageOutcome {
         remote: PeerId,
         protocol: Cow<'static, str>,
         notifications_sink: NotificationsSink,
-        info: Box<ChainInfo>,
+        generic_data: Vec<u8>,
         notif_protocols: Vec<Cow<'static, str>>,
         rpc_protocols: Vec<Cow<'static, str>>,
     },
@@ -89,8 +91,10 @@ pub enum CustomMessageOutcome {
 /// Peer information
 #[derive(Debug, Clone)]
 struct Peer {
+    /// The data in peer is generic. 
+    /// As a network node, it does not need to know what the above layers do.  
     #[allow(unused)]
-    info: ChainInfo,
+    info: Vec<u8>,
 }
 
 #[derive(Default)]
@@ -105,6 +109,21 @@ struct ContextData {
     // All connected peers
     peers: HashMap<PeerId, Peer>,
     stats: HashMap<&'static str, PacketStats>,
+}
+
+/// The above layer must implement this trait to complete some business logic related to the network.
+pub trait BusinessLayerHandle {
+    /// To verify whether the connection is qualified.
+    fn handshake(&self, peer_info: &[u8]) -> Result<(), (&'static str, String)>;
+
+    /// Return the generic data related to the above layers
+    fn get_generic_data(&self) -> Result<Vec<u8>, Error>;
+
+    /// Update generic data
+    fn update_generic_data(&mut self, peer_info: &[u8]) -> Result<(), Error>;
+
+    /// Update business status
+    fn update_status(self: Pin<&mut Self>, peer_status: &[u8]) -> Result<(), Error>;
 }
 
 pub struct Protocol {
@@ -127,7 +146,8 @@ pub struct Protocol {
     /// solve this, an entry is added to this map whenever an invalid handshake is received.
     /// Entries are removed when the corresponding "substream closed" is later received.
     bad_handshake_substreams: HashSet<(PeerId, sc_peerset::SetId)>,
-    chain_info: ChainInfo,
+    /// for interacting with the business layer above the network-p2p module
+    business_layer_handle: Pin<Box<dyn BusinessLayerHandle + Send>>,
 }
 
 impl NetworkBehaviour for Protocol {
@@ -290,7 +310,7 @@ impl Protocol {
     /// Create a new instance.
     pub fn new(
         peerset_config: sc_peerset::PeersetConfig,
-        chain_info: ChainInfo,
+        business_layer_handle: Pin<Box<dyn BusinessLayerHandle + Send>>,
         boot_node_ids: Arc<HashSet<PeerId>>,
         notif_protocols: Vec<Cow<'static, str>>,
         rpc_protocols: Vec<Cow<'static, str>>,
@@ -308,7 +328,7 @@ impl Protocol {
             let handshake_message = Self::build_handshake_msg(
                 notif_protocols.to_vec(),
                 rpc_protocols.to_vec(),
-                chain_info.clone(),
+                business_layer_handle.get_generic_data().unwrap_or(vec![]),
             );
 
             let notif_protocol_wth_handshake = notif_protocols
@@ -333,7 +353,7 @@ impl Protocol {
                 peers: HashMap::new(),
                 stats: HashMap::new(),
             },
-            chain_info,
+            business_layer_handle,
             boot_node_ids,
             notif_protocols,
             rpc_protocols,
@@ -408,27 +428,31 @@ impl Protocol {
         notifications_sink: NotificationsSink,
     ) -> CustomMessageOutcome {
         debug!(target: "network-p2p", "New peer {} {:?}", who, status);
-        if status.info.genesis_hash() != self.chain_info.genesis_hash() {
-            if self.boot_node_ids.contains(&who) {
-                error!(
-                    target: "network-p2p",
-                    "Bootnode with peer id `{}` is on a different chain (our genesis: {} theirs: {})",
-                    who,
-                    self.chain_info.genesis_hash(),
-                    status.info.genesis_hash(),
-                );
-            } else {
-                log!(
-                    target: "network-p2p",
-                    if self.important_peers.contains(&who) { Level::Warn } else { Level::Debug },
-                    "Peer with id `{}` is on different chain (our genesis: {} theirs: {})",
-                    who,
-                    self.chain_info.genesis_hash(),
-                    status.info.genesis_hash(),
-                );
-            }
-            self.peerset_handle.report_peer(who, rep::GENESIS_MISMATCH);
-            return CustomMessageOutcome::None;
+        match self.business_layer_handle.handshake(&status.generic_data) {
+            Err((error, details)) => {
+                if self.boot_node_ids.contains(&who) {
+                    error!(
+                        target: "network-p2p",
+                        "Bootnode with peer id `{}` failed to handshade for the reason: {}",
+                        who,
+                        details,
+                    );
+                } else {
+                    log!(
+                        target: "network-p2p",
+                        if self.important_peers.contains(&who) { Level::Warn } else { Level::Debug },
+                        "Peer with id `{}` failed to handshade for the reason: {}",
+                        who,
+                        details 
+                    );
+                }
+                self.peerset_handle.report_peer(who, ReputationChange {
+                    value: i32::min_value(),
+                    reason: error,
+                });
+                return CustomMessageOutcome::None;
+            },
+            Ok(_) => (),
         }
         if status.version < MIN_VERSION || CURRENT_VERSION < status.min_supported_version {
             log!(
@@ -441,7 +465,7 @@ impl Protocol {
         }
         debug!(target: "network-p2p", "Connected {}", who);
         let peer = Peer {
-            info: status.info.clone(),
+            info: status.generic_data.clone(),
         };
         self.context_data.peers.insert(who, peer);
         debug!(target: "network-p2p", "Connected {}, Set id {:?}", who, set_id);
@@ -449,7 +473,7 @@ impl Protocol {
             remote: who,
             protocol: protocol_name,
             notifications_sink,
-            info: Box::new(status.info),
+            generic_data: status.generic_data,
             notif_protocols: status.notif_protocols.to_vec(),
             rpc_protocols: status.rpc_protocols.to_vec(),
         }
@@ -458,23 +482,23 @@ impl Protocol {
     fn build_status(
         notif_protocols: Vec<Cow<'static, str>>,
         rpc_protocols: Vec<Cow<'static, str>>,
-        info: ChainInfo,
+        generic_data: Vec<u8>,
     ) -> Status {
         message::generic::Status {
             version: CURRENT_VERSION,
             min_supported_version: MIN_VERSION,
             notif_protocols,
             rpc_protocols,
-            info,
+            generic_data,
         }
     }
 
     fn build_handshake_msg(
         notif_protocols: Vec<Cow<'static, str>>,
         rpc_protocols: Vec<Cow<'static, str>>,
-        info: ChainInfo,
+        generic_data: Vec<u8>
     ) -> Vec<u8> {
-        Self::build_status(notif_protocols, rpc_protocols, info)
+        Self::build_status(notif_protocols, rpc_protocols, generic_data)
             .encode()
             .expect("Status encode should success.")
     }
@@ -521,8 +545,8 @@ impl Protocol {
         self.context_data.peers.values().count()
     }
 
-    pub fn update_chain_status(&mut self, chain_status: ChainStatus) {
-        self.chain_info.update_status(chain_status);
+    pub fn update_status(mut self: Pin<&mut Self>, status: &[u8]) {
+        let _ = self.business_layer_handle.as_mut().update_status(status);
         self.update_handshake();
     }
 
@@ -530,7 +554,7 @@ impl Protocol {
         let handshake_msg = Self::build_handshake_msg(
             self.notif_protocols.to_vec(),
             self.rpc_protocols.to_vec(),
-            self.chain_info.clone(),
+            self.business_layer_handle.get_generic_data().unwrap_or(vec![]),
         );
         for (set_id, _) in self.notif_protocols.iter().enumerate() {
             self.behaviour
