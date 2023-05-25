@@ -6004,6 +6004,7 @@ dependencies = [
 name = "network-p2p-types"
 version = "1.13.5"
 dependencies = [
+ "anyhow",
  "bitflags",
  "bytes 1.4.0",
  "derive_more",
@@ -10123,6 +10124,7 @@ version = "1.13.5"
 dependencies = [
  "anyhow",
  "async-std",
+ "bcs-ext",
  "clap 3.2.23",
  "futures 0.3.26",
  "network-p2p",

@@ -1,7 +1,6 @@
 /// Generic types.
 pub mod generic {
     use serde::{Deserialize, Serialize};
-    use starcoin_types::startup_info::ChainInfo;
     use std::borrow::Cow;
 
     /// Consensus is mostly opaque to us

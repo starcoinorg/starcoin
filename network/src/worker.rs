@@ -8,7 +8,6 @@ use futures::prelude::*;
 use log::{debug, error, info};
 use network_api::{PeerInfo, RpcInfo};
 use network_p2p::config::{RequestResponseConfig, TransportConfig};
-use network_p2p::protocol::BusinessLayerHandle;
 use network_p2p::{
     identity, NetworkConfiguration, NetworkWorker, NodeKeyConfig, Params, ProtocolId, Secret,
 };
@@ -20,6 +19,8 @@ use starcoin_service_registry::ServiceRef;
 use starcoin_types::startup_info::ChainInfo;
 use std::borrow::Cow;
 
+use crate::network_p2p_handle::Networkp2pHandle;
+
 const MAX_REQUEST_SIZE: u64 = 1024 * 1024;
 const MAX_RESPONSE_SIZE: u64 = 1024 * 1024 * 64;
 const REQUEST_BUFFER_SIZE: usize = 128;
@@ -27,11 +28,11 @@ pub const RPC_PROTOCOL_PREFIX: &str = RpcInfo::RPC_PROTOCOL_PREFIX;
 
 pub fn build_network_worker(
     network_config: &NetworkConfig,
-    business_layer_handle: Box<dyn BusinessLayerHandle>,
+    chain_info: ChainInfo,
     protocols: Vec<Cow<'static, str>>,
     rpc_service: Option<(RpcInfo, ServiceRef<NetworkRpcService>)>,
     metrics_registry: Option<Registry>,
-) -> Result<(PeerInfo, NetworkWorker)> {
+) -> Result<(PeerInfo, NetworkWorker<Networkp2pHandle>)> {
     let node_name = network_config.node_name();
     let discover_local = network_config.discover_local();
     let transport_config = if is_memory_addr(&network_config.listen()) {
@@ -77,7 +78,7 @@ pub fn build_network_worker(
     info!("Final bootstrap seeds: {:?}", boot_nodes);
     let self_info = PeerInfo::new(
         network_config.self_peer_id(),
-        business_layer_handle.get_.clone(),
+        chain_info.clone(),
         protocols.to_vec(),
         rpc_protocols
             .iter()
@@ -109,10 +110,10 @@ pub fn build_network_worker(
     let protocol_id = ProtocolId::from(format!("chain/{}", chain_info.chain_id()).as_str());
     debug!("Init network worker with config: {:?}", config);
 
-    let worker = NetworkWorker::new(Params::new(
+    let worker: NetworkWorker<Networkp2pHandle> = NetworkWorker::new(Params::new(
         config,
         protocol_id,
-        business_layer_handle,
+        Networkp2pHandle::new(chain_info),
         metrics_registry,
     ))?;
 

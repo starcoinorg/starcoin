@@ -6,7 +6,6 @@ use crate::protocol::generic_proto::{GenericProto, GenericProtoOut, Notification
 use crate::protocol::message::generic::Status;
 use crate::utils::interval;
 use crate::{errors, DiscoveryNetBehaviour, Multiaddr};
-use anyhow::Error;
 use bcs_ext::BCSCodec;
 use bytes::Bytes;
 use futures::prelude::*;
@@ -16,9 +15,9 @@ use libp2p::swarm::{ConnectionHandler, IntoConnectionHandler};
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
 use log::Level;
+use network_p2p_types::business_layer_handle::BusinessLayerHandle;
 use sc_peerset::ReputationChange;
 use sc_peerset::{peersstate::PeersState, SetId};
-use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Write;
@@ -91,7 +90,7 @@ pub enum CustomMessageOutcome {
 /// Peer information
 #[derive(Debug, Clone)]
 struct Peer {
-    /// The data in peer is generic. 
+    /// The data in peer is generic.
     /// As a network node, it does not need to know what the above layers do.  
     #[allow(unused)]
     info: Vec<u8>,
@@ -111,22 +110,7 @@ struct ContextData {
     stats: HashMap<&'static str, PacketStats>,
 }
 
-/// The above layer must implement this trait to complete some business logic related to the network.
-pub trait BusinessLayerHandle {
-    /// To verify whether the connection is qualified.
-    fn handshake(&self, peer_info: &[u8]) -> Result<(), (&'static str, String)>;
-
-    /// Return the generic data related to the above layers
-    fn get_generic_data(&self) -> Result<Vec<u8>, Error>;
-
-    /// Update generic data
-    fn update_generic_data(&mut self, peer_info: &[u8]) -> Result<(), Error>;
-
-    /// Update business status
-    fn update_status(self: Pin<&mut Self>, peer_status: &[u8]) -> Result<(), Error>;
-}
-
-pub struct Protocol {
+pub struct Protocol<T: 'static + BusinessLayerHandle + Send> {
     /// Interval at which we call `tick`.
     tick_timeout: Pin<Box<dyn Stream<Item = ()> + Send>>,
     important_peers: HashSet<PeerId>,
@@ -147,10 +131,10 @@ pub struct Protocol {
     /// Entries are removed when the corresponding "substream closed" is later received.
     bad_handshake_substreams: HashSet<(PeerId, sc_peerset::SetId)>,
     /// for interacting with the business layer above the network-p2p module
-    business_layer_handle: Pin<Box<dyn BusinessLayerHandle + Send>>,
+    business_layer_handle: T,
 }
 
-impl NetworkBehaviour for Protocol {
+impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
     type ConnectionHandler = <GenericProto as NetworkBehaviour>::ConnectionHandler;
     type OutEvent = CustomMessageOutcome;
 
@@ -295,7 +279,7 @@ impl NetworkBehaviour for Protocol {
     }
 }
 
-impl DiscoveryNetBehaviour for Protocol {
+impl<T: BusinessLayerHandle + Send> DiscoveryNetBehaviour for Protocol<T> {
     fn add_discovered_nodes(&mut self, peer_ids: impl Iterator<Item = PeerId>) {
         for peer_id in peer_ids {
             for (set_id, _) in self.notif_protocols.iter().enumerate() {
@@ -306,15 +290,15 @@ impl DiscoveryNetBehaviour for Protocol {
     }
 }
 
-impl Protocol {
+impl<T: 'static + BusinessLayerHandle + Send> Protocol<T> {
     /// Create a new instance.
     pub fn new(
         peerset_config: sc_peerset::PeersetConfig,
-        business_layer_handle: Pin<Box<dyn BusinessLayerHandle + Send>>,
+        business_layer_handle: T,
         boot_node_ids: Arc<HashSet<PeerId>>,
         notif_protocols: Vec<Cow<'static, str>>,
         rpc_protocols: Vec<Cow<'static, str>>,
-    ) -> errors::Result<(Protocol, sc_peerset::PeersetHandle)> {
+    ) -> errors::Result<(Protocol<T>, sc_peerset::PeersetHandle)> {
         let mut important_peers = HashSet::new();
         important_peers.extend(boot_node_ids.iter());
         for peer_set in peerset_config.sets.iter() {
@@ -328,7 +312,7 @@ impl Protocol {
             let handshake_message = Self::build_handshake_msg(
                 notif_protocols.to_vec(),
                 rpc_protocols.to_vec(),
-                business_layer_handle.get_generic_data().unwrap_or(vec![]),
+                business_layer_handle.get_generic_data().unwrap_or_default(),
             );
 
             let notif_protocol_wth_handshake = notif_protocols
@@ -428,31 +412,31 @@ impl Protocol {
         notifications_sink: NotificationsSink,
     ) -> CustomMessageOutcome {
         debug!(target: "network-p2p", "New peer {} {:?}", who, status);
-        match self.business_layer_handle.handshake(&status.generic_data) {
-            Err((error, details)) => {
-                if self.boot_node_ids.contains(&who) {
-                    error!(
-                        target: "network-p2p",
-                        "Bootnode with peer id `{}` failed to handshade for the reason: {}",
-                        who,
-                        details,
-                    );
-                } else {
-                    log!(
-                        target: "network-p2p",
-                        if self.important_peers.contains(&who) { Level::Warn } else { Level::Debug },
-                        "Peer with id `{}` failed to handshade for the reason: {}",
-                        who,
-                        details 
-                    );
-                }
-                self.peerset_handle.report_peer(who, ReputationChange {
+        if let Err((error, details)) = self.business_layer_handle.handshake(&status.generic_data) {
+            if self.boot_node_ids.contains(&who) {
+                error!(
+                    target: "network-p2p",
+                    "Bootnode with peer id `{}` failed to handshade for the reason: {}",
+                    who,
+                    details,
+                );
+            } else {
+                log!(
+                    target: "network-p2p",
+                    if self.important_peers.contains(&who) { Level::Warn } else { Level::Debug },
+                    "Peer with id `{}` failed to handshade for the reason: {}",
+                    who,
+                    details
+                );
+            }
+            self.peerset_handle.report_peer(
+                who,
+                ReputationChange {
                     value: i32::min_value(),
                     reason: error,
-                });
-                return CustomMessageOutcome::None;
-            },
-            Ok(_) => (),
+                },
+            );
+            return CustomMessageOutcome::None;
         }
         if status.version < MIN_VERSION || CURRENT_VERSION < status.min_supported_version {
             log!(
@@ -496,7 +480,7 @@ impl Protocol {
     fn build_handshake_msg(
         notif_protocols: Vec<Cow<'static, str>>,
         rpc_protocols: Vec<Cow<'static, str>>,
-        generic_data: Vec<u8>
+        generic_data: Vec<u8>,
     ) -> Vec<u8> {
         Self::build_status(notif_protocols, rpc_protocols, generic_data)
             .encode()
@@ -545,8 +529,8 @@ impl Protocol {
         self.context_data.peers.values().count()
     }
 
-    pub fn update_status(mut self: Pin<&mut Self>, status: &[u8]) {
-        let _ = self.business_layer_handle.as_mut().update_status(status);
+    pub fn update_status(&mut self, status: &[u8]) {
+        let _ = self.business_layer_handle.update_status(status);
         self.update_handshake();
     }
 
@@ -554,7 +538,9 @@ impl Protocol {
         let handshake_msg = Self::build_handshake_msg(
             self.notif_protocols.to_vec(),
             self.rpc_protocols.to_vec(),
-            self.business_layer_handle.get_generic_data().unwrap_or(vec![]),
+            self.business_layer_handle
+                .get_generic_data()
+                .unwrap_or_default(),
         );
         for (set_id, _) in self.notif_protocols.iter().enumerate() {
             self.behaviour
@@ -584,7 +570,7 @@ impl Protocol {
     }
 }
 
-impl Drop for Protocol {
+impl<T: BusinessLayerHandle + Send> Drop for Protocol<T> {
     fn drop(&mut self) {
         debug!(target: "sync", "Network stats:\n{}", self.format_stats());
     }

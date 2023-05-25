@@ -7,6 +7,7 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
 
+pub mod business_layer_handle;
 pub mod network_state;
 
 pub use libp2p::core::{identity, multiaddr, Multiaddr, PeerId, PublicKey};
