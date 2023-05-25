@@ -20,7 +20,6 @@ use network_api::messages::{
 use network_api::{
     BroadcastProtocolFilter, NetworkActor, PeerId, PeerInfo, PeerMessageHandler, RpcInfo,
 };
-use network_p2p::protocol::BusinessLayerHandle;
 use network_p2p::{Event, NetworkWorker};
 use rand::prelude::SliceRandom;
 use starcoin_config::NodeConfig;
@@ -39,7 +38,6 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::ops::RangeInclusive;
 use std::sync::Arc;
-use crate::network_business_handle::NetworkBusinessHandle;
 
 const BARNARD_HARD_FORK_PEER_VERSION_STRING_PREFIX: &str = "barnard_rollback_block_fix";
 const BARNARD_HARD_FORK_VERSION: [i32; 3] = [1, 12, 9];
@@ -51,8 +49,6 @@ pub struct NetworkActorService {
     inner: Inner,
 
     network_worker_handle: Option<AbortHandle>,
-
-    network_business_handle: Option<NetworkBusinessHandle>
 }
 
 impl NetworkActor for NetworkActorService {}
@@ -67,7 +63,6 @@ impl NetworkActorService {
     where
         H: PeerMessageHandler + 'static,
     {
-        let business_handle = NetworkBusinessHandle::new(chain_info);
         let (self_info, worker) = build_network_worker(
             &config.network,
             chain_info,
@@ -82,7 +77,6 @@ impl NetworkActorService {
             worker: Some(worker),
             inner,
             network_worker_handle: None,
-            chain_info,
         })
     }
 
@@ -447,7 +441,6 @@ pub(crate) struct Inner {
     peers: HashMap<PeerId, Peer>,
     peer_message_handler: Arc<dyn PeerMessageHandler>,
     metrics: Option<NetworkMetrics>,
-    chain_info: ChainInfo,
 }
 
 impl BroadcastProtocolFilter for Inner {

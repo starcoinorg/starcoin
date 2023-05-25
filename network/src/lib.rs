@@ -7,7 +7,6 @@ pub mod helper;
 mod network_metrics;
 pub mod network_p2p_handle;
 mod service;
-mod network_business_handle;
 pub mod service_ref;
 pub mod worker;
 
@@ -18,4 +17,3 @@ pub use network_p2p_types::peer_id::PeerId;
 pub use service::NetworkActorService;
 pub use service_ref::NetworkServiceRef;
 pub use worker::build_network_worker;
-

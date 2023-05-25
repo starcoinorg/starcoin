@@ -45,12 +45,11 @@ pub mod rep {
     /// We received a message that failed to decode.
     pub const BAD_MESSAGE: Rep = Rep::new(-(1 << 12), "Bad message");
     /// Peer has different genesis.
-    // pub const GENESIS_MISMATCH: Rep = Rep::new_fatal("Genesis mismatch");
+    pub const GENESIS_MISMATCH: Rep = Rep::new_fatal("Genesis mismatch");
     /// Peer is on unsupported protocol version.
     pub const BAD_PROTOCOL: Rep = Rep::new_fatal("Unsupported protocol");
     /// Failed to encode message.
     pub const FAILED_TO_ENCODE: Rep = Rep::new_fatal("failed to encode message into Vec<u8>");
-
 }
 
 #[derive(Debug)]

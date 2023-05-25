@@ -13,13 +13,12 @@ use bcs_ext::BCSCodec;
 use futures::prelude::*;
 use futures::stream::StreamExt;
 use libp2p::PeerId;
-use network_p2p_types::MultiaddrWithPeerId;
+use network_p2p_types::{business_layer_handle::BusinessLayerHandle, MultiaddrWithPeerId};
 use once_cell::sync::Lazy;
 use sc_peerset::{SetId, ReputationChange};
 use serde::{Serialize, Deserialize};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use std::borrow::Cow;
-use std::pin::Pin;
 use std::{sync::Arc, time::Duration};
 use Event::NotificationStreamOpened;
 
@@ -107,14 +106,12 @@ impl BusinessLayerHandle for TestChainInfoHandle {
 }
 
 struct TestChainInfoHandle {
-    chain_info: ChainInfo
+    chain_info: ChainInfo,
 }
 
 impl TestChainInfoHandle {
     pub fn new(chain_info: ChainInfo) -> Self {
-        TestChainInfoHandle { 
-            chain_info 
-        }
+        TestChainInfoHandle { chain_info }
     }
 }
 
@@ -124,9 +121,14 @@ impl BusinessLayerHandle for TestChainInfoHandle {
         if self.chain_info.genesis_hash() == other_chain_info.genesis_hash() {
             return std::result::Result::Ok(());
         }
-        return Err(("the genesis hash is different", format!("the genesis hash from other peer is different, self: {}, remote: {}", 
-                            self.chain_info.genesis_hash(), 
-                            other_chain_info.genesis_hash())));
+        return Err((
+            "the genesis hash is different",
+            format!(
+                "the genesis hash from other peer is different, self: {}, remote: {}",
+                self.chain_info.genesis_hash(),
+                other_chain_info.genesis_hash()
+            ),
+        ));
     }
 
     fn get_generic_data(&self) -> Result<Vec<u8>, anyhow::Error> {
@@ -138,11 +140,12 @@ impl BusinessLayerHandle for TestChainInfoHandle {
         Ok(())
     }
 
-    fn update_status(mut self: Pin<&mut Self>, peer_status: &[u8]) -> Result<(), anyhow::Error> {
-        self.chain_info.update_status(ChainStatus::decode(peer_status).unwrap());
+    fn update_status(&mut self, peer_status: &[u8]) -> Result<(), anyhow::Error> {
+        self.chain_info
+            .update_status(ChainStatus::decode(peer_status).unwrap());
         Ok(())
     }
-} 
+}
 
 /// Builds a full node to be used for testing. Returns the node service and its associated events
 /// stream.

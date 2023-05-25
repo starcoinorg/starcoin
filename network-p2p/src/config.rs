@@ -10,7 +10,7 @@ use libp2p::{
 };
 use crate::business_layer_handle::BusinessLayerHandle;
 use prometheus::Registry;
-use std::{borrow::Cow, pin::Pin};
+use std::borrow::Cow;
 use std::fmt;
 use std::{
     error::Error,
@@ -22,7 +22,6 @@ use std::{
 };
 use zeroize::Zeroize;
 
-use crate::protocol::BusinessLayerHandle;
 pub use crate::request_responses::{IncomingRequest, ProtocolConfig as RequestResponseConfig};
 pub use libp2p::{build_multiaddr, core::PublicKey, identity};
 pub use network_p2p_types::{parse_addr, parse_str_addr, MultiaddrWithPeerId};
