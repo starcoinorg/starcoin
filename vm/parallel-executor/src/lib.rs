@@ -3,7 +3,6 @@
 
 pub mod errors;
 pub mod executor;
-mod outcome_array;
 // XXX FIXME YSG
 //#[cfg(any(test, feature = "fuzzing"))]
 //pub mod proptest_types;

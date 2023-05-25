@@ -52,7 +52,7 @@ impl<V> WriteCell<V> {
 }
 
 /// Main multi-version data-structure used by threads to read/write during parallel
-/// execution. Maps each access path to an interal BTreeMap that contains the indices
+/// execution. Maps each access path to an internal BTreeMap that contains the indices
 /// of transactions that write at the given access path alongside the corresponding
 /// entries of WriteCell type.
 ///
