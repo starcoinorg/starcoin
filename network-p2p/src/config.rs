@@ -8,8 +8,9 @@ use libp2p::{
     identity::{ed25519, Keypair},
     multiaddr::Protocol,
 };
+use network_p2p_types::business_layer_handle::BusinessLayerHandle;
 use prometheus::Registry;
-use std::{borrow::Cow, pin::Pin};
+use std::borrow::Cow;
 use std::fmt;
 use std::{
     error::Error,
@@ -21,11 +22,9 @@ use std::{
 };
 use zeroize::Zeroize;
 
-use crate::protocol::BusinessLayerHandle;
 pub use crate::request_responses::{IncomingRequest, ProtocolConfig as RequestResponseConfig};
 pub use libp2p::{build_multiaddr, core::PublicKey, identity};
 pub use network_p2p_types::{parse_addr, parse_str_addr, MultiaddrWithPeerId};
-use starcoin_types::startup_info::ChainInfo;
 
 /// Name of a protocol, transmitted on the wire. Should be unique for each chain. Always UTF-8.
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -51,22 +50,22 @@ impl fmt::Debug for ProtocolId {
 }
 
 /// Network initialization parameters.
-pub struct Params {
+pub struct Params<T: 'static + BusinessLayerHandle + Send> {
     /// Network layer configuration.
     pub network_config: NetworkConfiguration,
 
     /// Name of the protocol to use on the wire. Should be different for each chain.
     pub protocol_id: ProtocolId,
 
-    pub business_layer_handle: Pin<Box<dyn BusinessLayerHandle + Send>>,
+    pub business_layer_handle: T,
     pub metrics_registry: Option<Registry>,
 }
 
-impl Params {
+impl<T: 'static + BusinessLayerHandle + Send> Params<T> {
     pub fn new(
         network_config: NetworkConfiguration,
         protocol_id: ProtocolId,
-        business_layer_handle: Pin<Box<dyn BusinessLayerHandle + Send>>,
+        business_layer_handle: T,
         metrics_registry: Option<Registry>,
     ) -> Self {
         Self {
