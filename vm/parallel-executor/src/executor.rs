@@ -3,14 +3,12 @@
 
 use crate::{
     errors::*,
-    outcome_array::OutcomeArray,
     scheduler::{Scheduler, SchedulerTask, TaskGuard, TxnIndex, Version},
     task::{ExecutionStatus, ExecutorTask, Transaction, TransactionOutput},
     txn_last_input_output::{ReadDescriptor, TxnLastInputOutput},
 };
 use num_cpus;
 use once_cell::sync::Lazy;
-use rayon::prelude::*;
 use starcoin_infallible::Mutex;
 use starcoin_mvhashmap::MVHashMap;
 use std::{collections::HashSet, hash::Hash, marker::PhantomData, sync::Arc, thread::spawn};
@@ -18,6 +16,7 @@ use std::{collections::HashSet, hash::Hash, marker::PhantomData, sync::Arc, thre
 static RAYON_EXEC_POOL: Lazy<rayon::ThreadPool> = Lazy::new(|| {
     rayon::ThreadPoolBuilder::new()
         .num_threads(num_cpus::get())
+        .thread_name(|index| format!("parallel_executor_{}", index))
         .build()
         .unwrap()
 });
@@ -107,14 +106,20 @@ pub struct ParallelTransactionExecutor<T: Transaction, E: ExecutorTask> {
 }
 
 impl<T, E> ParallelTransactionExecutor<T, E>
-where
-    T: Transaction,
-    E: ExecutorTask<T = T>,
+    where
+        T: Transaction,
+        E: ExecutorTask<T = T>,
 {
-    pub fn new() -> Self {
+    /// The caller needs to ensure that concurrency_level > 1 (0 is illegal and 1 should
+    /// be handled by sequential execution) and that concurrency_level <= num_cpus.
+    pub fn new(concurrency_level: usize) -> Self {
+        assert!(
+            concurrency_level > 1 && concurrency_level <= num_cpus::get(),
+            "Parallel execution concurrency level {} should be between 2 and number of CPUs",
+            concurrency_level
+        );
         Self {
-            // TODO: must be a configurable parameter.
-            concurrency_level: num_cpus::get(),
+            concurrency_level,
             phantom: PhantomData,
         }
     }
@@ -160,20 +165,22 @@ where
         };
 
         let result = match execute_result {
+            // These statuses are the results of speculative execution, so even for
+            // SkipRest (skip the rest of transactions) and Abort (abort execution with
+            // user defined error), no immediate action is taken. Instead the statuses
+            // are recorded and (final statuses) are analyzed when the block is executed.
             ExecutionStatus::Success(output) => {
-                // Commit the side effects to the versioned_data_cache.
+                // Apply the writes to the versioned_data_cache.
                 apply_writes(&output);
                 ExecutionStatus::Success(output)
             }
             ExecutionStatus::SkipRest(output) => {
-                // Commit and skip the rest of the transactions.
+                // Apply the writes and record status indicating skip.
                 apply_writes(&output);
-                scheduler.set_stop_idx(idx_to_execute + 1);
                 ExecutionStatus::SkipRest(output)
             }
             ExecutionStatus::Abort(err) => {
-                // Abort the execution with user defined error.
-                scheduler.set_stop_idx(idx_to_execute + 1);
+                // Record the status indicating abort.
                 ExecutionStatus::Abort(Error::UserError(err))
             }
         };
@@ -288,7 +295,6 @@ where
 
         let num_txns = signature_verified_block.len();
         let versioned_data_cache = MVHashMap::new();
-        let outcomes = OutcomeArray::new(num_txns);
         let last_input_output = TxnLastInputOutput::new(num_txns);
         let scheduler = Scheduler::new(num_txns);
 
@@ -306,21 +312,23 @@ where
             }
         });
 
-        // Extract outputs in parallel
-        let valid_results_size = scheduler.num_txn_to_execute();
-        let chunk_size =
-            (valid_results_size + 4 * self.concurrency_level - 1) / (4 * self.concurrency_level);
-        RAYON_EXEC_POOL.install(|| {
-            (0..valid_results_size)
-                .collect::<Vec<TxnIndex>>()
-                .par_chunks(chunk_size)
-                .map(|chunk| {
-                    for idx in chunk.iter() {
-                        outcomes.set_result(*idx, last_input_output.take_output(*idx));
-                    }
-                })
-                .collect::<()>();
-        });
+        // TODO: for large block sizes and many cores, extract outputs in parallel.
+        let mut maybe_err = None;
+        let mut final_results = Vec::with_capacity(num_txns);
+        let num_txns = scheduler.num_txn_to_execute();
+        for idx in 0..num_txns {
+            match last_input_output.take_output(idx) {
+                ExecutionStatus::Success(t) => final_results.push(t),
+                ExecutionStatus::SkipRest(t) => {
+                    final_results.push(t);
+                    break;
+                }
+                ExecutionStatus::Abort(err) => {
+                    maybe_err = Some(err);
+                    break;
+                }
+            };
+        }
 
         spawn(move || {
             // Explicit async drops.
@@ -329,6 +337,13 @@ where
             drop(versioned_data_cache);
             drop(scheduler);
         });
-        outcomes.get_all_results(valid_results_size)
+
+        match maybe_err {
+            Some(err) => Err(err),
+            None => {
+                final_results.resize_with(num_txns, E::Output::skip_output);
+                Ok(final_results)
+            }
+        }
     }
 }
