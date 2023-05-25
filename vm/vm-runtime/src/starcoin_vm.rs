@@ -1064,8 +1064,6 @@ impl StarcoinVM {
         Ok(())
     }
 
-    /// XXX FIXME YSG add delta_change_set for TransactionOutput
-
     /// Execute a block transactions with gas_limit,
     /// if gas is used up when executing some txn, only return the outputs of previous succeed txns.
     pub fn execute_block_transactions<S: StateView>(
