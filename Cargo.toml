@@ -56,8 +56,8 @@ members = [
     "network/types",
     "network/api",
     "network-rpc",
-    "network-rpc/derive",
-    "network-rpc/core",
+    "network-p2p/derive",
+    "network-p2p/core",
     "network-rpc/api",
     "account/api",
     "account",
@@ -160,8 +160,8 @@ default-members = [
     "network",
     "network/api",
     "network-rpc",
-    "network-rpc/derive",
-    "network-rpc/core",
+    "network-p2p/derive",
+    "network-p2p/core",
     "network-rpc/api",
     "account/api",
     "account",
@@ -352,8 +352,8 @@ names = { version = "0.14.0", default-features = false }
 network-api = { path = "network/api", package = "network-api" }
 network-p2p = { path = "network-p2p" }
 network-p2p-types = { path = "network-p2p/types" }
-network-rpc-core = { path = "network-rpc/core" }
-network-rpc-derive = { path = "network-rpc/derive" }
+network-p2p-core = { path = "network-p2p/core" }
+network-p2p-derive = { path = "network-p2p/derive" }
 network-types = { path = "network/types" }
 num = "0.4.0"
 num-derive = "0.3.3"

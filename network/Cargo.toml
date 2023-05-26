@@ -28,7 +28,7 @@ serde_json = { features = ["arbitrary_precision"], workspace = true }
 stest = { workspace = true }
 prometheus = { workspace = true }
 network-api = { workspace = true }
-network-rpc-core = { workspace = true }
+network-p2p-core = { workspace = true }
 starcoin-metrics = { workspace = true }
 starcoin-network-rpc = { workspace = true }
 starcoin-network-rpc-api = { workspace = true }

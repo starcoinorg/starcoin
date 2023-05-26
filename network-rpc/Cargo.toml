@@ -12,8 +12,8 @@ bcs-ext = { package = "bcs-ext", workspace = true }
 starcoin-crypto = { package = "starcoin-crypto", workspace = true }
 network-api = { workspace = true }
 network-p2p-types = { workspace = true }
-network-rpc-core = { workspace = true }
-network-rpc-derive = { package = "network-rpc-derive", workspace = true }
+network-p2p-core = { workspace = true }
+network-p2p-derive = { package = "network-p2p-derive", workspace = true }
 prometheus = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-chain-service = { workspace = true }

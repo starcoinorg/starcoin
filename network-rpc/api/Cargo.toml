@@ -3,8 +3,8 @@ once_cell = { workspace = true }
 anyhow = { workspace = true }
 bcs-ext = { package = "bcs-ext", workspace = true }
 futures = { workspace = true }
-network-rpc-core = { workspace = true }
-network-rpc-derive = { workspace = true }
+network-p2p-core = { workspace = true }
+network-p2p-derive = { workspace = true }
 network-types = { workspace = true }
 serde = { features = ["derive"], workspace = true }
 starcoin-accumulator = { workspace = true }
