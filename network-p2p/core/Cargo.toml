@@ -1,0 +1,24 @@
+[dependencies]
+anyhow = { workspace = true }
+bcs-ext = { package = "bcs-ext", workspace = true }
+futures = { workspace = true }
+log = { workspace = true }
+network-p2p-derive = { workspace = true }
+num_enum = { workspace = true }
+serde = { features = ["derive"], workspace = true }
+starcoin-types = { package = "starcoin-types", workspace = true }
+network-types = { workspace = true }
+
+[dev-dependencies]
+stest = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "network-p2p-core"
+publish = { workspace = true }
+version = "1.13.4"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
