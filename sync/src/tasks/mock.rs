@@ -12,7 +12,7 @@ use futures::{FutureExt, StreamExt};
 use futures_timer::Delay;
 use network_api::messages::NotificationMessage;
 use network_api::{PeerId, PeerInfo, PeerSelector, PeerStrategy};
-use network_rpc_core::{NetRpcError, RpcErrorCode};
+use network_p2p_core::{NetRpcError, RpcErrorCode};
 use rand::Rng;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;

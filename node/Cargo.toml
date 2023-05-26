@@ -9,7 +9,7 @@ chrono = { workspace = true }
 futures = { workspace = true }
 futures-timer = { workspace = true }
 network-api = { workspace = true }
-network-rpc-core = { workspace = true }
+network-p2p-core = { workspace = true }
 serde_json = { features = ["arbitrary_precision"], workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-account-service = { workspace = true }

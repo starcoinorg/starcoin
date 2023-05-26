@@ -3,8 +3,8 @@
 
 use anyhow::Result;
 use futures::future::BoxFuture;
-use network_rpc_core::{NetRpcError, RpcErrorCode};
-use network_rpc_derive::*;
+use network_p2p_core::{NetRpcError, RpcErrorCode};
+use network_p2p_derive::*;
 use network_types::peer_info::{PeerId, RpcInfo};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -21,7 +21,7 @@ use starcoin_types::transaction::{SignedUserTransaction, Transaction, Transactio
 
 mod remote_chain_state;
 
-pub use network_rpc_core::RawRpcClient;
+pub use network_p2p_core::RawRpcClient;
 pub use remote_chain_state::RemoteChainStateReader;
 
 pub use starcoin_types::block::BlockBody;

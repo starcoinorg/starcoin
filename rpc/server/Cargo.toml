@@ -27,7 +27,7 @@ jsonrpc-ws-server = { workspace = true }
 log = { workspace = true }
 network-api = { workspace = true }
 network-p2p-types = { workspace = true }
-network-rpc-core = { workspace = true }
+network-p2p-core = { workspace = true }
 network-types = { workspace = true }
 parking_lot = { workspace = true }
 serde = { features = ["derive"], workspace = true }

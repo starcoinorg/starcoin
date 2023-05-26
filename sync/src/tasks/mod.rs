@@ -9,7 +9,7 @@ use futures::channel::mpsc::UnboundedSender;
 use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
 use network_api::{PeerId, PeerProvider, PeerSelector};
-use network_rpc_core::{NetRpcError, RpcErrorCode};
+use network_p2p_core::{NetRpcError, RpcErrorCode};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::MerkleAccumulator;
 use starcoin_chain::{BlockChain, ChainReader};

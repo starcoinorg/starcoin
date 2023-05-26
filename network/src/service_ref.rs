@@ -15,7 +15,7 @@ use network_api::{
 };
 use network_p2p_types::network_state::NetworkState;
 use network_p2p_types::{IfDisconnected, Multiaddr, RequestFailure};
-use network_rpc_core::{NetRpcError, RawRpcClient};
+use network_p2p_core::{NetRpcError, RawRpcClient};
 use starcoin_service_registry::ServiceRef;
 use std::borrow::Cow;
 use std::sync::Arc;
