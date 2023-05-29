@@ -5,7 +5,7 @@ use crate::module::map_err;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
 use network_api::PeerStrategy;
-use network_types::peer_info::PeerId;
+use network_p2p_types::peer_id::PeerId;
 use starcoin_rpc_api::sync_manager::SyncManagerApi;
 use starcoin_rpc_api::FutureResult;
 use starcoin_sync_api::{PeerScoreResponse, SyncAsyncService, SyncProgressReport};

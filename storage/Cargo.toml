@@ -19,6 +19,7 @@ coarsetime = { workspace = true }
 forkable-jellyfish-merkle = { package = "forkable-jellyfish-merkle", workspace = true }
 starcoin-logger = { package = "starcoin-logger", workspace = true }
 network-types = { workspace = true }
+network-p2p-types = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-metrics = { workspace = true }
 starcoin-uint = { workspace = true }

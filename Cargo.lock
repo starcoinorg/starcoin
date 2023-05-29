@@ -6009,7 +6009,7 @@ dependencies = [
  "futures 0.3.26",
  "log 0.4.17",
  "network-p2p-derive",
- "network-types",
+ "network-p2p-types",
  "num_enum",
  "serde 1.0.152",
  "starcoin-types",
@@ -6040,6 +6040,8 @@ dependencies = [
  "schemars",
  "serde 1.0.152",
  "serde_json",
+ "starcoin-crypto",
+ "starcoin-types",
 ]
 
 [[package]]
@@ -10008,6 +10010,7 @@ dependencies = [
  "futures 0.3.26",
  "network-p2p-core",
  "network-p2p-derive",
+ "network-p2p-types",
  "network-types",
  "once_cell",
  "serde 1.0.152",
@@ -10469,6 +10472,7 @@ dependencies = [
  "coarsetime",
  "forkable-jellyfish-merkle",
  "lru 0.7.8",
+ "network-p2p-types",
  "network-types",
  "num_enum",
  "once_cell",

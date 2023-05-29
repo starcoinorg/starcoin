@@ -28,7 +28,8 @@ pub use peer_provider::PeerDetail;
 pub use peer_provider::{PeerProvider, PeerSelector, PeerStrategy};
 
 use futures::channel::oneshot::Receiver;
-pub use network_types::peer_info::{PeerId, PeerInfo, RpcInfo};
+pub use network_p2p_types::peer_id::PeerId;
+pub use network_types::peer_info::{PeerInfo, RpcInfo};
 use std::borrow::Cow;
 
 pub trait NetworkService: Send + Sync + Clone + Sized + std::marker::Unpin + PeerProvider {

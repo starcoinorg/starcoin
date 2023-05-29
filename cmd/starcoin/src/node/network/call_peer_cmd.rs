@@ -6,7 +6,7 @@ use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use bcs_ext::BCSCodec;
 use clap::Parser;
-use network_types::peer_info::PeerId;
+use network_p2p_types::peer_id::PeerId;
 use scmd::{CommandAction, ExecContext};
 use starcoin_network_rpc_api::Ping;
 use starcoin_rpc_api::types::StrView;

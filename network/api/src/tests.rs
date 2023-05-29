@@ -3,7 +3,8 @@
 
 use crate::peer_provider::{PeerSelector, PeerStrategy};
 use crate::peer_score::{InverseScore, Score};
-use network_types::peer_info::{PeerId, PeerInfo};
+use network_p2p_types::peer_id::PeerId;
+use network_types::peer_info::PeerInfo;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};

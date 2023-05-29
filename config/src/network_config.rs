@@ -9,12 +9,12 @@ use crate::{
 use anyhow::Result;
 use clap::Parser;
 use network_api::messages::{NotificationMessage, BLOCK_PROTOCOL_NAME};
+use network_p2p_types::peer_id::PeerId;
 use network_p2p_types::{
     is_memory_addr, memory_addr,
     multiaddr::{Multiaddr, Protocol},
     MultiaddrWithPeerId,
 };
-use network_types::peer_info::PeerId;
 use once_cell::sync::Lazy;
 use rand::seq::SliceRandom;
 use rand::thread_rng;

@@ -8,7 +8,7 @@ use crate::{
 };
 use anyhow::{bail, Result};
 use bcs_ext::{BCSCodec, Sample};
-use network_types::peer_info::PeerId;
+use network_p2p_types::peer_id::PeerId;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
