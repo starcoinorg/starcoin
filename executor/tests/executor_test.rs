@@ -40,7 +40,7 @@ use test_helper::executor::{
 use starcoin_state_api::StateReaderExt;
 use starcoin_types::account::Account;
 use starcoin_types::account_config::G_STC_TOKEN_CODE;
-use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
+use starcoin_vm_runtime::starcoin_vm::{chunk_block_transactions, StarcoinVM};
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use test_helper::txn::create_account_txn_sent_as_association;
@@ -1048,6 +1048,50 @@ fn test_insufficient_balance_for_transaction_fee() -> Result<()> {
     let output3 = execute_and_apply(&chain_state, txn3);
     assert_eq!(KeptVMStatus::Executed, output3.status().status().unwrap());
     assert!(output3.gas_used() > 0);
+
+    Ok(())
+}
+
+#[test]
+fn test_chunk_block_transactions() -> Result<()> {
+    let (_chain_state, net) = prepare_genesis();
+    let account1 = Account::new();
+    let mut txns1 = vec![];
+    let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+        &account1, 0, 50_000_000, 1, &net,
+    ));
+
+    let txn2 = Transaction::BlockMetadata(BlockMetadata::new(
+        starcoin_crypto::HashValue::random(),
+        net.time_service().now_millis(),
+        *account1.address(),
+        Some(account1.auth_key()),
+        0,
+        1,
+        net.chain_id(),
+        0,
+    ));
+
+    let txn3 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+        &account1, 0, 50_000_000, 1, &net,
+    ));
+
+    txns1.push(txn1.clone());
+    let result1 = chunk_block_transactions(txns1);
+    assert_eq!(result1.len(), 1);
+
+    let mut txns2 = vec![];
+    txns2.push(txn1.clone());
+    txns2.push(txn2.clone());
+    let result2 = chunk_block_transactions(txns2);
+    assert_eq!(result2.len(), 2);
+
+    let mut txns3 = vec![];
+    txns3.push(txn1);
+    txns3.push(txn2);
+    txns3.push(txn3);
+    let result3 = chunk_block_transactions(txns3);
+    assert_eq!(result3.len(), 3);
 
     Ok(())
 }
