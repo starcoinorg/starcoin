@@ -1384,6 +1384,7 @@ impl TransactionBlock {
     }
 }
 
+/// TransactionBlock::UserTransaction | TransactionBlock::BlockPrologue | TransactionBlock::UserTransaction
 pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock> {
     let mut blocks = vec![];
     let mut buf = vec![];
