@@ -5,7 +5,7 @@ use crate::{
     pool,
     pool::{
         PendingOrdering, PendingSettings, PoolTransaction, PrioritizationStrategy, Status,
-        TxStatus, UnverifiedUserTransaction, VerifiedTransaction,
+        UnverifiedUserTransaction, VerifiedTransaction,
     },
     pool_client::{NonceCache, PoolClient},
 };
@@ -20,7 +20,7 @@ use starcoin_crypto::hash::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
-use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
+use starcoin_txpool_api::{TxnStatusFullEvent, TxPoolStatus, TxPoolSyncService};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader},
@@ -155,7 +155,7 @@ impl TxPoolSyncService for TxPoolService {
     }
 
     /// subscribe
-    fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<Arc<[(HashValue, transaction::TxStatus)]>> {
+    fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent> {
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
             metrics
                 .txpool_service_time
@@ -306,7 +306,7 @@ impl Inner {
             .next_sequence_number(self.get_pool_client(), &address)
     }
 
-    pub(crate) fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<Arc<[(HashValue, TxStatus)]>> {
+    pub(crate) fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent> {
         let (tx, rx) = mpsc::unbounded();
         self.queue.add_full_listener(tx);
         rx

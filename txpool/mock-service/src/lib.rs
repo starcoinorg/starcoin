@@ -4,7 +4,7 @@
 use anyhow::Result;
 use futures_channel::mpsc;
 use starcoin_crypto::hash::HashValue;
-use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
+use starcoin_txpool_api::{TxnStatusFullEvent, TxPoolStatus, TxPoolSyncService};
 use starcoin_types::{
     account_address::AccountAddress, block::Block, transaction, transaction::SignedUserTransaction,
 };
@@ -76,7 +76,7 @@ impl TxPoolSyncService for MockTxPoolService {
     }
 
     /// subscribe
-    fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<Arc<[(HashValue, transaction::TxStatus)]>> {
+    fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent> {
         todo!()
     }
     fn subscribe_pending_txn(&self) -> mpsc::UnboundedReceiver<Arc<[HashValue]>> {

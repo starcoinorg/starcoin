@@ -492,14 +492,14 @@ where
     }
 }
 
-pub struct PutShardRequest<T>
+pub struct PutSharedRequest<T>
 where
     T: Send + Sync + Clone + 'static,
 {
     value: T,
 }
 
-impl<T> Debug for PutShardRequest<T>
+impl<T> Debug for PutSharedRequest<T>
 where
     T: Send + Sync + Clone,
 {
@@ -508,7 +508,7 @@ where
     }
 }
 
-impl<T> PutShardRequest<T>
+impl<T> PutSharedRequest<T>
 where
     T: Send + Sync + Clone,
 {
@@ -517,30 +517,30 @@ where
     }
 }
 
-impl<T> ServiceRequest for PutShardRequest<T>
+impl<T> ServiceRequest for PutSharedRequest<T>
 where
     T: Send + Sync + Clone + 'static,
 {
     type Response = ();
 }
 
-impl<T> ServiceHandler<Self, PutShardRequest<T>> for RegistryService
+impl<T> ServiceHandler<Self, PutSharedRequest<T>> for RegistryService
 where
     T: Send + Sync + Clone + 'static,
 {
-    fn handle(&mut self, msg: PutShardRequest<T>, _ctx: &mut ServiceContext<RegistryService>) {
+    fn handle(&mut self, msg: PutSharedRequest<T>, _ctx: &mut ServiceContext<RegistryService>) {
         self.registry.put_shared(msg.value);
     }
 }
 
-pub struct GetShardRequest<T>
+pub struct GetSharedRequest<T>
 where
     T: Send + Sync + Clone + 'static,
 {
     phantom: PhantomData<T>,
 }
 
-impl<T> Debug for GetShardRequest<T>
+impl<T> Debug for GetSharedRequest<T>
 where
     T: Send + Sync + Clone,
 {
@@ -549,7 +549,7 @@ where
     }
 }
 
-impl<T> GetShardRequest<T>
+impl<T> GetSharedRequest<T>
 where
     T: Send + Sync + Clone,
 {
@@ -561,34 +561,34 @@ where
     }
 }
 
-impl<T> ServiceRequest for GetShardRequest<T>
+impl<T> ServiceRequest for GetSharedRequest<T>
 where
     T: Send + Sync + Clone + 'static,
 {
     type Response = Option<T>;
 }
 
-impl<T> ServiceHandler<Self, GetShardRequest<T>> for RegistryService
+impl<T> ServiceHandler<Self, GetSharedRequest<T>> for RegistryService
 where
     T: Send + Sync + Clone + 'static,
 {
     fn handle(
         &mut self,
-        _msg: GetShardRequest<T>,
+        _msg: GetSharedRequest<T>,
         _ctx: &mut ServiceContext<RegistryService>,
     ) -> Option<T> {
         self.registry.get_shared_opt::<T>()
     }
 }
 
-pub struct RemoveShardRequest<T>
+pub struct RemoveSharedRequest<T>
 where
     T: Send + Sync + Clone + 'static,
 {
     phantom: PhantomData<T>,
 }
 
-impl<T> Debug for RemoveShardRequest<T>
+impl<T> Debug for RemoveSharedRequest<T>
 where
     T: Send + Sync + Clone,
 {
@@ -597,7 +597,7 @@ where
     }
 }
 
-impl<T> RemoveShardRequest<T>
+impl<T> RemoveSharedRequest<T>
 where
     T: Send + Sync + Clone,
 {
@@ -609,18 +609,18 @@ where
     }
 }
 
-impl<T> ServiceRequest for RemoveShardRequest<T>
+impl<T> ServiceRequest for RemoveSharedRequest<T>
 where
     T: Send + Sync + Clone + 'static,
 {
     type Response = ();
 }
 
-impl<T> ServiceHandler<Self, RemoveShardRequest<T>> for RegistryService
+impl<T> ServiceHandler<Self, RemoveSharedRequest<T>> for RegistryService
 where
     T: Send + Sync + Clone + 'static,
 {
-    fn handle(&mut self, _msg: RemoveShardRequest<T>, _ctx: &mut ServiceContext<RegistryService>) {
+    fn handle(&mut self, _msg: RemoveSharedRequest<T>, _ctx: &mut ServiceContext<RegistryService>) {
         self.registry.remove_shared::<T>();
     }
 }
@@ -938,21 +938,21 @@ impl RegistryAsyncService for ServiceRef<RegistryService> {
     where
         T: Send + Sync + Clone + 'static,
     {
-        self.send(PutShardRequest::new(value)).await
+        self.send(PutSharedRequest::new(value)).await
     }
 
     async fn get_shared_opt<T>(&self) -> Result<Option<T>>
     where
         T: Send + Sync + Clone + 'static,
     {
-        self.send(GetShardRequest::new()).await
+        self.send(GetSharedRequest::new()).await
     }
 
     async fn remove_shared<T>(&self) -> Result<()>
     where
         T: Send + Sync + Clone + 'static,
     {
-        self.send(RemoveShardRequest::<T>::new()).await
+        self.send(RemoveSharedRequest::<T>::new()).await
     }
 
     async fn shutdown_system(&self) -> Result<()> {
