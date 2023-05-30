@@ -4,6 +4,7 @@
 mod storage_wrapper;
 mod vm_wrapper;
 
+use crate::metrics::VMMetrics;
 use crate::{
     adapter_common::{preprocess_transaction, PreprocessedTransaction},
     parallel_executor::vm_wrapper::StarcoinVMWrapper,
@@ -64,17 +65,19 @@ impl ParallelStarcoinVM {
     pub fn execute_block<S: StateView>(
         transactions: Vec<Transaction>,
         state_view: &S,
+        concurrency_level: usize,
+        block_gas_limit: Option<u64>,
+        metrics: Option<VMMetrics>,
     ) -> Result<(Vec<TransactionOutput>, Option<Error<VMStatus>>), VMStatus> {
-        // Verify the signatures of all the transactions in parallel.
-        // This is time consuming so don't wait and do the checking
-        // sequentially while executing the transactions.
         let signature_verified_block: Vec<PreprocessedTransaction> = transactions
             .par_iter()
-            .map(|txn| preprocess_transaction::<StarcoinVM>(txn.clone()))
+            .map(|txn| preprocess_transaction(txn.clone()))
             .collect();
 
-        match ParallelTransactionExecutor::<PreprocessedTransaction, StarcoinVMWrapper<S>>::new()
-            .execute_transactions_parallel(state_view, signature_verified_block)
+        match ParallelTransactionExecutor::<PreprocessedTransaction, StarcoinVMWrapper<S>>::new(
+            concurrency_level,
+        )
+        .execute_transactions_parallel(state_view, signature_verified_block)
         {
             Ok(results) => Ok((
                 results
@@ -85,7 +88,8 @@ impl ParallelStarcoinVM {
             )),
             Err(err @ Error::InferencerError) | Err(err @ Error::UnestimatedWrite) => {
                 // XXX FIXME YSG
-                let output = StarcoinVM::execute_block_and_keep_vm_status(transactions, state_view)?;
+                let output =
+                    StarcoinVM::execute_block_and_keep_vm_status(transactions, state_view, block_gas_limit, metrics)?;
                 Ok((
                     output
                         .into_iter()

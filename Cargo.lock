@@ -10871,6 +10871,7 @@ dependencies = [
  "move-stdlib",
  "move-table-extension",
  "move-vm-runtime",
+ "num_cpus",
  "num_enum",
  "once_cell",
  "rand 0.8.5",
