@@ -2,16 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::access_path_cache::AccessPathCache;
+use crate::adapter_common::PreprocessedTransaction;
 use crate::data_cache::{AsMoveResolver, RemoteStorage, StateViewCache};
 use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
 use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
 use anyhow::{bail, format_err, Error, Result};
+use move_core_types::effects::Op;
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
 use move_table_extension::NativeTableContext;
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
 use move_vm_runtime::session::Session;
+use num_cpus;
+use once_cell::sync::OnceCell;
 use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_crypto::HashValue;
 use starcoin_gas::{NativeGasParameters, StarcoinGasMeter, StarcoinGasParameters};
@@ -63,11 +67,15 @@ use starcoin_vm_types::{
     transaction_metadata::TransactionMetadata,
     vm_status::{StatusCode, VMStatus},
 };
+use std::cmp::min;
 use std::sync::Arc;
-use crate::adapter_common::PreprocessedTransaction;
+use starcoin_vm_types::errors::VMResult;
+
+static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
 
 #[cfg(feature = "metrics")]
 use crate::metrics::VMMetrics;
+use crate::VMExecutor;
 
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
@@ -1344,28 +1352,81 @@ impl StarcoinVM {
         })
     }
 
-    // XXX FIXME YSG
-    pub fn execute_single_transaction<S: MoveResolverExt + StateView>(&self, txn: PreprocessedTransaction, mut state_view: &S) -> Result<(VMStatus, TransactionOutputExt, Option<String>), VMStatus> {
-        let mut data_cache = StateViewCache::new(state_view);
+    // XXX FIXME YSG, why use &mut self, because of check_reconfigure modified vm_config, why aptos no need do this
+    // actually is load_configs problem
+    pub fn execute_single_transaction<S: MoveResolverExt + StateView>(
+        &mut self,
+        txn: &PreprocessedTransaction,
+        data_cache: &S,
+    ) -> Result<(VMStatus, TransactionOutput, Option<String>), VMStatus> {
         Ok(match txn {
             PreprocessedTransaction::UserTransaction(txn) => {
-                let gas_unit_price = txn.gas_unit_price();
                 let sender = txn.sender().to_string();
+                let (vm_status, output) =
+                    self.execute_user_transaction(*txn.clone(), data_cache);
                 // XXX FIXME YSG
-                let (status, output) = self.execute_user_transaction(*txn, &mut data_cache);
+                // this place should add check_reconfigure to check we need re execution
+                // let gas_unit_price = transaction.gas_unit_price(); think about gas_used OutOfGas
                 (vm_status, output, Some(sender))
-            },
+            }
             PreprocessedTransaction::BlockMetadata(block_meta) => {
-                // XXX FIXME YSG
-                let (status, output) = match self.process_block_metadata( &mut data_cache, block_meta) {
-                    Ok(output) => (VMStatus::Executed, output, Some("block_prologue".to_string())),
-                    Err(vm_status) => {
-                        let (status, output) = discard_error_vm_status(vm_status);
-                        (status, output, Some("block_prologue".to_string()))
-                    },
-                }
+                let (vm_status, output) =
+                    match self.process_block_metadata(data_cache, block_meta.clone()) {
+                        Ok(output) => (VMStatus::Executed, output),
+                        Err(vm_status) => discard_error_vm_status(vm_status),
+                    };
+                (vm_status, output, Some("block_meta".to_string()))
             }
         })
+    }
+
+    /// XXX FIXME YSG， refactor to adaptor
+    pub fn should_restart_execution(output: &TransactionOutput) -> bool {
+        for event in output.events() {
+            if event.key().get_creator_address() == genesis_address()
+                && (event.is::<UpgradeEvent>() || event.is::<ConfigChangeEvent<Version>>())
+            {
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Sets execution concurrency level when invoked the first time.
+    pub fn set_concurrency_level_once(mut concurrency_level: usize) {
+        concurrency_level = min(concurrency_level, num_cpus::get());
+        // Only the first call succeeds, due to OnceCell semantics.
+        EXECUTION_CONCURRENCY_LEVEL.set(concurrency_level).ok();
+    }
+
+    /// Get the concurrency level if already set, otherwise return default 1
+    /// (sequential execution).
+    pub fn get_concurrency_level() -> usize {
+        match EXECUTION_CONCURRENCY_LEVEL.get() {
+            Some(concurrency_level) => *concurrency_level,
+            None => 1,
+        }
+    }
+
+    /// Alternate form of 'execute_block' that keeps the vm_status before it goes into the
+    /// `TransactionOutput`
+    pub fn execute_block_and_keep_vm_status(
+        txns: Vec<Transaction>,
+        state_view: &impl StateView,
+        block_gas_limit: Option<u64>,
+        metrics: Option<VMMetrics>,
+    ) -> Result<Vec<(VMStatus, TransactionOutput)>, VMStatus> {
+        let mut vm = StarcoinVM::new(metrics);
+        let result = vm
+            // XXX FIXME YSG, remove unwrap
+            .execute_block_transactions(state_view, txns, block_gas_limit).unwrap()
+            .into_iter()
+            .collect();
+        Ok(result)
+    }
+
+    pub fn load_module<'r, R: MoveResolverExt>(&self, module_id: &ModuleId, remote: &'r R) -> VMResult<Arc<CompiledModule>> {
+        self.move_vm.load_module(module_id, remote)
     }
 }
 
@@ -1514,6 +1575,44 @@ pub fn log_vm_status(
                 "[starcoin-vm] Executed txn: {:?} (sender: {:?}, sequence_number: {:?}) txn_status: {:?}, vm_status: {}",
                 txn_id, txn_data.sender, txn_data.sequence_number, txn_status, msg,
             );
+        }
+    }
+}
+
+// Executor external API
+impl VMExecutor for StarcoinVM {
+    /// Execute a block of `transactions`. The output vector will have the exact same length as the
+    /// input vector. The discarded transactions will be marked as `TransactionStatus::Discard` and
+    /// have an empty `WriteSet`. Also `state_view` is immutable, and does not have interior
+    /// mutability. Writes to be applied to the data view are encoded in the write set part of a
+    /// transaction output.
+    fn execute_block(
+        transactions: Vec<Transaction>,
+        state_view: &impl StateView,
+        block_gas_limit: Option<u64>,
+        metrics: Option<VMMetrics>,
+    ) -> Result<Vec<TransactionOutput>, VMStatus> {
+        let concurrency_level = Self::get_concurrency_level();
+        if concurrency_level > 1 {
+            let (result, _) = crate::parallel_executor::ParallelStarcoinVM::execute_block(
+                transactions,
+                state_view,
+                concurrency_level,
+                block_gas_limit,
+                metrics,
+            )?;
+            Ok(result)
+        } else {
+            let output = Self::execute_block_and_keep_vm_status(
+                transactions,
+                state_view,
+                block_gas_limit,
+                metrics,
+            )?;
+            Ok(output
+                .into_iter()
+                .map(|(_vm_status, txn_output)| txn_output)
+                .collect())
         }
     }
 }

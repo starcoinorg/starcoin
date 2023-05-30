@@ -3,11 +3,12 @@
 
 use anyhow::Result;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionOutput};
-use starcoin_vm_runtime::metrics::VMMetrics;
-use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
-use starcoin_vm_types::identifier::Identifier;
-use starcoin_vm_types::language_storage::{ModuleId, TypeTag};
-use starcoin_vm_types::{state_view::StateView, vm_status::VMStatus};
+use starcoin_vm_runtime::{metrics::VMMetrics, parallel_executor, starcoin_vm::StarcoinVM};
+use starcoin_vm_types::{
+    identifier::Identifier,
+    language_storage::{ModuleId, TypeTag},
+    {state_view::StateView, vm_status::VMStatus},
+};
 
 pub fn execute_transactions<S: StateView>(
     chain_state: &S,
@@ -34,18 +35,11 @@ fn do_execute_block_transactions<S: StateView>(
     block_gas_limit: Option<u64>,
     metrics: Option<VMMetrics>,
 ) -> Result<Vec<TransactionOutput>> {
-    let mut vm = StarcoinVM::new(metrics);
-    let result = vm
-        .execute_block_transactions(&chain_state, txns, block_gas_limit)?
-        .into_iter()
-        .map(|(_, output)| {
-            debug! {"{:?}", output};
-            output
-        })
-        .collect();
+    let result = StarcoinVM::execute_block(txns, chain_state, block_gas_limit, metrics)?;
     Ok(result)
 }
 
+// XXX FIXME YSG, refactor use VMValidator
 pub fn validate_transaction<S: StateView>(
     chain_state: &S,
     txn: SignedUserTransaction,
