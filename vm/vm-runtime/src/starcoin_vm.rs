@@ -1464,11 +1464,6 @@ pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolverExt>(
     ))
 }
 
-pub enum VerifiedTransactionPayload {
-    Script(Vec<u8>, Vec<TypeTag>, Vec<Value>),
-    Package(Package),
-}
-
 pub fn log_vm_status(
     txn_id: HashValue,
     txn_data: &TransactionMetadata,
