@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    adapter_common::{PreprocessedTransaction, VMAdapter},
+    adapter_common::PreprocessedTransaction,
     data_cache::RemoteStorage,
     parallel_executor::{storage_wrapper::VersionedView, StarcoinTransactionOutput},
     starcoin_vm::StarcoinVM,
@@ -60,17 +60,15 @@ impl<'a, S: 'a + StateView> ExecutorTask for StarcoinVMWrapper<'a, S> {
         }
     }
 
+    // XXX FIXME YSG, self should be immut
     fn execute_transaction(
-        &self,
+        &mut self,
         view: &MVHashMapView<StateKey, WriteOp>,
         txn: &PreprocessedTransaction,
     ) -> ExecutionStatus<StarcoinTransactionOutput, VMStatus> {
         let versioned_view = VersionedView::new_view(self.base_view, view);
 
-        match self
-            .vm
-            .execute_single_transaction(txn, &versioned_view, &log_context)
-        {
+        match self.vm.execute_single_transaction(txn, &versioned_view) {
             Ok((vm_status, output, sender)) => {
                 if output.status().is_discarded() {
                     match sender {

@@ -2,12 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// XXX FIXME YSG notice SignedUserTransaction is Aptos SignedTransaction
-use crate::{data_cache::{AsMoveResolver, StateViewCache}, move_vm_ext::{SessionId, MoveResolverExt}};
-use move_core_types::resolver::MoveResolver;
+use crate::{
+    data_cache::{AsMoveResolver, StateViewCache},
+    move_vm_ext::{MoveResolverExt, SessionId},
+};
+use anyhow::Result;
+//use move_core_types::resolver::MoveResolver;
 use move_core_types::vm_status::{StatusCode, VMStatus};
 use move_vm_runtime::session::Session;
-use rayon::prelude::*;
-use starcoin_logger::prelude::*;
+// use rayon::prelude::*;
+//use starcoin_logger::prelude::*;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::{
     access_path::AccessPath,
@@ -15,12 +19,11 @@ use starcoin_vm_types::{
     state_store::state_key::StateKey,
     transaction::{
         SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionArgument,
-        TransactionOutput, TransactionPayload, TransactionStatus, WriteSetPayload,
+        TransactionOutput, TransactionPayload, TransactionStatus, VMValidatorResult,
     },
     write_set::WriteSet,
 };
 use std::collections::HashSet;
-use anyhow::Result;
 
 /// This trait describes the VM adapter's interface.
 /// TODO: bring more of the execution logic in aptos_vm into this file.
@@ -65,11 +68,12 @@ pub trait VMAdapter {
 /// The returned `VMValidatorResult` will have status `None` and if all checks succeeded
 /// and `Some(DiscardedVMStatus)` otherwise.
 pub fn validate_signed_transaction<A: VMAdapter>(
-    adapter: &A,
-    transaction: SignedUserTransaction,
-    state_view: &impl StateView,
+    _adapter: &A,
+    _transaction: SignedUserTransaction,
+    _state_view: &impl StateView,
 ) -> VMValidatorResult {
-
+    // XXX FIXME YSG
+    /*
     let txn = match A::check_signature(transaction) {
         Ok(t) => t,
         _ => {
@@ -101,6 +105,8 @@ pub fn validate_signed_transaction<A: VMAdapter>(
         ),
     };
     result
+     */
+    VMValidatorResult::new(None, 0)
 }
 
 pub(crate) fn validate_signature_checked_transaction<S: MoveResolverExt, A: VMAdapter>(
@@ -110,9 +116,9 @@ pub(crate) fn validate_signature_checked_transaction<S: MoveResolverExt, A: VMAd
     transaction: &SignatureCheckedTransaction,
     allow_too_new: bool,
 ) -> Result<(), VMStatus> {
-    adapter.check_transaction_format(transaction)?;
+    // adapter.check_transaction_format(transaction)?;
 
-    let prologue_status = adapter.run_prologue(session, transaction, log_context);
+    let prologue_status = adapter.run_prologue(session, transaction);
     match prologue_status {
         Err(err) if !allow_too_new || err.status_code() != StatusCode::SEQUENCE_NUMBER_TOO_NEW => {
             Err(err)
@@ -121,8 +127,13 @@ pub(crate) fn validate_signature_checked_transaction<S: MoveResolverExt, A: VMAd
     }
 }
 
-fn preload_cache(signature_verified_block: &[PreprocessedTransaction], data_view: &impl StateView) {
+fn preload_cache(
+    _signature_verified_block: &[PreprocessedTransaction],
+    _data_view: &impl StateView,
+) {
+    // XXX FIXME YSG
     // generate a collection of addresses
+    /*
     let mut addresses_to_preload = HashSet::new();
     for txn in signature_verified_block {
         if let PreprocessedTransaction::UserTransaction(txn) = txn {
@@ -148,14 +159,17 @@ fn preload_cache(signature_verified_block: &[PreprocessedTransaction], data_view
                 .ok()?
         })
         .collect::<Vec<Option<Vec<u8>>>>();
+     */
 }
 
 pub(crate) fn execute_block_impl<A: VMAdapter, S: StateView>(
-    adapter: &A,
-    transactions: Vec<Transaction>,
-    data_cache: &mut StateViewCache<S>,
+    _adapter: &A,
+    _transactions: Vec<Transaction>,
+    _data_cache: &mut StateViewCache<S>,
 ) -> Result<Vec<(VMStatus, TransactionOutput)>, VMStatus> {
     let mut result = vec![];
+    // XXX FIXME YSG, need open it
+    /*
     let mut should_restart = false;
 
     info!(
@@ -170,7 +184,8 @@ pub(crate) fn execute_block_impl<A: VMAdapter, S: StateView>(
         // sequentially while executing the transactions.
         signature_verified_block = transactions
             .into_par_iter()
-            .map(preprocess_transaction::<A>)
+            // XXX FIXME YSG
+            .map(preprocess_transaction)
             .collect();
     }
 
@@ -185,7 +200,7 @@ pub(crate) fn execute_block_impl<A: VMAdapter, S: StateView>(
             let txn_output =
                 TransactionOutput::new(WriteSet::default(), vec![], 0, TransactionStatus::Retry);
             result.push((VMStatus::Error(StatusCode::UNKNOWN_STATUS), txn_output));
-            debug!(log_context, "Retry after reconfiguration");
+            debug!("Retry after reconfiguration");
             continue;
         };
         let (vm_status, output, sender) = adapter.execute_single_transaction(
@@ -197,12 +212,11 @@ pub(crate) fn execute_block_impl<A: VMAdapter, S: StateView>(
         } else {
             match sender {
                 Some(s) => trace!(
-                    log_context,
                     "Transaction discarded, sender: {}, error: {:?}",
                     s,
                     vm_status,
                 ),
-                None => trace!(log_context, "Transaction malformed, error: {:?}", vm_status,),
+                None => trace!("Transaction malformed, error: {:?}", vm_status,),
             }
         }
 
@@ -217,7 +231,7 @@ pub(crate) fn execute_block_impl<A: VMAdapter, S: StateView>(
         // the number of iterations is bound to the max size of `signature_verified_block`
         assume!(result.len() < usize::max_value());
         result.push((vm_status, output))
-    }
+    } */
     Ok(result)
 }
 
@@ -226,7 +240,7 @@ pub(crate) fn execute_block_impl<A: VMAdapter, S: StateView>(
 /// but a user transaction transformed to a SignatureCheckedTransaction.
 #[derive(Debug)]
 pub enum PreprocessedTransaction {
-    UserTransaction(Box<SignatureCheckedTransaction>),
+    UserTransaction(Box<SignedUserTransaction>),
     BlockMetadata(BlockMetadata),
 }
 
@@ -234,19 +248,12 @@ pub enum PreprocessedTransaction {
 /// is a PreprocessedTransaction, where a user transaction is translated to a
 /// SignatureCheckedTransaction and also categorized into either a UserTransaction
 /// or a WriteSet transaction.
-pub(crate) fn preprocess_transaction<A: VMAdapter>(txn: Transaction) -> PreprocessedTransaction {
+// XXX FIXME YSG, code need to check clone()
+pub(crate) fn preprocess_transaction(txn: Transaction) -> PreprocessedTransaction {
     match txn {
         Transaction::BlockMetadata(b) => PreprocessedTransaction::BlockMetadata(b),
         Transaction::UserTransaction(txn) => {
-            let checked_txn = match A::check_signature(txn) {
-                Ok(checked_txn) => checked_txn,
-                _ => {
-                    return PreprocessedTransaction::InvalidSignature;
-                }
-            };
-            match checked_txn.payload() {
-                _ => PreprocessedTransaction::UserTransaction(Box::new(checked_txn)),
-            }
+            PreprocessedTransaction::UserTransaction(Box::new(txn))
         }
     }
 }
