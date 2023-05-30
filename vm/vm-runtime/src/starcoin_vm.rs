@@ -61,7 +61,6 @@ use starcoin_vm_types::{
     on_chain_config::{OnChainConfig, VMConfig, Version},
     state_view::StateView,
     transaction_metadata::TransactionMetadata,
-    values::Value,
     vm_status::{StatusCode, VMStatus},
 };
 use std::sync::Arc;
