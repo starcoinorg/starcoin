@@ -13,6 +13,7 @@ use crate::storage::{CodecKVStore, CodecWriteBatch, ColumnFamilyName, StorageIns
 //use crate::table_info::{TableInfoStorage, TableInfoStore};
 use crate::transaction::TransactionStorage;
 use crate::transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage};
+use crate::write_set::WriteSetStorage;
 use anyhow::{bail, format_err, Error, Result};
 use network_types::peer_info::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
@@ -29,9 +30,11 @@ use starcoin_types::{
     startup_info::StartupInfo,
 };
 //use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_types::write_set::WriteSet;
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
+
 pub use upgrade::BARNARD_HARD_FORK_HASH;
 pub use upgrade::BARNARD_HARD_FORK_HEIGHT;
 
@@ -53,6 +56,7 @@ mod tests;
 pub mod transaction;
 pub mod transaction_info;
 mod upgrade;
+pub mod write_set;
 
 #[macro_use]
 pub mod storage_macros;
@@ -76,6 +80,7 @@ pub const TRANSACTION_INFO_HASH_PREFIX_NAME: ColumnFamilyName = "transaction_inf
 pub const CONTRACT_EVENT_PREFIX_NAME: ColumnFamilyName = "contract_event";
 pub const FAILED_BLOCK_PREFIX_NAME: ColumnFamilyName = "failed_block";
 pub const TABLE_INFO_PREFIX_NAME: ColumnFamilyName = "table_info";
+pub const WRITE_SET_PRIFIX_NAME: ColumnFamilyName = "write_set";
 
 ///db storage use prefix_name vec to init
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
@@ -138,9 +143,11 @@ static VEC_PREFIX_NAME_V3: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         TRANSACTION_INFO_HASH_PREFIX_NAME,
         CONTRACT_EVENT_PREFIX_NAME,
         FAILED_BLOCK_PREFIX_NAME,
+        WRITE_SET_PRIFIX_NAME,
         // TABLE_INFO_PREFIX_NAME,
     ]
 });
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, IntoPrimitive, TryFromPrimitive)]
 #[repr(u8)]
 pub enum StorageVersion {
@@ -239,6 +246,7 @@ pub trait BlockTransactionInfoStore {
         ids: Vec<HashValue>,
     ) -> Result<Vec<Option<RichTransactionInfo>>>;
 }
+
 pub trait ContractEventStore {
     /// Save events by key `txn_info_id`.
     /// As txn_info has accumulator root of events, so there is a one-to-one mapping.
@@ -261,6 +269,11 @@ pub trait TransactionStore {
     fn get_transactions(&self, txn_hash_vec: Vec<HashValue>) -> Result<Vec<Option<Transaction>>>;
 }
 
+pub trait WriteSetStore {
+    fn get_write_set(&self, hash: HashValue) -> Result<Option<WriteSet>>;
+    fn save_write_set(&self, hash: HashValue, write_set: WriteSet) -> Result<()>;
+}
+
 // TODO: remove Arc<dyn Store>, we can clone Storage directly.
 #[derive(Clone)]
 pub struct Storage {
@@ -274,6 +287,7 @@ pub struct Storage {
     block_info_storage: BlockInfoStorage,
     event_storage: ContractEventStorage,
     chain_info_storage: ChainInfoStorage,
+    write_set_store: WriteSetStorage,
     // table_info_storage: TableInfoStorage,
     // instance: StorageInstance,
 }
@@ -293,7 +307,8 @@ impl Storage {
                 AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
             block_info_storage: BlockInfoStorage::new(instance.clone()),
             event_storage: ContractEventStorage::new(instance.clone()),
-            chain_info_storage: ChainInfoStorage::new(instance),
+            chain_info_storage: ChainInfoStorage::new(instance.clone()),
+            write_set_store: WriteSetStorage::new(instance),
             // table_info_storage: TableInfoStorage::new(instance),
             // instance,
         };
@@ -331,6 +346,7 @@ impl Display for Storage {
         write!(f, "{}", self.clone())
     }
 }
+
 impl Debug for Storage {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{}", self)
@@ -543,6 +559,16 @@ impl ContractEventStore for Storage {
     }
 }
 
+impl WriteSetStore for Storage {
+    fn get_write_set(&self, hash: HashValue) -> Result<Option<WriteSet>> {
+        self.write_set_store.get_write_set(hash)
+    }
+
+    fn save_write_set(&self, hash: HashValue, write_set: WriteSet) -> Result<()> {
+        self.write_set_store.save_write_set(hash, write_set)
+    }
+}
+
 impl TransactionStore for Storage {
     fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>, Error> {
         self.transaction_storage.get(txn_hash)
@@ -572,6 +598,7 @@ pub trait Store:
     + TransactionStore
     + BlockTransactionInfoStore
     + ContractEventStore
+    + WriteSetStore
     + IntoSuper<dyn StateNodeStore>
 {
     fn get_transaction_info_by_block_and_index(
