@@ -42,7 +42,6 @@ use starcoin_vm_types::on_chain_resource::Epoch;
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
-use std::ptr::write;
 use std::{collections::HashMap, sync::Arc};
 
 pub struct ChainStatusWithBlock {

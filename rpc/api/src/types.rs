@@ -48,12 +48,13 @@ use starcoin_vm_types::transaction::{
 };
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::vm_status::{DiscardedVMStatus, KeptVMStatus, StatusCode};
-use starcoin_vm_types::write_set::WriteOp;
+use starcoin_vm_types::write_set::{WriteOp, WriteSet};
 use std::collections::BTreeMap;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
 pub type ByteCode = Vec<u8>;
+
 mod node_api_types;
 pub mod pubsub;
 
@@ -266,8 +267,8 @@ impl ArgumentsView {
 /// Because we cannot distinguish whether `0x12341235` is an human readable address or just some bcs bytes in hex string.
 impl<'de> Deserialize<'de> for ArgumentsView {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         let args = <Vec<TransactionArgumentView>>::deserialize(deserializer)?;
         Ok(ArgumentsView::HumanReadable(args))
@@ -277,8 +278,8 @@ impl<'de> Deserialize<'de> for ArgumentsView {
 /// Only return BCS hex string when returning arguments out of jsonrpc.
 impl Serialize for ArgumentsView {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
+        where
+            S: Serializer,
     {
         match self {
             Self::HumanReadable(_vs) => {
@@ -477,7 +478,7 @@ impl From<BlockHeaderView> for BlockHeader {
 }
 
 impl FromIterator<BlockHeaderView> for Vec<BlockHeader> {
-    fn from_iter<T: IntoIterator<Item = BlockHeaderView>>(views: T) -> Self {
+    fn from_iter<T: IntoIterator<Item=BlockHeaderView>>(views: T) -> Self {
         let mut blocks = vec![];
         for view in views {
             blocks.push(view.into())
@@ -1221,6 +1222,7 @@ impl From<TransactionOutput> for TransactionOutputView {
         }
     }
 }
+
 impl From<(AccessPath, WriteOp)> for TransactionOutputAction {
     fn from((access_path, op): (AccessPath, WriteOp)) -> Self {
         let (action, value) = match op {
@@ -1242,6 +1244,7 @@ impl From<(AccessPath, WriteOp)> for TransactionOutputAction {
         }
     }
 }
+
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionOutputAction {
     pub access_path: AccessPath,
@@ -1546,7 +1549,7 @@ impl<T> JsonSchema for StrView<T> {
             instance_type: Some(InstanceType::String.into()),
             ..Default::default()
         }
-        .into()
+            .into()
     }
 }
 
@@ -1557,25 +1560,25 @@ impl<T> From<T> for StrView<T> {
 }
 
 impl<T> Serialize for StrView<T>
-where
-    Self: ToString,
+    where
+        Self: ToString,
 {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
+        where
+            S: Serializer,
     {
         serializer.serialize_str(&self.to_string())
     }
 }
 
 impl<'de, T> Deserialize<'de> for StrView<T>
-where
-    Self: FromStr,
-    <Self as FromStr>::Err: std::fmt::Display,
+    where
+        Self: FromStr,
+        <Self as FromStr>::Err: std::fmt::Display,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         let s = <String>::deserialize(deserializer)?;
 
@@ -1790,8 +1793,8 @@ impl From<Vec<u8>> for BytesView {
 
 impl<'de> Deserialize<'de> for BytesView {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         let s = <String>::deserialize(deserializer)?;
         <Vec<u8>>::from_hex(s)
@@ -1802,8 +1805,8 @@ impl<'de> Deserialize<'de> for BytesView {
 
 impl Serialize for BytesView {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
+        where
+            S: Serializer,
     {
         hex::encode(self).serialize(serializer)
     }
@@ -1822,6 +1825,7 @@ pub struct ConnectLocal;
 impl ServiceRequest for ConnectLocal {
     type Response = RpcChannel;
 }
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct AccumulatorInfoView {
     /// Accumulator root hash
@@ -1925,6 +1929,41 @@ impl From<StateKey> for StateKeyView {
                 key: table_item.key,
             }),
         }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct TransactionWriteSetView {
+    hash_value: HashValue,
+    access_write_set: Vec<TransactionOutputAction>,
+    table_write_set: Vec<TransactionOutputTableItemAction>,
+}
+
+impl TransactionWriteSetView {
+    pub fn new(hash_value: HashValue, write_set: WriteSet) -> anyhow::Result<Self> {
+        let mut access_write_set = vec![];
+        let mut table_item_write_set = vec![];
+        for (state_key, op) in write_set {
+            match state_key {
+                StateKey::AccessPath(access_path) => {
+                    access_write_set.push((access_path, op));
+                }
+                StateKey::TableItem(table_item) => {
+                    table_item_write_set.push((table_item, op));
+                }
+            }
+        }
+        Ok(Self {
+            hash_value,
+            access_write_set: access_write_set
+                .into_iter()
+                .map(TransactionOutputAction::from)
+                .collect(),
+            table_write_set: table_item_write_set
+                .into_iter()
+                .map(TransactionOutputTableItemAction::from)
+                .collect(),
+        })
     }
 }
 

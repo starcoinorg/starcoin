@@ -14,6 +14,7 @@ use starcoin_types::{
     transaction::Transaction,
 };
 use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::write_set::WriteSet;
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug)]
@@ -60,6 +61,7 @@ pub enum ChainRequest {
         access_path: Option<AccessPath>,
     },
     GetBlockInfos(Vec<HashValue>),
+    GetTransactionWriteSet(HashValue),
 }
 
 impl ServiceRequest for ChainRequest {
@@ -88,4 +90,5 @@ pub enum ChainResponse {
     HashVec(Vec<HashValue>),
     TransactionProof(Box<Option<TransactionInfoWithProof>>),
     BlockInfoVec(Box<Vec<Option<BlockInfo>>>),
+    TransactionWriteSet(Option<WriteSet>),
 }

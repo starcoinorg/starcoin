@@ -15,6 +15,7 @@ use starcoin_types::{
     startup_info::StartupInfo,
 };
 use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::write_set::WriteSet;
 
 /// Readable block chain service trait
 pub trait ReadableChainService {
@@ -72,6 +73,8 @@ pub trait ReadableChainService {
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
+
+    fn get_transaction_write_set(&self, hash: HashValue) -> Result<Option<WriteSet>>;
 }
 
 /// Writeable block chain service trait
@@ -139,6 +142,8 @@ pub trait ChainAsyncService:
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
+
+    async fn get_transaction_write_set(&self, hash: HashValue) -> Result<Option<WriteSet>>;
 }
 
 #[async_trait::async_trait]
@@ -434,6 +439,17 @@ where
             Ok(*block_infos)
         } else {
             bail!("get block_infos error")
+        }
+    }
+
+    async fn get_transaction_write_set(&self, hash: HashValue) -> Result<Option<WriteSet>> {
+        let response = self
+            .send(ChainRequest::GetTransactionWriteSet(hash))
+            .await??;
+        if let ChainResponse::TransactionWriteSet(write_set) = response {
+            Ok(write_set)
+        } else {
+            bail!("get get_write_set error")
         }
     }
 }

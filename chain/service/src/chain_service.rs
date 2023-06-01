@@ -27,6 +27,7 @@ use starcoin_types::{
 };
 use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::write_set::WriteSet;
 use std::sync::Arc;
 
 /// A Chain reader service to provider Reader API.
@@ -232,6 +233,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetBlockInfos(ids) => Ok(ChainResponse::BlockInfoVec(Box::new(
                 self.inner.get_block_infos(ids)?,
             ))),
+            ChainRequest::GetTransactionWriteSet(hash) => Ok(ChainResponse::TransactionWriteSet(
+                self.inner.get_transaction_write_set(hash)?,
+            )),
         }
     }
 }
@@ -415,6 +419,10 @@ impl ReadableChainService for ChainReaderServiceInner {
 
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>> {
         self.storage.get_block_infos(ids)
+    }
+
+    fn get_transaction_write_set(&self, hash: HashValue) -> Result<Option<WriteSet>> {
+        self.storage.get_write_set(hash)
     }
 }
 
