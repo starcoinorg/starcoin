@@ -381,7 +381,7 @@ regex = "1.6.0"
 ripemd160 = "0.9.1"
 rlp = "0.4"
 rlp-derive = "0.1"
-rocksdb = { default-features = false, features = ["lz4"], version = "0.18" }
+rocksdb = { default-features = false, features = ["lz4"], version = "0.21.0" }
 rpassword = "~5"
 rust-argon2 = "0.8"
 rust-embed = "6.3.0"
