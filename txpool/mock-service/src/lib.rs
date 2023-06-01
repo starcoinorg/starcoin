@@ -4,7 +4,7 @@
 use anyhow::Result;
 use futures_channel::mpsc;
 use starcoin_crypto::hash::HashValue;
-use starcoin_txpool_api::{TxnStatusFullEvent, TxPoolStatus, TxPoolSyncService};
+use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::{
     account_address::AccountAddress, block::Block, transaction, transaction::SignedUserTransaction,
 };

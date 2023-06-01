@@ -20,7 +20,7 @@ use starcoin_crypto::hash::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
-use starcoin_txpool_api::{TxnStatusFullEvent, TxPoolStatus, TxPoolSyncService};
+use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader},
