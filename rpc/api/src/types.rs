@@ -267,8 +267,8 @@ impl ArgumentsView {
 /// Because we cannot distinguish whether `0x12341235` is an human readable address or just some bcs bytes in hex string.
 impl<'de> Deserialize<'de> for ArgumentsView {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         let args = <Vec<TransactionArgumentView>>::deserialize(deserializer)?;
         Ok(ArgumentsView::HumanReadable(args))
@@ -278,8 +278,8 @@ impl<'de> Deserialize<'de> for ArgumentsView {
 /// Only return BCS hex string when returning arguments out of jsonrpc.
 impl Serialize for ArgumentsView {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         match self {
             Self::HumanReadable(_vs) => {
@@ -478,7 +478,7 @@ impl From<BlockHeaderView> for BlockHeader {
 }
 
 impl FromIterator<BlockHeaderView> for Vec<BlockHeader> {
-    fn from_iter<T: IntoIterator<Item=BlockHeaderView>>(views: T) -> Self {
+    fn from_iter<T: IntoIterator<Item = BlockHeaderView>>(views: T) -> Self {
         let mut blocks = vec![];
         for view in views {
             blocks.push(view.into())
@@ -1549,7 +1549,7 @@ impl<T> JsonSchema for StrView<T> {
             instance_type: Some(InstanceType::String.into()),
             ..Default::default()
         }
-            .into()
+        .into()
     }
 }
 
@@ -1560,25 +1560,25 @@ impl<T> From<T> for StrView<T> {
 }
 
 impl<T> Serialize for StrView<T>
-    where
-        Self: ToString,
+where
+    Self: ToString,
 {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         serializer.serialize_str(&self.to_string())
     }
 }
 
 impl<'de, T> Deserialize<'de> for StrView<T>
-    where
-        Self: FromStr,
-        <Self as FromStr>::Err: std::fmt::Display,
+where
+    Self: FromStr,
+    <Self as FromStr>::Err: std::fmt::Display,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         let s = <String>::deserialize(deserializer)?;
 
@@ -1793,8 +1793,8 @@ impl From<Vec<u8>> for BytesView {
 
 impl<'de> Deserialize<'de> for BytesView {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         let s = <String>::deserialize(deserializer)?;
         <Vec<u8>>::from_hex(s)
@@ -1805,8 +1805,8 @@ impl<'de> Deserialize<'de> for BytesView {
 
 impl Serialize for BytesView {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         hex::encode(self).serialize(serializer)
     }

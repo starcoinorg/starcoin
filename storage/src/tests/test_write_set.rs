@@ -18,15 +18,12 @@ fn to_write_set(access_path: AccessPath, value: Vec<u8>) -> WriteSet {
     WriteSetMut::new(vec![
         (
             StateKey::AccessPath(access_path.clone()),
-            WriteOp::Value(value)
+            WriteOp::Value(value),
         ),
-        (
-            StateKey::AccessPath(access_path.clone()),
-            WriteOp::Deletion
-        ),
+        (StateKey::AccessPath(access_path.clone()), WriteOp::Deletion),
     ])
-        .freeze()
-        .expect("freeze write_set must success.")
+    .freeze()
+    .expect("freeze write_set must success.")
 }
 
 #[test]
@@ -35,7 +32,8 @@ fn test_put_and_save() {
     let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
-    )).unwrap();
+    ))
+    .unwrap();
 
     let access_path = AccessPath::random_resource();
     let state0 = HashValue::random().to_vec();

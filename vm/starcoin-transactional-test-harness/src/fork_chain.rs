@@ -13,7 +13,10 @@ use starcoin_config::{BuiltinNetworkID, ChainNetworkID};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::{ChainApi, GetBlockOption};
 use starcoin_rpc_api::chain::{ChainApiClient, GetBlocksOption};
-use starcoin_rpc_api::types::{BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView, SignedUserTransactionView, TransactionInfoView, TransactionView, TransactionWriteSetView};
+use starcoin_rpc_api::types::{
+    BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
+    SignedUserTransactionView, TransactionInfoView, TransactionView, TransactionWriteSetView,
+};
 use starcoin_rpc_api::FutureResult;
 use starcoin_rpc_server::module::map_err;
 use starcoin_state_api::StateView;
@@ -496,7 +499,10 @@ impl ChainApi for MockChainApi {
         Box::pin(fut.boxed().map_err(map_err))
     }
 
-    fn get_transaction_write_set(&self, _block_hash: HashValue) -> FutureResult<Option<TransactionWriteSetView>> {
+    fn get_transaction_write_set(
+        &self,
+        _block_hash: HashValue,
+    ) -> FutureResult<Option<TransactionWriteSetView>> {
         let fut = async move {
             bail!("not implemented.");
         };
