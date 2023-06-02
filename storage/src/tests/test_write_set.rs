@@ -20,7 +20,7 @@ fn to_write_set(access_path: AccessPath, value: Vec<u8>) -> WriteSet {
             StateKey::AccessPath(access_path.clone()),
             WriteOp::Value(value),
         ),
-        (StateKey::AccessPath(access_path.clone()), WriteOp::Deletion),
+        (StateKey::AccessPath(access_path), WriteOp::Deletion),
     ])
     .freeze()
     .expect("freeze write_set must success.")
