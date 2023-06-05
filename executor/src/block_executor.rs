@@ -10,14 +10,13 @@ use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::write_set::WriteSet;
-use std::collections::HashMap;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BlockExecutedData {
     pub state_root: HashValue,
     pub txn_infos: Vec<TransactionInfo>,
     pub txn_events: Vec<Vec<ContractEvent>>,
-    pub txn_write_sets: HashMap<HashValue, WriteSet>,
+    pub txn_write_sets: Vec<(HashValue, WriteSet)>,
 }
 
 impl Default for BlockExecutedData {
@@ -26,7 +25,7 @@ impl Default for BlockExecutedData {
             state_root: HashValue::zero(),
             txn_events: vec![],
             txn_infos: vec![],
-            txn_write_sets: HashMap::default(),
+            txn_write_sets: vec![],
         }
     }
 }
@@ -77,7 +76,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
                 executed_data.txn_events.push(events);
 
                 // Put write set into result
-                executed_data.txn_write_sets.insert(txn_hash, write_set);
+                executed_data.txn_write_sets.push((txn_hash, write_set));
             }
         };
     }
