@@ -61,7 +61,6 @@ use starcoin_vm_types::{
     on_chain_config::{OnChainConfig, VMConfig, Version},
     state_view::StateView,
     transaction_metadata::TransactionMetadata,
-    values::Value,
     vm_status::{StatusCode, VMStatus},
 };
 use std::sync::Arc;
@@ -1462,11 +1461,6 @@ pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolverExt>(
         u64::from(gas_used),
         TransactionStatus::Keep(status),
     ))
-}
-
-pub enum VerifiedTransactionPayload {
-    Script(Vec<u8>, Vec<TypeTag>, Vec<Value>),
-    Package(Package),
 }
 
 pub fn log_vm_status(
