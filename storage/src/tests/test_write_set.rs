@@ -10,8 +10,10 @@ use crate::storage::StorageInstance;
 use crate::{Storage, WriteSetStore};
 use starcoin_config::RocksdbConfig;
 use starcoin_crypto::HashValue;
+use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::access_path::AccessPath;
-use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::state_key::{StateKey};
+use starcoin_vm_types::state_store::table::TableHandle;
 use starcoin_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 
 fn to_write_set(access_path: AccessPath, value: Vec<u8>) -> WriteSet {
@@ -22,8 +24,21 @@ fn to_write_set(access_path: AccessPath, value: Vec<u8>) -> WriteSet {
         ),
         (StateKey::AccessPath(access_path), WriteOp::Deletion),
     ])
-    .freeze()
-    .expect("freeze write_set must success.")
+        .freeze()
+        .expect("freeze write_set must success.")
+}
+
+fn to_table_item_write_set(table_item: &StateKey, value: Vec<u8>) -> WriteSet {
+    WriteSetMut::new(vec![
+        (
+            table_item.clone(),
+            WriteOp::Value(value),
+        ),
+        (
+            table_item.clone(),
+            WriteOp::Deletion
+        ),
+    ]).freeze().expect("freeze write_set must success.")
 }
 
 #[test]
@@ -33,7 +48,7 @@ fn test_put_and_save() {
         CacheStorage::new(None),
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
     ))
-    .unwrap();
+        .unwrap();
 
     let access_path = AccessPath::random_resource();
     let state0 = HashValue::random().to_vec();
@@ -61,5 +76,42 @@ fn test_put_and_save() {
 
     let (st_key, op) = iter.next().expect("Error");
     assert_eq!(st_key, StateKey::AccessPath(access_path));
+    assert_eq!(op, WriteOp::Deletion);
+}
+
+#[test]
+fn test_put_and_save_table_item() {
+    let tmpdir = starcoin_config::temp_dir();
+    let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
+    ))
+        .unwrap();
+
+    let table_item = StateKey::table_item(TableHandle(AccountAddress::random()), HashValue::random().to_vec());
+    let table_item_val = HashValue::random().to_vec();
+    let hash = HashValue::random();
+
+    storage
+        .write_set_store
+        .save_write_set(hash, to_table_item_write_set(&table_item, table_item_val.clone()))
+        .expect("Save write set failed");
+
+    let after = storage
+        .write_set_store
+        .get_write_set(hash)
+        .expect("{} Write set not exists!")
+        .expect("{} Write set not exists!");
+
+    assert!(!after.is_empty());
+
+    let mut iter = after.into_iter();
+
+    let (st_key, op) = iter.next().expect("Error");
+    assert_eq!(st_key, table_item.clone());
+    assert_eq!(op, WriteOp::Value(table_item_val.clone()));
+
+    let (st_key, op) = iter.next().expect("Error");
+    assert_eq!(st_key, table_item.clone());
     assert_eq!(op, WriteOp::Deletion);
 }
