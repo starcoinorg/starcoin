@@ -98,6 +98,29 @@ impl CommandAction for SubscribeBlockCommand {
         Ok(())
     }
 }
+
+#[derive(Debug, Parser)]
+#[clap(name = "new_mint_block")]
+pub struct SubscribeNewMintBlockOpt {}
+pub struct SubscribeNewMintBlockCommand;
+impl CommandAction for SubscribeNewMintBlockCommand {
+    type State = CliState;
+    type GlobalOpt = StarcoinOpt;
+    type Opt = SubscribeNewMintBlockOpt;
+    type ReturnItem = ();
+    fn run(
+        &self,
+        ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
+    ) -> Result<Self::ReturnItem> {
+        let event_stream = ctx.state().client().subscribe_new_mint_blocks()?;
+        println!("Subscribe successful, Press `q` and Enter to quit");
+        blocking_display_notification(event_stream, |evt| {
+            serde_json::to_string(&evt).expect("should never fail")
+        });
+        Ok(())
+    }
+}
+
 #[derive(Debug, Parser)]
 #[clap(name = "new_pending_txn")]
 pub struct SubscribeNewTxnOpt {}

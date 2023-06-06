@@ -128,6 +128,7 @@ pub fn add_command(
                 .subcommand(
                     CustomCommand::with_name("subscribe")
                         .with_about("Subscribe the chain events")
+                        .subcommand(dev::SubscribeNewMintBlockCommand)
                         .subcommand(dev::SubscribeBlockCommand)
                         .subcommand(dev::SubscribeEventCommand)
                         .subcommand(dev::SubscribeNewTxnCommand),
