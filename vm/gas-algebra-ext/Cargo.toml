@@ -20,3 +20,7 @@ version = "1.13.4"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }
+
+[features]
+default = []
+testing = ["move-stdlib/testing"]
