@@ -2,19 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub use crate::batch::WriteBatch;
-use crate::cache_storage::CacheStorage;
-use crate::db_storage::{DBStorage, SchemaIterator};
-use crate::upgrade::DBUpgrade;
+use crate::{
+    cache_storage::CacheStorage,
+    db_storage::{DBStorage, SchemaIterator},
+    upgrade::DBUpgrade,
+};
 use anyhow::{bail, format_err, Result};
 use byteorder::{BigEndian, ReadBytesExt};
+use rocksdb::{DBPinnableSlice, WriteBatch as DBWriteBatch};
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 use starcoin_vm_types::state_store::table::TableHandle;
-use std::convert::TryInto;
-use std::fmt::Debug;
-use std::marker::PhantomData;
-use std::sync::Arc;
+use std::{convert::TryInto, fmt::Debug, marker::PhantomData, sync::Arc};
 
 /// Type alias to improve readability.
 pub type ColumnFamilyName = &'static str;
@@ -44,6 +44,31 @@ pub trait InnerStore: Send + Sync {
     fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
     fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()>;
     fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>>;
+}
+
+pub trait RawDBStorage: Send + Sync {
+    fn raw_get_pinned_cf<K: AsRef<[u8]>>(
+        &self,
+        prefix: &str,
+        key: K,
+    ) -> Result<Option<DBPinnableSlice>>;
+
+    fn raw_write_batch(&self, batch: DBWriteBatch) -> Result<()>;
+}
+
+pub trait InnerStoreV2: Send + Sync {
+    fn get_v2(&self, prefix_name: Option<&str>, key: Vec<u8>) -> Result<Option<Vec<u8>>>;
+    fn put_v2(&self, prefix_name: Option<&str>, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
+    fn contains_key_v2(&self, prefix_name: Option<&str>, key: Vec<u8>) -> Result<bool>;
+    fn remove_v2(&self, prefix_name: Option<&str>, key: Vec<u8>) -> Result<()>;
+    fn write_batch_v2(&self, prefix_name: Option<&str>, batch: WriteBatch) -> Result<()>;
+    fn put_sync_v2(&self, prefix_name: Option<&str>, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
+    fn write_batch_sync_v2(&self, prefix_name: Option<&str>, batch: WriteBatch) -> Result<()>;
+    fn multi_get_v2(
+        &self,
+        prefix_name: Option<&str>,
+        keys: Vec<Vec<u8>>,
+    ) -> Result<Vec<Option<Vec<u8>>>>;
 }
 
 ///Storage instance type define
