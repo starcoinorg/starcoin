@@ -21,7 +21,7 @@ use starcoin_vm_types::{
 use std::collections::btree_map::BTreeMap;
 use std::ops::{Deref, DerefMut};
 
-/// A local cache for a given a `StateView`. The cache is private to the Diem layer
+/// A local cache for a given a `StateView`. The cache is private to the Starcoin layer
 /// but can be used as a one shot cache for systems that need a simple `RemoteCache`
 /// implementation (e.g. tests or benchmarks).
 ///
@@ -88,20 +88,6 @@ impl<'block, S: StateView> StateView for StateViewCache<'block, S> {
     }
 }
 
-impl<'block, S: StateView> ModuleResolver for StateViewCache<'block, S> {
-    type Error = VMError;
-
-    fn get_module(&self, module_id: &ModuleId) -> VMResult<Option<Vec<u8>>> {
-        RemoteStorage::new(self).get_module(module_id)
-    }
-}
-impl<'block, S: StateView> ResourceResolver for StateViewCache<'block, S> {
-    type Error = VMError;
-    fn get_resource(&self, address: &AccountAddress, tag: &StructTag) -> VMResult<Option<Vec<u8>>> {
-        RemoteStorage::new(self).get_resource(address, tag)
-    }
-}
-
 // Adapter to convert a `StateView` into a `RemoteCache`.
 pub struct RemoteStorage<'a, S>(&'a S);
 
@@ -137,6 +123,17 @@ impl<'a, S: StateView> ResourceResolver for RemoteStorage<'a, S> {
     }
 }
 
+impl<'a, S: StateView> TableResolver for RemoteStorage<'a, S> {
+    fn resolve_table_entry(
+        &self,
+        handle: &TableHandle,
+        key: &[u8],
+    ) -> Result<Option<Vec<u8>>, Error> {
+        self.0
+            .get_state_value(&StateKey::table_item((*handle).into(), key.to_vec()))
+    }
+}
+
 impl<'a, S: StateView> ConfigStorage for RemoteStorage<'a, S> {
     fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>> {
         self.get(&access_path).ok()?
@@ -148,17 +145,6 @@ impl<'a, S> Deref for RemoteStorage<'a, S> {
 
     fn deref(&self) -> &Self::Target {
         self.0
-    }
-}
-
-impl<'a, S: StateView> TableResolver for RemoteStorage<'a, S> {
-    fn resolve_table_entry(
-        &self,
-        handle: &TableHandle,
-        key: &[u8],
-    ) -> Result<Option<Vec<u8>>, Error> {
-        self.0
-            .get_state_value(&StateKey::table_item((*handle).into(), key.to_vec()))
     }
 }
 
