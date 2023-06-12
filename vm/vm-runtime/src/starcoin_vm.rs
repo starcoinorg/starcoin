@@ -2,14 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::access_path_cache::AccessPathCache;
-use crate::adapter_common::PreprocessedTransaction;
+use crate::adapter_common::{
+    discard_error_output, discard_error_vm_status, validate_signed_transaction,
+    PreprocessedTransaction, VMAdapter,
+};
 use crate::data_cache::{AsMoveResolver, RemoteStorage, StateViewCache};
 use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
 use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
 use anyhow::{bail, format_err, Error, Result};
-use move_core_types::effects::Op;
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
 use move_table_extension::NativeTableContext;
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
@@ -34,7 +36,6 @@ use starcoin_types::{
         SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionOutput,
         TransactionPayload, TransactionStatus,
     },
-    write_set::WriteSet,
 };
 use starcoin_vm_types::access::{ModuleAccess, ScriptAccess};
 use starcoin_vm_types::account_address::AccountAddress;
@@ -43,6 +44,7 @@ use starcoin_vm_types::account_config::{
     core_code_address, genesis_address, ModuleUpgradeStrategy, TwoPhaseUpgradeV2Resource,
     G_EPILOGUE_NAME, G_EPILOGUE_V2_NAME, G_PROLOGUE_NAME,
 };
+use starcoin_vm_types::errors::VMResult;
 use starcoin_vm_types::file_format::{CompiledModule, CompiledScript};
 use starcoin_vm_types::gas_schedule::G_LATEST_GAS_COST_TABLE;
 use starcoin_vm_types::genesis_config::StdlibVersion;
@@ -55,7 +57,9 @@ use starcoin_vm_types::on_chain_config::{
 };
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateReaderExt;
-use starcoin_vm_types::transaction::{DryRunTransaction, Package, TransactionPayloadType};
+use starcoin_vm_types::transaction::{
+    DryRunTransaction, Package, TransactionPayloadType, VMValidatorResult,
+};
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::vm_status::KeptVMStatus;
@@ -69,13 +73,12 @@ use starcoin_vm_types::{
 };
 use std::cmp::min;
 use std::sync::Arc;
-use starcoin_vm_types::errors::VMResult;
 
 static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
 
 #[cfg(feature = "metrics")]
 use crate::metrics::VMMetrics;
-use crate::VMExecutor;
+use crate::{VMExecutor, VMValidator};
 
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
@@ -1342,6 +1345,7 @@ impl StarcoinVM {
             TransactionStatus::Discard(status) => {
                 (VMStatus::Error(status), discard_error_output(status))
             }
+            TransactionStatus::Retry => unreachable!()
         }
     }
 
@@ -1350,46 +1354,6 @@ impl StarcoinVM {
             debug!("VM Startup Failed. Gas Parameters Not Found");
             VMStatus::Error(StatusCode::VM_STARTUP_FAILURE)
         })
-    }
-
-    // XXX FIXME YSG, why use &mut self, because of check_reconfigure modified vm_config, why aptos no need do this
-    // actually is load_configs problem
-    pub fn execute_single_transaction<S: MoveResolverExt + StateView>(
-        &mut self,
-        txn: &PreprocessedTransaction,
-        data_cache: &S,
-    ) -> Result<(VMStatus, TransactionOutput, Option<String>), VMStatus> {
-        Ok(match txn {
-            PreprocessedTransaction::UserTransaction(txn) => {
-                let sender = txn.sender().to_string();
-                let (vm_status, output) =
-                    self.execute_user_transaction(*txn.clone(), data_cache);
-                // XXX FIXME YSG
-                // this place should add check_reconfigure to check we need re execution
-                // let gas_unit_price = transaction.gas_unit_price(); think about gas_used OutOfGas
-                (vm_status, output, Some(sender))
-            }
-            PreprocessedTransaction::BlockMetadata(block_meta) => {
-                let (vm_status, output) =
-                    match self.process_block_metadata(data_cache, block_meta.clone()) {
-                        Ok(output) => (VMStatus::Executed, output),
-                        Err(vm_status) => discard_error_vm_status(vm_status),
-                    };
-                (vm_status, output, Some("block_meta".to_string()))
-            }
-        })
-    }
-
-    /// XXX FIXME YSG， refactor to adaptor
-    pub fn should_restart_execution(output: &TransactionOutput) -> bool {
-        for event in output.events() {
-            if event.key().get_creator_address() == genesis_address()
-                && (event.is::<UpgradeEvent>() || event.is::<ConfigChangeEvent<Version>>())
-            {
-                return true;
-            }
-        }
-        false
     }
 
     /// Sets execution concurrency level when invoked the first time.
@@ -1419,13 +1383,16 @@ impl StarcoinVM {
         let mut vm = StarcoinVM::new(metrics);
         let result = vm
             // XXX FIXME YSG, remove unwrap
-            .execute_block_transactions(state_view, txns, block_gas_limit).unwrap()
-            .into_iter()
-            .collect();
+            .execute_block_transactions(state_view, txns, block_gas_limit)
+            .unwrap();
         Ok(result)
     }
 
-    pub fn load_module<'r, R: MoveResolverExt>(&self, module_id: &ModuleId, remote: &'r R) -> VMResult<Arc<CompiledModule>> {
+    pub fn load_module<'r, R: MoveResolverExt>(
+        &self,
+        module_id: &ModuleId,
+        remote: &'r R,
+    ) -> VMResult<Arc<CompiledModule>> {
         self.move_vm.load_module(module_id, remote)
     }
 }
@@ -1486,30 +1453,6 @@ pub(crate) fn charge_global_write_gas_usage<R: MoveResolverExt>(
     gas_meter
         .deduct_gas(total_cost)
         .map_err(|p_err| p_err.finish(Location::Undefined).into_vm_status())
-}
-
-pub(crate) fn discard_error_vm_status(err: VMStatus) -> (VMStatus, TransactionOutput) {
-    info!("discard error vm_status output: {:?}", err);
-    let vm_status = err.clone();
-    let error_code = match err.keep_or_discard() {
-        Ok(_) => {
-            debug_assert!(false, "discarding non-discardable error: {:?}", vm_status);
-            vm_status.status_code()
-        }
-        Err(code) => code,
-    };
-    (vm_status, discard_error_output(error_code))
-}
-
-pub(crate) fn discard_error_output(err: StatusCode) -> TransactionOutput {
-    info!("discard error output: {:?}", err);
-    // Since this transaction will be discarded, no writeset will be included.
-    TransactionOutput::new(
-        WriteSet::default(),
-        vec![],
-        0,
-        TransactionStatus::Discard(err),
-    )
 }
 
 pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolverExt>(
@@ -1614,5 +1557,92 @@ impl VMExecutor for StarcoinVM {
                 .map(|(_vm_status, txn_output)| txn_output)
                 .collect())
         }
+    }
+}
+
+// VMValidator external API
+impl VMValidator for StarcoinVM {
+    /// XXX FIXME YSG
+    /// Determine if a transaction is valid. Will return `None` if the transaction is accepted,
+    /// `Some(Err)` if the VM rejects it, with `Err` as an error code. Verification performs the
+    /// following steps:
+    /// 1. The signature on the `SignedUserTransaction` matches the public key included in the
+    ///    transaction
+    /// 2. The script to be executed is under given specific configuration.
+    /// 3. Invokes `Account.prologue`, which checks properties such as the transaction has the
+    /// right sequence number and the sender has enough balance to pay for the gas.
+    /// TBD:
+    /// 1. Transaction arguments matches the main function's type signature.
+    ///    We don't check this item for now and would execute the check at execution time.
+    fn validate_transaction(
+        &self,
+        transaction: SignedUserTransaction,
+        state_view: &impl StateView,
+    ) -> VMValidatorResult {
+        validate_signed_transaction(self, transaction, state_view)
+    }
+}
+
+impl VMAdapter for StarcoinVM {
+    fn new_session<'r, R: MoveResolverExt>(
+        &self,
+        remote: &'r R,
+        session_id: SessionId,
+    ) -> SessionAdapter<'r, '_, R> {
+        self.move_vm.new_session(remote, session_id).into()
+    }
+
+    fn check_signature(txn: SignedUserTransaction) -> Result<SignatureCheckedTransaction> {
+        txn.check_signature()
+    }
+
+    fn run_prologue<S: MoveResolverExt>(
+        &self,
+        session: &mut SessionAdapter<S>,
+        transaction: &SignatureCheckedTransaction,
+    ) -> Result<(), VMStatus> {
+        // XXX FIXME YSG
+        todo!()
+    }
+
+    fn should_restart_execution(output: &TransactionOutput) -> bool {
+        for event in output.events() {
+            if event.key().get_creator_address() == genesis_address()
+                && (event.is::<UpgradeEvent>() || event.is::<ConfigChangeEvent<Version>>())
+            {
+                return true;
+            }
+        }
+        false
+    }
+
+    // XXX FIXME YSG, why use &mut self, because of check_reconfigure modified vm_config, why aptos no need do this
+    // actually is load_configs problem
+    fn execute_single_transaction<S: MoveResolverExt + StateView>(
+        &self,
+        txn: &PreprocessedTransaction,
+        state_view: &S,
+    ) -> Result<(VMStatus, TransactionOutput, Option<String>), VMStatus> {
+        Ok(match txn {
+            PreprocessedTransaction::UserTransaction(txn) => {
+                let sender = txn.sender().to_string();
+                let mut data_cache = StateViewCache::new(state_view);
+                let (vm_status, output) =
+                    self.execute_user_transaction(*txn.clone(), &mut data_cache);
+                // XXX FIXME YSG
+                // this place should add check_reconfigure to check we need re execution
+                // let gas_unit_price = transaction.gas_unit_price(); think about gas_used OutOfGas
+                (vm_status, output, Some(sender))
+            }
+            PreprocessedTransaction::BlockMetadata(block_meta) => {
+                let mut data_cache = StateViewCache::new(state_view);
+                let (vm_status, output) =
+                    match self.process_block_metadata(&mut data_cache, block_meta.clone()) {
+                        Ok(output) => (VMStatus::Executed, output),
+                        Err(vm_status) => discard_error_vm_status(vm_status),
+                    };
+                (vm_status, output, Some("block_meta".to_string()))
+            }
+        })
     }
 }

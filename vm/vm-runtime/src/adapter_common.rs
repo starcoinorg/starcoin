@@ -3,27 +3,24 @@
 
 /// XXX FIXME YSG notice SignedUserTransaction is Aptos SignedTransaction
 use crate::{
-    data_cache::{AsMoveResolver, StateViewCache},
+    data_cache::StateViewCache,
     move_vm_ext::{MoveResolverExt, SessionId},
 };
 use anyhow::Result;
 //use move_core_types::resolver::MoveResolver;
 use move_core_types::vm_status::{StatusCode, VMStatus};
-use move_vm_runtime::session::Session;
 // use rayon::prelude::*;
 //use starcoin_logger::prelude::*;
+use move_vm_runtime::move_vm_adapter::SessionAdapter;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::{
-    access_path::AccessPath,
     block_metadata::BlockMetadata,
-    state_store::state_key::StateKey,
     transaction::{
-        SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionArgument,
-        TransactionOutput, TransactionPayload, TransactionStatus, VMValidatorResult,
+        SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionOutput,
+        TransactionStatus, VMValidatorResult,
     },
     write_set::WriteSet,
 };
-use std::collections::HashSet;
 
 /// This trait describes the VM adapter's interface.
 /// TODO: bring more of the execution logic in aptos_vm into this file.
@@ -31,12 +28,13 @@ pub trait VMAdapter {
     /// Creates a new Session backed by the given storage.
     /// TODO: this doesn't belong in this trait. We should be able to remove
     /// this after redesigning cache ownership model.
+    // XXX FIXME YSG, this place we use SessionAdapter, we don't have move_vm_ext::SessionExt
+    /// XXX FIXME YSG, we don't know
     fn new_session<'r, R: MoveResolverExt>(
         &self,
         remote: &'r R,
         session_id: SessionId,
-        // XXX FIXME YSG, this place we use Session, we don't have move_vm_ext::SessionExt
-    ) -> Session<'r, '_, R>;
+    ) -> SessionAdapter<'r, '_, R>;
 
     /// Checks the signature of the given signed transaction and returns
     /// `Ok(SignatureCheckedTransaction)` if the signature is valid.
@@ -46,7 +44,7 @@ pub trait VMAdapter {
     fn run_prologue<S: MoveResolverExt>(
         &self,
         // XXX FIXME YSG, this place we use Session, we don't have move_vm_ext::SessionExt
-        session: &mut Session<S>,
+        session: &mut SessionAdapter<S>,
         transaction: &SignatureCheckedTransaction,
     ) -> Result<(), VMStatus>;
 
@@ -68,7 +66,7 @@ pub trait VMAdapter {
 /// The returned `VMValidatorResult` will have status `None` and if all checks succeeded
 /// and `Some(DiscardedVMStatus)` otherwise.
 pub fn validate_signed_transaction<A: VMAdapter>(
-    _adapter: &A,
+    adapter: &A,
     _transaction: SignedUserTransaction,
     _state_view: &impl StateView,
 ) -> VMValidatorResult {
@@ -111,8 +109,8 @@ pub fn validate_signed_transaction<A: VMAdapter>(
 
 pub(crate) fn validate_signature_checked_transaction<S: MoveResolverExt, A: VMAdapter>(
     adapter: &A,
-    // XXX FIXME YSG, this place we use Session, we don't have move_vm_ext::SessionExt
-    session: &mut Session<S>,
+    // XXX FIXME YSG, this place we use SessionAdapter, we don't have move_vm_ext::SessionExt
+    session: &mut SessionAdapter<S>,
     transaction: &SignatureCheckedTransaction,
     allow_too_new: bool,
 ) -> Result<(), VMStatus> {
@@ -235,20 +233,13 @@ pub(crate) fn execute_block_impl<A: VMAdapter, S: StateView>(
     Ok(result)
 }
 
-/// Transactions after signature checking:
-/// BlockPrologues are not signed and are unaffected by signature checking,
-/// but a user transaction transformed to a SignatureCheckedTransaction.
 #[derive(Debug)]
 pub enum PreprocessedTransaction {
     UserTransaction(Box<SignedUserTransaction>),
     BlockMetadata(BlockMetadata),
 }
 
-/// Check the signature (if any) of a transaction. If the signature is OK, the result
-/// is a PreprocessedTransaction, where a user transaction is translated to a
-/// SignatureCheckedTransaction and also categorized into either a UserTransaction
-/// or a WriteSet transaction.
-// XXX FIXME YSG, code need to check clone()
+#[inline]
 pub(crate) fn preprocess_transaction(txn: Transaction) -> PreprocessedTransaction {
     match txn {
         Transaction::BlockMetadata(b) => PreprocessedTransaction::BlockMetadata(b),
