@@ -25,7 +25,7 @@ static RAYON_EXEC_POOL: Lazy<rayon::ThreadPool> = Lazy::new(|| {
 /// passed to the VM and acts as a proxy to resolve reads first in the shared multi-version
 /// data-structure. It also allows the caller to track the read-set and any dependencies.
 ///
-/// TODO(issue 10177): MvHashMapView currently needs to be sync due to trait bounds, but should
+/// XXX FIXME YSG TODO(issue 10177): MvHashMapView currently needs to be sync due to trait bounds, but should
 /// not be. In this case, the read_dependency member can have a RefCell<bool> type and the
 /// captured_reads member can have RefCell<Vec<ReadDescriptor<K>>> type.
 pub struct MVHashMapView<'a, K, V> {
@@ -284,6 +284,7 @@ where
         }
     }
 
+    // XXX FIXME YSG
     pub fn execute_transactions_parallel(
         &self,
         executor_initial_arguments: E::Argument,

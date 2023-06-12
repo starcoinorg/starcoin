@@ -17,7 +17,7 @@ use crate::{
     },
     genesis_config::ChainId,
     move_resource::MoveResource,
-    on_chain_config::{GlobalTimeOnChain, OnChainConfig},
+    on_chain_config::{GlobalTimeOnChain, OnChainConfig, ConfigStorage},
     on_chain_resource::{
         dao::{Proposal, ProposalAction},
         BlockMetadata, Epoch, EpochData, EpochInfo, Treasury,
@@ -30,6 +30,7 @@ use move_core_types::{
     language_storage::{ModuleId, StructTag},
 };
 use serde::de::DeserializeOwned;
+use std::ops::Deref;
 
 /// `StateView` is a trait that defines a read-only snapshot of the global state. It is passed to
 /// the VM for transaction execution, during which the VM is guaranteed to read anything at the
@@ -194,5 +195,20 @@ pub trait StateReaderExt: StateView {
         A: ProposalAction + DeserializeOwned,
     {
         self.get_proposal(G_STC_TOKEN_CODE.clone())
+    }
+}
+
+/// XXX FIXME YSG, why has conflict
+impl<R, S> StateView for R
+where
+    R: Deref<Target = S> + Sync,
+    S: StateView,
+{
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+        self.deref().get_state_value(state_key)
+    }
+
+    fn is_genesis(&self) -> bool {
+        self.deref().is_genesis()
     }
 }
