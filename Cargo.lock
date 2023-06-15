@@ -9936,6 +9936,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "prometheus",
  "rand 0.8.5",
+ "sc-peerset",
  "serde 1.0.152",
  "serde_json",
  "starcoin-config",

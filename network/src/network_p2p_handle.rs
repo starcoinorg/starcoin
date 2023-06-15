@@ -1,63 +1,110 @@
+use std::{borrow::Cow, error};
+
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-use anyhow::anyhow;
+use anyhow::{anyhow, Ok, Error};
 use bcs_ext::BCSCodec;
-use network_p2p_types::business_layer_handle::BusinessLayerHandle;
+use log::debug;
+use network_p2p::{PeerId, business_layer_handle::BusinessLayerHandle, protocol::{CustomMessageOutcome, generic_proto::NotificationsSink, rep}};
+use sc_peerset::{SetId, ReputationChange};
+use serde::{Serialize, Deserialize};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use log::error;
+
+
+/// Current protocol version.
+pub(crate) const CURRENT_VERSION: u32 = 5;
+/// Lowest version we support
+pub(crate) const MIN_VERSION: u32 = 3;
+
+/// Status sent on connection.
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+pub struct Status {
+    /// Protocol version.
+    pub version: u32,
+    /// Minimum supported version.
+    pub min_supported_version: u32,
+    /// Tell other peer which notification protocols we support.
+    pub notif_protocols: Vec<Cow<'static, str>>,
+    /// Tell other peer which rpc api we support.
+    pub rpc_protocols: Vec<Cow<'static, str>>,
+    /// the generic data related to the peer
+    pub info: ChainInfo,
+}
+
 
 pub struct Networkp2pHandle {
-    chain_info: ChainInfo,
+    status: Status,
 }
 
 impl Networkp2pHandle {
     pub fn new(chain_info: ChainInfo) -> Self {
-        Networkp2pHandle { chain_info }
+        let status = Status { 
+            version: CURRENT_VERSION, 
+            min_supported_version: MIN_VERSION, 
+            notif_protocols: [].to_vec(), 
+            rpc_protocols: [].to_vec(), 
+            info: chain_info 
+        };
+        Networkp2pHandle { status }
+    }
+}
+
+impl Networkp2pHandle {
+    fn inner_handshale(&self,  who: PeerId,
+        set_id: SetId,
+        protocol_name: Cow<'static, str>,
+        status: Status,
+        notifications_sink: NotificationsSink,) -> Result<CustomMessageOutcome, ReputationChange> {
+        debug!(target: "network-p2p", "New peer {} {:?}", who, status);
+        if status.info.genesis_hash() != self.status.info.genesis_hash() {
+            return Err(rep::GENESIS_MISMATCH);
+        }
+        if status.version < MIN_VERSION || CURRENT_VERSION < status.min_supported_version {
+            return Err(rep::BAD_PROTOCOL);
+        }
+        debug!(target: "network-p2p", "Connected {}", who);
+        let result_generic_data = status.info.encode();
+        match result_generic_data {
+            std::result::Result::Ok(generic_data) => {
+                return std::result::Result::Ok(CustomMessageOutcome::NotificationStreamOpened {
+                            remote: who,
+                            protocol: protocol_name,
+                            notifications_sink,
+                            generic_data,
+                            notif_protocols: status.notif_protocols.to_vec(),
+                            rpc_protocols: status.rpc_protocols.to_vec(),
+                });
+            }
+            Err(error) => {
+                return Err(rep::FAILED_TO_ENCODE);
+            }
+        }
     }
 }
 
 impl BusinessLayerHandle for Networkp2pHandle {
-    fn handshake(&self, peer_info: &[u8]) -> Result<(), (&'static str, String)> {
-        match ChainInfo::decode(peer_info) {
-            Ok(other_chain_info) => {
-                if self.chain_info.genesis_hash() == other_chain_info.genesis_hash() {
-                    std::result::Result::Ok(())
-                } else {
-                    return Err((
-                        "the genesis hash is different",
-                        format!(
-                            "the genesis hash from other peer is different, self: {}, remote: {}",
-                            self.chain_info.genesis_hash(),
-                            other_chain_info.genesis_hash()
-                        ),
-                    ));
-                }
+    fn handshake(&self, peer_id: PeerId, set_id: SetId, protocol_name: Cow<'static, str>, 
+                received_handshake: Vec<u8>, notifications_sink: NotificationsSink) -> Result<CustomMessageOutcome, ReputationChange> {
+        match Status::decode(&received_handshake[..]) {
+            std::result::Result::Ok(status) => {
+                return self.inner_handshale(peer_id, set_id, protocol_name, status, notifications_sink);
             }
-            Err(error) => {
-                return Err((
-                    "failed to decode the generic data",
-                    format!(
-                        "failed to decode the generic data for the reason: {}",
-                        error
-                    ),
-                ))
+            Err(err) => {
+                error!(target: "network-p2p", "Couldn't decode handshake packet sent by {}: {:?}: {}", peer_id, hex::encode(received_handshake), err);
+                return Err(rep::BAD_MESSAGE);
             }
         }
     }
 
     fn get_generic_data(&self) -> Result<Vec<u8>, anyhow::Error> {
-        match self.chain_info.encode() {
-            Ok(generic) => Ok(generic),
-            Err(error) => Err(anyhow!(format!(
-                "failed to encode chain info for the reason: {}",
-                error
-            ))),
-        }
+        self.status.encode()     
     }
 
     fn update_generic_data(&mut self, peer_info: &[u8]) -> Result<(), anyhow::Error> {
         match ChainInfo::decode(peer_info) {
-            Ok(other_chain_info) => {
-                self.chain_info = other_chain_info;
+            std::result::Result::Ok(other_chain_info) => {
+                self.status.info = other_chain_info;
                 Ok(())
             }
             Err(error) => {
@@ -71,8 +118,8 @@ impl BusinessLayerHandle for Networkp2pHandle {
 
     fn update_status(&mut self, peer_status: &[u8]) -> Result<(), anyhow::Error> {
         match ChainStatus::decode(peer_status) {
-            Ok(status) => {
-                self.chain_info.update_status(status);
+            std::result::Result::Ok(status) => {
+                self.status.info.update_status(status);
                 Ok(())
             }
             Err(error) => {
@@ -83,4 +130,12 @@ impl BusinessLayerHandle for Networkp2pHandle {
             }
         }
     }
+
+    fn build_handshake_msg(&mut self, notif_protocols: Vec<std::borrow::Cow<'static, str>>, rpc_protocols: Vec<std::borrow::Cow<'static, str>>) -> Result<Vec<u8>, anyhow::Error> {
+        self.status.notif_protocols = notif_protocols;
+        self.status.rpc_protocols = rpc_protocols;
+        self.status.encode()    
+    }
+
 }
+

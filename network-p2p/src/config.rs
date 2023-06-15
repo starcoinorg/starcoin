@@ -8,7 +8,7 @@ use libp2p::{
     identity::{ed25519, Keypair},
     multiaddr::Protocol,
 };
-use network_p2p_types::business_layer_handle::BusinessLayerHandle;
+use crate::business_layer_handle::BusinessLayerHandle;
 use prometheus::Registry;
 use std::borrow::Cow;
 use std::fmt;
