@@ -6,14 +6,14 @@ use crate::config::RequestResponseConfig;
 use crate::protocol::{CustomMessageOutcome, rep};
 use crate::protocol::generic_proto::NotificationsSink;
 use crate::service::NetworkStateInfo;
-use crate::{config, Event, NetworkService, NetworkWorker};
+use crate::{config, Event, NetworkService, NetworkWorker, GenericProtoOut};
 use crate::{NetworkConfiguration, Params, ProtocolId};
 use anyhow::{Ok, Result};
 use bcs_ext::BCSCodec;
 use futures::prelude::*;
 use futures::stream::StreamExt;
 use libp2p::PeerId;
-use network_p2p_types::{business_layer_handle::BusinessLayerHandle, MultiaddrWithPeerId};
+use network_p2p_types::MultiaddrWithPeerId;
 use once_cell::sync::Lazy;
 use sc_peerset::{SetId, ReputationChange};
 use serde::{Serialize, Deserialize};
@@ -106,44 +106,56 @@ impl BusinessLayerHandle for TestChainInfoHandle {
 }
 
 struct TestChainInfoHandle {
-    chain_info: ChainInfo,
+    status: Status,
 }
 
 impl TestChainInfoHandle {
-    pub fn new(chain_info: ChainInfo) -> Self {
-        TestChainInfoHandle { chain_info }
+    pub fn new(status: Status) -> Self {
+        TestChainInfoHandle { status }
     }
 }
 
 impl BusinessLayerHandle for TestChainInfoHandle {
-    fn handshake(&self, peer_info: &[u8]) -> Result<(), (&'static str, String)> {
-        let other_chain_info = ChainInfo::decode(peer_info).unwrap();
-        if self.chain_info.genesis_hash() == other_chain_info.genesis_hash() {
-            return std::result::Result::Ok(());
+    fn handshake(&self, peer_id: PeerId, set_id: SetId, protocol_name: Cow<'static, str>, 
+                received_handshake: Vec<u8>, notifications_sink: NotificationsSink) -> Result<CustomMessageOutcome, ReputationChange> {
+        let status = Status::decode(&received_handshake).unwrap();
+        if self.status.chain_info.genesis_hash() == status.chain_info.genesis_hash() {
+            return std::result::Result::Ok(CustomMessageOutcome::NotificationStreamOpened {
+                remote: peer_id,
+                protocol: protocol_name,
+                notifications_sink,
+                generic_data: status.chain_info.encode().unwrap(),
+                notif_protocols: status.notif_protocols,
+                rpc_protocols: status.rpc_protocols,
+            });
         }
-        return Err((
-            "the genesis hash is different",
-            format!(
-                "the genesis hash from other peer is different, self: {}, remote: {}",
-                self.chain_info.genesis_hash(),
-                other_chain_info.genesis_hash()
-            ),
-        ));
-    }
+        return Err(rep::BAD_MESSAGE);
+}
 
     fn get_generic_data(&self) -> Result<Vec<u8>, anyhow::Error> {
-        Ok(self.chain_info.encode().unwrap())
+        Ok(self.status.encode().unwrap())
     }
 
     fn update_generic_data(&mut self, peer_info: &[u8]) -> Result<(), anyhow::Error> {
-        self.chain_info = ChainInfo::decode(peer_info).unwrap();
+        self.status = Status::decode(peer_info).unwrap();
         Ok(())
     }
 
     fn update_status(&mut self, peer_status: &[u8]) -> Result<(), anyhow::Error> {
-        self.chain_info
+        self.status.chain_info
             .update_status(ChainStatus::decode(peer_status).unwrap());
         Ok(())
+    }
+
+    fn build_handshake_msg(&mut self, notif_protocols: Vec<Cow<'static, str>>, rpc_protocols: Vec<Cow<'static, str>>) -> std::result::Result<Vec<u8>, anyhow::Error> {
+        let status= Status {
+            version: 1,
+            min_supported_version: 1,
+            notif_protocols,
+            rpc_protocols,
+            chain_info: ChainInfo::random(),
+        };
+        Ok(status.encode().unwrap())
     }
 }
 
