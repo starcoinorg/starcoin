@@ -5,7 +5,6 @@ use libp2p::futures::channel::oneshot;
 use std::borrow::Cow;
 use std::fmt;
 
-pub mod business_layer_handle;
 pub mod multi_address_with_peer_id;
 pub mod network_state;
 pub mod peer_id;

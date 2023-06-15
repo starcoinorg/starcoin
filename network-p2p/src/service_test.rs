@@ -1,67 +1,107 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::business_layer_handle::BusinessLayerHandle;
 use crate::config::RequestResponseConfig;
-use crate::protocol::message::generic::Status;
+use crate::protocol::{CustomMessageOutcome, rep};
+use crate::protocol::generic_proto::NotificationsSink;
 use crate::service::NetworkStateInfo;
-use crate::{config, Event, NetworkService, NetworkWorker};
+use crate::{config, Event, NetworkService, NetworkWorker, GenericProtoOut};
 use crate::{NetworkConfiguration, Params, ProtocolId};
 use anyhow::{Ok, Result};
 use bcs_ext::BCSCodec;
 use futures::prelude::*;
 use futures::stream::StreamExt;
 use libp2p::PeerId;
-use network_p2p_types::{business_layer_handle::BusinessLayerHandle, MultiaddrWithPeerId};
+use network_p2p_types::MultiaddrWithPeerId;
 use once_cell::sync::Lazy;
-use starcoin_crypto::HashValue;
-use starcoin_types::genesis_config::ChainId;
+use sc_peerset::{SetId, ReputationChange};
+use serde::{Serialize, Deserialize};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use std::borrow::Cow;
 use std::{sync::Arc, time::Duration};
 use Event::NotificationStreamOpened;
 
-static G_TEST_CHAIN_INFO: Lazy<ChainInfo> =
-    Lazy::new(|| ChainInfo::new(ChainId::new(0), HashValue::zero(), ChainStatus::random()));
+static G_TEST_CHAIN_INFO: Lazy<Status> =
+    Lazy::new(|| Status::default());
+
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+struct Status {
+    /// Protocol version.
+    pub version: u32,
+    /// Minimum supported version.
+    pub min_supported_version: u32,
+    /// Tell other peer which notification protocols we support.
+    pub notif_protocols: Vec<Cow<'static, str>>,
+    /// Tell other peer which rpc api we support.
+    pub rpc_protocols: Vec<Cow<'static, str>>,
+    /// the generic data related to the peer
+    pub chain_info: ChainInfo,
+}
+
+impl std::default::Default for Status {
+    fn default() -> Self {
+        Self { 
+            version: Default::default(), 
+            min_supported_version: Default::default(), 
+            notif_protocols: Default::default(), 
+            rpc_protocols: Default::default(), 
+            chain_info: ChainInfo::random() 
+        }
+    }
+}
 
 struct TestChainInfoHandle {
-    chain_info: ChainInfo,
+    status: Status,
 }
 
 impl TestChainInfoHandle {
-    pub fn new(chain_info: ChainInfo) -> Self {
-        TestChainInfoHandle { chain_info }
+    pub fn new(status: Status) -> Self {
+        TestChainInfoHandle { status }
     }
 }
 
 impl BusinessLayerHandle for TestChainInfoHandle {
-    fn handshake(&self, peer_info: &[u8]) -> Result<(), (&'static str, String)> {
-        let other_chain_info = ChainInfo::decode(peer_info).unwrap();
-        if self.chain_info.genesis_hash() == other_chain_info.genesis_hash() {
-            return std::result::Result::Ok(());
+    fn handshake(&self, peer_id: PeerId, set_id: SetId, protocol_name: Cow<'static, str>, 
+                received_handshake: Vec<u8>, notifications_sink: NotificationsSink) -> Result<CustomMessageOutcome, ReputationChange> {
+        let status = Status::decode(&received_handshake).unwrap();
+        if self.status.chain_info.genesis_hash() == status.chain_info.genesis_hash() {
+            return std::result::Result::Ok(CustomMessageOutcome::NotificationStreamOpened {
+                remote: peer_id,
+                protocol: protocol_name,
+                notifications_sink,
+                generic_data: status.chain_info.encode().unwrap(),
+                notif_protocols: status.notif_protocols,
+                rpc_protocols: status.rpc_protocols,
+            });
         }
-        return Err((
-            "the genesis hash is different",
-            format!(
-                "the genesis hash from other peer is different, self: {}, remote: {}",
-                self.chain_info.genesis_hash(),
-                other_chain_info.genesis_hash()
-            ),
-        ));
-    }
+        return Err(rep::BAD_MESSAGE);
+}
 
     fn get_generic_data(&self) -> Result<Vec<u8>, anyhow::Error> {
-        Ok(self.chain_info.encode().unwrap())
+        Ok(self.status.encode().unwrap())
     }
 
     fn update_generic_data(&mut self, peer_info: &[u8]) -> Result<(), anyhow::Error> {
-        self.chain_info = ChainInfo::decode(peer_info).unwrap();
+        self.status = Status::decode(peer_info).unwrap();
         Ok(())
     }
 
     fn update_status(&mut self, peer_status: &[u8]) -> Result<(), anyhow::Error> {
-        self.chain_info
+        self.status.chain_info
             .update_status(ChainStatus::decode(peer_status).unwrap());
         Ok(())
+    }
+
+    fn build_handshake_msg(&mut self, notif_protocols: Vec<Cow<'static, str>>, rpc_protocols: Vec<Cow<'static, str>>) -> std::result::Result<Vec<u8>, anyhow::Error> {
+        let status= Status {
+            version: 1,
+            min_supported_version: 1,
+            notif_protocols,
+            rpc_protocols,
+            chain_info: ChainInfo::random(),
+        };
+        Ok(status.encode().unwrap())
     }
 }
 
@@ -467,11 +507,11 @@ const PROTOCOL_NAME: &str = "/starcoin/notify/1";
 async fn test_handshake_fail() {
     let protocol = ProtocolId::from("starcoin");
     let config1 = generate_config(vec![], vec![PROTOCOL_NAME.into()], vec![]);
-    let chain1 = ChainInfo::random();
+    let status1 = Status::default();
     let worker1 = NetworkWorker::new(Params::new(
         config1.clone(),
         protocol.clone(),
-        TestChainInfoHandle::new(chain1),
+        TestChainInfoHandle::new(status1),
         None,
     ))
     .unwrap();
@@ -485,12 +525,12 @@ async fn test_handshake_fail() {
     };
 
     let config2 = generate_config(vec![seed], vec![PROTOCOL_NAME.into()], vec![]);
-    let chain2 = ChainInfo::random();
+    let status2 = Status::default();
 
     let worker2 = NetworkWorker::new(Params::new(
         config2,
         protocol,
-        TestChainInfoHandle::new(chain2),
+        TestChainInfoHandle::new(status2),
         None,
     ))
     .unwrap();
@@ -569,11 +609,11 @@ async fn test_support_protocol() {
         vec![block_v1.into(), txn_v1.into()],
         vec![get_block_rpc],
     );
-    let chain1 = ChainInfo::random();
+    let status1 = Status::default();
     let worker1 = NetworkWorker::new(Params::new(
         config1.clone(),
         protocol.clone(),
-        TestChainInfoHandle::new(chain1.clone()),
+        TestChainInfoHandle::new(status1.clone()),
         None,
     ))
     .unwrap();
@@ -591,7 +631,7 @@ async fn test_support_protocol() {
     let worker2 = NetworkWorker::new(Params::new(
         config2,
         protocol,
-        TestChainInfoHandle::new(chain1),
+        TestChainInfoHandle::new(status1),
         None,
     ))
     .unwrap();
