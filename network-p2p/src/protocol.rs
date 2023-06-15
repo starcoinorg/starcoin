@@ -13,6 +13,7 @@ use libp2p::swarm::behaviour::FromSwarm;
 use libp2p::swarm::{ConnectionHandler, IntoConnectionHandler};
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
+use log::Level;
 use crate::business_layer_handle::BusinessLayerHandle;
 use sc_peerset::{peersstate::PeersState, SetId};
 use std::borrow::Cow;
@@ -205,18 +206,51 @@ impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
             } => {
                let result = self.business_layer_handle.handshake(peer_id, set_id, 
                                                                                                    self.notif_protocols[usize::from(set_id)].clone(), 
-                                                                                                   received_handshake, 
+                                                                                                   received_handshake.clone(), 
                                                                                                    notifications_sink);
                 match result {
-                    Ok(custom_message) => custom_message,
+                    Ok(custom_message) => {
+                        debug!(target: "network-p2p", "Connected {}", peer_id);
+                        let peer = Peer {
+                            info: received_handshake,
+                        };
+                        self.context_data.peers.insert(peer_id, peer);
+                        debug!(target: "network-p2p", "Connected {}, Set id {:?}", peer_id, set_id);
+                        custom_message
+                    },
                     Err(err) => {
                         error!("business layer handle returned a failure: {:?}", err);
-                        self.bad_handshake_substreams.insert((peer_id, set_id));
-                        self.peerset_handle.report_peer(peer_id, rep::BAD_MESSAGE);
-                        self.behaviour
-                            .disconnect_peer(&peer_id, HARD_CORE_PROTOCOL_ID);
+                        if err == rep::BAD_MESSAGE {
+                            self.bad_handshake_substreams.insert((peer_id, set_id));
+                            self.peerset_handle.report_peer(peer_id, err);
+                            self.behaviour
+                                .disconnect_peer(&peer_id, HARD_CORE_PROTOCOL_ID);
+                        } else if err == rep::GENESIS_MISMATCH {
+                            if self.boot_node_ids.contains(&peer_id) {
+                                error!(
+                                    target: "network-p2p",
+                                    "Bootnode with peer id `{}` is on a different chain",
+                                    peer_id,
+                                );
+                            } else {
+                                log!(
+                                    target: "network-p2p",
+                                    if self.important_peers.contains(&peer_id) { Level::Warn } else { Level::Debug },
+                                    "Peer with id `{}` is on different chain",
+                                    peer_id
+                                );
+                            }
+                            self.peerset_handle.report_peer(peer_id, err);
+                        } else if err == rep::BAD_PROTOCOL {
+                            log!(
+                                target: "network-p2p",
+                                if self.important_peers.contains(&peer_id) { Level::Warn } else { Level::Debug },
+                                "Peer {:?} using unsupported protocol version", peer_id
+                            );
+                            self.peerset_handle.report_peer(peer_id, err);
+                        }
                         CustomMessageOutcome::None
-                    },
+                   },
                 }
             }
             GenericProtoOut::CustomProtocolClosed { peer_id, set_id } => {

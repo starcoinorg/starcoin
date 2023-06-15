@@ -4,12 +4,12 @@ use std::{borrow::Cow, error};
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::{anyhow, Ok, Error};
 use bcs_ext::BCSCodec;
-use log::debug;
+use log::{debug, Level};
 use network_p2p::{PeerId, business_layer_handle::BusinessLayerHandle, protocol::{CustomMessageOutcome, generic_proto::NotificationsSink, rep}};
 use sc_peerset::{SetId, ReputationChange};
 use serde::{Serialize, Deserialize};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
-use log::error;
+use log::{log, error};
 
 
 /// Current protocol version.
@@ -51,16 +51,28 @@ impl Networkp2pHandle {
 }
 
 impl Networkp2pHandle {
-    fn inner_handshale(&self,  who: PeerId,
+    fn inner_handshake(&self,  who: PeerId,
         set_id: SetId,
         protocol_name: Cow<'static, str>,
         status: Status,
         notifications_sink: NotificationsSink,) -> Result<CustomMessageOutcome, ReputationChange> {
         debug!(target: "network-p2p", "New peer {} {:?}", who, status);
         if status.info.genesis_hash() != self.status.info.genesis_hash() {
+            error!(
+                target: "network-p2p",
+                "Bootnode with peer id `{}` is on a different chain (our genesis: {} theirs: {})",
+                who,
+                self.status.info.genesis_hash(),
+                status.info.genesis_hash(),
+            );
             return Err(rep::GENESIS_MISMATCH);
         }
         if status.version < MIN_VERSION || CURRENT_VERSION < status.min_supported_version {
+            log!(
+                target: "network-p2p",
+                Level::Warn,
+                "Peer {:?} using unsupported protocol version {}", who, status.version
+            );
             return Err(rep::BAD_PROTOCOL);
         }
         debug!(target: "network-p2p", "Connected {}", who);
@@ -88,7 +100,7 @@ impl BusinessLayerHandle for Networkp2pHandle {
                 received_handshake: Vec<u8>, notifications_sink: NotificationsSink) -> Result<CustomMessageOutcome, ReputationChange> {
         match Status::decode(&received_handshake[..]) {
             std::result::Result::Ok(status) => {
-                return self.inner_handshale(peer_id, set_id, protocol_name, status, notifications_sink);
+                return self.inner_handshake(peer_id, set_id, protocol_name, status, notifications_sink);
             }
             Err(err) => {
                 error!(target: "network-p2p", "Couldn't decode handshake packet sent by {}: {:?}: {}", peer_id, hex::encode(received_handshake), err);
