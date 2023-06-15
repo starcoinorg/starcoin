@@ -1,12 +1,9 @@
 use clap::Parser;
 use move_binary_format::errors::Location;
 use starcoin_crypto::HashValue;
-use starcoin_types::block::Block;
-use starcoin_types::transaction::TransactionPayload;
-use starcoin_vm_types::errors::VMError;
-use starcoin_vm_types::file_format::CompiledModule;
-use std::fmt::Debug;
-use std::path::PathBuf;
+use starcoin_types::{block::Block, transaction::TransactionPayload};
+use starcoin_vm_types::{errors::VMError, file_format::CompiledModule};
+use std::{fmt::Debug, path::PathBuf};
 //use starcoin_accumulator::node::AccumulatorStoreType::Block;
 use crate::cmd_batch_execution::{BatchCmdExec, CmdBatchExecution};
 

@@ -1,10 +1,12 @@
 use anyhow::bail;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-use std::path::PathBuf;
-use std::time::SystemTime;
+use std::{
+    fs::File,
+    io::{BufRead, BufReader},
+    path::PathBuf,
+    time::SystemTime,
+};
 
 pub struct CmdBatchExecution {
     name: String,

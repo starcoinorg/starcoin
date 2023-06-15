@@ -1,22 +1,22 @@
 use clap::Parser;
-use serde::ser::SerializeMap;
-use serde::{Serialize, Serializer};
+use serde::{ser::SerializeMap, Serialize, Serializer};
 use starcoin_crypto::HashValue;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
 use starcoin_state_tree::StateTree;
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::db_storage::DBStorage;
-use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::{BlockStore, Storage, StorageVersion};
-use starcoin_types::access_path::DataType;
-use starcoin_types::account_state::AccountState;
-use starcoin_types::language_storage::{StructTag, TypeTag};
-use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::parser::parse_type_tag;
-use std::convert::TryInto;
-use std::fmt::Debug;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use starcoin_storage::{
+    db_storage::DBStorage, storage::StorageInstance, BlockStore, Storage, StorageVersion,
+};
+use starcoin_types::{
+    access_path::DataType, account_state::AccountState, language_storage::StructTag,
+};
+use starcoin_vm_types::{account_address::AccountAddress, parser::parse_struct_tag};
+use std::{
+    convert::TryInto,
+    fmt::Debug,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 #[derive(Serialize, Debug)]
 pub struct AccountData<R: Serialize> {
@@ -145,15 +145,6 @@ impl serde::Serialize for MoveValue {
             AnnotatedMoveValue::U16(v) => serializer.serialize_u16(*v),
             AnnotatedMoveValue::U32(v) => serializer.serialize_u32(*v),
             AnnotatedMoveValue::U256(v) => v.serialize(serializer),
-        }
-    }
-}
-
-fn parse_struct_tag(input: &str) -> anyhow::Result<StructTag> {
-    match parse_type_tag(input)? {
-        TypeTag::Struct(s) => Ok(*s),
-        _ => {
-            anyhow::bail!("invalid struct tag")
         }
     }
 }

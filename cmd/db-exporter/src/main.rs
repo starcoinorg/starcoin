@@ -2,39 +2,33 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, format_err, Result};
-use bcs_ext::BCSCodec;
-use bcs_ext::Sample;
-use clap::IntoApp;
-use clap::Parser;
+use bcs_ext::{BCSCodec, Sample};
+use clap::{IntoApp, Parser};
 use csv::Writer;
-use db_exporter::verify_header::{verify_header_via_export_file, VerifyHeaderOptions};
-use db_exporter::verify_module::{verify_modules_via_export_file, VerifyModuleOptions};
-use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
-use serde::ser::SerializeMap;
-use serde::{Serialize, Serializer};
-use starcoin_account_api::AccountInfo;
-use starcoin_accumulator::node::AccumulatorStoreType;
-use starcoin_accumulator::{Accumulator, MerkleAccumulator};
-use starcoin_chain::verifier::{
-    BasicVerifier, ConsensusVerifier, FullVerifier, NoneVerifier, Verifier,
+use db_exporter::{
+    verify_header::{verify_header_via_export_file, VerifyHeaderOptions},
+    verify_module::{verify_modules_via_export_file, VerifyModuleOptions},
 };
-use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use serde::{ser::SerializeMap, Serialize, Serializer};
+use starcoin_account_api::AccountInfo;
+use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
+use starcoin_chain::{
+    verifier::{BasicVerifier, ConsensusVerifier, FullVerifier, NoneVerifier, Verifier},
+    BlockChain, ChainReader, ChainWriter,
+};
 use starcoin_config::{BuiltinNetworkID, ChainNetwork, RocksdbConfig};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
-use starcoin_statedb::ChainStateDB;
-use starcoin_statedb::ChainStateReader;
-use starcoin_statedb::ChainStateWriter;
-use starcoin_storage::block::FailedBlock;
-use starcoin_storage::block_info::BlockInfoStore;
-use starcoin_storage::cache_storage::CacheStorage;
-use starcoin_storage::db_storage::DBStorage;
-use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::storage::ValueCodec;
-use starcoin_storage::storage::{ColumnFamilyName, InnerStore};
+use starcoin_statedb::{ChainStateDB, ChainStateReader, ChainStateWriter};
 use starcoin_storage::{
+    block::FailedBlock,
+    block_info::BlockInfoStore,
+    cache_storage::CacheStorage,
+    db_storage::DBStorage,
+    storage::{ColumnFamilyName, InnerStore, StorageInstance, ValueCodec},
     BlockStore, Storage, StorageVersion, Store, BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
     BLOCK_HEADER_PREFIX_NAME, BLOCK_INFO_PREFIX_NAME, BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
     STATE_NODE_PREFIX_NAME, STATE_NODE_PREFIX_NAME_PREV, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
@@ -42,34 +36,37 @@ use starcoin_storage::{
 use starcoin_transaction_builder::{
     build_signed_empty_txn, create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT,
 };
-use starcoin_types::account::peer_to_peer_txn;
-use starcoin_types::account::Account;
-use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
-use starcoin_types::language_storage::{StructTag, TypeTag};
-use starcoin_types::startup_info::{SnapshotRange, StartupInfo};
-use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
-use starcoin_types::transaction::Transaction;
-use starcoin_vm_types::account_config::stc_type_tag;
-use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use starcoin_vm_types::identifier::Identifier;
-use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::parser::parse_type_tag;
-use starcoin_vm_types::transaction::{ScriptFunction, SignedUserTransaction, TransactionPayload};
-use std::collections::HashMap;
-use std::fmt::Debug;
-use std::fmt::Formatter;
-use std::fs::File;
-use std::fs::OpenOptions;
-use std::io::{BufRead, BufReader, Write};
-use std::path::Path;
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
-use std::time::SystemTime;
-use std::{thread, thread::JoinHandle};
+use starcoin_types::{
+    account::{peer_to_peer_txn, Account, DEFAULT_EXPIRATION_TIME},
+    account_address::AccountAddress,
+    block::{Block, BlockHeader, BlockInfo, BlockNumber},
+    startup_info::{SnapshotRange, StartupInfo},
+    state_set::{AccountStateSet, ChainStateSet},
+    transaction::Transaction,
+};
+use starcoin_vm_types::{
+    account_config::stc_type_tag,
+    genesis_config::ConsensusStrategy,
+    identifier::Identifier,
+    language_storage::{ModuleId, StructTag},
+    parser::parse_struct_tag,
+    transaction::{ScriptFunction, SignedUserTransaction, TransactionPayload},
+};
+use std::{
+    collections::HashMap,
+    fmt::{Debug, Formatter},
+    fs::{File, OpenOptions},
+    io::{BufRead, BufReader, Write},
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
+    thread,
+    thread::JoinHandle,
+    time::SystemTime,
+};
 
 const BLOCK_GAP: u64 = 1000;
 const BACK_SIZE: u64 = 10000;
@@ -1065,6 +1062,18 @@ pub fn execute_transaction_with_fixed_account(
     Ok(())
 }
 
+fn handle_block_cf<T>(file: &mut File, blocks: Vec<Option<T>>, ids: &[HashValue]) -> Result<()>
+where
+    T: serde::Serialize,
+{
+    for (i, block) in blocks.into_iter().enumerate() {
+        let block =
+            block.ok_or_else(|| format_err!("get block by hash {} error", ids.get(i).unwrap()))?;
+        writeln!(file, "{}", serde_json::to_string(&block)?)?;
+    }
+    Ok(())
+}
+
 fn export_column(
     storage: Arc<Storage>,
     accumulator: MerkleAccumulator,
@@ -1104,23 +1113,13 @@ fn export_column(
                 // will cache ids
                 let ids = accumulator.get_leaves(start_index + start_num, false, max_size)?;
                 let blocks = storage.get_blocks(ids.clone())?;
-                for (i, block) in blocks.into_iter().enumerate() {
-                    let block = block.ok_or_else(|| {
-                        format_err!("get block by hash {} error", ids.get(i).unwrap())
-                    })?;
-                    writeln!(file, "{}", serde_json::to_string(&block)?)?;
-                }
+                handle_block_cf(&mut file, blocks, &ids)?;
             }
             BLOCK_INFO_PREFIX_NAME => {
                 // will cache ids
                 let ids = accumulator.get_leaves(start_index + start_num, false, max_size)?;
                 let block_infos = storage.get_block_infos(ids.clone())?;
-                for (i, block_info) in block_infos.into_iter().enumerate() {
-                    let block_info = block_info.ok_or_else(|| {
-                        format_err!("get block by hash {} error", ids.get(i).unwrap())
-                    })?;
-                    writeln!(file, "{}", serde_json::to_string(&block_info)?)?;
-                }
+                handle_block_cf(&mut file, block_infos, &ids)?;
             }
             _ => {
                 println!("{} not process", column);
@@ -1182,6 +1181,7 @@ pub fn export_snapshot(
     } else {
         block_num - SNAP_GAP
     };
+    // For debug purpose
     if let Some(special_num) = special_block_num {
         if special_num <= cur_num {
             cur_num = special_num;
@@ -1829,14 +1829,6 @@ impl serde::Serialize for MoveValue {
             AnnotatedMoveValue::Bytes(v) => hex::encode(v).serialize(serializer),
             AnnotatedMoveValue::Struct(v) => MoveStruct(v.clone()).serialize(serializer),
             _ => todo!("XXX FXIME YSG"),
-        }
-    }
-}
-fn parse_struct_tag(input: &str) -> anyhow::Result<StructTag> {
-    match parse_type_tag(input)? {
-        TypeTag::Struct(s) => Ok(*s),
-        _ => {
-            anyhow::bail!("invalid struct tag")
         }
     }
 }
