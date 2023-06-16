@@ -933,16 +933,20 @@ mod test {
     }
 }
 
-
 impl BusinessLayerHandle for NetworkActorService {
     fn handshake(&self, peer_info: &[u8]) -> Result<(), (&'static str, String)> {
         let other_chain_info = ChainInfo::decode(peer_info).unwrap();
         if self.chain_info.genesis_hash() == other_chain_info.genesis_hash() {
             return std::result::Result::Ok(());
         }
-        return Err(("the genesis hash is different", format!("the genesis hash from other peer is different, self: {}, remote: {}", 
-                            self.chain_info.genesis_hash(), 
-                            other_chain_info.genesis_hash())));
+        return Err((
+            "the genesis hash is different",
+            format!(
+                "the genesis hash from other peer is different, self: {}, remote: {}",
+                self.chain_info.genesis_hash(),
+                other_chain_info.genesis_hash()
+            ),
+        ));
     }
 
     fn get_generic_data(&self) -> Result<Vec<u8>, anyhow::Error> {
@@ -955,8 +959,8 @@ impl BusinessLayerHandle for NetworkActorService {
     }
 
     fn update_status(mut self: Pin<&mut Self>, peer_status: &[u8]) -> Result<(), anyhow::Error> {
-        self.chain_info.update_status(ChainStatus::decode(peer_status).unwrap());
+        self.chain_info
+            .update_status(ChainStatus::decode(peer_status).unwrap());
         Ok(())
     }
-
 }

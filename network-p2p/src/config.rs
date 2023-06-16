@@ -3,12 +3,12 @@
 
 //! Libp2p network configuration.
 
+use crate::business_layer_handle::BusinessLayerHandle;
 use libp2p::{
     core::Multiaddr,
     identity::{ed25519, Keypair},
     multiaddr::Protocol,
 };
-use crate::business_layer_handle::BusinessLayerHandle;
 use prometheus::Registry;
 use std::borrow::Cow;
 use std::fmt;

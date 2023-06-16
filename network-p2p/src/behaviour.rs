@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::business_layer_handle::BusinessLayerHandle;
 use crate::discovery::DiscoveryConfig;
 use crate::protocol::generic_proto::NotificationsSink;
 use crate::protocol::{CustomMessageOutcome, Protocol};
@@ -28,7 +29,6 @@ use libp2p::core::{Multiaddr, PeerId, PublicKey};
 use libp2p::identify::Info;
 use libp2p::kad::record;
 use libp2p::swarm::NetworkBehaviour;
-use crate::business_layer_handle::BusinessLayerHandle;
 use sc_peerset::ReputationChange;
 use std::borrow::Cow;
 use std::collections::HashSet;

@@ -3,8 +3,8 @@
 
 use crate::business_layer_handle::BusinessLayerHandle;
 use crate::config::RequestResponseConfig;
-use crate::protocol::{CustomMessageOutcome, rep};
 use crate::protocol::generic_proto::NotificationsSink;
+use crate::protocol::{rep, CustomMessageOutcome};
 use crate::service::NetworkStateInfo;
 use crate::{config, Event, NetworkService, NetworkWorker};
 use crate::{NetworkConfiguration, Params, ProtocolId};
@@ -15,15 +15,14 @@ use futures::stream::StreamExt;
 use libp2p::PeerId;
 use network_p2p_types::MultiaddrWithPeerId;
 use once_cell::sync::Lazy;
-use sc_peerset::{SetId, ReputationChange};
-use serde::{Serialize, Deserialize};
+use sc_peerset::{ReputationChange, SetId};
+use serde::{Deserialize, Serialize};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use std::borrow::Cow;
 use std::{sync::Arc, time::Duration};
 use Event::NotificationStreamOpened;
 
-static G_TEST_CHAIN_INFO: Lazy<Status> =
-    Lazy::new(|| Status::default());
+static G_TEST_CHAIN_INFO: Lazy<Status> = Lazy::new(|| Status::default());
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 struct Status {
@@ -41,12 +40,12 @@ struct Status {
 
 impl std::default::Default for Status {
     fn default() -> Self {
-        Self { 
-            version: Default::default(), 
-            min_supported_version: Default::default(), 
-            notif_protocols: Default::default(), 
-            rpc_protocols: Default::default(), 
-            chain_info: ChainInfo::random() 
+        Self {
+            version: Default::default(),
+            min_supported_version: Default::default(),
+            notif_protocols: Default::default(),
+            rpc_protocols: Default::default(),
+            chain_info: ChainInfo::random(),
         }
     }
 }
@@ -62,8 +61,14 @@ impl TestChainInfoHandle {
 }
 
 impl BusinessLayerHandle for TestChainInfoHandle {
-    fn handshake(&self, peer_id: PeerId, set_id: SetId, protocol_name: Cow<'static, str>, 
-                received_handshake: Vec<u8>, notifications_sink: NotificationsSink) -> Result<CustomMessageOutcome, ReputationChange> {
+    fn handshake(
+        &self,
+        peer_id: PeerId,
+        set_id: SetId,
+        protocol_name: Cow<'static, str>,
+        received_handshake: Vec<u8>,
+        notifications_sink: NotificationsSink,
+    ) -> Result<CustomMessageOutcome, ReputationChange> {
         let status = Status::decode(&received_handshake).unwrap();
         if self.status.chain_info.genesis_hash() == status.chain_info.genesis_hash() {
             return std::result::Result::Ok(CustomMessageOutcome::NotificationStreamOpened {
@@ -76,7 +81,7 @@ impl BusinessLayerHandle for TestChainInfoHandle {
             });
         }
         return Err(rep::BAD_MESSAGE);
-}
+    }
 
     fn get_generic_data(&self) -> Result<Vec<u8>, anyhow::Error> {
         Ok(self.status.encode().unwrap())
@@ -88,13 +93,18 @@ impl BusinessLayerHandle for TestChainInfoHandle {
     }
 
     fn update_status(&mut self, peer_status: &[u8]) -> Result<(), anyhow::Error> {
-        self.status.chain_info
+        self.status
+            .chain_info
             .update_status(ChainStatus::decode(peer_status).unwrap());
         Ok(())
     }
 
-    fn build_handshake_msg(&mut self, notif_protocols: Vec<Cow<'static, str>>, rpc_protocols: Vec<Cow<'static, str>>) -> std::result::Result<Vec<u8>, anyhow::Error> {
-        let status= Status {
+    fn build_handshake_msg(
+        &mut self,
+        notif_protocols: Vec<Cow<'static, str>>,
+        rpc_protocols: Vec<Cow<'static, str>>,
+    ) -> std::result::Result<Vec<u8>, anyhow::Error> {
+        let status = Status {
             version: 1,
             min_supported_version: 1,
             notif_protocols,
@@ -116,8 +126,14 @@ impl TestChainInfoHandle {
 }
 
 impl BusinessLayerHandle for TestChainInfoHandle {
-    fn handshake(&self, peer_id: PeerId, set_id: SetId, protocol_name: Cow<'static, str>, 
-                received_handshake: Vec<u8>, notifications_sink: NotificationsSink) -> Result<CustomMessageOutcome, ReputationChange> {
+    fn handshake(
+        &self,
+        peer_id: PeerId,
+        set_id: SetId,
+        protocol_name: Cow<'static, str>,
+        received_handshake: Vec<u8>,
+        notifications_sink: NotificationsSink,
+    ) -> Result<CustomMessageOutcome, ReputationChange> {
         let status = Status::decode(&received_handshake).unwrap();
         if self.status.chain_info.genesis_hash() == status.chain_info.genesis_hash() {
             return std::result::Result::Ok(CustomMessageOutcome::NotificationStreamOpened {
@@ -130,7 +146,7 @@ impl BusinessLayerHandle for TestChainInfoHandle {
             });
         }
         return Err(rep::BAD_MESSAGE);
-}
+    }
 
     fn get_generic_data(&self) -> Result<Vec<u8>, anyhow::Error> {
         Ok(self.status.encode().unwrap())
@@ -142,13 +158,18 @@ impl BusinessLayerHandle for TestChainInfoHandle {
     }
 
     fn update_status(&mut self, peer_status: &[u8]) -> Result<(), anyhow::Error> {
-        self.status.chain_info
+        self.status
+            .chain_info
             .update_status(ChainStatus::decode(peer_status).unwrap());
         Ok(())
     }
 
-    fn build_handshake_msg(&mut self, notif_protocols: Vec<Cow<'static, str>>, rpc_protocols: Vec<Cow<'static, str>>) -> std::result::Result<Vec<u8>, anyhow::Error> {
-        let status= Status {
+    fn build_handshake_msg(
+        &mut self,
+        notif_protocols: Vec<Cow<'static, str>>,
+        rpc_protocols: Vec<Cow<'static, str>>,
+    ) -> std::result::Result<Vec<u8>, anyhow::Error> {
+        let status = Status {
             version: 1,
             min_supported_version: 1,
             notif_protocols,

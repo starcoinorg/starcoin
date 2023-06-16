@@ -18,8 +18,8 @@ pub use libp2p::{
 
 //TODO change to private
 pub mod behaviour;
-pub mod config;
 pub mod business_layer_handle;
+pub mod config;
 //TODO change to private
 #[allow(deprecated)]
 pub mod discovery;

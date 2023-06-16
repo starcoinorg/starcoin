@@ -33,6 +33,7 @@ use std::sync::{
 use std::task::Poll;
 use std::{borrow::Cow, collections::HashSet, io, iter};
 
+use crate::business_layer_handle::BusinessLayerHandle;
 use crate::config::{Params, TransportConfig};
 use crate::discovery::DiscoveryConfig;
 use crate::errors::Error;
@@ -69,7 +70,6 @@ use libp2p::{
     PeerId,
 };
 use log::{error, info, trace, warn};
-use crate::business_layer_handle::BusinessLayerHandle;
 use network_p2p_types::IfDisconnected;
 use parking_lot::Mutex;
 use sc_peerset::{peersstate, PeersetHandle, ReputationChange};

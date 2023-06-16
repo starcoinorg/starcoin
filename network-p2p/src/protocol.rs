@@ -4,6 +4,7 @@ pub mod message;
 
 use crate::protocol::generic_proto::{GenericProto, GenericProtoOut, NotificationsSink};
 // use crate::protocol::message::generic::Status;
+use crate::business_layer_handle::BusinessLayerHandle;
 use crate::utils::interval;
 use crate::{errors, DiscoveryNetBehaviour, Multiaddr};
 use bytes::Bytes;
@@ -14,7 +15,6 @@ use libp2p::swarm::{ConnectionHandler, IntoConnectionHandler};
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
 use log::Level;
-use crate::business_layer_handle::BusinessLayerHandle;
 use sc_peerset::{peersstate::PeersState, SetId};
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
@@ -203,10 +203,13 @@ impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
                 received_handshake,
                 notifications_sink,
             } => {
-               let result = self.business_layer_handle.handshake(peer_id, set_id, 
-                                                                                                   self.notif_protocols[usize::from(set_id)].clone(), 
-                                                                                                   received_handshake.clone(), 
-                                                                                                   notifications_sink);
+                let result = self.business_layer_handle.handshake(
+                    peer_id,
+                    set_id,
+                    self.notif_protocols[usize::from(set_id)].clone(),
+                    received_handshake.clone(),
+                    notifications_sink,
+                );
                 match result {
                     Ok(custom_message) => {
                         debug!(target: "network-p2p", "Connected {}", peer_id);
@@ -216,7 +219,7 @@ impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
                         self.context_data.peers.insert(peer_id, peer);
                         debug!(target: "network-p2p", "Connected {}, Set id {:?}", peer_id, set_id);
                         custom_message
-                    },
+                    }
                     Err(err) => {
                         error!("business layer handle returned a failure: {:?}", err);
                         if err == rep::BAD_MESSAGE {
@@ -249,7 +252,7 @@ impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
                             self.peerset_handle.report_peer(peer_id, err);
                         }
                         CustomMessageOutcome::None
-                   },
+                    }
                 }
             }
             GenericProtoOut::CustomProtocolClosed { peer_id, set_id } => {
@@ -335,8 +338,10 @@ impl<T: 'static + BusinessLayerHandle + Send> Protocol<T> {
 
         let (peerset, peerset_handle) = sc_peerset::Peerset::from_config(peerset_config);
         let behaviour = {
-            let handshake_message = business_layer_handle.build_handshake_msg(notif_protocols.to_vec(), rpc_protocols.to_vec()).expect("Status encode should success."); 
-	    let notif_protocol_wth_handshake = notif_protocols
+            let handshake_message = business_layer_handle
+                .build_handshake_msg(notif_protocols.to_vec(), rpc_protocols.to_vec())
+                .expect("Status encode should success.");
+            let notif_protocol_wth_handshake = notif_protocols
                 .clone()
                 .into_iter()
                 .map(|protocol| (protocol, handshake_message.clone(), u64::max_value()));
@@ -471,7 +476,10 @@ impl<T: 'static + BusinessLayerHandle + Send> Protocol<T> {
     }
 
     fn update_handshake(&mut self) -> anyhow::Result<()> {
-       let handshake_msg = self.business_layer_handle.build_handshake_msg(self.notif_protocols.to_vec(), self.rpc_protocols.to_vec()).expect("Status encode should success."); 
+        let handshake_msg = self
+            .business_layer_handle
+            .build_handshake_msg(self.notif_protocols.to_vec(), self.rpc_protocols.to_vec())
+            .expect("Status encode should success.");
         for (set_id, _) in self.notif_protocols.iter().enumerate() {
             self.behaviour
                 .set_notif_protocol_handshake(SetId::from(set_id), handshake_msg.clone());
