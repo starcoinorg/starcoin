@@ -5,7 +5,7 @@ use crate::{
     gen_client::NetworkRpcClient, GetAccountState, GetStateWithProof, GetStateWithTableItemProof,
 };
 use anyhow::{anyhow, Result};
-use network_types::peer_info::PeerId;
+use network_p2p_types::peer_id::PeerId;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::{ChainStateReader, StateView, StateWithProof, StateWithTableItemProof};
 use starcoin_state_tree::AccountStateSetIterator;

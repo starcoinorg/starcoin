@@ -2,154 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
-use network_p2p_types::identity::PublicKey;
 pub use network_p2p_types::multiaddr::Multiaddr;
-use network_p2p_types::multihash::Error;
 pub use network_p2p_types::multihash::Multihash;
-use schemars::{self, JsonSchema};
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use starcoin_crypto::ed25519::Ed25519PublicKey;
+use network_p2p_types::peer_id::PeerId;
+use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::U256;
 use std::borrow::Cow;
-use std::convert::TryFrom;
-use std::fmt;
-use std::str::FromStr;
-
-#[derive(Eq, PartialEq, Hash, Clone, Debug, JsonSchema)]
-pub struct PeerId(#[schemars(with = "String")] network_p2p_types::PeerId);
-
-impl PeerId {
-    pub fn new(peer_id: network_p2p_types::PeerId) -> Self {
-        Self(peer_id)
-    }
-
-    /// Builds a `PeerId` from a public key.
-    pub fn from_public_key(key: PublicKey) -> PeerId {
-        Self::new(network_p2p_types::PeerId::from_public_key(&key))
-    }
-
-    pub fn from_ed25519_public_key(key: Ed25519PublicKey) -> PeerId {
-        let pub_key =
-            network_p2p_types::identity::ed25519::PublicKey::decode(key.to_bytes().as_ref())
-                .expect("Decode pubkey must success.");
-        Self::from_public_key(PublicKey::Ed25519(pub_key))
-    }
-
-    /// Checks whether `data` is a valid `PeerId`. If so, returns the `PeerId`. If not, returns
-    /// back the data as an error.
-    pub fn from_bytes(data: Vec<u8>) -> Result<PeerId, Error> {
-        Ok(Self::new(network_p2p_types::PeerId::from_bytes(&data)?))
-    }
-
-    /// Turns a `Multihash` into a `PeerId`. If the multihash doesn't use the correct algorithm,
-    /// returns back the data as an error.
-    pub fn from_multihash(data: Multihash) -> Result<PeerId, Multihash> {
-        Ok(Self::new(network_p2p_types::PeerId::from_multihash(data)?))
-    }
-
-    pub fn into_bytes(self) -> Vec<u8> {
-        self.0.to_bytes()
-    }
-
-    /// Returns a base-58 encoded string of this `PeerId`.
-    pub fn to_base58(&self) -> String {
-        self.0.to_base58()
-    }
-
-    pub fn origin(&self) -> &network_p2p_types::PeerId {
-        &self.0
-    }
-
-    /// Checks whether the public key passed as parameter matches the public key of this `PeerId`.
-    ///
-    /// Returns `None` if this `PeerId`s hash algorithm is not supported when encoding the
-    /// given public key, otherwise `Some` boolean as the result of an equality check.
-    pub fn is_public_key(&self, public_key: &PublicKey) -> Option<bool> {
-        self.0.is_public_key(public_key)
-    }
-
-    pub fn random() -> Self {
-        Self(network_p2p_types::PeerId::random())
-    }
-}
-
-#[allow(clippy::from_over_into)]
-impl Into<network_p2p_types::PeerId> for PeerId {
-    fn into(self) -> network_p2p_types::PeerId {
-        self.0
-    }
-}
-
-impl From<network_p2p_types::PeerId> for PeerId {
-    fn from(peer_id: network_p2p_types::PeerId) -> Self {
-        Self(peer_id)
-    }
-}
-
-impl TryFrom<Multihash> for PeerId {
-    type Error = Multihash;
-
-    fn try_from(value: Multihash) -> Result<Self, Self::Error> {
-        PeerId::from_multihash(value)
-    }
-}
-
-impl From<PeerId> for Multihash {
-    fn from(peer_id: PeerId) -> Self {
-        peer_id.0.into()
-    }
-}
-
-impl FromStr for PeerId {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(network_p2p_types::PeerId::from_str(s)?))
-    }
-}
-
-impl<'de> Deserialize<'de> for PeerId {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        if deserializer.is_human_readable() {
-            //note: if use &str at here, json rpc raise a error: invalid type: string "xx", expected a borrowed string
-            let s = <String>::deserialize(deserializer)?;
-            let peer_id =
-                network_p2p_types::PeerId::from_str(s.as_str()).map_err(D::Error::custom)?;
-            Ok(PeerId(peer_id))
-        } else {
-            let b = <Vec<u8>>::deserialize(deserializer)?;
-            let peer_id = network_p2p_types::PeerId::from_bytes(&b)
-                .map_err(|e| D::Error::custom(format_args!("parse PeerId fail:{:?}", e)))?;
-            Ok(PeerId(peer_id))
-        }
-    }
-}
-
-impl Serialize for PeerId {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        if serializer.is_human_readable() {
-            self.0.to_base58().serialize(serializer)
-        } else {
-            self.0.to_bytes().serialize(serializer)
-        }
-    }
-}
-
-impl fmt::Display for PeerId {
-    fn fmt(&self, f: &mut fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct PeerInfo {
