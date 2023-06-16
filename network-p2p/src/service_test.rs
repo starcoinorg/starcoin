@@ -19,6 +19,7 @@ use sc_peerset::{SetId, ReputationChange};
 use serde::{Serialize, Deserialize};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use std::borrow::Cow;
+use std::pin::Pin;
 use std::{sync::Arc, time::Duration};
 use Event::NotificationStreamOpened;
 
@@ -104,6 +105,44 @@ impl BusinessLayerHandle for TestChainInfoHandle {
         Ok(status.encode().unwrap())
     }
 }
+
+struct TestChainInfoHandle {
+    chain_info: ChainInfo
+}
+
+impl TestChainInfoHandle {
+    pub fn new(chain_info: ChainInfo) -> Self {
+        TestChainInfoHandle { 
+            chain_info 
+        }
+    }
+}
+
+impl BusinessLayerHandle for TestChainInfoHandle {
+    fn handshake(&self, peer_info: &[u8]) -> Result<(), (&'static str, String)> {
+        let other_chain_info = ChainInfo::decode(peer_info).unwrap();
+        if self.chain_info.genesis_hash() == other_chain_info.genesis_hash() {
+            return std::result::Result::Ok(());
+        }
+        return Err(("the genesis hash is different", format!("the genesis hash from other peer is different, self: {}, remote: {}", 
+                            self.chain_info.genesis_hash(), 
+                            other_chain_info.genesis_hash())));
+    }
+
+    fn get_generic_data(&self) -> Result<Vec<u8>, anyhow::Error> {
+        Ok(self.chain_info.encode().unwrap())
+    }
+
+    fn update_generic_data(&mut self, peer_info: &[u8]) -> Result<(), anyhow::Error> {
+        self.chain_info = ChainInfo::decode(peer_info).unwrap();
+        Ok(())
+    }
+
+    fn update_status(mut self: Pin<&mut Self>, peer_status: &[u8]) -> Result<(), anyhow::Error> {
+        self.chain_info.update_status(ChainStatus::decode(peer_status).unwrap());
+        Ok(())
+    }
+} 
 
 /// Builds a full node to be used for testing. Returns the node service and its associated events
 /// stream.

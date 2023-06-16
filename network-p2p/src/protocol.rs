@@ -45,7 +45,7 @@ pub mod rep {
     /// We received a message that failed to decode.
     pub const BAD_MESSAGE: Rep = Rep::new(-(1 << 12), "Bad message");
     /// Peer has different genesis.
-    pub const GENESIS_MISMATCH: Rep = Rep::new_fatal("Genesis mismatch");
+    // pub const GENESIS_MISMATCH: Rep = Rep::new_fatal("Genesis mismatch");
     /// Peer is on unsupported protocol version.
     pub const BAD_PROTOCOL: Rep = Rep::new_fatal("Unsupported protocol");
     /// Failed to encode message.
@@ -337,8 +337,7 @@ impl<T: 'static + BusinessLayerHandle + Send> Protocol<T> {
         let (peerset, peerset_handle) = sc_peerset::Peerset::from_config(peerset_config);
         let behaviour = {
             let handshake_message = business_layer_handle.build_handshake_msg(notif_protocols.to_vec(), rpc_protocols.to_vec()).expect("Status encode should success."); 
-
-            let notif_protocol_wth_handshake = notif_protocols
+	    let notif_protocol_wth_handshake = notif_protocols
                 .clone()
                 .into_iter()
                 .map(|protocol| (protocol, handshake_message.clone(), u64::max_value()));

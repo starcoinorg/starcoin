@@ -20,6 +20,7 @@ use network_api::messages::{
 use network_api::{
     BroadcastProtocolFilter, NetworkActor, PeerId, PeerInfo, PeerMessageHandler, RpcInfo,
 };
+use network_p2p::protocol::BusinessLayerHandle;
 use network_p2p::{Event, NetworkWorker};
 use rand::prelude::SliceRandom;
 use starcoin_config::NodeConfig;
@@ -38,6 +39,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::ops::RangeInclusive;
 use std::sync::Arc;
+use crate::network_business_handle::NetworkBusinessHandle;
 
 const BARNARD_HARD_FORK_PEER_VERSION_STRING_PREFIX: &str = "barnard_rollback_block_fix";
 const BARNARD_HARD_FORK_VERSION: [i32; 3] = [1, 12, 9];
@@ -49,6 +51,8 @@ pub struct NetworkActorService {
     inner: Inner,
 
     network_worker_handle: Option<AbortHandle>,
+
+    network_business_handle: Option<NetworkBusinessHandle>
 }
 
 impl NetworkActor for NetworkActorService {}
@@ -63,6 +67,7 @@ impl NetworkActorService {
     where
         H: PeerMessageHandler + 'static,
     {
+        let business_handle = NetworkBusinessHandle::new(chain_info);
         let (self_info, worker) = build_network_worker(
             &config.network,
             chain_info,
@@ -77,6 +82,7 @@ impl NetworkActorService {
             worker: Some(worker),
             inner,
             network_worker_handle: None,
+            chain_info,
         })
     }
 
@@ -441,6 +447,7 @@ pub(crate) struct Inner {
     peers: HashMap<PeerId, Peer>,
     peer_message_handler: Arc<dyn PeerMessageHandler>,
     metrics: Option<NetworkMetrics>,
+    chain_info: ChainInfo,
 }
 
 impl BroadcastProtocolFilter for Inner {
@@ -931,4 +938,32 @@ mod test {
         let v5 = String::from("starcoin/1.13.1 (build:v1.13.1) (kele01)");
         assert!(greater_barnard_fork_version(&v5));
     }
+}
+
+
+impl BusinessLayerHandle for NetworkActorService {
+    fn handshake(&self, peer_info: &[u8]) -> Result<(), (&'static str, String)> {
+        let other_chain_info = ChainInfo::decode(peer_info).unwrap();
+        if self.chain_info.genesis_hash() == other_chain_info.genesis_hash() {
+            return std::result::Result::Ok(());
+        }
+        return Err(("the genesis hash is different", format!("the genesis hash from other peer is different, self: {}, remote: {}", 
+                            self.chain_info.genesis_hash(), 
+                            other_chain_info.genesis_hash())));
+    }
+
+    fn get_generic_data(&self) -> Result<Vec<u8>, anyhow::Error> {
+        Ok(self.chain_info.encode().unwrap())
+    }
+
+    fn update_generic_data(&mut self, peer_info: &[u8]) -> Result<(), anyhow::Error> {
+        self.chain_info = ChainInfo::decode(peer_info).unwrap();
+        Ok(())
+    }
+
+    fn update_status(mut self: Pin<&mut Self>, peer_status: &[u8]) -> Result<(), anyhow::Error> {
+        self.chain_info.update_status(ChainStatus::decode(peer_status).unwrap());
+        Ok(())
+    }
+
 }

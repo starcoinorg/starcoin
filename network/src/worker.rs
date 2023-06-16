@@ -8,6 +8,7 @@ use futures::prelude::*;
 use log::{debug, error, info};
 use network_api::{PeerInfo, RpcInfo};
 use network_p2p::config::{RequestResponseConfig, TransportConfig};
+use network_p2p::protocol::BusinessLayerHandle;
 use network_p2p::{
     identity, NetworkConfiguration, NetworkWorker, NodeKeyConfig, Params, ProtocolId, Secret,
 };
@@ -28,7 +29,7 @@ pub const RPC_PROTOCOL_PREFIX: &str = RpcInfo::RPC_PROTOCOL_PREFIX;
 
 pub fn build_network_worker(
     network_config: &NetworkConfig,
-    chain_info: ChainInfo,
+    business_layer_handle: Box<dyn BusinessLayerHandle>,
     protocols: Vec<Cow<'static, str>>,
     rpc_service: Option<(RpcInfo, ServiceRef<NetworkRpcService>)>,
     metrics_registry: Option<Registry>,
@@ -78,7 +79,7 @@ pub fn build_network_worker(
     info!("Final bootstrap seeds: {:?}", boot_nodes);
     let self_info = PeerInfo::new(
         network_config.self_peer_id(),
-        chain_info.clone(),
+        business_layer_handle.get_.clone(),
         protocols.to_vec(),
         rpc_protocols
             .iter()
