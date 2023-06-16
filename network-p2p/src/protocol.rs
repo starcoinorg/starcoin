@@ -472,7 +472,8 @@ impl<T: 'static + BusinessLayerHandle + Send> Protocol<T> {
 
     pub fn update_status(&mut self, status: &[u8]) {
         let _ = self.business_layer_handle.update_status(status);
-        self.update_handshake().expect("update status should success.");
+        self.update_handshake()
+            .expect("update status should success.");
     }
 
     fn update_handshake(&mut self) -> anyhow::Result<()> {
