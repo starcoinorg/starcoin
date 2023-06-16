@@ -1,8 +1,8 @@
-use std::{borrow::Cow, error};
+use std::borrow::Cow;
 
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-use anyhow::{anyhow, Error, Ok};
+use anyhow::{anyhow, Ok};
 use bcs_ext::BCSCodec;
 use log::{debug, Level};
 use log::{error, log};
@@ -56,7 +56,7 @@ impl Networkp2pHandle {
     fn inner_handshake(
         &self,
         who: PeerId,
-        set_id: SetId,
+        _set_id: SetId,
         protocol_name: Cow<'static, str>,
         status: Status,
         notifications_sink: NotificationsSink,
@@ -93,7 +93,7 @@ impl Networkp2pHandle {
                     rpc_protocols: status.rpc_protocols.to_vec(),
                 });
             }
-            Err(error) => {
+            Err(_error) => {
                 return Err(rep::FAILED_TO_ENCODE);
             }
         }
