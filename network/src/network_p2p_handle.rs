@@ -93,9 +93,7 @@ impl Networkp2pHandle {
                     rpc_protocols: status.rpc_protocols.to_vec(),
                 })
             }
-            Err(_error) => {
-                Err(rep::FAILED_TO_ENCODE)
-            }
+            Err(_error) => Err(rep::FAILED_TO_ENCODE),
         }
     }
 }
@@ -111,13 +109,7 @@ impl BusinessLayerHandle for Networkp2pHandle {
     ) -> Result<CustomMessageOutcome, ReputationChange> {
         match Status::decode(&received_handshake[..]) {
             std::result::Result::Ok(status) => {
-                self.inner_handshake(
-                    peer_id,
-                    set_id,
-                    protocol_name,
-                    status,
-                    notifications_sink,
-                )
+                self.inner_handshake(peer_id, set_id, protocol_name, status, notifications_sink)
             }
             Err(err) => {
                 error!(target: "network-p2p", "Couldn't decode handshake packet sent by {}: {:?}: {}", peer_id, hex::encode(received_handshake), err);
