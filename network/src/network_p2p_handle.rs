@@ -84,17 +84,17 @@ impl Networkp2pHandle {
         let result_generic_data = status.info.encode();
         match result_generic_data {
             std::result::Result::Ok(generic_data) => {
-                return std::result::Result::Ok(CustomMessageOutcome::NotificationStreamOpened {
+                std::result::Result::Ok(CustomMessageOutcome::NotificationStreamOpened {
                     remote: who,
                     protocol: protocol_name,
                     notifications_sink,
                     generic_data,
                     notif_protocols: status.notif_protocols.to_vec(),
                     rpc_protocols: status.rpc_protocols.to_vec(),
-                });
+                })
             }
             Err(_error) => {
-                return Err(rep::FAILED_TO_ENCODE);
+                Err(rep::FAILED_TO_ENCODE)
             }
         }
     }
@@ -111,17 +111,17 @@ impl BusinessLayerHandle for Networkp2pHandle {
     ) -> Result<CustomMessageOutcome, ReputationChange> {
         match Status::decode(&received_handshake[..]) {
             std::result::Result::Ok(status) => {
-                return self.inner_handshake(
+                self.inner_handshake(
                     peer_id,
                     set_id,
                     protocol_name,
                     status,
                     notifications_sink,
-                );
+                )
             }
             Err(err) => {
                 error!(target: "network-p2p", "Couldn't decode handshake packet sent by {}: {:?}: {}", peer_id, hex::encode(received_handshake), err);
-                return Err(rep::BAD_MESSAGE);
+                Err(rep::BAD_MESSAGE)
             }
         }
     }
