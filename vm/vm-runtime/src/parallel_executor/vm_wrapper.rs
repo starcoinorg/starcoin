@@ -22,6 +22,7 @@ use starcoin_logger::prelude::*;
 use starcoin_vm_types::{
     state_store::state_key::StateKey, state_view::StateView, write_set::WriteOp,
 };
+use crate::data_cache::AsMoveResolver;
 
 pub(crate) struct StarcoinVMWrapper<'a, S> {
     vm: StarcoinVM,
@@ -67,8 +68,7 @@ impl<'a, S: 'a + StateView> ExecutorTask for StarcoinVMWrapper<'a, S> {
         txn: &PreprocessedTransaction,
     ) -> ExecutionStatus<StarcoinTransactionOutput, VMStatus> {
         let versioned_view = VersionedView::new_view(self.base_view, view);
-
-        match self.vm.execute_single_transaction(txn, &versioned_view) {
+        match self.vm.execute_single_transaction(txn, &versioned_view.as_move_resolver()) {
             Ok((vm_status, output, sender)) => {
                 if output.status().is_discarded() {
                     match sender {
