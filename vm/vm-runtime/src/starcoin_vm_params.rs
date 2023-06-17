@@ -7,17 +7,20 @@ use starcoin_vm_types::account_config::{access_path_for_module_upgrade_strategy,
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::{StateReaderExt, StateView};
 use crate::data_cache::StateViewCache;
-use crate::move_vm_ext::MoveResolverExt;
 
-pub(crate) struct VMExecuteStrategyParams<'a, S: StateView> {
+pub struct VMExecuteStrategyParams<'a, S: StateView> {
     remote_cache: &'a StateViewCache<'a, S>,
 }
 
 impl<'a, S: StateView> VMExecuteStrategyParams<'a, S> {
-    pub fn new(remote_cache: &StateViewCache<'a, S>) -> VMExecuteStrategyParams<'a, S> {
+    pub fn new(remote_cache: &'a StateViewCache<'a, S>) -> VMExecuteStrategyParams<'a, S> {
         Self {
             remote_cache
         }
+    }
+
+    pub fn is_genesis(&self) -> bool {
+        self.remote_cache.is_genesis()
     }
 
     pub fn only_new_module_strategy(

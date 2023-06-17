@@ -3,7 +3,7 @@
 
 use anyhow::Result;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionOutput};
-use starcoin_vm_runtime::{metrics::VMMetrics, parallel_executor, starcoin_vm::StarcoinVM};
+use starcoin_vm_runtime::{metrics::VMMetrics, parallel_executor, starcoin_vm::StarcoinVM, VMExecutor};
 use starcoin_vm_runtime::data_cache::StateViewCache;
 use starcoin_vm_types::{
     identifier::Identifier,
@@ -47,9 +47,7 @@ pub fn validate_transaction<S: StateView>(
     metrics: Option<VMMetrics>,
 ) -> Option<VMStatus> {
     let mut vm = StarcoinVM::new(metrics);
-    let data_cache = StateViewCache::new(chain_state);
-    let params = VMExecuteStrategyParams::new(&data_cache);
-    vm.verify_transaction(chain_state, txn, &params)
+    vm.verify_transaction(chain_state, txn)
 }
 
 pub fn execute_readonly_function<S: StateView>(

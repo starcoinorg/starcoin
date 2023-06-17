@@ -28,9 +28,6 @@ use starcoin_gas_algebra_ext::{
 };
 use starcoin_logger::prelude::*;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;
-use starcoin_types::account_config::{
-    access_path_for_module_upgrade_strategy, access_path_for_two_phase_upgrade_v2,
-};
 use starcoin_types::{
     account_config,
     block_metadata::BlockMetadata,
@@ -57,8 +54,6 @@ use starcoin_vm_types::on_chain_config::{
     G_GAS_SCHEDULE_IDENTIFIER, G_INSTRUCTION_SCHEDULE_IDENTIFIER, G_NATIVE_SCHEDULE_IDENTIFIER,
     G_VM_CONFIG_IDENTIFIER,
 };
-use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_view::StateReaderExt;
 use starcoin_vm_types::transaction::{
     DryRunTransaction, Package, TransactionPayloadType, VMValidatorResult,
 };
@@ -67,7 +62,6 @@ use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::{errors::Location, language_storage::TypeTag, on_chain_config::{OnChainConfig, VMConfig, Version}, state_view, state_view::StateView, transaction_metadata::TransactionMetadata, vm_status::{StatusCode, VMStatus}};
 use std::cmp::min;
-use std::os::macos::raw::stat;
 use std::sync::Arc;
 
 static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
@@ -401,19 +395,17 @@ impl StarcoinVM {
         Ok(())
     }
 
-    fn verify_transaction_impl<S: MoveResolverExt + StateView>(
+    fn verify_transaction_impl<S: StateView>(
         &mut self,
-        storage: &S,
+        remote_cache: &StateViewCache<S>,
         transaction: &SignatureCheckedTransaction,
-        strategy_params: &VMExecuteStrategyParams<S>,
     ) -> Result<(), VMStatus> {
         let txn_data = TransactionMetadata::new(transaction)?;
-        //let data_cache = remote_cache.as_move_resolver();
-        // let mut session: SessionAdapter<_> = self
-        //     .move_vm
-        //     .new_session(&data_cache, SessionId::txn(transaction))
-        //     .into();
-        let mut session: SessionAdapter<S> = self.move_vm.new_session(storage, SessionId::txn_meta(&txn_data)).into();
+        let data_cache = remote_cache.as_move_resolver();
+        let mut session: SessionAdapter<_> = self
+            .move_vm
+            .new_session(&data_cache, SessionId::txn(transaction))
+            .into();
         let gas_params = self.get_gas_parameters()?;
         let mut gas_meter = StarcoinGasMeter::new(gas_params.clone(), txn_data.max_gas_amount());
         gas_meter.set_metering(false);
@@ -441,6 +433,7 @@ impl StarcoinVM {
                 //         Ok(only_new_module) => only_new_module,
                 //     };
 
+                let strategy_params = VMExecuteStrategyParams::new(&remote_cache);
                 let enforced = match strategy_params.is_enforced(package.package_address()) {
                     Ok(is_enforced) => is_enforced,
                     _ => false,
@@ -500,11 +493,10 @@ impl StarcoinVM {
         self.run_prologue(&mut session, &mut gas_meter, &txn_data)
     }
 
-    pub fn verify_transaction<S: MoveResolverExt + StateView>(
+    pub fn verify_transaction<S: StateView>(
         &mut self,
-        storage: &S,
+        state_view: &S,
         txn: SignedUserTransaction,
-        params: &VMExecuteStrategyParams<S>,
     ) -> Option<VMStatus> {
         #[cfg(feature = "metrics")]
             let _timer = self.metrics.as_ref().map(|metrics| {
@@ -513,16 +505,18 @@ impl StarcoinVM {
                 .with_label_values(&["verify_transaction"])
                 .start_timer()
         });
-        //let data_cache = StateViewCache::new(state_view);
+
         let signature_verified_txn = match txn.check_signature() {
             Ok(t) => t,
             Err(_) => return Some(VMStatus::Error(StatusCode::INVALID_SIGNATURE)),
         };
-        if let Err(err) = self.load_configs(storage) {
+        if let Err(err) = self.load_configs(state_view) {
             warn!("Load config error at verify_transaction: {}", err);
             return Some(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE));
         }
-        match self.verify_transaction_impl(storage, &signature_verified_txn, param) {
+
+        let data_cache = StateViewCache::new(state_view);
+        match self.verify_transaction_impl(&data_cache, &signature_verified_txn) {
             Ok(_) => None,
             Err(err) => {
                 if err.status_code() == StatusCode::SEQUENCE_NUMBER_TOO_NEW {
@@ -996,7 +990,7 @@ impl StarcoinVM {
         let session_id = SessionId::txn_meta(&txn_data);
         match signature_checked_txn {
             Ok(txn) => {
-                let mut session = self.move_vm.new_session(&storage, session_id.clone()).into();
+                let mut session = self.move_vm.new_session(storage, session_id.clone()).into();
                 let result = match txn.payload() {
                     payload @ TransactionPayload::Script(_)
                     | payload @ TransactionPayload::ScriptFunction(_) => self
@@ -1021,7 +1015,7 @@ impl StarcoinVM {
                         status_and_output
                     }
                     Err(err) => {
-                        let mut session = self.move_vm.new_session(&storage, session_id.clone()).into();
+                        let mut session = self.move_vm.new_session(storage, session_id.clone()).into();
                         let txn_status = TransactionStatus::from(err.clone());
                         log_vm_status(txn_id, &txn_data, &err, None);
                         if txn_status.is_discarded() {
@@ -1046,14 +1040,14 @@ impl StarcoinVM {
         &mut self,
         storage: &S,
         txn: DryRunTransaction,
-        params: &VMExecuteStrategyParams<S>,
+        strategy_params: &VMExecuteStrategyParams<S>,
     ) -> Result<(VMStatus, TransactionOutput)> {
         //TODO load config by config change event.
         self.load_configs(&storage)?;
         let gas_params = match self.get_gas_parameters() {
             Ok(gas_params) => gas_params,
             Err(e) => {
-                if params.is_genesis() {
+                if strategy_params.is_genesis() {
                     &G_LATEST_GAS_PARAMS
                 } else {
                     return Ok(discard_error_vm_status(e));
@@ -1067,9 +1061,12 @@ impl StarcoinVM {
             Ok(txn_data) => txn_data,
             Err(e) => return Ok(discard_error_vm_status(e)),
         };
-        let mut session = self.move_vm.new_session(&storage, SessionId::txn_meta(&txn_data)).into();
+
         let mut gas_meter = StarcoinGasMeter::new(gas_params.clone(), txn_data.max_gas_amount());
         gas_meter.set_metering(false);
+
+        let session_id = SessionId::txn_meta(&txn_data);
+        let mut session = self.move_vm.new_session(storage, session_id.clone()).into();
         let result = match txn.raw_txn.payload() {
             payload @ TransactionPayload::Script(_)
             | payload @ TransactionPayload::ScriptFunction(_) => self
@@ -1080,7 +1077,7 @@ impl StarcoinVM {
                     payload,
                 ),
             TransactionPayload::Package(p) => {
-                self.execute_package(session, &mut gas_meter, &txn_data, p, params)
+                self.execute_package(session, &mut gas_meter, &txn_data, p, strategy_params)
             }
         };
         Ok(match result {
@@ -1090,7 +1087,8 @@ impl StarcoinVM {
                 if txn_status.is_discarded() {
                     discard_error_vm_status(err)
                 } else {
-                    self.failed_transaction_cleanup(err, &mut gas_meter, &txn_data, &storage)
+                    let mut session = self.move_vm.new_session(storage, session_id.clone()).into();
+                    self.failed_transaction_cleanup(session, err, &mut gas_meter, &txn_data, strategy_params)
                 }
             }
         })
@@ -1119,12 +1117,13 @@ impl StarcoinVM {
         storage: &S,
         transactions: Vec<Transaction>,
         block_gas_limit: Option<u64>,
-        params: &VMExecuteStrategyParams<S>,
     ) -> Result<Vec<(VMStatus, TransactionOutput)>> {
-        //let mut data_cache = StateViewCache::new(state_view);
+        // Convert storage to data cache
+        let mut data_cache = StateViewCache::new(storage);
+
         let mut result = vec![];
         //TODO load config by config change event.
-        self.load_configs(&storage)?;
+        self.load_configs(storage)?;
 
         let mut gas_left = block_gas_limit.unwrap_or(u64::MAX);
 
@@ -1142,9 +1141,10 @@ impl StarcoinVM {
                                 .with_label_values(&[txn_type_name.as_str()])
                                 .start_timer()
                         });
+                        let strategy_params: VMExecuteStrategyParams<_> = VMExecuteStrategyParams::new(&data_cache);
                         let gas_unit_price = transaction.gas_unit_price();
                         let (status, output) =
-                            self.execute_user_transaction(&storage, transaction, params);
+                            self.execute_user_transaction(storage, transaction, &strategy_params);
                         // only need to check for user transactions.
                         match gas_left.checked_sub(output.gas_used()) {
                             Some(l) => gas_left = l,
@@ -1159,9 +1159,9 @@ impl StarcoinVM {
                                     "Keep transaction gas used must not be zero"
                                 );
                             }
-                            storage.push_write_set(output.write_set())
+                            data_cache.push_write_set(output.write_set())
                         }
-                        self.check_reconfigure(&storage, &output)?;
+                        self.check_reconfigure(&data_cache, &output)?;
                         #[cfg(feature = "metrics")]
                         if let Some(timer) = timer {
                             timer.observe_duration();
@@ -1189,7 +1189,7 @@ impl StarcoinVM {
                             .start_timer()
                     });
                     let (status, output) =
-                        match self.process_block_metadata(&storage, block_metadata) {
+                        match self.process_block_metadata(storage, block_metadata) {
                             Ok(output) => (VMStatus::Executed, output),
                             Err(vm_status) => discard_error_vm_status(vm_status),
                         };
@@ -1204,7 +1204,7 @@ impl StarcoinVM {
                             &KeptVMStatus::Executed,
                             "Block metadata transaction keep status must been Executed."
                         );
-                        storage.push_write_set(output.write_set())
+                        data_cache.push_write_set(output.write_set())
                     }
                     #[cfg(feature = "metrics")]
                     if let Some(timer) = timer {
@@ -1409,11 +1409,9 @@ impl StarcoinVM {
         metrics: Option<VMMetrics>,
     ) -> Result<Vec<(VMStatus, TransactionOutput)>, VMStatus> {
         let mut vm = StarcoinVM::new(metrics);
-        let state_view_cache = StateViewCache::new(state_view);
-        let param = VMExecuteStrategyParams::new(&state_view_cache);
         let result = vm
             // XXX FIXME YSG, remove unwrap
-            .execute_block_transactions(state_view, txns, block_gas_limit, &param)
+            .execute_block_transactions(&state_view.as_move_resolver(), txns, block_gas_limit)
             .unwrap();
         Ok(result)
     }
@@ -1659,7 +1657,7 @@ impl VMAdapter for StarcoinVM {
             PreprocessedTransaction::UserTransaction(txn) => {
                 let sender = txn.sender().to_string();
                 let (vm_status, output) =
-                    self.execute_user_transaction(&data_cache, *txn.clone(), &params);
+                    self.execute_user_transaction(storage, *txn.clone(), &params);
                 // XXX FIXME YSG
                 // this place should add check_reconfigure to check we need re execution
                 // let gas_unit_price = transaction.gas_unit_price(); think about gas_used OutOfGas
@@ -1668,7 +1666,7 @@ impl VMAdapter for StarcoinVM {
             PreprocessedTransaction::BlockMetadata(block_meta) => {
                 //let mut data_cache = StateViewCache::new(data_cache);
                 let (vm_status, output) =
-                    match self.process_block_metadata(&data_cache, block_meta.clone()) {
+                    match self.process_block_metadata(storage, block_meta.clone()) {
                         Ok(output) => (VMStatus::Executed, output),
                         Err(vm_status) => discard_error_vm_status(vm_status),
                     };
