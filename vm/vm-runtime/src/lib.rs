@@ -14,7 +14,7 @@ mod access_path_cache;
 mod errors;
 pub mod move_vm_ext;
 pub mod parallel_executor;
-mod starcoin_vm_params;
+pub mod starcoin_vm_params;
 use crate::metrics::VMMetrics;
 use starcoin_vm_types::{
     access_path::AccessPath,

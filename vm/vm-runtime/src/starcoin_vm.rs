@@ -6,7 +6,7 @@ use crate::adapter_common::{
     discard_error_output, discard_error_vm_status, validate_signed_transaction,
     PreprocessedTransaction, VMAdapter,
 };
-use crate::data_cache::{AsMoveResolver, RemoteStorage, StateViewCache};
+use crate::data_cache::{AsMoveResolver, IntoMoveResolver, RemoteStorage, StateViewCache};
 use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
@@ -1054,6 +1054,7 @@ impl StarcoinVM {
                 }
             }
         };
+
         let txn_data = match TransactionMetadata::from_raw_txn_and_preimage(
             &txn.raw_txn,
             txn.public_key.authentication_key_preimage(),
@@ -1077,7 +1078,7 @@ impl StarcoinVM {
                     payload,
                 ),
             TransactionPayload::Package(p) => {
-                self.execute_package(session, &mut gas_meter, &txn_data, p, strategy_params)
+                self.execute_package(session, &mut gas_meter, &txn_data, p, &strategy_params)
             }
         };
         Ok(match result {
@@ -1088,7 +1089,7 @@ impl StarcoinVM {
                     discard_error_vm_status(err)
                 } else {
                     let mut session = self.move_vm.new_session(storage, session_id.clone()).into();
-                    self.failed_transaction_cleanup(session, err, &mut gas_meter, &txn_data, strategy_params)
+                    self.failed_transaction_cleanup(session, err, &mut gas_meter, &txn_data, &strategy_params)
                 }
             }
         })

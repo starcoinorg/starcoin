@@ -22,6 +22,8 @@ use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::transaction_argument::TransactionArgument;
 use starcoin_vm_types::vm_status::VMStatus;
 use std::sync::Arc;
+use starcoin_vm_runtime::data_cache::{IntoMoveResolver, RemoteStorageOwned, StateViewCache};
+use starcoin_vm_runtime::starcoin_vm_params::VMExecuteStrategyParams;
 
 #[derive(Clone)]
 pub struct PlaygroudService {
@@ -97,7 +99,9 @@ pub fn dry_run<S: StateView>(
     metrics: Option<VMMetrics>,
 ) -> Result<(VMStatus, TransactionOutput)> {
     let mut vm = StarcoinVM::new(metrics);
-    vm.dry_run_transaction(state_view, txn)
+    let state_cache = StateViewCache::new(state_view);
+    let strategy_params = VMExecuteStrategyParams::new(&state_cache);
+    vm.dry_run_transaction(&state_cache, txn, &strategy_params)
 }
 
 pub fn dry_run_explain<S: StateView>(
@@ -199,10 +203,10 @@ pub fn call_contract<S: StateView>(
                 | (TypeInstantiation::Address, TransactionArgument::Address(_))
                 | (TypeInstantiation::Bool, TransactionArgument::Bool(_)) => {}
                 (TypeInstantiation::Vector(sub_ty), TransactionArgument::U8Vector(_))
-                    if sub_ty.as_ref() == &TypeInstantiation::U8 => {}
+                if sub_ty.as_ref() == &TypeInstantiation::U8 => {}
                 (TypeInstantiation::Reference(_, ref_type), TransactionArgument::Address(_))
-                    if (ref_type.as_ref() == &TypeInstantiation::Address)
-                        || (ref_type.as_ref() == &TypeInstantiation::Signer) => {}
+                if (ref_type.as_ref() == &TypeInstantiation::Address)
+                    || (ref_type.as_ref() == &TypeInstantiation::Signer) => {}
                 (abi, value) => anyhow::bail!(
                     "arg type at position {} mismatch, expect {:?}, actual {}",
                     i,

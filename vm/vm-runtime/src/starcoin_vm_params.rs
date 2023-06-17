@@ -9,18 +9,18 @@ use starcoin_vm_types::state_view::{StateReaderExt, StateView};
 use crate::data_cache::StateViewCache;
 
 pub struct VMExecuteStrategyParams<'a, S: StateView> {
-    remote_cache: &'a StateViewCache<'a, S>,
+    state_view_cache: &'a StateViewCache<'a, S>,
 }
 
 impl<'a, S: StateView> VMExecuteStrategyParams<'a, S> {
-    pub fn new(remote_cache: &'a StateViewCache<'a, S>) -> VMExecuteStrategyParams<'a, S> {
+    pub fn new(state_view_cache: &'a StateViewCache<'a, S>) -> VMExecuteStrategyParams<'a, S> {
         Self {
-            remote_cache
+            state_view_cache
         }
     }
 
     pub fn is_genesis(&self) -> bool {
-        self.remote_cache.is_genesis()
+        self.state_view_cache.is_genesis()
     }
 
     pub fn only_new_module_strategy(
@@ -29,7 +29,7 @@ impl<'a, S: StateView> VMExecuteStrategyParams<'a, S> {
     ) -> Result<bool> {
         let strategy_access_path = access_path_for_module_upgrade_strategy(package_address);
         if let Some(data) =
-            self.remote_cache.get_state_value(&StateKey::AccessPath(strategy_access_path))?
+            self.state_view_cache.get_state_value(&StateKey::AccessPath(strategy_access_path))?
         {
             Ok(bcs_ext::from_bytes::<ModuleUpgradeStrategy>(&data)?.only_new_module())
         } else {
@@ -41,8 +41,8 @@ impl<'a, S: StateView> VMExecuteStrategyParams<'a, S> {
         &self,
         package_address: AccountAddress,
     ) -> Result<bool> {
-        let chain_id = self.remote_cache.get_chain_id()?;
-        let block_meta = self.remote_cache.get_block_metadata()?;
+        let chain_id = self.state_view_cache.get_chain_id()?;
+        let block_meta = self.state_view_cache.get_block_metadata()?;
         // from mainnet after 8015088 and barnard after 8311392, we disable enforce upgrade
         if package_address == genesis_address()
             || (chain_id.is_main() && block_meta.number < 8015088)
@@ -50,7 +50,7 @@ impl<'a, S: StateView> VMExecuteStrategyParams<'a, S> {
         {
             let two_phase_upgrade_v2_path = access_path_for_two_phase_upgrade_v2(package_address);
             if let Some(data) =
-                self.remote_cache.get_state_value(&StateKey::AccessPath(two_phase_upgrade_v2_path))?
+                self.state_view_cache.get_state_value(&StateKey::AccessPath(two_phase_upgrade_v2_path))?
             {
                 let enforced = bcs_ext::from_bytes::<TwoPhaseUpgradeV2Resource>(&data)?.enforced();
                 Ok(enforced)

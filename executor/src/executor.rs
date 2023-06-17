@@ -3,8 +3,7 @@
 
 use anyhow::Result;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionOutput};
-use starcoin_vm_runtime::{metrics::VMMetrics, parallel_executor, starcoin_vm::StarcoinVM, VMExecutor};
-use starcoin_vm_runtime::data_cache::StateViewCache;
+use starcoin_vm_runtime::{metrics::VMMetrics, starcoin_vm::StarcoinVM, VMExecutor};
 use starcoin_vm_types::{
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},

@@ -70,6 +70,9 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
                 ));
                 executed_data.txn_events.push(events);
             }
+            TransactionStatus::Retry => {
+                // FIXME BobOng: Need handle this status?
+            }
         };
     }
 

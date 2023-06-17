@@ -862,7 +862,7 @@ impl BlockView {
             transactions.try_into()?
         };
         Ok(BlockView {
-            header: header.into(),
+            header: BlockHeaderView::from(header),
             uncles: uncles
                 .unwrap_or_default()
                 .into_iter()
@@ -971,6 +971,10 @@ impl TryFrom<TransactionInfoView> for RichTransactionInfo {
             )),
             TransactionStatus::Discard(_) => {
                 bail!("TransactionInfoView's status is discard, {:?}, can not convert to RichTransactionInfo", view);
+            },
+            TransactionStatus::Retry => {
+                // FIXME BobOng, Need handle this status?
+                bail!("TransactionInfoView's status is discard, {:?}, can not convert to RichTransactionInfo", view);
             }
         }
     }
@@ -1006,6 +1010,10 @@ impl From<TransactionStatus> for TransactionStatusView {
         match s {
             TransactionStatus::Discard(d) => d.into(),
             TransactionStatus::Keep(k) => k.into(),
+            TransactionStatus::Retry => {
+                // FIXME BobOng, Need handle this status?
+                s.into()
+            },
         }
     }
 }

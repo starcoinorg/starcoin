@@ -185,6 +185,9 @@ impl OpenedBlock {
                     self.included_user_txns
                         .push(txn.try_into().expect("user txn"));
                 }
+                TransactionStatus::Retry => {
+                    // FIXME BobOng: Need handle this status?
+                }
             };
         }
         Ok(ExcludedTxns {
@@ -215,6 +218,9 @@ impl OpenedBlock {
             }
             TransactionStatus::Keep(_) => {
                 let _ = self.push_txn_and_state(block_meta_txn_hash, output)?;
+            }
+            TransactionStatus::Retry => {
+                // FIXME BobOng: Need handle this status?
             }
         };
         Ok(())
