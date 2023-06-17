@@ -35,7 +35,7 @@ struct Status {
     /// Tell other peer which rpc api we support.
     pub rpc_protocols: Vec<Cow<'static, str>>,
     /// the generic data related to the peer
-    pub chain_info: ChainInfo,
+    pub info: ChainInfo,
 }
 
 impl std::default::Default for Status {
@@ -45,7 +45,19 @@ impl std::default::Default for Status {
             min_supported_version: Default::default(),
             notif_protocols: Default::default(),
             rpc_protocols: Default::default(),
-            chain_info: ChainInfo::random(),
+            info: ChainInfo::default(),
+        }
+    }
+}
+
+impl Status {
+    pub fn random() -> Self {
+        Self {
+            version: Default::default(),
+            min_supported_version: Default::default(),
+            notif_protocols: Default::default(),
+            rpc_protocols: Default::default(),
+            info: ChainInfo::random(),
         }
     }
 }
@@ -70,12 +82,12 @@ impl BusinessLayerHandle for TestChainInfoHandle {
         notifications_sink: NotificationsSink,
     ) -> Result<CustomMessageOutcome, ReputationChange> {
         let status = Status::decode(&received_handshake).unwrap();
-        if self.status.chain_info.genesis_hash() == status.chain_info.genesis_hash() {
+        if self.status.info.genesis_hash() == status.info.genesis_hash() {
             return std::result::Result::Ok(CustomMessageOutcome::NotificationStreamOpened {
                 remote: peer_id,
                 protocol: protocol_name,
                 notifications_sink,
-                generic_data: status.chain_info.encode().unwrap(),
+                generic_data: status.info.encode().unwrap(),
                 notif_protocols: status.notif_protocols,
                 rpc_protocols: status.rpc_protocols,
             });
@@ -94,7 +106,7 @@ impl BusinessLayerHandle for TestChainInfoHandle {
 
     fn update_status(&mut self, peer_status: &[u8]) -> Result<(), anyhow::Error> {
         self.status
-            .chain_info
+            .info
             .update_status(ChainStatus::decode(peer_status).unwrap());
         Ok(())
     }
@@ -109,7 +121,7 @@ impl BusinessLayerHandle for TestChainInfoHandle {
             min_supported_version: 1,
             notif_protocols,
             rpc_protocols,
-            chain_info: ChainInfo::random(),
+            info: ChainInfo::default(),
         };
         Ok(status.encode().unwrap())
     }
@@ -517,7 +529,7 @@ const PROTOCOL_NAME: &str = "/starcoin/notify/1";
 async fn test_handshake_fail() {
     let protocol = ProtocolId::from("starcoin");
     let config1 = generate_config(vec![], vec![PROTOCOL_NAME.into()], vec![]);
-    let status1 = Status::default();
+    let status1 = Status::random();
     let worker1 = NetworkWorker::new(Params::new(
         config1.clone(),
         protocol.clone(),
@@ -535,7 +547,7 @@ async fn test_handshake_fail() {
     };
 
     let config2 = generate_config(vec![seed], vec![PROTOCOL_NAME.into()], vec![]);
-    let status2 = Status::default();
+    let status2 = Status::random();
 
     let worker2 = NetworkWorker::new(Params::new(
         config2,
