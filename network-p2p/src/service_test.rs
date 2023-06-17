@@ -24,7 +24,7 @@ use Event::NotificationStreamOpened;
 
 static G_TEST_CHAIN_INFO: Lazy<Status> = Lazy::new(Status::default);
 
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize, Default)]
 struct Status {
     /// Protocol version.
     pub version: u32,
@@ -36,18 +36,6 @@ struct Status {
     pub rpc_protocols: Vec<Cow<'static, str>>,
     /// the generic data related to the peer
     pub info: ChainInfo,
-}
-
-impl std::default::Default for Status {
-    fn default() -> Self {
-        Self {
-            version: Default::default(),
-            min_supported_version: Default::default(),
-            notif_protocols: Default::default(),
-            rpc_protocols: Default::default(),
-            info: ChainInfo::default(),
-        }
-    }
 }
 
 impl Status {
