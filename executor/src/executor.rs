@@ -4,6 +4,8 @@
 use anyhow::Result;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionOutput};
 use starcoin_vm_runtime::{metrics::VMMetrics, starcoin_vm::StarcoinVM, VMExecutor};
+use starcoin_vm_runtime::data_cache::{IntoMoveResolver, StateViewCache};
+use starcoin_vm_runtime::starcoin_vm_params::VMExecuteStrategyParams;
 use starcoin_vm_types::{
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
@@ -46,7 +48,9 @@ pub fn validate_transaction<S: StateView>(
     metrics: Option<VMMetrics>,
 ) -> Option<VMStatus> {
     let mut vm = StarcoinVM::new(metrics);
-    vm.verify_transaction(chain_state, txn)
+    let data_cache = StateViewCache::new(chain_state);
+    let strategy_params = VMExecuteStrategyParams::new();
+    vm.verify_transaction(&data_cache.into_move_resolver(), txn, &strategy_params)
 }
 
 pub fn execute_readonly_function<S: StateView>(

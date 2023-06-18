@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use std::ops::Deref;
 use anyhow::{format_err, Result};
 use starcoin_abi_decoder::decode_move_value;
 use starcoin_abi_resolver::ABIResolver;
@@ -100,8 +101,9 @@ pub fn dry_run<S: StateView>(
 ) -> Result<(VMStatus, TransactionOutput)> {
     let mut vm = StarcoinVM::new(metrics);
     let state_cache = StateViewCache::new(state_view);
-    let strategy_params = VMExecuteStrategyParams::new(&state_cache);
-    vm.dry_run_transaction(&state_cache, txn, &strategy_params)
+    let strategy_params = VMExecuteStrategyParams::new();
+    let resolver = state_cache.into_move_resolver();
+    vm.dry_run_transaction(&resolver, txn, &strategy_params)
 }
 
 pub fn dry_run_explain<S: StateView>(

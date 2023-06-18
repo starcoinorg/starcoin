@@ -395,16 +395,17 @@ impl StarcoinVM {
         Ok(())
     }
 
-    fn verify_transaction_impl<S: StateView>(
+    fn verify_transaction_impl<S: MoveResolverExt + StateView>(
         &mut self,
-        remote_cache: &StateViewCache<S>,
+        storage: &S,
         transaction: &SignatureCheckedTransaction,
+        strategy_params: &VMExecuteStrategyParams,
     ) -> Result<(), VMStatus> {
         let txn_data = TransactionMetadata::new(transaction)?;
-        let data_cache = remote_cache.as_move_resolver();
+        //let data_cache = remote_cache.as_move_resolver();
         let mut session: SessionAdapter<_> = self
             .move_vm
-            .new_session(&data_cache, SessionId::txn(transaction))
+            .new_session(storage, SessionId::txn(transaction))
             .into();
         let gas_params = self.get_gas_parameters()?;
         let mut gas_meter = StarcoinGasMeter::new(gas_params.clone(), txn_data.max_gas_amount());
@@ -433,7 +434,6 @@ impl StarcoinVM {
                 //         Ok(only_new_module) => only_new_module,
                 //     };
 
-                let strategy_params = VMExecuteStrategyParams::new(&remote_cache);
                 let enforced = match strategy_params.is_enforced(package.package_address()) {
                     Ok(is_enforced) => is_enforced,
                     _ => false,
@@ -493,10 +493,11 @@ impl StarcoinVM {
         self.run_prologue(&mut session, &mut gas_meter, &txn_data)
     }
 
-    pub fn verify_transaction<S: StateView>(
+    pub fn verify_transaction<S: MoveResolverExt + StateView>(
         &mut self,
-        state_view: &S,
+        storage: &S,
         txn: SignedUserTransaction,
+        strategy_params: &VMExecuteStrategyParams,
     ) -> Option<VMStatus> {
         #[cfg(feature = "metrics")]
             let _timer = self.metrics.as_ref().map(|metrics| {
@@ -510,13 +511,12 @@ impl StarcoinVM {
             Ok(t) => t,
             Err(_) => return Some(VMStatus::Error(StatusCode::INVALID_SIGNATURE)),
         };
-        if let Err(err) = self.load_configs(state_view) {
+        if let Err(err) = self.load_configs(storage) {
             warn!("Load config error at verify_transaction: {}", err);
             return Some(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE));
         }
 
-        let data_cache = StateViewCache::new(state_view);
-        match self.verify_transaction_impl(&data_cache, &signature_verified_txn) {
+        match self.verify_transaction_impl(storage, &signature_verified_txn, strategy_params) {
             Ok(_) => None,
             Err(err) => {
                 if err.status_code() == StatusCode::SEQUENCE_NUMBER_TOO_NEW {
@@ -573,7 +573,7 @@ impl StarcoinVM {
         gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
         package: &Package,
-        params: &VMExecuteStrategyParams<S>,
+        params: &VMExecuteStrategyParams,
     ) -> Result<(VMStatus, TransactionOutput), VMStatus> {
         {
             // Run the validation logic
@@ -957,7 +957,7 @@ impl StarcoinVM {
         &self,
         storage: &S,
         txn: SignedUserTransaction,
-        strategy_params: &VMExecuteStrategyParams<S>,
+        strategy_params: &VMExecuteStrategyParams,
     ) -> (VMStatus, TransactionOutput) {
         let txn_id = txn.id();
         let txn_data = match TransactionMetadata::new(&txn) {
@@ -1040,7 +1040,7 @@ impl StarcoinVM {
         &mut self,
         storage: &S,
         txn: DryRunTransaction,
-        strategy_params: &VMExecuteStrategyParams<S>,
+        strategy_params: &VMExecuteStrategyParams,
     ) -> Result<(VMStatus, TransactionOutput)> {
         //TODO load config by config change event.
         self.load_configs(&storage)?;
@@ -1142,7 +1142,7 @@ impl StarcoinVM {
                                 .with_label_values(&[txn_type_name.as_str()])
                                 .start_timer()
                         });
-                        let strategy_params: VMExecuteStrategyParams<_> = VMExecuteStrategyParams::new(&data_cache);
+                        let strategy_params = VMExecuteStrategyParams::new();
                         let gas_unit_price = transaction.gas_unit_price();
                         let (status, output) =
                             self.execute_user_transaction(storage, transaction, &strategy_params);
@@ -1347,7 +1347,7 @@ impl StarcoinVM {
         error_code: VMStatus,
         gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
-        params: &VMExecuteStrategyParams<S>,
+        params: &VMExecuteStrategyParams,
     ) -> (VMStatus, TransactionOutput) {
         gas_meter.set_metering(false);
 
@@ -1651,8 +1651,8 @@ impl VMAdapter for StarcoinVM {
         txn: &PreprocessedTransaction,
         storage: &S,
     ) -> Result<(VMStatus, TransactionOutput, Option<String>), VMStatus> {
-        let mut data_cache = StateViewCache::new(storage);
-        let mut params = VMExecuteStrategyParams::new(&data_cache);
+        //let mut data_cache = StateViewCache::new(storage);
+        let mut params = VMExecuteStrategyParams::new();
 
         Ok(match txn {
             PreprocessedTransaction::UserTransaction(txn) => {
