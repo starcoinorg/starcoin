@@ -22,6 +22,7 @@ use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::transaction_argument::TransactionArgument;
 use starcoin_vm_types::vm_status::VMStatus;
 use std::sync::Arc;
+use starcoin_vm_runtime::data_cache::{AsMoveResolver, StateViewCache};
 
 #[derive(Clone)]
 pub struct PlaygroudService {
@@ -97,7 +98,8 @@ pub fn dry_run<S: StateView>(
     metrics: Option<VMMetrics>,
 ) -> Result<(VMStatus, TransactionOutput)> {
     let mut vm = StarcoinVM::new(metrics);
-    vm.dry_run_transaction(state_view, txn)
+    let state_view_cache = StateViewCache::new(state_view);
+    vm.dry_run_transaction(&state_view_cache.as_move_resolver(), txn)
 }
 
 pub fn dry_run_explain<S: StateView>(

@@ -3,6 +3,7 @@
 
 use anyhow::Result;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionOutput};
+use starcoin_vm_runtime::data_cache::{AsMoveResolver, IntoMoveResolver, StateViewCache};
 use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::identifier::Identifier;
@@ -34,9 +35,10 @@ fn do_execute_block_transactions<S: StateView>(
     block_gas_limit: Option<u64>,
     metrics: Option<VMMetrics>,
 ) -> Result<Vec<TransactionOutput>> {
-    let mut vm = StarcoinVM::new(metrics);
+    let vm = StarcoinVM::new(metrics);
+    let mut state_view_cache = StateViewCache::new(chain_state);
     let result = vm
-        .execute_block_transactions(chain_state, txns, block_gas_limit)?
+        .execute_block_transactions(&state_view_cache.as_move_resolver(), txns, block_gas_limit)?
         .into_iter()
         .map(|(_, output)| {
             debug! {"{:?}", output};
