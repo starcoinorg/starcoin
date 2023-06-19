@@ -865,7 +865,7 @@ impl StarcoinVM {
 
     fn process_block_metadata<S: StateView>(
         &self,
-        remote_cache: &mut StateViewCache<'_, S>,
+        remote_cache: &StateViewCache<'_, S>,
         block_metadata: BlockMetadata,
     ) -> Result<TransactionOutput, VMStatus> {
         #[cfg(testing)]
@@ -928,9 +928,9 @@ impl StarcoinVM {
     }
 
     fn execute_user_transaction<S: StateView>(
-        &mut self,
+        &self,
         txn: SignedUserTransaction,
-        remote_cache: &mut StateViewCache<'_, S>,
+        remote_cache: &StateViewCache<'_, S>,
     ) -> (VMStatus, TransactionOutput) {
         let txn_id = txn.id();
         let txn_data = match TransactionMetadata::new(&txn) {
@@ -1005,7 +1005,6 @@ impl StarcoinVM {
 
     pub fn dry_run_transaction<S: StateView>(
         &mut self,
-
         state_view: &S,
         txn: DryRunTransaction,
     ) -> Result<(VMStatus, TransactionOutput)> {
@@ -1106,7 +1105,7 @@ impl StarcoinVM {
                         });
                         let gas_unit_price = transaction.gas_unit_price();
                         let (status, output) =
-                            self.execute_user_transaction(transaction, &mut data_cache);
+                            self.execute_user_transaction(transaction, &data_cache);
                         // only need to check for user transactions.
                         match gas_left.checked_sub(output.gas_used()) {
                             Some(l) => gas_left = l,
