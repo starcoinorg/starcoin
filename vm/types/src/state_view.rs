@@ -8,6 +8,7 @@
 
 //! This crate defines [`trait StateView`](StateView).
 
+use std::ops::Deref;
 use crate::state_store::state_key::StateKey;
 use crate::{
     access_path::AccessPath,
@@ -34,7 +35,7 @@ use serde::de::DeserializeOwned;
 /// `StateView` is a trait that defines a read-only snapshot of the global state. It is passed to
 /// the VM for transaction execution, during which the VM is guaranteed to read anything at the
 /// given state.
-pub trait StateView {
+pub trait StateView: Sync {
     /// Gets the state value for a given state key.
     fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>>;
 
@@ -42,6 +43,21 @@ pub trait StateView {
     /// Currently TransactionPayload::WriteSet is only valid for genesis state creation.
     fn is_genesis(&self) -> bool;
 }
+
+impl<R, S> StateView for R
+    where
+        R: Deref<Target = S> + Sync,
+        S: StateView,
+{
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+        self.deref().get_state_value(state_key)
+    }
+
+    fn is_genesis(&self) -> bool {
+        self.deref().is_genesis()
+    }
+}
+
 
 impl<T: ?Sized> StateReaderExt for T where T: StateView {}
 

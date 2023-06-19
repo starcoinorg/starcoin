@@ -922,7 +922,7 @@ impl StarcoinVM {
         )
     }
 
-    fn execute_user_transaction<S: MoveResolverExt>(
+    fn execute_user_transaction<S: MoveResolverExt + StateView>(
         &self,
         storage: &S,
         txn: SignedUserTransaction,
@@ -1082,7 +1082,7 @@ impl StarcoinVM {
 
     /// Execute a block transactions with gas_limit,
     /// if gas is used up when executing some txn, only return the outputs of previous succeed txns.
-    pub fn execute_block_transactions<S: MoveResolverExt>(
+    pub fn execute_block_transactions<S: MoveResolverExt + StateView>(
         &self,
         data_cache: &S,
         transactions: Vec<Transaction>,

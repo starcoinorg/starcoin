@@ -115,8 +115,8 @@ pub trait ConfigStorage {
 }
 
 impl<V> ConfigStorage for V
-where
-    V: StateView,
+    where
+        V: StateView,
 {
     fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>> {
         self.get_state_value(&StateKey::AccessPath(access_path))
