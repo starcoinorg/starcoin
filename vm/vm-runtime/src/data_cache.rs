@@ -13,7 +13,6 @@ use starcoin_vm_types::{
     access_path::AccessPath,
     errors::*,
     language_storage::{ModuleId, StructTag},
-    on_chain_config::ConfigStorage,
     state_view::StateView,
     vm_status::StatusCode,
     write_set::{WriteOp, WriteSet},

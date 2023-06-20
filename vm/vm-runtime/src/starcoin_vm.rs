@@ -943,7 +943,7 @@ impl StarcoinVM {
             }
         };
 
-        let mut session: SessionAdapter<_> = self
+        let session: SessionAdapter<_> = self
             .move_vm
             .new_session(storage, SessionId::txn_meta(&txn_data))
             .into();
@@ -1020,7 +1020,7 @@ impl StarcoinVM {
             Ok(txn_data) => txn_data,
             Err(e) => return Ok(discard_error_vm_status(e)),
         };
-        let mut session = self
+        let session = self
             .move_vm
             .new_session(storage, SessionId::txn_meta(&txn_data))
             .into();
