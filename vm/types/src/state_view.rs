@@ -8,7 +8,6 @@
 
 //! This crate defines [`trait StateView`](StateView).
 
-use std::ops::Deref;
 use crate::state_store::state_key::StateKey;
 use crate::{
     access_path::AccessPath,
@@ -31,6 +30,7 @@ use move_core_types::{
     language_storage::{ModuleId, StructTag},
 };
 use serde::de::DeserializeOwned;
+use std::ops::Deref;
 
 /// `StateView` is a trait that defines a read-only snapshot of the global state. It is passed to
 /// the VM for transaction execution, during which the VM is guaranteed to read anything at the
@@ -45,9 +45,9 @@ pub trait StateView: Sync {
 }
 
 impl<R, S> StateView for R
-    where
-        R: Deref<Target = S> + Sync,
-        S: StateView,
+where
+    R: Deref<Target = S> + Sync,
+    S: StateView,
 {
     fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
         self.deref().get_state_value(state_key)
@@ -57,7 +57,6 @@ impl<R, S> StateView for R
         self.deref().is_genesis()
     }
 }
-
 
 impl<T: ?Sized> StateReaderExt for T where T: StateView {}
 

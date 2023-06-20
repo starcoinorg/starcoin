@@ -587,14 +587,14 @@ impl StarcoinVM {
                 Ok(is_enforced) => is_enforced,
                 _ => false,
             };
-            let only_new_module =
-                match Self::only_new_module_strategy(&data_cache, package_address) {
-                    Err(e) => {
-                        warn!("[VM]Update module strategy deserialize err : {:?}", e);
-                        return Err(VMStatus::Error(StatusCode::FAILED_TO_DESERIALIZE_RESOURCE));
-                    }
-                    Ok(only_new_module) => only_new_module,
-                };
+            let only_new_module = match Self::only_new_module_strategy(&data_cache, package_address)
+            {
+                Err(e) => {
+                    warn!("[VM]Update module strategy deserialize err : {:?}", e);
+                    return Err(VMStatus::Error(StatusCode::FAILED_TO_DESERIALIZE_RESOURCE));
+                }
+                Ok(only_new_module) => only_new_module,
+            };
 
             session
                 .publish_module_bundle_with_option(
@@ -897,8 +897,7 @@ impl StarcoinVM {
             MoveValue::U64(parent_gas_used),
         ]);
         //let data_cache = remote_cache.as_move_resolver();
-        let mut session: SessionAdapter<_> =
-            self.move_vm.new_session(storage, session_id).into();
+        let mut session: SessionAdapter<_> = self.move_vm.new_session(storage, session_id).into();
         session
             .as_mut()
             .execute_function_bypass_visibility(
@@ -987,12 +986,7 @@ impl StarcoinVM {
                         if txn_status.is_discarded() {
                             discard_error_vm_status(err)
                         } else {
-                            self.failed_transaction_cleanup(
-                                err,
-                                &mut gas_meter,
-                                &txn_data,
-                                storage,
-                            )
+                            self.failed_transaction_cleanup(err, &mut gas_meter, &txn_data, storage)
                         }
                     }
                 }
@@ -1026,18 +1020,17 @@ impl StarcoinVM {
             Ok(txn_data) => txn_data,
             Err(e) => return Ok(discard_error_vm_status(e)),
         };
-        let mut session = self.move_vm.new_session(storage, SessionId::txn_meta(&txn_data)).into();
+        let mut session = self
+            .move_vm
+            .new_session(storage, SessionId::txn_meta(&txn_data))
+            .into();
         let mut gas_meter = StarcoinGasMeter::new(gas_params.clone(), txn_data.max_gas_amount());
         gas_meter.set_metering(false);
         let result = match txn.raw_txn.payload() {
             payload @ TransactionPayload::Script(_)
-            | payload @ TransactionPayload::ScriptFunction(_) => self
-                .execute_script_or_script_function(
-                    session,
-                    &mut gas_meter,
-                    &txn_data,
-                    payload,
-                ),
+            | payload @ TransactionPayload::ScriptFunction(_) => {
+                self.execute_script_or_script_function(session, &mut gas_meter, &txn_data, payload)
+            }
             TransactionPayload::Package(p) => {
                 self.execute_package(session, &mut gas_meter, &txn_data, p, storage)
             }
@@ -1077,10 +1070,11 @@ impl StarcoinVM {
     /// if gas is used up when executing some txn, only return the outputs of previous succeed txns.
     pub fn execute_block_transactions<S: StateView>(
         &mut self,
-        data_cache: &mut StateViewCache<S>,
+        storage: &S,
         transactions: Vec<Transaction>,
         block_gas_limit: Option<u64>,
     ) -> Result<Vec<(VMStatus, TransactionOutput)>> {
+        let mut data_cache = StateViewCache::new(storage);
         let mut result = vec![];
         // load config by config change event
         self.load_configs(&data_cache)?;
@@ -1102,8 +1096,8 @@ impl StarcoinVM {
                                 .start_timer()
                         });
                         let gas_unit_price = transaction.gas_unit_price();
-                        let (status, output) =
-                            self.execute_user_transaction(&data_cache.as_move_resolver(), transaction);
+                        let (status, output) = self
+                            .execute_user_transaction(&data_cache.as_move_resolver(), transaction);
                         // only need to check for user transactions.
                         match gas_left.checked_sub(output.gas_used()) {
                             Some(l) => gas_left = l,
@@ -1150,11 +1144,12 @@ impl StarcoinVM {
                             .with_label_values(&[txn_type_name.as_str()])
                             .start_timer()
                     });
-                    let (status, output) =
-                        match self.process_block_metadata(&data_cache.as_move_resolver(), block_metadata) {
-                            Ok(output) => (VMStatus::Executed, output),
-                            Err(vm_status) => discard_error_vm_status(vm_status),
-                        };
+                    let (status, output) = match self
+                        .process_block_metadata(&data_cache.as_move_resolver(), block_metadata)
+                    {
+                        Ok(output) => (VMStatus::Executed, output),
+                        Err(vm_status) => discard_error_vm_status(vm_status),
+                    };
                     debug_assert_eq!(
                         output.gas_used(),
                         0,
