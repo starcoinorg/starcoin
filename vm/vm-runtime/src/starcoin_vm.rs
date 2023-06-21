@@ -896,7 +896,6 @@ impl StarcoinVM {
             MoveValue::U8(chain_id.id()),
             MoveValue::U64(parent_gas_used),
         ]);
-        //let data_cache = remote_cache.as_move_resolver();
         let mut session: SessionAdapter<_> = self.move_vm.new_session(storage, session_id).into();
         session
             .as_mut()
@@ -1000,7 +999,7 @@ impl StarcoinVM {
         storage: &S,
         txn: DryRunTransaction,
     ) -> Result<(VMStatus, TransactionOutput)> {
-        // load config by config change event.
+        // TODO load config by config change event.
         self.load_configs(&storage)?;
 
         let gas_params = match self.get_gas_parameters() {
@@ -1076,7 +1075,8 @@ impl StarcoinVM {
     ) -> Result<Vec<(VMStatus, TransactionOutput)>> {
         let mut data_cache = StateViewCache::new(storage);
         let mut result = vec![];
-        // load config by config change event
+
+        // TODO load config by config change event
         self.load_configs(&data_cache)?;
 
         let mut gas_left = block_gas_limit.unwrap_or(u64::MAX);
@@ -1115,7 +1115,7 @@ impl StarcoinVM {
                             // Push write set to write set
                             data_cache.push_write_set(output.write_set())
                         }
-                        // load config by config change event
+                        // TODO load config by config change event
                         self.check_reconfigure(&data_cache, &output)?;
 
                         #[cfg(feature = "metrics")]
@@ -1307,7 +1307,6 @@ impl StarcoinVM {
         storage: &S,
     ) -> (VMStatus, TransactionOutput) {
         gas_meter.set_metering(false);
-        //let data_cache = remote_cache.as_move_resolver();
         let mut session: SessionAdapter<_> = self
             .move_vm
             .new_session(storage, SessionId::txn_meta(txn_data))

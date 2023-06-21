@@ -135,7 +135,7 @@ impl<'a, S: StateView> ResourceResolver for RemoteStorage<'a, S> {
         self.get(&ap).map_err(|e| e.finish(Location::Undefined))
     }
 }
-
+// TODO Note for Conflicting: conflicting implementation in crate `starcoin_vm_types`: - impl<V> ConfigStorage for V where V: StateView;
 // impl<'a, S: StateView> ConfigStorage for RemoteStorage<'a, S> {
 //     fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>> {
 //         self.get(&access_path).ok()?
@@ -219,6 +219,7 @@ impl<S: StateView> TableResolver for RemoteStorageOwned<S> {
     }
 }
 
+// TODO Note for Conflicting: conflicting implementation in crate `starcoin_vm_types`: - impl<V> ConfigStorage for V where V: StateView;
 // impl<S: StateView> ConfigStorage for RemoteStorageOwned<S> {
 //     fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>> {
 //         self.as_move_resolver().fetch_config(access_path)
