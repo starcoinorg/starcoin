@@ -1,10 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::business_layer_handle::BusinessLayerHandle;
+use crate::business_layer_handle::{BusinessLayerHandle, HandshakeResult};
 use crate::config::RequestResponseConfig;
-use crate::protocol::generic_proto::NotificationsSink;
-use crate::protocol::{rep, CustomMessageOutcome};
+use crate::protocol::rep;
 use crate::service::NetworkStateInfo;
 use crate::{config, Event, NetworkService, NetworkWorker};
 use crate::{NetworkConfiguration, Params, ProtocolId};
@@ -15,7 +14,7 @@ use futures::stream::StreamExt;
 use libp2p::PeerId;
 use network_p2p_types::MultiaddrWithPeerId;
 use once_cell::sync::Lazy;
-use sc_peerset::{ReputationChange, SetId};
+use sc_peerset::ReputationChange;
 use serde::{Deserialize, Serialize};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use std::borrow::Cow;
@@ -64,17 +63,12 @@ impl BusinessLayerHandle for TestChainInfoHandle {
     fn handshake(
         &self,
         peer_id: PeerId,
-        _set_id: SetId,
-        protocol_name: Cow<'static, str>,
         received_handshake: Vec<u8>,
-        notifications_sink: NotificationsSink,
-    ) -> Result<CustomMessageOutcome, ReputationChange> {
+    ) -> Result<HandshakeResult, ReputationChange> {
         let status = Status::decode(&received_handshake).unwrap();
         if self.status.info.genesis_hash() == status.info.genesis_hash() {
-            return std::result::Result::Ok(CustomMessageOutcome::NotificationStreamOpened {
-                remote: peer_id,
-                protocol: protocol_name,
-                notifications_sink,
+            return std::result::Result::Ok(HandshakeResult {
+                who: peer_id,
                 generic_data: status.info.encode().unwrap(),
                 notif_protocols: status.notif_protocols,
                 rpc_protocols: status.rpc_protocols,

@@ -2,23 +2,32 @@ use std::borrow::Cow;
 
 use anyhow::Error;
 use libp2p::PeerId;
-use sc_peerset::{ReputationChange, SetId};
+use sc_peerset::ReputationChange;
 
-use crate::protocol::{generic_proto::NotificationsSink, CustomMessageOutcome};
+pub struct HandshakeResult {
+    /// the node connected to
+    pub who: PeerId,
+
+    /// some data related to the above layer
+    pub generic_data: Vec<u8>,
+
+    /// broadcast protocol agreed on
+    pub notif_protocols: Vec<Cow<'static, str>>,
+
+    /// p2p protocol agreed on
+    pub rpc_protocols: Vec<Cow<'static, str>>,
+}
 
 /// The above layer must implement this trait to complete some business logic related to the network.
 pub trait BusinessLayerHandle {
     /// To verify whether the connection is qualified.
-    /// if handshaking is successful, return CustomMessageOutcome::NotificationStreamOpened
-    /// otherwise, return Error
+    /// if handshaking is successful, return HandshakeResult
+    /// otherwise, return the specific error message
     fn handshake(
         &self,
         peer_id: PeerId,
-        set_id: SetId,
-        protocol_name: Cow<'static, str>,
         received_handshake: Vec<u8>,
-        notifications_sink: NotificationsSink,
-    ) -> Result<CustomMessageOutcome, ReputationChange>;
+    ) -> Result<HandshakeResult, ReputationChange>;
 
     fn build_handshake_msg(
         &mut self,

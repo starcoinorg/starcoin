@@ -716,7 +716,9 @@ impl Inner {
                 self.network_service.update_business_status(
                     ChainStatus::new(msg.compact_block.header.clone(), msg.block_info.clone())
                         .encode()
-                        .unwrap(),
+                        .expect(
+                            "Encoding the compact_block.header and block_info must be successful",
+                        ),
                 );
 
                 self.self_peer.known_blocks.put(id, ());

@@ -203,22 +203,25 @@ impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
                 received_handshake,
                 notifications_sink,
             } => {
-                let result = self.business_layer_handle.handshake(
-                    peer_id,
-                    set_id,
-                    self.notif_protocols[usize::from(set_id)].clone(),
-                    received_handshake.clone(),
-                    notifications_sink,
-                );
-                match result {
-                    Ok(custom_message) => {
+                let result_handshake = self
+                    .business_layer_handle
+                    .handshake(peer_id, received_handshake.clone());
+                match result_handshake {
+                    Ok(handshake_info) => {
                         debug!(target: "network-p2p", "Connected {}", peer_id);
                         let peer = Peer {
                             info: received_handshake,
                         };
                         self.context_data.peers.insert(peer_id, peer);
                         debug!(target: "network-p2p", "Connected {}, Set id {:?}", peer_id, set_id);
-                        custom_message
+                        CustomMessageOutcome::NotificationStreamOpened {
+                            remote: handshake_info.who,
+                            protocol: self.notif_protocols[usize::from(set_id)].clone(),
+                            notifications_sink,
+                            generic_data: handshake_info.generic_data,
+                            notif_protocols: handshake_info.notif_protocols.to_vec(),
+                            rpc_protocols: handshake_info.rpc_protocols.to_vec(),
+                        }
                     }
                     Err(err) => {
                         error!("business layer handle returned a failure: {:?}", err);
