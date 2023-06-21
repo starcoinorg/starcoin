@@ -15,8 +15,7 @@ pub mod identifier {
 }
 
 pub mod language_storage {
-    pub use crate::language_storage_ext::parse_module_id;
-    pub use crate::language_storage_ext::FunctionId;
+    pub use crate::language_storage_ext::{parse_module_id, FunctionId};
     pub use move_core_types::language_storage::{
         ModuleId, ResourceKey, StructTag, TypeTag, CODE_TAG, CORE_CODE_ADDRESS, RESOURCE_TAG,
     };
@@ -149,20 +148,9 @@ pub mod transaction_argument {
 }
 
 pub mod parser {
-    use crate::language_storage::TypeTag;
-    use anyhow::{bail, Result};
-    use move_core_types::language_storage::StructTag;
     pub use move_core_types::parser::{
-        parse_transaction_argument, parse_type_tag, parse_type_tags,
+        parse_struct_tag, parse_transaction_argument, parse_type_tag, parse_type_tags,
     };
-
-    pub fn parse_struct_tag(s: &str) -> Result<StructTag> {
-        let type_tag = parse_type_tag(s)?;
-        match type_tag {
-            TypeTag::Struct(st) => Ok(*st),
-            t => bail!("expect a struct tag, found: {:?}", t),
-        }
-    }
 }
 
 #[cfg(any(test, feature = "fuzzing"))]
