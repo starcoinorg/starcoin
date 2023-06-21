@@ -11,6 +11,7 @@ use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValu
 use starcoin_rpc_api::types::{DryRunOutputView, TransactionOutputView, WriteOpValueView};
 use starcoin_state_api::StateNodeStore;
 use starcoin_statedb::ChainStateDB;
+use starcoin_vm_runtime::data_cache::{AsMoveResolver, StateViewCache};
 use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::file_format::CompiledModule;
@@ -97,7 +98,8 @@ pub fn dry_run<S: StateView>(
     metrics: Option<VMMetrics>,
 ) -> Result<(VMStatus, TransactionOutput)> {
     let mut vm = StarcoinVM::new(metrics);
-    vm.dry_run_transaction(state_view, txn)
+    let state_view_cache = StateViewCache::new(state_view);
+    vm.dry_run_transaction(&state_view_cache.as_move_resolver(), txn)
 }
 
 pub fn dry_run_explain<S: StateView>(

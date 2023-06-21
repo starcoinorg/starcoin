@@ -30,17 +30,32 @@ use move_core_types::{
     language_storage::{ModuleId, StructTag},
 };
 use serde::de::DeserializeOwned;
+use std::ops::Deref;
 
 /// `StateView` is a trait that defines a read-only snapshot of the global state. It is passed to
 /// the VM for transaction execution, during which the VM is guaranteed to read anything at the
 /// given state.
-pub trait StateView {
+pub trait StateView: Sync {
     /// Gets the state value for a given state key.
     fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>>;
 
     /// VM needs this method to know whether the current state view is for genesis state creation.
     /// Currently TransactionPayload::WriteSet is only valid for genesis state creation.
     fn is_genesis(&self) -> bool;
+}
+
+impl<R, S> StateView for R
+where
+    R: Deref<Target = S> + Sync,
+    S: StateView,
+{
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+        self.deref().get_state_value(state_key)
+    }
+
+    fn is_genesis(&self) -> bool {
+        self.deref().is_genesis()
+    }
 }
 
 impl<T: ?Sized> StateReaderExt for T where T: StateView {}

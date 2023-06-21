@@ -13,7 +13,6 @@ use starcoin_vm_types::{
     access_path::AccessPath,
     errors::*,
     language_storage::{ModuleId, StructTag},
-    on_chain_config::ConfigStorage,
     state_view::StateView,
     vm_status::StatusCode,
     write_set::{WriteOp, WriteSet},
@@ -136,12 +135,12 @@ impl<'a, S: StateView> ResourceResolver for RemoteStorage<'a, S> {
         self.get(&ap).map_err(|e| e.finish(Location::Undefined))
     }
 }
-
-impl<'a, S: StateView> ConfigStorage for RemoteStorage<'a, S> {
-    fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>> {
-        self.get(&access_path).ok()?
-    }
-}
+// TODO Note for Conflicting: conflicting implementation in crate `starcoin_vm_types`: - impl<V> ConfigStorage for V where V: StateView;
+// impl<'a, S: StateView> ConfigStorage for RemoteStorage<'a, S> {
+//     fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>> {
+//         self.get(&access_path).ok()?
+//     }
+// }
 
 impl<'a, S> Deref for RemoteStorage<'a, S> {
     type Target = S;
@@ -220,11 +219,12 @@ impl<S: StateView> TableResolver for RemoteStorageOwned<S> {
     }
 }
 
-impl<S: StateView> ConfigStorage for RemoteStorageOwned<S> {
-    fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>> {
-        self.as_move_resolver().fetch_config(access_path)
-    }
-}
+// TODO Note for Conflicting: conflicting implementation in crate `starcoin_vm_types`: - impl<V> ConfigStorage for V where V: StateView;
+// impl<S: StateView> ConfigStorage for RemoteStorageOwned<S> {
+//     fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>> {
+//         self.as_move_resolver().fetch_config(access_path)
+//     }
+// }
 
 pub trait IntoMoveResolver<S> {
     fn into_move_resolver(self) -> RemoteStorageOwned<S>;

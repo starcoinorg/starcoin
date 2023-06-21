@@ -36,7 +36,7 @@ fn do_execute_block_transactions<S: StateView>(
 ) -> Result<Vec<TransactionOutput>> {
     let mut vm = StarcoinVM::new(metrics);
     let result = vm
-        .execute_block_transactions(chain_state, txns, block_gas_limit)?
+        .execute_block_transactions(&chain_state, txns, block_gas_limit)?
         .into_iter()
         .map(|(_, output)| {
             debug! {"{:?}", output};
