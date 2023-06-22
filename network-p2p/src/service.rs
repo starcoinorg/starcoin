@@ -412,8 +412,11 @@ impl<T: BusinessLayerHandle + Send> NetworkWorker<T> {
                 let known_addresses = NetworkBehaviour::addresses_of_peer(swarm.behaviour_mut(), peer_id)
                     .into_iter().collect();
 
-                let endpoint = if let Some(e) = swarm.behaviour_mut().node(peer_id).map(|i| i.endpoint()) {
-                    e.clone().into()
+                let endpoint = if let Some(op_e) = swarm.behaviour_mut().node(peer_id).map(|i| i.endpoint()) {
+                    match op_e {
+                        Some(e) => e.clone().into(),
+                        None => return None,
+                    }
                 } else {
                     error!(target: "sub-libp2p", "Found state inconsistency between custom protocol \
 						and debug information about {:?}", peer_id);
