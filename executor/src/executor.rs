@@ -3,9 +3,7 @@
 
 use anyhow::Result;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionOutput};
-use starcoin_vm_runtime::{
-    metrics::VMMetrics, starcoin_vm::StarcoinVM, VMExecutor,
-};
+use starcoin_vm_runtime::{metrics::VMMetrics, starcoin_vm::StarcoinVM, VMExecutor};
 use starcoin_vm_types::{
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
@@ -37,7 +35,9 @@ fn do_execute_block_transactions<S: StateView>(
     block_gas_limit: Option<u64>,
     metrics: Option<VMMetrics>,
 ) -> Result<Vec<TransactionOutput>> {
-    let result = StarcoinVM::execute_block(txns, chain_state, block_gas_limit, metrics)?;
+    // XXX FIXME YSG
+    let result =
+        <StarcoinVM as VMExecutor>::execute_block(txns, chain_state, block_gas_limit, metrics)?;
     Ok(result)
 }
 
