@@ -220,7 +220,6 @@ impl<S: StateView> TableResolver for RemoteStorageOwned<S> {
     }
 }
 
-
 // TODO Note for Conflicting: conflicting implementation in crate `starcoin_vm_types`: - impl<V> ConfigStorage for V where V: StateView;
 // impl<S: StateView> ConfigStorage for RemoteStorageOwned<S> {
 //     fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>> {

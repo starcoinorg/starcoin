@@ -76,6 +76,8 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
                 // Merge more table_infos, and keep the latest TableInfo for a same TableHandle
                 executed_data.txn_table_infos.append(&mut table_infos);
             }
+            // XXX FIXME YSG
+            TransactionStatus::Retry => return Err(BlockExecutorError::BlockExecuteRetryErr),
         };
     }
 

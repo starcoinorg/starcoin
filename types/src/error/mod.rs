@@ -29,4 +29,6 @@ pub enum BlockExecutorError {
     AccountError(anyhow::Error),
     #[error("other error: {0:?}")]
     OtherError(Box<dyn Error + Send + Sync + 'static>),
+    #[error("block transaction execute Retry error")]
+    BlockExecuteRetryErr,
 }

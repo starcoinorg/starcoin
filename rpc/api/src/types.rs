@@ -973,6 +973,9 @@ impl TryFrom<TransactionInfoView> for RichTransactionInfo {
             TransactionStatus::Discard(_) => {
                 bail!("TransactionInfoView's status is discard, {:?}, can not convert to RichTransactionInfo", view);
             }
+            TransactionStatus::Retry => {
+                bail!("TransactionInfoView's status is Retry, {:?}, can not convert to RichTransactionInfo", view);
+            }
         }
     }
 }
@@ -1000,6 +1003,7 @@ pub enum TransactionStatusView {
         status_code: StrView<u64>,
         status_code_name: String,
     },
+    Retry,
 }
 
 impl From<TransactionStatus> for TransactionStatusView {
@@ -1007,6 +1011,7 @@ impl From<TransactionStatus> for TransactionStatusView {
         match s {
             TransactionStatus::Discard(d) => d.into(),
             TransactionStatus::Keep(k) => k.into(),
+            TransactionStatus::Retry => Retry,
         }
     }
 }
@@ -1074,6 +1079,7 @@ impl From<TransactionStatusView> for TransactionStatus {
                     .ok()
                     .unwrap_or(StatusCode::UNKNOWN_STATUS),
             ),
+            TransactionStatusView::Retry => TransactionStatus::Retry,
         }
     }
 }
@@ -1166,6 +1172,7 @@ impl TransactionEventView {
     }
 }
 
+use crate::types::TransactionStatusView::Retry;
 use schemars::gen::SchemaGenerator;
 use schemars::schema::{InstanceType, Schema, SchemaObject};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;

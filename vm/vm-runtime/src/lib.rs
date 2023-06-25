@@ -20,7 +20,7 @@ use starcoin_vm_types::{
     account_address::AccountAddress,
     language_storage::StructTag,
     state_view::StateView,
-    transaction::{Transaction, TransactionOutput, SignedUserTransaction, VMValidatorResult},
+    transaction::{SignedUserTransaction, Transaction, TransactionOutput, VMValidatorResult},
 };
 
 /// This trait describes the VM's validation interfaces.
