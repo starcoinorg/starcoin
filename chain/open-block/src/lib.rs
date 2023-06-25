@@ -185,6 +185,10 @@ impl OpenedBlock {
                     self.included_user_txns
                         .push(txn.try_into().expect("user txn"));
                 }
+                TransactionStatus::Retry => {
+                    debug!("impossible retry txn {}", txn_hash);
+                    discard_txns.push(txn.try_into().expect("user txn"));
+                }
             };
         }
         Ok(ExcludedTxns {
@@ -215,6 +219,12 @@ impl OpenedBlock {
             }
             TransactionStatus::Keep(_) => {
                 let _ = self.push_txn_and_state(block_meta_txn_hash, output)?;
+            }
+            TransactionStatus::Retry => {
+                bail!(
+                    "block_metadata txn {:?} is retry impossible",
+                    self.block_meta
+                );
             }
         };
         Ok(())

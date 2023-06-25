@@ -70,6 +70,8 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
                 ));
                 executed_data.txn_events.push(events);
             }
+            // XXX FIXME YSG
+            TransactionStatus::Retry => return Err(BlockExecutorError::BlockExecuteRetryErr),
         };
     }
 

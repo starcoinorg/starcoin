@@ -1345,7 +1345,7 @@ impl StarcoinVM {
             TransactionStatus::Discard(status) => {
                 (VMStatus::Error(status), discard_error_output(status))
             }
-            TransactionStatus::Retry => unreachable!()
+            TransactionStatus::Retry => unreachable!(),
         }
     }
 
@@ -1628,7 +1628,7 @@ impl VMAdapter for StarcoinVM {
                 let sender = txn.sender().to_string();
                 let mut data_cache = StateViewCache::new(state_view);
                 let (vm_status, output) =
-                    self.execute_user_transaction(*txn.clone(), &mut data_cache);
+                    self.execute_user_transaction(&data_cache.as_move_resolver(), *txn.clone());
                 // XXX FIXME YSG
                 // this place should add check_reconfigure to check we need re execution
                 // let gas_unit_price = transaction.gas_unit_price(); think about gas_used OutOfGas
@@ -1636,11 +1636,12 @@ impl VMAdapter for StarcoinVM {
             }
             PreprocessedTransaction::BlockMetadata(block_meta) => {
                 let mut data_cache = StateViewCache::new(state_view);
-                let (vm_status, output) =
-                    match self.process_block_metadata(&mut data_cache, block_meta.clone()) {
-                        Ok(output) => (VMStatus::Executed, output),
-                        Err(vm_status) => discard_error_vm_status(vm_status),
-                    };
+                let (vm_status, output) = match self
+                    .process_block_metadata(&data_cache.as_move_resolver(), block_meta.clone())
+                {
+                    Ok(output) => (VMStatus::Executed, output),
+                    Err(vm_status) => discard_error_vm_status(vm_status),
+                };
                 (vm_status, output, Some("block_meta".to_string()))
             }
         })
