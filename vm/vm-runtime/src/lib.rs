@@ -20,18 +20,8 @@ use starcoin_vm_types::{
     account_address::AccountAddress,
     language_storage::StructTag,
     state_view::StateView,
-    transaction::{SignedUserTransaction, Transaction, TransactionOutput, VMValidatorResult},
+    transaction::{Transaction, TransactionOutput},
 };
-
-/// This trait describes the VM's validation interfaces.
-pub trait VMValidator {
-    /// Executes the prologue of the Aptos Account and verifies that the transaction is valid.
-    fn validate_transaction(
-        &self,
-        transaction: SignedUserTransaction,
-        state_view: &impl StateView,
-    ) -> VMValidatorResult;
-}
 
 /// This trait describes the VM's execution interface.
 pub trait VMExecutor: Send + Sync {

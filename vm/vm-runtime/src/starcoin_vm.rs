@@ -3,8 +3,7 @@
 
 use crate::access_path_cache::AccessPathCache;
 use crate::adapter_common::{
-    discard_error_output, discard_error_vm_status, validate_signed_transaction,
-    PreprocessedTransaction, VMAdapter,
+    discard_error_output, discard_error_vm_status, PreprocessedTransaction, VMAdapter,
 };
 use crate::data_cache::{AsMoveResolver, RemoteStorage, StateViewCache};
 use crate::errors::{
@@ -57,9 +56,7 @@ use starcoin_vm_types::on_chain_config::{
 };
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateReaderExt;
-use starcoin_vm_types::transaction::{
-    DryRunTransaction, Package, TransactionPayloadType, VMValidatorResult,
-};
+use starcoin_vm_types::transaction::{DryRunTransaction, Package, TransactionPayloadType};
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::vm_status::KeptVMStatus;
@@ -78,7 +75,7 @@ static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
 
 #[cfg(feature = "metrics")]
 use crate::metrics::VMMetrics;
-use crate::{VMExecutor, VMValidator};
+use crate::VMExecutor;
 
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
@@ -1560,29 +1557,6 @@ impl VMExecutor for StarcoinVM {
     }
 }
 
-// VMValidator external API
-impl VMValidator for StarcoinVM {
-    /// XXX FIXME YSG
-    /// Determine if a transaction is valid. Will return `None` if the transaction is accepted,
-    /// `Some(Err)` if the VM rejects it, with `Err` as an error code. Verification performs the
-    /// following steps:
-    /// 1. The signature on the `SignedUserTransaction` matches the public key included in the
-    ///    transaction
-    /// 2. The script to be executed is under given specific configuration.
-    /// 3. Invokes `Account.prologue`, which checks properties such as the transaction has the
-    /// right sequence number and the sender has enough balance to pay for the gas.
-    /// TBD:
-    /// 1. Transaction arguments matches the main function's type signature.
-    ///    We don't check this item for now and would execute the check at execution time.
-    fn validate_transaction(
-        &self,
-        transaction: SignedUserTransaction,
-        state_view: &impl StateView,
-    ) -> VMValidatorResult {
-        validate_signed_transaction(self, transaction, state_view)
-    }
-}
-
 impl VMAdapter for StarcoinVM {
     fn new_session<'r, R: MoveResolverExt>(
         &self,
@@ -1596,15 +1570,6 @@ impl VMAdapter for StarcoinVM {
         txn.check_signature()
     }
 
-    fn run_prologue<S: MoveResolverExt>(
-        &self,
-        session: &mut SessionAdapter<S>,
-        transaction: &SignatureCheckedTransaction,
-    ) -> Result<(), VMStatus> {
-        // XXX FIXME YSG
-        todo!()
-    }
-
     fn should_restart_execution(output: &TransactionOutput) -> bool {
         for event in output.events() {
             if event.key().get_creator_address() == genesis_address()
@@ -1616,32 +1581,28 @@ impl VMAdapter for StarcoinVM {
         false
     }
 
-    // XXX FIXME YSG, why use &mut self, because of check_reconfigure modified vm_config, why aptos no need do this
-    // actually is load_configs problem
     fn execute_single_transaction<S: MoveResolverExt + StateView>(
         &self,
         txn: &PreprocessedTransaction,
-        state_view: &S,
+        data_cache: &S,
     ) -> Result<(VMStatus, TransactionOutput, Option<String>), VMStatus> {
         Ok(match txn {
             PreprocessedTransaction::UserTransaction(txn) => {
                 let sender = txn.sender().to_string();
-                let mut data_cache = StateViewCache::new(state_view);
-                let (vm_status, output) =
-                    self.execute_user_transaction(&data_cache.as_move_resolver(), *txn.clone());
+                let (vm_status, output) = self.execute_user_transaction(data_cache, *txn.clone());
                 // XXX FIXME YSG
+                // why use &mut self, because of check_reconfigure modified vm_config, why aptos no need do this
+                // actually is load_configs problem
                 // this place should add check_reconfigure to check we need re execution
                 // let gas_unit_price = transaction.gas_unit_price(); think about gas_used OutOfGas
                 (vm_status, output, Some(sender))
             }
             PreprocessedTransaction::BlockMetadata(block_meta) => {
-                let mut data_cache = StateViewCache::new(state_view);
-                let (vm_status, output) = match self
-                    .process_block_metadata(&data_cache.as_move_resolver(), block_meta.clone())
-                {
-                    Ok(output) => (VMStatus::Executed, output),
-                    Err(vm_status) => discard_error_vm_status(vm_status),
-                };
+                let (vm_status, output) =
+                    match self.process_block_metadata(data_cache, block_meta.clone()) {
+                        Ok(output) => (VMStatus::Executed, output),
+                        Err(vm_status) => discard_error_vm_status(vm_status),
+                    };
                 (vm_status, output, Some("block_meta".to_string()))
             }
         })

@@ -1,16 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-/// XXX FIXME YSG notice SignedUserTransaction is Aptos SignedTransaction
 use crate::{
     data_cache::StateViewCache,
     move_vm_ext::{MoveResolverExt, SessionId},
 };
 use anyhow::Result;
-//use move_core_types::resolver::MoveResolver;
 use move_core_types::vm_status::{StatusCode, VMStatus};
-// use rayon::prelude::*;
-//use starcoin_logger::prelude::*;
 use move_vm_runtime::move_vm_adapter::SessionAdapter;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::{
@@ -40,14 +36,6 @@ pub trait VMAdapter {
     /// `Ok(SignatureCheckedTransaction)` if the signature is valid.
     fn check_signature(txn: SignedUserTransaction) -> Result<SignatureCheckedTransaction>;
 
-    /// Runs the prologue for the given transaction.
-    fn run_prologue<S: MoveResolverExt>(
-        &self,
-        // XXX FIXME YSG, this place we use Session, we don't have move_vm_ext::SessionExt
-        session: &mut SessionAdapter<S>,
-        transaction: &SignatureCheckedTransaction,
-    ) -> Result<(), VMStatus>;
-
     /// TODO: maybe remove this after more refactoring of execution logic.
     fn should_restart_execution(output: &TransactionOutput) -> bool;
 
@@ -59,72 +47,7 @@ pub trait VMAdapter {
     ) -> Result<(VMStatus, TransactionOutput, Option<String>), VMStatus>;
 }
 
-/// Validate a signed transaction by performing the following:
-/// 1. Check the signature(s) included in the signed transaction
-/// 2. Check that the transaction is allowed in the context provided by the `adapter`
-/// 3. Run the prologue to perform additional on-chain checks
-/// The returned `VMValidatorResult` will have status `None` and if all checks succeeded
-/// and `Some(DiscardedVMStatus)` otherwise.
-pub fn validate_signed_transaction<A: VMAdapter>(
-    adapter: &A,
-    _transaction: SignedUserTransaction,
-    _state_view: &impl StateView,
-) -> VMValidatorResult {
-    // XXX FIXME YSG
-    /*
-    let txn = match A::check_signature(transaction) {
-        Ok(t) => t,
-        _ => {
-            return VMValidatorResult::error(StatusCode::INVALID_SIGNATURE);
-        }
-    };
-
-    let remote_cache = StateViewCache::new(state_view);
-    let resolver = remote_cache.as_move_resolver();
-    let mut session = adapter.new_session(&resolver, SessionId::txn(&txn));
-
-    let (status, gas_price) = match adapter.get_gas_price(&*txn, &resolver) {
-        Ok(price) => (None, price),
-        Err(err) => (Some(err.status_code()), 0),
-    };
-
-    let validation_result =
-        validate_signature_checked_transaction(adapter, &mut session, &txn, true);
-
-    // Increment the counter for transactions verified.
-    let (_counter_label, result) = match validation_result {
-        Ok(_) => (
-            "success",
-            VMValidatorResult::new(None, txn.gas_unit_price()),
-        ),
-        Err(err) => (
-            "failure",
-            VMValidatorResult::new(Some(err.status_code()), 0),
-        ),
-    };
-    result
-     */
-    VMValidatorResult::new(None, 0)
-}
-
-pub(crate) fn validate_signature_checked_transaction<S: MoveResolverExt, A: VMAdapter>(
-    adapter: &A,
-    // XXX FIXME YSG, this place we use SessionAdapter, we don't have move_vm_ext::SessionExt
-    session: &mut SessionAdapter<S>,
-    transaction: &SignatureCheckedTransaction,
-    allow_too_new: bool,
-) -> Result<(), VMStatus> {
-    // adapter.check_transaction_format(transaction)?;
-
-    let prologue_status = adapter.run_prologue(session, transaction);
-    match prologue_status {
-        Err(err) if !allow_too_new || err.status_code() != StatusCode::SEQUENCE_NUMBER_TOO_NEW => {
-            Err(err)
-        }
-        _ => Ok(()),
-    }
-}
-
+#[allow(dead_code)]
 fn preload_cache(
     _signature_verified_block: &[PreprocessedTransaction],
     _data_view: &impl StateView,
@@ -160,13 +83,15 @@ fn preload_cache(
      */
 }
 
+#[allow(dead_code)]
 pub(crate) fn execute_block_impl<A: VMAdapter, S: StateView>(
     _adapter: &A,
     _transactions: Vec<Transaction>,
     _data_cache: &mut StateViewCache<S>,
 ) -> Result<Vec<(VMStatus, TransactionOutput)>, VMStatus> {
-    let mut result = vec![];
+    let result = vec![];
     // XXX FIXME YSG, need open it
+    // check if preload_cache can use in
     /*
     let mut should_restart = false;
 
@@ -182,7 +107,6 @@ pub(crate) fn execute_block_impl<A: VMAdapter, S: StateView>(
         // sequentially while executing the transactions.
         signature_verified_block = transactions
             .into_par_iter()
-            // XXX FIXME YSG
             .map(preprocess_transaction)
             .collect();
     }
