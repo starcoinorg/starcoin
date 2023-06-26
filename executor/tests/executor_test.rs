@@ -151,7 +151,7 @@ fn test_txn_verify_err_case() -> Result<()> {
     );
 
     let signed_by_bob = bob.sign_txn(txn);
-    let verify_result = vm.verify_transaction(&NullStateView, signed_by_bob);
+    let verify_result = vm.verify_transaction(signed_by_bob, &NullStateView);
     assert!(verify_result.is_some());
     assert_eq!(
         verify_result.unwrap().status_code(),
@@ -211,7 +211,7 @@ fn test_package_txn() -> Result<()> {
             TransactionPayload::Package(package.clone()),
             None,
         ));
-        let verify_result = vm.verify_transaction(&chain_state, txn);
+        let verify_result = vm.verify_transaction(txn, &chain_state);
         assert!(verify_result.is_none());
         // execute the package txn
         account_execute_should_success(&alice, &chain_state, TransactionPayload::Package(package))
@@ -231,7 +231,7 @@ fn test_package_txn() -> Result<()> {
             TransactionPayload::Package(package),
             None,
         ));
-        let verify_result = vm.verify_transaction(&chain_state, txn);
+        let verify_result = vm.verify_transaction(txn, &chain_state);
         assert!(verify_result.is_some());
         assert_eq!(
             verify_result.unwrap().status_code(),
@@ -252,7 +252,7 @@ fn test_package_txn() -> Result<()> {
             TransactionPayload::Package(package.clone()),
             None,
         ));
-        let verify_result = vm.verify_transaction(&chain_state, txn);
+        let verify_result = vm.verify_transaction(txn, &chain_state);
         assert!(verify_result.is_none());
         // execute the package txn
         account_execute_should_success(&alice, &chain_state, TransactionPayload::Package(package))
