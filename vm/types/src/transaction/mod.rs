@@ -43,6 +43,7 @@ pub use script::{
 };
 use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use std::str::FromStr;
+use move_core_types::vm_status::StatusType;
 pub use transaction_argument::{
     parse_transaction_argument, parse_transaction_arguments, TransactionArgument,
 };
@@ -913,3 +914,51 @@ impl std::fmt::Display for TxStatus {
         write!(f, "{}", s)
     }
 }
+
+/// The result of running the transaction through the VM validator.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VMValidatorResult {
+    /// Result of the validation: `None` if the transaction was successfully validated
+    /// or `Some(DiscardedVMStatus)` if the transaction should be discarded.
+    status: Option<DiscardedVMStatus>,
+
+    /// Score for ranking the transaction priority (e.g., based on the gas price).
+    /// Only used when the status is `None`. Higher values indicate a higher priority.
+    score: u64,
+}
+
+impl VMValidatorResult {
+    pub fn new(vm_status: Option<DiscardedVMStatus>, score: u64) -> Self {
+        debug_assert!(
+            match vm_status {
+                None => true,
+                Some(status) =>
+                    status.status_type() == StatusType::Unknown
+                        || status.status_type() == StatusType::Validation
+                        || status.status_type() == StatusType::InvariantViolation,
+            },
+            "Unexpected discarded status: {:?}",
+            vm_status
+        );
+        Self {
+            status: vm_status,
+            score,
+        }
+    }
+
+    pub fn error(vm_status: DiscardedVMStatus) -> Self {
+        Self {
+            status: Some(vm_status),
+            score: 0,
+        }
+    }
+
+    pub fn status(&self) -> Option<DiscardedVMStatus> {
+        self.status
+    }
+
+    pub fn score(&self) -> u64 {
+        self.score
+    }
+}
+

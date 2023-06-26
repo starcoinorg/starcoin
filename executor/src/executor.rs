@@ -5,6 +5,7 @@ use anyhow::Result;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionOutput};
 use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
+use starcoin_vm_runtime::VMValidator;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{ModuleId, TypeTag};
 use starcoin_vm_types::{state_view::StateView, vm_status::VMStatus};
@@ -52,7 +53,7 @@ pub fn validate_transaction<S: StateView>(
     metrics: Option<VMMetrics>,
 ) -> Option<VMStatus> {
     let mut vm = StarcoinVM::new(metrics);
-    vm.verify_transaction(chain_state, txn)
+    vm.validate_transaction(txn, chain_state)
 }
 
 pub fn execute_readonly_function<S: StateView>(

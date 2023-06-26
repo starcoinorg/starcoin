@@ -8,6 +8,8 @@ use starcoin_types::error::ExecutorResult;
 use starcoin_types::transaction::TransactionStatus;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_vm_runtime::metrics::VMMetrics;
+use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
+use starcoin_vm_runtime::VMExecutor;
 use starcoin_vm_types::contract_event::ContractEvent;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -34,7 +36,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
     vm_metrics: Option<VMMetrics>,
 ) -> ExecutorResult<BlockExecutedData> {
     let txn_outputs =
-        crate::execute_block_transactions(chain_state, txns.clone(), block_gas_limit, vm_metrics)
+        StarcoinVM::execute_block(chain_state, txns.clone(), block_gas_limit, vm_metrics)
             .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
 
     let mut executed_data = BlockExecutedData::default();
