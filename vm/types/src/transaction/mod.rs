@@ -34,6 +34,7 @@ use crate::write_set::WriteOp;
 pub use error::CallError;
 pub use error::Error as TransactionError;
 pub use module::Module;
+use move_core_types::vm_status::StatusType;
 pub use package::Package;
 pub use pending_transaction::{Condition, PendingTransaction};
 use schemars::{self, JsonSchema};
@@ -43,7 +44,6 @@ pub use script::{
 };
 use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use std::str::FromStr;
-use move_core_types::vm_status::StatusType;
 pub use transaction_argument::{
     parse_transaction_argument, parse_transaction_arguments, TransactionArgument,
 };
@@ -961,4 +961,3 @@ impl VMValidatorResult {
         self.score
     }
 }
-

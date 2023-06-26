@@ -15,14 +15,13 @@ mod access_path_cache;
 mod errors;
 pub mod move_vm_ext;
 
+use crate::metrics::VMMetrics;
+use anyhow::Result;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::language_storage::StructTag;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::transaction::{SignedUserTransaction, Transaction, TransactionOutput};
-use crate::metrics::VMMetrics;
-use anyhow::Result;
-
 
 /// This trait describes the VM's validation interfaces.
 pub trait VMValidator {
