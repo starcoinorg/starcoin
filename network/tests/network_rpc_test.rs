@@ -4,7 +4,7 @@
 use bcs_ext::BCSCodec;
 use futures_timer::Delay;
 use network_api::RpcInfo;
-use network_rpc_core::RawRpcClient;
+use network_p2p_core::RawRpcClient;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;

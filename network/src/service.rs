@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::network_metrics::NetworkMetrics;
+use crate::network_p2p_handle::Networkp2pHandle;
 use crate::{build_network_worker, Announcement};
 use anyhow::{format_err, Result};
+use bcs_ext::BCSCodec;
 use bytes::Bytes;
 use futures::future::{abortable, AbortHandle};
 use futures::{
@@ -41,7 +43,9 @@ const BARNARD_HARD_FORK_PEER_VERSION_STRING_PREFIX: &str = "barnard_rollback_blo
 const BARNARD_HARD_FORK_VERSION: [i32; 3] = [1, 12, 9];
 
 pub struct NetworkActorService {
-    worker: Option<NetworkWorker>,
+    /// Worker and inner have ChainInfo instances separately. There might be some way to solve the problem.
+    /// Keep in mind that these two instances must be identical all the time!
+    worker: Option<NetworkWorker<Networkp2pHandle>>,
     inner: Inner,
 
     network_worker_handle: Option<AbortHandle>,
@@ -171,7 +175,7 @@ impl EventHandler<Self, Event> for NetworkActorService {
             Event::NotificationStreamOpened {
                 remote,
                 protocol,
-                info,
+                generic_data,
                 notif_protocols,
                 rpc_protocols,
                 version_string,
@@ -182,6 +186,10 @@ impl EventHandler<Self, Event> for NetworkActorService {
                     "Connected peer {:?}, protocol: {}, notif_protocols: {:?}, rpc_protocols: {:?}",
                     remote, protocol, notif_protocols, rpc_protocols
                 );
+                let info = match ChainInfo::decode(&generic_data) {
+                    Ok(data) => data,
+                    Err(_) => return,
+                };
                 if info.chain_id().is_barnard() {
                     info!("Connected peer ver_string {:?}", version_string);
                     if let Some(ref ver_str) = version_string {
@@ -197,10 +205,10 @@ impl EventHandler<Self, Event> for NetworkActorService {
                         }
                     }
                 }
-                let peer_event = PeerEvent::Open(remote.into(), info.clone());
+                let peer_event = PeerEvent::Open(remote.into(), Box::new(info.clone()));
                 self.inner.on_peer_connected(
                     remote.into(),
-                    *info,
+                    info,
                     notif_protocols,
                     rpc_protocols,
                     version_string,
@@ -480,7 +488,17 @@ impl Inner {
         self.self_peer
             .peer_info
             .update_chain_status(chain_status.clone());
-        self.network_service.update_chain_status(chain_status);
+        match chain_status.encode() {
+            Ok(status) => {
+                self.network_service.update_business_status(status);
+            }
+            Err(error) => {
+                error!(
+                    "failed to chain_status.encode(), reason: {}",
+                    error.to_string()
+                );
+            }
+        }
     }
 
     pub(crate) fn handle_network_message(
@@ -695,10 +713,13 @@ impl Inner {
                 //1. New Block broadcast
                 //2. Sync status change.
                 // may be update by repeat message, but can not find a more good way.
-                self.network_service.update_chain_status(ChainStatus::new(
-                    msg.compact_block.header.clone(),
-                    msg.block_info.clone(),
-                ));
+                self.network_service.update_business_status(
+                    ChainStatus::new(msg.compact_block.header.clone(), msg.block_info.clone())
+                        .encode()
+                        .expect(
+                            "Encoding the compact_block.header and block_info must be successful",
+                        ),
+                );
 
                 self.self_peer.known_blocks.put(id, ());
                 let (protocol_name, message) = notification

@@ -17,7 +17,7 @@ pub fn generate_server_module(rpc_trait: &mut ItemTrait) -> anyhow::Result<Token
         })
         .collect();
     let mut rpc_server_trait = rpc_trait.clone();
-    let io_delegate_type = quote!(network_rpc_core::delegates::IoDelegate);
+    let io_delegate_type = quote!(network_p2p_core::delegates::IoDelegate);
     let to_delegate_body = quote! {
         let mut del = #io_delegate_type::new(self.into());
         #(#delegate_methods)*
@@ -37,9 +37,9 @@ pub fn generate_server_module(rpc_trait: &mut ItemTrait) -> anyhow::Result<Token
         /// The generated server module.
         pub mod gen_server {
             use super::*;
-            use network_rpc_core::export::bcs_ext::{BCSCodec,from_bytes};
-            use network_rpc_core::export::log::*;
-            use network_rpc_core::NetRpcError;
+            use network_p2p_core::export::bcs_ext::{BCSCodec,from_bytes};
+            use network_p2p_core::export::log::*;
+            use network_p2p_core::NetRpcError;
             #rpc_server_trait
         }
     };

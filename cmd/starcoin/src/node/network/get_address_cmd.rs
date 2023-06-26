@@ -5,7 +5,8 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use clap::Parser;
-use network_types::peer_info::{Multiaddr, PeerId};
+use network_p2p_types::peer_id::PeerId;
+use network_types::peer_info::Multiaddr;
 use scmd::{CommandAction, ExecContext};
 
 #[derive(Debug, Parser, Default)]

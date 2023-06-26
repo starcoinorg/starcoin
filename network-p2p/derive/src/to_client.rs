@@ -40,7 +40,7 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
                             let result = self.request(peer_id.clone(), rpc_path, input_arg_serialized).await;
                             match result {
                                 Ok(result) => {
-                                    let result = from_bytes::<network_rpc_core::Result::<Vec<u8>>>(&result);
+                                    let result = from_bytes::<network_p2p_core::Result::<Vec<u8>>>(&result);
                                     match result {
                                         Ok(r) => match r {
                                             Ok(v) => {
@@ -81,12 +81,12 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
     pub mod gen_client{
         use super::*;
         use std::time::Duration;
-        use network_rpc_core::export::bcs_ext::{BCSCodec,from_bytes};
-        use network_rpc_core::export::log::*;
+        use network_p2p_core::export::bcs_ext::{BCSCodec,from_bytes};
+        use network_p2p_core::export::log::*;
         use futures::prelude::*;
-        use network_rpc_core::{RawRpcClient, PeerId};
+        use network_p2p_core::{RawRpcClient, PeerId};
         use std::sync::Arc;
-        use network_rpc_core::NetRpcError;
+        use network_p2p_core::NetRpcError;
         use anyhow::Context;
         use std::borrow::Cow;
         #get_rpc_info_method

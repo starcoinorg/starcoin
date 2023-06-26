@@ -143,8 +143,8 @@ pub struct Node<'a>(&'a NodeInfo);
 
 impl<'a> Node<'a> {
     /// Returns the endpoint of an established connection to the peer.
-    pub fn endpoint(&self) -> &'a ConnectedPoint {
-        &self.0.endpoints[0] // `endpoints` are non-empty by definition
+    pub fn endpoint(&self) -> Option<&'a ConnectedPoint> {
+        self.0.endpoints.get(0) // `endpoints` will trigger an exception if no item was pushed
     }
 
     /// Returns the latest version information we know of.

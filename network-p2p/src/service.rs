@@ -33,6 +33,7 @@ use std::sync::{
 use std::task::Poll;
 use std::{borrow::Cow, collections::HashSet, io, iter};
 
+use crate::business_layer_handle::BusinessLayerHandle;
 use crate::config::{Params, TransportConfig};
 use crate::discovery::DiscoveryConfig;
 use crate::errors::Error;
@@ -73,7 +74,6 @@ use network_p2p_types::IfDisconnected;
 use parking_lot::Mutex;
 use sc_peerset::{peersstate, PeersetHandle, ReputationChange};
 use starcoin_metrics::{Histogram, HistogramVec};
-use starcoin_types::startup_info::ChainStatus;
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
 use std::time::Duration;
@@ -125,13 +125,13 @@ pub struct NetworkService {
     notifications_sizes_metric: Option<HistogramVec>,
 }
 
-impl NetworkWorker {
+impl<T: BusinessLayerHandle + Send> NetworkWorker<T> {
     /// Creates the network service.
     ///
     /// Returns a `NetworkWorker` that implements `Future` and must be regularly polled in order
     /// for the network processing to advance. From it, you can extract a `NetworkService` using
     /// `worker.service()`. The `NetworkService` can be shared through the codebase.
-    pub fn new(params: Params) -> errors::Result<NetworkWorker> {
+    pub fn new(params: Params<T>) -> errors::Result<NetworkWorker<T>> {
         // Ensure the listen addresses are consistent with the transport.
         ensure_addresses_consistent_with_transport(
             params.network_config.listen_addresses.iter(),
@@ -221,7 +221,7 @@ impl NetworkWorker {
 
         let (protocol, peerset_handle) = Protocol::new(
             peerset_config,
-            params.chain_info,
+            params.business_layer_handle,
             boot_node_ids.clone(),
             notif_protocols,
             params
@@ -233,7 +233,7 @@ impl NetworkWorker {
         )?;
 
         // Build the swarm.
-        let (mut swarm, bandwidth): (Swarm<Behaviour>, _) = {
+        let (mut swarm, bandwidth): (Swarm<Behaviour<T>>, _) = {
             let user_agent = format!(
                 "{} ({})",
                 params.network_config.client_version, params.network_config.node_name
@@ -412,8 +412,11 @@ impl NetworkWorker {
                 let known_addresses = NetworkBehaviour::addresses_of_peer(swarm.behaviour_mut(), peer_id)
                     .into_iter().collect();
 
-                let endpoint = if let Some(e) = swarm.behaviour_mut().node(peer_id).map(|i| i.endpoint()) {
-                    e.clone().into()
+                let endpoint = if let Some(op_e) = swarm.behaviour_mut().node(peer_id).map(|i| i.endpoint()) {
+                    match op_e {
+                        Some(e) => e.clone().into(),
+                        None => return None,
+                    }
                 } else {
                     error!(target: "sub-libp2p", "Found state inconsistency between custom protocol \
 						and debug information about {:?}", peer_id);
@@ -723,12 +726,10 @@ impl NetworkService {
         }
     }
 
-    pub fn update_chain_status(&self, chain_status: ChainStatus) {
+    pub fn update_business_status(&self, status: Vec<u8>) {
         let _ = self
             .to_worker
-            .unbounded_send(ServiceToWorkerMsg::UpdateChainStatus(Box::new(
-                chain_status,
-            )));
+            .unbounded_send(ServiceToWorkerMsg::UpdateBusinessLayerStatus(status));
     }
 
     /// Returns a stream containing the events that happen on the network.
@@ -1005,7 +1006,7 @@ enum ServiceToWorkerMsg {
     IsConnected(PeerId, oneshot::Sender<bool>),
     NetworkState(oneshot::Sender<NetworkState>),
     KnownPeers(oneshot::Sender<HashSet<PeerId>>),
-    UpdateChainStatus(Box<ChainStatus>),
+    UpdateBusinessLayerStatus(Vec<u8>),
     AddressByPeerId(PeerId, oneshot::Sender<Vec<Multiaddr>>),
     BanPeer(bool, PeerId),
 }
@@ -1014,11 +1015,11 @@ enum ServiceToWorkerMsg {
 ///
 /// You are encouraged to poll this in a separate background thread or task.
 #[must_use = "The NetworkWorker must be polled in order for the network to work"]
-pub struct NetworkWorker {
+pub struct NetworkWorker<T: 'static + BusinessLayerHandle + Send> {
     /// The network service that can be extracted and shared through the codebase.
     service: Arc<NetworkService>,
     /// The *actual* network.
-    network_service: Swarm<Behaviour>,
+    network_service: Swarm<Behaviour<T>>,
     /// Messages from the `NetworkService` and that must be processed.
     from_worker: mpsc::UnboundedReceiver<ServiceToWorkerMsg>,
     /// Senders for events that happen on the network.
@@ -1033,7 +1034,7 @@ pub struct NetworkWorker {
     peers_notifications_sinks: Arc<Mutex<HashMap<(PeerId, Cow<'static, str>), NotificationsSink>>>,
 }
 
-impl Future for NetworkWorker {
+impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
     type Output = Result<(), io::Error>;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
@@ -1095,11 +1096,11 @@ impl Future for NetworkWorker {
                     }
                     let _ = tx.send(result);
                 }
-                ServiceToWorkerMsg::UpdateChainStatus(status) => {
+                ServiceToWorkerMsg::UpdateBusinessLayerStatus(status) => {
                     this.network_service
                         .behaviour_mut()
                         .user_protocol_mut()
-                        .update_chain_status(*status);
+                        .update_status(&status);
                 }
                 ServiceToWorkerMsg::AddressByPeerId(peer_id, tx) => {
                     let _ = tx.send(this.network_service.behaviour_mut().get_address(&peer_id));
@@ -1255,7 +1256,7 @@ impl Future for NetworkWorker {
                     remote,
                     protocol,
                     notifications_sink,
-                    info,
+                    generic_data,
                     notif_protocols,
                     rpc_protocols,
                 })) => {
@@ -1270,7 +1271,7 @@ impl Future for NetworkWorker {
                     this.event_streams.send(Event::NotificationStreamOpened {
                         remote,
                         protocol,
-                        info,
+                        generic_data,
                         notif_protocols,
                         rpc_protocols,
                         version_string: this
@@ -1573,7 +1574,7 @@ impl Future for NetworkWorker {
     }
 }
 
-impl Unpin for NetworkWorker {}
+impl<T: BusinessLayerHandle + Send> Unpin for NetworkWorker<T> {}
 
 fn ensure_addresses_consistent_with_transport<'a>(
     addresses: impl Iterator<Item = &'a Multiaddr>,

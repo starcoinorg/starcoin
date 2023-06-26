@@ -3,11 +3,11 @@ anyhow = { workspace = true }
 bcs-ext = { package = "bcs-ext", workspace = true }
 futures = { workspace = true }
 log = { workspace = true }
-network-rpc-derive = { workspace = true }
+network-p2p-derive = { workspace = true }
 num_enum = { workspace = true }
 serde = { features = ["derive"], workspace = true }
 starcoin-types = { package = "starcoin-types", workspace = true }
-network-types = { workspace = true }
+network-p2p-types = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }
@@ -16,7 +16,7 @@ stest = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
-name = "network-rpc-core"
+name = "network-p2p-core"
 publish = { workspace = true }
 version = "1.13.5"
 homepage = { workspace = true }

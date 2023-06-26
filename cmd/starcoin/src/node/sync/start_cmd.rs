@@ -6,7 +6,7 @@ use crate::StarcoinOpt;
 use anyhow::Result;
 use clap::Parser;
 use network_api::PeerStrategy;
-use network_types::peer_info::PeerId;
+use network_p2p_types::peer_id::PeerId;
 use scmd::{CommandAction, ExecContext};
 
 #[derive(Debug, Parser, Default)]

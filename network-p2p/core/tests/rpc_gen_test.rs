@@ -7,8 +7,8 @@ use futures::future::BoxFuture;
 use futures::FutureExt;
 use serde::{Deserialize, Serialize};
 
-use network_rpc_core::server::NetworkRpcServer;
-use network_rpc_core::{prelude::*, InmemoryRpcClient};
+use network_p2p_core::server::NetworkRpcServer;
+use network_p2p_core::{prelude::*, InmemoryRpcClient};
 
 use crate::gen_client::NetworkRpcClient;
 use crate::gen_server::KVRpc;
@@ -93,11 +93,11 @@ fn test_rpc_err() {
 
 #[test]
 fn test_result_serialize() {
-    let str_result: network_rpc_core::Result<String, NetRpcError> =
-        network_rpc_core::Result::Ok("test".to_string());
+    let str_result: network_p2p_core::Result<String, NetRpcError> =
+        network_p2p_core::Result::Ok("test".to_string());
     let bytes = bcs_ext::to_bytes(&str_result).unwrap();
     println!("bytes:{:?}", bytes);
-    let str_result2: network_rpc_core::Result<String, NetRpcError> =
+    let str_result2: network_p2p_core::Result<String, NetRpcError> =
         bcs_ext::from_bytes(bytes.as_slice()).unwrap();
     println!("result:{:?}", str_result2);
     assert_eq!(str_result, str_result2);

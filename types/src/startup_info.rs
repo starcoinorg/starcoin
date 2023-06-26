@@ -67,6 +67,16 @@ impl ChainInfo {
     }
 }
 
+impl std::default::Default for ChainInfo {
+    fn default() -> Self {
+        Self {
+            chain_id: ChainId::test(),
+            genesis_hash: HashValue::default(),
+            status: ChainStatus::sample(),
+        }
+    }
+}
+
 impl std::fmt::Display for ChainInfo {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(

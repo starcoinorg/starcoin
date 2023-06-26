@@ -6001,9 +6001,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "network-p2p-core"
+version = "1.13.5"
+dependencies = [
+ "anyhow",
+ "bcs-ext",
+ "futures 0.3.26",
+ "log 0.4.17",
+ "network-p2p-derive",
+ "network-p2p-types",
+ "num_enum",
+ "serde 1.0.152",
+ "starcoin-types",
+ "stest",
+]
+
+[[package]]
+name = "network-p2p-derive"
+version = "1.13.5"
+dependencies = [
+ "anyhow",
+ "proc-macro2 1.0.59",
+ "quote 1.0.28",
+ "syn 1.0.107",
+]
+
+[[package]]
 name = "network-p2p-types"
 version = "1.13.5"
 dependencies = [
+ "anyhow",
  "bitflags",
  "bytes 1.4.0",
  "derive_more",
@@ -6013,32 +6040,8 @@ dependencies = [
  "schemars",
  "serde 1.0.152",
  "serde_json",
-]
-
-[[package]]
-name = "network-rpc-core"
-version = "1.13.5"
-dependencies = [
- "anyhow",
- "bcs-ext",
- "futures 0.3.26",
- "log 0.4.17",
- "network-rpc-derive",
- "network-types",
- "num_enum",
- "serde 1.0.152",
+ "starcoin-crypto",
  "starcoin-types",
- "stest",
-]
-
-[[package]]
-name = "network-rpc-derive"
-version = "1.13.5"
-dependencies = [
- "anyhow",
- "proc-macro2 1.0.59",
- "quote 1.0.28",
- "syn 1.0.107",
 ]
 
 [[package]]
@@ -9928,11 +9931,12 @@ dependencies = [
  "lru 0.7.8",
  "network-api",
  "network-p2p",
+ "network-p2p-core",
  "network-p2p-types",
- "network-rpc-core",
  "parking_lot 0.12.1",
  "prometheus",
  "rand 0.8.5",
+ "sc-peerset",
  "serde 1.0.152",
  "serde_json",
  "starcoin-config",
@@ -9964,9 +9968,9 @@ dependencies = [
  "futures-timer",
  "hex",
  "network-api",
+ "network-p2p-core",
+ "network-p2p-derive",
  "network-p2p-types",
- "network-rpc-core",
- "network-rpc-derive",
  "once_cell",
  "prometheus",
  "serde 1.0.152",
@@ -10005,8 +10009,9 @@ dependencies = [
  "anyhow",
  "bcs-ext",
  "futures 0.3.26",
- "network-rpc-core",
- "network-rpc-derive",
+ "network-p2p-core",
+ "network-p2p-derive",
+ "network-p2p-types",
  "network-types",
  "once_cell",
  "serde 1.0.152",
@@ -10033,7 +10038,7 @@ dependencies = [
  "futures 0.3.26",
  "futures-timer",
  "network-api",
- "network-rpc-core",
+ "network-p2p-core",
  "serde_json",
  "starcoin-account-api",
  "starcoin-account-service",
@@ -10123,6 +10128,7 @@ version = "1.13.5"
 dependencies = [
  "anyhow",
  "async-std",
+ "bcs-ext",
  "clap 3.2.23",
  "futures 0.3.26",
  "network-p2p",
@@ -10300,8 +10306,8 @@ dependencies = [
  "jsonrpc-ws-server",
  "log 0.4.17",
  "network-api",
+ "network-p2p-core",
  "network-p2p-types",
- "network-rpc-core",
  "network-types",
  "parking_lot 0.12.1",
  "serde 1.0.152",
@@ -10467,6 +10473,7 @@ dependencies = [
  "coarsetime",
  "forkable-jellyfish-merkle",
  "lru 0.7.8",
+ "network-p2p-types",
  "network-types",
  "num_enum",
  "once_cell",
@@ -10528,7 +10535,7 @@ dependencies = [
  "hex",
  "itertools",
  "network-api",
- "network-rpc-core",
+ "network-p2p-core",
  "parking_lot 0.12.1",
  "pin-project 0.4.30",
  "pin-utils",
@@ -11302,8 +11309,8 @@ dependencies = [
  "hex",
  "move-ir-compiler",
  "network-api",
+ "network-p2p-core",
  "network-p2p-types",
- "network-rpc-core",
  "rand 0.8.5",
  "serde 1.0.152",
  "serde_json",

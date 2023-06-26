@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::business_layer_handle::BusinessLayerHandle;
 use crate::discovery::DiscoveryConfig;
 use crate::protocol::generic_proto::NotificationsSink;
 use crate::protocol::{CustomMessageOutcome, Protocol};
@@ -29,7 +30,6 @@ use libp2p::identify::Info;
 use libp2p::kad::record;
 use libp2p::swarm::NetworkBehaviour;
 use sc_peerset::ReputationChange;
-use starcoin_types::startup_info::ChainInfo;
 use std::borrow::Cow;
 use std::collections::HashSet;
 use std::time::Duration;
@@ -37,8 +37,8 @@ use std::time::Duration;
 /// General behaviour of the network. Combines all protocols together.
 #[derive(NetworkBehaviour)]
 #[behaviour(out_event = "BehaviourOut")]
-pub struct Behaviour {
-    protocol: Protocol,
+pub struct Behaviour<T: 'static + BusinessLayerHandle + Send> {
+    protocol: Protocol<T>,
     /// Periodically pings and identifies the nodes we are connected to, and store information in a
     /// cache.
     peer_info: peer_info::PeerInfoBehaviour,
@@ -62,7 +62,7 @@ pub enum BehaviourOut {
         protocol: Cow<'static, str>,
         /// Object that permits sending notifications to the peer.
         notifications_sink: NotificationsSink,
-        info: Box<ChainInfo>,
+        generic_data: Vec<u8>,
         notif_protocols: Vec<Cow<'static, str>>,
         rpc_protocols: Vec<Cow<'static, str>>,
     },
@@ -146,10 +146,10 @@ pub enum BehaviourOut {
     None,
 }
 
-impl Behaviour {
+impl<T: BusinessLayerHandle + Send> Behaviour<T> {
     /// Builds a new `Behaviour`.
     pub fn new(
-        protocol: Protocol,
+        protocol: Protocol<T>,
         user_agent: String,
         local_public_key: PublicKey,
         disco_config: DiscoveryConfig,
@@ -236,12 +236,12 @@ impl Behaviour {
     }
 
     /// Returns a shared reference to the user protocol.
-    pub fn user_protocol(&self) -> &Protocol {
+    pub fn user_protocol(&self) -> &Protocol<T> {
         &self.protocol
     }
 
     /// Returns a mutable reference to the user protocol.
-    pub fn user_protocol_mut(&mut self) -> &mut Protocol {
+    pub fn user_protocol_mut(&mut self) -> &mut Protocol<T> {
         &mut self.protocol
     }
 
@@ -265,14 +265,14 @@ impl From<CustomMessageOutcome> for BehaviourOut {
                 remote,
                 protocol,
                 notifications_sink,
-                info,
+                generic_data,
                 notif_protocols,
                 rpc_protocols,
             } => BehaviourOut::NotificationStreamOpened {
                 remote,
                 protocol,
                 notifications_sink,
-                info,
+                generic_data,
                 notif_protocols,
                 rpc_protocols,
             },

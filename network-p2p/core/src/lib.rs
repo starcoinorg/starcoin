@@ -8,20 +8,19 @@ use futures::FutureExt;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use serde::{Deserialize, Serialize};
 
-pub use network_types::peer_info::PeerId;
-
 //TODO find a suitable place for this type.
 use crate::server::NetworkRpcServer;
+pub use network_p2p_types::peer_id::PeerId;
 use std::borrow::Cow;
 
 pub mod delegates;
 pub mod server;
 
 pub mod prelude {
-    pub use network_rpc_derive::net_rpc;
+    pub use network_p2p_derive::net_rpc;
 
     pub use crate::NetRpcError;
-    pub use crate::PeerId;
+    pub use network_p2p_types::peer_id::PeerId;
 }
 
 pub mod export {

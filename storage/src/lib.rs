@@ -14,7 +14,7 @@ use crate::storage::{CodecKVStore, CodecWriteBatch, ColumnFamilyName, StorageIns
 use crate::transaction::TransactionStorage;
 use crate::transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage};
 use anyhow::{bail, format_err, Error, Result};
-use network_types::peer_info::PeerId;
+use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use starcoin_accumulator::node::AccumulatorStoreType;

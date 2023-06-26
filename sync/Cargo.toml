@@ -12,7 +12,7 @@ starcoin-logger = { package = "starcoin-logger", workspace = true }
 starcoin-config = { workspace = true }
 starcoin-network = { package = "starcoin-network", workspace = true }
 network-api = { workspace = true }
-network-rpc-core = { workspace = true }
+network-p2p-core = { workspace = true }
 parking_lot = { workspace = true }
 pin-project = { workspace = true }
 pin-utils = { workspace = true }

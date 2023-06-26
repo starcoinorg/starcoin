@@ -4,7 +4,7 @@
 pub use self::gen_client::Client as SyncManagerClient;
 use crate::FutureResult;
 use network_api::PeerStrategy;
-use network_types::peer_info::PeerId;
+use network_p2p_types::peer_id::PeerId;
 use openrpc_derive::openrpc;
 use starcoin_sync_api::{PeerScoreResponse, SyncProgressReport};
 use starcoin_types::sync_status::SyncStatus;

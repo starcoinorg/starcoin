@@ -3,6 +3,7 @@
 
 //! Libp2p network configuration.
 
+use crate::business_layer_handle::BusinessLayerHandle;
 use libp2p::{
     core::Multiaddr,
     identity::{ed25519, Keypair},
@@ -24,7 +25,6 @@ use zeroize::Zeroize;
 pub use crate::request_responses::{IncomingRequest, ProtocolConfig as RequestResponseConfig};
 pub use libp2p::{build_multiaddr, core::PublicKey, identity};
 pub use network_p2p_types::{parse_addr, parse_str_addr, MultiaddrWithPeerId};
-use starcoin_types::startup_info::ChainInfo;
 
 /// Name of a protocol, transmitted on the wire. Should be unique for each chain. Always UTF-8.
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -50,28 +50,28 @@ impl fmt::Debug for ProtocolId {
 }
 
 /// Network initialization parameters.
-pub struct Params {
+pub struct Params<T: 'static + BusinessLayerHandle + Send> {
     /// Network layer configuration.
     pub network_config: NetworkConfiguration,
 
     /// Name of the protocol to use on the wire. Should be different for each chain.
     pub protocol_id: ProtocolId,
 
-    pub chain_info: ChainInfo,
+    pub business_layer_handle: T,
     pub metrics_registry: Option<Registry>,
 }
 
-impl Params {
+impl<T: 'static + BusinessLayerHandle + Send> Params<T> {
     pub fn new(
         network_config: NetworkConfiguration,
         protocol_id: ProtocolId,
-        chain_info: ChainInfo,
+        business_layer_handle: T,
         metrics_registry: Option<Registry>,
     ) -> Self {
         Self {
             network_config,
             protocol_id,
-            chain_info,
+            business_layer_handle,
             metrics_registry,
         }
     }

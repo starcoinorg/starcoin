@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::peer_score::{PeerScoreMetrics, ScoreCounter};
-use crate::PeerId;
 use crate::PeerInfo;
 use anyhow::Result;
 use futures::channel::oneshot::Receiver;
 use futures::future::BoxFuture;
 use itertools::Itertools;
-use network_p2p_types::ReputationChange;
+use network_p2p_types::{peer_id::PeerId, ReputationChange};
 use parking_lot::Mutex;
 use rand::prelude::IteratorRandom;
 use rand::prelude::SliceRandom;
