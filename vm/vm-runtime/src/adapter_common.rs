@@ -13,7 +13,7 @@ use starcoin_vm_types::{
     block_metadata::BlockMetadata,
     transaction::{
         SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionOutput,
-        TransactionStatus, VMValidatorResult,
+        TransactionStatus,
     },
     write_set::WriteSet,
 };

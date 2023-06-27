@@ -1080,16 +1080,11 @@ fn test_chunk_block_transactions() -> Result<()> {
     let result1 = chunk_block_transactions(txns1);
     assert_eq!(result1.len(), 1);
 
-    let mut txns2 = vec![];
-    txns2.push(txn1.clone());
-    txns2.push(txn2.clone());
+    let txns2 = vec![txn1.clone(), txn2.clone()];
     let result2 = chunk_block_transactions(txns2);
     assert_eq!(result2.len(), 2);
 
-    let mut txns3 = vec![];
-    txns3.push(txn1);
-    txns3.push(txn2);
-    txns3.push(txn3);
+    let txns3 = vec![txn1, txn2, txn3];
     let result3 = chunk_block_transactions(txns3);
     assert_eq!(result3.len(), 3);
 
