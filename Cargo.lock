@@ -2256,7 +2256,7 @@ checksum = "850878694b7933ca4c9569d30a34b55031b9b139ee1fc7b94a527c4ef960d690"
 [[package]]
 name = "diem-crypto"
 version = "0.0.3"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=a02de6d0b83abe0abff088683e891df0238102fe#a02de6d0b83abe0abff088683e891df0238102fe"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=e19c5631c8f3c39730850080c196e0206834545f#e19c5631c8f3c39730850080c196e0206834545f"
 dependencies = [
  "aes-gcm 0.8.0",
  "anyhow",
@@ -2291,7 +2291,7 @@ dependencies = [
 [[package]]
 name = "diem-crypto-derive"
 version = "0.0.3"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=a02de6d0b83abe0abff088683e891df0238102fe#a02de6d0b83abe0abff088683e891df0238102fe"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=e19c5631c8f3c39730850080c196e0206834545f#e19c5631c8f3c39730850080c196e0206834545f"
 dependencies = [
  "proc-macro2 1.0.59",
  "quote 1.0.28",
@@ -9422,7 +9422,7 @@ dependencies = [
 [[package]]
 name = "starcoin-crypto"
 version = "1.10.0-rc.2"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=a02de6d0b83abe0abff088683e891df0238102fe#a02de6d0b83abe0abff088683e891df0238102fe"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=e19c5631c8f3c39730850080c196e0206834545f#e19c5631c8f3c39730850080c196e0206834545f"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9441,7 +9441,7 @@ dependencies = [
 [[package]]
 name = "starcoin-crypto-macro"
 version = "1.10.0-rc.2"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=a02de6d0b83abe0abff088683e891df0238102fe#a02de6d0b83abe0abff088683e891df0238102fe"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=e19c5631c8f3c39730850080c196e0206834545f#e19c5631c8f3c39730850080c196e0206834545f"
 dependencies = [
  "proc-macro2 1.0.59",
  "quote 1.0.28",
