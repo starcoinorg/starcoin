@@ -54,6 +54,7 @@ use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_txpool::TxPoolActorService;
 use starcoin_types::system_events::{SystemShutdown, SystemStarted};
 use starcoin_vm_runtime::metrics::VMMetrics;
+use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
@@ -232,6 +233,8 @@ impl NodeService {
             logger_handle.enable_stderr();
         }
 
+        // XXX FIXME YSG add execute_config
+        StarcoinVM::set_concurrency_level_once(4);
         let (start_sender, start_receiver) = oneshot::channel();
         let join_handle = timeout_join_handler::spawn(move || {
             let system = System::with_tokio_rt(|| {
