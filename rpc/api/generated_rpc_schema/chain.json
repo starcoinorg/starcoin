@@ -2445,7 +2445,8 @@
                   "enum": [
                     "Executed",
                     "OutOfGas",
-                    "MiscellaneousError"
+                    "MiscellaneousError",
+                    "Retry"
                   ]
                 },
                 {
@@ -2611,7 +2612,8 @@
                     "enum": [
                       "Executed",
                       "OutOfGas",
-                      "MiscellaneousError"
+                      "MiscellaneousError",
+                      "Retry"
                     ]
                   },
                   {
@@ -2789,7 +2791,8 @@
                   "enum": [
                     "Executed",
                     "OutOfGas",
-                    "MiscellaneousError"
+                    "MiscellaneousError",
+                    "Retry"
                   ]
                 },
                 {
@@ -3373,7 +3376,8 @@
                     "enum": [
                       "Executed",
                       "OutOfGas",
-                      "MiscellaneousError"
+                      "MiscellaneousError",
+                      "Retry"
                     ]
                   },
                   {
@@ -3722,7 +3726,8 @@
                       "enum": [
                         "Executed",
                         "OutOfGas",
-                        "MiscellaneousError"
+                        "MiscellaneousError",
+                        "Retry"
                       ]
                     },
                     {
