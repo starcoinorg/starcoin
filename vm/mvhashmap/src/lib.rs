@@ -63,6 +63,8 @@ pub struct MVHashMap<K, V> {
     data: DashMap<K, BTreeMap<TxnIndex, CachePadded<WriteCell<V>>>>,
 }
 
+#[allow(clippy::new_without_default)]
+#[allow(clippy::or_fun_call)]
 impl<K: Hash + Clone + Eq, V> MVHashMap<K, V> {
     pub fn new() -> MVHashMap<K, V> {
         MVHashMap {
