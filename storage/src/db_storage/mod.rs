@@ -490,7 +490,7 @@ impl RawDBStorage for DBStorage {
     }
 
     fn raw_write_batch(&self, batch: DBWriteBatch) -> Result<()> {
-        let res = self.db.write(batch)?;
-        Ok(res)
+        self.db.write(batch)?;
+        Ok(())
     }
 }
