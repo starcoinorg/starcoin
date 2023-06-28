@@ -506,9 +506,9 @@ impl BlockChain {
 
         storage.save_block_info(block_info.clone())?;
 
-        txn_write_set.into_iter().for_each(|(hash_value, write_set)| {
-            storage.save_write_set(hash_value, write_set).expect("Save write set failed!");
-        });
+        for (hash_value, write_set) in txn_write_set{
+            storage.save_write_set(hash_value, write_set)?;
+        }
 
 
         watch(CHAIN_WATCH_NAME, "n26");
