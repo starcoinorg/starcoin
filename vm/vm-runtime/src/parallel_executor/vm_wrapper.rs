@@ -3,7 +3,6 @@
 
 use crate::{
     adapter_common::{PreprocessedTransaction, VMAdapter},
-    data_cache::RemoteStorage,
     parallel_executor::{storage_wrapper::VersionedView, StarcoinTransactionOutput},
     starcoin_vm::StarcoinVM,
 };
@@ -13,11 +12,7 @@ use starcoin_parallel_executor::{
     task::{ExecutionStatus, ExecutorTask},
 };
 
-use move_core_types::{
-    ident_str,
-    language_storage::{ModuleId, CORE_CODE_ADDRESS},
-    vm_status::VMStatus,
-};
+use move_core_types::vm_status::VMStatus;
 use starcoin_logger::prelude::*;
 use starcoin_vm_types::{
     state_store::state_key::StateKey, state_view::StateView, write_set::WriteOp,
@@ -37,7 +32,7 @@ impl<'a, S: 'a + StateView> ExecutorTask for StarcoinVMWrapper<'a, S> {
     // XXX FIXME YSG
     fn init(argument: &'a S) -> Self {
         // XXX FIXME YSG
-        let vm = StarcoinVM::new(None);
+        let mut vm = StarcoinVM::new(None);
 
         // XXX FIXME YSG
         // Loading `0x1::Account` and its transitive dependency into the code cache.
@@ -48,11 +43,14 @@ impl<'a, S: 'a + StateView> ExecutorTask for StarcoinVMWrapper<'a, S> {
         // Loading up `0x1::AptosAccount` should be sufficient as this is the most common module
         // used for prologue, epilogue and transfer functionality.
 
-        // XXX FIXME YSG
+        /*
         let _ = vm.load_module(
             &ModuleId::new(CORE_CODE_ADDRESS, ident_str!("Account").to_owned()),
             &RemoteStorage::new(argument),
-        );
+        ); */
+        // XXX FIXME YSG
+        vm.load_configs(argument)
+            .expect("load configs should always success");
 
         Self {
             vm,
