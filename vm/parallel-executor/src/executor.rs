@@ -11,7 +11,6 @@ use crate::{
 use num_cpus;
 use once_cell::sync::Lazy;
 use starcoin_infallible::Mutex;
-use starcoin_logger::prelude::*;
 use starcoin_mvhashmap::MVHashMap;
 use std::{collections::HashSet, hash::Hash, marker::PhantomData, sync::Arc, thread::spawn};
 
@@ -347,7 +346,6 @@ where
             Some(err) => Err(err),
             None => {
                 final_results.resize_with(num_txns, E::Output::skip_output);
-                info!("final_results");
                 Ok(final_results)
             }
         }
