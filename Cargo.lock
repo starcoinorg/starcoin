@@ -2122,6 +2122,7 @@ dependencies = [
  "starcoin-storage",
  "starcoin-transaction-builder",
  "starcoin-types",
+ "starcoin-vm-runtime",
  "starcoin-vm-types",
  "tokio",
 ]

@@ -44,6 +44,7 @@ use starcoin_types::{
     state_set::{AccountStateSet, ChainStateSet},
     transaction::Transaction,
 };
+use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::{
     account_config::stc_type_tag,
     genesis_config::ConsensusStrategy,
@@ -671,6 +672,7 @@ pub fn apply_block(
         CacheStorage::new(None),
         db_storage,
     ))?);
+    StarcoinVM::set_concurrency_level_once(4);
     let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
     let mut chain = BlockChain::new(
         net.time_service(),
