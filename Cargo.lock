@@ -10177,6 +10177,7 @@ dependencies = [
  "once_cell",
  "rayon",
  "starcoin-infallible",
+ "starcoin-logger",
  "starcoin-mvhashmap",
 ]
 

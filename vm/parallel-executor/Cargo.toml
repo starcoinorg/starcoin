@@ -21,3 +21,4 @@ arc-swap = { workspace = true }
 anyhow = { workspace = true }
 starcoin-infallible = { workspace = true }
 starcoin-mvhashmap = { workspace = true }
+starcoin-logger = { workspace = true }

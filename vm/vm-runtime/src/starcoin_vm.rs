@@ -1575,10 +1575,12 @@ impl VMAdapter for StarcoinVM {
     }
 
     fn should_restart_execution(output: &TransactionOutput) -> bool {
+        // XXX FIXME YSG if GasSchedule.move UpgradeEvent
         for event in output.events() {
             if event.key().get_creator_address() == genesis_address()
                 && (event.is::<UpgradeEvent>() || event.is::<ConfigChangeEvent<Version>>())
             {
+                info!("should_restart_execution happen");
                 return true;
             }
         }

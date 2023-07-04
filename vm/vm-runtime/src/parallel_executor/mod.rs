@@ -86,7 +86,7 @@ impl ParallelStarcoinVM {
                     .collect(),
                 None,
             )),
-            Err(err @ Error::InferencerError) | Err(err @ Error::UnestimatedWrite) => {
+            Err(err @ Error::BlockRestart) => {
                 // XXX FIXME YSG
                 let output = StarcoinVM::execute_block_and_keep_vm_status(
                     transactions,

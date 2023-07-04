@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::errors::Error::BlockRestart;
 use crate::{
     errors::*,
     scheduler::{Scheduler, SchedulerTask, TaskGuard, TxnIndex, Version},
@@ -10,6 +11,7 @@ use crate::{
 use num_cpus;
 use once_cell::sync::Lazy;
 use starcoin_infallible::Mutex;
+use starcoin_logger::prelude::*;
 use starcoin_mvhashmap::MVHashMap;
 use std::{collections::HashSet, hash::Hash, marker::PhantomData, sync::Arc, thread::spawn};
 
@@ -320,8 +322,10 @@ where
         for idx in 0..num_txns {
             match last_input_output.take_output(idx) {
                 ExecutionStatus::Success(t) => final_results.push(t),
-                ExecutionStatus::SkipRest(t) => {
-                    final_results.push(t);
+                ExecutionStatus::SkipRest(_t) => {
+                    //   info!("SkipRest idx {} num_txns {}", idx, num_txns);
+                    //     final_results.push(t);
+                    maybe_err = Some(BlockRestart);
                     break;
                 }
                 ExecutionStatus::Abort(err) => {
@@ -343,6 +347,7 @@ where
             Some(err) => Err(err),
             None => {
                 final_results.resize_with(num_txns, E::Output::skip_output);
+                info!("final_results");
                 Ok(final_results)
             }
         }
