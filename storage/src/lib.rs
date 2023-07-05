@@ -77,7 +77,6 @@ pub const TRANSACTION_INFO_HASH_PREFIX_NAME: ColumnFamilyName = "transaction_inf
 pub const CONTRACT_EVENT_PREFIX_NAME: ColumnFamilyName = "contract_event";
 pub const FAILED_BLOCK_PREFIX_NAME: ColumnFamilyName = "failed_block";
 pub const TABLE_INFO_PREFIX_NAME: ColumnFamilyName = "table_info";
-pub const FLEXI_DAG_PREFIX_NAME: ColumnFamilyName = "flexi_dag_consensus";
 
 ///db storage use prefix_name vec to init
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！

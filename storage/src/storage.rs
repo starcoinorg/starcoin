@@ -56,21 +56,6 @@ pub trait RawDBStorage: Send + Sync {
     fn raw_write_batch(&self, batch: DBWriteBatch) -> Result<()>;
 }
 
-pub trait InnerStoreV2: Send + Sync {
-    fn get_v2(&self, prefix_name: Option<&str>, key: Vec<u8>) -> Result<Option<Vec<u8>>>;
-    fn put_v2(&self, prefix_name: Option<&str>, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
-    fn contains_key_v2(&self, prefix_name: Option<&str>, key: Vec<u8>) -> Result<bool>;
-    fn remove_v2(&self, prefix_name: Option<&str>, key: Vec<u8>) -> Result<()>;
-    fn write_batch_v2(&self, prefix_name: Option<&str>, batch: WriteBatch) -> Result<()>;
-    fn put_sync_v2(&self, prefix_name: Option<&str>, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
-    fn write_batch_sync_v2(&self, prefix_name: Option<&str>, batch: WriteBatch) -> Result<()>;
-    fn multi_get_v2(
-        &self,
-        prefix_name: Option<&str>,
-        keys: Vec<Vec<u8>>,
-    ) -> Result<Vec<Option<Vec<u8>>>>;
-}
-
 ///Storage instance type define
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
