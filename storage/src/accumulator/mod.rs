@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::define_storage;
+use crate::{define_storage, SYNC_FLEXI_DAG_ACCUMULATOR_PREFIX_NAME};
 use crate::storage::{CodecKVStore, ValueCodec};
 use crate::StorageInstance;
 use crate::{BLOCK_ACCUMULATOR_NODE_PREFIX_NAME, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME};
@@ -22,6 +22,13 @@ define_storage!(
     HashValue,
     AccumulatorNode,
     TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME
+);
+
+define_storage!(
+    DagBlockAccumulatorStorage,
+    HashValue,
+    AccumulatorNode,
+    SYNC_FLEXI_DAG_ACCUMULATOR_PREFIX_NAME
 );
 
 impl ValueCodec for AccumulatorNode {
@@ -58,6 +65,16 @@ impl AccumulatorStorage<TransactionAccumulatorStorage> {
     ) -> AccumulatorStorage<TransactionAccumulatorStorage> {
         Self {
             store: TransactionAccumulatorStorage::new(instance),
+        }
+    }
+}
+
+impl AccumulatorStorage<DagBlockAccumulatorStorage> {
+    pub fn new_dag_block_accumulator_storage(
+        instance: StorageInstance,
+    ) -> AccumulatorStorage<DagBlockAccumulatorStorage> {
+        Self {
+            store: DagBlockAccumulatorStorage::new(instance),
         }
     }
 }
