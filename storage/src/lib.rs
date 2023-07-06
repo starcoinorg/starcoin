@@ -326,7 +326,7 @@ impl Storage {
             block_info_storage: BlockInfoStorage::new(instance.clone()),
             event_storage: ContractEventStorage::new(instance.clone()),
             chain_info_storage: ChainInfoStorage::new(instance.clone()),
-            flexi_dag_storage: SyncFlexiDagStorage::new(instance)
+            flexi_dag_storage: SyncFlexiDagStorage::new(instance),
             // table_info_storage: TableInfoStorage::new(instance),
             // instance,
         };

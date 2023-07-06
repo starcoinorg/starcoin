@@ -21,7 +21,7 @@ struct SyncFlexiDagManagerImp {
 
 impl SyncFlexiDagManagerImp {
     pub fn new() -> Self {
-        let flexi_dag_storage = SyncFlexiDagStorage::new(StorageInstance::new_cache_and_db_instance(
+        let flexi_dag_storage: SyncFlexiDagStorage = SyncFlexiDagStorage::new(StorageInstance::new_cache_and_db_instance(
             CacheStorage::default(),
             DBStorage::new(
                 starcoin_config::temp_dir().as_ref(),
@@ -51,11 +51,11 @@ impl SyncFlexiDagManager for SyncFlexiDagManagerImp {
         hashes.sort();
         let accumulator_key = Self::hash_for_hashes(hashes.clone());
         self.accumulator.append(&[accumulator_key])?;
-        let key = self.flexi_dag_storage.put_hashes(SyncFlexiDagSnapshot { 
+        self.flexi_dag_storage.put_hashes(accumulator_key, SyncFlexiDagSnapshot { 
             hashes: hashes, 
             accumulator_info: self.get_accumulator_info(), 
         })?;
-        Ok(key)
+        Ok(accumulator_key)
     }
 
     fn query_by_hash(&self, hash: HashValue) -> Result<Option<SyncFlexiDagSnapshot>> {
