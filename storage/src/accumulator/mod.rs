@@ -1,9 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{define_storage, SYNC_FLEXI_DAG_ACCUMULATOR_PREFIX_NAME};
 use crate::storage::{CodecKVStore, ValueCodec};
 use crate::StorageInstance;
+use crate::{define_storage, SYNC_FLEXI_DAG_ACCUMULATOR_PREFIX_NAME};
 use crate::{BLOCK_ACCUMULATOR_NODE_PREFIX_NAME, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME};
 use anyhow::Result;
 use bcs_ext::BCSCodec;

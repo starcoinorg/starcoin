@@ -1,10 +1,14 @@
-use starcoin_accumulator::{MerkleAccumulator, accumulator_info::AccumulatorInfo, Accumulator};
+use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator};
 use starcoin_config::RocksdbConfig;
 use starcoin_crypto::HashValue;
 
-use crate::{flexi_dag::{SyncFlexiDagStorage, SyncFlexiDagSnapshot}, storage::StorageInstance, cache_storage::CacheStorage, db_storage::DBStorage};
-use anyhow::{Result, Ok};
-
+use crate::{
+    cache_storage::CacheStorage,
+    db_storage::DBStorage,
+    flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagStorage},
+    storage::StorageInstance,
+};
+use anyhow::{Ok, Result};
 
 trait SyncFlexiDagManager {
     fn insert_hashes(&self, hashes: Vec<HashValue>) -> Result<HashValue>;
@@ -15,33 +19,34 @@ trait SyncFlexiDagManager {
 }
 
 struct SyncFlexiDagManagerImp {
-  flexi_dag_storage: SyncFlexiDagStorage,
-  accumulator: MerkleAccumulator,
+    flexi_dag_storage: SyncFlexiDagStorage,
+    accumulator: MerkleAccumulator,
 }
 
 impl SyncFlexiDagManagerImp {
     pub fn new() -> Self {
-        let flexi_dag_storage: SyncFlexiDagStorage = SyncFlexiDagStorage::new(StorageInstance::new_cache_and_db_instance(
-            CacheStorage::default(),
-            DBStorage::new(
-                starcoin_config::temp_dir().as_ref(),
-                RocksdbConfig::default(),
-                None,
-            )
-            .unwrap(),
-        ));
+        let flexi_dag_storage: SyncFlexiDagStorage =
+            SyncFlexiDagStorage::new(StorageInstance::new_cache_and_db_instance(
+                CacheStorage::default(),
+                DBStorage::new(
+                    starcoin_config::temp_dir().as_ref(),
+                    RocksdbConfig::default(),
+                    None,
+                )
+                .unwrap(),
+            ));
         let accumulator = MerkleAccumulator::new_empty(flexi_dag_storage.get_accumulator_storage());
-        SyncFlexiDagManagerImp { 
+        SyncFlexiDagManagerImp {
             flexi_dag_storage,
-            accumulator, 
+            accumulator,
         }
     }
 
     fn hash_for_hashes(mut hashes: Vec<HashValue>) -> HashValue {
         hashes.sort();
         HashValue::sha3_256_of(&hashes.into_iter().fold([].to_vec(), |mut collect, hash| {
-          collect.extend(hash.into_iter());
-          collect
+            collect.extend(hash.into_iter());
+            collect
         }))
     }
 }
@@ -51,10 +56,13 @@ impl SyncFlexiDagManager for SyncFlexiDagManagerImp {
         hashes.sort();
         let accumulator_key = Self::hash_for_hashes(hashes.clone());
         self.accumulator.append(&[accumulator_key])?;
-        self.flexi_dag_storage.put_hashes(accumulator_key, SyncFlexiDagSnapshot { 
-            hashes: hashes, 
-            accumulator_info: self.get_accumulator_info(), 
-        })?;
+        self.flexi_dag_storage.put_hashes(
+            accumulator_key,
+            SyncFlexiDagSnapshot {
+                hashes,
+                accumulator_info: self.get_accumulator_info(),
+            },
+        )?;
         Ok(accumulator_key)
     }
 
@@ -93,26 +101,96 @@ fn test_syn_dag_accumulator_insert_and_find() {
     let m = HashValue::sha3_256_of(b"m");
 
     let genesis_key = syn_accumulator.insert_hashes([genesis].to_vec()).unwrap();
-    let layer1 = syn_accumulator.insert_hashes([b, c, d, e].to_vec()).unwrap();
-    let layer2 = syn_accumulator.insert_hashes([f, h, i, k].to_vec()).unwrap();
-    let layer3 = syn_accumulator.insert_hashes([j, m, k, l].to_vec()).unwrap();
+    let layer1 = syn_accumulator
+        .insert_hashes([b, c, d, e].to_vec())
+        .unwrap();
+    let layer2 = syn_accumulator
+        .insert_hashes([f, h, i, k].to_vec())
+        .unwrap();
+    let layer3 = syn_accumulator
+        .insert_hashes([j, m, k, l].to_vec())
+        .unwrap();
     let layer4 = syn_accumulator.insert_hashes([j, m, l].to_vec()).unwrap();
 
     assert_eq!(5, syn_accumulator.get_accumulator_info().get_num_leaves());
 
-    /// query by key
-    assert_eq!(genesis_key, syn_accumulator.get_hash_by_position(0).unwrap().unwrap());
-    assert_eq!(layer1, syn_accumulator.get_hash_by_position(1).unwrap().unwrap());
-    assert_eq!(layer2, syn_accumulator.get_hash_by_position(2).unwrap().unwrap());
-    assert_eq!(layer3, syn_accumulator.get_hash_by_position(3).unwrap().unwrap());
-    assert_eq!(layer4, syn_accumulator.get_hash_by_position(4).unwrap().unwrap());
+    assert_eq!(
+        genesis_key,
+        syn_accumulator.get_hash_by_position(0).unwrap().unwrap()
+    );
+    assert_eq!(
+        layer1,
+        syn_accumulator.get_hash_by_position(1).unwrap().unwrap()
+    );
+    assert_eq!(
+        layer2,
+        syn_accumulator.get_hash_by_position(2).unwrap().unwrap()
+    );
+    assert_eq!(
+        layer3,
+        syn_accumulator.get_hash_by_position(3).unwrap().unwrap()
+    );
+    assert_eq!(
+        layer4,
+        syn_accumulator.get_hash_by_position(4).unwrap().unwrap()
+    );
 
-    /// query by position
-    assert_eq!([genesis].to_vec(), syn_accumulator.query_by_hash(syn_accumulator.get_hash_by_position(0).unwrap().unwrap()).unwrap().unwrap().hashes);
-    assert_eq!({let mut v = [b, c, d, e].to_vec(); v.sort(); v}, syn_accumulator.query_by_hash(syn_accumulator.get_hash_by_position(1).unwrap().unwrap()).unwrap().unwrap().hashes);
-    assert_eq!({let mut v = [f, h, i, k].to_vec(); v.sort(); v}, syn_accumulator.query_by_hash(syn_accumulator.get_hash_by_position(2).unwrap().unwrap()).unwrap().unwrap().hashes);
-    assert_eq!({let mut v = [j, m, k, l].to_vec(); v.sort(); v}, syn_accumulator.query_by_hash(syn_accumulator.get_hash_by_position(3).unwrap().unwrap()).unwrap().unwrap().hashes);
-    assert_eq!({let mut v = [j, m, l].to_vec(); v.sort(); v}, syn_accumulator.query_by_hash(syn_accumulator.get_hash_by_position(4).unwrap().unwrap()).unwrap().unwrap().hashes);
+    assert_eq!(
+        [genesis].to_vec(),
+        syn_accumulator
+            .query_by_hash(syn_accumulator.get_hash_by_position(0).unwrap().unwrap())
+            .unwrap()
+            .unwrap()
+            .hashes
+    );
+    assert_eq!(
+        {
+            let mut v = [b, c, d, e].to_vec();
+            v.sort();
+            v
+        },
+        syn_accumulator
+            .query_by_hash(syn_accumulator.get_hash_by_position(1).unwrap().unwrap())
+            .unwrap()
+            .unwrap()
+            .hashes
+    );
+    assert_eq!(
+        {
+            let mut v = [f, h, i, k].to_vec();
+            v.sort();
+            v
+        },
+        syn_accumulator
+            .query_by_hash(syn_accumulator.get_hash_by_position(2).unwrap().unwrap())
+            .unwrap()
+            .unwrap()
+            .hashes
+    );
+    assert_eq!(
+        {
+            let mut v = [j, m, k, l].to_vec();
+            v.sort();
+            v
+        },
+        syn_accumulator
+            .query_by_hash(syn_accumulator.get_hash_by_position(3).unwrap().unwrap())
+            .unwrap()
+            .unwrap()
+            .hashes
+    );
+    assert_eq!(
+        {
+            let mut v = [j, m, l].to_vec();
+            v.sort();
+            v
+        },
+        syn_accumulator
+            .query_by_hash(syn_accumulator.get_hash_by_position(4).unwrap().unwrap())
+            .unwrap()
+            .unwrap()
+            .hashes
+    );
 }
 
 #[test]
@@ -135,35 +213,77 @@ fn test_syn_dag_accumulator_fork() {
     let p = HashValue::sha3_256_of(b"p");
     let v = HashValue::sha3_256_of(b"v");
 
-    let genesis_key = syn_accumulator.insert_hashes([genesis].to_vec()).unwrap();
-    let genesis_key = syn_accumulator_target.insert_hashes([genesis].to_vec()).unwrap();
+    let _genesis_key = syn_accumulator.insert_hashes([genesis].to_vec()).unwrap();
+    let _genesis_key = syn_accumulator_target
+        .insert_hashes([genesis].to_vec())
+        .unwrap();
 
-    let layer1 = syn_accumulator.insert_hashes([b, c, d, e].to_vec()).unwrap();
-    let layer2 = syn_accumulator.insert_hashes([f, h, i, k].to_vec()).unwrap();
-    let layer3 = syn_accumulator.insert_hashes([j, m, k, l].to_vec()).unwrap();
+    let layer1 = syn_accumulator
+        .insert_hashes([b, c, d, e].to_vec())
+        .unwrap();
+    let layer2 = syn_accumulator
+        .insert_hashes([f, h, i, k].to_vec())
+        .unwrap();
+    let layer3 = syn_accumulator
+        .insert_hashes([j, m, k, l].to_vec())
+        .unwrap();
     let layer4 = syn_accumulator.insert_hashes([j, m, l].to_vec()).unwrap();
 
-    let target_layer1 = syn_accumulator_target.insert_hashes([b, c, d, e].to_vec()).unwrap();
-    let target_layer2 = syn_accumulator_target.insert_hashes([f, h, i, k].to_vec()).unwrap();
-    let target_layer3 = syn_accumulator_target.insert_hashes([j, m, k, l].to_vec()).unwrap();
-    let target_layer4 = syn_accumulator_target.insert_hashes([p, m, v].to_vec()).unwrap();
-    let target_layer5 = syn_accumulator_target.insert_hashes([p, v].to_vec()).unwrap();
+    let target_layer1 = syn_accumulator_target
+        .insert_hashes([b, c, d, e].to_vec())
+        .unwrap();
+    let target_layer2 = syn_accumulator_target
+        .insert_hashes([f, h, i, k].to_vec())
+        .unwrap();
+    let target_layer3 = syn_accumulator_target
+        .insert_hashes([j, m, k, l].to_vec())
+        .unwrap();
+    let target_layer4 = syn_accumulator_target
+        .insert_hashes([p, m, v].to_vec())
+        .unwrap();
+    let target_layer5 = syn_accumulator_target
+        .insert_hashes([p, v].to_vec())
+        .unwrap();
 
     assert_eq!(layer1, target_layer1);
     assert_eq!(layer2, target_layer2);
     assert_eq!(layer3, target_layer3);
 
     assert_ne!(layer4, target_layer4);
-    assert_ne!(syn_accumulator.get_accumulator_info().get_num_leaves(), syn_accumulator_target.get_accumulator_info().get_num_leaves());
-    assert_ne!(syn_accumulator.get_accumulator_info(), syn_accumulator_target.get_accumulator_info());
+    assert_ne!(
+        syn_accumulator.get_accumulator_info().get_num_leaves(),
+        syn_accumulator_target
+            .get_accumulator_info()
+            .get_num_leaves()
+    );
+    assert_ne!(
+        syn_accumulator.get_accumulator_info(),
+        syn_accumulator_target.get_accumulator_info()
+    );
 
-    syn_accumulator.fork(syn_accumulator_target.query_by_hash(layer3).unwrap().unwrap().accumulator_info);
+    syn_accumulator
+        .fork(
+            syn_accumulator_target
+                .query_by_hash(layer3)
+                .unwrap()
+                .unwrap()
+                .accumulator_info,
+        )
+        .unwrap();
 
     let new_layer4 = syn_accumulator.insert_hashes([p, m, v].to_vec()).unwrap();
     let new_layer5 = syn_accumulator.insert_hashes([p, v].to_vec()).unwrap();
 
     assert_eq!(new_layer4, target_layer4);
     assert_eq!(new_layer5, target_layer5);
-    assert_eq!(syn_accumulator.get_accumulator_info().get_num_leaves(), syn_accumulator_target.get_accumulator_info().get_num_leaves());
-    assert_eq!(syn_accumulator.get_accumulator_info(), syn_accumulator_target.get_accumulator_info());
+    assert_eq!(
+        syn_accumulator.get_accumulator_info().get_num_leaves(),
+        syn_accumulator_target
+            .get_accumulator_info()
+            .get_num_leaves()
+    );
+    assert_eq!(
+        syn_accumulator.get_accumulator_info(),
+        syn_accumulator_target.get_accumulator_info()
+    );
 }

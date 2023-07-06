@@ -45,11 +45,11 @@ pub mod chain_info;
 pub mod contract_event;
 pub mod db_storage;
 pub mod errors;
+pub mod flexi_dag;
 pub mod metrics;
 pub mod state_node;
 pub mod storage;
 pub mod table_info;
-pub mod flexi_dag;
 #[cfg(test)]
 mod tests;
 pub mod transaction;
@@ -341,6 +341,10 @@ impl Storage {
         &self,
     ) -> AccumulatorStorage<TransactionAccumulatorStorage> {
         self.transaction_accumulator_storage.clone()
+    }
+
+    pub fn get_sync_flexi_dag_storage(&self) -> SyncFlexiDagStorage {
+        self.flexi_dag_storage.clone()
     }
 }
 
