@@ -14,7 +14,7 @@ use crate::storage::{CodecKVStore, CodecWriteBatch, ColumnFamilyName, StorageIns
 use crate::transaction::TransactionStorage;
 use crate::transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage};
 use anyhow::{bail, format_err, Error, Result};
-use flexi_dag::SyncFlexiDagStorage;
+use flexi_dag::{SyncFlexiDagStorage, SyncFlexiDagSnapshot};
 use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
@@ -292,6 +292,12 @@ pub trait TransactionStore {
     fn get_transactions(&self, txn_hash_vec: Vec<HashValue>) -> Result<Vec<Option<Transaction>>>;
 }
 
+pub trait SyncFlexiDagStore {
+    fn put_hashes(&self, key: HashValue, accumulator_snapshot: SyncFlexiDagSnapshot) -> Result<()>;
+    fn query_by_hash(&self, key: HashValue) -> Result<Option<SyncFlexiDagSnapshot>>;
+    fn get_accumulator_storage(&self) -> std::sync::Arc<dyn AccumulatorTreeStore>;
+}
+
 // TODO: remove Arc<dyn Store>, we can clone Storage directly.
 #[derive(Clone)]
 pub struct Storage {
@@ -341,10 +347,6 @@ impl Storage {
         &self,
     ) -> AccumulatorStorage<TransactionAccumulatorStorage> {
         self.transaction_accumulator_storage.clone()
-    }
-
-    pub fn get_sync_flexi_dag_storage(&self) -> SyncFlexiDagStorage {
-        self.flexi_dag_storage.clone()
     }
 }
 
@@ -598,6 +600,20 @@ impl TransactionStore for Storage {
         txn_hash_vec: Vec<HashValue>,
     ) -> Result<Vec<Option<Transaction>>, Error> {
         self.transaction_storage.multiple_get(txn_hash_vec)
+    }
+}
+
+impl SyncFlexiDagStore for Storage  {
+    fn put_hashes(&self, key: HashValue, accumulator_snapshot: SyncFlexiDagSnapshot) -> Result<()> {
+        self.flexi_dag_storage.put_hashes(key, accumulator_snapshot)
+    }
+
+    fn query_by_hash(&self, key: HashValue) -> Result<Option<SyncFlexiDagSnapshot>> {
+        self.flexi_dag_storage.get_hashes_by_hash(key)
+    }
+
+    fn get_accumulator_storage(&self) -> std::sync::Arc<dyn AccumulatorTreeStore> {
+        self.flexi_dag_storage.get_accumulator_storage()
     }
 }
 

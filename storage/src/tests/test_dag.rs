@@ -5,8 +5,8 @@ use starcoin_crypto::HashValue;
 use crate::{
     cache_storage::CacheStorage,
     db_storage::DBStorage,
-    flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagStorage},
-    storage::StorageInstance,
+    flexi_dag::SyncFlexiDagSnapshot,
+    storage::StorageInstance, Storage, SyncFlexiDagStore,
 };
 use anyhow::{Ok, Result};
 
@@ -19,14 +19,14 @@ trait SyncFlexiDagManager {
 }
 
 struct SyncFlexiDagManagerImp {
-    flexi_dag_storage: SyncFlexiDagStorage,
+    flexi_dag_storage: Box<dyn SyncFlexiDagStore>,
     accumulator: MerkleAccumulator,
 }
 
 impl SyncFlexiDagManagerImp {
     pub fn new() -> Self {
-        let flexi_dag_storage: SyncFlexiDagStorage =
-            SyncFlexiDagStorage::new(StorageInstance::new_cache_and_db_instance(
+        let flexi_dag_storage =
+            Storage::new(StorageInstance::new_cache_and_db_instance(
                 CacheStorage::default(),
                 DBStorage::new(
                     starcoin_config::temp_dir().as_ref(),
@@ -34,10 +34,10 @@ impl SyncFlexiDagManagerImp {
                     None,
                 )
                 .unwrap(),
-            ));
+            )).unwrap();
         let accumulator = MerkleAccumulator::new_empty(flexi_dag_storage.get_accumulator_storage());
         SyncFlexiDagManagerImp {
-            flexi_dag_storage,
+            flexi_dag_storage: Box::new(flexi_dag_storage),
             accumulator,
         }
     }
@@ -67,7 +67,7 @@ impl SyncFlexiDagManager for SyncFlexiDagManagerImp {
     }
 
     fn query_by_hash(&self, hash: HashValue) -> Result<Option<SyncFlexiDagSnapshot>> {
-        self.flexi_dag_storage.get_hashes_by_hash(hash)
+        self.flexi_dag_storage.query_by_hash(hash)
     }
 
     fn fork(&mut self, accumulator_info: AccumulatorInfo) -> Result<()> {
