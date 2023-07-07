@@ -37,13 +37,13 @@ define_storage!(
 
 #[derive(Clone)]
 pub struct SyncFlexiDagStorage {
-    snapshot_storage: Arc<SyncFlexiDagSnapshotStorage>,
+    snapshot_storage: SyncFlexiDagSnapshotStorage,
     accumulator_storage: Arc<AccumulatorStorage<DagBlockAccumulatorStorage>>,
 }
 
 impl SyncFlexiDagStorage {
     pub fn new(instance: StorageInstance) -> Self {
-        let snapshot_storage = Arc::new(SyncFlexiDagSnapshotStorage::new(instance.clone()));
+        let snapshot_storage = SyncFlexiDagSnapshotStorage::new(instance.clone());
         let accumulator_storage = Arc::new(
             AccumulatorStorage::<DagBlockAccumulatorStorage>::new_dag_block_accumulator_storage(
                 instance,
