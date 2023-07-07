@@ -14,7 +14,7 @@ use crate::storage::{CodecKVStore, CodecWriteBatch, ColumnFamilyName, StorageIns
 use crate::transaction::TransactionStorage;
 use crate::transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage};
 use anyhow::{bail, format_err, Error, Result};
-use flexi_dag::{SyncFlexiDagStorage, SyncFlexiDagSnapshot};
+use flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagStorage};
 use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
@@ -603,7 +603,7 @@ impl TransactionStore for Storage {
     }
 }
 
-impl SyncFlexiDagStore for Storage  {
+impl SyncFlexiDagStore for Storage {
     fn put_hashes(&self, key: HashValue, accumulator_snapshot: SyncFlexiDagSnapshot) -> Result<()> {
         self.flexi_dag_storage.put_hashes(key, accumulator_snapshot)
     }

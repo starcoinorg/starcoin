@@ -3,9 +3,7 @@ use starcoin_config::RocksdbConfig;
 use starcoin_crypto::HashValue;
 
 use crate::{
-    cache_storage::CacheStorage,
-    db_storage::DBStorage,
-    flexi_dag::SyncFlexiDagSnapshot,
+    cache_storage::CacheStorage, db_storage::DBStorage, flexi_dag::SyncFlexiDagSnapshot,
     storage::StorageInstance, Storage, SyncFlexiDagStore,
 };
 use anyhow::{Ok, Result};
@@ -25,16 +23,16 @@ struct SyncFlexiDagManagerImp {
 
 impl SyncFlexiDagManagerImp {
     pub fn new() -> Self {
-        let flexi_dag_storage =
-            Storage::new(StorageInstance::new_cache_and_db_instance(
-                CacheStorage::default(),
-                DBStorage::new(
-                    starcoin_config::temp_dir().as_ref(),
-                    RocksdbConfig::default(),
-                    None,
-                )
-                .unwrap(),
-            )).unwrap();
+        let flexi_dag_storage = Storage::new(StorageInstance::new_cache_and_db_instance(
+            CacheStorage::default(),
+            DBStorage::new(
+                starcoin_config::temp_dir().as_ref(),
+                RocksdbConfig::default(),
+                None,
+            )
+            .unwrap(),
+        ))
+        .unwrap();
         let accumulator = MerkleAccumulator::new_empty(flexi_dag_storage.get_accumulator_storage());
         SyncFlexiDagManagerImp {
             flexi_dag_storage: Box::new(flexi_dag_storage),
