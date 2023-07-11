@@ -3,9 +3,8 @@
 
 pub mod errors;
 pub mod executor;
-// XXX FIXME YSG
-//#[cfg(any(test, feature = "fuzzing"))]
-//pub mod proptest_types;
+#[cfg(any(test, feature = "fuzzing"))]
+pub mod proptest_types;
 mod scheduler;
 pub mod task;
 mod txn_last_input_output;

@@ -10173,10 +10173,13 @@ version = "1.13.4"
 dependencies = [
  "anyhow",
  "arc-swap",
+ "criterion",
  "crossbeam",
  "dashmap",
  "num_cpus",
  "once_cell",
+ "proptest",
+ "proptest-derive",
  "rayon",
  "starcoin-infallible",
  "starcoin-logger",
