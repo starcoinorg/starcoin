@@ -32,7 +32,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-chain-service"
 publish = { workspace = true }
-version = "1.13.5"
+version = "1.13.6"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }
