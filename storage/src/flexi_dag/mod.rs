@@ -4,7 +4,7 @@ use crate::{
     accumulator::{AccumulatorStorage, DagBlockAccumulatorStorage},
     define_storage,
     storage::{CodecKVStore, StorageInstance, ValueCodec},
-    SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME,
+    SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME, SYNC_FLEXI_DAG_BLOCK_HASH_PREFIX_NAME,
 };
 use anyhow::Result;
 use bcs_ext::BCSCodec;
@@ -14,7 +14,7 @@ use starcoin_crypto::HashValue;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct SyncFlexiDagSnapshot {
-    pub hashes: Vec<HashValue>,
+    pub child_hashes: Vec<HashValue>,     // child nodes, to get the relationship, use dag's relationship store
     pub accumulator_info: AccumulatorInfo,
 }
 
@@ -30,10 +30,19 @@ impl ValueCodec for SyncFlexiDagSnapshot {
 
 define_storage!(
     SyncFlexiDagSnapshotStorage,
-    HashValue,
+    HashValue,      // accumulator leaf node
     SyncFlexiDagSnapshot,
     SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME
 );
+
+define_storage!(
+    SyncFlexiDagBlockHashStorage,
+    HashValue,      // block hash
+    HashValue,      // accumulator leaf
+    SYNC_FLEXI_DAG_BLOCK_HASH_PREFIX_NAME
+);
+
+
 
 #[derive(Clone)]
 pub struct SyncFlexiDagStorage {
