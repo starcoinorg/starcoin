@@ -14,7 +14,7 @@ use crate::storage::{CodecKVStore, CodecWriteBatch, ColumnFamilyName, StorageIns
 use crate::transaction::TransactionStorage;
 use crate::transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage};
 use anyhow::{bail, format_err, Error, Result};
-use flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagStorage};
+use flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagStorage, SyncFlexiDagSnapshotStorage};
 use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
@@ -296,6 +296,7 @@ pub trait SyncFlexiDagStore {
     fn put_hashes(&self, key: HashValue, accumulator_snapshot: SyncFlexiDagSnapshot) -> Result<()>;
     fn query_by_hash(&self, key: HashValue) -> Result<Option<SyncFlexiDagSnapshot>>;
     fn get_accumulator_storage(&self) -> std::sync::Arc<dyn AccumulatorTreeStore>;
+    fn get_accumulator_snapshot_storage(&self) -> std::sync::Arc<SyncFlexiDagSnapshotStorage>;
 }
 
 // TODO: remove Arc<dyn Store>, we can clone Storage directly.
@@ -614,6 +615,9 @@ impl SyncFlexiDagStore for Storage {
 
     fn get_accumulator_storage(&self) -> std::sync::Arc<dyn AccumulatorTreeStore> {
         self.flexi_dag_storage.get_accumulator_storage()
+    }
+    fn get_accumulator_snapshot_storage(&self) -> std::sync::Arc<SyncFlexiDagSnapshotStorage>  {
+        self.flexi_dag_storage.get_snapshot_storage()
     }
 }
 
