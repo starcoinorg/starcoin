@@ -80,7 +80,6 @@ pub const FAILED_BLOCK_PREFIX_NAME: ColumnFamilyName = "failed_block";
 pub const TABLE_INFO_PREFIX_NAME: ColumnFamilyName = "table_info";
 pub const SYNC_FLEXI_DAG_ACCUMULATOR_PREFIX_NAME: ColumnFamilyName = "sync_flexi_dag_accumulator";
 pub const SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME: ColumnFamilyName = "sync_flexi_dag_snapshot";
-pub const SYNC_FLEXI_DAG_BLOCK_HASH_PREFIX_NAME: ColumnFamilyName = "sync_flexi_dag_block_hash";
 
 ///db storage use prefix_name vec to init
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
@@ -167,7 +166,6 @@ static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         FAILED_BLOCK_PREFIX_NAME,
         SYNC_FLEXI_DAG_ACCUMULATOR_PREFIX_NAME,
         SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME,
-        SYNC_FLEXI_DAG_BLOCK_HASH_PREFIX_NAME,
         // TABLE_INFO_PREFIX_NAME,
     ]
 });

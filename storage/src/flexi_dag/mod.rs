@@ -4,7 +4,7 @@ use crate::{
     accumulator::{AccumulatorStorage, DagBlockAccumulatorStorage},
     define_storage,
     storage::{CodecKVStore, StorageInstance, ValueCodec},
-    SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME, SYNC_FLEXI_DAG_BLOCK_HASH_PREFIX_NAME,
+    SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME,
 };
 use anyhow::Result;
 use bcs_ext::BCSCodec;
@@ -35,24 +35,15 @@ define_storage!(
     SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME
 );
 
-define_storage!(
-    SyncFlexiDagBlockHashStorage,
-    HashValue,      // block hash
-    HashValue,      // accumulator leaf
-    SYNC_FLEXI_DAG_BLOCK_HASH_PREFIX_NAME
-);
-
-
-
 #[derive(Clone)]
 pub struct SyncFlexiDagStorage {
-    snapshot_storage: SyncFlexiDagSnapshotStorage,
+    snapshot_storage: Arc<SyncFlexiDagSnapshotStorage>,
     accumulator_storage: Arc<AccumulatorStorage<DagBlockAccumulatorStorage>>,
 }
 
 impl SyncFlexiDagStorage {
     pub fn new(instance: StorageInstance) -> Self {
-        let snapshot_storage = SyncFlexiDagSnapshotStorage::new(instance.clone());
+        let snapshot_storage = Arc::new(SyncFlexiDagSnapshotStorage::new(instance.clone()));
         let accumulator_storage = Arc::new(
             AccumulatorStorage::<DagBlockAccumulatorStorage>::new_dag_block_accumulator_storage(
                 instance,
@@ -67,6 +58,10 @@ impl SyncFlexiDagStorage {
 
     pub fn get_accumulator_storage(&self) -> std::sync::Arc<dyn AccumulatorTreeStore> {
         self.accumulator_storage.clone()
+    }
+
+    pub fn get_snapshot_storage(&self) -> std::sync::Arc<SyncFlexiDagSnapshotStorage> {
+        self.snapshot_storage.clone()
     }
 
     pub fn put_hashes(&self, key: HashValue, accumulator_info: SyncFlexiDagSnapshot) -> Result<()> {
