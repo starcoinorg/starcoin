@@ -3,14 +3,14 @@ use starcoin_config::RocksdbConfig;
 use starcoin_crypto::HashValue;
 
 use crate::{
-    cache_storage::CacheStorage, db_storage::DBStorage, flexi_dag::SyncFlexiDagSnapshot,
-    storage::StorageInstance, Storage, SyncFlexiDagStore, accumulator,
+    accumulator, cache_storage::CacheStorage, db_storage::DBStorage,
+    flexi_dag::SyncFlexiDagSnapshot, storage::StorageInstance, Storage, Store, SyncFlexiDagStore,
 };
 use anyhow::{Ok, Result};
 
 trait SyncFlexiDagManager {
     fn insert_hashes(&self, hashes: Vec<HashValue>) -> Result<HashValue>;
-    fn query_by_hash(&self,hash: HashValue) -> Result<Option<SyncFlexiDagSnapshot>>;
+    fn query_by_hash(&self, hash: HashValue) -> Result<Option<SyncFlexiDagSnapshot>>;
     fn fork(&mut self, accumulator_info: AccumulatorInfo) -> Result<()>;
     fn get_hash_by_position(&self, position: u64) -> Result<Option<HashValue>>;
     fn get_accumulator_info(&self) -> AccumulatorInfo;
@@ -33,7 +33,10 @@ impl SyncFlexiDagManagerImp {
             .unwrap(),
         ))
         .unwrap();
-        let accumulator = MerkleAccumulator::new_empty(flexi_dag_storage.get_accumulator_storage());
+        let accumulator = MerkleAccumulator::new_empty(
+            flexi_dag_storage
+                .get_accumulator_store(starcoin_accumulator::node::AccumulatorStoreType::SyncDag),
+        );
         SyncFlexiDagManagerImp {
             flexi_dag_storage: Box::new(flexi_dag_storage),
             accumulator,
@@ -258,7 +261,7 @@ fn test_syn_dag_accumulator_fork() {
         syn_accumulator.get_accumulator_info(),
         syn_accumulator_target.get_accumulator_info()
     );
-    
+
     let info = syn_accumulator_target
         .query_by_hash(layer3)
         .unwrap()
@@ -267,19 +270,15 @@ fn test_syn_dag_accumulator_fork() {
 
     println!("{:?}", info);
     assert_eq!(
-         layer3,
-         syn_accumulator.get_hash_by_position(3).unwrap().unwrap()
+        layer3,
+        syn_accumulator.get_hash_by_position(3).unwrap().unwrap()
     );
 
-
-
-    syn_accumulator
-        .fork(info)
-        .unwrap();
+    syn_accumulator.fork(info).unwrap();
 
     assert_eq!(
-         layer3,
-         syn_accumulator.get_hash_by_position(3).unwrap().unwrap()
+        layer3,
+        syn_accumulator.get_hash_by_position(3).unwrap().unwrap()
     );
 
     let new_layer4 = syn_accumulator.insert_hashes([p, m, v].to_vec()).unwrap();
@@ -299,7 +298,6 @@ fn test_syn_dag_accumulator_fork() {
     );
 }
 
-
 #[test]
 fn test_accumulator_temp() {
     let flexi_dag_storage = Storage::new(StorageInstance::new_cache_and_db_instance(
@@ -312,7 +310,10 @@ fn test_accumulator_temp() {
         .unwrap(),
     ))
     .unwrap();
-    let mut accumulator = MerkleAccumulator::new_empty(flexi_dag_storage.get_accumulator_storage());
+    let mut accumulator = MerkleAccumulator::new_empty(
+        flexi_dag_storage
+            .get_accumulator_store(starcoin_accumulator::node::AccumulatorStoreType::SyncDag),
+    );
     let hash1 = accumulator.append(&[HashValue::sha3_256_of(b"a")]).unwrap();
     let hash2 = accumulator.append(&[HashValue::sha3_256_of(b"b")]).unwrap();
     let hash3 = accumulator.append(&[HashValue::sha3_256_of(b"c")]).unwrap();
@@ -323,7 +324,16 @@ fn test_accumulator_temp() {
     let hash5 = accumulator.append(&[HashValue::sha3_256_of(b"e")]).unwrap();
 
     // assert_eq!(HashValue::sha3_256_of(b"b"), accumulator.get_leaf(1).unwrap().unwrap());
-    assert_eq!(HashValue::sha3_256_of(b"c"), accumulator.get_leaf(2).unwrap().unwrap());
-    assert_eq!(HashValue::sha3_256_of(b"e"), accumulator.get_leaf(3).unwrap().unwrap());
-    assert_ne!(HashValue::sha3_256_of(b"d"), accumulator.get_leaf(3).unwrap().unwrap());
+    assert_eq!(
+        HashValue::sha3_256_of(b"c"),
+        accumulator.get_leaf(2).unwrap().unwrap()
+    );
+    assert_eq!(
+        HashValue::sha3_256_of(b"e"),
+        accumulator.get_leaf(3).unwrap().unwrap()
+    );
+    assert_ne!(
+        HashValue::sha3_256_of(b"d"),
+        accumulator.get_leaf(3).unwrap().unwrap()
+    );
 }

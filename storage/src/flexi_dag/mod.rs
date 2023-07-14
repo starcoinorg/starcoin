@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::{
     accumulator::{AccumulatorStorage, DagBlockAccumulatorStorage},
     define_storage,
@@ -9,12 +7,12 @@ use crate::{
 use anyhow::Result;
 use bcs_ext::BCSCodec;
 use serde::{Deserialize, Serialize};
-use starcoin_accumulator::{accumulator_info::AccumulatorInfo, AccumulatorTreeStore};
+use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::HashValue;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct SyncFlexiDagSnapshot {
-    pub child_hashes: Vec<HashValue>,     // child nodes, to get the relationship, use dag's relationship store
+    pub child_hashes: Vec<HashValue>, // child nodes, to get the relationship, use dag's relationship store
     pub accumulator_info: AccumulatorInfo,
 }
 
@@ -30,25 +28,24 @@ impl ValueCodec for SyncFlexiDagSnapshot {
 
 define_storage!(
     SyncFlexiDagSnapshotStorage,
-    HashValue,      // accumulator leaf node
+    HashValue, // accumulator leaf node
     SyncFlexiDagSnapshot,
     SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME
 );
 
 #[derive(Clone)]
 pub struct SyncFlexiDagStorage {
-    snapshot_storage: Arc<SyncFlexiDagSnapshotStorage>,
-    accumulator_storage: Arc<AccumulatorStorage<DagBlockAccumulatorStorage>>,
+    snapshot_storage: SyncFlexiDagSnapshotStorage,
+    accumulator_storage: AccumulatorStorage<DagBlockAccumulatorStorage>,
 }
 
 impl SyncFlexiDagStorage {
     pub fn new(instance: StorageInstance) -> Self {
-        let snapshot_storage = Arc::new(SyncFlexiDagSnapshotStorage::new(instance.clone()));
-        let accumulator_storage = Arc::new(
+        let snapshot_storage = SyncFlexiDagSnapshotStorage::new(instance.clone());
+        let accumulator_storage =
             AccumulatorStorage::<DagBlockAccumulatorStorage>::new_dag_block_accumulator_storage(
                 instance,
-            ),
-        );
+            );
 
         SyncFlexiDagStorage {
             snapshot_storage,
@@ -56,11 +53,11 @@ impl SyncFlexiDagStorage {
         }
     }
 
-    pub fn get_accumulator_storage(&self) -> std::sync::Arc<dyn AccumulatorTreeStore> {
+    pub fn get_accumulator_storage(&self) -> AccumulatorStorage<DagBlockAccumulatorStorage> {
         self.accumulator_storage.clone()
     }
 
-    pub fn get_snapshot_storage(&self) -> std::sync::Arc<SyncFlexiDagSnapshotStorage> {
+    pub fn get_snapshot_storage(&self) -> SyncFlexiDagSnapshotStorage {
         self.snapshot_storage.clone()
     }
 

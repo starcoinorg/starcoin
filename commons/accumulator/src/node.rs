@@ -16,6 +16,7 @@ use starcoin_crypto::{
 pub enum AccumulatorStoreType {
     Transaction,
     Block,
+    SyncDag,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
