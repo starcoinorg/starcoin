@@ -320,10 +320,12 @@ fn test_accumulator_temp() {
     let accumulator_info = accumulator.get_info();
     let hash4 = accumulator.append(&[HashValue::sha3_256_of(b"d")]).unwrap();
 
+    assert_eq!(HashValue::sha3_256_of(b"b"), accumulator.get_leaf(1).unwrap().unwrap());
+    accumulator.flush().unwrap();
     accumulator = accumulator.fork(Some(accumulator_info));
     let hash5 = accumulator.append(&[HashValue::sha3_256_of(b"e")]).unwrap();
 
-    // assert_eq!(HashValue::sha3_256_of(b"b"), accumulator.get_leaf(1).unwrap().unwrap());
+    assert_eq!(HashValue::sha3_256_of(b"b"), accumulator.get_leaf(1).unwrap().unwrap());
     assert_eq!(
         HashValue::sha3_256_of(b"c"),
         accumulator.get_leaf(2).unwrap().unwrap()

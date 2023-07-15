@@ -613,7 +613,7 @@ impl SyncFlexiDagStore for Storage {
     }
 
     fn get_accumulator_snapshot_storage(&self) -> std::sync::Arc<SyncFlexiDagSnapshotStorage> {
-        Arc::new(self.flexi_dag_storage.get_snapshot_storage())
+        self.flexi_dag_storage.get_snapshot_storage()
     }
 }
 

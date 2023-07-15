@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     accumulator::{AccumulatorStorage, DagBlockAccumulatorStorage},
     define_storage,
@@ -35,13 +37,13 @@ define_storage!(
 
 #[derive(Clone)]
 pub struct SyncFlexiDagStorage {
-    snapshot_storage: SyncFlexiDagSnapshotStorage,
+    snapshot_storage: Arc<SyncFlexiDagSnapshotStorage>,
     accumulator_storage: AccumulatorStorage<DagBlockAccumulatorStorage>,
 }
 
 impl SyncFlexiDagStorage {
     pub fn new(instance: StorageInstance) -> Self {
-        let snapshot_storage = SyncFlexiDagSnapshotStorage::new(instance.clone());
+        let snapshot_storage = Arc::new(SyncFlexiDagSnapshotStorage::new(instance.clone()));
         let accumulator_storage =
             AccumulatorStorage::<DagBlockAccumulatorStorage>::new_dag_block_accumulator_storage(
                 instance,
@@ -57,7 +59,7 @@ impl SyncFlexiDagStorage {
         self.accumulator_storage.clone()
     }
 
-    pub fn get_snapshot_storage(&self) -> SyncFlexiDagSnapshotStorage {
+    pub fn get_snapshot_storage(&self) -> Arc<SyncFlexiDagSnapshotStorage> {
         self.snapshot_storage.clone()
     }
 
