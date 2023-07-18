@@ -1,7 +1,18 @@
 // Copyright (c) Starcoin
 // SPDX-License-Identifier: Apache-2.0
 
+use criterion::{measurement::Measurement, BatchSize, Bencher};
+use proptest::{
+    collection::vec,
+    strategy::{Strategy, ValueTree},
+    test_runner::TestRunner,
+};
 use starcoin_crypto::HashValue;
+use starcoin_language_e2e_tests::{
+    account_universe::{log_balance_strategy, AUTransactionGen, AccountUniverseGen},
+    executor::FakeExecutor,
+    gas_costs::TXN_RESERVED,
+};
 use starcoin_types::{
     block_metadata::BlockMetadata,
     on_chain_config::{OnChainConfig, ValidatorSet},
@@ -9,17 +20,6 @@ use starcoin_types::{
 };
 use starcoin_vm::{
     data_cache::AsMoveResolver, parallel_executor::ParallelStarcoinVM, StarcoinVM, VMExecutor,
-};
-use criterion::{measurement::Measurement, BatchSize, Bencher};
-use starcoin_language_e2e_tests::{
-    account_universe::{log_balance_strategy, AUTransactionGen, AccountUniverseGen},
-    executor::FakeExecutor,
-    gas_costs::TXN_RESERVED,
-};
-use proptest::{
-    collection::vec,
-    strategy::{Strategy, ValueTree},
-    test_runner::TestRunner,
 };
 
 /// Benchmarking support for transactions.

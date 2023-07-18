@@ -4,8 +4,8 @@
 //! Support for encoding transactions for common situations.
 
 use crate::account::Account;
-use starcoin_vm_types::transaction::{RawUserTransaction, Script, SignedUserTransaction};
 use once_cell::sync::Lazy;
+use starcoin_vm_types::transaction::{RawUserTransaction, Script, SignedUserTransaction};
 
 pub static EMPTY_SCRIPT: Lazy<Vec<u8>> = Lazy::new(|| {
     let code = "
@@ -71,7 +71,11 @@ pub fn peer_to_peer_txn(
 }
 
 /// Returns a transaction to change the keys for the given account.
-pub fn rotate_key_txn(sender: &Account, new_key_hash: Vec<u8>, seq_num: u64) -> SignedUserTransaction {
+pub fn rotate_key_txn(
+    sender: &Account,
+    new_key_hash: Vec<u8>,
+    seq_num: u64,
+) -> SignedUserTransaction {
     sender
         .transaction()
         .payload(starcoin_stdlib::encode_account_rotate_authentication_key(
@@ -82,7 +86,11 @@ pub fn rotate_key_txn(sender: &Account, new_key_hash: Vec<u8>, seq_num: u64) -> 
 }
 
 /// Returns a transaction to change the keys for the given account.
-pub fn raw_rotate_key_txn(sender: &Account, new_key_hash: Vec<u8>, seq_num: u64) -> RawUserTransaction {
+pub fn raw_rotate_key_txn(
+    sender: &Account,
+    new_key_hash: Vec<u8>,
+    seq_num: u64,
+) -> RawUserTransaction {
     sender
         .transaction()
         .payload(starcoin_stdlib::encode_account_rotate_authentication_key(

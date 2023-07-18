@@ -3,8 +3,8 @@
 
 use criterion::{criterion_group, criterion_main, Criterion};
 // Run this bencher via `cargo bench --features fuzzing`.
-use starcoin_parallel_executor::proptest_types::bencher::Bencher;
 use proptest::prelude::*;
+use starcoin_parallel_executor::proptest_types::bencher::Bencher;
 
 //
 // Transaction benchmarks

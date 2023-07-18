@@ -3,22 +3,21 @@
 
 //! Support for running the VM to execute and verify transactions.
 
-use std::{env, fs};
-use std::fs::OpenOptions;
-use std::io::Write;
-use std::path::{Path, PathBuf};
+use crate::account::{Account, AccountData};
+use crate::data_store::{FakeDataStore, GENESIS_CHANGE_SET, GENESIS_CHANGE_SET_FRESH};
+use crate::golden_outputs::GoldenOutputs;
 use num_cpus;
 use serde::Serialize;
-use starcoin_crypto::HashValue;
 use starcoin_crypto::keygen::KeyGen;
+use starcoin_crypto::HashValue;
 use starcoin_vm_runtime::data_cache::{AsMoveResolver, RemoteStorage};
 use starcoin_vm_runtime::move_vm_ext::{MoveVmExt, SessionId};
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_runtime::VMExecutor;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config::{AccountResource, BalanceResource, CORE_CODE_ADDRESS};
 use starcoin_vm_types::account_config::block::NewBlockEvent;
+use starcoin_vm_types::account_config::{AccountResource, BalanceResource, CORE_CODE_ADDRESS};
 use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::effects::ChangeSet;
 use starcoin_vm_types::genesis_config::ChainId;
@@ -29,12 +28,15 @@ use starcoin_vm_types::on_chain_config::{OnChainConfig, Version};
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
-use starcoin_vm_types::transaction::{SignedUserTransaction, Transaction, TransactionOutput, TransactionStatus, VMValidatorResult};
+use starcoin_vm_types::transaction::{
+    SignedUserTransaction, Transaction, TransactionOutput, TransactionStatus, VMValidatorResult,
+};
 use starcoin_vm_types::vm_status::VMStatus;
 use starcoin_vm_types::write_set::WriteSet;
-use crate::account::{Account, AccountData};
-use crate::data_store::{FakeDataStore, GENESIS_CHANGE_SET, GENESIS_CHANGE_SET_FRESH};
-use crate::golden_outputs::GoldenOutputs;
+use std::fs::OpenOptions;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::{env, fs};
 
 static RNG_SEED: [u8; 32] = [9u8; 32];
 

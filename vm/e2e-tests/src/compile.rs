@@ -3,9 +3,8 @@
 
 //! Support for compiling scripts and modules in tests.
 
-
-use starcoin_vm_types::transaction::{Module, Script};
 use starcoin_vm_types::file_format::CompiledModule;
+use starcoin_vm_types::transaction::{Module, Script};
 
 /// Compile the provided Move code into a blob which can be used as the code to be published
 /// (a Module).

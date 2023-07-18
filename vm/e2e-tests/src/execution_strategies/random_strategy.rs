@@ -6,11 +6,11 @@ use crate::{
     execution_strategies::types::{Block, Executor, ExecutorResult, PartitionStrategy},
     executor::FakeExecutor,
 };
-use starcoin_vm_types::{transaction::SignedUserTransaction, vm_status::VMStatus};
 use rand::{
     rngs::{OsRng, StdRng},
     Rng, SeedableRng,
 };
+use starcoin_vm_types::{transaction::SignedUserTransaction, vm_status::VMStatus};
 
 #[derive(Debug, Clone)]
 pub struct RandomizedStrategy {

@@ -3,7 +3,7 @@
 
 //! Test infrastructure for modeling Starcoin accounts.
 
-use std::str::FromStr;
+use crate::gas_costs;
 use anyhow::{Error, Result};
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_crypto::keygen::KeyGen;
@@ -13,15 +13,17 @@ use starcoin_vm_types::account_config;
 use starcoin_vm_types::account_config::{AccountResource, BalanceResource};
 use starcoin_vm_types::event::EventHandle;
 use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::language_storage::{StructTag};
+use starcoin_vm_types::language_storage::StructTag;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
-use starcoin_vm_types::transaction::{RawUserTransaction, Script, ScriptFunction, SignedUserTransaction, TransactionPayload};
+use starcoin_vm_types::transaction::{
+    RawUserTransaction, Script, ScriptFunction, SignedUserTransaction, TransactionPayload,
+};
 use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use starcoin_vm_types::values::{Struct, Value};
 use starcoin_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
-use crate::gas_costs;
+use std::str::FromStr;
 // use vm_genesis::GENESIS_KEYPAIR;
 
 // TTL is 86400s. Initial time was set to 0.

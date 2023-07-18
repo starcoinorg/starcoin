@@ -1,7 +1,10 @@
 // Copyright (c) Starcoin
 // SPDX-License-Identifier: Apache-2.0
 
-use std::sync::Arc;
+use crate::account_universe::{AUTransactionGen, AccountUniverse};
+use crate::common_transactions::{empty_txn, EMPTY_SCRIPT};
+use crate::gas_costs;
+use move_core_types::gas_algebra::AbstractMemorySize;
 use proptest::prelude::Strategy;
 use proptest::prop_oneof;
 use proptest_derive::Arbitrary;
@@ -11,10 +14,7 @@ use starcoin_gas_algebra_ext::GasConstants;
 use starcoin_proptest_helpers::Index;
 use starcoin_vm_types::transaction::{Script, SignedUserTransaction, TransactionStatus};
 use starcoin_vm_types::vm_status::StatusCode;
-use crate::account_universe::{AccountUniverse, AUTransactionGen};
-use crate::common_transactions::{EMPTY_SCRIPT, empty_txn};
-use crate::gas_costs;
-use move_core_types::gas_algebra::AbstractMemorySize;
+use std::sync::Arc;
 
 /// Represents a sequence number mismatch transaction
 ///
