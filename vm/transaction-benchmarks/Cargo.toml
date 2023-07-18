@@ -1,0 +1,28 @@
+[package]
+name = "starcoin-transaction-benchmarks"
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+version = "1.13.5"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+criterion = { workspace = true }
+num_cpus = { workspace = true }
+proptest = { workspace = true }
+starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+starcoin-types = { workspace = true }
+starcoin-vm-runtime = { workspace = true }
+criterion-cpu-time = "0.1.0"
+starcoin-language-e2e-tests = { path = "../e2e-tests" }
+# move-deps = { path = "../../aptos-move/move-deps" }
+
+[[bench]]
+name = "transaction_benches"
+harness = false
+
+#[features]
+#fuzzing = ["criterion", "proptest", "proptest-derive"]

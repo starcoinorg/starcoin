@@ -1,0 +1,41 @@
+[package]
+name = "starcoin-language-e2e-tests"
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+version = "1.13.5"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+goldenfile = "1.1.0"
+anyhow = { workspace = true }
+bcs = { workspace = true }
+hex = { workspace = true }
+num_cpus = { workspace = true }
+once_cell = { workspace = true }
+proptest = { workspace = true }
+proptest-derive = { workspace = true }
+rand = { workspace = true }
+serde = { workspace = true, default-features = false }
+
+starcoin-config = { workspace = true }
+starcoin-crypto = { workspace = true, features = ["fuzzing"] }
+starcoin-vm-runtime = { workspace = true }
+starcoin-vm-types = { workspace = true }
+starcoin-proptest-helpers = { workspace = true }
+starcoin-gas-algebra-ext = { workspace = true }
+move-core-types = { workspace = true }
+
+#aptos-keygen = { path = "../../crates/aptos-keygen" }
+#aptos-proptest-helpers = { path = "../../crates/aptos-proptest-helpers" }
+#aptos-state-view = { path = "../../storage/state-view" }
+#aptos-transaction-builder = { path = "../../sdk/transaction-builder" }
+#aptos-types = { path = "../../types", features = ["fuzzing"] }
+#aptos-vm = { path = "../aptos-vm" }
+# aptos-writeset-generator = { path = "../writeset-transaction-generator" }
+# cached-framework-packages = { path = "../framework/cached-packages" }
+# move-deps = { path = "../move-deps", features = ["address32"] }
+# vm-genesis = { path = "../vm-genesis" }

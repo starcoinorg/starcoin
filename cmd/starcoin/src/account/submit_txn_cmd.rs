@@ -12,7 +12,7 @@ use crate::view::{ExecutionOutputView, FilePathOrHex};
 use crate::StarcoinOpt;
 
 #[derive(Debug, Parser)]
-/// Submit a SignedTransaction file or hex to transaction pool.
+/// Submit a SignedUserTransaction file or hex to transaction pool.
 #[clap(name = "submit-txn", alias = "submit-multisig-txn")]
 pub struct SubmitTxnOpt {
     #[clap(name = "signed-txn-file-or-hex", required = true)]
