@@ -8,9 +8,9 @@ use crate::{
     common_transactions::{create_account_txn, peer_to_peer_txn, rotate_key_txn},
     executor::FakeExecutor,
 };
+use once_cell::sync::Lazy;
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
 use starcoin_vm_types::transaction::{authenticator::AuthenticationKey, SignedUserTransaction};
-use once_cell::sync::Lazy;
 
 /// The gas each transaction is configured to reserve. If the gas available in the account,
 /// converted to microaptos, falls below this threshold, transactions are expected to fail with

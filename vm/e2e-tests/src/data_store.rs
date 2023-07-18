@@ -3,8 +3,8 @@
 
 //! Support for mocking the Aptos data store.
 
+use crate::account::AccountData;
 use anyhow::Result;
-use std::collections::HashMap;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_vm_types::access_path::AccessPath;
@@ -13,7 +13,7 @@ use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::write_set::{WriteOp, WriteSet};
-use crate::account::AccountData;
+use std::collections::HashMap;
 
 /// Dummy genesis ChangeSet for testing
 pub static GENESIS_CHANGE_SET: Lazy<ChangeSet> =

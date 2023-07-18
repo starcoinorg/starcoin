@@ -1,12 +1,13 @@
 // Copyright (c) Starcoin
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use crate::{account::Account, executor::FakeExecutor};
+use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::on_chain_config::Version;
 
 pub fn set_starcoin_version(executor: &mut FakeExecutor, version: Version) {
-    let account = Account::new_genesis_account(starcoin_vm_types::on_chain_config::config_address());
+    let account =
+        Account::new_genesis_account(starcoin_vm_types::on_chain_config::config_address());
     let txn = account
         .transaction()
         .payload(starcoin_stdlib::encode_version_set_version(version.major))

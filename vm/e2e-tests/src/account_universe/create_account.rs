@@ -9,15 +9,15 @@ use crate::{
     common_transactions::create_account_txn,
     gas_costs,
 };
+use move_core_types::vm_status::KeptVMStatus;
+use proptest::prelude::*;
+use proptest_derive::Arbitrary;
 use starcoin_proptest_helpers::Index;
 use starcoin_vm_types::{
     transaction::{SignedUserTransaction, TransactionStatus},
     vm_status::{AbortLocation, StatusCode},
 };
-use proptest::prelude::*;
-use proptest_derive::Arbitrary;
 use std::sync::Arc;
-use move_core_types::vm_status::KeptVMStatus;
 
 /// Represents a create-account transaction performed in the account universe.
 ///
@@ -100,10 +100,7 @@ impl AUTransactionGen for CreateExistingAccountGen {
             gas_used = sender.create_existing_account_gas_cost();
             sender.balance -= gas_used * gas_price;
             // TODO(tmn) provide a real abort location
-            TransactionStatus::Keep(KeptVMStatus::MoveAbort(
-                AbortLocation::Script,
-                777_777
-            ))
+            TransactionStatus::Keep(KeptVMStatus::MoveAbort(AbortLocation::Script, 777_777))
         } else {
             // Not enough gas to get past the prologue.
             TransactionStatus::Discard(StatusCode::INSUFFICIENT_BALANCE_FOR_TRANSACTION_FEE)

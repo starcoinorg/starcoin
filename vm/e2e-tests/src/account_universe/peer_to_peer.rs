@@ -1,18 +1,18 @@
 // Copyright (c) Starcoin
 // SPDX-License-Identifier: Apache-2.0
 
-use std::sync::Arc;
+use crate::account_universe::{AUTransactionGen, AccountPair, AccountPairGen, AccountUniverse};
+use crate::common_transactions::peer_to_peer_txn;
+use move_core_types::ident_str;
+use move_core_types::vm_status::KeptVMStatus;
 use proptest::prelude::Strategy;
 use proptest::prop_oneof;
 use proptest_derive::Arbitrary;
-use move_core_types::ident_str;
-use move_core_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::transaction::{SignedUserTransaction, TransactionStatus};
 use starcoin_vm_types::vm_status::{AbortLocation, StatusCode};
-use crate::account_universe::{AccountPair, AccountPairGen, AccountUniverse, AUTransactionGen};
-use crate::common_transactions::peer_to_peer_txn;
+use std::sync::Arc;
 
 /// Represents a peer-to-peer transaction performed in the account universe.
 ///
@@ -80,7 +80,13 @@ impl AUTransactionGen for P2PTransferGen {
                 // the balance was insufficient while trying to deduct gas costs in the
                 // epilogue.
                 // TODO: define these values in a central location
-                status = TransactionStatus::Keep(KeptVMStatus::MoveAbort(AbortLocation::Module(ModuleId::new(CORE_CODE_ADDRESS, ident_str!("Coin").to_owned())), 1287));
+                status = TransactionStatus::Keep(KeptVMStatus::MoveAbort(
+                    AbortLocation::Module(ModuleId::new(
+                        CORE_CODE_ADDRESS,
+                        ident_str!("Coin").to_owned(),
+                    )),
+                    1287,
+                ));
             }
             (true, false, _) => {
                 // Enough to pass validation but not to do the transfer. The transaction will be run

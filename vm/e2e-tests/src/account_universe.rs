@@ -28,15 +28,15 @@ use crate::{
     executor::FakeExecutor,
     gas_costs, transaction_status_eq,
 };
+use move_core_types::vm_status::KeptVMStatus;
+use once_cell::sync::Lazy;
+use proptest::{prelude::*, strategy::Union};
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_vm_types::{
     transaction::{SignedUserTransaction, TransactionStatus},
     vm_status::{known_locations, StatusCode},
 };
-use once_cell::sync::Lazy;
-use proptest::{prelude::*, strategy::Union};
 use std::{fmt, sync::Arc};
-use move_core_types::vm_status::KeptVMStatus;
 
 static UNIVERSE_SIZE: Lazy<usize> = Lazy::new(|| {
     use std::{env, process::abort};
@@ -100,8 +100,8 @@ pub trait AUTransactionGen: fmt::Debug {
 
     /// Creates an arced version of this transaction, suitable for dynamic dispatch.
     fn arced(self) -> Arc<dyn AUTransactionGen>
-        where
-            Self: 'static + Sized,
+    where
+        Self: 'static + Sized,
     {
         Arc::new(self)
     }
@@ -309,7 +309,7 @@ pub fn txn_one_account_result(
 
 /// Returns a [`Strategy`] that provides a variety of balances (or transfer amounts) over a roughly
 /// logarithmic distribution.
-pub fn log_balance_strategy(max_balance: u64) -> impl Strategy<Value=u64> {
+pub fn log_balance_strategy(max_balance: u64) -> impl Strategy<Value = u64> {
     // The logarithmic distribution is modeled by uniformly picking from ranges of powers of 2.
     let minimum = gas_costs::TXN_RESERVED.next_power_of_two();
     assert!(max_balance >= minimum, "minimum to make sense");
@@ -333,7 +333,7 @@ pub fn log_balance_strategy(max_balance: u64) -> impl Strategy<Value=u64> {
 pub fn all_transactions_strategy(
     min: u64,
     max: u64,
-) -> impl Strategy<Value=Arc<dyn AUTransactionGen + 'static>> {
+) -> impl Strategy<Value = Arc<dyn AUTransactionGen + 'static>> {
     prop_oneof![
         // Most transactions should be p2p payments.
         8 => p2p_strategy(min, max),

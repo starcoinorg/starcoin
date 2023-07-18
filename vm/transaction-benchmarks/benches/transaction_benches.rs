@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use criterion::{criterion_group, criterion_main, measurement::Measurement, Criterion};
-use starcoin_language_e2e_tests::account_universe::P2PTransferGen;
 use proptest::prelude::*;
+use starcoin_language_e2e_tests::account_universe::P2PTransferGen;
 use starcoin_transaction_benchmarks::transactions::TransactionBencher;
 
 //

@@ -1,25 +1,23 @@
 // Copyright (c) Starcoin
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::vm_status::KeptVMStatus;
 use crate::{
     account_universe::{AUTransactionGen, AccountUniverse},
     common_transactions::rotate_key_txn,
     gas_costs,
 };
+use move_core_types::vm_status::KeptVMStatus;
+use proptest::prelude::*;
+use proptest_derive::Arbitrary;
 use starcoin_crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     test_utils::KeyPair,
 };
 use starcoin_proptest_helpers::Index;
 use starcoin_vm_types::{
-    transaction::{
-        authenticator::AuthenticationKey, SignedUserTransaction, TransactionStatus,
-    },
+    transaction::{authenticator::AuthenticationKey, SignedUserTransaction, TransactionStatus},
     vm_status::StatusCode,
 };
-use proptest::prelude::*;
-use proptest_derive::Arbitrary;
 
 /// Represents a rotate-key transaction performed in the account universe.
 #[derive(Arbitrary, Clone, Debug)]
