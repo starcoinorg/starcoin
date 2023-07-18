@@ -87,6 +87,10 @@ members = [
     "vm/move-package-manager",
     "vm/vm-status-translator",
     "vm/starcoin-transactional-test-harness",
+    "vm/parallel-executor",
+    "vm/transaction-benchmarks",
+    "vm/e2e-tests",
+    "vm/proptest-helpers",
     "abi/types",
     "abi/decoder",
     "abi/resolver",
@@ -487,8 +491,12 @@ stest = { path = "commons/stest" }
 stest-macro = { path = "commons/stest/stest-macro" }
 stream-task = { path = "commons/stream-task" }
 starcoin-mvhashmap = { path = "vm/mvhashmap" }
-starcoin-parallel-executor = { path = "vm/parallel-executor" }
 starcoin-infallible = { path = "commons/infallible" }
+starcoin-parallel-executor = { path = "vm/parallel-executor" }
+starcoin-transaction-benchmarks = { path = "vm/transaction-benchmarks" }
+starcoin-language-e2e-tests = { path = "vm/e2e-tests" }
+starcoin-proptest-helpers = { path = "vm/proptest-helpers" }
+
 syn = { version = "1.0.107", features = [
     "full",
     "extra-traits",

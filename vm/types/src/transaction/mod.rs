@@ -471,7 +471,7 @@ impl fmt::Debug for SignedUserTransaction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "SignedTransaction {{ \n \
+            "SignedUserTransaction {{ \n \
              {{ raw_txn: {:#?}, \n \
              authenticator: {:#?}, \n \
              }} \n \

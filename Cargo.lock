@@ -932,6 +932,17 @@ checksum = "771fe0050b883fcc3ea2359b1a96bcfbc090b7116eae7c3c512c7a083fdf23d3"
 
 [[package]]
 name = "bstr"
+version = "0.2.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba3569f383e8f1598449f1a423e72e99569137b47740b1da11ef19af3d5c3223"
+dependencies = [
+ "lazy_static 1.4.0",
+ "memchr",
+ "regex-automata",
+]
+
+[[package]]
+name = "bstr"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b7f0778972c64420fdedc63f09919c8a88bda7b25135357fd25a5d9f3257e832"
@@ -1500,6 +1511,16 @@ dependencies = [
  "serde_json",
  "tinytemplate",
  "walkdir",
+]
+
+[[package]]
+name = "criterion-cpu-time"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63aaaf47e457badbcb376c65a49d0f182c317ebd97dc6d1ced94c8e1d09c0f3a"
+dependencies = [
+ "criterion",
+ "libc",
 ]
 
 [[package]]
@@ -3168,7 +3189,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "029d74589adefde59de1a0c4f4732695c32805624aec7b68d91503d4dba79afc"
 dependencies = [
  "aho-corasick",
- "bstr",
+ "bstr 1.2.0",
  "fnv",
  "log 0.4.17",
  "regex",
@@ -3205,6 +3226,16 @@ dependencies = [
  "futures-core",
  "js-sys",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "goldenfile"
+version = "1.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf1e66766a6a6960b997e03eeaa212b05b87e0275ede54eb3fe2ec1c6071305b"
+dependencies = [
+ "similar-asserts",
+ "tempfile",
 ]
 
 [[package]]
@@ -7870,6 +7901,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "regex-automata"
+version = "0.1.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c230d73fb8d8c1b9c0b3135c5142a8acee3a0558fb8db5cf1cb65f8d7862132"
+
+[[package]]
 name = "regex-syntax"
 version = "0.6.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8826,6 +8863,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "similar"
+version = "2.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "420acb44afdae038210c99e69aae24109f32f15500aa708e81d46c9f29d55fcf"
+dependencies = [
+ "bstr 0.2.17",
+ "unicode-segmentation",
+]
+
+[[package]]
+name = "similar-asserts"
+version = "1.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbf644ad016b75129f01a34a355dcb8d66a5bc803e417c7a77cc5d5ee9fa0f18"
+dependencies = [
+ "console",
+ "similar",
+]
+
+[[package]]
 name = "simple-stopwatch"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9724,6 +9781,29 @@ name = "starcoin-infallible"
 version = "0.1.0"
 
 [[package]]
+name = "starcoin-language-e2e-tests"
+version = "1.13.5"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "goldenfile",
+ "hex",
+ "move-core-types",
+ "num_cpus",
+ "once_cell",
+ "proptest",
+ "proptest-derive",
+ "rand 0.8.5",
+ "serde 1.0.152",
+ "starcoin-config",
+ "starcoin-crypto",
+ "starcoin-gas-algebra-ext",
+ "starcoin-proptest-helpers",
+ "starcoin-vm-runtime",
+ "starcoin-vm-types",
+]
+
+[[package]]
 name = "starcoin-logger"
 version = "1.13.5"
 dependencies = [
@@ -10200,6 +10280,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-proptest-helpers"
+version = "1.13.4"
+dependencies = [
+ "crossbeam",
+ "proptest",
+ "proptest-derive",
+]
+
+[[package]]
 name = "starcoin-replay"
 version = "1.13.5"
 dependencies = [
@@ -10667,6 +10756,20 @@ version = "1.13.5"
 dependencies = [
  "log 0.4.17",
  "serde 1.0.152",
+]
+
+[[package]]
+name = "starcoin-transaction-benchmarks"
+version = "1.13.5"
+dependencies = [
+ "criterion",
+ "criterion-cpu-time",
+ "num_cpus",
+ "proptest",
+ "starcoin-crypto",
+ "starcoin-language-e2e-tests",
+ "starcoin-types",
+ "starcoin-vm-runtime",
 ]
 
 [[package]]

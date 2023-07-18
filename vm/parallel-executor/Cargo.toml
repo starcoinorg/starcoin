@@ -36,5 +36,3 @@ bench = false
 name = "scheduler_benches"
 harness = false
 required-features = ["fuzzing"]
-
-
