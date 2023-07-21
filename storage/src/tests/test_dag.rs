@@ -3,8 +3,8 @@ use starcoin_config::RocksdbConfig;
 use starcoin_crypto::HashValue;
 
 use crate::{
-    cache_storage::CacheStorage, db_storage::DBStorage,
-    flexi_dag::SyncFlexiDagSnapshot, storage::StorageInstance, Storage, Store, SyncFlexiDagStore,
+    cache_storage::CacheStorage, db_storage::DBStorage, flexi_dag::SyncFlexiDagSnapshot,
+    storage::StorageInstance, Storage, Store, SyncFlexiDagStore,
 };
 use anyhow::{Ok, Result};
 
