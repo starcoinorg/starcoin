@@ -3,7 +3,7 @@ use starcoin_config::RocksdbConfig;
 use starcoin_crypto::HashValue;
 
 use crate::{
-    accumulator, cache_storage::CacheStorage, db_storage::DBStorage,
+    cache_storage::CacheStorage, db_storage::DBStorage,
     flexi_dag::SyncFlexiDagSnapshot, storage::StorageInstance, Storage, Store, SyncFlexiDagStore,
 };
 use anyhow::{Ok, Result};
@@ -314,18 +314,24 @@ fn test_accumulator_temp() {
         flexi_dag_storage
             .get_accumulator_store(starcoin_accumulator::node::AccumulatorStoreType::SyncDag),
     );
-    let hash1 = accumulator.append(&[HashValue::sha3_256_of(b"a")]).unwrap();
-    let hash2 = accumulator.append(&[HashValue::sha3_256_of(b"b")]).unwrap();
-    let hash3 = accumulator.append(&[HashValue::sha3_256_of(b"c")]).unwrap();
+    let _hash1 = accumulator.append(&[HashValue::sha3_256_of(b"a")]).unwrap();
+    let _hash2 = accumulator.append(&[HashValue::sha3_256_of(b"b")]).unwrap();
+    let _hash3 = accumulator.append(&[HashValue::sha3_256_of(b"c")]).unwrap();
     let accumulator_info = accumulator.get_info();
-    let hash4 = accumulator.append(&[HashValue::sha3_256_of(b"d")]).unwrap();
+    let _hash4 = accumulator.append(&[HashValue::sha3_256_of(b"d")]).unwrap();
 
-    assert_eq!(HashValue::sha3_256_of(b"b"), accumulator.get_leaf(1).unwrap().unwrap());
+    assert_eq!(
+        HashValue::sha3_256_of(b"b"),
+        accumulator.get_leaf(1).unwrap().unwrap()
+    );
     accumulator.flush().unwrap();
     accumulator = accumulator.fork(Some(accumulator_info));
-    let hash5 = accumulator.append(&[HashValue::sha3_256_of(b"e")]).unwrap();
+    let _hash5 = accumulator.append(&[HashValue::sha3_256_of(b"e")]).unwrap();
 
-    assert_eq!(HashValue::sha3_256_of(b"b"), accumulator.get_leaf(1).unwrap().unwrap());
+    assert_eq!(
+        HashValue::sha3_256_of(b"b"),
+        accumulator.get_leaf(1).unwrap().unwrap()
+    );
     assert_eq!(
         HashValue::sha3_256_of(b"c"),
         accumulator.get_leaf(2).unwrap().unwrap()
