@@ -22,12 +22,14 @@ anyhow = { workspace = true }
 starcoin-infallible = { workspace = true }
 starcoin-mvhashmap = { workspace = true }
 starcoin-logger = { workspace = true }
-criterion = { default-features = false, workspace = true, optional = true }
-proptest = { default-features = false, workspace = true, optional = true }
-proptest-derive = { default-features = false, workspace = true, optional = true }
+criterion = { workspace = true, optional = true }
+proptest = { workspace = true, optional = true }
+proptest-derive = { workspace = true, optional = true }
 
-[features]
-fuzzing = ["criterion", "proptest", "proptest-derive"]
+[dev-dependencies]
+criterion = { workspace = true }
+proptest = { workspace = true }
+proptest-derive = { workspace = true }
 
 [lib]
 bench = false
@@ -36,3 +38,11 @@ bench = false
 name = "scheduler_benches"
 harness = false
 required-features = ["fuzzing"]
+
+[features]
+default = []
+fuzzing = [
+    "criterion",
+    "proptest",
+    "proptest-derive"
+]
