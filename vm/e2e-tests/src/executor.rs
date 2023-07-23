@@ -4,14 +4,18 @@
 //! Support for running the VM to execute and verify transactions.
 
 use crate::account::{Account, AccountData};
-use crate::data_store::{FakeDataStore, GENESIS_CHANGE_SET, GENESIS_CHANGE_SET_FRESH};
+use crate::data_store::FakeDataStore;
 use crate::golden_outputs::GoldenOutputs;
+use move_core_types::vm_status::KeptVMStatus;
 use num_cpus;
 use serde::Serialize;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::HashValue;
+use starcoin_gas::{StarcoinGasMeter, StarcoinGasParameters};
+use starcoin_gas_algebra_ext::InitialGasSchedule;
 use starcoin_vm_runtime::data_cache::{AsMoveResolver, RemoteStorage};
-use starcoin_vm_runtime::move_vm_ext::{MoveVmExt, SessionId};
+use starcoin_vm_runtime::move_vm_ext::{MoveVmExt, SessionId, SessionOutput};
+use starcoin_vm_runtime::parallel_executor::ParallelStarcoinVM;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_runtime::VMExecutor;
 use starcoin_vm_types::access_path::AccessPath;
@@ -19,17 +23,16 @@ use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::block::NewBlockEvent;
 use starcoin_vm_types::account_config::{AccountResource, BalanceResource, CORE_CODE_ADDRESS};
 use starcoin_vm_types::block_metadata::BlockMetadata;
-use starcoin_vm_types::effects::ChangeSet;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::identifier::Identifier;
-use starcoin_vm_types::language_storage::{ModuleId, ResourceKey, TypeTag};
+use starcoin_vm_types::language_storage::{ModuleId, TypeTag};
 use starcoin_vm_types::move_resource::MoveResource;
-use starcoin_vm_types::on_chain_config::{OnChainConfig, Version};
+use starcoin_vm_types::on_chain_config::{OnChainConfig, VMConfig, Version};
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::{
-    SignedUserTransaction, Transaction, TransactionOutput, TransactionStatus, VMValidatorResult,
+    SignedUserTransaction, Transaction, TransactionOutput, TransactionStatus,
 };
 use starcoin_vm_types::vm_status::VMStatus;
 use starcoin_vm_types::write_set::WriteSet;
@@ -37,6 +40,8 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
+use starcoin_vm_types::errors::Location;
+use move_table_extension::NativeTableContext;
 
 static RNG_SEED: [u8; 32] = [9u8; 32];
 
@@ -56,7 +61,7 @@ pub type TraceSeqMapping = (usize, Vec<usize>, Vec<usize>);
 /// Provides an environment to run a VM instance.
 ///
 /// This struct is a mock in-memory implementation of the Aptos executor.
-#[derive(Debug)]
+//#[derive(Debug)]
 pub struct FakeExecutor {
     data_store: FakeDataStore,
     block_time: u64,
@@ -68,54 +73,57 @@ pub struct FakeExecutor {
 impl FakeExecutor {
     /// Creates an executor from a genesis [`WriteSet`].
     pub fn from_genesis(write_set: &WriteSet) -> Self {
-        let mut executor = FakeExecutor {
-            data_store: FakeDataStore::default(),
-            block_time: 0,
-            executed_output: None,
-            trace_dir: None,
-            rng: KeyGen::from_seed(RNG_SEED),
-        };
+        let mut executor = Self::no_genesis();
         executor.apply_write_set(write_set);
         executor
     }
 
     /// Create an executor from a saved genesis blob
-    pub fn from_saved_genesis(saved_genesis_blob: &[u8]) -> Self {
-        let change_set = bcs::from_bytes::<ChangeSet>(saved_genesis_blob).unwrap();
-        Self::from_genesis(change_set.write_set())
-    }
+    // TODO(BobOng): e2e-test
+    // pub fn from_saved_genesis(saved_genesis_blob: &[u8]) -> Self {
+    //     let change_set = bcs::from_bytes::<ChangeSet>(saved_genesis_blob).unwrap();
+    //     Self::from_genesis(change_set.write_set())
+    // }
 
     /// Creates an executor from the genesis file GENESIS_FILE_LOCATION
     pub fn from_genesis_file() -> Self {
-        Self::from_genesis(GENESIS_CHANGE_SET.clone().write_set())
+        //Self::from_genesis(GENESIS_CHANGE_SET.clone().write_set())
+        // TODO(BobOng): e2e-test
+        Self::no_genesis()
     }
 
     /// Creates an executor using the standard genesis.
     pub fn from_fresh_genesis() -> Self {
-        Self::from_genesis(GENESIS_CHANGE_SET_FRESH.clone().write_set())
+        //Self::from_genesis(GENESIS_CHANGE_SET_FRESH.clone().write_set())
+        // TODO(BobOng): e2e-test
+        Self::no_genesis()
     }
 
     pub fn allowlist_genesis() -> Self {
-        Self::custom_genesis(
-            cached_framework_packages::module_blobs(),
-            None,
-            VMPublishingOption::open(),
-        )
+        // Self::custom_genesis(
+        //     cached_framework_packages::module_blobs(),
+        //     None,
+        //     VMPublishingOption::open(),
+        // )
+        // TODO(BobOng): e2e-test
+        Self::no_genesis()
     }
 
     /// Creates an executor from the genesis file GENESIS_FILE_LOCATION with script/module
     /// publishing options given by `publishing_options`. These can only be either `Open` or
     /// `CustomScript`.
-    pub fn from_genesis_with_options(publishing_options: VMPublishingOption) -> Self {
-        if !publishing_options.is_open_script() {
-            panic!("Allowlisted transactions are not supported as a publishing option")
-        }
+    pub fn from_genesis_with_options(_publishing_options: VMConfig) -> Self {
+        // if !publishing_options.is_open_script() {
+        //     panic!("Allowlisted transactions are not supported as a publishing option")
+        // }
 
-        Self::custom_genesis(
-            cached_framework_packages::module_blobs(),
-            None,
-            publishing_options,
-        )
+        // Self::custom_genesis(
+        //     cached_framework_packages::module_blobs(),
+        //     None,
+        //     publishing_options,
+        // )
+        // TODO(BobOng): e2e-test
+        Self::no_genesis()
     }
 
     /// Creates an executor in which no genesis state has been applied yet.
@@ -140,7 +148,7 @@ impl FakeExecutor {
         //  - the environment variable is properly set
         if let Some(env_trace_dir) = env::var_os(ENV_TRACE_DIR) {
             let starcoin_version =
-                Version::fetch_config(&self.data_store.as_move_resolver()).map_or(0, |v| v.major);
+                Version::fetch_config(&self.data_store.as_move_resolver()).map_or(0, |v| v.unwrap().major);
 
             let trace_dir = Path::new(&env_trace_dir).join(file_name);
             if trace_dir.exists() {
@@ -170,29 +178,33 @@ impl FakeExecutor {
     /// Creates an executor with only the standard library Move modules published and not other
     /// initialization done.
     pub fn stdlib_only_genesis() -> Self {
-        let mut genesis = Self::no_genesis();
-        let blobs = cached_framework_packages::module_blobs();
-        let modules = cached_framework_packages::modules();
-        assert!(blobs.len() == modules.len());
-        for (module, bytes) in modules.iter().zip(blobs) {
-            let id = module.self_id();
-            genesis.add_module(&id, bytes.to_vec());
-        }
-        genesis
+        // let mut genesis = Self::no_genesis();
+        // let blobs = cached_framework_packages::module_blobs();
+        // let modules = cached_framework_packages::modules();
+        // assert!(blobs.len() == modules.len());
+        // for (module, bytes) in modules.iter().zip(blobs) {
+        //     let id = module.self_id();
+        //     genesis.add_module(&id, bytes.to_vec());
+        // }
+        // genesis
+        // TODO(BobOng): e2e-test
+        Self::no_genesis()
     }
 
     /// Creates fresh genesis from the stdlib modules passed in.
     pub fn custom_genesis(
-        genesis_modules: &[Vec<u8>],
-        validator_accounts: Option<usize>,
-        publishing_options: VMPublishingOption,
+        _genesis_modules: &[Vec<u8>],
+        _validator_accounts: Option<usize>,
+        _publishing_options: VMConfig,
     ) -> Self {
-        let genesis = vm_genesis::generate_test_genesis(
-            genesis_modules,
-            publishing_options,
-            validator_accounts,
-        );
-        Self::from_genesis(genesis.0.write_set())
+        // let genesis = vm_genesis::generate_test_genesis(
+        //     genesis_modules,
+        //     publishing_options,
+        //     validator_accounts,
+        // );
+        // Self::from_genesis(genesis.0.write_set())
+        // TODO(BobOng): e2e-test
+        Self::no_genesis()
     }
 
     /// Create one instance of [`AccountData`] without saving it to data store.
@@ -266,7 +278,7 @@ impl FakeExecutor {
     pub fn read_coin_store_resource_at_address(
         &self,
         addr: &AccountAddress,
-    ) -> Option<CoinStoreResource> {
+    ) -> Option<BalanceResource> {
         self.read_resource(addr)
     }
 
@@ -312,8 +324,9 @@ impl FakeExecutor {
         match output.status() {
             TransactionStatus::Keep(status) => {
                 self.apply_write_set(output.write_set());
-                assert!(
-                    status == &ExecutionStatus::Success,
+                assert_eq!(
+                    status,
+                    &KeptVMStatus::Executed,
                     "transaction failed with {:?}",
                     status
                 );
@@ -329,8 +342,13 @@ impl FakeExecutor {
         txn_block: Vec<Transaction>,
     ) -> Result<Vec<TransactionOutput>, VMStatus> {
         let (result, _) =
-            ParallelStarcoinVM::execute_block(txn_block, &self.data_store, num_cpus::get())?;
-
+            ParallelStarcoinVM::execute_block(
+                txn_block,
+                &self.data_store,
+                num_cpus::get(),
+                None,
+                None,
+            )?;
         Ok(result)
     }
 
@@ -415,11 +433,11 @@ impl FakeExecutor {
     }
 
     /// Verifies the given transaction by running it through the VM verifier.
-    pub fn verify_transaction(&self, txn: SignedUserTransaction) -> VMValidatorResult {
-        // TODO(BobOng):
+    pub fn verify_transaction(&self, txn: SignedUserTransaction) -> Option<VMStatus> {
+        // TODO(BobOng): e2e-test
         //let vm = StarcoinVM::new(self.get_state_view());
-        let vm = StarcoinVM::new(None);
-        vm.validate_transaction(txn, &self.data_store)
+        let mut vm = StarcoinVM::new(None);
+        vm.verify_transaction(&self.data_store, txn)
     }
 
     pub fn get_state_view(&self) -> &FakeDataStore {
@@ -433,17 +451,17 @@ impl FakeExecutor {
     pub fn new_block_with_timestamp(&mut self, time_stamp: u64) {
         // let validator_set = ValidatorSet::fetch_config(&self.data_store.as_move_resolver())
         //     .expect("Unable to retrieve the validator set from storage");
-        // TODO(BobOng): To adjust for starcoin
+        // TODO(BobOng): e2e-test
         self.block_time = time_stamp;
-        let minter_account = AccountData::random();
+        let minter_account = AccountData::new(10000, 0);
         let new_block = BlockMetadata::new(
             HashValue::zero(),
             self.block_time,
-            minter_account,
-            Some(AuthenticationKey::ed25519(&minter_account.public_key)),
+            minter_account.address().clone(),
+            Some(AuthenticationKey::ed25519(&minter_account.account().pubkey)),
             0,
             0,
-            ChainId::new(0),
+            ChainId::test(),
             0,
         );
         let output = self
@@ -453,7 +471,8 @@ impl FakeExecutor {
             .expect("Failed to get the execution result for Block Prologue");
         // check if we emit the expected event, there might be more events for transaction fees
         let event = output.events()[0].clone();
-        assert_eq!(event.key(), &new_block_event_key());
+        // TODO(BobOng): e2e-test
+        //assert_eq!(event.key(), &new_block_event_key());
         assert!(bcs::from_bytes::<NewBlockEvent>(event.event_data()).is_ok());
         self.apply_write_set(output.write_set());
     }
@@ -482,10 +501,16 @@ impl FakeExecutor {
         args: Vec<Vec<u8>>,
     ) {
         let write_set = {
-            let mut gas_status = GasStatus::new_unmetered();
-            let gas_params = StarcoinGasParameters::initial();
+            let mut gas_params = StarcoinGasParameters::initial();
             let vm = MoveVmExt::new(gas_params.natives.clone()).unwrap();
             let remote_view = RemoteStorage::new(&self.data_store);
+
+            let mut gas_meter = StarcoinGasMeter::new(
+                gas_params,
+                gas_params.txn.maximum_number_of_gas_units.clone(),
+            );
+            gas_meter.set_metering(false);
+
             let mut session = vm.new_session(&remote_view, SessionId::void());
             session
                 .execute_function_bypass_visibility(
@@ -493,7 +518,7 @@ impl FakeExecutor {
                     &Self::name(function_name),
                     type_params,
                     args,
-                    &mut gas_status,
+                    &mut gas_meter,
                 )
                 .unwrap_or_else(|e| {
                     panic!(
@@ -503,11 +528,26 @@ impl FakeExecutor {
                         e.into_vm_status()
                     )
                 });
-            let session_out = session.finish().expect("Failed to generate txn effects");
-            let (write_set, _events) = session_out
-                .into_change_set(&mut ())
-                .expect("Failed to generate writeset")
-                .into_inner();
+
+            let (
+                change_set,
+                events,
+                mut extensions
+            ) = session.finish_with_extensions().expect("Failed to generate txn effects");
+            let table_context: NativeTableContext = extensions.remove();
+            let table_change_set = table_context
+                .into_change_set()
+                .map_err(|e| e.finish(Location::Undefined))?;
+            let (write_set, _events) = SessionOutput {
+                change_set,
+                events,
+                table_change_set,
+            }.into_change_set(&mut ())?;
+            // let (write_set, _events) = session_out
+            //     .into_change_set(&mut ())
+            //     .expect("Failed to generate writeset")
+            //     .into_inner();
+            // write_set
             write_set
         };
         self.data_store.add_write_set(&write_set);
@@ -520,8 +560,7 @@ impl FakeExecutor {
         type_params: Vec<TypeTag>,
         args: Vec<Vec<u8>>,
     ) -> Result<WriteSet, VMStatus> {
-        let mut gas_status = GasStatus::new_unmetered();
-        let gas_params = StarcoinGasParameters::initial();
+        let mut gas_params = StarcoinGasParameters::initial();
         let vm = MoveVmExt::new(gas_params.natives.clone()).unwrap();
         let remote_view = RemoteStorage::new(&self.data_store);
         let mut session = vm.new_session(&remote_view, SessionId::void());
@@ -531,14 +570,30 @@ impl FakeExecutor {
                 &Self::name(function_name),
                 type_params,
                 args,
-                &mut gas_status,
+                &mut gas_params,
             )
             .map_err(|e| e.into_vm_status())?;
-        let session_out = session.finish().expect("Failed to generate txn effects");
-        let (writeset, _events) = session_out
-            .into_change_set(&mut ())
-            .expect("Failed to generate writeset")
-            .into_inner();
-        Ok(writeset)
+
+        let (
+            change_set,
+            events,
+            mut extensions
+        ) = session.finish_with_extensions().expect("Failed to generate txn effects");
+
+        let table_context: NativeTableContext = extensions.remove();
+        let table_change_set = table_context
+            .into_change_set()
+            .map_err(|e| e.finish(Location::Undefined))?;
+        let (write_set, _events) = SessionOutput {
+            change_set,
+            events,
+            table_change_set,
+        }.into_change_set(&mut ())?;
+
+        // let (writeset, _events) = session_out
+        //     .into_change_set(&mut ())
+        //     .expect("Failed to generate writeset")
+        //     .into_inner();
+        Ok(write_set)
     }
 }

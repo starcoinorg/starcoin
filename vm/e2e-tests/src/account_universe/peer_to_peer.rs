@@ -5,6 +5,7 @@ use crate::account_universe::{AUTransactionGen, AccountPair, AccountPairGen, Acc
 use crate::common_transactions::peer_to_peer_txn;
 use move_core_types::ident_str;
 use move_core_types::vm_status::KeptVMStatus;
+use proptest::arbitrary::any_with;
 use proptest::prelude::Strategy;
 use proptest::prop_oneof;
 use proptest_derive::Arbitrary;

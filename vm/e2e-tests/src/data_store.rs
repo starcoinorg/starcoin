@@ -2,13 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Support for mocking the Aptos data store.
-
 use crate::account::AccountData;
 use anyhow::Result;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_vm_types::access_path::AccessPath;
-use starcoin_vm_types::effects::ChangeSet;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateView;
@@ -16,11 +13,12 @@ use starcoin_vm_types::write_set::{WriteOp, WriteSet};
 use std::collections::HashMap;
 
 /// Dummy genesis ChangeSet for testing
-pub static GENESIS_CHANGE_SET: Lazy<ChangeSet> =
-    Lazy::new(|| generate_genesis_change_set_for_testing(GenesisOptions::Compiled));
-
-pub static GENESIS_CHANGE_SET_FRESH: Lazy<ChangeSet> =
-    Lazy::new(|| generate_genesis_change_set_for_testing(GenesisOptions::Fresh));
+// TODO(BobOng): e2e-test
+// pub static GENESIS_CHANGE_SET: Lazy<ChangeSet> =
+//     Lazy::new(|| generate_genesis_change_set_for_testing(GenesisOptions::Compiled));
+//
+// pub static GENESIS_CHANGE_SET_FRESH: Lazy<ChangeSet> =
+//     Lazy::new(|| generate_genesis_change_set_for_testing(GenesisOptions::Fresh));
 
 /// An in-memory implementation of [`StateView`] and [`RemoteCache`] for the VM.
 ///

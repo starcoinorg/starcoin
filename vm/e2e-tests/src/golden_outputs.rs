@@ -24,7 +24,7 @@ impl GoldenOutputs {
         let mut file_path = PathBuf::new();
         file_path.push(name);
         let file = RefCell::new(
-            mint.new_goldenfile(file_path.with_extension(EXP_EXT))
+            mint.new_goldenfile(file_path.with_extension("exp"))
                 .unwrap(),
         );
         Self { mint, file }

@@ -9,8 +9,7 @@ use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config;
-use starcoin_vm_types::account_config::{AccountResource, BalanceResource};
+use starcoin_vm_types::account_config::{genesis_address, AccountResource, BalanceResource};
 use starcoin_vm_types::event::EventHandle;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::language_storage::StructTag;
@@ -24,7 +23,6 @@ use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use starcoin_vm_types::values::{Struct, Value};
 use starcoin_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 use std::str::FromStr;
-// use vm_genesis::GENESIS_KEYPAIR;
 
 // TTL is 86400s. Initial time was set to 0.
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
@@ -51,13 +49,13 @@ impl Account {
     /// [`FakeExecutor::add_account_data`][crate::executor::FakeExecutor::add_account_data].
     /// This function returns distinct values upon every call.
     pub fn new() -> Self {
-        let (privkey, pubkey) = KeyGen::from_os_rng().generate_ed25519_keypair();
+        let (privkey, pubkey) = KeyGen::from_os_rng().generate_keypair();
         Self::with_keypair(privkey, pubkey)
     }
 
     /// Creates a new account in memory given a random seed.
     pub fn new_from_seed(seed: &mut KeyGen) -> Self {
-        let (privkey, pubkey) = seed.generate_ed25519_keypair();
+        let (privkey, pubkey) = seed.generate_keypair();
         Self::with_keypair(privkey, pubkey)
     }
 
@@ -95,10 +93,16 @@ impl Account {
     /// The address will be [`address`], which should be an address for a genesis account and
     /// the account will use [`GENESIS_KEYPAIR`][struct@GENESIS_KEYPAIR] as its keypair.
     pub fn new_genesis_account(address: AccountAddress) -> Self {
+        // Account {
+        //     addr: address,
+        //     pubkey: GENESIS_KEYPAIR.1.clone(),
+        //     privkey: GENESIS_KEYPAIR.0.clone(),
+        // }
+        let (privkey, pubkey) = KeyGen::from_os_rng().generate_keypair();
         Account {
             addr: address,
-            pubkey: GENESIS_KEYPAIR.1.clone(),
-            privkey: GENESIS_KEYPAIR.0.clone(),
+            pubkey,
+            privkey,
         }
     }
 
@@ -107,7 +111,7 @@ impl Account {
     /// The address will be [`starcoin_root_address`][account_config::starcoin_root_address], and
     /// the account will use [`GENESIS_KEYPAIR`][struct@GENESIS_KEYPAIR] as its keypair.
     pub fn new_starcoin_root() -> Self {
-        Self::new_genesis_account(account_config::starcoin_root_address())
+        Self::new_genesis_account(genesis_address())
     }
 
     /// Returns the address of the account. This is a hash of the public key the account was created
@@ -220,13 +224,12 @@ impl TransactionBuilder {
         self
     }
 
-    // TODO(BobOng): Not have type
     // pub fn module(mut self, m: Module) -> Self {
     //     self.program = Some(TransactionPayload::ModuleBundle(ModuleBundle::from(m)));
     //     self
     // }
 
-    // TODO(BobOng): Not have type
+    // TODO(BobOng): e2e-test
     // pub fn write_set(mut self, w: WriteSetPayload) -> Self {
     //     self.program = Some(TransactionPayload::WriteSet(w));
     //     self
@@ -274,34 +277,35 @@ impl TransactionBuilder {
         .into_inner()
     }
 
-    pub fn sign_multi_agent(self) -> SignedUserTransaction {
-        let secondary_signer_addresses: Vec<AccountAddress> = self
-            .secondary_signers
-            .iter()
-            .map(|signer| *signer.address())
-            .collect();
-        let secondary_private_keys = self
-            .secondary_signers
-            .iter()
-            .map(|signer| &signer.privkey)
-            .collect();
-        RawUserTransaction::new_with_default_gas_token(
-            *self.sender.address(),
-            self.sequence_number.expect("sequence number not set"),
-            self.program.expect("transaction payload not set"),
-            self.max_gas_amount.unwrap_or(gas_costs::TXN_RESERVED),
-            self.gas_unit_price.unwrap_or(0),
-            self.ttl.unwrap_or(DEFAULT_EXPIRATION_TIME),
-            ChainId::test(),
-        )
-        .sign_multi_agent(
-            &self.sender.privkey,
-            secondary_signer_addresses,
-            secondary_private_keys,
-        )
-        .unwrap()
-        .into_inner()
-    }
+    // TODO(BobOng): e2e-test unsupport multi-agent
+    // pub fn sign_multi_agent(self) -> SignedUserTransaction {
+    //     let secondary_signer_addresses: Vec<AccountAddress> = self
+    //         .secondary_signers
+    //         .iter()
+    //         .map(|signer| *signer.address())
+    //         .collect();
+    //     let secondary_private_keys = self
+    //         .secondary_signers
+    //         .iter()
+    //         .map(|signer| &signer.privkey)
+    //         .collect();
+    //     RawUserTransaction::new_with_default_gas_token(
+    //         *self.sender.address(),
+    //         self.sequence_number.expect("sequence number not set"),
+    //         self.program.expect("transaction payload not set"),
+    //         self.max_gas_amount.unwrap_or(gas_costs::TXN_RESERVED),
+    //         self.gas_unit_price.unwrap_or(0),
+    //         self.ttl.unwrap_or(DEFAULT_EXPIRATION_TIME),
+    //         ChainId::test(),
+    //     )
+    //     .sign_multi_agent(
+    //         &self.sender.privkey,
+    //         secondary_signer_addresses,
+    //         secondary_private_keys,
+    //     )
+    //     .unwrap()
+    //     .into_inner()
+    // }
 }
 
 //---------------------------------------------------------------------------
