@@ -7,8 +7,9 @@ use crate::account::{Account, AccountData};
 use crate::data_store::FakeDataStore;
 use crate::golden_outputs::GoldenOutputs;
 use move_core_types::vm_status::KeptVMStatus;
+use move_table_extension::NativeTableContext;
 use num_cpus;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::HashValue;
 use starcoin_gas::{StarcoinGasMeter, StarcoinGasParameters};
@@ -23,6 +24,7 @@ use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::block::NewBlockEvent;
 use starcoin_vm_types::account_config::{AccountResource, BalanceResource, CORE_CODE_ADDRESS};
 use starcoin_vm_types::block_metadata::BlockMetadata;
+use starcoin_vm_types::errors::Location;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{ModuleId, TypeTag};
@@ -40,8 +42,6 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
-use starcoin_vm_types::errors::Location;
-use move_table_extension::NativeTableContext;
 
 static RNG_SEED: [u8; 32] = [9u8; 32];
 
@@ -61,7 +61,7 @@ pub type TraceSeqMapping = (usize, Vec<usize>, Vec<usize>);
 /// Provides an environment to run a VM instance.
 ///
 /// This struct is a mock in-memory implementation of the Aptos executor.
-//#[derive(Debug)]
+#[derive(Debug)]
 pub struct FakeExecutor {
     data_store: FakeDataStore,
     block_time: u64,
@@ -147,8 +147,8 @@ impl FakeExecutor {
         //  - the e2e test outputs a golden file, and
         //  - the environment variable is properly set
         if let Some(env_trace_dir) = env::var_os(ENV_TRACE_DIR) {
-            let starcoin_version =
-                Version::fetch_config(&self.data_store.as_move_resolver()).map_or(0, |v| v.unwrap().major);
+            let starcoin_version = Version::fetch_config(&self.data_store.as_move_resolver())
+                .map_or(0, |v| v.unwrap().major);
 
             let trace_dir = Path::new(&env_trace_dir).join(file_name);
             if trace_dir.exists() {
@@ -251,7 +251,10 @@ impl FakeExecutor {
         self.read_account_resource_at_address(account.address())
     }
 
-    fn read_resource<T: MoveResource>(&self, addr: &AccountAddress) -> Option<T> {
+    fn read_resource<T: MoveResource + for<'a> Deserialize<'a>>(
+        &self,
+        addr: &AccountAddress,
+    ) -> Option<T> {
         let ap = AccessPath::resource_access_path(*addr, T::struct_tag());
         let data_blob = StateView::get_state_value(&self.data_store, &StateKey::AccessPath(ap))
             .expect("account must exist in data store")
@@ -341,14 +344,13 @@ impl FakeExecutor {
         &self,
         txn_block: Vec<Transaction>,
     ) -> Result<Vec<TransactionOutput>, VMStatus> {
-        let (result, _) =
-            ParallelStarcoinVM::execute_block(
-                txn_block,
-                &self.data_store,
-                num_cpus::get(),
-                None,
-                None,
-            )?;
+        let (result, _) = ParallelStarcoinVM::execute_block(
+            txn_block,
+            &self.data_store,
+            num_cpus::get(),
+            None,
+            None,
+        )?;
         Ok(result)
     }
 
@@ -499,16 +501,14 @@ impl FakeExecutor {
         function_name: &str,
         type_params: Vec<TypeTag>,
         args: Vec<Vec<u8>>,
-    ) {
+    ) -> Result<(), VMStatus> {
         let write_set = {
-            let mut gas_params = StarcoinGasParameters::initial();
+            let gas_params = StarcoinGasParameters::initial();
             let vm = MoveVmExt::new(gas_params.natives.clone()).unwrap();
             let remote_view = RemoteStorage::new(&self.data_store);
 
-            let mut gas_meter = StarcoinGasMeter::new(
-                gas_params,
-                gas_params.txn.maximum_number_of_gas_units.clone(),
-            );
+            let balance = gas_params.txn.maximum_number_of_gas_units.clone();
+            let mut gas_meter = StarcoinGasMeter::new(gas_params, balance);
             gas_meter.set_metering(false);
 
             let mut session = vm.new_session(&remote_view, SessionId::void());
@@ -529,11 +529,9 @@ impl FakeExecutor {
                     )
                 });
 
-            let (
-                change_set,
-                events,
-                mut extensions
-            ) = session.finish_with_extensions().expect("Failed to generate txn effects");
+            let (change_set, events, mut extensions) = session
+                .finish_with_extensions()
+                .expect("Failed to generate txn effects");
             let table_context: NativeTableContext = extensions.remove();
             let table_change_set = table_context
                 .into_change_set()
@@ -542,7 +540,8 @@ impl FakeExecutor {
                 change_set,
                 events,
                 table_change_set,
-            }.into_change_set(&mut ())?;
+            }
+            .into_change_set(&mut ())?;
             // let (write_set, _events) = session_out
             //     .into_change_set(&mut ())
             //     .expect("Failed to generate writeset")
@@ -551,6 +550,7 @@ impl FakeExecutor {
             write_set
         };
         self.data_store.add_write_set(&write_set);
+        Ok(())
     }
 
     pub fn try_exec(
@@ -560,9 +560,14 @@ impl FakeExecutor {
         type_params: Vec<TypeTag>,
         args: Vec<Vec<u8>>,
     ) -> Result<WriteSet, VMStatus> {
-        let mut gas_params = StarcoinGasParameters::initial();
+        let gas_params = StarcoinGasParameters::initial();
         let vm = MoveVmExt::new(gas_params.natives.clone()).unwrap();
         let remote_view = RemoteStorage::new(&self.data_store);
+
+        let balance = gas_params.txn.maximum_number_of_gas_units.clone();
+        let mut gas_meter = StarcoinGasMeter::new(gas_params, balance);
+        gas_meter.set_metering(false);
+
         let mut session = vm.new_session(&remote_view, SessionId::void());
         session
             .execute_function_bypass_visibility(
@@ -570,15 +575,13 @@ impl FakeExecutor {
                 &Self::name(function_name),
                 type_params,
                 args,
-                &mut gas_params,
+                &mut gas_meter,
             )
             .map_err(|e| e.into_vm_status())?;
 
-        let (
-            change_set,
-            events,
-            mut extensions
-        ) = session.finish_with_extensions().expect("Failed to generate txn effects");
+        let (change_set, events, mut extensions) = session
+            .finish_with_extensions()
+            .expect("Failed to generate txn effects");
 
         let table_context: NativeTableContext = extensions.remove();
         let table_change_set = table_context
@@ -588,7 +591,8 @@ impl FakeExecutor {
             change_set,
             events,
             table_change_set,
-        }.into_change_set(&mut ())?;
+        }
+        .into_change_set(&mut ())?;
 
         // let (writeset, _events) = session_out
         //     .into_change_set(&mut ())

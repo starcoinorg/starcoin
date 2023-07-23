@@ -36,14 +36,13 @@ pub fn compile_module(code: &str) -> (CompiledModule, Module) {
 /// Compile the provided Move code into a blob which can be used as the code to be executed
 /// (a Script).
 pub fn compile_script(code: &str, _extra_deps: Vec<CompiledModule>) -> Script {
+    let deps = stdlib_compiled_modules(StdLibOptions::Compiled(Latest));
     let compiler = Compiler {
         // deps: cached_framework_packages::modules()
         //     .iter()
         //     .chain(extra_deps.iter())
         //     .collect(),
-        deps: stdlib_compiled_modules(StdLibOptions::Compiled(Latest))
-            .iter()
-            .collect(),
+        deps: deps.iter().collect(),
     };
     Script::new(
         compiler
