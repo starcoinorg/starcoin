@@ -250,14 +250,14 @@ impl<V: Clone + Eq> ExpectedOutput<V> {
                         &reads[0]
                     } else {
                         assert!(incarnation > 0, "must run after parallel execution");
-                        &reads[(incarnation - 1) as usize % reads.len()]
+                        &reads[(incarnation - 1) % reads.len()]
                     };
                     let write_set = if writes.len() == 1 {
                         // Static write-set.
                         &writes[0]
                     } else {
                         assert!(incarnation > 0, "must run after parallel execution");
-                        &writes[(incarnation - 1) as usize % writes.len()]
+                        &writes[(incarnation - 1) % writes.len()]
                     };
 
                     let mut result = vec![];

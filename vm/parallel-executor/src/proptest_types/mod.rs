@@ -4,4 +4,4 @@
 pub mod bencher;
 #[cfg(test)]
 mod tests;
-pub mod types;
+pub(crate) mod types;
