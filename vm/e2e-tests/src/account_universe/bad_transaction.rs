@@ -11,10 +11,10 @@ use proptest_derive::Arbitrary;
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_crypto::test_utils::KeyPair;
 use starcoin_proptest_helpers::Index;
+use starcoin_vm_types::gas_schedule::G_TEST_GAS_CONSTANTS;
 use starcoin_vm_types::transaction::{SignedUserTransaction, TransactionStatus};
 use starcoin_vm_types::vm_status::StatusCode;
 use std::sync::Arc;
-use starcoin_vm_types::gas_schedule::G_TEST_GAS_CONSTANTS;
 
 /// Represents a sequence number mismatch transaction
 ///

@@ -40,7 +40,7 @@ pub fn empty_txn(
 ) -> SignedUserTransaction {
     build_signed_empty_txn(
         sender.address().clone(),
-        &sender.privkey.into(),
+        &sender.privkey.clone().into(),
         seq_num,
         now_time() + DEFAULT_EXPIRATION_TIME,
         ChainId::test(),

@@ -19,7 +19,7 @@ impl PartitionStrategy for BasicStrategy {
     }
 }
 
-//#[derive(Debug)]
+#[derive(Debug)]
 pub struct BasicExecutor {
     executor: FakeExecutor,
     strategy: BasicStrategy,
