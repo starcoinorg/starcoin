@@ -420,8 +420,8 @@ pub fn assert_accounts_match(
             idx
         );
         prop_assert_eq!(
-            account.balance(),
-            coin_store_resource.coin(),
+            account.balance() as u128,
+            coin_store_resource.token(),
             "account {} should have correct balance",
             idx
         );

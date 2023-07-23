@@ -9794,6 +9794,8 @@ dependencies = [
  "goldenfile",
  "hex",
  "move-core-types",
+ "move-ir-compiler",
+ "move-table-extension",
  "num_cpus",
  "once_cell",
  "proptest",
@@ -9802,10 +9804,16 @@ dependencies = [
  "serde 1.0.152",
  "starcoin-config",
  "starcoin-crypto",
+ "starcoin-gas",
  "starcoin-gas-algebra-ext",
+ "starcoin-parallel-executor",
  "starcoin-proptest-helpers",
+ "starcoin-transaction-builder",
+ "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-vm-types",
+ "stdlib",
+ "test-helper",
 ]
 
 [[package]]
@@ -10791,6 +10799,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-types",
  "starcoin-vm-types",
  "stdlib",
  "stest",

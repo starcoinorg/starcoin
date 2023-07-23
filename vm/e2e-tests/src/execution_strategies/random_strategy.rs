@@ -36,7 +36,7 @@ impl PartitionStrategy for RandomizedStrategy {
     fn partition(&mut self, mut block: Block<Self::Txn>) -> Vec<Block<SignedUserTransaction>> {
         let mut blocks = vec![];
         while !block.is_empty() {
-            let block_size = self.gen.gen_range(0, block.len());
+            let block_size = self.gen.gen_range(0..block.len());
             let new_block: Vec<_> = block.drain(0..block_size + 1).collect();
             blocks.push(new_block);
         }
@@ -44,7 +44,7 @@ impl PartitionStrategy for RandomizedStrategy {
     }
 }
 
-#[derive(Debug)]
+//#[derive(Debug)]
 pub struct RandomExecutor {
     strategy: RandomizedStrategy,
     executor: FakeExecutor,

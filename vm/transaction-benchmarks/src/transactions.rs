@@ -21,6 +21,9 @@ use starcoin_types::{
 use starcoin_vm::{
     data_cache::AsMoveResolver, parallel_executor::ParallelStarcoinVM, StarcoinVM, VMExecutor,
 };
+use starcoin_vm_runtime::data_cache::AsMoveResolver;
+use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
+use starcoin_vm_runtime::VMExecutor;
 
 /// Benchmarking support for transactions.
 #[derive(Clone, Debug)]

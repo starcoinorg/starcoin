@@ -2,19 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_universe::{AUTransactionGen, AccountUniverse};
-use crate::common_transactions::{empty_txn, EMPTY_SCRIPT};
+use crate::common_transactions::empty_txn;
 use crate::gas_costs;
-use move_core_types::gas_algebra::AbstractMemorySize;
+use proptest::arbitrary::any_with;
 use proptest::prelude::Strategy;
 use proptest::prop_oneof;
 use proptest_derive::Arbitrary;
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_crypto::test_utils::KeyPair;
-use starcoin_gas_algebra_ext::GasConstants;
 use starcoin_proptest_helpers::Index;
-use starcoin_vm_types::transaction::{Script, SignedUserTransaction, TransactionStatus};
+use starcoin_vm_types::transaction::{SignedUserTransaction, TransactionStatus};
 use starcoin_vm_types::vm_status::StatusCode;
 use std::sync::Arc;
+use starcoin_vm_types::gas_schedule::G_TEST_GAS_CONSTANTS;
 
 /// Represents a sequence number mismatch transaction
 ///
@@ -40,7 +40,6 @@ impl AUTransactionGen for SequenceNumberMismatchGen {
         };
 
         let txn = empty_txn(sender.account(), seq, gas_costs::TXN_RESERVED, 0);
-
         (
             txn,
             (
@@ -82,19 +81,20 @@ impl AUTransactionGen for InsufficientBalanceGen {
         );
 
         // TODO: Move such config to AccountUniverse
-        let default_constants = GasConstants::default();
-        let raw_bytes_len = AbstractMemorySize::new(txn.raw_txn_bytes_len() as GasCarrier);
-        let min_cost = GasConstants::default()
-            .to_external_units(calculate_intrinsic_gas(
-                raw_bytes_len,
-                &GasConstants::default(),
-            ))
-            .get();
-
+        let default_constants = G_TEST_GAS_CONSTANTS.clone();
+        // let raw_bytes_len = AbstractMemorySize::new(txn.raw_txn_bytes_len() as u64);
+        // let min_cost = txn.gas_unit_price()
+        //     .to_external_units(calculate_intrinsic_gas(
+        //         raw_bytes_len,
+        //         &default_constants,
+        //     ))
+        //     .get();
+        // TODO(BobOng): e2e-test calculate_intrinsic_gas
+        let min_cost = txn.gas_unit_price();
         (
             txn,
             (
-                if max_gas_unit > default_constants.maximum_number_of_gas_units.get() {
+                if max_gas_unit > default_constants.maximum_number_of_gas_units {
                     TransactionStatus::Discard(
                         StatusCode::MAX_GAS_UNITS_EXCEEDS_MAX_GAS_UNITS_BOUND,
                     )
@@ -102,9 +102,9 @@ impl AUTransactionGen for InsufficientBalanceGen {
                     TransactionStatus::Discard(
                         StatusCode::MAX_GAS_UNITS_BELOW_MIN_TRANSACTION_GAS_UNITS,
                     )
-                } else if self.gas_unit_price > default_constants.max_price_per_gas_unit.get() {
+                } else if self.gas_unit_price > default_constants.max_price_per_gas_unit {
                     TransactionStatus::Discard(StatusCode::GAS_UNIT_PRICE_ABOVE_MAX_BOUND)
-                } else if self.gas_unit_price < default_constants.min_price_per_gas_unit.get() {
+                } else if self.gas_unit_price < default_constants.min_price_per_gas_unit {
                     TransactionStatus::Discard(StatusCode::GAS_UNIT_PRICE_BELOW_MIN_BOUND)
                 } else {
                     TransactionStatus::Discard(StatusCode::INSUFFICIENT_BALANCE_FOR_TRANSACTION_FEE)
@@ -134,19 +134,19 @@ impl AUTransactionGen for InvalidAuthkeyGen {
     ) -> (SignedUserTransaction, (TransactionStatus, u64)) {
         let sender = universe.pick(self.sender).1;
 
-        let txn = sender
-            .account()
-            .transaction()
-            .script(Script::new(EMPTY_SCRIPT.clone(), vec![], vec![]))
-            .sequence_number(sender.sequence_number)
-            .raw()
-            .sign(
-                &self.new_keypair.private_key,
-                self.new_keypair.public_key.clone(),
-            )
-            .unwrap()
-            .into_inner();
-
+        // let txn = sender
+        //     .account()
+        //     .transaction()
+        //     .script(Script::new(EMPTY_SCRIPT.clone(), vec![], vec![]))
+        //     .sequence_number(sender.sequence_number)
+        //     .raw()
+        //     .sign(
+        //         &self.new_keypair.private_key,
+        //         self.new_keypair.public_key.clone(),
+        //     )
+        //     .unwrap()
+        //     .into_inner();
+        let txn = empty_txn(sender.account(), sender.sequence_number, 0, 0);
         (
             txn,
             (TransactionStatus::Discard(StatusCode::INVALID_AUTH_KEY), 0),
