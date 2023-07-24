@@ -8,22 +8,21 @@ use proptest::{
     test_runner::TestRunner,
 };
 use starcoin_crypto::HashValue;
+
+use starcoin_language_e2e_tests::account::AccountData;
 use starcoin_language_e2e_tests::{
     account_universe::{log_balance_strategy, AUTransactionGen, AccountUniverseGen},
     executor::FakeExecutor,
     gas_costs::TXN_RESERVED,
 };
-use starcoin_types::{
-    block_metadata::BlockMetadata,
-    on_chain_config::{OnChainConfig, ValidatorSet},
-    transaction::Transaction,
+
+use starcoin_types::{block_metadata::BlockMetadata, transaction::Transaction};
+
+use starcoin_vm_runtime::{
+    parallel_executor::ParallelStarcoinVM, starcoin_vm::StarcoinVM, VMExecutor,
 };
-use starcoin_vm::{
-    data_cache::AsMoveResolver, parallel_executor::ParallelStarcoinVM, StarcoinVM, VMExecutor,
-};
-use starcoin_vm_runtime::data_cache::AsMoveResolver;
-use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
-use starcoin_vm_runtime::VMExecutor;
+use starcoin_vm_types::genesis_config::ChainId;
+use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 
 /// Benchmarking support for transactions.
 #[derive(Clone, Debug)]
@@ -126,21 +125,31 @@ impl TransactionBenchState {
             num_transactions,
         );
 
+        // TODO(BobOng): e2e-test
         // Insert a blockmetadata transaction at the beginning to better simulate the real life traffic.
-        let validator_set =
-            ValidatorSet::fetch_config(&state.executor.get_state_view().as_move_resolver())
-                .expect("Unable to retrieve the validator set from storage");
-
+        // let validator_set =
+        //     ValidatorSet::fetch_config(&state.executor.get_state_view().as_move_resolver())
+        //         .expect("Unable to retrieve the validator set from storage");
+        // let new_block = BlockMetadata::new(
+        //     HashValue::zero(),
+        //     0,
+        //     0,
+        //     validator_set.payload().map(|_| false).collect(),
+        //     *validator_set.payload().next().unwrap().account_address(),
+        //     vec![],
+        //     1,
+        // );
+        let minter_account = AccountData::new(10000, 0);
         let new_block = BlockMetadata::new(
             HashValue::zero(),
             0,
+            minter_account.address().clone(),
+            Some(AuthenticationKey::ed25519(&minter_account.account().pubkey)),
             0,
-            validator_set.payload().map(|_| false).collect(),
-            *validator_set.payload().next().unwrap().account_address(),
-            vec![],
-            1,
+            0,
+            ChainId::test(),
+            0,
         );
-
         state
             .transactions
             .insert(0, Transaction::BlockMetadata(new_block));
@@ -190,8 +199,13 @@ impl TransactionBenchState {
     fn execute(self) {
         // The output is ignored here since we're just testing transaction performance, not trying
         // to assert correctness.
-        StarcoinVM::execute_block(self.transactions, self.executor.get_state_view())
-            .expect("VM should not fail to start");
+        StarcoinVM::execute_block(
+            self.transactions,
+            self.executor.get_state_view(),
+            None,
+            None,
+        )
+        .expect("VM should not fail to start");
     }
 
     /// Executes this state in a single block via parallel execution.
@@ -202,6 +216,8 @@ impl TransactionBenchState {
             self.transactions,
             self.executor.get_state_view(),
             num_cpus::get(),
+            None,
+            None,
         )
         .expect("VM should not fail to start");
     }
