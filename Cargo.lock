@@ -10774,10 +10774,12 @@ dependencies = [
  "criterion-cpu-time",
  "num_cpus",
  "proptest",
+ "proptest-derive",
  "starcoin-crypto",
  "starcoin-language-e2e-tests",
  "starcoin-types",
  "starcoin-vm-runtime",
+ "starcoin-vm-types",
 ]
 
 [[package]]
