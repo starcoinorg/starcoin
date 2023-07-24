@@ -3,4 +3,5 @@
 mod test_accumulator;
 mod test_batch;
 mod test_block;
+mod test_dag;
 mod test_storage;

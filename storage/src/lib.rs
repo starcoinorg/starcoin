@@ -16,6 +16,7 @@ use crate::{
     transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage},
 };
 use anyhow::{bail, format_err, Error, Result};
+use flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagSnapshotStorage, SyncFlexiDagStorage};
 use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
@@ -45,6 +46,7 @@ pub mod chain_info;
 pub mod contract_event;
 pub mod db_storage;
 pub mod errors;
+pub mod flexi_dag;
 pub mod metrics;
 pub mod state_node;
 pub mod storage;
@@ -77,6 +79,8 @@ pub const TRANSACTION_INFO_HASH_PREFIX_NAME: ColumnFamilyName = "transaction_inf
 pub const CONTRACT_EVENT_PREFIX_NAME: ColumnFamilyName = "contract_event";
 pub const FAILED_BLOCK_PREFIX_NAME: ColumnFamilyName = "failed_block";
 pub const TABLE_INFO_PREFIX_NAME: ColumnFamilyName = "table_info";
+pub const SYNC_FLEXI_DAG_ACCUMULATOR_PREFIX_NAME: ColumnFamilyName = "sync_flexi_dag_accumulator";
+pub const SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME: ColumnFamilyName = "sync_flexi_dag_snapshot";
 
 ///db storage use prefix_name vec to init
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
@@ -142,17 +146,43 @@ static VEC_PREFIX_NAME_V3: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         // TABLE_INFO_PREFIX_NAME,
     ]
 });
+
+static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
+    vec![
+        BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
+        TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
+        BLOCK_PREFIX_NAME,
+        BLOCK_HEADER_PREFIX_NAME,
+        BLOCK_BODY_PREFIX_NAME, // unused column
+        BLOCK_INFO_PREFIX_NAME,
+        BLOCK_TRANSACTIONS_PREFIX_NAME,
+        BLOCK_TRANSACTION_INFOS_PREFIX_NAME,
+        STATE_NODE_PREFIX_NAME,
+        CHAIN_INFO_PREFIX_NAME,
+        TRANSACTION_PREFIX_NAME,
+        TRANSACTION_INFO_PREFIX_NAME, // unused column
+        TRANSACTION_INFO_PREFIX_NAME_V2,
+        TRANSACTION_INFO_HASH_PREFIX_NAME,
+        CONTRACT_EVENT_PREFIX_NAME,
+        FAILED_BLOCK_PREFIX_NAME,
+        SYNC_FLEXI_DAG_ACCUMULATOR_PREFIX_NAME,
+        SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME,
+        // TABLE_INFO_PREFIX_NAME,
+    ]
+});
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, IntoPrimitive, TryFromPrimitive)]
 #[repr(u8)]
 pub enum StorageVersion {
     V1 = 1,
     V2 = 2,
     V3 = 3,
+    V4 = 4,
 }
 
 impl StorageVersion {
     pub fn current_version() -> StorageVersion {
-        StorageVersion::V3
+        StorageVersion::V4
     }
 
     pub fn get_column_family_names(&self) -> &'static [ColumnFamilyName] {
@@ -160,6 +190,7 @@ impl StorageVersion {
             StorageVersion::V1 => &VEC_PREFIX_NAME_V1,
             StorageVersion::V2 => &VEC_PREFIX_NAME_V2,
             StorageVersion::V3 => &VEC_PREFIX_NAME_V3,
+            StorageVersion::V4 => &VEC_PREFIX_NAME_V4,
         }
     }
 }
@@ -262,6 +293,12 @@ pub trait TransactionStore {
     fn get_transactions(&self, txn_hash_vec: Vec<HashValue>) -> Result<Vec<Option<Transaction>>>;
 }
 
+pub trait SyncFlexiDagStore {
+    fn put_hashes(&self, key: HashValue, accumulator_snapshot: SyncFlexiDagSnapshot) -> Result<()>;
+    fn query_by_hash(&self, key: HashValue) -> Result<Option<SyncFlexiDagSnapshot>>;
+    fn get_accumulator_snapshot_storage(&self) -> std::sync::Arc<SyncFlexiDagSnapshotStorage>;
+}
+
 // TODO: remove Arc<dyn Store>, we can clone Storage directly.
 #[derive(Clone)]
 pub struct Storage {
@@ -275,6 +312,7 @@ pub struct Storage {
     block_info_storage: BlockInfoStorage,
     event_storage: ContractEventStorage,
     chain_info_storage: ChainInfoStorage,
+    flexi_dag_storage: SyncFlexiDagStorage,
     // table_info_storage: TableInfoStorage,
     // instance: StorageInstance,
 }
@@ -294,7 +332,8 @@ impl Storage {
                 AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
             block_info_storage: BlockInfoStorage::new(instance.clone()),
             event_storage: ContractEventStorage::new(instance.clone()),
-            chain_info_storage: ChainInfoStorage::new(instance),
+            chain_info_storage: ChainInfoStorage::new(instance.clone()),
+            flexi_dag_storage: SyncFlexiDagStorage::new(instance),
             // table_info_storage: TableInfoStorage::new(instance),
             // instance,
         };
@@ -565,6 +604,20 @@ impl TransactionStore for Storage {
     }
 }
 
+impl SyncFlexiDagStore for Storage {
+    fn put_hashes(&self, key: HashValue, accumulator_snapshot: SyncFlexiDagSnapshot) -> Result<()> {
+        self.flexi_dag_storage.put_hashes(key, accumulator_snapshot)
+    }
+
+    fn query_by_hash(&self, key: HashValue) -> Result<Option<SyncFlexiDagSnapshot>> {
+        self.flexi_dag_storage.get_hashes_by_hash(key)
+    }
+
+    fn get_accumulator_snapshot_storage(&self) -> std::sync::Arc<SyncFlexiDagSnapshotStorage> {
+        self.flexi_dag_storage.get_snapshot_storage()
+    }
+}
+
 /// Chain storage define
 pub trait Store:
     StateNodeStore
@@ -645,6 +698,9 @@ impl Store for Storage {
             AccumulatorStoreType::Block => Arc::new(self.block_accumulator_storage.clone()),
             AccumulatorStoreType::Transaction => {
                 Arc::new(self.transaction_accumulator_storage.clone())
+            }
+            AccumulatorStoreType::SyncDag => {
+                Arc::new(self.flexi_dag_storage.get_accumulator_storage())
             }
         }
     }
