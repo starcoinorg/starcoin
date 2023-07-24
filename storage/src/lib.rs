@@ -1,40 +1,41 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::accumulator::{
-    AccumulatorStorage, BlockAccumulatorStorage, TransactionAccumulatorStorage,
+use crate::{
+    accumulator::{AccumulatorStorage, BlockAccumulatorStorage, TransactionAccumulatorStorage},
+    block::BlockStorage,
+    block_info::{BlockInfoStorage, BlockInfoStore},
+    chain_info::ChainInfoStorage,
+    contract_event::ContractEventStorage,
+    state_node::StateStorage,
+    storage::{CodecKVStore, CodecWriteBatch, ColumnFamilyName, StorageInstance},
 };
-use crate::block::BlockStorage;
-use crate::block_info::{BlockInfoStorage, BlockInfoStore};
-use crate::chain_info::ChainInfoStorage;
-use crate::contract_event::ContractEventStorage;
-use crate::state_node::StateStorage;
-use crate::storage::{CodecKVStore, CodecWriteBatch, ColumnFamilyName, StorageInstance};
 //use crate::table_info::{TableInfoStorage, TableInfoStore};
-use crate::transaction::TransactionStorage;
-use crate::transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage};
+use crate::{
+    transaction::TransactionStorage,
+    transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage},
+};
 use anyhow::{bail, format_err, Error, Result};
 use flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagSnapshotStorage, SyncFlexiDagStorage};
 use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
-use starcoin_accumulator::node::AccumulatorStoreType;
-use starcoin_accumulator::AccumulatorTreeStore;
+use starcoin_accumulator::{node::AccumulatorStoreType, AccumulatorTreeStore};
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
-use starcoin_types::contract_event::ContractEvent;
-use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
-use starcoin_types::transaction::{RichTransactionInfo, Transaction};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
-    startup_info::StartupInfo,
+    contract_event::ContractEvent,
+    startup_info::{ChainInfo, ChainStatus, SnapshotRange, StartupInfo},
+    transaction::{RichTransactionInfo, Transaction},
 };
 //use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-use std::collections::BTreeMap;
-use std::fmt::{Debug, Display, Formatter};
-use std::sync::Arc;
-pub use upgrade::BARNARD_HARD_FORK_HASH;
-pub use upgrade::BARNARD_HARD_FORK_HEIGHT;
+use std::{
+    collections::BTreeMap,
+    fmt::{Debug, Display, Formatter},
+    sync::Arc,
+};
+pub use upgrade::{BARNARD_HARD_FORK_HASH, BARNARD_HARD_FORK_HEIGHT};
 
 pub mod accumulator;
 pub mod batch;
