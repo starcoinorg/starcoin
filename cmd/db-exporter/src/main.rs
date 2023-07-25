@@ -9,6 +9,7 @@ use db_exporter::{
     verify_header::{verify_header_via_export_file, VerifyHeaderOptions},
     verify_module::{verify_modules_via_export_file, VerifyModuleOptions},
 };
+use num_cpus;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use serde::{ser::SerializeMap, Serialize, Serializer};
 use starcoin_account_api::AccountInfo;
@@ -672,7 +673,7 @@ pub fn apply_block(
         CacheStorage::new(None),
         db_storage,
     ))?);
-    StarcoinVM::set_concurrency_level_once(4);
+    StarcoinVM::set_concurrency_level_once(num_cpus::get());
     let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
     let mut chain = BlockChain::new(
         net.time_service(),
