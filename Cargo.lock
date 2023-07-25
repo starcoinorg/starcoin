@@ -9803,6 +9803,8 @@ dependencies = [
  "starcoin-gas-algebra-ext",
  "starcoin-parallel-executor",
  "starcoin-proptest-helpers",
+ "starcoin-state-tree",
+ "starcoin-statedb",
  "starcoin-transaction-builder",
  "starcoin-types",
  "starcoin-vm-runtime",

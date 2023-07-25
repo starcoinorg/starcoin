@@ -113,7 +113,6 @@ impl AccountUniverseGen {
         for account_data in &self.accounts {
             executor.add_account_data(account_data);
         }
-
         AccountUniverse::new(self.accounts, self.pick_style, true)
     }
 }

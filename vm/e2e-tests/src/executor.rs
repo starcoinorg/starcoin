@@ -4,12 +4,12 @@
 //! Support for running the VM to execute and verify transactions.
 
 use crate::account::{Account, AccountData};
-use crate::data_store::FakeDataStore;
 use crate::golden_outputs::GoldenOutputs;
 use move_core_types::vm_status::KeptVMStatus;
 use move_table_extension::NativeTableContext;
 use num_cpus;
 use serde::{Deserialize, Serialize};
+use starcoin_config::{ChainNetwork};
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::HashValue;
 use starcoin_gas::{StarcoinGasMeter, StarcoinGasParameters};
@@ -19,29 +19,33 @@ use starcoin_vm_runtime::move_vm_ext::{MoveVmExt, SessionId, SessionOutput};
 use starcoin_vm_runtime::parallel_executor::ParallelStarcoinVM;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_runtime::VMExecutor;
-use starcoin_vm_types::access_path::AccessPath;
-use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config::block::NewBlockEvent;
-use starcoin_vm_types::account_config::{AccountResource, BalanceResource, CORE_CODE_ADDRESS};
-use starcoin_vm_types::block_metadata::BlockMetadata;
-use starcoin_vm_types::errors::Location;
-use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::identifier::Identifier;
-use starcoin_vm_types::language_storage::{ModuleId, TypeTag};
-use starcoin_vm_types::move_resource::MoveResource;
-use starcoin_vm_types::on_chain_config::{OnChainConfig, VMConfig, Version};
-use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_view::StateView;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
-use starcoin_vm_types::transaction::{
-    SignedUserTransaction, Transaction, TransactionOutput, TransactionStatus,
+use starcoin_vm_types::{
+    access_path::AccessPath,
+    account_address::AccountAddress,
+    account_config::block::NewBlockEvent,
+    account_config::{AccountResource, BalanceResource, CORE_CODE_ADDRESS},
+    block_metadata::BlockMetadata,
+    errors::Location,
+    genesis_config::ChainId,
+    identifier::Identifier,
+    language_storage::{ModuleId, TypeTag},
+    move_resource::MoveResource,
+    on_chain_config::{OnChainConfig, VMConfig, Version},
+    state_store::state_key::StateKey,
+    state_view::StateView,
+    transaction::authenticator::AuthenticationKey,
+    transaction::{SignedUserTransaction, Transaction, TransactionOutput, TransactionStatus},
+    vm_status::VMStatus,
+    write_set::WriteSet,
 };
-use starcoin_vm_types::vm_status::VMStatus;
-use starcoin_vm_types::write_set::WriteSet;
+
+use starcoin_statedb::ChainStateWriter;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
+use test_helper::Genesis;
+use crate::data_store::FakeDataStore;
 
 static RNG_SEED: [u8; 32] = [9u8; 32];
 
@@ -72,11 +76,11 @@ pub struct FakeExecutor {
 
 impl FakeExecutor {
     /// Creates an executor from a genesis [`WriteSet`].
-    pub fn from_genesis(write_set: &WriteSet) -> Self {
-        let mut executor = Self::no_genesis();
-        executor.apply_write_set(write_set);
-        executor
-    }
+    // pub fn from_genesis(write_set: &WriteSet) -> Self {
+    //     let mut executor = Self::no_genesis();
+    //     executor.apply_write_set(write_set);
+    //     executor
+    // }
 
     /// Create an executor from a saved genesis blob
     // TODO(BobOng): e2e-test
@@ -94,8 +98,8 @@ impl FakeExecutor {
 
     /// Creates an executor using the standard genesis.
     pub fn from_fresh_genesis() -> Self {
-        //Self::from_genesis(GENESIS_CHANGE_SET_FRESH.clone().write_set())
         // TODO(BobOng): e2e-test
+        //Self::from_genesis(GENESIS_CHANGE_SET_FRESH.clone().write_set())
         Self::no_genesis()
     }
 
@@ -107,6 +111,16 @@ impl FakeExecutor {
         // )
         // TODO(BobOng): e2e-test
         Self::no_genesis()
+    }
+
+    pub fn from_test_genesis() -> Self {
+        let fake_executor = Self::no_genesis();
+        let net = ChainNetwork::new_test();
+        let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
+        let chain_state_view = fake_executor.get_state_view();
+        let _txn_info =
+            Genesis::execute_genesis_txn(chain_state_view, genesis_txn).unwrap();
+        fake_executor
     }
 
     /// Creates an executor from the genesis file GENESIS_FILE_LOCATION with script/module
@@ -130,6 +144,7 @@ impl FakeExecutor {
     pub fn no_genesis() -> Self {
         FakeExecutor {
             data_store: FakeDataStore::default(),
+            // data_store: Arc::new(ChainStateDB::mock()),
             block_time: 0,
             executed_output: None,
             trace_dir: None,
@@ -231,12 +246,15 @@ impl FakeExecutor {
 
     /// Applies a [`WriteSet`] to this executor's data store.
     pub fn apply_write_set(&mut self, write_set: &WriteSet) {
-        self.data_store.add_write_set(write_set);
+        self.data_store
+            .apply_write_set(write_set.clone())
+            .expect("Panic for cannot apply write set by calling FakeExecutor::apply_write_set");
     }
 
     /// Adds an account to this executor's data store.
     pub fn add_account_data(&mut self, account_data: &AccountData) {
-        self.data_store.add_account_data(account_data)
+        //self.data_store.add_account_data(account_data)
+        self.apply_write_set(&account_data.to_writeset())
     }
 
     /// Adds a module to this executor's data store.
@@ -244,6 +262,9 @@ impl FakeExecutor {
     /// Does not do any sort of verification on the module.
     pub fn add_module(&mut self, module_id: &ModuleId, module_blob: Vec<u8>) {
         self.data_store.add_module(module_id, module_blob)
+        // self.data_store
+        //     .set(&AccessPath::from(module_id), module_blob)
+        //     .expect("Panic for cannot apply write set by calling FakeExecutor::add_module");
     }
 
     /// Reads the resource [`Value`] for an account from this executor's data store.
@@ -371,7 +392,8 @@ impl FakeExecutor {
             }
         }
 
-        let output = StarcoinVM::execute_block(txn_block.clone(), &self.data_store, None, None);
+        let output =
+            StarcoinVM::execute_block(txn_block.clone(), &self.get_state_view(), None, None);
         let parallel_output = self.execute_transaction_block_parallel(txn_block);
         assert_eq!(output, parallel_output);
 
@@ -439,7 +461,7 @@ impl FakeExecutor {
         // TODO(BobOng): e2e-test
         //let vm = StarcoinVM::new(self.get_state_view());
         let mut vm = StarcoinVM::new(None);
-        vm.verify_transaction(&self.data_store, txn)
+        vm.verify_transaction(self.get_state_view(), txn)
     }
 
     pub fn get_state_view(&self) -> &FakeDataStore {
@@ -541,7 +563,7 @@ impl FakeExecutor {
                 events,
                 table_change_set,
             }
-            .into_change_set(&mut ())?;
+                .into_change_set(&mut ())?;
             // let (write_set, _events) = session_out
             //     .into_change_set(&mut ())
             //     .expect("Failed to generate writeset")
@@ -592,7 +614,7 @@ impl FakeExecutor {
             events,
             table_change_set,
         }
-        .into_change_set(&mut ())?;
+            .into_change_set(&mut ())?;
 
         // let (writeset, _events) = session_out
         //     .into_change_set(&mut ())
