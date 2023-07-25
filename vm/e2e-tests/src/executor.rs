@@ -40,7 +40,6 @@ use starcoin_vm_types::{
 };
 
 use crate::data_store::FakeDataStore;
-use log::info;
 use starcoin_statedb::ChainStateWriter;
 use std::fs::OpenOptions;
 use std::io::Write;
