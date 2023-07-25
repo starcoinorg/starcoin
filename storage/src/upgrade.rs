@@ -164,7 +164,6 @@ impl DBUpgrade {
     }
 
     fn db_upgrade_v3_v4(_instance: &mut StorageInstance) -> Result<()> {
-        // https://github.com/facebook/rocksdb/issues/1295
         Ok(())
     }
 

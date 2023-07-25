@@ -60,6 +60,10 @@ pub enum ChainRequest {
         access_path: Option<AccessPath>,
     },
     GetBlockInfos(Vec<HashValue>),
+    GetDagAccumulatorLeaves {
+        start_index: u64,
+        batch_size: u64,
+    }
 }
 
 impl ServiceRequest for ChainRequest {

@@ -195,6 +195,11 @@ impl StorageVersion {
     }
 }
 
+pub trait DagBlockStore {
+    fn get_flexi_dag_startup_info(&self) -> Result<Option<StartupInfo>>;
+    fn save_flexi_dag_startup_info(&self, startup_info: StartupInfo) -> Result<()>;
+}
+
 pub trait BlockStore {
     fn get_startup_info(&self) -> Result<Option<StartupInfo>>;
     fn save_startup_info(&self, startup_info: StartupInfo) -> Result<()>;
@@ -374,6 +379,16 @@ impl Display for Storage {
 impl Debug for Storage {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{}", self)
+    }
+}
+
+impl DagBlockStore for Storage {
+    fn get_flexi_dag_startup_info(&self) -> Result<Option<StartupInfo>> {
+        self.chain_info_storage.get_flexi_dag_startup_info()
+    }
+
+    fn save_flexi_dag_startup_info(&self, startup_info: StartupInfo) -> Result<()> {
+        self.chain_info_storage.save_flexi_dag_startup_info(startup_info)
     }
 }
 
@@ -621,6 +636,7 @@ impl SyncFlexiDagStore for Storage {
 /// Chain storage define
 pub trait Store:
     StateNodeStore
+    + DagBlockStore
     + BlockStore
     + BlockInfoStore
     + TransactionStore

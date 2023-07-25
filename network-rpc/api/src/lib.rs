@@ -20,6 +20,7 @@ use starcoin_types::account_state::AccountState;
 use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionInfo};
 
+pub mod dag_protocol;
 mod remote_chain_state;
 
 pub use network_p2p_core::RawRpcClient;
@@ -286,6 +287,22 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         peer_id: PeerId,
         request: GetStateWithTableItemProof,
     ) -> BoxFuture<Result<StateWithTableItemProof>>;
+
+    fn get_dag_accumulator_leaves(
+        &self,
+        peer_id: PeerId,
+        req: dag_protocol::GetDagAccumulatorLeaves,
+    ) -> BoxFuture<Result<Vec<dag_protocol::TargetDagAccumulatorLeaf>>>;
+    fn get_accumulator_leaf_detail(
+        &self,
+        peer_id: PeerId,
+        req: dag_protocol::GetTargetDagAccumulatorLeafDetail,
+    ) -> BoxFuture<Result<Option<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>>>>;
+    fn get_dag_block_info(
+        &self,
+        peer_id: PeerId,
+        req: dag_protocol::GetSyncDagBlockInfo,
+    ) -> BoxFuture<Result<Option<Vec<dag_protocol::SyncDagBlockInfo>>>>;
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

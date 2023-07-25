@@ -3,6 +3,7 @@
 
 use anyhow::{format_err, Error, Result};
 use starcoin_chain::BlockChain;
+use starcoin_chain::dag_chain::DagBlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::{
     ChainReader, ChainWriter, ReadableChainService, TransactionInfoWithProof,
@@ -32,6 +33,8 @@ use std::sync::Arc;
 /// A Chain reader service to provider Reader API.
 pub struct ChainReaderService {
     inner: ChainReaderServiceInner,
+
+    // dag_chain: DagBlockChain,
 }
 
 impl ChainReaderService {
@@ -43,6 +46,7 @@ impl ChainReaderService {
     ) -> Result<Self> {
         Ok(Self {
             inner: ChainReaderServiceInner::new(config, startup_info, storage, vm_metrics)?,
+            // dag_chain: DagBlockChain::new(config, storage, vm_metrics)?,
         })
     }
 }
@@ -232,6 +236,8 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetBlockInfos(ids) => Ok(ChainResponse::BlockInfoVec(Box::new(
                 self.inner.get_block_infos(ids)?,
             ))),
+            _ => todo!()
+            // ChainRequest::GetDagAccumulatorLeaves(start_index, batch_size) => Ok(ChainResponse::HashValue(self.dag_)),
         }
     }
 }
