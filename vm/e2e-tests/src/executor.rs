@@ -9,7 +9,7 @@ use move_core_types::vm_status::KeptVMStatus;
 use move_table_extension::NativeTableContext;
 use num_cpus;
 use serde::{Deserialize, Serialize};
-use starcoin_config::{ChainNetwork};
+use starcoin_config::ChainNetwork;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::HashValue;
 use starcoin_gas::{StarcoinGasMeter, StarcoinGasParameters};
@@ -39,13 +39,14 @@ use starcoin_vm_types::{
     write_set::WriteSet,
 };
 
+use crate::data_store::FakeDataStore;
+use log::info;
 use starcoin_statedb::ChainStateWriter;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
 use test_helper::Genesis;
-use crate::data_store::FakeDataStore;
 
 static RNG_SEED: [u8; 32] = [9u8; 32];
 
@@ -91,9 +92,9 @@ impl FakeExecutor {
 
     /// Creates an executor from the genesis file GENESIS_FILE_LOCATION
     pub fn from_genesis_file() -> Self {
-        //Self::from_genesis(GENESIS_CHANGE_SET.clone().write_set())
         // TODO(BobOng): e2e-test
-        Self::no_genesis()
+        //Self::from_genesis(GENESIS_CHANGE_SET.clone().write_set())
+        Self::from_test_genesis()
     }
 
     /// Creates an executor using the standard genesis.
@@ -114,12 +115,12 @@ impl FakeExecutor {
     }
 
     pub fn from_test_genesis() -> Self {
+        //let (state_db, net) = prepare_genesis();
         let fake_executor = Self::no_genesis();
         let net = ChainNetwork::new_test();
         let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
-        let chain_state_view = fake_executor.get_state_view();
         let _txn_info =
-            Genesis::execute_genesis_txn(chain_state_view, genesis_txn).unwrap();
+            Genesis::execute_genesis_txn(fake_executor.get_state_view(), genesis_txn).unwrap();
         fake_executor
     }
 
@@ -144,7 +145,6 @@ impl FakeExecutor {
     pub fn no_genesis() -> Self {
         FakeExecutor {
             data_store: FakeDataStore::default(),
-            // data_store: Arc::new(ChainStateDB::mock()),
             block_time: 0,
             executed_output: None,
             trace_dir: None,
@@ -563,7 +563,7 @@ impl FakeExecutor {
                 events,
                 table_change_set,
             }
-                .into_change_set(&mut ())?;
+            .into_change_set(&mut ())?;
             // let (write_set, _events) = session_out
             //     .into_change_set(&mut ())
             //     .expect("Failed to generate writeset")
@@ -614,7 +614,7 @@ impl FakeExecutor {
             events,
             table_change_set,
         }
-            .into_change_set(&mut ())?;
+        .into_change_set(&mut ())?;
 
         // let (writeset, _events) = session_out
         //     .into_change_set(&mut ())

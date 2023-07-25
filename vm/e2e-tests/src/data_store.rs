@@ -13,11 +13,11 @@ use starcoin_vm_types::{
     write_set::{WriteOp, WriteSet},
 };
 
-use std::collections::{HashMap};
-use std::sync::{RwLock, RwLockReadGuard};
 use starcoin_crypto::HashValue;
 use starcoin_statedb::ChainStateWriter;
 use starcoin_types::state_set::ChainStateSet;
+use std::collections::HashMap;
+use std::sync::{RwLock, RwLockReadGuard};
 
 /// Dummy genesis ChangeSet for testing
 // TODO(BobOng): e2e-test
