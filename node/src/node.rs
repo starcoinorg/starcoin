@@ -57,6 +57,8 @@ use starcoin_vm_runtime::metrics::VMMetrics;
 // use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
+use num_cpus;
+use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 
 pub struct NodeService {
     registry: ServiceRef<RegistryService>,
@@ -233,8 +235,8 @@ impl NodeService {
             logger_handle.enable_stderr();
         }
 
-        // XXX FIXME YSG add execute_config, currently we use console command to test
-        // StarcoinVM::set_concurrency_level_once(num_cpus::get());
+        // XXX FIXME YSG add execute_config
+        StarcoinVM::set_concurrency_level_once(num_cpus::get());
         let (start_sender, start_receiver) = oneshot::channel();
         let join_handle = timeout_join_handler::spawn(move || {
             let system = System::with_tokio_rt(|| {

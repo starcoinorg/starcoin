@@ -10174,6 +10174,7 @@ dependencies = [
  "futures-timer",
  "network-api",
  "network-p2p-core",
+ "num_cpus",
  "serde_json",
  "starcoin-account-api",
  "starcoin-account-service",
