@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result};
 use serde::{Deserialize, Serialize};
 use starcoin_executor::execute_readonly_function;
 use starcoin_types::account_address::AccountAddress;

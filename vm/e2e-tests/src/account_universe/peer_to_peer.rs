@@ -111,7 +111,6 @@ impl AUTransactionGen for P2PTransferGen {
                 );
             }
         }
-
         (txn, (status, gas_used))
     }
 }

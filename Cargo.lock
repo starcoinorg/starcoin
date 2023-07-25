@@ -10784,6 +10784,7 @@ version = "1.13.5"
 dependencies = [
  "criterion",
  "criterion-cpu-time",
+ "log 0.4.17",
  "num_cpus",
  "proptest",
  "proptest-derive",

@@ -11,7 +11,6 @@ use starcoin_transaction_benchmarks::{
 //
 // Transaction benchmarks
 //
-
 fn peer_to_peer<M: Measurement + 'static>(c: &mut Criterion<M>) {
     c.bench_function("peer_to_peer", |b| {
         let bencher = TransactionBencher::new(any_with::<P2PTransferGen>((1_000, 1_000_000)));
