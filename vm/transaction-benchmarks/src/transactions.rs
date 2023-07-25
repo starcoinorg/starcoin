@@ -174,7 +174,7 @@ impl TransactionBenchState {
             .expect("creating a new value should succeed")
             .current();
 
-        let mut executor = FakeExecutor::from_genesis_file();
+        let mut executor = FakeExecutor::from_test_genesis();
         // Run in gas-cost-stability mode for now -- this ensures that new accounts are ignored.
         // XXX We may want to include new accounts in case they have interesting performance
         // characteristics.
