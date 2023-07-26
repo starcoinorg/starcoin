@@ -571,7 +571,7 @@ fn split_children(children: &std::sync::Arc<Vec<Hash>>, pivot: Hash) -> Result<(
 #[cfg(test)]
 mod tests {
     use super::{super::tests::*, *};
-    use dag_database::consensus::{MemoryReachabilityStore, ReachabilityStoreReader};
+    use crate::consensusdb::schema::{MemoryReachabilityStore, ReachabilityStoreReader};
     use starcoin_types::{blockhash, interval::Interval};
 
     #[test]

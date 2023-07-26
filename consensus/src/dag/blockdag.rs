@@ -209,7 +209,7 @@ impl BlockDAG {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dag_database::prelude::{FlexiDagStorage, FlexiDagStorageConfig};
+    use crate::consensusdb::prelude::{FlexiDagStorage, FlexiDagStorageConfig};
     use starcoin_types::block::BlockHeader;
     use std::{env, fs};
     #[test]
