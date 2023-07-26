@@ -1845,19 +1845,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dag-consensus"
-version = "1.13.5"
-dependencies = [
- "anyhow",
- "ghostdag",
- "parking_lot 0.12.1",
- "reachability",
- "starcoin-consensus",
- "starcoin-crypto",
- "starcoin-types",
-]
-
-[[package]]
 name = "darling"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3113,21 +3100,6 @@ dependencies = [
  "pest 2.5.5",
  "pest_derive 2.5.5",
  "textwrap 0.11.0",
-]
-
-[[package]]
-name = "ghostdag"
-version = "1.13.5"
-dependencies = [
- "itertools",
- "parking_lot 0.12.1",
- "reachability",
- "rocksdb",
- "serde 1.0.152",
- "starcoin-consensus",
- "starcoin-crypto",
- "starcoin-types",
- "thiserror",
 ]
 
 [[package]]
@@ -7781,21 +7753,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "reachability"
-version = "1.13.5"
-dependencies = [
- "itertools",
- "parking_lot 0.12.1",
- "rocksdb",
- "serde 1.0.152",
- "starcoin-consensus",
- "starcoin-crypto",
- "starcoin-storage",
- "starcoin-types",
- "thiserror",
-]
-
-[[package]]
 name = "read-write-set"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=e31d9847cd1843ad571ba6f83e63b04cd96e254b#e31d9847cd1843ad571ba6f83e63b04cd96e254b"
@@ -9215,7 +9172,6 @@ dependencies = [
  "anyhow",
  "bcs-ext",
  "clap 3.2.23",
- "dag-consensus",
  "proptest",
  "proptest-derive",
  "rand 0.8.5",

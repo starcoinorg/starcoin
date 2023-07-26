@@ -1,11 +1,10 @@
 use std::sync::Arc;
 
 use anyhow::bail;
-use dag_consensus::blockdag::BlockDAG;
 use starcoin_accumulator::Accumulator;
 use starcoin_accumulator::{node::AccumulatorStoreType, MerkleAccumulator};
 use starcoin_config::NodeConfig;
-use starcoin_consensus::consensusdb::prelude::{FlexiDagStorage, FlexiDagStorageConfig};
+use starcoin_consensus::{BlockDAG, FlexiDagStorage, FlexiDagStorageConfig};
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_network_rpc_api::dag_protocol::{

@@ -1,7 +1,7 @@
 use super::{
     extensions::ReachabilityStoreIntervalExtensions, inquirer::get_next_chain_ancestor_unchecked, *,
 };
-use starcoin_consensus::consensusdb::schema::ReachabilityStore;
+use crate::consensusdb::schema::ReachabilityStore;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::{
     blockhash::{BlockHashExtensions, BlockHashMap},
