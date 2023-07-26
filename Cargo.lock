@@ -1845,6 +1845,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "dag-consensus"
+version = "1.13.5"
+dependencies = [
+ "anyhow",
+ "dag-database",
+ "ghostdag",
+ "parking_lot 0.12.1",
+ "reachability",
+ "starcoin-crypto",
+ "starcoin-types",
+]
+
+[[package]]
+name = "dag-database"
+version = "1.13.5"
+dependencies = [
+ "bincode",
+ "faster-hex",
+ "indexmap",
+ "itertools",
+ "num_cpus",
+ "parking_lot 0.12.1",
+ "rand 0.8.5",
+ "rocksdb",
+ "serde 1.0.152",
+ "starcoin-config",
+ "starcoin-crypto",
+ "starcoin-storage",
+ "starcoin-types",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "darling"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

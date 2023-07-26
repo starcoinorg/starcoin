@@ -104,3 +104,12 @@ pub mod sync_status;
 pub mod proof {
     pub use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 }
+
+pub mod blockhash;
+pub mod ghostdata;
+pub mod header;
+pub mod interval;
+pub mod ordering;
+pub mod perf;
+pub mod reachability;
+pub mod trusted;
