@@ -1,4 +1,4 @@
-use crate::{inquirer, Result};
+use super::{inquirer, Result};
 use parking_lot::RwLock;
 use starcoin_consensus::consensusdb::schema::ReachabilityStoreReader;
 use starcoin_crypto::{HashValue as Hash, HashValue};

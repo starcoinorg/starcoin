@@ -1,5 +1,5 @@
 use super::protocol::GhostdagManager;
-use reachability::reachability_service::ReachabilityService;
+use crate::reachability::reachability_service::ReachabilityService;
 use starcoin_consensus::consensusdb::schema::{
     GhostdagStoreReader, HeaderStoreReader, RelationsStoreReader,
 };

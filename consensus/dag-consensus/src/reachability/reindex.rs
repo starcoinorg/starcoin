@@ -1,4 +1,4 @@
-use crate::{
+use super::{
     extensions::ReachabilityStoreIntervalExtensions, inquirer::get_next_chain_ancestor_unchecked, *,
 };
 use starcoin_consensus::consensusdb::schema::ReachabilityStore;
