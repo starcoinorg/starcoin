@@ -2,11 +2,9 @@ use super::{
     extensions::ReachabilityStoreIntervalExtensions, inquirer::get_next_chain_ancestor_unchecked, *,
 };
 use crate::consensusdb::schema::ReachabilityStore;
+use crate::dag::types::interval::Interval;
 use starcoin_crypto::HashValue as Hash;
-use starcoin_types::{
-    blockhash::{BlockHashExtensions, BlockHashMap},
-    interval::Interval,
-};
+use starcoin_types::blockhash::{BlockHashExtensions, BlockHashMap};
 use std::collections::VecDeque;
 
 /// A struct used during reindex operations. It represents a temporary context
@@ -572,7 +570,8 @@ fn split_children(children: &std::sync::Arc<Vec<Hash>>, pivot: Hash) -> Result<(
 mod tests {
     use super::{super::tests::*, *};
     use crate::consensusdb::schema::{MemoryReachabilityStore, ReachabilityStoreReader};
-    use starcoin_types::{blockhash, interval::Interval};
+    use crate::dag::types::interval::Interval;
+    use starcoin_types::blockhash;
 
     #[test]
     fn test_count_subtrees() {

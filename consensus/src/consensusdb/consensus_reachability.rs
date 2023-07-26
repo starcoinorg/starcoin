@@ -5,13 +5,10 @@ use super::{
 use starcoin_crypto::HashValue as Hash;
 use starcoin_storage::storage::RawDBStorage;
 
+use crate::dag::types::{interval::Interval, reachability::ReachabilityData};
 use parking_lot::{RwLockUpgradableReadGuard, RwLockWriteGuard};
 use rocksdb::WriteBatch;
-use starcoin_types::{
-    blockhash::{self, BlockHashMap, BlockHashes},
-    interval::Interval,
-    reachability::ReachabilityData,
-};
+use starcoin_types::blockhash::{self, BlockHashMap, BlockHashes};
 use std::{collections::hash_map::Entry::Vacant, sync::Arc};
 
 /// Reader API for `ReachabilityStore`.

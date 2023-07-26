@@ -4,16 +4,18 @@ use super::{
     prelude::{CachedDbAccess, DirectDbWriter},
     writer::BatchDbWriter,
 };
+use crate::dag::types::{
+    ghostdata::{CompactGhostdagData, GhostdagData},
+    ordering::SortableBlock,
+};
 use itertools::{
     EitherOrBoth::{Both, Left, Right},
     Itertools,
 };
 use rocksdb::WriteBatch;
 use starcoin_crypto::HashValue as Hash;
-use starcoin_types::{
-    blockhash::{BlockHashMap, BlockHashes, BlockLevel, BlueWorkType, HashKTypeMap},
-    ghostdata::{CompactGhostdagData, GhostdagData},
-    ordering::SortableBlock,
+use starcoin_types::blockhash::{
+    BlockHashMap, BlockHashes, BlockLevel, BlueWorkType, HashKTypeMap,
 };
 use std::{cell::RefCell, cmp, iter::once, sync::Arc};
 

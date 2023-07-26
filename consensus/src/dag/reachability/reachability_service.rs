@@ -229,8 +229,7 @@ impl<T: ReachabilityStoreReader + ?Sized> Iterator for ForwardChainIterator<T> {
 mod tests {
     use super::*;
     use crate::consensusdb::schema::MemoryReachabilityStore;
-    use crate::dag::reachability::tests::TreeBuilder;
-    use starcoin_types::interval::Interval;
+    use crate::dag::{reachability::tests::TreeBuilder, types::interval::Interval};
 
     #[test]
     fn test_forward_iterator() {
