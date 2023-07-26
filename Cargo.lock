@@ -1845,19 +1845,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dag-consensus"
-version = "1.13.5"
-dependencies = [
- "anyhow",
- "ghostdag",
- "parking_lot 0.12.1",
- "reachability",
- "starcoin-consensus",
- "starcoin-crypto",
- "starcoin-types",
-]
-
-[[package]]
 name = "darling"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

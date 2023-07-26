@@ -1,4 +1,4 @@
-use starcoin_consensus::consensusdb::{prelude::StoreResult, schema::ReachabilityStoreReader};
+use crate::consensusdb::{prelude::StoreResult, schema::ReachabilityStoreReader};
 use starcoin_crypto::hash::HashValue as Hash;
 use starcoin_types::interval::Interval;
 

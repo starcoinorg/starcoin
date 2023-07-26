@@ -23,12 +23,15 @@ pub mod cn;
 mod consensus;
 #[cfg(test)]
 mod consensus_test;
-pub mod consensusdb;
+mod consensusdb;
+mod dag;
 pub mod difficulty;
 pub mod dummy;
 pub mod keccak;
 
 pub use consensus::{Consensus, ConsensusVerifyError};
+pub use consensusdb::prelude::{FlexiDagStorage, FlexiDagStorageConfig};
+pub use dag::blockdag::BlockDAG;
 pub use starcoin_time_service::duration_since_epoch;
 
 pub fn target_to_difficulty(target: U256) -> U256 {

@@ -2,7 +2,7 @@
 //! Test utils for reachability
 //!
 use super::{inquirer::*, tree::*};
-use starcoin_consensus::consensusdb::{
+use crate::consensusdb::{
     prelude::StoreError,
     schema::{ReachabilityStore, ReachabilityStoreReader},
 };

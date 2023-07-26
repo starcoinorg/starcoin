@@ -1,6 +1,6 @@
 use super::{inquirer, Result};
+use crate::consensusdb::schema::ReachabilityStoreReader;
 use parking_lot::RwLock;
-use starcoin_consensus::consensusdb::schema::ReachabilityStoreReader;
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_types::blockhash;
 use std::{ops::Deref, sync::Arc};

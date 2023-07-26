@@ -8,7 +8,7 @@ pub mod relations_service;
 mod tests;
 mod tree;
 
-use starcoin_consensus::consensusdb::prelude::StoreError;
+use crate::consensusdb::prelude::StoreError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
