@@ -1,9 +1,9 @@
-use crate::consensus::{
+use super::consensus::{
     DbGhostdagStore, DbHeadersStore, DbReachabilityStore, DbRelationsStore, CHILDREN_CF,
     COMPACT_GHOST_DAG_STORE_CF, COMPACT_HEADER_DATA_STORE_CF, GHOST_DAG_STORE_CF, HEADERS_STORE_CF,
     PARENTS_CF, REACHABILITY_DATA_CF,
 };
-use crate::errors::StoreError;
+use super::errors::StoreError;
 use starcoin_config::RocksdbConfig;
 pub(crate) use starcoin_storage::db_storage::DBStorage;
 use std::{path::Path, sync::Arc};
