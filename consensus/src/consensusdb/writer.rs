@@ -1,7 +1,7 @@
 use rocksdb::WriteBatch;
 use starcoin_storage::storage::InnerStore;
 
-use crate::{db::DBStorage, errors::StoreError};
+use super::{db::DBStorage, errors::StoreError};
 
 /// Abstraction over direct/batched DB writing
 pub trait DbWriter {

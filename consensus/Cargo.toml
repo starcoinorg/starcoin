@@ -19,6 +19,13 @@ starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
+rocksdb = { workspace = true }
+bincode = { workspace = true }
+serde = { workspace = true }
+starcoin-storage = { workspace = true }
+parking_lot = { workspace = true }
+itertools = { workspace = true }
+starcoin-config = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

@@ -23,6 +23,7 @@ pub mod cn;
 mod consensus;
 #[cfg(test)]
 mod consensus_test;
+pub mod consensusdb;
 pub mod difficulty;
 pub mod dummy;
 pub mod keccak;
