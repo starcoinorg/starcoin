@@ -9423,6 +9423,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-types",
  "stest",
+ "tempfile",
  "thiserror",
 ]
 

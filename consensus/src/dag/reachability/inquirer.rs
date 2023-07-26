@@ -240,7 +240,7 @@ fn assert_hashes_ordered(store: &(impl ReachabilityStoreReader + ?Sized), ordere
 #[cfg(test)]
 mod tests {
     use super::{super::tests::*, *};
-    use dag_database::consensus::MemoryReachabilityStore;
+    use crate::consensusdb::schema::MemoryReachabilityStore;
     use starcoin_types::blockhash::ORIGIN;
 
     #[test]
