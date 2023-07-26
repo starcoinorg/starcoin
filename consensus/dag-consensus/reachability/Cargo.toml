@@ -6,7 +6,7 @@ edition.workspace = true
 
 [dependencies]
 thiserror.workspace = true
-dag-database.workspace = true
+starcoin-consensus.workspace = true
 starcoin-crypto.workspace = true
 starcoin-types.workspace = true
 serde.workspace = true

@@ -1,6 +1,8 @@
 use crate::util::Refs;
-use dag_database::consensus::{GhostdagStoreReader, HeaderStoreReader, RelationsStoreReader};
 use reachability::reachability_service::ReachabilityService;
+use starcoin_consensus::consensusdb::consensus::{
+    GhostdagStoreReader, HeaderStoreReader, RelationsStoreReader,
+};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::{
     blockhash::{
