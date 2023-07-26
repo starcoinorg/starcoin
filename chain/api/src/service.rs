@@ -5,6 +5,7 @@ use crate::message::{ChainRequest, ChainResponse};
 use crate::TransactionInfoWithProof;
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
+use starcoin_network_rpc_api::dag_protocol;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
@@ -139,6 +140,7 @@ pub trait ChainAsyncService:
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
+    async fn get_dag_accumulator_leaves(&self, req: dag_protocol::GetDagAccumulatorLeaves) -> Result<Vec<dag_protocol::TargetDagAccumulatorLeaf>>;
 }
 
 #[async_trait::async_trait]
@@ -175,6 +177,19 @@ where
             self.send(ChainRequest::GetBlocks(hashes)).await??
         {
             Ok(blocks)
+        } else {
+            bail!("get_blocks response type error.")
+        }
+    }
+
+    async fn get_dag_accumulator_leaves(&self, req: dag_protocol::GetDagAccumulatorLeaves) -> Result<Vec<dag_protocol::TargetDagAccumulatorLeaf>> {
+        if let ChainResponse::TargetDagAccumulatorLeaf(leaves) =
+            self.send(ChainRequest::GetDagAccumulatorLeaves {
+                start_index: req.accumulator_leaf_index,
+                batch_size: req.batch_size,
+            }).await??
+        {
+            Ok(leaves)
         } else {
             bail!("get_blocks response type error.")
         }

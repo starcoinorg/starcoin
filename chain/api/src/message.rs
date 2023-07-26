@@ -4,7 +4,9 @@
 use crate::TransactionInfoWithProof;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
-use starcoin_network_rpc_api::dag_protocol::TargetDagAccumulatorLeaf;
+use starcoin_network_rpc_api::dag_protocol::{
+    TargetDagAccumulatorLeaf, TargetDagAccumulatorLeafDetail,
+};
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
@@ -65,6 +67,10 @@ pub enum ChainRequest {
         start_index: u64,
         batch_size: u64,
     },
+    GetTargetDagAccumulatorLeafDetail {
+        leaf_index: u64,
+        batch_size: u64,
+    },
 }
 
 impl ServiceRequest for ChainRequest {
@@ -94,4 +100,5 @@ pub enum ChainResponse {
     TransactionProof(Box<Option<TransactionInfoWithProof>>),
     BlockInfoVec(Box<Vec<Option<BlockInfo>>>),
     TargetDagAccumulatorLeaf(Vec<TargetDagAccumulatorLeaf>),
+    TargetDagAccumulatorLeafDetail(Vec<TargetDagAccumulatorLeafDetail>),
 }
