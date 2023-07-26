@@ -1,5 +1,5 @@
-use crate::util::Refs;
-use reachability::reachability_service::ReachabilityService;
+use super::util::Refs;
+use crate::reachability::reachability_service::ReachabilityService;
 use starcoin_consensus::consensusdb::schema::{
     GhostdagStoreReader, HeaderStoreReader, RelationsStoreReader,
 };

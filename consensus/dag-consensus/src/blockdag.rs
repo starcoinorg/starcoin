@@ -1,7 +1,7 @@
+use super::ghostdag::protocol::GhostdagManager;
+use super::reachability::{inquirer, reachability_service::MTReachabilityService};
 use anyhow::bail;
-use ghostdag::protocol::GhostdagManager;
 use parking_lot::RwLock;
-use reachability::{inquirer, reachability_service::MTReachabilityService};
 use starcoin_consensus::consensusdb::prelude::FlexiDagStorage;
 use starcoin_consensus::consensusdb::schema::{
     DbGhostdagStore, DbHeadersStore, DbReachabilityStore, DbRelationsStore, GhostdagStore,
