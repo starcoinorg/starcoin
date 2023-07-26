@@ -1,6 +1,7 @@
-use crate::{blockhash::BlockHashes, interval::Interval};
+use super::interval::Interval;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue as Hash;
+use starcoin_types::blockhash::BlockHashes;
 use std::sync::Arc;
 
 #[derive(Clone, Serialize, Deserialize)]

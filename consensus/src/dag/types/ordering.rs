@@ -1,6 +1,6 @@
-use crate::blockhash::BlueWorkType;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue as Hash;
+use starcoin_types::blockhash::BlueWorkType;
 use std::cmp::Ordering;
 
 #[derive(Eq, Clone, Debug, Serialize, Deserialize)]

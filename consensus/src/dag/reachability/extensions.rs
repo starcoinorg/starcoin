@@ -1,6 +1,6 @@
 use crate::consensusdb::{prelude::StoreResult, schema::ReachabilityStoreReader};
+use crate::dag::types::interval::Interval;
 use starcoin_crypto::hash::HashValue as Hash;
-use starcoin_types::interval::Interval;
 
 pub(super) trait ReachabilityStoreIntervalExtensions {
     fn interval_children_capacity(&self, block: Hash) -> StoreResult<Interval>;

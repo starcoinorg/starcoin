@@ -1,9 +1,7 @@
-use crate::{
-    blockhash::{BlockHashMap, BlockHashes, BlueWorkType, HashKTypeMap, KType},
-    trusted::ExternalGhostdagData,
-};
+use super::trusted::ExternalGhostdagData;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue as Hash;
+use starcoin_types::blockhash::{BlockHashMap, BlockHashes, BlueWorkType, HashKTypeMap, KType};
 use std::sync::Arc;
 
 #[derive(Clone, Serialize, Deserialize, Default, Debug)]
