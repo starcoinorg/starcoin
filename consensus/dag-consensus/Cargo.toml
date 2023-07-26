@@ -8,7 +8,7 @@ edition.workspace = true
 [dependencies]
 ghostdag.workspace = true
 reachability.workspace = true
-dag-database.workspace = true
+starcoin-consensus.workspace = true
 parking_lot.workspace = true
 starcoin-crypto.workspace = true
 starcoin-types.workspace = true

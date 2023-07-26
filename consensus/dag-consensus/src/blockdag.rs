@@ -1,12 +1,12 @@
 use anyhow::bail;
-use dag_database::consensus::{
-    DbGhostdagStore, DbHeadersStore, DbReachabilityStore, DbRelationsStore, GhostdagStore,
-    HeaderStore, ReachabilityStoreReader, RelationsStore, RelationsStoreReader,
-};
-use dag_database::prelude::FlexiDagStorage;
 use ghostdag::protocol::GhostdagManager;
 use parking_lot::RwLock;
 use reachability::{inquirer, reachability_service::MTReachabilityService};
+use starcoin_consensus::consensusdb::consensus::{
+    DbGhostdagStore, DbHeadersStore, DbReachabilityStore, DbRelationsStore, GhostdagStore,
+    HeaderStore, ReachabilityStoreReader, RelationsStore, RelationsStoreReader,
+};
+use starcoin_consensus::consensusdb::prelude::FlexiDagStorage;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::{
     blockhash::{BlockHashes, KType, ORIGIN},

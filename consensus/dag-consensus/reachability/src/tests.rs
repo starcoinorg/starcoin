@@ -2,7 +2,7 @@
 //! Test utils for reachability
 //!
 use super::{inquirer::*, tree::*};
-use dag_database::{
+use starcoin_consensus::consensusdb::{
     consensus::{ReachabilityStore, ReachabilityStoreReader},
     prelude::StoreError,
 };
