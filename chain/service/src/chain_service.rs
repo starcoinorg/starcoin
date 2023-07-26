@@ -11,6 +11,7 @@ use starcoin_chain_api::{
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
+use starcoin_network_rpc_api::dag_protocol::GetDagAccumulatorLeaves;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
@@ -241,7 +242,10 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetBlockInfos(ids) => Ok(ChainResponse::BlockInfoVec(Box::new(
                 self.inner.get_block_infos(ids)?,
             ))),
-            _ => todo!(), // ChainRequest::GetDagAccumulatorLeaves(start_index, batch_size) => Ok(ChainResponse::HashValue(self.dag_)),
+            ChainRequest::GetDagAccumulatorLeaves{start_index, batch_size} => Ok(ChainResponse::TargetDagAccumulatorLeaf(self.dag_chain.get_accumulator_leaves(GetDagAccumulatorLeaves {
+                accumulator_leaf_index: start_index,
+                batch_size,
+            })?)),
         }
     }
 }

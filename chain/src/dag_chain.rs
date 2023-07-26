@@ -3,18 +3,21 @@ use std::sync::Arc;
 use anyhow::bail;
 use dag_consensus::blockdag::BlockDAG;
 use dag_database::prelude::{FlexiDagStorage, FlexiDagStorageConfig};
+use starcoin_accumulator::Accumulator;
 use starcoin_accumulator::{node::AccumulatorStoreType, MerkleAccumulator};
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
+use starcoin_storage::storage::CodecKVStore;
 use starcoin_storage::{flexi_dag::SyncFlexiDagSnapshotStorage, Store};
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{blockhash::ORIGIN, header::Header};
+use starcoin_network_rpc_api::dag_protocol::{TargetDagAccumulatorLeaf, GetDagAccumulatorLeaves};
 
 pub struct DagBlockChain {
     dag: Option<BlockDAG>,
     dag_sync_accumulator: MerkleAccumulator,
-    sync_accumulator_snapshot: Arc<SyncFlexiDagSnapshotStorage>,
+    dag_sync_accumulator_snapshot: Arc<SyncFlexiDagSnapshotStorage>,
 }
 
 impl DagBlockChain {
@@ -42,7 +45,7 @@ impl DagBlockChain {
                     dag_sync_accumulator: MerkleAccumulator::new_empty(
                         storage.get_accumulator_store(AccumulatorStoreType::SyncDag),
                     ),
-                    sync_accumulator_snapshot: storage.get_accumulator_snapshot_storage(),
+                    dag_sync_accumulator_snapshot: storage.get_accumulator_snapshot_storage(),
                 })
             }
         };
@@ -62,7 +65,39 @@ impl DagBlockChain {
                 accumulator_info,
                 storage.get_accumulator_store(AccumulatorStoreType::SyncDag),
             ),
-            sync_accumulator_snapshot: storage.get_accumulator_snapshot_storage(),
+            dag_sync_accumulator_snapshot: storage.get_accumulator_snapshot_storage(),
         })
+    }
+
+    pub fn get_accumulator_leaves(&self, req: GetDagAccumulatorLeaves) -> anyhow::Result<Vec<TargetDagAccumulatorLeaf>> {
+        match self.dag_sync_accumulator.get_leaves(req.accumulator_leaf_index, true, req.batch_size) {
+            Ok(leaves) => Ok(leaves
+                .into_iter()
+                .enumerate()
+                .map(
+                    |(index, leaf)| match self.dag_sync_accumulator_snapshot.get(leaf) {
+                        Ok(op_snapshot) => {
+                            let snapshot = op_snapshot.expect("snapshot must exist");
+                            TargetDagAccumulatorLeaf {
+                                accumulator_root: snapshot.accumulator_info.accumulator_root,
+                                leaf_index: req.accumulator_leaf_index.saturating_sub(index as u64),
+                            }
+                        }
+                        Err(error) => {
+                            panic!(
+                                "error occured when query the accumulator snapshot: {}",
+                                error.to_string()
+                            );
+                        }
+                    },
+                )
+                .collect()),
+            Err(error) => {
+                bail!(
+                    "an error occured when getting the leaves of the accumulator, {}",
+                    error.to_string()
+                );
+            }
+        }
     }
 }

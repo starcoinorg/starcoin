@@ -4,6 +4,7 @@
 use crate::TransactionInfoWithProof;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
+use starcoin_network_rpc_api::dag_protocol::TargetDagAccumulatorLeaf;
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
@@ -92,4 +93,5 @@ pub enum ChainResponse {
     HashVec(Vec<HashValue>),
     TransactionProof(Box<Option<TransactionInfoWithProof>>),
     BlockInfoVec(Box<Vec<Option<BlockInfo>>>),
+    TargetDagAccumulatorLeaf(Vec<TargetDagAccumulatorLeaf>),
 }
