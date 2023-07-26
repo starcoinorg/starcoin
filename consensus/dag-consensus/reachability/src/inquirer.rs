@@ -1,5 +1,5 @@
 use super::{tree::*, *};
-use starcoin_consensus::consensusdb::consensus::{ReachabilityStore, ReachabilityStoreReader};
+use starcoin_consensus::consensusdb::schema::{ReachabilityStore, ReachabilityStoreReader};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::{blockhash, interval::Interval, perf};
 

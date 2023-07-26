@@ -1849,33 +1849,12 @@ name = "dag-consensus"
 version = "1.13.5"
 dependencies = [
  "anyhow",
- "dag-database",
  "ghostdag",
  "parking_lot 0.12.1",
  "reachability",
+ "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-types",
-]
-
-[[package]]
-name = "dag-database"
-version = "1.13.5"
-dependencies = [
- "bincode",
- "faster-hex",
- "indexmap",
- "itertools",
- "num_cpus",
- "parking_lot 0.12.1",
- "rand 0.8.5",
- "rocksdb",
- "serde 1.0.152",
- "starcoin-config",
- "starcoin-crypto",
- "starcoin-storage",
- "starcoin-types",
- "tempfile",
- "thiserror",
 ]
 
 [[package]]
@@ -9431,21 +9410,28 @@ name = "starcoin-consensus"
 version = "1.13.5"
 dependencies = [
  "anyhow",
+ "bincode",
  "byteorder",
  "cryptonight-rs",
  "futures 0.3.26",
  "hex",
+ "itertools",
  "once_cell",
+ "parking_lot 0.12.1",
  "proptest",
  "proptest-derive",
  "rand 0.8.5",
  "rand_core 0.6.4",
+ "rocksdb",
  "rust-argon2",
+ "serde 1.0.152",
  "sha3",
  "starcoin-chain-api",
+ "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-state-api",
+ "starcoin-storage",
  "starcoin-time-service",
  "starcoin-types",
  "starcoin-vm-types",

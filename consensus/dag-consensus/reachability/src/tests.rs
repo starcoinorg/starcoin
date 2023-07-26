@@ -3,8 +3,8 @@
 //!
 use super::{inquirer::*, tree::*};
 use starcoin_consensus::consensusdb::{
-    consensus::{ReachabilityStore, ReachabilityStoreReader},
     prelude::StoreError,
+    schema::{ReachabilityStore, ReachabilityStoreReader},
 };
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::{

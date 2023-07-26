@@ -1,6 +1,6 @@
 use super::protocol::GhostdagManager;
 use reachability::reachability_service::ReachabilityService;
-use starcoin_consensus::consensusdb::consensus::{
+use starcoin_consensus::consensusdb::schema::{
     GhostdagStoreReader, HeaderStoreReader, RelationsStoreReader,
 };
 use starcoin_crypto::HashValue as Hash;

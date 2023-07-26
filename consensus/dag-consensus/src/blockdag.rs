@@ -2,11 +2,11 @@ use anyhow::bail;
 use ghostdag::protocol::GhostdagManager;
 use parking_lot::RwLock;
 use reachability::{inquirer, reachability_service::MTReachabilityService};
-use starcoin_consensus::consensusdb::consensus::{
+use starcoin_consensus::consensusdb::prelude::FlexiDagStorage;
+use starcoin_consensus::consensusdb::schema::{
     DbGhostdagStore, DbHeadersStore, DbReachabilityStore, DbRelationsStore, GhostdagStore,
     HeaderStore, ReachabilityStoreReader, RelationsStore, RelationsStoreReader,
 };
-use starcoin_consensus::consensusdb::prelude::FlexiDagStorage;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::{
     blockhash::{BlockHashes, KType, ORIGIN},

@@ -22,7 +22,7 @@ pub mod prelude {
     pub use errors::{StoreError, StoreResult, StoreResultEmptyTuple, StoreResultExtensions};
 }
 
-pub mod consensus {
+pub mod schema {
     pub use super::{
         consensus_ghostdag::*, consensus_header::*, consensus_reachability::*,
         consensus_relations::*,
