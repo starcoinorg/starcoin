@@ -63,7 +63,7 @@ pub enum ChainRequest {
     GetDagAccumulatorLeaves {
         start_index: u64,
         batch_size: u64,
-    }
+    },
 }
 
 impl ServiceRequest for ChainRequest {

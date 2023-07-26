@@ -5,8 +5,8 @@
 mod language_storage_ext;
 
 pub mod account_address;
-pub mod gas_schedule;
 pub mod dag_block_metadata;
+pub mod gas_schedule;
 pub mod location {
     pub use move_ir_types::location::Loc;
 }

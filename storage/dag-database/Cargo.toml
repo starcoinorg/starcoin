@@ -1,0 +1,23 @@
+[package]
+name = "dag-database"
+version = "1.13.5"
+edition.workspace = true
+
+[dependencies]
+starcoin-storage.workspace = true
+starcoin-config.workspace = true
+starcoin-crypto.workspace = true
+starcoin-types.workspace = true
+rocksdb.workspace = true
+serde.workspace = true
+bincode.workspace = true
+indexmap.workspace = true
+parking_lot.workspace = true
+thiserror.workspace = true
+rand.workspace = true
+faster-hex.workspace = true
+itertools.workspace = true
+num_cpus.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

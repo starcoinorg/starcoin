@@ -23,9 +23,8 @@ starcoin-types = { package = "starcoin-types", workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-storage = { workspace = true }
 thiserror = { workspace = true }
-database = { workspace = true }
-consensus = { workspace = true }
-consensus-types = { workspace = true }
+dag-database = { workspace = true }
+dag-consensus = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
@@ -42,9 +41,8 @@ stdlib = { workspace = true }
 stest = { workspace = true }
 test-helper = { workspace = true }
 tokio = { features = ["full"], workspace = true }
-database = { workspace = true }
-consensus = { workspace = true }
-consensus-types = { workspace = true }
+dag-database = { workspace = true }
+dag-consensus = { workspace = true }
 
 [features]
 default = []

@@ -1,7 +1,7 @@
-use consensus_types::header::Header;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::HashValue;
+use starcoin_types::header::Header;
 
 #[derive(Clone, Debug, Hash, Eq, PartialOrd, Ord, PartialEq, Serialize, Deserialize)]
 pub struct RelationshipPair {

@@ -3,13 +3,12 @@
 
 use crate::account_address::AccountAddress;
 use crate::block::BlockHeaderExtra;
-use crate::block_metadata::BlockMetadata;
+use crate::blockhash::ORIGIN;
 use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
 use bcs_ext::Sample;
-use consensus_types::blockhash::ORIGIN;
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Deserializer, Serialize};
 pub use starcoin_accumulator::accumulator_info::AccumulatorInfo;
@@ -142,7 +141,8 @@ impl DagBlockHeader {
     }
 
     pub fn id(&self) -> HashValue {
-        self.id.expect("DagBlockHeader id should be Some after init.")
+        self.id
+            .expect("DagBlockHeader id should be Some after init.")
     }
 
     pub fn parent_hash(&self) -> Vec<HashValue> {
@@ -199,9 +199,9 @@ impl DagBlockHeader {
 
     pub fn is_genesis(&self) -> bool {
         if self.parent_hash.len() == 1 {
-            return self.parent_hash[0] == HashValue::new(ORIGIN);  
+            return self.parent_hash[0] == HashValue::new(ORIGIN);
         }
-        return false;
+        false
     }
 
     pub fn genesis_block_header(
@@ -483,7 +483,10 @@ pub struct BlockBody {
 }
 
 impl BlockBody {
-    pub fn new(transactions: Vec<SignedUserTransaction>, uncles: Option<Vec<DagBlockHeader>>) -> Self {
+    pub fn new(
+        transactions: Vec<SignedUserTransaction>,
+        uncles: Option<Vec<DagBlockHeader>>,
+    ) -> Self {
         Self {
             transactions,
             uncles,
@@ -752,8 +755,7 @@ impl DagBlockTemplate {
         strategy: ConsensusStrategy,
         block_metadata: DagBlockMetadata,
     ) -> Self {
-        let (parent_hash, timestamp, author, _author_auth_key, _, _) =
-            block_metadata.into_inner();
+        let (parent_hash, timestamp, author, _author_auth_key, _, _) = block_metadata.into_inner();
         Self {
             parent_hash,
             block_accumulator_root: parent_block_accumulator_root,

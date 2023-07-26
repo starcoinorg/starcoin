@@ -388,7 +388,8 @@ impl DagBlockStore for Storage {
     }
 
     fn save_flexi_dag_startup_info(&self, startup_info: StartupInfo) -> Result<()> {
-        self.chain_info_storage.save_flexi_dag_startup_info(startup_info)
+        self.chain_info_storage
+            .save_flexi_dag_startup_info(startup_info)
     }
 }
 
@@ -637,6 +638,7 @@ impl SyncFlexiDagStore for Storage {
 pub trait Store:
     StateNodeStore
     + DagBlockStore
+    + SyncFlexiDagStore
     + BlockStore
     + BlockInfoStore
     + TransactionStore

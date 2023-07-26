@@ -15,7 +15,6 @@ starcoin-state-api = { workspace = true }
 starcoin-state-tree = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
-consensus-types = { workspace = true }
 
 [package]
 authors = { workspace = true }
