@@ -1,5 +1,5 @@
 use parking_lot::RwLock;
-use starcoin_consensus::consensusdb::{consensus::RelationsStoreReader, prelude::StoreError};
+use starcoin_consensus::consensusdb::{prelude::StoreError, schema::RelationsStoreReader};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::blockhash::BlockHashes;
 use std::sync::Arc;
