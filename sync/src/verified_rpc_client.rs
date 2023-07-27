@@ -418,7 +418,7 @@ impl VerifiedRpcClient {
         req: dag_protocol::GetDagAccumulatorLeaves,
     ) -> Result<Vec<dag_protocol::TargetDagAccumulatorLeaf>> {
         let peer_id = self.select_a_peer()?;
-        self.client.get_dag_accumulator_leaves (peer_id, req).await
+        self.client.get_dag_accumulator_leaves(peer_id, req).await
     }
 
     pub async fn get_accumulator_leaf_detail(

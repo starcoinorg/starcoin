@@ -506,11 +506,12 @@ mod accumulator_sync_task;
 mod block_sync_task;
 mod find_ancestor_task;
 mod inner_sync_task;
-mod sync_dag_protocol_trait;
-mod sync_find_ancestor_task;
-mod sync_dag_accumulator_task;
 #[cfg(test)]
 pub(crate) mod mock;
+mod sync_dag_accumulator_task;
+mod sync_dag_block_task;
+mod sync_dag_protocol_trait;
+mod sync_find_ancestor_task;
 #[cfg(test)]
 mod tests;
 

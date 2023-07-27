@@ -1,7 +1,9 @@
 use anyhow::Result;
 use futures::future::BoxFuture;
 use network_p2p_core::PeerId;
-use starcoin_network_rpc_api::dag_protocol::{TargetDagAccumulatorLeaf, TargetDagAccumulatorLeafDetail, SyncDagBlockInfo};
+use starcoin_network_rpc_api::dag_protocol::{
+    SyncDagBlockInfo, TargetDagAccumulatorLeaf, TargetDagAccumulatorLeafDetail,
+};
 
 pub trait PeerSynDagAccumulator: Send + Sync {
     fn get_sync_dag_asccumulator_leaves(

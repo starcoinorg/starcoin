@@ -1,5 +1,5 @@
 use anyhow::{format_err, Result};
-use futures::{FutureExt, future::BoxFuture};
+use futures::{future::BoxFuture, FutureExt};
 use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator};
 use starcoin_network_rpc_api::dag_protocol::TargetDagAccumulatorLeaf;
 use starcoin_storage::{flexi_dag::SyncFlexiDagSnapshotStorage, storage::CodecKVStore};
@@ -15,11 +15,10 @@ pub struct FindAncestorTask {
     batch_size: u64,
 }
 impl FindAncestorTask {
-    pub(crate) fn new<F>(
-        current_leaf_numeber: u64,
-        target_leaf_numeber: u64,
-        fetcher: F,
-    ) -> Self where F: PeerSynDagAccumulator + 'static {
+    pub(crate) fn new<F>(current_leaf_numeber: u64, target_leaf_numeber: u64, fetcher: F) -> Self
+    where
+        F: PeerSynDagAccumulator + 'static,
+    {
         FindAncestorTask {
             start_leaf_number: std::cmp::min(current_leaf_numeber, target_leaf_numeber),
             fetcher: Arc::new(fetcher),

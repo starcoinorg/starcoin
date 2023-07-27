@@ -1,6 +1,6 @@
 use anyhow::{bail, ensure, format_err, Result};
 use bcs_ext::BCSCodec;
-use futures::{FutureExt, future::BoxFuture};
+use futures::{future::BoxFuture, FutureExt};
 use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator};
 use starcoin_crypto::HashValue;
 use starcoin_network_rpc_api::dag_protocol::TargetDagAccumulatorLeafDetail;
@@ -21,12 +21,10 @@ pub struct SyncDagAccumulatorTask {
     fetcher: Arc<dyn PeerSynDagAccumulator>,
 }
 impl SyncDagAccumulatorTask {
-    pub fn new<F>(
-        leaf_index: u64,
-        batch_size: u64,
-        target_index: u64,
-        fetcher: F,
-    ) -> Self where F: PeerSynDagAccumulator + 'static {
+    pub fn new<F>(leaf_index: u64, batch_size: u64, target_index: u64, fetcher: F) -> Self
+    where
+        F: PeerSynDagAccumulator + 'static,
+    {
         SyncDagAccumulatorTask {
             leaf_index,
             batch_size,
@@ -64,7 +62,8 @@ impl TaskState for SyncDagAccumulatorTask {
         }
 
         let next_number = self.leaf_index.saturating_add(self.batch_size);
-        if next_number > self.target_index - 1 { // genesis leaf doesn't need synchronization
+        if next_number > self.target_index - 1 {
+            // genesis leaf doesn't need synchronization
             return None;
         }
         Some(Self {
@@ -102,10 +101,14 @@ impl SyncDagAccumulatorCollector {
 impl TaskResultCollector<TargetDagAccumulatorLeafDetail> for SyncDagAccumulatorCollector {
     type Output = (u64, MerkleAccumulator);
 
-    fn collect(&mut self, mut item: TargetDagAccumulatorLeafDetail) -> anyhow::Result<CollectorState> {
+    fn collect(
+        &mut self,
+        mut item: TargetDagAccumulatorLeafDetail,
+    ) -> anyhow::Result<CollectorState> {
         item.relationship_pair.sort();
         let accumulator_leaf = HashValue::sha3_256_of(
-            &item.relationship_pair
+            &item
+                .relationship_pair
                 .encode()
                 .expect("encoding the sorted relatship set must be successful"),
         );
@@ -114,7 +117,11 @@ impl TaskResultCollector<TargetDagAccumulatorLeafDetail> for SyncDagAccumulatorC
 
         let accumulator_info = self.accumulator.get_info();
         if accumulator_info.accumulator_root != item.accumulator_root {
-            bail!("sync occurs error for the accumulator root differs from other!, local {}, peer {}", accumulator_info.accumulator_root, item.accumulator_root)
+            bail!(
+                "sync occurs error for the accumulator root differs from other!, local {}, peer {}",
+                accumulator_info.accumulator_root,
+                item.accumulator_root
+            )
         }
         self.accumulator.flush()?;
 
@@ -147,7 +154,10 @@ impl TaskResultCollector<TargetDagAccumulatorLeafDetail> for SyncDagAccumulatorC
             accumulator_info,
             self.target
         );
-        println!("finish to sync accumulator, its info is: {:?}", accumulator_info);
+        println!(
+            "finish to sync accumulator, its info is: {:?}",
+            accumulator_info
+        );
 
         Ok((self.start_leaf_index, self.accumulator))
     }
