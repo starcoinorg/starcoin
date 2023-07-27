@@ -508,6 +508,7 @@ mod find_ancestor_task;
 mod inner_sync_task;
 mod sync_dag_protocol_trait;
 mod sync_find_ancestor_task;
+mod sync_dag_accumulator_task;
 #[cfg(test)]
 pub(crate) mod mock;
 #[cfg(test)]
