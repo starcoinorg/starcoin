@@ -217,8 +217,17 @@ fn binary_search_descendant(
         Err(i) => {
             // `i` is where `point` was expected (i.e., point < ordered_hashes[i].interval.start),
             // so we expect `ordered_hashes[i - 1].interval` to be the only candidate to contain `point`
-            if i > 0 && is_chain_ancestor_of(store, ordered_hashes[i - 1], descendant)? {
-                Ok(SearchOutput::Found(ordered_hashes[i - 1], i - 1))
+            if i > 0
+                && is_chain_ancestor_of(
+                    store,
+                    ordered_hashes[i.checked_sub(1).unwrap()],
+                    descendant,
+                )?
+            {
+                Ok(SearchOutput::Found(
+                    ordered_hashes[i.checked_sub(1).unwrap()],
+                    i.checked_sub(1).unwrap(),
+                ))
             } else {
                 Ok(SearchOutput::NotFound(i))
             }

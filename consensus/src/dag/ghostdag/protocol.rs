@@ -131,8 +131,12 @@ impl<
             }
         }
 
-        let blue_score = self.ghostdag_store.get_blue_score(selected_parent).unwrap()
-            + new_block_data.mergeset_blues.len() as u64;
+        let blue_score = self
+            .ghostdag_store
+            .get_blue_score(selected_parent)
+            .unwrap()
+            .checked_add(new_block_data.mergeset_blues.len() as u64)
+            .unwrap();
 
         let added_blue_work: BlueWorkType = new_block_data
             .mergeset_blues
@@ -149,8 +153,12 @@ impl<
             })
             .sum();
 
-        let blue_work =
-            self.ghostdag_store.get_blue_work(selected_parent).unwrap() + added_blue_work;
+        let blue_work = self
+            .ghostdag_store
+            .get_blue_work(selected_parent)
+            .unwrap()
+            .checked_add(added_blue_work)
+            .unwrap();
         new_block_data.finalize_score_and_work(blue_score, blue_work);
 
         new_block_data
@@ -195,7 +203,7 @@ impl<
             candidate_blues_anticone_sizes
                 .insert(block, self.blue_anticone_size(block, new_block_data));
 
-            *candidate_blue_anticone_size += 1;
+            *candidate_blue_anticone_size = (*candidate_blue_anticone_size).checked_add(1).unwrap();
             if *candidate_blue_anticone_size > self.k {
                 // k-cluster violation: The candidate's blue anticone exceeded k
                 return ColoringState::Red;
@@ -252,7 +260,7 @@ impl<
     ) -> ColoringOutput {
         // The maximum length of new_block_data.mergeset_blues can be K+1 because
         // it contains the selected parent.
-        if new_block_data.mergeset_blues.len() as KType == self.k + 1 {
+        if new_block_data.mergeset_blues.len() as KType == self.k.checked_add(1).unwrap() {
             return ColoringOutput::Red;
         }
 

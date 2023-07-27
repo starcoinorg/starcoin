@@ -23,7 +23,10 @@ impl<T: ReachabilityStoreReader + ?Sized> ReachabilityStoreIntervalExtensions fo
         match self.get_children(block)?.first() {
             Some(first_child) => {
                 let first_alloc = self.get_interval(*first_child)?;
-                Ok(Interval::new(alloc_capacity.start, first_alloc.start - 1))
+                Ok(Interval::new(
+                    alloc_capacity.start,
+                    first_alloc.start.checked_sub(1).unwrap(),
+                ))
             }
             None => Ok(alloc_capacity),
         }
@@ -36,7 +39,10 @@ impl<T: ReachabilityStoreReader + ?Sized> ReachabilityStoreIntervalExtensions fo
         match self.get_children(block)?.last() {
             Some(last_child) => {
                 let last_alloc = self.get_interval(*last_child)?;
-                Ok(Interval::new(last_alloc.end + 1, alloc_capacity.end))
+                Ok(Interval::new(
+                    last_alloc.end.checked_add(1).unwrap(),
+                    alloc_capacity.end,
+                ))
             }
             None => Ok(alloc_capacity),
         }
