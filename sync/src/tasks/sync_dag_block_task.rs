@@ -1,8 +1,6 @@
-use anyhow::{bail, ensure, format_err, Ok, Result};
-use bcs_ext::BCSCodec;
+use anyhow::{Ok, Result};
 use futures::{future::BoxFuture, FutureExt};
-use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator};
-use starcoin_crypto::HashValue;
+use starcoin_accumulator::{accumulator_info::AccumulatorInfo, MerkleAccumulator};
 use starcoin_network_rpc_api::dag_protocol::SyncDagBlockInfo;
 use starcoin_storage::{
     flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagSnapshotStorage},

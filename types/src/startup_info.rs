@@ -13,6 +13,38 @@ use starcoin_vm_types::genesis_config::ChainId;
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
 use std::fmt::Formatter;
+
+#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
+pub struct ChainInfoV2 {
+    pub chain_info: ChainInfo,
+    pub dag_status: DagChainStatus,
+}
+
+impl ChainInfoV2 {
+    pub fn new(chain_id: ChainId, genesis_hash: HashValue, status: ChainStatus) -> Self {
+        ChainInfoV2 {
+            chain_info: ChainInfo::new(chain_id, genesis_hash, status),
+            dag_status: DagChainStatus {
+                flexi_dag_accumulator_info: AccumulatorInfo::default(), // dag todo
+            },
+        }
+    }
+    pub fn random() -> Self {
+        Self {
+            chain_info: ChainInfo::random(),
+            dag_status: DagChainStatus::random(),
+        }
+    }
+}
+impl std::fmt::Display for ChainInfoV2 {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self).map_err(|_| std::fmt::Error)?
+        )
+    }
+}
 /// The info of a chain.
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct ChainInfo {
@@ -119,6 +151,7 @@ impl ChainStatus {
                 rand::random::<u64>(),
             ),
         );
+
         Self {
             head,
             info: block_info,
@@ -147,6 +180,36 @@ impl Sample for ChainStatus {
         Self {
             head: BlockHeader::sample(),
             info: BlockInfo::sample(),
+        }
+    }
+}
+
+#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
+pub struct DagChainStatus {
+    pub flexi_dag_accumulator_info: AccumulatorInfo,
+} 
+
+impl DagChainStatus {
+    pub fn new(flexi_dag_accumulator_info: AccumulatorInfo) -> Self {
+        Self {
+            flexi_dag_accumulator_info,
+        }
+    }
+
+    pub fn random() -> Self {
+        let head = BlockHeader::random();
+        Self {
+            flexi_dag_accumulator_info: AccumulatorInfo::new(
+                head.block_accumulator_root(),
+                vec![],
+                rand::random::<u64>(),
+                rand::random::<u64>(),
+            )}
+    }
+
+    pub fn sample() -> Self {
+        Self {
+            flexi_dag_accumulator_info: AccumulatorInfo::sample(),
         }
     }
 }

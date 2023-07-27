@@ -20,13 +20,13 @@ use flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagSnapshotStorage, SyncFlexiDagS
 use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
-use starcoin_accumulator::{node::AccumulatorStoreType, AccumulatorTreeStore};
+use starcoin_accumulator::{node::AccumulatorStoreType, AccumulatorTreeStore, accumulator_info::AccumulatorInfo};
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
     contract_event::ContractEvent,
-    startup_info::{ChainInfo, ChainStatus, SnapshotRange, StartupInfo},
+    startup_info::{ChainInfo, ChainStatus, SnapshotRange, StartupInfo, ChainInfoV2, DagChainStatus},
     transaction::{RichTransactionInfo, Transaction},
 };
 //use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
@@ -198,6 +198,7 @@ impl StorageVersion {
 pub trait DagBlockStore {
     fn get_flexi_dag_startup_info(&self) -> Result<Option<StartupInfo>>;
     fn save_flexi_dag_startup_info(&self, startup_info: StartupInfo) -> Result<()>;
+    fn get_dag_accumulator_info(&self) -> Result<AccumulatorInfo>;
 }
 
 pub trait BlockStore {
@@ -208,7 +209,7 @@ pub trait BlockStore {
 
     fn save_genesis(&self, genesis_hash: HashValue) -> Result<()>;
 
-    fn get_chain_info(&self) -> Result<Option<ChainInfo>>;
+    fn get_chain_info(&self) -> Result<Option<ChainInfoV2>>;
 
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>>;
 
@@ -391,6 +392,24 @@ impl DagBlockStore for Storage {
         self.chain_info_storage
             .save_flexi_dag_startup_info(startup_info)
     }
+
+    fn get_dag_accumulator_info(&self) -> Result<AccumulatorInfo> {
+        // initialize the block accumulator
+        let startup_info = match self.get_flexi_dag_startup_info()? {
+            Some(startup_info) => startup_info,
+            None => bail!("failed to get dag startup info")
+        };
+
+        // let accmulator_info = sync_flexi_dag_store.get_snapshot_storage().get(startup_info.main);
+        let accumulator_info = match self.query_by_hash(startup_info.main) {
+            Ok(op_snapshot) => match op_snapshot {
+                Some(snapshot) => snapshot.accumulator_info,
+                None => bail!("failed to get sync accumulator info since it is None"),
+            },
+            Err(error) => bail!("failed to get sync accumulator info: {}", error.to_string()),
+        };
+        Ok(accumulator_info)
+    }
 }
 
 impl BlockStore for Storage {
@@ -410,7 +429,7 @@ impl BlockStore for Storage {
         self.chain_info_storage.save_genesis(genesis_hash)
     }
 
-    fn get_chain_info(&self) -> Result<Option<ChainInfo>> {
+    fn get_chain_info(&self) -> Result<Option<ChainInfoV2>> {
         let genesis_hash = match self.get_genesis()? {
             Some(genesis_hash) => genesis_hash,
             None => return Ok(None),
@@ -425,11 +444,19 @@ impl BlockStore for Storage {
         let head_block_info = self.get_block_info(head_block.id())?.ok_or_else(|| {
             format_err!("Startup block info {:?} should exist", startup_info.main)
         })?;
-        Ok(Some(ChainInfo::new(
+
+        let flexi_dag_accumulator_info = self.get_dag_accumulator_info().unwrap_or(AccumulatorInfo::default());
+        let chain_info = ChainInfo::new(
             head_block.chain_id(),
             genesis_hash,
             ChainStatus::new(head_block, head_block_info),
-        )))
+        );
+        Ok(Some(ChainInfoV2 { 
+            chain_info, 
+            dag_status: DagChainStatus {
+                flexi_dag_accumulator_info
+            }
+        }))
     }
 
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>> {

@@ -9,14 +9,14 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::block::BlockNumber;
-use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use starcoin_types::startup_info::{ChainInfoV2, ChainStatus};
 use starcoin_types::U256;
 use std::borrow::Cow;
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct PeerInfo {
     pub peer_id: PeerId,
-    pub chain_info: ChainInfo,
+    pub chain_info_v2: ChainInfoV2,
     pub notif_protocols: Vec<Cow<'static, str>>,
     pub rpc_protocols: Vec<Cow<'static, str>>,
     pub version_string: Option<String>,
@@ -25,14 +25,14 @@ pub struct PeerInfo {
 impl PeerInfo {
     pub fn new(
         peer_id: PeerId,
-        chain_info: ChainInfo,
+        chain_info_v2: ChainInfoV2,
         notif_protocols: Vec<Cow<'static, str>>,
         rpc_protocols: Vec<Cow<'static, str>>,
         version_string: Option<String>,
     ) -> Self {
         Self {
             peer_id,
-            chain_info,
+            chain_info_v2,
             notif_protocols,
             rpc_protocols,
             version_string,
@@ -43,28 +43,28 @@ impl PeerInfo {
         self.peer_id.clone()
     }
 
-    pub fn chain_info(&self) -> &ChainInfo {
-        &self.chain_info
+    pub fn chain_info(&self) -> &ChainInfoV2 {
+        &self.chain_info_v2
     }
 
     pub fn block_number(&self) -> BlockNumber {
-        self.chain_info.head().number()
+        self.chain_info_v2.chain_info.head().number()
     }
 
     pub fn latest_header(&self) -> &BlockHeader {
-        self.chain_info.head()
+        self.chain_info_v2.chain_info.head()
     }
 
     pub fn block_id(&self) -> HashValue {
-        self.chain_info.head().id()
+        self.chain_info_v2.chain_info.head().id()
     }
 
     pub fn total_difficulty(&self) -> U256 {
-        self.chain_info.total_difficulty()
+        self.chain_info_v2.chain_info.total_difficulty()
     }
 
     pub fn update_chain_status(&mut self, chain_status: ChainStatus) {
-        self.chain_info.update_status(chain_status)
+        self.chain_info_v2.chain_info.update_status(chain_status)
     }
 
     /// This peer is support notification
@@ -96,7 +96,7 @@ impl PeerInfo {
     pub fn random() -> Self {
         Self {
             peer_id: PeerId::random(),
-            chain_info: ChainInfo::random(),
+            chain_info_v2: ChainInfoV2::random(),
             notif_protocols: vec![],
             rpc_protocols: vec![],
             version_string: None,

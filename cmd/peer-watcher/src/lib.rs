@@ -9,6 +9,7 @@ use starcoin_network::network_p2p_handle::Networkp2pHandle;
 use starcoin_network::{build_network_worker, NotificationMessage};
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
+use starcoin_types::startup_info::ChainInfoV2;
 use std::sync::Arc;
 
 pub fn build_lighting_network(
@@ -18,9 +19,10 @@ pub fn build_lighting_network(
     let genesis = starcoin_genesis::Genesis::load_or_build(net)?;
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
     let chain_info = genesis.execute_genesis_block(net, storage)?;
+    let chain_info_v2 = ChainInfoV2::new(chain_info.chain_id(), chain_info.genesis_hash(), chain_info.status().clone());
     build_network_worker(
         network_config,
-        chain_info,
+        chain_info_v2,
         NotificationMessage::protocols(),
         None,
         None,

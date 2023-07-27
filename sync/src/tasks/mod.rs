@@ -5,11 +5,13 @@ use crate::tasks::block_sync_task::SyncBlockData;
 use crate::tasks::inner_sync_task::InnerSyncTask;
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Error, Result};
+use std::result::Result::Ok;
 use futures::channel::mpsc::UnboundedSender;
 use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
 use network_api::{PeerId, PeerProvider, PeerSelector};
 use network_p2p_core::{NetRpcError, RpcErrorCode};
+use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::MerkleAccumulator;
 use starcoin_chain::{BlockChain, ChainReader};
@@ -32,6 +34,24 @@ use stream_task::{
 };
 
 pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {
+    fn get_best_dag_target(&self, min_difficulty: U256) -> Result<Option<AccumulatorInfo>> {
+        if let Some(best_peers) = self.peer_selector().bests(min_difficulty) {
+            // to do, here simply returns the accumulator info containing longest leaves
+            let result = match best_peers.into_iter().max_by_key(|peer_info| {
+                peer_info.chain_info_v2.dag_status.flexi_dag_accumulator_info.num_leaves
+            }) {
+                Some(peer_info) => Ok(Some(peer_info.chain_info_v2.dag_status.flexi_dag_accumulator_info)),
+                None => {
+                    debug!("failed to find the best dag target");
+                    return Ok(None);
+                }
+            };
+            return result;
+        }
+        debug!("failed to find the best dag target, since maybe no peers");
+        return Ok(None);
+    }
+
     fn get_best_target(&self, min_difficulty: U256) -> Result<Option<SyncTarget>> {
         if let Some(best_peers) = self.peer_selector().bests(min_difficulty) {
             //TODO fast verify best peers by accumulator
@@ -42,7 +62,7 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                         let update = chain_statuses
                             .iter_mut()
                             .find(|(chain_status, _peers)| {
-                                peer.chain_info().status() == chain_status
+                                peer.chain_info().chain_info.status() == chain_status
                             })
                             .map(|(_chain_status, peers)| {
                                 peers.push(peer.peer_id());
@@ -52,7 +72,7 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
 
                         if !update {
                             chain_statuses
-                                .push((peer.chain_info().status().clone(), vec![peer.peer_id()]))
+                                .push((peer.chain_info().chain_info.status().clone(), vec![peer.peer_id()]))
                         }
                         chain_statuses
                     });
@@ -117,7 +137,7 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                                 && best_target.peers.contains(&better_peer.peer_id())
                             {
                                 target = Some((
-                                    better_peer.chain_info.status().info().clone(),
+                                    better_peer.chain_info_v2.chain_info.status().info().clone(),
                                     BlockIdAndNumber {
                                         number: better_peer.latest_header().number(),
                                         id: better_peer.latest_header().id(),
@@ -134,7 +154,7 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                                 let mut block_info = None;
                                 if block_id == better_peer.block_id() {
                                     block_info =
-                                        Some(better_peer.chain_info.status().info().clone());
+                                        Some(better_peer.chain_info_v2.chain_info.status().info().clone());
                                 } else if let Some(better_block_id) = self
                                     .fetch_block_id(
                                         Some(better_peer.peer_id()),

@@ -1,4 +1,4 @@
-use anyhow::{bail, ensure, format_err, Result};
+use anyhow::{bail, ensure, Result};
 use bcs_ext::BCSCodec;
 use futures::{future::BoxFuture, FutureExt};
 use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator};

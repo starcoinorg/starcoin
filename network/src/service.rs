@@ -30,7 +30,7 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceHandler, ServiceRef, ServiceRequest,
 };
 use starcoin_txpool_api::PropagateTransactions;
-use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use starcoin_types::startup_info::{ChainInfoV2, ChainStatus};
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::SyncStatusChangeEvent;
 use std::borrow::Cow;
@@ -56,7 +56,7 @@ impl NetworkActor for NetworkActorService {}
 impl NetworkActorService {
     pub fn new<H>(
         config: Arc<NodeConfig>,
-        chain_info: ChainInfo,
+        chain_info_v2: ChainInfoV2,
         rpc: Option<(RpcInfo, ServiceRef<NetworkRpcService>)>,
         peer_message_handler: H,
     ) -> Result<Self>
@@ -65,7 +65,7 @@ impl NetworkActorService {
     {
         let (self_info, worker) = build_network_worker(
             &config.network,
-            chain_info,
+            chain_info_v2,
             config.network.supported_network_protocols(),
             rpc,
             config.metrics.registry().cloned(),
@@ -186,11 +186,11 @@ impl EventHandler<Self, Event> for NetworkActorService {
                     "Connected peer {:?}, protocol: {}, notif_protocols: {:?}, rpc_protocols: {:?}",
                     remote, protocol, notif_protocols, rpc_protocols
                 );
-                let info = match ChainInfo::decode(&generic_data) {
+                let info = match ChainInfoV2::decode(&generic_data) {
                     Ok(data) => data,
                     Err(_) => return,
                 };
-                if info.chain_id().is_barnard() {
+                if info.chain_info.chain_id().is_barnard() {
                     info!("Connected peer ver_string {:?}", version_string);
                     if let Some(ref ver_str) = version_string {
                         if !ver_str.contains(BARNARD_HARD_FORK_PEER_VERSION_STRING_PREFIX)
@@ -205,7 +205,7 @@ impl EventHandler<Self, Event> for NetworkActorService {
                         }
                     }
                 }
-                let peer_event = PeerEvent::Open(remote.into(), Box::new(info.clone()));
+                let peer_event = PeerEvent::Open(remote.into(), Box::new(info.chain_info.clone()));
                 self.inner.on_peer_connected(
                     remote.into(),
                     info,
@@ -626,7 +626,7 @@ impl Inner {
     pub(crate) fn on_peer_connected(
         &mut self,
         peer_id: PeerId,
-        chain_info: ChainInfo,
+        chain_info_v2: ChainInfoV2,
         notif_protocols: Vec<Cow<'static, str>>,
         rpc_protocols: Vec<Cow<'static, str>>,
         version_string: Option<String>,
@@ -637,17 +637,17 @@ impl Inner {
                 // avoid update chain status to old
                 // this many happend when multi protocol send repeat handhake.
                 //FIXME after PeerEvent refactor.
-                if chain_info.total_difficulty()
-                    > peer.peer_info.chain_info.status().info.total_difficulty
+                if chain_info_v2.chain_info.total_difficulty()
+                    > peer.peer_info.chain_info_v2.chain_info.status().info.total_difficulty
                 {
                     peer.peer_info
-                        .update_chain_status(chain_info.status().clone());
+                        .update_chain_status(chain_info_v2.chain_info.status().clone());
                 }
             })
             .or_insert_with(|| {
                 Peer::new(PeerInfo::new(
                     peer_id,
-                    chain_info,
+                    chain_info_v2,
                     notif_protocols,
                     rpc_protocols,
                     version_string,

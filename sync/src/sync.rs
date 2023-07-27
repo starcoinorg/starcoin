@@ -217,7 +217,10 @@ impl SyncService {
                 peer_selector.clone(),
                 network.clone(),
             ));
-            if let Some(target) =
+
+            if let Some(accumulator_info) = rpc_client.get_best_dag_target(current_block_info.get_total_difficulty())? {
+                todo!()
+            } else if let Some(target) =
                 rpc_client.get_best_target(current_block_info.get_total_difficulty())?
             {
                 info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
@@ -520,6 +523,8 @@ impl CheckSyncEvent {
 
 impl EventHandler<Self, CheckSyncEvent> for SyncService {
     fn handle_event(&mut self, msg: CheckSyncEvent, ctx: &mut ServiceContext<Self>) {
+        // comment temporarily, for the dag branch, starcoin will sync dag only
+        // it will add some logic to determine which part to sync in the future
         if let Err(e) = self.check_and_start_sync(msg.peers, msg.skip_pow_verify, msg.strategy, ctx)
         {
             error!("[sync] Check sync error: {:?}", e);

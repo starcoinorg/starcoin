@@ -8,7 +8,7 @@ use network_p2p::Event;
 use network_types::peer_info::PeerInfo;
 use starcoin_config::{NodeConfig, StarcoinOpt};
 use starcoin_peer_watcher::build_lighting_network;
-use starcoin_types::startup_info::ChainInfo;
+use starcoin_types::startup_info::ChainInfoV2;
 
 /// A lighting node, connect to peer to peer network, and monitor peers.
 fn main() {
@@ -31,10 +31,10 @@ fn main() {
                         notif_protocols,
                         rpc_protocols,
                         version_string,
-                    } => match ChainInfo::decode(&generic_data) {
-                        Ok(chain_info) => Some(PeerInfo::new(
+                    } => match ChainInfoV2::decode(&generic_data) {
+                        Ok(chain_info_v2) => Some(PeerInfo::new(
                             remote.into(),
-                            chain_info,
+                            chain_info_v2,
                             notif_protocols,
                             rpc_protocols,
                             version_string,

@@ -253,9 +253,9 @@ impl Genesis {
         )?;
         let startup_info = StartupInfo::new(genesis_chain.current_header().id());
         storage.save_startup_info(startup_info)?;
-        storage
+        Ok(storage
             .get_chain_info()?
-            .ok_or_else(|| format_err!("ChainInfo should exist after genesis block executed."))
+            .ok_or_else(|| format_err!("ChainInfo should exist after genesis block executed."))?.chain_info)
     }
 
     pub fn save<P>(&self, data_dir: P) -> Result<()>
@@ -308,13 +308,13 @@ impl Genesis {
     ) -> Result<(ChainInfo, Genesis)> {
         debug!("load startup_info.");
         let (chain_info, genesis) = match storage.get_chain_info() {
-            Ok(Some(chain_info)) => {
-                debug!("Get chain info {:?} from db", chain_info);
+            Ok(Some(chain_info_v2)) => {
+                debug!("Get chain info {:?} from db", chain_info_v2);
                 info!("Check genesis file.");
                 let genesis = Self::load_and_check_genesis(net, data_dir, false)?;
                 match storage.get_block(genesis.block().header().id()) {
                     Ok(Some(block)) => {
-                        if *genesis.block() == block && chain_info.genesis_hash() == block.id() {
+                        if *genesis.block() == block && chain_info_v2.chain_info.genesis_hash() == block.id() {
                             info!("Check genesis db block ok!");
                         } else {
                             return Err(GenesisError::GenesisVersionMismatch {
@@ -329,7 +329,7 @@ impl Genesis {
                     }
                     Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
                 }
-                (chain_info, genesis)
+                (chain_info_v2.chain_info, genesis)
             }
             Ok(None) => {
                 let genesis = Self::load_and_check_genesis(net, data_dir, true)?;
