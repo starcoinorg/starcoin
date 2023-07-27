@@ -2,7 +2,7 @@ use super::ghostdag::protocol::GhostdagManager;
 use super::reachability::{inquirer, reachability_service::MTReachabilityService};
 use crate::consensusdb::{
     prelude::FlexiDagStorage,
-    schema::{
+    schemadb::{
         DbGhostdagStore, DbHeadersStore, DbReachabilityStore, DbRelationsStore, GhostdagStore,
         HeaderStore, ReachabilityStoreReader, RelationsStore, RelationsStoreReader,
     },

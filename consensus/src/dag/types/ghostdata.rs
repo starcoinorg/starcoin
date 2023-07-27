@@ -14,7 +14,7 @@ pub struct GhostdagData {
     pub blues_anticone_sizes: HashKTypeMap,
 }
 
-#[derive(Clone, Serialize, Deserialize, Copy)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, Copy)]
 pub struct CompactGhostdagData {
     pub blue_score: u64,
     pub blue_work: BlueWorkType,

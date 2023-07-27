@@ -1,5 +1,5 @@
 use super::protocol::GhostdagManager;
-use crate::consensusdb::schema::{GhostdagStoreReader, HeaderStoreReader, RelationsStoreReader};
+use crate::consensusdb::schemadb::{GhostdagStoreReader, HeaderStoreReader, RelationsStoreReader};
 use crate::dag::reachability::reachability_service::ReachabilityService;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::blockhash::BlockHashSet;

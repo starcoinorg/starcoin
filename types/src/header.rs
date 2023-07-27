@@ -12,7 +12,7 @@ pub trait ConsensusHeader {
     fn timestamp(&self) -> u64;
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct Header {
     block_header: BlockHeader,
     parents_hash: Vec<Hash>,
@@ -47,13 +47,13 @@ impl ConsensusHeader for Header {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct HeaderWithBlockLevel {
     pub header: Arc<Header>,
     pub block_level: BlockLevel,
 }
 
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]
 pub struct CompactHeaderData {
     pub timestamp: u64,
     pub difficulty: U256,

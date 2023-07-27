@@ -1,9 +1,15 @@
+use super::schema::{KeyCodec, ValueCodec};
 use super::{
     db::DBStorage,
-    errors::StoreError,
+    error::StoreError,
     prelude::{CachedDbAccess, DirectDbWriter},
     writer::BatchDbWriter,
 };
+use crate::define_schema;
+use starcoin_types::blockhash::{
+    BlockHashMap, BlockHashes, BlockLevel, BlueWorkType, HashKTypeMap,
+};
+
 use crate::dag::types::{
     ghostdata::{CompactGhostdagData, GhostdagData},
     ordering::SortableBlock,
@@ -14,9 +20,6 @@ use itertools::{
 };
 use rocksdb::WriteBatch;
 use starcoin_crypto::HashValue as Hash;
-use starcoin_types::blockhash::{
-    BlockHashMap, BlockHashes, BlockLevel, BlueWorkType, HashKTypeMap,
-};
 use std::{cell::RefCell, cmp, iter::once, sync::Arc};
 
 pub trait GhostdagStoreReader {
@@ -149,13 +152,59 @@ impl GhostDagDataWrapper {
 pub(crate) const GHOST_DAG_STORE_CF: &str = "block-ghostdag-data";
 pub(crate) const COMPACT_GHOST_DAG_STORE_CF: &str = "compact-block-ghostdag-data";
 
+define_schema!(GhostDag, Hash, Arc<GhostdagData>, GHOST_DAG_STORE_CF);
+define_schema!(
+    CompactGhostDag,
+    Hash,
+    CompactGhostdagData,
+    COMPACT_GHOST_DAG_STORE_CF
+);
+
+impl KeyCodec<GhostDag> for Hash {
+    fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
+        Ok(self.to_vec())
+    }
+
+    fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
+        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    }
+}
+impl ValueCodec<GhostDag> for Arc<GhostdagData> {
+    fn encode_value(&self) -> Result<Vec<u8>, StoreError> {
+        bcs_ext::to_bytes(&self).map_err(|e| StoreError::EncodeError(e.to_string()))
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self, StoreError> {
+        bcs_ext::from_bytes(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    }
+}
+
+impl KeyCodec<CompactGhostDag> for Hash {
+    fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
+        Ok(self.to_vec())
+    }
+
+    fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
+        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    }
+}
+impl ValueCodec<CompactGhostDag> for CompactGhostdagData {
+    fn encode_value(&self) -> Result<Vec<u8>, StoreError> {
+        bcs_ext::to_bytes(&self).map_err(|e| StoreError::EncodeError(e.to_string()))
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self, StoreError> {
+        bcs_ext::from_bytes(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    }
+}
+
 /// A DB + cache implementation of `GhostdagStore` trait, with concurrency support.
 #[derive(Clone)]
 pub struct DbGhostdagStore {
     db: Arc<DBStorage>,
     level: BlockLevel,
-    access: CachedDbAccess<Hash, Arc<GhostdagData>>,
-    compact_access: CachedDbAccess<Hash, CompactGhostdagData>,
+    access: CachedDbAccess<GhostDag>,
+    compact_access: CachedDbAccess<CompactGhostDag>,
 }
 
 impl DbGhostdagStore {
@@ -163,8 +212,8 @@ impl DbGhostdagStore {
         Self {
             db: Arc::clone(&db),
             level,
-            access: CachedDbAccess::new(db.clone(), cache_size, GHOST_DAG_STORE_CF),
-            compact_access: CachedDbAccess::new(db, cache_size, COMPACT_GHOST_DAG_STORE_CF),
+            access: CachedDbAccess::new(db.clone(), cache_size),
+            compact_access: CachedDbAccess::new(db, cache_size),
         }
     }
 

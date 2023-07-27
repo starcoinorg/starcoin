@@ -1,12 +1,13 @@
 use rocksdb::WriteBatch;
 use starcoin_storage::storage::InnerStore;
 
-use super::{db::DBStorage, errors::StoreError};
+use super::schema::{KeyCodec, Schema, ValueCodec};
+use super::{db::DBStorage, error::StoreError};
 
 /// Abstraction over direct/batched DB writing
 pub trait DbWriter {
-    fn put(&mut self, cf_name: &str, key: &[u8], value: Vec<u8>) -> Result<(), StoreError>;
-    fn delete(&mut self, cf_name: &str, key: &[u8]) -> Result<(), StoreError>;
+    fn put<S: Schema>(&mut self, key: &S::Key, value: &S::Value) -> Result<(), StoreError>;
+    fn delete<S: Schema>(&mut self, key: &S::Key) -> Result<(), StoreError>;
 }
 
 pub struct DirectDbWriter<'a> {
@@ -20,15 +21,18 @@ impl<'a> DirectDbWriter<'a> {
 }
 
 impl DbWriter for DirectDbWriter<'_> {
-    fn put(&mut self, cf_name: &str, key: &[u8], value: Vec<u8>) -> Result<(), StoreError> {
+    fn put<S: Schema>(&mut self, key: &S::Key, value: &S::Value) -> Result<(), StoreError> {
+        let bin_key = key.encode_key()?;
+        let bin_data = value.encode_value()?;
         self.db
-            .put(cf_name, key.to_owned(), value)
+            .put(S::COLUMN_FAMILY, bin_key, bin_data)
             .map_err(|e| StoreError::DBIoError(e.to_string()))
     }
 
-    fn delete(&mut self, cf_name: &str, key: &[u8]) -> Result<(), StoreError> {
+    fn delete<S: Schema>(&mut self, key: &S::Key) -> Result<(), StoreError> {
+        let key = key.encode_key()?;
         self.db
-            .remove(cf_name, key.to_owned())
+            .remove(S::COLUMN_FAMILY, key)
             .map_err(|e| StoreError::DBIoError(e.to_string()))
     }
 }
@@ -44,12 +48,15 @@ impl<'a> BatchDbWriter<'a> {
 }
 
 impl DbWriter for BatchDbWriter<'_> {
-    fn put(&mut self, _cf_name: &str, key: &[u8], value: Vec<u8>) -> Result<(), StoreError> {
+    fn put<S: Schema>(&mut self, key: &S::Key, value: &S::Value) -> Result<(), StoreError> {
+        let key = key.encode_key()?;
+        let value = value.encode_value()?;
         self.batch.put(key, value);
         Ok(())
     }
 
-    fn delete(&mut self, _cf_name: &str, key: &[u8]) -> Result<(), StoreError> {
+    fn delete<S: Schema>(&mut self, key: &S::Key) -> Result<(), StoreError> {
+        let key = key.encode_key()?;
         self.batch.delete(key);
         Ok(())
     }
@@ -57,12 +64,12 @@ impl DbWriter for BatchDbWriter<'_> {
 
 impl<T: DbWriter> DbWriter for &mut T {
     #[inline]
-    fn put(&mut self, cf_name: &str, key: &[u8], value: Vec<u8>) -> Result<(), StoreError> {
-        (*self).put(cf_name, key, value)
+    fn put<S: Schema>(&mut self, key: &S::Key, value: &S::Value) -> Result<(), StoreError> {
+        (*self).put::<S>(key, value)
     }
 
     #[inline]
-    fn delete(&mut self, cf_name: &str, key: &[u8]) -> Result<(), StoreError> {
-        (*self).delete(cf_name, key)
+    fn delete<S: Schema>(&mut self, key: &S::Key) -> Result<(), StoreError> {
+        (*self).delete::<S>(key)
     }
 }

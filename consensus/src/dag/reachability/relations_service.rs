@@ -1,4 +1,4 @@
-use crate::consensusdb::{prelude::StoreError, schema::RelationsStoreReader};
+use crate::consensusdb::{prelude::StoreError, schemadb::RelationsStoreReader};
 use parking_lot::RwLock;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::blockhash::BlockHashes;
