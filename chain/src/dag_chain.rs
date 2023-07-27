@@ -1,15 +1,15 @@
 use std::sync::Arc;
 
 use anyhow::bail;
-use dag_consensus::blockdag::BlockDAG;
-use dag_database::prelude::{FlexiDagStorage, FlexiDagStorageConfig};
 use starcoin_accumulator::Accumulator;
 use starcoin_accumulator::{node::AccumulatorStoreType, MerkleAccumulator};
 use starcoin_config::NodeConfig;
+use starcoin_consensus::{BlockDAG, FlexiDagStorage, FlexiDagStorageConfig};
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_network_rpc_api::dag_protocol::{
-    GetDagAccumulatorLeaves, TargetDagAccumulatorLeaf, TargetDagAccumulatorLeafDetail, GetTargetDagAccumulatorLeafDetail, RelationshipPair,
+    GetDagAccumulatorLeaves, GetTargetDagAccumulatorLeafDetail, RelationshipPair,
+    TargetDagAccumulatorLeaf, TargetDagAccumulatorLeafDetail,
 };
 use starcoin_storage::storage::CodecKVStore;
 use starcoin_storage::{flexi_dag::SyncFlexiDagSnapshotStorage, Store};
@@ -143,9 +143,7 @@ impl DagBlockChain {
                     .child_hashes
                     .into_iter()
                     .fold([].to_vec(), |mut pairs, child| {
-                        let parents = dag
-                            .get_parents(child)
-                            .expect("a child must have parents");
+                        let parents = dag.get_parents(child).expect("a child must have parents");
                         parents.into_iter().for_each(|parent| {
                             pairs.push(RelationshipPair { parent, child });
                         });

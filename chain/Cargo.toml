@@ -23,8 +23,6 @@ starcoin-types = { package = "starcoin-types", workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-storage = { workspace = true }
 thiserror = { workspace = true }
-dag-database = { workspace = true }
-dag-consensus = { workspace = true }
 starcoin-network-rpc-api = { workspace = true }
 
 [dev-dependencies]
@@ -42,8 +40,6 @@ stdlib = { workspace = true }
 stest = { workspace = true }
 test-helper = { workspace = true }
 tokio = { features = ["full"], workspace = true }
-dag-database = { workspace = true }
-dag-consensus = { workspace = true }
 starcoin-network-rpc-api = { workspace = true }
 
 [features]
