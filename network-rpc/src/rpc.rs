@@ -313,18 +313,18 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         req: dag_protocol::GetDagAccumulatorLeaves,
     ) -> BoxFuture<Result<Vec<dag_protocol::TargetDagAccumulatorLeaf>>> {
         let chain_service = self.chain_service.clone();
-        let fut = async move {
-            chain_service.get_dag_accumulator_leaves(req).await
-        };
+        let fut = async move { chain_service.get_dag_accumulator_leaves(req).await };
         Box::pin(fut)
     }
 
     fn get_accumulator_leaf_detail(
         &self,
         _peer_id: PeerId,
-        _req: dag_protocol::GetTargetDagAccumulatorLeafDetail,
-    ) -> BoxFuture<Result<Option<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>>>> {
-        todo!()
+        req: dag_protocol::GetTargetDagAccumulatorLeafDetail,
+    ) -> BoxFuture<Result<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>>> {
+        let chain_service = self.chain_service.clone();
+        let fut = async move { chain_service.get_dag_accumulator_leaves_detail(req).await };
+        Box::pin(fut)
     }
 
     fn get_dag_block_info(

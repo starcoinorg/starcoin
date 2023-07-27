@@ -140,7 +140,14 @@ pub trait ChainAsyncService:
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
-    async fn get_dag_accumulator_leaves(&self, req: dag_protocol::GetDagAccumulatorLeaves) -> Result<Vec<dag_protocol::TargetDagAccumulatorLeaf>>;
+    async fn get_dag_accumulator_leaves(
+        &self,
+        req: dag_protocol::GetDagAccumulatorLeaves,
+    ) -> Result<Vec<dag_protocol::TargetDagAccumulatorLeaf>>;
+    async fn get_dag_accumulator_leaves_detail(
+        &self,
+        req: dag_protocol::GetTargetDagAccumulatorLeafDetail,
+    ) -> Result<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>>;
 }
 
 #[async_trait::async_trait]
@@ -182,16 +189,37 @@ where
         }
     }
 
-    async fn get_dag_accumulator_leaves(&self, req: dag_protocol::GetDagAccumulatorLeaves) -> Result<Vec<dag_protocol::TargetDagAccumulatorLeaf>> {
-        if let ChainResponse::TargetDagAccumulatorLeaf(leaves) =
-            self.send(ChainRequest::GetDagAccumulatorLeaves {
+    async fn get_dag_accumulator_leaves(
+        &self,
+        req: dag_protocol::GetDagAccumulatorLeaves,
+    ) -> Result<Vec<dag_protocol::TargetDagAccumulatorLeaf>> {
+        if let ChainResponse::TargetDagAccumulatorLeaf(leaves) = self
+            .send(ChainRequest::GetDagAccumulatorLeaves {
                 start_index: req.accumulator_leaf_index,
                 batch_size: req.batch_size,
-            }).await??
+            })
+            .await??
         {
             Ok(leaves)
         } else {
-            bail!("get_blocks response type error.")
+            bail!("get_dag_accumulator_leaves response type error.")
+        }
+    }
+
+    async fn get_dag_accumulator_leaves_detail(
+        &self,
+        req: dag_protocol::GetTargetDagAccumulatorLeafDetail,
+    ) -> Result<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>> {
+        if let ChainResponse::TargetDagAccumulatorLeafDetail(details) = self
+            .send(ChainRequest::GetTargetDagAccumulatorLeafDetail {
+                leaf_index: req.leaf_index,
+                batch_size: req.batch_size,
+            })
+            .await??
+        {
+            Ok(details)
+        } else {
+            bail!("get_dag_accumulator_leaves response type error.")
         }
     }
 

@@ -11,7 +11,9 @@ use starcoin_chain_api::{
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_network_rpc_api::dag_protocol::{GetDagAccumulatorLeaves, GetTargetDagAccumulatorLeafDetail};
+use starcoin_network_rpc_api::dag_protocol::{
+    GetDagAccumulatorLeaves, GetTargetDagAccumulatorLeafDetail,
+};
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
@@ -256,11 +258,12 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 leaf_index,
                 batch_size,
             } => Ok(ChainResponse::TargetDagAccumulatorLeafDetail(
-                self.dag_chain
-                    .get_target_dag_accumulator_leaf_detail(GetTargetDagAccumulatorLeafDetail {
+                self.dag_chain.get_target_dag_accumulator_leaf_detail(
+                    GetTargetDagAccumulatorLeafDetail {
                         leaf_index,
                         batch_size,
-                    })?,
+                    },
+                )?,
             )),
         }
     }
