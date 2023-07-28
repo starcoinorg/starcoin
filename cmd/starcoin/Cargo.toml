@@ -52,6 +52,7 @@ starcoin-vm-types = { workspace = true }
 stdlib = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 vm-status-translator = { workspace = true }
+num_cpus = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }
