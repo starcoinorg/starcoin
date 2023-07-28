@@ -16,8 +16,8 @@ use starcoin_service_registry::{
     RegistryAsyncService, RegistryService, ServiceContext, ServiceFactory, ServiceRef,
 };
 use starcoin_storage::block_info::BlockInfoStore;
-use starcoin_storage::{BlockStore, Storage, DagBlockStore};
-use starcoin_types::startup_info::{ChainInfo, ChainStatus, DagChainStatus, ChainStateInfo};
+use starcoin_storage::{BlockStore, DagBlockStore, Storage};
+use starcoin_types::startup_info::{ChainInfo, ChainStateInfo, ChainStatus, DagChainStatus};
 use std::any::Any;
 use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
@@ -199,7 +199,7 @@ impl ServiceFactory<NetworkActorService> for MockNetworkServiceFactory {
             chain_info: ChainInfo::new(config.net().chain_id(), genesis_hash, chain_status.clone()),
             dag_status: DagChainStatus {
                 flexi_dag_accumulator_info: storage.get_dag_accumulator_info()?,
-            }
+            },
         };
         let actor_service =
             NetworkActorService::new(config, chain_state_info, rpc, peer_message_handle.clone())?;

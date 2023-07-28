@@ -107,7 +107,8 @@ pub fn build_network_worker(
         ..NetworkConfiguration::default()
     };
     // protocol id is chain/{chain_id}, `RegisteredProtocol` will append `/starcoin` prefix
-    let protocol_id = ProtocolId::from(format!("chain/{}", chain_info.chain_info.chain_id()).as_str());
+    let protocol_id =
+        ProtocolId::from(format!("chain/{}", chain_info.chain_info.chain_id()).as_str());
     debug!("Init network worker with config: {:?}", config);
 
     let worker: NetworkWorker<Networkp2pHandle> = NetworkWorker::new(Params::new(

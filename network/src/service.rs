@@ -638,7 +638,13 @@ impl Inner {
                 // this many happend when multi protocol send repeat handhake.
                 //FIXME after PeerEvent refactor.
                 if chain_state_info.chain_info.total_difficulty()
-                    > peer.peer_info.chain_state_info.chain_info.status().info.total_difficulty
+                    > peer
+                        .peer_info
+                        .chain_state_info
+                        .chain_info
+                        .status()
+                        .info
+                        .total_difficulty
                 {
                     peer.peer_info
                         .update_chain_status(chain_state_info.chain_info.status().clone());

@@ -19,7 +19,11 @@ pub fn build_lighting_network(
     let genesis = starcoin_genesis::Genesis::load_or_build(net)?;
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
     let chain_info = genesis.execute_genesis_block(net, storage)?;
-    let chain_state_info = ChainStateInfo::new(chain_info.chain_id(), chain_info.genesis_hash(), chain_info.status().clone());
+    let chain_state_info = ChainStateInfo::new(
+        chain_info.chain_id(),
+        chain_info.genesis_hash(),
+        chain_info.status().clone(),
+    );
     build_network_worker(
         network_config,
         chain_state_info,

@@ -187,7 +187,7 @@ impl Sample for ChainStatus {
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct DagChainStatus {
     pub flexi_dag_accumulator_info: AccumulatorInfo,
-} 
+}
 
 impl DagChainStatus {
     pub fn new(flexi_dag_accumulator_info: AccumulatorInfo) -> Self {
@@ -204,7 +204,8 @@ impl DagChainStatus {
                 vec![],
                 rand::random::<u64>(),
                 rand::random::<u64>(),
-            )}
+            ),
+        }
     }
 
     pub fn sample() -> Self {

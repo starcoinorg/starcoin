@@ -20,13 +20,17 @@ use flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagSnapshotStorage, SyncFlexiDagS
 use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
-use starcoin_accumulator::{node::AccumulatorStoreType, AccumulatorTreeStore, accumulator_info::AccumulatorInfo};
+use starcoin_accumulator::{
+    accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, AccumulatorTreeStore,
+};
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
     contract_event::ContractEvent,
-    startup_info::{ChainInfo, ChainStatus, SnapshotRange, StartupInfo, ChainStateInfo, DagChainStatus},
+    startup_info::{
+        ChainInfo, ChainStateInfo, ChainStatus, DagChainStatus, SnapshotRange, StartupInfo,
+    },
     transaction::{RichTransactionInfo, Transaction},
 };
 //use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
@@ -397,7 +401,7 @@ impl DagBlockStore for Storage {
         // initialize the block accumulator
         let startup_info = match self.get_flexi_dag_startup_info()? {
             Some(startup_info) => startup_info,
-            None => bail!("failed to get dag startup info")
+            None => bail!("failed to get dag startup info"),
         };
 
         // let accmulator_info = sync_flexi_dag_store.get_snapshot_storage().get(startup_info.main);
@@ -445,17 +449,19 @@ impl BlockStore for Storage {
             format_err!("Startup block info {:?} should exist", startup_info.main)
         })?;
 
-        let flexi_dag_accumulator_info = self.get_dag_accumulator_info().unwrap_or(AccumulatorInfo::default());
+        let flexi_dag_accumulator_info = self
+            .get_dag_accumulator_info()
+            .unwrap_or(AccumulatorInfo::default());
         let chain_info = ChainInfo::new(
             head_block.chain_id(),
             genesis_hash,
             ChainStatus::new(head_block, head_block_info),
         );
-        Ok(Some(ChainStateInfo { 
-            chain_info, 
+        Ok(Some(ChainStateInfo {
+            chain_info,
             dag_status: DagChainStatus {
-                flexi_dag_accumulator_info
-            }
+                flexi_dag_accumulator_info,
+            },
         }))
     }
 

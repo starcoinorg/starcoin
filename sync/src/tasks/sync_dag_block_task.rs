@@ -2,10 +2,6 @@ use anyhow::{Ok, Result};
 use futures::{future::BoxFuture, FutureExt};
 use starcoin_accumulator::{accumulator_info::AccumulatorInfo, MerkleAccumulator};
 use starcoin_network_rpc_api::dag_protocol::SyncDagBlockInfo;
-use starcoin_storage::{
-    flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagSnapshotStorage},
-    storage::CodecKVStore,
-};
 use std::sync::Arc;
 use stream_task::{CollectorState, TaskResultCollector, TaskState};
 
@@ -90,7 +86,7 @@ impl SyncDagBlockCollector {
 impl TaskResultCollector<SyncDagBlockInfo> for SyncDagBlockCollector {
     type Output = ();
 
-    fn collect(&mut self, mut item: SyncDagBlockInfo) -> anyhow::Result<CollectorState> {
+    fn collect(&mut self, mut _item: SyncDagBlockInfo) -> anyhow::Result<CollectorState> {
         Ok(CollectorState::Enough)
     }
 

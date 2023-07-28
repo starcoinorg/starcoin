@@ -255,7 +255,8 @@ impl Genesis {
         storage.save_startup_info(startup_info)?;
         Ok(storage
             .get_chain_info()?
-            .ok_or_else(|| format_err!("ChainInfo should exist after genesis block executed."))?.chain_info)
+            .ok_or_else(|| format_err!("ChainInfo should exist after genesis block executed."))?
+            .chain_info)
     }
 
     pub fn save<P>(&self, data_dir: P) -> Result<()>
@@ -314,7 +315,9 @@ impl Genesis {
                 let genesis = Self::load_and_check_genesis(net, data_dir, false)?;
                 match storage.get_block(genesis.block().header().id()) {
                     Ok(Some(block)) => {
-                        if *genesis.block() == block && chain_state_info.chain_info.genesis_hash() == block.id() {
+                        if *genesis.block() == block
+                            && chain_state_info.chain_info.genesis_hash() == block.id()
+                        {
                             info!("Check genesis db block ok!");
                         } else {
                             return Err(GenesisError::GenesisVersionMismatch {

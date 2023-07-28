@@ -1,27 +1,28 @@
 use anyhow::{format_err, Result};
 use futures::{future::BoxFuture, FutureExt};
 use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator};
-use starcoin_network_rpc_api::dag_protocol::TargetDagAccumulatorLeaf;
+use starcoin_network_rpc_api::dag_protocol::{self, TargetDagAccumulatorLeaf};
 use starcoin_storage::{flexi_dag::SyncFlexiDagSnapshotStorage, storage::CodecKVStore};
 use std::sync::Arc;
 use stream_task::{CollectorState, TaskResultCollector, TaskState};
 
-use super::sync_dag_protocol_trait::PeerSynDagAccumulator;
+use crate::verified_rpc_client::VerifiedRpcClient;
 
 #[derive(Clone)]
 pub struct FindAncestorTask {
     start_leaf_number: u64,
-    fetcher: Arc<dyn PeerSynDagAccumulator>,
+    fetcher: Arc<VerifiedRpcClient>,
     batch_size: u64,
 }
 impl FindAncestorTask {
-    pub(crate) fn new<F>(current_leaf_numeber: u64, target_leaf_numeber: u64, fetcher: F) -> Self
-    where
-        F: PeerSynDagAccumulator + 'static,
-    {
+    pub(crate) fn new(
+        current_leaf_numeber: u64,
+        target_leaf_numeber: u64,
+        fetcher: Arc<VerifiedRpcClient>,
+    ) -> Self {
         FindAncestorTask {
             start_leaf_number: std::cmp::min(current_leaf_numeber, target_leaf_numeber),
-            fetcher: Arc::new(fetcher),
+            fetcher,
             batch_size: 3,
         }
     }
@@ -32,10 +33,12 @@ impl TaskState for FindAncestorTask {
 
     fn new_sub_task(self) -> BoxFuture<'static, Result<Vec<Self::Item>>> {
         async move {
-            let current_number = self.start_leaf_number;
             let target_accumulator_leaves = self
                 .fetcher
-                .get_sync_dag_asccumulator_leaves(None, self.start_leaf_number, self.batch_size)
+                .get_dag_accumulator_leaves(dag_protocol::GetDagAccumulatorLeaves {
+                    accumulator_leaf_index: self.start_leaf_number,
+                    batch_size: self.batch_size,
+                })
                 .await?;
             Ok(target_accumulator_leaves)
         }
