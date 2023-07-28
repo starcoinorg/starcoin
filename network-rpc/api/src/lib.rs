@@ -297,7 +297,7 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         &self,
         peer_id: PeerId,
         req: dag_protocol::GetTargetDagAccumulatorLeafDetail,
-    ) -> BoxFuture<Result<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>>>;
+    ) -> BoxFuture<Result<Option<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>>>>;
     fn get_dag_block_info(
         &self,
         peer_id: PeerId,

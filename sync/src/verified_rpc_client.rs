@@ -424,9 +424,15 @@ impl VerifiedRpcClient {
     pub async fn get_accumulator_leaf_detail(
         &self,
         req: dag_protocol::GetTargetDagAccumulatorLeafDetail,
-    ) -> Result<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>> {
+    ) -> Result<Option<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>>> {
         let peer_id = self.select_a_peer()?;
-        self.client.get_accumulator_leaf_detail(peer_id, req).await
+        match self.client.get_accumulator_leaf_detail(peer_id, req).await {
+            Ok(result) => Ok(result),
+            Err(error) => {
+                warn!("get_accumulator_leaf_detail return None, error: {}", error.to_string());
+                Ok(None)
+            },
+        }
     }
 
     pub async fn get_dag_block_info(

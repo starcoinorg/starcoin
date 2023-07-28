@@ -321,7 +321,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         req: dag_protocol::GetTargetDagAccumulatorLeafDetail,
-    ) -> BoxFuture<Result<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>>> {
+    ) -> BoxFuture<Result<Option<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>>>> {
         let chain_service = self.chain_service.clone();
         let fut = async move { chain_service.get_dag_accumulator_leaves_detail(req).await };
         Box::pin(fut)

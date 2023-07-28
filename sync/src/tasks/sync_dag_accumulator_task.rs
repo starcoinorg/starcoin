@@ -3,13 +3,15 @@ use bcs_ext::BCSCodec;
 use futures::{future::BoxFuture, FutureExt};
 use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator};
 use starcoin_crypto::HashValue;
-use starcoin_network_rpc_api::dag_protocol::TargetDagAccumulatorLeafDetail;
+use starcoin_network_rpc_api::dag_protocol::{TargetDagAccumulatorLeafDetail, self};
 use starcoin_storage::{
     flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagSnapshotStorage},
     storage::CodecKVStore,
 };
 use std::sync::Arc;
 use stream_task::{CollectorState, TaskResultCollector, TaskState};
+
+use crate::verified_rpc_client::VerifiedRpcClient;
 
 use super::sync_dag_protocol_trait::PeerSynDagAccumulator;
 
@@ -18,18 +20,15 @@ pub struct SyncDagAccumulatorTask {
     leaf_index: u64,
     batch_size: u64,
     target_index: u64,
-    fetcher: Arc<dyn PeerSynDagAccumulator>,
+    fetcher: Arc<VerifiedRpcClient>,
 }
 impl SyncDagAccumulatorTask {
-    pub fn new<F>(leaf_index: u64, batch_size: u64, target_index: u64, fetcher: F) -> Self
-    where
-        F: PeerSynDagAccumulator + 'static,
-    {
+    pub fn new(leaf_index: u64, batch_size: u64, target_index: u64, fetcher: Arc<VerifiedRpcClient>) -> Self {
         SyncDagAccumulatorTask {
             leaf_index,
             batch_size,
             target_index,
-            fetcher: Arc::new(fetcher),
+            fetcher,
         }
     }
 }
@@ -41,7 +40,10 @@ impl TaskState for SyncDagAccumulatorTask {
         async move {
             let target_details = match self
                 .fetcher
-                .get_accumulator_leaf_detail(None, self.leaf_index, self.batch_size)
+                .get_accumulator_leaf_detail(dag_protocol::GetTargetDagAccumulatorLeafDetail {
+                    leaf_index: self.leaf_index,
+                    batch_size: self.batch_size,
+                })
                 .await?
             {
                 Some(details) => details,

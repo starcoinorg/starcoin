@@ -147,7 +147,7 @@ pub trait ChainAsyncService:
     async fn get_dag_accumulator_leaves_detail(
         &self,
         req: dag_protocol::GetTargetDagAccumulatorLeafDetail,
-    ) -> Result<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>>;
+    ) -> Result<Option<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>>>;
 }
 
 #[async_trait::async_trait]
@@ -209,7 +209,7 @@ where
     async fn get_dag_accumulator_leaves_detail(
         &self,
         req: dag_protocol::GetTargetDagAccumulatorLeafDetail,
-    ) -> Result<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>> {
+    ) -> Result<Option<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>>> {
         if let ChainResponse::TargetDagAccumulatorLeafDetail(details) = self
             .send(ChainRequest::GetTargetDagAccumulatorLeafDetail {
                 leaf_index: req.leaf_index,
@@ -217,9 +217,9 @@ where
             })
             .await??
         {
-            Ok(details)
+            Ok(Some(details))
         } else {
-            bail!("get_dag_accumulator_leaves response type error.")
+            Ok(None)
         }
     }
 
