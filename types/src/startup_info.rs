@@ -15,14 +15,14 @@ use std::fmt;
 use std::fmt::Formatter;
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
-pub struct ChainInfoV2 {
+pub struct ChainStateInfo {
     pub chain_info: ChainInfo,
     pub dag_status: DagChainStatus,
 }
 
-impl ChainInfoV2 {
+impl ChainStateInfo {
     pub fn new(chain_id: ChainId, genesis_hash: HashValue, status: ChainStatus) -> Self {
-        ChainInfoV2 {
+        ChainStateInfo {
             chain_info: ChainInfo::new(chain_id, genesis_hash, status),
             dag_status: DagChainStatus {
                 flexi_dag_accumulator_info: AccumulatorInfo::default(), // dag todo
@@ -36,7 +36,7 @@ impl ChainInfoV2 {
         }
     }
 }
-impl std::fmt::Display for ChainInfoV2 {
+impl std::fmt::Display for ChainStateInfo {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,

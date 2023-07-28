@@ -17,7 +17,7 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage, DagBlockStore};
-use starcoin_types::startup_info::{ChainInfo, ChainStatus, DagChainStatus, ChainInfoV2};
+use starcoin_types::startup_info::{ChainInfo, ChainStatus, DagChainStatus, ChainStateInfo};
 use std::any::Any;
 use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
@@ -195,14 +195,14 @@ impl ServiceFactory<NetworkActorService> for MockNetworkServiceFactory {
             .get_block_info(head_block_hash)?
             .ok_or_else(|| format_err!("can't get block info by hash {}", head_block_hash))?;
         let chain_status = ChainStatus::new(head_block_header, head_block_info);
-        let chain_info_v2 = ChainInfoV2 {
+        let chain_state_info = ChainStateInfo {
             chain_info: ChainInfo::new(config.net().chain_id(), genesis_hash, chain_status.clone()),
             dag_status: DagChainStatus {
                 flexi_dag_accumulator_info: storage.get_dag_accumulator_info()?,
             }
         };
         let actor_service =
-            NetworkActorService::new(config, chain_info_v2, rpc, peer_message_handle.clone())?;
+            NetworkActorService::new(config, chain_state_info, rpc, peer_message_handle.clone())?;
         let network_service = actor_service.network_service();
         let network_async_service = NetworkServiceRef::new(network_service, ctx.self_ref());
         // set self sync status to synced for test.

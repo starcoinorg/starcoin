@@ -10,7 +10,7 @@ use network_p2p::business_layer_handle::HandshakeResult;
 use network_p2p::{business_layer_handle::BusinessLayerHandle, protocol::rep, PeerId};
 use sc_peerset::ReputationChange;
 use serde::{Deserialize, Serialize};
-use starcoin_types::startup_info::{ChainInfoV2, ChainStatus};
+use starcoin_types::startup_info::{ChainStateInfo, ChainStatus};
 
 /// Current protocol version.
 pub(crate) const CURRENT_VERSION: u32 = 6;
@@ -29,7 +29,7 @@ pub struct Status {
     /// Tell other peer which rpc api we support.
     pub rpc_protocols: Vec<Cow<'static, str>>,
     /// the generic data related to the peer
-    pub info: ChainInfoV2,
+    pub info: ChainStateInfo,
 }
 
 pub struct Networkp2pHandle {
@@ -37,7 +37,7 @@ pub struct Networkp2pHandle {
 }
 
 impl Networkp2pHandle {
-    pub fn new(chain_info: ChainInfoV2) -> Self {
+    pub fn new(chain_info: ChainStateInfo) -> Self {
         let status = Status {
             version: CURRENT_VERSION,
             min_supported_version: MIN_VERSION,
@@ -108,7 +108,7 @@ impl BusinessLayerHandle for Networkp2pHandle {
     }
 
     fn update_generic_data(&mut self, peer_info: &[u8]) -> Result<(), anyhow::Error> {
-        match ChainInfoV2::decode(peer_info) {
+        match ChainStateInfo::decode(peer_info) {
             std::result::Result::Ok(other_chain_info) => {
                 self.status.info = other_chain_info;
                 Ok(())

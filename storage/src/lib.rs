@@ -26,7 +26,7 @@ use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
     contract_event::ContractEvent,
-    startup_info::{ChainInfo, ChainStatus, SnapshotRange, StartupInfo, ChainInfoV2, DagChainStatus},
+    startup_info::{ChainInfo, ChainStatus, SnapshotRange, StartupInfo, ChainStateInfo, DagChainStatus},
     transaction::{RichTransactionInfo, Transaction},
 };
 //use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
@@ -209,7 +209,7 @@ pub trait BlockStore {
 
     fn save_genesis(&self, genesis_hash: HashValue) -> Result<()>;
 
-    fn get_chain_info(&self) -> Result<Option<ChainInfoV2>>;
+    fn get_chain_info(&self) -> Result<Option<ChainStateInfo>>;
 
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>>;
 
@@ -429,7 +429,7 @@ impl BlockStore for Storage {
         self.chain_info_storage.save_genesis(genesis_hash)
     }
 
-    fn get_chain_info(&self) -> Result<Option<ChainInfoV2>> {
+    fn get_chain_info(&self) -> Result<Option<ChainStateInfo>> {
         let genesis_hash = match self.get_genesis()? {
             Some(genesis_hash) => genesis_hash,
             None => return Ok(None),
@@ -451,7 +451,7 @@ impl BlockStore for Storage {
             genesis_hash,
             ChainStatus::new(head_block, head_block_info),
         );
-        Ok(Some(ChainInfoV2 { 
+        Ok(Some(ChainStateInfo { 
             chain_info, 
             dag_status: DagChainStatus {
                 flexi_dag_accumulator_info

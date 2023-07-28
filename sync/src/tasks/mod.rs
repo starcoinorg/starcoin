@@ -38,9 +38,9 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
         if let Some(best_peers) = self.peer_selector().bests(min_difficulty) {
             // to do, here simply returns the accumulator info containing longest leaves
             let result = match best_peers.into_iter().max_by_key(|peer_info| {
-                peer_info.chain_info_v2.dag_status.flexi_dag_accumulator_info.num_leaves
+                peer_info.chain_state_info.dag_status.flexi_dag_accumulator_info.num_leaves
             }) {
-                Some(peer_info) => Ok(Some(peer_info.chain_info_v2.dag_status.flexi_dag_accumulator_info)),
+                Some(peer_info) => Ok(Some(peer_info.chain_state_info.dag_status.flexi_dag_accumulator_info)),
                 None => {
                     debug!("failed to find the best dag target");
                     return Ok(None);
@@ -137,7 +137,7 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                                 && best_target.peers.contains(&better_peer.peer_id())
                             {
                                 target = Some((
-                                    better_peer.chain_info_v2.chain_info.status().info().clone(),
+                                    better_peer.chain_state_info.chain_info.status().info().clone(),
                                     BlockIdAndNumber {
                                         number: better_peer.latest_header().number(),
                                         id: better_peer.latest_header().id(),
@@ -154,7 +154,7 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                                 let mut block_info = None;
                                 if block_id == better_peer.block_id() {
                                     block_info =
-                                        Some(better_peer.chain_info_v2.chain_info.status().info().clone());
+                                        Some(better_peer.chain_state_info.chain_info.status().info().clone());
                                 } else if let Some(better_block_id) = self
                                     .fetch_block_id(
                                         Some(better_peer.peer_id()),

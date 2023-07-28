@@ -7,7 +7,7 @@ use network_p2p_types::peer_id::PeerId;
 use network_types::peer_info::PeerInfo;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_types::startup_info::{ChainInfoV2, ChainStatus};
+use starcoin_types::startup_info::{ChainStateInfo, ChainStatus};
 use starcoin_types::U256;
 
 #[test]
@@ -34,28 +34,28 @@ fn test_peer_selector() {
     let peers = vec![
         PeerInfo::new(
             PeerId::random(),
-            ChainInfoV2::new(1.into(), HashValue::zero(), mock_chain_status(100.into())),
+            ChainStateInfo::new(1.into(), HashValue::zero(), mock_chain_status(100.into())),
             vec![],
             vec![],
             None,
         ),
         PeerInfo::new(
             PeerId::random(),
-            ChainInfoV2::new(1.into(), HashValue::zero(), mock_chain_status(99.into())),
+            ChainStateInfo::new(1.into(), HashValue::zero(), mock_chain_status(99.into())),
             vec![],
             vec![],
             None,
         ),
         PeerInfo::new(
             PeerId::random(),
-            ChainInfoV2::new(1.into(), HashValue::zero(), mock_chain_status(100.into())),
+            ChainStateInfo::new(1.into(), HashValue::zero(), mock_chain_status(100.into())),
             vec![],
             vec![],
             None,
         ),
         PeerInfo::new(
             PeerId::random(),
-            ChainInfoV2::new(1.into(), HashValue::zero(), mock_chain_status(1.into())),
+            ChainStateInfo::new(1.into(), HashValue::zero(), mock_chain_status(1.into())),
             vec![],
             vec![],
             None,
