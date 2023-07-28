@@ -189,7 +189,11 @@ impl DBUpgrade {
             (StorageVersion::V2, StorageVersion::V3) => {
                 Self::db_upgrade_v2_v3(instance)?;
             }
-            (StorageVersion::V3, StorageVersion::V4) => {
+            (StorageVersion::V3, StorageVersion::V4) | 
+            (StorageVersion::V1, StorageVersion::V4) | 
+            (StorageVersion::V2, StorageVersion::V4) 
+            => {
+                // just for testing. todo
                 Self::db_upgrade_v3_v4(instance)?;
             }
             _ => bail!(
