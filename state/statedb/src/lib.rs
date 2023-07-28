@@ -392,7 +392,6 @@ impl ChainStateDB {
     }
 
     fn get_state_tree_table_handles(&self, idx: usize) -> Result<&StateTree<TableHandle>> {
-        let idx = idx & (TABLE_ADDRESS_LIST_LEN - 1);
         let state_tree_table_handles = self.state_tree_table_handles_list.get(idx);
         match state_tree_table_handles {
             Some(state_tree_table_handles) => Ok(state_tree_table_handles),
