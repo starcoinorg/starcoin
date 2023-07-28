@@ -16,6 +16,7 @@ pub use upgrade_vm_config_proposal_cmd::*;
 pub(crate) mod call_api_cmd;
 mod call_contract_cmd;
 mod compile_cmd;
+mod concurrency_level_cmd;
 mod deploy_cmd;
 pub mod dev_helper;
 pub(crate) mod gen_block_cmd;
