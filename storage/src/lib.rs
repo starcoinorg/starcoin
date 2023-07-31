@@ -16,7 +16,7 @@ use crate::{
     transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage},
 };
 use anyhow::{bail, format_err, Error, Result};
-use flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagSnapshotStorage, SyncFlexiDagStorage};
+use flexi_dag::{SyncFlexiDagSnapshotStorage, SyncFlexiDagStorage};
 use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
@@ -26,7 +26,7 @@ use starcoin_accumulator::{
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::{
-    block::{Block, BlockBody, BlockHeader, BlockInfo},
+    block::{Block, BlockBody, BlockHeader, BlockInfo, BlockInfoExt},
     contract_event::ContractEvent,
     startup_info::{
         ChainInfo, ChainStateInfo, ChainStatus, DagChainStatus, SnapshotRange, StartupInfo,
@@ -304,8 +304,8 @@ pub trait TransactionStore {
 }
 
 pub trait SyncFlexiDagStore {
-    fn put_hashes(&self, key: HashValue, accumulator_snapshot: SyncFlexiDagSnapshot) -> Result<()>;
-    fn query_by_hash(&self, key: HashValue) -> Result<Option<SyncFlexiDagSnapshot>>;
+    fn put_hashes(&self, key: HashValue, accumulator_snapshot: BlockInfoExt) -> Result<()>;
+    fn query_by_hash(&self, key: HashValue) -> Result<Option<BlockInfoExt>>;
     fn get_accumulator_snapshot_storage(&self) -> std::sync::Arc<SyncFlexiDagSnapshotStorage>;
 }
 
@@ -407,7 +407,7 @@ impl DagBlockStore for Storage {
         // let accmulator_info = sync_flexi_dag_store.get_snapshot_storage().get(startup_info.main);
         let accumulator_info = match self.query_by_hash(startup_info.main) {
             Ok(op_snapshot) => match op_snapshot {
-                Some(snapshot) => snapshot.accumulator_info,
+                Some(snapshot) => snapshot.dag_accumulator_info,
                 None => bail!("failed to get sync accumulator info since it is None"),
             },
             Err(error) => bail!("failed to get sync accumulator info: {}", error.to_string()),
@@ -654,11 +654,11 @@ impl TransactionStore for Storage {
 }
 
 impl SyncFlexiDagStore for Storage {
-    fn put_hashes(&self, key: HashValue, accumulator_snapshot: SyncFlexiDagSnapshot) -> Result<()> {
+    fn put_hashes(&self, key: HashValue, accumulator_snapshot: BlockInfoExt) -> Result<()> {
         self.flexi_dag_storage.put_hashes(key, accumulator_snapshot)
     }
 
-    fn query_by_hash(&self, key: HashValue) -> Result<Option<SyncFlexiDagSnapshot>> {
+    fn query_by_hash(&self, key: HashValue) -> Result<Option<BlockInfoExt>> {
         self.flexi_dag_storage.get_hashes_by_hash(key)
     }
 

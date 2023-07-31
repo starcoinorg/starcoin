@@ -771,10 +771,27 @@ impl Sample for Block {
     }
 }
 
+#[derive(
+    Clone, Default, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
+)]
+pub struct BlockInfoExt {
+    /// Block ext id
+    pub block_ext_id: HashValue,
+ 
+    #[serde(skip)]
+    pub block_info: BlockInfo,
+
+    /// The chid hashes.
+    pub child_hashes: Vec<HashValue>, // child nodes, to get the relationship, use dag's relationship store
+
+    /// The dag accumulator info.
+    pub dag_accumulator_info: AccumulatorInfo,
+}
+
 /// `BlockInfo` is the object we store in the storage. It consists of the
 /// block as well as the execution result of this block.
 #[derive(
-    Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
+    Clone, Default, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
 )]
 pub struct BlockInfo {
     /// Block id

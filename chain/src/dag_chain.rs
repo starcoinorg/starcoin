@@ -55,7 +55,7 @@ impl DagBlockChain {
         // let accmulator_info = sync_flexi_dag_store.get_snapshot_storage().get(startup_info.main);
         let accumulator_info = match storage.query_by_hash(startup_info.main) {
             Ok(op_snapshot) => match op_snapshot {
-                Some(snapshot) => snapshot.accumulator_info,
+                Some(snapshot) => snapshot.dag_accumulator_info,
                 None => bail!("failed to get sync accumulator info since it is None"),
             },
             Err(error) => bail!("failed to get sync accumulator info: {}", error.to_string()),
@@ -90,7 +90,7 @@ impl DagBlockChain {
                         Ok(op_snapshot) => {
                             let snapshot = op_snapshot.expect("snapshot must exist");
                             TargetDagAccumulatorLeaf {
-                                accumulator_root: snapshot.accumulator_info.accumulator_root,
+                                accumulator_root: snapshot.dag_accumulator_info.accumulator_root,
                                 leaf_index: req.accumulator_leaf_index.saturating_sub(index as u64),
                             }
                         }
@@ -153,7 +153,7 @@ impl DagBlockChain {
             );
 
             details.push(TargetDagAccumulatorLeafDetail {
-                accumulator_root: snapshot.accumulator_info.accumulator_root,
+                accumulator_root: snapshot.dag_accumulator_info.accumulator_root,
                 relationship_pair,
             });
         }
