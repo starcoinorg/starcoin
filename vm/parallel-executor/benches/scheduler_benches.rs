@@ -12,7 +12,7 @@ use starcoin_parallel_executor::proptest_types::bencher::Bencher;
 
 fn random_benches(c: &mut Criterion) {
     c.bench_function("random_benches", |b| {
-        let bencher = Bencher::<[u8; 32], [u8; 32]>::new(10000, 100);
+        let bencher = Bencher::<[u8; 32], [u8; 32]>::new(1_000_000, 10_000);
         bencher.bench(&any::<[u8; 32]>(), b)
     });
 }

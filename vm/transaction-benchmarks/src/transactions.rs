@@ -38,16 +38,16 @@ where
     S::Value: AUTransactionGen,
 {
     /// The number of accounts created by default.
-    pub const DEFAULT_NUM_ACCOUNTS: usize = 100;
+    //pub const DEFAULT_NUM_ACCOUNTS: usize = 1000;
 
     /// The number of transactions created by default.
-    pub const DEFAULT_NUM_TRANSACTIONS: usize = 1000;
+    // pub const DEFAULT_NUM_TRANSACTIONS: usize = 1000;
 
     /// Creates a new transaction bencher with default settings.
-    pub fn new(strategy: S) -> Self {
+    pub fn new(strategy: S, num_accounts: usize, num_transactions: usize) -> Self {
         Self {
-            num_accounts: Self::DEFAULT_NUM_ACCOUNTS,
-            num_transactions: Self::DEFAULT_NUM_TRANSACTIONS,
+            num_accounts,
+            num_transactions,
             strategy,
         }
     }
