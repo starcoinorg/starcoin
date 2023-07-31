@@ -1,5 +1,5 @@
 use super::{inquirer, Result};
-use crate::consensusdb::schema::ReachabilityStoreReader;
+use crate::consensusdb::schemadb::ReachabilityStoreReader;
 use parking_lot::RwLock;
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_types::blockhash;
@@ -228,7 +228,7 @@ impl<T: ReachabilityStoreReader + ?Sized> Iterator for ForwardChainIterator<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::consensusdb::schema::MemoryReachabilityStore;
+    use crate::consensusdb::schemadb::MemoryReachabilityStore;
     use crate::dag::{reachability::tests::TreeBuilder, types::interval::Interval};
 
     #[test]

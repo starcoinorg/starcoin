@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
 pub struct Interval {
     pub start: u64,
     pub end: u64,
@@ -21,9 +21,7 @@ impl From<Interval> for (u64, u64) {
 
 impl Interval {
     pub fn new(start: u64, end: u64) -> Self {
-        debug_assert!(end >= start - 1); // TODO: make sure this is actually debug-only
-        debug_assert!(start > 0);
-        debug_assert!(end < u64::MAX);
+        debug_assert!(start > 0 && end < u64::MAX && end >= start.checked_sub(1).unwrap()); // TODO: make sure this is actually debug-only
         Interval { start, end }
     }
 
@@ -35,14 +33,16 @@ impl Interval {
     /// both `u64` bounds (`0` and `u64::MAX`) in order to support the reduction of any
     /// legal interval to an empty one by setting `end = start - 1` or `start = end + 1`
     pub fn maximal() -> Self {
-        Self::new(1, u64::MAX - 1)
+        Self::new(1, u64::MAX.saturating_sub(1))
     }
 
     pub fn size(&self) -> u64 {
         // Empty intervals are indicated by `self.end == self.start - 1`, so
         // we avoid the overflow by first adding 1
         // Note: this function will panic if `self.end < self.start - 1` due to overflow
-        (self.end + 1) - self.start
+        (self.end.checked_add(1).unwrap())
+            .checked_sub(self.start)
+            .unwrap()
     }
 
     pub fn is_empty(&self) -> bool {
@@ -50,27 +50,33 @@ impl Interval {
     }
 
     pub fn increase(&self, offset: u64) -> Self {
-        Self::new(self.start + offset, self.end + offset)
+        Self::new(
+            self.start.checked_add(offset).unwrap(),
+            self.end.checked_add(offset).unwrap(),
+        )
     }
 
     pub fn decrease(&self, offset: u64) -> Self {
-        Self::new(self.start - offset, self.end - offset)
+        Self::new(
+            self.start.checked_sub(offset).unwrap(),
+            self.end.checked_sub(offset).unwrap(),
+        )
     }
 
     pub fn increase_start(&self, offset: u64) -> Self {
-        Self::new(self.start + offset, self.end)
+        Self::new(self.start.checked_add(offset).unwrap(), self.end)
     }
 
     pub fn decrease_start(&self, offset: u64) -> Self {
-        Self::new(self.start - offset, self.end)
+        Self::new(self.start.checked_sub(offset).unwrap(), self.end)
     }
 
     pub fn increase_end(&self, offset: u64) -> Self {
-        Self::new(self.start, self.end + offset)
+        Self::new(self.start, self.end.checked_add(offset).unwrap())
     }
 
     pub fn decrease_end(&self, offset: u64) -> Self {
-        Self::new(self.start, self.end - offset)
+        Self::new(self.start, self.end.checked_sub(offset).unwrap())
     }
 
     pub fn split_half(&self) -> (Self, Self) {
@@ -86,8 +92,15 @@ impl Interval {
         let left_size = f32::ceil(self.size() as f32 * fraction) as u64;
 
         (
-            Self::new(self.start, self.start + left_size - 1),
-            Self::new(self.start + left_size, self.end),
+            Self::new(
+                self.start,
+                self.start
+                    .checked_add(left_size)
+                    .unwrap()
+                    .checked_sub(1)
+                    .unwrap(),
+            ),
+            Self::new(self.start.checked_add(left_size).unwrap(), self.end),
         )
     }
 
@@ -104,8 +117,11 @@ impl Interval {
         sizes
             .iter()
             .map(|size| {
-                let interval = Self::new(start, start + size - 1);
-                start += size;
+                let interval = Self::new(
+                    start,
+                    start.checked_add(*size).unwrap().checked_sub(1).unwrap(),
+                );
+                start = start.checked_add(*size).unwrap();
                 interval
             })
             .collect()
@@ -138,19 +154,19 @@ impl Interval {
         // Add a fractional bias to every size in the provided sizes
         //
 
-        let mut remaining_bias = interval_size - sizes_sum;
+        let mut remaining_bias = interval_size.checked_sub(sizes_sum).unwrap();
         let total_bias = remaining_bias as f64;
 
         let mut biased_sizes = Vec::<u64>::with_capacity(sizes.len());
         let exp_fractions = exponential_fractions(sizes);
         for (i, fraction) in exp_fractions.iter().enumerate() {
-            let bias: u64 = if i == exp_fractions.len() - 1 {
+            let bias: u64 = if i == exp_fractions.len().checked_sub(1).unwrap() {
                 remaining_bias
             } else {
                 remaining_bias.min(f64::round(total_bias * fraction) as u64)
             };
-            biased_sizes.push(sizes[i] + bias);
-            remaining_bias -= bias;
+            biased_sizes.push(sizes[i].checked_add(bias).unwrap());
+            remaining_bias = remaining_bias.checked_sub(bias).unwrap();
         }
 
         self.split_exact(biased_sizes.as_slice())

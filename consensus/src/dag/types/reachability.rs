@@ -4,7 +4,7 @@ use starcoin_crypto::HashValue as Hash;
 use starcoin_types::blockhash::BlockHashes;
 use std::sync::Arc;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Default, Debug, Serialize, Deserialize)]
 pub struct ReachabilityData {
     pub children: BlockHashes,
     pub parent: Hash,

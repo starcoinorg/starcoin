@@ -1,7 +1,7 @@
 use super::{
     extensions::ReachabilityStoreIntervalExtensions, inquirer::get_next_chain_ancestor_unchecked, *,
 };
-use crate::consensusdb::schema::ReachabilityStore;
+use crate::consensusdb::schemadb::ReachabilityStore;
 use crate::dag::types::interval::Interval;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::blockhash::{BlockHashExtensions, BlockHashMap};
@@ -147,7 +147,7 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
                 let count = counts.entry(current).or_insert(0);
                 let children = self.store.get_children(current)?;
 
-                *count += 1;
+                *count = (*count).checked_add(1).unwrap();
                 if *count < children.len() as u64 {
                     // Not all subtrees of the current block are ready
                     break;
@@ -157,7 +157,8 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
                 // Sum them all together and add 1 to get the sub tree size of
                 // `current`.
                 let subtree_sum: u64 = children.iter().map(|c| self.subtree_sizes[c]).sum();
-                self.subtree_sizes.insert(current, subtree_sum + 1);
+                self.subtree_sizes
+                    .insert(current, subtree_sum.checked_add(1).unwrap());
             }
         }
 
@@ -244,7 +245,11 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
             if current == reindex_root {
                 // Reached reindex root. In this case, since we reached (the unlimited) root,
                 // we also re-allocate new slack for the chain we just traversed
-                let offset = required_allocation + self.slack * path_len - slack_sum;
+                let offset = required_allocation
+                    .checked_add(self.slack.checked_mul(path_len).unwrap())
+                    .unwrap()
+                    .checked_sub(slack_sum)
+                    .unwrap();
                 self.apply_interval_op_and_propagate(current, offset, Interval::increase_start)?;
                 self.offset_siblings_before(allocation_block, current, offset)?;
 
@@ -254,11 +259,13 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
             }
 
             let slack_before_current = self.store.interval_remaining_before(current)?.size();
-            slack_sum += slack_before_current;
+            slack_sum = slack_sum.checked_add(slack_before_current).unwrap();
 
             if slack_sum >= required_allocation {
                 // Set offset to be just enough to satisfy required allocation
-                let offset = slack_before_current - (slack_sum - required_allocation);
+                let offset = slack_before_current
+                    .checked_sub(slack_sum.checked_sub(required_allocation).unwrap())
+                    .unwrap();
                 self.apply_interval_op(current, offset, Interval::increase_start)?;
                 self.offset_siblings_before(allocation_block, current, offset)?;
 
@@ -266,7 +273,7 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
             }
 
             current = get_next_chain_ancestor_unchecked(self.store, reindex_root, current)?;
-            path_len += 1;
+            path_len = path_len.checked_add(1).unwrap();
         }
 
         // Go back down the reachability tree towards the common ancestor.
@@ -280,7 +287,7 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
             }
 
             let slack_before_current = self.store.interval_remaining_before(current)?.size();
-            let offset = slack_before_current - path_slack_alloc;
+            let offset = slack_before_current.checked_sub(path_slack_alloc).unwrap();
             self.apply_interval_op(current, offset, Interval::increase_start)?;
             self.offset_siblings_before(allocation_block, current, offset)?;
         }
@@ -306,7 +313,11 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
             if current == reindex_root {
                 // Reached reindex root. In this case, since we reached (the unlimited) root,
                 // we also re-allocate new slack for the chain we just traversed
-                let offset = required_allocation + self.slack * path_len - slack_sum;
+                let offset = required_allocation
+                    .checked_add(self.slack.checked_mul(path_len).unwrap())
+                    .unwrap()
+                    .checked_sub(slack_sum)
+                    .unwrap();
                 self.apply_interval_op_and_propagate(current, offset, Interval::decrease_end)?;
                 self.offset_siblings_after(allocation_block, current, offset)?;
 
@@ -316,11 +327,13 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
             }
 
             let slack_after_current = self.store.interval_remaining_after(current)?.size();
-            slack_sum += slack_after_current;
+            slack_sum = slack_sum.checked_add(slack_after_current).unwrap();
 
             if slack_sum >= required_allocation {
                 // Set offset to be just enough to satisfy required allocation
-                let offset = slack_after_current - (slack_sum - required_allocation);
+                let offset = slack_after_current
+                    .checked_sub(slack_sum.checked_sub(required_allocation).unwrap())
+                    .unwrap();
                 self.apply_interval_op(current, offset, Interval::decrease_end)?;
                 self.offset_siblings_after(allocation_block, current, offset)?;
 
@@ -328,7 +341,7 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
             }
 
             current = get_next_chain_ancestor_unchecked(self.store, reindex_root, current)?;
-            path_len += 1;
+            path_len = path_len.checked_add(1).unwrap();
         }
 
         // Go back down the reachability tree towards the common ancestor.
@@ -342,7 +355,7 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
             }
 
             let slack_after_current = self.store.interval_remaining_after(current)?.size();
-            let offset = slack_after_current - path_slack_alloc;
+            let offset = slack_after_current.checked_sub(path_slack_alloc).unwrap();
             self.apply_interval_op(current, offset, Interval::decrease_end)?;
             self.offset_siblings_after(allocation_block, current, offset)?;
         }
@@ -472,8 +485,15 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
 
         let interval = self.store.get_interval(parent)?;
         let interval_before = Interval::new(
-            interval.start + self.slack,
-            interval.start + self.slack + sum - 1,
+            interval.start.checked_add(self.slack).unwrap(),
+            interval
+                .start
+                .checked_add(self.slack)
+                .unwrap()
+                .checked_add(sum)
+                .unwrap()
+                .checked_sub(1)
+                .unwrap(),
         );
 
         for (c, ci) in children_before
@@ -505,8 +525,18 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
 
         let interval = self.store.get_interval(parent)?;
         let interval_after = Interval::new(
-            interval.end - self.slack - sum,
-            interval.end - self.slack - 1,
+            interval
+                .end
+                .checked_sub(self.slack)
+                .unwrap()
+                .checked_sub(sum)
+                .unwrap(),
+            interval
+                .end
+                .checked_sub(self.slack)
+                .unwrap()
+                .checked_sub(1)
+                .unwrap(),
         );
 
         for (c, ci) in children_after
@@ -531,8 +561,20 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
     ) -> Result<()> {
         let interval = self.store.get_interval(parent)?;
         let allocation = Interval::new(
-            interval.start + siblings_before_subtrees_sum + self.slack,
-            interval.end - siblings_after_subtrees_sum - self.slack - 1,
+            interval
+                .start
+                .checked_add(siblings_before_subtrees_sum)
+                .unwrap()
+                .checked_add(self.slack)
+                .unwrap(),
+            interval
+                .end
+                .checked_sub(siblings_after_subtrees_sum)
+                .unwrap()
+                .checked_sub(self.slack)
+                .unwrap()
+                .checked_sub(1)
+                .unwrap(),
         );
         let current = self.store.get_interval(child)?;
 
@@ -546,8 +588,10 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
             next time this method is called (next time the reindex root moves), `allocation` is likely to contain `current`.
             Note that below following the propagation we reassign the full `allocation` to `child`.
             */
-            let narrowed =
-                Interval::new(allocation.start + self.slack, allocation.end - self.slack);
+            let narrowed = Interval::new(
+                allocation.start.checked_add(self.slack).unwrap(),
+                allocation.end.checked_sub(self.slack).unwrap(),
+            );
             self.store.set_interval(child, narrowed)?;
             self.propagate_interval(child)?;
         }
@@ -560,7 +604,10 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
 /// Splits `children` into two slices: the blocks that are before `pivot` and the blocks that are after.
 fn split_children(children: &std::sync::Arc<Vec<Hash>>, pivot: Hash) -> Result<(&[Hash], &[Hash])> {
     if let Some(index) = children.iter().cloned().position(|c| c == pivot) {
-        Ok((&children[..index], &children[index + 1..]))
+        Ok((
+            &children[..index],
+            &children[index.checked_add(1).unwrap()..],
+        ))
     } else {
         Err(ReachabilityError::DataInconsistency)
     }
@@ -569,7 +616,7 @@ fn split_children(children: &std::sync::Arc<Vec<Hash>>, pivot: Hash) -> Result<(
 #[cfg(test)]
 mod tests {
     use super::{super::tests::*, *};
-    use crate::consensusdb::schema::{MemoryReachabilityStore, ReachabilityStoreReader};
+    use crate::consensusdb::schemadb::{MemoryReachabilityStore, ReachabilityStoreReader};
     use crate::dag::types::interval::Interval;
     use starcoin_types::blockhash;
 

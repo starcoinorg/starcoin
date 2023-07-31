@@ -151,7 +151,6 @@ impl ChainStatus {
                 rand::random::<u64>(),
             ),
         );
-
         Self {
             head,
             info: block_info,

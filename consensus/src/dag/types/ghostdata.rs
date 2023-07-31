@@ -14,7 +14,7 @@ pub struct GhostdagData {
     pub blues_anticone_sizes: HashKTypeMap,
 }
 
-#[derive(Clone, Serialize, Deserialize, Copy)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, Copy)]
 pub struct CompactGhostdagData {
     pub blue_score: u64,
     pub blue_work: BlueWorkType,
@@ -67,7 +67,7 @@ impl GhostdagData {
     }
 
     pub fn new_with_selected_parent(selected_parent: Hash, k: KType) -> Self {
-        let mut mergeset_blues: Vec<Hash> = Vec::with_capacity((k + 1) as usize);
+        let mut mergeset_blues: Vec<Hash> = Vec::with_capacity(k.checked_add(1).unwrap() as usize);
         let mut blues_anticone_sizes: BlockHashMap<KType> = BlockHashMap::with_capacity(k as usize);
         mergeset_blues.push(selected_parent);
         blues_anticone_sizes.insert(selected_parent, 0);
@@ -83,7 +83,10 @@ impl GhostdagData {
     }
 
     pub fn mergeset_size(&self) -> usize {
-        self.mergeset_blues.len() + self.mergeset_reds.len()
+        self.mergeset_blues
+            .len()
+            .checked_add(self.mergeset_reds.len())
+            .unwrap()
     }
 
     /// Returns an iterator to the mergeset with no specified order (excluding the selected parent)
@@ -128,7 +131,7 @@ impl GhostdagData {
 
         // Insert/update map entries for blocks affected by this insertion
         for (blue, size) in block_blues_anticone_sizes {
-            blues_anticone_sizes.insert(*blue, size + 1);
+            blues_anticone_sizes.insert(*blue, size.checked_add(1).unwrap());
         }
     }
 

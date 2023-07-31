@@ -5,10 +5,15 @@ use super::{
 use starcoin_crypto::HashValue as Hash;
 use starcoin_storage::storage::RawDBStorage;
 
-use crate::dag::types::{interval::Interval, reachability::ReachabilityData};
+use crate::{
+    dag::types::{interval::Interval, reachability::ReachabilityData},
+    define_schema,
+    schema::{KeyCodec, ValueCodec},
+};
+use starcoin_types::blockhash::{self, BlockHashMap, BlockHashes};
+
 use parking_lot::{RwLockUpgradableReadGuard, RwLockWriteGuard};
 use rocksdb::WriteBatch;
-use starcoin_types::blockhash::{self, BlockHashMap, BlockHashes};
 use std::{collections::hash_map::Entry::Vacant, sync::Arc};
 
 /// Reader API for `ReachabilityStore`.
@@ -48,12 +53,57 @@ const REINDEX_ROOT_KEY: &str = "reachability-reindex-root";
 pub(crate) const REACHABILITY_DATA_CF: &str = "reachability-data";
 // TODO: explore perf to see if using fixed-length constants for store prefixes is preferable
 
+define_schema!(
+    Reachability,
+    Hash,
+    Arc<ReachabilityData>,
+    REACHABILITY_DATA_CF
+);
+define_schema!(ReachabilityCache, Vec<u8>, Hash, REACHABILITY_DATA_CF);
+
+impl KeyCodec<Reachability> for Hash {
+    fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
+        Ok(self.to_vec())
+    }
+
+    fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
+        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    }
+}
+impl ValueCodec<Reachability> for Arc<ReachabilityData> {
+    fn encode_value(&self) -> Result<Vec<u8>, StoreError> {
+        bcs_ext::to_bytes(&self).map_err(|e| StoreError::EncodeError(e.to_string()))
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self, StoreError> {
+        bcs_ext::from_bytes(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    }
+}
+impl KeyCodec<ReachabilityCache> for Vec<u8> {
+    fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
+        Ok(self.to_vec())
+    }
+
+    fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
+        Ok(data.to_vec())
+    }
+}
+impl ValueCodec<ReachabilityCache> for Hash {
+    fn encode_value(&self) -> Result<Vec<u8>, StoreError> {
+        Ok(self.to_vec())
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self, StoreError> {
+        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    }
+}
+
 /// A DB + cache implementation of `ReachabilityStore` trait, with concurrent readers support.
 #[derive(Clone)]
 pub struct DbReachabilityStore {
     db: Arc<DBStorage>,
-    access: CachedDbAccess<Hash, Arc<ReachabilityData>>,
-    reindex_root: CachedDbItem<Hash>,
+    access: CachedDbAccess<Reachability>,
+    reindex_root: CachedDbItem<ReachabilityCache>,
 }
 
 impl DbReachabilityStore {
@@ -68,12 +118,8 @@ impl DbReachabilityStore {
     fn new_with_prefix_end(db: Arc<DBStorage>, cache_size: u64) -> Self {
         Self {
             db: Arc::clone(&db),
-            access: CachedDbAccess::new(Arc::clone(&db), cache_size, REACHABILITY_DATA_CF),
-            reindex_root: CachedDbItem::new(
-                db,
-                REACHABILITY_DATA_CF,
-                REINDEX_ROOT_KEY.as_bytes().to_vec(),
-            ),
+            access: CachedDbAccess::new(Arc::clone(&db), cache_size),
+            reindex_root: CachedDbItem::new(db, REINDEX_ROOT_KEY.as_bytes().to_vec()),
         }
     }
 

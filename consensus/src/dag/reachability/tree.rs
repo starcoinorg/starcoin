@@ -5,7 +5,7 @@ use super::{
     extensions::ReachabilityStoreIntervalExtensions, inquirer::*, reindex::ReindexOperationContext,
     *,
 };
-use crate::consensusdb::schema::ReachabilityStore;
+use crate::consensusdb::schemadb::ReachabilityStore;
 use starcoin_crypto::HashValue as Hash;
 
 /// Adds `new_block` as a child of `parent` in the tree structure. If this block
@@ -26,7 +26,12 @@ pub fn add_tree_block(
         // Init with the empty interval.
         // Note: internal logic relies on interval being this specific interval
         //       which comes exactly at the end of current capacity
-        store.insert(new_block, parent, remaining, parent_height + 1)?;
+        store.insert(
+            new_block,
+            parent,
+            remaining,
+            parent_height.checked_add(1).unwrap(),
+        )?;
 
         // Start a reindex operation (TODO: add timing)
         let reindex_root = store.get_reindex_root()?;
@@ -34,7 +39,12 @@ pub fn add_tree_block(
         ctx.reindex_intervals(new_block, reindex_root)?;
     } else {
         let allocated = remaining.split_half().0;
-        store.insert(new_block, parent, allocated, parent_height + 1)?;
+        store.insert(
+            new_block,
+            parent,
+            allocated,
+            parent_height.checked_add(1).unwrap(),
+        )?;
     };
     Ok(())
 }
@@ -81,7 +91,9 @@ pub fn find_next_reindex_root(
         //
         // Note: In some cases the height of the (hint) selected tip can be lower than the current reindex root height.
         // If that's the case we keep the reindex root unchanged.
-        if hint_height < current_height || hint_height - current_height < reindex_slack {
+        if hint_height < current_height
+            || hint_height.checked_sub(current_height).unwrap() < reindex_slack
+        {
             return Ok((current, current));
         }
 
@@ -99,7 +111,7 @@ pub fn find_next_reindex_root(
         if hint_height < child_height {
             return Err(ReachabilityError::DataInconsistency);
         }
-        if hint_height - child_height < reindex_depth {
+        if hint_height.checked_sub(child_height).unwrap() < reindex_depth {
             break;
         }
         next = child;

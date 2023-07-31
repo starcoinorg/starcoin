@@ -5,24 +5,25 @@ mod consensus_header;
 mod consensus_reachability;
 mod consensus_relations;
 mod db;
-mod errors;
+mod error;
 mod item;
+pub mod schema;
 mod writer;
 
 pub mod prelude {
-    use super::{db, errors};
+    use super::{db, error};
 
     pub use super::{
         access::CachedDbAccess,
-        cache::Cache,
+        cache::DagCache,
         item::CachedDbItem,
         writer::{BatchDbWriter, DbWriter, DirectDbWriter},
     };
     pub use db::{FlexiDagStorage, FlexiDagStorageConfig};
-    pub use errors::{StoreError, StoreResult, StoreResultEmptyTuple, StoreResultExtensions};
+    pub use error::{StoreError, StoreResult, StoreResultEmptyTuple, StoreResultExtensions};
 }
 
-pub mod schema {
+pub mod schemadb {
     pub use super::{
         consensus_ghostdag::*, consensus_header::*, consensus_reachability::*,
         consensus_relations::*,

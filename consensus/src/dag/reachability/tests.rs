@@ -4,7 +4,7 @@
 use super::{inquirer::*, tree::*};
 use crate::consensusdb::{
     prelude::StoreError,
-    schema::{ReachabilityStore, ReachabilityStoreReader},
+    schemadb::{ReachabilityStore, ReachabilityStoreReader},
 };
 use crate::dag::types::{interval::Interval, perf};
 use starcoin_crypto::HashValue as Hash;
