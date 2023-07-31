@@ -24,7 +24,9 @@ use starcoin_types::{
     state_set::{AccountStateSet, ChainStateSet},
 };
 use starcoin_vm_types::access_path::{DataPath, ModuleName};
-use starcoin_vm_types::account_config::{TABLE_ADDRESS_LIST_LEN, TABLE_HANDLE_ADDRESS_LIST};
+#[cfg(test)]
+use starcoin_vm_types::account_config::TABLE_ADDRESS_LIST_LEN;
+use starcoin_vm_types::account_config::TABLE_HANDLE_ADDRESS_LIST;
 use starcoin_vm_types::language_storage::StructTag;
 use starcoin_vm_types::state_store::{state_key::StateKey, table::TableHandle};
 use starcoin_vm_types::state_view::StateView;
