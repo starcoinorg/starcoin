@@ -95,7 +95,7 @@ impl TaskResultCollector<TargetDagAccumulatorLeaf> for AncestorCollector {
         })?;
 
         let accumulator_info = match self.accumulator_snapshot.get(accumulator_leaf)? {
-            Some(snapshot) => snapshot.accumulator_info,
+            Some(snapshot) => snapshot.dag_accumulator_info,
             None => panic!("failed to get the snapshot, it is none."),
         };
 

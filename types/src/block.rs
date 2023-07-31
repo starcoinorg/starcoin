@@ -118,6 +118,65 @@ impl From<BlockHeader> for BlockIdAndNumber {
 /// block timestamp allowed future times
 pub const ALLOWED_FUTURE_BLOCKTIME: u64 = 30000; // 30 second;
 
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema)]
+pub struct BlockHeaderExtForVerification {
+    block_header: BlockHeader,
+
+    /// Dag block parents.
+    dag_parent_hashes: Vec<HashValue>,
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema)]
+pub struct BlockHeaderExt {
+    #[serde(skip)]
+    dag_header_id: Option<HashValue>,
+
+    #[serde(skip)]
+    block_header: Option<BlockHeader>,
+
+    /// Dag block parents.
+    dag_parent_hashes: Vec<HashValue>,
+
+    /// Dag block number.
+    dag_number: BlockNumber,
+}
+
+impl BlockHeaderExt {
+    pub fn new(block_header: BlockHeader, dag_parent_hashes: Vec<HashValue>, dag_number: BlockNumber) -> Self {
+        Self {
+            dag_header_id: None,
+            block_header: Some(block_header),
+            dag_parent_hashes,
+            dag_number,
+        }
+    }
+
+    pub fn dag_header_id(&self) -> Option<HashValue> {
+        self.dag_header_id
+    }
+
+    pub fn block_header(&self) -> &Option<BlockHeader> {
+        &self.block_header
+    }
+
+    pub fn dag_parent_hashes(&self) -> &Vec<HashValue> {
+        &self.dag_parent_hashes
+    }
+    
+    pub fn dag_number(&self) -> BlockNumber {
+        self.dag_number
+    }
+}
+
+impl Into<BlockHeaderExtForVerification> for BlockHeaderExt {
+    fn into(self) -> BlockHeaderExtForVerification {
+        BlockHeaderExtForVerification {
+            block_header: self.block_header.expect("block_header should not be None"),
+            dag_parent_hashes: self.dag_parent_hashes,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, CryptoHasher, CryptoHash, JsonSchema)]
 pub struct BlockHeader {
     #[serde(skip)]
@@ -775,11 +834,8 @@ impl Sample for Block {
     Clone, Default, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
 )]
 pub struct BlockInfoExt {
-    /// Block ext id
-    pub block_ext_id: HashValue,
- 
     #[serde(skip)]
-    pub block_info: BlockInfo,
+    pub block_info: Option<BlockInfo>,
 
     /// The chid hashes.
     pub child_hashes: Vec<HashValue>, // child nodes, to get the relationship, use dag's relationship store

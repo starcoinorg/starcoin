@@ -5,15 +5,14 @@ use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, Merkl
 use starcoin_crypto::HashValue;
 use starcoin_network_rpc_api::dag_protocol::{TargetDagAccumulatorLeafDetail, self};
 use starcoin_storage::{
-    flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagSnapshotStorage},
+    flexi_dag::SyncFlexiDagSnapshotStorage,
     storage::CodecKVStore,
 };
+use starcoin_types::block::BlockInfoExt;
 use std::sync::Arc;
 use stream_task::{CollectorState, TaskResultCollector, TaskState};
 
 use crate::verified_rpc_client::VerifiedRpcClient;
-
-use super::sync_dag_protocol_trait::PeerSynDagAccumulator;
 
 #[derive(Clone)]
 pub struct SyncDagAccumulatorTask {
@@ -130,13 +129,14 @@ impl TaskResultCollector<TargetDagAccumulatorLeafDetail> for SyncDagAccumulatorC
         let num_leaves = accumulator_info.num_leaves;
         self.accumulator_snapshot.put(
             accumulator_leaf,
-            SyncFlexiDagSnapshot {
+            BlockInfoExt {
                 child_hashes: item
                     .relationship_pair
                     .into_iter()
                     .map(|pair| pair.child)
                     .collect::<Vec<_>>(),
-                accumulator_info,
+                dag_accumulator_info: accumulator_info,
+                block_info: None,
             },
         )?;
 
