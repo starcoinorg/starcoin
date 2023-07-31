@@ -78,7 +78,6 @@ pub fn handle_release(
     for m in pkg.root_compiled_units.as_slice() {
         let m = module(&m.unit)?;
         println!("\t {}", m.self_id());
-        // XXX FIXME YSG, mpm release
         let code = if language_version as u32 == VERSION_4 {
             ModuleBytecodeDowngrader::to_v4(m)?
         } else {
