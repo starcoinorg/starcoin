@@ -31,6 +31,7 @@ pub mod keccak;
 
 pub use consensus::{Consensus, ConsensusVerifyError};
 pub use consensusdb::prelude::{FlexiDagStorage, FlexiDagStorageConfig};
+pub(crate) use consensusdb::schema;
 pub use dag::blockdag::BlockDAG;
 pub use starcoin_time_service::duration_since_epoch;
 

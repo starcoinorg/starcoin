@@ -9397,6 +9397,7 @@ name = "starcoin-consensus"
 version = "1.13.5"
 dependencies = [
  "anyhow",
+ "bcs-ext",
  "bincode",
  "byteorder",
  "cryptonight-rs",

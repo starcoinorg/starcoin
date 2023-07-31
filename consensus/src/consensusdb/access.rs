@@ -1,9 +1,9 @@
-use super::{cache::DagCache, db::DBStorage, errors::StoreError};
+use super::{cache::DagCache, db::DBStorage, error::StoreError};
 
-use super::prelude::{Cache, DbWriter};
+use super::prelude::DbWriter;
+use super::schema::{KeyCodec, Schema, ValueCodec};
 use itertools::Itertools;
 use rocksdb::{Direction, IteratorMode, ReadOptions};
-use serde::{de::DeserializeOwned, Serialize};
 use starcoin_storage::storage::RawDBStorage;
 use std::{
     collections::hash_map::RandomState, error::Error, hash::BuildHasher, marker::PhantomData,
@@ -12,94 +12,72 @@ use std::{
 
 /// A concurrent DB store access with typed caching.
 #[derive(Clone)]
-pub struct CachedDbAccess<TKey, TData, S = RandomState>
-where
-    TKey: Clone + std::hash::Hash + Eq + Send + Sync + AsRef<[u8]>,
-    TData: Clone + Send + Sync + DeserializeOwned,
-{
+pub struct CachedDbAccess<S: Schema, R = RandomState> {
     db: Arc<DBStorage>,
 
     // Cache
-    cache: Cache<TKey>,
+    cache: DagCache<S::Key, S::Value>,
 
-    // DB bucket/path
-    prefix: &'static str,
-
-    _phantom: PhantomData<(TData, S)>,
+    _phantom: PhantomData<R>,
 }
 
-impl<TKey, TData, S> CachedDbAccess<TKey, TData, S>
+impl<S: Schema, R> CachedDbAccess<S, R>
 where
-    TKey: Clone + std::hash::Hash + Eq + Send + Sync + AsRef<[u8]>,
-    TData: Clone + Send + Sync + DeserializeOwned,
-    S: BuildHasher + Default,
+    R: BuildHasher + Default,
 {
-    pub fn new(db: Arc<DBStorage>, cache_size: u64, prefix: &'static str) -> Self {
+    pub fn new(db: Arc<DBStorage>, cache_size: u64) -> Self {
         Self {
             db,
-            cache: Cache::new_with_capacity(cache_size),
-            prefix,
+            cache: DagCache::new_with_capacity(cache_size),
             _phantom: Default::default(),
         }
     }
 
-    pub fn read_from_cache(&self, key: TKey) -> Result<Option<TData>, StoreError>
-    where
-        TKey: Copy + AsRef<[u8]>,
-    {
-        self.cache
-            .get(&key)
-            .map(|b| bincode::deserialize(&b).map_err(StoreError::DeserializationError))
-            .transpose()
+    pub fn read_from_cache(&self, key: S::Key) -> Option<S::Value> {
+        self.cache.get(&key)
     }
 
-    pub fn has(&self, key: TKey) -> Result<bool, StoreError>
-    where
-        TKey: Clone + AsRef<[u8]>,
-    {
+    pub fn has(&self, key: S::Key) -> Result<bool, StoreError> {
         Ok(self.cache.contains_key(&key)
             || self
                 .db
-                .raw_get_pinned_cf(self.prefix, key)
-                .map_err(|_| StoreError::CFNotExist(self.prefix.to_string()))?
+                .raw_get_pinned_cf(S::COLUMN_FAMILY, key.encode_key().unwrap())
+                .map_err(|_| StoreError::CFNotExist(S::COLUMN_FAMILY.to_string()))?
                 .is_some())
     }
 
-    pub fn read(&self, key: TKey) -> Result<TData, StoreError>
-    where
-        TKey: Clone + AsRef<[u8]> + ToString,
-        TData: DeserializeOwned, // We need `DeserializeOwned` since the slice coming from `db.get_pinned_cf` has short lifetime
-    {
+    pub fn read(&self, key: S::Key) -> Result<S::Value, StoreError> {
         if let Some(data) = self.cache.get(&key) {
-            let data = bincode::deserialize(&data)?;
             Ok(data)
         } else if let Some(slice) = self
             .db
-            .raw_get_pinned_cf(self.prefix, &key)
-            .map_err(|_| StoreError::CFNotExist(self.prefix.to_string()))?
+            .raw_get_pinned_cf(S::COLUMN_FAMILY, key.encode_key().unwrap())
+            .map_err(|_| StoreError::CFNotExist(S::COLUMN_FAMILY.to_string()))?
         {
-            let data: TData = bincode::deserialize(&slice)?;
-            self.cache.insert(key, slice.to_vec());
+            let data = S::Value::decode_value(slice.as_ref())
+                .map_err(|o| StoreError::DecodeError(o.to_string()))?;
+            self.cache.insert(key, data.clone());
             Ok(data)
         } else {
-            Err(StoreError::KeyNotFound(key.to_string()))
+            Err(StoreError::KeyNotFound("".to_string()))
         }
     }
 
     pub fn iterator(
         &self,
-    ) -> Result<impl Iterator<Item = Result<(Box<[u8]>, TData), Box<dyn Error>>> + '_, StoreError>
-    where
-        TKey: Clone + AsRef<[u8]>,
-        TData: DeserializeOwned, // We need `DeserializeOwned` since the slice coming from `db.get_pinned_cf` has short lifetime
+    ) -> Result<impl Iterator<Item = Result<(Box<[u8]>, S::Value), Box<dyn Error>>> + '_, StoreError>
     {
         let db_iterator = self
             .db
-            .raw_iterator_cf_opt(self.prefix, IteratorMode::Start, ReadOptions::default())
+            .raw_iterator_cf_opt(
+                S::COLUMN_FAMILY,
+                IteratorMode::Start,
+                ReadOptions::default(),
+            )
             .map_err(|e| StoreError::CFNotExist(e.to_string()))?;
 
         Ok(db_iterator.map(|iter_result| match iter_result {
-            Ok((key, data_bytes)) => match bincode::deserialize(&data_bytes) {
+            Ok((key, data_bytes)) => match S::Value::decode_value(&data_bytes) {
                 Ok(data) => Ok((key, data)),
                 Err(e) => Err(e.into()),
             },
@@ -107,30 +85,25 @@ where
         }))
     }
 
-    pub fn write(&self, mut writer: impl DbWriter, key: TKey, data: TData) -> Result<(), StoreError>
-    where
-        TKey: Clone + AsRef<[u8]>,
-        TData: Serialize,
-    {
-        let bin_data = bincode::serialize(&data)?;
-        self.cache.insert(key.clone(), bin_data.clone());
-        writer.put(self.prefix, key.as_ref(), bin_data)?;
+    pub fn write(
+        &self,
+        mut writer: impl DbWriter,
+        key: S::Key,
+        data: S::Value,
+    ) -> Result<(), StoreError> {
+        writer.put::<S>(&key, &data)?;
+        self.cache.insert(key, data);
         Ok(())
     }
 
     pub fn write_many(
         &self,
         mut writer: impl DbWriter,
-        iter: &mut (impl Iterator<Item = (TKey, TData)> + Clone),
-    ) -> Result<(), StoreError>
-    where
-        TKey: Clone + AsRef<[u8]>,
-        TData: Serialize,
-    {
+        iter: &mut (impl Iterator<Item = (S::Key, S::Value)> + Clone),
+    ) -> Result<(), StoreError> {
         for (key, data) in iter {
-            let bin_data = bincode::serialize(&data)?;
-            self.cache.insert(key.clone(), bin_data.clone());
-            writer.put(self.prefix, key.as_ref(), bin_data)?;
+            writer.put::<S>(&key, &data)?;
+            self.cache.insert(key, data);
         }
         Ok(())
     }
@@ -139,54 +112,44 @@ where
     pub fn write_many_without_cache(
         &self,
         mut writer: impl DbWriter,
-        iter: &mut impl Iterator<Item = (TKey, TData)>,
-    ) -> Result<(), StoreError>
-    where
-        TKey: Clone + AsRef<[u8]>,
-        TData: Serialize,
-    {
+        iter: &mut impl Iterator<Item = (S::Key, S::Value)>,
+    ) -> Result<(), StoreError> {
         for (key, data) in iter {
-            let bin_data = bincode::serialize(&data)?;
-            writer.put(self.prefix, key.as_ref(), bin_data)?;
+            writer.put::<S>(&key, &data)?;
         }
         // The cache must be cleared in order to avoid invalidated entries
         self.cache.remove_all();
         Ok(())
     }
 
-    pub fn delete(&self, mut writer: impl DbWriter, key: TKey) -> Result<(), StoreError>
-    where
-        TKey: Clone + AsRef<[u8]>,
-    {
+    pub fn delete(&self, mut writer: impl DbWriter, key: S::Key) -> Result<(), StoreError> {
         self.cache.remove(&key);
-        writer.delete(self.prefix, key.as_ref())?;
+        writer.delete::<S>(&key)?;
         Ok(())
     }
 
     pub fn delete_many(
         &self,
         mut writer: impl DbWriter,
-        key_iter: &mut (impl Iterator<Item = TKey> + Clone),
-    ) -> Result<(), StoreError>
-    where
-        TKey: Clone + AsRef<[u8]>,
-    {
+        key_iter: &mut (impl Iterator<Item = S::Key> + Clone),
+    ) -> Result<(), StoreError> {
         let key_iter_clone = key_iter.clone();
         self.cache.remove_many(key_iter);
         for key in key_iter_clone {
-            writer.delete(self.prefix, key.as_ref())?;
+            writer.delete::<S>(&key)?;
         }
         Ok(())
     }
 
-    pub fn delete_all(&self, mut writer: impl DbWriter) -> Result<(), StoreError>
-    where
-        TKey: Clone + AsRef<[u8]>,
-    {
+    pub fn delete_all(&self, mut writer: impl DbWriter) -> Result<(), StoreError> {
         self.cache.remove_all();
         let keys = self
             .db
-            .raw_iterator_cf_opt(self.prefix, IteratorMode::Start, ReadOptions::default())
+            .raw_iterator_cf_opt(
+                S::COLUMN_FAMILY,
+                IteratorMode::Start,
+                ReadOptions::default(),
+            )
             .map_err(|e| StoreError::CFNotExist(e.to_string()))?
             .map(|iter_result| match iter_result {
                 Ok((key, _)) => Ok::<_, rocksdb::Error>(key),
@@ -194,7 +157,7 @@ where
             })
             .collect_vec();
         for key in keys {
-            writer.delete(self.prefix, key?.as_ref())?;
+            writer.delete::<S>(&S::Key::decode_key(&key?)?)?;
         }
         Ok(())
     }
@@ -203,24 +166,21 @@ where
     //TODO: loop and chain iterators for multi-prefix iterator.
     pub fn seek_iterator(
         &self,
-        seek_from: Option<TKey>, // iter whole range if None
-        limit: usize,            // amount to take.
+        seek_from: Option<S::Key>, // iter whole range if None
+        limit: usize,              // amount to take.
         skip_first: bool, // skips the first value, (useful in conjunction with the seek-key, as to not re-retrieve).
-    ) -> Result<impl Iterator<Item = Result<(Box<[u8]>, TData), Box<dyn Error>>> + '_, StoreError>
-    where
-        TKey: Clone + AsRef<[u8]>,
-        TData: DeserializeOwned,
+    ) -> Result<impl Iterator<Item = Result<(Box<[u8]>, S::Value), Box<dyn Error>>> + '_, StoreError>
     {
         let read_opts = ReadOptions::default();
         let mut db_iterator = match seek_from {
             Some(seek_key) => self.db.raw_iterator_cf_opt(
-                self.prefix,
-                IteratorMode::From(seek_key.as_ref(), Direction::Forward),
+                S::COLUMN_FAMILY,
+                IteratorMode::From(seek_key.encode_key()?.as_slice(), Direction::Forward),
                 read_opts,
             ),
             None => self
                 .db
-                .raw_iterator_cf_opt(self.prefix, IteratorMode::Start, read_opts),
+                .raw_iterator_cf_opt(S::COLUMN_FAMILY, IteratorMode::Start, read_opts),
         }
         .map_err(|e| StoreError::CFNotExist(e.to_string()))?;
 
@@ -229,12 +189,10 @@ where
         }
 
         Ok(db_iterator.take(limit).map(move |item| match item {
-            Ok((key_bytes, value_bytes)) => {
-                match bincode::deserialize::<TData>(value_bytes.as_ref()) {
-                    Ok(value) => Ok((key_bytes, value)),
-                    Err(err) => Err(err.into()),
-                }
-            }
+            Ok((key_bytes, value_bytes)) => match S::Value::decode_value(value_bytes.as_ref()) {
+                Ok(value) => Ok((key_bytes, value)),
+                Err(err) => Err(err.into()),
+            },
             Err(err) => Err(err.into()),
         }))
     }
