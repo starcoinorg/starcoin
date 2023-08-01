@@ -10,6 +10,7 @@ use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
 use network_api::{PeerId, PeerProvider, PeerSelector};
 use network_p2p_core::{NetRpcError, RpcErrorCode};
+use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::MerkleAccumulator;
 use starcoin_chain::{BlockChain, ChainReader};
@@ -22,6 +23,7 @@ use starcoin_time_service::TimeService;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::U256;
+use std::result::Result::Ok;
 use std::str::FromStr;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
@@ -32,6 +34,33 @@ use stream_task::{
 };
 
 pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {
+    fn get_best_dag_target(&self, min_difficulty: U256) -> Result<Option<AccumulatorInfo>> {
+        if let Some(best_peers) = self.peer_selector().bests(min_difficulty) {
+            // to do, here simply returns the accumulator info containing longest leaves
+            let result = match best_peers.into_iter().max_by_key(|peer_info| {
+                peer_info
+                    .chain_state_info
+                    .dag_status
+                    .flexi_dag_accumulator_info
+                    .num_leaves
+            }) {
+                Some(peer_info) => Ok(Some(
+                    peer_info
+                        .chain_state_info
+                        .dag_status
+                        .flexi_dag_accumulator_info,
+                )),
+                None => {
+                    debug!("failed to find the best dag target");
+                    return Ok(None);
+                }
+            };
+            return result;
+        }
+        debug!("failed to find the best dag target, since maybe no peers");
+        return Ok(None);
+    }
+
     fn get_best_target(&self, min_difficulty: U256) -> Result<Option<SyncTarget>> {
         if let Some(best_peers) = self.peer_selector().bests(min_difficulty) {
             //TODO fast verify best peers by accumulator
@@ -42,7 +71,7 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                         let update = chain_statuses
                             .iter_mut()
                             .find(|(chain_status, _peers)| {
-                                peer.chain_info().status() == chain_status
+                                peer.chain_info().chain_info.status() == chain_status
                             })
                             .map(|(_chain_status, peers)| {
                                 peers.push(peer.peer_id());
@@ -51,8 +80,10 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                             .unwrap_or(false);
 
                         if !update {
-                            chain_statuses
-                                .push((peer.chain_info().status().clone(), vec![peer.peer_id()]))
+                            chain_statuses.push((
+                                peer.chain_info().chain_info.status().clone(),
+                                vec![peer.peer_id()],
+                            ))
                         }
                         chain_statuses
                     });
@@ -117,7 +148,12 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                                 && best_target.peers.contains(&better_peer.peer_id())
                             {
                                 target = Some((
-                                    better_peer.chain_info.status().info().clone(),
+                                    better_peer
+                                        .chain_state_info
+                                        .chain_info
+                                        .status()
+                                        .info()
+                                        .clone(),
                                     BlockIdAndNumber {
                                         number: better_peer.latest_header().number(),
                                         id: better_peer.latest_header().id(),
@@ -133,8 +169,14 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                             {
                                 let mut block_info = None;
                                 if block_id == better_peer.block_id() {
-                                    block_info =
-                                        Some(better_peer.chain_info.status().info().clone());
+                                    block_info = Some(
+                                        better_peer
+                                            .chain_state_info
+                                            .chain_info
+                                            .status()
+                                            .info()
+                                            .clone(),
+                                    );
                                 } else if let Some(better_block_id) = self
                                     .fetch_block_id(
                                         Some(better_peer.peer_id()),
@@ -508,6 +550,11 @@ mod find_ancestor_task;
 mod inner_sync_task;
 #[cfg(test)]
 pub(crate) mod mock;
+mod sync_dag_accumulator_task;
+mod sync_dag_block_task;
+mod sync_dag_full_task;
+mod sync_dag_protocol_trait;
+mod sync_find_ancestor_task;
 #[cfg(test)]
 mod tests;
 
@@ -516,6 +563,7 @@ pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
 use starcoin_executor::VMMetrics;
+pub use sync_dag_full_task::sync_dag_full_task;
 
 pub fn full_sync_task<H, A, F, N>(
     current_block_id: HashValue,

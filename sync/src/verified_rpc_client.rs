@@ -10,6 +10,7 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::hash::HashValue;
 use starcoin_logger::prelude::*;
+use starcoin_network_rpc_api::dag_protocol;
 use starcoin_network_rpc_api::{
     gen_client::NetworkRpcClient, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeadersByNumber,
     GetBlockIds, GetTxnsWithHash, RawRpcClient,
@@ -410,5 +411,34 @@ impl VerifiedRpcClient {
                 }
             })
             .collect())
+    }
+
+    pub async fn get_dag_accumulator_leaves(
+        &self,
+        req: dag_protocol::GetDagAccumulatorLeaves,
+    ) -> Result<Vec<dag_protocol::TargetDagAccumulatorLeaf>> {
+        let peer_id = self.select_a_peer()?;
+        self.client.get_dag_accumulator_leaves(peer_id, req).await
+    }
+
+    pub async fn get_accumulator_leaf_detail(
+        &self,
+        req: dag_protocol::GetTargetDagAccumulatorLeafDetail,
+    ) -> Result<Option<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>>> {
+        let peer_id = self.select_a_peer()?;
+        match self.client.get_accumulator_leaf_detail(peer_id, req).await {
+            Ok(result) => Ok(result),
+            Err(error) => {
+                warn!("get_accumulator_leaf_detail return None, error: {}", error.to_string());
+                Ok(None)
+            },
+        }
+    }
+
+    pub async fn get_dag_block_info(
+        &self,
+        _req: dag_protocol::GetSyncDagBlockInfo,
+    ) -> Result<Option<Vec<dag_protocol::SyncDagBlockInfo>>> {
+        todo!()
     }
 }

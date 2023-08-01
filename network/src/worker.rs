@@ -16,7 +16,7 @@ use starcoin_config::NetworkConfig;
 use starcoin_metrics::Registry;
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_service_registry::ServiceRef;
-use starcoin_types::startup_info::ChainInfo;
+use starcoin_types::startup_info::ChainStateInfo;
 use std::borrow::Cow;
 
 use crate::network_p2p_handle::Networkp2pHandle;
@@ -28,7 +28,7 @@ pub const RPC_PROTOCOL_PREFIX: &str = RpcInfo::RPC_PROTOCOL_PREFIX;
 
 pub fn build_network_worker(
     network_config: &NetworkConfig,
-    chain_info: ChainInfo,
+    chain_info: ChainStateInfo,
     protocols: Vec<Cow<'static, str>>,
     rpc_service: Option<(RpcInfo, ServiceRef<NetworkRpcService>)>,
     metrics_registry: Option<Registry>,
@@ -107,7 +107,8 @@ pub fn build_network_worker(
         ..NetworkConfiguration::default()
     };
     // protocol id is chain/{chain_id}, `RegisteredProtocol` will append `/starcoin` prefix
-    let protocol_id = ProtocolId::from(format!("chain/{}", chain_info.chain_id()).as_str());
+    let protocol_id =
+        ProtocolId::from(format!("chain/{}", chain_info.chain_info.chain_id()).as_str());
     debug!("Init network worker with config: {:?}", config);
 
     let worker: NetworkWorker<Networkp2pHandle> = NetworkWorker::new(Params::new(

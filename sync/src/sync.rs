@@ -3,13 +3,14 @@
 
 use crate::block_connector::BlockConnectorService;
 use crate::sync_metrics::SyncMetrics;
-use crate::tasks::{full_sync_task, AncestorEvent, SyncFetcher};
+use crate::tasks::{full_sync_task, AncestorEvent, SyncFetcher, sync_dag_full_task};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
 use futures::FutureExt;
 use futures_timer::Delay;
 use network_api::peer_score::PeerScoreMetrics;
 use network_api::{PeerId, PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
+use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_config::NodeConfig;
@@ -21,7 +22,7 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::block_info::BlockInfoStore;
-use starcoin_storage::{BlockStore, Storage};
+use starcoin_storage::{BlockStore, DagBlockStore, Storage, Store, SyncFlexiDagStore};
 use starcoin_sync_api::{
     PeerScoreRequest, PeerScoreResponse, SyncCancelRequest, SyncProgressReport,
     SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
@@ -33,6 +34,7 @@ use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemS
 use std::sync::Arc;
 use std::time::Duration;
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
+use std::result::Result::Ok;
 
 const REPUTATION_THRESHOLD: i32 = -1000;
 
@@ -149,6 +151,16 @@ impl SyncService {
         let peer_score_metrics = self.peer_score_metrics.clone();
         let sync_metrics = self.metrics.clone();
         let vm_metrics = self.vm_metrics.clone();
+
+        let accumulator_store = ctx
+            .get_shared::<Arc<Storage>>()
+            .expect("storage must exist")
+            .get_accumulator_store(AccumulatorStoreType::SyncDag);
+        let accumulator_snapshot = ctx
+            .get_shared::<Arc<Storage>>()
+            .expect("storage must exist")
+            .get_accumulator_snapshot_storage();
+ 
         let fut = async move {
             let peer_select_strategy =
                 peer_strategy.unwrap_or_else(|| config.sync.peer_select_strategy());
@@ -217,7 +229,21 @@ impl SyncService {
                 peer_selector.clone(),
                 network.clone(),
             ));
-            if let Some(target) =
+
+            // for testing, we start dag sync directly
+            if let Some(target_accumulator_info) =
+                rpc_client.get_best_dag_target(current_block_info.get_total_difficulty())?
+            {
+                let local_dag_accumulator_info = storage.get_dag_accumulator_info()?;
+                sync_dag_full_task(
+                    local_dag_accumulator_info,
+                    target_accumulator_info,
+                    rpc_client.clone(),
+                    accumulator_store,
+                    accumulator_snapshot,
+                );
+                Ok(None)
+            } else if let Some(target) =
                 rpc_client.get_best_target(current_block_info.get_total_difficulty())?
             {
                 info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
@@ -520,6 +546,8 @@ impl CheckSyncEvent {
 
 impl EventHandler<Self, CheckSyncEvent> for SyncService {
     fn handle_event(&mut self, msg: CheckSyncEvent, ctx: &mut ServiceContext<Self>) {
+        // comment temporarily, for the dag branch, starcoin will sync dag only
+        // it will add some logic to determine which part to sync in the future
         if let Err(e) = self.check_and_start_sync(msg.peers, msg.skip_pow_verify, msg.strategy, ctx)
         {
             error!("[sync] Check sync error: {:?}", e);

@@ -10,10 +10,10 @@ use starcoin_accumulator::AccumulatorNode;
 use starcoin_chain_service::{ChainAsyncService, ChainReaderService};
 use starcoin_crypto::HashValue;
 use starcoin_network_rpc_api::{
-    gen_server, BlockBody, GetAccountState, GetAccumulatorNodeByNodeHash, GetBlockHeadersByNumber,
-    GetBlockIds, GetStateWithProof, GetStateWithTableItemProof, GetTxnsWithHash, GetTxnsWithSize,
-    Ping, RpcRequest, MAX_BLOCK_HEADER_REQUEST_SIZE, MAX_BLOCK_INFO_REQUEST_SIZE,
-    MAX_BLOCK_REQUEST_SIZE, MAX_TXN_REQUEST_SIZE,
+    dag_protocol, gen_server, BlockBody, GetAccountState, GetAccumulatorNodeByNodeHash,
+    GetBlockHeadersByNumber, GetBlockIds, GetStateWithProof, GetStateWithTableItemProof,
+    GetTxnsWithHash, GetTxnsWithSize, Ping, RpcRequest, MAX_BLOCK_HEADER_REQUEST_SIZE,
+    MAX_BLOCK_INFO_REQUEST_SIZE, MAX_BLOCK_REQUEST_SIZE, MAX_TXN_REQUEST_SIZE,
 };
 use starcoin_service_registry::ServiceRef;
 use starcoin_state_api::{ChainStateAsyncService, StateWithProof, StateWithTableItemProof};
@@ -305,5 +305,33 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
             chain_service.get_blocks(ids).await
         };
         Box::pin(fut)
+    }
+
+    fn get_dag_accumulator_leaves(
+        &self,
+        _peer_id: PeerId,
+        req: dag_protocol::GetDagAccumulatorLeaves,
+    ) -> BoxFuture<Result<Vec<dag_protocol::TargetDagAccumulatorLeaf>>> {
+        let chain_service = self.chain_service.clone();
+        let fut = async move { chain_service.get_dag_accumulator_leaves(req).await };
+        Box::pin(fut)
+    }
+
+    fn get_accumulator_leaf_detail(
+        &self,
+        _peer_id: PeerId,
+        req: dag_protocol::GetTargetDagAccumulatorLeafDetail,
+    ) -> BoxFuture<Result<Option<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>>>> {
+        let chain_service = self.chain_service.clone();
+        let fut = async move { chain_service.get_dag_accumulator_leaves_detail(req).await };
+        Box::pin(fut)
+    }
+
+    fn get_dag_block_info(
+        &self,
+        _peer_id: PeerId,
+        _req: dag_protocol::GetSyncDagBlockInfo,
+    ) -> BoxFuture<Result<Option<Vec<dag_protocol::SyncDagBlockInfo>>>> {
+        todo!()
     }
 }

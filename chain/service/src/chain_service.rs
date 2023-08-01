@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Error, Result};
+use starcoin_chain::dag_chain::DagBlockChain;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::{
@@ -10,6 +11,9 @@ use starcoin_chain_api::{
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
+use starcoin_network_rpc_api::dag_protocol::{
+    GetDagAccumulatorLeaves, GetTargetDagAccumulatorLeafDetail,
+};
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
@@ -32,6 +36,8 @@ use std::sync::Arc;
 /// A Chain reader service to provider Reader API.
 pub struct ChainReaderService {
     inner: ChainReaderServiceInner,
+
+    dag_chain: DagBlockChain,
 }
 
 impl ChainReaderService {
@@ -42,7 +48,13 @@ impl ChainReaderService {
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         Ok(Self {
-            inner: ChainReaderServiceInner::new(config, startup_info, storage, vm_metrics)?,
+            inner: ChainReaderServiceInner::new(
+                config.clone(),
+                startup_info,
+                storage.clone(),
+                vm_metrics.clone(),
+            )?,
+            dag_chain: DagBlockChain::new(config.clone(), storage.clone(), vm_metrics)?,
         })
     }
 }
@@ -232,6 +244,27 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetBlockInfos(ids) => Ok(ChainResponse::BlockInfoVec(Box::new(
                 self.inner.get_block_infos(ids)?,
             ))),
+            ChainRequest::GetDagAccumulatorLeaves {
+                start_index,
+                batch_size,
+            } => Ok(ChainResponse::TargetDagAccumulatorLeaf(
+                self.dag_chain
+                    .get_accumulator_leaves(GetDagAccumulatorLeaves {
+                        accumulator_leaf_index: start_index,
+                        batch_size,
+                    })?,
+            )),
+            ChainRequest::GetTargetDagAccumulatorLeafDetail {
+                leaf_index,
+                batch_size,
+            } => Ok(ChainResponse::TargetDagAccumulatorLeafDetail(
+                self.dag_chain.get_target_dag_accumulator_leaf_detail(
+                    GetTargetDagAccumulatorLeafDetail {
+                        leaf_index,
+                        batch_size,
+                    },
+                )?,
+            )),
         }
     }
 }
