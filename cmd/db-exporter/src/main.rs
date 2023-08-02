@@ -9,8 +9,8 @@ use db_exporter::{
     verify_header::{verify_header_via_export_file, VerifyHeaderOptions},
     verify_module::{verify_modules_via_export_file, VerifyModuleOptions},
 };
-use num_cpus;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use num_cpus;
 use serde::{ser::SerializeMap, Serialize, Serializer};
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};

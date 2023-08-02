@@ -18,7 +18,7 @@ fn peer_to_peer<M: Measurement + 'static>(c: &mut Criterion<M>) {
         let bencher = TransactionBencher::new(
             any_with::<P2PTransferGen>((10_000, 10_000_000)),
             default_num_accounts,
-            default_num_transactions
+            default_num_transactions,
         );
         bencher.bench(b)
     });
