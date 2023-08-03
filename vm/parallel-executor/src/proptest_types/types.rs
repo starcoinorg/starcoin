@@ -278,17 +278,21 @@ impl<V: Clone + Eq> ExpectedOutput<V> {
     pub fn check_output<K>(&self, results: &Result<Vec<Output<K, V>>, usize>) -> bool {
         match (self, results) {
             (Self::Aborted(i), Err(Error::UserError(idx))) => i == idx,
-            (Self::SkipRest(skip_at, expected_results), Ok(results)) => {
-                results
+            (Self::SkipRest(skip_at, expected_results), Ok(ok_results)) => {
+                ok_results
                     .iter()
                     .take(*skip_at)
                     .zip(expected_results.iter())
                     .all(|(Output(_, result), expected_results)| expected_results == result)
-                    && results
+                    && ok_results
                         .iter()
                         .skip(*skip_at)
                         .all(|Output(_, result)| result.is_empty())
-            }
+            },
+            (Self::SkipRest(_skip_at, _expected_results), Err(Error::BlockRestart)) => {
+                // Not check any val
+                true
+            },
             (Self::Success(expected_results), Ok(results)) => expected_results
                 .iter()
                 .zip(results.iter())
