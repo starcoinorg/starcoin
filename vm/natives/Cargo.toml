@@ -30,7 +30,7 @@ testing = ["move-stdlib/testing"]
 authors = { workspace = true }
 edition = { workspace = true }
 name = "starcoin-natives"
-version = "1.13.6"
+version = "1.13.7"
 homepage = { workspace = true }
 license = { workspace = true }
 publish = { workspace = true }
