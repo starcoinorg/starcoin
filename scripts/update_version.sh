@@ -31,6 +31,16 @@ if [ "$3" == "--execute" ]; then
     simulate=false
 fi
 
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  if ! command -v gsed >/dev/null; then
+    echo "gsed not found, installing..."
+    brew install gnu-sed
+  fi
+  SED=gsed
+else
+  SED=sed
+fi
+
 # Get input parameters
 old_version=$1
 new_version=$2
@@ -45,9 +55,9 @@ base_dir=$(dirname "$script_dir")
 find "$base_dir" -name "target" -prune -o -name "Cargo.toml" -type f | while read -r cargo_file; do
     # Use sed command to find and replace version number in [package] section
     if [ "$simulate" = true ]; then
-        sed -n "/\[package\]/,/^$/p" "$cargo_file" | sed "s/version = \"$old_version\"/version = \"$new_version\"/g"
+        $SED -n "/\[package\]/,/^$/p" "$cargo_file" | $SED "s/version = \"$old_version\"/version = \"$new_version\"/g"
     else
-        sed -i "/\[package\]/,/^$/ s/version = \"$old_version\"/version = \"$new_version\"/" "$cargo_file"
+        $SED -i "/\[package\]/,/^$/ s/version = \"$old_version\"/version = \"$new_version\"/" "$cargo_file"
         echo "Version number in $cargo_file has been changed to $new_version"
     fi
 done

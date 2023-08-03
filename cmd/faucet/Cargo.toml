@@ -35,7 +35,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-faucet"
 publish = { workspace = true }
-version = "1.13.6"
+version = "1.13.7"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }
