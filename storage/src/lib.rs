@@ -272,6 +272,7 @@ pub trait TransactionStore {
 pub trait WriteSetStore {
     fn get_write_set(&self, hash: HashValue) -> Result<Option<WriteSet>>;
     fn save_write_set(&self, hash: HashValue, write_set: WriteSet) -> Result<()>;
+    fn save_write_set_batch(&self, write_set_vec: Vec<(HashValue, WriteSet)>) -> Result<()>;
 }
 
 // TODO: remove Arc<dyn Store>, we can clone Storage directly.
@@ -566,6 +567,10 @@ impl WriteSetStore for Storage {
 
     fn save_write_set(&self, hash: HashValue, write_set: WriteSet) -> Result<()> {
         self.write_set_store.save_write_set(hash, write_set)
+    }
+
+    fn save_write_set_batch(&self, write_set_vec: Vec<(HashValue, WriteSet)>) -> Result<()> {
+        self.write_set_store.save_write_set_batch(write_set_vec)
     }
 }
 

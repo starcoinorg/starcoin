@@ -321,15 +321,15 @@ impl BlockChain {
     }
 
     pub fn verify_with_verifier<V>(&mut self, block: Block) -> Result<VerifiedBlock>
-    where
-        V: BlockVerifier,
+        where
+            V: BlockVerifier,
     {
         V::verify_block(self, block)
     }
 
     pub fn apply_with_verifier<V>(&mut self, block: Block) -> Result<ExecutedBlock>
-    where
-        V: BlockVerifier,
+        where
+            V: BlockVerifier,
     {
         let verified_block = self.verify_with_verifier::<V>(block)?;
         watch(CHAIN_WATCH_NAME, "n1");
@@ -505,11 +505,7 @@ impl BlockChain {
         storage.commit_block(block.clone())?;
 
         storage.save_block_info(block_info.clone())?;
-
-        for (hash_value, write_set) in txn_write_set{
-            storage.save_write_set(hash_value, write_set)?;
-        }
-
+        storage.save_write_set_batch(txn_write_set)?;
 
         watch(CHAIN_WATCH_NAME, "n26");
         Ok(ExecutedBlock { block, block_info })

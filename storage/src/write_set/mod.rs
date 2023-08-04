@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::storage::{CodecKVStore, ValueCodec};
+use crate::storage::{CodecKVStore, CodecWriteBatch, ValueCodec};
 use crate::{define_storage, WriteSetStore, WRITE_SET_PRIFIX_NAME};
 use anyhow::Result;
 use bcs_ext::BCSCodec;
@@ -27,5 +27,11 @@ impl WriteSetStore for WriteSetStorage {
 
     fn save_write_set(&self, hash: HashValue, write_set_vec: WriteSet) -> Result<()> {
         self.put(hash, write_set_vec)
+    }
+
+    fn save_write_set_batch(&self, write_set_vec: Vec<(HashValue, WriteSet)>) -> Result<()> {
+        let batch =
+            CodecWriteBatch::new_puts(write_set_vec.into_iter().map(|(hash, write_set)| (hash, write_set)).collect());
+        self.write_batch(batch)
     }
 }
