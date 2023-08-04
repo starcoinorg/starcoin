@@ -12,6 +12,7 @@ use futures::channel::oneshot;
 use futures::executor::block_on;
 use futures_timer::Delay;
 use network_api::{PeerProvider, PeerSelector, PeerStrategy};
+use num_cpus;
 use starcoin_account_service::{AccountEventService, AccountService, AccountStorage};
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_chain_notify::ChainNotifyHandlerService;
@@ -234,7 +235,7 @@ impl NodeService {
         }
 
         // XXX FIXME YSG add execute_config
-        StarcoinVM::set_concurrency_level_once(4);
+        StarcoinVM::set_concurrency_level_once(num_cpus::get());
         let (start_sender, start_receiver) = oneshot::channel();
         let join_handle = timeout_join_handler::spawn(move || {
             let system = System::with_tokio_rt(|| {

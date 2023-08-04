@@ -1,3 +1,14 @@
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-vm-runtime"
+publish = { workspace = true }
+version = "1.13.5"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
 [dependencies]
 anyhow = { workspace = true }
 bcs-ext = { package = "bcs-ext", workspace = true }
@@ -32,13 +43,4 @@ default = ["metrics"]
 metrics = ["starcoin-metrics"]
 testing = ["move-stdlib/testing", "starcoin-natives/testing"]
 
-[package]
-authors = { workspace = true }
-edition = { workspace = true }
-license = { workspace = true }
-name = "starcoin-vm-runtime"
-publish = { workspace = true }
-version = "1.13.5"
-homepage = { workspace = true }
-repository = { workspace = true }
-rust-version = { workspace = true }
+
