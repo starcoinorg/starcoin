@@ -59,7 +59,7 @@ fn test_put_and_save() {
     //  Check save
     storage
         .write_set_store
-        .save_write_set(hash, write_set.clone())
+        .save_write_set(hash, write_set)
         .expect("Save write set failed");
     let after = storage
         .write_set_store
@@ -91,8 +91,7 @@ fn test_put_and_save_batch() {
     let write_set = to_write_set(access_path.clone(), state0.clone());
     let hash = HashValue::random();
 
-    let mut data_batch = Vec::new();
-    data_batch.push((hash, write_set));
+    let data_batch = vec![(hash, write_set)];
 
     //  Check save
     storage.write_set_store
@@ -141,11 +140,11 @@ fn test_put_and_save_table_item() {
     let mut iter = after.into_iter();
 
     let (st_key, op) = iter.next().expect("Error");
-    assert_eq!(st_key, table_item.clone());
-    assert_eq!(op, WriteOp::Value(table_item_val.clone()));
+    assert_eq!(st_key, table_item);
+    assert_eq!(op, WriteOp::Value(table_item_val));
 
     let (st_key, op) = iter.next().expect("Error");
-    assert_eq!(st_key, table_item.clone());
+    assert_eq!(st_key, table_item);
     assert_eq!(op, WriteOp::Deletion);
 }
 
@@ -162,8 +161,7 @@ fn test_put_and_save_table_item_batch() {
     let table_item_val = HashValue::random().to_vec();
     let hash = HashValue::random();
 
-    let mut batch_data = Vec::new();
-    batch_data.push((hash, to_table_item_write_set(&table_item, table_item_val.clone())));
+    let batch_data = vec![(hash, to_table_item_write_set(&table_item, table_item_val.clone()))];
     storage
         .write_set_store
         .save_write_set_batch(batch_data)
@@ -180,10 +178,10 @@ fn test_put_and_save_table_item_batch() {
     let mut iter = after.into_iter();
 
     let (st_key, op) = iter.next().expect("Error");
-    assert_eq!(st_key, table_item.clone());
-    assert_eq!(op, WriteOp::Value(table_item_val.clone()));
+    assert_eq!(st_key, table_item);
+    assert_eq!(op, WriteOp::Value(table_item_val));
 
     let (st_key, op) = iter.next().expect("Error");
-    assert_eq!(st_key, table_item.clone());
+    assert_eq!(st_key, table_item);
     assert_eq!(op, WriteOp::Deletion);
 }
