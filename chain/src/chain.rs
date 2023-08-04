@@ -321,15 +321,15 @@ impl BlockChain {
     }
 
     pub fn verify_with_verifier<V>(&mut self, block: Block) -> Result<VerifiedBlock>
-        where
-            V: BlockVerifier,
+    where
+        V: BlockVerifier,
     {
         V::verify_block(self, block)
     }
 
     pub fn apply_with_verifier<V>(&mut self, block: Block) -> Result<ExecutedBlock>
-        where
-            V: BlockVerifier,
+    where
+        V: BlockVerifier,
     {
         let verified_block = self.verify_with_verifier::<V>(block)?;
         watch(CHAIN_WATCH_NAME, "n1");

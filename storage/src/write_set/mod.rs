@@ -30,8 +30,12 @@ impl WriteSetStore for WriteSetStorage {
     }
 
     fn save_write_set_batch(&self, write_set_vec: Vec<(HashValue, WriteSet)>) -> Result<()> {
-        let batch =
-            CodecWriteBatch::new_puts(write_set_vec.into_iter().map(|(hash, write_set)| (hash, write_set)).collect());
+        let batch = CodecWriteBatch::new_puts(
+            write_set_vec
+                .into_iter()
+                .map(|(hash, write_set)| (hash, write_set))
+                .collect(),
+        );
         self.write_batch(batch)
     }
 }
