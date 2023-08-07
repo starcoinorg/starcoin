@@ -26,6 +26,10 @@ use starcoin_types::transaction::{
 use starcoin_types::vm_error::KeptVMStatus;
 //use starcoin_vm_types::account_address::AccountAddress;
 //use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use crate::table_info::TableInfoStore;
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::language_storage::TypeTag;
+use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::path::Path;
 
 #[test]
@@ -475,8 +479,6 @@ pub fn test_cache_evict_multi_get() -> Result<()> {
     Ok(())
 }
 
-/*
-XXX FIXME YSG temp comment
 #[test]
 fn test_table_info_storage() -> Result<()> {
     let tmpdir = starcoin_config::temp_dir();
@@ -514,4 +516,3 @@ fn test_table_info_storage() -> Result<()> {
     assert_eq!(vals, vals2);
     Ok(())
 }
-*/
