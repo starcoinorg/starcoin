@@ -88,7 +88,8 @@ impl ParallelStarcoinVM {
                     .collect(),
                 None,
             )),
-            Err(err @ Error::BlockRestart) => {
+            // XXX FIXME YSG
+            Err(err @ Error::BlockRestart) | Err(err @ Error::ModulePathReadWrite) => {
                 let output = StarcoinVM::execute_block_and_keep_vm_status(
                     transactions,
                     state_view,

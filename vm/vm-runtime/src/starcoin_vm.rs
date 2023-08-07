@@ -1041,6 +1041,8 @@ impl StarcoinVM {
         state_view: &S,
         output: &TransactionOutput,
     ) -> Result<(), Error> {
+        // XXX FIXME YSG if GasSchedule.move UpgradeEvent
+        // XXX FIXME YSG ConfigChangeEvent include ConsensusConfig, DaoConfig,GasScheule, MoveLanguageVersion, TransactionPublishOption, VMConfig
         for event in output.events() {
             if event.key().get_creator_address() == genesis_address()
                 && (event.is::<UpgradeEvent>() || event.is::<ConfigChangeEvent<Version>>())
@@ -1516,7 +1518,7 @@ impl VMExecutor for StarcoinVM {
     ) -> Result<Vec<TransactionOutput>, VMStatus> {
         let concurrency_level = Self::get_concurrency_level();
         if concurrency_level > 1 {
-            let (result, _) = crate::parallel_executor::ParallelStarcoinVM::execute_block(
+            let (result, err) = crate::parallel_executor::ParallelStarcoinVM::execute_block(
                 transactions,
                 state_view,
                 concurrency_level,
@@ -1524,6 +1526,7 @@ impl VMExecutor for StarcoinVM {
                 metrics,
             )?;
             // debug!("TurboSTM executor concurrency_level {}", concurrency_level);
+            debug!("Parallel execution error {:?}", err);
             Ok(result)
         } else {
             let output = Self::execute_block_and_keep_vm_status(
@@ -1555,6 +1558,8 @@ impl VMAdapter for StarcoinVM {
 
     fn should_restart_execution(output: &TransactionOutput) -> bool {
         // XXX FIXME YSG if GasSchedule.move UpgradeEvent
+        // XXX FIXME YSG ConfigChangeEvent include ConsensusConfig, DaoConfig,GasScheule, MoveLanguageVersion, TransactionPublishOption, VMConfig
+
         for event in output.events() {
             if event.key().get_creator_address() == genesis_address()
                 && (event.is::<UpgradeEvent>() || event.is::<ConfigChangeEvent<Version>>())

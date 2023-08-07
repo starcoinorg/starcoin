@@ -10275,6 +10275,7 @@ dependencies = [
  "starcoin-infallible",
  "starcoin-logger",
  "starcoin-mvhashmap",
+ "starcoin-vm-types",
 ]
 
 [[package]]

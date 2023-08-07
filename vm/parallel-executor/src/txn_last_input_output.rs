@@ -1,13 +1,17 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::task::ModulePath;
 use crate::{
     errors::Error,
     scheduler::{Incarnation, TxnIndex, Version},
     task::{ExecutionStatus, Transaction, TransactionOutput},
 };
+use anyhow::{bail, Result};
 use arc_swap::ArcSwapOption;
 use crossbeam::utils::CachePadded;
+use dashmap::DashSet;
+use starcoin_vm_types::access_path::AccessPath;
 use std::{collections::HashSet, sync::Arc};
 
 type TxnInput<K> = Vec<ReadDescriptor<K>>;
@@ -30,7 +34,7 @@ pub struct ReadDescriptor<K> {
     kind: ReadKind,
 }
 
-impl<K> ReadDescriptor<K> {
+impl<K: ModulePath> ReadDescriptor<K> {
     pub fn from(access_path: K, txn_idx: TxnIndex, incarnation: Incarnation) -> Self {
         Self {
             access_path,
@@ -43,6 +47,10 @@ impl<K> ReadDescriptor<K> {
             access_path,
             kind: ReadKind::Storage,
         }
+    }
+
+    fn module_path(&self) -> Option<AccessPath> {
+        self.access_path.module_path()
     }
 
     pub fn path(&self) -> &K {
@@ -65,9 +73,15 @@ pub struct TxnLastInputOutput<K, T, E> {
     inputs: Vec<CachePadded<ArcSwapOption<TxnInput<K>>>>, // txn_idx -> input.
 
     outputs: Vec<CachePadded<ArcSwapOption<TxnOutput<T, E>>>>, // txn_idx -> output.
+
+    // Record all writes and reads to access paths corresponding to modules (code) in any
+    // (speculative) executions. Used to avoid a potential race with module publishing and
+    // Move-VM loader cache - see 'record' function comment for more information.
+    module_writes: DashSet<AccessPath>,
+    module_reads: DashSet<AccessPath>,
 }
 
-impl<K, T: TransactionOutput, E: Send + Clone> TxnLastInputOutput<K, T, E> {
+impl<K: ModulePath, T: TransactionOutput, E: Send + Clone> TxnLastInputOutput<K, T, E> {
     pub fn new(num_txns: usize) -> Self {
         Self {
             inputs: (0..num_txns)
@@ -76,7 +90,25 @@ impl<K, T: TransactionOutput, E: Send + Clone> TxnLastInputOutput<K, T, E> {
             outputs: (0..num_txns)
                 .map(|_| CachePadded::new(ArcSwapOption::empty()))
                 .collect(),
+            module_writes: DashSet::new(),
+            module_reads: DashSet::new(),
         }
+    }
+
+    fn append_and_check(
+        paths: Vec<AccessPath>,
+        set_to_append: &DashSet<AccessPath>,
+        set_to_check: &DashSet<AccessPath>,
+    ) -> Result<()> {
+        for path in paths {
+            // Standard flags, first show, then look.
+            set_to_append.insert(path.clone());
+
+            if set_to_check.contains(&path) {
+                bail!("Module published and also read");
+            }
+        }
+        Ok(())
     }
 
     pub fn record(
@@ -84,9 +116,24 @@ impl<K, T: TransactionOutput, E: Send + Clone> TxnLastInputOutput<K, T, E> {
         txn_idx: TxnIndex,
         input: Vec<ReadDescriptor<K>>,
         output: ExecutionStatus<T, Error<E>>,
-    ) {
+    ) -> Result<()> {
+        let read_modules: Vec<AccessPath> =
+            input.iter().filter_map(|desc| desc.module_path()).collect();
+        let written_modules: Vec<AccessPath> = match &output {
+            ExecutionStatus::Success(output) | ExecutionStatus::SkipRest(output) => output
+                .get_writes()
+                .into_iter()
+                .filter_map(|(k, _)| k.module_path())
+                .collect(),
+            ExecutionStatus::Abort(_) => Vec::new(),
+        };
+
+        Self::append_and_check(read_modules, &self.module_reads, &self.module_writes)?;
+        Self::append_and_check(written_modules, &self.module_writes, &self.module_reads)?;
+
         self.inputs[txn_idx].store(Some(Arc::new(input)));
         self.outputs[txn_idx].store(Some(Arc::new(output)));
+        Ok(())
     }
 
     pub fn read_set(&self, txn_idx: TxnIndex) -> Option<Arc<Vec<ReadDescriptor<K>>>> {

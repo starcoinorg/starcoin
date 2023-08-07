@@ -26,6 +26,7 @@ fn test_access_path_str_valid() {
                           r1.as_str()];
     for case in test_cases {
         let access_path = AccessPath::from_str(case).unwrap();
+        println!("access {}", access_path);
         assert_eq!(case.to_owned(), access_path.to_string())
     }
 }
