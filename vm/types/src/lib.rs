@@ -11,7 +11,10 @@ pub mod location {
 }
 
 pub mod identifier {
-    pub use move_core_types::identifier::{IdentStr, Identifier};
+    pub use move_core_types::{
+        ident_str,
+        identifier::{IdentStr, Identifier},
+    };
 }
 
 pub mod language_storage {

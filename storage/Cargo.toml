@@ -24,6 +24,7 @@ starcoin-config = { workspace = true }
 starcoin-metrics = { workspace = true }
 starcoin-uint = { workspace = true }
 starcoin-vm-types = { workspace = true }
+starcoin-resource-viewer = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

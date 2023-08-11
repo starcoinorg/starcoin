@@ -20,6 +20,7 @@ use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
+use starcoin_storage::indexer::Indexer;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
@@ -506,6 +507,15 @@ impl BlockChain {
         storage.save_block_info(block_info.clone())?;
 
         watch(CHAIN_WATCH_NAME, "n26");
+
+        let write_sets = executed_data.write_sets;
+        let mut keys = vec![];
+        let mut values = vec![];
+        let indexer = Indexer::new(storage);
+
+        indexer.index(&statedb, &write_sets, &mut keys, &mut values)?;
+        storage.save_table_infos(keys, values)?;
+
         Ok(ExecutedBlock { block, block_info })
     }
 

@@ -104,14 +104,12 @@ pub enum AnnotatedMoveValue {
 
 pub struct MoveValueAnnotator<'a> {
     cache: Resolver<'a>,
-    _data_view: &'a dyn StateView,
 }
 
 impl<'a> MoveValueAnnotator<'a> {
     pub fn new(view: &'a dyn StateView) -> Self {
         Self {
             cache: Resolver::new(view),
-            _data_view: view,
         }
     }
 

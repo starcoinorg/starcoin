@@ -22,6 +22,16 @@ impl WriteOp {
             WriteOp::Value(_) => false,
         }
     }
+
+    #[inline]
+    pub fn bytes(&self) -> Option<&[u8]> {
+        use WriteOp::*;
+
+        match self {
+            Value(d) => Some(d.as_ref()),
+            Deletion => None,
+        }
+    }
 }
 
 impl std::fmt::Debug for WriteOp {

@@ -57,6 +57,7 @@ mod upgrade;
 
 #[macro_use]
 pub mod storage_macros;
+pub mod indexer;
 
 pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
 pub const BLOCK_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_block";
@@ -574,6 +575,7 @@ pub trait Store:
     + BlockTransactionInfoStore
     + ContractEventStore
     + IntoSuper<dyn StateNodeStore>
+    + TableInfoStore
 {
     fn get_transaction_info_by_block_and_index(
         &self,
