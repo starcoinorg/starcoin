@@ -31,7 +31,7 @@ starcoin-gas-algebra-ext = { workspace = true }
 move-core-types = { workspace = true }
 move-ir-compiler = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
-starcoin-parallel-executor = { workspace = true }
+starcoin-block-executor = { workspace = true }
 test-helper = { workspace = true }
 stdlib = { workspace = true }
 starcoin-gas = { workspace = true }

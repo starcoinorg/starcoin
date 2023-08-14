@@ -75,7 +75,7 @@ members = [
     "vm/compiler",
     "vm/move-prover",
     "vm/mvhashmap",
-    "vm/parallel-executor",
+    "vm/block-executor",
     "vm/transaction-builder",
     "vm/transaction-builder-generator",
     "vm/move-coverage",
@@ -87,7 +87,7 @@ members = [
     "vm/move-package-manager",
     "vm/vm-status-translator",
     "vm/starcoin-transactional-test-harness",
-    "vm/parallel-executor",
+    "vm/block-executor",
     "vm/transaction-benchmarks",
     "vm/e2e-tests",
     "vm/proptest-helpers",
@@ -185,7 +185,7 @@ default-members = [
     "vm/compiler",
     "vm/move-prover",
     "vm/mvhashmap",
-    "vm/parallel-executor",
+    "vm/block-executor",
     "vm/transaction-builder",
     "vm/transaction-builder-generator",
     "vm/move-coverage",
@@ -492,7 +492,7 @@ stest-macro = { path = "commons/stest/stest-macro" }
 stream-task = { path = "commons/stream-task" }
 starcoin-mvhashmap = { path = "vm/mvhashmap" }
 starcoin-infallible = { path = "commons/infallible" }
-starcoin-parallel-executor = { path = "vm/parallel-executor" }
+starcoin-block-executor = { path = "vm/block-executor" }
 starcoin-transaction-benchmarks = { path = "vm/transaction-benchmarks" }
 starcoin-language-e2e-tests = { path = "vm/e2e-tests" }
 starcoin-proptest-helpers = { path = "vm/proptest-helpers" }

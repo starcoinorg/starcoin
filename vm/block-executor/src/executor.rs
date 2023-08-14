@@ -17,7 +17,7 @@ use std::{collections::HashSet, hash::Hash, marker::PhantomData, sync::Arc, thre
 static RAYON_EXEC_POOL: Lazy<rayon::ThreadPool> = Lazy::new(|| {
     rayon::ThreadPoolBuilder::new()
         .num_threads(num_cpus::get())
-        .thread_name(|index| format!("parallel_executor_{}", index))
+        .thread_name(|index| format!("par_exec_{}", index))
         .build()
         .unwrap()
 });
@@ -68,7 +68,7 @@ impl<'a, K: ModulePath + PartialOrd + Send + Clone + Hash + Eq, V: Send + Sync>
                     // `self.txn_idx` estimated to depend on a write from `dep_idx`.
                     match self.scheduler.wait_for_dependency(self.txn_idx, dep_idx) {
                         Some(dep_condition) => {
-                            // Wait on a condition variable correpsonding to the encountered
+                            // Wait on a condition variable corresponding to the encountered
                             // read dependency. Once the dep_idx finishes re-execution, scheduler
                             // will mark the dependency as resolved, and then the txn_idx will be
                             // scheduled for re-execution, which will re-awaken cvar here.
@@ -101,14 +101,14 @@ impl<'a, K: ModulePath + PartialOrd + Send + Clone + Hash + Eq, V: Send + Sync>
     }
 }
 
-pub struct ParallelTransactionExecutor<T: Transaction, E: ExecutorTask> {
+pub struct BlockExecutor<T: Transaction, E: ExecutorTask> {
     // number of active concurrent tasks, corresponding to the maximum number of rayon
     // threads that may be concurrently participating in parallel execution.
     concurrency_level: usize,
     phantom: PhantomData<(T, E)>,
 }
 
-impl<T, E> ParallelTransactionExecutor<T, E>
+impl<T, E> BlockExecutor<T, E>
 where
     T: Transaction,
     E: ExecutorTask<T = T>,

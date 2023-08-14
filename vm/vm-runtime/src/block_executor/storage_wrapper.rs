@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::data_cache::{IntoMoveResolver, RemoteStorageOwned};
-use starcoin_parallel_executor::executor::MVHashMapView;
+use starcoin_block_executor::executor::MVHashMapView;
 use starcoin_vm_types::{
     state_store::state_key::StateKey, state_view::StateView, write_set::WriteOp,
 };

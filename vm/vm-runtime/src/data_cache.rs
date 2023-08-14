@@ -8,17 +8,19 @@ use move_core_types::resolver::{ModuleResolver, ResourceResolver};
 use move_table_extension::{TableHandle, TableResolver};
 use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::{
     access_path::AccessPath,
     errors::*,
     language_storage::{ModuleId, StructTag},
+    state_store::state_key::StateKey,
     state_view::StateView,
     vm_status::StatusCode,
     write_set::{WriteOp, WriteSet},
 };
-use std::collections::btree_map::BTreeMap;
-use std::ops::{Deref, DerefMut};
+use std::{
+    collections::btree_map::BTreeMap,
+    ops::{Deref, DerefMut},
+};
 
 /// A local cache for a given a `StateView`. The cache is private to the Diem layer
 /// but can be used as a one shot cache for systems that need a simple `RemoteCache`

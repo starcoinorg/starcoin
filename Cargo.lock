@@ -9220,6 +9220,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-block-executor"
+version = "1.13.5"
+dependencies = [
+ "anyhow",
+ "arc-swap",
+ "criterion",
+ "crossbeam",
+ "dashmap",
+ "num_cpus",
+ "once_cell",
+ "proptest",
+ "proptest-derive",
+ "rayon",
+ "starcoin-infallible",
+ "starcoin-logger",
+ "starcoin-mvhashmap",
+ "starcoin-vm-types",
+]
+
+[[package]]
 name = "starcoin-block-relayer"
 version = "1.13.7"
 dependencies = [
@@ -9802,11 +9822,11 @@ dependencies = [
  "proptest-derive",
  "rand 0.8.5",
  "serde 1.0.152",
+ "starcoin-block-executor",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-gas",
  "starcoin-gas-algebra-ext",
- "starcoin-parallel-executor",
  "starcoin-proptest-helpers",
  "starcoin-state-tree",
  "starcoin-statedb",
@@ -10256,26 +10276,6 @@ dependencies = [
  "starcoin-storage",
  "starcoin-types",
  "stest",
-]
-
-[[package]]
-name = "starcoin-parallel-executor"
-version = "1.13.5"
-dependencies = [
- "anyhow",
- "arc-swap",
- "criterion",
- "crossbeam",
- "dashmap",
- "num_cpus",
- "once_cell",
- "proptest",
- "proptest-derive",
- "rayon",
- "starcoin-infallible",
- "starcoin-logger",
- "starcoin-mvhashmap",
- "starcoin-vm-types",
 ]
 
 [[package]]
@@ -11013,6 +11013,7 @@ dependencies = [
  "rand_core 0.6.4",
  "rayon",
  "serde 1.0.152",
+ "starcoin-block-executor",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-gas",
@@ -11020,7 +11021,6 @@ dependencies = [
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-natives",
- "starcoin-parallel-executor",
  "starcoin-types",
  "starcoin-vm-types",
  "stdlib",

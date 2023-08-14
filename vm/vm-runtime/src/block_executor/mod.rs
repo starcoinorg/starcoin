@@ -4,17 +4,17 @@
 mod storage_wrapper;
 mod vm_wrapper;
 
-use crate::metrics::VMMetrics;
 use crate::{
     adapter_common::{preprocess_transaction, PreprocessedTransaction},
-    parallel_executor::vm_wrapper::StarcoinVMWrapper,
+    block_executor::vm_wrapper::StarcoinVMWrapper,
+    metrics::VMMetrics,
     starcoin_vm::StarcoinVM,
 };
 use move_core_types::vm_status::{StatusCode, VMStatus};
 use rayon::prelude::*;
-use starcoin_parallel_executor::{
+use starcoin_block_executor::{
     errors::Error,
-    executor::ParallelTransactionExecutor,
+    executor::BlockExecutor,
     task::{Transaction as PTransaction, TransactionOutput as PTransactionOutput},
 };
 use starcoin_vm_types::{
@@ -61,9 +61,9 @@ impl PTransactionOutput for StarcoinTransactionOutput {
     }
 }
 
-pub struct ParallelStarcoinVM();
+pub struct BlockStarcoinVM();
 
-impl ParallelStarcoinVM {
+impl BlockStarcoinVM {
     pub fn execute_block<S: StateView>(
         transactions: Vec<Transaction>,
         state_view: &S,
@@ -76,10 +76,9 @@ impl ParallelStarcoinVM {
             .map(|txn| preprocess_transaction(txn.clone()))
             .collect();
 
-        match ParallelTransactionExecutor::<PreprocessedTransaction, StarcoinVMWrapper<S>>::new(
-            concurrency_level,
-        )
-        .execute_transactions_parallel(state_view, signature_verified_block)
+        // XXX FIXME YSG block_gas_limit
+        match BlockExecutor::<PreprocessedTransaction, StarcoinVMWrapper<S>>::new(concurrency_level)
+            .execute_transactions_parallel(state_view, signature_verified_block)
         {
             Ok(results) => Ok((
                 results

@@ -3,11 +3,11 @@
 
 use crate::{
     adapter_common::{PreprocessedTransaction, VMAdapter},
-    parallel_executor::{storage_wrapper::VersionedView, StarcoinTransactionOutput},
+    block_executor::{storage_wrapper::VersionedView, StarcoinTransactionOutput},
     starcoin_vm::StarcoinVM,
 };
 
-use starcoin_parallel_executor::{
+use starcoin_block_executor::{
     executor::MVHashMapView,
     task::{ExecutionStatus, ExecutorTask},
 };

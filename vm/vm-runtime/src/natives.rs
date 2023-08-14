@@ -1,10 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-use move_core_types::account_address::AccountAddress;
-use move_core_types::language_storage::CORE_CODE_ADDRESS;
-use move_vm_runtime::native_functions;
+
+use move_core_types::{account_address::AccountAddress, language_storage::CORE_CODE_ADDRESS};
 use move_vm_runtime::native_functions::{
-    make_table_from_iter, NativeFunction, NativeFunctionTable,
+    self, make_table_from_iter, NativeFunction, NativeFunctionTable,
 };
 use starcoin_gas::NativeGasParameters;
 

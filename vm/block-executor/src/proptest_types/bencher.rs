@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    executor::ParallelTransactionExecutor,
+    executor::BlockExecutor,
     proptest_types::types::{
         ExpectedOutput, Task, Transaction, TransactionGen, TransactionGenParams,
     },
@@ -105,10 +105,8 @@ where
 
     pub(crate) fn run(self) {
         let output =
-            ParallelTransactionExecutor::<Transaction<KeyType<K>, V>, Task<KeyType<K>, V>>::new(
-                num_cpus::get(),
-            )
-            .execute_transactions_parallel((), self.transactions.clone());
+            BlockExecutor::<Transaction<KeyType<K>, V>, Task<KeyType<K>, V>>::new(num_cpus::get())
+                .execute_transactions_parallel((), self.transactions.clone());
 
         assert!(self.expected_output.check_output(&output));
     }

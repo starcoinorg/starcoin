@@ -31,7 +31,7 @@ starcoin-metrics = { optional = true, workspace = true }
 starcoin-gas = { workspace = true }
 starcoin-gas-algebra-ext = { workspace = true }
 serde = { features = ["derive"], workspace = true }
-starcoin-parallel-executor = { workspace = true }
+starcoin-block-executor = { workspace = true }
 rayon = { workspace = true }
 num_cpus = { workspace = true }
 

@@ -4,7 +4,7 @@
 use crate::errors::Error;
 use crate::proptest_types::types::KeyType;
 use crate::{
-    executor::ParallelTransactionExecutor,
+    executor::BlockExecutor,
     proptest_types::types::{
         ExpectedOutput, Task, Transaction, TransactionGen, TransactionGenParams,
     },
@@ -49,10 +49,8 @@ where
     let mut ret = true;
     for _ in 0..num_repeat {
         let output =
-            ParallelTransactionExecutor::<Transaction<KeyType<K>, V>, Task<KeyType<K>, V>>::new(
-                num_cpus::get(),
-            )
-            .execute_transactions_parallel((), transactions.clone());
+            BlockExecutor::<Transaction<KeyType<K>, V>, Task<KeyType<K>, V>>::new(num_cpus::get())
+                .execute_transactions_parallel((), transactions.clone());
 
         if module_access.0 && module_access.1 {
             assert_eq!(output.unwrap_err(), Error::ModulePathReadWrite);
@@ -269,7 +267,7 @@ fn publishing_fixed_params() {
     };
 
     // Confirm still no intersection
-    let output = ParallelTransactionExecutor::<
+    let output = BlockExecutor::<
         Transaction<KeyType<[u8; 32]>, [u8; 32]>,
         Task<KeyType<[u8; 32]>, [u8; 32]>,
     >::new(num_cpus::get())
@@ -304,7 +302,7 @@ fn publishing_fixed_params() {
     };
 
     for _ in 0..200 {
-        let output = ParallelTransactionExecutor::<
+        let output = BlockExecutor::<
             Transaction<KeyType<[u8; 32]>, [u8; 32]>,
             Task<KeyType<[u8; 32]>, [u8; 32]>,
         >::new(num_cpus::get())

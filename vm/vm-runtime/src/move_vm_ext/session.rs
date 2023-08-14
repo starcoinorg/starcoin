@@ -1,23 +1,27 @@
 use crate::access_path_cache::AccessPathCache;
-use move_core_types::account_address::AccountAddress;
-use move_core_types::effects::{
-    ChangeSet as MoveChangeSet, Event as MoveEvent, Op as MoveStorageOp,
+use move_core_types::{
+    account_address::AccountAddress,
+    effects::{ChangeSet as MoveChangeSet, Event as MoveEvent, Op as MoveStorageOp},
 };
-use move_core_types::language_storage::ModuleId;
-use move_core_types::vm_status::{StatusCode, VMStatus};
+use move_core_types::{
+    language_storage::ModuleId,
+    vm_status::{StatusCode, VMStatus},
+};
 use move_table_extension::TableChangeSet;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::hash::{CryptoHash, CryptoHasher, PlainCryptoHash};
-use starcoin_crypto::HashValue;
-use starcoin_vm_types::block_metadata::BlockMetadata;
-use starcoin_vm_types::contract_event::ContractEvent;
-use starcoin_vm_types::event::EventKey;
-use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-use starcoin_vm_types::transaction::SignatureCheckedTransaction;
-use starcoin_vm_types::transaction_metadata::TransactionMetadata;
-use starcoin_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
-use std::collections::BTreeMap;
+use starcoin_crypto::{
+    hash::{CryptoHash, CryptoHasher, PlainCryptoHash},
+    HashValue,
+};
+use starcoin_vm_types::{
+    block_metadata::BlockMetadata,
+    contract_event::ContractEvent,
+    event::EventKey,
+    state_store::state_key::StateKey,
+    transaction::SignatureCheckedTransaction,
+    transaction_metadata::TransactionMetadata,
+    write_set::{WriteOp, WriteSet, WriteSetMut},
+};
 use std::convert::TryFrom;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]

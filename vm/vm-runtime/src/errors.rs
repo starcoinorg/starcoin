@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_logger::prelude::*;
-use starcoin_vm_types::account_config::G_ACCOUNT_MODULE;
-use starcoin_vm_types::errors::VMError;
-use starcoin_vm_types::vm_status::{AbortLocation, StatusCode, VMStatus};
+use starcoin_vm_types::{
+    account_config::G_ACCOUNT_MODULE,
+    errors::VMError,
+    vm_status::{AbortLocation, StatusCode, VMStatus},
+};
 
 //should be consistent with ErrorCode.move
 const PROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0;

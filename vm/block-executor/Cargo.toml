@@ -1,9 +1,9 @@
 [package]
 authors = { workspace = true }
-description = "Starcoin parallel transaction executor library"
+description = "Starcoin block transaction executor library, parallel execution via Turbo-STM"
 edition = { workspace = true }
 license = { workspace = true }
-name = "starcoin-parallel-executor"
+name = "starcoin-block-executor"
 publish = { workspace = true }
 version = "1.13.5"
 homepage = { workspace = true }
