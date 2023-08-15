@@ -10488,6 +10488,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-metrics",
+ "starcoin-resource-viewer",
  "starcoin-state-store-api",
  "starcoin-types",
  "starcoin-uint",
