@@ -187,7 +187,7 @@ impl StarcoinVM {
                     .gas_schedule;
                 (
                     Some(GasSchedule::from(&gas_cost_table)),
-                    "gas schedule from gensis",
+                    "gas schedule from vmconfig",
                 )
             } else if stdlib_version >= StdlibVersion::Version(VMCONFIG_UPGRADE_VERSION_MARK)
                 && stdlib_version < StdlibVersion::Version(GAS_SCHEDULE_UPGRADE_VERSION_MARK)
@@ -275,7 +275,7 @@ impl StarcoinVM {
                         )?
                         .pop()
                         .ok_or_else(|| {
-                            anyhow::anyhow!("Expect 0x1::GasSchedule::initialize() return value")
+                            anyhow::anyhow!("Expect 0x1::GasSchedule::gas_schedule() return value")
                         })?;
                     bcs_ext::from_bytes::<GasSchedule>(&data)?
                 };
