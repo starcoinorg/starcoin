@@ -34,46 +34,22 @@ use stream_task::{
 };
 
 pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {
-    fn get_best_dag_target(&self, min_difficulty: U256) -> Result<Option<AccumulatorInfo>> {
-        if let Some(best_peers) = self.peer_selector().bests(min_difficulty) {
-            // to do, here simply returns the accumulator info containing longest leaves
-            let result = match best_peers.into_iter().max_by_key(|peer_info| {
-                peer_info
-                    .chain_state_info
-                    .dag_status
-                    .flexi_dag_accumulator_info
-                    .num_leaves
-            }) {
-                Some(peer_info) => Ok(Some(
-                    peer_info
-                        .chain_state_info
-                        .dag_status
-                        .flexi_dag_accumulator_info,
-                )),
-                None => {
-                    debug!("failed to find the best dag target");
-                    return Ok(None);
-                }
-            };
-            return result;
-        }
-        debug!("failed to find the best dag target, since maybe no peers");
-        return Ok(None);
-    }
-
-    fn get_best_target(&self, min_difficulty: U256) -> Result<Option<SyncTarget>> {
+    fn get_best_target(
+        &self,
+        min_difficulty: U256,
+    ) -> Result<Option<(SyncTarget, Option<AccumulatorInfo>)>> {
         if let Some(best_peers) = self.peer_selector().bests(min_difficulty) {
             //TODO fast verify best peers by accumulator
-            let mut chain_statuses: Vec<(ChainStatus, Vec<PeerId>)> =
+            let mut chain_statuses: Vec<(ChainStatus, Vec<PeerId>, Option<AccumulatorInfo>)> =
                 best_peers
                     .into_iter()
                     .fold(vec![], |mut chain_statuses, peer| {
                         let update = chain_statuses
                             .iter_mut()
-                            .find(|(chain_status, _peers)| {
-                                peer.chain_info().chain_info.status() == chain_status
+                            .find(|(chain_status, _peers, _)| {
+                                peer.chain_info().status() == chain_status
                             })
-                            .map(|(_chain_status, peers)| {
+                            .map(|(_chain_status, peers, _)| {
                                 peers.push(peer.peer_id());
                                 true
                             })
@@ -81,25 +57,32 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
 
                         if !update {
                             chain_statuses.push((
-                                peer.chain_info().chain_info.status().clone(),
+                                peer.chain_info().status().clone(),
                                 vec![peer.peer_id()],
+                                peer.chain_info().dag_accumulator_info().clone(),
                             ))
                         }
                         chain_statuses
                     });
             //if all best peers block info is same, block_infos len should been 1, other use majority peers block_info
             if chain_statuses.len() > 1 {
-                chain_statuses.sort_by(|(_chain_status_1, peers_1), (_chain_status_2, peers_2)| {
-                    peers_1.len().cmp(&peers_2.len())
-                });
+                chain_statuses.sort_by(
+                    |(_chain_status_1, peers_1, _), (_chain_status_2, peers_2, _)| {
+                        peers_1.len().cmp(&peers_2.len())
+                    },
+                );
             }
-            let (chain_status, peers) = chain_statuses.pop().expect("chain statuses should exist");
+            let (chain_status, peers, dag_accumulator_info) =
+                chain_statuses.pop().expect("chain statuses should exist");
             let header = chain_status.head;
-            Ok(Some(SyncTarget {
-                target_id: BlockIdAndNumber::new(header.id(), header.number()),
-                block_info: chain_status.info,
-                peers,
-            }))
+            Ok(Some((
+                SyncTarget {
+                    target_id: BlockIdAndNumber::new(header.id(), header.number()),
+                    block_info: chain_status.info,
+                    peers,
+                },
+                dag_accumulator_info,
+            )))
         } else {
             debug!(
                 "get_best_target return None, total_peers_in_selector: {}, min_difficulty: {}",
@@ -148,12 +131,7 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                                 && best_target.peers.contains(&better_peer.peer_id())
                             {
                                 target = Some((
-                                    better_peer
-                                        .chain_state_info
-                                        .chain_info
-                                        .status()
-                                        .info()
-                                        .clone(),
+                                    better_peer.chain_info.status().info().clone(),
                                     BlockIdAndNumber {
                                         number: better_peer.latest_header().number(),
                                         id: better_peer.latest_header().id(),
@@ -169,14 +147,8 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                             {
                                 let mut block_info = None;
                                 if block_id == better_peer.block_id() {
-                                    block_info = Some(
-                                        better_peer
-                                            .chain_state_info
-                                            .chain_info
-                                            .status()
-                                            .info()
-                                            .clone(),
-                                    );
+                                    block_info =
+                                        Some(better_peer.chain_info.status().info().clone());
                                 } else if let Some(better_block_id) = self
                                     .fetch_block_id(
                                         Some(better_peer.peer_id()),
@@ -425,6 +397,7 @@ impl BlockLocalStore for Arc<dyn Store> {
 #[derive(Clone, Debug)]
 pub struct BlockConnectedEvent {
     pub block: Block,
+    pub dag_parents: Option<Vec<HashValue>>,
 }
 
 #[derive(Clone, Debug)]

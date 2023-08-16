@@ -1,4 +1,4 @@
 pub mod blockdag;
-mod ghostdag;
+pub mod ghostdag;
 mod reachability;
 pub mod types;

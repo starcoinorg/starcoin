@@ -89,13 +89,11 @@ impl SyncStatus {
                 target,
                 total_difficulty,
             } => {
-                if target.number() < self.chain_status.head().number() {
+                let max_header_number = self.chain_status.head().number();
+                if target.number() < max_header_number {
                     false
                 } else {
-                    target
-                        .number
-                        .saturating_sub(self.chain_status.head().number())
-                        <= NEARLY_SYNCED_BLOCKS
+                    target.number.saturating_sub(max_header_number) <= NEARLY_SYNCED_BLOCKS
                         || self.chain_status.total_difficulty() >= *total_difficulty
                 }
             }

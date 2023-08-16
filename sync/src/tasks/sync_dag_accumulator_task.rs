@@ -3,12 +3,11 @@ use bcs_ext::BCSCodec;
 use futures::{future::BoxFuture, FutureExt};
 use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator};
 use starcoin_crypto::HashValue;
-use starcoin_network_rpc_api::dag_protocol::{TargetDagAccumulatorLeafDetail, self};
+use starcoin_network_rpc_api::dag_protocol::{self, TargetDagAccumulatorLeafDetail};
 use starcoin_storage::{
-    flexi_dag::SyncFlexiDagSnapshotStorage,
+    flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagSnapshotStorage},
     storage::CodecKVStore,
 };
-use starcoin_types::block::BlockInfoExt;
 use std::sync::Arc;
 use stream_task::{CollectorState, TaskResultCollector, TaskState};
 
@@ -22,7 +21,12 @@ pub struct SyncDagAccumulatorTask {
     fetcher: Arc<VerifiedRpcClient>,
 }
 impl SyncDagAccumulatorTask {
-    pub fn new(leaf_index: u64, batch_size: u64, target_index: u64, fetcher: Arc<VerifiedRpcClient>) -> Self {
+    pub fn new(
+        leaf_index: u64,
+        batch_size: u64,
+        target_index: u64,
+        fetcher: Arc<VerifiedRpcClient>,
+    ) -> Self {
         SyncDagAccumulatorTask {
             leaf_index,
             batch_size,
@@ -129,14 +133,13 @@ impl TaskResultCollector<TargetDagAccumulatorLeafDetail> for SyncDagAccumulatorC
         let num_leaves = accumulator_info.num_leaves;
         self.accumulator_snapshot.put(
             accumulator_leaf,
-            BlockInfoExt {
+            SyncFlexiDagSnapshot {
                 child_hashes: item
                     .relationship_pair
                     .into_iter()
                     .map(|pair| pair.child)
                     .collect::<Vec<_>>(),
-                dag_accumulator_info: accumulator_info,
-                block_info: None,
+                accumulator_info,
             },
         )?;
 

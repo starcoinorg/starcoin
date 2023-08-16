@@ -1,17 +1,16 @@
 use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator};
 use starcoin_config::RocksdbConfig;
 use starcoin_crypto::HashValue;
-use starcoin_types::block::{BlockInfo, BlockInfoExt};
 
 use crate::{
-    cache_storage::CacheStorage, db_storage::DBStorage,
+    cache_storage::CacheStorage, db_storage::DBStorage, flexi_dag::SyncFlexiDagSnapshot,
     storage::StorageInstance, Storage, Store, SyncFlexiDagStore,
 };
 use anyhow::{Ok, Result};
 
 trait SyncFlexiDagManager {
     fn insert_hashes(&self, hashes: Vec<HashValue>) -> Result<HashValue>;
-    fn query_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfoExt>>;
+    fn query_by_hash(&self, hash: HashValue) -> Result<Option<SyncFlexiDagSnapshot>>;
     fn fork(&mut self, accumulator_info: AccumulatorInfo) -> Result<()>;
     fn get_hash_by_position(&self, position: u64) -> Result<Option<HashValue>>;
     fn get_accumulator_info(&self) -> AccumulatorInfo;
@@ -60,17 +59,15 @@ impl SyncFlexiDagManager for SyncFlexiDagManagerImp {
         self.accumulator.append(&[accumulator_key])?;
         self.flexi_dag_storage.put_hashes(
             accumulator_key,
-            BlockInfoExt {
+            SyncFlexiDagSnapshot {
                 child_hashes,
-                block_ext_id: accumulator_key,
-                block_info: BlockInfo::default(),
-                dag_accumulator_info: self.accumulator.get_info(),
+                accumulator_info: self.get_accumulator_info(),
             },
         )?;
         Ok(accumulator_key)
     }
 
-    fn query_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfoExt>> {
+    fn query_by_hash(&self, hash: HashValue) -> Result<Option<SyncFlexiDagSnapshot>> {
         self.flexi_dag_storage.query_by_hash(hash)
     }
 
@@ -269,7 +266,7 @@ fn test_syn_dag_accumulator_fork() {
         .query_by_hash(layer3)
         .unwrap()
         .unwrap()
-        .dag_accumulator_info;
+        .accumulator_info;
 
     println!("{:?}", info);
     assert_eq!(

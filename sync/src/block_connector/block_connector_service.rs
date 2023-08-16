@@ -8,6 +8,7 @@ use anyhow::{format_err, Result};
 use network_api::PeerProvider;
 use starcoin_chain_api::{ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
+use starcoin_consensus::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
@@ -20,7 +21,7 @@ use starcoin_txpool::TxPoolService;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use sysinfo::{DiskExt, System, SystemExt};
 
 const DISK_CHECKPOINT_FOR_PANIC: u64 = 1024 * 1024 * 1024 * 3;
@@ -107,6 +108,7 @@ impl ServiceFactory<Self> for BlockConnectorService {
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist."))?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
+        let dag = ctx.get_shared::<Arc<Mutex<BlockDAG>>>()?;
         let chain_service = WriteBlockChainService::new(
             config.clone(),
             startup_info,
@@ -114,6 +116,7 @@ impl ServiceFactory<Self> for BlockConnectorService {
             txpool,
             bus,
             vm_metrics,
+            dag.clone(),
         )?;
 
         Ok(Self::new(chain_service, config))
@@ -171,7 +174,7 @@ impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService {
         //TODO refactor connect and execute
 
         let block = msg.block;
-        if let Err(e) = self.chain_service.try_connect(block) {
+        if let Err(e) = self.chain_service.try_connect(block, msg.dag_parents) {
             error!("Process connected block error: {:?}", e);
         }
     }
@@ -179,11 +182,14 @@ impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService {
 
 impl EventHandler<Self, MinedBlock> for BlockConnectorService {
     fn handle_event(&mut self, msg: MinedBlock, _ctx: &mut ServiceContext<Self>) {
-        let MinedBlock(new_block) = msg;
+        let MinedBlock(new_block, tips_headers) = msg;
         let id = new_block.header().id();
         debug!("try connect mined block: {}", id);
 
-        match self.chain_service.try_connect(new_block.as_ref().clone()) {
+        match self
+            .chain_service
+            .try_connect(new_block.as_ref().clone(), tips_headers)
+        {
             Ok(_) => debug!("Process mined block {} success.", id),
             Err(e) => {
                 warn!("Process mined block {} fail, error: {:?}", id, e);
@@ -205,7 +211,10 @@ impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
             return;
         }
         let peer_id = msg.get_peer_id();
-        if let Err(e) = self.chain_service.try_connect(msg.get_block().clone()) {
+        if let Err(e) = self
+            .chain_service
+            .try_connect(msg.get_block().clone(), msg.get_dag_parents().clone())
+        {
             match e.downcast::<ConnectBlockError>() {
                 Ok(connect_error) => {
                     match connect_error {
@@ -263,7 +272,8 @@ impl ServiceHandler<Self, ResetRequest> for BlockConnectorService {
         msg: ResetRequest,
         _ctx: &mut ServiceContext<BlockConnectorService>,
     ) -> Result<()> {
-        self.chain_service.reset(msg.block_hash)
+        self.chain_service
+            .reset(msg.block_hash, msg.dag_block_parent)
     }
 }
 

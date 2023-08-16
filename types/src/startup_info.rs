@@ -13,52 +13,29 @@ use starcoin_vm_types::genesis_config::ChainId;
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
 use std::fmt::Formatter;
+use std::hash::Hash;
 
-#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
-pub struct ChainStateInfo {
-    pub chain_info: ChainInfo,
-    pub dag_status: DagChainStatus,
-}
-
-impl ChainStateInfo {
-    pub fn new(chain_id: ChainId, genesis_hash: HashValue, status: ChainStatus) -> Self {
-        ChainStateInfo {
-            chain_info: ChainInfo::new(chain_id, genesis_hash, status),
-            dag_status: DagChainStatus {
-                flexi_dag_accumulator_info: AccumulatorInfo::default(), // dag todo
-            },
-        }
-    }
-    pub fn random() -> Self {
-        Self {
-            chain_info: ChainInfo::random(),
-            dag_status: DagChainStatus::random(),
-        }
-    }
-}
-impl std::fmt::Display for ChainStateInfo {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            serde_json::to_string(self).map_err(|_| std::fmt::Error)?
-        )
-    }
-}
 /// The info of a chain.
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct ChainInfo {
     chain_id: ChainId,
     genesis_hash: HashValue,
     status: ChainStatus,
+    flexi_dag_accumulator_info: Option<AccumulatorInfo>,
 }
 
 impl ChainInfo {
-    pub fn new(chain_id: ChainId, genesis_hash: HashValue, status: ChainStatus) -> Self {
+    pub fn new(
+        chain_id: ChainId,
+        genesis_hash: HashValue,
+        status: ChainStatus,
+        flexi_dag_accumulator_info: Option<AccumulatorInfo>,
+    ) -> Self {
         Self {
             chain_id,
             genesis_hash,
             status,
+            flexi_dag_accumulator_info,
         }
     }
 
@@ -79,11 +56,15 @@ impl ChainInfo {
     }
 
     pub fn head(&self) -> &BlockHeader {
-        self.status.head()
+        &self.status.head
+    }
+
+    pub fn dag_accumulator_info(&self) -> &Option<AccumulatorInfo> {
+        &self.flexi_dag_accumulator_info
     }
 
     pub fn total_difficulty(&self) -> U256 {
-        self.status.total_difficulty()
+        self.status.info.get_total_difficulty()
     }
 
     pub fn into_inner(self) -> (ChainId, HashValue, ChainStatus) {
@@ -95,6 +76,12 @@ impl ChainInfo {
             chain_id: ChainId::new(rand::random()),
             genesis_hash: HashValue::random(),
             status: ChainStatus::random(),
+            flexi_dag_accumulator_info: Some(AccumulatorInfo::new(
+                HashValue::random(),
+                vec![],
+                rand::random::<u64>(),
+                rand::random::<u64>(),
+            )),
         }
     }
 }
@@ -105,6 +92,7 @@ impl std::default::Default for ChainInfo {
             chain_id: ChainId::test(),
             genesis_hash: HashValue::default(),
             status: ChainStatus::sample(),
+            flexi_dag_accumulator_info: Some(AccumulatorInfo::default()),
         }
     }
 }
@@ -126,11 +114,17 @@ pub struct ChainStatus {
     pub head: BlockHeader,
     /// Chain block info
     pub info: BlockInfo,
+    /// tips of the dag chain in dag accumulator snapshots
+    pub tips_hash: Option<Vec<HashValue>>,
 }
 
 impl ChainStatus {
-    pub fn new(head: BlockHeader, info: BlockInfo) -> Self {
-        Self { head, info }
+    pub fn new(head: BlockHeader, info: BlockInfo, tips_hash: Option<Vec<HashValue>>) -> Self {
+        Self {
+            head,
+            info,
+            tips_hash,
+        }
     }
 
     pub fn random() -> Self {
@@ -152,8 +146,9 @@ impl ChainStatus {
             ),
         );
         Self {
-            head,
+            head: head.clone(),
             info: block_info,
+            tips_hash: Some(vec![head.id()]),
         }
     }
 
@@ -179,6 +174,7 @@ impl Sample for ChainStatus {
         Self {
             head: BlockHeader::sample(),
             info: BlockInfo::sample(),
+            tips_hash: Some(vec![HashValue::zero()]),
         }
     }
 }

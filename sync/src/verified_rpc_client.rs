@@ -429,9 +429,12 @@ impl VerifiedRpcClient {
         match self.client.get_accumulator_leaf_detail(peer_id, req).await {
             Ok(result) => Ok(result),
             Err(error) => {
-                warn!("get_accumulator_leaf_detail return None, error: {}", error.to_string());
+                warn!(
+                    "get_accumulator_leaf_detail return None, error: {}",
+                    error.to_string()
+                );
                 Ok(None)
-            },
+            }
         }
     }
 

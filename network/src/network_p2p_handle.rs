@@ -10,7 +10,7 @@ use network_p2p::business_layer_handle::HandshakeResult;
 use network_p2p::{business_layer_handle::BusinessLayerHandle, protocol::rep, PeerId};
 use sc_peerset::ReputationChange;
 use serde::{Deserialize, Serialize};
-use starcoin_types::startup_info::{ChainStateInfo, ChainStatus};
+use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 
 /// Current protocol version.
 pub(crate) const CURRENT_VERSION: u32 = 6;
@@ -29,7 +29,7 @@ pub struct Status {
     /// Tell other peer which rpc api we support.
     pub rpc_protocols: Vec<Cow<'static, str>>,
     /// the generic data related to the peer
-    pub info: ChainStateInfo,
+    pub info: ChainInfo,
 }
 
 pub struct Networkp2pHandle {
@@ -37,7 +37,7 @@ pub struct Networkp2pHandle {
 }
 
 impl Networkp2pHandle {
-    pub fn new(chain_info: ChainStateInfo) -> Self {
+    pub fn new(chain_info: ChainInfo) -> Self {
         let status = Status {
             version: CURRENT_VERSION,
             min_supported_version: MIN_VERSION,
@@ -56,13 +56,13 @@ impl Networkp2pHandle {
         status: Status,
     ) -> Result<HandshakeResult, ReputationChange> {
         debug!(target: "network-p2p", "New peer {} {:?}", who, status);
-        if status.info.chain_info.genesis_hash() != self.status.info.chain_info.genesis_hash() {
+        if status.info.genesis_hash() != self.status.info.genesis_hash() {
             error!(
                 target: "network-p2p",
                 "Bootnode with peer id `{}` is on a different chain (our genesis: {} theirs: {})",
                 who,
-                self.status.info.chain_info.genesis_hash(),
-                status.info.chain_info.genesis_hash(),
+                self.status.info.genesis_hash(),
+                status.info.genesis_hash(),
             );
             return Err(rep::GENESIS_MISMATCH);
         }
@@ -108,7 +108,7 @@ impl BusinessLayerHandle for Networkp2pHandle {
     }
 
     fn update_generic_data(&mut self, peer_info: &[u8]) -> Result<(), anyhow::Error> {
-        match ChainStateInfo::decode(peer_info) {
+        match ChainInfo::decode(peer_info) {
             std::result::Result::Ok(other_chain_info) => {
                 self.status.info = other_chain_info;
                 Ok(())
@@ -125,7 +125,7 @@ impl BusinessLayerHandle for Networkp2pHandle {
     fn update_status(&mut self, peer_status: &[u8]) -> Result<(), anyhow::Error> {
         match ChainStatus::decode(peer_status) {
             std::result::Result::Ok(status) => {
-                self.status.info.chain_info.update_status(status);
+                self.status.info.update_status(status);
                 Ok(())
             }
             Err(error) => {
