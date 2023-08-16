@@ -1,11 +1,10 @@
-use super::schema::{KeyCodec, ValueCodec};
-use super::{
-    db::DBStorage,
+use super::prelude::CachedDbAccess;
+use starcoin_schemadb::{
+    define_schema,
     error::StoreError,
-    prelude::{CachedDbAccess, DirectDbWriter},
-    writer::BatchDbWriter,
+    schema::{KeyCodec, ValueCodec},
+    DBStorage,
 };
-use crate::define_schema;
 use starcoin_types::blockhash::{
     BlockHashMap, BlockHashes, BlockLevel, BlueWorkType, HashKTypeMap,
 };

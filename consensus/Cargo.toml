@@ -23,6 +23,7 @@ rocksdb = { workspace = true }
 bincode = { workspace = true }
 serde = { workspace = true }
 starcoin-storage = { workspace = true }
+starcoin-schemadb = { workspace = true }
 parking_lot = { workspace = true }
 itertools = { workspace = true }
 starcoin-config = { workspace = true }

@@ -1,5 +1,5 @@
 use super::{tree::*, *};
-use crate::consensusdb::schemadb::{ReachabilityStore, ReachabilityStoreReader};
+use crate::consensusdb::schema::{ReachabilityStore, ReachabilityStoreReader};
 use crate::dag::types::{interval::Interval, perf};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::blockhash;
@@ -250,7 +250,7 @@ fn assert_hashes_ordered(store: &(impl ReachabilityStoreReader + ?Sized), ordere
 #[cfg(test)]
 mod tests {
     use super::{super::tests::*, *};
-    use crate::consensusdb::schemadb::MemoryReachabilityStore;
+    use crate::consensusdb::schema::MemoryReachabilityStore;
     use starcoin_types::blockhash::ORIGIN;
 
     #[test]

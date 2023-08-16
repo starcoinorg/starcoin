@@ -1,7 +1,9 @@
-use super::prelude::DbWriter;
-use super::schema::{KeyCodec, Schema, ValueCodec};
-use super::{db::DBStorage, error::StoreError};
 use parking_lot::RwLock;
+use starcoin_schemadb::{
+    error::StoreError,
+    schema::{KeyCodec, Schema, ValueCodec},
+    DBStorage,
+};
 use starcoin_storage::storage::RawDBStorage;
 use std::sync::Arc;
 

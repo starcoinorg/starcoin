@@ -1,11 +1,12 @@
-use super::schema::{KeyCodec, ValueCodec};
-use super::{
-    db::DBStorage,
-    prelude::{BatchDbWriter, CachedDbAccess, DirectDbWriter, StoreError},
-};
-use crate::define_schema;
+use super::prelude::CachedDbAccess;
 use rocksdb::WriteBatch;
 use starcoin_crypto::HashValue as Hash;
+use starcoin_schemadb::{
+    define_schema,
+    error::StoreError,
+    schema::{KeyCodec, ValueCodec},
+    DBStorage,
+};
 use starcoin_types::blockhash::{BlockHashMap, BlockHashes, BlockLevel};
 use std::{collections::hash_map::Entry::Vacant, sync::Arc};
 

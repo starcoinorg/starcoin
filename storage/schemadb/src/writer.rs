@@ -1,13 +1,16 @@
-use rocksdb::WriteBatch;
-use starcoin_storage::storage::InnerStore;
+use starcoin_storage::{db_storage::DBStorage, storage::InnerStore};
 
-use super::schema::{KeyCodec, Schema, ValueCodec};
-use super::{db::DBStorage, error::StoreError};
+use crate::error::StoreError;
+use crate::schema::{KeyCodec, Schema, ValueCodec};
 
 /// Abstraction over direct/batched DB writing
 pub trait DbWriter {
     fn put<S: Schema>(&mut self, key: &S::Key, value: &S::Value) -> Result<(), StoreError>;
     fn delete<S: Schema>(&mut self, key: &S::Key) -> Result<(), StoreError>;
+}
+
+pub trait DbReader {
+    fn get<S: Schema>(&self, key: &S::Key) -> Result<(), StoreError>;
 }
 
 pub struct DirectDbWriter<'a> {
@@ -34,16 +37,6 @@ impl DbWriter for DirectDbWriter<'_> {
         self.db
             .remove(S::COLUMN_FAMILY, key)
             .map_err(|e| StoreError::DBIoError(e.to_string()))
-    }
-}
-
-pub struct BatchDbWriter<'a> {
-    batch: &'a mut WriteBatch,
-}
-
-impl<'a> BatchDbWriter<'a> {
-    pub fn new(batch: &'a mut WriteBatch) -> Self {
-        Self { batch }
     }
 }
 

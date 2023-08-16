@@ -1,7 +1,7 @@
 use super::{
     extensions::ReachabilityStoreIntervalExtensions, inquirer::get_next_chain_ancestor_unchecked, *,
 };
-use crate::consensusdb::schemadb::ReachabilityStore;
+use crate::consensusdb::schema::ReachabilityStore;
 use crate::dag::types::interval::Interval;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::blockhash::{BlockHashExtensions, BlockHashMap};
@@ -616,7 +616,7 @@ fn split_children(children: &std::sync::Arc<Vec<Hash>>, pivot: Hash) -> Result<(
 #[cfg(test)]
 mod tests {
     use super::{super::tests::*, *};
-    use crate::consensusdb::schemadb::{MemoryReachabilityStore, ReachabilityStoreReader};
+    use crate::consensusdb::schema::{MemoryReachabilityStore, ReachabilityStoreReader};
     use crate::dag::types::interval::Interval;
     use starcoin_types::blockhash;
 

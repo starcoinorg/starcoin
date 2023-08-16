@@ -1,9 +1,12 @@
-use super::{cache::DagCache, db::DBStorage, error::StoreError};
+use super::cache::DagCache;
 
-use super::prelude::DbWriter;
-use super::schema::{KeyCodec, Schema, ValueCodec};
 use itertools::Itertools;
 use rocksdb::{Direction, IteratorMode, ReadOptions};
+use starcoin_schemadb::{
+    error::StoreError,
+    schema::{KeyCodec, Schema, ValueCodec},
+    DBStorage,
+};
 use starcoin_storage::storage::RawDBStorage;
 use std::{
     collections::hash_map::RandomState, error::Error, hash::BuildHasher, marker::PhantomData,

@@ -1,15 +1,14 @@
-use super::{
-    db::DBStorage,
-    prelude::{BatchDbWriter, CachedDbAccess, CachedDbItem, DirectDbWriter, StoreError},
-};
+use super::prelude::{CachedDbAccess, CachedDbItem};
 use starcoin_crypto::HashValue as Hash;
+use starcoin_schemadb::{
+    define_schema,
+    error::StoreError,
+    schema::{KeyCodec, ValueCodec},
+    DBStorage,
+};
 use starcoin_storage::storage::RawDBStorage;
 
-use crate::{
-    dag::types::{interval::Interval, reachability::ReachabilityData},
-    define_schema,
-    schema::{KeyCodec, ValueCodec},
-};
+use crate::dag::types::{interval::Interval, reachability::ReachabilityData};
 use starcoin_types::blockhash::{self, BlockHashMap, BlockHashes};
 
 use parking_lot::{RwLockUpgradableReadGuard, RwLockWriteGuard};

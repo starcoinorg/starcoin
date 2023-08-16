@@ -9421,6 +9421,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-schemadb",
  "starcoin-state-api",
  "starcoin-storage",
  "starcoin-time-service",
@@ -10366,6 +10367,17 @@ dependencies = [
  "thiserror",
  "tokio",
  "vm-status-translator",
+]
+
+[[package]]
+name = "starcoin-schemadb"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "parking_lot 0.12.1",
+ "rocksdb",
+ "starcoin-storage",
+ "thiserror",
 ]
 
 [[package]]

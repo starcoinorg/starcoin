@@ -1,4 +1,4 @@
-use super::error::StoreError;
+use crate::error::StoreError;
 use core::hash::Hash;
 use std::fmt::Debug;
 use std::result::Result;

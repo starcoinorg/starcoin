@@ -1,3 +1,4 @@
+use anyhow::Error;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -25,6 +26,15 @@ pub enum StoreError {
 
     #[error("ghostdag {0} duplicate blocks")]
     DAGDupBlocksError(String),
+
+    #[error("error {0}")]
+    AnyError(String),
+}
+
+impl From<anyhow::Error> for StoreError {
+    fn from(value: Error) -> Self {
+        StoreError::AnyError(value.to_string())
+    }
 }
 
 pub type StoreResult<T> = std::result::Result<T, StoreError>;
