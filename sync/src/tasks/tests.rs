@@ -977,7 +977,7 @@ async fn test_sync_target() {
         .unwrap()
         .unwrap();
     let target = node2
-        .get_better_target(genesis_chain_info.total_difficulty(), full_target, 10, 0)
+        .get_better_target(genesis_chain_info.total_difficulty(), full_target.0, 10, 0)
         .await
         .unwrap();
     assert_eq!(target.peers.len(), 2);

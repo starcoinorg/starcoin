@@ -15,22 +15,22 @@ use crate::{
     transaction::TransactionStorage,
     transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage},
 };
-use anyhow::{bail, format_err, Error, Result};
-use flexi_dag::{SyncFlexiDagSnapshotStorage, SyncFlexiDagStorage};
+use anyhow::{bail, format_err, Error, Ok, Result};
+use flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagSnapshotStorage, SyncFlexiDagStorage};
 use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use starcoin_accumulator::{
-    accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, AccumulatorTreeStore,
+    accumulator_info::{self, AccumulatorInfo},
+    node::AccumulatorStoreType,
+    Accumulator, AccumulatorTreeStore, MerkleAccumulator,
 };
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::{
-    block::{Block, BlockBody, BlockHeader, BlockInfo, BlockInfoExt},
+    block::{Block, BlockBody, BlockHeader, BlockInfo},
     contract_event::ContractEvent,
-    startup_info::{
-        ChainInfo, ChainStateInfo, ChainStatus, DagChainStatus, SnapshotRange, StartupInfo,
-    },
+    startup_info::{ChainInfo, ChainStatus, SnapshotRange, StartupInfo},
     transaction::{RichTransactionInfo, Transaction},
 };
 //use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
@@ -69,6 +69,7 @@ pub const BLOCK_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_block
 pub const TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_transaction";
 pub const BLOCK_PREFIX_NAME: ColumnFamilyName = "block";
 pub const BLOCK_HEADER_PREFIX_NAME: ColumnFamilyName = "block_header";
+pub const BLOCK_TIPS_HEADER_PREFIX_NAME: ColumnFamilyName = "block_tips_header";
 pub const BLOCK_BODY_PREFIX_NAME: ColumnFamilyName = "block_body";
 pub const BLOCK_INFO_PREFIX_NAME: ColumnFamilyName = "block_info";
 pub const BLOCK_TRANSACTIONS_PREFIX_NAME: ColumnFamilyName = "block_txns";
@@ -203,6 +204,7 @@ pub trait DagBlockStore {
     fn get_flexi_dag_startup_info(&self) -> Result<Option<StartupInfo>>;
     fn save_flexi_dag_startup_info(&self, startup_info: StartupInfo) -> Result<()>;
     fn get_dag_accumulator_info(&self) -> Result<AccumulatorInfo>;
+    fn get_last_tips(&self) -> Result<Option<Vec<HashValue>>>;
 }
 
 pub trait BlockStore {
@@ -213,7 +215,7 @@ pub trait BlockStore {
 
     fn save_genesis(&self, genesis_hash: HashValue) -> Result<()>;
 
-    fn get_chain_info(&self) -> Result<Option<ChainStateInfo>>;
+    fn get_chain_info(&self) -> Result<Option<ChainInfo>>;
 
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>>;
 
@@ -227,6 +229,11 @@ pub trait BlockStore {
     fn delete_block(&self, block_id: HashValue) -> Result<()>;
 
     fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>>;
+
+    fn get_block_tips_header_by_hash(
+        &self,
+        block_id: HashValue,
+    ) -> Result<Option<Vec<BlockHeader>>>;
 
     fn get_block_by_hash(&self, block_id: HashValue) -> Result<Option<Block>>;
 
@@ -304,8 +311,8 @@ pub trait TransactionStore {
 }
 
 pub trait SyncFlexiDagStore {
-    fn put_hashes(&self, key: HashValue, accumulator_snapshot: BlockInfoExt) -> Result<()>;
-    fn query_by_hash(&self, key: HashValue) -> Result<Option<BlockInfoExt>>;
+    fn put_hashes(&self, key: HashValue, accumulator_snapshot: SyncFlexiDagSnapshot) -> Result<()>;
+    fn query_by_hash(&self, key: HashValue) -> Result<Option<SyncFlexiDagSnapshot>>;
     fn get_accumulator_snapshot_storage(&self) -> std::sync::Arc<SyncFlexiDagSnapshotStorage>;
 }
 
@@ -406,13 +413,32 @@ impl DagBlockStore for Storage {
 
         // let accmulator_info = sync_flexi_dag_store.get_snapshot_storage().get(startup_info.main);
         let accumulator_info = match self.query_by_hash(startup_info.main) {
-            Ok(op_snapshot) => match op_snapshot {
-                Some(snapshot) => snapshot.dag_accumulator_info,
+            anyhow::Result::Ok(op_snapshot) => match op_snapshot {
+                Some(snapshot) => snapshot.accumulator_info,
                 None => bail!("failed to get sync accumulator info since it is None"),
             },
             Err(error) => bail!("failed to get sync accumulator info: {}", error.to_string()),
         };
         Ok(accumulator_info)
+    }
+
+    fn get_last_tips(&self) -> Result<Option<Vec<HashValue>>> {
+        let accumulator_info = self.get_dag_accumulator_info()?;
+        let accumulator_storage = Arc::new(self.flexi_dag_storage.get_accumulator_storage());
+        let accumulator = MerkleAccumulator::new_with_info(accumulator_info, accumulator_storage);
+        let count = accumulator.num_leaves();
+        if count == 0 {
+            return Ok(None);
+        }
+        match accumulator.get_leaf(count - 1)? {
+            Some(last_leaf_hash) => {
+                match self.flexi_dag_storage.get_hashes_by_hash(last_leaf_hash)? {
+                    Some(snapshot) => Ok(Some(snapshot.child_hashes)),
+                    None => bail!("failed to get snapshot by hash: {}", last_leaf_hash),
+                }
+            }
+            None => bail!("the dag accumulator's last leaf hash is None"),
+        }
     }
 }
 
@@ -433,7 +459,7 @@ impl BlockStore for Storage {
         self.chain_info_storage.save_genesis(genesis_hash)
     }
 
-    fn get_chain_info(&self) -> Result<Option<ChainStateInfo>> {
+    fn get_chain_info(&self) -> Result<Option<ChainInfo>> {
         let genesis_hash = match self.get_genesis()? {
             Some(genesis_hash) => genesis_hash,
             None => return Ok(None),
@@ -452,17 +478,14 @@ impl BlockStore for Storage {
         let flexi_dag_accumulator_info = self
             .get_dag_accumulator_info()
             .unwrap_or(AccumulatorInfo::default());
+        let tips_header_hash = self.get_last_tips()?;
         let chain_info = ChainInfo::new(
             head_block.chain_id(),
             genesis_hash,
-            ChainStatus::new(head_block, head_block_info),
+            ChainStatus::new(head_block.clone(), head_block_info, tips_header_hash),
+            Some(flexi_dag_accumulator_info),
         );
-        Ok(Some(ChainStateInfo {
-            chain_info,
-            dag_status: DagChainStatus {
-                flexi_dag_accumulator_info,
-            },
-        }))
+        Ok(Some(chain_info))
     }
 
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>> {
@@ -488,6 +511,13 @@ impl BlockStore for Storage {
 
     fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {
         self.block_storage.get_block_header_by_hash(block_id)
+    }
+
+    fn get_block_tips_header_by_hash(
+        &self,
+        block_id: HashValue,
+    ) -> Result<Option<Vec<BlockHeader>>> {
+        self.block_storage.get_block_tips_header_by_hash(block_id)
     }
 
     fn get_block_by_hash(&self, block_id: HashValue) -> Result<Option<Block>> {
@@ -654,11 +684,11 @@ impl TransactionStore for Storage {
 }
 
 impl SyncFlexiDagStore for Storage {
-    fn put_hashes(&self, key: HashValue, accumulator_snapshot: BlockInfoExt) -> Result<()> {
+    fn put_hashes(&self, key: HashValue, accumulator_snapshot: SyncFlexiDagSnapshot) -> Result<()> {
         self.flexi_dag_storage.put_hashes(key, accumulator_snapshot)
     }
 
-    fn query_by_hash(&self, key: HashValue) -> Result<Option<BlockInfoExt>> {
+    fn query_by_hash(&self, key: HashValue) -> Result<Option<SyncFlexiDagSnapshot>> {
         self.flexi_dag_storage.get_hashes_by_hash(key)
     }
 

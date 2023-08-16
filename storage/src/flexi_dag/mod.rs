@@ -3,15 +3,22 @@ use std::sync::Arc;
 use crate::{
     accumulator::{AccumulatorStorage, DagBlockAccumulatorStorage},
     define_storage,
-    storage::{StorageInstance, ValueCodec, CodecKVStore},
+    storage::{CodecKVStore, StorageInstance, ValueCodec},
     SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME,
 };
 use anyhow::Result;
 use bcs_ext::BCSCodec;
+use serde::{Deserialize, Serialize};
+use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::HashValue;
-use starcoin_types::block::BlockInfoExt;
 
-impl ValueCodec for BlockInfoExt {
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+pub struct SyncFlexiDagSnapshot {
+    pub child_hashes: Vec<HashValue>, // child nodes(tips), to get the relationship, use dag's relationship store
+    pub accumulator_info: AccumulatorInfo,
+}
+
+impl ValueCodec for SyncFlexiDagSnapshot {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
     }
@@ -24,7 +31,7 @@ impl ValueCodec for BlockInfoExt {
 define_storage!(
     SyncFlexiDagSnapshotStorage,
     HashValue, // accumulator leaf node
-    BlockInfoExt,
+    SyncFlexiDagSnapshot,
     SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME
 );
 
@@ -56,14 +63,14 @@ impl SyncFlexiDagStorage {
         self.snapshot_storage.clone()
     }
 
-    pub fn put_hashes(&self, key: HashValue, block_info_ext: BlockInfoExt) -> Result<()> {
-        self.snapshot_storage.put(key, block_info_ext)
+    pub fn put_hashes(&self, key: HashValue, accumulator_info: SyncFlexiDagSnapshot) -> Result<()> {
+        self.snapshot_storage.put(key, accumulator_info)
     }
 
     pub fn get_hashes_by_hash(
         &self,
         hash: HashValue,
-    ) -> std::result::Result<Option<BlockInfoExt>, anyhow::Error> {
+    ) -> std::result::Result<Option<SyncFlexiDagSnapshot>, anyhow::Error> {
         self.snapshot_storage.get(hash)
     }
 }

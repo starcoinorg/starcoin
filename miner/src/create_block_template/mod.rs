@@ -312,6 +312,9 @@ where
 
         let author = *self.miner_account.address();
         let previous_header = self.chain.current_header();
+
+        let tips_header = self.chain.status().tips_hash;
+
         let uncles = self.find_uncles();
         let mut now_millis = self.chain.time_service().now_millis();
         if now_millis <= previous_header.timestamp() {
@@ -345,6 +348,7 @@ where
             difficulty,
             strategy,
             self.vm_metrics.clone(),
+            tips_header,
         )?;
         let excluded_txns = opened_block.push_txns(txns)?;
         let template = opened_block.finalize()?;

@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_address::AccountAddress;
-use crate::block_metadata::BlockMetadata;
+use crate::block::BlockHeaderExtra;
+use crate::blockhash::ORIGIN;
 use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
-use bcs_ext::{BCSCodec, Sample};
+use bcs_ext::Sample;
 use schemars::{self, JsonSchema};
-use serde::de::Error;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize};
 pub use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::hash::{ACCUMULATOR_PLACEHOLDER_HASH, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use starcoin_crypto::{
@@ -18,117 +18,21 @@ use starcoin_crypto::{
     HashValue,
 };
 use starcoin_vm_types::account_config::genesis_address;
+use starcoin_vm_types::dag_block_metadata::DagBlockMetadata;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use std::fmt::Formatter;
-use std::hash::Hash;
-/// Type for block number.
-pub type BlockNumber = u64;
-
-/// Type for block header extra
-#[derive(Clone, Default, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, JsonSchema)]
-pub struct BlockHeaderExtra(#[schemars(with = "String")] [u8; 4]);
-
-impl BlockHeaderExtra {
-    pub fn new(extra: [u8; 4]) -> Self {
-        Self(extra)
-    }
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_vec()
-    }
-    pub fn as_slice(&self) -> &[u8; 4] {
-        &self.0
-    }
-}
-
-impl std::fmt::Display for BlockHeaderExtra {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", hex::encode(self.0))
-    }
-}
-
-impl<'de> Deserialize<'de> for BlockHeaderExtra {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        if deserializer.is_human_readable() {
-            let s = <String>::deserialize(deserializer)?;
-            let literal = s.strip_prefix("0x").unwrap_or(&s);
-            if literal.len() != 8 {
-                return Err(D::Error::custom("Invalid block header extra len"));
-            }
-            let result = hex::decode(literal).map_err(D::Error::custom)?;
-            if result.len() != 4 {
-                return Err(D::Error::custom("Invalid block header extra len"));
-            }
-            let mut extra = [0u8; 4];
-            extra.copy_from_slice(&result);
-            Ok(BlockHeaderExtra::new(extra))
-        } else {
-            #[derive(::serde::Deserialize)]
-            #[serde(rename = "BlockHeaderExtra")]
-            struct Value([u8; 4]);
-            let value = Value::deserialize(deserializer)?;
-            Ok(BlockHeaderExtra::new(value.0))
-        }
-    }
-}
-
-impl Serialize for BlockHeaderExtra {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        if serializer.is_human_readable() {
-            format!("0x{}", hex::encode(self.0)).serialize(serializer)
-        } else {
-            serializer.serialize_newtype_struct("BlockHeaderExtra", &self.0)
-        }
-    }
-}
-
-#[derive(
-    Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Deserialize, Serialize, JsonSchema,
-)]
-pub struct BlockIdAndNumber {
-    pub id: HashValue,
-    pub number: BlockNumber,
-}
-
-impl BlockIdAndNumber {
-    pub fn new(id: HashValue, number: BlockNumber) -> Self {
-        Self { id, number }
-    }
-    pub fn id(&self) -> HashValue {
-        self.id
-    }
-    pub fn number(&self) -> BlockNumber {
-        self.number
-    }
-}
-
-impl From<BlockHeader> for BlockIdAndNumber {
-    fn from(header: BlockHeader) -> Self {
-        Self {
-            id: header.id(),
-            number: header.number(),
-        }
-    }
-}
 
 /// block timestamp allowed future times
 pub const ALLOWED_FUTURE_BLOCKTIME: u64 = 30000; // 30 second;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, CryptoHasher, CryptoHash, JsonSchema)]
-pub struct BlockHeader {
+pub struct DagBlockHeader {
     #[serde(skip)]
     id: Option<HashValue>,
     /// Parent hash.
-    parent_hash: HashValue,
+    parent_hash: Vec<HashValue>,
     /// Block timestamp.
     timestamp: u64,
-    /// Block number.
-    number: BlockNumber,
     /// Block author.
     author: AccountAddress,
     /// Block author auth key.
@@ -155,11 +59,10 @@ pub struct BlockHeader {
     extra: BlockHeaderExtra,
 }
 
-impl BlockHeader {
+impl DagBlockHeader {
     pub fn new(
-        parent_hash: HashValue,
+        parent_hash: Vec<HashValue>,
         timestamp: u64,
-        number: BlockNumber,
         author: AccountAddress,
         txn_accumulator_root: HashValue,
         block_accumulator_root: HashValue,
@@ -170,11 +73,10 @@ impl BlockHeader {
         chain_id: ChainId,
         nonce: u32,
         extra: BlockHeaderExtra,
-    ) -> BlockHeader {
+    ) -> DagBlockHeader {
         Self::new_with_auth_key(
             parent_hash,
             timestamp,
-            number,
             author,
             None,
             txn_accumulator_root,
@@ -191,9 +93,8 @@ impl BlockHeader {
 
     // the author_auth_key field is deprecated, but keep this fn for compat with old block.
     fn new_with_auth_key(
-        parent_hash: HashValue,
+        parent_hash: Vec<HashValue>,
         timestamp: u64,
-        number: BlockNumber,
         author: AccountAddress,
         author_auth_key: Option<AuthenticationKey>,
         txn_accumulator_root: HashValue,
@@ -205,12 +106,11 @@ impl BlockHeader {
         chain_id: ChainId,
         nonce: u32,
         extra: BlockHeaderExtra,
-    ) -> BlockHeader {
-        let mut header = BlockHeader {
+    ) -> DagBlockHeader {
+        let mut header = DagBlockHeader {
             id: None,
             parent_hash,
             block_accumulator_root,
-            number,
             timestamp,
             author,
             author_auth_key,
@@ -229,7 +129,7 @@ impl BlockHeader {
 
     pub fn as_pow_header_blob(&self) -> Vec<u8> {
         let mut blob = Vec::new();
-        let raw_header: RawBlockHeader = self.to_owned().into();
+        let raw_header: RawDagBlockHeader = self.to_owned().into();
         let raw_header_hash = raw_header.crypto_hash();
         let mut diff = [0u8; 32];
         raw_header.difficulty.to_big_endian(&mut diff);
@@ -241,19 +141,16 @@ impl BlockHeader {
     }
 
     pub fn id(&self) -> HashValue {
-        self.id.expect("BlockHeader id should be Some after init.")
+        self.id
+            .expect("DagBlockHeader id should be Some after init.")
     }
 
-    pub fn parent_hash(&self) -> HashValue {
-        self.parent_hash
+    pub fn parent_hash(&self) -> Vec<HashValue> {
+        self.parent_hash.clone()
     }
 
     pub fn timestamp(&self) -> u64 {
         self.timestamp
-    }
-
-    pub fn number(&self) -> BlockNumber {
-        self.number
     }
 
     pub fn author(&self) -> AccountAddress {
@@ -301,11 +198,14 @@ impl BlockHeader {
     }
 
     pub fn is_genesis(&self) -> bool {
-        self.number == 0
+        if self.parent_hash.len() == 1 {
+            return self.parent_hash[0] == HashValue::new(ORIGIN);
+        }
+        false
     }
 
     pub fn genesis_block_header(
-        parent_hash: HashValue,
+        parent_hash: Vec<HashValue>,
         timestamp: u64,
         txn_accumulator_root: HashValue,
         state_root: HashValue,
@@ -316,7 +216,6 @@ impl BlockHeader {
         Self::new(
             parent_hash,
             timestamp,
-            0,
             CORE_CODE_ADDRESS,
             txn_accumulator_root,
             *ACCUMULATOR_PLACEHOLDER_HASH,
@@ -332,8 +231,7 @@ impl BlockHeader {
 
     pub fn random() -> Self {
         Self::new(
-            HashValue::random(),
-            rand::random(),
+            vec![HashValue::random()],
             rand::random(),
             AccountAddress::random(),
             HashValue::random(),
@@ -344,26 +242,25 @@ impl BlockHeader {
             HashValue::random(),
             ChainId::test(),
             0,
-            BlockHeaderExtra([0u8; 4]),
+            BlockHeaderExtra::new([0u8; 4]),
         )
     }
 
-    pub fn as_builder(&self) -> BlockHeaderBuilder {
-        BlockHeaderBuilder::new_with(self.clone())
+    pub fn as_builder(&self) -> DagBlockHeaderBuilder {
+        DagBlockHeaderBuilder::new_with(self.clone())
     }
 }
 
-impl<'de> Deserialize<'de> for BlockHeader {
+impl<'de> Deserialize<'de> for DagBlockHeader {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
     where
         D: Deserializer<'de>,
     {
         #[derive(Deserialize)]
-        #[serde(rename = "BlockHeader")]
-        struct BlockHeaderData {
-            parent_hash: HashValue,
+        #[serde(rename = "DagBlockHeader")]
+        struct DagBlockHeaderData {
+            parent_hash: Vec<HashValue>,
             timestamp: u64,
-            number: BlockNumber,
             author: AccountAddress,
             author_auth_key: Option<AuthenticationKey>,
             txn_accumulator_root: HashValue,
@@ -377,11 +274,10 @@ impl<'de> Deserialize<'de> for BlockHeader {
             extra: BlockHeaderExtra,
         }
 
-        let header_data = BlockHeaderData::deserialize(deserializer)?;
+        let header_data = DagBlockHeaderData::deserialize(deserializer)?;
         let block_header = Self::new_with_auth_key(
             header_data.parent_hash,
             header_data.timestamp,
-            header_data.number,
             header_data.author,
             header_data.author_auth_key,
             header_data.txn_accumulator_root,
@@ -398,11 +294,10 @@ impl<'de> Deserialize<'de> for BlockHeader {
     }
 }
 
-impl Default for BlockHeader {
+impl Default for DagBlockHeader {
     fn default() -> Self {
         Self::new(
-            HashValue::zero(),
-            0,
+            vec![HashValue::zero()],
             0,
             AccountAddress::ZERO,
             HashValue::zero(),
@@ -413,17 +308,16 @@ impl Default for BlockHeader {
             HashValue::zero(),
             ChainId::test(),
             0,
-            BlockHeaderExtra([0u8; 4]),
+            BlockHeaderExtra::new([0u8; 4]),
         )
     }
 }
 
-impl Sample for BlockHeader {
+impl Sample for DagBlockHeader {
     fn sample() -> Self {
         Self::new(
-            HashValue::zero(),
+            vec![HashValue::zero()],
             1610110515000,
-            0,
             genesis_address(),
             *ACCUMULATOR_PLACEHOLDER_HASH,
             *ACCUMULATOR_PLACEHOLDER_HASH,
@@ -433,18 +327,17 @@ impl Sample for BlockHeader {
             BlockBody::sample().crypto_hash(),
             ChainId::test(),
             0,
-            BlockHeaderExtra([0u8; 4]),
+            BlockHeaderExtra::new([0u8; 4]),
         )
     }
 }
 
 #[allow(clippy::from_over_into)]
-impl Into<RawBlockHeader> for BlockHeader {
-    fn into(self) -> RawBlockHeader {
-        RawBlockHeader {
+impl Into<RawDagBlockHeader> for DagBlockHeader {
+    fn into(self) -> RawDagBlockHeader {
+        RawDagBlockHeader {
             parent_hash: self.parent_hash,
             timestamp: self.timestamp,
-            number: self.number,
             author: self.author,
             author_auth_key: self.author_auth_key,
             accumulator_root: self.txn_accumulator_root,
@@ -459,13 +352,11 @@ impl Into<RawBlockHeader> for BlockHeader {
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
-pub struct RawBlockHeader {
+pub struct RawDagBlockHeader {
     /// Parent hash.
-    pub parent_hash: HashValue,
+    pub parent_hash: Vec<HashValue>,
     /// Block timestamp.
     pub timestamp: u64,
-    /// Block number.
-    pub number: BlockNumber,
     /// Block author.
     pub author: AccountAddress,
     /// Block author auth key.
@@ -488,37 +379,32 @@ pub struct RawBlockHeader {
 }
 
 #[derive(Default)]
-pub struct BlockHeaderBuilder {
-    buffer: BlockHeader,
+pub struct DagBlockHeaderBuilder {
+    buffer: DagBlockHeader,
 }
 
-impl BlockHeaderBuilder {
+impl DagBlockHeaderBuilder {
     pub fn new() -> Self {
         Self::default()
     }
 
     pub fn random() -> Self {
         Self {
-            buffer: BlockHeader::random(),
+            buffer: DagBlockHeader::random(),
         }
     }
 
-    fn new_with(buffer: BlockHeader) -> Self {
+    fn new_with(buffer: DagBlockHeader) -> Self {
         Self { buffer }
     }
 
-    pub fn with_parent_hash(mut self, parent_hash: HashValue) -> Self {
+    pub fn with_parent_hash(mut self, parent_hash: Vec<HashValue>) -> Self {
         self.buffer.parent_hash = parent_hash;
         self
     }
 
     pub fn with_timestamp(mut self, timestamp: u64) -> Self {
         self.buffer.timestamp = timestamp;
-        self
-    }
-
-    pub fn with_number(mut self, number: BlockNumber) -> Self {
-        self.buffer.number = number;
         self
     }
 
@@ -580,7 +466,7 @@ impl BlockHeaderBuilder {
         self
     }
 
-    pub fn build(mut self) -> BlockHeader {
+    pub fn build(mut self) -> DagBlockHeader {
         self.buffer.id = Some(self.buffer.crypto_hash());
         self.buffer
     }
@@ -593,11 +479,14 @@ pub struct BlockBody {
     /// The transactions in this block.
     pub transactions: Vec<SignedUserTransaction>,
     /// uncles block header
-    pub uncles: Option<Vec<BlockHeader>>,
+    pub uncles: Option<Vec<DagBlockHeader>>,
 }
 
 impl BlockBody {
-    pub fn new(transactions: Vec<SignedUserTransaction>, uncles: Option<Vec<BlockHeader>>) -> Self {
+    pub fn new(
+        transactions: Vec<SignedUserTransaction>,
+        uncles: Option<Vec<DagBlockHeader>>,
+    ) -> Self {
         Self {
             transactions,
             uncles,
@@ -650,13 +539,13 @@ impl Sample for BlockBody {
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct Block {
     /// The header of this block.
-    pub header: BlockHeader,
+    pub header: DagBlockHeader,
     /// The body of this block.
     pub body: BlockBody,
 }
 
 impl Block {
-    pub fn new<B>(header: BlockHeader, body: B) -> Self
+    pub fn new<B>(header: DagBlockHeader, body: B) -> Self
     where
         B: Into<BlockBody>,
     {
@@ -669,14 +558,14 @@ impl Block {
     pub fn id(&self) -> HashValue {
         self.header.id()
     }
-    pub fn header(&self) -> &BlockHeader {
+    pub fn header(&self) -> &DagBlockHeader {
         &self.header
     }
     pub fn transactions(&self) -> &[SignedUserTransaction] {
         self.body.transactions.as_slice()
     }
 
-    pub fn uncles(&self) -> Option<&[BlockHeader]> {
+    pub fn uncles(&self) -> Option<&[DagBlockHeader]> {
         match &self.body.uncles {
             Some(uncles) => Some(uncles.as_slice()),
             None => None,
@@ -689,12 +578,12 @@ impl Block {
             .unwrap_or_default()
     }
 
-    pub fn into_inner(self) -> (BlockHeader, BlockBody) {
+    pub fn into_inner(self) -> (DagBlockHeader, BlockBody) {
         (self.header, self.body)
     }
 
     pub fn genesis_block(
-        parent_hash: HashValue,
+        parent_hash: Vec<HashValue>,
         timestamp: u64,
         accumulator_root: HashValue,
         state_root: HashValue,
@@ -703,7 +592,7 @@ impl Block {
     ) -> Self {
         let chain_id = genesis_txn.chain_id();
         let block_body = BlockBody::new(vec![genesis_txn], None);
-        let header = BlockHeader::genesis_block_header(
+        let header = DagBlockHeader::genesis_block_header(
             parent_hash,
             timestamp,
             accumulator_root,
@@ -718,21 +607,12 @@ impl Block {
         }
     }
 
-    pub fn to_metadata(&self, parent_gas_used: u64) -> BlockMetadata {
-        let uncles = self
-            .body
-            .uncles
-            .as_ref()
-            .map(|uncles| uncles.len() as u64)
-            .unwrap_or(0);
-
-        BlockMetadata::new(
+    pub fn to_metadata(&self, parent_gas_used: u64) -> DagBlockMetadata {
+        DagBlockMetadata::new(
             self.header.parent_hash(),
             self.header.timestamp,
             self.header.author,
             self.header.author_auth_key,
-            uncles,
-            self.header.number,
             self.header.chain_id,
             parent_gas_used,
         )
@@ -743,9 +623,8 @@ impl std::fmt::Display for Block {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Block{{id:\"{}\", number:\"{}\", parent_id:\"{}\",",
+            "Block{{id:\"{}\", parent_id:\"{:?}\",",
             self.id(),
-            self.header().number(),
             self.header().parent_hash()
         )?;
         if let Some(uncles) = &self.body.uncles {
@@ -766,7 +645,7 @@ impl std::fmt::Display for Block {
 impl Sample for Block {
     fn sample() -> Self {
         Self {
-            header: BlockHeader::sample(),
+            header: DagBlockHeader::sample(),
             body: BlockBody::sample(),
         }
     }
@@ -828,7 +707,7 @@ impl BlockInfo {
 impl Sample for BlockInfo {
     fn sample() -> Self {
         Self {
-            block_id: BlockHeader::sample().id(),
+            block_id: DagBlockHeader::sample().id(),
             total_difficulty: 0.into(),
             txn_accumulator_info: AccumulatorInfo::sample(),
             block_accumulator_info: AccumulatorInfo::sample(),
@@ -837,13 +716,11 @@ impl Sample for BlockInfo {
 }
 
 #[derive(Clone, Debug)]
-pub struct BlockTemplate {
+pub struct DagBlockTemplate {
     /// Parent hash.
-    pub parent_hash: HashValue,
+    pub parent_hash: Vec<HashValue>,
     /// Block timestamp.
     pub timestamp: u64,
-    /// Block number.
-    pub number: BlockNumber,
     /// Block author.
     pub author: AccountAddress,
     /// The transaction accumulator root hash after executing this block.
@@ -864,11 +741,9 @@ pub struct BlockTemplate {
     pub difficulty: U256,
     /// Block consensus strategy
     pub strategy: ConsensusStrategy,
-    /// Tips
-    pub tips_header: Option<Vec<HashValue>>,
 }
 
-impl BlockTemplate {
+impl DagBlockTemplate {
     pub fn new(
         parent_block_accumulator_root: HashValue,
         accumulator_root: HashValue,
@@ -878,16 +753,13 @@ impl BlockTemplate {
         chain_id: ChainId,
         difficulty: U256,
         strategy: ConsensusStrategy,
-        block_metadata: BlockMetadata,
-        current_tips: Option<Vec<HashValue>>,
+        block_metadata: DagBlockMetadata,
     ) -> Self {
-        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _) =
-            block_metadata.into_inner();
+        let (parent_hash, timestamp, author, _author_auth_key, _, _) = block_metadata.into_inner();
         Self {
             parent_hash,
             block_accumulator_root: parent_block_accumulator_root,
             timestamp,
-            number,
             author,
             txn_accumulator_root: accumulator_root,
             state_root,
@@ -897,15 +769,13 @@ impl BlockTemplate {
             chain_id,
             difficulty,
             strategy,
-            tips_header: current_tips,
         }
     }
 
     pub fn into_block(self, nonce: u32, extra: BlockHeaderExtra) -> Block {
-        let header = BlockHeader::new(
-            self.generate_parent_header(),
+        let header = DagBlockHeader::new(
+            self.parent_hash,
             self.timestamp,
-            self.number,
             self.author,
             self.txn_accumulator_root,
             self.block_accumulator_root,
@@ -923,25 +793,10 @@ impl BlockTemplate {
         }
     }
 
-    fn generate_parent_header(&self) -> HashValue {
-        if self.tips_header.is_none() {
-            return self.parent_hash;
-        }
-        HashValue::sha3_256_of(
-            &self
-                .tips_header
-                .as_ref()
-                .unwrap()
-                .encode()
-                .expect("dag parent must encode successfully"),
-        )
-    }
-
-    pub fn as_raw_block_header(&self) -> RawBlockHeader {
-        RawBlockHeader {
-            parent_hash: self.generate_parent_header(),
+    pub fn as_raw_block_header(&self) -> RawDagBlockHeader {
+        RawDagBlockHeader {
+            parent_hash: self.parent_hash.clone(),
             timestamp: self.timestamp,
-            number: self.number,
             author: self.author,
             author_auth_key: None,
             accumulator_root: self.txn_accumulator_root,
@@ -961,18 +816,17 @@ impl BlockTemplate {
         let mut dh = [0u8; 32];
         raw_header.difficulty.to_big_endian(&mut dh);
         let extend_and_nonce = [0u8; 12];
+
         blob.extend_from_slice(raw_header_hash.to_vec().as_slice());
         blob.extend_from_slice(&extend_and_nonce);
         blob.extend_from_slice(&dh);
-
         blob
     }
 
-    pub fn into_block_header(self, nonce: u32, extra: BlockHeaderExtra) -> BlockHeader {
-        BlockHeader::new(
+    pub fn into_block_header(self, nonce: u32, extra: BlockHeaderExtra) -> DagBlockHeader {
+        DagBlockHeader::new(
             self.parent_hash,
             self.timestamp,
-            self.number,
             self.author,
             self.txn_accumulator_root,
             self.block_accumulator_root,
@@ -1010,23 +864,23 @@ impl ExecutedBlock {
         &self.block_info
     }
 
-    pub fn header(&self) -> &BlockHeader {
+    pub fn header(&self) -> &DagBlockHeader {
         self.block.header()
     }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BlockSummary {
-    pub block_header: BlockHeader,
-    pub uncles: Vec<BlockHeader>,
+    pub block_header: DagBlockHeader,
+    pub uncles: Vec<DagBlockHeader>,
 }
 
 impl BlockSummary {
-    pub fn uncles(&self) -> &[BlockHeader] {
+    pub fn uncles(&self) -> &[DagBlockHeader] {
         &self.uncles
     }
 
-    pub fn header(&self) -> &BlockHeader {
+    pub fn header(&self) -> &DagBlockHeader {
         &self.block_header
     }
 }
@@ -1041,8 +895,8 @@ impl From<Block> for BlockSummary {
 }
 
 #[allow(clippy::from_over_into)]
-impl Into<(BlockHeader, Vec<BlockHeader>)> for BlockSummary {
-    fn into(self) -> (BlockHeader, Vec<BlockHeader>) {
+impl Into<(DagBlockHeader, Vec<DagBlockHeader>)> for BlockSummary {
+    fn into(self) -> (DagBlockHeader, Vec<DagBlockHeader>) {
         (self.block_header, self.uncles)
     }
 }

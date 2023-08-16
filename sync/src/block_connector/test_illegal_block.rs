@@ -147,7 +147,7 @@ fn apply_legal_block(
         )
         .unwrap();
     writeable_block_chain_service
-        .try_connect(new_block)
+        .try_connect(new_block, None)
         .unwrap();
 }
 
@@ -768,7 +768,7 @@ async fn test_verify_uncles_uncle_exist_failed() {
         .create_block(block_template, net.time_service().as_ref())
         .unwrap();
     writeable_block_chain_service
-        .try_connect(new_block)
+        .try_connect(new_block, None)
         .unwrap();
 
     info!(
@@ -838,7 +838,7 @@ async fn test_verify_uncle_and_parent_number_failed() {
         .create_block(block_template, net.time_service().as_ref())
         .unwrap();
     writeable_block_chain_service
-        .try_connect(new_block)
+        .try_connect(new_block, None)
         .unwrap();
     let new_number = writeable_block_chain_service
         .get_main()

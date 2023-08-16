@@ -227,6 +227,7 @@ async fn test_rollback() -> Result<()> {
             U256::from(1024u64),
             config.net().genesis_config().consensus(),
             None,
+            None,
         )?;
         let excluded_txns = open_block.push_txns(vec![txn])?;
         assert_eq!(excluded_txns.discarded_txns.len(), 0);

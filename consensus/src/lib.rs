@@ -24,14 +24,17 @@ mod consensus;
 #[cfg(test)]
 mod consensus_test;
 mod consensusdb;
-mod dag;
+pub mod dag;
 pub mod difficulty;
 pub mod dummy;
 pub mod keccak;
 
 pub use consensus::{Consensus, ConsensusVerifyError};
+pub use consensusdb::consensus_relations::{
+    DbRelationsStore, RelationsStore, RelationsStoreReader,
+};
 pub use consensusdb::prelude::{FlexiDagStorage, FlexiDagStorageConfig};
-pub(crate) use consensusdb::schema;
+pub use consensusdb::schema;
 pub use dag::blockdag::BlockDAG;
 pub use starcoin_time_service::duration_since_epoch;
 

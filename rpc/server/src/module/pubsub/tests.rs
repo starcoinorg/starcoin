@@ -109,7 +109,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 
     // send block
     let block_detail = Arc::new(executed_block);
-    bus.broadcast(NewHeadBlock(block_detail))?;
+    bus.broadcast(NewHeadBlock(block_detail, None))?;
 
     let mut receiver = receiver;
 

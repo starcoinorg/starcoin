@@ -869,7 +869,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         );
         let new_block = Block::new(block_header, block_body);
         let mut chain = self.context.chain.lock().unwrap();
-        chain.add_new_block(new_block)?;
+        chain.add_new_block(new_block, None)?;
 
         Ok((None, Some(serde_json::to_value(&new_block_meta)?)))
     }

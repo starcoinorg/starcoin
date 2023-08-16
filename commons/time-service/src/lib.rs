@@ -163,6 +163,61 @@ impl TimeService for MockTimeService {
     }
 }
 
+#[derive(Debug)]
+pub struct DagBlockTimeWindowService {
+    real_time_service: RealTimeService,
+    time_window: u64,
+}
+
+pub enum TimeWindowResult {
+    InTimeWindow,
+    BeforeTimeWindow,
+    AfterTimeWindow,
+}
+
+impl TimeService for DagBlockTimeWindowService {
+    fn adjust(&self, milliseconds: u64) {
+        self.real_time_service.adjust(milliseconds)
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn now_secs(&self) -> u64 {
+        self.real_time_service.now_secs()
+    }
+
+    fn now_millis(&self) -> u64 {
+        self.real_time_service.now_millis()
+    }
+
+    fn sleep(&self, millis: u64) {
+        self.real_time_service.sleep(millis)
+    }
+}
+
+impl DagBlockTimeWindowService {
+    pub fn new(time_windows: u64) -> Self {
+        Self {
+            real_time_service: RealTimeService::new(),
+            time_window: time_windows,
+        }
+    }
+
+    pub fn is_in_time_window(&self, block_timestamp: u64) -> TimeWindowResult {
+        let now = self.now_millis();
+        let start_time = now - now % self.time_window;
+        let end_time = start_time + self.time_window;
+        if (start_time..end_time).contains(&block_timestamp) {
+            TimeWindowResult::InTimeWindow
+        } else if block_timestamp < start_time {
+            TimeWindowResult::BeforeTimeWindow
+        } else {
+            TimeWindowResult::AfterTimeWindow
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

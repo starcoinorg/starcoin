@@ -1,5 +1,7 @@
-use super::ghostdag::protocol::GhostdagManager;
+use super::ghostdag::protocol::{ColoringOutput, GhostdagManager};
 use super::reachability::{inquirer, reachability_service::MTReachabilityService};
+use super::types::ghostdata::GhostdagData;
+use crate::consensusdb::prelude::StoreError;
 use crate::consensusdb::{
     prelude::FlexiDagStorage,
     schemadb::{
@@ -7,7 +9,7 @@ use crate::consensusdb::{
         HeaderStore, ReachabilityStoreReader, RelationsStore, RelationsStoreReader,
     },
 };
-use anyhow::bail;
+use anyhow::{bail, Ok};
 use parking_lot::RwLock;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::{
@@ -66,29 +68,28 @@ impl BlockDAG {
         dag
     }
 
-    pub fn init_with_genesis(&mut self) {
-        if self.relations_store.has(Hash::new(ORIGIN)).unwrap() {
-            return;
+    pub fn init_with_genesis(&mut self) -> anyhow::Result<()> {
+        let exits = self.relations_store.has(Hash::new(ORIGIN))?;
+        if exits {
+            return Ok(());
         }
         self.relations_store
             .insert(Hash::new(ORIGIN), BlockHashes::new(vec![]))
             .unwrap();
-        self.commit_header(&self.genesis.clone())
+        let _ = self.commit_header(&self.genesis.clone())?;
+        Ok(())
     }
 
-    pub fn commit_header(&mut self, header: &Header) {
+    pub fn commit_header_inner(
+        &mut self,
+        ghostdag_data: &GhostdagData,
+        header: &Header,
+    ) -> anyhow::Result<()> {
         // Generate ghostdag data
-
         let parents_hash = header.parents_hash();
-        let ghostdag_data = if header.hash() != self.genesis.hash() {
-            self.ghostdag_manager.ghostdag(parents_hash)
-        } else {
-            self.ghostdag_manager.genesis_ghostdag_data()
-        };
         // Store ghostdata
         self.ghostdag_store
-            .insert(header.hash(), Arc::new(ghostdag_data.clone()))
-            .unwrap();
+            .insert(header.hash(), Arc::new(ghostdag_data.clone()))?;
 
         // Update reachability store
         let mut reachability_store = self.reachability_store.clone();
@@ -101,17 +102,40 @@ impl BlockDAG {
             header.hash(),
             ghostdag_data.selected_parent,
             &mut merge_set,
-        )
-        .unwrap();
+        )?;
 
         // store relations
         self.relations_store
-            .insert(header.hash(), BlockHashes::new(parents_hash.to_vec()))
-            .unwrap();
+            .insert(header.hash(), BlockHashes::new(parents_hash.to_vec()))?;
         // Store header store
         self.header_store
-            .insert(header.hash(), Arc::new(header.to_owned()), 0)
-            .unwrap();
+            .insert(header.hash(), Arc::new(header.to_owned()), 0)?;
+
+        Ok(())
+    }
+
+    pub fn commit_header(&mut self, header: &Header) -> anyhow::Result<ColoringOutput> {
+        let ghostdag_data = if header.hash() != self.genesis.hash() {
+            self.ghostdag_manager.ghostdag(header.parents_hash())
+        } else {
+            self.ghostdag_manager.genesis_ghostdag_data()
+        };
+
+        match self.commit_header_inner(&ghostdag_data, header) {
+            anyhow::Result::Ok(()) => (),
+            Err(error) => {
+                let error_result = error.downcast::<StoreError>()?;
+                match error_result {
+                    StoreError::KeyAlreadyExists(_) => (), // if the header existed already, we check its color
+                    _ => {
+                        return anyhow::Result::Err(error_result.into());
+                    }
+                }
+            }
+        }
+        Ok(self
+            .ghostdag_manager
+            .check_blue_candidate(&ghostdag_data, header.hash()))
     }
     fn is_in_dag(&self, _hash: Hash) -> anyhow::Result<bool> {
         return Ok(true);
@@ -173,7 +197,7 @@ impl BlockDAG {
 
     pub fn get_block_header(&self, hash: Hash) -> anyhow::Result<Header> {
         match self.header_store.get_header(hash) {
-            Ok(header) => anyhow::Result::Ok(header),
+            anyhow::Result::Ok(header) => anyhow::Result::Ok(header),
             Err(error) => {
                 println!("failed to get header by hash: {}", error.to_string());
                 bail!("failed to get header by hash: {}", error.to_string());
@@ -183,7 +207,7 @@ impl BlockDAG {
 
     pub fn get_parents(&self, hash: Hash) -> anyhow::Result<Vec<Hash>> {
         match self.relations_store.get_parents(hash) {
-            Ok(parents) => anyhow::Result::Ok((*parents).clone()),
+            anyhow::Result::Ok(parents) => anyhow::Result::Ok((*parents).clone()),
             Err(error) => {
                 println!("failed to get parents by hash: {}", error.to_string());
                 bail!("failed to get parents by hash: {}", error.to_string());
@@ -193,7 +217,7 @@ impl BlockDAG {
 
     pub fn get_children(&self, hash: Hash) -> anyhow::Result<Vec<Hash>> {
         match self.relations_store.get_children(hash) {
-            Ok(children) => anyhow::Result::Ok((*children).clone()),
+            anyhow::Result::Ok(children) => anyhow::Result::Ok((*children).clone()),
             Err(error) => {
                 println!("failed to get parents by hash: {}", error.to_string());
                 bail!("failed to get parents by hash: {}", error.to_string());

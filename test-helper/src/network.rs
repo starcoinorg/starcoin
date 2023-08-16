@@ -17,7 +17,7 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, DagBlockStore, Storage};
-use starcoin_types::startup_info::{ChainInfo, ChainStateInfo, ChainStatus, DagChainStatus};
+use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use std::any::Any;
 use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
@@ -184,7 +184,6 @@ impl ServiceFactory<NetworkActorService> for MockNetworkServiceFactory {
         let peer_message_handle = MockPeerMessageHandler::default();
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
-
         let genesis_hash = genesis.block().header().id();
         let startup_info = storage.get_startup_info()?.unwrap();
         let head_block_hash = startup_info.main;
@@ -194,13 +193,18 @@ impl ServiceFactory<NetworkActorService> for MockNetworkServiceFactory {
         let head_block_info = storage
             .get_block_info(head_block_hash)?
             .ok_or_else(|| format_err!("can't get block info by hash {}", head_block_hash))?;
-        let chain_status = ChainStatus::new(head_block_header, head_block_info);
-        let chain_state_info = ChainStateInfo {
-            chain_info: ChainInfo::new(config.net().chain_id(), genesis_hash, chain_status.clone()),
-            dag_status: DagChainStatus {
-                flexi_dag_accumulator_info: storage.get_dag_accumulator_info()?,
+        let dag_tips = storage.get_last_tips()?;
+
+        let chain_status = ChainStatus::new(head_block_header.clone(), head_block_info, dag_tips);
+        let chain_state_info = ChainInfo::new(
+            config.net().chain_id(),
+            genesis_hash,
+            chain_status.clone(),
+            match storage.get_dag_accumulator_info() {
+                Ok(result) => Some(result),
+                Err(_) => None,
             },
-        };
+        );
         let actor_service =
             NetworkActorService::new(config, chain_state_info, rpc, peer_message_handle.clone())?;
         let network_service = actor_service.network_service();

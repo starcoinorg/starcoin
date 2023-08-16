@@ -24,6 +24,7 @@ pub mod account_state;
 #[allow(clippy::too_many_arguments)]
 pub mod block;
 pub mod compact_block;
+pub mod dag_block;
 
 pub mod block_metadata {
     pub use starcoin_vm_types::block_metadata::BlockMetadata;

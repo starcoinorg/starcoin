@@ -30,7 +30,7 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceHandler, ServiceRef, ServiceRequest,
 };
 use starcoin_txpool_api::PropagateTransactions;
-use starcoin_types::startup_info::{ChainStateInfo, ChainStatus};
+use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::SyncStatusChangeEvent;
 use std::borrow::Cow;
@@ -56,7 +56,7 @@ impl NetworkActor for NetworkActorService {}
 impl NetworkActorService {
     pub fn new<H>(
         config: Arc<NodeConfig>,
-        chain_state_info: ChainStateInfo,
+        chain_state_info: ChainInfo,
         rpc: Option<(RpcInfo, ServiceRef<NetworkRpcService>)>,
         peer_message_handler: H,
     ) -> Result<Self>
@@ -186,11 +186,11 @@ impl EventHandler<Self, Event> for NetworkActorService {
                     "Connected peer {:?}, protocol: {}, notif_protocols: {:?}, rpc_protocols: {:?}",
                     remote, protocol, notif_protocols, rpc_protocols
                 );
-                let info = match ChainStateInfo::decode(&generic_data) {
+                let info = match ChainInfo::decode(&generic_data) {
                     Ok(data) => data,
                     Err(_) => return,
                 };
-                if info.chain_info.chain_id().is_barnard() {
+                if info.chain_id().is_barnard() {
                     info!("Connected peer ver_string {:?}", version_string);
                     if let Some(ref ver_str) = version_string {
                         if !ver_str.contains(BARNARD_HARD_FORK_PEER_VERSION_STRING_PREFIX)
@@ -205,7 +205,7 @@ impl EventHandler<Self, Event> for NetworkActorService {
                         }
                     }
                 }
-                let peer_event = PeerEvent::Open(remote.into(), Box::new(info.chain_info.clone()));
+                let peer_event = PeerEvent::Open(remote.into(), Box::new(info.clone()));
                 self.inner.on_peer_connected(
                     remote.into(),
                     info,
@@ -554,8 +554,9 @@ impl Inner {
                     );
                     peer_info.known_blocks.put(block_id, ());
                     peer_info.peer_info.update_chain_status(ChainStatus::new(
-                        block_header,
+                        block_header.clone(),
                         compact_block_message.block_info.clone(),
+                        compact_block_message.tips_header.clone(),
                     ));
 
                     if self.self_peer.known_blocks.contains(&block_id) {
@@ -626,7 +627,7 @@ impl Inner {
     pub(crate) fn on_peer_connected(
         &mut self,
         peer_id: PeerId,
-        chain_state_info: ChainStateInfo,
+        chain_info: ChainInfo,
         notif_protocols: Vec<Cow<'static, str>>,
         rpc_protocols: Vec<Cow<'static, str>>,
         version_string: Option<String>,
@@ -637,23 +638,17 @@ impl Inner {
                 // avoid update chain status to old
                 // this many happend when multi protocol send repeat handhake.
                 //FIXME after PeerEvent refactor.
-                if chain_state_info.chain_info.total_difficulty()
-                    > peer
-                        .peer_info
-                        .chain_state_info
-                        .chain_info
-                        .status()
-                        .info
-                        .total_difficulty
+                if chain_info.total_difficulty()
+                    > peer.peer_info.chain_info.status().info.total_difficulty
                 {
                     peer.peer_info
-                        .update_chain_status(chain_state_info.chain_info.status().clone());
+                        .update_chain_status(chain_info.status().clone());
                 }
             })
             .or_insert_with(|| {
                 Peer::new(PeerInfo::new(
                     peer_id,
-                    chain_state_info,
+                    chain_info,
                     notif_protocols,
                     rpc_protocols,
                     version_string,
@@ -720,11 +715,13 @@ impl Inner {
                 //2. Sync status change.
                 // may be update by repeat message, but can not find a more good way.
                 self.network_service.update_business_status(
-                    ChainStatus::new(msg.compact_block.header.clone(), msg.block_info.clone())
-                        .encode()
-                        .expect(
-                            "Encoding the compact_block.header and block_info must be successful",
-                        ),
+                    ChainStatus::new(
+                        msg.compact_block.header.clone(),
+                        msg.block_info.clone(),
+                        msg.tips_header.clone(),
+                    )
+                    .encode()
+                    .expect("Encoding the compact_block.header and block_info must be successful"),
                 );
 
                 self.self_peer.known_blocks.put(id, ());

@@ -3,7 +3,7 @@ mod cache;
 mod consensus_ghostdag;
 mod consensus_header;
 mod consensus_reachability;
-mod consensus_relations;
+pub mod consensus_relations;
 mod db;
 mod error;
 mod item;

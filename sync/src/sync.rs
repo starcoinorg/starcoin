@@ -3,7 +3,7 @@
 
 use crate::block_connector::BlockConnectorService;
 use crate::sync_metrics::SyncMetrics;
-use crate::tasks::{full_sync_task, AncestorEvent, SyncFetcher, sync_dag_full_task};
+use crate::tasks::{full_sync_task, sync_dag_full_task, AncestorEvent, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
 use futures::FutureExt;
@@ -31,10 +31,10 @@ use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
+use std::result::Result::Ok;
 use std::sync::Arc;
 use std::time::Duration;
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
-use std::result::Result::Ok;
 
 const REPUTATION_THRESHOLD: i32 = -1000;
 
@@ -91,7 +91,11 @@ impl SyncService {
             .registry()
             .and_then(|registry| PeerScoreMetrics::register(registry).ok());
         Ok(Self {
-            sync_status: SyncStatus::new(ChainStatus::new(head_block.header, head_block_info)),
+            sync_status: SyncStatus::new(ChainStatus::new(
+                head_block.header.clone(),
+                head_block_info,
+                storage.get_last_tips()?,
+            )),
             stage: SyncStage::NotStart,
             config,
             storage,
@@ -160,7 +164,7 @@ impl SyncService {
             .get_shared::<Arc<Storage>>()
             .expect("storage must exist")
             .get_accumulator_snapshot_storage();
- 
+
         let fut = async move {
             let peer_select_strategy =
                 peer_strategy.unwrap_or_else(|| config.sync.peer_select_strategy());
@@ -231,48 +235,51 @@ impl SyncService {
             ));
 
             // for testing, we start dag sync directly
-            if let Some(target_accumulator_info) =
-                rpc_client.get_best_dag_target(current_block_info.get_total_difficulty())?
-            {
-                let local_dag_accumulator_info = storage.get_dag_accumulator_info()?;
-                sync_dag_full_task(
-                    local_dag_accumulator_info,
-                    target_accumulator_info,
-                    rpc_client.clone(),
-                    accumulator_store,
-                    accumulator_snapshot,
-                );
-                Ok(None)
-            } else if let Some(target) =
+            if let Some((target, op_dag_accumulator_info)) =
                 rpc_client.get_best_target(current_block_info.get_total_difficulty())?
             {
-                info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
+                if let Some(target_accumulator_info) = op_dag_accumulator_info {
+                    let local_dag_accumulator_info = storage.get_dag_accumulator_info()?;
+                    sync_dag_full_task(
+                        local_dag_accumulator_info,
+                        target_accumulator_info,
+                        rpc_client.clone(),
+                        accumulator_store,
+                        accumulator_snapshot,
+                        storage.clone(),
+                        config.net().time_service(),
+                        vm_metrics.clone(),
+                    );
+                    Ok(None)
+                } else {
+                    info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
 
-                let (fut, task_handle, task_event_handle) = full_sync_task(
-                    current_block_id,
-                    target.clone(),
-                    skip_pow_verify,
-                    config.net().time_service(),
-                    storage.clone(),
-                    connector_service.clone(),
-                    rpc_client.clone(),
-                    self_ref.clone(),
-                    network.clone(),
-                    config.sync.max_retry_times(),
-                    sync_metrics.clone(),
-                    vm_metrics.clone(),
-                )?;
+                    let (fut, task_handle, task_event_handle) = full_sync_task(
+                        current_block_id,
+                        target.clone(),
+                        skip_pow_verify,
+                        config.net().time_service(),
+                        storage.clone(),
+                        connector_service.clone(),
+                        rpc_client.clone(),
+                        self_ref.clone(),
+                        network.clone(),
+                        config.sync.max_retry_times(),
+                        sync_metrics.clone(),
+                        vm_metrics.clone(),
+                    )?;
 
-                self_ref.notify(SyncBeginEvent {
-                    target,
-                    task_handle,
-                    task_event_handle,
-                    peer_selector,
-                })?;
-                if let Some(sync_task_total) = sync_task_total.as_ref() {
-                    sync_task_total.with_label_values(&["start"]).inc();
+                    self_ref.notify(SyncBeginEvent {
+                        target,
+                        task_handle,
+                        task_event_handle,
+                        peer_selector,
+                    })?;
+                    if let Some(sync_task_total) = sync_task_total.as_ref() {
+                        sync_task_total.with_label_values(&["start"]).inc();
+                    }
+                    Ok(Some(fut.await?))
                 }
-                Ok(Some(fut.await?))
             } else {
                 debug!("[sync]No best peer to request, current is beast.");
                 Ok(None)
@@ -602,10 +609,11 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService {
 
 impl EventHandler<Self, NewHeadBlock> for SyncService {
     fn handle_event(&mut self, msg: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
-        let NewHeadBlock(block) = msg;
+        let NewHeadBlock(block, dag_parents) = msg;
         if self.sync_status.update_chain_status(ChainStatus::new(
             block.header().clone(),
             block.block_info.clone(),
+            dag_parents,
         )) {
             ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
         }
