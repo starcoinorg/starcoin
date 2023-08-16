@@ -253,7 +253,7 @@ impl<
         }
     }
 
-    fn check_blue_candidate(
+    pub fn check_blue_candidate(
         &self,
         new_block_data: &GhostdagData,
         blue_candidate: Hash,
@@ -331,7 +331,7 @@ enum ColoringState {
 }
 
 /// Represents the final output of GHOSTDAG coloring for the current candidate
-enum ColoringOutput {
+pub enum ColoringOutput {
     Blue(KType, BlockHashMap<KType>), // (blue anticone size, map of blue anticone sizes for each affected blue)
     Red,
 }

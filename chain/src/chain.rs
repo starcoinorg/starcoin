@@ -94,6 +94,9 @@ impl BlockChain {
         let genesis = storage
             .get_genesis()?
             .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
+
+        let tips_hash = storage.get_last_tips()?;
+
         watch(CHAIN_WATCH_NAME, "n1253");
         let mut chain = Self {
             genesis_hash: genesis,
@@ -109,7 +112,7 @@ impl BlockChain {
                 storage.as_ref(),
             ),
             status: ChainStatusWithBlock {
-                status: ChainStatus::new(head_block.header.clone(), block_info),
+                status: ChainStatus::new(head_block.header.clone(), block_info, tips_hash),
                 head: head_block,
             },
             statedb: chain_state,
@@ -141,6 +144,7 @@ impl BlockChain {
             storage.get_accumulator_store(AccumulatorStoreType::Block),
         );
         let statedb = ChainStateDB::new(storage.clone().into_super_arc(), None);
+
         let executed_block = Self::execute_block_and_save(
             storage.as_ref(),
             statedb,
@@ -265,6 +269,7 @@ impl BlockChain {
             difficulty,
             strategy,
             None,
+            self.status.status.tips_hash.clone(),
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
         let template = opened_block.finalize()?;
@@ -502,7 +507,6 @@ impl BlockChain {
         storage.save_block_transaction_ids(block_id, txn_id_vec)?;
         storage.save_block_txn_info_ids(block_id, txn_info_ids)?;
         storage.commit_block(block.clone())?;
-
         storage.save_block_info(block_info.clone())?;
 
         watch(CHAIN_WATCH_NAME, "n26");
@@ -524,6 +528,10 @@ impl ChainReader for BlockChain {
             self.status.head.header().chain_id(),
             self.genesis_hash,
             self.status.status.clone(),
+            match self.storage.get_dag_accumulator_info() {
+                Ok(result) => Some(result),
+                Err(_) => None,
+            },
         )
     }
 
@@ -567,12 +575,11 @@ impl ChainReader for BlockChain {
         reverse: bool,
         count: u64,
     ) -> Result<Vec<Block>> {
+        let num_leaves = self.block_accumulator.num_leaves();
         let end_num = match number {
-            None => self.current_header().number(),
+            None => num_leaves.saturating_sub(1),
             Some(number) => number,
         };
-
-        let num_leaves = self.block_accumulator.num_leaves();
 
         if end_num > num_leaves.saturating_sub(1) {
             bail!("Can not find block by number {}", end_num);
@@ -709,6 +716,7 @@ impl ChainReader for BlockChain {
         } else {
             None
         };
+
         BlockChain::new_with_uncles(
             self.time_service.clone(),
             head,
@@ -989,7 +997,11 @@ impl ChainWriter for BlockChain {
 
         self.statedb = ChainStateDB::new(self.storage.clone().into_super_arc(), Some(state_root));
         self.status = ChainStatusWithBlock {
-            status: ChainStatus::new(block.header().clone(), block_info.clone()),
+            status: ChainStatus::new(
+                block.header().clone(),
+                block_info.clone(),
+                self.storage.get_last_tips()?,
+            ),
             head: block.clone(),
         };
         if self.epoch.end_block_number() == block.header().number() {

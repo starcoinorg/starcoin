@@ -39,6 +39,7 @@ pub struct OpenedBlock {
     difficulty: U256,
     strategy: ConsensusStrategy,
     vm_metrics: Option<VMMetrics>,
+    tips_header: Option<Vec<HashValue>>,
 }
 
 impl OpenedBlock {
@@ -52,6 +53,7 @@ impl OpenedBlock {
         difficulty: U256,
         strategy: ConsensusStrategy,
         vm_metrics: Option<VMMetrics>,
+        tips_header: Option<Vec<HashValue>>,
     ) -> Result<Self> {
         let previous_block_id = previous_header.id();
         let block_info = storage
@@ -90,6 +92,7 @@ impl OpenedBlock {
             difficulty,
             strategy,
             vm_metrics,
+            tips_header,
         };
         opened_block.initialize()?;
         Ok(opened_block)
@@ -271,6 +274,7 @@ impl OpenedBlock {
             self.difficulty,
             self.strategy,
             self.block_meta,
+            self.tips_header,
         );
         Ok(block_template)
     }
