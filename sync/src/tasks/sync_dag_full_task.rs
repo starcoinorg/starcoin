@@ -151,15 +151,25 @@ fn sync_accumulator(
     }
 }
 
-fn get_start_block_id(accumulator: &MerkleAccumulator, start_index: u64, local_store: Arc<dyn Store>,) -> anyhow::Result<HashValue> {
+fn get_start_block_id(
+    accumulator: &MerkleAccumulator,
+    start_index: u64,
+    local_store: Arc<dyn Store>,
+) -> anyhow::Result<HashValue> {
     let last_block_id = accumulator
-        .get_leaf(start_index)?.expect("last block id should not be None");
+        .get_leaf(start_index)?
+        .expect("last block id should not be None");
 
-    let mut snapshot = local_store.get_last_tips()?.expect("tips should not be None");
+    let mut snapshot = local_store
+        .get_last_tips()?
+        .expect("tips should not be None");
     snapshot.sort();
-    Ok(snapshot.iter().last().expect("last block id should not be None").clone())
+    Ok(snapshot
+        .iter()
+        .last()
+        .expect("last block id should not be None")
+        .clone())
 }
-
 
 fn sync_dag_block(
     start_index: u64,
