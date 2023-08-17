@@ -736,7 +736,7 @@ impl MockLocalBlockStore {
         );
         self.store.lock().unwrap().insert(
             block.id(),
-            SyncBlockData::new(block.clone(), Some(block_info), None, None, 1),
+            SyncBlockData::new(block.clone(), Some(block_info), None, None, 1, None),
         );
     }
 }

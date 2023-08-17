@@ -14,6 +14,7 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_config::NodeConfig;
+use starcoin_consensus::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
@@ -32,7 +33,7 @@ use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
 use std::result::Result::Ok;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
 
@@ -165,6 +166,8 @@ impl SyncService {
             .expect("storage must exist")
             .get_accumulator_snapshot_storage();
 
+        let dag = ctx.get_shared::<Arc<Mutex<BlockDAG>>>()?;
+
         let fut = async move {
             let peer_select_strategy =
                 peer_strategy.unwrap_or_else(|| config.sync.peer_select_strategy());
@@ -252,6 +255,7 @@ impl SyncService {
                         connector_service.clone(),
                         network.clone(),
                         skip_pow_verify,
+                        dag.clone(),
                     );
                     Ok(None)
                 } else {

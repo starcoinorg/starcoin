@@ -142,6 +142,7 @@ where
                 self.peer_provider.clone(),
                 skip_pow_verify_when_sync,
                 HashValue::zero(),
+                None,
             );
             Ok(TaskGenerator::new(
                 block_sync_task,

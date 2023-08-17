@@ -81,6 +81,7 @@ impl SyncDagBlockTask {
                         block: None,
                         absent_block: true,
                         peer_id: None,
+                        dag_parents: vec![],
                     });
                 } else {
                     result.push(SyncDagBlockInfo {
@@ -88,6 +89,7 @@ impl SyncDagBlockTask {
                         block: Some(block_info.unwrap().block),
                         absent_block: false,
                         peer_id: None,
+                        dag_parents: vec![],
                     });
                 }
             });
@@ -97,7 +99,7 @@ impl SyncDagBlockTask {
             .fetch_blocks(absent_block)
             .await?
             .iter()
-            .map(|(block, peer_info)| (block.header().id(), (block.clone(), peer_info.clone())))
+            .map(|(block, peer_info, parents)| (block.header().id(), (block.clone(), peer_info.clone(), parents.clone())))
             .collect::<HashMap<_, _>>();
 
         // should return the block in order
@@ -115,6 +117,11 @@ impl SyncDagBlockTask {
                     .expect("the block should be got from peer already")
                     .1
                     .to_owned();
+                block_info.dag_parents = fetched_block_info
+                    .get(&block_info.block_id)
+                    .expect("the block should be got from peer already")
+                    .2
+                    .to_owned().expect("dag block should have parents");
             }
         });
         result.sort_by_key(|item| item.block_id);
@@ -132,16 +139,22 @@ impl SyncDagBlockTask {
                                 .expect("block_info should exists"),
                         ),
                         peer_id: None,
-                        accumulator_root: Some(snapshot.accumulator_info.get_accumulator_root().clone()),
+                        accumulator_root: Some(
+                            snapshot.accumulator_info.get_accumulator_root().clone(),
+                        ),
                         count_in_leaf: snapshot.child_hashes.len() as u64,
+                        dag_block_headers: Some(item.dag_parents),
                     }
                 } else {
                     SyncBlockData {
                         block: item.block.expect("block should exists"),
                         info: None,
                         peer_id: item.peer_id,
-                        accumulator_root: Some(snapshot.accumulator_info.get_accumulator_root().clone()),
+                        accumulator_root: Some(
+                            snapshot.accumulator_info.get_accumulator_root().clone(),
+                        ),
                         count_in_leaf: snapshot.child_hashes.len() as u64,
+                        dag_block_headers: Some(item.dag_parents),
                     }
                 }
             })

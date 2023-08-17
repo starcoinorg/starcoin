@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use anyhow::{bail, format_err, Ok};
 use network_api::PeerProvider;
@@ -6,6 +6,7 @@ use starcoin_accumulator::{
     accumulator_info::AccumulatorInfo, Accumulator, AccumulatorTreeStore, MerkleAccumulator,
 };
 use starcoin_chain::BlockChain;
+use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_network::NetworkServiceRef;
@@ -183,6 +184,7 @@ fn sync_dag_block<H, N>(
     block_event_handle: H,
     network: N,
     skip_pow_verify_when_sync: bool,
+    dag: Arc<Mutex<BlockDAG>>,
     vm_metrics: Option<VMMetrics>,
 ) -> anyhow::Result<()>
 where
@@ -253,6 +255,7 @@ where
                 network.clone(),
                 skip_pow_verify_when_sync,
                 accumulator_root,
+                Some(dag.clone()),
             ),
             event_handle.clone(),
             ext_error_handle,
@@ -297,6 +300,7 @@ pub fn sync_dag_full_task(
     connector_service: ServiceRef<BlockConnectorService>,
     network: NetworkServiceRef,
     skip_pow_verify_when_sync: bool,
+    dag: Arc<Mutex<BlockDAG>>,
 ) -> anyhow::Result<()> {
     let event_handle = Arc::new(TaskEventCounterHandle::new());
 
@@ -327,6 +331,7 @@ pub fn sync_dag_full_task(
                 connector_service.clone(),
                 network,
                 skip_pow_verify_when_sync,
+                dag.clone(),
                 vm_metrics,
             );
         }

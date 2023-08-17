@@ -9,6 +9,7 @@ use starcoin_chain_api::{
     ChainReader, ChainWriter, ReadableChainService, TransactionInfoWithProof,
 };
 use starcoin_config::NodeConfig;
+use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::dag_protocol::{
@@ -31,7 +32,7 @@ use starcoin_types::{
 };
 use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_types::access_path::AccessPath;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 /// A Chain reader service to provider Reader API.
 pub struct ChainReaderService {
@@ -45,6 +46,7 @@ impl ChainReaderService {
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
+        dag: Arc<Mutex<BlockDAG>>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         Ok(Self {
@@ -52,9 +54,10 @@ impl ChainReaderService {
                 config.clone(),
                 startup_info,
                 storage.clone(),
+                dag.clone(),         
                 vm_metrics.clone(),
             )?,
-            dag_chain: DagBlockChain::new(config.clone(), storage.clone(), vm_metrics)?,
+            dag_chain: DagBlockChain::new(storage.clone(), dag.clone())?,
         })
     }
 }
@@ -67,7 +70,8 @@ impl ServiceFactory<Self> for ChainReaderService {
             .get_startup_info()?
             .ok_or_else(|| format_err!("StartupInfo should exist at service init."))?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        Self::new(config, startup_info, storage, vm_metrics)
+        let dag = ctx.get_shared_opt::<Arc<Mutex<BlockDAG>>>()?.expect("dag should be initialized at service init");
+        Self::new(config, startup_info, storage, dag.clone(), vm_metrics)
     }
 }
 
@@ -275,6 +279,7 @@ pub struct ChainReaderServiceInner {
     main: BlockChain,
     storage: Arc<dyn Store>,
     vm_metrics: Option<VMMetrics>,
+    dag: Arc<Mutex<BlockDAG>>,
 }
 
 impl ChainReaderServiceInner {
@@ -282,6 +287,7 @@ impl ChainReaderServiceInner {
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
+        dag: Arc<Mutex<BlockDAG>>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let net = config.net();
@@ -296,6 +302,7 @@ impl ChainReaderServiceInner {
             startup_info,
             main,
             storage,
+            dag: dag.clone(),
             vm_metrics,
         })
     }
@@ -330,15 +337,26 @@ impl ReadableChainService for ChainReaderServiceInner {
         self.storage.get_block_by_hash(hash)
     }
 
-    fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>> {
-        self.storage.get_blocks(ids)
+    fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<(Block, Option<Vec<HashValue>>)>>> {
+        let blocks = self.storage.get_blocks(ids)?;
+        Ok(blocks.into_iter().map(|block| {
+            if let Some(block) = block  {
+                let parents = match self.dag.lock().expect("failed to lock dag").get_parents(block.id()) {
+                    Ok(parents) => parents,
+                    Err(_) => panic!("failed to get parents of block {}", block.id()),
+                };
+                Some((block, Some(parents)))
+            } else {
+                None
+            }
+        }).collect())
     }
 
     fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockHeader>>> {
         Ok(self
             .get_blocks(ids)?
             .into_iter()
-            .map(|block| block.map(|b| b.header))
+            .map(|block| block.map(|b| b.0.header))
             .collect())
     }
 

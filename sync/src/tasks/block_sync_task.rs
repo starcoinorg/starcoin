@@ -3,7 +3,7 @@
 
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
-use anyhow::{format_err, Result, Ok};
+use anyhow::{format_err, Ok, Result};
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use network_api::PeerId;
@@ -12,13 +12,16 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
 use starcoin_config::G_CRATE_VERSION;
+use starcoin_consensus::BlockDAG;
+use starcoin_consensus::dag::ghostdag::protocol::ColoringOutput;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_storage::BARNARD_HARD_FORK_HASH;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
+use starcoin_types::header::Header;
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use stream_task::{CollectorState, TaskError, TaskResultCollector, TaskState};
 
 #[derive(Clone, Debug)]
@@ -28,6 +31,7 @@ pub struct SyncBlockData {
     pub(crate) peer_id: Option<PeerId>,
     pub(crate) accumulator_root: Option<HashValue>, // the block belongs to this accumulator leaf
     pub(crate) count_in_leaf: u64, // the number of the block in the accumulator leaf
+    pub(crate) dag_block_headers: Option<Vec<HashValue>>,
 }
 
 impl SyncBlockData {
@@ -37,6 +41,7 @@ impl SyncBlockData {
         peer_id: Option<PeerId>,
         accumulator_root: Option<HashValue>,
         count_in_leaf: u64,
+        dag_block_headers: Option<Vec<HashValue>>,
     ) -> Self {
         Self {
             block,
@@ -44,14 +49,15 @@ impl SyncBlockData {
             peer_id,
             accumulator_root,
             count_in_leaf,
+            dag_block_headers,
         }
     }
 }
 
 #[allow(clippy::from_over_into)]
-impl Into<(Block, Option<BlockInfo>, Option<PeerId>)> for SyncBlockData {
-    fn into(self) -> (Block, Option<BlockInfo>, Option<PeerId>) {
-        (self.block, self.info, self.peer_id)
+impl Into<(Block, Option<BlockInfo>, Option<PeerId>, Option<Vec<HashValue>>)> for SyncBlockData {
+    fn into(self) -> (Block, Option<BlockInfo>, Option<PeerId>, Option<Vec<HashValue>>) {
+        (self.block, self.info, self.peer_id, self.dag_block_headers)
     }
 }
 
@@ -136,9 +142,11 @@ impl TaskState for BlockSyncTask {
                         .fetch_blocks(no_exist_block_ids)
                         .await?
                         .into_iter()
-                        .fold(result_map, |mut result_map, (block, peer_id)| {
-                            result_map
-                                .insert(block.id(), SyncBlockData::new(block, None, peer_id, None, 1));
+                        .fold(result_map, |mut result_map, (block, peer_id, _)| {
+                            result_map.insert(
+                                block.id(),
+                                SyncBlockData::new(block, None, peer_id, None, 1, None),
+                            );
                             result_map
                         })
                 };
@@ -158,7 +166,7 @@ impl TaskState for BlockSyncTask {
                     .fetch_blocks(block_ids)
                     .await?
                     .into_iter()
-                    .map(|(block, peer_id)| SyncBlockData::new(block, None, peer_id, None, 1))
+                    .map(|(block, peer_id, _)| SyncBlockData::new(block, None, peer_id, None, 1, None))
                     .collect())
             }
         }
@@ -202,6 +210,7 @@ pub struct BlockCollector<N, H> {
     last_accumulator_root: HashValue,
     dag_block_pool: Vec<SyncBlockData>,
     target_accumulator_root: HashValue,
+    dag: Option<Arc<Mutex<BlockDAG>>>,
 }
 
 impl<N, H> BlockCollector<N, H>
@@ -217,7 +226,11 @@ where
         peer_provider: N,
         skip_pow_verify: bool,
         target_accumulator_root: HashValue,
+        dag: Option<Arc<Mutex<BlockDAG>>>,
     ) -> Self {
+        if let Some(dag) = &dag {
+            dag.lock().expect("failed to lock the dag").clear_missing_block();
+        }
         Self {
             current_block_info,
             target,
@@ -228,6 +241,7 @@ where
             last_accumulator_root: HashValue::zero(),
             dag_block_pool: Vec::new(),
             target_accumulator_root,
+            dag: dag.clone(),
         }
     }
 
@@ -311,7 +325,10 @@ where
     }
 
     fn check_if_sync_complete(&self, block_info: BlockInfo) -> Result<CollectorState> {
-        let target = self.target.as_ref().expect("the process is for single chain");
+        let target = self
+            .target
+            .as_ref()
+            .expect("the process is for single chain");
         if block_info.block_accumulator_info.num_leaves
             == target.block_info.block_accumulator_info.num_leaves
         {
@@ -337,9 +354,24 @@ where
     }
 
     fn collect_item(&mut self, item: SyncBlockData) -> Result<BlockInfo> {
-        let (block, block_info, peer_id) = item.into();
+        let (block, block_info, peer_id, dag_parents) = item.into();
         let block_id = block.id();
         let timestamp = block.header().timestamp();
+
+        if let Some(parents) = dag_parents {
+            if let Some(dag) = &self.dag {
+                let color = dag
+                    .lock()
+                    .unwrap()
+                    .commit_header(&Header::new(block.header().clone(), parents.clone()))?;
+                if let ColoringOutput::Red = color {
+                    panic!("the red block should not be applied or connected!");
+                }
+            } else {
+                    panic!("in dag sync, the dag should not be None")
+            }
+
+        }
 
         return match block_info {
             Some(block_info) => {
