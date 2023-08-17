@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::{bail, Ok, format_err};
+use anyhow::{bail, format_err, Ok};
 use network_api::PeerProvider;
 use starcoin_accumulator::{
     accumulator_info::AccumulatorInfo, Accumulator, AccumulatorTreeStore, MerkleAccumulator,
@@ -8,19 +8,19 @@ use starcoin_accumulator::{
 use starcoin_chain::BlockChain;
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
-use starcoin_service_registry::ServiceRef;
-use starcoin_storage::{flexi_dag::SyncFlexiDagSnapshotStorage, Store, storage::CodecKVStore};
 use starcoin_network::NetworkServiceRef;
+use starcoin_service_registry::ServiceRef;
+use starcoin_storage::{flexi_dag::SyncFlexiDagSnapshotStorage, storage::CodecKVStore, Store};
 use starcoin_time_service::TimeService;
 use stream_task::{Generator, TaskEventCounterHandle, TaskGenerator};
 
-use crate::{verified_rpc_client::VerifiedRpcClient, block_connector::BlockConnectorService};
+use crate::{block_connector::BlockConnectorService, verified_rpc_client::VerifiedRpcClient};
 
 use super::{
     sync_dag_accumulator_task::{SyncDagAccumulatorCollector, SyncDagAccumulatorTask},
     sync_dag_block_task::SyncDagBlockTask,
     sync_find_ancestor_task::{AncestorCollector, FindAncestorTask},
-    ExtSyncTaskErrorHandle, BlockCollector, BlockConnectedEventHandle,
+    BlockCollector, BlockConnectedEventHandle, ExtSyncTaskErrorHandle,
 };
 
 pub fn find_dag_ancestor_task(
@@ -184,9 +184,10 @@ fn sync_dag_block<H, N>(
     network: N,
     skip_pow_verify_when_sync: bool,
     vm_metrics: Option<VMMetrics>,
-) -> anyhow::Result<()> 
-where H: BlockConnectedEventHandle + Sync + 'static,
-      N: PeerProvider + Clone + 'static, 
+) -> anyhow::Result<()>
+where
+    H: BlockConnectedEventHandle + Sync + 'static,
+    N: PeerProvider + Clone + 'static,
 {
     let max_retry_times = 10; // in startcoin, it is in config
     let delay_milliseconds_on_error = 100;
@@ -208,17 +209,29 @@ where H: BlockConnectedEventHandle + Sync + 'static,
     let mut snapshot = accumulator_snapshot
         .get(leaf)
         .expect(format!("index: {} must be valid for getting snapshot", start_index).as_str())
-        .expect(format!("index: {} should not be None for getting snapshot", start_index).as_str());
+        .expect(
+            format!(
+                "index: {} should not be None for getting snapshot",
+                start_index
+            )
+            .as_str(),
+        );
 
     snapshot.child_hashes.sort();
-    let last_chain_block = snapshot.child_hashes.iter().last().expect("block id should not be None").clone();
+    let last_chain_block = snapshot
+        .child_hashes
+        .iter()
+        .last()
+        .expect("block id should not be None")
+        .clone();
 
-    let current_block_info = local_store 
-    .get_block_info(last_chain_block)?
-    .ok_or_else(|| format_err!("Can not find block info by id: {}", last_chain_block))?;
+    let current_block_info = local_store
+        .get_block_info(last_chain_block)?
+        .ok_or_else(|| format_err!("Can not find block info by id: {}", last_chain_block))?;
 
     let sync = async_std::task::spawn(async move {
         let accumulator_info = accumulator.get_info();
+        let accumulator_root = accumulator.root_hash();
         let sync_task = TaskGenerator::new(
             SyncDagBlockTask::new(
                 accumulator,
@@ -234,11 +247,12 @@ where H: BlockConnectedEventHandle + Sync + 'static,
             delay_milliseconds_on_error,
             BlockCollector::new_with_handle(
                 current_block_info.clone(),
-                target.clone(),
+                None,
                 chain,
                 block_event_handle.clone(),
                 network.clone(),
                 skip_pow_verify_when_sync,
+                accumulator_root,
             ),
             event_handle.clone(),
             ext_error_handle,
@@ -285,7 +299,7 @@ pub fn sync_dag_full_task(
     skip_pow_verify_when_sync: bool,
 ) -> anyhow::Result<()> {
     let event_handle = Arc::new(TaskEventCounterHandle::new());
-    
+
     let ancestor = find_dag_ancestor_task(
         local_accumulator_info,
         target_accumulator_info.clone(),
@@ -303,7 +317,6 @@ pub fn sync_dag_full_task(
         accumulator_snapshot.clone(),
     ) {
         anyhow::Result::Ok((start_index, accumulator)) => {
-
             return sync_dag_block(
                 start_index,
                 accumulator,

@@ -3,7 +3,7 @@
 
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
-use anyhow::{format_err, Result};
+use anyhow::{format_err, Result, Ok};
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use network_api::PeerId;
@@ -12,6 +12,7 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
 use starcoin_config::G_CRATE_VERSION;
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_storage::BARNARD_HARD_FORK_HASH;
 use starcoin_sync_api::SyncTarget;
@@ -25,14 +26,24 @@ pub struct SyncBlockData {
     pub(crate) block: Block,
     pub(crate) info: Option<BlockInfo>,
     pub(crate) peer_id: Option<PeerId>,
+    pub(crate) accumulator_root: Option<HashValue>, // the block belongs to this accumulator leaf
+    pub(crate) count_in_leaf: u64, // the number of the block in the accumulator leaf
 }
 
 impl SyncBlockData {
-    pub fn new(block: Block, block_info: Option<BlockInfo>, peer_id: Option<PeerId>) -> Self {
+    pub fn new(
+        block: Block,
+        block_info: Option<BlockInfo>,
+        peer_id: Option<PeerId>,
+        accumulator_root: Option<HashValue>,
+        count_in_leaf: u64,
+    ) -> Self {
         Self {
             block,
             info: block_info,
             peer_id,
+            accumulator_root,
+            count_in_leaf,
         }
     }
 }
@@ -126,7 +137,8 @@ impl TaskState for BlockSyncTask {
                         .await?
                         .into_iter()
                         .fold(result_map, |mut result_map, (block, peer_id)| {
-                            result_map.insert(block.id(), SyncBlockData::new(block, None, peer_id));
+                            result_map
+                                .insert(block.id(), SyncBlockData::new(block, None, peer_id, None, 1));
                             result_map
                         })
                 };
@@ -146,7 +158,7 @@ impl TaskState for BlockSyncTask {
                     .fetch_blocks(block_ids)
                     .await?
                     .into_iter()
-                    .map(|(block, peer_id)| SyncBlockData::new(block, None, peer_id))
+                    .map(|(block, peer_id)| SyncBlockData::new(block, None, peer_id, None, 1))
                     .collect())
             }
         }
@@ -181,12 +193,15 @@ impl TaskState for BlockSyncTask {
 pub struct BlockCollector<N, H> {
     //node's current block info
     current_block_info: BlockInfo,
-    target: SyncTarget,
+    target: Option<SyncTarget>,
     // the block chain init by ancestor
     chain: BlockChain,
     event_handle: H,
     peer_provider: N,
     skip_pow_verify: bool,
+    last_accumulator_root: HashValue,
+    dag_block_pool: Vec<SyncBlockData>,
+    target_accumulator_root: HashValue,
 }
 
 impl<N, H> BlockCollector<N, H>
@@ -196,11 +211,12 @@ where
 {
     pub fn new_with_handle(
         current_block_info: BlockInfo,
-        target: SyncTarget,
+        target: Option<SyncTarget>,
         chain: BlockChain,
         event_handle: H,
         peer_provider: N,
         skip_pow_verify: bool,
+        target_accumulator_root: HashValue,
     ) -> Self {
         Self {
             current_block_info,
@@ -209,6 +225,9 @@ where
             event_handle,
             peer_provider,
             skip_pow_verify,
+            last_accumulator_root: HashValue::zero(),
+            dag_block_pool: Vec::new(),
+            target_accumulator_root,
         }
     }
 
@@ -257,7 +276,7 @@ where
                 error_msg, peer_id
             );
             match err.downcast::<ConnectBlockError>() {
-                Ok(connect_error) => match connect_error {
+                std::result::Result::Ok(connect_error) => match connect_error {
                     ConnectBlockError::FutureBlock(block) => {
                         Err(ConnectBlockError::FutureBlock(block).into())
                     }
@@ -282,20 +301,47 @@ where
             Ok(())
         }
     }
-}
 
-impl<N, H> TaskResultCollector<SyncBlockData> for BlockCollector<N, H>
-where
-    N: PeerProvider + 'static,
-    H: BlockConnectedEventHandle + 'static,
-{
-    type Output = BlockChain;
+    fn check_if_sync_complete_for_dag(&self) -> Result<CollectorState> {
+        if self.last_accumulator_root == self.target_accumulator_root {
+            return Ok(CollectorState::Enough);
+        } else {
+            return Ok(CollectorState::Need);
+        }
+    }
 
-    fn collect(&mut self, item: SyncBlockData) -> Result<CollectorState> {
+    fn check_if_sync_complete(&self, block_info: BlockInfo) -> Result<CollectorState> {
+        let target = self.target.as_ref().expect("the process is for single chain");
+        if block_info.block_accumulator_info.num_leaves
+            == target.block_info.block_accumulator_info.num_leaves
+        {
+            if block_info != target.block_info {
+                Err(TaskError::BreakError(
+                    RpcVerifyError::new_with_peers(
+                        target.peers.clone(),
+                        format!(
+                    "Verify target error, expect target: {:?}, collect target block_info:{:?}",
+                    target.block_info,
+                    block_info
+                ),
+                    )
+                    .into(),
+                )
+                .into())
+            } else {
+                Ok(CollectorState::Enough)
+            }
+        } else {
+            Ok(CollectorState::Need)
+        }
+    }
+
+    fn collect_item(&mut self, item: SyncBlockData) -> Result<BlockInfo> {
         let (block, block_info, peer_id) = item.into();
         let block_id = block.id();
         let timestamp = block.header().timestamp();
-        let block_info = match block_info {
+
+        return match block_info {
             Some(block_info) => {
                 //If block_info exists, it means that this block was already executed and try connect in the previous sync, but the sync task was interrupted.
                 //So, we just need to update chain and continue
@@ -303,7 +349,7 @@ where
                     block,
                     block_info: block_info.clone(),
                 })?;
-                block_info
+                Ok(block_info)
             }
             None => {
                 self.apply_block(block.clone(), peer_id)?;
@@ -322,32 +368,54 @@ where
                         );
                     }
                 }
-                block_info
+                Ok(block_info)
             }
         };
+    }
+}
 
-        //verify target
-        if block_info.block_accumulator_info.num_leaves
-            == self.target.block_info.block_accumulator_info.num_leaves
-        {
-            if block_info != self.target.block_info {
-                Err(TaskError::BreakError(
-                    RpcVerifyError::new_with_peers(
-                        self.target.peers.clone(),
-                        format!(
-                    "Verify target error, expect target: {:?}, collect target block_info:{:?}",
-                    self.target.block_info,
-                    block_info
-                ),
-                    )
-                    .into(),
-                )
-                .into())
+impl<N, H> TaskResultCollector<SyncBlockData> for BlockCollector<N, H>
+where
+    N: PeerProvider + 'static,
+    H: BlockConnectedEventHandle + 'static,
+{
+    type Output = BlockChain;
+
+    fn collect(&mut self, item: SyncBlockData) -> Result<CollectorState> {
+        let mut process_block_pool = vec![];
+        if item.accumulator_root.is_some() {
+            self.dag_block_pool.push(item.clone());
+            self.last_accumulator_root = item.accumulator_root.unwrap();
+            if item.count_in_leaf != self.dag_block_pool.len() as u64 {
+                return Ok(CollectorState::Need);
             } else {
-                Ok(CollectorState::Enough)
+                process_block_pool = std::mem::take(&mut self.dag_block_pool);
+
+                self.chain.status().tips_hash = Some(
+                    process_block_pool
+                        .iter()
+                        .clone()
+                        .map(|item| item.block.header().id())
+                        .collect(),
+                );
             }
         } else {
-            Ok(CollectorState::Need)
+            process_block_pool.push(item);
+        }
+
+        assert!(!process_block_pool.is_empty());
+
+        let mut block_info = None;
+        for item in process_block_pool {
+            block_info = Some(self.collect_item(item)?);
+        }
+
+        //verify target
+        match self.target {
+            Some(_) => {
+                self.check_if_sync_complete(block_info.expect("block_info should not be None"))
+            }
+            None => self.check_if_sync_complete_for_dag(),
         }
     }
 

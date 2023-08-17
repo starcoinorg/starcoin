@@ -191,11 +191,12 @@ pub async fn test_failed_block() -> Result<()> {
     };
     let mut block_collector = BlockCollector::new_with_handle(
         chain_info.status().info.clone(),
-        target,
+        Some(target),
         chain,
         sender,
         DummyNetworkService::default(),
         true,
+        HashValue::zero(),
     );
     let header = BlockHeaderBuilder::random().with_number(1).build();
     let body = BlockBody::new(Vec::new(), None);
@@ -735,7 +736,7 @@ impl MockLocalBlockStore {
         );
         self.store.lock().unwrap().insert(
             block.id(),
-            SyncBlockData::new(block.clone(), Some(block_info), None),
+            SyncBlockData::new(block.clone(), Some(block_info), None, None, 1),
         );
     }
 }
