@@ -1,23 +1,26 @@
 use std::sync::Arc;
 
-use anyhow::{bail, Ok};
+use anyhow::{bail, Ok, format_err};
+use network_api::PeerProvider;
 use starcoin_accumulator::{
     accumulator_info::AccumulatorInfo, Accumulator, AccumulatorTreeStore, MerkleAccumulator,
 };
 use starcoin_chain::BlockChain;
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
-use starcoin_storage::{flexi_dag::SyncFlexiDagSnapshotStorage, Store};
+use starcoin_service_registry::ServiceRef;
+use starcoin_storage::{flexi_dag::SyncFlexiDagSnapshotStorage, Store, storage::CodecKVStore};
+use starcoin_network::NetworkServiceRef;
 use starcoin_time_service::TimeService;
 use stream_task::{Generator, TaskEventCounterHandle, TaskGenerator};
 
-use crate::verified_rpc_client::VerifiedRpcClient;
+use crate::{verified_rpc_client::VerifiedRpcClient, block_connector::BlockConnectorService};
 
 use super::{
     sync_dag_accumulator_task::{SyncDagAccumulatorCollector, SyncDagAccumulatorTask},
-    sync_dag_block_task::{SyncDagBlockCollector, SyncDagBlockTask},
+    sync_dag_block_task::SyncDagBlockTask,
     sync_find_ancestor_task::{AncestorCollector, FindAncestorTask},
-    BlockLocalStore, ExtSyncTaskErrorHandle,
+    ExtSyncTaskErrorHandle, BlockCollector, BlockConnectedEventHandle,
 };
 
 pub fn find_dag_ancestor_task(
@@ -26,11 +29,10 @@ pub fn find_dag_ancestor_task(
     fetcher: Arc<VerifiedRpcClient>,
     accumulator_store: Arc<dyn AccumulatorTreeStore>,
     accumulator_snapshot: Arc<SyncFlexiDagSnapshotStorage>,
+    event_handle: Arc<TaskEventCounterHandle>,
 ) -> anyhow::Result<AccumulatorInfo> {
     let max_retry_times = 10; // in startcoin, it is in config
     let delay_milliseconds_on_error = 100;
-
-    let event_handle = Arc::new(TaskEventCounterHandle::new());
 
     let ext_error_handle = Arc::new(ExtSyncTaskErrorHandle::new(fetcher.clone()));
 
@@ -171,15 +173,21 @@ fn get_start_block_id(
         .clone())
 }
 
-fn sync_dag_block(
+fn sync_dag_block<H, N>(
     start_index: u64,
     accumulator: MerkleAccumulator,
     fetcher: Arc<VerifiedRpcClient>,
     accumulator_snapshot: Arc<SyncFlexiDagSnapshotStorage>,
     local_store: Arc<dyn Store>,
     time_service: Arc<dyn TimeService>,
+    block_event_handle: H,
+    network: N,
+    skip_pow_verify_when_sync: bool,
     vm_metrics: Option<VMMetrics>,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<()> 
+where H: BlockConnectedEventHandle + Sync + 'static,
+      N: PeerProvider + Clone + 'static, 
+{
     let max_retry_times = 10; // in startcoin, it is in config
     let delay_milliseconds_on_error = 100;
     let event_handle = Arc::new(TaskEventCounterHandle::new());
@@ -191,6 +199,23 @@ fn sync_dag_block(
         local_store.clone(),
         vm_metrics,
     )?;
+
+    let leaf = accumulator
+        .get_leaf(start_index)
+        .expect(format!("index: {} must be valid", start_index).as_str())
+        .expect(format!("index: {} should not be None", start_index).as_str());
+
+    let mut snapshot = accumulator_snapshot
+        .get(leaf)
+        .expect(format!("index: {} must be valid for getting snapshot", start_index).as_str())
+        .expect(format!("index: {} should not be None for getting snapshot", start_index).as_str());
+
+    snapshot.child_hashes.sort();
+    let last_chain_block = snapshot.child_hashes.iter().last().expect("block id should not be None").clone();
+
+    let current_block_info = local_store 
+    .get_block_info(last_chain_block)?
+    .ok_or_else(|| format_err!("Can not find block info by id: {}", last_chain_block))?;
 
     let sync = async_std::task::spawn(async move {
         let accumulator_info = accumulator.get_info();
@@ -207,7 +232,14 @@ fn sync_dag_block(
             2,
             max_retry_times,
             delay_milliseconds_on_error,
-            SyncDagBlockCollector::new(chain),
+            BlockCollector::new_with_handle(
+                current_block_info.clone(),
+                target.clone(),
+                chain,
+                block_event_handle.clone(),
+                network.clone(),
+                skip_pow_verify_when_sync,
+            ),
             event_handle.clone(),
             ext_error_handle,
         )
@@ -248,13 +280,19 @@ pub fn sync_dag_full_task(
     local_store: Arc<dyn Store>,
     time_service: Arc<dyn TimeService>,
     vm_metrics: Option<VMMetrics>,
+    connector_service: ServiceRef<BlockConnectorService>,
+    network: NetworkServiceRef,
+    skip_pow_verify_when_sync: bool,
 ) -> anyhow::Result<()> {
+    let event_handle = Arc::new(TaskEventCounterHandle::new());
+    
     let ancestor = find_dag_ancestor_task(
         local_accumulator_info,
         target_accumulator_info.clone(),
         fetcher.clone(),
         accumulator_store.clone(),
         accumulator_snapshot.clone(),
+        event_handle.clone(),
     )?;
 
     match sync_accumulator(
@@ -264,14 +302,18 @@ pub fn sync_dag_full_task(
         accumulator_store.clone(),
         accumulator_snapshot.clone(),
     ) {
-        anyhow::Result::Ok((start_index, accumultor)) => {
+        anyhow::Result::Ok((start_index, accumulator)) => {
+
             return sync_dag_block(
                 start_index,
-                accumultor,
+                accumulator,
                 fetcher.clone(),
                 accumulator_snapshot.clone(),
                 local_store.clone(),
                 time_service.clone(),
+                connector_service.clone(),
+                network,
+                skip_pow_verify_when_sync,
                 vm_metrics,
             );
         }

@@ -249,6 +249,9 @@ impl SyncService {
                         storage.clone(),
                         config.net().time_service(),
                         vm_metrics.clone(),
+                        connector_service.clone(),
+                        network.clone(),
+                        skip_pow_verify,
                     );
                     Ok(None)
                 } else {

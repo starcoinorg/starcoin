@@ -3,6 +3,7 @@ use anyhow::{Ok, Result};
 use futures::{future::BoxFuture, FutureExt};
 use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
+use starcoin_chain_api::{ExecutedBlock, ChainWriter};
 use starcoin_network_rpc_api::dag_protocol::{GetSyncDagBlockInfo, SyncDagBlockInfo};
 use starcoin_storage::{
     block_info, flexi_dag::SyncFlexiDagSnapshotStorage, storage::CodecKVStore, Store,
@@ -11,7 +12,7 @@ use starcoin_types::block::Block;
 use std::{collections::HashMap, sync::Arc};
 use stream_task::{CollectorState, TaskResultCollector, TaskState};
 
-use super::BlockLocalStore;
+use super::{BlockLocalStore, block_sync_task::SyncBlockData};
 
 #[derive(Clone)]
 pub struct SyncDagBlockTask {
@@ -46,7 +47,7 @@ impl SyncDagBlockTask {
 }
 
 impl SyncDagBlockTask {
-    async fn fetch_absent_dag_block(&self, index: u64) -> Result<Vec<SyncDagBlockInfo>> {
+    async fn fetch_absent_dag_block(&self, index: u64) -> Result<Vec<SyncBlockData>> {
         let leaf = self
             .accumulator
             .get_leaf(index)
@@ -79,13 +80,15 @@ impl SyncDagBlockTask {
                         block_id: block_id.clone(),
                         block: None,
                         absent_block: true,
-                    })
+                        peer_id: None,
+                    });
                 } else {
                     result.push(SyncDagBlockInfo {
                         block_id: block_id.clone(),
                         block: Some(block_info.unwrap().block),
                         absent_block: false,
-                    })
+                        peer_id: None,
+                    });
                 }
             });
 
@@ -101,15 +104,32 @@ impl SyncDagBlockTask {
         result.iter_mut().for_each(|block_info| {
             if block_info.absent_block {
                 block_info.block = Some(fetched_block_info.get(&block_info.block_id).expect("the block should be got from peer already").0.to_owned());
+                block_info.peer_id = fetched_block_info.get(&block_info.block_id).expect("the block should be got from peer already").1.to_owned();
             }
         });
         result.sort_by_key(|item| item.block_id);
-        Ok(result)
+
+
+        Ok(result.into_iter().map(|item| {
+            if !item.absent_block {
+                SyncBlockData {
+                    block: item.block.expect("block should exists"),
+                    info: Some(self.local_store.get_block_info(item.block_id).expect("failed to read block info").expect("block_info should exists")),
+                    peer_id: None,
+                }
+            } else {
+                SyncBlockData {
+                    block: item.block.expect("block should exists"),
+                    info: None,
+                    peer_id: item.peer_id,
+                }
+            }
+        }).collect())
     }
 }
 
 impl TaskState for SyncDagBlockTask {
-    type Item = SyncDagBlockInfo;
+    type Item = SyncBlockData;
 
     fn new_sub_task(self) -> BoxFuture<'static, Result<Vec<Self::Item>>> {
         async move {
@@ -132,27 +152,5 @@ impl TaskState for SyncDagBlockTask {
             accumulator_snapshot: self.accumulator_snapshot.clone(),
             local_store: self.local_store.clone(),
         })
-    }
-}
-
-pub struct SyncDagBlockCollector {
-    chain: BlockChain,
-}
-
-impl SyncDagBlockCollector {
-    pub fn new(chain: BlockChain) -> Self {
-        Self { chain }
-    }
-}
-
-impl TaskResultCollector<SyncDagBlockInfo> for SyncDagBlockCollector {
-    type Output = ();
-
-    fn collect(&mut self, mut _item: SyncDagBlockInfo) -> anyhow::Result<CollectorState> {
-        Ok(CollectorState::Enough)
-    }
-
-    fn finish(self) -> Result<Self::Output> {
-        Ok(())
     }
 }

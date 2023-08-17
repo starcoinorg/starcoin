@@ -1,3 +1,4 @@
+use network_p2p_core::PeerId;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::HashValue;
@@ -44,4 +45,5 @@ pub struct SyncDagBlockInfo {
     pub block_id: HashValue,
     pub block: Option<Block>,
     pub absent_block: bool, // True if the block is not in the local therefore it needs to apply
+    pub peer_id: Option<PeerId>,
 }
