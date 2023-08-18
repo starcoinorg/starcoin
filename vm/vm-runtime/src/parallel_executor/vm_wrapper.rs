@@ -58,7 +58,6 @@ impl<'a, S: 'a + StateView> ExecutorTask for StarcoinVMWrapper<'a, S> {
         }
     }
 
-    // XXX FIXME YSG, self should be immut
     fn execute_transaction(
         &self,
         view: &MVHashMapView<StateKey, WriteOp>,

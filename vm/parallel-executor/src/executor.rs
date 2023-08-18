@@ -285,7 +285,6 @@ where
         }
     }
 
-    // XXX FIXME YSG
     pub fn execute_transactions_parallel(
         &self,
         executor_initial_arguments: E::Argument,

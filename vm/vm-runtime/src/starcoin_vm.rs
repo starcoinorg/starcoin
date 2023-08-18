@@ -1080,12 +1080,13 @@ impl StarcoinVM {
         storage: &S,
         transactions: Vec<Transaction>,
         block_gas_limit: Option<u64>,
-    ) -> Result<Vec<(VMStatus, TransactionOutput)>> {
+    ) -> Result<Vec<(VMStatus, TransactionOutput)>, VMStatus> {
         let mut data_cache = StateViewCache::new(storage);
         let mut result = vec![];
 
         // TODO load config by config change event
-        self.load_configs(&data_cache)?;
+        self.load_configs(&data_cache)
+            .map_err(|_err| VMStatus::Error(StatusCode::STORAGE_ERROR))?;
 
         let mut gas_left = block_gas_limit.unwrap_or(u64::MAX);
 
@@ -1124,7 +1125,8 @@ impl StarcoinVM {
                             data_cache.push_write_set(output.write_set())
                         }
                         // TODO load config by config change event
-                        self.check_reconfigure(&data_cache, &output)?;
+                        self.check_reconfigure(&data_cache, &output)
+                            .map_err(|_err| VMStatus::Error(StatusCode::STORAGE_ERROR))?;
 
                         #[cfg(feature = "metrics")]
                         if let Some(timer) = timer {
@@ -1381,11 +1383,7 @@ impl StarcoinVM {
         metrics: Option<VMMetrics>,
     ) -> Result<Vec<(VMStatus, TransactionOutput)>, VMStatus> {
         let mut vm = StarcoinVM::new(metrics);
-        let result = vm
-            // XXX FIXME YSG, remove unwrap
-            .execute_block_transactions(state_view, txns, block_gas_limit)
-            .unwrap();
-        Ok(result)
+        vm.execute_block_transactions(state_view, txns, block_gas_limit)
     }
 
     pub fn load_module<'r, R: MoveResolverExt>(

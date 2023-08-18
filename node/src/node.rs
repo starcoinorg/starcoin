@@ -233,8 +233,8 @@ impl NodeService {
             logger_handle.enable_stderr();
         }
 
-        // XXX FIXME YSG add execute_config
-        StarcoinVM::set_concurrency_level_once(4);
+        // XXX FIXME YSG add execute_config, currently we use console command to test
+        // StarcoinVM::set_concurrency_level_once(4);
         let (start_sender, start_receiver) = oneshot::channel();
         let join_handle = timeout_join_handler::spawn(move || {
             let system = System::with_tokio_rt(|| {
