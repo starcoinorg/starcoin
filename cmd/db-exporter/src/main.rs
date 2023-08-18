@@ -672,7 +672,7 @@ pub fn apply_block(
         CacheStorage::new(None),
         db_storage,
     ))?);
-    StarcoinVM::set_concurrency_level_once(4);
+    StarcoinVM::set_concurrency_level_once(num_cpus::get());
     let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
     let mut chain = BlockChain::new(
         net.time_service(),
