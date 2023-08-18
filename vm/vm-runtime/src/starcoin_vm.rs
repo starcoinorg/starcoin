@@ -179,7 +179,7 @@ impl StarcoinVM {
                 < StdlibVersion::Version(VMCONFIG_UPGRADE_VERSION_MARK)
             {
                 debug!(
-                    "stdlib version: {}, fetch vmconfig from onchain resource",
+                    "stdlib version: {}, fetch VMConfig from onchain resource",
                     stdlib_version
                 );
                 let gas_cost_table = VMConfig::fetch_config(&remote_storage)?
@@ -187,13 +187,13 @@ impl StarcoinVM {
                     .gas_schedule;
                 (
                     Some(GasSchedule::from(&gas_cost_table)),
-                    "gas schedule from gensis",
+                    "gas schedule from VMConfig",
                 )
             } else if stdlib_version >= StdlibVersion::Version(VMCONFIG_UPGRADE_VERSION_MARK)
                 && stdlib_version < StdlibVersion::Version(GAS_SCHEDULE_UPGRADE_VERSION_MARK)
             {
                 debug!(
-                    "stdlib version: {}, fetch vmconfig from onchain module",
+                    "stdlib version: {}, fetch VMConfig from onchain module",
                     stdlib_version
                 );
                 let instruction_schedule = {
@@ -253,11 +253,11 @@ impl StarcoinVM {
                 };
                 (
                     Some(GasSchedule::from(&cost_table)),
-                    "gas schedule from vm config",
+                    "gas schedule from VMConfig",
                 )
             } else {
                 debug!(
-                    "stdlib version: {}, fetch gas schedule from onchain module",
+                    "stdlib version: {}, fetch schedule from onchain  module GasSchedule",
                     stdlib_version
                 );
                 let gas_schedule = {
@@ -275,11 +275,11 @@ impl StarcoinVM {
                         )?
                         .pop()
                         .ok_or_else(|| {
-                            anyhow::anyhow!("Expect 0x1::GasSchedule::initialize() return value")
+                            anyhow::anyhow!("Expect 0x1::GasSchedule::gas_schedule() return value")
                         })?;
                     bcs_ext::from_bytes::<GasSchedule>(&data)?
                 };
-                (Some(gas_schedule), "gas schedule from gas schedule in move")
+                (Some(gas_schedule), "gas schedule from GasSchedule")
             };
             #[cfg(feature = "print_gas_info")]
             match self.gas_schedule.as_ref() {
