@@ -15,6 +15,7 @@ use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::BlockDAG;
+use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
@@ -29,6 +30,7 @@ use starcoin_sync_api::{
     SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
 use starcoin_types::block::BlockIdAndNumber;
+use starcoin_types::blockhash::ORIGIN;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
@@ -95,7 +97,7 @@ impl SyncService {
             sync_status: SyncStatus::new(ChainStatus::new(
                 head_block.header.clone(),
                 head_block_info,
-                storage.get_last_tips()?,
+                storage.get_last_tips().unwrap_or(Some(vec![HashValue::new(ORIGIN)])),
             )),
             stage: SyncStage::NotStart,
             config,

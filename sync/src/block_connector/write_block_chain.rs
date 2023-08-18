@@ -600,7 +600,7 @@ where
             // tips header, check the dag time window to see if it is should apply the blocks
             // checkout if it is time to settle down
             let time_service = DagBlockTimeWindowService::new(15 * 1000);
-            match time_service.is_in_time_window(block.header().timestamp()) {
+            match time_service.is_in_time_window(block.header().timestamp(), self.config.net().time_service().clone()) {
                 TimeWindowResult::InTimeWindow => {
                     self.dag_block_pool
                         .lock()
