@@ -16,7 +16,7 @@ use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     BlockHeaderView, BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
     SignedUserTransactionView, StrView, TransactionEventResponse, TransactionInfoView,
-    TransactionInfoWithProofView, TransactionView,
+    TransactionInfoWithProofView, TransactionView, TransactionWriteSetView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::StateView;
@@ -467,6 +467,22 @@ where
         }
         .map_err(map_err);
 
+        Box::pin(fut.boxed())
+    }
+
+    fn get_transaction_write_set(
+        &self,
+        txn_hash: HashValue,
+    ) -> FutureResult<Option<TransactionWriteSetView>> {
+        let service = self.service.clone();
+        let fut = async move {
+            let write_set = service.get_transaction_write_set(txn_hash).await?;
+            match write_set {
+                None => Ok(None),
+                Some(w) => Ok(Some(TransactionWriteSetView::new(txn_hash, w)?)),
+            }
+        }
+        .map_err(map_err);
         Box::pin(fut.boxed())
     }
 }

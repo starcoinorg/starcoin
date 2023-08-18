@@ -463,6 +463,7 @@ impl BlockChain {
         let block_id = block.id();
         let txn_infos = executed_data.txn_infos;
         let txn_events = executed_data.txn_events;
+        let txn_write_set = executed_data.txn_write_sets;
 
         debug_assert!(
             txn_events.len() == txn_infos.len(),
@@ -504,6 +505,7 @@ impl BlockChain {
         storage.commit_block(block.clone())?;
 
         storage.save_block_info(block_info.clone())?;
+        storage.save_write_set_batch(txn_write_set)?;
 
         watch(CHAIN_WATCH_NAME, "n26");
         Ok(ExecutedBlock { block, block_info })

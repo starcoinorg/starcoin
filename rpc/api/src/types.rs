@@ -49,12 +49,13 @@ use starcoin_vm_types::transaction::{
 };
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::vm_status::{DiscardedVMStatus, KeptVMStatus, StatusCode};
-use starcoin_vm_types::write_set::WriteOp;
+use starcoin_vm_types::write_set::{WriteOp, WriteSet};
 use std::collections::BTreeMap;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
 pub type ByteCode = Vec<u8>;
+
 mod node_api_types;
 pub mod pubsub;
 
@@ -1222,6 +1223,7 @@ impl From<TransactionOutput> for TransactionOutputView {
         }
     }
 }
+
 impl From<(AccessPath, WriteOp)> for TransactionOutputAction {
     fn from((access_path, op): (AccessPath, WriteOp)) -> Self {
         let (action, value) = match op {
@@ -1243,6 +1245,7 @@ impl From<(AccessPath, WriteOp)> for TransactionOutputAction {
         }
     }
 }
+
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionOutputAction {
     pub access_path: AccessPath,
@@ -1823,6 +1826,7 @@ pub struct ConnectLocal;
 impl ServiceRequest for ConnectLocal {
     type Response = RpcChannel;
 }
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct AccumulatorInfoView {
     /// Accumulator root hash
@@ -1926,6 +1930,41 @@ impl From<StateKey> for StateKeyView {
                 key: table_item.key,
             }),
         }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct TransactionWriteSetView {
+    hash_value: HashValue,
+    access_write_set: Vec<TransactionOutputAction>,
+    table_write_set: Vec<TransactionOutputTableItemAction>,
+}
+
+impl TransactionWriteSetView {
+    pub fn new(hash_value: HashValue, write_set: WriteSet) -> anyhow::Result<Self> {
+        let mut access_write_set = vec![];
+        let mut table_item_write_set = vec![];
+        for (state_key, op) in write_set {
+            match state_key {
+                StateKey::AccessPath(access_path) => {
+                    access_write_set.push((access_path, op));
+                }
+                StateKey::TableItem(table_item) => {
+                    table_item_write_set.push((table_item, op));
+                }
+            }
+        }
+        Ok(Self {
+            hash_value,
+            access_write_set: access_write_set
+                .into_iter()
+                .map(TransactionOutputAction::from)
+                .collect(),
+            table_write_set: table_item_write_set
+                .into_iter()
+                .map(TransactionOutputTableItemAction::from)
+                .collect(),
+        })
     }
 }
 

@@ -6,6 +6,7 @@ use crate::types::pubsub::EventFilter;
 use crate::types::{
     BlockHeaderView, BlockInfoView, BlockView, ChainId, ChainInfoView, StrView,
     TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView, TransactionView,
+    TransactionWriteSetView,
 };
 use crate::FutureResult;
 use jsonrpc_core::Result;
@@ -122,6 +123,12 @@ pub trait ChainApi {
         event_index: Option<u64>,
         access_path: Option<StrView<AccessPath>>,
     ) -> FutureResult<Option<StrView<Vec<u8>>>>;
+
+    #[rpc(name = "chain.get_transaction_write_set")]
+    fn get_transaction_write_set(
+        &self,
+        block_hash: HashValue,
+    ) -> FutureResult<Option<TransactionWriteSetView>>;
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]
