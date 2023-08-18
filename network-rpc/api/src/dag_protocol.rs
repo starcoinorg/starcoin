@@ -1,8 +1,7 @@
 use network_p2p_core::PeerId;
 use serde::{Deserialize, Serialize};
-use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::HashValue;
-use starcoin_types::{block::Block, header::Header};
+use starcoin_types::block::Block;
 
 #[derive(Clone, Debug, Hash, Eq, PartialOrd, Ord, PartialEq, Serialize, Deserialize)]
 pub struct RelationshipPair {

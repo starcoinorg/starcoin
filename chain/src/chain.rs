@@ -25,7 +25,7 @@ use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
-use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use starcoin_types::startup_info::{ChainInfo, ChainStatus, StartupInfo};
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
     account_address::AccountAddress,
@@ -95,7 +95,7 @@ impl BlockChain {
             .get_genesis()?
             .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
 
-        let tips_hash = storage.get_last_tips()?;
+        let tips_hash = storage.get_last_tips().unwrap_or_default();
 
         watch(CHAIN_WATCH_NAME, "n1253");
         let mut chain = Self {
