@@ -54,7 +54,7 @@ use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_txpool::TxPoolActorService;
 use starcoin_types::system_events::{SystemShutdown, SystemStarted};
 use starcoin_vm_runtime::metrics::VMMetrics;
-use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
+// use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 

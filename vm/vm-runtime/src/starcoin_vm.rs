@@ -1595,9 +1595,6 @@ impl VMAdapter for StarcoinVM {
                 let sender = txn.sender().to_string();
                 let (vm_status, output) = self.execute_user_transaction(data_cache, *txn.clone());
                 // XXX FIXME YSG
-                // why use &mut self, because of check_reconfigure modified vm_config, why aptos no need do this
-                // actually is load_configs problem
-                // this place should add check_reconfigure to check we need re execution
                 // let gas_unit_price = transaction.gas_unit_price(); think about gas_used OutOfGas
                 (vm_status, output, Some(sender))
             }

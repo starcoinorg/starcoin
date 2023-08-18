@@ -1,10 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    data_cache::StateViewCache,
-    move_vm_ext::{MoveResolverExt, SessionId},
-};
+use crate::move_vm_ext::{MoveResolverExt, SessionId};
 use anyhow::Result;
 use move_core_types::vm_status::{StatusCode, VMStatus};
 use move_vm_runtime::move_vm_adapter::SessionAdapter;
@@ -19,13 +16,11 @@ use starcoin_vm_types::{
 };
 
 /// This trait describes the VM adapter's interface.
-/// TODO: bring more of the execution logic in aptos_vm into this file.
 pub trait VMAdapter {
     /// Creates a new Session backed by the given storage.
     /// TODO: this doesn't belong in this trait. We should be able to remove
     /// this after redesigning cache ownership model.
     // XXX FIXME YSG, this place we use SessionAdapter, we don't have move_vm_ext::SessionExt
-    /// XXX FIXME YSG, we don't know
     fn new_session<'r, R: MoveResolverExt>(
         &self,
         remote: &'r R,
@@ -45,116 +40,6 @@ pub trait VMAdapter {
         txn: &PreprocessedTransaction,
         data_cache: &S,
     ) -> Result<(VMStatus, TransactionOutput, Option<String>), VMStatus>;
-}
-
-#[allow(dead_code)]
-fn preload_cache(
-    _signature_verified_block: &[PreprocessedTransaction],
-    _data_view: &impl StateView,
-) {
-    // XXX FIXME YSG
-    // generate a collection of addresses
-    /*
-    let mut addresses_to_preload = HashSet::new();
-    for txn in signature_verified_block {
-        if let PreprocessedTransaction::UserTransaction(txn) = txn {
-            if let TransactionPayload::Script(script) = txn.payload() {
-                addresses_to_preload.insert(txn.sender());
-
-                for arg in script.args() {
-                    if let TransactionArgument::Address(address) = arg {
-                        addresses_to_preload.insert(*address);
-                    }
-                }
-            }
-        }
-    }
-
-    // This will launch a number of threads to preload the account blobs in parallel. We may
-    // want to fine tune the number of threads launched here in the future.
-    addresses_to_preload
-        .into_par_iter()
-        .map(|addr| {
-            data_view
-                .get_state_value(&StateKey::AccessPath(AccessPath::new(addr, Vec::new())))
-                .ok()?
-        })
-        .collect::<Vec<Option<Vec<u8>>>>();
-     */
-}
-
-#[allow(dead_code)]
-pub(crate) fn execute_block_impl<A: VMAdapter, S: StateView>(
-    _adapter: &A,
-    _transactions: Vec<Transaction>,
-    _data_cache: &mut StateViewCache<S>,
-) -> Result<Vec<(VMStatus, TransactionOutput)>, VMStatus> {
-    let result = vec![];
-    // XXX FIXME YSG, need open it
-    // check if preload_cache can use in
-    /*
-    let mut should_restart = false;
-
-    info!(
-        "Executing block, transaction count: {}",
-        transactions.len()
-    );
-
-    let signature_verified_block: Vec<PreprocessedTransaction>;
-    {
-        // Verify the signatures of all the transactions in parallel.
-        // This is time consuming so don't wait and do the checking
-        // sequentially while executing the transactions.
-        signature_verified_block = transactions
-            .into_par_iter()
-            .map(preprocess_transaction)
-            .collect();
-    }
-
-    rayon::scope(|scope| {
-        scope.spawn(|_| {
-            preload_cache(&signature_verified_block, data_cache);
-        });
-    });
-
-    for (idx, txn) in signature_verified_block.into_iter().enumerate() {
-        if should_restart {
-            let txn_output =
-                TransactionOutput::new(WriteSet::default(), vec![], 0, TransactionStatus::Retry);
-            result.push((VMStatus::Error(StatusCode::UNKNOWN_STATUS), txn_output));
-            debug!("Retry after reconfiguration");
-            continue;
-        };
-        let (vm_status, output, sender) = adapter.execute_single_transaction(
-            &txn,
-            &data_cache.as_move_resolver(),
-        )?;
-        if !output.status().is_discarded() {
-            data_cache.push_write_set(output.write_set());
-        } else {
-            match sender {
-                Some(s) => trace!(
-                    "Transaction discarded, sender: {}, error: {:?}",
-                    s,
-                    vm_status,
-                ),
-                None => trace!("Transaction malformed, error: {:?}", vm_status,),
-            }
-        }
-
-        if A::should_restart_execution(&output) {
-            info!(
-                "Reconfiguration occurred: restart required",
-            );
-            should_restart = true;
-        }
-
-        // `result` is initially empty, a single element is pushed per loop iteration and
-        // the number of iterations is bound to the max size of `signature_verified_block`
-        assume!(result.len() < usize::max_value());
-        result.push((vm_status, output))
-    } */
-    Ok(result)
 }
 
 #[derive(Debug)]

@@ -2103,6 +2103,7 @@ dependencies = [
  "indicatif",
  "move-binary-format",
  "move-bytecode-verifier",
+ "num_cpus",
  "pprof",
  "rayon",
  "serde 1.0.152",

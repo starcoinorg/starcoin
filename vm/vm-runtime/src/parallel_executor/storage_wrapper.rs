@@ -28,7 +28,6 @@ impl<'a, S: StateView> VersionedView<'a, S> {
 impl<'a, S: StateView> StateView for VersionedView<'a, S> {
     // Get some data either through the cache or the `StateView` on a cache miss.
     fn get_state_value(&self, state_key: &StateKey) -> anyhow::Result<Option<Vec<u8>>> {
-        // XXX FIXME YSG
         match self.hashmap_view.read(state_key) {
             Some(v) => Ok(match v.as_ref() {
                 WriteOp::Value(w) => Some(w.clone()),

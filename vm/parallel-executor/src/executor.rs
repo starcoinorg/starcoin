@@ -321,8 +321,6 @@ where
             match last_input_output.take_output(idx) {
                 ExecutionStatus::Success(t) => final_results.push(t),
                 ExecutionStatus::SkipRest(_t) => {
-                    //   info!("SkipRest idx {} num_txns {}", idx, num_txns);
-                    //     final_results.push(t);
                     maybe_err = Some(BlockRestart);
                     break;
                 }
