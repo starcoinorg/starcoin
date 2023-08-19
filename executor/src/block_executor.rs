@@ -17,7 +17,7 @@ pub struct BlockExecutedData {
     pub state_root: HashValue,
     pub txn_infos: Vec<TransactionInfo>,
     pub txn_events: Vec<Vec<ContractEvent>>,
-    pub tables: BTreeMap<TableHandle, TableInfo>,
+    pub txn_tables: BTreeMap<TableHandle, TableInfo>,
 }
 
 impl Default for BlockExecutedData {
@@ -26,7 +26,7 @@ impl Default for BlockExecutedData {
             state_root: HashValue::zero(),
             txn_events: vec![],
             txn_infos: vec![],
-            tables: BTreeMap::new(),
+            txn_tables: BTreeMap::new(),
         }
     }
 }
@@ -73,7 +73,8 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
                     status,
                 ));
                 executed_data.txn_events.push(events);
-                executed_data.tables.append(&mut tables);
+                // Merge more tables, and keep the latest TableInfo for a same TableHandle
+                executed_data.txn_tables.append(&mut tables);
             }
         };
     }

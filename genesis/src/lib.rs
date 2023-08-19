@@ -128,6 +128,7 @@ impl Genesis {
             let accumulator_root = accumulator.append(vec![txn_info_hash].as_slice())?;
             accumulator.flush()?;
 
+            // Persist newly created tables to storage
             storage.save_table_infos(tables.into_iter().collect())?;
 
             Ok(Block::genesis_block(

@@ -225,6 +225,9 @@ impl OpenedBlock {
         txn_hash: HashValue,
         output: TransactionOutput,
     ) -> Result<(HashValue, HashValue)> {
+        // Ignore the newly created tables.
+        // Because they are not needed to calculate state_root, or included to TransactionInfo.
+        // This auxiliary function is used to create a new block for mining, nothing need to be persisted to storage.
         let (_, write_set, events, gas_used, status) = output.into_inner();
         debug_assert!(matches!(status, TransactionStatus::Keep(_)));
         let status = status

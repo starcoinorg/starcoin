@@ -463,7 +463,7 @@ impl BlockChain {
         let block_id = block.id();
         let txn_infos = executed_data.txn_infos;
         let txn_events = executed_data.txn_events;
-        let tables = executed_data.tables.into_iter().collect::<Vec<_>>();
+        let txn_tables = executed_data.txn_tables.into_iter().collect::<Vec<_>>();
 
         debug_assert!(
             txn_events.len() == txn_infos.len(),
@@ -506,7 +506,7 @@ impl BlockChain {
 
         storage.save_block_info(block_info.clone())?;
 
-        storage.save_table_infos(tables)?;
+        storage.save_table_infos(txn_tables)?;
 
         watch(CHAIN_WATCH_NAME, "n26");
         Ok(ExecutedBlock { block, block_info })
