@@ -574,6 +574,7 @@ pub trait Store:
     + BlockTransactionInfoStore
     + ContractEventStore
     + IntoSuper<dyn StateNodeStore>
+    + TableInfoStore
 {
     fn get_transaction_info_by_block_and_index(
         &self,
@@ -663,8 +664,8 @@ impl TableInfoStore for Storage {
         self.table_info_storage.multiple_get(keys)
     }
 
-    fn save_table_infos(&self, keys: Vec<TableHandle>, table_infos: Vec<TableInfo>) -> Result<()> {
-        let batch = CodecWriteBatch::new_puts(keys.into_iter().zip(table_infos).collect());
+    fn save_table_infos(&self, tables: Vec<(TableHandle, TableInfo)>) -> Result<()> {
+        let batch = CodecWriteBatch::new_puts(tables);
         self.table_info_storage.write_batch(batch)
     }
 }

@@ -505,7 +505,12 @@ fn test_table_info_storage() -> Result<()> {
         TableInfo::new(TypeTag::U8, TypeTag::Address),
         TableInfo::new(TypeTag::Address, TypeTag::U128),
     ];
-    storage.save_table_infos(keys.clone(), vals.clone())?;
+    let tables = keys
+        .clone()
+        .into_iter()
+        .zip(vals.clone())
+        .collect::<Vec<_>>();
+    storage.save_table_infos(tables)?;
     let vals2 = storage.get_table_infos(keys);
     assert!(vals2.is_ok());
     let vals2 = vals2

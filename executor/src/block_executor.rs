@@ -9,12 +9,15 @@ use starcoin_types::transaction::TransactionStatus;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_types::contract_event::ContractEvent;
+use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use std::collections::BTreeMap;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BlockExecutedData {
     pub state_root: HashValue,
     pub txn_infos: Vec<TransactionInfo>,
     pub txn_events: Vec<Vec<ContractEvent>>,
+    pub tables: BTreeMap<TableHandle, TableInfo>,
 }
 
 impl Default for BlockExecutedData {
@@ -23,6 +26,7 @@ impl Default for BlockExecutedData {
             state_root: HashValue::zero(),
             txn_events: vec![],
             txn_infos: vec![],
+            tables: BTreeMap::new(),
         }
     }
 }
@@ -44,7 +48,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
         .zip(txn_outputs.into_iter())
     {
         let txn_hash = txn.id();
-        let (write_set, events, gas_used, status) = output.into_inner();
+        let (mut tables, write_set, events, gas_used, status) = output.into_inner();
         match status {
             TransactionStatus::Discard(status) => {
                 return Err(BlockExecutorError::BlockTransactionDiscard(
@@ -69,6 +73,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
                     status,
                 ));
                 executed_data.txn_events.push(events);
+                executed_data.tables.append(&mut tables);
             }
         };
     }
