@@ -38,6 +38,7 @@ use starcoin_types::{
         TransactionPayload, TransactionStatus,
     },
 };
+use starcoin_vm_types::write_set::WriteOp;
 use starcoin_vm_types::{
     access::{ModuleAccess, ScriptAccess},
     account_address::AccountAddress,
@@ -63,6 +64,7 @@ use starcoin_vm_types::{
     value::{serialize_values, MoveValue},
     vm_status::{KeptVMStatus, StatusCode, VMStatus},
 };
+use std::collections::BTreeMap;
 use std::{cmp::min, sync::Arc};
 
 static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
@@ -1057,11 +1059,12 @@ impl StarcoinVM {
         transactions: Vec<Transaction>,
         block_gas_limit: Option<u64>,
     ) -> Result<Vec<(VMStatus, TransactionOutput)>, VMStatus> {
-        let mut data_cache = StateViewCache::new(storage);
+        let mut data_map = BTreeMap::new();
+
         let mut result = vec![];
 
         // TODO load config by config change event
-        self.load_configs(&data_cache)
+        self.load_configs(storage)
             .map_err(|_err| VMStatus::Error(STORAGE_ERROR))?;
 
         let mut gas_left = block_gas_limit.unwrap_or(u64::MAX);
@@ -1073,6 +1076,7 @@ impl StarcoinVM {
             match block {
                 TransactionBlock::UserTransaction(txns) => {
                     for transaction in txns {
+                        let data_cache = StateViewCache::from_map_ref(storage, &data_map);
                         #[cfg(feature = "metrics")]
                         let timer = self.metrics.as_ref().map(|metrics| {
                             metrics
@@ -1097,11 +1101,21 @@ impl StarcoinVM {
                                     "Keep transaction gas used must not be zero"
                                 );
                             }
-                            // Push write set to write set
-                            data_cache.push_write_set(output.write_set())
+                            // Apply the writes
+                            for (ap, write_op) in output.get_writes().into_iter() {
+                                match write_op {
+                                    WriteOp::Value(blob) => {
+                                        data_map.insert(ap, Some(blob));
+                                    }
+                                    WriteOp::Deletion => {
+                                        data_map.remove(&ap);
+                                        data_map.insert(ap, None);
+                                    }
+                                }
+                            }
                         }
+                        let data_cache = StateViewCache::from_map_ref(storage, &data_map);
                         // TODO load config by config change event
-
                         self.check_reconfigure(&data_cache, &output)
                             .map_err(|_err| VMStatus::Error(STORAGE_ERROR))?;
 
@@ -1124,6 +1138,7 @@ impl StarcoinVM {
                     }
                 }
                 TransactionBlock::BlockPrologue(block_metadata) => {
+                    let data_cache = StateViewCache::from_map_ref(storage, &data_map);
                     #[cfg(feature = "metrics")]
                     let timer = self.metrics.as_ref().map(|metrics| {
                         metrics
@@ -1148,8 +1163,18 @@ impl StarcoinVM {
                             &KeptVMStatus::Executed,
                             "Block metadata transaction keep status must been Executed."
                         );
-                        // Push write set to write set
-                        data_cache.push_write_set(output.write_set())
+                        // Apply the writes
+                        for (ap, write_op) in output.get_writes().into_iter() {
+                            match write_op {
+                                WriteOp::Value(blob) => {
+                                    data_map.insert(ap, Some(blob));
+                                }
+                                WriteOp::Deletion => {
+                                    data_map.remove(&ap);
+                                    data_map.insert(ap, None);
+                                }
+                            }
+                        }
                     }
                     #[cfg(feature = "metrics")]
                     if let Some(timer) = timer {

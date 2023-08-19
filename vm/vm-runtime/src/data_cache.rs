@@ -15,20 +15,17 @@ use starcoin_vm_types::{
     state_store::state_key::StateKey,
     state_view::StateView,
     vm_status::StatusCode,
-    write_set::{WriteOp, WriteSet},
 };
 use std::{
+    borrow::Cow,
     collections::btree_map::BTreeMap,
     ops::{Deref, DerefMut},
 };
 
-/// A local cache for a given a `StateView`. The cache is private to the Diem layer
+/// A local cache for a given a `StateView`. The cache is private to the Starcoin layer
 /// but can be used as a one shot cache for systems that need a simple `RemoteCache`
 /// implementation (e.g. tests or benchmarks).
 ///
-/// The cache is responsible to track all changes to the `StateView` that are the result
-/// of transaction execution. Those side effects are published at the end of a transaction
-/// execution via `StateViewCache::push_write_set`.
 ///
 /// `StateViewCache` is responsible to give an up to date view over the data store,
 /// so that changes executed but not yet committed are visible to subsequent transactions.
@@ -37,22 +34,33 @@ use std::{
 /// track of incremental changes is vital to the consistency of the data store and the system.
 pub struct StateViewCache<'a, S> {
     data_view: &'a S,
-    data_map: BTreeMap<StateKey, Option<Vec<u8>>>,
+    data_map: Cow<'a, BTreeMap<StateKey, Option<Vec<u8>>>>,
 }
 
 impl<'a, S: StateView> StateViewCache<'a, S> {
+    pub fn from_map_ref(
+        data_view: &'a S,
+        data_map_ref: &'a BTreeMap<StateKey, Option<Vec<u8>>>,
+    ) -> Self {
+        Self {
+            data_view,
+            data_map: Cow::Borrowed(data_map_ref),
+        }
+    }
+
     /// Create a `StateViewCache` give a `StateView`. Hold updates to the data store and
     /// forward data request to the `StateView` if not in the local cache.
     pub fn new(data_view: &'a S) -> Self {
         StateViewCache {
             data_view,
-            data_map: BTreeMap::new(),
+            data_map: Cow::Owned(BTreeMap::new()),
         }
     }
 
     // Publishes a `WriteSet` computed at the end of a transaction.
     // The effect is to build a layer in front of the `StateView` which keeps
     // track of the data as if the changes were applied immediately.
+    /*
     pub(crate) fn push_write_set(&mut self, write_set: &WriteSet) {
         for (ref ap, ref write_op) in write_set.iter() {
             match write_op {
@@ -65,7 +73,7 @@ impl<'a, S: StateView> StateViewCache<'a, S> {
                 }
             }
         }
-    }
+    } */
 }
 
 impl<'block, S: StateView> StateView for StateViewCache<'block, S> {
