@@ -17,7 +17,7 @@ pub struct BlockExecutedData {
     pub state_root: HashValue,
     pub txn_infos: Vec<TransactionInfo>,
     pub txn_events: Vec<Vec<ContractEvent>>,
-    pub txn_tables: BTreeMap<TableHandle, TableInfo>,
+    pub txn_table_infos: BTreeMap<TableHandle, TableInfo>,
 }
 
 impl Default for BlockExecutedData {
@@ -26,7 +26,7 @@ impl Default for BlockExecutedData {
             state_root: HashValue::zero(),
             txn_events: vec![],
             txn_infos: vec![],
-            txn_tables: BTreeMap::new(),
+            txn_table_infos: BTreeMap::new(),
         }
     }
 }
@@ -48,7 +48,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
         .zip(txn_outputs.into_iter())
     {
         let txn_hash = txn.id();
-        let (mut tables, write_set, events, gas_used, status) = output.into_inner();
+        let (mut table_infos, write_set, events, gas_used, status) = output.into_inner();
         match status {
             TransactionStatus::Discard(status) => {
                 return Err(BlockExecutorError::BlockTransactionDiscard(
@@ -73,8 +73,8 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
                     status,
                 ));
                 executed_data.txn_events.push(events);
-                // Merge more tables, and keep the latest TableInfo for a same TableHandle
-                executed_data.txn_tables.append(&mut tables);
+                // Merge more table_infos, and keep the latest TableInfo for a same TableHandle
+                executed_data.txn_table_infos.append(&mut table_infos);
             }
         };
     }

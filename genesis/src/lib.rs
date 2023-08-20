@@ -116,7 +116,7 @@ impl Genesis {
             let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
             let chain_state_db = ChainStateDB::new(storage.clone(), None);
 
-            let (tables, transaction_info) =
+            let (table_infos, transaction_info) =
                 Self::execute_genesis_txn(&chain_state_db, txn.clone())?;
 
             let accumulator = MerkleAccumulator::new_with_info(
@@ -128,8 +128,8 @@ impl Genesis {
             let accumulator_root = accumulator.append(vec![txn_info_hash].as_slice())?;
             accumulator.flush()?;
 
-            // Persist newly created tables to storage
-            storage.save_table_infos(tables.into_iter().collect())?;
+            // Persist newly created table_infos to storage
+            storage.save_table_infos(table_infos.into_iter().collect())?;
 
             Ok(Block::genesis_block(
                 *parent_hash,
@@ -192,7 +192,7 @@ impl Genesis {
         let output = starcoin_executor::execute_transactions(chain_state, vec![txn], None)?
             .pop()
             .expect("Execute output must exist.");
-        let (tables, write_set, events, gas_used, status) = output.into_inner();
+        let (table_infos, write_set, events, gas_used, status) = output.into_inner();
         assert_eq!(gas_used, 0, "Genesis txn output's gas_used must be zero");
         let keep_status = status
             .status()
@@ -206,7 +206,7 @@ impl Genesis {
         let state_root = chain_state.commit()?;
         chain_state.flush()?;
         Ok((
-            tables,
+            table_infos,
             TransactionInfo::new(
                 txn_hash,
                 state_root,

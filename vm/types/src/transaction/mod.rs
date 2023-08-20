@@ -648,7 +648,7 @@ impl From<VMStatus> for TransactionStatus {
 /// The output of executing a transaction.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TransactionOutput {
-    tables: BTreeMap<TableHandle, TableInfo>,
+    table_infos: BTreeMap<TableHandle, TableInfo>,
 
     write_set: WriteSet,
 
@@ -664,14 +664,14 @@ pub struct TransactionOutput {
 
 impl TransactionOutput {
     pub fn new(
-        tables: BTreeMap<TableHandle, TableInfo>,
+        table_infos: BTreeMap<TableHandle, TableInfo>,
         write_set: WriteSet,
         events: Vec<ContractEvent>,
         gas_used: u64,
         status: TransactionStatus,
     ) -> Self {
         TransactionOutput {
-            tables,
+            table_infos,
             write_set,
             events,
             gas_used,
@@ -683,8 +683,8 @@ impl TransactionOutput {
         &self.write_set
     }
 
-    pub fn tables(&self) -> &BTreeMap<TableHandle, TableInfo> {
-        &self.tables
+    pub fn table_infos(&self) -> &BTreeMap<TableHandle, TableInfo> {
+        &self.table_infos
     }
 
     pub fn events(&self) -> &[ContractEvent] {
@@ -709,7 +709,7 @@ impl TransactionOutput {
         TransactionStatus,
     ) {
         (
-            self.tables,
+            self.table_infos,
             self.write_set,
             self.events,
             self.gas_used,

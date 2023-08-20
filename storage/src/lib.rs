@@ -664,8 +664,8 @@ impl TableInfoStore for Storage {
         self.table_info_storage.multiple_get(keys)
     }
 
-    fn save_table_infos(&self, tables: Vec<(TableHandle, TableInfo)>) -> Result<()> {
-        let batch = CodecWriteBatch::new_puts(tables);
+    fn save_table_infos(&self, table_infos: Vec<(TableHandle, TableInfo)>) -> Result<()> {
+        let batch = CodecWriteBatch::new_puts(table_infos);
         self.table_info_storage.write_batch(batch)
     }
 }

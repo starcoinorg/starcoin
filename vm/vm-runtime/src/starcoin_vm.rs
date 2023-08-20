@@ -1266,8 +1266,9 @@ impl StarcoinVM {
         let table_change_set = table_context
             .into_change_set()
             .map_err(|e| e.finish(Location::Undefined))?;
-        // Ignore new tables. No tables should be produced in readonly function.
-        let (_tables, write_set, _events) = SessionOutput {
+        // Ignore new table infos.
+        // No table infos should be produced in readonly function.
+        let (_table_infos, write_set, _events) = SessionOutput {
             change_set,
             events,
             table_change_set,
@@ -1447,14 +1448,14 @@ pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolverExt>(
     let table_change_set = table_context
         .into_change_set()
         .map_err(|e| e.finish(Location::Undefined))?;
-    let (tables, write_set, events) = SessionOutput {
+    let (table_infos, write_set, events) = SessionOutput {
         change_set,
         events,
         table_change_set,
     }
     .into_change_set(ap_cache)?;
     Ok(TransactionOutput::new(
-        tables,
+        table_infos,
         write_set,
         events,
         u64::from(gas_used),

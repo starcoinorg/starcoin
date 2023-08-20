@@ -136,12 +136,12 @@ impl SessionOutput {
             }
         }
 
-        let mut tables = BTreeMap::new();
+        let mut table_infos = BTreeMap::new();
         for (key, value) in table_change_set.new_tables {
             let handle = TableHandle(key.0);
             let info = TableInfo::new(value.key_type, value.value_type);
 
-            tables.insert(handle, info);
+            table_infos.insert(handle, info);
         }
 
         let write_set = write_set_mut
@@ -157,6 +157,6 @@ impl SessionOutput {
             })
             .collect::<Result<Vec<_>, VMStatus>>()?;
 
-        Ok((tables, write_set, events))
+        Ok((table_infos, write_set, events))
     }
 }
