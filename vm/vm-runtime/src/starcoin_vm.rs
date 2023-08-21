@@ -68,6 +68,7 @@ use std::sync::Arc;
 
 #[cfg(feature = "metrics")]
 use crate::metrics::VMMetrics;
+use crate::{VMExecutor, VMValidator};
 
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
@@ -395,7 +396,7 @@ impl StarcoinVM {
     }
 
     fn verify_transaction_impl<S: StateView>(
-        &mut self,
+        &self,
         transaction: &SignatureCheckedTransaction,
         remote_cache: &StateViewCache<S>,
     ) -> Result<(), VMStatus> {
@@ -477,8 +478,8 @@ impl StarcoinVM {
 
     pub fn verify_transaction<S: StateView>(
         &mut self,
-        state_view: &S,
         txn: SignedUserTransaction,
+        state_view: &S,
     ) -> Option<VMStatus> {
         #[cfg(feature = "metrics")]
         let _timer = self.metrics.as_ref().map(|metrics| {
@@ -492,10 +493,12 @@ impl StarcoinVM {
             Ok(t) => t,
             Err(_) => return Some(VMStatus::Error(StatusCode::INVALID_SIGNATURE)),
         };
+
         if let Err(err) = self.load_configs(state_view) {
             warn!("Load config error at verify_transaction: {}", err);
             return Some(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE));
         }
+
         match self.verify_transaction_impl(&signature_verified_txn, &data_cache) {
             Ok(_) => None,
             Err(err) => {
@@ -605,7 +608,7 @@ impl StarcoinVM {
                         .map(|m| m.code().to_vec())
                         .collect(),
                     package.package_address(), // be careful with the sender.
-                     gas_meter,
+                    gas_meter,
                     PublishModuleBundleOption {
                         force_publish: enforced,
                         only_new_module,
@@ -706,11 +709,11 @@ impl StarcoinVM {
                     return Err(VMStatus::Error(StatusCode::UNREACHABLE));
                 }
             }
-            .map_err(|e|
-                {
-                    warn!("[VM] execute_script_function error, status_type: {:?}, status_code:{:?}, message:{:?}, location:{:?}", e.status_type(), e.major_status(), e.message(), e.location());
-                    e.into_vm_status()
-                })?;
+                .map_err(|e|
+                    {
+                        warn!("[VM] execute_script_function error, status_type: {:?}, status_code:{:?}, message:{:?}, location:{:?}", e.status_type(), e.major_status(), e.message(), e.location());
+                        e.into_vm_status()
+                    })?;
             charge_global_write_gas_usage(gas_meter, &session, &txn_data.sender())?;
 
             self.success_transaction_cleanup(session, gas_meter, txn_data)
@@ -1496,5 +1499,81 @@ pub fn log_vm_status(
                 txn_id, txn_data.sender, txn_data.sequence_number, txn_status, msg,
             );
         }
+    }
+}
+
+// Executor external API
+impl VMExecutor for StarcoinVM {
+    /// Execute a block of `transactions`. The output vector will have the exact same length as the
+    /// input vector. The discarded transactions will be marked as `TransactionStatus::Discard` and
+    /// have an empty `WriteSet`. Also `state_view` is immutable, and does not have interior
+    /// mutability. Writes to be applied to the data view are encoded in the write set part of a
+    /// transaction output.
+    // fn execute_block(
+    //     transactions: Vec<Transaction>,
+    //     state_view: &impl StateView,
+    // ) -> Result<Vec<TransactionOutput>, VMStatus> {
+    //     fail_point!("move_adapter::execute_block", |_| {
+    //         Err(VMStatus::Error(
+    //             StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
+    //         ))
+    //     });
+    //
+    //     let concurrency_level = Self::get_concurrency_level();
+    //     if concurrency_level > 1 {
+    //         let (result, _) = crate::parallel_executor::ParallelAptosVM::execute_block(
+    //             transactions,
+    //             state_view,
+    //             concurrency_level,
+    //         )?;
+    //         Ok(result)
+    //     } else {
+    //         let output = Self::execute_block_and_keep_vm_status(transactions, state_view)?;
+    //         Ok(output
+    //             .into_iter()
+    //             .map(|(_vm_status, txn_output)| txn_output)
+    //             .collect())
+    //     }
+    // }
+
+    fn execute_block<S: StateView>(
+        chain_state: &S,
+        txns: Vec<Transaction>,
+        block_gas_limit: u64,
+        metrics: Option<VMMetrics>,
+    ) -> Result<Vec<TransactionOutput>> {
+        let mut vm = StarcoinVM::new(metrics);
+        let result = vm
+            .execute_block_transactions(&chain_state, txns, Some(block_gas_limit))?
+            .into_iter()
+            .map(|(_, output)| {
+                debug! {"{:?}", output}
+                output
+            })
+            .collect();
+        Ok(result)
+    }
+}
+
+// VMValidator external API
+impl VMValidator for StarcoinVM {
+    /// Determine if a transaction is valid. Will return `None` if the transaction is accepted,
+    /// `Some(Err)` if the VM rejects it, with `Err` as an error code. Verification performs the
+    /// following steps:
+    /// 1. The signature on the `SignedTransaction` matches the public key included in the
+    ///    transaction
+    /// 2. The script to be executed is under given specific configuration.
+    /// 3. Invokes `Account.prologue`, which checks properties such as the transaction has the
+    /// right sequence number and the sender has enough balance to pay for the gas.
+    /// TBD:
+    /// 1. Transaction arguments matches the main function's type signature.
+    ///    We don't check this item for now and would execute the check at execution time.
+    fn validate_transaction(
+        &mut self,
+        transaction: SignedUserTransaction,
+        state_view: &impl StateView,
+    ) -> Option<VMStatus> {
+        //validate_signed_transaction(self, transaction, state_view)
+        self.verify_transaction(transaction, state_view)
     }
 }
