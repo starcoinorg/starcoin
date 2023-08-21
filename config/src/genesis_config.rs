@@ -17,6 +17,7 @@ use starcoin_crypto::{
 use starcoin_gas::StarcoinGasParameters;
 use starcoin_gas_algebra_ext::{CostTable, FromOnChainGasSchedule};
 use starcoin_time_service::{TimeService, TimeServiceType};
+use starcoin_types::blockhash::ORIGIN;
 use starcoin_uint::U256;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::event::EventHandle;
@@ -776,7 +777,8 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
-            parent_hash: HashValue::sha3_256_of(b"starcoin_dev"),
+            // parent_hash: HashValue::sha3_256_of(b"starcoin_dev"),
+            parent_hash: HashValue::from_slice(ORIGIN).expect("hash should be ok"),
             timestamp: 0,
             difficulty: 1.into(),
         }),
