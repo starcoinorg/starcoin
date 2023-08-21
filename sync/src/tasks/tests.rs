@@ -191,11 +191,13 @@ pub async fn test_failed_block() -> Result<()> {
     };
     let mut block_collector = BlockCollector::new_with_handle(
         chain_info.status().info.clone(),
-        target,
+        Some(target),
         chain,
         sender,
         DummyNetworkService::default(),
         true,
+        HashValue::zero(),
+        None,
     );
     let header = BlockHeaderBuilder::random().with_number(1).build();
     let body = BlockBody::new(Vec::new(), None);
@@ -680,13 +682,13 @@ impl BlockFetcher for MockBlockFetcher {
     fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>> {
+    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>, Option<Vec<HashValue>>)>>> {
         let blocks = self.blocks.lock().unwrap();
-        let result: Result<Vec<(Block, Option<PeerId>)>> = block_ids
+        let result: Result<Vec<(Block, Option<PeerId>, Option<Vec<HashValue>>)>> = block_ids
             .iter()
             .map(|block_id| {
                 if let Some(block) = blocks.get(block_id).cloned() {
-                    Ok((block, None))
+                    Ok((block, None, None))
                 } else {
                     Err(format_err!("Can not find block by id: {:?}", block_id))
                 }
@@ -735,7 +737,7 @@ impl MockLocalBlockStore {
         );
         self.store.lock().unwrap().insert(
             block.id(),
-            SyncBlockData::new(block.clone(), Some(block_info), None),
+            SyncBlockData::new(block.clone(), Some(block_info), None, None, 1, None),
         );
     }
 }

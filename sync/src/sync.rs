@@ -14,6 +14,8 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_config::NodeConfig;
+use starcoin_consensus::BlockDAG;
+use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
@@ -28,11 +30,12 @@ use starcoin_sync_api::{
     SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
 use starcoin_types::block::BlockIdAndNumber;
+use starcoin_types::blockhash::ORIGIN;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
 use std::result::Result::Ok;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
 
@@ -94,7 +97,7 @@ impl SyncService {
             sync_status: SyncStatus::new(ChainStatus::new(
                 head_block.header.clone(),
                 head_block_info,
-                storage.get_last_tips()?,
+                storage.get_last_tips().unwrap_or(Some(vec![HashValue::new(ORIGIN)])),
             )),
             stage: SyncStage::NotStart,
             config,
@@ -164,6 +167,8 @@ impl SyncService {
             .get_shared::<Arc<Storage>>()
             .expect("storage must exist")
             .get_accumulator_snapshot_storage();
+
+        let dag = ctx.get_shared::<Arc<Mutex<BlockDAG>>>()?;
 
         let fut = async move {
             let peer_select_strategy =
@@ -249,6 +254,10 @@ impl SyncService {
                         storage.clone(),
                         config.net().time_service(),
                         vm_metrics.clone(),
+                        connector_service.clone(),
+                        network.clone(),
+                        skip_pow_verify,
+                        dag.clone(),
                     );
                     Ok(None)
                 } else {

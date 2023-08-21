@@ -204,8 +204,8 @@ impl DagBlockTimeWindowService {
         }
     }
 
-    pub fn is_in_time_window(&self, block_timestamp: u64) -> TimeWindowResult {
-        let now = self.now_millis();
+    pub fn is_in_time_window(&self, block_timestamp: u64, net_time_serivce: Arc<dyn TimeService>) -> TimeWindowResult {
+        let now = net_time_serivce.now_millis();
         let start_time = now - now % self.time_window;
         let end_time = start_time + self.time_window;
         if (start_time..end_time).contains(&block_timestamp) {

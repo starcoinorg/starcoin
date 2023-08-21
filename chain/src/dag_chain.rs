@@ -1,49 +1,33 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use anyhow::bail;
 use starcoin_accumulator::Accumulator;
 use starcoin_accumulator::{node::AccumulatorStoreType, MerkleAccumulator};
-use starcoin_config::NodeConfig;
-use starcoin_consensus::{BlockDAG, FlexiDagStorage, FlexiDagStorageConfig};
-use starcoin_crypto::HashValue;
-use starcoin_executor::VMMetrics;
+use starcoin_consensus::BlockDAG;
 use starcoin_network_rpc_api::dag_protocol::{
     GetDagAccumulatorLeaves, GetTargetDagAccumulatorLeafDetail, RelationshipPair,
     TargetDagAccumulatorLeaf, TargetDagAccumulatorLeafDetail,
 };
 use starcoin_storage::storage::CodecKVStore;
 use starcoin_storage::{flexi_dag::SyncFlexiDagSnapshotStorage, Store};
-use starcoin_types::block::BlockHeader;
-use starcoin_types::{blockhash::ORIGIN, header::Header};
 
 pub struct DagBlockChain {
-    dag: Option<BlockDAG>,
+    dag: Arc<Mutex<BlockDAG>>,
     dag_sync_accumulator: MerkleAccumulator,
     dag_sync_accumulator_snapshot: Arc<SyncFlexiDagSnapshotStorage>,
 }
 
 impl DagBlockChain {
     pub fn new(
-        config: Arc<NodeConfig>,
         storage: Arc<dyn Store>,
-        _vm_metrics: Option<VMMetrics>,
+        dag: Arc<Mutex<BlockDAG>>,
     ) -> anyhow::Result<Self> {
-        // initialize the dag
-        let db_path = config.storage.dir();
-        let config = FlexiDagStorageConfig::create_with_params(1, 0, 1024);
-        let db = FlexiDagStorage::create_from_path(db_path, config)?;
-        let dag = BlockDAG::new(
-            Header::new(BlockHeader::random(), vec![HashValue::new(ORIGIN)]),
-            16,
-            db,
-        );
-
         // initialize the block accumulator
         let startup_info = match storage.get_flexi_dag_startup_info()? {
             Some(startup_info) => startup_info,
             None => {
                 return Ok(Self {
-                    dag: Some(dag),
+                    dag: dag.clone(),
                     dag_sync_accumulator: MerkleAccumulator::new_empty(
                         storage.get_accumulator_store(AccumulatorStoreType::SyncDag),
                     ),
@@ -62,7 +46,7 @@ impl DagBlockChain {
         };
 
         Ok(Self {
-            dag: Some(dag),
+            dag: dag.clone(),
             dag_sync_accumulator: MerkleAccumulator::new_with_info(
                 accumulator_info,
                 storage.get_accumulator_store(AccumulatorStoreType::SyncDag),
@@ -75,9 +59,6 @@ impl DagBlockChain {
         &self,
         req: GetDagAccumulatorLeaves,
     ) -> anyhow::Result<Vec<TargetDagAccumulatorLeaf>> {
-        if self.dag.is_none() {
-            bail!("the dag is None");
-        }
         match self
             .dag_sync_accumulator
             .get_leaves(req.accumulator_leaf_index, true, req.batch_size)
@@ -116,11 +97,6 @@ impl DagBlockChain {
         &self,
         req: GetTargetDagAccumulatorLeafDetail,
     ) -> anyhow::Result<Vec<TargetDagAccumulatorLeafDetail>> {
-        let dag = if self.dag.is_some() {
-            self.dag.as_ref().unwrap()
-        } else {
-            bail!("the dag is None");
-        };
         let end_index = std::cmp::min(
             req.leaf_index + req.batch_size - 1,
             self.dag_sync_accumulator.get_info().num_leaves - 1,
@@ -143,7 +119,7 @@ impl DagBlockChain {
                     .child_hashes
                     .into_iter()
                     .fold([].to_vec(), |mut pairs, child| {
-                        let parents = dag.get_parents(child).expect("a child must have parents");
+                        let parents = self.dag.lock().expect("failed to lock the dag").get_parents(child).expect("a child must have parents");
                         parents.into_iter().for_each(|parent| {
                             pairs.push(RelationshipPair { parent, child });
                         });

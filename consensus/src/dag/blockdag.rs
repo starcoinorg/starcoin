@@ -68,6 +68,10 @@ impl BlockDAG {
         dag
     }
 
+    pub fn clear_missing_block(&mut self) {
+        self.missing_blocks.clear();
+    }
+
     pub fn init_with_genesis(&mut self) -> anyhow::Result<()> {
         let exits = self.relations_store.has(Hash::new(ORIGIN))?;
         if exits {

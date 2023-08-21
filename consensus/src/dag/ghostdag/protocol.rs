@@ -330,6 +330,7 @@ enum ColoringState {
     Pending,
 }
 
+#[derive(Debug)]
 /// Represents the final output of GHOSTDAG coloring for the current candidate
 pub enum ColoringOutput {
     Blue(KType, BlockHashMap<KType>), // (blue anticone size, map of blue anticone sizes for each affected blue)

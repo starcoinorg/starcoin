@@ -1,7 +1,7 @@
+use network_p2p_core::PeerId;
 use serde::{Deserialize, Serialize};
-use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::HashValue;
-use starcoin_types::header::Header;
+use starcoin_types::block::Block;
 
 #[derive(Clone, Debug, Hash, Eq, PartialOrd, Ord, PartialEq, Serialize, Deserialize)]
 pub struct RelationshipPair {
@@ -41,6 +41,9 @@ pub struct GetSyncDagBlockInfo {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SyncDagBlockInfo {
-    pub block_headers: Vec<Header>,
-    pub accumulator_info: AccumulatorInfo,
+    pub block_id: HashValue,
+    pub block: Option<Block>,
+    pub absent_block: bool, // True if the block is not in the local therefore it needs to apply
+    pub peer_id: Option<PeerId>,
+    pub dag_parents: Vec<HashValue>,
 }
