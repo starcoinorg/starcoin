@@ -26,7 +26,7 @@ use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::blockhash::ORIGIN;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
-use starcoin_types::startup_info::{ChainInfo, ChainStatus, StartupInfo};
+use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
     account_address::AccountAddress,
