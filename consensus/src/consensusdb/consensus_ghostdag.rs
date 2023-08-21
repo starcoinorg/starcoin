@@ -3,7 +3,7 @@ use starcoin_schemadb::{
     define_schema,
     error::StoreError,
     schema::{KeyCodec, ValueCodec},
-    DBStorage,
+    DBStorage, SchemaBatch, DB,
 };
 use starcoin_types::blockhash::{
     BlockHashMap, BlockHashes, BlockLevel, BlueWorkType, HashKTypeMap,
@@ -17,7 +17,6 @@ use itertools::{
     EitherOrBoth::{Both, Left, Right},
     Itertools,
 };
-use rocksdb::WriteBatch;
 use starcoin_crypto::HashValue as Hash;
 use std::{cell::RefCell, cmp, iter::once, sync::Arc};
 
@@ -200,7 +199,7 @@ impl ValueCodec<CompactGhostDag> for CompactGhostdagData {
 /// A DB + cache implementation of `GhostdagStore` trait, with concurrency support.
 #[derive(Clone)]
 pub struct DbGhostdagStore {
-    db: Arc<DBStorage>,
+    db: DB,
     level: BlockLevel,
     access: CachedDbAccess<GhostDag>,
     compact_access: CachedDbAccess<CompactGhostDag>,
@@ -209,30 +208,32 @@ pub struct DbGhostdagStore {
 impl DbGhostdagStore {
     pub fn new(db: Arc<DBStorage>, level: BlockLevel, cache_size: u64) -> Self {
         Self {
-            db: Arc::clone(&db),
+            db: DB {
+                name: "ghostdag".to_owned(),
+                inner: Arc::clone(&db),
+            },
             level,
             access: CachedDbAccess::new(db.clone(), cache_size),
             compact_access: CachedDbAccess::new(db, cache_size),
         }
     }
 
-    pub fn clone_with_new_cache(&self, cache_size: u64) -> Self {
-        Self::new(Arc::clone(&self.db), self.level, cache_size)
-    }
+    //pub fn clone_with_new_cache(&self, cache_size: u64) -> Self {
+    //    Self::new(Arc::clone(&self.db), self.level, cache_size)
+    //}
 
     pub fn insert_batch(
         &self,
-        batch: &mut WriteBatch,
+        batch: &mut SchemaBatch,
         hash: Hash,
         data: &Arc<GhostdagData>,
     ) -> Result<(), StoreError> {
         if self.access.has(hash)? {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }
-        self.access
-            .write(BatchDbWriter::new(batch), hash, data.clone())?;
-        self.compact_access.write(
-            BatchDbWriter::new(batch),
+        self.access.write_batch(batch, hash, data.clone())?;
+        self.compact_access.write_batch(
+            batch,
             hash,
             CompactGhostdagData {
                 blue_score: data.blue_score,
@@ -241,6 +242,10 @@ impl DbGhostdagStore {
             },
         )?;
         Ok(())
+    }
+
+    pub fn write_schemas(&self, batch: SchemaBatch) -> Result<(), StoreError> {
+        self.db.write_schemas(batch)
     }
 }
 
@@ -287,13 +292,13 @@ impl GhostdagStore for DbGhostdagStore {
         if self.access.has(hash)? {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }
-        self.access
-            .write(DirectDbWriter::new(&self.db), hash, data.clone())?;
+        let mut batch = SchemaBatch::new();
+        self.access.write_batch(&mut batch, hash, data.clone())?;
         if self.compact_access.has(hash)? {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }
-        self.compact_access.write(
-            DirectDbWriter::new(&self.db),
+        self.compact_access.write_batch(
+            &mut batch,
             hash,
             CompactGhostdagData {
                 blue_score: data.blue_score,
@@ -301,6 +306,9 @@ impl GhostdagStore for DbGhostdagStore {
                 selected_parent: data.selected_parent,
             },
         )?;
+
+        self.db.write_schemas(batch)?;
+
         Ok(())
     }
 }

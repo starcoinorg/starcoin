@@ -4,9 +4,11 @@ pub mod schema;
 use crate::error::StoreError;
 use crate::schema::{KeyCodec, Schema, ValueCodec};
 use parking_lot::Mutex;
+use rocksdb::{DBIterator, IteratorMode, ReadOptions};
 pub use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::InnerStore;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 pub type ColumnFamilyName = &'static str;
 
@@ -55,9 +57,10 @@ impl SchemaBatch {
     }
 }
 
+#[derive(Clone)]
 pub struct DB {
     pub name: String, // for logging
-    pub inner: DBStorage,
+    pub inner: Arc<DBStorage>,
 }
 
 impl DB {
@@ -89,11 +92,39 @@ impl DB {
         Ok(())
     }
 
+    pub fn remove<S: Schema>(&self, key: &S::Key) -> Result<(), StoreError> {
+        let raw_key = <S::Key as KeyCodec<S>>::encode_key(key)?;
+        self.inner.remove(S::COLUMN_FAMILY, raw_key)?;
+        Ok(())
+    }
+
     pub fn flush_cf(&self, cf_name: &str) -> Result<(), StoreError> {
         Ok(self.inner.flush_cf(cf_name)?)
     }
 
-    fn get_cf_handle(&self, cf_name: &str) -> Result<&rocksdb::ColumnFamily, StoreError> {
-        Ok(self.inner.get_cf_handle(cf_name)?)
+    pub fn iterator_cf_opt<S: Schema>(
+        &self,
+        mode: IteratorMode,
+        readopts: ReadOptions,
+    ) -> Result<DBIterator, StoreError> {
+        Ok(self
+            .inner
+            .raw_iterator_cf_opt(S::COLUMN_FAMILY, mode, readopts)?)
     }
+
+    //fn get_cf_handle<S: Schema>(&self) -> Result<&rocksdb::ColumnFamily, StoreError> {
+    //    Ok(self.inner.get_cf_handle(S::COLUMN_FAMILY)?)
+    //}
+
+    //pub fn get_pinned_cf<S: Schema>(
+    //    &self,
+    //    key: &S::Key,
+    //) -> Result<Option<DBPinnableSlice>, StoreError> {
+    //    let raw_key = <S::Key as KeyCodec<S>>::encode_key(key)?;
+    //    let res = self
+    //        .inner
+    //        .raw_get_pinned_cf(S::COLUMN_FAMILY, raw_key.as_slice())?;
+
+    //    Ok(res)
+    //}
 }

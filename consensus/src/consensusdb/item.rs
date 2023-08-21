@@ -2,7 +2,7 @@ use parking_lot::RwLock;
 use starcoin_schemadb::{
     error::StoreError,
     schema::{KeyCodec, Schema, ValueCodec},
-    DBStorage,
+    DBStorage, SchemaBatch, DB,
 };
 use starcoin_storage::storage::RawDBStorage;
 use std::sync::Arc;
@@ -10,7 +10,7 @@ use std::sync::Arc;
 /// A cached DB item with concurrency support
 #[derive(Clone)]
 pub struct CachedDbItem<S: Schema> {
-    db: Arc<DBStorage>,
+    db: DB,
     key: S::Key,
     cached_item: Arc<RwLock<Option<S::Value>>>,
 }
@@ -18,7 +18,10 @@ pub struct CachedDbItem<S: Schema> {
 impl<S: Schema> CachedDbItem<S> {
     pub fn new(db: Arc<DBStorage>, key: S::Key) -> Self {
         Self {
-            db,
+            db: DB {
+                name: "cacheitem".to_owned(),
+                inner: Arc::clone(&db),
+            },
             key,
             cached_item: Arc::new(RwLock::new(None)),
         }
@@ -30,6 +33,7 @@ impl<S: Schema> CachedDbItem<S> {
         }
         if let Some(slice) = self
             .db
+            .inner
             .raw_get_pinned_cf(S::COLUMN_FAMILY, &self.key.encode_key()?)
             .map_err(|_| StoreError::CFNotExist(S::COLUMN_FAMILY.to_string()))?
         {
@@ -39,25 +43,40 @@ impl<S: Schema> CachedDbItem<S> {
         } else {
             Err(StoreError::KeyNotFound(
                 String::from_utf8(self.key.encode_key()?)
-                    .unwrap_or(("unrecoverable key string").to_string()),
+                    .unwrap_or_else(|_| ("unrecoverable key string").to_string()),
             ))
         }
     }
 
-    pub fn write(&mut self, mut writer: impl DbWriter, item: &S::Value) -> Result<(), StoreError> {
+    pub fn write_batch(
+        &mut self,
+        batch: &mut SchemaBatch,
+        item: &S::Value,
+    ) -> Result<(), StoreError> {
         *self.cached_item.write() = Some(item.clone());
-        writer.put::<S>(&self.key, item)?;
+        batch.put::<S>(&self.key, item)?;
         Ok(())
     }
 
-    pub fn remove(&mut self, mut writer: impl DbWriter) -> Result<(), StoreError>
+    pub fn write(&mut self, item: &S::Value) -> Result<(), StoreError> {
+        *self.cached_item.write() = Some(item.clone());
+        self.db.put::<S>(&self.key, item)?;
+        Ok(())
+    }
+
+    pub fn remove_batch(&mut self, batch: &mut SchemaBatch) -> Result<(), StoreError>
 where {
         *self.cached_item.write() = None;
-        writer.delete::<S>(&self.key)?;
+        batch.delete::<S>(&self.key)?;
         Ok(())
     }
 
-    pub fn update<F>(&mut self, mut writer: impl DbWriter, op: F) -> Result<S::Value, StoreError>
+    pub fn remove(&mut self) -> Result<(), StoreError> {
+        *self.cached_item.write() = None;
+        self.db.remove::<S>(&self.key)
+    }
+
+    pub fn update<F>(&mut self, op: F) -> Result<S::Value, StoreError>
     where
         F: Fn(S::Value) -> S::Value,
     {
@@ -66,6 +85,7 @@ where {
             item
         } else if let Some(slice) = self
             .db
+            .inner
             .raw_get_pinned_cf(S::COLUMN_FAMILY, &self.key.encode_key()?)
             .map_err(|_| StoreError::CFNotExist(S::COLUMN_FAMILY.to_string()))?
         {
@@ -77,7 +97,7 @@ where {
 
         item = op(item); // Apply the update op
         *guard = Some(item.clone());
-        writer.put::<S>(&self.key, &item)?;
+        self.db.put::<S>(&self.key, &item)?;
         Ok(item)
     }
 }

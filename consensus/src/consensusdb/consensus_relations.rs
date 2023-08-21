@@ -1,11 +1,10 @@
 use super::prelude::CachedDbAccess;
-use rocksdb::WriteBatch;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_schemadb::{
     define_schema,
     error::StoreError,
     schema::{KeyCodec, ValueCodec},
-    DBStorage,
+    DBStorage, SchemaBatch, DB,
 };
 use starcoin_types::blockhash::{BlockHashMap, BlockHashes, BlockLevel};
 use std::{collections::hash_map::Entry::Vacant, sync::Arc};
@@ -72,7 +71,7 @@ impl ValueCodec<RelationChildren> for Arc<Vec<Hash>> {
 /// A DB + cache implementation of `RelationsStore` trait, with concurrent readers support.
 #[derive(Clone)]
 pub struct DbRelationsStore {
-    db: Arc<DBStorage>,
+    db: DB,
     level: BlockLevel,
     parents_access: CachedDbAccess<RelationParent>,
     children_access: CachedDbAccess<RelationChildren>,
@@ -81,7 +80,10 @@ pub struct DbRelationsStore {
 impl DbRelationsStore {
     pub fn new(db: Arc<DBStorage>, level: BlockLevel, cache_size: u64) -> Self {
         Self {
-            db: Arc::clone(&db),
+            db: DB {
+                name: "relationstore".to_owned(),
+                inner: Arc::clone(&db),
+            },
             level,
             parents_access: CachedDbAccess::new(Arc::clone(&db), cache_size),
             children_access: CachedDbAccess::new(db, cache_size),
@@ -89,12 +91,12 @@ impl DbRelationsStore {
     }
 
     pub fn clone_with_new_cache(&self, cache_size: u64) -> Self {
-        Self::new(Arc::clone(&self.db), self.level, cache_size)
+        Self::new(Arc::clone(&self.db.inner), self.level, cache_size)
     }
 
     pub fn insert_batch(
         &mut self,
-        batch: &mut WriteBatch,
+        batch: &mut SchemaBatch,
         hash: Hash,
         parents: BlockHashes,
     ) -> Result<(), StoreError> {
@@ -104,24 +106,18 @@ impl DbRelationsStore {
 
         // Insert a new entry for `hash`
         self.parents_access
-            .write(BatchDbWriter::new(batch), hash, parents.clone())?;
+            .write_batch(batch, hash, parents.clone())?;
 
         // The new hash has no children yet
-        self.children_access.write(
-            BatchDbWriter::new(batch),
-            hash,
-            BlockHashes::new(Vec::new()),
-        )?;
+        self.children_access
+            .write_batch(batch, hash, BlockHashes::new(Vec::new()))?;
 
         // Update `children` for each parent
         for parent in parents.iter().cloned() {
             let mut children = (*self.get_children(parent)?).clone();
             children.push(hash);
-            self.children_access.write(
-                BatchDbWriter::new(batch),
-                parent,
-                BlockHashes::new(children),
-            )?;
+            self.children_access
+                .write_batch(batch, parent, BlockHashes::new(children))?;
         }
 
         Ok(())
@@ -155,27 +151,24 @@ impl RelationsStore for DbRelationsStore {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }
 
+        let mut batch = SchemaBatch::new();
         // Insert a new entry for `hash`
         self.parents_access
-            .write(DirectDbWriter::new(&self.db), hash, parents.clone())?;
+            .write_batch(&mut batch, hash, parents.clone())?;
 
         // The new hash has no children yet
-        self.children_access.write(
-            DirectDbWriter::new(&self.db),
-            hash,
-            BlockHashes::new(Vec::new()),
-        )?;
+        self.children_access
+            .write_batch(&mut batch, hash, BlockHashes::new(Vec::new()))?;
 
         // Update `children` for each parent
         for parent in parents.iter().cloned() {
             let mut children = (*self.get_children(parent)?).clone();
             children.push(hash);
-            self.children_access.write(
-                DirectDbWriter::new(&self.db),
-                parent,
-                BlockHashes::new(children),
-            )?;
+            self.children_access
+                .write_batch(&mut batch, parent, BlockHashes::new(children))?;
         }
+
+        self.db.write_schemas(batch)?;
 
         Ok(())
     }

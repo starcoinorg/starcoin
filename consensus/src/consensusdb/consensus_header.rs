@@ -1,11 +1,10 @@
 use super::prelude::CachedDbAccess;
-use rocksdb::WriteBatch;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_schemadb::{
     define_schema,
     error::{StoreError, StoreResult},
     schema::{KeyCodec, ValueCodec},
-    DBStorage,
+    DBStorage, SchemaBatch, DB,
 };
 use starcoin_types::{
     blockhash::BlockLevel,
@@ -85,7 +84,7 @@ impl ValueCodec<CompactBlockHeader> for CompactHeaderData {
 /// A DB + cache implementation of `HeaderStore` trait, with concurrency support.
 #[derive(Clone)]
 pub struct DbHeadersStore {
-    db: Arc<DBStorage>,
+    db: DB,
     headers_access: CachedDbAccess<BlockHeader>,
     compact_headers_access: CachedDbAccess<CompactBlockHeader>,
 }
@@ -93,15 +92,18 @@ pub struct DbHeadersStore {
 impl DbHeadersStore {
     pub fn new(db: Arc<DBStorage>, cache_size: u64) -> Self {
         Self {
-            db: Arc::clone(&db),
+            db: DB {
+                name: "headers".to_owned(),
+                inner: Arc::clone(&db),
+            },
             headers_access: CachedDbAccess::new(db.clone(), cache_size),
             compact_headers_access: CachedDbAccess::new(db, cache_size),
         }
     }
 
-    pub fn clone_with_new_cache(&self, cache_size: u64) -> Self {
-        Self::new(Arc::clone(&self.db), cache_size)
-    }
+    //pub fn clone_with_new_cache(&self, cache_size: u64) -> Self {
+    //    Self::new(Arc::clone(&self.db), cache_size)
+    //}
 
     pub fn has(&self, hash: Hash) -> StoreResult<bool> {
         self.headers_access.has(hash)
@@ -114,7 +116,7 @@ impl DbHeadersStore {
 
     pub fn insert_batch(
         &self,
-        batch: &mut WriteBatch,
+        batch: &mut SchemaBatch,
         hash: Hash,
         header: Arc<Header>,
         block_level: BlockLevel,
@@ -122,23 +124,28 @@ impl DbHeadersStore {
         if self.headers_access.has(hash)? {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }
-        self.headers_access.write(
-            BatchDbWriter::new(batch),
+        self.headers_access.write_batch(
+            batch,
             hash,
             HeaderWithBlockLevel {
                 header: header.clone(),
                 block_level,
             },
         )?;
-        self.compact_headers_access.write(
-            BatchDbWriter::new(batch),
+        self.compact_headers_access.write_batch(
+            batch,
             hash,
             CompactHeaderData {
                 timestamp: header.timestamp(),
                 difficulty: header.difficulty(),
             },
         )?;
+
         Ok(())
+    }
+
+    pub fn write_schemas(&self, batch: SchemaBatch) -> Result<(), StoreError> {
+        self.db.write_schemas(batch)
     }
 }
 
@@ -189,22 +196,26 @@ impl HeaderStore for DbHeadersStore {
         if self.headers_access.has(hash)? {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }
-        self.compact_headers_access.write(
-            DirectDbWriter::new(&self.db),
+        let mut batch = SchemaBatch::new();
+        self.compact_headers_access.write_batch(
+            &mut batch,
             hash,
             CompactHeaderData {
                 timestamp: header.timestamp(),
                 difficulty: header.difficulty(),
             },
         )?;
-        self.headers_access.write(
-            DirectDbWriter::new(&self.db),
+        self.headers_access.write_batch(
+            &mut batch,
             hash,
             HeaderWithBlockLevel {
                 header,
                 block_level,
             },
         )?;
+
+        self.db.write_schemas(batch)?;
+
         Ok(())
     }
 }
