@@ -619,7 +619,6 @@ where
                         .lock()
                         .unwrap()
                         .push((block, dag_block_parents));
-
                     // sort by id
                     dag_blocks.sort_by_key(|(block, _)| block.header().id());
 
