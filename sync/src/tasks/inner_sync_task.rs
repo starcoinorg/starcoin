@@ -6,6 +6,7 @@ use anyhow::format_err;
 use network_api::PeerProvider;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
+use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
@@ -135,11 +136,13 @@ where
             )?;
             let block_collector = BlockCollector::new_with_handle(
                 current_block_info.clone(),
-                self.target.clone(),
+                Some(self.target.clone()),
                 chain,
                 self.block_event_handle.clone(),
                 self.peer_provider.clone(),
                 skip_pow_verify_when_sync,
+                HashValue::zero(),
+                None,
             );
             Ok(TaskGenerator::new(
                 block_sync_task,

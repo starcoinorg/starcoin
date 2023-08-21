@@ -31,7 +31,7 @@ use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
     contract_event::ContractEvent,
     startup_info::{ChainInfo, ChainStatus, SnapshotRange, StartupInfo},
-    transaction::{RichTransactionInfo, Transaction},
+    transaction::{RichTransactionInfo, Transaction}, blockhash::ORIGIN,
 };
 //use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::{
@@ -478,7 +478,7 @@ impl BlockStore for Storage {
         let flexi_dag_accumulator_info = self
             .get_dag_accumulator_info()
             .unwrap_or(AccumulatorInfo::default());
-        let tips_header_hash = self.get_last_tips()?;
+        let tips_header_hash = self.get_last_tips().unwrap_or(Some(vec![HashValue::new(ORIGIN)]));
         let chain_info = ChainInfo::new(
             head_block.chain_id(),
             genesis_hash,

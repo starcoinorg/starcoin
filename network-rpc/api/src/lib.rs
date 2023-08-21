@@ -280,7 +280,7 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         &self,
         peer_id: PeerId,
         ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<Option<Block>>>>;
+    ) -> BoxFuture<Result<Vec<Option<(Block, Option<Vec<HashValue>>)>>>>;
 
     fn get_state_with_table_item_proof(
         &self,

@@ -61,7 +61,6 @@ pub struct SyncTarget {
     pub block_info: BlockInfo,
     pub peers: Vec<PeerId>,
 }
-
 #[derive(Debug, Clone)]
 pub struct SyncStatusRequest;
 

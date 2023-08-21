@@ -7,6 +7,7 @@ use network_api::messages::PeerMessage;
 use network_api::{MultiaddrWithPeerId, PeerId, PeerMessageHandler, RpcInfo};
 use network_p2p_types::{OutgoingResponse, ProtocolRequest};
 use starcoin_config::NodeConfig;
+use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkActorService;
@@ -17,6 +18,7 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, DagBlockStore, Storage};
+use starcoin_types::blockhash::ORIGIN;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use std::any::Any;
 use std::borrow::Cow;
@@ -193,7 +195,7 @@ impl ServiceFactory<NetworkActorService> for MockNetworkServiceFactory {
         let head_block_info = storage
             .get_block_info(head_block_hash)?
             .ok_or_else(|| format_err!("can't get block info by hash {}", head_block_hash))?;
-        let dag_tips = storage.get_last_tips()?;
+        let dag_tips = storage.get_last_tips().unwrap_or(Some(vec![HashValue::new(ORIGIN)]));
 
         let chain_status = ChainStatus::new(head_block_header.clone(), head_block_info, dag_tips);
         let chain_state_info = ChainInfo::new(
