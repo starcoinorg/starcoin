@@ -540,7 +540,7 @@ where
 
             match color {
                 ColoringOutput::Blue(_, _) => {
-                    if self.main.current_header().id() == block.header().parent_hash()
+                    if self.main.current_tips_hash().expect("in dag block, the tips hash must exist") == block.header().parent_hash()
                         && !self.block_exist(block_id)?
                     {
                         return self.apply_and_select_head(block, Some(parents));
