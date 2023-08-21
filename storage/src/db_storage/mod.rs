@@ -174,9 +174,38 @@ impl DBStorage {
     /// tests.
     pub fn flush_all(&self) -> Result<()> {
         for cf_name in &self.cfs {
-            let cf_handle = self.get_cf_handle(cf_name)?;
-            self.db.flush_cf(cf_handle)?;
+            self.flush_cf(cf_name)?
         }
+        Ok(())
+    }
+
+    pub fn flush_cf(&self, cf_name: &str) -> Result<()> {
+        let cf_handle = self.get_cf_handle(cf_name)?;
+        Ok(self.db.flush_cf(cf_handle)?)
+    }
+
+    pub fn write_batch_inner(
+        &self,
+        prefix_name: &str,
+        rows: &[WriteOp<Vec<u8>, Vec<u8>>],
+        sync: bool,
+    ) -> Result<()> {
+        let mut db_batch = DBWriteBatch::default();
+        let cf_handle = self.get_cf_handle(prefix_name)?;
+        for write_op in rows {
+            match write_op {
+                WriteOp::Value(key, value) => db_batch.put_cf(cf_handle, key, value),
+                WriteOp::Deletion(key) => db_batch.delete_cf(cf_handle, key),
+            };
+        }
+
+        let write_opts = if sync {
+            Self::sync_write_options()
+        } else {
+            Self::default_write_options()
+        };
+
+        self.db.write_opt(db_batch, &write_opts)?;
         Ok(())
     }
 
@@ -190,7 +219,7 @@ impl DBStorage {
         rocksdb_current_file.is_file()
     }
 
-    fn get_cf_handle(&self, cf_name: &str) -> Result<&rocksdb::ColumnFamily> {
+    pub fn get_cf_handle(&self, cf_name: &str) -> Result<&rocksdb::ColumnFamily> {
         self.db.cf_handle(cf_name).ok_or_else(|| {
             format_err!(
                 "DB::cf_handle not found for column family name: {}",
@@ -400,17 +429,11 @@ impl InnerStore for DBStorage {
     /// Writes a group of records wrapped in a WriteBatch.
     fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
         record_metrics("db", prefix_name, "write_batch", self.metrics.as_ref()).call(|| {
-            let mut db_batch = DBWriteBatch::default();
-            let cf_handle = self.get_cf_handle(prefix_name)?;
-            for (key, write_op) in &batch.rows {
-                match write_op {
-                    WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
-                    WriteOp::Deletion => db_batch.delete_cf(cf_handle, key),
-                };
-            }
-            self.db
-                .write_opt(db_batch, &Self::default_write_options())?;
-            Ok(())
+            self.write_batch_inner(
+                prefix_name,
+                batch.rows.as_slice(),
+                false, /*normal write*/
+            )
         })
     }
 
@@ -439,18 +462,8 @@ impl InnerStore for DBStorage {
     }
 
     fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
-        record_metrics("db", prefix_name, "write_batch_sync", self.metrics.as_ref()).call(|| {
-            let mut db_batch = DBWriteBatch::default();
-            let cf_handle = self.get_cf_handle(prefix_name)?;
-            for (key, write_op) in &batch.rows {
-                match write_op {
-                    WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
-                    WriteOp::Deletion => db_batch.delete_cf(cf_handle, key),
-                };
-            }
-            self.db.write_opt(db_batch, &Self::sync_write_options())?;
-            Ok(())
-        })
+        record_metrics("db", prefix_name, "write_batch_sync", self.metrics.as_ref())
+            .call(|| self.write_batch_inner(prefix_name, batch.rows.as_slice(), true))
     }
 
     fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {

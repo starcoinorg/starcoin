@@ -384,19 +384,20 @@ pub trait ValueCodec: Clone + Sized + Debug + std::marker::Send + std::marker::S
 }
 
 #[derive(Debug, Clone)]
-pub enum WriteOp<V> {
-    Value(V),
-    Deletion,
+pub enum WriteOp<K, V> {
+    Value(K, V),
+    Deletion(K),
 }
 
-impl<V> WriteOp<V>
+impl<K, V> WriteOp<K, V>
 where
+    K: KeyCodec,
     V: ValueCodec,
 {
-    pub fn into_raw_op(self) -> Result<WriteOp<Vec<u8>>> {
+    pub fn into_raw_op(self) -> Result<WriteOp<Vec<u8>, Vec<u8>>> {
         Ok(match self {
-            WriteOp::Value(v) => WriteOp::Value(v.encode_value()?),
-            WriteOp::Deletion => WriteOp::Deletion,
+            WriteOp::Value(k, v) => WriteOp::Value(k.encode_key()?, v.encode_value()?),
+            WriteOp::Deletion(k) => WriteOp::Deletion(k.encode_key()?),
         })
     }
 }
@@ -407,7 +408,7 @@ where
     K: KeyCodec,
     V: ValueCodec,
 {
-    rows: Vec<(K, WriteOp<V>)>,
+    rows: Vec<WriteOp<K, V>>,
 }
 
 impl<K, V> Default for CodecWriteBatch<K, V>
@@ -432,25 +433,25 @@ where
 
     pub fn new_puts(kvs: Vec<(K, V)>) -> Self {
         let mut rows = Vec::new();
-        rows.extend(kvs.into_iter().map(|(k, v)| (k, WriteOp::Value(v))));
+        rows.extend(kvs.into_iter().map(|(k, v)| (WriteOp::Value(k, v))));
         Self { rows }
     }
 
     pub fn new_deletes(ks: Vec<K>) -> Self {
         let mut rows = Vec::new();
-        rows.extend(ks.into_iter().map(|k| (k, WriteOp::Deletion)));
+        rows.extend(ks.into_iter().map(|k| WriteOp::Deletion(k)));
         Self { rows }
     }
 
     /// Adds an insert/update operation to the batch.
     pub fn put(&mut self, key: K, value: V) -> Result<()> {
-        self.rows.push((key, WriteOp::Value(value)));
+        self.rows.push(WriteOp::Value(key, value));
         Ok(())
     }
 
     /// Adds a delete operation to the batch.
     pub fn delete(&mut self, key: K) -> Result<()> {
-        self.rows.push((key, WriteOp::Deletion));
+        self.rows.push(WriteOp::Deletion(key));
         Ok(())
     }
 
@@ -466,8 +467,8 @@ where
     K: KeyCodec,
     V: ValueCodec,
 {
-    type Item = (K, WriteOp<V>);
-    type IntoIter = std::vec::IntoIter<(K, WriteOp<V>)>;
+    type Item = WriteOp<K, V>;
+    type IntoIter = std::vec::IntoIter<WriteOp<K, V>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.rows.into_iter()

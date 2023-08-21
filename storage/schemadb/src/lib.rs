@@ -10,11 +10,7 @@ use std::collections::HashMap;
 
 pub type ColumnFamilyName = &'static str;
 
-#[derive(Debug)]
-pub enum WriteOp {
-    Value { key: Vec<u8>, value: Vec<u8> },
-    Deletion { key: Vec<u8> },
-}
+pub type WriteOp = starcoin_storage::storage::WriteOp<Vec<u8>, Vec<u8>>;
 
 #[derive(Debug)]
 pub struct SchemaBatch {
@@ -41,7 +37,7 @@ impl SchemaBatch {
             .lock()
             .entry(S::COLUMN_FAMILY)
             .or_insert_with(Vec::new)
-            .push(WriteOp::Value { key, value });
+            .push(WriteOp::Value(key, value));
 
         Ok(())
     }
@@ -53,7 +49,7 @@ impl SchemaBatch {
             .lock()
             .entry(S::COLUMN_FAMILY)
             .or_insert_with(Vec::new)
-            .push(WriteOp::Deletion { key });
+            .push(WriteOp::Deletion(key));
 
         Ok(())
     }
@@ -69,7 +65,8 @@ impl DB {
         let rows_locked = batch.rows.lock();
 
         for row in rows_locked.iter() {
-            self.inner.write_batch(row.0, row.1)?
+            self.inner
+                .write_batch_inner(row.0, row.1, false /*normal write*/)?
         }
 
         Ok(())
@@ -93,10 +90,10 @@ impl DB {
     }
 
     pub fn flush_cf(&self, cf_name: &str) -> Result<(), StoreError> {
-        todo!()
+        Ok(self.inner.flush_cf(cf_name)?)
     }
 
     fn get_cf_handle(&self, cf_name: &str) -> Result<&rocksdb::ColumnFamily, StoreError> {
-        todo!()
+        Ok(self.inner.get_cf_handle(cf_name)?)
     }
 }

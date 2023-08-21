@@ -82,7 +82,10 @@ impl InnerStore for CacheStorage {
         let rows = batch
             .rows
             .into_iter()
-            .map(|(k, v)| (compose_key(Some(prefix_name), k), v))
+            .map(|op| match op {
+                WriteOp::Value(k, v) => WriteOp::Value(compose_key(Some(prefix_name), k), v),
+                WriteOp::Deletion(k) => WriteOp::Deletion(compose_key(Some(prefix_name), k)),
+            })
             .collect();
         let batch = WriteBatch { rows };
         record_metrics("cache", prefix_name, "write_batch", self.metrics.as_ref()).call(|| {
@@ -155,12 +158,12 @@ impl<K: Hash + Eq + Default, V: Clone + Default> GCacheStorage<K, V> {
     }
 
     pub fn write_batch_inner(&self, batch: GWriteBatch<K, V>) {
-        for (key, write_op) in batch.rows {
+        for write_op in batch.rows {
             match write_op {
-                WriteOp::Value(value) => {
+                WriteOp::Value(key, value) => {
                     self.put_inner(key, value);
                 }
-                WriteOp::Deletion => {
+                WriteOp::Deletion(key) => {
                     self.remove_inner(&key);
                 }
             };

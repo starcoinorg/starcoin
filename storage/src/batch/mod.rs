@@ -9,7 +9,7 @@ pub type WriteBatch = GWriteBatch<Vec<u8>, Vec<u8>>;
 
 #[derive(Debug, Default, Clone)]
 pub struct GWriteBatch<K, V> {
-    pub rows: Vec<(K, WriteOp<V>)>,
+    pub rows: Vec<WriteOp<K, V>>,
 }
 
 impl<K: Default, V: Default> GWriteBatch<K, V> {
@@ -18,19 +18,19 @@ impl<K: Default, V: Default> GWriteBatch<K, V> {
         Self::default()
     }
 
-    pub fn new_with_rows(rows: Vec<(K, WriteOp<V>)>) -> Self {
+    pub fn new_with_rows(rows: Vec<WriteOp<K, V>>) -> Self {
         Self { rows }
     }
 
     /// Adds an insert/update operation to the batch.
     pub fn put(&mut self, key: K, value: V) -> Result<()> {
-        self.rows.push((key, WriteOp::Value(value)));
+        self.rows.push(WriteOp::Value(key, value));
         Ok(())
     }
 
     /// Adds a delete operation to the batch.
     pub fn delete(&mut self, key: K) -> Result<()> {
-        self.rows.push((key, WriteOp::Deletion));
+        self.rows.push(WriteOp::Deletion(key));
         Ok(())
     }
 
@@ -49,10 +49,8 @@ where
     type Error = anyhow::Error;
 
     fn try_from(batch: CodecWriteBatch<K, V>) -> Result<Self, Self::Error> {
-        let rows: Result<Vec<(Vec<u8>, WriteOp<Vec<u8>>)>> = batch
-            .into_iter()
-            .map(|(key, op)| Ok((KeyCodec::encode_key(&key)?, op.into_raw_op()?)))
-            .collect();
+        let rows: Result<Vec<WriteOp<Vec<u8>, Vec<u8>>>> =
+            batch.into_iter().map(|op| Ok(op.into_raw_op()?)).collect();
         Ok(WriteBatch::new_with_rows(rows?))
     }
 }
