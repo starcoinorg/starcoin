@@ -3,6 +3,7 @@
 
 use crate::verifier::{BlockVerifier, FullVerifier};
 use anyhow::{bail, ensure, format_err, Result};
+use bcs_ext::BCSCodec;
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
 use starcoin_accumulator::{
@@ -95,8 +96,7 @@ impl BlockChain {
         let genesis = storage
             .get_genesis()?
             .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
-
-        let tips_hash = storage.get_last_tips().unwrap_or(Some(vec![HashValue::new(ORIGIN)]));
+        let tips_hash = storage.get_last_tips().unwrap_or(Some(vec![genesis]));
 
         watch(CHAIN_WATCH_NAME, "n1253");
         let mut chain = Self {
@@ -546,6 +546,17 @@ impl ChainReader for BlockChain {
 
     fn current_header(&self) -> BlockHeader {
         self.status.status.head().clone()
+    }
+
+    fn current_tips_hash(&self) -> Option<HashValue> {
+        match self.status.status.tips_hash.clone() {
+            Some(mut tips_hash) => {
+                assert!(!tips_hash.is_empty());
+                tips_hash.sort_by_key(|key| key.clone());
+                Some(HashValue::sha3_256_of(&tips_hash.encode().expect("failed to encode tips hash")))
+            }
+            None => None,
+        }
     }
 
     fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>> {

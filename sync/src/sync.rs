@@ -93,11 +93,14 @@ impl SyncService {
             .metrics
             .registry()
             .and_then(|registry| PeerScoreMetrics::register(registry).ok());
+        let genesis = storage
+            .get_genesis()?
+            .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
         Ok(Self {
             sync_status: SyncStatus::new(ChainStatus::new(
                 head_block.header.clone(),
                 head_block_info,
-                storage.get_last_tips().unwrap_or(Some(vec![HashValue::new(ORIGIN)])),
+                storage.get_last_tips().unwrap_or(Some(vec![genesis])),
             )),
             stage: SyncStage::NotStart,
             config,

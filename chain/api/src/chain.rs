@@ -100,6 +100,9 @@ pub trait ChainReader {
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>>;
+
+    /// get the current tips hash value
+    fn current_tips_hash(&self) -> Option<HashValue>;
 }
 
 pub trait ChainWriter {
