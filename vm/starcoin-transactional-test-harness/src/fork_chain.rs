@@ -143,7 +143,7 @@ impl ForkBlockChain {
     pub fn add_new_txn(&mut self, txn: Transaction, output: TransactionOutput) -> Result<()> {
         let txn_hash = txn.id();
         let state_root = *self.state_root.lock().unwrap();
-        let (_, events, gas_used, status) = output.into_inner();
+        let (_, _, events, gas_used, status) = output.into_inner();
         let status = status
             .status()
             .expect("TransactionStatus at here must been KeptVMStatus");

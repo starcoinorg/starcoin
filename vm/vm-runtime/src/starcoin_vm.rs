@@ -63,6 +63,7 @@ use starcoin_vm_types::{
     transaction_metadata::TransactionMetadata,
     vm_status::{StatusCode, VMStatus},
 };
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 #[cfg(feature = "metrics")]
@@ -1265,7 +1266,9 @@ impl StarcoinVM {
         let table_change_set = table_context
             .into_change_set()
             .map_err(|e| e.finish(Location::Undefined))?;
-        let (write_set, _events) = SessionOutput {
+        // Ignore new table infos.
+        // No table infos should be produced in readonly function.
+        let (_table_infos, write_set, _events) = SessionOutput {
             change_set,
             events,
             table_change_set,
@@ -1420,6 +1423,7 @@ pub(crate) fn discard_error_output(err: StatusCode) -> TransactionOutput {
     info!("discard error output: {:?}", err);
     // Since this transaction will be discarded, no writeset will be included.
     TransactionOutput::new(
+        BTreeMap::new(),
         WriteSet::default(),
         vec![],
         0,
@@ -1444,13 +1448,14 @@ pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolverExt>(
     let table_change_set = table_context
         .into_change_set()
         .map_err(|e| e.finish(Location::Undefined))?;
-    let (write_set, events) = SessionOutput {
+    let (table_infos, write_set, events) = SessionOutput {
         change_set,
         events,
         table_change_set,
     }
     .into_change_set(ap_cache)?;
     Ok(TransactionOutput::new(
+        table_infos,
         write_set,
         events,
         u64::from(gas_used),

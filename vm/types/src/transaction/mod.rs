@@ -26,10 +26,12 @@ use starcoin_crypto::{
     traits::*,
     HashValue,
 };
+use std::collections::BTreeMap;
 use std::ops::Deref;
 use std::{convert::TryFrom, fmt};
 
 use crate::state_store::state_key::StateKey;
+use crate::state_store::table::{TableHandle, TableInfo};
 use crate::write_set::WriteOp;
 pub use error::CallError;
 pub use error::Error as TransactionError;
@@ -646,6 +648,8 @@ impl From<VMStatus> for TransactionStatus {
 /// The output of executing a transaction.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TransactionOutput {
+    table_infos: BTreeMap<TableHandle, TableInfo>,
+
     write_set: WriteSet,
 
     /// The list of events emitted during this transaction.
@@ -660,12 +664,14 @@ pub struct TransactionOutput {
 
 impl TransactionOutput {
     pub fn new(
+        table_infos: BTreeMap<TableHandle, TableInfo>,
         write_set: WriteSet,
         events: Vec<ContractEvent>,
         gas_used: u64,
         status: TransactionStatus,
     ) -> Self {
         TransactionOutput {
+            table_infos,
             write_set,
             events,
             gas_used,
@@ -675,6 +681,10 @@ impl TransactionOutput {
 
     pub fn write_set(&self) -> &WriteSet {
         &self.write_set
+    }
+
+    pub fn table_infos(&self) -> &BTreeMap<TableHandle, TableInfo> {
+        &self.table_infos
     }
 
     pub fn events(&self) -> &[ContractEvent] {
@@ -689,8 +699,22 @@ impl TransactionOutput {
         &self.status
     }
 
-    pub fn into_inner(self) -> (WriteSet, Vec<ContractEvent>, u64, TransactionStatus) {
-        (self.write_set, self.events, self.gas_used, self.status)
+    pub fn into_inner(
+        self,
+    ) -> (
+        BTreeMap<TableHandle, TableInfo>,
+        WriteSet,
+        Vec<ContractEvent>,
+        u64,
+        TransactionStatus,
+    ) {
+        (
+            self.table_infos,
+            self.write_set,
+            self.events,
+            self.gas_used,
+            self.status,
+        )
     }
 
     pub fn table_items(&self) -> Vec<(StateKey, WriteOp)> {

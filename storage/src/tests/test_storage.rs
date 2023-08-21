@@ -6,6 +6,7 @@ extern crate chrono;
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::{CodecKVStore, InnerStore, StorageInstance, ValueCodec};
+use crate::table_info::TableInfoStore;
 use crate::transaction_info::{BlockTransactionInfo, OldTransactionInfoStorage};
 use crate::{
     BlockInfoStore, BlockStore, BlockTransactionInfoStore, Storage,
@@ -17,15 +18,15 @@ use anyhow::Result;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_config::RocksdbConfig;
 use starcoin_crypto::HashValue;
-use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockInfo};
-//use starcoin_types::language_storage::TypeTag;
-use starcoin_types::startup_info::SnapshotRange;
-use starcoin_types::transaction::{
-    RichTransactionInfo, SignedUserTransaction, Transaction, TransactionInfo,
+use starcoin_types::{
+    account_address::AccountAddress,
+    block::{Block, BlockBody, BlockHeader, BlockInfo},
+    language_storage::TypeTag,
+    startup_info::SnapshotRange,
+    transaction::{RichTransactionInfo, SignedUserTransaction, Transaction, TransactionInfo},
+    vm_error::KeptVMStatus,
 };
-use starcoin_types::vm_error::KeptVMStatus;
-//use starcoin_vm_types::account_address::AccountAddress;
-//use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::path::Path;
 
 #[test]
@@ -475,8 +476,6 @@ pub fn test_cache_evict_multi_get() -> Result<()> {
     Ok(())
 }
 
-/*
-XXX FIXME YSG temp comment
 #[test]
 fn test_table_info_storage() -> Result<()> {
     let tmpdir = starcoin_config::temp_dir();
@@ -503,7 +502,12 @@ fn test_table_info_storage() -> Result<()> {
         TableInfo::new(TypeTag::U8, TypeTag::Address),
         TableInfo::new(TypeTag::Address, TypeTag::U128),
     ];
-    storage.save_table_infos(keys.clone(), vals.clone())?;
+    let table_infos = keys
+        .clone()
+        .into_iter()
+        .zip(vals.clone())
+        .collect::<Vec<_>>();
+    storage.save_table_infos(table_infos)?;
     let vals2 = storage.get_table_infos(keys);
     assert!(vals2.is_ok());
     let vals2 = vals2
@@ -514,4 +518,3 @@ fn test_table_info_storage() -> Result<()> {
     assert_eq!(vals, vals2);
     Ok(())
 }
-*/
