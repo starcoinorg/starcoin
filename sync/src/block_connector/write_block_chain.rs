@@ -540,7 +540,7 @@ where
 
             match color {
                 ColoringOutput::Blue(_, _) => {
-                    if self.main.current_header().id() == block.header().parent_hash()
+                    if self.main.current_tips_hash().expect("in dag block, the tips hash must exist") == block.header().parent_hash()
                         && !self.block_exist(block_id)?
                     {
                         return self.apply_and_select_head(block, Some(parents));
@@ -601,24 +601,25 @@ where
             // checkout if it is time to settle down
             let time_service = DagBlockTimeWindowService::new(15 * 1000);
             match time_service.is_in_time_window(block.header().timestamp(), self.config.net().time_service().clone()) {
-                TimeWindowResult::InTimeWindow => {
+                // TimeWindowResult::InTimeWindow => {
+                //     self.dag_block_pool
+                //         .lock()
+                //         .unwrap()
+                //         .push((block, dag_block_parents));
+                //     return Ok(ConnectOk::DagPending);
+                // }
+                // TimeWindowResult::BeforeTimeWindow => {
+                //     return Err(ConnectBlockError::DagBlockBeforeTimeWindow(Box::new(block)).into())
+                // }
+                // TimeWindowResult::AfterTimeWindow => {
+                _ => {
+                    // dump the block in the time window pool and put the block into the next time window pool
                     self.dag_block_pool
                         .lock()
                         .unwrap()
                         .push((block, dag_block_parents));
-                    return Ok(ConnectOk::DagPending);
-                }
-                TimeWindowResult::BeforeTimeWindow => {
-                    return Err(ConnectBlockError::DagBlockBeforeTimeWindow(Box::new(block)).into())
-                }
-                TimeWindowResult::AfterTimeWindow => {
-                    // dump the block in the time window pool and put the block into the next time window pool
                     let mut dag_blocks = self.dag_block_pool.lock().unwrap().clone();
                     self.dag_block_pool.lock().unwrap().clear();
-                    self.dag_block_pool
-                        .lock()
-                        .unwrap()
-                        .push((block, dag_block_parents));
 
                     // sort by id
                     dag_blocks.sort_by_key(|(block, _)| block.header().id());
