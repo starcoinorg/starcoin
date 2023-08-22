@@ -181,7 +181,7 @@ fn test_execute_transfer_txn_with_dummy_gas_token_code() -> Result<()> {
     let txn2 = Transaction::UserTransaction(account1.sign_txn(raw_txn));
     let output = execute_and_apply(&chain_state, txn2);
     assert_eq!(
-        TransactionStatus::Discard(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION),
+        TransactionStatus::Discard(StatusCode::BAD_TRANSACTION_FEE_CURRENCY),
         *output.status()
     );
 
