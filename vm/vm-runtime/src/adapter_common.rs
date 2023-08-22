@@ -14,6 +14,7 @@ use starcoin_vm_types::{
     },
     write_set::WriteSet,
 };
+use std::collections::BTreeMap;
 
 /// This trait describes the VM adapter's interface.
 pub trait VMAdapter {
@@ -73,6 +74,7 @@ pub(crate) fn discard_error_vm_status(err: VMStatus) -> (VMStatus, TransactionOu
 pub(crate) fn discard_error_output(err: StatusCode) -> TransactionOutput {
     // Since this transaction will be discarded, no writeset will be included.
     TransactionOutput::new(
+        BTreeMap::new(),
         WriteSet::default(),
         vec![],
         0,

@@ -68,7 +68,6 @@ use starcoin_vm_types::{
     transaction_metadata::TransactionMetadata,
     vm_status::{StatusCode, VMStatus},
 };
-use std::collections::BTreeMap;
 use std::cmp::min;
 use std::sync::Arc;
 
