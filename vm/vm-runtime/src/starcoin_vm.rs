@@ -1542,6 +1542,7 @@ impl VMExecutor for StarcoinVM {
                 block_gas_limit,
                 metrics,
             )?;
+            debug!("TurboSTM executor concurrency_level {}", concurrency_level);
             Ok(result)
         } else {
             let output = Self::execute_block_and_keep_vm_status(
