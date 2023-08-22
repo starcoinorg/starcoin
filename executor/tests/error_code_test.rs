@@ -153,8 +153,7 @@ fn test_execute_transfer_txn_with_wrong_token_code() -> Result<()> {
     Ok(())
 }
 
-//#[stest::test]
-#[allow(dead_code)]
+#[stest::test]
 fn test_execute_transfer_txn_with_dummy_gas_token_code() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
 
