@@ -266,7 +266,7 @@ impl AccountManager {
                     .load_setting(current_default)
                     .map_err(AccountError::StoreError)?;
                 setting.is_default = false;
-                self.store.update_setting(current_default, setting)?;
+                self.store.put_setting(current_default, setting)?;
             } else {
                 info!("the account {} is already default.", address);
                 // do not return here,for fix setting.is_default in some condition.
@@ -281,7 +281,7 @@ impl AccountManager {
             .load_setting(address)
             .map_err(AccountError::StoreError)?;
         setting.is_default = true;
-        self.store.update_setting(address, setting)?;
+        self.store.put_setting(address, setting)?;
         account_info.is_default = true;
         Ok(account_info)
     }

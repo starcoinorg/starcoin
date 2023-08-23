@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 thiserror = { workspace = true }
 starcoin-storage = { workspace = true }
+starcoin-config = { workspace = true }
 parking_lot = { workspace = true }
 anyhow = { workspace = true }
 

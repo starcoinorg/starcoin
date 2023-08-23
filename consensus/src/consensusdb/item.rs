@@ -1,10 +1,9 @@
 use parking_lot::RwLock;
 use starcoin_schemadb::{
     error::StoreError,
-    schema::{KeyCodec, Schema, ValueCodec},
+    schema::{KeyCodec, Schema},
     DBStorage, SchemaBatch, DB,
 };
-use starcoin_storage::storage::RawDBStorage;
 use std::sync::Arc;
 
 /// A cached DB item with concurrency support
@@ -31,13 +30,7 @@ impl<S: Schema> CachedDbItem<S> {
         if let Some(item) = self.cached_item.read().clone() {
             return Ok(item);
         }
-        if let Some(slice) = self
-            .db
-            .inner
-            .raw_get_pinned_cf(S::COLUMN_FAMILY, &self.key.encode_key()?)
-            .map_err(|_| StoreError::CFNotExist(S::COLUMN_FAMILY.to_string()))?
-        {
-            let item = S::Value::decode_value(&slice)?;
+        if let Some(item) = self.db.get::<S>(&self.key)? {
             *self.cached_item.write() = Some(item.clone());
             Ok(item)
         } else {
@@ -83,13 +76,7 @@ where {
         let mut guard = self.cached_item.write();
         let mut item = if let Some(item) = guard.take() {
             item
-        } else if let Some(slice) = self
-            .db
-            .inner
-            .raw_get_pinned_cf(S::COLUMN_FAMILY, &self.key.encode_key()?)
-            .map_err(|_| StoreError::CFNotExist(S::COLUMN_FAMILY.to_string()))?
-        {
-            let item = S::Value::decode_value(&slice)?;
+        } else if let Some(item) = self.db.get::<S>(&self.key)? {
             item
         } else {
             return Err(StoreError::KeyNotFound("".to_string()));

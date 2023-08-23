@@ -1,13 +1,17 @@
 pub mod error;
 pub mod schema;
 
-use crate::error::StoreError;
+use crate::error::{StoreError, StoreResult};
 use crate::schema::{KeyCodec, Schema, ValueCodec};
 use parking_lot::Mutex;
 use rocksdb::{DBIterator, IteratorMode, ReadOptions};
+use starcoin_config::RocksdbConfig;
 pub use starcoin_storage::db_storage::DBStorage;
+use starcoin_storage::metrics::StorageMetrics;
 use starcoin_storage::storage::InnerStore;
+use starcoin_storage::Store;
 use std::collections::HashMap;
+use std::path::Path;
 use std::sync::Arc;
 
 pub type ColumnFamilyName = &'static str;
@@ -64,6 +68,28 @@ pub struct DB {
 }
 
 impl DB {
+    pub fn create_from_path(
+        name: &str,
+        root_path: impl AsRef<Path>,
+        column_families: Vec<ColumnFamilyName>,
+        readonly: bool,
+        rocksdb_config: RocksdbConfig,
+        metrics: Option<StorageMetrics>,
+    ) -> StoreResult<Self> {
+        let db_storage = DBStorage::open_with_cfs(
+            root_path,
+            column_families,
+            readonly,
+            rocksdb_config,
+            metrics,
+        )?;
+
+        Ok(DB {
+            name: name.to_owned(),
+            inner: Arc::new(db_storage),
+        })
+    }
+
     pub fn write_schemas(&self, batch: SchemaBatch) -> Result<(), StoreError> {
         let rows_locked = batch.rows.lock();
 

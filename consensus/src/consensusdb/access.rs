@@ -16,7 +16,6 @@ use std::{
 #[derive(Clone)]
 pub struct CachedDbAccess<S: Schema, R = RandomState> {
     db: DB,
-    // Cache
     cache: DagCache<S::Key, S::Value>,
     _phantom: PhantomData<R>,
 }
@@ -106,7 +105,7 @@ where
         &self,
         iter: &mut impl Iterator<Item = (S::Key, S::Value)>,
     ) -> Result<(), StoreError> {
-        let mut batch = SchemaBatch::new();
+        let batch = SchemaBatch::new();
         for (key, data) in iter {
             batch.put::<S>(&key, &data)?;
         }
