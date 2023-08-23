@@ -32,6 +32,7 @@ pub struct SyncBlockData {
     pub(crate) accumulator_root: Option<HashValue>, // the block belongs to this accumulator leaf
     pub(crate) count_in_leaf: u64, // the number of the block in the accumulator leaf
     pub(crate) dag_block_headers: Option<Vec<HashValue>>,
+    pub(crate) dag_transaction_header: Option<HashValue>,
 }
 
 impl SyncBlockData {
@@ -42,6 +43,7 @@ impl SyncBlockData {
         accumulator_root: Option<HashValue>,
         count_in_leaf: u64,
         dag_block_headers: Option<Vec<HashValue>>,
+        dag_transaction_header: Option<HashValue>,
     ) -> Self {
         Self {
             block,
@@ -50,14 +52,15 @@ impl SyncBlockData {
             accumulator_root,
             count_in_leaf,
             dag_block_headers,
+            dag_transaction_header,
         }
     }
 }
 
 #[allow(clippy::from_over_into)]
-impl Into<(Block, Option<BlockInfo>, Option<PeerId>, Option<Vec<HashValue>>)> for SyncBlockData {
-    fn into(self) -> (Block, Option<BlockInfo>, Option<PeerId>, Option<Vec<HashValue>>) {
-        (self.block, self.info, self.peer_id, self.dag_block_headers)
+impl Into<(Block, Option<BlockInfo>, Option<PeerId>, Option<Vec<HashValue>>, Option<HashValue>)> for SyncBlockData {
+    fn into(self) -> (Block, Option<BlockInfo>, Option<PeerId>, Option<Vec<HashValue>>, Option<HashValue>) {
+        (self.block, self.info, self.peer_id, self.dag_block_headers, self.dag_transaction_header)
     }
 }
 
@@ -145,7 +148,7 @@ impl TaskState for BlockSyncTask {
                         .fold(result_map, |mut result_map, (block, peer_id, _)| {
                             result_map.insert(
                                 block.id(),
-                                SyncBlockData::new(block, None, peer_id, None, 1, None),
+                                SyncBlockData::new(block, None, peer_id, None, 1, None, None),
                             );
                             result_map
                         })
@@ -166,7 +169,7 @@ impl TaskState for BlockSyncTask {
                     .fetch_blocks(block_ids)
                     .await?
                     .into_iter()
-                    .map(|(block, peer_id, _)| SyncBlockData::new(block, None, peer_id, None, 1, None))
+                    .map(|(block, peer_id, _)| SyncBlockData::new(block, None, peer_id, None, 1, None, None))
                     .collect())
             }
         }
@@ -246,11 +249,11 @@ where
     }
 
     #[cfg(test)]
-    pub fn apply_block_for_test(&mut self, block: Block) -> Result<()> {
-        self.apply_block(block, None)
+    pub fn apply_block_for_test(&mut self, block: Block, dag_parent: Option<Vec<HashValue>>, next_tips: &mut Option<Vec<HashValue>>) -> Result<()> {
+        self.apply_block(block, None, dag_parent, next_tips)
     }
 
-    fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>) -> Result<()> {
+    fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>, dag_parent: Option<HashValue>, next_tips: &mut Option<Vec<HashValue>>) -> Result<()> {
         if let Some((_failed_block, pre_peer_id, err, version)) = self
             .chain
             .get_storage()
@@ -279,9 +282,9 @@ where
         }
         let apply_result = if self.skip_pow_verify {
             self.chain
-                .apply_with_verifier::<BasicVerifier>(block.clone())
+                .apply_with_verifier::<BasicVerifier>(block.clone(), dag_parent, next_tips)
         } else {
-            self.chain.apply(block.clone())
+            self.chain.apply(block.clone(), dag_parent, next_tips)
         };
         if let Err(err) = apply_result {
             let error_msg = err.to_string();
@@ -353,8 +356,8 @@ where
         }
     }
 
-    fn collect_item(&mut self, item: SyncBlockData) -> Result<BlockInfo> {
-        let (block, block_info, peer_id, dag_parents) = item.into();
+    fn collect_item(&mut self, item: SyncBlockData, next_tips: &mut Option<Vec<HashValue>>) -> Result<BlockInfo> {
+        let (block, block_info, peer_id, dag_parents, dag_transaction_header) = item.into();
         let block_id = block.id();
         let timestamp = block.header().timestamp();
 
@@ -380,11 +383,12 @@ where
                 self.chain.connect(ExecutedBlock {
                     block,
                     block_info: block_info.clone(),
-                })?;
+                    dag_parent: dag_transaction_header,
+                },  next_tips)?;
                 Ok(block_info)
             }
             None => {
-                self.apply_block(block.clone(), peer_id)?;
+                self.apply_block(block.clone(), peer_id, dag_transaction_header, next_tips)?;
                 self.chain.time_service().adjust(timestamp);
                 let block_info = self.chain.status().info;
                 let total_difficulty = block_info.get_total_difficulty();
@@ -438,8 +442,9 @@ where
         assert!(!process_block_pool.is_empty());
 
         let mut block_info = None;
+        let mut next_tips = Some(Vec::<HashValue>::new());
         for item in process_block_pool {
-            block_info = Some(self.collect_item(item)?);
+            block_info = Some(self.collect_item(item, &mut next_tips)?);
         }
 
         //verify target

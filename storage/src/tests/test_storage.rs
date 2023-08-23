@@ -295,7 +295,7 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
         BlockBody::new(vec![txn.clone()], None),
     );
     let mut txn_inf_ids = vec![];
-    let block_metadata = block.to_metadata(0);
+    let block_metadata = block.to_metadata(0, None);
     let txn_info_0 = TransactionInfo::new(
         block_metadata.id(),
         HashValue::random(),

@@ -167,6 +167,14 @@ impl ChainStatus {
     pub fn into_inner(self) -> (BlockHeader, BlockInfo) {
         (self.head, self.info)
     }
+
+    pub fn get_last_tip_block_id(&self) -> Option<HashValue> {
+        if let Some(tips) = &self.tips_hash {
+            tips.into_iter().max().cloned()
+        } else {
+            None
+        }
+    }
 }
 
 impl Sample for ChainStatus {

@@ -82,6 +82,7 @@ impl SyncDagBlockTask {
                         absent_block: true,
                         peer_id: None,
                         dag_parents: vec![],
+                        dag_transaction_header: None,
                     });
                 } else {
                     result.push(SyncDagBlockInfo {
@@ -90,6 +91,7 @@ impl SyncDagBlockTask {
                         absent_block: false,
                         peer_id: None,
                         dag_parents: vec![],
+                        dag_transaction_header: None,
                     });
                 }
             });
@@ -144,6 +146,7 @@ impl SyncDagBlockTask {
                         ),
                         count_in_leaf: snapshot.child_hashes.len() as u64,
                         dag_block_headers: Some(item.dag_parents),
+                        dag_transaction_header: Some(item.dag_transaction_header.expect("dag transaction header should exists")),
                     }
                 } else {
                     SyncBlockData {
@@ -155,6 +158,7 @@ impl SyncDagBlockTask {
                         ),
                         count_in_leaf: snapshot.child_hashes.len() as u64,
                         dag_block_headers: Some(item.dag_parents),
+                        dag_transaction_header: Some(item.dag_transaction_header.expect("dag transaction header should exists")),
                     }
                 }
             })

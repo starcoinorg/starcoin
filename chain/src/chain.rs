@@ -96,7 +96,6 @@ impl BlockChain {
         let genesis = storage
             .get_genesis()?
             .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
-        let tips_hash = storage.get_last_tips().unwrap_or(Some(vec![genesis]));
 
         watch(CHAIN_WATCH_NAME, "n1253");
         let mut chain = Self {
@@ -113,7 +112,7 @@ impl BlockChain {
                 storage.as_ref(),
             ),
             status: ChainStatusWithBlock {
-                status: ChainStatus::new(head_block.header.clone(), block_info, tips_hash),
+                status: ChainStatus::new(head_block.header.clone(), block_info, Some(vec![head_block.id()])),
                 head: head_block,
             },
             statedb: chain_state,
@@ -154,6 +153,7 @@ impl BlockChain {
             &genesis_epoch,
             None,
             genesis_block,
+            None,
             None,
         )?;
         Self::new(time_service, executed_block.block.id(), storage, None)
@@ -333,24 +333,24 @@ impl BlockChain {
         V::verify_block(self, block)
     }
 
-    pub fn apply_with_verifier<V>(&mut self, block: Block) -> Result<ExecutedBlock>
+    pub fn apply_with_verifier<V>(&mut self, block: Block, dag_block_parent: Option<HashValue>, next_tips: &mut Option<Vec<HashValue>>) -> Result<ExecutedBlock>
     where
         V: BlockVerifier,
     {
         let verified_block = self.verify_with_verifier::<V>(block)?;
         watch(CHAIN_WATCH_NAME, "n1");
-        let executed_block = self.execute(verified_block)?;
+        let executed_block = self.execute(verified_block, dag_block_parent)?;
         watch(CHAIN_WATCH_NAME, "n2");
-        self.connect(executed_block)
+        self.connect(executed_block, next_tips)
     }
 
     //TODO remove this function.
-    pub fn update_chain_head(&mut self, block: Block) -> Result<ExecutedBlock> {
+    pub fn update_chain_head(&mut self, block: Block, dag_parent: Option<HashValue>) -> Result<ExecutedBlock> {
         let block_info = self
             .storage
             .get_block_info(block.id())?
             .ok_or_else(|| format_err!("Can not find block info by hash {:?}", block.id()))?;
-        self.connect(ExecutedBlock { block, block_info })
+        self.connect(ExecutedBlock { block, block_info, dag_parent }, &mut Some(vec![]))
     }
 
     //TODO consider move this logic to BlockExecutor
@@ -362,6 +362,7 @@ impl BlockChain {
         epoch: &Epoch,
         parent_status: Option<ChainStatus>,
         block: Block,
+        dag_block_parent: Option<HashValue>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
         let header = block.header();
@@ -373,7 +374,7 @@ impl BlockChain {
             let mut t = match &parent_status {
                 None => vec![],
                 Some(parent) => {
-                    let block_metadata = block.to_metadata(parent.head().gas_used());
+                    let block_metadata = block.to_metadata(parent.head().gas_used(), dag_block_parent);
                     vec![Transaction::BlockMetadata(block_metadata)]
                 }
             };
@@ -511,7 +512,7 @@ impl BlockChain {
         storage.save_block_info(block_info.clone())?;
 
         watch(CHAIN_WATCH_NAME, "n26");
-        Ok(ExecutedBlock { block, block_info })
+        Ok(ExecutedBlock { block, block_info, dag_parent: dag_block_parent })
     }
 
     pub fn get_txn_accumulator(&self) -> &MerkleAccumulator {
@@ -541,7 +542,7 @@ impl ChainReader for BlockChain {
     }
 
     fn head_block(&self) -> ExecutedBlock {
-        ExecutedBlock::new(self.status.head.clone(), self.status.status.info.clone())
+        ExecutedBlock::new(self.status.head.clone(), self.status.status.info.clone(), self.status.status.get_last_tip_block_id())
     }
 
     fn current_header(&self) -> BlockHeader {
@@ -769,7 +770,7 @@ impl ChainReader for BlockChain {
         FullVerifier::verify_block(self, block)
     }
 
-    fn execute(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
+    fn execute(&self, verified_block: VerifiedBlock, dag_block_parent: Option<HashValue>) -> Result<ExecutedBlock> {
         Self::execute_block_and_save(
             self.storage.as_ref(),
             self.statedb.fork(),
@@ -778,6 +779,7 @@ impl ChainReader for BlockChain {
             &self.epoch,
             Some(self.status.status.clone()),
             verified_block.0,
+            dag_block_parent, 
             self.vm_metrics.clone(),
         )
     }
@@ -989,9 +991,15 @@ impl ChainWriter for BlockChain {
         executed_block.block.header().parent_hash() == self.status.status.head().id()
     }
 
-    fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
+    fn connect(&mut self, executed_block: ExecutedBlock, next_tips: &mut Option<Vec<HashValue>>) -> Result<ExecutedBlock> {
         let (block, block_info) = (executed_block.block(), executed_block.block_info());
-        debug_assert!(block.header().parent_hash() == self.status.status.head().id());
+        if self.status.status.tips_hash.is_some() {
+            let mut tips = self.status.status.tips_hash.clone().unwrap();
+            tips.sort();
+            debug_assert!(block.header().parent_hash() == HashValue::sha3_256_of(&tips.encode().expect("hash encode must be sucessful")));
+        } else {
+            debug_assert!(block.header().parent_hash() == self.status.status.head().id());
+        }
         //TODO try reuse accumulator and state db.
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
@@ -1008,11 +1016,19 @@ impl ChainWriter for BlockChain {
         );
 
         self.statedb = ChainStateDB::new(self.storage.clone().into_super_arc(), Some(state_root));
+        match next_tips {
+            Some(tips) =>  {
+                if !tips.contains(&block.id()) {
+                    tips.push(block.id());
+                }
+            }
+            None => (),
+        }
         self.status = ChainStatusWithBlock {
             status: ChainStatus::new(
                 block.header().clone(),
                 block_info.clone(),
-                self.storage.get_last_tips()?,
+                next_tips.clone(),
             ),
             head: block.clone(),
         };
@@ -1028,8 +1044,8 @@ impl ChainWriter for BlockChain {
         Ok(executed_block)
     }
 
-    fn apply(&mut self, block: Block) -> Result<ExecutedBlock> {
-        self.apply_with_verifier::<FullVerifier>(block)
+    fn apply(&mut self, block: Block, dag_block_next_parent: Option<HashValue>, next_tips: &mut Option<Vec<HashValue>>) -> Result<ExecutedBlock> {
+        self.apply_with_verifier::<FullVerifier>(block, dag_block_next_parent, next_tips)
     }
 
     fn chain_state(&mut self) -> &ChainStateDB {

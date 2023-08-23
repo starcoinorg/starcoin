@@ -162,11 +162,11 @@ impl SyncService {
         let sync_metrics = self.metrics.clone();
         let vm_metrics = self.vm_metrics.clone();
 
-        let accumulator_store = ctx
+        let dag_accumulator_store = ctx
             .get_shared::<Arc<Storage>>()
             .expect("storage must exist")
             .get_accumulator_store(AccumulatorStoreType::SyncDag);
-        let accumulator_snapshot = ctx
+        let dag_accumulator_snapshot = ctx
             .get_shared::<Arc<Storage>>()
             .expect("storage must exist")
             .get_accumulator_snapshot_storage();
@@ -252,8 +252,8 @@ impl SyncService {
                         local_dag_accumulator_info,
                         target_accumulator_info,
                         rpc_client.clone(),
-                        accumulator_store,
-                        accumulator_snapshot,
+                        dag_accumulator_store,
+                        dag_accumulator_snapshot,
                         storage.clone(),
                         config.net().time_service(),
                         vm_metrics.clone(),
@@ -621,11 +621,11 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService {
 
 impl EventHandler<Self, NewHeadBlock> for SyncService {
     fn handle_event(&mut self, msg: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
-        let NewHeadBlock(block, dag_parents) = msg;
+        let NewHeadBlock(block, _dag_parents, next_tips) = msg;
         if self.sync_status.update_chain_status(ChainStatus::new(
             block.header().clone(),
             block.block_info.clone(),
-            dag_parents,
+            next_tips,
         )) {
             ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
         }

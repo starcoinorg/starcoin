@@ -123,7 +123,7 @@ fn apply_with_illegal_uncle(
         .current_header()
         .id();
     let mut main = BlockChain::new(net.time_service(), head_id, storage, None)?;
-    main.apply(new_block.clone())?;
+    main.apply(new_block.clone(), None, &mut None)?;
     Ok(new_block)
 }
 
@@ -160,7 +160,7 @@ async fn test_verify_gas_limit(succ: bool) -> Result<()> {
             .with_gas_used(u64::MAX)
             .build();
     }
-    main.apply(new_block)?;
+    main.apply(new_block, None, &mut None)?;
     Ok(())
 }
 
@@ -183,7 +183,7 @@ async fn test_verify_body_hash(succ: bool) -> Result<()> {
             .with_body_hash(HashValue::random())
             .build();
     }
-    main.apply(new_block)?;
+    main.apply(new_block, None, &mut None)?;
     Ok(())
 }
 
@@ -206,7 +206,7 @@ async fn test_verify_parent_id(succ: bool) -> Result<()> {
             .with_parent_hash(HashValue::random())
             .build();
     }
-    main.apply(new_block)?;
+    main.apply(new_block, None, &mut None)?;
     Ok(())
 }
 
@@ -234,7 +234,7 @@ async fn test_verify_timestamp(succ: bool) -> Result<()> {
             .with_timestamp(main.current_header().timestamp())
             .build();
     }
-    main.apply(new_block)?;
+    main.apply(new_block, None, &mut None)?;
     Ok(())
 }
 
@@ -263,7 +263,7 @@ async fn test_verify_future_timestamp(succ: bool) -> Result<()> {
             )
             .build();
     }
-    main.apply(new_block)?;
+    main.apply(new_block, None, &mut None)?;
     Ok(())
 }
 
@@ -286,7 +286,7 @@ async fn test_verify_consensus(succ: bool) -> Result<()> {
             .with_difficulty(U256::from(1024u64))
             .build();
     }
-    main.apply(new_block)?;
+    main.apply(new_block, None)?;
     Ok(())
 }
 
@@ -371,7 +371,7 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
             .consensus()
             .create_block(block_template, net.time_service().as_ref())
             .unwrap();
-        new_branch.apply(new_block).unwrap();
+        new_branch.apply(new_block, None, &mut None).unwrap();
     }
 
     // 3. new block
@@ -468,7 +468,7 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
         .create_block(block_template, net.time_service().as_ref())
         .unwrap();
 
-    main_block_chain.apply(new_block)?;
+    main_block_chain.apply(new_block, None)?;
     Ok(())
 }
 
@@ -491,7 +491,7 @@ async fn test_verify_state_root(succ: bool) -> Result<()> {
             .with_state_root(HashValue::random())
             .build();
     }
-    main.apply(new_block)?;
+    main.apply(new_block, None, &mut None)?;
     Ok(())
 }
 
@@ -510,7 +510,7 @@ async fn test_verify_block_used_gas(succ: bool) -> Result<()> {
     if !succ {
         new_block.header = new_block.header().as_builder().with_gas_used(1).build();
     }
-    main.apply(new_block)?;
+    main.apply(new_block, None, &mut None)?;
     Ok(())
 }
 
@@ -532,7 +532,7 @@ async fn test_verify_txn_count_failed() {
     let mut body = new_block.body.clone();
     body.transactions = txns;
     new_block.body = body;
-    let apply_failed = main.apply(new_block);
+    let apply_failed = main.apply(new_block, None);
     assert!(apply_failed.is_err());
     if let Err(apply_err) = apply_failed {
         error!("apply failed : {:?}", apply_err);
@@ -548,7 +548,7 @@ async fn test_verify_accumulator_root(succ: bool) -> Result<()> {
             .with_accumulator_root(HashValue::random())
             .build();
     }
-    main.apply(new_block)?;
+    main.apply(new_block, None, &mut None)?;
     Ok(())
 }
 
@@ -571,7 +571,7 @@ async fn test_verify_block_accumulator_root(succ: bool) -> Result<()> {
             .with_parent_block_accumulator_root(HashValue::random())
             .build();
     }
-    main.apply(new_block)?;
+    main.apply(new_block, None, &mut None)?;
     Ok(())
 }
 
@@ -602,7 +602,7 @@ async fn test_verify_block_number_failed(succ: bool, order: bool) {
                 .build();
         }
     }
-    let apply_failed = main.apply(new_block);
+    let apply_failed = main.apply(new_block, None, &mut None);
     if !succ {
         assert!(apply_failed.is_err());
         if let Err(apply_err) = apply_failed {

@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
+use bcs_ext::BCSCodec;
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_chain_api::{
     verify_block, ChainReader, ConnectBlockError, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_consensus::{Consensus, ConsensusVerifyError};
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::debug;
 use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
 use std::{collections::HashSet, str::FromStr};
@@ -179,23 +181,37 @@ impl BlockVerifier for BasicVerifier {
         let current_id = current.id();
         let expect_number = current.number().saturating_add(1);
 
-        verify_block!(
-            VerifyBlockField::Header,
-            expect_number == new_block_header.number(),
-            "Invalid block: Unexpect block number, expect:{}, got: {}.",
-            expect_number,
-            new_block_header.number()
-        );
+        // dag 
+        if chain_status.tips_hash.is_some() {
+            let mut tips_hash = chain_status.tips_hash.clone().unwrap();
+            tips_hash.sort();
+            verify_block!(
+                VerifyBlockField::Header,
+                HashValue::sha3_256_of(&tips_hash.encode().expect("hash encode must be successful")) == new_block_parent,
+                "Invalid block: Parent id mismatch, expect:{}, got: {}, number:{}.",
+                current_id,
+                new_block_parent,
+                new_block_header.number()
+            );
+        } else {
+            // single chain
+            verify_block!(
+                VerifyBlockField::Header,
+                expect_number == new_block_header.number(),
+                "Invalid block: Unexpect block number, expect:{}, got: {}.",
+                expect_number,
+                new_block_header.number()
+            );
 
-        verify_block!(
-            VerifyBlockField::Header,
-            current_id == new_block_parent,
-            "Invalid block: Parent id mismatch, expect:{}, got: {}, number:{}.",
-            current_id,
-            new_block_parent,
-            new_block_header.number()
-        );
-
+            verify_block!(
+                VerifyBlockField::Header,
+                current_id == new_block_parent,
+                "Invalid block: Parent id mismatch, expect:{}, got: {}, number:{}.",
+                current_id,
+                new_block_parent,
+                new_block_header.number()
+            );
+        }
         verify_block!(
             VerifyBlockField::Header,
             new_block_header.timestamp() > current.timestamp(),

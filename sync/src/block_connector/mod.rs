@@ -37,6 +37,7 @@ impl ServiceRequest for ResetRequest {
 pub struct ExecuteRequest {
     pub block: Block,
     pub dag_block_parent: Option<Vec<HashValue>>,
+    pub dag_transaction_parent: Option<HashValue>,
 }
 
 impl ServiceRequest for ExecuteRequest {

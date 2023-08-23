@@ -718,7 +718,7 @@ impl Block {
         }
     }
 
-    pub fn to_metadata(&self, parent_gas_used: u64) -> BlockMetadata {
+    pub fn to_metadata(&self, parent_gas_used: u64, dag_block_parent: Option<HashValue>) -> BlockMetadata {
         let uncles = self
             .body
             .uncles
@@ -726,8 +726,14 @@ impl Block {
             .map(|uncles| uncles.len() as u64)
             .unwrap_or(0);
 
+        let parent = if dag_block_parent.is_some() {
+            dag_block_parent.unwrap()
+        } else {
+            self.header.parent_hash()
+        };
+
         BlockMetadata::new(
-            self.header.parent_hash(),
+            parent,
             self.header.timestamp,
             self.header.author,
             self.header.author_auth_key,
@@ -991,11 +997,12 @@ impl BlockTemplate {
 pub struct ExecutedBlock {
     pub block: Block,
     pub block_info: BlockInfo,
+    pub dag_parent: Option<HashValue>,
 }
 
 impl ExecutedBlock {
-    pub fn new(block: Block, block_info: BlockInfo) -> Self {
-        ExecutedBlock { block, block_info }
+    pub fn new(block: Block, block_info: BlockInfo, dag_parent: Option<HashValue>) -> Self {
+        ExecutedBlock { block, block_info, dag_parent }
     }
 
     pub fn total_difficulty(&self) -> U256 {

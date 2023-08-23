@@ -71,7 +71,7 @@ impl ChainBencher {
             let block = ConsensusStrategy::Dummy
                 .create_block(block_template, self.net.time_service().as_ref())
                 .unwrap();
-            self.chain.write().apply(block).unwrap();
+            self.chain.write().apply(block, None, &mut None).unwrap();
         }
     }
 

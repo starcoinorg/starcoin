@@ -203,7 +203,7 @@ pub async fn test_failed_block() -> Result<()> {
     let body = BlockBody::new(Vec::new(), None);
     let failed_block = Block::new(header, body);
     let failed_block_id = failed_block.id();
-    if block_collector.apply_block_for_test(failed_block).is_err() {
+    if block_collector.apply_block_for_test(failed_block, None, &mut None).is_err() {
         assert!(storage.get_failed_block_by_id(failed_block_id)?.is_some());
         Ok(())
     } else {
@@ -737,7 +737,7 @@ impl MockLocalBlockStore {
         );
         self.store.lock().unwrap().insert(
             block.id(),
-            SyncBlockData::new(block.clone(), Some(block_info), None, None, 1, None),
+            SyncBlockData::new(block.clone(), Some(block_info), None, None, 1, None, None),
         );
     }
 }
