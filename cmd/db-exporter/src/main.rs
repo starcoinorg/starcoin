@@ -320,6 +320,7 @@ pub enum Txntype {
     CreateAccount,
     FixAccount,
     EmptyTxn,
+    TurboStmTxn,
 }
 
 impl FromStr for Txntype {
@@ -330,6 +331,7 @@ impl FromStr for Txntype {
             "CreateAccount" => Txntype::CreateAccount,
             "FixAccount" => Txntype::FixAccount,
             "EmptyTxn" => Txntype::EmptyTxn,
+            "TurboStmTxn" => Txntype::TurboStmTxn,
             _ => {
                 bail!("Unsupported TxnType: {}", s)
             }
@@ -348,7 +350,7 @@ pub struct GenBlockTransactionsOptions {
     pub block_num: Option<u64>,
     #[clap(long, short = 't')]
     pub trans_num: Option<u64>,
-    #[clap(long, short = 'p', possible_values=&["CreateAccount", "FixAccount", "EmptyTxn"],)]
+    #[clap(long, short = 'p', possible_values=&["CreateAccount", "FixAccount", "EmptyTxn", "TurboStmTxn"],)]
     /// txn type
     pub txn_type: Txntype,
 }
@@ -790,7 +792,11 @@ pub fn gen_block_transactions(
     txn_type: Txntype,
 ) -> anyhow::Result<()> {
     starcoin_logger::init();
-    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
+    let net_id = match txn_type {
+        Txntype::TurboStmTxn => BuiltinNetworkID::Test,
+        _ => BuiltinNetworkID::Halley,
+    };
+    let net = ChainNetwork::new_builtin(net_id);
     let db_storage = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
@@ -816,6 +822,9 @@ pub fn gen_block_transactions(
         Txntype::EmptyTxn => {
             execute_empty_transaction_with_miner(storage, &mut chain, &net, block_num, trans_num)
         }
+        Txntype::TurboStmTxn => execute_turbo_stm_transaction_with_fixed_account(
+            storage, &mut chain, &net, block_num, trans_num,
+        ),
     }
 }
 /// Returns a transaction to create a new account with the given arguments.
@@ -1055,6 +1064,88 @@ pub fn execute_transaction_with_fixed_account(
             println!("trans {}", block.transactions().len());
         }
         send_sequence += block.transactions().len() as u64;
+        let block_hash = block.header.id();
+        chain.apply_with_verifier::<BasicVerifier>(block)?;
+
+        let startup_info = StartupInfo::new(block_hash);
+        storage.save_startup_info(startup_info)?;
+    }
+    Ok(())
+}
+
+// ./starcoin_db_exporter gen-block-transactions -b 1 -t 512 -p TurboStmTxn -o ~/test > log 2>&1
+// gen one miner_account and 2 * trans_num txn
+// trans_num 1024, block_num 1000
+pub fn execute_turbo_stm_transaction_with_fixed_account(
+    storage: Arc<Storage>,
+    chain: &mut BlockChain,
+    net: &ChainNetwork,
+    block_num: u64,
+    trans_num: u64,
+) -> anyhow::Result<()> {
+    let miner_account = Account::new();
+    let miner_info = AccountInfo::from(&miner_account);
+    let mut sequence = 0u64;
+    let mut txns = vec![];
+    let mut receivers = vec![];
+    let mut seq = 0;
+    for _j in 0..trans_num {
+        let receiver1 = Account::new();
+        let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+            &receiver1,
+            seq,
+            100_000_000,
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            net,
+        ));
+        seq += 1;
+        let receiver2 = Account::new();
+        let txn2 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+            &receiver2,
+            seq,
+            100_000_000,
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            net,
+        ));
+        seq += 1;
+        receivers.push(receiver1);
+        receivers.push(receiver2);
+        txns.push(txn1.as_signed_user_txn()?.clone());
+        txns.push(txn2.as_signed_user_txn()?.clone());
+    }
+
+    let (block_template, _) =
+        chain.create_block_template(*miner_info.address(), None, txns, vec![], None)?;
+    let block =
+        ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
+    println!("trans {}", block.transactions().len());
+    println!("receivers create_block");
+    let block_hash = block.header.id();
+    chain.apply_with_verifier::<BasicVerifier>(block)?;
+    let startup_info = StartupInfo::new(block_hash);
+    storage.save_startup_info(startup_info)?;
+    println!("receivers finish");
+
+    for _i in 0..block_num {
+        let mut txns = vec![];
+        for j in 0..trans_num {
+            let idx = j as usize;
+            let txn1 = Transaction::UserTransaction(peer_to_peer_txn(
+                receivers.get(idx).unwrap(),
+                receivers.get(2 * idx).unwrap(),
+                sequence,
+                1000,
+                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                net.chain_id(),
+            ));
+            txns.push(txn1.as_signed_user_txn()?.clone());
+        }
+        sequence += 1;
+        let (block_template, _) =
+            chain.create_block_template(*miner_info.address(), None, txns, vec![], None)?;
+        let block =
+            ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
+        println!("trans {}", block.transactions().len());
         let block_hash = block.header.id();
         chain.apply_with_verifier::<BasicVerifier>(block)?;
 
