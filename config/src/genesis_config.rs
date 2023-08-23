@@ -777,8 +777,8 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
-            // parent_hash: HashValue::sha3_256_of(b"starcoin_dev"),
-            parent_hash: HashValue::from_slice(ORIGIN).expect("hash should be ok"),
+            parent_hash: HashValue::sha3_256_of(b"starcoin_dev"),
+            // parent_hash: HashValue::from_slice(ORIGIN).expect("hash should be ok"),
             timestamp: 0,
             difficulty: 1.into(),
         }),

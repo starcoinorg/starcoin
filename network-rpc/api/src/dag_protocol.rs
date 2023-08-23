@@ -46,4 +46,5 @@ pub struct SyncDagBlockInfo {
     pub absent_block: bool, // True if the block is not in the local therefore it needs to apply
     pub peer_id: Option<PeerId>,
     pub dag_parents: Vec<HashValue>,
+    pub dag_transaction_header: Option<HashValue>,
 }

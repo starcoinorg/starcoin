@@ -13,6 +13,7 @@ use futures::executor::block_on;
 use futures_timer::Delay;
 use network_api::{PeerProvider, PeerSelector, PeerStrategy};
 use starcoin_account_service::{AccountEventService, AccountService, AccountStorage};
+use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
@@ -45,7 +46,7 @@ use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::errors::StorageInitError;
 use starcoin_storage::metrics::StorageMetrics;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::{BlockStore, Storage};
+use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_stratum::service::{StratumService, StratumServiceFactory};
 use starcoin_stratum::stratum::{Stratum, StratumFactory};
 use starcoin_sync::announcement::AnnouncementService;
@@ -191,6 +192,7 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                         None
                     }
                 };
+                // let dag_transaction_parent = storage.get_accumulator_store(AccumulatorStoreType::Block).?;
                 let fut = async move {
                     info!("Prepare to re execute block {}", block_hash);
                     let block = match storage.get_block(block_hash)? {
@@ -222,6 +224,7 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                         .send(ExecuteRequest {
                             block,
                             dag_block_parent: parents,
+                            dag_transaction_parent: None,
                         })
                         .await??;
                     info!("Re execute result: {:?}", result);

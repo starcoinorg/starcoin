@@ -132,18 +132,18 @@ fn main() -> anyhow::Result<()> {
             let block_height = block.header().number();
             match opts.verifier {
                 Verifier::Basic => {
-                    chain2.apply_with_verifier::<BasicVerifier>(block).unwrap();
+                    chain2.apply_with_verifier::<BasicVerifier>(block, None, &mut None).unwrap();
                 }
                 Verifier::Consensus => {
                     chain2
-                        .apply_with_verifier::<ConsensusVerifier>(block)
+                        .apply_with_verifier::<ConsensusVerifier>(block, None, &mut None)
                         .unwrap();
                 }
                 Verifier::None => {
-                    chain2.apply_with_verifier::<NoneVerifier>(block).unwrap();
+                    chain2.apply_with_verifier::<NoneVerifier>(block, None, &mut None).unwrap();
                 }
                 Verifier::Full => {
-                    chain2.apply_with_verifier::<FullVerifier>(block).unwrap();
+                    chain2.apply_with_verifier::<FullVerifier>(block, None, &mut None).unwrap();
                 }
             };
             println!(

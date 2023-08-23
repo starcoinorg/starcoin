@@ -70,9 +70,9 @@ fn test_transaction_info_and_proof() -> Result<()> {
             .consensus()
             .create_block(template, config.net().time_service().as_ref())
             .unwrap();
-        block_chain.apply(block.clone()).unwrap();
+        block_chain.apply(block.clone(), None, &mut None).unwrap();
         all_txns.push(Transaction::BlockMetadata(
-            block.to_metadata(current_header.gas_used()),
+            block.to_metadata(current_header.gas_used(), None),
         ));
         all_txns.extend(txns.into_iter().map(Transaction::UserTransaction));
         current_header = block.header().clone();

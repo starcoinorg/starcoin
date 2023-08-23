@@ -10055,6 +10055,7 @@ dependencies = [
  "serde_json",
  "starcoin-account-api",
  "starcoin-account-service",
+ "starcoin-accumulator",
  "starcoin-block-relayer",
  "starcoin-chain-notify",
  "starcoin-chain-service",

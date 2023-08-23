@@ -717,10 +717,10 @@ pub fn apply_block(
         let block_hash = block.header().id();
         let block_number = block.header().number();
         match verifier {
-            Verifier::Basic => chain.apply_with_verifier::<BasicVerifier>(block)?,
-            Verifier::Consensus => chain.apply_with_verifier::<ConsensusVerifier>(block)?,
-            Verifier::Full => chain.apply_with_verifier::<FullVerifier>(block)?,
-            Verifier::None => chain.apply_with_verifier::<NoneVerifier>(block)?,
+            Verifier::Basic => chain.apply_with_verifier::<BasicVerifier>(block, None, &mut None)?,
+            Verifier::Consensus => chain.apply_with_verifier::<ConsensusVerifier>(block, None, &mut None)?,
+            Verifier::Full => chain.apply_with_verifier::<FullVerifier>(block, None, &mut None)?,
+            Verifier::None => chain.apply_with_verifier::<NoneVerifier>(block, None, &mut None)?,
         };
         // apply block then flush startup_info for breakpoint resume
         let startup_info = StartupInfo::new(block_hash);
@@ -900,7 +900,7 @@ pub fn execute_transaction_with_create_account(
             println!("trans {}", block.transactions().len());
         }
         let block_hash = block.header.id();
-        chain.apply_with_verifier::<BasicVerifier>(block)?;
+        chain.apply_with_verifier::<BasicVerifier>(block, None, &mut None)?;
 
         let startup_info = StartupInfo::new(block_hash);
         storage.save_startup_info(startup_info)?;
@@ -923,7 +923,7 @@ pub fn execute_transaction_with_miner_create_account(
     let block =
         ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
     let block_hash = block.header.id();
-    chain.apply_with_verifier::<BasicVerifier>(block)?;
+    chain.apply_with_verifier::<BasicVerifier>(block, None, &mut None)?;
     let startup_info = StartupInfo::new(block_hash);
     storage.save_startup_info(startup_info)?;
     for _i in 0..block_num {
@@ -952,7 +952,7 @@ pub fn execute_transaction_with_miner_create_account(
         }
         send_sequence += block.transactions().len() as u64;
         let block_hash = block.header.id();
-        chain.apply_with_verifier::<BasicVerifier>(block)?;
+        chain.apply_with_verifier::<BasicVerifier>(block, None, &mut None)?;
 
         let startup_info = StartupInfo::new(block_hash);
         storage.save_startup_info(startup_info)?;
@@ -975,7 +975,7 @@ pub fn execute_empty_transaction_with_miner(
     let block =
         ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
     let block_hash = block.header.id();
-    chain.apply_with_verifier::<BasicVerifier>(block)?;
+    chain.apply_with_verifier::<BasicVerifier>(block, None, &mut None)?;
     let startup_info = StartupInfo::new(block_hash);
     storage.save_startup_info(startup_info)?;
     for _i in 0..block_num {
@@ -1002,7 +1002,7 @@ pub fn execute_empty_transaction_with_miner(
         }
         send_sequence += block.transactions().len() as u64;
         let block_hash = block.header.id();
-        chain.apply_with_verifier::<BasicVerifier>(block)?;
+        chain.apply_with_verifier::<BasicVerifier>(block, None, &mut None)?;
 
         let startup_info = StartupInfo::new(block_hash);
         storage.save_startup_info(startup_info)?;
@@ -1026,7 +1026,7 @@ pub fn execute_transaction_with_fixed_account(
     let block =
         ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
     let block_hash = block.header.id();
-    chain.apply_with_verifier::<BasicVerifier>(block)?;
+    chain.apply_with_verifier::<BasicVerifier>(block, None, &mut None)?;
     let startup_info = StartupInfo::new(block_hash);
     storage.save_startup_info(startup_info)?;
     for _i in 0..block_num {
@@ -1054,7 +1054,7 @@ pub fn execute_transaction_with_fixed_account(
         }
         send_sequence += block.transactions().len() as u64;
         let block_hash = block.header.id();
-        chain.apply_with_verifier::<BasicVerifier>(block)?;
+        chain.apply_with_verifier::<BasicVerifier>(block, None, &mut None)?;
 
         let startup_info = StartupInfo::new(block_hash);
         storage.save_startup_info(startup_info)?;
