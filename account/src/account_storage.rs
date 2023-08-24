@@ -14,7 +14,6 @@ use starcoin_config::{temp_dir, RocksdbConfig};
 use starcoin_crypto::ValidCryptoMaterial;
 use starcoin_decrypt::{decrypt, encrypt};
 use starcoin_schemadb::{SchemaBatch, DB};
-use starcoin_storage::storage::StorageInstance;
 use starcoin_types::{account_address::AccountAddress, account_config::token_code::TokenCode};
 use std::{convert::TryFrom, path::Path, sync::Arc};
 
@@ -49,7 +48,7 @@ impl AccountStorage {
 
     pub fn new(db: Arc<DB>) -> Self {
         Self {
-            db: db.clone(),
+            db: Arc::clone(&db),
             setting_store: AccountStore::<AccountSetting>::new(),
             private_key_store: AccountStore::<PrivateKey>::new(),
             public_key_store: AccountStore::<PublicKey>::new(),
@@ -234,7 +233,7 @@ impl AccountStorage {
         password: impl AsRef<str>,
     ) -> Result<()> {
         let encrypted_prikey = encrypt(password.as_ref().as_bytes(), &private_key.to_bytes());
-        self.put_private_key(address.into(), encrypted_prikey.into())?;
+        self.put_private_key(address, encrypted_prikey.into())?;
         let public_key = private_key.public_key();
         self.update_public_key(address, public_key)?;
         Ok(())

@@ -10,7 +10,6 @@ use starcoin_account_api::{
 };
 use starcoin_crypto::PrivateKey;
 use starcoin_logger::prelude::*;
-use starcoin_storage::storage::StorageInstance;
 use starcoin_types::account_address;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::genesis_config::ChainId;

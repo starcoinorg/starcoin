@@ -9,7 +9,6 @@ use starcoin_config::RocksdbConfig;
 pub use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::metrics::StorageMetrics;
 use starcoin_storage::storage::InnerStore;
-use starcoin_storage::Store;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;

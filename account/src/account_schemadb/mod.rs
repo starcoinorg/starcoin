@@ -1,4 +1,4 @@
-use starcoin_schemadb::{error::StoreResult, schema::Schema, SchemaBatch};
+use starcoin_schemadb::{error::StoreResult, schema::Schema};
 use starcoin_storage::cache_storage::GCacheStorage;
 use starcoin_types::account_address::AccountAddress;
 use std::sync::Arc;
@@ -62,18 +62,5 @@ impl<S: Schema> AccountStore<S> {
     pub fn remove(&self, key: &S::Key) -> StoreResult<()> {
         self.cache.remove_inner(key);
         Ok(())
-    }
-
-    pub fn put_batch(
-        &self,
-        batch: &mut SchemaBatch,
-        key: &S::Key,
-        val: &S::Value,
-    ) -> StoreResult<()> {
-        batch.put::<S>(key, val)
-    }
-
-    pub fn remove_batch(&self, batch: &mut SchemaBatch, key: &S::Key) -> StoreResult<()> {
-        batch.delete::<S>(key)
     }
 }
