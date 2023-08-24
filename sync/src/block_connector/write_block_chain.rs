@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::metrics::ChainMetrics;
-use anyhow::{format_err, Ok, Result, bail};
+use anyhow::{bail, format_err, Ok, Result};
+use async_std::stream::StreamExt;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 use starcoin_config::NodeConfig;
@@ -325,7 +326,11 @@ where
     }
 
     ///Directly execute the block and save result, do not try to connect.
-    pub fn execute(&mut self, block: Block, dag_block_parent:Option<HashValue>) -> Result<ExecutedBlock> {
+    pub fn execute(
+        &mut self,
+        block: Block,
+        dag_block_parent: Option<HashValue>,
+    ) -> Result<ExecutedBlock> {
         let chain = BlockChain::new(
             self.config.net().time_service(),
             block.header().parent_hash(),
@@ -440,7 +445,12 @@ where
         Ok(blocks)
     }
 
-    fn broadcast_new_head(&self, block: ExecutedBlock, dag_parents: Option<Vec<HashValue>>, next_tips: Option<Vec<HashValue>>) {
+    fn broadcast_new_head(
+        &self,
+        block: ExecutedBlock,
+        dag_parents: Option<Vec<HashValue>>,
+        next_tips: Option<Vec<HashValue>>,
+    ) {
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
                 .chain_select_head_total
@@ -499,16 +509,27 @@ where
             (Some(block_info), None) => {
                 // both are identical
                 let block_id: HashValue = block_info.block_id().clone();
-                let executed_block = self.main.connect(ExecutedBlock {
-                    block: block.clone(),
-                    block_info,
-                    dag_parent: dag_block_next_parent,
-                }, next_tips)?;
+                let executed_block = self.main.connect(
+                    ExecutedBlock {
+                        block: block.clone(),
+                        block_info,
+                        dag_parent: dag_block_next_parent,
+                    },
+                    next_tips,
+                )?;
                 info!(
                     "Block {} main has been processed, trigger head selection",
                     block_id,
                 );
-                self.do_new_head(executed_block, 1, vec![block], 0, vec![], dag_block_parents, next_tips.clone())?;
+                self.do_new_head(
+                    executed_block,
+                    1,
+                    vec![block],
+                    0,
+                    vec![],
+                    dag_block_parents,
+                    next_tips.clone(),
+                )?;
                 Ok(ConnectOk::Connect)
             }
             (None, Some(mut branch)) => {
@@ -526,7 +547,7 @@ where
         block: Block,
         dag_block_parents: Option<Vec<HashValue>>,
         dag_block_next_parent: Option<HashValue>,
-        next_tips: &mut Option<Vec<HashValue>>
+        next_tips: &mut Option<Vec<HashValue>>,
     ) -> Result<ConnectOk> {
         let block_id = block.id();
         if block_id == *starcoin_storage::BARNARD_HARD_FORK_HASH
@@ -553,14 +574,25 @@ where
             );
             match color {
                 ColoringOutput::Blue(_, _) => {
-                    if self.main.current_tips_hash().expect("in dag block, the tips hash must exist") == block.header().parent_hash()
+                    if self
+                        .main
+                        .current_tips_hash()
+                        .expect("in dag block, the tips hash must exist")
+                        == block.header().parent_hash()
                         && !self.block_exist(block_id)?
                     {
-                        return self.apply_and_select_head(block, Some(parents), dag_block_next_parent, next_tips);
+                        return self.apply_and_select_head(
+                            block,
+                            Some(parents),
+                            dag_block_next_parent,
+                            next_tips,
+                        );
                     }
                     self.switch_branch(block, Some(parents), dag_block_next_parent, next_tips)
                 }
-                ColoringOutput::Red => self.switch_branch(block, Some(parents), dag_block_next_parent, next_tips),
+                ColoringOutput::Red => {
+                    self.switch_branch(block, Some(parents), dag_block_next_parent, next_tips)
+                }
             }
         } else {
             if self.main.current_header().id() == block.header().parent_hash()
@@ -616,7 +648,10 @@ where
             // tips header, check the dag time window to see if it is should apply the blocks
             // checkout if it is time to settle down
             let time_service = DagBlockTimeWindowService::new(15 * 1000);
-            match time_service.is_in_time_window(block.header().timestamp(), self.config.net().time_service().clone()) {
+            match time_service.is_in_time_window(
+                block.header().timestamp(),
+                self.config.net().time_service().clone(),
+            ) {
                 // TimeWindowResult::InTimeWindow => {
                 //     self.dag_block_pool
                 //         .lock()
@@ -640,14 +675,23 @@ where
                     // sort by id
                     dag_blocks.sort_by_key(|(block, _)| block.header().id());
 
-                    let mut dag_block_next_parent = dag_block_parents.iter().max().expect("tips must be larger than 0").clone();
+                    let mut dag_block_next_parent = dag_block_parents
+                        .iter()
+                        .max()
+                        .expect("tips must be larger than 0")
+                        .clone();
                     let mut next_tips = Some(vec![]);
                     // connect the block one by one
                     dag_blocks
                         .into_iter()
                         .for_each(|(block, dag_block_parents)| {
                             let next_transaction_parent = block.header().id();
-                            let result = self.connect_to_main(block, Some(dag_block_parents), Some(dag_block_next_parent), &mut next_tips);
+                            let result = self.connect_to_main(
+                                block,
+                                Some(dag_block_parents),
+                                Some(dag_block_next_parent),
+                                &mut next_tips,
+                            );
                             match result {
                                 std::result::Result::Ok(_) => {
                                     dag_block_next_parent = next_transaction_parent;
@@ -658,7 +702,19 @@ where
                                 ),
                             }
                         });
-                    
+
+                    match next_tips {
+                        Some(new_tips) => {
+                            if new_tips.is_empty() {
+                                bail!("no new block has been executed successfully!");
+                            }
+                            self.main.append_dag_accumulator_leaf(new_tips).expect("failed to append new tips to dag accumulator");
+                        }
+                        None => {
+                            unreachable!("next tips should not be None");
+                        }
+                    }
+
                     return Ok(ConnectOk::DagConnected);
                 }
             }

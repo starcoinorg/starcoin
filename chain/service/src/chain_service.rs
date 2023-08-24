@@ -1,8 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{format_err, Error, Result};
-use starcoin_chain::dag_chain::DagBlockChain;
+use anyhow::{format_err, Error, Result, bail};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::{
@@ -13,7 +12,8 @@ use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::dag_protocol::{
-    GetDagAccumulatorLeaves, GetTargetDagAccumulatorLeafDetail,
+    GetDagAccumulatorLeaves, GetTargetDagAccumulatorLeafDetail, TargetDagAccumulatorLeaf,
+    TargetDagAccumulatorLeafDetail,
 };
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
@@ -37,8 +37,6 @@ use std::sync::{Arc, Mutex};
 /// A Chain reader service to provider Reader API.
 pub struct ChainReaderService {
     inner: ChainReaderServiceInner,
-
-    dag_chain: DagBlockChain,
 }
 
 impl ChainReaderService {
@@ -54,10 +52,9 @@ impl ChainReaderService {
                 config.clone(),
                 startup_info,
                 storage.clone(),
-                dag.clone(),         
+                dag.clone(),
                 vm_metrics.clone(),
             )?,
-            dag_chain: DagBlockChain::new(storage.clone(), dag.clone())?,
         })
     }
 }
@@ -70,7 +67,9 @@ impl ServiceFactory<Self> for ChainReaderService {
             .get_startup_info()?
             .ok_or_else(|| format_err!("StartupInfo should exist at service init."))?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        let dag = ctx.get_shared_opt::<Arc<Mutex<BlockDAG>>>()?.expect("dag should be initialized at service init");
+        let dag = ctx
+            .get_shared_opt::<Arc<Mutex<BlockDAG>>>()?
+            .expect("dag should be initialized at service init");
         Self::new(config, startup_info, storage, dag.clone(), vm_metrics)
     }
 }
@@ -92,7 +91,8 @@ impl EventHandler<Self, NewHeadBlock> for ChainReaderService {
         let new_head = event.0.block().header();
         if let Err(e) = if self.inner.get_main().can_connect(event.0.as_ref()) {
             let mut next_tips = event.2.clone();
-            self.inner.update_chain_head(event.0.as_ref().clone(), &mut next_tips)
+            self.inner
+                .update_chain_head(event.0.as_ref().clone(), &mut next_tips)
         } else {
             self.inner.switch_main(new_head.id())
         } {
@@ -253,17 +253,16 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 start_index,
                 batch_size,
             } => Ok(ChainResponse::TargetDagAccumulatorLeaf(
-                self.dag_chain
-                    .get_accumulator_leaves(GetDagAccumulatorLeaves {
-                        accumulator_leaf_index: start_index,
-                        batch_size,
-                    })?,
+                self.inner.get_dag_accumulator_leaves(GetDagAccumulatorLeaves {
+                    accumulator_leaf_index: start_index,
+                    batch_size,
+                })?,
             )),
             ChainRequest::GetTargetDagAccumulatorLeafDetail {
                 leaf_index,
                 batch_size,
             } => Ok(ChainResponse::TargetDagAccumulatorLeafDetail(
-                self.dag_chain.get_target_dag_accumulator_leaf_detail(
+                self.inner.get_target_dag_accumulator_leaf_detail(
                     GetTargetDagAccumulatorLeafDetail {
                         leaf_index,
                         batch_size,
@@ -312,7 +311,11 @@ impl ChainReaderServiceInner {
         &self.main
     }
 
-    pub fn update_chain_head(&mut self, block: ExecutedBlock, next_tips: &mut Option<Vec<HashValue>>) -> Result<()> {
+    pub fn update_chain_head(
+        &mut self,
+        block: ExecutedBlock,
+        next_tips: &mut Option<Vec<HashValue>>,
+    ) -> Result<()> {
         self.main.connect(block, next_tips)?;
         Ok(())
     }
@@ -338,19 +341,30 @@ impl ReadableChainService for ChainReaderServiceInner {
         self.storage.get_block_by_hash(hash)
     }
 
-    fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<(Block, Option<Vec<HashValue>>)>>> {
+    fn get_blocks(
+        &self,
+        ids: Vec<HashValue>,
+    ) -> Result<Vec<Option<(Block, Option<Vec<HashValue>>)>>> {
         let blocks = self.storage.get_blocks(ids)?;
-        Ok(blocks.into_iter().map(|block| {
-            if let Some(block) = block  {
-                let parents = match self.dag.lock().expect("failed to lock dag").get_parents(block.id()) {
-                    Ok(parents) => parents,
-                    Err(_) => panic!("failed to get parents of block {}", block.id()),
-                };
-                Some((block, Some(parents)))
-            } else {
-                None
-            }
-        }).collect())
+        Ok(blocks
+            .into_iter()
+            .map(|block| {
+                if let Some(block) = block {
+                    let parents = match self
+                        .dag
+                        .lock()
+                        .expect("failed to lock dag")
+                        .get_parents(block.id())
+                    {
+                        Ok(parents) => parents,
+                        Err(_) => panic!("failed to get parents of block {}", block.id()),
+                    };
+                    Some((block, Some(parents)))
+                } else {
+                    None
+                }
+            })
+            .collect())
     }
 
     fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockHeader>>> {
@@ -467,6 +481,60 @@ impl ReadableChainService for ChainReaderServiceInner {
 
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>> {
         self.storage.get_block_infos(ids)
+    }
+
+    fn get_dag_accumulator_leaves(
+        &self,
+        req: GetDagAccumulatorLeaves,
+    ) -> anyhow::Result<Vec<TargetDagAccumulatorLeaf>> {
+        match self
+            .main
+            .get_dag_leaves(req.accumulator_leaf_index, true, req.batch_size)
+        {
+            Ok(leaves) => Ok(leaves
+                .into_iter()
+                .enumerate()
+                .map(
+                    |(index, leaf)| match self.main.get_dag_accumulator_snapshot(leaf) {
+                        Ok(snapshot) => TargetDagAccumulatorLeaf {
+                            accumulator_root: snapshot.accumulator_info.accumulator_root,
+                            leaf_index: req.accumulator_leaf_index.saturating_sub(index as u64),
+                        },
+                        Err(error) => {
+                            panic!(
+                                "error occured when query the accumulator snapshot: {}",
+                                error.to_string()
+                            );
+                        }
+                    },
+                )
+                .collect()),
+            Err(error) => {
+                bail!(
+                    "an error occured when getting the leaves of the accumulator, {}",
+                    error.to_string()
+                );
+            }
+        }
+    }
+
+    fn get_target_dag_accumulator_leaf_detail(
+        &self,
+        req: GetTargetDagAccumulatorLeafDetail,
+    ) -> anyhow::Result<Vec<TargetDagAccumulatorLeafDetail>> {
+        let end_index = std::cmp::min(
+            req.leaf_index + req.batch_size - 1,
+            self.main.get_dag_current_leaf_number() - 1,
+        );
+        let mut details = [].to_vec();
+        for index in req.leaf_index..=end_index {
+            let snapshot = self.main.get_dag_accumulator_snapshot_by_index(index)?;
+            details.push(TargetDagAccumulatorLeafDetail {
+                accumulator_root: snapshot.accumulator_info.accumulator_root,
+                tips: snapshot.child_hashes,
+            });
+        }
+        Ok(details)
     }
 }
 

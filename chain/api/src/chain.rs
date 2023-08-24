@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2
 
 use anyhow::Result;
+use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::ChainStateReader;
 use starcoin_statedb::ChainStateDB;
@@ -80,7 +81,11 @@ pub trait ChainReader {
     /// Verify block header and body, base current chain, but do not verify it execute state.
     fn verify(&self, block: Block) -> Result<VerifiedBlock>;
     /// Execute block and verify it execute state, and save result base current chain, but do not change current chain.
-    fn execute(&self, block: VerifiedBlock, dag_block_parents: Option<HashValue>) -> Result<ExecutedBlock>;
+    fn execute(
+        &self,
+        block: VerifiedBlock,
+        dag_block_parents: Option<HashValue>,
+    ) -> Result<ExecutedBlock>;
     /// Get chain transaction infos
     fn get_transaction_infos(
         &self,
@@ -108,12 +113,33 @@ pub trait ChainReader {
 pub trait ChainWriter {
     fn can_connect(&self, executed_block: &ExecutedBlock) -> bool;
     /// Connect a executed block to current chain.
-    fn connect(&mut self, executed_block: ExecutedBlock, next_tips: &mut Option<Vec<HashValue>>) -> Result<ExecutedBlock>;
+    fn connect(
+        &mut self,
+        executed_block: ExecutedBlock,
+        next_tips: &mut Option<Vec<HashValue>>,
+    ) -> Result<ExecutedBlock>;
 
     /// Verify, Execute and Connect block to current chain.
-    fn apply(&mut self, block: Block, dag_block_next_parent: Option<HashValue>, next_tips: &mut Option<Vec<HashValue>>) -> Result<ExecutedBlock>;
+    fn apply(
+        &mut self,
+        block: Block,
+        dag_block_next_parent: Option<HashValue>,
+        next_tips: &mut Option<Vec<HashValue>>,
+    ) -> Result<ExecutedBlock>;
 
     fn chain_state(&mut self) -> &ChainStateDB;
+
+    /// Get the dag accumulator info
+    fn get_current_dag_accumulator_info(&self) -> Result<AccumulatorInfo>;
+
+    /// Fork the accumulator
+    fn fork_dag_accumulator(&mut self, accumulator_info: AccumulatorInfo) -> Result<()>;
+
+    /// Append the dag accumulator leaf
+    fn append_dag_accumulator_leaf(
+        &mut self,
+        tips: Vec<HashValue>,
+    ) -> Result<(HashValue, AccumulatorInfo)>;
 }
 
 /// `Chain` is a trait that defines a single Chain.

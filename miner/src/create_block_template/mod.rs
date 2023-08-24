@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::create_block_template::metrics::BlockBuilderMetrics;
-use anyhow::{format_err, Result, bail};
+use anyhow::{bail, format_err, Result};
 use futures::executor::block_on;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_account_service::AccountService;
@@ -112,7 +112,10 @@ impl ActorService for BlockBuilderService {
 impl EventHandler<Self, NewHeadBlock> for BlockBuilderService {
     fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<BlockBuilderService>) {
         let mut next_tips = msg.2.clone();
-        if let Err(e) = self.inner.update_chain(msg.0.as_ref().clone(), &mut next_tips) {
+        if let Err(e) = self
+            .inner
+            .update_chain(msg.0.as_ref().clone(), &mut next_tips)
+        {
             error!("err : {:?}", e)
         }
     }
@@ -241,7 +244,11 @@ where
         }
     }
 
-    pub fn update_chain(&mut self, block: ExecutedBlock, next_tips: &mut Option<Vec<HashValue>>) -> Result<()> {
+    pub fn update_chain(
+        &mut self,
+        block: ExecutedBlock,
+        next_tips: &mut Option<Vec<HashValue>>,
+    ) -> Result<()> {
         let current_header = self.chain.current_header();
         let current_id = current_header.id();
         if self.chain.can_connect(&block) {

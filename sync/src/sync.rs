@@ -15,7 +15,6 @@ use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::BlockDAG;
-use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
@@ -24,13 +23,12 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::block_info::BlockInfoStore;
-use starcoin_storage::{BlockStore, DagBlockStore, Storage, Store, SyncFlexiDagStore};
+use starcoin_storage::{BlockStore, Storage, Store, SyncFlexiDagStore};
 use starcoin_sync_api::{
     PeerScoreRequest, PeerScoreResponse, SyncCancelRequest, SyncProgressReport,
     SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
 use starcoin_types::block::BlockIdAndNumber;
-use starcoin_types::blockhash::ORIGIN;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
@@ -100,7 +98,7 @@ impl SyncService {
             sync_status: SyncStatus::new(ChainStatus::new(
                 head_block.header.clone(),
                 head_block_info,
-                storage.get_last_tips().unwrap_or(Some(vec![genesis])),
+                Some(storage.get_tips_by_block_id(head_block_hash)?),
             )),
             stage: SyncStage::NotStart,
             config,
@@ -247,7 +245,7 @@ impl SyncService {
                 rpc_client.get_best_target(current_block_info.get_total_difficulty())?
             {
                 if let Some(target_accumulator_info) = op_dag_accumulator_info {
-                    let local_dag_accumulator_info = storage.get_dag_accumulator_info()?;
+                    let local_dag_accumulator_info = storage.get_dag_accumulator_info(current_block_id)?.expect("current dag accumulator info should exist");
                     sync_dag_full_task(
                         local_dag_accumulator_info,
                         target_accumulator_info,

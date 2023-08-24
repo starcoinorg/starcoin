@@ -30,7 +30,7 @@ pub struct GetTargetDagAccumulatorLeafDetail {
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct TargetDagAccumulatorLeafDetail {
     pub accumulator_root: HashValue,
-    pub relationship_pair: Vec<RelationshipPair>,
+    pub tips: Vec<HashValue>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

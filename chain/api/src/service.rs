@@ -5,7 +5,7 @@ use crate::message::{ChainRequest, ChainResponse};
 use crate::TransactionInfoWithProof;
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
-use starcoin_network_rpc_api::dag_protocol;
+use starcoin_network_rpc_api::dag_protocol::{self, GetDagAccumulatorLeaves, TargetDagAccumulatorLeaf, TargetDagAccumulatorLeafDetail, GetTargetDagAccumulatorLeafDetail};
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
@@ -21,7 +21,10 @@ use starcoin_vm_types::access_path::AccessPath;
 pub trait ReadableChainService {
     fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>>;
     fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
-    fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<(Block, Option<Vec<HashValue>>)>>>;
+    fn get_blocks(
+        &self,
+        ids: Vec<HashValue>,
+    ) -> Result<Vec<Option<(Block, Option<Vec<HashValue>>)>>>;
     fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockHeader>>>;
     fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
@@ -73,6 +76,14 @@ pub trait ReadableChainService {
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
+    fn get_dag_accumulator_leaves(
+        &self,
+        req: GetDagAccumulatorLeaves,
+    ) -> anyhow::Result<Vec<TargetDagAccumulatorLeaf>>;
+    fn get_target_dag_accumulator_leaf_detail(
+        &self,
+        req: GetTargetDagAccumulatorLeafDetail,
+    ) -> anyhow::Result<Vec<TargetDagAccumulatorLeafDetail>>;
 }
 
 /// Writeable block chain service trait
@@ -86,7 +97,10 @@ pub trait ChainAsyncService:
 {
     async fn get_header_by_hash(&self, hash: &HashValue) -> Result<Option<BlockHeader>>;
     async fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
-    async fn get_blocks(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<(Block, Option<Vec<HashValue>>)>>>;
+    async fn get_blocks(
+        &self,
+        hashes: Vec<HashValue>,
+    ) -> Result<Vec<Option<(Block, Option<Vec<HashValue>>)>>>;
     async fn get_headers(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockHeader>>>;
     async fn get_block_info_by_hash(&self, hash: &HashValue) -> Result<Option<BlockInfo>>;
     async fn get_block_info_by_number(&self, number: u64) -> Result<Option<BlockInfo>>;
@@ -179,7 +193,10 @@ where
         }
     }
 
-    async fn get_blocks(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<(Block, Option<Vec<HashValue>>)>>> {
+    async fn get_blocks(
+        &self,
+        hashes: Vec<HashValue>,
+    ) -> Result<Vec<Option<(Block, Option<Vec<HashValue>>)>>> {
         if let ChainResponse::BlockOptionVec(blocks) =
             self.send(ChainRequest::GetBlocks(hashes)).await??
         {

@@ -181,13 +181,15 @@ impl BlockVerifier for BasicVerifier {
         let current_id = current.id();
         let expect_number = current.number().saturating_add(1);
 
-        // dag 
+        // dag
         if chain_status.tips_hash.is_some() {
             let mut tips_hash = chain_status.tips_hash.clone().unwrap();
             tips_hash.sort();
             verify_block!(
                 VerifyBlockField::Header,
-                HashValue::sha3_256_of(&tips_hash.encode().expect("hash encode must be successful")) == new_block_parent,
+                HashValue::sha3_256_of(
+                    &tips_hash.encode().expect("hash encode must be successful")
+                ) == new_block_parent,
                 "Invalid block: Parent id mismatch, expect:{}, got: {}, number:{}.",
                 current_id,
                 new_block_parent,

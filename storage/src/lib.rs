@@ -29,9 +29,10 @@ use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
+    blockhash::ORIGIN,
     contract_event::ContractEvent,
     startup_info::{ChainInfo, ChainStatus, SnapshotRange, StartupInfo},
-    transaction::{RichTransactionInfo, Transaction}, blockhash::ORIGIN,
+    transaction::{RichTransactionInfo, Transaction},
 };
 //use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::{
@@ -200,12 +201,12 @@ impl StorageVersion {
     }
 }
 
-pub trait DagBlockStore {
-    fn get_flexi_dag_startup_info(&self) -> Result<Option<StartupInfo>>;
-    fn save_flexi_dag_startup_info(&self, startup_info: StartupInfo) -> Result<()>;
-    fn get_dag_accumulator_info(&self) -> Result<AccumulatorInfo>;
-    fn get_last_tips(&self) -> Result<Option<Vec<HashValue>>>;
-}
+// pub trait DagBlockStore {
+//     fn get_flexi_dag_startup_info(&self) -> Result<Option<StartupInfo>>;
+//     fn save_flexi_dag_startup_info(&self, startup_info: StartupInfo) -> Result<()>;
+//     fn get_dag_accumulator_info(&self) -> Result<AccumulatorInfo>;
+//     fn get_last_tips(&self) -> Result<Option<Vec<HashValue>>>;
+// }
 
 pub trait BlockStore {
     fn get_startup_info(&self) -> Result<Option<StartupInfo>>;
@@ -314,6 +315,14 @@ pub trait SyncFlexiDagStore {
     fn put_hashes(&self, key: HashValue, accumulator_snapshot: SyncFlexiDagSnapshot) -> Result<()>;
     fn query_by_hash(&self, key: HashValue) -> Result<Option<SyncFlexiDagSnapshot>>;
     fn get_accumulator_snapshot_storage(&self) -> std::sync::Arc<SyncFlexiDagSnapshotStorage>;
+    fn append_dag_accumulator_leaf(
+        &self,
+        key: HashValue,
+        new_tips: Vec<HashValue>,
+        accumulator_info: AccumulatorInfo,
+    ) -> Result<()>;
+    fn get_dag_accumulator_info(&self, block_id: HashValue) -> Result<Option<AccumulatorInfo>>;
+    fn get_tips_by_block_id(&self, block_id: HashValue) -> Result<Vec<HashValue>>;
 }
 
 // TODO: remove Arc<dyn Store>, we can clone Storage directly.
@@ -394,53 +403,53 @@ impl Debug for Storage {
     }
 }
 
-impl DagBlockStore for Storage {
-    fn get_flexi_dag_startup_info(&self) -> Result<Option<StartupInfo>> {
-        self.chain_info_storage.get_flexi_dag_startup_info()
-    }
+// impl DagBlockStore for Storage {
+//     fn get_flexi_dag_startup_info(&self) -> Result<Option<StartupInfo>> {
+//         self.chain_info_storage.get_flexi_dag_startup_info()
+//     }
 
-    fn save_flexi_dag_startup_info(&self, startup_info: StartupInfo) -> Result<()> {
-        self.chain_info_storage
-            .save_flexi_dag_startup_info(startup_info)
-    }
+//     fn save_flexi_dag_startup_info(&self, startup_info: StartupInfo) -> Result<()> {
+//         self.chain_info_storage
+//             .save_flexi_dag_startup_info(startup_info)
+//     }
 
-    fn get_dag_accumulator_info(&self) -> Result<AccumulatorInfo> {
-        // initialize the block accumulator
-        let startup_info = match self.get_flexi_dag_startup_info()? {
-            Some(startup_info) => startup_info,
-            None => bail!("failed to get dag startup info"),
-        };
+//     fn get_dag_accumulator_info(&self) -> Result<AccumulatorInfo> {
+//         // initialize the block accumulator
+//         let startup_info = match self.get_flexi_dag_startup_info()? {
+//             Some(startup_info) => startup_info,
+//             None => bail!("failed to get dag startup info"),
+//         };
 
-        // let accmulator_info = sync_flexi_dag_store.get_snapshot_storage().get(startup_info.main);
-        let accumulator_info = match self.query_by_hash(startup_info.main) {
-            anyhow::Result::Ok(op_snapshot) => match op_snapshot {
-                Some(snapshot) => snapshot.accumulator_info,
-                None => bail!("failed to get sync accumulator info since it is None"),
-            },
-            Err(error) => bail!("failed to get sync accumulator info: {}", error.to_string()),
-        };
-        Ok(accumulator_info)
-    }
+//         // let accmulator_info = sync_flexi_dag_store.get_snapshot_storage().get(startup_info.main);
+//         let accumulator_info = match self.query_by_hash(startup_info.main) {
+//             anyhow::Result::Ok(op_snapshot) => match op_snapshot {
+//                 Some(snapshot) => snapshot.accumulator_info,
+//                 None => bail!("failed to get sync accumulator info since it is None"),
+//             },
+//             Err(error) => bail!("failed to get sync accumulator info: {}", error.to_string()),
+//         };
+//         Ok(accumulator_info)
+//     }
 
-    fn get_last_tips(&self) -> Result<Option<Vec<HashValue>>> {
-        let accumulator_info = self.get_dag_accumulator_info()?;
-        let accumulator_storage = Arc::new(self.flexi_dag_storage.get_accumulator_storage());
-        let accumulator = MerkleAccumulator::new_with_info(accumulator_info, accumulator_storage);
-        let count = accumulator.num_leaves();
-        if count == 0 {
-            return Ok(None);
-        }
-        match accumulator.get_leaf(count - 1)? {
-            Some(last_leaf_hash) => {
-                match self.flexi_dag_storage.get_hashes_by_hash(last_leaf_hash)? {
-                    Some(snapshot) => Ok(Some(snapshot.child_hashes)),
-                    None => bail!("failed to get snapshot by hash: {}", last_leaf_hash),
-                }
-            }
-            None => bail!("the dag accumulator's last leaf hash is None"),
-        }
-    }
-}
+//     fn get_last_tips(&self) -> Result<Option<Vec<HashValue>>> {
+//         let accumulator_info = self.get_dag_accumulator_info()?;
+//         let accumulator_storage = Arc::new(self.flexi_dag_storage.get_accumulator_storage());
+//         let accumulator = MerkleAccumulator::new_with_info(accumulator_info, accumulator_storage);
+//         let count = accumulator.num_leaves();
+//         if count == 0 {
+//             return Ok(None);
+//         }
+//         match accumulator.get_leaf(count - 1)? {
+//             Some(last_leaf_hash) => {
+//                 match self.flexi_dag_storage.get_hashes_by_hash(last_leaf_hash)? {
+//                     Some(snapshot) => Ok(Some(snapshot.child_hashes)),
+//                     None => bail!("failed to get snapshot by hash: {}", last_leaf_hash),
+//                 }
+//             }
+//             None => bail!("the dag accumulator's last leaf hash is None"),
+//         }
+//     }
+// }
 
 impl BlockStore for Storage {
     fn get_startup_info(&self) -> Result<Option<StartupInfo>> {
@@ -476,13 +485,16 @@ impl BlockStore for Storage {
         })?;
 
         let flexi_dag_accumulator_info = self
-            .get_dag_accumulator_info()
-            .unwrap_or(AccumulatorInfo::default());
-        let tips_header_hash = self.get_last_tips().unwrap_or(Some(vec![genesis_hash]));
+            .get_dag_accumulator_info(head_block.id())
+            .unwrap_or(Some(AccumulatorInfo::default()))
+            .unwrap();
+        let tips_header_hash = self
+            .get_tips_by_block_id(head_block.id())
+            .unwrap_or(vec![genesis_hash]);
         let chain_info = ChainInfo::new(
             head_block.chain_id(),
             genesis_hash,
-            ChainStatus::new(head_block.clone(), head_block_info, tips_header_hash),
+            ChainStatus::new(head_block.clone(), head_block_info, Some(tips_header_hash)),
             Some(flexi_dag_accumulator_info),
         );
         Ok(Some(chain_info))
@@ -695,12 +707,57 @@ impl SyncFlexiDagStore for Storage {
     fn get_accumulator_snapshot_storage(&self) -> std::sync::Arc<SyncFlexiDagSnapshotStorage> {
         self.flexi_dag_storage.get_snapshot_storage()
     }
+
+    fn get_dag_accumulator_info(&self, block_id: HashValue) -> Result<Option<AccumulatorInfo>> {
+        match self
+            .flexi_dag_storage
+            .get_snapshot_storage()
+            .get(block_id)?
+        {
+            Some(snapshot) => Ok(Some(snapshot.accumulator_info)),
+            None => Ok(None),
+        }
+    }
+
+    fn append_dag_accumulator_leaf(
+        &self,
+        key: HashValue,
+        new_tips: Vec<HashValue>,
+        accumulator_info: AccumulatorInfo,
+    ) -> Result<()> {
+        let snapshot = SyncFlexiDagSnapshot {
+                child_hashes: new_tips.clone(),
+                accumulator_info: accumulator_info.clone(),
+        }; 
+        // for sync
+        self.flexi_dag_storage.put_hashes(
+            key,
+            snapshot.clone(),
+        )?;
+
+        // for block chain
+        new_tips.iter().try_fold((), |_, block_id| {
+            self.flexi_dag_storage.put_hashes(
+                block_id.clone(),
+                snapshot.clone(),
+            )
+        })?;
+        Ok(())
+    }
+
+    fn get_tips_by_block_id(&self, block_id: HashValue) -> Result<Vec<HashValue>> {
+        match self.query_by_hash(block_id)? {
+            Some(snapshot) => Ok(snapshot.child_hashes),
+            None => {
+                bail!("failed to get snapshot by hash: {}", block_id);
+            }
+        }
+    }
 }
 
 /// Chain storage define
 pub trait Store:
     StateNodeStore
-    + DagBlockStore
     + SyncFlexiDagStore
     + BlockStore
     + BlockInfoStore

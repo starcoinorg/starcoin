@@ -110,16 +110,14 @@ impl TaskResultCollector<TargetDagAccumulatorLeafDetail> for SyncDagAccumulatorC
         &mut self,
         mut item: TargetDagAccumulatorLeafDetail,
     ) -> anyhow::Result<CollectorState> {
-        item.relationship_pair.sort();
+        item.tips.sort();
         let accumulator_leaf = HashValue::sha3_256_of(
             &item
-                .relationship_pair
+                .tips
                 .encode()
                 .expect("encoding the sorted relatship set must be successful"),
         );
         self.accumulator.append(&[accumulator_leaf])?;
-        println!("item: {}", item.relationship_pair.len());
-
         let accumulator_info = self.accumulator.get_info();
         if accumulator_info.accumulator_root != item.accumulator_root {
             bail!(
@@ -134,11 +132,7 @@ impl TaskResultCollector<TargetDagAccumulatorLeafDetail> for SyncDagAccumulatorC
         self.accumulator_snapshot.put(
             accumulator_leaf,
             SyncFlexiDagSnapshot {
-                child_hashes: item
-                    .relationship_pair
-                    .into_iter()
-                    .map(|pair| pair.child)
-                    .collect::<Vec<_>>(),
+                child_hashes: item.tips,
                 accumulator_info,
             },
         )?;

@@ -164,10 +164,10 @@ fn get_start_block_id(
         .expect("last block id should not be None");
 
     let mut snapshot = local_store
-        .get_last_tips()?
+        .query_by_hash(last_block_id)?
         .expect("tips should not be None");
-    snapshot.sort();
-    Ok(snapshot
+    snapshot.child_hashes.sort();
+    Ok(snapshot.child_hashes
         .iter()
         .last()
         .expect("last block id should not be None")

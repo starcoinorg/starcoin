@@ -101,7 +101,12 @@ impl SyncDagBlockTask {
             .fetch_blocks(absent_block)
             .await?
             .iter()
-            .map(|(block, peer_info, parents)| (block.header().id(), (block.clone(), peer_info.clone(), parents.clone())))
+            .map(|(block, peer_info, parents)| {
+                (
+                    block.header().id(),
+                    (block.clone(), peer_info.clone(), parents.clone()),
+                )
+            })
             .collect::<HashMap<_, _>>();
 
         // should return the block in order
@@ -123,7 +128,8 @@ impl SyncDagBlockTask {
                     .get(&block_info.block_id)
                     .expect("the block should be got from peer already")
                     .2
-                    .to_owned().expect("dag block should have parents");
+                    .to_owned()
+                    .expect("dag block should have parents");
             }
         });
         result.sort_by_key(|item| item.block_id);
@@ -146,7 +152,10 @@ impl SyncDagBlockTask {
                         ),
                         count_in_leaf: snapshot.child_hashes.len() as u64,
                         dag_block_headers: Some(item.dag_parents),
-                        dag_transaction_header: Some(item.dag_transaction_header.expect("dag transaction header should exists")),
+                        dag_transaction_header: Some(
+                            item.dag_transaction_header
+                                .expect("dag transaction header should exists"),
+                        ),
                     }
                 } else {
                     SyncBlockData {
@@ -158,7 +167,10 @@ impl SyncDagBlockTask {
                         ),
                         count_in_leaf: snapshot.child_hashes.len() as u64,
                         dag_block_headers: Some(item.dag_parents),
-                        dag_transaction_header: Some(item.dag_transaction_header.expect("dag transaction header should exists")),
+                        dag_transaction_header: Some(
+                            item.dag_transaction_header
+                                .expect("dag transaction header should exists"),
+                        ),
                     }
                 }
             })

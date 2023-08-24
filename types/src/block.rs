@@ -718,7 +718,11 @@ impl Block {
         }
     }
 
-    pub fn to_metadata(&self, parent_gas_used: u64, dag_block_parent: Option<HashValue>) -> BlockMetadata {
+    pub fn to_metadata(
+        &self,
+        parent_gas_used: u64,
+        dag_block_parent: Option<HashValue>,
+    ) -> BlockMetadata {
         let uncles = self
             .body
             .uncles
@@ -1002,7 +1006,11 @@ pub struct ExecutedBlock {
 
 impl ExecutedBlock {
     pub fn new(block: Block, block_info: BlockInfo, dag_parent: Option<HashValue>) -> Self {
-        ExecutedBlock { block, block_info, dag_parent }
+        ExecutedBlock {
+            block,
+            block_info,
+            dag_parent,
+        }
     }
 
     pub fn total_difficulty(&self) -> U256 {
