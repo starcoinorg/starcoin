@@ -12,8 +12,8 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
 use starcoin_config::G_CRATE_VERSION;
-use starcoin_consensus::BlockDAG;
 use starcoin_consensus::dag::ghostdag::protocol::ColoringOutput;
+use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_storage::BARNARD_HARD_FORK_HASH;
@@ -58,9 +58,31 @@ impl SyncBlockData {
 }
 
 #[allow(clippy::from_over_into)]
-impl Into<(Block, Option<BlockInfo>, Option<PeerId>, Option<Vec<HashValue>>, Option<HashValue>)> for SyncBlockData {
-    fn into(self) -> (Block, Option<BlockInfo>, Option<PeerId>, Option<Vec<HashValue>>, Option<HashValue>) {
-        (self.block, self.info, self.peer_id, self.dag_block_headers, self.dag_transaction_header)
+impl
+    Into<(
+        Block,
+        Option<BlockInfo>,
+        Option<PeerId>,
+        Option<Vec<HashValue>>,
+        Option<HashValue>,
+    )> for SyncBlockData
+{
+    fn into(
+        self,
+    ) -> (
+        Block,
+        Option<BlockInfo>,
+        Option<PeerId>,
+        Option<Vec<HashValue>>,
+        Option<HashValue>,
+    ) {
+        (
+            self.block,
+            self.info,
+            self.peer_id,
+            self.dag_block_headers,
+            self.dag_transaction_header,
+        )
     }
 }
 
@@ -169,7 +191,9 @@ impl TaskState for BlockSyncTask {
                     .fetch_blocks(block_ids)
                     .await?
                     .into_iter()
-                    .map(|(block, peer_id, _)| SyncBlockData::new(block, None, peer_id, None, 1, None, None))
+                    .map(|(block, peer_id, _)| {
+                        SyncBlockData::new(block, None, peer_id, None, 1, None, None)
+                    })
                     .collect())
             }
         }
@@ -232,7 +256,9 @@ where
         dag: Option<Arc<Mutex<BlockDAG>>>,
     ) -> Self {
         if let Some(dag) = &dag {
-            dag.lock().expect("failed to lock the dag").clear_missing_block();
+            dag.lock()
+                .expect("failed to lock the dag")
+                .clear_missing_block();
         }
         Self {
             current_block_info,
@@ -249,11 +275,22 @@ where
     }
 
     #[cfg(test)]
-    pub fn apply_block_for_test(&mut self, block: Block, dag_parent: Option<Vec<HashValue>>, next_tips: &mut Option<Vec<HashValue>>) -> Result<()> {
+    pub fn apply_block_for_test(
+        &mut self,
+        block: Block,
+        dag_parent: Option<Vec<HashValue>>,
+        next_tips: &mut Option<Vec<HashValue>>,
+    ) -> Result<()> {
         self.apply_block(block, None, dag_parent, next_tips)
     }
 
-    fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>, dag_parent: Option<HashValue>, next_tips: &mut Option<Vec<HashValue>>) -> Result<()> {
+    fn apply_block(
+        &mut self,
+        block: Block,
+        peer_id: Option<PeerId>,
+        dag_parent: Option<HashValue>,
+        next_tips: &mut Option<Vec<HashValue>>,
+    ) -> Result<()> {
         if let Some((_failed_block, pre_peer_id, err, version)) = self
             .chain
             .get_storage()
@@ -356,7 +393,11 @@ where
         }
     }
 
-    fn collect_item(&mut self, item: SyncBlockData, next_tips: &mut Option<Vec<HashValue>>) -> Result<BlockInfo> {
+    fn collect_item(
+        &mut self,
+        item: SyncBlockData,
+        next_tips: &mut Option<Vec<HashValue>>,
+    ) -> Result<BlockInfo> {
         let (block, block_info, peer_id, dag_parents, dag_transaction_header) = item.into();
         let block_id = block.id();
         let timestamp = block.header().timestamp();
@@ -371,20 +412,22 @@ where
                     panic!("the red block should not be applied or connected!");
                 }
             } else {
-                    panic!("in dag sync, the dag should not be None")
+                panic!("in dag sync, the dag should not be None")
             }
-
         }
 
         return match block_info {
             Some(block_info) => {
                 //If block_info exists, it means that this block was already executed and try connect in the previous sync, but the sync task was interrupted.
                 //So, we just need to update chain and continue
-                self.chain.connect(ExecutedBlock {
-                    block,
-                    block_info: block_info.clone(),
-                    dag_parent: dag_transaction_header,
-                },  next_tips)?;
+                self.chain.connect(
+                    ExecutedBlock {
+                        block,
+                        block_info: block_info.clone(),
+                        dag_parent: dag_transaction_header,
+                    },
+                    next_tips,
+                )?;
                 Ok(block_info)
             }
             None => {

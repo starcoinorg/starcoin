@@ -8,7 +8,7 @@ use starcoin_config::{ChainNetwork, NetworkConfig};
 use starcoin_network::network_p2p_handle::Networkp2pHandle;
 use starcoin_network::{build_network_worker, NotificationMessage};
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::{DagBlockStore, Storage};
+use starcoin_storage::Storage;
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
 
@@ -23,10 +23,7 @@ pub fn build_lighting_network(
         chain_info.chain_id(),
         chain_info.genesis_hash(),
         chain_info.status().clone(),
-        match storage.get_dag_accumulator_info() {
-            Ok(result) => Some(result),
-            Err(_) => None,
-        },
+        chain_info.dag_accumulator_info().clone(),
     );
     build_network_worker(
         network_config,

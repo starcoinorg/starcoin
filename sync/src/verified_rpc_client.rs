@@ -384,8 +384,7 @@ impl VerifiedRpcClient {
     ) -> Result<Vec<Option<(Block, Option<PeerId>, Option<Vec<HashValue>>)>>> {
         let peer_id = self.select_a_peer()?;
         let start_time = Instant::now();
-        let blocks =
-            self.client.get_blocks(peer_id.clone(), ids.clone()).await?;
+        let blocks = self.client.get_blocks(peer_id.clone(), ids.clone()).await?;
         let time = (Instant::now()
             .saturating_duration_since(start_time)
             .as_millis()) as u32;

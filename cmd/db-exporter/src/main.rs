@@ -717,8 +717,12 @@ pub fn apply_block(
         let block_hash = block.header().id();
         let block_number = block.header().number();
         match verifier {
-            Verifier::Basic => chain.apply_with_verifier::<BasicVerifier>(block, None, &mut None)?,
-            Verifier::Consensus => chain.apply_with_verifier::<ConsensusVerifier>(block, None, &mut None)?,
+            Verifier::Basic => {
+                chain.apply_with_verifier::<BasicVerifier>(block, None, &mut None)?
+            }
+            Verifier::Consensus => {
+                chain.apply_with_verifier::<ConsensusVerifier>(block, None, &mut None)?
+            }
             Verifier::Full => chain.apply_with_verifier::<FullVerifier>(block, None, &mut None)?,
             Verifier::None => chain.apply_with_verifier::<NoneVerifier>(block, None, &mut None)?,
         };
