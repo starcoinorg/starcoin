@@ -1114,50 +1114,51 @@ pub fn execute_turbo_stm_transaction_with_fixed_account(
     let miner_account = Account::new();
     let miner_info = AccountInfo::from(&miner_account);
     let mut sequence = 0u64;
-    let mut txns = vec![];
     let mut receivers = vec![];
     let trans_num = 512;
     let mut seq = 0;
-    for _j in 0..trans_num {
-        let receiver1 = Account::new();
-        let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
-            &receiver1,
-            seq,
-            100_000_000,
-            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-            net,
-        ));
-        seq += 1;
-        let receiver2 = Account::new();
-        let txn2 = Transaction::UserTransaction(create_account_txn_sent_as_association(
-            &receiver2,
-            seq,
-            100_000_000,
-            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-            net,
-        ));
-        seq += 1;
-        receivers.push(receiver1);
-        receivers.push(receiver2);
-        txns.push(txn1.as_signed_user_txn()?.clone());
-        txns.push(txn2.as_signed_user_txn()?.clone());
-    }
+    for _i in 0..4 {
+        let mut txns = vec![];
+        for _j in 0..trans_num {
+            let receiver1 = Account::new();
+            let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+                &receiver1,
+                seq,
+                200_000_000,
+                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                net,
+            ));
+            seq += 1;
+            let receiver2 = Account::new();
+            let txn2 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+                &receiver2,
+                seq,
+                200_000_000,
+                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                net,
+            ));
+            seq += 1;
+            receivers.push(receiver1);
+            receivers.push(receiver2);
+            txns.push(txn1.as_signed_user_txn()?.clone());
+            txns.push(txn2.as_signed_user_txn()?.clone());
+        }
 
-    let (block_template, _) =
-        chain.create_block_template(*miner_info.address(), None, txns, vec![], None)?;
-    let block =
-        ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
-    println!("trans {}", block.transactions().len());
-    println!("receivers create_block");
-    let block_hash = block.header.id();
-    chain.apply_with_verifier::<BasicVerifier>(block)?;
-    let startup_info = StartupInfo::new(block_hash);
-    storage.save_startup_info(startup_info)?;
-    println!("receivers finish");
+        let (block_template, _) =
+            chain.create_block_template(*miner_info.address(), None, txns, vec![], None)?;
+        let block =
+            ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
+        println!("create account trans {}", block.transactions().len());
+        let block_hash = block.header.id();
+        chain.apply_with_verifier::<BasicVerifier>(block)?;
+        let startup_info = StartupInfo::new(block_hash);
+        storage.save_startup_info(startup_info)?;
+        println!("receivers finish");
+    }
 
     for _i in 0..block_num {
         let mut txns = vec![];
-        for j in 0..trans_num {
+        for j in 0..(trans_num * 4) {
             let idx = j as usize;
             let txn1 = Transaction::UserTransaction(peer_to_peer_txn(
                 receivers.get(idx).unwrap(),
@@ -1174,7 +1175,7 @@ pub fn execute_turbo_stm_transaction_with_fixed_account(
             chain.create_block_template(*miner_info.address(), None, txns, vec![], None)?;
         let block =
             ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
-        println!("trans {}", block.transactions().len());
+        println!("p2p trans {}", block.transactions().len());
         let block_hash = block.header.id();
         chain.apply_with_verifier::<BasicVerifier>(block)?;
 
@@ -2022,23 +2023,16 @@ pub fn apply_turbo_stm_block(
     }
     println!("seq execution");
 
-    let bar = ProgressBar::new(blocks.len() as u64);
-    bar.set_style(
-        ProgressStyle::default_bar()
-            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
-    );
-    chain_seq.apply_with_verifier::<BasicVerifier>(blocks[0].clone())?;
+    for item in blocks.iter().take(4) {
+        chain_seq.apply_with_verifier::<NoneVerifier>(item.clone())?;
+    }
     let mut block_hash = HashValue::zero();
     let start_time = SystemTime::now();
-    for item in blocks.iter().skip(1) {
+    for item in blocks.iter().skip(4) {
         let block = item.clone();
         block_hash = block.header().id();
-        let block_number = block.header().number();
-        chain_seq.apply_with_verifier::<BasicVerifier>(block)?;
-        bar.set_message(format!("apply block {}", block_number));
-        bar.inc(1);
+        chain_seq.apply_with_verifier::<NoneVerifier>(block)?;
     }
-    bar.finish();
     let startup_info = StartupInfo::new(block_hash);
     storage_seq.save_startup_info(startup_info)?;
     let use_time = SystemTime::now().duration_since(start_time)?;
@@ -2063,25 +2057,18 @@ pub fn apply_turbo_stm_block(
     )
     .expect("create block chain should success.");
 
-    let bar = ProgressBar::new(blocks.len() as u64);
-    bar.set_style(
-        ProgressStyle::default_bar()
-            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
-    );
     println!("stm execution");
-    chain_stm.apply_with_verifier::<BasicVerifier>(blocks[0].clone())?;
+    for item in blocks.iter().take(4) {
+        chain_stm.apply_with_verifier::<NoneVerifier>(item.clone())?;
+    }
     let mut block_hash = HashValue::zero();
     let start_time = SystemTime::now();
     StarcoinVM::set_concurrency_level_once(num_cpus::get());
-    for item in blocks.iter().skip(1) {
+    for item in blocks.iter().skip(4) {
         let block = item.clone();
         block_hash = block.header().id();
-        let block_number = block.header().number();
-        chain_stm.apply_with_verifier::<BasicVerifier>(block)?;
-        bar.set_message(format!("apply block {}", block_number));
-        bar.inc(1);
+        chain_stm.apply_with_verifier::<NoneVerifier>(block)?;
     }
-    bar.finish();
     let startup_info = StartupInfo::new(block_hash);
     storage_stm.save_startup_info(startup_info)?;
     let use_time = SystemTime::now().duration_since(start_time)?;
