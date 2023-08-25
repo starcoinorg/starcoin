@@ -11,8 +11,8 @@ use starcoin_chain_service::{ChainAsyncService, ChainReaderService};
 use starcoin_crypto::HashValue;
 use starcoin_network_rpc_api::{
     gen_server, BlockBody, GetAccountState, GetAccumulatorNodeByNodeHash, GetBlockHeadersByNumber,
-    GetBlockIds, GetStateWithProof, GetStateWithTableItemProof, GetTxnsWithHash, GetTxnsWithSize,
-    Ping, RpcRequest, MAX_BLOCK_HEADER_REQUEST_SIZE, MAX_BLOCK_INFO_REQUEST_SIZE,
+    GetBlockIds, GetStateWithProof, GetStateWithTableItemProof, GetTableInfo, GetTxnsWithHash,
+    GetTxnsWithSize, Ping, RpcRequest, MAX_BLOCK_HEADER_REQUEST_SIZE, MAX_BLOCK_INFO_REQUEST_SIZE,
     MAX_BLOCK_REQUEST_SIZE, MAX_TXN_REQUEST_SIZE,
 };
 use starcoin_service_registry::ServiceRef;
@@ -28,6 +28,7 @@ use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
+use starcoin_vm_types::state_store::table::TableInfo;
 use std::sync::Arc;
 
 pub struct NetworkRpcImpl {
@@ -248,6 +249,16 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
                 .get_with_table_item_proof_by_root(req.handle, req.key, req.state_root)
                 .await
         };
+        Box::pin(fut)
+    }
+
+    fn get_state_table_info(
+        &self,
+        _peer_id: PeerId,
+        request: GetTableInfo,
+    ) -> BoxFuture<Result<Option<TableInfo>>> {
+        let state_service = self.state_service.clone();
+        let fut = async move { state_service.get_table_info(request.0).await };
         Box::pin(fut)
     }
 

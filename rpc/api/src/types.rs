@@ -1180,7 +1180,7 @@ use starcoin_chain_api::{EventWithProof, TransactionInfoWithProof};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_store::state_key::{StateKey, TableItem};
-use starcoin_vm_types::state_store::table::TableHandle;
+use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 pub use vm_status_translator::VmStatusExplainView;
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
@@ -1933,6 +1933,32 @@ impl From<StateKey> for StateKeyView {
                 key: table_item.key,
             }),
         }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct TableInfoView {
+    #[schemars(with = "String")]
+    #[serde(rename = "table_info")]
+    inner: Option<TableInfo>,
+}
+
+impl TableInfoView {
+    pub fn new(inner: Option<TableInfo>) -> Self {
+        Self { inner }
+    }
+}
+
+impl Into<Option<TableInfo>> for TableInfoView {
+    fn into(self) -> Option<TableInfo> {
+        self.inner
+    }
+}
+
+impl TryInto<TableInfo> for TableInfoView {
+    type Error = String;
+    fn try_into(self) -> Result<TableInfo, Self::Error> {
+        self.inner.ok_or("Null".to_string())
     }
 }
 

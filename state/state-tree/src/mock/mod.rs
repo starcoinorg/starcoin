@@ -5,6 +5,8 @@ use anyhow::{Error, Result};
 use parking_lot::RwLock;
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
+use starcoin_types::account_address::AccountAddress;
+use starcoin_vm_types::state_store::table::TableInfo;
 use std::collections::{BTreeMap, HashMap};
 
 #[derive(Default)]
@@ -40,5 +42,9 @@ impl StateNodeStore for MockStateNodeStore {
         let mut store_nodes = self.nodes.write();
         store_nodes.extend(nodes.into_iter());
         Ok(())
+    }
+
+    fn get_table_info(&self, _address: AccountAddress) -> Result<Option<TableInfo>> {
+        Ok(None)
     }
 }
