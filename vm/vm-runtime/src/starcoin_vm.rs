@@ -1362,6 +1362,7 @@ impl StarcoinVM {
         concurrency_level = min(concurrency_level, num_cpus::get());
         // Only the first call succeeds, due to OnceCell semantics.
         EXECUTION_CONCURRENCY_LEVEL.set(concurrency_level).ok();
+        info!("TurboSTM executor concurrency_level {}", concurrency_level);
     }
 
     /// Get the concurrency level if already set, otherwise return default 1

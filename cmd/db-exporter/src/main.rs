@@ -233,6 +233,8 @@ enum Cmd {
     ExportResource(ExportResourceOptions),
     VerifyModules(VerifyModuleOptions),
     VerifyHeader(VerifyHeaderOptions),
+    GenTurboSTMTransactions(GenTurboSTMTransactionsOptions),
+    ApplyTurboSTMBlock(ApplyTurboSTMBlockOptions),
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -320,7 +322,6 @@ pub enum Txntype {
     CreateAccount,
     FixAccount,
     EmptyTxn,
-    TurboStmTxn,
 }
 
 impl FromStr for Txntype {
@@ -331,7 +332,6 @@ impl FromStr for Txntype {
             "CreateAccount" => Txntype::CreateAccount,
             "FixAccount" => Txntype::FixAccount,
             "EmptyTxn" => Txntype::EmptyTxn,
-            "TurboStmTxn" => Txntype::TurboStmTxn,
             _ => {
                 bail!("Unsupported TxnType: {}", s)
             }
@@ -350,7 +350,7 @@ pub struct GenBlockTransactionsOptions {
     pub block_num: Option<u64>,
     #[clap(long, short = 't')]
     pub trans_num: Option<u64>,
-    #[clap(long, short = 'p', possible_values=&["CreateAccount", "FixAccount", "EmptyTxn", "TurboStmTxn"],)]
+    #[clap(long, short = 'p', possible_values=&["CreateAccount", "FixAccount", "EmptyTxn"],)]
     /// txn type
     pub txn_type: Txntype,
 }
@@ -415,6 +415,33 @@ pub struct ExportResourceOptions {
     /// fields of the struct to output. it use pointer syntax of serde_json.
     /// like: /authentication_key /sequence_number /deposit_events/counter /token/value
     pub fields: Vec<String>,
+}
+
+#[derive(Debug, Parser)]
+#[clap(
+    name = "gen_turbo_stm_transactions",
+    about = "gen turbo stm transactions"
+)]
+pub struct GenTurboSTMTransactionsOptions {
+    #[clap(long, short = 'o', parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/halley
+    pub to_path: PathBuf,
+    #[clap(long, short = 'b')]
+    pub block_num: Option<u64>,
+}
+
+#[derive(Debug, Parser)]
+#[clap(name = "apply turbo stm block", about = "apply turbo stm block")]
+pub struct ApplyTurboSTMBlockOptions {
+    #[clap(long, short = 'o', parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/test
+    pub to_path: PathBuf,
+    #[clap(long, short = 't', parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/test_stm
+    pub turbo_stm_to_path: PathBuf,
+    #[clap(long, short = 'i', parse(from_os_str))]
+    /// input file, like accounts.csv
+    pub input_path: PathBuf,
 }
 
 #[tokio::main(flavor = "multi_thread")]
@@ -570,6 +597,15 @@ async fn main() -> anyhow::Result<()> {
 
         Cmd::VerifyHeader(option) => {
             return verify_header_via_export_file(option.input_path, option.batch_size);
+        }
+        Cmd::GenTurboSTMTransactions(option) => {
+            let result = gen_turbo_stm_transactions(option.to_path, option.block_num);
+            return result;
+        }
+        Cmd::ApplyTurboSTMBlock(option) => {
+            let result =
+                apply_turbo_stm_block(option.to_path, option.turbo_stm_to_path, option.input_path);
+            return result;
         }
     }
     Ok(())
@@ -792,11 +828,7 @@ pub fn gen_block_transactions(
     txn_type: Txntype,
 ) -> anyhow::Result<()> {
     starcoin_logger::init();
-    let net_id = match txn_type {
-        Txntype::TurboStmTxn => BuiltinNetworkID::Test,
-        _ => BuiltinNetworkID::Halley,
-    };
-    let net = ChainNetwork::new_builtin(net_id);
+    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
     let db_storage = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
@@ -822,9 +854,6 @@ pub fn gen_block_transactions(
         Txntype::EmptyTxn => {
             execute_empty_transaction_with_miner(storage, &mut chain, &net, block_num, trans_num)
         }
-        Txntype::TurboStmTxn => execute_turbo_stm_transaction_with_fixed_account(
-            storage, &mut chain, &net, block_num, trans_num,
-        ),
     }
 }
 /// Returns a transaction to create a new account with the given arguments.
@@ -1073,7 +1102,7 @@ pub fn execute_transaction_with_fixed_account(
     Ok(())
 }
 
-// ./starcoin_db_exporter gen-block-transactions -b 1 -t 512 -p TurboStmTxn -o ~/test > log 2>&1
+// ./starcoin_db_exporter gen-block-transactions -b 1 -o ~/test > log 2>&1
 // gen one miner_account and 2 * trans_num txn
 // trans_num 1024, block_num 1000
 pub fn execute_turbo_stm_transaction_with_fixed_account(
@@ -1081,13 +1110,13 @@ pub fn execute_turbo_stm_transaction_with_fixed_account(
     chain: &mut BlockChain,
     net: &ChainNetwork,
     block_num: u64,
-    trans_num: u64,
 ) -> anyhow::Result<()> {
     let miner_account = Account::new();
     let miner_info = AccountInfo::from(&miner_account);
     let mut sequence = 0u64;
     let mut txns = vec![];
     let mut receivers = vec![];
+    let trans_num = 512;
     let mut seq = 0;
     for _j in 0..trans_num {
         let receiver1 = Account::new();
@@ -1924,4 +1953,138 @@ impl serde::Serialize for MoveValue {
             _ => todo!("XXX FXIME YSG"),
         }
     }
+}
+
+pub fn gen_turbo_stm_transactions(to_dir: PathBuf, block_num: Option<u64>) -> anyhow::Result<()> {
+    starcoin_logger::init();
+    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let db_storage = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_storage,
+    ))?);
+    let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
+    let mut chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+    let block_num = block_num.unwrap_or(1000);
+    execute_turbo_stm_transaction_with_fixed_account(storage, &mut chain, &net, block_num)
+}
+
+pub fn apply_turbo_stm_block(
+    to_dir: PathBuf,
+    turbo_stm_to_dir: PathBuf,
+    input_path: PathBuf,
+) -> anyhow::Result<()> {
+    ::starcoin_logger::init();
+    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let db_storage_seq =
+        DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
+    let storage_seq = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_storage_seq,
+    ))?);
+    let (chain_info_seq, _) =
+        Genesis::init_and_check_storage(&net, storage_seq.clone(), to_dir.as_ref())?;
+    let mut chain_seq = BlockChain::new(
+        net.time_service(),
+        chain_info_seq.head().id(),
+        storage_seq.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+    let cur_num = chain_seq.status().head().number();
+
+    let file_name = input_path.display().to_string();
+    let reader = BufReader::new(File::open(input_path)?);
+    let mut blocks = vec![];
+    for record in reader.lines() {
+        let record = record?;
+        let block: Block = serde_json::from_str(record.as_str())?;
+        blocks.push(block);
+    }
+    if blocks.is_empty() {
+        println!("file {} has apply", file_name);
+        return Ok(());
+    }
+
+    if let Some(last_block) = blocks.last() {
+        let start = blocks.get(0).unwrap().header().number();
+        let end = last_block.header().number();
+        println!(
+            "current number {}, import [{},{}] block number",
+            cur_num, start, end
+        );
+    }
+    println!("seq execution");
+
+    let bar = ProgressBar::new(blocks.len() as u64);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
+    chain_seq.apply_with_verifier::<BasicVerifier>(blocks[0].clone())?;
+    let mut block_hash = HashValue::zero();
+    let start_time = SystemTime::now();
+    for item in blocks.iter().skip(1) {
+        let block = item.clone();
+        block_hash = block.header().id();
+        let block_number = block.header().number();
+        chain_seq.apply_with_verifier::<BasicVerifier>(block)?;
+        bar.set_message(format!("apply block {}", block_number));
+        bar.inc(1);
+    }
+    bar.finish();
+    let startup_info = StartupInfo::new(block_hash);
+    storage_seq.save_startup_info(startup_info)?;
+    let use_time = SystemTime::now().duration_since(start_time)?;
+    println!("seq apply block use time: {:?}", use_time.as_secs());
+
+    let db_storage_stm = DBStorage::new(
+        turbo_stm_to_dir.join("starcoindb/db"),
+        RocksdbConfig::default(),
+        None,
+    )?;
+    let storage_stm = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_storage_stm,
+    ))?);
+    let (chain_info_stm, _) =
+        Genesis::init_and_check_storage(&net, storage_stm.clone(), turbo_stm_to_dir.as_ref())?;
+    let mut chain_stm = BlockChain::new(
+        net.time_service(),
+        chain_info_stm.head().id(),
+        storage_stm.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+
+    let bar = ProgressBar::new(blocks.len() as u64);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
+    println!("stm execution");
+    chain_stm.apply_with_verifier::<BasicVerifier>(blocks[0].clone())?;
+    let mut block_hash = HashValue::zero();
+    let start_time = SystemTime::now();
+    StarcoinVM::set_concurrency_level_once(num_cpus::get());
+    for item in blocks.iter().skip(1) {
+        let block = item.clone();
+        block_hash = block.header().id();
+        let block_number = block.header().number();
+        chain_stm.apply_with_verifier::<BasicVerifier>(block)?;
+        bar.set_message(format!("apply block {}", block_number));
+        bar.inc(1);
+    }
+    bar.finish();
+    let startup_info = StartupInfo::new(block_hash);
+    storage_stm.save_startup_info(startup_info)?;
+    let use_time = SystemTime::now().duration_since(start_time)?;
+    println!("stm apply block use time: {:?}", use_time.as_secs());
+    Ok(())
 }
