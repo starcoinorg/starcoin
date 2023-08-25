@@ -1949,16 +1949,16 @@ impl TableInfoView {
     }
 }
 
-impl Into<Option<TableInfo>> for TableInfoView {
-    fn into(self) -> Option<TableInfo> {
-        self.inner
+impl From<TableInfoView> for Option<TableInfo> {
+    fn from(value: TableInfoView) -> Self {
+        value.inner
     }
 }
 
 impl TryInto<TableInfo> for TableInfoView {
     type Error = String;
     fn try_into(self) -> Result<TableInfo, Self::Error> {
-        self.inner.ok_or("Null".to_string())
+        self.inner.ok_or_else(|| "Null".to_string())
     }
 }
 
