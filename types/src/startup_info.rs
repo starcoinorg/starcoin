@@ -6,6 +6,7 @@ use anyhow::Result;
 use bcs_ext::{BCSCodec, Sample};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use starcoin_accumulator::MerkleAccumulator;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::HashValue;
 use starcoin_uint::U256;
@@ -52,7 +53,11 @@ impl ChainInfo {
     }
 
     pub fn update_status(&mut self, status: ChainStatus) {
-        self.status = status
+        self.status = status;
+    }
+
+    pub fn update_dag_accumulator_info(&mut self, flexi_dag_accumulator_info: Option<AccumulatorInfo>) {
+        self.flexi_dag_accumulator_info = flexi_dag_accumulator_info;
     }
 
     pub fn head(&self) -> &BlockHeader {

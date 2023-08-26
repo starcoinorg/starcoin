@@ -229,6 +229,11 @@ impl BlockDAG {
         }
     }
 
+    // for testing
+    pub fn push_parent_children(&mut self, child: Hash, parents: Arc<Vec<Hash>>) -> Result<(), StoreError> {
+        self.relations_store.insert(child, parents)
+    }
+
     pub fn get_genesis_hash(&self) -> Hash {
         self.genesis.hash()
     }

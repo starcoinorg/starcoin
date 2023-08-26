@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::block::BlockNumber;
+use starcoin_types::dag_block::AccumulatorInfo;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::U256;
 use std::borrow::Cow;
@@ -65,6 +66,10 @@ impl PeerInfo {
 
     pub fn update_chain_status(&mut self, chain_status: ChainStatus) {
         self.chain_info.update_status(chain_status)
+    }
+
+    pub fn update_dag_accumulator_info(&mut self, dag_accumulator_info: Option<AccumulatorInfo>) {
+        self.chain_info.update_dag_accumulator_info(dag_accumulator_info)
     }
 
     /// This peer is support notification

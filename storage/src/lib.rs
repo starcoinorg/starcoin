@@ -21,9 +21,7 @@ use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use starcoin_accumulator::{
-    accumulator_info::{self, AccumulatorInfo},
-    node::AccumulatorStoreType,
-    Accumulator, AccumulatorTreeStore, MerkleAccumulator,
+    accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, AccumulatorTreeStore,
 };
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
@@ -726,21 +724,16 @@ impl SyncFlexiDagStore for Storage {
         accumulator_info: AccumulatorInfo,
     ) -> Result<()> {
         let snapshot = SyncFlexiDagSnapshot {
-                child_hashes: new_tips.clone(),
-                accumulator_info: accumulator_info.clone(),
-        }; 
+            child_hashes: new_tips.clone(),
+            accumulator_info: accumulator_info.clone(),
+        };
         // for sync
-        self.flexi_dag_storage.put_hashes(
-            key,
-            snapshot.clone(),
-        )?;
+        self.flexi_dag_storage.put_hashes(key, snapshot.clone())?;
 
         // for block chain
         new_tips.iter().try_fold((), |_, block_id| {
-            self.flexi_dag_storage.put_hashes(
-                block_id.clone(),
-                snapshot.clone(),
-            )
+            self.flexi_dag_storage
+                .put_hashes(block_id.clone(), snapshot.clone())
         })?;
         Ok(())
     }

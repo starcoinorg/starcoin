@@ -1,7 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{format_err, Error, Result, bail};
+use anyhow::{bail, format_err, Error, Result};
+use starcoin_accumulator::{MerkleAccumulator, Accumulator};
+use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::{
@@ -91,8 +93,14 @@ impl EventHandler<Self, NewHeadBlock> for ChainReaderService {
         let new_head = event.0.block().header();
         if let Err(e) = if self.inner.get_main().can_connect(event.0.as_ref()) {
             let mut next_tips = event.2.clone();
-            self.inner
-                .update_chain_head(event.0.as_ref().clone(), &mut next_tips)
+
+            match self.inner
+                .update_chain_head(event.0.as_ref().clone(), &mut next_tips) {
+                Ok(_) => {
+                    self.inner.update_dag_accumulator(new_head.id())
+                }
+                Err(e) => Err(e),
+            }
         } else {
             self.inner.switch_main(new_head.id())
         } {
@@ -253,10 +261,11 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 start_index,
                 batch_size,
             } => Ok(ChainResponse::TargetDagAccumulatorLeaf(
-                self.inner.get_dag_accumulator_leaves(GetDagAccumulatorLeaves {
-                    accumulator_leaf_index: start_index,
-                    batch_size,
-                })?,
+                self.inner
+                    .get_dag_accumulator_leaves(GetDagAccumulatorLeaves {
+                        accumulator_leaf_index: start_index,
+                        batch_size,
+                    })?,
             )),
             ChainRequest::GetTargetDagAccumulatorLeafDetail {
                 leaf_index,
@@ -330,6 +339,11 @@ impl ChainReaderServiceInner {
         )?;
         Ok(())
     }
+
+
+    pub fn update_dag_accumulator(&mut self, head_id: HashValue) -> Result<()> {
+        self.main.update_dag_accumulator(head_id)
+    }
 }
 
 impl ReadableChainService for ChainReaderServiceInner {
@@ -344,7 +358,7 @@ impl ReadableChainService for ChainReaderServiceInner {
     fn get_blocks(
         &self,
         ids: Vec<HashValue>,
-    ) -> Result<Vec<Option<(Block, Option<Vec<HashValue>>)>>> {
+    ) -> Result<Vec<Option<(Block, Option<Vec<HashValue>>, Option<HashValue>)>>> {
         let blocks = self.storage.get_blocks(ids)?;
         Ok(blocks
             .into_iter()
@@ -359,7 +373,18 @@ impl ReadableChainService for ChainReaderServiceInner {
                         Ok(parents) => parents,
                         Err(_) => panic!("failed to get parents of block {}", block.id()),
                     };
-                    Some((block, Some(parents)))
+                    let transaction_parent = match self.storage.get_block_info(block.id()) {
+                        Ok(block_info) => {
+                            if let Some(block_info) = &block_info {
+                                let block_accumulator = MerkleAccumulator::new_with_info(block_info.block_accumulator_info.clone(), self.storage.get_accumulator_store(AccumulatorStoreType::Block));
+                                block_accumulator.get_leaf(block_info.block_accumulator_info.num_leaves - 2).expect("block should have transction header")
+                            } else {
+                                None
+                            } 
+                        }
+                        Err(_) => todo!(),
+                    };
+                    Some((block, Some(parents), transaction_parent))
                 } else {
                     None
                 }
