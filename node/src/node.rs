@@ -210,7 +210,7 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                                 peer_selector.retain_rpc_peers();
                                 let rpc_client = VerifiedRpcClient::new(peer_selector, network);
                                 let mut blocks = rpc_client.get_blocks(vec![block_hash]).await?;
-                                blocks.pop().flatten().map(|(block, _peer, _)| block)
+                                blocks.pop().flatten().map(|(block, _peer, _, _)| block)
                             }
                         }
                     };

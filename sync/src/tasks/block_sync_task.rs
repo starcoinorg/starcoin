@@ -167,7 +167,7 @@ impl TaskState for BlockSyncTask {
                         .fetch_blocks(no_exist_block_ids)
                         .await?
                         .into_iter()
-                        .fold(result_map, |mut result_map, (block, peer_id, _)| {
+                        .fold(result_map, |mut result_map, (block, peer_id, _, _)| {
                             result_map.insert(
                                 block.id(),
                                 SyncBlockData::new(block, None, peer_id, None, 1, None, None),
@@ -191,7 +191,7 @@ impl TaskState for BlockSyncTask {
                     .fetch_blocks(block_ids)
                     .await?
                     .into_iter()
-                    .map(|(block, peer_id, _)| {
+                    .map(|(block, peer_id, _, _)| {
                         SyncBlockData::new(block, None, peer_id, None, 1, None, None)
                     })
                     .collect())
@@ -278,7 +278,7 @@ where
     pub fn apply_block_for_test(
         &mut self,
         block: Block,
-        dag_parent: Option<Vec<HashValue>>,
+        dag_parent: Option<HashValue>,
         next_tips: &mut Option<Vec<HashValue>>,
     ) -> Result<()> {
         self.apply_block(block, None, dag_parent, next_tips)
@@ -402,7 +402,7 @@ where
         let block_id = block.id();
         let timestamp = block.header().timestamp();
 
-        if let Some(parents) = dag_parents {
+        if let Some(parents) = dag_parents.clone() {
             if let Some(dag) = &self.dag {
                 let color = dag
                     .lock()
@@ -439,7 +439,7 @@ where
                 if total_difficulty > self.current_block_info.total_difficulty {
                     if let Err(e) = self.event_handle.handle(BlockConnectedEvent {
                         block,
-                        dag_parents: None,
+                        dag_parents,
                     }) {
                         error!(
                             "Send BlockConnectedEvent error: {:?}, block_id: {}",
@@ -495,7 +495,11 @@ where
             Some(_) => {
                 self.check_if_sync_complete(block_info.expect("block_info should not be None"))
             }
-            None => self.check_if_sync_complete_for_dag(),
+            None => { // dag
+                assert!(!next_tips.as_ref().expect("next_tips should not be None").is_empty());
+                self.chain.append_dag_accumulator_leaf(next_tips.expect("next_tips should not be None"))?;
+                self.check_if_sync_complete_for_dag()
+            },
         }
     }
 

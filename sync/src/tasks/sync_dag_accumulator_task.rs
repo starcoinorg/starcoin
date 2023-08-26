@@ -1,7 +1,8 @@
-use anyhow::{bail, ensure, Result};
+use anyhow::{bail, ensure, Result, Chain};
 use bcs_ext::BCSCodec;
 use futures::{future::BoxFuture, FutureExt};
 use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator};
+use starcoin_chain::BlockChain;
 use starcoin_crypto::HashValue;
 use starcoin_network_rpc_api::dag_protocol::{self, TargetDagAccumulatorLeafDetail};
 use starcoin_storage::{
@@ -110,13 +111,7 @@ impl TaskResultCollector<TargetDagAccumulatorLeafDetail> for SyncDagAccumulatorC
         &mut self,
         mut item: TargetDagAccumulatorLeafDetail,
     ) -> anyhow::Result<CollectorState> {
-        item.tips.sort();
-        let accumulator_leaf = HashValue::sha3_256_of(
-            &item
-                .tips
-                .encode()
-                .expect("encoding the sorted relatship set must be successful"),
-        );
+        let accumulator_leaf = BlockChain::calculate_dag_accumulator_key(item.tips.clone())?;
         self.accumulator.append(&[accumulator_leaf])?;
         let accumulator_info = self.accumulator.get_info();
         if accumulator_info.accumulator_root != item.accumulator_root {

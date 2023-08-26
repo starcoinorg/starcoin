@@ -194,7 +194,8 @@ impl ServiceFactory<NetworkActorService> for MockNetworkServiceFactory {
             .get_block_info(head_block_hash)?
             .ok_or_else(|| format_err!("can't get block info by hash {}", head_block_hash))?;
         let dag_tips = storage.get_tips_by_block_id(head_block_hash)?;
-        let chain_status = ChainStatus::new(head_block_header.clone(), head_block_info, Some(dag_tips));
+        let chain_status =
+            ChainStatus::new(head_block_header.clone(), head_block_info, Some(dag_tips));
         let chain_state_info = ChainInfo::new(
             config.net().chain_id(),
             genesis_hash,

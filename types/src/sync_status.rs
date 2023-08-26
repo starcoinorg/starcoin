@@ -5,6 +5,7 @@ use crate::block::BlockIdAndNumber;
 use crate::startup_info::ChainStatus;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use starcoin_accumulator::{Accumulator, accumulator_info::AccumulatorInfo};
 use starcoin_uint::U256;
 #[derive(Eq, PartialEq, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 pub enum SyncState {
@@ -38,6 +39,7 @@ impl SyncState {
 pub struct SyncStatus {
     chain_status: ChainStatus,
     state: SyncState,
+    dag_accumulator_info: Option<AccumulatorInfo>,
 }
 
 pub const NEARLY_SYNCED_BLOCKS: u64 = 24;
@@ -47,6 +49,15 @@ impl SyncStatus {
         Self {
             chain_status,
             state: SyncState::Prepare,
+            dag_accumulator_info: None,
+        }
+    }
+
+    pub fn new_with_dag_accumulator(chain_status: ChainStatus, dag_accumulator_info: AccumulatorInfo) -> Self {
+        Self {
+            chain_status,
+            state: SyncState::Prepare,
+            dag_accumulator_info: Some(dag_accumulator_info),
         }
     }
 
@@ -69,8 +80,16 @@ impl SyncStatus {
         false
     }
 
+    pub fn update_dag_accumulator_info(&mut self, dag_accumulator_info: Option<AccumulatorInfo>) {
+        self.dag_accumulator_info = dag_accumulator_info;
+    }
+
     pub fn sync_status(&self) -> &SyncState {
         &self.state
+    }
+
+    pub fn dag_accumulator_info(&self) -> &Option<AccumulatorInfo> {
+        &self.dag_accumulator_info
     }
 
     pub fn chain_status(&self) -> &ChainStatus {

@@ -937,14 +937,9 @@ impl BlockTemplate {
         if self.tips_header.is_none() {
             return self.parent_hash;
         }
-        HashValue::sha3_256_of(
-            &self
-                .tips_header
-                .as_ref()
-                .unwrap()
-                .encode()
-                .expect("dag parent must encode successfully"),
-        )
+        let mut tips = self.tips_header.as_ref().unwrap().clone();
+        tips.sort();
+        HashValue::sha3_256_of(&tips.encode().expect("dag parent must encode successfully"))
     }
 
     pub fn as_raw_block_header(&self) -> RawBlockHeader {

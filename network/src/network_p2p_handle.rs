@@ -123,9 +123,9 @@ impl BusinessLayerHandle for Networkp2pHandle {
     }
 
     fn update_status(&mut self, peer_status: &[u8]) -> Result<(), anyhow::Error> {
-        match ChainStatus::decode(peer_status) {
-            std::result::Result::Ok(status) => {
-                self.status.info.update_status(status);
+        match ChainInfo::decode(peer_status) {
+            std::result::Result::Ok(chain_info) => {
+                self.status.info = chain_info;
                 Ok(())
             }
             Err(error) => {
