@@ -5,7 +5,6 @@ starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-vm-types = { workspace = true }
-starcoin-types = { workspace = true }
 stdlib = { package = "stdlib", workspace = true }
 
 [dev-dependencies]

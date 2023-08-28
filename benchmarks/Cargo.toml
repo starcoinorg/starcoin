@@ -1,14 +1,18 @@
-[package]
-authors = { workspace = true }
-edition = { workspace = true }
-license = { workspace = true }
-name = "benchmarks"
-publish = { workspace = true }
-version = "1.13.5"
-homepage = { workspace = true }
-repository = { workspace = true }
-rust-version = { workspace = true }
+[[bench]]
+harness = false
+name = "bench_storage"
 
+[[bench]]
+harness = false
+name = "bench_chain"
+
+[[bench]]
+harness = false
+name = "bench_state_tree"
+
+[[bench]]
+harness = false
+name = "bench_vm"
 
 [dependencies]
 anyhow = { workspace = true }
@@ -45,21 +49,16 @@ starcoin-executor-benchmark = { workspace = true }
 [lib]
 bench = false
 
-[[bench]]
-harness = false
-name = "bench_storage"
-
-[[bench]]
-harness = false
-name = "bench_chain"
-
-[[bench]]
-harness = false
-name = "bench_state_tree"
-
-[[bench]]
-harness = false
-name = "bench_vm"
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "benchmarks"
+publish = { workspace = true }
+version = "1.13.5"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
 
 [target."cfg(target_os=\"linux\")".dependencies]
 pprof = { version = "0.10", features = ["flamegraph", "criterion"] }

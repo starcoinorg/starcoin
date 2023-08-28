@@ -5,7 +5,6 @@ use anyhow::Result;
 use starcoin_config::{genesis_config::G_TOTAL_STC_AMOUNT, ChainNetwork};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
-use starcoin_types::account::Account;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config;
@@ -293,35 +292,6 @@ pub fn peer_to_peer_txn_sent_as_association(
         expiration_timestamp_secs,
         net,
     )
-}
-
-pub fn peer_to_peer_v2(
-    sender: &Account,
-    recipient: &AccountAddress,
-    seq_num: u64,
-    amount: u128,
-    net: &ChainNetwork,
-) -> SignedUserTransaction {
-    sender.sign_txn(RawUserTransaction::new_with_default_gas_token(
-        *sender.address(),
-        seq_num,
-        TransactionPayload::ScriptFunction(ScriptFunction::new(
-            ModuleId::new(
-                core_code_address(),
-                Identifier::new("TransferScripts").unwrap(),
-            ),
-            Identifier::new("peer_to_peer_v2").unwrap(),
-            vec![stc_type_tag()],
-            vec![
-                bcs_ext::to_bytes(&recipient).unwrap(),
-                bcs_ext::to_bytes(&amount).unwrap(),
-            ],
-        )),
-        10000000,
-        1,
-        1000 + 60 * 60,
-        net.chain_id(),
-    ))
 }
 
 //this only work for DEV or TEST

@@ -19,7 +19,7 @@ use starcoin_vm_types::{
 };
 
 /// This trait describes the VM adapter's interface.
-/// TODO: bring more of the execution logic in starcoin_vm into this file.
+/// TODO: bring more of the execution logic in aptos_vm into this file.
 pub trait VMAdapter {
     /// Creates a new Session backed by the given storage.
     /// TODO: this doesn't belong in this trait. We should be able to remove
