@@ -1,10 +1,15 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2
+
 pub mod db;
 pub mod error;
+pub mod iterator;
 pub mod metrics;
 pub mod schema;
 
 use crate::db::DBStorage;
 use crate::error::{StoreError, StoreResult};
+use crate::iterator::{ScanDirection, SchemaIterator};
 use crate::metrics::StorageMetrics;
 use crate::schema::{KeyCodec, Schema, ValueCodec};
 use parking_lot::Mutex;
@@ -153,19 +158,16 @@ impl DB {
             .raw_iterator_cf_opt(S::COLUMN_FAMILY, mode, readopts)?)
     }
 
-    //fn get_cf_handle<S: Schema>(&self) -> Result<&rocksdb::ColumnFamily, StoreError> {
-    //    Ok(self.inner.get_cf_handle(S::COLUMN_FAMILY)?)
-    //}
-
-    //pub fn get_pinned_cf<S: Schema>(
-    //    &self,
-    //    key: &S::Key,
-    //) -> Result<Option<DBPinnableSlice>, StoreError> {
-    //    let raw_key = <S::Key as KeyCodec<S>>::encode_key(key)?;
-    //    let res = self
-    //        .inner
-    //        .raw_get_pinned_cf(S::COLUMN_FAMILY, raw_key.as_slice())?;
-
-    //    Ok(res)
-    //}
+    pub fn iter_with_direction<S: Schema>(
+        &self,
+        direction: ScanDirection,
+    ) -> Result<SchemaIterator<S>, StoreError> {
+        let cf_handle = self.inner.get_cf_handle(S::COLUMN_FAMILY)?;
+        Ok(SchemaIterator::new(
+            self.inner
+                .db
+                .raw_iterator_cf_opt(cf_handle, ReadOptions::default()),
+            direction,
+        ))
+    }
 }

@@ -1,8 +1,12 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2
+
 use crate::error::StoreError;
 use core::hash::Hash;
 use std::fmt::Debug;
 use std::result::Result;
 
+// Todo, change StoreError to anyhow::Error
 pub trait KeyCodec<S: Schema + ?Sized>: Clone + Sized + Debug + Send + Sync {
     /// Converts `self` to bytes to be stored in DB.
     fn encode_key(&self) -> Result<Vec<u8>, StoreError>;
