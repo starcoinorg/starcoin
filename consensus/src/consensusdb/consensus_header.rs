@@ -1,10 +1,11 @@
 use super::prelude::CachedDbAccess;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_schemadb::{
+    db::DBStorage,
     define_schema,
     error::{StoreError, StoreResult},
     schema::{KeyCodec, ValueCodec},
-    DBStorage, SchemaBatch, DB,
+    SchemaBatch, DB,
 };
 use starcoin_types::{
     blockhash::BlockLevel,

@@ -1,8 +1,9 @@
 use parking_lot::RwLock;
 use starcoin_schemadb::{
+    db::DBStorage,
     error::StoreError,
     schema::{KeyCodec, Schema},
-    DBStorage, SchemaBatch, DB,
+    SchemaBatch, DB,
 };
 use std::sync::Arc;
 

@@ -1,10 +1,11 @@
 use super::prelude::{CachedDbAccess, CachedDbItem};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_schemadb::{
+    db::DBStorage,
     define_schema,
     error::StoreError,
     schema::{KeyCodec, ValueCodec},
-    DBStorage, SchemaBatch, DB,
+    SchemaBatch, DB,
 };
 
 use crate::dag::types::{interval::Interval, reachability::ReachabilityData};

@@ -4,8 +4,7 @@ use super::schema::{
     PARENTS_CF, REACHABILITY_DATA_CF,
 };
 use starcoin_config::RocksdbConfig;
-use starcoin_schemadb::error::StoreError;
-pub(crate) use starcoin_storage::db_storage::DBStorage;
+use starcoin_schemadb::{db::DBStorage, error::StoreError};
 use std::{path::Path, sync::Arc};
 
 #[derive(Clone)]

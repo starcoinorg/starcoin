@@ -3,9 +3,10 @@ use super::cache::DagCache;
 use itertools::Itertools;
 use rocksdb::{Direction, IteratorMode, ReadOptions};
 use starcoin_schemadb::{
+    db::DBStorage,
     error::StoreError,
     schema::{KeyCodec, Schema, ValueCodec},
-    DBStorage, SchemaBatch, DB,
+    SchemaBatch, DB,
 };
 use std::{
     collections::hash_map::RandomState, error::Error, hash::BuildHasher, marker::PhantomData,

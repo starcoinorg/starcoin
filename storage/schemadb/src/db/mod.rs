@@ -14,8 +14,10 @@ const RES_FDS: u64 = 4096;
 
 #[allow(clippy::upper_case_acronyms)]
 pub struct DBStorage {
+    // Todo, make me private to other crates
     pub db: DB,
     cfs: Vec<ColumnFamilyName>,
+    // Todo, make me private to other crates
     pub metrics: Option<StorageMetrics>,
 }
 impl DBStorage {
