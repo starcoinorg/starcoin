@@ -17,6 +17,7 @@ members = [
     "commons/accumulator",
     "commons/forkable-jellyfish-merkle",
     "commons/time-service",
+    "commons/infallible",
     "types",
     "types/uint",
     "genesis",
@@ -73,6 +74,8 @@ members = [
     "vm/stdlib",
     "vm/compiler",
     "vm/move-prover",
+    "vm/mvhashmap",
+    "vm/parallel-executor",
     "vm/transaction-builder",
     "vm/transaction-builder-generator",
     "vm/move-coverage",
@@ -122,6 +125,7 @@ default-members = [
     "commons/api-limiter",
     "commons/accumulator",
     "commons/forkable-jellyfish-merkle",
+    "commons/infallible",
     "types",
     "types/uint",
     "genesis",
@@ -176,6 +180,8 @@ default-members = [
     "vm/stdlib",
     "vm/compiler",
     "vm/move-prover",
+    "vm/mvhashmap",
+    "vm/parallel-executor",
     "vm/transaction-builder",
     "vm/transaction-builder-generator",
     "vm/move-coverage",
@@ -258,6 +264,7 @@ codespan = { version = "0.8.0", features = ["serialization"] }
 codespan-reporting = "0.11"
 colored = "2.0.0"
 criterion = "0.3"
+crossbeam = "0.8.1"
 crossbeam-channel = "0.5.6"
 cryptonight-rs = { path = "consensus/cryptonight-rs" }
 csv = "~1"
@@ -376,7 +383,7 @@ proptest-derive = "0.3.0"
 quote = "1.0.16"
 rand = "0.8.5"
 rand_core = { version = "0.6.3", default-features = false }
-rayon = "1"
+rayon = "1.6.1"
 regex = "1.6.0"
 ripemd160 = "0.9.1"
 rlp = "0.4"
@@ -479,6 +486,9 @@ stdlib = { path = "vm/stdlib" }
 stest = { path = "commons/stest" }
 stest-macro = { path = "commons/stest/stest-macro" }
 stream-task = { path = "commons/stream-task" }
+starcoin-mvhashmap = { path = "vm/mvhashmap" }
+starcoin-parallel-executor = { path = "vm/parallel-executor" }
+starcoin-infallible = { path = "commons/infallible" }
 syn = { version = "1.0.107", features = [
     "full",
     "extra-traits",

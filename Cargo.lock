@@ -1513,6 +1513,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "crossbeam"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2801af0d36612ae591caa9568261fddce32ce6e08a7275ea334a06a4ad021a2c"
+dependencies = [
+ "cfg-if 1.0.0",
+ "crossbeam-channel",
+ "crossbeam-deque",
+ "crossbeam-epoch",
+ "crossbeam-queue",
+ "crossbeam-utils 0.8.14",
+]
+
+[[package]]
 name = "crossbeam-channel"
 version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1544,6 +1558,16 @@ dependencies = [
  "crossbeam-utils 0.8.14",
  "memoffset 0.7.1",
  "scopeguard",
+]
+
+[[package]]
+name = "crossbeam-queue"
+version = "0.3.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1cfb3ea8a53f37c40dea2c7bedcbd88bdfae54f5e2175d6ecaff1c988353add"
+dependencies = [
+ "cfg-if 1.0.0",
+ "crossbeam-utils 0.8.14",
 ]
 
 [[package]]
@@ -2079,6 +2103,7 @@ dependencies = [
  "indicatif",
  "move-binary-format",
  "move-bytecode-verifier",
+ "num_cpus",
  "pprof",
  "rayon",
  "serde 1.0.152",
@@ -2098,6 +2123,7 @@ dependencies = [
  "starcoin-storage",
  "starcoin-transaction-builder",
  "starcoin-types",
+ "starcoin-vm-runtime",
  "starcoin-vm-types",
  "tokio",
 ]
@@ -9312,6 +9338,7 @@ dependencies = [
  "network-api",
  "network-p2p-types",
  "network-types",
+ "num_cpus",
  "rand 0.8.5",
  "scmd",
  "serde 1.0.152",
@@ -9698,6 +9725,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-infallible"
+version = "0.1.0"
+
+[[package]]
 name = "starcoin-logger"
 version = "1.13.7"
 dependencies = [
@@ -9883,6 +9914,20 @@ dependencies = [
  "tempfile",
  "toml",
  "walkdir",
+]
+
+[[package]]
+name = "starcoin-mvhashmap"
+version = "1.13.4"
+dependencies = [
+ "arc-swap",
+ "crossbeam",
+ "dashmap",
+ "num_cpus",
+ "once_cell",
+ "proptest",
+ "proptest-derive",
+ "rayon",
 ]
 
 [[package]]
@@ -10123,6 +10168,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-parallel-executor"
+version = "1.13.4"
+dependencies = [
+ "anyhow",
+ "arc-swap",
+ "crossbeam",
+ "dashmap",
+ "num_cpus",
+ "once_cell",
+ "rayon",
+ "starcoin-infallible",
+ "starcoin-logger",
+ "starcoin-mvhashmap",
+]
+
+[[package]]
 name = "starcoin-peer-watcher"
 version = "1.13.7"
 dependencies = [
@@ -10348,6 +10409,7 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-txpool-mock-service",
  "starcoin-types",
+ "starcoin-vm-runtime",
  "starcoin-vm-types",
  "stest",
  "test-helper",
@@ -10821,10 +10883,12 @@ dependencies = [
  "move-stdlib",
  "move-table-extension",
  "move-vm-runtime",
+ "num_cpus",
  "num_enum",
  "once_cell",
  "rand 0.8.5",
  "rand_core 0.6.4",
+ "rayon",
  "serde 1.0.152",
  "starcoin-config",
  "starcoin-crypto",
@@ -10833,6 +10897,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-natives",
+ "starcoin-parallel-executor",
  "starcoin-types",
  "starcoin-vm-types",
  "stdlib",

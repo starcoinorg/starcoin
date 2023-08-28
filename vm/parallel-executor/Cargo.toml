@@ -1,0 +1,24 @@
+[package]
+authors = { workspace = true }
+description = "Starcoin parallel transaction executor library"
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-parallel-executor"
+publish = { workspace = true }
+version = "1.13.4"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+
+[dependencies]
+once_cell = { workspace = true }
+rayon = { workspace = true }
+num_cpus = { workspace = true }
+crossbeam = { workspace = true }
+dashmap = { workspace = true }
+arc-swap = { workspace = true }
+anyhow = { workspace = true }
+starcoin-infallible = { workspace = true }
+starcoin-mvhashmap = { workspace = true }
+starcoin-logger = { workspace = true }

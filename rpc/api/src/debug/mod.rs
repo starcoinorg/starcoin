@@ -28,6 +28,10 @@ pub trait DebugApi {
     /// Get and set txn factory status.
     #[rpc(name = "txfactory.status")]
     fn txfactory_status(&self, action: FactoryAction) -> Result<bool>;
+
+    /// Update vm concurrency level, level = min(level, num_cpus::get)
+    #[rpc(name = "debug.set_concurrency_level")]
+    fn set_concurrency_level(&self, level: usize) -> Result<()>;
 }
 #[test]
 fn test() {

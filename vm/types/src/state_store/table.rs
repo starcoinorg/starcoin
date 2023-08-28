@@ -1,9 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// Copyright (c) Aptos
-// SPDX-License-Identifier: Apache-2.0
-
 use crate::account_config::TABLE_ADDRESS_LIST_LEN;
 use anyhow::format_err;
 use move_core_types::{
