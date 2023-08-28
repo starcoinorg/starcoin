@@ -1,6 +1,12 @@
 use anyhow::Error;
 use thiserror::Error;
 
+#[derive(Debug, Error)]
+pub enum StorageInitError {
+    #[error("Storage check error {0:?}.")]
+    StorageCheckError(Error),
+}
+
 #[derive(Error, Debug)]
 pub enum StoreError {
     #[error("key {0} not found in store")]

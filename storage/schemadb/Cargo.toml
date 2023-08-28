@@ -7,10 +7,13 @@ edition = "2021"
 
 [dependencies]
 thiserror = { workspace = true }
-starcoin-storage = { workspace = true }
 starcoin-config = { workspace = true }
+starcoin-metrics = { workspace = true }
 parking_lot = { workspace = true }
 anyhow = { workspace = true }
+coarsetime = { workspace = true }
+num_enum = { workspace = true }
+once_cell = { workspace = true }
 
 [dependencies.rocksdb]
 default-features = false

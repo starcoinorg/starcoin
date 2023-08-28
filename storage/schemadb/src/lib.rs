@@ -1,21 +1,28 @@
+pub mod db;
 pub mod error;
+pub mod metrics;
 pub mod schema;
 
+use crate::db::DBStorage;
 use crate::error::{StoreError, StoreResult};
+use crate::metrics::StorageMetrics;
 use crate::schema::{KeyCodec, Schema, ValueCodec};
 use parking_lot::Mutex;
 use rocksdb::{DBIterator, IteratorMode, ReadOptions};
 use starcoin_config::RocksdbConfig;
-pub use starcoin_storage::db_storage::DBStorage;
-use starcoin_storage::metrics::StorageMetrics;
-use starcoin_storage::storage::InnerStore;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
 pub type ColumnFamilyName = &'static str;
 
-pub type WriteOp = starcoin_storage::storage::WriteOp<Vec<u8>, Vec<u8>>;
+#[derive(Debug, Clone)]
+pub enum GWriteOp<K, V> {
+    Value(K, V),
+    Deletion(K),
+}
+
+pub type WriteOp = GWriteOp<Vec<u8>, Vec<u8>>;
 
 #[derive(Debug)]
 pub struct SchemaBatch {
@@ -102,24 +109,33 @@ impl DB {
 
     pub fn get<S: Schema>(&self, key: &S::Key) -> Result<Option<S::Value>, StoreError> {
         let raw_key = <S::Key as KeyCodec<S>>::encode_key(key)?;
+        let cf_handle = self.inner.get_cf_handle(S::COLUMN_FAMILY)?;
         self.inner
-            .get(S::COLUMN_FAMILY, raw_key)?
-            .map(|raw_value| <S::Value as ValueCodec<S>>::decode_value(&raw_value))
-            .transpose()
+            .db
+            .get_cf(cf_handle, raw_key)
+            .map_err(Into::into)
+            .and_then(|raw_value| {
+                raw_value
+                    .map(|v| <S::Value as ValueCodec<S>>::decode_value(&v))
+                    .transpose()
+            })
     }
 
     pub fn put<S: Schema>(&self, key: &S::Key, value: &S::Value) -> Result<(), StoreError> {
         let raw_key = <S::Key as KeyCodec<S>>::encode_key(key)?;
-        let raw_val = <S::Value as ValueCodec<S>>::encode_value(value)?;
+        let raw_value = <S::Value as ValueCodec<S>>::encode_value(value)?;
+        let cf_handle = self.inner.get_cf_handle(S::COLUMN_FAMILY)?;
 
-        self.inner.put(S::COLUMN_FAMILY, raw_key, raw_val)?;
+        self.inner.db.put_cf(cf_handle, raw_key, raw_value)?;
 
         Ok(())
     }
 
     pub fn remove<S: Schema>(&self, key: &S::Key) -> Result<(), StoreError> {
         let raw_key = <S::Key as KeyCodec<S>>::encode_key(key)?;
-        self.inner.remove(S::COLUMN_FAMILY, raw_key)?;
+        let cf_handle = self.inner.get_cf_handle(S::COLUMN_FAMILY)?;
+
+        self.inner.db.delete_cf(cf_handle, raw_key)?;
         Ok(())
     }
 

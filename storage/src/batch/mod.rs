@@ -41,6 +41,13 @@ impl<K: Default, V: Default> GWriteBatch<K, V> {
     }
 }
 
+fn into_raw_op<K: KeyCodec, V: ValueCodec>(op: WriteOp<K, V>) -> Result<WriteOp<Vec<u8>, Vec<u8>>> {
+    Ok(match op {
+        WriteOp::Value(k, v) => WriteOp::Value(k.encode_key()?, v.encode_value()?),
+        WriteOp::Deletion(k) => WriteOp::Deletion(k.encode_key()?),
+    })
+}
+
 impl<K, V> TryFrom<CodecWriteBatch<K, V>> for WriteBatch
 where
     K: KeyCodec,
@@ -50,7 +57,7 @@ where
 
     fn try_from(batch: CodecWriteBatch<K, V>) -> Result<Self, Self::Error> {
         let rows: Result<Vec<WriteOp<Vec<u8>, Vec<u8>>>> =
-            batch.into_iter().map(|op| Ok(op.into_raw_op()?)).collect();
+            batch.into_iter().map(|op| into_raw_op(op)).collect();
         Ok(WriteBatch::new_with_rows(rows?))
     }
 }

@@ -1,10 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-pub use crate::batch::WriteBatch;
 use crate::{
     cache_storage::CacheStorage,
-    db_storage::{DBStorage, SchemaIterator},
+    db_storage::{ClassicIter, SchemaIterator},
     upgrade::DBUpgrade,
 };
 use anyhow::{bail, format_err, Result};
@@ -14,6 +13,10 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 use starcoin_vm_types::state_store::table::TableHandle;
 use std::{convert::TryInto, fmt::Debug, marker::PhantomData, sync::Arc};
+pub use {
+    crate::batch::WriteBatch,
+    starcoin_schemadb::{db::DBStorage, GWriteOp as WriteOp},
+};
 
 /// Type alias to improve readability.
 pub type ColumnFamilyName = &'static str;
@@ -370,25 +373,6 @@ pub trait ValueCodec: Clone + Sized + Debug + std::marker::Send + std::marker::S
     fn encode_value(&self) -> Result<Vec<u8>>;
     /// Converts bytes fetched from DB to `Self`.
     fn decode_value(data: &[u8]) -> Result<Self>;
-}
-
-#[derive(Debug, Clone)]
-pub enum WriteOp<K, V> {
-    Value(K, V),
-    Deletion(K),
-}
-
-impl<K, V> WriteOp<K, V>
-where
-    K: KeyCodec,
-    V: ValueCodec,
-{
-    pub fn into_raw_op(self) -> Result<WriteOp<Vec<u8>, Vec<u8>>> {
-        Ok(match self {
-            WriteOp::Value(k, v) => WriteOp::Value(k.encode_key()?, v.encode_value()?),
-            WriteOp::Deletion(k) => WriteOp::Deletion(k.encode_key()?),
-        })
-    }
 }
 
 #[derive(Debug, Clone)]
