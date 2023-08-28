@@ -110,7 +110,9 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
             .map(Into::into)
     }
     fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>> {
-        self.client.state_get_table_info(address).map(Into::into)
+        self.client
+            .state_get_table_info(address)
+            .map(|v| v.map(Into::into))
     }
 }
 

@@ -186,12 +186,12 @@ where
         Box::pin(fut)
     }
 
-    fn get_table_info(&self, address: AccountAddress) -> FutureResult<TableInfoView> {
+    fn get_table_info(&self, address: AccountAddress) -> FutureResult<Option<TableInfoView>> {
         let fut = self
             .service
             .clone()
             .get_table_info(address)
-            .map_ok(TableInfoView::new)
+            .map_ok(|v| v.map(Into::into))
             .map_err(map_err);
         Box::pin(fut)
     }

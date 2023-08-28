@@ -65,7 +65,7 @@ pub trait StateApi {
 
     /// Return the TableInfo according to queried AccountAddress
     #[rpc(name = "state.get_table_info")]
-    fn get_table_info(&self, address: AccountAddress) -> FutureResult<TableInfoView>;
+    fn get_table_info(&self, address: AccountAddress) -> FutureResult<Option<TableInfoView>>;
 
     /// Return the TableItem value  and provide a State Proof at `state_root`
     #[rpc(name = "state.get_with_table_item_proof")]

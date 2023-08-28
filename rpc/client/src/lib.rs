@@ -656,7 +656,10 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn state_get_table_info(&self, address: AccountAddress) -> anyhow::Result<TableInfoView> {
+    pub fn state_get_table_info(
+        &self,
+        address: AccountAddress,
+    ) -> anyhow::Result<Option<TableInfoView>> {
         self.call_rpc_blocking(|inner| inner.state_client.get_table_info(address))
             .map_err(map_err)
     }
