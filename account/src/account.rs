@@ -4,18 +4,19 @@
 use crate::account_manager::gen_private_key;
 use crate::account_storage::AccountStorage;
 use anyhow::{format_err, Result};
-use starcoin_account_api::error::AccountError;
 use starcoin_account_api::{
-    AccountInfo, AccountPrivateKey, AccountPublicKey, AccountResult, Setting,
+    error::AccountError, AccountInfo, AccountPrivateKey, AccountPublicKey, AccountResult, Setting,
 };
 use starcoin_crypto::PrivateKey;
 use starcoin_logger::prelude::*;
-use starcoin_types::account_address;
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::genesis_config::ChainId;
-use starcoin_types::sign_message::{SignedMessage, SigningMessage};
-use starcoin_types::transaction::authenticator::AuthenticationKey;
-use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_types::{
+    account_address,
+    account_address::AccountAddress,
+    genesis_config::ChainId,
+    sign_message::{SignedMessage, SigningMessage},
+    transaction::authenticator::AuthenticationKey,
+    transaction::{RawUserTransaction, SignedUserTransaction},
+};
 
 pub struct Account {
     addr: AccountAddress,

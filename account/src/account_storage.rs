@@ -87,13 +87,12 @@ impl AccountStorage {
                     addresses: vec![addr],
                 };
                 self.db.put::<GlobalSetting>(&key, &val)?;
-                self.global_value_store.put(key, val).map_err(Into::into)
+                self.global_value_store.put(key, val)
             }
             None => {
                 self.db.remove::<GlobalSetting>(&key)?;
                 self.global_value_store
                     .remove(&GlobalSettingKey::DefaultAddress)
-                    .map_err(Into::into)
             }
         }
     }
@@ -122,14 +121,12 @@ impl AccountStorage {
                 self.db
                     .get::<GlobalSetting>(&GlobalSettingKey::AllAddresses)
             })
-            .map_err(Into::<Error>::into)
     }
 
     fn put_addresses(&self, key: GlobalSettingKey, value: GlobalValue) -> Result<()> {
         self.db
             .put::<GlobalSetting>(&key, &value)
             .and_then(|_| self.global_value_store.put(key, value))
-            .map_err(Into::into)
     }
 
     /// FIXME: once storage support iter, we can remove this.
@@ -167,7 +164,6 @@ impl AccountStorage {
             .map(|v| Ok(Some(v)))
             .unwrap_or_else(|| self.db.get::<PublicKey>(address))
             .map(|v| v.map(Into::into))
-            .map_err(Into::<Error>::into)
     }
 
     fn put_public_key(&self, key: AccountAddress, value: AccountPublicKey) -> Result<()> {
@@ -176,7 +172,6 @@ impl AccountStorage {
         self.db
             .put::<PublicKey>(&key, &value)
             .and_then(|_| self.public_key_store.put(key, value))
-            .map_err(Into::into)
     }
 
     pub fn public_key(&self, address: AccountAddress) -> Result<Option<AccountPublicKey>> {
@@ -191,7 +186,6 @@ impl AccountStorage {
             .get(address)?
             .map(|v| Ok(Some(v)))
             .unwrap_or_else(|| self.db.get::<PrivateKey>(address))
-            .map_err(Into::<Error>::into)
     }
 
     fn put_private_key(&self, key: AccountAddress, value: EncryptedPrivateKey) -> Result<()> {
@@ -199,7 +193,6 @@ impl AccountStorage {
         self.db
             .put::<PrivateKey>(&key, &value)
             .and_then(|_| self.private_key_store.put(key, value))
-            .map_err(Into::into)
     }
 
     pub fn decrypt_private_key(
@@ -245,7 +238,6 @@ impl AccountStorage {
         self.db
             .put::<AccountSetting>(&key, &value)
             .and_then(|_| self.setting_store.put(key, value))
-            .map_err(Into::into)
     }
 
     pub fn load_setting(&self, address: AccountAddress) -> Result<Setting> {
@@ -254,8 +246,7 @@ impl AccountStorage {
             .setting_store
             .get(&key)?
             .map(|setting| Ok(Some(setting)))
-            .unwrap_or_else(|| self.db.get::<AccountSetting>(&key))
-            .map_err(Into::<Error>::into)?
+            .unwrap_or_else(|| self.db.get::<AccountSetting>(&key))?
             .unwrap_or_default()
             .0)
     }
@@ -289,8 +280,7 @@ impl AccountStorage {
             .accepted_token_store
             .get(&key)?
             .map(|v| Ok(Some(v)))
-            .unwrap_or_else(|| self.db.get::<AcceptedToken>(&key))
-            .map_err(Into::<Error>::into)?;
+            .unwrap_or_else(|| self.db.get::<AcceptedToken>(&key))?;
         Ok(ts.map(|t| t.0).unwrap_or_default())
     }
 
@@ -298,7 +288,6 @@ impl AccountStorage {
         self.db
             .put::<AcceptedToken>(&key, &value)
             .and_then(|_| self.accepted_token_store.put(key, value))
-            .map_err(Into::into)
     }
 
     pub fn add_accepted_token(
@@ -315,6 +304,6 @@ impl AccountStorage {
     }
 
     pub fn write_schemas(&self, batch: SchemaBatch) -> Result<()> {
-        self.db.write_schemas(batch).map_err(Into::into)
+        self.db.write_schemas(batch)
     }
 }

@@ -1,8 +1,8 @@
+use anyhow::Result;
 use bcs_ext::BCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_schemadb::{
     define_schema,
-    error::{StoreError, StoreResult},
     schema::{KeyCodec, ValueCodec},
     ColumnFamilyName,
 };
@@ -31,26 +31,21 @@ pub struct GlobalValue {
 }
 
 impl KeyCodec<GlobalSetting> for GlobalSettingKey {
-    fn encode_key(&self) -> StoreResult<Vec<u8>> {
+    fn encode_key(&self) -> Result<Vec<u8>> {
         self.encode()
-            .map_err(|e| StoreError::EncodeError(e.to_string()))
     }
 
-    fn decode_key(data: &[u8]) -> StoreResult<Self> {
-        GlobalSettingKey::decode(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    fn decode_key(data: &[u8]) -> Result<Self> {
+        GlobalSettingKey::decode(data)
     }
 }
 
 impl ValueCodec<GlobalSetting> for GlobalValue {
-    fn encode_value(&self) -> StoreResult<Vec<u8>> {
-        self.addresses
-            .encode()
-            .map_err(|e| StoreError::EncodeError(e.to_string()))
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        self.addresses.encode()
     }
 
-    fn decode_value(data: &[u8]) -> StoreResult<Self> {
-        <Vec<AccountAddress>>::decode(data)
-            .map(|addresses| GlobalValue { addresses })
-            .map_err(|e| StoreError::DecodeError(e.to_string()))
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        <Vec<AccountAddress>>::decode(data).map(|addresses| GlobalValue { addresses })
     }
 }

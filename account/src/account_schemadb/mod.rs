@@ -1,4 +1,5 @@
-use starcoin_schemadb::{error::StoreResult, schema::Schema};
+use anyhow::Result;
+use starcoin_schemadb::schema::Schema;
 use starcoin_storage::cache_storage::GCacheStorage;
 use starcoin_types::account_address::AccountAddress;
 use std::sync::Arc;
@@ -29,12 +30,12 @@ impl From<AccountAddress> for AccountAddressWrapper {
     }
 }
 impl TryFrom<&[u8]> for AccountAddressWrapper {
-    type Error = String;
+    type Error = anyhow::Error;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         AccountAddress::try_from(value)
             .map(Self)
-            .map_err(|e| e.to_string())
+            .map_err(Into::into)
     }
 }
 
@@ -50,16 +51,16 @@ impl<S: Schema> AccountStore<S> {
         }
     }
 
-    pub fn get(&self, key: &S::Key) -> StoreResult<Option<S::Value>> {
+    pub fn get(&self, key: &S::Key) -> Result<Option<S::Value>> {
         Ok(self.cache.get_inner(key))
     }
 
-    pub fn put(&self, key: S::Key, value: S::Value) -> StoreResult<()> {
+    pub fn put(&self, key: S::Key, value: S::Value) -> Result<()> {
         self.cache.put_inner(key, value);
         Ok(())
     }
 
-    pub fn remove(&self, key: &S::Key) -> StoreResult<()> {
+    pub fn remove(&self, key: &S::Key) -> Result<()> {
         self.cache.remove_inner(key);
         Ok(())
     }

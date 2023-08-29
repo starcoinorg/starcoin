@@ -1,8 +1,8 @@
 use super::AccountAddressWrapper;
+use anyhow::{format_err, Result};
 use starcoin_account_api::AccountPublicKey;
 use starcoin_schemadb::{
     define_schema,
-    error::{StoreError, StoreResult},
     schema::{KeyCodec, ValueCodec},
     ColumnFamilyName,
 };
@@ -17,12 +17,12 @@ define_schema!(
 );
 
 impl KeyCodec<PublicKey> for AccountAddressWrapper {
-    fn encode_key(&self) -> StoreResult<Vec<u8>> {
+    fn encode_key(&self) -> Result<Vec<u8>> {
         Ok(self.0.to_vec())
     }
 
-    fn decode_key(data: &[u8]) -> StoreResult<Self> {
-        AccountAddressWrapper::try_from(data).map_err(StoreError::DecodeError)
+    fn decode_key(data: &[u8]) -> Result<Self> {
+        AccountAddressWrapper::try_from(data)
     }
 }
 
@@ -41,14 +41,14 @@ impl From<PublicKeyWrapper> for AccountPublicKey {
 }
 
 impl ValueCodec<PublicKey> for PublicKeyWrapper {
-    fn encode_value(&self) -> StoreResult<Vec<u8>> {
+    fn encode_value(&self) -> Result<Vec<u8>> {
         match &self.0 {
             Some(p) => Ok(bcs_ext::to_bytes(&p)?),
-            None => Err(StoreError::EncodeError("null".to_string())),
+            None => Err(format_err!("NullValue")),
         }
     }
 
-    fn decode_value(data: &[u8]) -> StoreResult<Self> {
+    fn decode_value(data: &[u8]) -> Result<Self> {
         Ok(Self::from(bcs_ext::from_bytes::<AccountPublicKey>(data)?))
     }
 }
