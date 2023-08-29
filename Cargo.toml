@@ -438,7 +438,7 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 starcoin-decrypt = { path = "commons/decrypt" }
 starcoin-dev = { path = "vm/dev" }
 starcoin-executor = { path = "executor" }
-starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "e2b6dfa88c2494aad4647c5983585bff7441ad5b" }
+starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "0d3921265ed6a519bd09b1111949db2593a6f9c1" }
 starcoin-genesis = { path = "genesis" }
 starcoin-logger = { path = "commons/logger" }
 starcoin-metrics = { path = "commons/metrics" }
