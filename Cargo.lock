@@ -9829,6 +9829,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-move-aggregator"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "move-core-types",
+ "move-table-extension",
+ "starcoin-crypto",
+ "starcoin-types",
+ "starcoin-vm-types",
+]
+
+[[package]]
 name = "starcoin-move-compiler"
 version = "1.13.7"
 dependencies = [

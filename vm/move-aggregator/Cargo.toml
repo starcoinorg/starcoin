@@ -1,0 +1,35 @@
+[package]
+name = "starcoin-move-aggregator"
+description = "Aggregator sources for the starcoin blockchain"
+version = "0.1.0"
+
+# Workspace inherited keys
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true }
+starcoin-crypto = { workspace = true }
+#starcoin-state-view = { workspace = true }
+#starcoin-table-natives = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-vm-types = { workspace = true }
+bcs = { workspace = true }
+##better_any = { workspace = true }
+#move-binary-format = { workspace = true }
+move-core-types = { workspace = true }
+move-table-extension = { workspace = true }
+#once_cell = { workspace = true }
+#smallvec = { workspace = true }
+
+[dev-dependencies]
+#aptos-language-e2e-tests = { workspace = true }
+#claims = { workspace = true }
+
+[features]
+default = []

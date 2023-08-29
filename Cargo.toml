@@ -84,6 +84,7 @@ members = [
     "vm/move-package-manager",
     "vm/vm-status-translator",
     "vm/starcoin-transactional-test-harness",
+    "vm/move-aggregator",
     "abi/types",
     "abi/decoder",
     "abi/resolver",
@@ -440,6 +441,7 @@ starcoin-miner-client = { path = "cmd/miner_client" }
 starcoin-miner-client-api = { path = "cmd/miner_client/api" }
 starcoin-move-compiler = { path = "vm/compiler" }
 starcoin-move-explain = { path = "vm/move-explain" }
+starcoin-move-aggregator = { path = "vm/move-aggregator"}
 starcoin-gas-algebra-ext = { path = "vm/gas-algebra-ext" }
 starcoin-gas = { path = "vm/starcoin-gas" }
 starcoin-natives = { path = "vm/natives" }
