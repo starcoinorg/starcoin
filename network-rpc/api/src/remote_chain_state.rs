@@ -3,6 +3,7 @@
 
 use crate::{
     gen_client::NetworkRpcClient, GetAccountState, GetStateWithProof, GetStateWithTableItemProof,
+    GetTableInfo,
 };
 use anyhow::{anyhow, Result};
 use network_p2p_types::peer_id::PeerId;
@@ -14,7 +15,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_store::table::TableHandle;
+use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 
 #[derive(Clone)]
 pub struct RemoteChainStateReader {
@@ -120,6 +121,18 @@ impl ChainStateReader for RemoteChainStateReader {
             futures::executor::block_on(client.get_state_with_table_item_proof(peer_id, req))?;
         state_table_item_proof.verify(handle, key)?;
         Ok(state_table_item_proof)
+    }
+
+    fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>> {
+        let peer_id = self
+            .peer_id
+            .clone()
+            .ok_or_else(|| anyhow!("peer id not set"))?;
+        let req = GetTableInfo(address);
+        let client = self.client.clone();
+        let table_info: Option<TableInfo> =
+            futures::executor::block_on(client.get_state_table_info(peer_id, req))?;
+        Ok(table_info)
     }
 }
 

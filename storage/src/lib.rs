@@ -29,6 +29,7 @@ use starcoin_types::{
     startup_info::StartupInfo,
 };
 //use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
@@ -324,6 +325,11 @@ impl StateNodeStore for Storage {
     fn write_nodes(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<()> {
         let batch = CodecWriteBatch::new_puts(nodes.into_iter().collect());
         self.state_node_storage.write_batch(batch)
+    }
+
+    fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>> {
+        let handle = TableHandle(address);
+        self.table_info_storage.get(handle)
     }
 }
 

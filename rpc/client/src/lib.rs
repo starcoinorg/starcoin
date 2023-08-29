@@ -37,8 +37,8 @@ use starcoin_rpc_api::types::{
     DryRunTransactionRequest, FactoryAction, FunctionIdView, ListCodeView, ListResourceView,
     MintedBlockView, ModuleIdView, PeerInfoView, ResourceView, SignedMessageView,
     SignedUserTransactionView, StateWithProofView, StateWithTableItemProofView, StrView,
-    StructTagView, TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView,
-    TransactionRequest, TransactionView,
+    StructTagView, TableInfoView, TransactionEventResponse, TransactionInfoView,
+    TransactionInfoWithProofView, TransactionRequest, TransactionView,
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
@@ -654,6 +654,14 @@ impl RpcClient {
                 .get_with_table_item_proof_by_root(handle, key, state_root)
         })
         .map_err(map_err)
+    }
+
+    pub fn state_get_table_info(
+        &self,
+        address: AccountAddress,
+    ) -> anyhow::Result<Option<TableInfoView>> {
+        self.call_rpc_blocking(|inner| inner.state_client.get_table_info(address))
+            .map_err(map_err)
     }
 
     pub fn get_state_node_by_node_hash(

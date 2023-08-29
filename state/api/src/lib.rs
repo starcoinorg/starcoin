@@ -21,7 +21,7 @@ use starcoin_types::state_set::AccountStateSet;
 use starcoin_vm_types::access_path::DataPath;
 use starcoin_vm_types::account_config::TABLE_HANDLE_ADDRESS_LIST;
 use starcoin_vm_types::move_resource::MoveResource;
-use starcoin_vm_types::state_store::table::TableHandle;
+use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 pub use starcoin_vm_types::state_view::{StateReaderExt, StateView};
 
 mod chain_state;
@@ -92,6 +92,8 @@ pub trait ChainStateAsyncService: Clone + std::marker::Unpin + Send + Sync {
         key: Vec<u8>,
         state_root: HashValue,
     ) -> Result<StateWithTableItemProof>;
+
+    async fn get_table_info(self, address: AccountAddress) -> Result<Option<TableInfo>>;
 }
 
 #[async_trait::async_trait]
@@ -212,6 +214,15 @@ where
             .await??;
         if let StateResponse::StateWithTableItemProof(state) = response {
             Ok(*state)
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
+
+    async fn get_table_info(self, address: AccountAddress) -> Result<Option<TableInfo>> {
+        let response = self.send(StateRequest::GetTableInfo(address)).await??;
+        if let StateResponse::TableInfo(state) = response {
+            Ok(state)
         } else {
             panic!("Unexpect response type.")
         }

@@ -15,6 +15,7 @@ use starcoin_rpc_api::state::{
 use starcoin_rpc_api::types::{
     AccountStateSetView, AnnotatedMoveStructView, CodeView, ListCodeView, ListResourceView,
     ResourceView, StateWithProofView, StateWithTableItemProofView, StrView, StructTagView,
+    TableInfoView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::{ChainStateAsyncService, StateView};
@@ -181,6 +182,16 @@ where
             .map_ok(|p| {
                 StrView(bcs_ext::to_bytes(&p).expect("Serialize StateWithProof should success."))
             })
+            .map_err(map_err);
+        Box::pin(fut)
+    }
+
+    fn get_table_info(&self, address: AccountAddress) -> FutureResult<Option<TableInfoView>> {
+        let fut = self
+            .service
+            .clone()
+            .get_table_info(address)
+            .map_ok(|v| v.map(Into::into))
             .map_err(map_err);
         Box::pin(fut)
     }

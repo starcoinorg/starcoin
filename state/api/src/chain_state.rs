@@ -19,7 +19,7 @@ use starcoin_types::{
 use starcoin_vm_types::account_config::TABLE_HANDLE_ADDRESS_LIST;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::on_chain_resource::{Epoch, EpochInfo, GlobalTimeOnChain};
-use starcoin_vm_types::state_store::table::TableHandle;
+use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::{
     move_resource::MoveResource, on_chain_config::OnChainConfig, state_view::StateView,
@@ -135,6 +135,8 @@ pub trait ChainStateReader: StateView {
         handle: &TableHandle,
         key: &[u8],
     ) -> Result<StateWithTableItemProof>;
+
+    fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>>;
 }
 
 pub trait ChainStateWriter {

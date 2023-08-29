@@ -3,6 +3,8 @@ use forkable_jellyfish_merkle::node_type::Node;
 use forkable_jellyfish_merkle::RawKey;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::hash::HashValue;
+use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::state_store::table::TableInfo;
 use std::collections::BTreeMap;
 use std::convert::{TryFrom, TryInto};
 
@@ -54,4 +56,5 @@ pub trait StateNodeStore: std::marker::Send + std::marker::Sync {
     fn get(&self, hash: &HashValue) -> Result<Option<StateNode>>;
     fn put(&self, key: HashValue, node: StateNode) -> Result<()>;
     fn write_nodes(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<()>;
+    fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>>;
 }

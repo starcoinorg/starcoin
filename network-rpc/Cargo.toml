@@ -28,6 +28,7 @@ starcoin-txpool-api = { workspace = true }
 starcoin-storage = { package = "starcoin-storage", workspace = true }
 starcoin-types = { package = "starcoin-types", workspace = true }
 starcoin-state-tree = { workspace = true }
+starcoin-vm-types = { workspace = true }
 
 [dev-dependencies]
 starcoin-account-api = { package = "starcoin-account-api", workspace = true }

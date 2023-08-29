@@ -9,7 +9,7 @@ use starcoin_types::state_set::AccountStateSet;
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
 };
-use starcoin_vm_types::state_store::table::TableHandle;
+use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 
 #[derive(Debug, Clone)]
 pub enum StateRequest {
@@ -25,6 +25,7 @@ pub enum StateRequest {
     StateRoot(),
     GetWithTableItemProof(TableHandle, Vec<u8>),
     GetWithTableItemProofByRoot(TableHandle, Vec<u8>, HashValue),
+    GetTableInfo(AccountAddress),
 }
 
 impl ServiceRequest for StateRequest {
@@ -40,4 +41,5 @@ pub enum StateResponse {
     AccountStateSet(Option<AccountStateSet>),
     None,
     StateWithTableItemProof(Box<StateWithTableItemProof>),
+    TableInfo(Option<TableInfo>),
 }

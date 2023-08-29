@@ -8,7 +8,7 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::state_set::AccountStateSet;
-use starcoin_vm_types::state_store::table::TableHandle;
+use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 
 //TODO implement Mock service
 #[derive(Clone, Default)]
@@ -77,5 +77,9 @@ impl ChainStateAsyncService for MockChainStateService {
         _state_root: HashValue,
     ) -> Result<StateWithTableItemProof> {
         unimplemented!()
+    }
+
+    async fn get_table_info(self, _address: AccountAddress) -> Result<Option<TableInfo>> {
+        Ok(None)
     }
 }

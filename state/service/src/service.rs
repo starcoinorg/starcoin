@@ -23,7 +23,7 @@ use starcoin_types::{
     state_set::ChainStateSet,
 };
 use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_store::table::TableHandle;
+use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::sync::Arc;
 
 pub struct ChainStateService {
@@ -120,6 +120,9 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
                     self.service
                         .get_with_table_item_proof_by_root(handle, key, state_root)?,
                 ))
+            }
+            StateRequest::GetTableInfo(address) => {
+                StateResponse::TableInfo(self.service.get_table_info(address)?)
             }
         };
         Ok(response)
@@ -243,6 +246,10 @@ impl ChainStateReader for Inner {
         key: &[u8],
     ) -> Result<StateWithTableItemProof> {
         self.state_db.get_with_table_item_proof(handle, key)
+    }
+
+    fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>> {
+        self.state_db.get_table_info(address)
     }
 }
 

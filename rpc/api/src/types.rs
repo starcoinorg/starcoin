@@ -1180,7 +1180,7 @@ use starcoin_chain_api::{EventWithProof, TransactionInfoWithProof};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_store::state_key::{StateKey, TableItem};
-use starcoin_vm_types::state_store::table::TableHandle;
+use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 pub use vm_status_translator::VmStatusExplainView;
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
@@ -1903,15 +1903,14 @@ impl From<BlockInfo> for BlockInfoView {
 #[serde(rename = "table_item")]
 pub struct TableItemView {
     handle: TableHandle,
-    #[schemars(with = "String")]
-    key: Vec<u8>,
+    key: StrView<Vec<u8>>,
 }
 
 impl From<TableItem> for TableItemView {
     fn from(table_item: TableItem) -> Self {
         Self {
             handle: table_item.handle,
-            key: table_item.key,
+            key: table_item.key.into(),
         }
     }
 }
@@ -1930,8 +1929,33 @@ impl From<StateKey> for StateKeyView {
             StateKey::AccessPath(access_path) => Self::AccessPath(access_path),
             StateKey::TableItem(table_item) => Self::TableItem(TableItemView {
                 handle: table_item.handle,
-                key: table_item.key,
+                key: table_item.key.into(),
             }),
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename = "table_info")]
+pub struct TableInfoView {
+    key_type: TypeTagView,
+    value_type: TypeTagView,
+}
+
+impl From<TableInfo> for TableInfoView {
+    fn from(value: TableInfo) -> Self {
+        Self {
+            key_type: value.key_type.into(),
+            value_type: value.value_type.into(),
+        }
+    }
+}
+
+impl From<TableInfoView> for TableInfo {
+    fn from(value: TableInfoView) -> Self {
+        Self {
+            key_type: value.key_type.0,
+            value_type: value.value_type.0,
         }
     }
 }

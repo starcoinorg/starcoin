@@ -19,6 +19,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionInfo};
+use starcoin_vm_types::state_store::table::TableInfo;
 
 mod remote_chain_state;
 
@@ -286,6 +287,12 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         peer_id: PeerId,
         request: GetStateWithTableItemProof,
     ) -> BoxFuture<Result<StateWithTableItemProof>>;
+
+    fn get_state_table_info(
+        &self,
+        peer_id: PeerId,
+        request: GetTableInfo,
+    ) -> BoxFuture<Result<Option<TableInfo>>>;
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -294,3 +301,5 @@ pub struct GetStateWithTableItemProof {
     pub handle: TableHandle,
     pub key: Vec<u8>,
 }
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetTableInfo(pub AccountAddress);

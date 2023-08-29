@@ -3,6 +3,7 @@ anyhow = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 serde = { workspace = true }
 starcoin-crypto = { workspace = true }
+starcoin-vm-types = { workspace = true }
 
 [package]
 authors = { workspace = true }

@@ -10588,6 +10588,7 @@ dependencies = [
  "forkable-jellyfish-merkle",
  "serde 1.0.152",
  "starcoin-crypto",
+ "starcoin-vm-types",
 ]
 
 [[package]]
