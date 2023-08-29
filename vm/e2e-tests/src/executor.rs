@@ -558,11 +558,12 @@ impl FakeExecutor {
                 .into_change_set()
                 .map_err(|e| e.finish(Location::Undefined))?;
 
-            let (_table_infos, write_set, _events, ) = SessionOutput {
+            let (_table_infos, write_set, _events) = SessionOutput {
                 change_set,
                 events,
                 table_change_set,
-            }.into_change_set(&mut ())?;
+            }
+            .into_change_set(&mut ())?;
             // let (write_set, _events) = session_out
             //     .into_change_set(&mut ())
             //     .expect("Failed to generate writeset")
