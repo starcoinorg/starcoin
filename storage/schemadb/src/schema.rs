@@ -3,8 +3,7 @@
 
 use crate::error::StoreError;
 use core::hash::Hash;
-use std::fmt::Debug;
-use std::result::Result;
+use std::{fmt::Debug, result::Result};
 
 // Todo, change StoreError to anyhow::Error
 pub trait KeyCodec<S: Schema + ?Sized>: Clone + Sized + Debug + Send + Sync {
@@ -19,6 +18,21 @@ pub trait ValueCodec<S: Schema + ?Sized>: Clone + Sized + Debug + Send + Sync {
     fn encode_value(&self) -> Result<Vec<u8>, StoreError>;
     /// Converts bytes fetched from DB to `Self`.
     fn decode_value(data: &[u8]) -> Result<Self, StoreError>;
+}
+
+pub trait SeekKeyCodec<S: Schema + ?Sized> {
+    fn encode_seek_key(&self) -> Result<Vec<u8>, StoreError>;
+}
+
+// auto implements for all keys
+impl<S, K> SeekKeyCodec<S> for K
+where
+    S: Schema,
+    K: KeyCodec<S>,
+{
+    fn encode_seek_key(&self) -> Result<Vec<u8>, StoreError> {
+        <K as KeyCodec<S>>::encode_key(self)
+    }
 }
 
 pub trait Schema: Debug + Send + Sync + 'static {

@@ -7,17 +7,17 @@ pub mod iterator;
 pub mod metrics;
 pub mod schema;
 
-use crate::db::DBStorage;
-use crate::error::{StoreError, StoreResult};
-use crate::iterator::{ScanDirection, SchemaIterator};
-use crate::metrics::StorageMetrics;
-use crate::schema::{KeyCodec, Schema, ValueCodec};
+use crate::{
+    db::DBStorage,
+    error::{StoreError, StoreResult},
+    iterator::{ScanDirection, SchemaIterator},
+    metrics::StorageMetrics,
+    schema::{KeyCodec, Schema, ValueCodec},
+};
 use parking_lot::Mutex;
 use rocksdb::{DBIterator, IteratorMode, ReadOptions};
 use starcoin_config::RocksdbConfig;
-use std::collections::HashMap;
-use std::path::Path;
-use std::sync::Arc;
+use std::{collections::HashMap, path::Path, sync::Arc};
 
 pub type ColumnFamilyName = &'static str;
 

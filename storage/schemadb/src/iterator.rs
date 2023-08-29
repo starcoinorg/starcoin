@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::schema::{KeyCodec, Schema, ValueCodec};
+use crate::schema::{KeyCodec, Schema, SeekKeyCodec, ValueCodec};
 use anyhow::Result;
 use std::marker::PhantomData;
 
@@ -40,15 +40,17 @@ where
 
     /// Seeks to the first key whose binary representation is equal to or greater than that of the
     /// `seek_key`.
-    pub fn seek(&mut self, seek_key: Vec<u8>) -> Result<()> {
-        self.db_iter.seek(&seek_key);
+    pub fn seek<SK: SeekKeyCodec<S>>(&mut self, seek_key: &SK) -> Result<()> {
+        let raw_key = <SK as SeekKeyCodec<S>>::encode_seek_key(seek_key)?;
+        self.db_iter.seek(&raw_key);
         Ok(())
     }
 
     /// Seeks to the last key whose binary representation is less than or equal to that of the
     /// `seek_key`.
-    pub fn seek_for_prev(&mut self, seek_key: Vec<u8>) -> Result<()> {
-        self.db_iter.seek_for_prev(&seek_key);
+    pub fn seek_for_prev<SK: SeekKeyCodec<S>>(&mut self, seek_key: &SK) -> Result<()> {
+        let raw_key = <SK as SeekKeyCodec<S>>::encode_seek_key(seek_key)?;
+        self.db_iter.seek_for_prev(&raw_key);
         Ok(())
     }
 
