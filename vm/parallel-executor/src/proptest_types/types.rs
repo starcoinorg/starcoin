@@ -288,11 +288,11 @@ impl<V: Clone + Eq> ExpectedOutput<V> {
                         .iter()
                         .skip(*skip_at)
                         .all(|Output(_, result)| result.is_empty())
-            },
+            }
             (Self::SkipRest(_skip_at, _expected_results), Err(Error::BlockRestart)) => {
                 // Not check any val
                 true
-            },
+            }
             (Self::Success(expected_results), Ok(results)) => expected_results
                 .iter()
                 .zip(results.iter())
