@@ -1,0 +1,24 @@
+[package]
+authors = { workspace = true }
+description = "Starcoin Move VM starcoin-mvhashmap"
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-mvhashmap"
+publish = { workspace = true }
+version = "1.13.4"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+
+[dependencies]
+once_cell = { workspace = true }
+rayon = { workspace = true }
+num_cpus = { workspace = true }
+crossbeam = { workspace = true }
+dashmap = { workspace = true }
+arc-swap = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+proptest-derive = { workspace = true }

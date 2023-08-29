@@ -655,6 +655,9 @@ impl<'a> StarcoinTestAdapter<'a> {
             TransactionStatus::Discard(_) => {
                 bail!("Transaction discarded. VMStatus: {}", status)
             }
+            TransactionStatus::Retry => {
+                bail!("Transaction Retry never happen")
+            }
         }
         let mut chain = self.context.chain.lock().unwrap();
         chain.add_new_txn(Transaction::BlockMetadata(meta), output)?;
@@ -689,6 +692,7 @@ impl<'a> StarcoinTestAdapter<'a> {
                 )?;
             }
             TransactionStatus::Discard(_) => {}
+            TransactionStatus::Retry => {}
         }
         let payload = decode_txn_payload(&self.context.storage, signed_txn.payload())?;
         let mut txn_view: SignedUserTransactionView = signed_txn.try_into()?;

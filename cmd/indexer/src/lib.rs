@@ -114,6 +114,7 @@ pub enum TransactionVMStatusEsView {
     Discard {
         status_code: StrView<u64>,
     },
+    Retry,
 }
 
 impl From<TransactionStatusView> for TransactionVMStatusEsView {
@@ -142,6 +143,7 @@ impl From<TransactionStatusView> for TransactionVMStatusEsView {
                 status_code,
                 status_code_name: _,
             } => Self::Discard { status_code },
+            TransactionStatusView::Retry => Self::Retry,
         }
     }
 }

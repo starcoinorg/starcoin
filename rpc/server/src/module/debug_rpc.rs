@@ -13,6 +13,7 @@ use starcoin_rpc_api::types::FactoryAction;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
 use starcoin_types::system_events::GenerateBlockEvent;
+use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -81,5 +82,10 @@ impl DebugApi for DebugRpcImpl {
 
     fn txfactory_status(&self, action: FactoryAction) -> Result<bool> {
         Ok(TxFactoryStatusHandle::handle_action(action))
+    }
+
+    fn set_concurrency_level(&self, level: usize) -> Result<()> {
+        StarcoinVM::set_concurrency_level_once(level);
+        Ok(())
     }
 }

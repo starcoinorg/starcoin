@@ -47,6 +47,7 @@ starcoin-vm-runtime = { workspace = true }
 thiserror = { workspace = true }
 timeout-join-handler = { workspace = true }
 tokio = { features = ["full"], workspace = true }
+num_cpus = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }

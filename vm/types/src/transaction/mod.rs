@@ -473,7 +473,7 @@ impl fmt::Debug for SignedUserTransaction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "SignedTransaction {{ \n \
+            "SignedUserTransaction {{ \n \
              {{ raw_txn: {:#?}, \n \
              authenticator: {:#?}, \n \
              }} \n \
@@ -618,6 +618,9 @@ pub enum TransactionStatus {
 
     /// Keep the transaction output
     Keep(KeptVMStatus),
+
+    /// Retry the transaction, e.g., after a reconfiguration
+    Retry,
 }
 
 impl TransactionStatus {
@@ -625,6 +628,7 @@ impl TransactionStatus {
         match self {
             TransactionStatus::Keep(status) => Ok(status.clone()),
             TransactionStatus::Discard(code) => Err(*code),
+            TransactionStatus::Retry => Err(StatusCode::UNKNOWN_VALIDATION_STATUS),
         }
     }
 
@@ -632,6 +636,7 @@ impl TransactionStatus {
         match self {
             TransactionStatus::Discard(_) => true,
             TransactionStatus::Keep(_) => false,
+            TransactionStatus::Retry => true,
         }
     }
 }

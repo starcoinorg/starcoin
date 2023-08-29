@@ -17,6 +17,7 @@ members = [
     "commons/accumulator",
     "commons/forkable-jellyfish-merkle",
     "commons/time-service",
+    "commons/infallible",
     "types",
     "types/uint",
     "genesis",
@@ -73,6 +74,8 @@ members = [
     "vm/stdlib",
     "vm/compiler",
     "vm/move-prover",
+    "vm/mvhashmap",
+    "vm/parallel-executor",
     "vm/transaction-builder",
     "vm/transaction-builder-generator",
     "vm/move-coverage",
@@ -80,11 +83,15 @@ members = [
     "vm/starcoin-gas",
     "vm/dev",
     "vm/gas-algebra-ext",
+    "vm/move-aggregator",
     "vm/move-explain",
     "vm/move-package-manager",
     "vm/vm-status-translator",
     "vm/starcoin-transactional-test-harness",
-    "vm/move-aggregator",
+    "vm/parallel-executor",
+    "vm/transaction-benchmarks",
+    "vm/e2e-tests",
+    "vm/proptest-helpers",
     "abi/types",
     "abi/decoder",
     "abi/resolver",
@@ -123,6 +130,7 @@ default-members = [
     "commons/api-limiter",
     "commons/accumulator",
     "commons/forkable-jellyfish-merkle",
+    "commons/infallible",
     "types",
     "types/uint",
     "genesis",
@@ -177,6 +185,8 @@ default-members = [
     "vm/stdlib",
     "vm/compiler",
     "vm/move-prover",
+    "vm/mvhashmap",
+    "vm/parallel-executor",
     "vm/transaction-builder",
     "vm/transaction-builder-generator",
     "vm/move-coverage",
@@ -259,6 +269,7 @@ codespan = { version = "0.8.0", features = ["serialization"] }
 codespan-reporting = "0.11"
 colored = "2.0.0"
 criterion = "0.3"
+crossbeam = "0.8.1"
 crossbeam-channel = "0.5.6"
 cryptonight-rs = { path = "consensus/cryptonight-rs" }
 csv = "~1"
@@ -377,7 +388,7 @@ proptest-derive = "0.3.0"
 quote = "1.0.16"
 rand = "0.8.5"
 rand_core = { version = "0.6.3", default-features = false }
-rayon = "1"
+rayon = "1.6.1"
 regex = "1.6.0"
 ripemd160 = "0.9.1"
 rlp = "0.4"
@@ -428,7 +439,7 @@ starcoin-chain-service = { path = "chain/service" }
 starcoin-cmd = { path = "cmd/starcoin" }
 starcoin-config = { path = "config" }
 starcoin-consensus = { path = "consensus" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "a02de6d0b83abe0abff088683e891df0238102fe" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "a742ddc0674022800341182cbb4c3681807b2f00" }
 starcoin-decrypt = { path = "commons/decrypt" }
 starcoin-dev = { path = "vm/dev" }
 starcoin-executor = { path = "executor" }
@@ -481,6 +492,13 @@ stdlib = { path = "vm/stdlib" }
 stest = { path = "commons/stest" }
 stest-macro = { path = "commons/stest/stest-macro" }
 stream-task = { path = "commons/stream-task" }
+starcoin-mvhashmap = { path = "vm/mvhashmap" }
+starcoin-infallible = { path = "commons/infallible" }
+starcoin-parallel-executor = { path = "vm/parallel-executor" }
+starcoin-transaction-benchmarks = { path = "vm/transaction-benchmarks" }
+starcoin-language-e2e-tests = { path = "vm/e2e-tests" }
+starcoin-proptest-helpers = { path = "vm/proptest-helpers" }
+
 syn = { version = "1.0.107", features = [
     "full",
     "extra-traits",

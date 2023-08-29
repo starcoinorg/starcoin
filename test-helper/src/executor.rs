@@ -278,6 +278,9 @@ fn execute_signed_txn_should_success(
                 bail!("txn executing error, {:?}", s)
             }
         }
+        TransactionStatus::Retry => {
+            bail!("impossible txn retry");
+        }
     }
     Ok(output)
 }

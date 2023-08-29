@@ -1,0 +1,48 @@
+[package]
+authors = { workspace = true }
+description = "Starcoin parallel transaction executor library"
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-parallel-executor"
+publish = { workspace = true }
+version = "1.13.4"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+
+[dependencies]
+once_cell = { workspace = true }
+rayon = { workspace = true }
+num_cpus = { workspace = true }
+crossbeam = { workspace = true }
+dashmap = { workspace = true }
+arc-swap = { workspace = true }
+anyhow = { workspace = true }
+starcoin-infallible = { workspace = true }
+starcoin-mvhashmap = { workspace = true }
+starcoin-logger = { workspace = true }
+criterion = { workspace = true, optional = true }
+proptest = { workspace = true, optional = true }
+proptest-derive = { workspace = true, optional = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+proptest = { workspace = true }
+proptest-derive = { workspace = true }
+
+[lib]
+bench = false
+
+[[bench]]
+name = "scheduler_benches"
+harness = false
+required-features = ["fuzzing"]
+
+[features]
+default = []
+fuzzing = [
+    "criterion",
+    "proptest",
+    "proptest-derive"
+]

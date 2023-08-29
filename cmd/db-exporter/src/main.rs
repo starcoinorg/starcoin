@@ -44,6 +44,7 @@ use starcoin_types::{
     state_set::{AccountStateSet, ChainStateSet},
     transaction::Transaction,
 };
+use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::{
     account_config::stc_type_tag,
     genesis_config::ConsensusStrategy,
@@ -232,6 +233,8 @@ enum Cmd {
     ExportResource(ExportResourceOptions),
     VerifyModules(VerifyModuleOptions),
     VerifyHeader(VerifyHeaderOptions),
+    GenTurboSTMTransactions(GenTurboSTMTransactionsOptions),
+    ApplyTurboSTMBlock(ApplyTurboSTMBlockOptions),
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -414,6 +417,33 @@ pub struct ExportResourceOptions {
     pub fields: Vec<String>,
 }
 
+#[derive(Debug, Parser)]
+#[clap(
+    name = "gen_turbo_stm_transactions",
+    about = "gen turbo stm transactions"
+)]
+pub struct GenTurboSTMTransactionsOptions {
+    #[clap(long, short = 'o', parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/halley
+    pub to_path: PathBuf,
+    #[clap(long, short = 'b')]
+    pub block_num: Option<u64>,
+}
+
+#[derive(Debug, Parser)]
+#[clap(name = "apply turbo stm block", about = "apply turbo stm block")]
+pub struct ApplyTurboSTMBlockOptions {
+    #[clap(long, short = 'o', parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/test
+    pub to_path: PathBuf,
+    #[clap(long, short = 't', parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/test_stm
+    pub turbo_stm_to_path: PathBuf,
+    #[clap(long, short = 'i', parse(from_os_str))]
+    /// input file, like accounts.csv
+    pub input_path: PathBuf,
+}
+
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     let opt = Opt::parse();
@@ -568,6 +598,15 @@ async fn main() -> anyhow::Result<()> {
         Cmd::VerifyHeader(option) => {
             return verify_header_via_export_file(option.input_path, option.batch_size);
         }
+        Cmd::GenTurboSTMTransactions(option) => {
+            let result = gen_turbo_stm_transactions(option.to_path, option.block_num);
+            return result;
+        }
+        Cmd::ApplyTurboSTMBlock(option) => {
+            let result =
+                apply_turbo_stm_block(option.to_path, option.turbo_stm_to_path, option.input_path);
+            return result;
+        }
     }
     Ok(())
 }
@@ -671,6 +710,7 @@ pub fn apply_block(
         CacheStorage::new(None),
         db_storage,
     ))?);
+    StarcoinVM::set_concurrency_level_once(num_cpus::get());
     let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
     let mut chain = BlockChain::new(
         net.time_service(),
@@ -1053,6 +1093,89 @@ pub fn execute_transaction_with_fixed_account(
             println!("trans {}", block.transactions().len());
         }
         send_sequence += block.transactions().len() as u64;
+        let block_hash = block.header.id();
+        chain.apply_with_verifier::<BasicVerifier>(block)?;
+
+        let startup_info = StartupInfo::new(block_hash);
+        storage.save_startup_info(startup_info)?;
+    }
+    Ok(())
+}
+
+// ./starcoin_db_exporter gen-block-transactions -b 1 -o ~/test > log 2>&1
+// gen one miner_account and 2 * trans_num txn
+// trans_num 1024, block_num 1000
+pub fn execute_turbo_stm_transaction_with_fixed_account(
+    storage: Arc<Storage>,
+    chain: &mut BlockChain,
+    net: &ChainNetwork,
+    block_num: u64,
+) -> anyhow::Result<()> {
+    let miner_account = Account::new();
+    let miner_info = AccountInfo::from(&miner_account);
+    let mut sequence = 0u64;
+    let mut receivers = vec![];
+    let trans_num = 512;
+    let mut seq = 0;
+    for _i in 0..4 {
+        let mut txns = vec![];
+        for _j in 0..trans_num {
+            let receiver1 = Account::new();
+            let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+                &receiver1,
+                seq,
+                200_000_000,
+                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                net,
+            ));
+            seq += 1;
+            let receiver2 = Account::new();
+            let txn2 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+                &receiver2,
+                seq,
+                200_000_000,
+                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                net,
+            ));
+            seq += 1;
+            receivers.push(receiver1);
+            receivers.push(receiver2);
+            txns.push(txn1.as_signed_user_txn()?.clone());
+            txns.push(txn2.as_signed_user_txn()?.clone());
+        }
+
+        let (block_template, _) =
+            chain.create_block_template(*miner_info.address(), None, txns, vec![], None)?;
+        let block =
+            ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
+        println!("create account trans {}", block.transactions().len());
+        let block_hash = block.header.id();
+        chain.apply_with_verifier::<BasicVerifier>(block)?;
+        let startup_info = StartupInfo::new(block_hash);
+        storage.save_startup_info(startup_info)?;
+        println!("receivers finish");
+    }
+
+    for _i in 0..block_num {
+        let mut txns = vec![];
+        for j in 0..(trans_num * 4) {
+            let idx = j as usize;
+            let txn1 = Transaction::UserTransaction(peer_to_peer_txn(
+                receivers.get(idx).unwrap(),
+                receivers.get(2 * idx).unwrap(),
+                sequence,
+                1000,
+                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                net.chain_id(),
+            ));
+            txns.push(txn1.as_signed_user_txn()?.clone());
+        }
+        sequence += 1;
+        let (block_template, _) =
+            chain.create_block_template(*miner_info.address(), None, txns, vec![], None)?;
+        let block =
+            ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
+        println!("p2p trans {}", block.transactions().len());
         let block_hash = block.header.id();
         chain.apply_with_verifier::<BasicVerifier>(block)?;
 
@@ -1831,4 +1954,124 @@ impl serde::Serialize for MoveValue {
             _ => todo!("XXX FXIME YSG"),
         }
     }
+}
+
+pub fn gen_turbo_stm_transactions(to_dir: PathBuf, block_num: Option<u64>) -> anyhow::Result<()> {
+    starcoin_logger::init();
+    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let db_storage = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_storage,
+    ))?);
+    let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
+    let mut chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+    let block_num = block_num.unwrap_or(1000);
+    execute_turbo_stm_transaction_with_fixed_account(storage, &mut chain, &net, block_num)
+}
+
+pub fn apply_turbo_stm_block(
+    to_dir: PathBuf,
+    turbo_stm_to_dir: PathBuf,
+    input_path: PathBuf,
+) -> anyhow::Result<()> {
+    ::starcoin_logger::init();
+    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let db_storage_seq =
+        DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
+    let storage_seq = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_storage_seq,
+    ))?);
+    let (chain_info_seq, _) =
+        Genesis::init_and_check_storage(&net, storage_seq.clone(), to_dir.as_ref())?;
+    let mut chain_seq = BlockChain::new(
+        net.time_service(),
+        chain_info_seq.head().id(),
+        storage_seq.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+    let cur_num = chain_seq.status().head().number();
+
+    let file_name = input_path.display().to_string();
+    let reader = BufReader::new(File::open(input_path)?);
+    let mut blocks = vec![];
+    for record in reader.lines() {
+        let record = record?;
+        let block: Block = serde_json::from_str(record.as_str())?;
+        blocks.push(block);
+    }
+    if blocks.is_empty() {
+        println!("file {} has apply", file_name);
+        return Ok(());
+    }
+
+    if let Some(last_block) = blocks.last() {
+        let start = blocks.get(0).unwrap().header().number();
+        let end = last_block.header().number();
+        println!(
+            "current number {}, import [{},{}] block number",
+            cur_num, start, end
+        );
+    }
+    println!("seq execution");
+
+    for item in blocks.iter().take(4) {
+        chain_seq.apply_with_verifier::<NoneVerifier>(item.clone())?;
+    }
+    let mut block_hash = HashValue::zero();
+    let start_time = SystemTime::now();
+    for item in blocks.iter().skip(4) {
+        let block = item.clone();
+        block_hash = block.header().id();
+        chain_seq.apply_with_verifier::<NoneVerifier>(block)?;
+    }
+    let startup_info = StartupInfo::new(block_hash);
+    storage_seq.save_startup_info(startup_info)?;
+    let use_time = SystemTime::now().duration_since(start_time)?;
+    println!("seq apply block use time: {:?}", use_time.as_secs());
+
+    let db_storage_stm = DBStorage::new(
+        turbo_stm_to_dir.join("starcoindb/db"),
+        RocksdbConfig::default(),
+        None,
+    )?;
+    let storage_stm = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_storage_stm,
+    ))?);
+    let (chain_info_stm, _) =
+        Genesis::init_and_check_storage(&net, storage_stm.clone(), turbo_stm_to_dir.as_ref())?;
+    let mut chain_stm = BlockChain::new(
+        net.time_service(),
+        chain_info_stm.head().id(),
+        storage_stm.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+
+    println!("stm execution");
+    for item in blocks.iter().take(4) {
+        chain_stm.apply_with_verifier::<NoneVerifier>(item.clone())?;
+    }
+    let mut block_hash = HashValue::zero();
+    let start_time = SystemTime::now();
+    StarcoinVM::set_concurrency_level_once(num_cpus::get());
+    for item in blocks.iter().skip(4) {
+        let block = item.clone();
+        block_hash = block.header().id();
+        chain_stm.apply_with_verifier::<NoneVerifier>(block)?;
+    }
+    let startup_info = StartupInfo::new(block_hash);
+    storage_stm.save_startup_info(startup_info)?;
+    let use_time = SystemTime::now().duration_since(start_time)?;
+    println!("stm apply block use time: {:?}", use_time.as_secs());
+    Ok(())
 }

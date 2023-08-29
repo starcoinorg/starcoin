@@ -254,7 +254,7 @@ pub fn peer_to_peer_txn(
         bcs_ext::to_bytes(&transfer_amount).unwrap(),
     ];
 
-    // get a SignedTransaction
+    // get a SignedUserTransaction
     sender.create_signed_txn_with_args(
         TransactionPayload::ScriptFunction(ScriptFunction::new(
             ModuleId::new(
