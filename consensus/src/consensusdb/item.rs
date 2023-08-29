@@ -1,7 +1,7 @@
 use parking_lot::RwLock;
 use starcoin_schemadb::{
     db::DBStorage,
-    error::StoreError,
+    error::{StoreError, StoreResult},
     schema::{KeyCodec, Schema},
     SchemaBatch, DB,
 };
@@ -27,7 +27,7 @@ impl<S: Schema> CachedDbItem<S> {
         }
     }
 
-    pub fn read(&self) -> Result<S::Value, StoreError> {
+    pub fn read(&self) -> StoreResult<S::Value> {
         if let Some(item) = self.cached_item.read().clone() {
             return Ok(item);
         }
@@ -42,35 +42,31 @@ impl<S: Schema> CachedDbItem<S> {
         }
     }
 
-    pub fn write_batch(
-        &mut self,
-        batch: &mut SchemaBatch,
-        item: &S::Value,
-    ) -> Result<(), StoreError> {
+    pub fn write_batch(&mut self, batch: &mut SchemaBatch, item: &S::Value) -> StoreResult<()> {
         *self.cached_item.write() = Some(item.clone());
         batch.put::<S>(&self.key, item)?;
         Ok(())
     }
 
-    pub fn write(&mut self, item: &S::Value) -> Result<(), StoreError> {
+    pub fn write(&mut self, item: &S::Value) -> StoreResult<()> {
         *self.cached_item.write() = Some(item.clone());
         self.db.put::<S>(&self.key, item)?;
         Ok(())
     }
 
-    pub fn remove_batch(&mut self, batch: &mut SchemaBatch) -> Result<(), StoreError>
+    pub fn remove_batch(&mut self, batch: &mut SchemaBatch) -> StoreResult<()>
 where {
         *self.cached_item.write() = None;
         batch.delete::<S>(&self.key)?;
         Ok(())
     }
 
-    pub fn remove(&mut self) -> Result<(), StoreError> {
+    pub fn remove(&mut self) -> StoreResult<()> {
         *self.cached_item.write() = None;
-        self.db.remove::<S>(&self.key)
+        self.db.remove::<S>(&self.key).map_err(Into::into)
     }
 
-    pub fn update<F>(&mut self, op: F) -> Result<S::Value, StoreError>
+    pub fn update<F>(&mut self, op: F) -> StoreResult<S::Value>
     where
         F: Fn(S::Value) -> S::Value,
     {

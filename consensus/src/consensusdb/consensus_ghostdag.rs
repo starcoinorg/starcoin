@@ -1,4 +1,14 @@
 use super::prelude::CachedDbAccess;
+use crate::dag::types::{
+    ghostdata::{CompactGhostdagData, GhostdagData},
+    ordering::SortableBlock,
+};
+use anyhow::Result;
+use itertools::{
+    EitherOrBoth::{Both, Left, Right},
+    Itertools,
+};
+use starcoin_crypto::HashValue as Hash;
 use starcoin_schemadb::{
     db::DBStorage,
     define_schema,
@@ -9,16 +19,6 @@ use starcoin_schemadb::{
 use starcoin_types::blockhash::{
     BlockHashMap, BlockHashes, BlockLevel, BlueWorkType, HashKTypeMap,
 };
-
-use crate::dag::types::{
-    ghostdata::{CompactGhostdagData, GhostdagData},
-    ordering::SortableBlock,
-};
-use itertools::{
-    EitherOrBoth::{Both, Left, Right},
-    Itertools,
-};
-use starcoin_crypto::HashValue as Hash;
 use std::{cell::RefCell, cmp, iter::once, sync::Arc};
 
 pub trait GhostdagStoreReader {
@@ -160,40 +160,40 @@ define_schema!(
 );
 
 impl KeyCodec<GhostDag> for Hash {
-    fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
+    fn encode_key(&self) -> Result<Vec<u8>> {
         Ok(self.to_vec())
     }
 
-    fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
-        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    fn decode_key(data: &[u8]) -> Result<Self> {
+        Hash::from_slice(data).map_err(Into::into)
     }
 }
 impl ValueCodec<GhostDag> for Arc<GhostdagData> {
-    fn encode_value(&self) -> Result<Vec<u8>, StoreError> {
-        bcs_ext::to_bytes(&self).map_err(|e| StoreError::EncodeError(e.to_string()))
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        bcs_ext::to_bytes(&self).map_err(Into::into)
     }
 
-    fn decode_value(data: &[u8]) -> Result<Self, StoreError> {
-        bcs_ext::from_bytes(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        bcs_ext::from_bytes(data).map_err(Into::into)
     }
 }
 
 impl KeyCodec<CompactGhostDag> for Hash {
-    fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
+    fn encode_key(&self) -> Result<Vec<u8>> {
         Ok(self.to_vec())
     }
 
-    fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
-        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    fn decode_key(data: &[u8]) -> Result<Self> {
+        Hash::from_slice(data).map_err(Into::into)
     }
 }
 impl ValueCodec<CompactGhostDag> for CompactGhostdagData {
-    fn encode_value(&self) -> Result<Vec<u8>, StoreError> {
-        bcs_ext::to_bytes(&self).map_err(|e| StoreError::EncodeError(e.to_string()))
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        bcs_ext::to_bytes(&self).map_err(Into::into)
     }
 
-    fn decode_value(data: &[u8]) -> Result<Self, StoreError> {
-        bcs_ext::from_bytes(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        bcs_ext::from_bytes(data).map_err(Into::into)
     }
 }
 
@@ -246,7 +246,7 @@ impl DbGhostdagStore {
     }
 
     pub fn write_schemas(&self, batch: SchemaBatch) -> Result<(), StoreError> {
-        self.db.write_schemas(batch)
+        self.db.write_schemas(batch).map_err(Into::into)
     }
 }
 

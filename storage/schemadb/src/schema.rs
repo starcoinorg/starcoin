@@ -1,27 +1,26 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::error::StoreError;
+use anyhow::Result;
 use core::hash::Hash;
-use std::{fmt::Debug, result::Result};
+use std::fmt::Debug;
 
-// Todo, change StoreError to anyhow::Error
 pub trait KeyCodec<S: Schema + ?Sized>: Clone + Sized + Debug + Send + Sync {
     /// Converts `self` to bytes to be stored in DB.
-    fn encode_key(&self) -> Result<Vec<u8>, StoreError>;
+    fn encode_key(&self) -> Result<Vec<u8>>;
     /// Converts bytes fetched from DB to `Self`.
-    fn decode_key(data: &[u8]) -> Result<Self, StoreError>;
+    fn decode_key(data: &[u8]) -> Result<Self>;
 }
 
 pub trait ValueCodec<S: Schema + ?Sized>: Clone + Sized + Debug + Send + Sync {
     /// Converts `self` to bytes to be stored in DB.
-    fn encode_value(&self) -> Result<Vec<u8>, StoreError>;
+    fn encode_value(&self) -> Result<Vec<u8>>;
     /// Converts bytes fetched from DB to `Self`.
-    fn decode_value(data: &[u8]) -> Result<Self, StoreError>;
+    fn decode_value(data: &[u8]) -> Result<Self>;
 }
 
 pub trait SeekKeyCodec<S: Schema + ?Sized> {
-    fn encode_seek_key(&self) -> Result<Vec<u8>, StoreError>;
+    fn encode_seek_key(&self) -> Result<Vec<u8>>;
 }
 
 // auto implements for all keys
@@ -30,7 +29,7 @@ where
     S: Schema,
     K: KeyCodec<S>,
 {
-    fn encode_seek_key(&self) -> Result<Vec<u8>, StoreError> {
+    fn encode_seek_key(&self) -> Result<Vec<u8>> {
         <K as KeyCodec<S>>::encode_key(self)
     }
 }

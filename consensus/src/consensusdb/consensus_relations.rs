@@ -1,9 +1,10 @@
 use super::prelude::CachedDbAccess;
+use anyhow::Result;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_schemadb::{
     db::DBStorage,
     define_schema,
-    error::StoreError,
+    error::{StoreError, StoreResult},
     schema::{KeyCodec, ValueCodec},
     SchemaBatch, DB,
 };
@@ -12,9 +13,9 @@ use std::{collections::hash_map::Entry::Vacant, sync::Arc};
 
 /// Reader API for `RelationsStore`.
 pub trait RelationsStoreReader {
-    fn get_parents(&self, hash: Hash) -> Result<BlockHashes, StoreError>;
-    fn get_children(&self, hash: Hash) -> Result<BlockHashes, StoreError>;
-    fn has(&self, hash: Hash) -> Result<bool, StoreError>;
+    fn get_parents(&self, hash: Hash) -> StoreResult<BlockHashes>;
+    fn get_children(&self, hash: Hash) -> StoreResult<BlockHashes>;
+    fn has(&self, hash: Hash) -> StoreResult<bool>;
 }
 
 /// Write API for `RelationsStore`. The insert function is deliberately `mut`
@@ -22,7 +23,7 @@ pub trait RelationsStoreReader {
 /// non-append-only and thus needs to be guarded.
 pub trait RelationsStore: RelationsStoreReader {
     /// Inserts `parents` into a new store entry for `hash`, and for each `parent ∈ parents` adds `hash` to `parent.children`
-    fn insert(&mut self, hash: Hash, parents: BlockHashes) -> Result<(), StoreError>;
+    fn insert(&mut self, hash: Hash, parents: BlockHashes) -> StoreResult<()>;
 }
 
 pub(crate) const PARENTS_CF: &str = "block-parents";
@@ -32,40 +33,40 @@ define_schema!(RelationParent, Hash, Arc<Vec<Hash>>, PARENTS_CF);
 define_schema!(RelationChildren, Hash, Arc<Vec<Hash>>, CHILDREN_CF);
 
 impl KeyCodec<RelationParent> for Hash {
-    fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
+    fn encode_key(&self) -> Result<Vec<u8>> {
         Ok(self.to_vec())
     }
 
-    fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
-        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    fn decode_key(data: &[u8]) -> Result<Self> {
+        Hash::from_slice(data).map_err(Into::into)
     }
 }
 impl ValueCodec<RelationParent> for Arc<Vec<Hash>> {
-    fn encode_value(&self) -> Result<Vec<u8>, StoreError> {
-        bcs_ext::to_bytes(self).map_err(|e| StoreError::EncodeError(e.to_string()))
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        bcs_ext::to_bytes(self)
     }
 
-    fn decode_value(data: &[u8]) -> Result<Self, StoreError> {
-        bcs_ext::from_bytes(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        bcs_ext::from_bytes(data)
     }
 }
 impl KeyCodec<RelationChildren> for Hash {
-    fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
+    fn encode_key(&self) -> Result<Vec<u8>> {
         Ok(self.to_vec())
     }
 
-    fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
-        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    fn decode_key(data: &[u8]) -> Result<Self> {
+        Hash::from_slice(data).map_err(Into::into)
     }
 }
 
 impl ValueCodec<RelationChildren> for Arc<Vec<Hash>> {
-    fn encode_value(&self) -> Result<Vec<u8>, StoreError> {
-        bcs_ext::to_bytes(self).map_err(|e| StoreError::EncodeError(e.to_string()))
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        bcs_ext::to_bytes(self)
     }
 
-    fn decode_value(data: &[u8]) -> Result<Self, StoreError> {
-        bcs_ext::from_bytes(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        bcs_ext::from_bytes(data)
     }
 }
 
@@ -100,7 +101,7 @@ impl DbRelationsStore {
         batch: &mut SchemaBatch,
         hash: Hash,
         parents: BlockHashes,
-    ) -> Result<(), StoreError> {
+    ) -> StoreResult<()> {
         if self.has(hash)? {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }
@@ -126,15 +127,15 @@ impl DbRelationsStore {
 }
 
 impl RelationsStoreReader for DbRelationsStore {
-    fn get_parents(&self, hash: Hash) -> Result<BlockHashes, StoreError> {
+    fn get_parents(&self, hash: Hash) -> StoreResult<BlockHashes> {
         self.parents_access.read(hash)
     }
 
-    fn get_children(&self, hash: Hash) -> Result<BlockHashes, StoreError> {
+    fn get_children(&self, hash: Hash) -> StoreResult<BlockHashes> {
         self.children_access.read(hash)
     }
 
-    fn has(&self, hash: Hash) -> Result<bool, StoreError> {
+    fn has(&self, hash: Hash) -> StoreResult<bool> {
         if self.parents_access.has(hash)? {
             debug_assert!(self.children_access.has(hash)?);
             Ok(true)
@@ -147,7 +148,7 @@ impl RelationsStoreReader for DbRelationsStore {
 impl RelationsStore for DbRelationsStore {
     /// See `insert_batch` as well
     /// TODO: use one function with DbWriter for both this function and insert_batch
-    fn insert(&mut self, hash: Hash, parents: BlockHashes) -> Result<(), StoreError> {
+    fn insert(&mut self, hash: Hash, parents: BlockHashes) -> StoreResult<()> {
         if self.has(hash)? {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }
@@ -196,27 +197,27 @@ impl Default for MemoryRelationsStore {
 }
 
 impl RelationsStoreReader for MemoryRelationsStore {
-    fn get_parents(&self, hash: Hash) -> Result<BlockHashes, StoreError> {
+    fn get_parents(&self, hash: Hash) -> StoreResult<BlockHashes> {
         match self.parents_map.get(&hash) {
             Some(parents) => Ok(BlockHashes::clone(parents)),
             None => Err(StoreError::KeyNotFound(hash.to_string())),
         }
     }
 
-    fn get_children(&self, hash: Hash) -> Result<BlockHashes, StoreError> {
+    fn get_children(&self, hash: Hash) -> StoreResult<BlockHashes> {
         match self.children_map.get(&hash) {
             Some(children) => Ok(BlockHashes::clone(children)),
             None => Err(StoreError::KeyNotFound(hash.to_string())),
         }
     }
 
-    fn has(&self, hash: Hash) -> Result<bool, StoreError> {
+    fn has(&self, hash: Hash) -> StoreResult<bool> {
         Ok(self.parents_map.contains_key(&hash))
     }
 }
 
 impl RelationsStore for MemoryRelationsStore {
-    fn insert(&mut self, hash: Hash, parents: BlockHashes) -> Result<(), StoreError> {
+    fn insert(&mut self, hash: Hash, parents: BlockHashes) -> StoreResult<()> {
         if let Vacant(e) = self.parents_map.entry(hash) {
             // Update the new entry for `hash`
             e.insert(BlockHashes::clone(&parents));

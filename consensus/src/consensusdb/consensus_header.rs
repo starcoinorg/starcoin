@@ -1,4 +1,5 @@
 use super::prelude::CachedDbAccess;
+use anyhow::Result;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_schemadb::{
     db::DBStorage,
@@ -15,23 +16,18 @@ use starcoin_types::{
 use std::sync::Arc;
 
 pub trait HeaderStoreReader {
-    fn get_daa_score(&self, hash: Hash) -> Result<u64, StoreError>;
-    fn get_blue_score(&self, hash: Hash) -> Result<u64, StoreError>;
-    fn get_timestamp(&self, hash: Hash) -> Result<u64, StoreError>;
-    fn get_difficulty(&self, hash: Hash) -> Result<U256, StoreError>;
-    fn get_header(&self, hash: Hash) -> Result<Arc<Header>, StoreError>;
-    fn get_header_with_block_level(&self, hash: Hash) -> Result<HeaderWithBlockLevel, StoreError>;
-    fn get_compact_header_data(&self, hash: Hash) -> Result<CompactHeaderData, StoreError>;
+    fn get_daa_score(&self, hash: Hash) -> StoreResult<u64>;
+    fn get_blue_score(&self, hash: Hash) -> StoreResult<u64>;
+    fn get_timestamp(&self, hash: Hash) -> StoreResult<u64>;
+    fn get_difficulty(&self, hash: Hash) -> StoreResult<U256>;
+    fn get_header(&self, hash: Hash) -> StoreResult<Arc<Header>>;
+    fn get_header_with_block_level(&self, hash: Hash) -> StoreResult<HeaderWithBlockLevel>;
+    fn get_compact_header_data(&self, hash: Hash) -> StoreResult<CompactHeaderData>;
 }
 
 pub trait HeaderStore: HeaderStoreReader {
     // This is append only
-    fn insert(
-        &self,
-        hash: Hash,
-        header: Arc<Header>,
-        block_level: BlockLevel,
-    ) -> Result<(), StoreError>;
+    fn insert(&self, hash: Hash, header: Arc<Header>, block_level: BlockLevel) -> StoreResult<()>;
 }
 
 pub(crate) const HEADERS_STORE_CF: &str = "headers-store";
@@ -46,39 +42,39 @@ define_schema!(
 );
 
 impl KeyCodec<BlockHeader> for Hash {
-    fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
+    fn encode_key(&self) -> Result<Vec<u8>> {
         Ok(self.to_vec())
     }
 
-    fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
-        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    fn decode_key(data: &[u8]) -> Result<Self> {
+        Hash::from_slice(data).map_err(Into::into)
     }
 }
 impl ValueCodec<BlockHeader> for HeaderWithBlockLevel {
-    fn encode_value(&self) -> Result<Vec<u8>, StoreError> {
-        bcs_ext::to_bytes(&self).map_err(|e| StoreError::EncodeError(e.to_string()))
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        bcs_ext::to_bytes(&self)
     }
 
-    fn decode_value(data: &[u8]) -> Result<Self, StoreError> {
-        bcs_ext::from_bytes(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        bcs_ext::from_bytes(data)
     }
 }
 impl KeyCodec<CompactBlockHeader> for Hash {
-    fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
+    fn encode_key(&self) -> Result<Vec<u8>> {
         Ok(self.to_vec())
     }
 
-    fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
-        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    fn decode_key(data: &[u8]) -> Result<Self> {
+        Hash::from_slice(data).map_err(Into::into)
     }
 }
 impl ValueCodec<CompactBlockHeader> for CompactHeaderData {
-    fn encode_value(&self) -> Result<Vec<u8>, StoreError> {
-        bcs_ext::to_bytes(&self).map_err(|e| StoreError::EncodeError(e.to_string()))
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        bcs_ext::to_bytes(&self)
     }
 
-    fn decode_value(data: &[u8]) -> Result<Self, StoreError> {
-        bcs_ext::from_bytes(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        bcs_ext::from_bytes(data)
     }
 }
 
@@ -110,7 +106,7 @@ impl DbHeadersStore {
         self.headers_access.has(hash)
     }
 
-    pub fn get_header(&self, hash: Hash) -> Result<Header, StoreError> {
+    pub fn get_header(&self, hash: Hash) -> StoreResult<Header> {
         let result = self.headers_access.read(hash)?;
         Ok((*result.header).clone())
     }
@@ -121,7 +117,7 @@ impl DbHeadersStore {
         hash: Hash,
         header: Arc<Header>,
         block_level: BlockLevel,
-    ) -> Result<(), StoreError> {
+    ) -> StoreResult<()> {
         if self.headers_access.has(hash)? {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }
@@ -145,43 +141,43 @@ impl DbHeadersStore {
         Ok(())
     }
 
-    pub fn write_schemas(&self, batch: SchemaBatch) -> Result<(), StoreError> {
-        self.db.write_schemas(batch)
+    pub fn write_schemas(&self, batch: SchemaBatch) -> StoreResult<()> {
+        self.db.write_schemas(batch).map_err(Into::into)
     }
 }
 
 impl HeaderStoreReader for DbHeadersStore {
-    fn get_daa_score(&self, _hash: Hash) -> Result<u64, StoreError> {
+    fn get_daa_score(&self, _hash: Hash) -> StoreResult<u64> {
         unimplemented!()
     }
 
-    fn get_blue_score(&self, _hash: Hash) -> Result<u64, StoreError> {
+    fn get_blue_score(&self, _hash: Hash) -> StoreResult<u64> {
         unimplemented!()
     }
 
-    fn get_timestamp(&self, hash: Hash) -> Result<u64, StoreError> {
+    fn get_timestamp(&self, hash: Hash) -> StoreResult<u64> {
         if let Some(header_with_block_level) = self.headers_access.read_from_cache(hash) {
             return Ok(header_with_block_level.header.timestamp());
         }
         Ok(self.compact_headers_access.read(hash)?.timestamp)
     }
 
-    fn get_difficulty(&self, hash: Hash) -> Result<U256, StoreError> {
+    fn get_difficulty(&self, hash: Hash) -> StoreResult<U256> {
         if let Some(header_with_block_level) = self.headers_access.read_from_cache(hash) {
             return Ok(header_with_block_level.header.difficulty());
         }
         Ok(self.compact_headers_access.read(hash)?.difficulty)
     }
 
-    fn get_header(&self, hash: Hash) -> Result<Arc<Header>, StoreError> {
+    fn get_header(&self, hash: Hash) -> StoreResult<Arc<Header>> {
         Ok(self.headers_access.read(hash)?.header)
     }
 
-    fn get_header_with_block_level(&self, hash: Hash) -> Result<HeaderWithBlockLevel, StoreError> {
+    fn get_header_with_block_level(&self, hash: Hash) -> StoreResult<HeaderWithBlockLevel> {
         self.headers_access.read(hash)
     }
 
-    fn get_compact_header_data(&self, hash: Hash) -> Result<CompactHeaderData, StoreError> {
+    fn get_compact_header_data(&self, hash: Hash) -> StoreResult<CompactHeaderData> {
         if let Some(header_with_block_level) = self.headers_access.read_from_cache(hash) {
             return Ok(CompactHeaderData {
                 timestamp: header_with_block_level.header.timestamp(),
@@ -193,7 +189,7 @@ impl HeaderStoreReader for DbHeadersStore {
 }
 
 impl HeaderStore for DbHeadersStore {
-    fn insert(&self, hash: Hash, header: Arc<Header>, block_level: u8) -> Result<(), StoreError> {
+    fn insert(&self, hash: Hash, header: Arc<Header>, block_level: u8) -> StoreResult<()> {
         if self.headers_access.has(hash)? {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }

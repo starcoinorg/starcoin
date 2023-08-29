@@ -9,11 +9,11 @@ pub mod schema;
 
 use crate::{
     db::DBStorage,
-    error::{StoreError, StoreResult},
     iterator::{ScanDirection, SchemaIterator},
     metrics::StorageMetrics,
     schema::{KeyCodec, Schema, ValueCodec},
 };
+use anyhow::Result;
 use parking_lot::Mutex;
 use rocksdb::ReadOptions;
 use starcoin_config::RocksdbConfig;
@@ -47,7 +47,7 @@ impl SchemaBatch {
         Self::default()
     }
 
-    pub fn put<S: Schema>(&self, key: &S::Key, val: &S::Value) -> Result<(), StoreError> {
+    pub fn put<S: Schema>(&self, key: &S::Key, val: &S::Value) -> Result<()> {
         let key = <S::Key as KeyCodec<S>>::encode_key(key)?;
         let value = <S::Value as ValueCodec<S>>::encode_value(val)?;
         self.rows
@@ -59,7 +59,7 @@ impl SchemaBatch {
         Ok(())
     }
 
-    pub fn delete<S: Schema>(&self, key: &S::Key) -> Result<(), StoreError> {
+    pub fn delete<S: Schema>(&self, key: &S::Key) -> Result<()> {
         let key = <S::Key as KeyCodec<S>>::encode_key(key)?;
 
         self.rows
@@ -86,7 +86,7 @@ impl DB {
         readonly: bool,
         rocksdb_config: RocksdbConfig,
         metrics: Option<StorageMetrics>,
-    ) -> StoreResult<Self> {
+    ) -> Result<Self> {
         let db_storage = DBStorage::open_with_cfs(
             root_path,
             column_families,
@@ -101,7 +101,7 @@ impl DB {
         })
     }
 
-    pub fn write_schemas(&self, batch: SchemaBatch) -> Result<(), StoreError> {
+    pub fn write_schemas(&self, batch: SchemaBatch) -> Result<()> {
         let rows_locked = batch.rows.lock();
 
         for row in rows_locked.iter() {
@@ -112,7 +112,7 @@ impl DB {
         Ok(())
     }
 
-    pub fn get<S: Schema>(&self, key: &S::Key) -> Result<Option<S::Value>, StoreError> {
+    pub fn get<S: Schema>(&self, key: &S::Key) -> Result<Option<S::Value>> {
         let raw_key = <S::Key as KeyCodec<S>>::encode_key(key)?;
         let cf_handle = self.inner.get_cf_handle(S::COLUMN_FAMILY)?;
         self.inner
@@ -126,7 +126,7 @@ impl DB {
             })
     }
 
-    pub fn put<S: Schema>(&self, key: &S::Key, value: &S::Value) -> Result<(), StoreError> {
+    pub fn put<S: Schema>(&self, key: &S::Key, value: &S::Value) -> Result<()> {
         let raw_key = <S::Key as KeyCodec<S>>::encode_key(key)?;
         let raw_value = <S::Value as ValueCodec<S>>::encode_value(value)?;
         let cf_handle = self.inner.get_cf_handle(S::COLUMN_FAMILY)?;
@@ -136,7 +136,7 @@ impl DB {
         Ok(())
     }
 
-    pub fn remove<S: Schema>(&self, key: &S::Key) -> Result<(), StoreError> {
+    pub fn remove<S: Schema>(&self, key: &S::Key) -> Result<()> {
         let raw_key = <S::Key as KeyCodec<S>>::encode_key(key)?;
         let cf_handle = self.inner.get_cf_handle(S::COLUMN_FAMILY)?;
 
@@ -144,15 +144,15 @@ impl DB {
         Ok(())
     }
 
-    pub fn flush_cf(&self, cf_name: &str) -> Result<(), StoreError> {
+    pub fn flush_cf(&self, cf_name: &str) -> Result<()> {
         Ok(self.inner.flush_cf(cf_name)?)
     }
 
-    pub fn iter<S: Schema>(&self, opts: ReadOptions) -> Result<SchemaIterator<S>, StoreError> {
+    pub fn iter<S: Schema>(&self, opts: ReadOptions) -> Result<SchemaIterator<S>> {
         self.iter_with_direction(opts, ScanDirection::Forward)
     }
 
-    pub fn rev_iter<S: Schema>(&self, opts: ReadOptions) -> Result<SchemaIterator<S>, StoreError> {
+    pub fn rev_iter<S: Schema>(&self, opts: ReadOptions) -> Result<SchemaIterator<S>> {
         self.iter_with_direction(opts, ScanDirection::Backward)
     }
 
@@ -160,7 +160,7 @@ impl DB {
         &self,
         opts: ReadOptions,
         direction: ScanDirection,
-    ) -> Result<SchemaIterator<S>, StoreError> {
+    ) -> Result<SchemaIterator<S>> {
         let cf_handle = self.inner.get_cf_handle(S::COLUMN_FAMILY)?;
         Ok(SchemaIterator::new(
             self.inner.db.raw_iterator_cf_opt(cf_handle, opts),

@@ -1,50 +1,49 @@
 use super::prelude::{CachedDbAccess, CachedDbItem};
+use crate::dag::types::{interval::Interval, reachability::ReachabilityData};
+use anyhow::Result;
+use parking_lot::{RwLockUpgradableReadGuard, RwLockWriteGuard};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_schemadb::{
     db::DBStorage,
     define_schema,
-    error::StoreError,
+    error::{StoreError, StoreResult},
     schema::{KeyCodec, ValueCodec},
     SchemaBatch, DB,
 };
-
-use crate::dag::types::{interval::Interval, reachability::ReachabilityData};
 use starcoin_types::blockhash::{self, BlockHashMap, BlockHashes};
-
-use parking_lot::{RwLockUpgradableReadGuard, RwLockWriteGuard};
 use std::{collections::hash_map::Entry::Vacant, sync::Arc};
 
 /// Reader API for `ReachabilityStore`.
 pub trait ReachabilityStoreReader {
-    fn has(&self, hash: Hash) -> Result<bool, StoreError>;
-    fn get_interval(&self, hash: Hash) -> Result<Interval, StoreError>;
-    fn get_parent(&self, hash: Hash) -> Result<Hash, StoreError>;
-    fn get_children(&self, hash: Hash) -> Result<BlockHashes, StoreError>;
-    fn get_future_covering_set(&self, hash: Hash) -> Result<BlockHashes, StoreError>;
+    fn has(&self, hash: Hash) -> StoreResult<bool>;
+    fn get_interval(&self, hash: Hash) -> StoreResult<Interval>;
+    fn get_parent(&self, hash: Hash) -> StoreResult<Hash>;
+    fn get_children(&self, hash: Hash) -> StoreResult<BlockHashes>;
+    fn get_future_covering_set(&self, hash: Hash) -> StoreResult<BlockHashes>;
 }
 
 /// Write API for `ReachabilityStore`. All write functions are deliberately `mut`
 /// since reachability writes are not append-only and thus need to be guarded.
 pub trait ReachabilityStore: ReachabilityStoreReader {
-    fn init(&mut self, origin: Hash, capacity: Interval) -> Result<(), StoreError>;
+    fn init(&mut self, origin: Hash, capacity: Interval) -> StoreResult<()>;
     fn insert(
         &mut self,
         hash: Hash,
         parent: Hash,
         interval: Interval,
         height: u64,
-    ) -> Result<(), StoreError>;
-    fn set_interval(&mut self, hash: Hash, interval: Interval) -> Result<(), StoreError>;
-    fn append_child(&mut self, hash: Hash, child: Hash) -> Result<u64, StoreError>;
+    ) -> StoreResult<()>;
+    fn set_interval(&mut self, hash: Hash, interval: Interval) -> StoreResult<()>;
+    fn append_child(&mut self, hash: Hash, child: Hash) -> StoreResult<u64>;
     fn insert_future_covering_item(
         &mut self,
         hash: Hash,
         fci: Hash,
         insertion_index: usize,
-    ) -> Result<(), StoreError>;
-    fn get_height(&self, hash: Hash) -> Result<u64, StoreError>;
-    fn set_reindex_root(&mut self, root: Hash) -> Result<(), StoreError>;
-    fn get_reindex_root(&self) -> Result<Hash, StoreError>;
+    ) -> StoreResult<()>;
+    fn get_height(&self, hash: Hash) -> StoreResult<u64>;
+    fn set_reindex_root(&mut self, root: Hash) -> StoreResult<()>;
+    fn get_reindex_root(&self) -> StoreResult<Hash>;
 }
 
 const REINDEX_ROOT_KEY: &str = "reachability-reindex-root";
@@ -60,39 +59,39 @@ define_schema!(
 define_schema!(ReachabilityCache, Vec<u8>, Hash, REACHABILITY_DATA_CF);
 
 impl KeyCodec<Reachability> for Hash {
-    fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
+    fn encode_key(&self) -> Result<Vec<u8>> {
         Ok(self.to_vec())
     }
 
-    fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
-        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    fn decode_key(data: &[u8]) -> Result<Self> {
+        Hash::from_slice(data).map_err(Into::into)
     }
 }
 impl ValueCodec<Reachability> for Arc<ReachabilityData> {
-    fn encode_value(&self) -> Result<Vec<u8>, StoreError> {
-        bcs_ext::to_bytes(&self).map_err(|e| StoreError::EncodeError(e.to_string()))
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        bcs_ext::to_bytes(&self)
     }
 
-    fn decode_value(data: &[u8]) -> Result<Self, StoreError> {
-        bcs_ext::from_bytes(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        bcs_ext::from_bytes(data)
     }
 }
 impl KeyCodec<ReachabilityCache> for Vec<u8> {
-    fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
+    fn encode_key(&self) -> Result<Vec<u8>> {
         Ok(self.to_vec())
     }
 
-    fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
+    fn decode_key(data: &[u8]) -> Result<Self> {
         Ok(data.to_vec())
     }
 }
 impl ValueCodec<ReachabilityCache> for Hash {
-    fn encode_value(&self) -> Result<Vec<u8>, StoreError> {
+    fn encode_value(&self) -> Result<Vec<u8>> {
         Ok(self.to_vec())
     }
 
-    fn decode_value(data: &[u8]) -> Result<Self, StoreError> {
-        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        Hash::from_slice(data).map_err(Into::into)
     }
 }
 
@@ -130,7 +129,7 @@ impl DbReachabilityStore {
 }
 
 impl ReachabilityStore for DbReachabilityStore {
-    fn init(&mut self, origin: Hash, capacity: Interval) -> Result<(), StoreError> {
+    fn init(&mut self, origin: Hash, capacity: Interval) -> StoreResult<()> {
         debug_assert!(!self.access.has(origin)?);
 
         let data = Arc::new(ReachabilityData::new(
@@ -153,7 +152,7 @@ impl ReachabilityStore for DbReachabilityStore {
         parent: Hash,
         interval: Interval,
         height: u64,
-    ) -> Result<(), StoreError> {
+    ) -> StoreResult<()> {
         if self.access.has(hash)? {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }
@@ -162,14 +161,14 @@ impl ReachabilityStore for DbReachabilityStore {
         Ok(())
     }
 
-    fn set_interval(&mut self, hash: Hash, interval: Interval) -> Result<(), StoreError> {
+    fn set_interval(&mut self, hash: Hash, interval: Interval) -> StoreResult<()> {
         let mut data = self.access.read(hash)?;
         Arc::make_mut(&mut data).interval = interval;
         self.access.write(hash, data)?;
         Ok(())
     }
 
-    fn append_child(&mut self, hash: Hash, child: Hash) -> Result<u64, StoreError> {
+    fn append_child(&mut self, hash: Hash, child: Hash) -> StoreResult<u64> {
         let mut data = self.access.read(hash)?;
         let height = data.height;
         let mut_data = Arc::make_mut(&mut data);
@@ -183,7 +182,7 @@ impl ReachabilityStore for DbReachabilityStore {
         hash: Hash,
         fci: Hash,
         insertion_index: usize,
-    ) -> Result<(), StoreError> {
+    ) -> StoreResult<()> {
         let mut data = self.access.read(hash)?;
         let mut_data = Arc::make_mut(&mut data);
         Arc::make_mut(&mut mut_data.future_covering_set).insert(insertion_index, fci);
@@ -191,37 +190,37 @@ impl ReachabilityStore for DbReachabilityStore {
         Ok(())
     }
 
-    fn get_height(&self, hash: Hash) -> Result<u64, StoreError> {
+    fn get_height(&self, hash: Hash) -> StoreResult<u64> {
         Ok(self.access.read(hash)?.height)
     }
 
-    fn set_reindex_root(&mut self, root: Hash) -> Result<(), StoreError> {
+    fn set_reindex_root(&mut self, root: Hash) -> StoreResult<()> {
         self.reindex_root.write(&root)
     }
 
-    fn get_reindex_root(&self) -> Result<Hash, StoreError> {
+    fn get_reindex_root(&self) -> StoreResult<Hash> {
         self.reindex_root.read()
     }
 }
 
 impl ReachabilityStoreReader for DbReachabilityStore {
-    fn has(&self, hash: Hash) -> Result<bool, StoreError> {
+    fn has(&self, hash: Hash) -> StoreResult<bool> {
         self.access.has(hash)
     }
 
-    fn get_interval(&self, hash: Hash) -> Result<Interval, StoreError> {
+    fn get_interval(&self, hash: Hash) -> StoreResult<Interval> {
         Ok(self.access.read(hash)?.interval)
     }
 
-    fn get_parent(&self, hash: Hash) -> Result<Hash, StoreError> {
+    fn get_parent(&self, hash: Hash) -> StoreResult<Hash> {
         Ok(self.access.read(hash)?.parent)
     }
 
-    fn get_children(&self, hash: Hash) -> Result<BlockHashes, StoreError> {
+    fn get_children(&self, hash: Hash) -> StoreResult<BlockHashes> {
         Ok(Arc::clone(&self.access.read(hash)?.children))
     }
 
-    fn get_future_covering_set(&self, hash: Hash) -> Result<BlockHashes, StoreError> {
+    fn get_future_covering_set(&self, hash: Hash) -> StoreResult<BlockHashes> {
         Ok(Arc::clone(&self.access.read(hash)?.future_covering_set))
     }
 }
@@ -244,7 +243,7 @@ impl<'a> StagingReachabilityStore<'a> {
     pub fn commit(
         self,
         batch: &mut SchemaBatch,
-    ) -> Result<RwLockWriteGuard<'a, DbReachabilityStore>, StoreError> {
+    ) -> StoreResult<RwLockWriteGuard<'a, DbReachabilityStore>> {
         let mut store_write = RwLockUpgradableReadGuard::upgrade(self.store_read);
         for (k, v) in self.staging_writes {
             let data = Arc::new(v);
@@ -258,7 +257,7 @@ impl<'a> StagingReachabilityStore<'a> {
 }
 
 impl ReachabilityStore for StagingReachabilityStore<'_> {
-    fn init(&mut self, origin: Hash, capacity: Interval) -> Result<(), StoreError> {
+    fn init(&mut self, origin: Hash, capacity: Interval) -> StoreResult<()> {
         self.insert(origin, Hash::new(blockhash::NONE), capacity, 0)?;
         self.set_reindex_root(origin)?;
         Ok(())
@@ -270,7 +269,7 @@ impl ReachabilityStore for StagingReachabilityStore<'_> {
         parent: Hash,
         interval: Interval,
         height: u64,
-    ) -> Result<(), StoreError> {
+    ) -> StoreResult<()> {
         if self.store_read.has(hash)? {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }
@@ -282,7 +281,7 @@ impl ReachabilityStore for StagingReachabilityStore<'_> {
         }
     }
 
-    fn set_interval(&mut self, hash: Hash, interval: Interval) -> Result<(), StoreError> {
+    fn set_interval(&mut self, hash: Hash, interval: Interval) -> StoreResult<()> {
         if let Some(data) = self.staging_writes.get_mut(&hash) {
             data.interval = interval;
             return Ok(());
@@ -295,7 +294,7 @@ impl ReachabilityStore for StagingReachabilityStore<'_> {
         Ok(())
     }
 
-    fn append_child(&mut self, hash: Hash, child: Hash) -> Result<u64, StoreError> {
+    fn append_child(&mut self, hash: Hash, child: Hash) -> StoreResult<u64> {
         if let Some(data) = self.staging_writes.get_mut(&hash) {
             Arc::make_mut(&mut data.children).push(child);
             return Ok(data.height);
@@ -314,7 +313,7 @@ impl ReachabilityStore for StagingReachabilityStore<'_> {
         hash: Hash,
         fci: Hash,
         insertion_index: usize,
-    ) -> Result<(), StoreError> {
+    ) -> StoreResult<()> {
         if let Some(data) = self.staging_writes.get_mut(&hash) {
             Arc::make_mut(&mut data.future_covering_set).insert(insertion_index, fci);
             return Ok(());
@@ -327,7 +326,7 @@ impl ReachabilityStore for StagingReachabilityStore<'_> {
         Ok(())
     }
 
-    fn get_height(&self, hash: Hash) -> Result<u64, StoreError> {
+    fn get_height(&self, hash: Hash) -> StoreResult<u64> {
         if let Some(data) = self.staging_writes.get(&hash) {
             Ok(data.height)
         } else {
@@ -335,12 +334,12 @@ impl ReachabilityStore for StagingReachabilityStore<'_> {
         }
     }
 
-    fn set_reindex_root(&mut self, root: Hash) -> Result<(), StoreError> {
+    fn set_reindex_root(&mut self, root: Hash) -> StoreResult<()> {
         self.staging_reindex_root = Some(root);
         Ok(())
     }
 
-    fn get_reindex_root(&self) -> Result<Hash, StoreError> {
+    fn get_reindex_root(&self) -> StoreResult<Hash> {
         if let Some(root) = self.staging_reindex_root {
             Ok(root)
         } else {
@@ -350,11 +349,11 @@ impl ReachabilityStore for StagingReachabilityStore<'_> {
 }
 
 impl ReachabilityStoreReader for StagingReachabilityStore<'_> {
-    fn has(&self, hash: Hash) -> Result<bool, StoreError> {
+    fn has(&self, hash: Hash) -> StoreResult<bool> {
         Ok(self.staging_writes.contains_key(&hash) || self.store_read.access.has(hash)?)
     }
 
-    fn get_interval(&self, hash: Hash) -> Result<Interval, StoreError> {
+    fn get_interval(&self, hash: Hash) -> StoreResult<Interval> {
         if let Some(data) = self.staging_writes.get(&hash) {
             Ok(data.interval)
         } else {
@@ -362,7 +361,7 @@ impl ReachabilityStoreReader for StagingReachabilityStore<'_> {
         }
     }
 
-    fn get_parent(&self, hash: Hash) -> Result<Hash, StoreError> {
+    fn get_parent(&self, hash: Hash) -> StoreResult<Hash> {
         if let Some(data) = self.staging_writes.get(&hash) {
             Ok(data.parent)
         } else {
@@ -370,7 +369,7 @@ impl ReachabilityStoreReader for StagingReachabilityStore<'_> {
         }
     }
 
-    fn get_children(&self, hash: Hash) -> Result<BlockHashes, StoreError> {
+    fn get_children(&self, hash: Hash) -> StoreResult<BlockHashes> {
         if let Some(data) = self.staging_writes.get(&hash) {
             Ok(BlockHashes::clone(&data.children))
         } else {
@@ -380,7 +379,7 @@ impl ReachabilityStoreReader for StagingReachabilityStore<'_> {
         }
     }
 
-    fn get_future_covering_set(&self, hash: Hash) -> Result<BlockHashes, StoreError> {
+    fn get_future_covering_set(&self, hash: Hash) -> StoreResult<BlockHashes> {
         if let Some(data) = self.staging_writes.get(&hash) {
             Ok(BlockHashes::clone(&data.future_covering_set))
         } else {
@@ -410,50 +409,27 @@ impl MemoryReachabilityStore {
         }
     }
 
-    fn get_data_mut(&mut self, hash: Hash) -> Result<&mut ReachabilityData, StoreError> {
+    fn get_data_mut(&mut self, hash: Hash) -> StoreResult<&mut ReachabilityData> {
         match self.map.get_mut(&hash) {
             Some(data) => Ok(data),
             None => Err(StoreError::KeyNotFound(hash.to_string())),
         }
     }
 
-    fn get_data(&self, hash: Hash) -> Result<&ReachabilityData, StoreError> {
+    fn get_data(&self, hash: Hash) -> StoreResult<&ReachabilityData> {
         match self.map.get(&hash) {
             Some(data) => Ok(data),
-            None => Err(StoreError::KeyNotFound(hash.to_string())),
-        }
-    }
-}
-
-impl ReachabilityStore for MemoryReachabilityStore {
-    fn init(&mut self, origin: Hash, capacity: Interval) -> Result<(), StoreError> {
-        self.insert(origin, Hash::new(blockhash::NONE), capacity, 0)?;
-        self.set_reindex_root(origin)?;
-        Ok(())
-    }
-
-    fn insert(
-        &mut self,
-        hash: Hash,
-        parent: Hash,
-        interval: Interval,
-        height: u64,
-    ) -> Result<(), StoreError> {
-        if let Vacant(e) = self.map.entry(hash) {
-            e.insert(ReachabilityData::new(parent, interval, height));
-            Ok(())
-        } else {
-            Err(StoreError::KeyAlreadyExists(hash.to_string()))
+            None => Err(StoreError::KeyAlreadyExists(hash.to_string())),
         }
     }
 
-    fn set_interval(&mut self, hash: Hash, interval: Interval) -> Result<(), StoreError> {
+    fn set_interval(&mut self, hash: Hash, interval: Interval) -> StoreResult<()> {
         let data = self.get_data_mut(hash)?;
         data.interval = interval;
         Ok(())
     }
 
-    fn append_child(&mut self, hash: Hash, child: Hash) -> Result<u64, StoreError> {
+    fn append_child(&mut self, hash: Hash, child: Hash) -> StoreResult<u64> {
         let data = self.get_data_mut(hash)?;
         Arc::make_mut(&mut data.children).push(child);
         Ok(data.height)
@@ -464,22 +440,22 @@ impl ReachabilityStore for MemoryReachabilityStore {
         hash: Hash,
         fci: Hash,
         insertion_index: usize,
-    ) -> Result<(), StoreError> {
+    ) -> StoreResult<()> {
         let data = self.get_data_mut(hash)?;
         Arc::make_mut(&mut data.future_covering_set).insert(insertion_index, fci);
         Ok(())
     }
 
-    fn get_height(&self, hash: Hash) -> Result<u64, StoreError> {
+    fn get_height(&self, hash: Hash) -> StoreResult<u64> {
         Ok(self.get_data(hash)?.height)
     }
 
-    fn set_reindex_root(&mut self, root: Hash) -> Result<(), StoreError> {
+    fn set_reindex_root(&mut self, root: Hash) -> StoreResult<()> {
         self.reindex_root = Some(root);
         Ok(())
     }
 
-    fn get_reindex_root(&self) -> Result<Hash, StoreError> {
+    fn get_reindex_root(&self) -> StoreResult<Hash> {
         match self.reindex_root {
             Some(root) => Ok(root),
             None => Err(StoreError::KeyNotFound(REINDEX_ROOT_KEY.to_string())),
@@ -488,23 +464,23 @@ impl ReachabilityStore for MemoryReachabilityStore {
 }
 
 impl ReachabilityStoreReader for MemoryReachabilityStore {
-    fn has(&self, hash: Hash) -> Result<bool, StoreError> {
+    fn has(&self, hash: Hash) -> StoreResult<bool> {
         Ok(self.map.contains_key(&hash))
     }
 
-    fn get_interval(&self, hash: Hash) -> Result<Interval, StoreError> {
+    fn get_interval(&self, hash: Hash) -> StoreResult<Interval> {
         Ok(self.get_data(hash)?.interval)
     }
 
-    fn get_parent(&self, hash: Hash) -> Result<Hash, StoreError> {
+    fn get_parent(&self, hash: Hash) -> StoreResult<Hash> {
         Ok(self.get_data(hash)?.parent)
     }
 
-    fn get_children(&self, hash: Hash) -> Result<BlockHashes, StoreError> {
+    fn get_children(&self, hash: Hash) -> StoreResult<BlockHashes> {
         Ok(Arc::clone(&self.get_data(hash)?.children))
     }
 
-    fn get_future_covering_set(&self, hash: Hash) -> Result<BlockHashes, StoreError> {
+    fn get_future_covering_set(&self, hash: Hash) -> StoreResult<BlockHashes> {
         Ok(Arc::clone(&self.get_data(hash)?.future_covering_set))
     }
 }
