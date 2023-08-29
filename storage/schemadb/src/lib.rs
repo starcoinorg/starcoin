@@ -15,7 +15,7 @@ use crate::{
     schema::{KeyCodec, Schema, ValueCodec},
 };
 use parking_lot::Mutex;
-use rocksdb::{DBIterator, IteratorMode, ReadOptions};
+use rocksdb::ReadOptions;
 use starcoin_config::RocksdbConfig;
 use std::{collections::HashMap, path::Path, sync::Arc};
 
@@ -148,25 +148,22 @@ impl DB {
         Ok(self.inner.flush_cf(cf_name)?)
     }
 
-    pub fn iterator_cf_opt<S: Schema>(
-        &self,
-        mode: IteratorMode,
-        readopts: ReadOptions,
-    ) -> Result<DBIterator, StoreError> {
-        Ok(self
-            .inner
-            .raw_iterator_cf_opt(S::COLUMN_FAMILY, mode, readopts)?)
+    pub fn iter<S: Schema>(&self, opts: ReadOptions) -> Result<SchemaIterator<S>, StoreError> {
+        self.iter_with_direction(opts, ScanDirection::Forward)
     }
 
-    pub fn iter_with_direction<S: Schema>(
+    pub fn rev_iter<S: Schema>(&self, opts: ReadOptions) -> Result<SchemaIterator<S>, StoreError> {
+        self.iter_with_direction(opts, ScanDirection::Backward)
+    }
+
+    fn iter_with_direction<S: Schema>(
         &self,
+        opts: ReadOptions,
         direction: ScanDirection,
     ) -> Result<SchemaIterator<S>, StoreError> {
         let cf_handle = self.inner.get_cf_handle(S::COLUMN_FAMILY)?;
         Ok(SchemaIterator::new(
-            self.inner
-                .db
-                .raw_iterator_cf_opt(cf_handle, ReadOptions::default()),
+            self.inner.db.raw_iterator_cf_opt(cf_handle, opts),
             direction,
         ))
     }

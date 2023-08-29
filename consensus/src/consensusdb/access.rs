@@ -1,13 +1,7 @@
 use super::cache::DagCache;
 
-use itertools::Itertools;
-use rocksdb::{Direction, IteratorMode, ReadOptions};
-use starcoin_schemadb::{
-    db::DBStorage,
-    error::StoreError,
-    schema::{KeyCodec, Schema, ValueCodec},
-    SchemaBatch, DB,
-};
+use rocksdb::ReadOptions;
+use starcoin_schemadb::{db::DBStorage, error::StoreError, schema::Schema, SchemaBatch, DB};
 use std::{
     collections::hash_map::RandomState, error::Error, hash::BuildHasher, marker::PhantomData,
     sync::Arc,
@@ -57,17 +51,14 @@ where
 
     pub fn iterator(
         &self,
-    ) -> Result<impl Iterator<Item = Result<(Box<[u8]>, S::Value), Box<dyn Error>>> + '_, StoreError>
+    ) -> Result<impl Iterator<Item = Result<(S::Key, S::Value), Box<dyn Error>>> + '_, StoreError>
     {
-        let db_iterator = self
-            .db
-            .iterator_cf_opt::<S>(IteratorMode::Start, ReadOptions::default())?;
+        let opts = ReadOptions::default();
+        let mut db_iterator = self.db.iter::<S>(opts)?;
+        db_iterator.seek_to_first();
 
         Ok(db_iterator.map(|iter_result| match iter_result {
-            Ok((key, data_bytes)) => match S::Value::decode_value(&data_bytes) {
-                Ok(data) => Ok((key, data)),
-                Err(e) => Err(e.into()),
-            },
+            Ok((key, data)) => Ok((key, data)),
             Err(e) => Err(e.into()),
         }))
     }
@@ -145,50 +136,36 @@ where
 
     pub fn delete_all(&self) -> Result<(), StoreError> {
         self.cache.remove_all();
-        let keys = self
-            .db
-            .iterator_cf_opt::<S>(IteratorMode::Start, ReadOptions::default())?
-            .map(|iter_result| match iter_result {
-                Ok((key, _)) => Ok::<_, rocksdb::Error>(key),
-                Err(e) => Err(e),
-            })
-            .collect_vec();
+        let mut kvs = self.db.iter::<S>(ReadOptions::default())?;
+        kvs.seek_to_first();
+
         let batch = SchemaBatch::new();
-        for key in keys {
-            batch.delete::<S>(&S::Key::decode_key(&key?)?)?;
+        while let Some((key, _)) = kvs.next().transpose()? {
+            batch.delete::<S>(&key)?;
         }
         self.db.write_schemas(batch)?;
         Ok(())
     }
 
-    /// A dynamic iterator that can iterate through a specific prefix, and from a certain start point.
-    //TODO: loop and chain iterators for multi-prefix iterator.
+    /// A dynamic iterator that can iterate through a specific column family, and from a certain start point.
     pub fn seek_iterator(
         &self,
         seek_from: Option<S::Key>, // iter whole range if None
         limit: usize,              // amount to take.
         skip_first: bool, // skips the first value, (useful in conjunction with the seek-key, as to not re-retrieve).
-    ) -> Result<impl Iterator<Item = Result<(Box<[u8]>, S::Value), Box<dyn Error>>> + '_, StoreError>
+    ) -> Result<impl Iterator<Item = Result<(S::Key, S::Value), Box<dyn Error>>> + '_, StoreError>
     {
         let read_opts = ReadOptions::default();
-        let mut db_iterator = match seek_from {
-            Some(seek_key) => self.db.iterator_cf_opt::<S>(
-                IteratorMode::From(seek_key.encode_key()?.as_slice(), Direction::Forward),
-                read_opts,
-            ),
-            None => self.db.iterator_cf_opt::<S>(IteratorMode::Start, read_opts),
-        }?;
+        let mut iter = self.db.iter::<S>(read_opts)?;
+        iter.seek_to_first();
+        if let Some(seek_key) = seek_from {
+            iter.seek(&seek_key)?;
+        };
 
         if skip_first {
-            db_iterator.next();
+            iter.next();
         }
 
-        Ok(db_iterator.take(limit).map(move |item| match item {
-            Ok((key_bytes, value_bytes)) => match S::Value::decode_value(value_bytes.as_ref()) {
-                Ok(value) => Ok((key_bytes, value)),
-                Err(err) => Err(err.into()),
-            },
-            Err(err) => Err(err.into()),
-        }))
+        Ok(iter.take(limit).map(|item| item.map_err(Into::into)))
     }
 }
