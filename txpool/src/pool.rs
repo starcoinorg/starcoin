@@ -185,7 +185,7 @@ impl VerifiedTransaction {
         self.insertion_id
     }
 
-    /// Gets wrapped `SignedTransaction`
+    /// Gets wrapped `SignedUserTransaction`
     pub fn signed(&self) -> &transaction::SignedUserTransaction {
         &self.transaction
     }
