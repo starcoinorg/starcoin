@@ -18,6 +18,7 @@ members = [
     "commons/forkable-jellyfish-merkle",
     "commons/time-service",
     "commons/infallible",
+    "commons/starcoin-temppath",
     "types",
     "types/uint",
     "genesis",
@@ -28,6 +29,7 @@ members = [
     "state/service",
     "config",
     "storage",
+    "storage/schemadb",
     "consensus",
     "consensus/cryptonight-rs",
     "testsuite",
@@ -131,6 +133,7 @@ default-members = [
     "commons/accumulator",
     "commons/forkable-jellyfish-merkle",
     "commons/infallible",
+    "commons/starcoin-temppath",
     "types",
     "types/uint",
     "genesis",
@@ -141,6 +144,7 @@ default-members = [
     "state/service",
     "config",
     "storage",
+    "storage/schemadb",
     "consensus",
     "consensus/cryptonight-rs",
     "testsuite",
@@ -475,6 +479,7 @@ starcoin-state-store-api = { path = "state/state-store-api" }
 starcoin-state-tree = { path = "state/state-tree" }
 starcoin-statedb = { path = "state/statedb" }
 starcoin-storage = { path = "storage" }
+starcoin-schemadb = { path = "storage/schemadb" }
 starcoin-stratum = { path = "stratum" }
 starcoin-sync = { path = "sync" }
 starcoin-sync-api = { path = "sync/api" }
@@ -489,6 +494,7 @@ starcoin-types = { path = "types" }
 starcoin-uint = { path = "types/uint" }
 starcoin-vm-runtime = { path = "vm/vm-runtime" }
 starcoin-vm-types = { path = "vm/types" }
+starcoin-temppath = { path = "commons/starcoin-temppath" }
 stdlib = { path = "vm/stdlib" }
 stest = { path = "commons/stest" }
 stest-macro = { path = "commons/stest/stest-macro" }
