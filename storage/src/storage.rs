@@ -1,23 +1,22 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-pub use crate::batch::WriteBatch;
-use crate::cache_storage::CacheStorage;
-use crate::db_storage::{DBStorage, SchemaIterator};
-use crate::upgrade::DBUpgrade;
+use crate::{
+    cache_storage::CacheStorage,
+    db_storage::{ClassicIter, SchemaIterator},
+    upgrade::DBUpgrade,
+};
 use anyhow::{bail, format_err, Result};
 use byteorder::{BigEndian, ReadBytesExt};
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 use starcoin_vm_types::state_store::table::TableHandle;
-use std::convert::TryInto;
-use std::fmt::Debug;
-use std::marker::PhantomData;
-use std::sync::Arc;
-
-/// Type alias to improve readability.
-pub type ColumnFamilyName = &'static str;
+use std::{convert::TryInto, fmt::Debug, marker::PhantomData, sync::Arc};
+pub use {
+    crate::batch::WriteBatch,
+    starcoin_schemadb::{db::DBStorage, ColumnFamilyName, GWriteOp as WriteOp},
+};
 
 #[allow(clippy::upper_case_acronyms)]
 pub trait KVStore: Send + Sync {
@@ -374,30 +373,12 @@ pub trait ValueCodec: Clone + Sized + Debug + std::marker::Send + std::marker::S
 }
 
 #[derive(Debug, Clone)]
-pub enum WriteOp<V> {
-    Value(V),
-    Deletion,
-}
-
-impl<V> WriteOp<V>
-where
-    V: ValueCodec,
-{
-    pub fn into_raw_op(self) -> Result<WriteOp<Vec<u8>>> {
-        Ok(match self {
-            WriteOp::Value(v) => WriteOp::Value(v.encode_value()?),
-            WriteOp::Deletion => WriteOp::Deletion,
-        })
-    }
-}
-
-#[derive(Debug, Clone)]
 pub struct CodecWriteBatch<K, V>
 where
     K: KeyCodec,
     V: ValueCodec,
 {
-    rows: Vec<(K, WriteOp<V>)>,
+    rows: Vec<WriteOp<K, V>>,
 }
 
 impl<K, V> Default for CodecWriteBatch<K, V>
@@ -422,25 +403,25 @@ where
 
     pub fn new_puts(kvs: Vec<(K, V)>) -> Self {
         let mut rows = Vec::new();
-        rows.extend(kvs.into_iter().map(|(k, v)| (k, WriteOp::Value(v))));
+        rows.extend(kvs.into_iter().map(|(k, v)| (WriteOp::Value(k, v))));
         Self { rows }
     }
 
     pub fn new_deletes(ks: Vec<K>) -> Self {
         let mut rows = Vec::new();
-        rows.extend(ks.into_iter().map(|k| (k, WriteOp::Deletion)));
+        rows.extend(ks.into_iter().map(|k| WriteOp::Deletion(k)));
         Self { rows }
     }
 
     /// Adds an insert/update operation to the batch.
     pub fn put(&mut self, key: K, value: V) -> Result<()> {
-        self.rows.push((key, WriteOp::Value(value)));
+        self.rows.push(WriteOp::Value(key, value));
         Ok(())
     }
 
     /// Adds a delete operation to the batch.
     pub fn delete(&mut self, key: K) -> Result<()> {
-        self.rows.push((key, WriteOp::Deletion));
+        self.rows.push(WriteOp::Deletion(key));
         Ok(())
     }
 
@@ -456,8 +437,8 @@ where
     K: KeyCodec,
     V: ValueCodec,
 {
-    type Item = (K, WriteOp<V>);
-    type IntoIter = std::vec::IntoIter<(K, WriteOp<V>)>;
+    type Item = WriteOp<K, V>;
+    type IntoIter = std::vec::IntoIter<WriteOp<K, V>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.rows.into_iter()
