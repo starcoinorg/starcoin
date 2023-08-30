@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: ghcr.io/starcoinorg/starcoin:barnard_rollback_block_fix_gas_schedule
+        image: ghcr.io/starcoinorg/starcoin:barnard_rollback_block_fix_gas_schedule2
         imagePullPolicy: Always
         command:
           - bash
