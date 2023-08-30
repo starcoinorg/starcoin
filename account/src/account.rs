@@ -35,7 +35,7 @@ impl Account {
     ) -> AccountResult<Self> {
         storage.update_key(address, &private_key, password.as_str())?;
         let setting = Setting::default();
-        storage.put_setting(address, setting.clone())?;
+        storage.update_setting(address, setting.clone())?;
         Ok(Self {
             addr: address,
             public_key: private_key.public_key(),
@@ -52,7 +52,7 @@ impl Account {
     ) -> AccountResult<Self> {
         storage.update_public_key(address, public_key.clone())?;
         let setting = Setting::readonly();
-        storage.put_setting(address, setting.clone())?;
+        storage.update_setting(address, setting.clone())?;
         Ok(Self {
             addr: address,
             public_key,
@@ -106,7 +106,7 @@ impl Account {
     pub fn set_default(&mut self) -> Result<()> {
         self.setting.is_default = true;
         self.store.set_default_address(Some(self.addr))?;
-        self.store.put_setting(self.addr, self.setting.clone())?;
+        self.store.update_setting(self.addr, self.setting.clone())?;
         Ok(())
     }
 

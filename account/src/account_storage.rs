@@ -86,30 +86,19 @@ impl AccountStorage {
                 let val = GlobalValue {
                     addresses: vec![addr],
                 };
-                self.db.put::<GlobalSetting>(&key, &val)?;
-                self.global_value_store.put(key, val)
+                self.put_addresses(key, val)
             }
-            None => {
-                self.db.remove::<GlobalSetting>(&key)?;
-                self.global_value_store
-                    .remove(&GlobalSettingKey::DefaultAddress)
-            }
+            None => self.remove_address(&key),
         }
     }
 
     pub fn contain_address(&self, address: AccountAddress) -> Result<bool> {
-        match self.public_key_store.get(&address.into())? {
+        match self.get_public_key(&address.into())? {
             Some(v) => {
                 let _ = Into::<AccountPublicKey>::into(v);
                 Ok(true)
             }
-            None => match self.db.get::<PublicKey>(&address.into())? {
-                Some(v) => {
-                    let _ = Into::<AccountPublicKey>::into(v);
-                    Ok(true)
-                }
-                None => Ok(false),
-            },
+            None => Ok(false),
         }
     }
 
@@ -129,6 +118,11 @@ impl AccountStorage {
             .and_then(|_| self.global_value_store.put(key, value))
     }
 
+    fn remove_address(&self, key: &GlobalSettingKey) -> Result<()> {
+        self.db.remove::<GlobalSetting>(key)?;
+        self.global_value_store.remove(key)
+    }
+
     /// FIXME: once storage support iter, we can remove this.
     pub fn add_address(&self, address: AccountAddress) -> Result<()> {
         let value = self.get_addresses(&GlobalSettingKey::AllAddresses)?;
@@ -142,7 +136,7 @@ impl AccountStorage {
         )
     }
 
-    pub fn remove_address(&self, address: AccountAddress) -> Result<()> {
+    pub fn remove_address_from_all(&self, address: AccountAddress) -> Result<()> {
         let value = self.get_addresses(&GlobalSettingKey::AllAddresses)?;
         let mut addrs = value.map(|v| v.addresses).unwrap_or_default();
         addrs.retain(|a| a != &address);
@@ -188,12 +182,12 @@ impl AccountStorage {
             .unwrap_or_else(|| self.db.get::<PrivateKey>(address))
     }
 
-    fn put_private_key(&self, key: AccountAddress, value: EncryptedPrivateKey) -> Result<()> {
-        let key: AccountAddressWrapper = key.into();
-        self.db
-            .put::<PrivateKey>(&key, &value)
-            .and_then(|_| self.private_key_store.put(key, value))
-    }
+    //fn put_private_key(&self, key: AccountAddress, value: EncryptedPrivateKey) -> Result<()> {
+    //    let key: AccountAddressWrapper = key.into();
+    //    self.db
+    //        .put::<PrivateKey>(&key, &value)
+    //        .and_then(|_| self.private_key_store.put(key, value))
+    //}
 
     pub fn decrypt_private_key(
         &self,
@@ -225,19 +219,27 @@ impl AccountStorage {
         private_key: &AccountPrivateKey,
         password: impl AsRef<str>,
     ) -> Result<()> {
+        let batch = SchemaBatch::default();
         let encrypted_prikey = encrypt(password.as_ref().as_bytes(), &private_key.to_bytes());
-        self.put_private_key(address, encrypted_prikey.into())?;
+        self.private_key_store
+            .put_batch(address.into(), encrypted_prikey.into(), &batch)?;
         let public_key = private_key.public_key();
-        self.update_public_key(address, public_key)?;
+        self.public_key_store
+            .put_batch(address.into(), public_key.into(), &batch)?;
+        self.write_schemas(batch)?;
         Ok(())
     }
 
-    pub fn put_setting(&self, address: AccountAddress, setting: Setting) -> Result<()> {
+    fn put_setting(&self, address: AccountAddress, setting: Setting) -> Result<()> {
         let key: AccountAddressWrapper = address.into();
         let value: SettingWrapper = setting.into();
         self.db
             .put::<AccountSetting>(&key, &value)
             .and_then(|_| self.setting_store.put(key, value))
+    }
+
+    pub fn update_setting(&self, address: AccountAddress, setting: Setting) -> Result<()> {
+        self.put_setting(address, setting)
     }
 
     pub fn load_setting(&self, address: AccountAddress) -> Result<Setting> {
@@ -255,20 +257,34 @@ impl AccountStorage {
         let batch = SchemaBatch::default();
 
         if self.default_address()?.filter(|a| a == &address).is_some() {
-            self.set_default_address(None)?;
+            // clean up default address
+            // self.set_default_address(None)?;
+            self.global_value_store
+                .remove_batch(&GlobalSettingKey::DefaultAddress, &batch)?;
         }
-        self.remove_address(address)?;
+
+        //self.remove_address_from_all(address)?;
+        {
+            if let Some(GlobalValue {
+                addresses: mut addrs,
+            }) = self.get_addresses(&GlobalSettingKey::AllAddresses)?
+            {
+                addrs.retain(|a| a != &address);
+                self.global_value_store.put_batch(
+                    GlobalSettingKey::AllAddresses,
+                    GlobalValue { addresses: addrs },
+                    &batch,
+                )?;
+            }
+        }
 
         let key: AccountAddressWrapper = address.into();
-        batch.delete::<PrivateKey>(&key)?;
-        self.private_key_store.remove(&key)?;
-        batch.delete::<PublicKey>(&key)?;
-        self.public_key_store.remove(&key)?;
-        batch.delete::<AccountSetting>(&key)?;
-        self.setting_store.remove(&key)?;
-        batch.delete::<AcceptedToken>(&key)?;
-        self.accepted_token_store.remove(&key)?;
+        self.private_key_store.remove_batch(&key, &batch)?;
+        self.public_key_store.remove_batch(&key, &batch)?;
+        self.setting_store.remove_batch(&key, &batch)?;
+        self.accepted_token_store.remove_batch(&key, &batch)?;
 
+        // persist updates to underlying storage
         self.db.write_schemas(batch)?;
 
         Ok(())

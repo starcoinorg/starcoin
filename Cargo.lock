@@ -9054,6 +9054,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-decrypt",
  "starcoin-logger",
+ "starcoin-schemadb",
  "starcoin-storage",
  "starcoin-types",
  "tempfile",
@@ -10374,9 +10375,13 @@ name = "starcoin-schemadb"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "coarsetime",
+ "num_enum",
+ "once_cell",
  "parking_lot 0.12.1",
  "rocksdb",
- "starcoin-storage",
+ "starcoin-config",
+ "starcoin-metrics",
  "thiserror",
 ]
 
@@ -10512,6 +10517,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-metrics",
+ "starcoin-schemadb",
  "starcoin-state-store-api",
  "starcoin-types",
  "starcoin-uint",
