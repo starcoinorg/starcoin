@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: ghcr.io/starcoin/starcoin:v1.13.7
+        image: ghcr.io/starcoinorg/starcoin:barnard_rollback_block_fix_gas_schedule
         imagePullPolicy: Always
         command:
           - bash
@@ -79,8 +79,8 @@ spec:
               - -c
               - >-
                  /starcoin/starcoin -n barnard -d /sc-data node sync status|grep Synchronized
-          initialDelaySeconds: 10
-          periodSeconds: 5
+          initialDelaySeconds: 120
+          periodSeconds: 30
           timeoutSeconds: 2
           failureThreshold: 3
           successThreshold: 1
