@@ -327,9 +327,7 @@ impl BlockStore for Storage {
             format_err!("Startup block info {:?} should exist", startup_info.main)
         })?;
 
-        let flexi_dag_accumulator_info = self
-            .get_dag_accumulator_info()
-            .unwrap_or(AccumulatorInfo::default());
+        let flexi_dag_accumulator_info = self.get_dag_accumulator_info().unwrap_or_default();
         let chain_info = ChainInfo::new(
             head_block.chain_id(),
             genesis_hash,

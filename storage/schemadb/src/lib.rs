@@ -145,7 +145,7 @@ impl DB {
     }
 
     pub fn flush_cf(&self, cf_name: &str) -> Result<()> {
-        Ok(self.inner.flush_cf(cf_name)?)
+        self.inner.flush_cf(cf_name)
     }
 
     pub fn iter<S: Schema>(&self, opts: ReadOptions) -> Result<SchemaIterator<S>> {
