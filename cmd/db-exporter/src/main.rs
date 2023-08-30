@@ -30,7 +30,7 @@ use starcoin_storage::{
     block::FailedBlock,
     block_info::BlockInfoStore,
     cache_storage::CacheStorage,
-    db_storage::DBStorage,
+    db_storage::{ClassicIter, DBStorage},
     storage::{ColumnFamilyName, InnerStore, StorageInstance, ValueCodec},
     BlockStore, Storage, StorageVersion, Store, BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
     BLOCK_HEADER_PREFIX_NAME, BLOCK_INFO_PREFIX_NAME, BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
