@@ -4,19 +4,19 @@
 use crate::account_manager::gen_private_key;
 use crate::account_storage::AccountStorage;
 use anyhow::{format_err, Result};
-use starcoin_account_api::error::AccountError;
 use starcoin_account_api::{
-    AccountInfo, AccountPrivateKey, AccountPublicKey, AccountResult, Setting,
+    error::AccountError, AccountInfo, AccountPrivateKey, AccountPublicKey, AccountResult, Setting,
 };
 use starcoin_crypto::PrivateKey;
 use starcoin_logger::prelude::*;
-use starcoin_storage::storage::StorageInstance;
-use starcoin_types::account_address;
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::genesis_config::ChainId;
-use starcoin_types::sign_message::{SignedMessage, SigningMessage};
-use starcoin_types::transaction::authenticator::AuthenticationKey;
-use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_types::{
+    account_address,
+    account_address::AccountAddress,
+    genesis_config::ChainId,
+    sign_message::{SignedMessage, SigningMessage},
+    transaction::authenticator::AuthenticationKey,
+    transaction::{RawUserTransaction, SignedUserTransaction},
+};
 
 pub struct Account {
     addr: AccountAddress,
@@ -172,7 +172,7 @@ impl Account {
         let private_key = gen_private_key();
         let public_key = private_key.public_key();
         let address = account_address::from_public_key(&public_key);
-        let storage = AccountStorage::new(StorageInstance::new_cache_instance());
+        let storage = AccountStorage::mock();
         Self::create(address, private_key.into(), "".to_string(), storage).map_err(|e| e.into())
     }
 }
