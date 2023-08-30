@@ -9141,6 +9141,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-decrypt",
  "starcoin-logger",
+ "starcoin-schemadb",
  "starcoin-storage",
  "starcoin-types",
  "tempfile",
