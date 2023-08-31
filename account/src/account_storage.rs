@@ -62,7 +62,13 @@ impl AccountStorage {
         let db = DB::create_from_path(
             "acccountmock",
             &path,
-            vec![],
+            vec![
+                SETTING_PREFIX_NAME,
+                ENCRYPTED_PRIVATE_KEY_PREFIX_NAME,
+                PUBLIC_KEY_PREFIX_NAME,
+                ACCEPTED_TOKEN_PREFIX_NAME,
+                GLOBAL_PREFIX_NAME,
+            ],
             false,
             RocksdbConfig::default(),
             None,
