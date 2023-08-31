@@ -50,9 +50,8 @@ use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::on_chain_config::{
-    GasSchedule, MoveLanguageVersion, G_GAS_CONSTANTS_IDENTIFIER, G_GAS_SCHEDULE_GAS_SCHEDULE,
-    G_GAS_SCHEDULE_IDENTIFIER, G_INSTRUCTION_SCHEDULE_IDENTIFIER, G_NATIVE_SCHEDULE_IDENTIFIER,
-    G_VM_CONFIG_IDENTIFIER,
+    GasSchedule, MoveLanguageVersion, G_GAS_CONSTANTS_IDENTIFIER,
+    G_INSTRUCTION_SCHEDULE_IDENTIFIER, G_NATIVE_SCHEDULE_IDENTIFIER, G_VM_CONFIG_IDENTIFIER,
 };
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateReaderExt;
@@ -269,26 +268,8 @@ impl StarcoinVM {
                     "stdlib version: {}, fetch schedule from onchain  module GasSchedule",
                     stdlib_version
                 );
-                let gas_schedule = {
-                    let data = self
-                        .execute_readonly_function_internal(
-                            state,
-                            &ModuleId::new(
-                                core_code_address(),
-                                G_GAS_SCHEDULE_IDENTIFIER.to_owned(),
-                            ),
-                            G_GAS_SCHEDULE_GAS_SCHEDULE.as_ident_str(),
-                            vec![],
-                            vec![],
-                            false,
-                        )?
-                        .pop()
-                        .ok_or_else(|| {
-                            anyhow::anyhow!("Expect 0x1::GasSchedule::gas_schedule() return value")
-                        })?;
-                    bcs_ext::from_bytes::<GasSchedule>(&data)?
-                };
-                (Some(gas_schedule), "gas schedule from GasSchedule")
+                let gas_schedule = GasSchedule::fetch_config(&remote_storage)?;
+                (gas_schedule, "gas schedule from GasSchedule")
             };
             #[cfg(feature = "print_gas_info")]
             match self.gas_schedule.as_ref() {
