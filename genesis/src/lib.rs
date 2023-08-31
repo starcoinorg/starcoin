@@ -635,10 +635,7 @@ mod tests {
                     .ok_or_else(|| {
                         anyhow::anyhow!("Expect 0x1::GasSchedule::gas_schedule() return value")
                     })?;
-                let mut framework_gas_shedule = bcs_ext::from_bytes::<GasSchedule>(&data)?;
-                framework_gas_shedule
-                    .entries
-                    .retain(|(key, _value)| !key.is_empty());
+                let framework_gas_shedule = bcs_ext::from_bytes::<GasSchedule>(&data)?;
 
                 assert!(
                     !framework_gas_shedule.is_different(genesis_gas_schedule.as_ref().unwrap()),
