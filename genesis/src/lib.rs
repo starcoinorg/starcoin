@@ -586,7 +586,7 @@ mod tests {
             return Ok(());
         }
         match net.stdlib_version() {
-            // test whether it is successful that the function initialize_v3 initializes genesis block for the gas scheduls
+            // test whether it is successful that the function initialize_v2 initializes genesis block for the gas schedules
             // if it is, the gas schedule in genesis block will be the same as the one from the latest cost table
             StdlibVersion::Version(12) | StdlibVersion::Latest => {
                 info!(
