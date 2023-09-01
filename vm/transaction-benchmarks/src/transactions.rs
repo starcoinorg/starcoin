@@ -84,16 +84,48 @@ where
     pub fn bench_parallel<M: Measurement>(&self, b: &mut Bencher<M>) {
         b.iter_batched(
             || {
-                TransactionBenchState::with_size(
+                ParallelBenchState::with_size(
                     &self.strategy,
                     self.num_accounts,
                     self.num_transactions,
                 )
             },
-            |state| state.execute_parallel(),
+            |state| state.execute(),
             // The input here is the entire list of signed transactions, so it's pretty large.
             BatchSize::LargeInput,
         )
+    }
+
+    pub fn manual_parallel(
+        &self,
+        num_accounts: usize,
+        num_txn: usize,
+        num_warmups: usize,
+        num_runs: usize,
+    ) -> Vec<usize> {
+        let mut ret = Vec::new();
+
+        let total_runs = num_warmups + num_runs;
+        for i in 0..total_runs {
+            let state = ParallelBenchState::with_size(&self.strategy, num_accounts, num_txn);
+
+            if i < num_warmups {
+                println!("WARMUP - ignore results");
+                state.execute();
+            } else {
+                println!(
+                    "RUN bencher for: num_threads = {}, \
+                          block_size = {}, \
+                          num_account = {}",
+                    num_cpus::get(),
+                    num_txn,
+                    num_accounts,
+                );
+                ret.push(state.execute());
+            }
+        }
+
+        ret
     }
 }
 
@@ -232,4 +264,38 @@ fn universe_strategy(
     let max_balance = TXN_RESERVED * num_transactions as u64 * 5;
     let balance_strategy = log_balance_strategy(max_balance);
     AccountUniverseGen::strategy(num_accounts, balance_strategy)
+}
+
+struct ParallelBenchState {
+    bench_state: TransactionBenchState,
+}
+
+impl ParallelBenchState {
+    /// Creates a new benchmark state with the given number of accounts and transactions.
+    fn with_size<S>(strategy: S, num_accounts: usize, num_transactions: usize) -> Self
+    where
+        S: Strategy,
+        S::Value: AUTransactionGen,
+    {
+        Self {
+            bench_state: TransactionBenchState::with_universe(
+                strategy,
+                universe_strategy(num_accounts, num_transactions),
+                num_transactions,
+            ),
+        }
+    }
+
+    fn execute(self) -> usize {
+        // let txns = self
+        //     .bench_state
+        //     .transactions
+        //     .into_iter()
+        //     .map(Transaction::UserTransaction)
+        //     .collect();
+
+        let state_view = self.bench_state.executor.get_state_view();
+        // measured - microseconds.
+        ParallelStarcoinVM::execute_block_tps(self.bench_state.transactions.clone(), state_view)
+    }
 }

@@ -24,6 +24,7 @@ use starcoin_vm_types::{
     write_set::{WriteOp, WriteSet},
 };
 use std::collections::BTreeMap;
+use std::time::Instant;
 
 impl PTransaction for PreprocessedTransaction {
     type Key = StateKey;
@@ -108,5 +109,32 @@ impl BlockStarcoinVM {
             )),
             Err(Error::UserError(err)) => Err(err),
         }
+    }
+
+    pub fn execute_block_tps<S: StateView>(
+        transactions: Vec<Transaction>,
+        state_view: &S,
+    ) -> usize {
+        // Verify the signatures of all the transactions in parallel.
+        // This is time consuming so don't wait and do the checking
+        // sequentially while executing the transactions.
+
+        // let mut timer = Instant::now();
+        let signature_verified_block: Vec<PreprocessedTransaction> = transactions
+            .par_iter()
+            .map(|txn| preprocess_transaction(txn.clone()))
+            .collect();
+        // println!("CLONE & Prologue {:?}", timer.elapsed());
+
+        let executor =
+            ParallelTransactionExecutor::<PreprocessedTransaction, StarcoinVMWrapper<S>>::new(num_cpus::get());
+
+        let timer = Instant::now();
+        let useless = executor.execute_transactions_parallel(state_view, signature_verified_block);
+        let exec_t = timer.elapsed();
+
+        drop(useless);
+
+        (transactions.len() * 1000 / exec_t.as_millis() as usize) as usize
     }
 }
