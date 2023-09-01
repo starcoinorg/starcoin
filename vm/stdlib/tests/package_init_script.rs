@@ -1,10 +1,10 @@
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use starcoin_vm_types::transaction::Package;
-use std::{fs::File, io::Read, path::PathBuf};
+use stdlib::COMPILED_MOVE_CODE_DIR;
 
 #[test]
 fn test_package_init_function() -> Result<()> {
-    let path_list = [
+    let _path_list = [
         "./compiled/2/1-2/stdlib.blob",
         "./compiled/3/2-3/stdlib.blob",
         "./compiled/4/3-4/stdlib.blob",
@@ -17,6 +17,7 @@ fn test_package_init_function() -> Result<()> {
         "./compiled/11/10-11/stdlib.blob",
         "./compiled/12/11-12/stdlib.blob",
     ];
+
     let init_strs = [
         "0x00000000000000000000000000000001::PackageTxnManager::convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2",
         "0x00000000000000000000000000000001::StdlibUpgradeScripts::upgrade_from_v2_to_v3",
@@ -30,11 +31,21 @@ fn test_package_init_function() -> Result<()> {
         "",
         "0x00000000000000000000000000000001::StdlibUpgradeScripts::upgrade_from_v11_to_v12",
     ];
-    for (i, str) in path_list.iter().enumerate() {
-        let path = PathBuf::from(*str).canonicalize()?;
-        let mut bytes = vec![];
-        File::open(path)?.read_to_end(&mut bytes)?;
-        let package: Package = bcs_ext::from_bytes(&bytes)?;
+    for (i, version) in (2..=12).collect::<Vec<usize>>().into_iter().enumerate() {
+        let package_file = format!("{}/{}-{}/stdlib.blob", version, version - 1, version);
+        let package = COMPILED_MOVE_CODE_DIR
+            .get_file(package_file)
+            .map(|file| {
+                bcs_ext::from_bytes::<Package>(file.contents())
+                    .expect("Decode package should success")
+            })
+            .ok_or_else(|| {
+                format_err!(
+                    "Can not find upgrade package between version {} and {}",
+                    version - 1,
+                    version
+                )
+            })?;
         let init_fun = if let Some(init_script) = package.init_script() {
             format!("{}::{}", init_script.module(), init_script.function())
         } else {
