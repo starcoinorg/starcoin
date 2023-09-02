@@ -136,7 +136,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetTransactionBlock(txn_id) => {
                 let block_id = self
                     .inner
-                    .get_transaction_info(txn_id)?
+                    .get_transaction_info(&txn_id)?
                     .map(|info| info.block_id());
                 let block = match block_id {
                     Some(id) => self.inner.get_block_by_hash(id)?,
@@ -145,7 +145,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 Ok(ChainResponse::BlockOption(block.map(Box::new)))
             }
             ChainRequest::GetTransactionInfo(hash) => Ok(ChainResponse::TransactionInfo(
-                self.inner.get_transaction_info(hash)?,
+                self.inner.get_transaction_info(&hash)?,
             )),
             ChainRequest::GetBlocksByNumber(number, reverse, count) => Ok(ChainResponse::BlockVec(
                 self.inner.main_blocks_by_number(number, reverse, count)?,
@@ -163,7 +163,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetEventsByTxnHash { txn_hash } => {
                 let txn_info = self
                     .inner
-                    .get_transaction_info(txn_hash)?
+                    .get_transaction_info(&txn_hash)?
                     .ok_or_else(|| anyhow::anyhow!("cannot find txn info of txn {}", txn_hash))?;
 
                 let events = self
@@ -319,7 +319,7 @@ impl ReadableChainService for ChainReaderServiceInner {
 
     fn get_transaction_info(
         &self,
-        txn_hash: HashValue,
+        txn_hash: &HashValue,
     ) -> Result<Option<RichTransactionInfo>, Error> {
         self.main.get_transaction_info(txn_hash)
     }

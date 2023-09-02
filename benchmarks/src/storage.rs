@@ -3,6 +3,7 @@
 
 use criterion::{BatchSize, Bencher};
 use starcoin_crypto::HashValue;
+use starcoin_schemadb::SchemaBatch;
 use starcoin_storage::BlockTransactionInfoStore;
 use starcoin_storage::Storage;
 use starcoin_types::transaction::TransactionInfo;
@@ -18,10 +19,10 @@ pub struct StorageBencher {
 
 impl StorageBencher {
     /// The number of accounts created by default.
-    pub const DEFAULT_NUM_ACCOUNTS: usize = 10;
+    pub const DEFAULT_NUM_ACCOUNTS: usize = 1000;
 
     /// The number of transactions created by default.
-    pub const DEFAULT_NUM_TRANSACTIONS: usize = 20;
+    pub const DEFAULT_NUM_TRANSACTIONS: usize = 2000;
 
     /// Creates a new transaction bencher with default settings.
     pub fn new(storage: Storage) -> Self {
@@ -43,8 +44,10 @@ impl StorageBencher {
         self.num_transactions = num_transactions;
         self
     }
-    /// Executes this state in a single block.
-    fn execute(&self) {
+
+    pub fn setup(&self) -> (Vec<(HashValue, Vec<HashValue>)>, Vec<RichTransactionInfo>) {
+        let mut txn_infos = Vec::with_capacity(self.num_transactions);
+        let mut txn_info_ids = Vec::with_capacity(self.num_transactions);
         for _i in 0..self.num_transactions {
             let transaction_info1 = TransactionInfo::new(
                 HashValue::random(),
@@ -54,19 +57,36 @@ impl StorageBencher {
                 KeptVMStatus::Executed,
             );
 
-            self.storage
-                .save_transaction_infos(vec![RichTransactionInfo::new(
-                    HashValue::zero(),
-                    rand::random(),
-                    transaction_info1,
-                    rand::random(),
-                    rand::random(),
-                )])
-                .unwrap();
+            txn_info_ids.push((
+                transaction_info1.transaction_hash(),
+                vec![transaction_info1.id()],
+            ));
+
+            txn_infos.push(RichTransactionInfo::new(
+                HashValue::zero(),
+                rand::random(),
+                transaction_info1,
+                rand::random(),
+                rand::random(),
+            ));
         }
+        (txn_info_ids, txn_infos)
+    }
+
+    /// Executes this state in a single block.
+    fn execute(&self, data: (Vec<(HashValue, Vec<HashValue>)>, Vec<RichTransactionInfo>)) {
+        let batch = SchemaBatch::new();
+        self.storage
+            .save_transaction_infos_batch(&data.1, &data.0, &batch)
+            .unwrap();
+        self.storage.ledger_db().write_schemas(batch).unwrap();
     }
     /// Runs the bencher.
     pub fn bench(&self, b: &mut Bencher) {
-        b.iter_batched(|| self, |bench| bench.execute(), BatchSize::LargeInput)
+        b.iter_batched(
+            || (self.setup(), self),
+            |(data, bench)| bench.execute(data),
+            BatchSize::LargeInput,
+        )
     }
 }

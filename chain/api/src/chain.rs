@@ -48,7 +48,7 @@ pub trait ChainReader {
     fn get_hash_by_number(&self, number: BlockNumber) -> Result<Option<HashValue>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
     /// Get transaction info by transaction's hash
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<RichTransactionInfo>>;
+    fn get_transaction_info(&self, txn_hash: &HashValue) -> Result<Option<RichTransactionInfo>>;
 
     /// get transaction info by global index in chain.
     fn get_transaction_info_by_global_index(

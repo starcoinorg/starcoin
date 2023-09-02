@@ -1,65 +1,110 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::define_storage;
-use crate::storage::{CodecKVStore, CodecWriteBatch, ValueCodec};
-use crate::{
-    TRANSACTION_INFO_HASH_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
-    TRANSACTION_INFO_PREFIX_NAME_V2,
-};
-use anyhow::{Error, Result};
+use anyhow::Result;
 use bcs_ext::BCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
-use starcoin_types::transaction::{RichTransactionInfo, TransactionInfo};
+use starcoin_schemadb::{
+    db::{
+        TRANSACTION_INFO_HASH_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
+        TRANSACTION_INFO_PREFIX_NAME_V2,
+    },
+    define_schema,
+    schema::{KeyCodec, ValueCodec},
+};
+use starcoin_types::transaction::{RichTransactionInfo, TransactionInfo as TxnInfo};
 
-// This column family is deprecated
-define_storage!(
-    OldTransactionInfoStorage,
-    HashValue,
-    BlockTransactionInfo,
-    TRANSACTION_INFO_PREFIX_NAME
-);
-
-define_storage!(
-    TransactionInfoStorage,
+define_schema!(
+    TransactionInfo,
     HashValue,
     RichTransactionInfo,
     TRANSACTION_INFO_PREFIX_NAME_V2
 );
 
-define_storage!(
-    TransactionInfoHashStorage,
+impl KeyCodec<TransactionInfo> for HashValue {
+    fn encode_key(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+    fn decode_key(data: &[u8]) -> Result<Self> {
+        <Self as BCSCodec>::decode(data)
+    }
+}
+
+impl ValueCodec<TransactionInfo> for RichTransactionInfo {
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        <Self as BCSCodec>::decode(data)
+    }
+}
+
+define_schema!(
+    TransactionInfoHash,
     HashValue,
     Vec<HashValue>,
     TRANSACTION_INFO_HASH_PREFIX_NAME
 );
 
+impl KeyCodec<TransactionInfoHash> for HashValue {
+    fn encode_key(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+
+    fn decode_key(data: &[u8]) -> Result<Self> {
+        <Self as BCSCodec>::decode(data)
+    }
+}
+
+impl ValueCodec<TransactionInfoHash> for Vec<HashValue> {
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        <Self as BCSCodec>::decode(data)
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BlockTransactionInfo {
     pub block_id: HashValue,
-    pub txn_info: TransactionInfo,
+    pub txn_info: TxnInfo,
 }
 
-impl ValueCodec for BlockTransactionInfo {
+// This column family is deprecated
+define_schema!(
+    OldTransactionInfo,
+    HashValue,
+    BlockTransactionInfo,
+    TRANSACTION_INFO_PREFIX_NAME
+);
+
+impl KeyCodec<OldTransactionInfo> for HashValue {
+    fn encode_key(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+
+    fn decode_key(data: &[u8]) -> Result<Self> {
+        <Self as BCSCodec>::decode(data)
+    }
+}
+
+impl ValueCodec<OldTransactionInfo> for BlockTransactionInfo {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
     }
 
     fn decode_value(data: &[u8]) -> Result<Self> {
-        Self::decode(data)
+        <Self as BCSCodec>::decode(data)
     }
 }
 
-impl ValueCodec for RichTransactionInfo {
-    fn encode_value(&self) -> Result<Vec<u8>> {
-        self.encode()
-    }
-
-    fn decode_value(data: &[u8]) -> Result<Self> {
-        Self::decode(data)
-    }
-}
+/*
+use crate::storage::CodecWriteBatch;
+use anyhow::{Error, Result};
+use starcoin_crypto::HashValue;
+use starcoin_types::transaction::RichTransactionInfo;
 
 impl TransactionInfoHashStorage {
     pub(crate) fn get_transaction_info_ids_by_hash(
@@ -116,3 +161,4 @@ impl TransactionInfoStorage {
         self.multiple_get(ids)
     }
 }
+*/

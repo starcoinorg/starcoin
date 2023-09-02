@@ -24,7 +24,7 @@ pub trait ReadableChainService {
     fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockHeader>>>;
     fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<RichTransactionInfo>>;
+    fn get_transaction_info(&self, txn_hash: &HashValue) -> Result<Option<RichTransactionInfo>>;
     fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<RichTransactionInfo>>;
     fn get_txn_info_by_block_and_index(
         &self,

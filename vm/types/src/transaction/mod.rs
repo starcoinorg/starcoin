@@ -860,6 +860,22 @@ impl RichTransactionInfo {
         }
     }
 
+    pub fn random() -> Self {
+        Self::new(
+            HashValue::random(),
+            rand::random(),
+            TransactionInfo::new(
+                HashValue::random(),
+                HashValue::zero(),
+                vec![].as_slice(),
+                1,
+                KeptVMStatus::Executed,
+            ),
+            rand::random(),
+            rand::random(),
+        )
+    }
+
     pub fn block_id(&self) -> HashValue {
         self.block_id
     }

@@ -86,19 +86,7 @@ fn test_storage() {
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
     ))
     .unwrap();
-    let transaction_info1 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            0,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info1 = RichTransactionInfo::random();
     let id = transaction_info1.id();
     storage
         .transaction_info_storage
@@ -117,19 +105,7 @@ fn test_iter() {
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
     ))
     .unwrap();
-    let transaction_info1 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            0,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info1 = RichTransactionInfo::random();
     let id = transaction_info1.id();
     storage
         .transaction_info_storage
@@ -154,19 +130,7 @@ fn test_two_level_storage() {
     let db_storage = instance.db().unwrap();
     let storage = Storage::new(instance.clone()).unwrap();
 
-    let transaction_info1 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            0,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info1 = RichTransactionInfo::random();
     let id = transaction_info1.id();
     storage
         .transaction_info_storage
@@ -401,49 +365,13 @@ pub fn test_cache_evict_multi_get() -> Result<()> {
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None)?,
     );
     let storage = Storage::new(instance.clone())?;
-    let transaction_info1 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            0,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info1 = RichTransactionInfo::random();
     let id1 = transaction_info1.id();
 
-    let transaction_info2 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            0,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info2 = RichTransactionInfo::random();
     let id2 = transaction_info2.id();
 
-    let transaction_info3 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            0,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info3 = RichTransactionInfo::random();
     let id3 = transaction_info3.id();
     storage
         .transaction_info_storage

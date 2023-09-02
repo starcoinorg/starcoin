@@ -84,13 +84,15 @@ fn test_transaction_info_and_proof() -> Result<()> {
     for txn_global_index in 0..all_txns.len() {
         let txn = all_txns.get(txn_global_index).cloned().unwrap();
         let txn_hash = txn.id();
-        let txn_info = block_chain.get_transaction_info(txn_hash)?.ok_or_else(|| {
-            format_err!(
-                "Can not get txn info by txn hash:{}, txn:{:?}",
-                txn_hash,
-                txn
-            )
-        })?;
+        let txn_info = block_chain
+            .get_transaction_info(&txn_hash)?
+            .ok_or_else(|| {
+                format_err!(
+                    "Can not get txn info by txn hash:{}, txn:{:?}",
+                    txn_hash,
+                    txn
+                )
+            })?;
 
         let txn_info_leaf = block_chain
             .get_txn_accumulator()

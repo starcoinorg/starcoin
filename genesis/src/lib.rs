@@ -554,7 +554,7 @@ mod tests {
         assert_eq!(
             txn_accumulator.get_leaf(0).unwrap().unwrap(),
             storage1
-                .get_transaction_info_by_txn_hash(genesis_txn.id())
+                .get_transaction_info_by_txn_hash(&genesis_txn.id())
                 .unwrap()
                 .pop()
                 .unwrap()
