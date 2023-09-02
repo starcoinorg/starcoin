@@ -8,9 +8,10 @@ use flatten_json::flatten;
 use serde_json::{json, Value};
 use std::str::FromStr;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum OutputFormat {
+    #[default]
     JSON,
     TABLE,
 }
@@ -24,12 +25,6 @@ impl FromStr for OutputFormat {
             "table" | "TABLE" => OutputFormat::TABLE,
             _ => OutputFormat::JSON,
         })
-    }
-}
-
-impl Default for OutputFormat {
-    fn default() -> Self {
-        OutputFormat::JSON
     }
 }
 

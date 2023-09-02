@@ -65,7 +65,7 @@ mod inner {
 
     /// Wrapper around `mpsc::unbounded` that tracks the in- and outflow via
     /// `UNBOUNDED_CHANNELS_COUNTER`
-    #[allow(clippy::clone_double_ref)]
+    #[allow(suspicious_double_ref_op)]
     pub fn tracing_unbounded<T>(
         key: &'static str,
     ) -> (TracingUnboundedSender<T>, TracingUnboundedReceiver<T>) {

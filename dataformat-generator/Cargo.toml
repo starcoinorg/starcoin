@@ -1,9 +1,9 @@
 [build-dependencies]
 serde-reflection = { workspace = true }
-starcoin-crypto = { package = "starcoin-crypto", workspace = true }
-starcoin-types = { package = "starcoin-types", workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-types = { workspace = true }
 anyhow = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 serde = { features = ["derive"], workspace = true }
 serde_yaml = { workspace = true }
 starcoin-vm-types = { workspace = true }

@@ -14,7 +14,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     let epoch = chain.epoch();
     let current_header = chain.current_header();
     if current_header.number() <= 1 {
-        return Ok(difficult_to_target(current_header.difficulty()));
+        return difficult_to_target(current_header.difficulty());
     }
     let start_window_num = if current_header.number() < epoch.block_difficulty_window() {
         0
@@ -35,7 +35,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
             chain
                 .get_header_by_number(n)?
                 .ok_or_else(|| format_err!("Can not find header by number {}", n))
-                .map(|header| header.into())
+                .and_then(|header| header.try_into())
         })
         .collect::<Result<Vec<BlockDiffInfo>>>()?;
     if start_window_num != 0 {
@@ -102,14 +102,17 @@ pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Res
     }
     // new_target = avg_target * avg_time_used/time_plan
     // avoid the target increase or reduce too fast.
-    let new_target = if let Some(new_target) = (avg_target / time_plan).checked_mul(avg_time.into())
+    let new_target = if let Some(new_target) = avg_target
+        .checked_div(time_plan.into())
+        .and_then(|r| r.checked_mul(avg_time.into()))
     {
-        if new_target / 2 > avg_target {
+        // the divisor is `2` and never be `0`
+        if new_target.checked_div(2.into()).unwrap() > avg_target {
             debug!("target increase too fast, limit to 2 times");
-            avg_target * 2
-        } else if new_target < avg_target / 2 {
+            avg_target.saturating_mul(2.into())
+        } else if new_target < avg_target.checked_div(2.into()).unwrap() {
             debug!("target reduce too fast, limit to 2 times");
-            avg_target / 2
+            avg_target.checked_div(2.into()).unwrap()
         } else {
             new_target
         }
@@ -136,11 +139,12 @@ impl BlockDiffInfo {
     }
 }
 
-impl From<BlockHeader> for BlockDiffInfo {
-    fn from(block_header: BlockHeader) -> Self {
-        Self {
+impl TryFrom<BlockHeader> for BlockDiffInfo {
+    type Error = anyhow::Error;
+    fn try_from(block_header: BlockHeader) -> Result<Self, Self::Error> {
+        Ok(Self {
             timestamp: block_header.timestamp(),
-            target: difficult_to_target(block_header.difficulty()),
-        }
+            target: difficult_to_target(block_header.difficulty())?,
+        })
     }
 }

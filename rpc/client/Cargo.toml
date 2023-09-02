@@ -3,7 +3,7 @@ actix = { workspace = true }
 actix-rt = { workspace = true }
 anyhow = { workspace = true }
 async-std = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 futures = { workspace = true }
 futures-timer = { workspace = true }
 hex = { workspace = true }
@@ -24,7 +24,7 @@ jsonrpc-derive = { workspace = true }
 jsonrpc-pubsub = { workspace = true }
 jsonrpc-server-utils = { workspace = true }
 log = { workspace = true }
-network-api = { package = "network-api", workspace = true }
+network-api = { workspace = true }
 network-p2p-types = { workspace = true }
 network-types = { workspace = true }
 parity-tokio-ipc = { workspace = true }

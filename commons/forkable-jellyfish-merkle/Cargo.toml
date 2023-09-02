@@ -5,7 +5,7 @@ name = "bench_merkle_tree"
 [dependencies]
 anyhow = { workspace = true }
 backtrace = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 byteorder = { workspace = true }
 hex = { workspace = true }
 mirai-annotations = { workspace = true }

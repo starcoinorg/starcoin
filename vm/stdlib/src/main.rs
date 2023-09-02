@@ -326,7 +326,6 @@ fn main() {
                 .collect::<BTreeMap<_, _>>();
             let incompatible_module_ids = new_modules
                 .values()
-                .into_iter()
                 .filter_map(|module| {
                     let module_id = module.self_id();
                     if let Some(old_module) = pre_stable_modules.get(&module_id) {

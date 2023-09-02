@@ -42,7 +42,7 @@ jsonrpc-derive = { workspace = true }
 jsonrpc-http-server = { workspace = true }
 move-resource-viewer = { workspace = true }
 starcoin-abi-decoder = { workspace = true }
-starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
+starcoin-accumulator = { workspace = true }
 starcoin-chain-api = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }

@@ -10,14 +10,14 @@ use starcoin_crypto::HashValue;
 
 #[derive(Debug, Parser)]
 #[clap(name = "get-root", alias = "get_root")]
-pub struct GetOpt {}
+pub struct GetRootOpt {}
 
 pub struct GetRootCommand;
 
 impl CommandAction for GetRootCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = GetOpt;
+    type Opt = GetRootOpt;
     type ReturnItem = HashValue;
 
     fn run(

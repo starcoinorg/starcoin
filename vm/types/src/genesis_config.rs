@@ -11,7 +11,9 @@ use std::fmt::{self, Formatter};
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[derive(Default)]
 pub enum StdlibVersion {
+    #[default]
     Latest,
     Version(VersionNumber),
 }
@@ -71,11 +73,7 @@ impl Ord for StdlibVersion {
     }
 }
 
-impl Default for StdlibVersion {
-    fn default() -> Self {
-        StdlibVersion::Latest
-    }
-}
+
 
 impl FromStr for StdlibVersion {
     type Err = anyhow::Error;
@@ -114,7 +112,9 @@ impl Display for StdlibVersion {
 )]
 #[repr(u8)]
 #[serde(tag = "type")]
+#[derive(Default)]
 pub enum ConsensusStrategy {
+    #[default]
     Dummy = 0,
     Argon = 1,
     Keccak = 2,
@@ -127,11 +127,7 @@ impl ConsensusStrategy {
     }
 }
 
-impl Default for ConsensusStrategy {
-    fn default() -> Self {
-        ConsensusStrategy::Dummy
-    }
-}
+
 
 impl fmt::Display for ConsensusStrategy {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

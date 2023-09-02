@@ -5,7 +5,7 @@ asynchronous-codec = { workspace = true }
 bitflags = { workspace = true }
 bytes = { workspace = true }
 once_cell = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 async-std = { workspace = true }
 bs58 = { workspace = true }
 derive_more = { workspace = true }
