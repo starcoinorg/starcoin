@@ -59,7 +59,6 @@ impl CommandAction for GenerateKeypairCommand {
             KeyGen::from_os_rng()
         };
         let keypairs = (0..opt.count.unwrap_or(1))
-            .into_iter()
             .map(|_| {
                 let (private_key, public_key) = key_gen.generate_keypair();
                 let account_public_key = AccountPublicKey::single(public_key);

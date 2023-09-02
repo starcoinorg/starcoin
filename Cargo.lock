@@ -7763,6 +7763,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom 0.2.8",
+ "serde 1.0.152",
 ]
 
 [[package]]
@@ -9613,8 +9614,6 @@ dependencies = [
  "futures 0.3.26",
  "hex",
  "once_cell",
- "proptest",
- "proptest-derive",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "rust-argon2",

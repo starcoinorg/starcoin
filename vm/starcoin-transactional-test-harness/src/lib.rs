@@ -981,7 +981,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             module,
             (data_path.to_owned(), data),
         );
-        Ok((warnings_opt, Some(serde_json::to_value(&package_result)?)))
+        Ok((warnings_opt, Some(serde_json::to_value(package_result)?)))
     }
 
     fn handle_deploy(

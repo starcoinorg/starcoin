@@ -1,6 +1,6 @@
 [dependencies]
-hex = { default-features = false, workspace = true }
-serde = { default-features = false, workspace = true }
+hex = { features = ["serde"], workspace = true }
+serde = { features = ["derive"], workspace = true }
 starcoin-crypto = { workspace = true }
 uint = { workspace = true }
 

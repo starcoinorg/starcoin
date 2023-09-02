@@ -60,6 +60,7 @@ use std::sync::Arc;
 )]
 #[repr(u8)]
 #[allow(clippy::upper_case_acronyms)]
+#[derive(Default)]
 pub enum BuiltinNetworkID {
     /// A ephemeral network just for unit test.
     Test = 255,
@@ -77,6 +78,7 @@ pub enum BuiltinNetworkID {
     /// Barnard's Star is a red dwarf about six light-years away from Earth in the constellation of Ophiuchus.
     Barnard = 251,
     /// Starcoin main net.
+    #[default]
     Main = 1,
 }
 
@@ -200,11 +202,7 @@ impl BuiltinNetworkID {
     }
 }
 
-impl Default for BuiltinNetworkID {
-    fn default() -> Self {
-        BuiltinNetworkID::Main
-    }
-}
+
 
 impl From<BuiltinNetworkID> for ChainNetwork {
     fn from(network: BuiltinNetworkID) -> Self {

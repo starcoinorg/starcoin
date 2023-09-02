@@ -19,7 +19,7 @@ once_cell = { workspace = true }
 proptest = { workspace = true }
 proptest-derive = { workspace = true }
 rand = { workspace = true }
-serde = { workspace = true, default-features = false }
+serde = { workspace = true, features = ["derive"] }
 
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true, features = ["fuzzing"] }

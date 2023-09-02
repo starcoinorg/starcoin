@@ -2,7 +2,7 @@
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 backtrace = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 futures = { workspace = true }
 futures-timer = { workspace = true }
 hex = { workspace = true }
@@ -39,7 +39,7 @@ starcoin-state-service = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-sync = { workspace = true }
-starcoin-sync-api = { package = "starcoin-sync-api", workspace = true }
+starcoin-sync-api = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
 starcoin-txpool = { workspace = true }
 starcoin-txpool-api = { workspace = true }

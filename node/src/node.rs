@@ -273,8 +273,7 @@ impl NodeService {
             });
             system.run().map_err(|e| e.into())
         });
-        let (registry, node_service) =
-            block_on(async { start_receiver.await }).expect("Wait node start error.")?;
+        let (registry, node_service) = block_on(start_receiver).expect("Wait node start error.")?;
         Ok(NodeHandle::new(join_handle, node_service, registry))
     }
 

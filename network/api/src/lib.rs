@@ -1,6 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-#![deny(clippy::integer_arithmetic)]
+#![deny(clippy::arithmetic_side_effects)]
 
 use crate::messages::{
     BanPeer, GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage, PeerMessage,

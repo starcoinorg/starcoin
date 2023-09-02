@@ -125,10 +125,13 @@ fn simulate_blocks(time_plan: u64, init_difficulty: U256) -> u64 {
     for _ in 0..500 {
         let timestamp = liner_hash_pow(diff, now);
         now = timestamp;
-        blocks.push_front(BlockDiffInfo::new(timestamp, difficult_to_target(diff)));
+        blocks.push_front(BlockDiffInfo::new(
+            timestamp,
+            difficult_to_target(diff).unwrap(),
+        ));
         let bf: Vec<&BlockDiffInfo> = blocks.iter().collect();
         let blocks = bf.iter().map(|&b| b.clone()).collect();
-        diff = target_to_difficulty(get_next_target_helper(blocks, time_plan).unwrap());
+        diff = target_to_difficulty(get_next_target_helper(blocks, time_plan).unwrap()).unwrap();
     }
     blocks[0].timestamp - blocks[1].timestamp
 }

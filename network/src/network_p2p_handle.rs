@@ -143,7 +143,7 @@ impl BusinessLayerHandle for Networkp2pHandle {
                 Ok(())
             }
             Err(error) => {
-                return Err(anyhow!(
+                Err(anyhow!(
                     "failed to decode the generic data for the reason: {}",
                     error
                 ))
@@ -158,7 +158,7 @@ impl BusinessLayerHandle for Networkp2pHandle {
                 Ok(())
             }
             Err(error) => {
-                return Err(anyhow!(
+                Err(anyhow!(
                     "failed to decode the generic data for the reason: {}",
                     error
                 ))

@@ -1,7 +1,7 @@
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 futures = { workspace = true }
 parking_lot = { workspace = true }
 rand = { workspace = true }
