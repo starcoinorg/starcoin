@@ -1363,10 +1363,10 @@ impl StarcoinVM {
         vm.execute_block_transactions(state_view, txns, block_gas_limit)
     }
 
-    pub fn load_module<'r, R: MoveResolverExt>(
+    pub fn load_module<R: MoveResolverExt>(
         &self,
         module_id: &ModuleId,
-        remote: &'r R,
+        remote: &R,
     ) -> VMResult<Arc<CompiledModule>> {
         self.move_vm.load_module(module_id, remote)
     }

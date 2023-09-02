@@ -4,17 +4,12 @@
 use crate::module::{convert_to_rpc_error, map_err};
 use bcs_ext::BCSCodec;
 use starcoin_crypto::HashValue;
-/// Re-export the API
-pub use starcoin_rpc_api::txpool::*;
 use starcoin_rpc_api::types::{SignedUserTransactionView, StrView};
 use starcoin_rpc_api::{txpool::TxPoolApi, FutureResult};
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::SignedUserTransaction;
 use std::convert::TryInto;
-
-/// Re-export the API
-pub use starcoin_rpc_api::txpool::*;
 
 pub struct TxPoolRpcImpl<S>
 where

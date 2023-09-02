@@ -1,6 +1,6 @@
 [dependencies]
 anyhow = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 lru = { workspace = true }
 parking_lot = { workspace = true }

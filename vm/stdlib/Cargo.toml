@@ -1,6 +1,6 @@
 [dependencies]
 anyhow = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 clap = { features = ["derive"], workspace = true }
 fs_extra = { workspace = true }
 include_dir = { workspace = true }
@@ -10,7 +10,7 @@ move-bytecode-verifier = { workspace = true }
 move-compiler = { workspace = true }
 move-prover = { workspace = true }
 once_cell = { workspace = true }
-serde = { default-features = false, workspace = true }
+serde = { features = ["derive"], workspace = true }
 sha2 = { workspace = true }
 simplelog = { workspace = true }
 starcoin-crypto = { workspace = true }

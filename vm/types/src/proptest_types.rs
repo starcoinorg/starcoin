@@ -249,7 +249,7 @@ impl RawUserTransactionGen {
         expired_time: u64,
         payload: Option<TransactionPayload>,
     ) -> RawUserTransaction {
-        let mut sender_info = universe.get_account_info_mut(sender_index);
+        let sender_info = universe.get_account_info_mut(sender_index);
 
         let sequence_number = sender_info.sequence_number;
         let temp_payload = payload.unwrap_or(self.payload);

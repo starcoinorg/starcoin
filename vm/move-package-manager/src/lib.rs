@@ -61,7 +61,9 @@ pub struct TestOpts {
 }
 
 #[derive(Debug, Eq, PartialEq)]
+#[derive(Default)]
 enum Format {
+    #[default]
     Pretty,
     Terse,
     Json,
@@ -96,11 +98,7 @@ impl FromStr for Format {
     }
 }
 
-impl Default for Format {
-    fn default() -> Self {
-        Format::Pretty
-    }
-}
+
 
 #[derive(Args, Debug)]
 pub struct IntegrationTestCommand {

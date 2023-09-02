@@ -59,18 +59,16 @@ impl Serialize for Result {
 
 /// Subscription kind.
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize)]
+#[derive(Default)]
 pub enum Params {
     /// No parameters passed.
+    #[default]
     None,
     /// Log parameters.
     Events(EventParams),
 }
 
-impl Default for Params {
-    fn default() -> Self {
-        Params::None
-    }
-}
+
 
 impl<'a> Deserialize<'a> for Params {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Params, D::Error>

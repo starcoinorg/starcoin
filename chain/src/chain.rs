@@ -992,7 +992,9 @@ impl BlockChain {
             .map(|status| status.total_difficulty())
             .unwrap_or_default();
 
-        let total_difficulty = pre_total_difficulty + header.difficulty();
+        let total_difficulty = pre_total_difficulty
+            .checked_add(header.difficulty())
+            .ok_or(format_err!("failed to calculate total difficulty"))?;
 
         block_accumulator.append(&[block_id])?;
         block_accumulator.flush()?;

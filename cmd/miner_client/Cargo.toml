@@ -7,14 +7,14 @@ actix = { workspace = true }
 actix-rt = { workspace = true }
 anyhow = { workspace = true }
 async-std = { workspace = true }
-starcoin-consensus = { package = "starcoin-consensus", workspace = true }
-starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+starcoin-consensus = { workspace = true }
+starcoin-crypto = { workspace = true }
 futures = { workspace = true }
 futures-channel = { workspace = true }
 jsonrpc-core = { features = ["arbitrary_precision"], workspace = true }
 jsonrpc-core-client = { workspace = true }
 jsonrpc-server-utils = { workspace = true }
-starcoin-logger = { package = "starcoin-logger", workspace = true }
+starcoin-logger = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
@@ -24,7 +24,7 @@ byteorder = { workspace = true }
 clap = { features = ["derive"], workspace = true }
 dyn-clone = { workspace = true }
 futures-timer = { workspace = true }
-hex = { default-features = false, workspace = true }
+hex = { features = ["serde"], workspace = true }
 libloading = { workspace = true }
 parking_lot = { workspace = true }
 rand = { workspace = true }

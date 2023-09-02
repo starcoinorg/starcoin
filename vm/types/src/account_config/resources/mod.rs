@@ -1,12 +1,12 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-pub mod account;
+mod account;
 pub mod auto_accept_token;
-pub mod balance;
-pub mod key_rotation_capability;
-pub mod module_upgrade_strategy;
-pub mod withdraw_capability;
+mod balance;
+mod key_rotation_capability;
+mod module_upgrade_strategy;
+mod withdraw_capability;
 
 pub use crate::token::token_info::*;
 pub use account::*;

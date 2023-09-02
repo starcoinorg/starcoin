@@ -1,12 +1,12 @@
 [dependencies]
 anyhow = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 futures = { workspace = true }
 log = { workspace = true }
 network-p2p-derive = { workspace = true }
 num_enum = { workspace = true }
 serde = { features = ["derive"], workspace = true }
-starcoin-types = { package = "starcoin-types", workspace = true }
+starcoin-types = { workspace = true }
 network-p2p-types = { workspace = true }
 
 [dev-dependencies]
