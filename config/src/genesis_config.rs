@@ -201,8 +201,6 @@ impl BuiltinNetworkID {
     }
 }
 
-
-
 impl From<BuiltinNetworkID> for ChainNetwork {
     fn from(network: BuiltinNetworkID) -> Self {
         ChainNetwork::new(

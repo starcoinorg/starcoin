@@ -58,8 +58,7 @@ impl Serialize for Result {
 }
 
 /// Subscription kind.
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize)]
-#[derive(Default)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Default)]
 pub enum Params {
     /// No parameters passed.
     #[default]
@@ -67,8 +66,6 @@ pub enum Params {
     /// Log parameters.
     Events(EventParams),
 }
-
-
 
 impl<'a> Deserialize<'a> for Params {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Params, D::Error>

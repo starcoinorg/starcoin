@@ -82,8 +82,7 @@ impl FromStr for Api {
     }
 }
 
-#[derive(Debug, Clone)]
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 pub enum ApiSet {
     // Unsafe context (like jsonrpc over http)
     #[default]
@@ -97,8 +96,6 @@ pub enum ApiSet {
     // Fixed list of APis
     List(HashSet<Api>),
 }
-
-
 
 impl PartialEq for ApiSet {
     fn eq(&self, other: &Self) -> bool {

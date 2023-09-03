@@ -15,16 +15,13 @@ use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::str::FromStr;
 
-#[derive(Debug, Clone, Copy)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, Default)]
 pub enum StateRootOption {
     #[default]
     Latest,
     BlockHash(HashValue),
     BlockNumber(BlockNumber),
 }
-
-
 
 impl FromStr for StateRootOption {
     type Err = anyhow::Error;

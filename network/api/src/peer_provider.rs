@@ -85,8 +85,7 @@ impl From<(PeerInfo, u64)> for PeerDetail {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize, JsonSchema)]
-#[derive(Default)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize, JsonSchema, Default)]
 pub enum PeerStrategy {
     Random,
     #[default]
@@ -94,8 +93,6 @@ pub enum PeerStrategy {
     Best,
     Avg,
 }
-
-
 
 impl std::fmt::Display for PeerStrategy {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

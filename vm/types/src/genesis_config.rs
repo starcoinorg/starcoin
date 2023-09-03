@@ -10,8 +10,7 @@ use std::cmp::Ordering;
 use std::fmt::{self, Formatter};
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-#[derive(Default)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize, Default)]
 pub enum StdlibVersion {
     #[default]
     Latest,
@@ -73,8 +72,6 @@ impl Ord for StdlibVersion {
     }
 }
 
-
-
 impl FromStr for StdlibVersion {
     type Err = anyhow::Error;
 
@@ -126,8 +123,6 @@ impl ConsensusStrategy {
         self.into()
     }
 }
-
-
 
 impl fmt::Display for ConsensusStrategy {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

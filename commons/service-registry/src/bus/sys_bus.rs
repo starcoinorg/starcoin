@@ -249,7 +249,7 @@ mod tests {
         let mut bus = SysBus::new();
         let receiver = bus.oneshot::<Message>();
         assert_eq!(1, bus.len_by_type::<Message>());
-        let job = task::spawn(async { receiver.await });
+        let job = task::spawn(receiver);
         Delay::new(Duration::from_millis(10)).await;
         bus.broadcast(Message {});
         let result = job.await;

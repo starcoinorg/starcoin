@@ -108,7 +108,6 @@ async fn test_pool_pending() -> Result<()> {
     let metrics_config: &MetricsConfig = &node_config.metrics;
 
     let txn_vec = (0..pool_size + expect_reject)
-        .into_iter()
         .map(|index| generate_txn(node_config.clone(), index))
         .collect::<Vec<_>>();
 
@@ -152,7 +151,6 @@ async fn test_pool_pending() -> Result<()> {
     );
 
     let txn_vec = (pool_size..(pool_size + expect_reject))
-        .into_iter()
         .map(|index| generate_txn(node_config.clone(), index))
         .collect::<Vec<_>>();
 
