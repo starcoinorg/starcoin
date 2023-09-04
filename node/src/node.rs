@@ -235,7 +235,7 @@ impl NodeService {
         }
 
         // XXX FIXME YSG add execute_config
-        StarcoinVM::set_concurrency_level_once(num_cpus::get());
+        // StarcoinVM::set_concurrency_level_once(num_cpus::get());
         let (start_sender, start_receiver) = oneshot::channel();
         let join_handle = timeout_join_handler::spawn(move || {
             let system = System::with_tokio_rt(|| {
