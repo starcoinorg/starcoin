@@ -141,7 +141,8 @@ pub fn add_command(
                 )
                 .subcommand(dev::panic_cmd::PanicCommand)
                 .subcommand(dev::sleep_cmd::SleepCommand)
-                .subcommand(dev::gen_block_cmd::GenBlockCommand),
+                .subcommand(dev::gen_block_cmd::GenBlockCommand)
+                .subcommand(dev::ConcurrencyLevelCommand),
         )
         .command(CustomCommand::with_name("contract").subcommand(contract::GetContractDataCommand))
 }
