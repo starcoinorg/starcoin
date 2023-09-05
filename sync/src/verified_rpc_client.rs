@@ -381,7 +381,16 @@ impl VerifiedRpcClient {
     pub async fn get_blocks(
         &self,
         ids: Vec<HashValue>,
-    ) -> Result<Vec<Option<(Block, Option<PeerId>, Option<Vec<HashValue>>, Option<HashValue>)>>> {
+    ) -> Result<
+        Vec<
+            Option<(
+                Block,
+                Option<PeerId>,
+                Option<Vec<HashValue>>,
+                Option<HashValue>,
+            )>,
+        >,
+    > {
         let peer_id = self.select_a_peer()?;
         let start_time = Instant::now();
         let blocks = self.client.get_blocks(peer_id.clone(), ids.clone()).await?;

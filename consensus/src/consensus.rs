@@ -75,11 +75,23 @@ pub trait Consensus {
         block_template: BlockTemplate,
         time_service: &dyn TimeService,
     ) -> Result<Block> {
-        let mining_hash = block_template.as_pow_header_blob();
+        let mining_hash = block_template.as_pow_header_blob_single_chain();
         let consensus_nonce =
             self.solve_consensus_nonce(&mining_hash, block_template.difficulty, time_service);
         let extra = BlockHeaderExtra::new([0u8; 4]);
-        Ok(block_template.into_block(consensus_nonce, extra))
+        Ok(block_template.into_single_chain_block(consensus_nonce, extra))
+    }
+
+    fn create_single_chain_block(
+        &self,
+        block_template: BlockTemplate,
+        time_service: &dyn TimeService,
+    ) -> Result<Block> {
+        let mining_hash = block_template.as_pow_header_blob_single_chain();
+        let consensus_nonce =
+            self.solve_consensus_nonce(&mining_hash, block_template.difficulty, time_service);
+        let extra = BlockHeaderExtra::new([0u8; 4]);
+        Ok(block_template.into_single_chain_block(consensus_nonce, extra))
     }
     /// Inner helper for verify and unit testing
     fn verify_header_difficulty(&self, difficulty: U256, header: &BlockHeader) -> Result<()> {

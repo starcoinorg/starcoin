@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 #![allow(clippy::integer_arithmetic)]
+use crate::block_connector::test_write_block_chain::create_writeable_block_chain;
 use crate::block_connector::WriteBlockChainService;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader};
@@ -20,78 +21,49 @@ use starcoin_types::header::Header;
 use starcoin_types::startup_info::StartupInfo;
 use std::sync::{Arc, Mutex};
 
-pub async fn create_writeable_block_chain() -> (
-    WriteBlockChainService<MockTxPoolService>,
-    Arc<NodeConfig>,
-    Arc<dyn Store>,
-) {
-    let node_config = NodeConfig::random_for_test();
-    let node_config = Arc::new(node_config);
-
-    let (storage, chain_info, genesis) = StarcoinGenesis::init_storage_for_test(node_config.net())
-        .expect("init storage by genesis fail.");
-    let registry = RegistryService::launch();
-    let bus = registry.service_ref::<BusService>().await.unwrap();
-    let txpool_service = MockTxPoolService::new();
-
-    genesis.save(node_config.data_dir()).unwrap();
-
-    let (chain_info, genesis) = StarcoinGenesis::init_and_check_storage(
-        node_config.net(),
-        storage.clone(),
-        node_config.data_dir(),
-    )
-    .expect("init chain and genesis error");
-
-    let flex_dag_config = FlexiDagStorageConfig::create_with_params(1, 0, 1024);
-    let flex_dag_db = FlexiDagStorage::create_from_path("./smolstc", flex_dag_config)
-        .expect("Failed to create flexidag storage");
-
-    let dag = BlockDAG::new(
-        Header::new(
-            genesis.block().header().clone(),
-            vec![HashValue::new(ORIGIN)],
-        ),
-        3,
-        flex_dag_db,
-    );
-
-    (
-        WriteBlockChainService::new(
-            node_config.clone(),
-            StartupInfo::new(chain_info.head().id()),
-            storage.clone(),
-            txpool_service,
-            bus,
-            None,
-            Arc::new(Mutex::new(dag)),
-        )
-        .unwrap(),
-        node_config,
-        storage,
-    )
-}
-
-pub fn gen_blocks(
+pub fn gen_dag_blocks(
     times: u64,
     writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
     time_service: &dyn TimeService,
-) {
+) -> Option<HashValue> {
     let miner_account = AccountInfo::random();
+    let mut last_block_hash = None;
     if times > 0 {
-        for _i in 0..times {
-            let block = new_block(
+        for i in 0..times {
+            let block = new_dag_block(
                 Some(&miner_account),
                 writeable_block_chain_service,
                 time_service,
             );
-            let e = writeable_block_chain_service.try_connect(block, None);
-            println!("try_connect result: {:?}", e)
+            last_block_hash = Some(block.id());
+            let e = writeable_block_chain_service.try_connect(
+                block,
+                writeable_block_chain_service.get_main().status().tips_hash,
+            );
+            println!("try_connect result: {:?}", e);
+            assert!(e.is_ok());
+            if (i + 1) % 3 == 0 {
+                writeable_block_chain_service.time_sleep(5);
+            }
+        }
+    }
+
+    let result = writeable_block_chain_service.execute_dag_block_pool();
+    let result = result.unwrap();
+    match result {
+        super::write_block_chain::ConnectOk::Duplicate(block)
+        | super::write_block_chain::ConnectOk::ExeConnectMain(block)
+        | super::write_block_chain::ConnectOk::ExeConnectBranch(block)
+        | super::write_block_chain::ConnectOk::Connect(block) => Some(block.header().id()),
+        super::write_block_chain::ConnectOk::DagConnected
+        | super::write_block_chain::ConnectOk::MainDuplicate
+        | super::write_block_chain::ConnectOk::DagPending => {
+            unreachable!("should not reach here, result: {:?}", result);
         }
     }
 }
 
-pub fn new_block(
+pub fn new_dag_block(
     miner_account: Option<&AccountInfo>,
     writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
     time_service: &dyn TimeService,
@@ -107,16 +79,16 @@ pub fn new_block(
         .unwrap();
     block_chain
         .consensus()
-        .create_single_chain_block(block_template, time_service)
+        .create_block(block_template, time_service)
         .unwrap()
 }
 
 #[stest::test]
-async fn test_block_chain_apply() {
-    let times = 10;
+async fn test_dag_block_chain_apply() {
+    let times = 12;
     let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
     let net = node_config.net();
-    gen_blocks(
+    let last_header_id = gen_dag_blocks(
         times,
         &mut writeable_block_chain_service,
         net.time_service().as_ref(),
@@ -125,18 +97,18 @@ async fn test_block_chain_apply() {
         writeable_block_chain_service
             .get_main()
             .current_header()
-            .number(),
-        times
+            .id(),
+        last_header_id.unwrap()
     );
     println!("finish test_block_chain_apply");
 }
 
-fn gen_fork_block_chain(
+fn gen_fork_dag_block_chain(
     fork_number: u64,
     node_config: Arc<NodeConfig>,
     times: u64,
     writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
-) {
+) -> Option<HashValue> {
     let miner_account = AccountInfo::random();
     if let Some(block_header) = writeable_block_chain_service
         .get_main()
@@ -158,7 +130,7 @@ fn gen_fork_block_chain(
                 .unwrap();
             let block = block_chain
                 .consensus()
-                .create_single_chain_block(block_template, net.time_service().as_ref())
+                .create_block(block_template, net.time_service().as_ref())
                 .unwrap();
             parent_id = block.id();
 
@@ -166,49 +138,17 @@ fn gen_fork_block_chain(
                 .try_connect(block, None)
                 .unwrap();
         }
+        return Some(parent_id);
     }
-}
-
-#[stest::test]
-async fn test_block_chain_forks() {
-    let times = 10;
-    let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
-    let net = node_config.net();
-    gen_blocks(
-        times,
-        &mut writeable_block_chain_service,
-        net.time_service().as_ref(),
-    );
-    assert_eq!(
-        writeable_block_chain_service
-            .get_main()
-            .current_header()
-            .number(),
-        times
-    );
-
-    gen_fork_block_chain(
-        0,
-        node_config,
-        times / 2,
-        &mut writeable_block_chain_service,
-    );
-
-    assert_eq!(
-        writeable_block_chain_service
-            .get_main()
-            .current_header()
-            .number(),
-        times
-    );
+    return None;
 }
 
 #[stest::test(timeout = 120)]
 async fn test_block_chain_switch_main() {
-    let times = 10;
+    let times = 12;
     let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
     let net = node_config.net();
-    gen_blocks(
+    let mut last_block = gen_dag_blocks(
         times,
         &mut writeable_block_chain_service,
         net.time_service().as_ref(),
@@ -217,11 +157,11 @@ async fn test_block_chain_switch_main() {
         writeable_block_chain_service
             .get_main()
             .current_header()
-            .number(),
-        times
+            .id(),
+        last_block.unwrap()
     );
 
-    gen_fork_block_chain(
+    last_block = gen_fork_dag_block_chain(
         0,
         node_config,
         2 * times,
@@ -232,8 +172,8 @@ async fn test_block_chain_switch_main() {
         writeable_block_chain_service
             .get_main()
             .current_header()
-            .number(),
-        2 * times
+            .id(),
+        last_block.unwrap()
     );
 }
 
@@ -242,7 +182,7 @@ async fn test_block_chain_reset() -> anyhow::Result<()> {
     let times = 10;
     let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
     let net = node_config.net();
-    gen_blocks(
+    let mut last_block = gen_dag_blocks(
         times,
         &mut writeable_block_chain_service,
         net.time_service().as_ref(),
@@ -251,8 +191,8 @@ async fn test_block_chain_reset() -> anyhow::Result<()> {
         writeable_block_chain_service
             .get_main()
             .current_header()
-            .number(),
-        times
+            .id(),
+        last_block.unwrap()
     );
     let block = writeable_block_chain_service
         .get_main()

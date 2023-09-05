@@ -165,7 +165,8 @@ impl TimeService for MockTimeService {
 
 #[derive(Debug)]
 pub struct DagBlockTimeWindowService {
-    real_time_service: RealTimeService,
+    time_service: Arc<dyn TimeService>,
+
     time_window: u64,
 }
 
@@ -177,39 +178,35 @@ pub enum TimeWindowResult {
 
 impl TimeService for DagBlockTimeWindowService {
     fn adjust(&self, milliseconds: u64) {
-        self.real_time_service.adjust(milliseconds)
+        self.time_service.adjust(milliseconds)
     }
 
     fn as_any(&self) -> &dyn Any {
         self
     }
     fn now_secs(&self) -> u64 {
-        self.real_time_service.now_secs()
+        self.time_service.now_secs()
     }
 
     fn now_millis(&self) -> u64 {
-        self.real_time_service.now_millis()
+        self.time_service.now_millis()
     }
 
     fn sleep(&self, millis: u64) {
-        self.real_time_service.sleep(millis)
+        self.time_service.sleep(millis)
     }
 }
 
 impl DagBlockTimeWindowService {
-    pub fn new(time_windows: u64) -> Self {
+    pub fn new(time_windows: u64, time_service: Arc<dyn TimeService>) -> Self {
         Self {
-            real_time_service: RealTimeService::new(),
+            time_service: time_service.clone(),
             time_window: time_windows,
         }
     }
 
-    pub fn is_in_time_window(
-        &self,
-        block_timestamp: u64,
-        net_time_serivce: Arc<dyn TimeService>,
-    ) -> TimeWindowResult {
-        let now = net_time_serivce.now_millis();
+    pub fn is_in_time_window(&self, block_timestamp: u64) -> TimeWindowResult {
+        let now = self.time_service.now_millis();
         let start_time = now - now % self.time_window;
         let end_time = start_time + self.time_window;
         if (start_time..end_time).contains(&block_timestamp) {

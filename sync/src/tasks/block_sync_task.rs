@@ -404,13 +404,17 @@ where
 
         if let Some(parents) = dag_parents.clone() {
             if let Some(dag) = &self.dag {
-                let color = dag
+                // let color = dag
+                //     .lock()
+                //     .unwrap()
+                //     .commit_header(&Header::new(block.header().clone(), parents.clone()))?;
+                // if let ColoringOutput::Red = color {
+                //     panic!("the red block should not be applied or connected!");
+                // }
+                let _ = dag
                     .lock()
                     .unwrap()
-                    .commit_header(&Header::new(block.header().clone(), parents.clone()))?;
-                if let ColoringOutput::Red = color {
-                    panic!("the red block should not be applied or connected!");
-                }
+                    .push_parent_children(block_id, Arc::new(parents));
             } else {
                 panic!("in dag sync, the dag should not be None")
             }
@@ -437,10 +441,10 @@ where
                 let total_difficulty = block_info.get_total_difficulty();
                 // only try connect block when sync chain total_difficulty > node's current chain.
                 if total_difficulty > self.current_block_info.total_difficulty {
-                    if let Err(e) = self.event_handle.handle(BlockConnectedEvent {
-                        block,
-                        dag_parents,
-                    }) {
+                    if let Err(e) = self
+                        .event_handle
+                        .handle(BlockConnectedEvent { block, dag_parents })
+                    {
                         error!(
                             "Send BlockConnectedEvent error: {:?}, block_id: {}",
                             e, block_id
@@ -495,11 +499,17 @@ where
             Some(_) => {
                 self.check_if_sync_complete(block_info.expect("block_info should not be None"))
             }
-            None => { // dag
-                assert!(!next_tips.as_ref().expect("next_tips should not be None").is_empty());
-                self.chain.append_dag_accumulator_leaf(next_tips.expect("next_tips should not be None"))?;
+            None => {
+                // dag
+                assert!(!next_tips
+                    .as_ref()
+                    .expect("next_tips should not be None")
+                    .is_empty());
+                self.chain.append_dag_accumulator_leaf(
+                    next_tips.expect("next_tips should not be None"),
+                )?;
                 self.check_if_sync_complete_for_dag()
-            },
+            }
         }
     }
 

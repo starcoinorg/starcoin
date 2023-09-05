@@ -57,41 +57,25 @@ impl SyncDagBlockTask {
             .expect(format!("index: {} must be valid for getting snapshot", index).as_str())
             .expect(format!("index: {} should not be None for getting snapshot", index).as_str());
 
-        let block_with_infos = self
-            .local_store
-            .get_block_with_info(snapshot.child_hashes.clone())?;
+        // let block_with_infos = self
+        //     .local_store
+        //     .get_block_with_info(snapshot.child_hashes.clone())?;
 
-        assert_eq!(block_with_infos.len(), snapshot.child_hashes.len());
+        // assert_eq!(block_with_infos.len(), snapshot.child_hashes.len());
 
         // the order must be the same between snapshot.child_hashes and block_with_infos
         let mut absent_block = vec![];
         let mut result = vec![];
-        snapshot
-            .child_hashes
-            .iter()
-            .zip(block_with_infos)
-            .for_each(|(block_id, block_info)| {
-                if let None = block_info {
-                    absent_block.push(block_id.clone());
-                    result.push(SyncDagBlockInfo {
-                        block_id: block_id.clone(),
-                        block: None,
-                        absent_block: true,
-                        peer_id: None,
-                        dag_parents: vec![],
-                        dag_transaction_header: None,
-                    });
-                } else {
-                    result.push(SyncDagBlockInfo {
-                        block_id: block_id.clone(),
-                        block: Some(block_info.unwrap().block),
-                        absent_block: false,
-                        peer_id: None,
-                        dag_parents: vec![],
-                        dag_transaction_header: None,
-                    });
-                }
+        snapshot.child_hashes.iter().for_each(|block_id| {
+            absent_block.push(block_id.clone());
+            result.push(SyncDagBlockInfo {
+                block_id: block_id.clone(),
+                block: None,
+                peer_id: None,
+                dag_parents: vec![],
+                dag_transaction_header: None,
             });
+        });
 
         let fetched_block_info = self
             .fetcher
@@ -101,82 +85,65 @@ impl SyncDagBlockTask {
             .map(|(block, peer_info, parents, transaction_header)| {
                 (
                     block.header().id(),
-                    (block.clone(), peer_info.clone(), parents.clone(), transaction_header.clone()),
+                    (
+                        block.clone(),
+                        peer_info.clone(),
+                        parents.clone(),
+                        transaction_header.clone(),
+                    ),
                 )
             })
             .collect::<HashMap<_, _>>();
 
         // should return the block in order
         result.iter_mut().for_each(|block_info| {
-            if block_info.absent_block {
-                block_info.block = Some(
-                    fetched_block_info
-                        .get(&block_info.block_id)
-                        .expect("the block should be got from peer already")
-                        .0
-                        .to_owned(),
-                );
-                block_info.peer_id = fetched_block_info
+            block_info.block = Some(
+                fetched_block_info
                     .get(&block_info.block_id)
                     .expect("the block should be got from peer already")
-                    .1
-                    .to_owned();
-                block_info.dag_parents = fetched_block_info
+                    .0
+                    .to_owned(),
+            );
+            block_info.peer_id = fetched_block_info
+                .get(&block_info.block_id)
+                .expect("the block should be got from peer already")
+                .1
+                .to_owned();
+            block_info.dag_parents = fetched_block_info
+                .get(&block_info.block_id)
+                .expect("the block should be got from peer already")
+                .2
+                .to_owned()
+                .expect("dag block should have parents");
+            block_info.dag_transaction_header = Some(
+                fetched_block_info
                     .get(&block_info.block_id)
                     .expect("the block should be got from peer already")
-                    .2
+                    .3
                     .to_owned()
-                    .expect("dag block should have parents");
-                block_info.dag_transaction_header = Some(
-                    fetched_block_info
-                        .get(&block_info.block_id)
-                        .expect("the block should be got from peer already")
-                        .3
-                        .to_owned()
-                        .expect("dag block should have parents"));
-            }
+                    .expect("dag block should have parents"),
+            );
         });
         result.sort_by_key(|item| item.block_id);
 
+        let block_info = self
+            .local_store
+            .get_block_infos(result.iter().map(|item| item.block_id).collect())?;
+
         Ok(result
             .into_iter()
-            .map(|item| {
-                if !item.absent_block {
-                    SyncBlockData {
-                        block: item.block.expect("block should exists"),
-                        info: Some(
-                            self.local_store
-                                .get_block_info(item.block_id)
-                                .expect("failed to read block info")
-                                .expect("block_info should exists"),
-                        ),
-                        peer_id: None,
-                        accumulator_root: Some(
-                            snapshot.accumulator_info.get_accumulator_root().clone(),
-                        ),
-                        count_in_leaf: snapshot.child_hashes.len() as u64,
-                        dag_block_headers: Some(item.dag_parents),
-                        dag_transaction_header: Some(
-                            item.dag_transaction_header
-                                .expect("dag transaction header should exists"),
-                        ),
-                    }
-                } else {
-                    SyncBlockData {
-                        block: item.block.expect("block should exists"),
-                        info: None,
-                        peer_id: item.peer_id,
-                        accumulator_root: Some(
-                            snapshot.accumulator_info.get_accumulator_root().clone(),
-                        ),
-                        count_in_leaf: snapshot.child_hashes.len() as u64,
-                        dag_block_headers: Some(item.dag_parents),
-                        dag_transaction_header: Some(
-                            item.dag_transaction_header
-                                .expect("dag transaction header should exists"),
-                        ),
-                    }
-                }
+            .zip(block_info)
+            .map(|(item, block_info)| SyncBlockData {
+                block: item.block.expect("block should exists"),
+                info: block_info,
+                peer_id: item.peer_id,
+                accumulator_root: Some(snapshot.accumulator_info.get_accumulator_root().clone()),
+                count_in_leaf: snapshot.child_hashes.len() as u64,
+                dag_block_headers: Some(item.dag_parents),
+                dag_transaction_header: Some(
+                    item.dag_transaction_header
+                        .expect("dag transaction header should exists"),
+                ),
             })
             .collect())
     }

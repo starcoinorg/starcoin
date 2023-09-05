@@ -236,7 +236,7 @@ api-limiter = { path = "commons/api-limiter" }
 arc-swap = "1.5.1"
 arrayref = "0.3"
 ascii = "1.0.0"
-async-std = "1.12"
+async-std = { version = "1.12", features = ["attributes", "tokio1"] }
 async-trait = "0.1.53"
 asynchronous-codec = "0.5"
 atomic-counter = "1.0.1"

@@ -468,7 +468,7 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
         .create_block(block_template, net.time_service().as_ref())
         .unwrap();
 
-    main_block_chain.apply(new_block, None)?;
+    main_block_chain.apply(new_block, None, &mut None)?;
     Ok(())
 }
 
@@ -532,7 +532,7 @@ async fn test_verify_txn_count_failed() {
     let mut body = new_block.body.clone();
     body.transactions = txns;
     new_block.body = body;
-    let apply_failed = main.apply(new_block, None);
+    let apply_failed = main.apply(new_block, None, &mut None);
     assert!(apply_failed.is_err());
     if let Err(apply_err) = apply_failed {
         error!("apply failed : {:?}", apply_err);
