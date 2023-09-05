@@ -88,6 +88,7 @@ where
                     &self.strategy,
                     self.num_accounts,
                     self.num_transactions,
+                    num_cpus::get(),
                 )
             },
             |state| state.execute(),
@@ -107,7 +108,12 @@ where
 
         let total_runs = num_warmups + num_runs;
         for i in 0..total_runs {
-            let state = ParallelBenchState::with_size(&self.strategy, num_accounts, num_txn);
+            let state = ParallelBenchState::with_size(
+                &self.strategy,
+                num_accounts,
+                num_txn,
+                num_cpus::get(),
+            );
 
             if i < num_warmups {
                 println!("WARMUP - ignore results");
@@ -268,11 +274,17 @@ fn universe_strategy(
 
 struct ParallelBenchState {
     bench_state: TransactionBenchState,
+    num_threads: usize,
 }
 
 impl ParallelBenchState {
     /// Creates a new benchmark state with the given number of accounts and transactions.
-    fn with_size<S>(strategy: S, num_accounts: usize, num_transactions: usize) -> Self
+    fn with_size<S>(
+        strategy: S,
+        num_accounts: usize,
+        num_transactions: usize,
+        num_threads: usize,
+    ) -> Self
     where
         S: Strategy,
         S::Value: AUTransactionGen,
@@ -283,6 +295,7 @@ impl ParallelBenchState {
                 universe_strategy(num_accounts, num_transactions),
                 num_transactions,
             ),
+            num_threads,
         }
     }
 
@@ -296,6 +309,10 @@ impl ParallelBenchState {
 
         let state_view = self.bench_state.executor.get_state_view();
         // measured - microseconds.
-        ParallelStarcoinVM::execute_block_tps(self.bench_state.transactions.clone(), state_view)
+        ParallelStarcoinVM::execute_block_tps(
+            self.bench_state.transactions.clone(),
+            state_view,
+            self.num_threads,
+        )
     }
 }
