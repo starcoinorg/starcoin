@@ -114,6 +114,7 @@ impl ParallelStarcoinVM {
     pub fn execute_block_tps<S: StateView>(
         transactions: Vec<Transaction>,
         state_view: &S,
+        parallel_level: usize,
     ) -> usize {
         // Verify the signatures of all the transactions in parallel.
         // This is time consuming so don't wait and do the checking
@@ -127,7 +128,9 @@ impl ParallelStarcoinVM {
         // println!("CLONE & Prologue {:?}", timer.elapsed());
 
         let executor =
-            ParallelTransactionExecutor::<PreprocessedTransaction, StarcoinVMWrapper<S>>::new(num_cpus::get());
+            ParallelTransactionExecutor::<PreprocessedTransaction, StarcoinVMWrapper<S>>::new(
+                parallel_level,
+            );
 
         let timer = Instant::now();
         let useless = executor.execute_transactions_parallel(state_view, signature_verified_block);
@@ -135,6 +138,6 @@ impl ParallelStarcoinVM {
 
         drop(useless);
 
-        (transactions.len() * 1000 / exec_t.as_millis() as usize) as usize
+        transactions.len() * 1000 / exec_t.as_millis() as usize
     }
 }
