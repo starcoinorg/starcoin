@@ -308,12 +308,29 @@ impl BlockFetcher for SyncNodeMocker {
     fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>, Option<Vec<HashValue>>)>>> {
-        let result: Result<Vec<(Block, Option<PeerId>, Option<Vec<HashValue>>)>> = block_ids
+    ) -> BoxFuture<
+        '_,
+        Result<
+            Vec<(
+                Block,
+                Option<PeerId>,
+                Option<Vec<HashValue>>,
+                Option<HashValue>,
+            )>,
+        >,
+    > {
+        let result: Result<
+            Vec<(
+                Block,
+                Option<PeerId>,
+                Option<Vec<HashValue>>,
+                Option<HashValue>,
+            )>,
+        > = block_ids
             .into_iter()
             .map(|block_id| {
                 if let Some(block) = self.chain().get_block(block_id)? {
-                    Ok((block, None, None))
+                    Ok((block, None, None, None))
                 } else {
                     Err(format_err!("Can not find block by id: {}", block_id))
                 }

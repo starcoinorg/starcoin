@@ -293,7 +293,16 @@ pub trait BlockFetcher: Send + Sync {
     fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>, Option<Vec<HashValue>>, Option<HashValue>)>>>;
+    ) -> BoxFuture<
+        Result<
+            Vec<(
+                Block,
+                Option<PeerId>,
+                Option<Vec<HashValue>>,
+                Option<HashValue>,
+            )>,
+        >,
+    >;
 }
 
 impl<T> BlockFetcher for Arc<T>
@@ -303,7 +312,17 @@ where
     fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>, Option<Vec<HashValue>>, Option<HashValue>)>>> {
+    ) -> BoxFuture<
+        '_,
+        Result<
+            Vec<(
+                Block,
+                Option<PeerId>,
+                Option<Vec<HashValue>>,
+                Option<HashValue>,
+            )>,
+        >,
+    > {
         BlockFetcher::fetch_blocks(self.as_ref(), block_ids)
     }
 }
@@ -312,22 +331,35 @@ impl BlockFetcher for VerifiedRpcClient {
     fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>, Option<Vec<HashValue>>, Option<HashValue>)>>> {
+    ) -> BoxFuture<
+        '_,
+        Result<
+            Vec<(
+                Block,
+                Option<PeerId>,
+                Option<Vec<HashValue>>,
+                Option<HashValue>,
+            )>,
+        >,
+    > {
         self.get_blocks(block_ids.clone())
             .and_then(|blocks| async move {
-                let results: Result<Vec<(Block, Option<PeerId>, Option<Vec<HashValue>>, Option<HashValue>)>> =
-                    block_ids
-                        .iter()
-                        .zip(blocks)
-                        .map(|(id, block)| {
-                            block.ok_or_else(|| {
-                                format_err!(
-                                    "Get block by id: {} failed, remote node return None",
-                                    id
-                                )
-                            })
+                let results: Result<
+                    Vec<(
+                        Block,
+                        Option<PeerId>,
+                        Option<Vec<HashValue>>,
+                        Option<HashValue>,
+                    )>,
+                > = block_ids
+                    .iter()
+                    .zip(blocks)
+                    .map(|(id, block)| {
+                        block.ok_or_else(|| {
+                            format_err!("Get block by id: {} failed, remote node return None", id)
                         })
-                        .collect();
+                    })
+                    .collect();
                 results.map_err(fetcher_err_map)
             })
             .boxed()
@@ -390,6 +422,7 @@ impl BlockLocalStore for Arc<dyn Store> {
                 Some(block) => {
                     let id = block.id();
                     let block_info = self.get_block_info(id)?;
+
                     Ok(Some(SyncBlockData::new(
                         block, block_info, None, None, 1, None, None,
                     )))

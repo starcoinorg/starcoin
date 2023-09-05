@@ -80,7 +80,7 @@ impl BlockDAG {
         self.relations_store
             .insert(Hash::new(ORIGIN), BlockHashes::new(vec![]))
             .unwrap();
-        let _ = self.commit_header(&self.genesis.clone())?;
+        // let _ = self.commit_header(&self.genesis.clone())?;
         Ok(())
     }
 
@@ -230,7 +230,11 @@ impl BlockDAG {
     }
 
     // for testing
-    pub fn push_parent_children(&mut self, child: Hash, parents: Arc<Vec<Hash>>) -> Result<(), StoreError> {
+    pub fn push_parent_children(
+        &mut self,
+        child: Hash,
+        parents: Arc<Vec<Hash>>,
+    ) -> Result<(), StoreError> {
         self.relations_store.insert(child, parents)
     }
 

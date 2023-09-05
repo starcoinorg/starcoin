@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, format_err, Error, Result};
-use starcoin_accumulator::{MerkleAccumulator, Accumulator};
 use starcoin_accumulator::node::AccumulatorStoreType;
+use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::{
@@ -94,11 +94,11 @@ impl EventHandler<Self, NewHeadBlock> for ChainReaderService {
         if let Err(e) = if self.inner.get_main().can_connect(event.0.as_ref()) {
             let mut next_tips = event.2.clone();
 
-            match self.inner
-                .update_chain_head(event.0.as_ref().clone(), &mut next_tips) {
-                Ok(_) => {
-                    self.inner.update_dag_accumulator(new_head.id())
-                }
+            match self
+                .inner
+                .update_chain_head(event.0.as_ref().clone(), &mut next_tips)
+            {
+                Ok(_) => self.inner.update_dag_accumulator(new_head.id()),
                 Err(e) => Err(e),
             }
         } else {
@@ -340,7 +340,6 @@ impl ChainReaderServiceInner {
         Ok(())
     }
 
-
     pub fn update_dag_accumulator(&mut self, head_id: HashValue) -> Result<()> {
         self.main.update_dag_accumulator(head_id)
     }
@@ -376,11 +375,17 @@ impl ReadableChainService for ChainReaderServiceInner {
                     let transaction_parent = match self.storage.get_block_info(block.id()) {
                         Ok(block_info) => {
                             if let Some(block_info) = &block_info {
-                                let block_accumulator = MerkleAccumulator::new_with_info(block_info.block_accumulator_info.clone(), self.storage.get_accumulator_store(AccumulatorStoreType::Block));
-                                block_accumulator.get_leaf(block_info.block_accumulator_info.num_leaves - 2).expect("block should have transction header")
+                                let block_accumulator = MerkleAccumulator::new_with_info(
+                                    block_info.block_accumulator_info.clone(),
+                                    self.storage
+                                        .get_accumulator_store(AccumulatorStoreType::Block),
+                                );
+                                block_accumulator
+                                    .get_leaf(block_info.block_accumulator_info.num_leaves - 2)
+                                    .expect("block should have transction header")
                             } else {
                                 None
-                            } 
+                            }
                         }
                         Err(_) => todo!(),
                     };
@@ -549,7 +554,7 @@ impl ReadableChainService for ChainReaderServiceInner {
     ) -> anyhow::Result<Vec<TargetDagAccumulatorLeafDetail>> {
         let end_index = std::cmp::min(
             req.leaf_index + req.batch_size - 1,
-            self.main.get_dag_current_leaf_number() - 1,
+            self.main.get_dag_current_leaf_number()? - 1,
         );
         let mut details = [].to_vec();
         for index in req.leaf_index..=end_index {

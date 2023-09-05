@@ -196,18 +196,19 @@ impl ServiceFactory<NetworkActorService> for MockNetworkServiceFactory {
         let dag_tips = storage.get_tips_by_block_id(head_block_hash)?;
         let chain_status =
             ChainStatus::new(head_block_header.clone(), head_block_info, Some(dag_tips));
+        let dag_accumulator_info = storage.get_dag_accumulator_info(head_block_hash)?;
         let chain_state_info = ChainInfo::new(
             config.net().chain_id(),
             genesis_hash,
             chain_status.clone(),
-            storage.get_dag_accumulator_info(head_block_hash)?,
+            dag_accumulator_info.clone(),
         );
         let actor_service =
             NetworkActorService::new(config, chain_state_info, rpc, peer_message_handle.clone())?;
         let network_service = actor_service.network_service();
         let network_async_service = NetworkServiceRef::new(network_service, ctx.self_ref());
         // set self sync status to synced for test.
-        let mut sync_status = SyncStatus::new(chain_status);
+        let mut sync_status = SyncStatus::new(chain_status, dag_accumulator_info);
         sync_status.sync_done();
         ctx.notify(SyncStatusChangeEvent(sync_status));
 

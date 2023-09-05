@@ -185,18 +185,31 @@ impl BlockVerifier for BasicVerifier {
         if chain_status.tips_hash.is_some() {
             let mut tips_hash = chain_status.tips_hash.clone().unwrap();
             tips_hash.sort();
-            verify_block!(
-                VerifyBlockField::Header,
-                HashValue::sha3_256_of(
-                    &tips_hash.encode().expect("hash encode must be successful")
-                ) == new_block_parent,
-                "Invalid block: Parent id mismatch, expect:{}, got: {}, number:{}.",
-                current_id,
-                new_block_parent,
-                new_block_header.number()
-            );
+
+            // if it is a dag block
+            if HashValue::sha3_256_of(&tips_hash.encode().expect("hash encode must be successful"))
+                != new_block_parent
+            {
+                // or a block of a single chain
+                verify_block!(
+                    VerifyBlockField::Header,
+                    expect_number == new_block_header.number(),
+                    "Invalid block: Unexpect block number, expect:{}, got: {}.",
+                    expect_number,
+                    new_block_header.number()
+                );
+
+                verify_block!(
+                    VerifyBlockField::Header,
+                    current_id == new_block_parent,
+                    "Invalid block: Parent id mismatch, expect:{}, got: {}, number:{}.",
+                    current_id,
+                    new_block_parent,
+                    new_block_header.number()
+                );
+            }
         } else {
-            // single chain
+            // or a block of a single chain
             verify_block!(
                 VerifyBlockField::Header,
                 expect_number == new_block_header.number(),

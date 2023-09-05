@@ -69,7 +69,8 @@ impl PeerInfo {
     }
 
     pub fn update_dag_accumulator_info(&mut self, dag_accumulator_info: Option<AccumulatorInfo>) {
-        self.chain_info.update_dag_accumulator_info(dag_accumulator_info)
+        self.chain_info
+            .update_dag_accumulator_info(dag_accumulator_info)
     }
 
     /// This peer is support notification

@@ -933,6 +933,28 @@ impl BlockTemplate {
         }
     }
 
+    pub fn into_single_chain_block(self, nonce: u32, extra: BlockHeaderExtra) -> Block {
+        let header = BlockHeader::new(
+            self.parent_hash,
+            self.timestamp,
+            self.number,
+            self.author,
+            self.txn_accumulator_root,
+            self.block_accumulator_root,
+            self.state_root,
+            self.gas_used,
+            self.difficulty,
+            self.body_hash,
+            self.chain_id,
+            nonce,
+            extra,
+        );
+        Block {
+            header,
+            body: self.body,
+        }
+    }
+
     fn generate_parent_header(&self) -> HashValue {
         if self.tips_header.is_none() {
             return self.parent_hash;
@@ -940,6 +962,23 @@ impl BlockTemplate {
         let mut tips = self.tips_header.as_ref().unwrap().clone();
         tips.sort();
         HashValue::sha3_256_of(&tips.encode().expect("dag parent must encode successfully"))
+    }
+
+    pub fn as_raw_block_header_single_chain(&self) -> RawBlockHeader {
+        RawBlockHeader {
+            parent_hash: self.parent_hash,
+            timestamp: self.timestamp,
+            number: self.number,
+            author: self.author,
+            author_auth_key: None,
+            accumulator_root: self.txn_accumulator_root,
+            parent_block_accumulator_root: self.block_accumulator_root,
+            state_root: self.state_root,
+            gas_used: self.gas_used,
+            body_hash: self.body_hash,
+            difficulty: self.difficulty,
+            chain_id: self.chain_id,
+        }
     }
 
     pub fn as_raw_block_header(&self) -> RawBlockHeader {
@@ -957,6 +996,20 @@ impl BlockTemplate {
             difficulty: self.difficulty,
             chain_id: self.chain_id,
         }
+    }
+
+    pub fn as_pow_header_blob_single_chain(&self) -> Vec<u8> {
+        let mut blob = Vec::new();
+        let raw_header = self.as_raw_block_header_single_chain();
+        let raw_header_hash = raw_header.crypto_hash();
+        let mut dh = [0u8; 32];
+        raw_header.difficulty.to_big_endian(&mut dh);
+        let extend_and_nonce = [0u8; 12];
+        blob.extend_from_slice(raw_header_hash.to_vec().as_slice());
+        blob.extend_from_slice(&extend_and_nonce);
+        blob.extend_from_slice(&dh);
+
+        blob
     }
 
     pub fn as_pow_header_blob(&self) -> Vec<u8> {

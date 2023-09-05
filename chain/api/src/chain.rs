@@ -111,10 +111,7 @@ pub trait ChainReader {
 }
 
 pub trait ChainWriter {
-    fn can_connect(
-        &self,
-        executed_block: &ExecutedBlock,
-    ) -> bool;
+    fn can_connect(&self, executed_block: &ExecutedBlock) -> bool;
     /// Connect a executed block to current chain.
     fn connect(
         &mut self,

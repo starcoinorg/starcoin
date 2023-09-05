@@ -11,6 +11,8 @@ mod metrics;
 mod test_illegal_block;
 #[cfg(test)]
 mod test_write_block_chain;
+#[cfg(test)]
+mod test_write_dag_block_chain;
 mod write_block_chain;
 
 pub use block_connector_service::BlockConnectorService;

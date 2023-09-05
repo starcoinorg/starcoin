@@ -6,8 +6,8 @@ use crate::sync_metrics::SyncMetrics;
 use crate::tasks::{full_sync_task, sync_dag_full_task, AncestorEvent, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
-use futures::FutureExt;
 use futures::executor::block_on;
+use futures::FutureExt;
 use futures_timer::Delay;
 use network_api::peer_score::PeerScoreMetrics;
 use network_api::{PeerId, PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
@@ -92,15 +92,29 @@ impl SyncService {
             .metrics
             .registry()
             .and_then(|registry| PeerScoreMetrics::register(registry).ok());
-        let genesis = storage
-            .get_genesis()?
-            .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
+        // let genesis = storage
+        //     .get_genesis()?
+        //     .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
+        let dag_accumulator_info =
+            match storage.get_dag_accumulator_info(head_block_info.block_id().clone())? {
+                Some(info) => Some(info),
+                None => {
+                    warn!(
+                        "Can not find dag accumulator info by head block id: {}, use genesis info.",
+                        head_block_info.block_id(),
+                    );
+                    None
+                }
+            };
         Ok(Self {
-            sync_status: SyncStatus::new(ChainStatus::new(
-                head_block.header.clone(),
-                head_block_info,
-                Some(storage.get_tips_by_block_id(head_block_hash)?),
-            )),
+            sync_status: SyncStatus::new(
+                ChainStatus::new(
+                    head_block.header.clone(),
+                    head_block_info,
+                    Some(storage.get_tips_by_block_id(head_block_hash)?),
+                ),
+                dag_accumulator_info,
+            ),
             stage: SyncStage::NotStart,
             config,
             storage,
@@ -246,8 +260,10 @@ impl SyncService {
                 rpc_client.get_best_target(current_block_info.get_total_difficulty())?
             {
                 if let Some(target_accumulator_info) = op_dag_accumulator_info {
-                    let local_dag_accumulator_info = storage.get_dag_accumulator_info(current_block_id)?.expect("current dag accumulator info should exist");
-                    let block_chain = sync_dag_full_task(
+                    let local_dag_accumulator_info = storage
+                        .get_dag_accumulator_info(current_block_id)?
+                        .expect("current dag accumulator info should exist");
+                    let (fut, task_handle, task_event_handle) = sync_dag_full_task(
                         local_dag_accumulator_info,
                         target_accumulator_info,
                         rpc_client.clone(),
@@ -261,7 +277,16 @@ impl SyncService {
                         skip_pow_verify,
                         dag.clone(),
                     )?;
-                    Ok(block_chain)
+                    self_ref.notify(SyncBeginEvent {
+                        target,
+                        task_handle,
+                        task_event_handle,
+                        peer_selector,
+                    })?;
+                    if let Some(sync_task_total) = sync_task_total.as_ref() {
+                        sync_task_total.with_label_values(&["start"]).inc();
+                    }
+                    Ok(Some(fut.await?))
                 } else {
                     info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
 
@@ -626,7 +651,11 @@ impl EventHandler<Self, NewHeadBlock> for SyncService {
             block.block_info.clone(),
             next_tips,
         )) {
-            self.sync_status.update_dag_accumulator_info(self.storage.get_dag_accumulator_info(block.header().id()).expect("dag accumulator info must exist"));
+            self.sync_status.update_dag_accumulator_info(
+                self.storage
+                    .get_dag_accumulator_info(block.header().id())
+                    .expect("dag accumulator info must exist"),
+            );
             ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
         }
     }
