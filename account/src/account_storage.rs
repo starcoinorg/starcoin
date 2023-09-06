@@ -13,7 +13,7 @@ use starcoin_account_api::{AccountPrivateKey, AccountPublicKey, Setting};
 use starcoin_config::{temp_dir, RocksdbConfig};
 use starcoin_crypto::ValidCryptoMaterial;
 use starcoin_decrypt::{decrypt, encrypt};
-use starcoin_schemadb::{SchemaBatch, DB};
+use starcoin_schemadb::{db::DBStorage as DB, SchemaBatch};
 use starcoin_types::{account_address::AccountAddress, account_config::token_code::TokenCode};
 use std::{convert::TryFrom, path::Path, sync::Arc};
 
