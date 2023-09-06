@@ -4,13 +4,12 @@
 use crate::account_schemadb::{
     AcceptedToken, AcceptedTokens, AccountAddressWrapper, AccountSetting, AccountStore,
     EncryptedPrivateKey, GlobalSetting, GlobalSettingKey, GlobalValue, PrivateKey, PublicKey,
-    PublicKeyWrapper, SettingWrapper, ACCEPTED_TOKEN_PREFIX_NAME,
-    ENCRYPTED_PRIVATE_KEY_PREFIX_NAME, GLOBAL_PREFIX_NAME, PUBLIC_KEY_PREFIX_NAME,
-    SETTING_PREFIX_NAME,
+    SettingWrapper, ACCEPTED_TOKEN_PREFIX_NAME, ENCRYPTED_PRIVATE_KEY_PREFIX_NAME,
+    GLOBAL_PREFIX_NAME, PUBLIC_KEY_PREFIX_NAME, SETTING_PREFIX_NAME,
 };
 use anyhow::{Error, Result};
 use starcoin_account_api::{AccountPrivateKey, AccountPublicKey, Setting};
-use starcoin_config::{temp_dir, RocksdbConfig};
+use starcoin_config::RocksdbConfig;
 use starcoin_crypto::ValidCryptoMaterial;
 use starcoin_decrypt::{decrypt, encrypt};
 use starcoin_schemadb::{db::DBStorage as DB, SchemaBatch};
@@ -19,7 +18,7 @@ use std::{convert::TryFrom, path::Path, sync::Arc};
 
 #[derive(Clone)]
 pub struct AccountStorage {
-    db: Arc<DB>,
+    db: Option<Arc<DB>>,
     setting_store: AccountStore<AccountSetting>,
     private_key_store: AccountStore<PrivateKey>,
     public_key_store: AccountStore<PublicKey>,
@@ -48,33 +47,24 @@ impl AccountStorage {
 
     pub fn new(db: Arc<DB>) -> Self {
         Self {
-            db: Arc::clone(&db),
+            db: Some(Arc::clone(&db)),
+            setting_store: AccountStore::<AccountSetting>::new_with_db(&db),
+            private_key_store: AccountStore::<PrivateKey>::new_with_db(&db),
+            public_key_store: AccountStore::<PublicKey>::new_with_db(&db),
+            accepted_token_store: AccountStore::<AcceptedToken>::new_with_db(&db),
+            global_value_store: AccountStore::<GlobalSetting>::new_with_db(&db),
+        }
+    }
+
+    pub fn mock() -> Self {
+        Self {
+            db: None,
             setting_store: AccountStore::<AccountSetting>::new(),
             private_key_store: AccountStore::<PrivateKey>::new(),
             public_key_store: AccountStore::<PublicKey>::new(),
             accepted_token_store: AccountStore::<AcceptedToken>::new(),
             global_value_store: AccountStore::<GlobalSetting>::new(),
         }
-    }
-
-    pub fn mock() -> Self {
-        let path = temp_dir();
-        let db = DB::open_with_cfs(
-            "acccountmock",
-            &path,
-            vec![
-                SETTING_PREFIX_NAME,
-                ENCRYPTED_PRIVATE_KEY_PREFIX_NAME,
-                PUBLIC_KEY_PREFIX_NAME,
-                ACCEPTED_TOKEN_PREFIX_NAME,
-                GLOBAL_PREFIX_NAME,
-            ],
-            false,
-            RocksdbConfig::default(),
-            None,
-        )
-        .unwrap();
-        Self::new(Arc::new(db))
     }
 }
 
@@ -113,19 +103,19 @@ impl AccountStorage {
             .get(global_setting_key)?
             .map(|v| Ok(Some(v)))
             .unwrap_or_else(|| {
-                self.db
-                    .get::<GlobalSetting>(&GlobalSettingKey::AllAddresses)
+                if global_setting_key != &GlobalSettingKey::AllAddresses {
+                    self.global_value_store.get(&GlobalSettingKey::AllAddresses)
+                } else {
+                    Ok(None)
+                }
             })
     }
 
     fn put_addresses(&self, key: GlobalSettingKey, value: GlobalValue) -> Result<()> {
-        self.db
-            .put::<GlobalSetting>(&key, &value)
-            .and_then(|_| self.global_value_store.put(key, value))
+        self.global_value_store.put(key, value)
     }
 
     fn remove_address(&self, key: &GlobalSettingKey) -> Result<()> {
-        self.db.remove::<GlobalSetting>(key)?;
         self.global_value_store.remove(key)
     }
 
@@ -159,19 +149,11 @@ impl AccountStorage {
     }
 
     fn get_public_key(&self, address: &AccountAddressWrapper) -> Result<Option<AccountPublicKey>> {
-        self.public_key_store
-            .get(address)?
-            .map(|v| Ok(Some(v)))
-            .unwrap_or_else(|| self.db.get::<PublicKey>(address))
-            .map(|v| v.map(Into::into))
+        Ok(self.public_key_store.get(address)?.map(Into::into))
     }
 
     fn put_public_key(&self, key: AccountAddress, value: AccountPublicKey) -> Result<()> {
-        let key: AccountAddressWrapper = key.into();
-        let value: PublicKeyWrapper = value.into();
-        self.db
-            .put::<PublicKey>(&key, &value)
-            .and_then(|_| self.public_key_store.put(key, value))
+        self.public_key_store.put(key.into(), value.into())
     }
 
     pub fn public_key(&self, address: AccountAddress) -> Result<Option<AccountPublicKey>> {
@@ -182,10 +164,7 @@ impl AccountStorage {
         &self,
         address: &AccountAddressWrapper,
     ) -> Result<Option<EncryptedPrivateKey>> {
-        self.private_key_store
-            .get(address)?
-            .map(|v| Ok(Some(v)))
-            .unwrap_or_else(|| self.db.get::<PrivateKey>(address))
+        self.private_key_store.get(address)
     }
 
     //fn put_private_key(&self, key: AccountAddress, value: EncryptedPrivateKey) -> Result<()> {
@@ -239,9 +218,7 @@ impl AccountStorage {
     fn put_setting(&self, address: AccountAddress, setting: Setting) -> Result<()> {
         let key: AccountAddressWrapper = address.into();
         let value: SettingWrapper = setting.into();
-        self.db
-            .put::<AccountSetting>(&key, &value)
-            .and_then(|_| self.setting_store.put(key, value))
+        self.setting_store.put(key, value)
     }
 
     pub fn update_setting(&self, address: AccountAddress, setting: Setting) -> Result<()> {
@@ -250,13 +227,7 @@ impl AccountStorage {
 
     pub fn load_setting(&self, address: AccountAddress) -> Result<Setting> {
         let key: AccountAddressWrapper = address.into();
-        Ok(self
-            .setting_store
-            .get(&key)?
-            .map(|setting| Ok(Some(setting)))
-            .unwrap_or_else(|| self.db.get::<AccountSetting>(&key))?
-            .unwrap_or_default()
-            .0)
+        Ok(self.setting_store.get(&key)?.unwrap_or_default().0)
     }
 
     pub fn destroy_account(&self, address: AccountAddress) -> Result<()> {
@@ -291,25 +262,21 @@ impl AccountStorage {
         self.accepted_token_store.remove_batch(&key, &batch)?;
 
         // persist updates to underlying storage
-        self.db.write_schemas(batch)?;
+        self.db
+            .as_ref()
+            .map_or_else(|| Ok(()), |db| db.write_schemas(batch))?;
 
         Ok(())
     }
 
     pub fn get_accepted_tokens(&self, address: AccountAddress) -> Result<Vec<TokenCode>> {
         let key: AccountAddressWrapper = address.into();
-        let ts = self
-            .accepted_token_store
-            .get(&key)?
-            .map(|v| Ok(Some(v)))
-            .unwrap_or_else(|| self.db.get::<AcceptedToken>(&key))?;
+        let ts = self.accepted_token_store.get(&key)?;
         Ok(ts.map(|t| t.0).unwrap_or_default())
     }
 
     fn put_accepted_tokens(&self, key: AccountAddressWrapper, value: AcceptedTokens) -> Result<()> {
-        self.db
-            .put::<AcceptedToken>(&key, &value)
-            .and_then(|_| self.accepted_token_store.put(key, value))
+        self.accepted_token_store.put(key, value)
     }
 
     pub fn add_accepted_token(
@@ -326,6 +293,8 @@ impl AccountStorage {
     }
 
     pub fn write_schemas(&self, batch: SchemaBatch) -> Result<()> {
-        self.db.write_schemas(batch)
+        self.db
+            .as_ref()
+            .map_or_else(|| Ok(()), |db| db.write_schemas(batch))
     }
 }
