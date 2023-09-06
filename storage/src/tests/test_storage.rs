@@ -36,17 +36,17 @@ fn test_reopen() {
     let value = HashValue::zero();
     {
         let db = DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap();
-        db.put(DEFAULT_PREFIX_NAME, key.to_vec(), value.to_vec())
+        db.put_raw(DEFAULT_PREFIX_NAME, key.to_vec(), value.to_vec())
             .unwrap();
         assert_eq!(
-            db.get(DEFAULT_PREFIX_NAME, key.to_vec()).unwrap(),
+            db.get_raw(DEFAULT_PREFIX_NAME, key.to_vec()).unwrap(),
             Some(value.to_vec())
         );
     }
     {
         let db = DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap();
         assert_eq!(
-            db.get(DEFAULT_PREFIX_NAME, key.to_vec()).unwrap(),
+            db.get_raw(DEFAULT_PREFIX_NAME, key.to_vec()).unwrap(),
             Some(value.to_vec())
         );
     }
@@ -58,7 +58,7 @@ fn test_open_read_only() {
     let db = DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap();
     let key = HashValue::random();
     let value = HashValue::zero();
-    let result = db.put(DEFAULT_PREFIX_NAME, key.to_vec(), value.to_vec());
+    let result = db.put_raw(DEFAULT_PREFIX_NAME, key.to_vec(), value.to_vec());
     assert!(result.is_ok());
     let path = tmpdir.as_ref().join("starcoindb");
     let db = DBStorage::open_with_cfs(
@@ -72,9 +72,9 @@ fn test_open_read_only() {
         None,
     )
     .unwrap();
-    let result = db.put(DEFAULT_PREFIX_NAME, key.to_vec(), value.to_vec());
+    let result = db.put_raw(DEFAULT_PREFIX_NAME, key.to_vec(), value.to_vec());
     assert!(result.is_err());
-    let result = db.get(DEFAULT_PREFIX_NAME, key.to_vec()).unwrap();
+    let result = db.get_raw(DEFAULT_PREFIX_NAME, key.to_vec()).unwrap();
     assert_eq!(result, Some(value.to_vec()));
 }
 
@@ -177,14 +177,14 @@ fn test_two_level_storage() {
     assert_eq!(transaction_info1, transaction_info2.unwrap());
     //verfiy cache storage
     let value3 = cache_storage
-        .get(TRANSACTION_INFO_PREFIX_NAME_V2, id.to_vec())
+        .get_raw(TRANSACTION_INFO_PREFIX_NAME_V2, id.to_vec())
         .unwrap()
         .unwrap();
     let transaction_info3 = RichTransactionInfo::decode_value(&value3).unwrap();
     assert_eq!(transaction_info3, transaction_info1);
     // // verify db storage
     let value4 = db_storage
-        .get(TRANSACTION_INFO_PREFIX_NAME_V2, id.to_vec())
+        .get_raw(TRANSACTION_INFO_PREFIX_NAME_V2, id.to_vec())
         .unwrap()
         .unwrap();
     let transaction_info4 = RichTransactionInfo::decode_value(&value4).unwrap();
@@ -195,11 +195,11 @@ fn test_two_level_storage() {
     assert_eq!(transaction_info5, None);
     // verify cache storage is null
     let value6 = cache_storage
-        .get(TRANSACTION_INFO_PREFIX_NAME_V2, id.to_vec())
+        .get_raw(TRANSACTION_INFO_PREFIX_NAME_V2, id.to_vec())
         .unwrap();
     assert!(value6.is_none());
     let value7 = db_storage
-        .get(TRANSACTION_INFO_PREFIX_NAME_V2, id.to_vec())
+        .get_raw(TRANSACTION_INFO_PREFIX_NAME_V2, id.to_vec())
         .unwrap();
     assert_eq!(value7, None);
 }
@@ -246,7 +246,7 @@ fn test_two_level_storage_read_through() -> Result<()> {
     let transaction_info_data = storage_instance
         .cache()
         .unwrap()
-        .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())?;
+        .get_raw(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())?;
     assert!(transaction_info_data.is_none());
 
     //let transaction_info3 =
@@ -268,14 +268,14 @@ fn test_missing_key_handle() -> Result<()> {
     let key = HashValue::random();
     let result = storage.get_transaction_info(key)?;
     assert!(result.is_none());
-    let value2 = cache_storage.get(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
+    let value2 = cache_storage.get_raw(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
     assert!(value2.is_none());
-    let value3 = db_storage.get(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
+    let value3 = db_storage.get_raw(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
     assert!(value3.is_none());
     // test remove
-    let result2 = instance.remove(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec());
+    let result2 = instance.remove_raw(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec());
     assert!(result2.is_ok());
-    let value4 = cache_storage.get(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
+    let value4 = cache_storage.get_raw(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
     assert!(value4.is_none());
     let contains = instance.contains_key(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
     assert!(!contains);

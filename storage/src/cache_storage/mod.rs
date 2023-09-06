@@ -45,13 +45,13 @@ impl<K: Hash + Eq + Default, V: Default> Default for GCacheStorage<K, V> {
 }
 
 impl InnerStore for CacheStorage {
-    fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
+    fn get_raw(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         let composed_key = compose_key(Some(prefix_name), key);
         record_metrics("cache", prefix_name, "get", self.metrics.as_ref())
             .call(|| Ok(self.get_inner(&composed_key)))
     }
 
-    fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+    fn put_raw(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         // remove record_metrics for performance
         // record_metrics add in write_batch to reduce Instant::now system call
         let composed_key = compose_key(Some(prefix_name), key);
@@ -67,7 +67,7 @@ impl InnerStore for CacheStorage {
         record_metrics("cache", prefix_name, "contains_key", self.metrics.as_ref())
             .call(|| Ok(self.contains_key_inner(&composed_key)))
     }
-    fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
+    fn remove_raw(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
         // remove record_metrics for performance
         // record_metrics add in write_batch to reduce Instant::now system call
         let composed_key = compose_key(Some(prefix_name), key);
@@ -107,7 +107,7 @@ impl InnerStore for CacheStorage {
     }
 
     fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
-        self.put(prefix_name, key, value)
+        self.put_raw(prefix_name, key, value)
     }
 
     fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {

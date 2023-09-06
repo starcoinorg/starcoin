@@ -33,10 +33,10 @@ pub trait KVStore: Send + Sync {
 }
 
 pub trait InnerStore: Send + Sync {
-    fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>>;
-    fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
+    fn get_raw(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>>;
+    fn put_raw(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
     fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool>;
-    fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()>;
+    fn remove_raw(&self, prefix_name: &str, key: Vec<u8>) -> Result<()>;
     fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()>;
     fn get_len(&self) -> Result<u64>;
     fn keys(&self) -> Result<Vec<Vec<u8>>>;
@@ -120,17 +120,17 @@ impl StorageInstance {
 }
 
 impl InnerStore for StorageInstance {
-    fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
+    fn get_raw(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         match self {
-            StorageInstance::CACHE { cache } => cache.get(prefix_name, key),
-            StorageInstance::DB { db } => db.get(prefix_name, key),
+            StorageInstance::CACHE { cache } => cache.get_raw(prefix_name, key),
+            StorageInstance::DB { db } => db.get_raw(prefix_name, key),
             StorageInstance::CacheAndDb { cache, db } => {
                 // first get from cache
                 // if from cache get non-existent, query from db
-                if let Ok(Some(value)) = cache.get(prefix_name, key.clone()) {
+                if let Ok(Some(value)) = cache.get_raw(prefix_name, key.clone()) {
                     Ok(Some(value))
                 } else {
-                    match db.get(prefix_name, key)? {
+                    match db.get_raw(prefix_name, key)? {
                         Some(value) => {
                             // cache.put_obj(prefix_name, key, CacheObject::Value(value.clone()))?;
                             Ok(Some(value))
@@ -146,13 +146,13 @@ impl InnerStore for StorageInstance {
         }
     }
 
-    fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+    fn put_raw(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         match self {
-            StorageInstance::CACHE { cache } => cache.put(prefix_name, key, value),
-            StorageInstance::DB { db } => db.put(prefix_name, key, value),
+            StorageInstance::CACHE { cache } => cache.put_raw(prefix_name, key, value),
+            StorageInstance::DB { db } => db.put_raw(prefix_name, key, value),
             StorageInstance::CacheAndDb { cache, db } => db
-                .put(prefix_name, key.clone(), value.clone())
-                .and_then(|_| cache.put(prefix_name, key, value)),
+                .put_raw(prefix_name, key.clone(), value.clone())
+                .and_then(|_| cache.put_raw(prefix_name, key, value)),
         }
     }
 
@@ -169,13 +169,13 @@ impl InnerStore for StorageInstance {
         }
     }
 
-    fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
+    fn remove_raw(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
         match self {
-            StorageInstance::CACHE { cache } => cache.remove(prefix_name, key),
-            StorageInstance::DB { db } => db.remove(prefix_name, key),
+            StorageInstance::CACHE { cache } => cache.remove_raw(prefix_name, key),
+            StorageInstance::DB { db } => db.remove_raw(prefix_name, key),
             StorageInstance::CacheAndDb { cache, db } => {
-                match db.remove(prefix_name, key.clone()) {
-                    Ok(_) => cache.remove(prefix_name, key),
+                match db.remove_raw(prefix_name, key.clone()) {
+                    Ok(_) => cache.remove_raw(prefix_name, key),
                     _ => bail!("db storage remove error."),
                 }
             }
@@ -212,11 +212,11 @@ impl InnerStore for StorageInstance {
 
     fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         match self {
-            StorageInstance::CACHE { cache } => cache.put(prefix_name, key, value),
+            StorageInstance::CACHE { cache } => cache.put_raw(prefix_name, key, value),
             StorageInstance::DB { db } => db.put_sync(prefix_name, key, value),
             StorageInstance::CacheAndDb { cache, db } => db
                 .put_sync(prefix_name, key.clone(), value.clone())
-                .and_then(|_| cache.put(prefix_name, key, value)),
+                .and_then(|_| cache.put_raw(prefix_name, key, value)),
         }
     }
 
@@ -314,7 +314,7 @@ where
     CF: ColumnFamily,
 {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        self.instance.get(self.prefix_name, key.to_vec())
+        self.instance.get_raw(self.prefix_name, key.to_vec())
     }
 
     fn multiple_get(&self, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
@@ -322,7 +322,7 @@ where
     }
 
     fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
-        self.instance.put(self.prefix_name, key, value)
+        self.instance.put_raw(self.prefix_name, key, value)
     }
 
     fn contains_key(&self, key: Vec<u8>) -> Result<bool> {
@@ -330,7 +330,7 @@ where
     }
 
     fn remove(&self, key: Vec<u8>) -> Result<()> {
-        self.instance.remove(self.prefix_name, key)
+        self.instance.remove_raw(self.prefix_name, key)
     }
 
     fn write_batch(&self, batch: WriteBatch) -> Result<()> {
@@ -621,6 +621,6 @@ where
             .storage()
             .db()
             .ok_or_else(|| format_err!("Only support scan on db storage instance"))?;
-        db.iter::<K, V>(self.get_store().prefix_name)
+        db.iter_raw::<K, V>(self.get_store().prefix_name)
     }
 }

@@ -20,8 +20,11 @@ pub trait ClassicIter {
         direction: ScanDirection,
     ) -> Result<SchemaIterator<K, V>>;
 
-    fn iter<K: KeyCodec, V: ValueCodec>(&self, prefix_name: &str) -> Result<SchemaIterator<K, V>>;
-    fn rev_iter<K: KeyCodec, V: ValueCodec>(
+    fn iter_raw<K: KeyCodec, V: ValueCodec>(
+        &self,
+        prefix_name: &str,
+    ) -> Result<SchemaIterator<K, V>>;
+    fn rev_iter_raw<K: KeyCodec, V: ValueCodec>(
         &self,
         prefix_name: &str,
     ) -> Result<SchemaIterator<K, V>>;
@@ -45,7 +48,7 @@ impl ClassicIter for DBStorage {
         ))
     }
     /// Returns a forward [`SchemaIterator`] on a certain schema.
-    fn iter<K, V>(&self, prefix_name: &str) -> Result<SchemaIterator<K, V>>
+    fn iter_raw<K, V>(&self, prefix_name: &str) -> Result<SchemaIterator<K, V>>
     where
         K: KeyCodec,
         V: ValueCodec,
@@ -54,7 +57,7 @@ impl ClassicIter for DBStorage {
     }
 
     /// Returns a backward [`SchemaIterator`] on a certain schema.
-    fn rev_iter<K, V>(&self, prefix_name: &str) -> Result<SchemaIterator<K, V>>
+    fn rev_iter_raw<K, V>(&self, prefix_name: &str) -> Result<SchemaIterator<K, V>>
     where
         K: KeyCodec,
         V: ValueCodec,
@@ -64,7 +67,7 @@ impl ClassicIter for DBStorage {
 }
 
 impl InnerStore for DBStorage {
-    fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
+    fn get_raw(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         record_metrics("db", prefix_name, "get", self.metrics.as_ref()).call(|| {
             let cf_handle = self.get_cf_handle(prefix_name)?;
             let result = self.db.get_cf(cf_handle, key.as_slice())?;
@@ -72,7 +75,7 @@ impl InnerStore for DBStorage {
         })
     }
 
-    fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+    fn put_raw(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
                 .storage_item_bytes
@@ -90,13 +93,13 @@ impl InnerStore for DBStorage {
 
     fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool> {
         record_metrics("db", prefix_name, "contains_key", self.metrics.as_ref()).call(|| match self
-            .get(prefix_name, key)
+            .get_raw(prefix_name, key)
         {
             Ok(Some(_)) => Ok(true),
             _ => Ok(false),
         })
     }
-    fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
+    fn remove_raw(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
         record_metrics("db", prefix_name, "remove", self.metrics.as_ref()).call(|| {
             let cf_handle = self.get_cf_handle(prefix_name)?;
             self.db.delete_cf(cf_handle, &key)?;

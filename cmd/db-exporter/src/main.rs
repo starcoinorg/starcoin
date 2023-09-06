@@ -80,6 +80,7 @@ pub fn export<W: std::io::Write>(
     schema: DbSchema,
 ) -> anyhow::Result<()> {
     let db_storage = DBStorage::open_with_cfs(
+        "starcoindb",
         db,
         StorageVersion::current_version()
             .get_column_family_names()
@@ -88,7 +89,7 @@ pub fn export<W: std::io::Write>(
         Default::default(),
         None,
     )?;
-    let mut iter = db_storage.iter::<Vec<u8>, Vec<u8>>(schema.to_string().as_str())?;
+    let mut iter = db_storage.iter_raw::<Vec<u8>, Vec<u8>>(schema.to_string().as_str())?;
     iter.seek_to_first();
     let key_codec = schema.get_key_codec();
     let value_codec = schema.get_value_codec();
@@ -502,6 +503,7 @@ async fn main() -> anyhow::Result<()> {
         }
         Cmd::Checkkey(option) => {
             let db = DBStorage::open_with_cfs(
+                "starcoindb",
                 option.db_path.display().to_string().as_str(),
                 StorageVersion::current_version()
                     .get_column_family_names()
@@ -511,7 +513,7 @@ async fn main() -> anyhow::Result<()> {
                 None,
             )?;
 
-            let result = db.get(option.cf_name.as_str(), option.block_hash.to_vec())?;
+            let result = db.get_raw(option.cf_name.as_str(), option.block_hash.to_vec())?;
             if result.is_some() {
                 println!("{} block_hash {} exist", option.cf_name, option.block_hash);
             } else {
@@ -620,6 +622,7 @@ pub fn export_block_range(
 ) -> anyhow::Result<()> {
     let net = ChainNetwork::new_builtin(network);
     let db_storage = DBStorage::open_with_cfs(
+        "starcoindb",
         from_dir.join("starcoindb/db/starcoindb"),
         StorageVersion::current_version()
             .get_column_family_names()
@@ -1277,6 +1280,7 @@ pub fn export_snapshot(
     let start_time = SystemTime::now();
     let net = ChainNetwork::new_builtin(network);
     let db_storage = DBStorage::open_with_cfs(
+        "starcoindb",
         from_dir.join("starcoindb/db/starcoindb"),
         StorageVersion::current_version()
             .get_column_family_names()
@@ -1825,6 +1829,7 @@ pub fn export_resource(
     fields: &[String],
 ) -> anyhow::Result<()> {
     let db_storage = DBStorage::open_with_cfs(
+        "starcoindb",
         db,
         StorageVersion::current_version()
             .get_column_family_names()
