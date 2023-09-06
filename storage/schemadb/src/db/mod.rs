@@ -3,7 +3,13 @@
 
 mod version;
 
-use crate::{error::StorageInitError, metrics::StorageMetrics, ColumnFamilyName, WriteOp};
+use crate::iterator::ScanDirection;
+use crate::{
+    error::StorageInitError,
+    metrics::StorageMetrics,
+    schema::{KeyCodec, Schema, ValueCodec},
+    ColumnFamilyName, SchemaBatch, SchemaIterator, WriteOp,
+};
 use anyhow::{ensure, format_err, Error, Result};
 use rocksdb::{
     DBIterator, IteratorMode, Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB,
@@ -17,6 +23,7 @@ const RES_FDS: u64 = 4096;
 
 #[allow(clippy::upper_case_acronyms)]
 pub struct DBStorage {
+    name: String, // for logging
     // Todo, make me private to other crates
     pub db: DB,
     cfs: Vec<ColumnFamilyName>,
@@ -32,6 +39,7 @@ impl DBStorage {
         //TODO find a compat way to remove the `starcoindb` path
         let path = db_root_path.as_ref().join("starcoindb");
         Self::open_with_cfs(
+            "default",
             path,
             StorageVersion::current_version()
                 .get_column_family_names()
@@ -43,6 +51,7 @@ impl DBStorage {
     }
 
     pub fn open_with_cfs<P>(
+        name: &str,
         root_path: P,
         column_families: Vec<ColumnFamilyName>,
         readonly: bool,
@@ -53,6 +62,7 @@ impl DBStorage {
         P: AsRef<Path>,
     {
         Self::open_with_cfs_as_secondary(
+            name,
             root_path,
             None,
             column_families,
@@ -62,7 +72,8 @@ impl DBStorage {
         )
     }
 
-    pub fn open_with_cfs_as_secondary<P>(
+    fn open_with_cfs_as_secondary<P>(
+        name: &str,
         primary_path: P,
         secondary_path: Option<P>,
         column_families: Vec<ColumnFamilyName>,
@@ -97,7 +108,7 @@ impl DBStorage {
             let mut remove_cf_vec = Vec::new();
             db_cfs_set.iter().for_each(|k| {
                 if !cfs_set.contains(&k.as_str()) {
-                    remove_cf_vec.push(<&std::string::String>::clone(k));
+                    remove_cf_vec.push(<&String>::clone(k));
                 }
             });
             ensure!(
@@ -121,7 +132,7 @@ impl DBStorage {
                     column_families.clone(),
                 )?
             } else {
-                Self::open_readonly(&rocksdb_opts, path, column_families.clone())?
+                Self::open_readonly_inner(&rocksdb_opts, path, column_families.clone())?
             }
         } else {
             rocksdb_opts.create_if_missing(true);
@@ -130,6 +141,7 @@ impl DBStorage {
         };
         check_open_fds_limit(rocksdb_config.max_open_files as u64 + RES_FDS)?;
         Ok(DBStorage {
+            name: name.to_string(),
             db,
             cfs: column_families,
             metrics,
@@ -146,7 +158,7 @@ impl DBStorage {
         P: AsRef<Path>,
     {
         let cfs = column_families.iter().map(|cf_name| {
-            let mut cf_opts = rocksdb::Options::default();
+            let mut cf_opts = Options::default();
             cf_opts.set_compression_type(rocksdb::DBCompressionType::Lz4);
             /*
             cf_opts.set_compression_per_level(&[
@@ -163,26 +175,22 @@ impl DBStorage {
         });
 
         let inner = if let Some(secondary_path) = secondary_path {
-            rocksdb::DB::open_cf_descriptors_as_secondary(opts, primary_path, secondary_path, cfs)
+            DB::open_cf_descriptors_as_secondary(opts, primary_path, secondary_path, cfs)
         } else {
-            rocksdb::DB::open_cf_descriptors(opts, primary_path, cfs)
+            DB::open_cf_descriptors(opts, primary_path, cfs)
         };
 
         Ok(inner?)
     }
 
-    fn open_readonly(
+    fn open_readonly_inner(
         db_opts: &Options,
         path: impl AsRef<Path>,
         column_families: Vec<ColumnFamilyName>,
     ) -> Result<DB> {
         let error_if_log_file_exists = false;
-        let inner = rocksdb::DB::open_cf_for_read_only(
-            db_opts,
-            path,
-            column_families,
-            error_if_log_file_exists,
-        )?;
+        let inner =
+            DB::open_cf_for_read_only(db_opts, path, column_families, error_if_log_file_exists)?;
         Ok(inner)
     }
 
@@ -244,7 +252,7 @@ impl DBStorage {
 
     /// List cf
     pub fn list_cf(path: impl AsRef<Path>) -> Result<Vec<String>, Error> {
-        Ok(rocksdb::DB::list_cf(&rocksdb::Options::default(), path)?)
+        Ok(DB::list_cf(&Options::default(), path)?)
     }
 
     fn db_exists(path: &Path) -> bool {
@@ -301,5 +309,137 @@ impl DBStorage {
         let mut opts = WriteOptions::new();
         opts.set_sync(true);
         opts
+    }
+}
+
+impl DBStorage {
+    pub fn open(
+        name: &str,
+        root_path: impl AsRef<Path>,
+        column_families: Vec<ColumnFamilyName>,
+        rocksdb_config: RocksdbConfig,
+        metrics: Option<StorageMetrics>,
+    ) -> Result<Self> {
+        Self::open_with_cfs(
+            name,
+            root_path,
+            column_families,
+            false,
+            rocksdb_config,
+            metrics,
+        )
+    }
+
+    pub fn open_readonly(
+        name: &str,
+        root_path: impl AsRef<Path>,
+        column_families: Vec<ColumnFamilyName>,
+        rocksdb_config: RocksdbConfig,
+        metrics: Option<StorageMetrics>,
+    ) -> Result<Self> {
+        Self::open_with_cfs(
+            name,
+            root_path,
+            column_families,
+            true,
+            rocksdb_config,
+            metrics,
+        )
+    }
+
+    pub fn open_cf_as_secondary<P>(
+        name: &str,
+        primary_path: P,
+        secondary_path: P,
+        column_families: Vec<ColumnFamilyName>,
+        rocksdb_config: RocksdbConfig,
+        metrics: Option<StorageMetrics>,
+    ) -> Result<Self>
+    where
+        P: AsRef<Path>,
+    {
+        DBStorage::open_with_cfs_as_secondary(
+            name,
+            primary_path,
+            Some(secondary_path),
+            column_families,
+            true,
+            rocksdb_config,
+            metrics,
+        )
+    }
+
+    pub fn write_schemas(&self, batch: SchemaBatch) -> Result<()> {
+        let rows_locked = batch.rows.lock();
+
+        for row in rows_locked.iter() {
+            self.write_batch_inner(row.0, row.1, false /*normal write*/)?
+        }
+
+        Ok(())
+    }
+
+    pub fn get<S: Schema>(&self, key: &S::Key) -> Result<Option<S::Value>> {
+        let raw_key = <S::Key as KeyCodec<S>>::encode_key(key)?;
+        let cf_handle = self.get_cf_handle(S::COLUMN_FAMILY)?;
+        self.db
+            .get_cf(cf_handle, raw_key)
+            .map_err(Into::into)
+            .and_then(|raw_value| {
+                raw_value
+                    .map(|v| <S::Value as ValueCodec<S>>::decode_value(&v))
+                    .transpose()
+            })
+    }
+
+    pub fn put<S: Schema>(&self, key: &S::Key, value: &S::Value) -> Result<()> {
+        let raw_key = <S::Key as KeyCodec<S>>::encode_key(key)?;
+        let raw_value = <S::Value as ValueCodec<S>>::encode_value(value)?;
+        let cf_handle = self.get_cf_handle(S::COLUMN_FAMILY)?;
+
+        self.db.put_cf(cf_handle, raw_key, raw_value)?;
+
+        Ok(())
+    }
+
+    pub fn remove<S: Schema>(&self, key: &S::Key) -> Result<()> {
+        let raw_key = <S::Key as KeyCodec<S>>::encode_key(key)?;
+        let cf_handle = self.get_cf_handle(S::COLUMN_FAMILY)?;
+
+        self.db.delete_cf(cf_handle, raw_key)?;
+        Ok(())
+    }
+
+    pub fn iter<S: Schema>(&self, opts: ReadOptions) -> Result<SchemaIterator<S>> {
+        self.iter_with_direction(opts, ScanDirection::Forward)
+    }
+
+    pub fn rev_iter<S: Schema>(&self, opts: ReadOptions) -> Result<SchemaIterator<S>> {
+        self.iter_with_direction(opts, ScanDirection::Backward)
+    }
+
+    fn iter_with_direction<S: Schema>(
+        &self,
+        opts: ReadOptions,
+        direction: ScanDirection,
+    ) -> Result<SchemaIterator<S>> {
+        let cf_handle = self.get_cf_handle(S::COLUMN_FAMILY)?;
+        Ok(SchemaIterator::new(
+            self.db.raw_iterator_cf_opt(cf_handle, opts),
+            direction,
+        ))
+    }
+
+    pub fn get_property(&self, cf_name: &str, property_name: &str) -> Result<u64> {
+        self.db
+            .property_int_value_cf(self.get_cf_handle(cf_name)?, property_name)?
+            .ok_or_else(|| {
+                format_err!(
+                    "Unable to get property \"{}\" of  column family \"{}\" in db \"{}\".",
+                    property_name,
+                    cf_name,
+                    self.name,
+                )
+            })
     }
 }

@@ -62,6 +62,7 @@ fn test_open_read_only() {
     assert!(result.is_ok());
     let path = tmpdir.as_ref().join("starcoindb");
     let db = DBStorage::open_with_cfs(
+        "test",
         path,
         StorageVersion::current_version()
             .get_column_family_names()

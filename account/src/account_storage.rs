@@ -29,7 +29,7 @@ pub struct AccountStorage {
 
 impl AccountStorage {
     pub fn create_from_path(p: impl AsRef<Path>, rocksdb_config: RocksdbConfig) -> Result<Self> {
-        let db = DB::create_from_path(
+        let db = DB::open_with_cfs(
             "accountdb",
             p,
             vec![
@@ -59,7 +59,7 @@ impl AccountStorage {
 
     pub fn mock() -> Self {
         let path = temp_dir();
-        let db = DB::create_from_path(
+        let db = DB::open_with_cfs(
             "acccountmock",
             &path,
             vec![
