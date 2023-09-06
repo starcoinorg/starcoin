@@ -6,10 +6,10 @@ use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use rocksdb::DEFAULT_COLUMN_FAMILY_NAME;
 use starcoin_config::RocksdbConfig;
 use starcoin_schemadb::{
+    db::DBStorage as DB,
     define_schema,
     iterator::SchemaIterator,
     schema::{KeyCodec, Schema, SeekKeyCodec, ValueCodec},
-    DB,
 };
 
 define_schema!(TestSchema, TestKey, TestValue, "TestCF");

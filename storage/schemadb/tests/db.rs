@@ -6,9 +6,10 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use rocksdb::DEFAULT_COLUMN_FAMILY_NAME;
 use starcoin_config::RocksdbConfig;
 use starcoin_schemadb::{
+    db::DBStorage as DB,
     define_schema,
     schema::{KeyCodec, Schema, ValueCodec},
-    ColumnFamilyName, SchemaBatch, DB,
+    ColumnFamilyName, SchemaBatch,
 };
 
 // Creating two schemas that share exactly the same structure but are stored in different column
