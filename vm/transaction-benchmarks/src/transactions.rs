@@ -8,6 +8,7 @@ use proptest::{
     test_runner::TestRunner,
 };
 use starcoin_crypto::HashValue;
+use std::time::Instant;
 
 use starcoin_language_e2e_tests::account::AccountData;
 use starcoin_language_e2e_tests::{
@@ -97,6 +98,41 @@ where
         )
     }
 
+    pub fn manual_sequence(
+        &self,
+        num_accounts: usize,
+        num_txn: usize,
+        num_warmups: usize,
+        num_runs: usize,
+    ) -> Vec<usize> {
+        let mut ret = Vec::new();
+
+        let total_runs = num_warmups + num_runs;
+        for i in 0..total_runs {
+            let state = TransactionBenchState::with_size(
+                &self.strategy,
+                num_accounts,
+                num_txn,
+            );
+
+            if i < num_warmups {
+                println!("WARMUP - ignore results");
+                state.execute();
+            } else {
+                println!(
+                    "RUN bencher for: num_threads = {}, \
+                          block_size = {}, \
+                          num_account = {}",
+                    num_cpus::get(),
+                    num_txn,
+                    num_accounts,
+                );
+                ret.push(state.execute());
+            }
+        }
+        ret
+    }
+
     pub fn manual_parallel(
         &self,
         num_accounts: usize,
@@ -130,7 +166,6 @@ where
                 ret.push(state.execute());
             }
         }
-
         ret
     }
 }
@@ -234,31 +269,42 @@ impl TransactionBenchState {
     }
 
     /// Executes this state in a single block.
-    fn execute(self) {
+    fn execute(self) -> usize {
         // The output is ignored here since we're just testing transaction performance, not trying
         // to assert correctness.
-        StarcoinVM::execute_block(
+        StarcoinVM::set_concurrency_level_once(1);
+
+        let transactions_len = self.transactions.len();
+
+        // this bench execution with TPS
+        let timer = Instant::now();
+        let useless = StarcoinVM::execute_block(
             self.transactions,
             self.executor.get_state_view(),
             None,
             None,
         )
         .expect("VM should not fail to start");
+
+        drop(useless);
+
+        let exec_t = timer.elapsed();
+        transactions_len * 1000 / exec_t.as_millis() as usize
     }
 
-    /// Executes this state in a single block via parallel execution.
-    fn execute_parallel(self) {
-        // The output is ignored here since we're just testing transaction performance, not trying
-        // to assert correctness.
-        ParallelStarcoinVM::execute_block(
-            self.transactions,
-            self.executor.get_state_view(),
-            num_cpus::get(),
-            None,
-            None,
-        )
-        .expect("VM should not fail to start");
-    }
+    // /// Executes this state in a single block via parallel execution.
+    // fn execute_parallel(self) {
+    //     // The output is ignored here since we're just testing transaction performance, not trying
+    //     // to assert correctness.
+    //     ParallelStarcoinVM::execute_block(
+    //         self.transactions,
+    //         self.executor.get_state_view(),
+    //         num_cpus::get(),
+    //         None,
+    //         None,
+    //     )
+    //     .expect("VM should not fail to start");
+    // }
 }
 
 /// Returns a strategy for the account universe customized for benchmarks.
