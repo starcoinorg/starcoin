@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    cache_storage::CacheStorage,
+    cache_storage::GCacheStorage,
     db_storage::{ClassicIter, SchemaIterator},
     upgrade::DBUpgrade,
 };
@@ -12,7 +12,7 @@ use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 use starcoin_vm_types::state_store::table::TableHandle;
-use std::{convert::TryInto, fmt::Debug, marker::PhantomData, sync::Arc};
+use std::{convert::TryInto, fmt::Debug, hash::Hash, marker::PhantomData, sync::Arc};
 pub use {
     crate::batch::WriteBatch,
     starcoin_schemadb::{db::DBStorage, ColumnFamilyName, GWriteOp as WriteOp},
@@ -45,53 +45,59 @@ pub trait InnerStore: Send + Sync {
     fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>>;
 }
 
-///Storage instance type define
+pub type StorageInstance = GStorageInstance<Vec<u8>, Vec<u8>>;
+
+///Generic Storage instance type define
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
-pub enum StorageInstance {
+pub enum GStorageInstance<K, V>
+where
+    K: Hash + Eq + Default,
+    V: Default,
+{
     CACHE {
-        cache: Arc<CacheStorage>,
+        cache: Arc<GCacheStorage<K, V>>,
     },
     DB {
         db: Arc<DBStorage>,
     },
     CacheAndDb {
-        cache: Arc<CacheStorage>,
+        cache: Arc<GCacheStorage<K, V>>,
         db: Arc<DBStorage>,
     },
 }
 
-impl StorageInstance {
+impl<K, V> GStorageInstance<K, V>
+where
+    K: Hash + Eq + Default,
+    V: Default,
+{
     pub fn new_cache_instance() -> Self {
-        StorageInstance::CACHE {
-            cache: Arc::new(CacheStorage::new(None)),
+        GStorageInstance::CACHE {
+            cache: Arc::new(GCacheStorage::default()),
         }
     }
     pub fn new_db_instance(db: DBStorage) -> Self {
         Self::DB { db: Arc::new(db) }
     }
 
-    pub fn new_cache_and_db_instance(cache: CacheStorage, db: DBStorage) -> Self {
+    pub fn new_cache_and_db_instance(cache: GCacheStorage<K, V>, db: DBStorage) -> Self {
         Self::CacheAndDb {
             cache: Arc::new(cache),
             db: Arc::new(db),
         }
     }
 
-    pub fn cache(&self) -> Option<Arc<CacheStorage>> {
+    pub fn cache(&self) -> Option<Arc<GCacheStorage<K, V>>> {
         match self {
-            StorageInstance::CACHE { cache } | StorageInstance::CacheAndDb { cache, db: _ } => {
-                Some(cache.clone())
-            }
+            Self::CACHE { cache } | Self::CacheAndDb { cache, db: _ } => Some(cache.clone()),
             _ => None,
         }
     }
 
-    pub fn db(&self) -> Option<&DBStorage> {
+    pub fn db(&self) -> Option<&Arc<DBStorage>> {
         match self {
-            StorageInstance::DB { db } | StorageInstance::CacheAndDb { cache: _, db } => {
-                Some(db.as_ref())
-            }
+            Self::DB { db } | Self::CacheAndDb { cache: _, db } => Some(db),
             _ => None,
         }
     }
@@ -99,13 +105,13 @@ impl StorageInstance {
     // make sure Arc::strong_count(&db) == 1 unless will get None
     pub fn db_mut(&mut self) -> Option<&mut DBStorage> {
         match self {
-            StorageInstance::DB { db } | StorageInstance::CacheAndDb { cache: _, db } => {
-                Arc::get_mut(db)
-            }
+            Self::DB { db } | Self::CacheAndDb { cache: _, db } => Arc::get_mut(db),
             _ => None,
         }
     }
+}
 
+impl StorageInstance {
     pub fn check_upgrade(&mut self) -> Result<()> {
         DBUpgrade::check_upgrade(self)
     }
