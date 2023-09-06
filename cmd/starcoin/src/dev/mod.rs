@@ -3,6 +3,7 @@
 
 pub use call_contract_cmd::*;
 pub use compile_cmd::*;
+pub use concurrency_level_cmd::*;
 pub use deploy_cmd::*;
 pub use get_coin_cmd::*;
 pub use package_cmd::*;
