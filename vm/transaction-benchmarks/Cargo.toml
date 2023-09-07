@@ -15,18 +15,20 @@ starcoin-crypto = { package = "starcoin-crypto", workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
-criterion = { workspace = true, optional = true }
+criterion = { workspace = true, optional = true, features = ["html_reports"] }
 proptest = { workspace = true, optional = true }
 proptest-derive = { workspace = true, optional = true }
+pprof = { version = "0.10", optional = true, features = ["flamegraph", "criterion"] }
 log = { workspace = true }
 criterion-cpu-time = "0.1.0"
 starcoin-language-e2e-tests = { path = "../e2e-tests" }
 # move-deps = { path = "../../aptos-move/move-deps" }
 
 [dev-dependencies]
-criterion = { workspace = true }
+criterion = { workspace = true, features = ["html_reports"] }
 proptest = { workspace = true }
 proptest-derive = { workspace = true }
+pprof = { version = "0.10", features = ["flamegraph", "criterion"] }
 
 [[bench]]
 name = "transaction_benches"
@@ -37,5 +39,9 @@ required-features = ["fuzzing"]
 fuzzing = [
     "criterion",
     "proptest",
-    "proptest-derive"
+    "proptest-derive",
+    "pprof"
 ]
+flamegraph = []
+html_reports = []
+
