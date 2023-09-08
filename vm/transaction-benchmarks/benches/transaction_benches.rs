@@ -1,14 +1,12 @@
 // Copyright (c) Starcoin
 // SPDX-License-Identifier: Apache-2.0
 
-use std::fs::File;
 use criterion::{criterion_group, criterion_main, measurement::Measurement, Criterion};
+use pprof::criterion::{Output, PProfProfiler};
 use proptest::prelude::*;
 use starcoin_language_e2e_tests::account_universe::P2PTransferGen;
-use starcoin_transaction_benchmarks::{
-    transactions::TransactionBencher,
-};
-use pprof::criterion::{Output, PProfProfiler};
+use starcoin_transaction_benchmarks::transactions::TransactionBencher;
+use std::fs::File;
 
 //
 // Transaction benchmarks
@@ -27,7 +25,6 @@ fn peer_to_peer<M: Measurement + 'static>(c: &mut Criterion<M>) {
     });
 
     c.bench_function("peer_to_peer_parallel", |b| {
-
         let bencher = TransactionBencher::new(
             any_with::<P2PTransferGen>((10_000, 10_000_000)),
             default_num_accounts,

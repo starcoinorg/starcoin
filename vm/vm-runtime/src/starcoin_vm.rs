@@ -932,6 +932,7 @@ impl StarcoinVM {
         &self,
         storage: &S,
         txn: SignedUserTransaction,
+        use_stm: bool,
     ) -> (VMStatus, TransactionOutput) {
         let txn_data = match TransactionMetadata::new(&txn) {
             Ok(txn_data) => txn_data,
@@ -979,17 +980,21 @@ impl StarcoinVM {
                 };
                 match result {
                     Ok(status_and_output) => {
-                        log_vm_status(
-                            txn.id(),
-                            &txn_data,
-                            &status_and_output.0,
-                            Some(&status_and_output.1),
-                        );
+                        if !use_stm {
+                            log_vm_status(
+                                txn.id(),
+                                &txn_data,
+                                &status_and_output.0,
+                                Some(&status_and_output.1),
+                            );
+                        }
                         status_and_output
                     }
                     Err(err) => {
                         let txn_status = TransactionStatus::from(err.clone());
-                        log_vm_status(txn.id(), &txn_data, &err, None);
+                        if !use_stm {
+                            log_vm_status(txn.id(), &txn_data, &err, None);
+                        }
                         if txn_status.is_discarded() {
                             discard_error_vm_status(err)
                         } else {
@@ -1103,8 +1108,11 @@ impl StarcoinVM {
                                 .start_timer()
                         });
                         let gas_unit_price = transaction.gas_unit_price();
-                        let (status, output) = self
-                            .execute_user_transaction(&data_cache.as_move_resolver(), transaction);
+                        let (status, output) = self.execute_user_transaction(
+                            &data_cache.as_move_resolver(),
+                            transaction,
+                            false,
+                        );
                         // only need to check for user transactions.
                         match gas_left.checked_sub(output.gas_used()) {
                             Some(l) => gas_left = l,
@@ -1593,7 +1601,8 @@ impl VMAdapter for StarcoinVM {
         Ok(match txn {
             PreprocessedTransaction::UserTransaction(txn) => {
                 let sender = txn.sender().to_string();
-                let (vm_status, output) = self.execute_user_transaction(data_cache, *txn.clone());
+                let (vm_status, output) =
+                    self.execute_user_transaction(data_cache, *txn.clone(), true);
                 // XXX FIXME YSG
                 // let gas_unit_price = transaction.gas_unit_price(); think about gas_used OutOfGas
                 (vm_status, output, Some(sender))
