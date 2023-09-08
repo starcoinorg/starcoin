@@ -7,7 +7,7 @@ if [[ "$(uname)" != "Linux" ]]; then
 fi
 
 
-cmd="cargo bench -p starcoin-transaction-benchmarks --features fuzzing"
+cmd="cargo bench -p starcoin-transaction-benchmarks --features fuzzing,flamegraph"
 echo "run flamegraph with cmd: ${cmd}"
 eval "$cmd"
 
