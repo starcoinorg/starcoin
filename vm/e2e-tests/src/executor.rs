@@ -364,7 +364,7 @@ impl FakeExecutor {
         &self,
         txn_block: Vec<Transaction>,
     ) -> Result<Vec<TransactionOutput>, VMStatus> {
-        let (result, _) = ParallelStarcoinVM::execute_block(
+        let (result, _) = BlockStarcoinVM::execute_block(
             txn_block,
             &self.data_store,
             num_cpus::get(),

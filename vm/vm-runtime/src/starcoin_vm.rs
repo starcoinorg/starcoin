@@ -54,8 +54,8 @@ use starcoin_vm_types::{
     language_storage::{ModuleId, TypeTag},
     on_chain_config::{
         GasSchedule, MoveLanguageVersion, OnChainConfig, VMConfig, Version,
-        G_GAS_CONSTANTS_IDENTIFIER, G_GAS_SCHEDULE_GAS_SCHEDULE, G_GAS_SCHEDULE_IDENTIFIER,
-        G_INSTRUCTION_SCHEDULE_IDENTIFIER, G_NATIVE_SCHEDULE_IDENTIFIER, G_VM_CONFIG_IDENTIFIER,
+        G_GAS_CONSTANTS_IDENTIFIER, G_INSTRUCTION_SCHEDULE_IDENTIFIER,
+        G_NATIVE_SCHEDULE_IDENTIFIER, G_VM_CONFIG_IDENTIFIER,
     },
     state_store::state_key::StateKey,
     state_view::{StateReaderExt, StateView},

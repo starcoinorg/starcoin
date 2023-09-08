@@ -19,9 +19,7 @@ use starcoin_language_e2e_tests::{
 
 use starcoin_types::{block_metadata::BlockMetadata, transaction::Transaction};
 
-use starcoin_vm_runtime::{
-    parallel_executor::ParallelStarcoinVM, starcoin_vm::StarcoinVM, VMExecutor,
-};
+use starcoin_vm_runtime::{block_executor::BlockStarcoinVM, starcoin_vm::StarcoinVM, VMExecutor};
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 
@@ -351,7 +349,7 @@ impl ParallelBenchState {
 
         let state_view = self.bench_state.executor.get_state_view();
         // measured - microseconds.
-        ParallelStarcoinVM::execute_block_tps(
+        BlockStarcoinVM::execute_block_tps(
             self.bench_state.transactions.clone(),
             state_view,
             self.num_threads,

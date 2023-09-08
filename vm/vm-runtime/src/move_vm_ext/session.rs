@@ -17,12 +17,15 @@ use starcoin_vm_types::{
     block_metadata::BlockMetadata,
     contract_event::ContractEvent,
     event::EventKey,
-    state_store::state_key::StateKey,
+    state_store::{
+        state_key::StateKey,
+        table::{TableHandle, TableInfo},
+    },
     transaction::SignatureCheckedTransaction,
     transaction_metadata::TransactionMetadata,
     write_set::{WriteOp, WriteSet, WriteSetMut},
 };
-use std::convert::TryFrom;
+use std::{collections::BTreeMap, convert::TryFrom};
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub enum SessionId {

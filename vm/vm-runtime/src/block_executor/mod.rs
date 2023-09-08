@@ -128,9 +128,7 @@ impl BlockStarcoinVM {
         // println!("CLONE & Prologue {:?}", timer.elapsed());
 
         let executor =
-            ParallelTransactionExecutor::<PreprocessedTransaction, StarcoinVMWrapper<S>>::new(
-                parallel_level,
-            );
+            BlockExecutor::<PreprocessedTransaction, StarcoinVMWrapper<S>>::new(parallel_level);
 
         let timer = Instant::now();
         let useless = executor.execute_transactions_parallel(state_view, signature_verified_block);
