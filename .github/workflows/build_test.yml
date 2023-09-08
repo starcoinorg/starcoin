@@ -28,3 +28,10 @@ jobs:
           RUST_BACKTRACE: full
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: upload flamegraph to artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: flamegraph-artifact
+          path: |
+            ./target/criterion/peer_to_peer_parallel/profile/p2p-p.1.flamegraph.svg
+            ./target/criterion/peer_to_peer_parallel/profile/p2p-p-flamegraph.svg
