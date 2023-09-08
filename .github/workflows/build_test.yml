@@ -33,5 +33,5 @@ jobs:
         with:
           name: flamegraph-artifact
           path: |
-            ./target/criterion/peer_to_peer_parallel/profile/p2p-p.1.flamegraph.svg
-            ./target/criterion/peer_to_peer_parallel/profile/p2p-p-flamegraph.svg
+            ./target/criterion/peer_to_peer/profile/flamegraph.svg
+            ./target/criterion/peer_to_peer_parallel/profile/flamegraph.svg
