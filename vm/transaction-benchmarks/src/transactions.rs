@@ -109,11 +109,7 @@ where
 
         let total_runs = num_warmups + num_runs;
         for i in 0..total_runs {
-            let state = TransactionBenchState::with_size(
-                &self.strategy,
-                num_accounts,
-                num_txn,
-            );
+            let state = TransactionBenchState::with_size(&self.strategy, num_accounts, num_txn);
 
             if i < num_warmups {
                 println!("WARMUP - ignore results");
