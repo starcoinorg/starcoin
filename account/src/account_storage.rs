@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_schemadb::{
-    AcceptedToken, AcceptedTokens, AccountAddressWrapper, AccountSetting, AccountStore,
-    EncryptedPrivateKey, GlobalSetting, GlobalSettingKey, GlobalValue, PrivateKey, PublicKey,
-    SettingWrapper, ACCEPTED_TOKEN_PREFIX_NAME, ENCRYPTED_PRIVATE_KEY_PREFIX_NAME,
-    GLOBAL_PREFIX_NAME, PUBLIC_KEY_PREFIX_NAME, SETTING_PREFIX_NAME,
+    AcceptedToken, AcceptedTokens, AccountSetting, AccountStore, EncryptedPrivateKey,
+    GlobalSetting, GlobalSettingKey, GlobalValue, PrivateKey, PublicKey,
+    ACCEPTED_TOKEN_PREFIX_NAME, ENCRYPTED_PRIVATE_KEY_PREFIX_NAME, GLOBAL_PREFIX_NAME,
+    PUBLIC_KEY_PREFIX_NAME, SETTING_PREFIX_NAME,
 };
 use anyhow::{Error, Result};
 use starcoin_account_api::{AccountPrivateKey, AccountPublicKey, Setting};
@@ -89,7 +89,7 @@ impl AccountStorage {
     }
 
     pub fn contain_address(&self, address: AccountAddress) -> Result<bool> {
-        match self.get_public_key(&address.into())? {
+        match self.get_public_key(&address)? {
             Some(v) => {
                 let _ = Into::<AccountPublicKey>::into(v);
                 Ok(true)
@@ -148,22 +148,19 @@ impl AccountStorage {
         Ok(value.map(|v| v.addresses).unwrap_or_default())
     }
 
-    fn get_public_key(&self, address: &AccountAddressWrapper) -> Result<Option<AccountPublicKey>> {
-        Ok(self.public_key_store.get(address)?.map(Into::into))
+    fn get_public_key(&self, address: &AccountAddress) -> Result<Option<AccountPublicKey>> {
+        self.public_key_store.get(address)
     }
 
     fn put_public_key(&self, key: AccountAddress, value: AccountPublicKey) -> Result<()> {
-        self.public_key_store.put(key.into(), value.into())
+        self.public_key_store.put(key, value)
     }
 
     pub fn public_key(&self, address: AccountAddress) -> Result<Option<AccountPublicKey>> {
-        self.get_public_key(&address.into())
+        self.get_public_key(&address)
     }
 
-    fn get_private_key(
-        &self,
-        address: &AccountAddressWrapper,
-    ) -> Result<Option<EncryptedPrivateKey>> {
+    fn get_private_key(&self, address: &AccountAddress) -> Result<Option<EncryptedPrivateKey>> {
         self.private_key_store.get(address)
     }
 
@@ -179,7 +176,7 @@ impl AccountStorage {
         address: AccountAddress,
         password: impl AsRef<str>,
     ) -> Result<Option<AccountPrivateKey>> {
-        match self.get_private_key(&address.into())? {
+        match self.get_private_key(&address)? {
             None => Ok(None),
             Some(encrypted_key) => {
                 let plain_key_data = decrypt(password.as_ref().as_bytes(), &encrypted_key.0)?;
@@ -207,18 +204,16 @@ impl AccountStorage {
         let batch = SchemaBatch::default();
         let encrypted_prikey = encrypt(password.as_ref().as_bytes(), &private_key.to_bytes());
         self.private_key_store
-            .put_batch(address.into(), encrypted_prikey.into(), &batch)?;
+            .put_batch(address, encrypted_prikey.into(), &batch)?;
         let public_key = private_key.public_key();
         self.public_key_store
-            .put_batch(address.into(), public_key.into(), &batch)?;
+            .put_batch(address, public_key, &batch)?;
         self.write_schemas(batch)?;
         Ok(())
     }
 
     fn put_setting(&self, address: AccountAddress, setting: Setting) -> Result<()> {
-        let key: AccountAddressWrapper = address.into();
-        let value: SettingWrapper = setting.into();
-        self.setting_store.put(key, value)
+        self.setting_store.put(address, setting)
     }
 
     pub fn update_setting(&self, address: AccountAddress, setting: Setting) -> Result<()> {
@@ -226,8 +221,7 @@ impl AccountStorage {
     }
 
     pub fn load_setting(&self, address: AccountAddress) -> Result<Setting> {
-        let key: AccountAddressWrapper = address.into();
-        Ok(self.setting_store.get(&key)?.unwrap_or_default().0)
+        Ok(self.setting_store.get(&address)?.unwrap_or_default())
     }
 
     pub fn destroy_account(&self, address: AccountAddress) -> Result<()> {
@@ -255,11 +249,10 @@ impl AccountStorage {
             }
         }
 
-        let key: AccountAddressWrapper = address.into();
-        self.private_key_store.remove_batch(&key, &batch)?;
-        self.public_key_store.remove_batch(&key, &batch)?;
-        self.setting_store.remove_batch(&key, &batch)?;
-        self.accepted_token_store.remove_batch(&key, &batch)?;
+        self.private_key_store.remove_batch(&address, &batch)?;
+        self.public_key_store.remove_batch(&address, &batch)?;
+        self.setting_store.remove_batch(&address, &batch)?;
+        self.accepted_token_store.remove_batch(&address, &batch)?;
 
         // persist updates to underlying storage
         self.db
@@ -270,12 +263,11 @@ impl AccountStorage {
     }
 
     pub fn get_accepted_tokens(&self, address: AccountAddress) -> Result<Vec<TokenCode>> {
-        let key: AccountAddressWrapper = address.into();
-        let ts = self.accepted_token_store.get(&key)?;
+        let ts = self.accepted_token_store.get(&address)?;
         Ok(ts.map(|t| t.0).unwrap_or_default())
     }
 
-    fn put_accepted_tokens(&self, key: AccountAddressWrapper, value: AcceptedTokens) -> Result<()> {
+    fn put_accepted_tokens(&self, key: AccountAddress, value: AcceptedTokens) -> Result<()> {
         self.accepted_token_store.put(key, value)
     }
 
@@ -287,7 +279,7 @@ impl AccountStorage {
         let mut tokens = self.get_accepted_tokens(address)?;
         if !tokens.contains(&token_code) {
             tokens.push(token_code);
-            self.put_accepted_tokens(address.into(), AcceptedTokens(tokens))?;
+            self.put_accepted_tokens(address, AcceptedTokens(tokens))?;
         }
         Ok(())
     }

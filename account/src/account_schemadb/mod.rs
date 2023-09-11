@@ -1,7 +1,6 @@
 use anyhow::Result;
 use starcoin_schemadb::schema::Schema;
 use starcoin_storage::cache_storage::GCacheStorage;
-use starcoin_types::account_address::AccountAddress;
 use std::sync::Arc;
 
 mod accepted_token;
@@ -16,29 +15,6 @@ pub(crate) use private_key::*;
 pub(crate) use public_key::*;
 pub(crate) use setting::*;
 use starcoin_schemadb::{db::DBStorage as DB, SchemaBatch};
-
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Clone, Copy)]
-pub(crate) struct AccountAddressWrapper(AccountAddress);
-
-impl Default for AccountAddressWrapper {
-    fn default() -> Self {
-        Self(AccountAddress::ZERO)
-    }
-}
-impl From<AccountAddress> for AccountAddressWrapper {
-    fn from(value: AccountAddress) -> Self {
-        Self(value)
-    }
-}
-impl TryFrom<&[u8]> for AccountAddressWrapper {
-    type Error = anyhow::Error;
-
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        AccountAddress::try_from(value)
-            .map(Self)
-            .map_err(Into::into)
-    }
-}
 
 #[derive(Clone)]
 pub(super) struct AccountStore<S: Schema> {

@@ -15,12 +15,12 @@ use starcoin_config::DEFAULT_CACHE_SIZE;
 
 pub type CacheStorage = GCacheStorage<Vec<u8>, Vec<u8>>;
 
-pub struct GCacheStorage<K: Hash + Eq + Default, V: Default> {
+pub struct GCacheStorage<K: Hash + Eq, V> {
     cache: Mutex<LruCache<K, V>>,
     metrics: Option<StorageMetrics>,
 }
 
-impl<K: Hash + Eq + Default, V: Default> GCacheStorage<K, V> {
+impl<K: Hash + Eq, V> GCacheStorage<K, V> {
     pub fn new(metrics: Option<StorageMetrics>) -> Self {
         GCacheStorage {
             cache: Mutex::new(LruCache::<K, V>::new(DEFAULT_CACHE_SIZE)),
@@ -38,7 +38,7 @@ impl<K: Hash + Eq + Default, V: Default> GCacheStorage<K, V> {
     }
 }
 
-impl<K: Hash + Eq + Default, V: Default> Default for GCacheStorage<K, V> {
+impl<K: Hash + Eq, V> Default for GCacheStorage<K, V> {
     fn default() -> Self {
         Self::new(None)
     }
@@ -136,7 +136,7 @@ fn compose_key(prefix_name: Option<&str>, source_key: Vec<u8>) -> Vec<u8> {
     }
 }
 
-impl<K: Hash + Eq + Default, V: Clone + Default> GCacheStorage<K, V> {
+impl<K: Hash + Eq, V: Clone> GCacheStorage<K, V> {
     pub fn get_inner(&self, key: &K) -> Option<V> {
         self.cache.lock().get(key).cloned()
     }

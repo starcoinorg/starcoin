@@ -37,8 +37,8 @@ where
 pub trait Schema: Debug + Send + Sync + 'static {
     const COLUMN_FAMILY: &'static str;
 
-    type Key: KeyCodec<Self> + Hash + Eq + Default;
-    type Value: ValueCodec<Self> + Default + Clone;
+    type Key: KeyCodec<Self> + Hash + Eq;
+    type Value: ValueCodec<Self>;
 }
 
 #[macro_export]
