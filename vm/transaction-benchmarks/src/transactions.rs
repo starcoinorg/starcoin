@@ -8,7 +8,7 @@ use proptest::{
     test_runner::TestRunner,
 };
 use starcoin_crypto::HashValue;
-use std::time::Instant;
+use std::time::{Instant, SystemTime};
 
 use starcoin_language_e2e_tests::account::AccountData;
 use starcoin_language_e2e_tests::{
@@ -81,19 +81,23 @@ where
 
     /// Runs the bencher.
     pub fn bench_parallel<M: Measurement>(&self, b: &mut Bencher<M>) {
+        let start_time = SystemTime::now();
+        let num = 4;
         b.iter_batched(
             || {
                 ParallelBenchState::with_size(
                     &self.strategy,
                     self.num_accounts,
                     self.num_transactions,
-                    num_cpus::get(),
+                    num,
                 )
             },
             |state| state.execute(),
             // The input here is the entire list of signed transactions, so it's pretty large.
             BatchSize::LargeInput,
-        )
+        );
+        let use_time = SystemTime::now().duration_since(start_time).unwrap();
+        println!("cpu num = {}, cost time = {}", num, use_time.as_secs());
     }
 
     pub fn manual_sequence(
