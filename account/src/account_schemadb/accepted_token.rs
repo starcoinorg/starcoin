@@ -1,4 +1,3 @@
-use super::AccountAddressWrapper;
 use anyhow::Result;
 use bcs_ext::BCSCodec;
 use serde::{Deserialize, Serialize};
@@ -7,24 +6,25 @@ use starcoin_schemadb::{
     schema::{KeyCodec, ValueCodec},
     ColumnFamilyName,
 };
+use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_code::TokenCode;
 
 pub const ACCEPTED_TOKEN_PREFIX_NAME: ColumnFamilyName = "accepted_token";
 
 define_schema!(
     AcceptedToken,
-    AccountAddressWrapper,
+    AccountAddress,
     AcceptedTokens,
     ACCEPTED_TOKEN_PREFIX_NAME
 );
 
-impl KeyCodec<AcceptedToken> for AccountAddressWrapper {
+impl KeyCodec<AcceptedToken> for AccountAddress {
     fn encode_key(&self) -> Result<Vec<u8>> {
-        Ok(self.0.to_vec())
+        Ok(self.to_vec())
     }
 
     fn decode_key(data: &[u8]) -> Result<Self> {
-        AccountAddressWrapper::try_from(data)
+        AccountAddress::try_from(data).map_err(Into::into)
     }
 }
 

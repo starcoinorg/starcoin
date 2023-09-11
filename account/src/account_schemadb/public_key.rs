@@ -1,54 +1,38 @@
-use super::AccountAddressWrapper;
-use anyhow::{format_err, Result};
+use anyhow::Result;
+use bcs_ext::BCSCodec;
 use starcoin_account_api::AccountPublicKey;
 use starcoin_schemadb::{
     define_schema,
     schema::{KeyCodec, ValueCodec},
     ColumnFamilyName,
 };
+use starcoin_types::account_address::AccountAddress;
 
 pub const PUBLIC_KEY_PREFIX_NAME: ColumnFamilyName = "public_key";
 
 define_schema!(
     PublicKey,
-    AccountAddressWrapper,
-    PublicKeyWrapper,
+    AccountAddress,
+    AccountPublicKey,
     PUBLIC_KEY_PREFIX_NAME
 );
 
-impl KeyCodec<PublicKey> for AccountAddressWrapper {
+impl KeyCodec<PublicKey> for AccountAddress {
     fn encode_key(&self) -> Result<Vec<u8>> {
-        Ok(self.0.to_vec())
+        Ok(self.to_vec())
     }
 
     fn decode_key(data: &[u8]) -> Result<Self> {
-        AccountAddressWrapper::try_from(data)
+        AccountAddress::try_from(data).map_err(Into::into)
     }
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Eq)]
-pub struct PublicKeyWrapper(pub(crate) Option<AccountPublicKey>);
-impl From<AccountPublicKey> for PublicKeyWrapper {
-    fn from(s: AccountPublicKey) -> Self {
-        Self(Some(s))
-    }
-}
-
-impl From<PublicKeyWrapper> for AccountPublicKey {
-    fn from(value: PublicKeyWrapper) -> Self {
-        value.0.expect("NullValue")
-    }
-}
-
-impl ValueCodec<PublicKey> for PublicKeyWrapper {
+impl ValueCodec<PublicKey> for AccountPublicKey {
     fn encode_value(&self) -> Result<Vec<u8>> {
-        match &self.0 {
-            Some(p) => Ok(bcs_ext::to_bytes(&p)?),
-            None => Err(format_err!("NullValue")),
-        }
+        self.encode()
     }
 
     fn decode_value(data: &[u8]) -> Result<Self> {
-        Ok(Self::from(bcs_ext::from_bytes::<AccountPublicKey>(data)?))
+        bcs_ext::from_bytes::<AccountPublicKey>(data)
     }
 }

@@ -17,9 +17,8 @@ define_schema!(
     GLOBAL_PREFIX_NAME
 );
 
-#[derive(Default, Hash, Copy, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Hash, Copy, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum GlobalSettingKey {
-    #[default]
     DefaultAddress,
     /// FIXME: once db support iter, remove this.
     AllAddresses,

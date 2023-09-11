@@ -1,27 +1,27 @@
-use super::AccountAddressWrapper;
 use anyhow::Result;
 use starcoin_schemadb::{
     define_schema,
     schema::{KeyCodec, ValueCodec},
     ColumnFamilyName,
 };
+use starcoin_types::account_address::AccountAddress;
 
 pub const ENCRYPTED_PRIVATE_KEY_PREFIX_NAME: ColumnFamilyName = "encrypted_private_key";
 
 define_schema!(
     PrivateKey,
-    AccountAddressWrapper,
+    AccountAddress,
     EncryptedPrivateKey,
     ENCRYPTED_PRIVATE_KEY_PREFIX_NAME
 );
 
-impl KeyCodec<PrivateKey> for AccountAddressWrapper {
+impl KeyCodec<PrivateKey> for AccountAddress {
     fn encode_key(&self) -> Result<Vec<u8>> {
-        Ok(self.0.to_vec())
+        Ok(self.to_vec())
     }
 
     fn decode_key(data: &[u8]) -> Result<Self> {
-        AccountAddressWrapper::try_from(data)
+        AccountAddress::try_from(data).map_err(Into::into)
     }
 }
 
