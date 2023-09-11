@@ -2,8 +2,18 @@ use num_cpus;
 use proptest::prelude::*;
 use starcoin_language_e2e_tests::account_universe::P2PTransferGen;
 use starcoin_transaction_benchmarks::transactions::TransactionBencher;
+use clap::Parser;
+
+#[derive(Debug, Parser)]
+#[clap(name = "concurrency level", about = "concurrency level")]
+pub struct ConcurrencyLevelOpt {
+    #[clap(long, short = 'n')]
+    /// concurrency level
+    pub concurrency_level: usize,
+}
 
 fn main() {
+    let opt: ConcurrencyLevelOpt = ConcurrencyLevelOpt::parse();
     let default_num_accounts = 100;
     let default_num_transactions = 1_000;
 
@@ -17,7 +27,7 @@ fn main() {
     let txns = [1000, 10000];
     let num_warmups = 2;
     let num_runs = 10;
-    let num_threads = 2;
+    let num_threads = opt.concurrency_level;
 
     println!("num cpus = {}", num_cpus::get());
 

@@ -10809,6 +10809,7 @@ dependencies = [
 name = "starcoin-transaction-benchmarks"
 version = "1.13.7"
 dependencies = [
+ "clap 3.2.23",
  "criterion",
  "criterion-cpu-time",
  "log 0.4.17",
