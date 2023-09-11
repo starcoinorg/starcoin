@@ -126,7 +126,7 @@ where
                     "RUN benchmark for: num_threads = {}, \
                         num_account = {}, \
                         block_size = {}",
-                    num_cpus::get(),
+                    concurrency_level,
                     num_accounts,
                     num_txn,
                 );
