@@ -82,7 +82,7 @@ where
     /// Runs the bencher.
     pub fn bench_parallel<M: Measurement>(&self, b: &mut Bencher<M>) {
         let start_time = SystemTime::now();
-        let num = 4;
+        let num = 8;
         b.iter_batched(
             || {
                 ParallelBenchState::with_size(
