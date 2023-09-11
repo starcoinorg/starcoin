@@ -10,10 +10,6 @@ cmd="cargo run -p starcoin-transaction-benchmarks  --features fuzzing -- -n 2"
 echo "run tps with cmd: ${cmd}"
 eval "$cmd"
 
-cmd="cargo run -p starcoin-transaction-benchmarks  --features fuzzing -- -n 4"
-echo "run tps with cmd: ${cmd}"
-eval "$cmd"
-
 cmd="cargo run -p starcoin-transaction-benchmarks  --features fuzzing -- -n 8"
 echo "run tps with cmd: ${cmd}"
 eval "$cmd"
