@@ -6,7 +6,7 @@ if [[ "$(uname)" != "Linux" ]]; then
   echo "run flamegraph only in linux. exit"
 fi
 
-cmd="cargo run -p starcoin-transaction-benchmarks --release --features fuzzing -- -n 24"
+cmd="cargo run -p starcoin-transaction-benchmarks --release --features fuzzing -- -n 32"
 echo "run tps with cmd: ${cmd}"
 eval "$cmd"
 

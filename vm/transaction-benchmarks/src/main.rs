@@ -36,7 +36,7 @@ fn main() {
     );
 
     let acts = [1000];
-    let txns = [80000];
+    let txns = [100000];
     let num_warmups = 2;
     let num_runs = 10;
 
