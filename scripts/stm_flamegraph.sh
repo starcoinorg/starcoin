@@ -14,15 +14,7 @@ cmd="cargo run -p starcoin-transaction-benchmarks  --features fuzzing -- -n 4"
 echo "run tps with cmd: ${cmd}"
 eval "$cmd"
 
-cmd="cargo run -p starcoin-transaction-benchmarks  --features fuzzing -- -n 6"
-echo "run tps with cmd: ${cmd}"
-eval "$cmd"
-
 cmd="cargo run -p starcoin-transaction-benchmarks  --features fuzzing -- -n 8"
-echo "run tps with cmd: ${cmd}"
-eval "$cmd"
-
-cmd="cargo run -p starcoin-transaction-benchmarks  --features fuzzing -- -n 10"
 echo "run tps with cmd: ${cmd}"
 eval "$cmd"
 
@@ -30,23 +22,11 @@ cmd="cargo run -p starcoin-transaction-benchmarks  --features fuzzing -- -n 12"
 echo "run tps with cmd: ${cmd}"
 eval "$cmd"
 
-cmd="cargo run -p starcoin-transaction-benchmarks  --features fuzzing -- -n 14"
-echo "run tps with cmd: ${cmd}"
-eval "$cmd"
-
 cmd="cargo run -p starcoin-transaction-benchmarks  --features fuzzing -- -n 16"
 echo "run tps with cmd: ${cmd}"
 eval "$cmd"
 
-cmd="cargo run -p starcoin-transaction-benchmarks  --features fuzzing -- -n 18"
-echo "run tps with cmd: ${cmd}"
-eval "$cmd"
-
 cmd="cargo run -p starcoin-transaction-benchmarks  --features fuzzing -- -n 20"
-echo "run tps with cmd: ${cmd}"
-eval "$cmd"
-
-cmd="cargo run -p starcoin-transaction-benchmarks  --features fuzzing -- -n 22"
 echo "run tps with cmd: ${cmd}"
 eval "$cmd"
 
