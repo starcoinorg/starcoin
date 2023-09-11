@@ -13,17 +13,25 @@ fn main() {
         default_num_transactions,
     );
 
-    let acts = [2, 10, 100, 1000, 10000];
+    let acts = [1000];
     let txns = [1000, 10000];
     let num_warmups = 2;
     let num_runs = 10;
+    let num_threads = 2;
+
+    println!("num cpus = {}", num_cpus::get());
 
     let mut measurements = Vec::new();
 
     for block_size in txns {
         for num_accounts in acts {
-            let mut times =
-                bencher.manual_parallel(num_accounts, block_size, num_warmups, num_runs);
+            let mut times = bencher.manual_parallel(
+                num_accounts,
+                block_size,
+                num_warmups,
+                num_runs,
+                num_threads,
+            );
             times.sort();
             measurements.push(times);
         }

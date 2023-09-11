@@ -106,6 +106,7 @@ where
         num_txn: usize,
         num_warmups: usize,
         num_runs: usize,
+        concurrency_level: usize,
     ) -> Vec<usize> {
         let mut ret = Vec::new();
 
@@ -121,9 +122,7 @@ where
                     "RUN bencher for: num_threads = {}, \
                           block_size = {}, \
                           num_account = {}",
-                    num_cpus::get(),
-                    num_txn,
-                    num_accounts,
+                    concurrency_level, num_txn, num_accounts,
                 );
                 ret.push(state.execute());
             }
@@ -137,6 +136,7 @@ where
         num_txn: usize,
         num_warmups: usize,
         num_runs: usize,
+        concurrency_level: usize,
     ) -> Vec<usize> {
         let mut ret = Vec::new();
 
@@ -146,7 +146,7 @@ where
                 &self.strategy,
                 num_accounts,
                 num_txn,
-                num_cpus::get(),
+                concurrency_level,
             );
 
             if i < num_warmups {
@@ -157,9 +157,7 @@ where
                     "RUN bencher for: num_threads = {}, \
                           block_size = {}, \
                           num_account = {}",
-                    num_cpus::get(),
-                    num_txn,
-                    num_accounts,
+                    concurrency_level, num_txn, num_accounts,
                 );
                 ret.push(state.execute());
             }
