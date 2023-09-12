@@ -12,11 +12,11 @@ pub struct ConcurrencyLevelOpt {
     #[clap(long, short = 't', use_delimiter = true)]
     /// Transaction numbers
     pub txn_nums: Vec<usize>,
-    #[clap(long, short = 'p')]
+    #[clap(long, short = 'p', parse(try_from_str), default_value = "true")]
     /// run parallel
     pub run_par: bool,
     /// run seq
-    #[clap(long, short = 's')]
+    #[clap(long, short = 's', parse(try_from_str), default_value = "true")]
     pub run_seq: bool,
 }
 
@@ -47,7 +47,7 @@ fn main() {
     let num_warmups = 2;
     let num_runs = 10;
 
-    println!("num cpus = {}, run_seq: {}", num_cpus::get(), run_seq);
+    println!("num cpus = {}, run_seq: {}, run_seq: {}", num_cpus::get(), run_seq, run_seq);
 
     for concurrency_level in &concurrency_levels {
         let mut par_measurements = Vec::new();
