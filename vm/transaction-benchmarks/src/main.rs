@@ -30,7 +30,7 @@ fn main() {
     let run_seq = true;
 
     assert!(!concurrency_levels.is_empty(), "Concurrcy level array is empty!");
-    assert!(!txns.is_empty(),  "Transaction numbers level array is empty!");
+    assert!(!txns.is_empty(), "Transaction numbers level array is empty!");
 
     // if !concurrency_levels.is_empty() {
     //     run_par = true;
@@ -47,66 +47,66 @@ fn main() {
     let num_warmups = 2;
     let num_runs = 10;
 
-    println!("num cpus = {}", num_cpus::get());
+    println!("num cpus = {}, run_seq: {}", num_cpus::get(), run_seq);
 
-    let mut par_measurements = Vec::new();
-    let mut seq_measurements = Vec::new();
+    for concurrency_level in &concurrency_levels {
+        let mut par_measurements = Vec::new();
+        let mut seq_measurements = Vec::new();
 
-    for concurrency_level in concurrency_levels {
-        for block_size in &txns {
-            for num_accounts in acts {
+        for num_accounts in acts {
+            println!("\n========== concurrency_level: {} started ==========\n ", concurrency_level);
+            for block_size in &txns {
                 let (mut par_tps, mut seq_tps) = bencher.blockstm_benchmark(
                     num_accounts,
                     *block_size,
-                    run_par || (concurrency_level > 1),
+                    run_par || (*concurrency_level > 1),
                     run_seq,
                     num_warmups,
                     num_runs,
-                    concurrency_level,
+                    *concurrency_level,
                 );
                 par_tps.sort();
                 seq_tps.sort();
                 par_measurements.push(par_tps);
                 seq_measurements.push(seq_tps);
             }
-        }
-        println!("\nconcurrency_level = {}\n", concurrency_level);
-    }
+            println!("\n========== concurrency_level:  {} completed ========== \n", concurrency_level);
 
+            let mut i = 0;
+            for block_size in &txns {
+                for num_accounts in acts {
+                    println!(
+                        "PARAMS: num_account = {}, block_size = {}",
+                        num_accounts, *block_size
+                    );
 
-    let mut i = 0;
-    for block_size in &txns {
-        for num_accounts in acts {
-            println!(
-                "PARAMS: num_account = {}, block_size = {}",
-                num_accounts, *block_size
-            );
+                    let mut seq_tps = 1;
+                    if run_seq {
+                        println!("Sequential TPS: {:?}", seq_measurements[i]);
+                        let mut seq_sum = 0;
+                        for m in &seq_measurements[i] {
+                            seq_sum += m;
+                        }
+                        seq_tps = seq_sum / seq_measurements[i].len();
+                        println!("Avg Sequential TPS = {:?}", seq_tps, );
+                    }
 
-            let mut seq_tps = 1;
-            if run_seq {
-                println!("Sequential TPS: {:?}", seq_measurements[i]);
-                let mut seq_sum = 0;
-                for m in &seq_measurements[i] {
-                    seq_sum += m;
+                    if run_par {
+                        println!("Parallel TPS: {:?}", par_measurements[i]);
+                        let mut par_sum = 0;
+                        for m in &par_measurements[i] {
+                            par_sum += m;
+                        }
+                        let par_tps = par_sum / par_measurements[i].len();
+                        println!("Avg Parallel TPS = {:?}", par_tps, );
+                        if run_seq {
+                            println!("Speed up {}x over sequential", par_tps / seq_tps);
+                        }
+                    }
+                    i += 1;
                 }
-                seq_tps = seq_sum / seq_measurements[i].len();
-                println!("Avg Sequential TPS = {:?}", seq_tps,);
+                println!();
             }
-
-            if run_par {
-                println!("Parallel TPS: {:?}", par_measurements[i]);
-                let mut par_sum = 0;
-                for m in &par_measurements[i] {
-                    par_sum += m;
-                }
-                let par_tps = par_sum / par_measurements[i].len();
-                println!("Avg Parallel TPS = {:?}", par_tps,);
-                if run_seq {
-                    println!("Speed up {}x over sequential", par_tps / seq_tps);
-                }
-            }
-            i += 1;
         }
-        println!();
     }
 }
