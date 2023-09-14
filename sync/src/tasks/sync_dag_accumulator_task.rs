@@ -4,6 +4,7 @@ use futures::{future::BoxFuture, FutureExt};
 use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::info;
 use starcoin_network_rpc_api::dag_protocol::{self, TargetDagAccumulatorLeafDetail};
 use starcoin_storage::{
     flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagSnapshotStorage},
@@ -127,10 +128,20 @@ impl TaskResultCollector<TargetDagAccumulatorLeafDetail> for SyncDagAccumulatorC
         self.accumulator_snapshot.put(
             accumulator_leaf,
             SyncFlexiDagSnapshot {
-                child_hashes: item.tips,
-                accumulator_info,
+                child_hashes: item.tips.clone(),
+                accumulator_info: accumulator_info.clone(),
             },
         )?;
+
+        item.tips.iter().try_fold((), |_, block_id| {
+            self.accumulator_snapshot.put(
+                block_id.clone(),
+                SyncFlexiDagSnapshot {
+                    child_hashes: item.tips.clone(),
+                    accumulator_info: accumulator_info.clone(),
+                },
+            )
+        })?;
 
         if num_leaves == self.target.num_leaves {
             Ok(CollectorState::Enough)
@@ -148,7 +159,7 @@ impl TaskResultCollector<TargetDagAccumulatorLeafDetail> for SyncDagAccumulatorC
             accumulator_info,
             self.target
         );
-        println!(
+        info!(
             "finish to sync accumulator, its info is: {:?}",
             accumulator_info
         );

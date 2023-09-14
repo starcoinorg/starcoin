@@ -1,7 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
+use crate::block_connector::{BlockConnectedRequest, BlockConnectorService};
+use crate::tasks::{BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{format_err, Ok, Result};
 use futures::future::BoxFuture;
@@ -12,14 +13,13 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
 use starcoin_config::G_CRATE_VERSION;
-use starcoin_consensus::dag::ghostdag::protocol::ColoringOutput;
 use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
+use starcoin_service_registry::ServiceRef;
 use starcoin_storage::BARNARD_HARD_FORK_HASH;
-use starcoin_sync_api::SyncTarget;
+use starcoin_sync_api::{SyncTarget, NewBlockChainRequest};
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
-use starcoin_types::header::Header;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use stream_task::{CollectorState, TaskError, TaskResultCollector, TaskState};
@@ -238,6 +238,7 @@ pub struct BlockCollector<N, H> {
     dag_block_pool: Vec<SyncBlockData>,
     target_accumulator_root: HashValue,
     dag: Option<Arc<Mutex<BlockDAG>>>,
+    block_chain_service: ServiceRef<BlockConnectorService>,
 }
 
 impl<N, H> BlockCollector<N, H>
@@ -254,6 +255,7 @@ where
         skip_pow_verify: bool,
         target_accumulator_root: HashValue,
         dag: Option<Arc<Mutex<BlockDAG>>>,
+        block_chain_service: ServiceRef<BlockConnectorService>,
     ) -> Self {
         if let Some(dag) = &dag {
             dag.lock()
@@ -271,6 +273,7 @@ where
             dag_block_pool: Vec::new(),
             target_accumulator_root,
             dag: dag.clone(),
+            block_chain_service: block_chain_service.clone(),
         }
     }
 
@@ -411,10 +414,7 @@ where
                 // if let ColoringOutput::Red = color {
                 //     panic!("the red block should not be applied or connected!");
                 // }
-                let _ = dag
-                    .lock()
-                    .unwrap()
-                    .push_parent_children(block_id, Arc::new(parents));
+                let _ = dag.lock().unwrap().push_parent_children(block_id, Arc::new(parents));
             } else {
                 panic!("in dag sync, the dag should not be None")
             }
@@ -426,12 +426,18 @@ where
                 //So, we just need to update chain and continue
                 self.chain.connect(
                     ExecutedBlock {
-                        block,
+                        block: block.clone(),
                         block_info: block_info.clone(),
                         dag_parent: dag_transaction_header,
                     },
                     next_tips,
                 )?;
+                let block_info = self.chain.status().info;
+                let total_difficulty = block_info.get_total_difficulty();
+                // only try connect block when sync chain total_difficulty > node's current chain.
+                if total_difficulty > self.current_block_info.total_difficulty {
+                    async_std::task::block_on(self.block_chain_service.send(NewBlockChainRequest { new_head_block: block_id  }))??;
+                }
                 Ok(block_info)
             }
             None => {
@@ -441,15 +447,16 @@ where
                 let total_difficulty = block_info.get_total_difficulty();
                 // only try connect block when sync chain total_difficulty > node's current chain.
                 if total_difficulty > self.current_block_info.total_difficulty {
-                    if let Err(e) = self
-                        .event_handle
-                        .handle(BlockConnectedEvent { block, dag_parents })
-                    {
-                        error!(
-                            "Send BlockConnectedEvent error: {:?}, block_id: {}",
-                            e, block_id
-                        );
-                    }
+                    async_std::task::block_on(self.block_chain_service.send(BlockConnectedRequest { block, dag_parents }))??;
+                    // if let Err(e) = self
+                    //     .event_handle
+                    //     .handle(BlockConnectedEvent { block, dag_parents })
+                    // {
+                    //     error!(
+                    //         "Send BlockConnectedEvent error: {:?}, block_id: {}",
+                    //         e, block_id
+                    //     );
+                    // }
                 }
                 Ok(block_info)
             }

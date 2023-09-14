@@ -48,7 +48,8 @@ pub fn gen_dag_blocks(
         }
     }
 
-    let result = writeable_block_chain_service.execute_dag_block_pool();
+    let result = writeable_block_chain_service
+        .execute_dag_block_pool();
     let result = result.unwrap();
     match result {
         super::write_block_chain::ConnectOk::Duplicate(block)
@@ -158,7 +159,7 @@ async fn test_block_chain_switch_main() {
             .get_main()
             .current_header()
             .id(),
-        last_block.unwrap()
+            last_block.unwrap()
     );
 
     last_block = gen_fork_dag_block_chain(
