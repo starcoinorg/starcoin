@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::block_connector::BlockConnectorService;
 use crate::tasks::block_sync_task::SyncBlockData;
 use crate::tasks::inner_sync_task::InnerSyncTask;
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
@@ -422,7 +423,7 @@ impl BlockLocalStore for Arc<dyn Store> {
                 Some(block) => {
                     let id = block.id();
                     let block_info = self.get_block_info(id)?;
-
+                    
                     Ok(Some(SyncBlockData::new(
                         block, block_info, None, None, 1, None, None,
                     )))
@@ -588,6 +589,7 @@ pub fn full_sync_task<H, A, F, N>(
     ancestor_event_handle: A,
     peer_provider: N,
     max_retry_times: u64,
+    block_chain_service: ServiceRef<BlockConnectorService>,
     sync_metrics: Option<SyncMetrics>,
     vm_metrics: Option<VMMetrics>,
 ) -> Result<(
@@ -703,6 +705,7 @@ where
                     max_retry_times,
                     delay_milliseconds_on_error,
                     skip_pow_verify,
+                    block_chain_service.clone(),
                     vm_metrics.clone(),
                 )
                 .await?;

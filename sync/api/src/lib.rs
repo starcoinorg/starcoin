@@ -1,6 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use std::any;
+use std::sync::Arc;
+
 use anyhow::Result;
 use network_api::PeerId;
 use network_api::PeerStrategy;
@@ -9,6 +12,7 @@ use serde::{Deserialize, Serialize};
 pub use service::{SyncAsyncService, SyncServiceHandler};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
+use starcoin_types::block::ExecutedBlock;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::U256;
@@ -61,6 +65,16 @@ pub struct SyncTarget {
     pub block_info: BlockInfo,
     pub peers: Vec<PeerId>,
 }
+
+#[derive(Debug, Clone)]
+pub struct NewBlockChainRequest {
+    pub new_head_block: HashValue,
+}
+
+impl ServiceRequest for NewBlockChainRequest {
+    type Response = anyhow::Result<()>;
+}
+
 #[derive(Debug, Clone)]
 pub struct SyncStatusRequest;
 

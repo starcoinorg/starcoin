@@ -24,6 +24,7 @@ use starcoin_accumulator::{
     accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, AccumulatorTreeStore,
 };
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::info;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
@@ -728,10 +729,22 @@ impl SyncFlexiDagStore for Storage {
             accumulator_info: accumulator_info.clone(),
         };
         // for sync
+        if self.flexi_dag_storage.get_hashes_by_hash(key)?.is_some() {
+            if let Some(t) = self.flexi_dag_storage.get_hashes_by_hash(key)? {
+                if t != snapshot {
+                    bail!("the accumulator differ from other");
+                }
+            }
+        }
         self.flexi_dag_storage.put_hashes(key, snapshot.clone())?;
 
         // for block chain
         new_tips.iter().try_fold((), |_, block_id| {
+            if let Some(t) = self.flexi_dag_storage.get_hashes_by_hash(block_id.clone())? {
+                if t != snapshot {
+                    bail!("the key {} should not exists", block_id);
+                }
+            }
             self.flexi_dag_storage
                 .put_hashes(block_id.clone(), snapshot.clone())
         })?;

@@ -15,6 +15,7 @@ use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
 use starcoin_storage::Store;
+use starcoin_storage::storage::CodecKVStore;
 use starcoin_time_service::{DagBlockTimeWindowService, TimeWindowResult};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
@@ -218,6 +219,32 @@ where
         self.config.net().time_service().sleep(sec * 1000000);
     }
 
+    // for sync task to connect to its chain, if chain's total difficulties is larger than the main
+    // switch by:
+    // 1, update the startup info
+    // 2, broadcast the new header
+    pub fn switch_new_main(&mut self, new_head_block: HashValue) -> Result<(BlockChain, Vec<HashValue>, Vec<HashValue>)> {
+        let new_branch = BlockChain::new(self.config
+            .net()
+            .time_service(), 
+            new_head_block, 
+            self.storage.clone(), 
+            self.vm_metrics.clone())?;
+
+        let main_total_difficulty = self.main.get_total_difficulty()?;
+        let branch_total_difficulty = new_branch.get_total_difficulty()?;
+        if branch_total_difficulty > main_total_difficulty {
+            self.update_startup_info(new_branch.head_block().header())?;
+        }
+
+        let dag_parents = self.dag.lock().unwrap().get_parents(new_head_block)?;
+        let next_tips = self.storage.get_accumulator_snapshot_storage()
+        .get(new_head_block)?
+        .expect("the snapshot must exists!").child_hashes;
+
+        Ok((new_branch, dag_parents, next_tips))
+    }
+
     pub fn select_head(
         &mut self,
         new_branch: BlockChain,
@@ -232,12 +259,17 @@ where
         );
 
         if branch_total_difficulty > main_total_difficulty {
-            let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
+            let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) = if dag_block_parents.is_some() {
+                // for dag
+                self.find_ancestors_from_dag_accumulator(&new_branch)?
+            } else {
+                // for single chain
                 if !parent_is_main_head {
                     self.find_ancestors_from_accumulator(&new_branch)?
                 } else {
                     (1, vec![executed_block.block.clone()], 0, vec![])
-                };
+                }
+            };
             self.main = new_branch;
 
             self.do_new_head(
@@ -262,8 +294,18 @@ where
         retracted_count: u64,
         retracted_blocks: Vec<Block>,
     ) -> Result<()> {
+        if enacted_blocks.is_empty() {
+            error!("enacted_blocks is empty.");
+            bail!("enacted_blocks is empty.");
+        }
+        if enacted_blocks.last().unwrap().header != executed_block.block().header {
+            error!("enacted_blocks.last().unwrap().header: {:?}, executed_block.block().header: {:?} are different!", 
+                    enacted_blocks.last().unwrap().header, executed_block.block().header);
+            bail!("enacted_blocks.last().unwrap().header: {:?}, executed_block.block().header: {:?} are different!", 
+                    enacted_blocks.last().unwrap().header, executed_block.block().header);
+        }
         debug_assert!(!enacted_blocks.is_empty());
-        debug_assert_eq!(enacted_blocks.last().unwrap(), executed_block.block());
+        debug_assert_eq!(enacted_blocks.last().unwrap().header, executed_block.block().header);
         self.update_startup_info(executed_block.block().header())?;
         if retracted_count > 0 {
             if let Some(metrics) = self.metrics.as_ref() {
@@ -290,6 +332,10 @@ where
         // self.broadcast_new_head(executed_block, dag_parents, next_tips);
 
         Ok(())
+    }
+
+    pub fn do_new_head_with_broadcast() {
+
     }
 
     /// Reset the node to `block_id`, and replay blocks after the block
@@ -393,6 +439,61 @@ where
         if let Err(e) = self.txpool.chain_new_block(enacted, retracted) {
             error!("rollback err : {:?}", e);
         }
+    }
+
+
+    fn find_ancestors_from_dag_accumulator(&self, new_branch: &BlockChain) -> Result<(u64, Vec<Block>, u64, Vec<Block>)> {
+        let mut min_leaf_index = std::cmp::min(self.main.get_dag_current_leaf_number()?, new_branch.get_dag_current_leaf_number()?) - 1;
+
+        let mut retracted = vec![];
+        let mut enacted = vec![];
+
+        loop {
+            if min_leaf_index == 0 {
+                break;
+            }
+            let main_snapshot = self.main.get_dag_accumulator_snapshot_by_index(min_leaf_index)?;
+            let new_branch_snapshot = new_branch.get_dag_accumulator_snapshot_by_index(min_leaf_index)?;
+
+            if main_snapshot.accumulator_info.get_accumulator_root() == new_branch_snapshot.accumulator_info.get_accumulator_root() {
+                break;
+            }
+
+            let mut temp_retracted = vec![];
+            temp_retracted.extend(main_snapshot.child_hashes.iter().try_fold(Vec::<Block>::new(), |mut rollback_blocks, child| {
+                let block = self
+                .storage
+                .get_block(child.clone());
+                if let anyhow::Result::Ok(Some(block)) = block {
+                    rollback_blocks.push(block);
+                } else {
+                    warn!("the block{} dose not exist in main branch, ignore", child.clone());
+                }
+                return Ok(rollback_blocks);
+            })?.into_iter());
+            temp_retracted.sort_by(|a, b| b.header().id().cmp(&a.header().id()));
+            retracted.extend(temp_retracted.into_iter());
+
+            let mut temp_enacted = vec![];
+            temp_enacted.extend(new_branch_snapshot.child_hashes.iter().try_fold(Vec::<Block>::new(), |mut rollback_blocks, child| {
+                let block = self
+                .storage
+                .get_block(child.clone());
+                if let anyhow::Result::Ok(Some(block)) = block {
+                    rollback_blocks.push(block);
+                } else {
+                    warn!("the block{} dose not exist in new branch, ignore", child.clone());
+                }
+                return Ok(rollback_blocks);
+            })?.into_iter());
+            temp_enacted.sort_by(|a, b| b.header().id().cmp(&a.header().id()));
+            enacted.extend(temp_enacted.into_iter());
+
+            min_leaf_index = min_leaf_index.saturating_sub(1);
+        }
+        enacted.reverse();
+        retracted.reverse();
+        Ok((enacted.len() as u64, enacted, retracted.len() as u64, retracted))
     }
 
     fn find_ancestors_from_accumulator(
@@ -511,11 +612,7 @@ where
         dag_block_next_parent: Option<HashValue>,
         next_tips: &mut Option<Vec<HashValue>>,
     ) -> Result<ConnectOk> {
-        let (block_info, fork) = self.find_or_fork(
-            block.header(),
-            dag_block_next_parent,
-            dag_block_parents.clone(),
-        )?;
+        let (block_info, fork) = self.find_or_fork(block.header(), dag_block_next_parent, dag_block_parents.clone())?;
         match (block_info, fork) {
             //block has been processed in some branch, so just trigger a head selection.
             (Some(block_info), Some(branch)) => {
@@ -527,6 +624,9 @@ where
                 );
                 let exe_block = branch.head_block();
                 self.select_head(branch, dag_block_parents)?;
+                if let Some(new_tips) = next_tips {
+                    new_tips.push(block_info.block_id().clone());
+                }
                 Ok(ConnectOk::Duplicate(exe_block))
             }
             //block has been processed, and its parent is main chain, so just connect it to main chain.
@@ -676,18 +776,18 @@ where
             //     // TimeWindowResult::InTimeWindow => {
             //     return Ok(ConnectOk::DagPending);
             // } else {
-            // TimeWindowResult::BeforeTimeWindow => {
-            //     return Err(ConnectBlockError::DagBlockBeforeTimeWindow(Box::new(block)).into())
-            // }
-            // TimeWindowResult::AfterTimeWindow => {
-            // dump the block in the time window pool and put the block into the next time window pool
-            // self.main.status().tips_hash = None; // set the tips to None, and in connect_to_main, the block will be added to the tips
+                // TimeWindowResult::BeforeTimeWindow => {
+                //     return Err(ConnectBlockError::DagBlockBeforeTimeWindow(Box::new(block)).into())
+                // }
+                // TimeWindowResult::AfterTimeWindow => {
+                // dump the block in the time window pool and put the block into the next time window pool
+                // self.main.status().tips_hash = None; // set the tips to None, and in connect_to_main, the block will be added to the tips
 
-            // 2, get the new tips and clear the blocks in the pool
-            let dag_blocks = self.dag_block_pool.lock().unwrap().clone();
-            self.dag_block_pool.lock().unwrap().clear();
+                // 2, get the new tips and clear the blocks in the pool
+                let dag_blocks = self.dag_block_pool.lock().unwrap().clone();
+                self.dag_block_pool.lock().unwrap().clear();
 
-            return self.execute_dag_block_in_pool(dag_blocks, dag_block_parents);
+                return self.execute_dag_block_in_pool(dag_blocks, dag_block_parents);
             // }
         } else {
             // normal block, just connect to main
@@ -735,7 +835,7 @@ where
         // connect the block one by one
         dag_blocks
             .into_iter()
-            .for_each(|(block, dag_block_parents)| {
+            .try_fold((), |_, (block, dag_block_parents)| {
                 let next_transaction_parent = block.header().id();
                 let result = self.connect_to_main(
                     block,
@@ -747,12 +847,13 @@ where
                     std::result::Result::Ok(connect_ok) => {
                         executed_blocks.push((connect_ok.block().clone(), dag_block_parents));
                         dag_block_next_parent = next_transaction_parent;
+                        Ok(())
                     }
                     Err(error) => {
-                        error!("apply_and_select_head failed, error: {}", error.to_string())
+                        bail!("apply_and_select_head failed, error: {}", error.to_string())
                     }
                 }
-            });
+            })?;
 
         match next_tips {
             Some(new_tips) => {
@@ -762,8 +863,7 @@ where
 
                 // 1, write to disc
                 self.main
-                    .append_dag_accumulator_leaf(new_tips.clone())
-                    .expect("failed to append new tips to dag accumulator");
+                    .append_dag_accumulator_leaf(new_tips.clone())?;
 
                 // 2, broadcast the blocks sorted by their id
                 executed_blocks
@@ -781,10 +881,7 @@ where
                     .last()
                     .map(|(exe_block, _)| {
                         ConnectOk::ExeConnectMain(
-                            exe_block
-                                .as_ref()
-                                .expect("exe block should not be None!")
-                                .clone(),
+                            exe_block.as_ref().expect("exe block should not be None!").clone(),
                         )
                     })
                     .ok_or_else(|| format_err!("no block has been executed successfully!"));

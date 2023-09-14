@@ -4,9 +4,9 @@
 use crate::block_connector::{ExecuteRequest, ResetRequest, WriteBlockChainService};
 use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::{BlockConnectedEvent, BlockDiskCheckEvent};
-use anyhow::{format_err, Result};
+use anyhow::{format_err, Result, Ok};
 use network_api::PeerProvider;
-use starcoin_chain_api::{ConnectBlockError, WriteableChainService};
+use starcoin_chain_api::{ConnectBlockError, WriteableChainService, ChainReader};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
 use starcoin_consensus::BlockDAG;
 use starcoin_executor::VMMetrics;
@@ -16,13 +16,15 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::{BlockStore, Storage};
-use starcoin_sync_api::PeerNewBlock;
+use starcoin_sync_api::{PeerNewBlock, NewBlockChainRequest};
 use starcoin_txpool::TxPoolService;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
-use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
+use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown, NewHeadBlock};
 use std::sync::{Arc, Mutex};
 use sysinfo::{DiskExt, System, SystemExt};
+
+use super::BlockConnectedRequest;
 
 const DISK_CHECKPOINT_FOR_PANIC: u64 = 1024 * 1024 * 1024 * 3;
 const DISK_CHECKPOINT_FOR_WARN: u64 = 1024 * 1024 * 1024 * 5;
@@ -152,7 +154,7 @@ impl EventHandler<Self, BlockDiskCheckEvent> for BlockConnectorService {
     ) {
         if let Some(res) = self.check_disk_space() {
             match res {
-                Ok(available_space) => {
+                std::result::Result::Ok(available_space) => {
                     warn!("Available diskspace only {}/GB left ", available_space)
                 }
                 Err(e) => {
@@ -190,7 +192,7 @@ impl EventHandler<Self, MinedBlock> for BlockConnectorService {
             .chain_service
             .try_connect(new_block.as_ref().clone(), tips_headers)
         {
-            Ok(_) => debug!("Process mined block {} success.", id),
+            std::result::Result::Ok(_) => debug!("Process mined block {} success.", id),
             Err(e) => {
                 warn!("Process mined block {} fail, error: {:?}", id, e);
             }
@@ -216,11 +218,11 @@ impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
             .try_connect(msg.get_block().clone(), msg.get_dag_parents().clone())
         {
             match e.downcast::<ConnectBlockError>() {
-                Ok(connect_error) => {
+                std::result::Result::Ok(connect_error) => {
                     match connect_error {
                         ConnectBlockError::FutureBlock(block) => {
                             //TODO cache future block
-                            if let Ok(sync_service) = ctx.service_ref::<SyncService>() {
+                            if let std::result::Result::Ok(sync_service) = ctx.service_ref::<SyncService>() {
                                 info!(
                                     "BlockConnector try connect future block ({:?},{}), peer_id:{:?}, notify Sync service check sync.",
                                     block.id(),
@@ -277,6 +279,18 @@ impl ServiceHandler<Self, ResetRequest> for BlockConnectorService {
     }
 }
 
+impl ServiceHandler<Self, NewBlockChainRequest> for BlockConnectorService {
+    fn handle(
+        &mut self,
+        msg: NewBlockChainRequest,
+        ctx: &mut ServiceContext<BlockConnectorService>,
+    ) -> Result<()> {
+        let (new_branch, dag_parents, next_tips) = self.chain_service.switch_new_main(msg.new_head_block)?;
+        ctx.broadcast(NewHeadBlock(Arc::new(new_branch.head_block()), Some(dag_parents), Some(next_tips)));
+        Ok(())
+    }
+}
+
 impl ServiceHandler<Self, ExecuteRequest> for BlockConnectorService {
     fn handle(
         &mut self,
@@ -285,5 +299,19 @@ impl ServiceHandler<Self, ExecuteRequest> for BlockConnectorService {
     ) -> Result<ExecutedBlock> {
         self.chain_service
             .execute(msg.block, msg.dag_transaction_parent)
+    }
+}
+
+impl ServiceHandler<Self, BlockConnectedRequest> for BlockConnectorService {
+    fn handle(
+        &mut self,
+        msg: BlockConnectedRequest,
+        _ctx: &mut ServiceContext<BlockConnectorService>,
+    ) -> Result<()> {
+        //because this block has execute at sync task, so just try connect to select head chain.
+        //TODO refactor connect and execute
+
+        let block = msg.block;
+        self.chain_service.try_connect(block, msg.dag_parents)
     }
 }
