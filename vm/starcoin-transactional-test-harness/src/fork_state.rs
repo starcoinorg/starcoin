@@ -12,8 +12,7 @@ use starcoin_state_api::{
     StateWithTableItemProof,
 };
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::state_node::StateStorage;
-use starcoin_storage::storage::{CodecKVStore, CodecWriteBatch, StorageInstance};
+use starcoin_storage::state_node::StateStorageMock;
 
 use starcoin_rpc_api::state::StateApiClient;
 use starcoin_state_tree::StateNode;
@@ -25,15 +24,14 @@ use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use tokio::runtime::Runtime;
 
 pub struct MockStateNodeStore {
-    local_storage: StateStorage,
+    local_storage: StateStorageMock,
     remote: Arc<StateApiClient>,
     rt: Arc<Runtime>,
 }
 
 impl MockStateNodeStore {
     pub fn new(remote: Arc<StateApiClient>, rt: Arc<Runtime>) -> Self {
-        let storage_instance = StorageInstance::new_cache_instance();
-        let storage = StateStorage::new(storage_instance);
+        let storage = StateStorageMock::new();
 
         Self {
             local_storage: storage,
@@ -45,7 +43,7 @@ impl MockStateNodeStore {
 
 impl StateNodeStore for MockStateNodeStore {
     fn get(&self, hash: &HashValue) -> Result<Option<StateNode>> {
-        match self.local_storage.get(*hash)? {
+        match self.local_storage.get(hash)? {
             Some(sn) => Ok(Some(sn)),
             None => {
                 let client = self.remote.clone();
@@ -69,8 +67,7 @@ impl StateNodeStore for MockStateNodeStore {
     }
 
     fn write_nodes(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<()> {
-        let batch = CodecWriteBatch::new_puts(nodes.into_iter().collect());
-        self.local_storage.write_batch(batch)
+        self.local_storage.write_batch(nodes)
     }
 
     fn get_table_info(&self, _address: AccountAddress) -> Result<Option<TableInfo>> {

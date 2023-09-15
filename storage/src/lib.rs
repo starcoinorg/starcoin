@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::schema::{
-    transaction::Transaction as TxnSchema, transaction_info::TransactionInfo as TxnInfoSchema,
+    state_node::State as StateSchema, transaction::Transaction as TxnSchema,
+    transaction_info::TransactionInfo as TxnInfoSchema,
     transaction_info::TransactionInfoHash as TxnInfoHashSchema,
 };
 use crate::transaction_store::{
@@ -211,7 +212,7 @@ impl Storage {
             transaction_info_hash_storage: TransactionInfoHashStorage::new(ledger_db),
             transaction_storage: TransactionStorage::new(ledger_db),
             block_storage: BlockStorage::new(instance.clone()),
-            state_node_storage: StateStorage::new(instance.clone()),
+            state_node_storage: StateStorage::new(ledger_db),
             block_accumulator_storage: BlockAccumulatorStorage::new_accumulator_storage(
                 instance.db().unwrap(),
             ),
@@ -242,16 +243,19 @@ impl Storage {
 
 impl StateNodeStore for Storage {
     fn get(&self, hash: &HashValue) -> Result<Option<StateNode>> {
-        self.state_node_storage.get(*hash)
+        self.state_node_storage.get(hash)
     }
 
     fn put(&self, key: HashValue, node: StateNode) -> Result<()> {
-        self.state_node_storage.put(key, node)
+        self.state_node_storage.put(&key, &node)
     }
 
     fn write_nodes(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<()> {
-        let batch = CodecWriteBatch::new_puts(nodes.into_iter().collect());
-        self.state_node_storage.write_batch(batch)
+        let batch = SchemaBatch::new();
+        for (key, value) in nodes.iter() {
+            batch.put::<StateSchema>(key, value)?;
+        }
+        self.state_node_storage.write_schemas(batch)
     }
 
     fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>> {
@@ -449,6 +453,7 @@ impl BlockTransactionInfoStore for Storage {
         txn_infos: &[(HashValue, HashValue)],
     ) -> Result<BTreeMap<HashValue, Vec<HashValue>>> {
         let mut local = BTreeMap::new();
+        // todo: change to multi_get
         for (hash, id) in txn_infos {
             let id_vec = local.entry(*hash).or_insert(
                 self.get_transaction_info_ids_by_txn_hash(hash)?
