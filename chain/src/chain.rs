@@ -23,6 +23,7 @@ use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter}
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::flexi_dag::SyncFlexiDagSnapshot;
 use starcoin_storage::Store;
+use starcoin_storage::storage::CodecKVStore;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
@@ -107,6 +108,7 @@ impl BlockChain {
             )),
             None => None,
         };
+        let dag_snapshot_tips = storage.get_accumulator_snapshot_storage().get(head_id)?.map(|snapshot| snapshot.child_hashes);
         let mut chain = Self {
             genesis_hash: genesis,
             time_service,
@@ -124,7 +126,7 @@ impl BlockChain {
                 status: ChainStatus::new(
                     head_block.header.clone(),
                     block_info,
-                    Some(vec![head_block.id()]),
+                    dag_snapshot_tips,
                 ),
                 head: head_block,
             },
@@ -635,6 +637,22 @@ impl BlockChain {
                 ),
         );
         Ok(())
+    }
+    
+    pub fn dag_parents_in_tips(&self, dag_parents: Vec<HashValue>) -> Result<bool> {
+        Ok(dag_parents.into_iter().all(|parent| {
+            match &self.status.status.tips_hash {
+                Some(tips) => tips.contains(&parent),
+                None => false,
+            }
+        }))
+    }
+
+    pub fn is_head_of_dag_accumulator(&self, next_tips: Vec<HashValue>) -> Result<bool> {
+        let key = Self::calculate_dag_accumulator_key(next_tips)?;
+        let next_tips_info = self.storage.get_dag_accumulator_info(key)?;
+
+        return Ok(next_tips_info == self.dag_accumulator.as_ref().map(|accumulator| accumulator.get_info()));
     }
 }
 

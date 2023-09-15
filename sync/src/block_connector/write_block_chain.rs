@@ -448,6 +448,19 @@ where
         let mut retracted = vec![];
         let mut enacted = vec![];
 
+        let snapshot = new_branch.get_dag_accumulator_snapshot(new_branch.head_block().header().id())?;
+        let mut children = snapshot.child_hashes.clone();
+        children.sort();
+        for child in children {
+            match self
+            .storage
+            .get_block(child)? {
+                Some(block) => enacted.push(block),
+                None => bail!("the block{} dose not exist in new branch, ignore", child.clone()),
+            }
+        }
+        enacted.reverse();
+
         loop {
             if min_leaf_index == 0 {
                 break;
@@ -467,7 +480,7 @@ where
                 if let anyhow::Result::Ok(Some(block)) = block {
                     rollback_blocks.push(block);
                 } else {
-                    warn!("the block{} dose not exist in main branch, ignore", child.clone());
+                    bail!("the block{} dose not exist in main branch, ignore", child.clone());
                 }
                 return Ok(rollback_blocks);
             })?.into_iter());
@@ -482,7 +495,7 @@ where
                 if let anyhow::Result::Ok(Some(block)) = block {
                     rollback_blocks.push(block);
                 } else {
-                    warn!("the block{} dose not exist in new branch, ignore", child.clone());
+                    bail!("the block{} dose not exist in new branch, ignore", child.clone());
                 }
                 return Ok(rollback_blocks);
             })?.into_iter());
@@ -861,28 +874,43 @@ where
                     bail!("no new block has been executed successfully!");
                 }
 
-                // 1, write to disc
-                self.main
-                    .append_dag_accumulator_leaf(new_tips.clone())?;
+                let mut connected = self.main.is_head_of_dag_accumulator(new_tips.clone())?;
+                if self.main.dag_parents_in_tips(new_tips.clone())? {
+                    // 1, write to disc
+                    if !connected {
+                        self.main
+                            .append_dag_accumulator_leaf(new_tips.clone())?;
+                        connected = true;
+                    }
+                }
 
-                // 2, broadcast the blocks sorted by their id
-                executed_blocks
-                    .iter()
-                    .for_each(|(exe_block, dag_block_parents)| {
-                        if let Some(block) = exe_block {
-                            self.broadcast_new_head(
-                                block.clone(),
-                                Some(dag_block_parents.clone()),
-                                Some(new_tips.clone()),
-                            );
-                        }
-                    });
+                if  connected {
+                    // 2, broadcast the blocks sorted by their id
+                    executed_blocks
+                        .iter()
+                        .for_each(|(exe_block, dag_block_parents)| {
+                            if let Some(block) = exe_block {
+                                self.broadcast_new_head(
+                                    block.clone(),
+                                    Some(dag_block_parents.clone()),
+                                    Some(new_tips.clone()),
+                                );
+                            }
+                        });
+                }
+
                 return executed_blocks
                     .last()
                     .map(|(exe_block, _)| {
-                        ConnectOk::ExeConnectMain(
-                            exe_block.as_ref().expect("exe block should not be None!").clone(),
-                        )
+                        if connected {
+                            ConnectOk::ExeConnectMain(
+                                exe_block.as_ref().expect("exe block should not be None!").clone(),
+                            )
+                        } else {
+                            ConnectOk::ExeConnectBranch(
+                                exe_block.as_ref().expect("exe block should not be None!").clone(),
+                            )
+                        }
                     })
                     .ok_or_else(|| format_err!("no block has been executed successfully!"));
             }

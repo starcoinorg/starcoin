@@ -312,6 +312,7 @@ impl ServiceHandler<Self, BlockConnectedRequest> for BlockConnectorService {
         //TODO refactor connect and execute
 
         let block = msg.block;
-        self.chain_service.try_connect(block, msg.dag_parents)
+        let result = self.chain_service.try_connect(block, msg.dag_parents);
+        result
     }
 }
