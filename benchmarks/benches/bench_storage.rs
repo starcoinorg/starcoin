@@ -47,7 +47,7 @@ fn accumulator_append(c: &mut Criterion) {
             || {
                 MerkleAccumulator::new_with_info(
                     AccumulatorInfo::default(),
-                    Arc::new(storage.get_transaction_accumulator_storage()),
+                    Arc::clone(&storage.get_transaction_accumulator_storage()),
                 )
             },
             |bench| {

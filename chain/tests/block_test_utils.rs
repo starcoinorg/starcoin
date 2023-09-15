@@ -229,7 +229,7 @@ fn gen_root_hashes(
                 vec![],
                 0,
                 0,
-                Arc::new(storage.get_transaction_accumulator_storage()),
+                Arc::clone(&storage.get_transaction_accumulator_storage()),
             );
 
             let included_txn_info_hashes: Vec<_> = executed_data

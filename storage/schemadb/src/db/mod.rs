@@ -399,6 +399,25 @@ impl DBStorage {
             })
     }
 
+    pub fn batched_multi_get<S: Schema>(&self, keys: &[S::Key]) -> Result<Vec<Option<S::Value>>> {
+        let cf_handle = self.get_cf_handle(S::COLUMN_FAMILY)?;
+        let keys = keys
+            .iter()
+            .map(|key| <S::Key as KeyCodec<S>>::encode_key(key))
+            .collect::<Result<Vec<_>>>()?;
+
+        self.db
+            .batched_multi_get_cf(cf_handle, keys, false)
+            .into_iter()
+            .map(|result| {
+                result.map_err(Into::into).and_then(|raw| {
+                    raw.map(|v| <S::Value as ValueCodec<S>>::decode_value(&v))
+                        .transpose()
+                })
+            })
+            .collect::<Result<Vec<_>>>()
+    }
+
     pub fn put<S: Schema>(&self, key: &S::Key, value: &S::Value) -> Result<()> {
         let raw_key = <S::Key as KeyCodec<S>>::encode_key(key)?;
         let raw_value = <S::Value as ValueCodec<S>>::encode_value(value)?;

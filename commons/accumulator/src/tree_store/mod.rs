@@ -22,8 +22,9 @@ pub trait AccumulatorTreeStore: std::marker::Send + std::marker::Sync {
     /// save node
     fn save_node(&self, node: AccumulatorNode) -> Result<()>;
     /// batch save nodes
+    // Todo: change Vec to Iterator
     fn save_nodes(&self, nodes: Vec<AccumulatorNode>) -> Result<()>;
-    ///delete node
+    ///delete nodes
     fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<()>;
 }
 

@@ -9,7 +9,7 @@ use crate::transaction_store::{
     TransactionInfoHashStorage, TransactionInfoStorage, TransactionStorage,
 };
 use crate::{
-    accumulator::{AccumulatorStorage, BlockAccumulatorStorage, TransactionAccumulatorStorage},
+    accumulator::{BlockAccumulatorStorage, TransactionAccumulatorStorage},
     block::BlockStorage,
     block_info::{BlockInfoStorage, BlockInfoStore},
     chain_info::ChainInfoStorage,
@@ -193,8 +193,8 @@ pub struct Storage {
     transaction_storage: TransactionStorage,
     block_storage: BlockStorage,
     state_node_storage: StateStorage,
-    block_accumulator_storage: AccumulatorStorage<BlockAccumulatorStorage>,
-    transaction_accumulator_storage: AccumulatorStorage<TransactionAccumulatorStorage>,
+    block_accumulator_storage: BlockAccumulatorStorage,
+    transaction_accumulator_storage: TransactionAccumulatorStorage,
     block_info_storage: BlockInfoStorage,
     event_storage: ContractEventStorage,
     chain_info_storage: ChainInfoStorage,
@@ -212,11 +212,12 @@ impl Storage {
             transaction_storage: TransactionStorage::new(ledger_db),
             block_storage: BlockStorage::new(instance.clone()),
             state_node_storage: StateStorage::new(instance.clone()),
-            block_accumulator_storage: AccumulatorStorage::new_block_accumulator_storage(
-                instance.clone(),
+            block_accumulator_storage: BlockAccumulatorStorage::new_accumulator_storage(
+                instance.db().unwrap(),
             ),
-            transaction_accumulator_storage:
-                AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
+            transaction_accumulator_storage: TransactionAccumulatorStorage::new_accumulator_storage(
+                instance.db().unwrap(),
+            ),
             block_info_storage: BlockInfoStorage::new(instance.clone()),
             event_storage: ContractEventStorage::new(instance.clone()),
             chain_info_storage: ChainInfoStorage::new(instance.clone()),
@@ -226,14 +227,12 @@ impl Storage {
         Ok(storage)
     }
 
-    pub fn get_block_accumulator_storage(&self) -> AccumulatorStorage<BlockAccumulatorStorage> {
-        self.block_accumulator_storage.clone()
+    pub fn get_block_accumulator_storage(&self) -> Arc<dyn AccumulatorTreeStore> {
+        Arc::new(self.block_accumulator_storage.clone())
     }
 
-    pub fn get_transaction_accumulator_storage(
-        &self,
-    ) -> AccumulatorStorage<TransactionAccumulatorStorage> {
-        self.transaction_accumulator_storage.clone()
+    pub fn get_transaction_accumulator_storage(&self) -> Arc<dyn AccumulatorTreeStore> {
+        Arc::new(self.transaction_accumulator_storage.clone())
     }
 
     pub fn ledger_db(&self) -> &DB {
