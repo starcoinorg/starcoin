@@ -1,18 +1,21 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-use crate::define_storage;
-use crate::storage::{CodecKVStore, StorageInstance, ValueCodec};
-use crate::{
-    BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME,
-    BLOCK_TRANSACTIONS_PREFIX_NAME, BLOCK_TRANSACTION_INFOS_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
+
+use crate::schema::block::{
+    BlockBodyStorage, BlockHeaderStorage, BlockInnerStorage, BlockTransactionInfosStorage,
+    BlockTransactionsStorage, FailedBlockStorage,
 };
+use crate::storage::StorageInstance;
 use anyhow::{bail, Result};
 use bcs_ext::{BCSCodec, Sample};
 use network_p2p_types::peer_id::PeerId;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
+use starcoin_schemadb::db::DBStorage;
+use starcoin_schemadb::SchemaBatch;
 use starcoin_types::block::{Block, BlockBody, BlockHeader};
+use std::sync::Arc;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct OldFailedBlock {
@@ -75,40 +78,9 @@ impl Sample for FailedBlock {
     }
 }
 
-define_storage!(BlockInnerStorage, HashValue, Block, BLOCK_PREFIX_NAME);
-define_storage!(
-    BlockHeaderStorage,
-    HashValue,
-    BlockHeader,
-    BLOCK_HEADER_PREFIX_NAME
-);
-define_storage!(
-    BlockBodyStorage,
-    HashValue,
-    BlockBody,
-    BLOCK_BODY_PREFIX_NAME
-);
-define_storage!(
-    BlockTransactionsStorage,
-    HashValue,
-    Vec<HashValue>,
-    BLOCK_TRANSACTIONS_PREFIX_NAME
-);
-define_storage!(
-    BlockTransactionInfosStorage,
-    HashValue,
-    Vec<HashValue>,
-    BLOCK_TRANSACTION_INFOS_PREFIX_NAME
-);
-define_storage!(
-    FailedBlockStorage,
-    HashValue,
-    FailedBlock,
-    FAILED_BLOCK_PREFIX_NAME
-);
-
 #[derive(Clone)]
 pub struct BlockStorage {
+    db: Arc<DBStorage>,
     block_store: BlockInnerStorage,
     pub(crate) header_store: BlockHeaderStorage,
     body_store: BlockBodyStorage,
@@ -117,64 +89,17 @@ pub struct BlockStorage {
     failed_block_storage: FailedBlockStorage,
 }
 
-impl ValueCodec for Block {
-    fn encode_value(&self) -> Result<Vec<u8>> {
-        self.encode()
-    }
-
-    fn decode_value(data: &[u8]) -> Result<Self> {
-        Self::decode(data)
-    }
-}
-
-impl ValueCodec for BlockHeader {
-    fn encode_value(&self) -> Result<Vec<u8>> {
-        self.encode()
-    }
-
-    fn decode_value(data: &[u8]) -> Result<Self> {
-        Self::decode(data)
-    }
-}
-
-impl ValueCodec for BlockBody {
-    fn encode_value(&self) -> Result<Vec<u8>> {
-        self.encode()
-    }
-
-    fn decode_value(data: &[u8]) -> Result<Self> {
-        Self::decode(data)
-    }
-}
-
-impl ValueCodec for OldFailedBlock {
-    fn encode_value(&self) -> Result<Vec<u8>> {
-        self.encode()
-    }
-
-    fn decode_value(data: &[u8]) -> Result<Self> {
-        Self::decode(data)
-    }
-}
-impl ValueCodec for FailedBlock {
-    fn encode_value(&self) -> Result<Vec<u8>> {
-        self.encode()
-    }
-
-    fn decode_value(data: &[u8]) -> Result<Self> {
-        Self::decode(data)
-    }
-}
-
 impl BlockStorage {
     pub fn new(instance: StorageInstance) -> Self {
+        let block_db = instance.db().unwrap();
         BlockStorage {
-            block_store: BlockInnerStorage::new(instance.clone()),
-            header_store: BlockHeaderStorage::new(instance.clone()),
-            body_store: BlockBodyStorage::new(instance.clone()),
-            block_txns_store: BlockTransactionsStorage::new(instance.clone()),
-            block_txn_infos_store: BlockTransactionInfosStorage::new(instance.clone()),
-            failed_block_storage: FailedBlockStorage::new(instance),
+            db: Arc::clone(block_db),
+            block_store: BlockInnerStorage::new(block_db),
+            header_store: BlockHeaderStorage::new(block_db),
+            body_store: BlockBodyStorage::new(block_db),
+            block_txns_store: BlockTransactionsStorage::new(block_db),
+            block_txn_infos_store: BlockTransactionInfosStorage::new(block_db),
+            failed_block_storage: FailedBlockStorage::new(block_db),
         }
     }
     pub fn save(&self, block: Block) -> Result<()> {
@@ -184,56 +109,57 @@ impl BlockStorage {
             block.header().parent_hash()
         );
         let block_id = block.header().id();
-        self.block_store.put(block_id, block)
+        self.block_store.put(&block_id, &block)
     }
 
     pub fn save_header(&self, header: BlockHeader) -> Result<()> {
-        self.header_store.put(header.id(), header)
-    }
-
-    pub fn get_headers(&self) -> Result<Vec<HashValue>> {
-        let mut key_hashes = vec![];
-        for hash in self.header_store.keys()? {
-            key_hashes.push(hash)
-        }
-        Ok(key_hashes)
+        self.header_store.put(&header.id(), &header)
     }
 
     pub fn save_body(&self, block_id: HashValue, body: BlockBody) -> Result<()> {
-        self.body_store.put(block_id, body)
+        self.body_store.put(&block_id, &body)
     }
 
     pub fn get(&self, block_id: HashValue) -> Result<Option<Block>> {
-        self.block_store.get(block_id)
+        self.block_store.get(&block_id)
     }
 
     pub fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>> {
-        Ok(self.block_store.multiple_get(ids)?.into_iter().collect())
+        Ok(self.block_store.multi_get(&ids)?.into_iter().collect())
     }
 
     pub fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>> {
-        self.body_store.get(block_id)
+        self.body_store.get(&block_id)
     }
 
     pub fn commit_block(&self, block: Block) -> Result<()> {
-        let (header, _) = block.clone().into_inner();
-        //save header
-        self.save_header(header)?;
+        let batch = SchemaBatch::new();
+        //save header, add it to batch
+        self.header_store
+            .put_batch(&batch, &block.header.id(), &block.header)?;
         // save block , no need body
         // self.save_body(block_id, body)?;
-        //save block
-        self.save(block)
+        //save block, add it to batch
+        self.block_store
+            .put_batch(&batch, &block.header.id(), &block)?;
+
+        // persist schemas to db
+        self.db.write_schemas(batch)
     }
     pub fn delete_block(&self, block_id: HashValue) -> Result<()> {
-        self.header_store.remove(block_id)?;
-        self.body_store.remove(block_id)?;
-        self.block_store.remove(block_id)?;
-        self.block_txns_store.remove(block_id)?;
-        self.block_txn_infos_store.remove(block_id)
+        let batch = SchemaBatch::new();
+
+        self.header_store.remove_batch(&batch, &block_id)?;
+        self.body_store.remove_batch(&batch, &block_id)?;
+        self.block_store.remove_batch(&batch, &block_id)?;
+        self.block_txns_store.remove_batch(&batch, &block_id)?;
+        self.block_txn_infos_store.remove_batch(&batch, &block_id)?;
+
+        self.db.write_schemas(batch)
     }
 
     pub fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {
-        self.header_store.get(block_id)
+        self.header_store.get(&block_id)
     }
 
     pub fn get_block_by_hash(&self, block_id: HashValue) -> Result<Option<Block>> {
@@ -241,7 +167,7 @@ impl BlockStorage {
     }
 
     pub fn get_transactions(&self, block_id: HashValue) -> Result<Vec<HashValue>> {
-        match self.block_txns_store.get(block_id) {
+        match self.block_txns_store.get(&block_id) {
             Ok(Some(transactions)) => Ok(transactions),
             _ => bail!("can't find block's transaction: {:?}", block_id),
         }
@@ -250,7 +176,7 @@ impl BlockStorage {
     /// get txn info ids for `block_id`.
     /// return None, if block_id not exists.
     pub fn get_transaction_info_ids(&self, block_id: HashValue) -> Result<Option<Vec<HashValue>>> {
-        self.block_txn_infos_store.get(block_id)
+        self.block_txn_infos_store.get(&block_id)
     }
 
     pub fn put_transaction_ids(
@@ -258,7 +184,7 @@ impl BlockStorage {
         block_id: HashValue,
         transactions: Vec<HashValue>,
     ) -> Result<()> {
-        self.block_txns_store.put(block_id, transactions)
+        self.block_txns_store.put(&block_id, &transactions)
     }
 
     pub fn put_transaction_infos(
@@ -266,7 +192,7 @@ impl BlockStorage {
         block_id: HashValue,
         txn_info_ids: Vec<HashValue>,
     ) -> Result<()> {
-        self.block_txn_infos_store.put(block_id, txn_info_ids)
+        self.block_txn_infos_store.put(&block_id, &txn_info_ids)
     }
 
     pub fn save_failed_block(
@@ -278,31 +204,32 @@ impl BlockStorage {
         version: String,
     ) -> Result<()> {
         self.failed_block_storage
-            .put(block_id, (block, peer_id, failed, version).into())
+            .put(&block_id, &(block, peer_id, failed, version).into())
     }
 
     pub fn delete_failed_block(&self, block_id: HashValue) -> Result<()> {
-        self.failed_block_storage.remove(block_id)
+        self.failed_block_storage.remove(&block_id)
     }
 
     pub fn get_failed_block_by_id(
         &self,
         block_id: HashValue,
     ) -> Result<Option<(Block, Option<PeerId>, String, String)>> {
-        let res = self.failed_block_storage.get_raw(block_id)?;
+        let res = self.failed_block_storage.get_raw(&block_id)?;
         match res {
             Some(res) => {
-                let result = OldFailedBlock::decode_value(res.as_slice());
+                let result = OldFailedBlock::decode(res.as_slice());
                 if result.is_ok() {
                     return Ok(Some(result?.into()));
                 }
-                let result = FailedBlock::decode_value(res.as_slice())?;
+                let result = FailedBlock::decode(res.as_slice())?;
                 Ok(Some(result.into()))
             }
             None => Ok(None),
         }
     }
 
+    // just for tests
     pub fn save_old_failed_block(
         &self,
         block_id: HashValue,
@@ -312,6 +239,6 @@ impl BlockStorage {
     ) -> Result<()> {
         let old_block: OldFailedBlock = (block, peer_id, failed).into();
         self.failed_block_storage
-            .put_raw(block_id, old_block.encode_value()?)
+            .put_raw(&block_id, &old_block.encode()?)
     }
 }

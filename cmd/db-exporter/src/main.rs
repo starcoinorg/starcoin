@@ -28,7 +28,7 @@ use starcoin_storage::{
     block_info::BlockInfoStore,
     cache_storage::CacheStorage,
     db_storage::{ClassicIter, DBStorage},
-    storage::{ColumnFamilyName, InnerStore, StorageInstance, ValueCodec},
+    storage::{ColumnFamilyName, InnerStore, StorageInstance},
     BlockStore, Storage, StorageVersion, Store, BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
     BLOCK_HEADER_PREFIX_NAME, BLOCK_INFO_PREFIX_NAME, BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
     STATE_NODE_PREFIX_NAME, STATE_NODE_PREFIX_NAME_PREV, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
@@ -169,17 +169,13 @@ impl DbSchema {
     pub fn get_value_codec(&self) -> Box<dyn Fn(Vec<u8>) -> Result<serde_json::Value>> {
         Box::new(match self {
             DbSchema::Block => |arg| -> Result<serde_json::Value> {
-                Ok(serde_json::to_value(Block::decode_value(arg.as_slice())?)?)
+                Ok(serde_json::to_value(Block::decode(arg.as_slice())?)?)
             },
             DbSchema::BlockHeader => |arg| -> Result<serde_json::Value> {
-                Ok(serde_json::to_value(BlockHeader::decode_value(
-                    arg.as_slice(),
-                )?)?)
+                Ok(serde_json::to_value(BlockHeader::decode(arg.as_slice())?)?)
             },
             DbSchema::FailedBlock => |arg| -> Result<serde_json::Value> {
-                Ok(serde_json::to_value(FailedBlock::decode_value(
-                    arg.as_slice(),
-                )?)?)
+                Ok(serde_json::to_value(FailedBlock::decode(arg.as_slice())?)?)
             },
         })
     }

@@ -6,7 +6,6 @@ use include_dir::include_dir;
 use include_dir::Dir;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
-use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_config::{
@@ -37,7 +36,8 @@ use std::sync::Arc;
 
 mod errors;
 pub use errors::GenesisError;
-use starcoin_storage::table_info::TableInfoStore;
+use starcoin_accumulator::tree_store::mock::MockAccumulatorStore;
+use starcoin_state_api::mock::MockStateNodeStore;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;
 
@@ -113,23 +113,19 @@ impl Genesis {
         {
             let txn = Self::build_genesis_transaction(net)?;
 
-            let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
-            let chain_state_db = ChainStateDB::new(storage.clone(), None);
+            let chain_state_db = ChainStateDB::new(Arc::new(MockStateNodeStore::new()), None);
 
-            let (table_infos, transaction_info) =
+            let (_table_infos, transaction_info) =
                 Self::execute_genesis_txn(&chain_state_db, txn.clone())?;
 
             let accumulator = MerkleAccumulator::new_with_info(
                 AccumulatorInfo::default(),
-                storage.get_accumulator_store(AccumulatorStoreType::Transaction),
+                Arc::new(MockAccumulatorStore::new()),
             );
             let txn_info_hash = transaction_info.id();
 
             let accumulator_root = accumulator.append(vec![txn_info_hash].as_slice())?;
             accumulator.flush()?;
-
-            // Persist newly created table_infos to storage
-            storage.save_table_infos(table_infos.into_iter().collect())?;
 
             Ok(Block::genesis_block(
                 *parent_hash,

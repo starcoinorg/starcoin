@@ -6,7 +6,7 @@ use crate::{
     block_info::BlockInfoStorage,
     chain_info::ChainInfoStorage,
     transaction_store::{OldTransactionInfoStorage, TransactionInfoStorage, TransactionStorage},
-    CodecKVStore, RichTransactionInfo, StorageInstance,
+    RichTransactionInfo, StorageInstance,
 };
 use anyhow::{bail, ensure, format_err, Result};
 use once_cell::sync::Lazy;
@@ -60,7 +60,7 @@ impl DBUpgrade {
         let ledger_db = std::sync::Arc::clone(instance.db().unwrap());
         let old_transaction_info_storage = OldTransactionInfoStorage::new(&ledger_db);
         let block_storage = BlockStorage::new(instance.clone());
-        let block_info_storage = BlockInfoStorage::new(instance.clone());
+        let block_info_storage = BlockInfoStorage::new(&ledger_db);
         let transaction_info_storage = TransactionInfoStorage::new(&ledger_db);
         let transaction_storage = TransactionStorage::new(&ledger_db);
         let mut iter = old_transaction_info_storage.iter()?;
@@ -71,7 +71,7 @@ impl DBUpgrade {
             let block_id = old_transaction_info.block_id;
             let (block, block_info) = match (
                 block_storage.get(block_id)?,
-                block_info_storage.get(block_id)?,
+                block_info_storage.get(&block_id)?,
             ) {
                 (Some(block), Some(block_info)) => (block, block_info),
                 (_, _) => {
@@ -209,13 +209,13 @@ impl DBUpgrade {
             if block.header().number() == BARNARD_HARD_FORK_HEIGHT {
                 info!("barnard hard fork rollback height");
                 let mut processed_count = 0;
-                let block_info_storage = BlockInfoStorage::new(instance.clone());
+                let block_info_storage = BlockInfoStorage::new(instance.db().unwrap());
                 let mut iter = block_storage.header_store.iter()?;
                 iter.seek_to_first();
                 for item in iter {
                     let (id, block_header) = item?;
                     if block_header.number() >= BARNARD_HARD_FORK_HEIGHT {
-                        block_info_storage.remove(id)?;
+                        block_info_storage.remove(&id)?;
                         processed_count += 1;
                         if processed_count % 10000 == 0 {
                             info!(

@@ -10,10 +10,9 @@ use starcoin_crypto::{
 };
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
+use starcoin_state_api::mock::MockStateNodeStore;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::Storage;
 use starcoin_transaction_builder::{
     create_signed_txn_with_association_account, encode_create_account_script_function,
     encode_transfer_script_function,
@@ -251,9 +250,7 @@ pub fn run_benchmark(
     block_size: usize,
     num_transfer_blocks: usize,
 ) {
-    let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance()).unwrap());
-
-    let chain_state = ChainStateDB::new(storage, None);
+    let chain_state = ChainStateDB::new(Arc::new(MockStateNodeStore::new()), None);
     let net = ChainNetwork::new_test();
     let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
     let _ = Genesis::execute_genesis_txn(&chain_state, genesis_txn).unwrap();

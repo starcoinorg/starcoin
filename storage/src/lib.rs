@@ -219,7 +219,7 @@ impl Storage {
             transaction_accumulator_storage: TransactionAccumulatorStorage::new_accumulator_storage(
                 instance.db().unwrap(),
             ),
-            block_info_storage: BlockInfoStorage::new(instance.clone()),
+            block_info_storage: BlockInfoStorage::new(ledger_db),
             event_storage: ContractEventStorage::new(instance.clone()),
             chain_info_storage: ChainInfoStorage::new(instance.clone()),
             table_info_storage: TableInfoStorage::new(instance),
@@ -403,20 +403,21 @@ impl BlockStore for Storage {
 
 impl BlockInfoStore for Storage {
     fn save_block_info(&self, block_info: BlockInfo) -> Result<(), Error> {
-        self.block_info_storage.put(block_info.block_id, block_info)
+        self.block_info_storage
+            .put(&block_info.block_id, &block_info)
     }
 
     fn get_block_info(&self, hash_value: HashValue) -> Result<Option<BlockInfo>, Error> {
-        self.block_info_storage.get(hash_value)
+        self.block_info_storage.get(&hash_value)
     }
     fn delete_block_info(&self, block_hash: HashValue) -> Result<(), Error> {
-        self.block_info_storage.remove(block_hash)
+        self.block_info_storage.remove(&block_hash)
     }
 
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>> {
         Ok(self
             .block_info_storage
-            .multiple_get(ids)?
+            .multi_get(ids)?
             .into_iter()
             .collect())
     }

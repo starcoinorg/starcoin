@@ -469,3 +469,16 @@ impl DBStorage {
             })
     }
 }
+
+// FixMe: Remove these functions
+impl DBStorage {
+    pub fn get_no_schema(&self, cf_name: &str, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        let cf = self.get_cf_handle(cf_name)?;
+        self.db.get_cf(cf, key).map_err(Into::into)
+    }
+
+    pub fn put_no_schema(&self, cf_name: &str, key: &[u8], value: &[u8]) -> Result<()> {
+        let cf = self.get_cf_handle(cf_name)?;
+        self.db.put_cf(cf, key, value).map_err(Into::into)
+    }
+}
