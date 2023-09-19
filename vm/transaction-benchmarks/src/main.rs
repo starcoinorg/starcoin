@@ -59,13 +59,13 @@ fn main() {
         println!("=========== concurrency_level:  {} started ===========", concurrency_level);
 
         for num_accounts in &account_nums {
-            let bencher = TransactionBencher::new(
-                any_with::<P2PTransferGen>((1_000, 1_000_000)),
-                default_num_accounts,
-                default_num_transactions,
-            );
             println!("=== accounts_num: {} started ===", num_accounts);
             for block_size in &txns {
+                let bencher = TransactionBencher::new(
+                    any_with::<P2PTransferGen>((1_000, 1_000_000)),
+                    *num_accounts,
+                    *block_size,
+                );
                 let (mut par_tps, mut seq_tps) = bencher.blockstm_benchmark(
                     *num_accounts,
                     *block_size,
