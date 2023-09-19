@@ -22,7 +22,7 @@ jobs:
         with:
           command: clean
       - name: run flamegraph
-        run: bash ./scripts/stm_flamegraph.sh
+        run: bash ./scripts/benchmark_parallel.sh
         env:
           RUST_LOG: error
           RUST_BACKTRACE: full
