@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   pull_request:
     branches:
-      - block_executor_optimize_tps
+      - stm_acc_test
 
 jobs:
   build-and-test:
