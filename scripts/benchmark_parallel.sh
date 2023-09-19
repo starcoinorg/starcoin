@@ -3,8 +3,8 @@
 #RUST_LOG=info cargo bench --features fuzzing -p 'starcoin-transaction-benchmarks'
 
 STARCOIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
-TXN_NUMS=1000
-ACCOUNT_NUMS=2,10,100
+TXN_NUMS=1000,10000,50000,100000
+ACCOUNT_NUMS=2,10,100,1000,10000
 
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     # Linux
