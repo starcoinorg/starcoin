@@ -67,15 +67,6 @@ pub struct SyncTarget {
 }
 
 #[derive(Debug, Clone)]
-pub struct NewBlockChainRequest {
-    pub new_head_block: HashValue,
-}
-
-impl ServiceRequest for NewBlockChainRequest {
-    type Response = anyhow::Result<()>;
-}
-
-#[derive(Debug, Clone)]
 pub struct SyncStatusRequest;
 
 impl ServiceRequest for SyncStatusRequest {
