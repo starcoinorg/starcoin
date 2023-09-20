@@ -228,7 +228,7 @@ impl BlockStarcoinVM {
         println!("Sequential execution starts...");
         let seq_timer = Instant::now();
         let mut vm = StarcoinVM::new(None);
-        let ret = vm.execute_block_transactions(state_view, transactions, None);
+        let _ret = vm.execute_block_transactions(state_view, transactions, None);
         let seq_exec_t = seq_timer.elapsed();
         println!(
             "Sequential execution finishes, TPS = {}",
