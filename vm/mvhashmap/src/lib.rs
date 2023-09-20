@@ -92,6 +92,7 @@ impl<K: Hash + Clone + Eq, V> MVHashMap<K, V> {
     /// Mark an entry from transaction 'txn_idx' at access path 'key' as an estimated write
     /// (for future incarnation). Will panic if the entry is not in the data-structure.
     pub fn mark_estimate(&self, key: &K, txn_idx: TxnIndex) {
+        println!("XXX FIXME YSG mark_estimate");
         let map = self.data.get(key).expect("Path must exist");
         map.get(&txn_idx)
             .expect("Entry by txn must exist")
@@ -117,6 +118,7 @@ impl<K: Hash + Clone + Eq, V> MVHashMap<K, V> {
                     let flag = write_cell.flag();
 
                     if flag == FLAG_ESTIMATE {
+                        println!("XXX FIXME YSG Found a dependency.");
                         // Found a dependency.
                         Err(Some(*idx))
                     } else {
