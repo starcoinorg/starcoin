@@ -1,7 +1,10 @@
-use crate::{tasks::{
-    AccumulatorCollector, BlockAccumulatorSyncTask, BlockCollector, BlockConnectedEventHandle,
-    BlockFetcher, BlockIdFetcher, BlockSyncTask, PeerOperator,
-}, block_connector::BlockConnectorService};
+use crate::{
+    block_connector::BlockConnectorService,
+    tasks::{
+        AccumulatorCollector, BlockAccumulatorSyncTask, BlockCollector, BlockConnectedEventHandle,
+        BlockFetcher, BlockIdFetcher, BlockSyncTask, PeerOperator,
+    },
+};
 use anyhow::format_err;
 use network_api::PeerProvider;
 use starcoin_accumulator::node::AccumulatorStoreType;
@@ -145,7 +148,6 @@ where
                 skip_pow_verify_when_sync,
                 HashValue::zero(),
                 None,
-                block_chain_service.clone(),
             );
             Ok(TaskGenerator::new(
                 block_sync_task,

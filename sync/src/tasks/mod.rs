@@ -423,7 +423,7 @@ impl BlockLocalStore for Arc<dyn Store> {
                 Some(block) => {
                     let id = block.id();
                     let block_info = self.get_block_info(id)?;
-                    
+
                     Ok(Some(SyncBlockData::new(
                         block, block_info, None, None, 1, None, None,
                     )))
@@ -435,10 +435,21 @@ impl BlockLocalStore for Arc<dyn Store> {
 }
 
 #[derive(Clone, Debug)]
+pub enum BlockConnectAction {
+    ConnectNewBlock,
+    ConnectExecutedBlock,
+}
+
+#[derive(Clone, Debug)]
 pub struct BlockConnectedEvent {
     pub block: Block,
     pub dag_parents: Option<Vec<HashValue>>,
+    pub feedback: Option<futures::channel::mpsc::UnboundedSender<BlockConnectedFinishEvent>>,
+    pub action: BlockConnectAction,
 }
+
+#[derive(Clone, Debug)]
+pub struct BlockConnectedFinishEvent;
 
 #[derive(Clone, Debug)]
 pub struct BlockDiskCheckEvent {}

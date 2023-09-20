@@ -45,13 +45,3 @@ pub struct ExecuteRequest {
 impl ServiceRequest for ExecuteRequest {
     type Response = anyhow::Result<ExecutedBlock>;
 }
-
-#[derive(Debug, Clone)]
-pub struct BlockConnectedRequest {
-    pub block: Block,
-    pub dag_parents: Option<Vec<HashValue>>,
-}
-
-impl ServiceRequest for BlockConnectedRequest {
-    type Response = anyhow::Result<()>;
-}

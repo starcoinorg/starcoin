@@ -740,7 +740,10 @@ impl SyncFlexiDagStore for Storage {
 
         // for block chain
         new_tips.iter().try_fold((), |_, block_id| {
-            if let Some(t) = self.flexi_dag_storage.get_hashes_by_hash(block_id.clone())? {
+            if let Some(t) = self
+                .flexi_dag_storage
+                .get_hashes_by_hash(block_id.clone())?
+            {
                 if t != snapshot {
                     bail!("the key {} should not exists", block_id);
                 }
