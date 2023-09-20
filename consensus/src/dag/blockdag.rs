@@ -80,20 +80,22 @@ impl BlockDAG {
         self.relations_store
             .insert(Hash::new(ORIGIN), BlockHashes::new(vec![]))
             .unwrap();
-        // let _ = self.commit_header(&self.genesis.clone())?;
+        self.commit_header(&self.genesis.clone())?;
         Ok(())
     }
 
-    pub fn commit_header_inner(
-        &mut self,
-        ghostdag_data: &GhostdagData,
-        header: &Header,
-    ) -> anyhow::Result<()> {
+    pub fn commit_header(&mut self, header: &Header) -> anyhow::Result<()> {
         // Generate ghostdag data
         let parents_hash = header.parents_hash();
+        let ghostdag_data = if header.hash() != self.genesis.hash() {
+            self.ghostdag_manager.ghostdag(parents_hash)
+        } else {
+            self.ghostdag_manager.genesis_ghostdag_data()
+        };
         // Store ghostdata
         self.ghostdag_store
-            .insert(header.hash(), Arc::new(ghostdag_data.clone()))?;
+            .insert(header.hash(), Arc::new(ghostdag_data.clone()))
+            .unwrap();
 
         // Update reachability store
         let mut reachability_store = self.reachability_store.clone();
@@ -118,29 +120,6 @@ impl BlockDAG {
         Ok(())
     }
 
-    pub fn commit_header(&mut self, header: &Header) -> anyhow::Result<ColoringOutput> {
-        let ghostdag_data = if header.hash() != self.genesis.hash() {
-            self.ghostdag_manager.ghostdag(header.parents_hash())
-        } else {
-            self.ghostdag_manager.genesis_ghostdag_data()
-        };
-
-        match self.commit_header_inner(&ghostdag_data, header) {
-            anyhow::Result::Ok(()) => (),
-            Err(error) => {
-                let error_result = error.downcast::<StoreError>()?;
-                match error_result {
-                    StoreError::KeyAlreadyExists(_) => (), // if the header existed already, we check its color
-                    _ => {
-                        return anyhow::Result::Err(error_result.into());
-                    }
-                }
-            }
-        }
-        Ok(self
-            .ghostdag_manager
-            .check_blue_candidate(&ghostdag_data, header.hash()))
-    }
     fn is_in_dag(&self, _hash: Hash) -> anyhow::Result<bool> {
         return Ok(true);
     }

@@ -40,7 +40,7 @@ function import_snapshot() {
   from_dir=$2
   to_dir=$3
 
-  download "$net" "$from_dir"
+  #download "$net" "$from_dir"
 
   ./starcoin_db_exporter apply-snapshot -i "$from_dir"/snapshot -n "$net" -o "$to_dir"
   case_status=$?

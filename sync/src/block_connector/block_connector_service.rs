@@ -4,9 +4,9 @@
 use crate::block_connector::{ExecuteRequest, ResetRequest, WriteBlockChainService};
 use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::{BlockConnectedEvent, BlockDiskCheckEvent};
-use anyhow::{format_err, Result, Ok};
+use anyhow::{format_err, Ok, Result};
 use network_api::PeerProvider;
-use starcoin_chain_api::{ConnectBlockError, WriteableChainService, ChainReader};
+use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
 use starcoin_consensus::BlockDAG;
 use starcoin_executor::VMMetrics;
@@ -16,11 +16,13 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::{BlockStore, Storage};
-use starcoin_sync_api::{PeerNewBlock, NewBlockChainRequest};
+use starcoin_sync_api::{NewBlockChainRequest, PeerNewBlock};
 use starcoin_txpool::TxPoolService;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
-use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown, NewHeadBlock};
+use starcoin_types::system_events::{
+    MinedBlock, NewHeadBlock, SyncStatusChangeEvent, SystemShutdown,
+};
 use std::sync::{Arc, Mutex};
 use sysinfo::{DiskExt, System, SystemExt};
 
@@ -222,7 +224,9 @@ impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
                     match connect_error {
                         ConnectBlockError::FutureBlock(block) => {
                             //TODO cache future block
-                            if let std::result::Result::Ok(sync_service) = ctx.service_ref::<SyncService>() {
+                            if let std::result::Result::Ok(sync_service) =
+                                ctx.service_ref::<SyncService>()
+                            {
                                 info!(
                                     "BlockConnector try connect future block ({:?},{}), peer_id:{:?}, notify Sync service check sync.",
                                     block.id(),
@@ -285,8 +289,13 @@ impl ServiceHandler<Self, NewBlockChainRequest> for BlockConnectorService {
         msg: NewBlockChainRequest,
         ctx: &mut ServiceContext<BlockConnectorService>,
     ) -> Result<()> {
-        let (new_branch, dag_parents, next_tips) = self.chain_service.switch_new_main(msg.new_head_block)?;
-        ctx.broadcast(NewHeadBlock(Arc::new(new_branch.head_block()), Some(dag_parents), Some(next_tips)));
+        let (new_branch, dag_parents, next_tips) =
+            self.chain_service.switch_new_main(msg.new_head_block)?;
+        ctx.broadcast(NewHeadBlock(
+            Arc::new(new_branch.head_block()),
+            Some(dag_parents),
+            Some(next_tips),
+        ));
         Ok(())
     }
 }

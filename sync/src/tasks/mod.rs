@@ -423,7 +423,7 @@ impl BlockLocalStore for Arc<dyn Store> {
                 Some(block) => {
                     let id = block.id();
                     let block_info = self.get_block_info(id)?;
-                    
+
                     Ok(Some(SyncBlockData::new(
                         block, block_info, None, None, 1, None, None,
                     )))

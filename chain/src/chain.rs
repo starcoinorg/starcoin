@@ -13,7 +13,7 @@ use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
     ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
-use starcoin_consensus::Consensus;
+use starcoin_consensus::{BlockDAG, Consensus, FlexiDagStorage};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
@@ -22,8 +22,8 @@ use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::flexi_dag::SyncFlexiDagSnapshot;
-use starcoin_storage::Store;
 use starcoin_storage::storage::CodecKVStore;
+use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
@@ -64,6 +64,7 @@ pub struct BlockChain {
     epoch: Epoch,
     vm_metrics: Option<VMMetrics>,
     dag_accumulator: Option<MerkleAccumulator>,
+    dag: BlockDAG,
 }
 
 impl BlockChain {
@@ -71,12 +72,13 @@ impl BlockChain {
         time_service: Arc<dyn TimeService>,
         head_block_hash: HashValue,
         storage: Arc<dyn Store>,
+        dag_store: FlexiDagStorage,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let head = storage
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
-        Self::new_with_uncles(time_service, head, None, storage, vm_metrics)
+        Self::new_with_uncles(time_service, head, None, storage, vm_metrics, dag_store)
     }
 
     fn new_with_uncles(
@@ -85,6 +87,7 @@ impl BlockChain {
         uncles: Option<HashMap<HashValue, MintedUncleNumber>>,
         storage: Arc<dyn Store>,
         vm_metrics: Option<VMMetrics>,
+        dag_store: FlexiDagStorage,
     ) -> Result<Self> {
         let block_info = storage
             .get_block_info(head_block.id())?
@@ -108,7 +111,11 @@ impl BlockChain {
             )),
             None => None,
         };
-        let dag_snapshot_tips = storage.get_accumulator_snapshot_storage().get(head_id)?.map(|snapshot| snapshot.child_hashes);
+        let dag_snapshot_tips = storage
+            .get_accumulator_snapshot_storage()
+            .get(head_id)?
+            .map(|snapshot| snapshot.child_hashes);
+        let dag = BlockDAG::new(genesis,16,dag_store),
         let mut chain = Self {
             genesis_hash: genesis,
             time_service,
@@ -123,11 +130,7 @@ impl BlockChain {
                 storage.as_ref(),
             ),
             status: ChainStatusWithBlock {
-                status: ChainStatus::new(
-                    head_block.header.clone(),
-                    block_info,
-                    dag_snapshot_tips,
-                ),
+                status: ChainStatus::new(head_block.header.clone(), block_info, dag_snapshot_tips),
                 head: head_block,
             },
             statedb: chain_state,
@@ -136,6 +139,7 @@ impl BlockChain {
             epoch,
             vm_metrics,
             dag_accumulator,
+            dag,
         };
         watch(CHAIN_WATCH_NAME, "n1251");
         match uncles {
@@ -638,21 +642,25 @@ impl BlockChain {
         );
         Ok(())
     }
-    
+
     pub fn dag_parents_in_tips(&self, dag_parents: Vec<HashValue>) -> Result<bool> {
-        Ok(dag_parents.into_iter().all(|parent| {
-            match &self.status.status.tips_hash {
+        Ok(dag_parents
+            .into_iter()
+            .all(|parent| match &self.status.status.tips_hash {
                 Some(tips) => tips.contains(&parent),
                 None => false,
-            }
-        }))
+            }))
     }
 
     pub fn is_head_of_dag_accumulator(&self, next_tips: Vec<HashValue>) -> Result<bool> {
         let key = Self::calculate_dag_accumulator_key(next_tips)?;
         let next_tips_info = self.storage.get_dag_accumulator_info(key)?;
 
-        return Ok(next_tips_info == self.dag_accumulator.as_ref().map(|accumulator| accumulator.get_info()));
+        return Ok(next_tips_info
+            == self
+                .dag_accumulator
+                .as_ref()
+                .map(|accumulator| accumulator.get_info()));
     }
 }
 

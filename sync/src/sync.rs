@@ -95,22 +95,26 @@ impl SyncService {
         // let genesis = storage
         //     .get_genesis()?
         //     .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
-        let dag_accumulator_info = match storage.get_dag_accumulator_info(head_block_info.block_id().clone())? {
-            Some(info) => Some(info),
-            None => {
-                warn!(
-                    "Can not find dag accumulator info by head block id: {}, use genesis info.",
-                    head_block_info.block_id(),
-                );
-                None
-            }
-        };
+        let dag_accumulator_info =
+            match storage.get_dag_accumulator_info(head_block_info.block_id().clone())? {
+                Some(info) => Some(info),
+                None => {
+                    warn!(
+                        "Can not find dag accumulator info by head block id: {}, use genesis info.",
+                        head_block_info.block_id(),
+                    );
+                    None
+                }
+            };
         Ok(Self {
-            sync_status: SyncStatus::new(ChainStatus::new(
-                head_block.header.clone(),
-                head_block_info,
-                Some(storage.get_tips_by_block_id(head_block_hash)?),
-            ), dag_accumulator_info),
+            sync_status: SyncStatus::new(
+                ChainStatus::new(
+                    head_block.header.clone(),
+                    head_block_info,
+                    Some(storage.get_tips_by_block_id(head_block_hash)?),
+                ),
+                dag_accumulator_info,
+            ),
             stage: SyncStage::NotStart,
             config,
             storage,
