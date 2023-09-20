@@ -3,8 +3,8 @@
 #RUST_LOG=info cargo bench --features fuzzing -p 'starcoin-transaction-benchmarks'
 
 STARCOIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
-TXN_NUMS=10000
-ACCOUNT_NUMS=2,10,100
+TXN_NUMS=1000
+ACCOUNT_NUMS=2
 
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     # Linux
@@ -39,4 +39,4 @@ IFS=','
 power_of_two_str="${power_of_two_array[*]}"
 
 #echo "Power of two array: ${power_of_two_str[@]}"
-eval RUST_LOG=info cargo run --release -p "starcoin-transaction-benchmarks" --features fuzzing -- --concurrency-level "4,8,16,24,32" --txn-nums "$TXN_NUMS" --account-nums="$ACCOUNT_NUMS"
+eval RUST_LOG=info cargo run --release -p "starcoin-transaction-benchmarks" --features fuzzing -- --concurrency-level "4" --txn-nums "$TXN_NUMS" --account-nums="$ACCOUNT_NUMS"
