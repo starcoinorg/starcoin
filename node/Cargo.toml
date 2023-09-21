@@ -44,6 +44,7 @@ starcoin-txpool = { workspace = true }
 starcoin-txpool-api = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
+starcoin-schemadb = { workspace = true }
 thiserror = { workspace = true }
 timeout-join-handler = { workspace = true }
 tokio = { features = ["full"], workspace = true }

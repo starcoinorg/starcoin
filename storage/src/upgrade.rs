@@ -58,12 +58,12 @@ impl DBUpgrade {
     }
 
     fn db_upgrade_v1_v2(instance: &mut StorageInstance) -> Result<()> {
-        let ledger_db = std::sync::Arc::clone(instance.db().unwrap());
-        let old_transaction_info_storage = OldTransactionInfoStorage::new(&ledger_db);
+        let ledger_db = instance.db().unwrap();
+        let old_transaction_info_storage = OldTransactionInfoStorage::new(ledger_db);
         let block_storage = BlockStorage::new(instance.clone());
-        let block_info_storage = BlockInfoStorage::new(&ledger_db);
-        let transaction_info_storage = TransactionInfoStorage::new(&ledger_db);
-        let transaction_storage = TransactionStorage::new(&ledger_db);
+        let block_info_storage = BlockInfoStorage::new(ledger_db);
+        let transaction_info_storage = TransactionInfoStorage::new(ledger_db);
+        let transaction_storage = TransactionStorage::new(ledger_db);
         let mut iter = old_transaction_info_storage.iter()?;
         iter.seek_to_first();
         let mut processed_count = 0;

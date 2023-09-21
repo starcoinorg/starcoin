@@ -5,7 +5,7 @@ use forkable_jellyfish_merkle::blob::Blob;
 use forkable_jellyfish_merkle::{HashValueKey, RawKey};
 use starcoin_config::RocksdbConfig;
 use starcoin_crypto::hash::*;
-use starcoin_storage::db_storage::DBStorage;
+use starcoin_schemadb::db::DBStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use std::collections::HashMap;

@@ -34,7 +34,7 @@ impl<S: Schema> TransactionStore<S> {
     }
 
     pub fn multi_get(&self, keys: &[S::Key]) -> Result<Vec<Option<S::Value>>> {
-        self.db.batched_multi_get::<S>(keys)
+        self.db.multi_get::<S>(keys)
     }
 
     pub fn put(&self, key: &S::Key, value: &S::Value) -> Result<()> {

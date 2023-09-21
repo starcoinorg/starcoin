@@ -1,8 +1,10 @@
 use crate::BLOCK_PREFIX_NAME;
 use bcs_ext::BCSCodec;
 use starcoin_crypto::HashValue;
-use starcoin_schemadb::define_schema;
-use starcoin_schemadb::schema::{KeyCodec, ValueCodec};
+use starcoin_schemadb::{
+    define_schema,
+    schema::{KeyCodec, ValueCodec},
+};
 use starcoin_types::block::Block;
 
 define_schema!(BlockInner, HashValue, Block, BLOCK_PREFIX_NAME);

@@ -56,7 +56,6 @@ pub mod block_info;
 pub mod cache_storage;
 pub mod chain_info;
 pub mod contract_event;
-pub mod db_storage;
 pub mod errors {
     pub use starcoin_schemadb::error::StorageInitError;
 }
@@ -70,8 +69,6 @@ pub mod table_info;
 mod tests;
 mod upgrade;
 
-#[macro_use]
-pub mod storage_macros;
 pub mod schema;
 mod transaction_store;
 

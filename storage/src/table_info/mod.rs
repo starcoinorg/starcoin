@@ -35,7 +35,7 @@ impl TableInfoStore for TableInfoStorage {
     }
 
     fn get_table_infos(&self, keys: &[TableHandle]) -> Result<Vec<Option<TableInfo>>> {
-        self.db.batched_multi_get::<TableInfoSchema>(keys)
+        self.db.multi_get::<TableInfoSchema>(keys)
     }
 
     fn save_table_infos(&self, table_infos: &[(TableHandle, TableInfo)]) -> Result<()> {

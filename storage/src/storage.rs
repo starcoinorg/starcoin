@@ -1,12 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    cache_storage::GCacheStorage,
-    db_storage::{ClassicIter, SchemaIterator},
-    upgrade::DBUpgrade,
-};
-use anyhow::{bail, format_err, Result};
+use crate::{cache_storage::GCacheStorage, upgrade::DBUpgrade};
+use anyhow::{bail, Result};
 use byteorder::{BigEndian, ReadBytesExt};
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
@@ -129,14 +125,14 @@ impl InnerStore for StorageInstance {
     fn get_raw(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         match self {
             StorageInstance::CACHE { cache } => cache.get_raw(prefix_name, key),
-            StorageInstance::DB { db } => db.get_raw(prefix_name, key),
+            StorageInstance::DB { db } => db.get_no_schema(prefix_name, &key),
             StorageInstance::CacheAndDb { cache, db } => {
                 // first get from cache
                 // if from cache get non-existent, query from db
                 if let Ok(Some(value)) = cache.get_raw(prefix_name, key.clone()) {
                     Ok(Some(value))
                 } else {
-                    match db.get_raw(prefix_name, key)? {
+                    match db.get_no_schema(prefix_name, &key)? {
                         Some(value) => {
                             // cache.put_obj(prefix_name, key, CacheObject::Value(value.clone()))?;
                             Ok(Some(value))
@@ -155,9 +151,9 @@ impl InnerStore for StorageInstance {
     fn put_raw(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         match self {
             StorageInstance::CACHE { cache } => cache.put_raw(prefix_name, key, value),
-            StorageInstance::DB { db } => db.put_raw(prefix_name, key, value),
+            StorageInstance::DB { db } => db.put_no_schema(prefix_name, &key, &value),
             StorageInstance::CacheAndDb { cache, db } => db
-                .put_raw(prefix_name, key.clone(), value.clone())
+                .put_no_schema(prefix_name, &key, &value)
                 .and_then(|_| cache.put_raw(prefix_name, key, value)),
         }
     }
@@ -165,11 +161,11 @@ impl InnerStore for StorageInstance {
     fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool> {
         match self {
             StorageInstance::CACHE { cache } => cache.contains_key(prefix_name, key),
-            StorageInstance::DB { db } => db.contains_key(prefix_name, key),
+            StorageInstance::DB { db } => db.contains_key(prefix_name, &key),
             StorageInstance::CacheAndDb { cache, db } => {
                 match cache.contains_key(prefix_name, key.clone()) {
                     Ok(true) => Ok(true),
-                    _ => db.contains_key(prefix_name, key),
+                    _ => db.contains_key(prefix_name, &key),
                 }
             }
         }
@@ -178,9 +174,9 @@ impl InnerStore for StorageInstance {
     fn remove_raw(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
         match self {
             StorageInstance::CACHE { cache } => cache.remove_raw(prefix_name, key),
-            StorageInstance::DB { db } => db.remove_raw(prefix_name, key),
+            StorageInstance::DB { db } => db.remove_no_schema(prefix_name, &key),
             StorageInstance::CacheAndDb { cache, db } => {
-                match db.remove_raw(prefix_name, key.clone()) {
+                match db.remove_no_schema(prefix_name, &key) {
                     Ok(_) => cache.remove_raw(prefix_name, key),
                     _ => bail!("db storage remove error."),
                 }
@@ -191,9 +187,11 @@ impl InnerStore for StorageInstance {
     fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
         match self {
             StorageInstance::CACHE { cache } => cache.write_batch(prefix_name, batch),
-            StorageInstance::DB { db } => db.write_batch(prefix_name, batch),
+            StorageInstance::DB { db } => {
+                db.write_batch_inner(prefix_name, batch.rows.as_ref(), true)
+            }
             StorageInstance::CacheAndDb { cache, db } => {
-                match db.write_batch(prefix_name, batch.clone()) {
+                match db.write_batch_inner(prefix_name, batch.rows.as_ref(), true) {
                     Ok(_) => cache.write_batch(prefix_name, batch),
                     Err(err) => bail!("write batch db error: {}", err),
                 }
@@ -217,11 +215,13 @@ impl InnerStore for StorageInstance {
     }
 
     fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+        let mut opts = rocksdb::WriteOptions::default();
+        opts.set_sync(true);
         match self {
             StorageInstance::CACHE { cache } => cache.put_raw(prefix_name, key, value),
-            StorageInstance::DB { db } => db.put_sync(prefix_name, key, value),
+            StorageInstance::DB { db } => db.put_no_schema_opt(prefix_name, &key, &value, &opts),
             StorageInstance::CacheAndDb { cache, db } => db
-                .put_sync(prefix_name, key.clone(), value.clone())
+                .put_no_schema_opt(prefix_name, &key, &value, &opts)
                 .and_then(|_| cache.put_raw(prefix_name, key, value)),
         }
     }
@@ -229,9 +229,9 @@ impl InnerStore for StorageInstance {
     fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
         match self {
             StorageInstance::CACHE { cache } => cache.write_batch(prefix_name, batch),
-            StorageInstance::DB { db } => db.write_batch_sync(prefix_name, batch),
+            StorageInstance::DB { db } => db.write_batch_inner(prefix_name, &batch.rows, true),
             StorageInstance::CacheAndDb { cache, db } => {
-                match db.write_batch_sync(prefix_name, batch.clone()) {
+                match db.write_batch_inner(prefix_name, &batch.rows, true) {
                     Ok(_) => cache.write_batch(prefix_name, batch),
                     Err(err) => bail!("write batch db error: {}", err),
                 }
@@ -242,7 +242,7 @@ impl InnerStore for StorageInstance {
     fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
         match self {
             StorageInstance::CACHE { cache } => cache.multi_get(prefix_name, keys),
-            StorageInstance::DB { db } => db.multi_get(prefix_name, keys),
+            StorageInstance::DB { db } => db.multi_get_no_schema(prefix_name, &keys),
             StorageInstance::CacheAndDb { db, .. } => {
                 /* https://github.com/facebook/rocksdb/wiki/Block-Cache#lru-cache
                 * if use multi_get from CacheStorage, cache may evict some records
@@ -275,7 +275,7 @@ impl InnerStore for StorageInstance {
                 }
                 Ok(result)
                  */
-                db.multi_get(prefix_name, keys)
+                db.multi_get_no_schema(prefix_name, &keys)
             }
         }
     }
@@ -485,7 +485,7 @@ where
 
     fn get_raw(&self, key: K) -> Result<Option<Vec<u8>>>;
 
-    fn iter(&self) -> Result<SchemaIterator<K, V>>;
+    //    fn iter(&self) -> Result<SchemaIterator<K, V>>;
 }
 
 impl KeyCodec for u64 {
@@ -621,12 +621,13 @@ where
         KVStore::get(self.get_store(), key.encode_key()?.as_slice())
     }
 
-    fn iter(&self) -> Result<SchemaIterator<K, V>> {
-        let db = self
-            .get_store()
-            .storage()
-            .db()
-            .ok_or_else(|| format_err!("Only support scan on db storage instance"))?;
-        db.iter_raw::<K, V>(self.get_store().prefix_name)
-    }
+    //fn iter(&self) -> Result<SchemaIterator<K, V>> {
+    //    let db = self
+    //        .get_store()
+    //        .storage()
+    //        .db()
+    //        .ok_or_else(|| format_err!("Only support scan on db storage instance"))?;
+    //    db.iter_raw::<K, V>(self.get_store().prefix_name)
+    //    unimplemented!()
+    //}
 }

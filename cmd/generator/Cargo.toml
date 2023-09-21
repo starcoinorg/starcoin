@@ -21,6 +21,7 @@ starcoin-genesis = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
+starcoin-schemadb = { workspace = true }
 
 [features]
 default = []

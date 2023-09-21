@@ -3,11 +3,11 @@
 
 // use crate::DiemDB;
 use crate::cache_storage::CacheStorage;
-use crate::db_storage::DBStorage;
 use crate::storage::StorageInstance;
 use crate::{Storage, TransactionStore};
 use proptest::{collection::vec, prelude::*};
 use starcoin_config::RocksdbConfig;
+use starcoin_schemadb::db::DBStorage;
 use starcoin_types::{
     proptest_types::{AccountInfoUniverse, Index, SignatureCheckedTransactionGen},
     transaction::Transaction,

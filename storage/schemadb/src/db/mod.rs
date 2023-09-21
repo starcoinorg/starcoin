@@ -11,9 +11,7 @@ use crate::{
     ColumnFamilyName, SchemaBatch, SchemaIterator, WriteOp,
 };
 use anyhow::{ensure, format_err, Error, Result};
-use rocksdb::{
-    DBIterator, IteratorMode, Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB,
-};
+use rocksdb::{Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB};
 use starcoin_config::{check_open_fds_limit, RocksdbConfig};
 use std::collections::HashSet;
 use std::path::Path;
@@ -26,17 +24,9 @@ pub struct DBStorage {
     name: String, // for logging
     db: DB,
     cfs: Vec<ColumnFamilyName>,
-    metrics: Option<StorageMetrics>,
+    _metrics: Option<StorageMetrics>,
 }
 impl DBStorage {
-    pub fn db(&self) -> &DB {
-        &self.db
-    }
-
-    pub fn metrics(&self) -> Option<&StorageMetrics> {
-        self.metrics.as_ref()
-    }
-
     pub fn new<P: AsRef<Path> + Clone>(
         db_root_path: P,
         rocksdb_config: RocksdbConfig,
@@ -150,7 +140,7 @@ impl DBStorage {
             name: name.to_string(),
             db,
             cfs: column_families,
-            metrics,
+            _metrics: metrics,
         })
     }
 
@@ -200,13 +190,6 @@ impl DBStorage {
         Ok(inner)
     }
 
-    pub fn drop_cf(&mut self) -> Result<(), Error> {
-        for cf in self.cfs.clone() {
-            self.db.drop_cf(cf)?;
-        }
-        Ok(())
-    }
-
     pub fn drop_unused_cfs(&mut self, names: Vec<&str>) -> Result<(), Error> {
         // https://github.com/facebook/rocksdb/issues/1295
         for name in names {
@@ -236,6 +219,7 @@ impl DBStorage {
         Ok(self.db.flush_cf(cf_handle)?)
     }
 
+    // todo: make me private
     pub fn write_batch_inner(&self, prefix_name: &str, rows: &[WriteOp], sync: bool) -> Result<()> {
         let mut db_batch = DBWriteBatch::default();
         let cf_handle = self.get_cf_handle(prefix_name)?;
@@ -257,7 +241,7 @@ impl DBStorage {
     }
 
     /// List cf
-    pub fn list_cf(path: impl AsRef<Path>) -> Result<Vec<String>, Error> {
+    fn list_cf(path: impl AsRef<Path>) -> Result<Vec<String>, Error> {
         Ok(DB::list_cf(&Options::default(), path)?)
     }
 
@@ -266,7 +250,7 @@ impl DBStorage {
         rocksdb_current_file.is_file()
     }
 
-    pub fn get_cf_handle(&self, cf_name: &str) -> Result<&rocksdb::ColumnFamily> {
+    fn get_cf_handle(&self, cf_name: &str) -> Result<&rocksdb::ColumnFamily> {
         self.db.cf_handle(cf_name).ok_or_else(|| {
             format_err!(
                 "DB::cf_handle not found for column family name: {}",
@@ -275,7 +259,7 @@ impl DBStorage {
         })
     }
 
-    pub fn default_write_options() -> WriteOptions {
+    fn default_write_options() -> WriteOptions {
         let mut opts = WriteOptions::new();
         opts.set_sync(false);
         opts
@@ -301,17 +285,7 @@ impl DBStorage {
         db_opts
     }
 
-    pub fn raw_iterator_cf_opt(
-        &self,
-        prefix_name: &str,
-        mode: IteratorMode,
-        readopts: ReadOptions,
-    ) -> Result<DBIterator> {
-        let cf_handle = self.get_cf_handle(prefix_name)?;
-        Ok(self.db.iterator_cf_opt(cf_handle, readopts, mode))
-    }
-
-    pub fn sync_write_options() -> WriteOptions {
+    fn sync_write_options() -> WriteOptions {
         let mut opts = WriteOptions::new();
         opts.set_sync(true);
         opts
@@ -399,7 +373,7 @@ impl DBStorage {
             })
     }
 
-    pub fn batched_multi_get<S: Schema>(&self, keys: &[S::Key]) -> Result<Vec<Option<S::Value>>> {
+    pub fn multi_get<S: Schema>(&self, keys: &[S::Key]) -> Result<Vec<Option<S::Value>>> {
         let cf_handle = self.get_cf_handle(S::COLUMN_FAMILY)?;
         let keys = keys
             .iter()
@@ -491,5 +465,41 @@ impl DBStorage {
     ) -> Result<()> {
         let cf = self.get_cf_handle(cf_name)?;
         self.db.put_cf_opt(cf, key, value, opts).map_err(Into::into)
+    }
+
+    pub fn contains_key(&self, cf_name: &str, key: &[u8]) -> Result<bool> {
+        self.get_no_schema(cf_name, key).map(|s| s.is_some())
+    }
+
+    pub fn remove_no_schema(&self, cf_name: &str, key: &[u8]) -> Result<()> {
+        let cf_handle = self.get_cf_handle(cf_name)?;
+        self.db.delete_cf(cf_handle, key).map_err(Into::into)
+    }
+
+    pub fn multi_get_no_schema(
+        &self,
+        cf_name: &str,
+        keys: &[Vec<u8>],
+    ) -> Result<Vec<Option<Vec<u8>>>> {
+        let cf_handle = self.get_cf_handle(cf_name)?;
+        self.db
+            .batched_multi_get_cf(cf_handle, keys, false)
+            .into_iter()
+            .map(|result| {
+                result
+                    .map_err(Into::into)
+                    .map(|raw| raw.map(|v| v.to_vec()))
+            })
+            .collect::<Result<Vec<_>>>()
+    }
+
+    pub fn iter_no_schema(
+        &self,
+        cf_name: &str,
+        opts: rocksdb::ReadOptions,
+        mode: rocksdb::IteratorMode,
+    ) -> Result<rocksdb::DBIterator> {
+        let cf_handle = self.get_cf_handle(cf_name)?;
+        Ok(self.db.iterator_cf_opt(cf_handle, opts, mode))
     }
 }

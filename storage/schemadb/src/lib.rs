@@ -43,6 +43,12 @@ impl SchemaBatch {
         Self::default()
     }
 
+    pub fn new_bunch(cf_name: ColumnFamilyName, batch: Vec<WriteOp>) -> Self {
+        Self {
+            rows: Mutex::new(HashMap::from([(cf_name, batch)])),
+        }
+    }
+
     pub fn put<S: Schema>(&self, key: &S::Key, val: &S::Value) -> Result<()> {
         let key = <S::Key as KeyCodec<S>>::encode_key(key)?;
         let value = <S::Value as ValueCodec<S>>::encode_value(val)?;

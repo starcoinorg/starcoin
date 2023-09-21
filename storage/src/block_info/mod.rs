@@ -38,6 +38,6 @@ impl BlockInfoStorage {
     }
 
     pub(crate) fn multi_get(&self, keys: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>> {
-        self.db.batched_multi_get::<BlockInfoSchema>(&keys)
+        self.db.multi_get::<BlockInfoSchema>(&keys)
     }
 }

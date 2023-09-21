@@ -9,10 +9,10 @@ use starcoin_crypto::HashValue;
 
 use crate::block::{FailedBlock, OldFailedBlock};
 use crate::cache_storage::CacheStorage;
-use crate::db_storage::DBStorage;
 use crate::storage::StorageInstance;
 use crate::Storage;
 use starcoin_config::RocksdbConfig;
+use starcoin_schemadb::db::DBStorage;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockHeaderExtra};
 use starcoin_types::genesis_config::ChainId;

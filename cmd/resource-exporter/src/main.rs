@@ -2,11 +2,10 @@ use clap::Parser;
 use serde::{ser::SerializeMap, Serialize, Serializer};
 use starcoin_crypto::HashValue;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
+use starcoin_schemadb::db::DBStorage;
 use starcoin_state_tree::StateTree;
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::{
-    db_storage::DBStorage, storage::StorageInstance, BlockStore, Storage, StorageVersion,
-};
+use starcoin_storage::{storage::StorageInstance, BlockStore, Storage, StorageVersion};
 use starcoin_types::{
     access_path::DataType, account_state::AccountState, language_storage::StructTag,
 };

@@ -31,6 +31,7 @@ use starcoin_node_api::errors::NodeStartError;
 use starcoin_node_api::message::{NodeRequest, NodeResponse};
 use starcoin_rpc_server::module::{PubSubService, PubSubServiceFactory};
 use starcoin_rpc_server::service::RpcService;
+use starcoin_schemadb::db::DBStorage;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{
     ActorService, EventHandler, RegistryAsyncService, RegistryService, ServiceContext,
@@ -39,7 +40,6 @@ use starcoin_service_registry::{
 use starcoin_state_service::ChainStateService;
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::cache_storage::CacheStorage;
-use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::errors::StorageInitError;
 use starcoin_storage::metrics::StorageMetrics;
 use starcoin_storage::storage::StorageInstance;

@@ -4,7 +4,6 @@
 extern crate chrono;
 
 use crate::cache_storage::CacheStorage;
-use crate::db_storage::DBStorage;
 use crate::storage::{CodecKVStore, InnerStore, StorageInstance, ValueCodec};
 use crate::table_info::TableInfoStore;
 use crate::transaction_info::{BlockTransactionInfo, OldTransactionInfoStorage};
@@ -18,6 +17,7 @@ use anyhow::Result;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_config::RocksdbConfig;
 use starcoin_crypto::HashValue;
+use starcoin_schemadb::db::DBStorage;
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockBody, BlockHeader, BlockInfo},

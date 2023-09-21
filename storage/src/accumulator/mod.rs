@@ -95,7 +95,7 @@ macro_rules! impl_accumulator_tree_store_for_schema {
             }
 
             fn multiple_get(&self, keys: Vec<HashValue>) -> Result<Vec<Option<AccumulatorNode>>> {
-                self.db.batched_multi_get::<$schema>(&keys)
+                self.db.multi_get::<$schema>(&keys)
             }
 
             fn save_node(&self, node: AccumulatorNode) -> Result<()> {

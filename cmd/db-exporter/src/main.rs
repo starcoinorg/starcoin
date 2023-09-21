@@ -22,13 +22,13 @@ use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
+use starcoin_schemadb::db::DBStorage;
 use starcoin_statedb::{ChainStateDB, ChainStateReader, ChainStateWriter};
 use starcoin_storage::{
     block::FailedBlock,
     block_info::BlockInfoStore,
     cache_storage::CacheStorage,
-    db_storage::{ClassicIter, DBStorage},
-    storage::{ColumnFamilyName, InnerStore, StorageInstance},
+    storage::{ColumnFamilyName, StorageInstance},
     BlockStore, Storage, StorageVersion, Store, BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
     BLOCK_HEADER_PREFIX_NAME, BLOCK_INFO_PREFIX_NAME, BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
     STATE_NODE_PREFIX_NAME, STATE_NODE_PREFIX_NAME_PREV, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
@@ -89,8 +89,11 @@ pub fn export<W: std::io::Write>(
         Default::default(),
         None,
     )?;
-    let mut iter = db_storage.iter_raw::<Vec<u8>, Vec<u8>>(schema.to_string().as_str())?;
-    iter.seek_to_first();
+    let iter = db_storage.iter_no_schema(
+        schema.to_string().as_str(),
+        rocksdb::ReadOptions::default(),
+        rocksdb::IteratorMode::Start,
+    )?;
     let key_codec = schema.get_key_codec();
     let value_codec = schema.get_value_codec();
     let fields = schema.get_fields();
@@ -105,8 +108,8 @@ pub fn export<W: std::io::Write>(
 
     for item in iter {
         let (k, v) = item?;
-        let key = key_codec(k);
-        let value = value_codec(v)?;
+        let key = key_codec(k.to_vec());
+        let value = value_codec(v.to_vec())?;
         let object = value.as_object().expect("should be object.");
 
         let mut record = vec![key];
@@ -509,7 +512,7 @@ async fn main() -> anyhow::Result<()> {
                 None,
             )?;
 
-            let result = db.get_raw(option.cf_name.as_str(), option.block_hash.to_vec())?;
+            let result = db.get_no_schema(option.cf_name.as_str(), option.block_hash.as_slice())?;
             if result.is_some() {
                 println!("{} block_hash {} exist", option.cf_name, option.block_hash);
             } else {

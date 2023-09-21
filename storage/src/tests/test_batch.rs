@@ -3,12 +3,12 @@
 
 use crate::batch::WriteBatch;
 use crate::cache_storage::CacheStorage;
-use crate::db_storage::DBStorage;
 use crate::storage::{CodecWriteBatch, InnerStore, ValueCodec};
 use crate::{DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME_V2};
 use anyhow::Result;
 use starcoin_config::RocksdbConfig;
 use starcoin_crypto::HashValue;
+use starcoin_schemadb::db::DBStorage;
 use starcoin_types::transaction::RichTransactionInfo;
 use std::convert::TryInto;
 use std::sync::Arc;
