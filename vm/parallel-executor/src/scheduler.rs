@@ -3,14 +3,10 @@
 
 use crossbeam::utils::CachePadded;
 use starcoin_infallible::Mutex;
-use std::{
-    cmp::min,
-    hint,
-    sync::{
-        atomic::{AtomicBool, AtomicUsize, Ordering},
-        Arc, Condvar,
-    },
-};
+use std::{cmp::min, hint, sync::{
+    atomic::{AtomicBool, AtomicUsize, Ordering},
+    Arc, Condvar,
+}, thread};
 
 // Type aliases.
 pub type TxnIndex = usize;
@@ -167,35 +163,45 @@ impl Scheduler {
     /// returns false. Since incarnation numbers never decrease, this also ensures
     /// that the same version may not successfully abort more than once.
     pub fn try_abort(&self, txn_idx: TxnIndex, incarnation: Incarnation) -> bool {
+        println!("{:?} - Scheduler::try_abort | Entered, txn_idx: {:?}, incarnation: {:?}", thread::current().id(), txn_idx, incarnation);
         // lock the status.
         let mut status = self.txn_status[txn_idx].lock();
+        println!("{:?} - Scheduler::try_abort | Status: {:?} ", thread::current().id(), status);
 
         if *status == TransactionStatus::Executed(incarnation) {
             *status = TransactionStatus::Aborting(incarnation);
+            println!("{:?} - Scheduler::try_abort | Exited, status == Executed", thread::current().id());
             true
         } else {
+            println!("{:?} - Scheduler::try_abort | Exited, status != Executed", thread::current().id());
             false
         }
     }
 
     /// Return the next task for the thread.
     pub fn next_task(&self) -> SchedulerTask {
+        println!("{:?} - Scheduler::next_task | Entered", thread::current().id());
         loop {
             if self.done() {
                 // No more tasks.
+                println!("{:?} - Scheduler::next_task | Exited, has SchedulerTask::Done", thread::current().id());
                 return SchedulerTask::Done;
             }
 
             let idx_to_validate = self.validation_idx.load(Ordering::SeqCst);
             let idx_to_execute = self.execution_idx.load(Ordering::SeqCst);
 
+            println!("{:?} - Scheduler::next_task | idx_to_validate: {}, idx_to_execute: {}", thread::current().id(), idx_to_validate, idx_to_execute);
+
             if idx_to_validate < idx_to_execute {
                 if let Some((version_to_validate, guard)) = self.try_validate_next_version() {
+                    println!("{:?} - Scheduler::next_task | Exited: SchedulerTask::ValidationTask", thread::current().id());
                     return SchedulerTask::ValidationTask(version_to_validate, guard);
                 }
             } else if let Some((version_to_execute, maybe_condvar, guard)) =
                 self.try_execute_next_version()
             {
+                println!("{:?} - Scheduler::next_task | Exited: SchedulerTask::ExecutionTask", thread::current().id());
                 return SchedulerTask::ExecutionTask(version_to_execute, maybe_condvar, guard);
             }
         }
@@ -215,6 +221,8 @@ impl Scheduler {
         // Note: Could pre-check that txn dep_txn_idx isn't in an executed state, but the caller
         // usually has just observed the read dependency.
 
+        println!("{:?} - Scheduler::wait_for_dependency | Entered, txn_idx: {:#?}, dep_txn_idx: {:#?}", thread::current().id(), txn_idx, dep_txn_idx);
+
         // Create a condition variable associated with the dependency.
         let dep_condvar = Arc::new((Mutex::new(false), Condvar::new()));
 
@@ -230,6 +238,7 @@ impl Scheduler {
                 // Only place in scheduler where a thread may hold >1 mutexes, hence, such
                 // acquisitions always happens in the same order (this function), may not deadlock.
 
+                println!("{:?} - Scheduler::wait_for_dependency | Exited, return None", thread::current().id(),);
                 return None;
             }
 
@@ -240,6 +249,7 @@ impl Scheduler {
             stored_deps.push(txn_idx);
         }
 
+        println!("{:?} - Scheduler::wait_for_dependency | Exited, return Some(dep_condvar), condvar index: {:?}", thread::current().id(), txn_idx);
         Some(dep_condvar)
     }
 
@@ -254,6 +264,8 @@ impl Scheduler {
         revalidate_suffix: bool,
         guard: TaskGuard<'a>,
     ) -> SchedulerTask<'a> {
+        println!("{:?} - Scheduler::finish_execution | Entered, txn_id: {:?}, incarnation: {:?} ", thread::current().id(), txn_idx, incarnation);
+
         self.set_executed_status(txn_idx, incarnation);
 
         let txn_deps: Vec<TxnIndex> = {
@@ -273,6 +285,7 @@ impl Scheduler {
                 dep
             })
             .min();
+
         if let Some(execution_target_idx) = min_dep {
             // Decrease the execution index as necessary to ensure resolved dependencies
             // get a chance to be re-executed.
@@ -290,9 +303,13 @@ impl Scheduler {
             } else {
                 // Only transaction txn_idx requires validation. Return validation task
                 // back to the caller. No need to change active tasks (-1 +1= 0)
+                println!("{:?} - Scheduler::finish_execution | Exited, ValidationTask", thread::current().id());
+
                 return SchedulerTask::ValidationTask((txn_idx, incarnation), guard);
             }
         }
+
+        println!("{:?} - Scheduler::finish_execution | Exited, NoTask", thread::current().id());
 
         SchedulerTask::NoTask
     }
@@ -320,6 +337,8 @@ impl Scheduler {
             // nothing to do, as another thread must have succeeded to incarnate and
             // obtain the task for re-execution.
             if let Some((new_incarnation, maybe_condvar)) = self.try_incarnate(txn_idx) {
+                println!("{:?} - Scheduler::finish_abort | Exited, ExecutionTask", thread::current().id());
+
                 return SchedulerTask::ExecutionTask(
                     (txn_idx, new_incarnation),
                     maybe_condvar,
@@ -327,6 +346,8 @@ impl Scheduler {
                 );
             }
         }
+
+        println!("{:?} - Scheduler::finish_abort | Exited, NoTask", thread::current().id());
 
         SchedulerTask::NoTask
     }
@@ -461,12 +482,15 @@ impl Scheduler {
     /// incremented incarnation number.
     /// The caller must ensure that the transaction is in the Suspended state.
     fn resume(&self, txn_idx: TxnIndex) {
+        println!("{:?} - Scheduler::resume | Entered, txn_id: {:?} ", thread::current().id(), txn_idx);
+
         let mut status = self.txn_status[txn_idx].lock();
         if let TransactionStatus::Suspended(incarnation, dep_condvar) = &*status {
             *status = TransactionStatus::ReadyToExecute(*incarnation, Some(dep_condvar.clone()));
         } else {
             unreachable!();
         }
+        println!("{:?} - Scheduler::resume | Exited, txn_id: {:?} ", thread::current().id(), txn_idx);
     }
 
     /// Set status of the transaction to Executed(incarnation).
@@ -482,12 +506,16 @@ impl Scheduler {
     /// After a successful abort, mark the transaction as ready for re-execution with
     /// an incremented incarnation number.
     fn set_aborted_status(&self, txn_idx: TxnIndex, incarnation: Incarnation) {
+        println!("{:?} - Scheduler::set_aborted_status | Entered, txn_id: {:?}, incarnation: {:?}", thread::current().id(), txn_idx, incarnation);
+
         let mut status = self.txn_status[txn_idx].lock();
 
         // Only makes sense when the current status is 'Aborting'.
         debug_assert!(*status == TransactionStatus::Aborting(incarnation));
 
         *status = TransactionStatus::ReadyToExecute(incarnation + 1, None);
+
+        println!("{:?} - Scheduler::set_aborted_status | Exited, txn_id: {:?}, incarnation: {:?}", thread::current().id(), txn_idx, incarnation);
     }
 
     /// A lazy, check of whether the scheduler execution is completed.
