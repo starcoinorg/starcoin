@@ -30,16 +30,17 @@ pub static BARNARD_HARD_FORK_HASH: Lazy<HashValue> = Lazy::new(|| {
 
 impl DBUpgrade {
     pub fn check_upgrade(instance: &mut StorageInstance) -> Result<()> {
+        let ledger_db = instance.db().unwrap();
         let version_in_db = {
-            let chain_info_storage = ChainInfoStorage::new(instance.clone());
+            let chain_info_storage = ChainInfoStorage::new(ledger_db);
             chain_info_storage.get_storage_version()?
         };
         // make sure Arc::strong_count(&instance) == 1
         let version_in_code = StorageVersion::current_version();
         match version_in_db.cmp(&version_in_code) {
             Ordering::Less => {
+                let chain_info_storage = ChainInfoStorage::new(ledger_db);
                 Self::do_upgrade(version_in_db, version_in_code, instance)?;
-                let chain_info_storage = ChainInfoStorage::new(instance.clone());
                 chain_info_storage.set_storage_version(version_in_code)?;
             }
             Ordering::Equal => {
@@ -194,8 +195,9 @@ impl DBUpgrade {
     }
 
     pub fn barnard_hard_fork(instance: &mut StorageInstance) -> Result<()> {
+        let ledger_db = instance.db().unwrap();
         let block_storage = BlockStorage::new(instance.clone());
-        let chain_info_storage = ChainInfoStorage::new(instance.clone());
+        let chain_info_storage = ChainInfoStorage::new(ledger_db);
         let barnard_hard_fork = chain_info_storage.get_barnard_hard_fork()?;
 
         let barnard_info = BarnardHardFork::new(BARNARD_HARD_FORK_HEIGHT, *BARNARD_HARD_FORK_HASH);

@@ -481,4 +481,15 @@ impl DBStorage {
         let cf = self.get_cf_handle(cf_name)?;
         self.db.put_cf(cf, key, value).map_err(Into::into)
     }
+
+    pub fn put_no_schema_opt(
+        &self,
+        cf_name: &str,
+        key: &[u8],
+        value: &[u8],
+        opts: &WriteOptions,
+    ) -> Result<()> {
+        let cf = self.get_cf_handle(cf_name)?;
+        self.db.put_cf_opt(cf, key, value, opts).map_err(Into::into)
+    }
 }

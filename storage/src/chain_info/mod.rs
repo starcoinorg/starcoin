@@ -1,26 +1,18 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::storage::{ColumnFamily, InnerStorage, KVStore};
 use crate::{StorageVersion, CHAIN_INFO_PREFIX_NAME};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
+use starcoin_schemadb::db::DBStorage;
 use starcoin_types::startup_info::{BarnardHardFork, SnapshotRange, StartupInfo};
 use std::convert::{TryFrom, TryInto};
+use std::sync::Arc;
 
 #[derive(Clone)]
-pub struct ChainInfoColumnFamily;
-
-impl ColumnFamily for ChainInfoColumnFamily {
-    type Key = String;
-    type Value = Vec<u8>;
-
-    fn name() -> &'static str {
-        CHAIN_INFO_PREFIX_NAME
-    }
+pub(crate) struct ChainInfoStorage {
+    db: Arc<DBStorage>,
 }
-
-pub type ChainInfoStorage = InnerStorage<ChainInfoColumnFamily>;
 
 impl ChainInfoStorage {
     const STARTUP_INFO_KEY: &'static str = "startup_info";
@@ -28,6 +20,25 @@ impl ChainInfoStorage {
     const STORAGE_VERSION_KEY: &'static str = "storage_version";
     const SNAPSHOT_RANGE_KEY: &'static str = "snapshot_height";
     const BARNARD_HARD_FORK: &'static str = "barnard_hard_fork";
+
+    pub(crate) fn new(db: &Arc<DBStorage>) -> Self {
+        Self { db: Arc::clone(db) }
+    }
+
+    fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        self.db.get_no_schema(CHAIN_INFO_PREFIX_NAME, key)
+    }
+
+    fn put_sync(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+        let mut write_opts = rocksdb::WriteOptions::new();
+        write_opts.set_sync(true);
+        self.db.put_no_schema_opt(
+            CHAIN_INFO_PREFIX_NAME,
+            key.as_slice(),
+            value.as_slice(),
+            &write_opts,
+        )
+    }
 
     pub fn get_startup_info(&self) -> Result<Option<StartupInfo>> {
         self.get(Self::STARTUP_INFO_KEY.as_bytes())

@@ -221,7 +221,7 @@ impl Storage {
             ),
             block_info_storage: BlockInfoStorage::new(ledger_db),
             event_storage: ContractEventStorage::new(ledger_db),
-            chain_info_storage: ChainInfoStorage::new(instance.clone()),
+            chain_info_storage: ChainInfoStorage::new(ledger_db),
             table_info_storage: TableInfoStorage::new(ledger_db),
             // instance,
         };
