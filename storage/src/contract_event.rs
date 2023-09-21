@@ -1,41 +1,38 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::define_storage;
-use crate::storage::{CodecKVStore, ValueCodec};
-use crate::{ContractEventStore, CONTRACT_EVENT_PREFIX_NAME};
+use crate::{schema::contract_event::ContractEvent as ContractEventSchema, ContractEventStore};
 use anyhow::Result;
-use bcs_ext::BCSCodec;
 use starcoin_crypto::HashValue;
+use starcoin_schemadb::db::DBStorage;
 use starcoin_types::contract_event::ContractEvent;
+use std::sync::Arc;
 
-define_storage!(
-    ContractEventStorage,
-    HashValue,
-    Vec<ContractEvent>,
-    CONTRACT_EVENT_PREFIX_NAME
-);
+#[derive(Clone)]
+pub(crate) struct ContractEventStorage {
+    db: Arc<DBStorage>,
+}
 
-impl ValueCodec for Vec<ContractEvent> {
-    fn encode_value(&self) -> Result<Vec<u8>> {
-        self.encode()
+impl ContractEventStorage {
+    pub(crate) fn new(db: &Arc<DBStorage>) -> Self {
+        Self { db: Arc::clone(db) }
     }
 
-    fn decode_value(data: &[u8]) -> Result<Self> {
-        Self::decode(data)
+    pub(crate) fn get(&self, key: &HashValue) -> Result<Option<Vec<ContractEvent>>> {
+        self.db.get::<ContractEventSchema>(key)
     }
 }
 
 impl ContractEventStore for ContractEventStorage {
     fn save_contract_events(
         &self,
-        txn_info_id: HashValue,
-        events: Vec<ContractEvent>,
+        txn_info_id: &HashValue,
+        events: &Vec<ContractEvent>,
     ) -> Result<()> {
-        self.put(txn_info_id, events)
+        self.db.put::<ContractEventSchema>(txn_info_id, events)
     }
 
-    fn get_contract_events(&self, txn_info_id: HashValue) -> Result<Option<Vec<ContractEvent>>> {
-        self.get(txn_info_id)
+    fn get_contract_events(&self, txn_info_id: &HashValue) -> Result<Option<Vec<ContractEvent>>> {
+        self.db.get::<ContractEventSchema>(txn_info_id)
     }
 }

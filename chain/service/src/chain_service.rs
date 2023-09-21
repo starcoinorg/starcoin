@@ -340,7 +340,7 @@ impl ReadableChainService for ChainReaderServiceInner {
         &self,
         txn_info_id: HashValue,
     ) -> Result<Option<Vec<ContractEvent>>, Error> {
-        self.storage.get_contract_events(txn_info_id)
+        self.storage.get_contract_events(&txn_info_id)
     }
 
     fn main_head_header(&self) -> BlockHeader {

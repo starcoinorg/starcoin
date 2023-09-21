@@ -1,61 +1,48 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::storage::{CodecKVStore, CodecWriteBatch, ValueCodec};
-use crate::{define_storage, TABLE_INFO_PREFIX_NAME};
+use crate::schema::table_info::TableInfoSchema;
 use anyhow::Result;
-use bcs_ext::BCSCodec;
+use starcoin_schemadb::{db::DBStorage, SchemaBatch};
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use std::sync::Arc;
 
-define_storage!(
-    TableInfoStorage,
-    TableHandle,
-    TableInfo,
-    TABLE_INFO_PREFIX_NAME
-);
+#[derive(Clone)]
+pub(crate) struct TableInfoStorage {
+    db: Arc<DBStorage>,
+}
+
+impl TableInfoStorage {
+    pub(crate) fn new(db: &Arc<DBStorage>) -> Self {
+        Self { db: Arc::clone(db) }
+    }
+}
 
 pub trait TableInfoStore {
-    fn get_table_info(&self, key: TableHandle) -> Result<Option<TableInfo>>;
-    fn save_table_info(&self, key: TableHandle, table_info: TableInfo) -> Result<()>;
-    fn get_table_infos(&self, keys: Vec<TableHandle>) -> Result<Vec<Option<TableInfo>>>;
-    fn save_table_infos(&self, table_infos: Vec<(TableHandle, TableInfo)>) -> Result<()>;
-}
-
-impl ValueCodec for TableHandle {
-    fn encode_value(&self) -> Result<Vec<u8>> {
-        self.encode()
-    }
-
-    fn decode_value(data: &[u8]) -> Result<Self> {
-        Self::decode(data)
-    }
-}
-
-impl ValueCodec for TableInfo {
-    fn encode_value(&self) -> Result<Vec<u8>> {
-        self.encode()
-    }
-
-    fn decode_value(data: &[u8]) -> Result<Self> {
-        Self::decode(data)
-    }
+    fn get_table_info(&self, key: &TableHandle) -> Result<Option<TableInfo>>;
+    fn save_table_info(&self, key: &TableHandle, table_info: &TableInfo) -> Result<()>;
+    fn get_table_infos(&self, keys: &[TableHandle]) -> Result<Vec<Option<TableInfo>>>;
+    fn save_table_infos(&self, table_infos: &[(TableHandle, TableInfo)]) -> Result<()>;
 }
 
 impl TableInfoStore for TableInfoStorage {
-    fn get_table_info(&self, key: TableHandle) -> Result<Option<TableInfo>> {
-        self.get(key)
+    fn get_table_info(&self, key: &TableHandle) -> Result<Option<TableInfo>> {
+        self.db.get::<TableInfoSchema>(key)
     }
 
-    fn save_table_info(&self, key: TableHandle, table_info: TableInfo) -> Result<()> {
-        self.put(key, table_info)
+    fn save_table_info(&self, key: &TableHandle, table_info: &TableInfo) -> Result<()> {
+        self.db.put::<TableInfoSchema>(key, table_info)
     }
 
-    fn get_table_infos(&self, keys: Vec<TableHandle>) -> Result<Vec<Option<TableInfo>>> {
-        self.multiple_get(keys)
+    fn get_table_infos(&self, keys: &[TableHandle]) -> Result<Vec<Option<TableInfo>>> {
+        self.db.batched_multi_get::<TableInfoSchema>(keys)
     }
 
-    fn save_table_infos(&self, table_infos: Vec<(TableHandle, TableInfo)>) -> Result<()> {
-        let batch = CodecWriteBatch::new_puts(table_infos);
-        self.write_batch(batch)
+    fn save_table_infos(&self, table_infos: &[(TableHandle, TableInfo)]) -> Result<()> {
+        let batch = SchemaBatch::new();
+        for info in table_infos {
+            batch.put::<TableInfoSchema>(&info.0, &info.1)?;
+        }
+        self.db.write_schemas(batch)
     }
 }

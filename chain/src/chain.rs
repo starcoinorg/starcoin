@@ -478,7 +478,7 @@ impl BlockChain {
             .map(|info| (info.transaction_hash(), info.id()))
             .collect();
         for ((_, info_id), events) in txn_info_ids.iter().zip(txn_events.into_iter()) {
-            storage.save_contract_events(*info_id, events)?;
+            storage.save_contract_events(info_id, &events)?;
         }
 
         let merged_txn_info_ids = storage.merge_transaction_info_ids(&txn_info_ids)?;
@@ -521,7 +521,7 @@ impl BlockChain {
 
         storage.save_block_info(block_info.clone())?;
 
-        storage.save_table_infos(txn_table_infos)?;
+        storage.save_table_infos(&txn_table_infos)?;
 
         watch(CHAIN_WATCH_NAME, "n26");
         Ok(ExecutedBlock { block, block_info })
@@ -807,7 +807,7 @@ impl ChainReader for BlockChain {
     }
 
     fn get_events(&self, txn_info_id: HashValue) -> Result<Option<Vec<ContractEvent>>> {
-        self.storage.get_contract_events(txn_info_id)
+        self.storage.get_contract_events(&txn_info_id)
     }
 
     fn get_transaction_proof(
@@ -847,7 +847,7 @@ impl ChainReader for BlockChain {
         let event_proof = if let Some(event_index) = event_index {
             let events = self
                 .storage
-                .get_contract_events(txn_info_hash)?
+                .get_contract_events(&txn_info_hash)?
                 .unwrap_or_default();
             let event = events.get(event_index as usize).cloned().ok_or_else(|| {
                 format_err!("event index out of range, events len:{}", events.len())
@@ -912,7 +912,7 @@ impl BlockChain {
                 txn_info_ids.reverse();
             }
             for id in txn_info_ids.iter() {
-                let events = self.storage.get_contract_events(*id)?.ok_or_else(|| {
+                let events = self.storage.get_contract_events(id)?.ok_or_else(|| {
                     anyhow::anyhow!(format!(
                         "cannot find events of txn with txn_info_id {} on main chain(header: {})",
                         id,

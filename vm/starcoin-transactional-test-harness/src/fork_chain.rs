@@ -151,7 +151,7 @@ impl ForkBlockChain {
             TransactionInfo::new(txn_hash, state_root, events.as_slice(), gas_used, status);
         self.txn_accumulator.append(&[txn_info.id()])?;
 
-        self.storage.save_contract_events(txn_hash, events)?;
+        self.storage.save_contract_events(&txn_hash, &events)?;
         self.storage.save_transaction(txn)?;
         Ok(())
     }

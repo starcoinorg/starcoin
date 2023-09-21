@@ -16,7 +16,7 @@ use crate::{
     chain_info::ChainInfoStorage,
     contract_event::ContractEventStorage,
     state_node::StateStorage,
-    storage::{CodecKVStore, CodecWriteBatch, StorageInstance},
+    storage::StorageInstance,
     table_info::{TableInfoStorage, TableInfoStore},
 };
 use anyhow::{bail, format_err, Error, Result};
@@ -168,14 +168,14 @@ pub trait ContractEventStore {
     /// As txn_info has accumulator root of events, so there is a one-to-one mapping.
     fn save_contract_events(
         &self,
-        txn_info_id: HashValue,
-        events: Vec<ContractEvent>,
+        txn_info_id: &HashValue,
+        events: &Vec<ContractEvent>,
     ) -> Result<()>;
 
     /// Get events by `txn_info_id`.
     /// If the txn_info_id does not exists in the store, return `None`.
     /// NOTICE: *don't exists* is different with *no events produced*.
-    fn get_contract_events(&self, txn_info_id: HashValue) -> Result<Option<Vec<ContractEvent>>>;
+    fn get_contract_events(&self, txn_info_id: &HashValue) -> Result<Option<Vec<ContractEvent>>>;
 }
 
 pub trait TransactionStore {
@@ -220,9 +220,9 @@ impl Storage {
                 instance.db().unwrap(),
             ),
             block_info_storage: BlockInfoStorage::new(ledger_db),
-            event_storage: ContractEventStorage::new(instance.clone()),
+            event_storage: ContractEventStorage::new(ledger_db),
             chain_info_storage: ChainInfoStorage::new(instance.clone()),
-            table_info_storage: TableInfoStorage::new(instance),
+            table_info_storage: TableInfoStorage::new(ledger_db),
             // instance,
         };
         Ok(storage)
@@ -260,7 +260,7 @@ impl StateNodeStore for Storage {
 
     fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>> {
         let handle = TableHandle(address);
-        self.table_info_storage.get(handle)
+        self.table_info_storage.get_table_info(&handle)
     }
 }
 
@@ -501,15 +501,15 @@ impl BlockTransactionInfoStore for Storage {
 impl ContractEventStore for Storage {
     fn save_contract_events(
         &self,
-        txn_info_id: HashValue,
-        events: Vec<ContractEvent>,
+        txn_info_id: &HashValue,
+        events: &Vec<ContractEvent>,
     ) -> Result<(), Error> {
         self.event_storage.save_contract_events(txn_info_id, events)
     }
 
     fn get_contract_events(
         &self,
-        txn_info_id: HashValue,
+        txn_info_id: &HashValue,
     ) -> Result<Option<Vec<ContractEvent>>, Error> {
         self.event_storage.get(txn_info_id)
     }
@@ -638,20 +638,19 @@ impl Store for Storage {
 }
 
 impl TableInfoStore for Storage {
-    fn get_table_info(&self, key: TableHandle) -> Result<Option<TableInfo>> {
-        self.table_info_storage.get(key)
+    fn get_table_info(&self, key: &TableHandle) -> Result<Option<TableInfo>> {
+        self.table_info_storage.get_table_info(key)
     }
 
-    fn save_table_info(&self, key: TableHandle, table_info: TableInfo) -> Result<()> {
-        self.table_info_storage.put(key, table_info)
+    fn save_table_info(&self, key: &TableHandle, table_info: &TableInfo) -> Result<()> {
+        self.table_info_storage.save_table_info(key, table_info)
     }
 
-    fn get_table_infos(&self, keys: Vec<TableHandle>) -> Result<Vec<Option<TableInfo>>> {
-        self.table_info_storage.multiple_get(keys)
+    fn get_table_infos(&self, keys: &[TableHandle]) -> Result<Vec<Option<TableInfo>>> {
+        self.table_info_storage.get_table_infos(keys)
     }
 
-    fn save_table_infos(&self, table_infos: Vec<(TableHandle, TableInfo)>) -> Result<()> {
-        let batch = CodecWriteBatch::new_puts(table_infos);
-        self.table_info_storage.write_batch(batch)
+    fn save_table_infos(&self, table_infos: &[(TableHandle, TableInfo)]) -> Result<()> {
+        self.table_info_storage.save_table_infos(table_infos)
     }
 }

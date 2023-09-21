@@ -88,7 +88,7 @@ impl ChainNotifyHandlerService {
                 .get_transaction_info(txn_info_id)?
                 .ok_or_else(|| format_err!("cannot find txn info by it's id {}", &txn_info_id))?;
             // get events directly by txn_info_id
-            let events = store.get_contract_events(txn_info_id)?.unwrap_or_default();
+            let events = store.get_contract_events(&txn_info_id)?.unwrap_or_default();
             all_events.extend(events.into_iter().enumerate().map(|(idx, evt)| {
                 Event::new(
                     block_id,
