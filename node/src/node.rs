@@ -56,7 +56,7 @@ use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_txpool::TxPoolActorService;
 use starcoin_types::blockhash::ORIGIN;
-use starcoin_types::header::Header;
+use starcoin_types::header::DagHeader;
 use starcoin_types::system_events::{SystemShutdown, SystemStarted};
 use starcoin_vm_runtime::metrics::VMMetrics;
 use std::sync::{Arc, Mutex};
@@ -368,7 +368,7 @@ impl NodeService {
             .expect("Failed to create flexidag storage");
 
         let dag = BlockDAG::new(
-            Header::new(
+            DagHeader::new(
                 genesis.block().header().clone(),
                 vec![HashValue::new(ORIGIN)],
             ),

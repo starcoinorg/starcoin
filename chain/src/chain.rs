@@ -28,6 +28,7 @@ use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
+use starcoin_types::header::DagHeader;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
@@ -72,13 +73,13 @@ impl BlockChain {
         time_service: Arc<dyn TimeService>,
         head_block_hash: HashValue,
         storage: Arc<dyn Store>,
-        dag_store: FlexiDagStorage,
         vm_metrics: Option<VMMetrics>,
+        dag: BlockDAG,
     ) -> Result<Self> {
         let head = storage
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
-        Self::new_with_uncles(time_service, head, None, storage, vm_metrics, dag_store)
+        Self::new_with_uncles(time_service, head, None, storage, vm_metrics, dag)
     }
 
     fn new_with_uncles(
@@ -87,7 +88,7 @@ impl BlockChain {
         uncles: Option<HashMap<HashValue, MintedUncleNumber>>,
         storage: Arc<dyn Store>,
         vm_metrics: Option<VMMetrics>,
-        dag_store: FlexiDagStorage,
+        dag: BlockDAG,
     ) -> Result<Self> {
         let block_info = storage
             .get_block_info(head_block.id())?
@@ -115,7 +116,6 @@ impl BlockChain {
             .get_accumulator_snapshot_storage()
             .get(head_id)?
             .map(|snapshot| snapshot.child_hashes);
-        let dag = BlockDAG::new(genesis,16,dag_store),
         let mut chain = Self {
             genesis_hash: genesis,
             time_service,
@@ -155,6 +155,7 @@ impl BlockChain {
         storage: Arc<dyn Store>,
         genesis_epoch: Epoch,
         genesis_block: Block,
+        dag_store: FlexiDagStorage,
     ) -> Result<Self> {
         debug_assert!(genesis_block.header().is_genesis());
         let txn_accumulator = MerkleAccumulator::new_empty(
@@ -164,7 +165,7 @@ impl BlockChain {
             storage.get_accumulator_store(AccumulatorStoreType::Block),
         );
         let statedb = ChainStateDB::new(storage.clone().into_super_arc(), None);
-
+        let genesis_header = genesis_block.header.clone();
         let genesis_id = genesis_block.header.id();
         let executed_block = Self::execute_block_and_save(
             storage.as_ref(),
@@ -190,8 +191,9 @@ impl BlockChain {
             new_tips,
             dag_accumulator.get_info(),
         )?;
-
-        Self::new(time_service, executed_block.block.id(), storage, None)
+        let mut dag = BlockDAG::new(genesis_id, 16, dag_store);
+        dag.init_with_genesis(DagHeader::new_genesis(genesis_header))?;
+        Self::new(time_service, executed_block.block.id(), storage, None, dag)
     }
 
     pub fn current_epoch_uncles_size(&self) -> u64 {
@@ -884,6 +886,8 @@ impl ChainReader for BlockChain {
             uncles,
             self.storage.clone(),
             self.vm_metrics.clone(),
+            //TODO: check missing blocks need to be clean
+            self.dag.clone(),
         )
     }
 
@@ -1155,7 +1159,6 @@ impl ChainWriter for BlockChain {
                 == executed_block.block().header().parent_hash();
         }
     }
-
     fn connect(
         &mut self,
         executed_block: ExecutedBlock,

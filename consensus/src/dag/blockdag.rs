@@ -9,12 +9,12 @@ use crate::consensusdb::{
         HeaderStore, ReachabilityStoreReader, RelationsStore, RelationsStoreReader,
     },
 };
-use anyhow::{bail, Ok};
+use anyhow::{anyhow, bail, Ok};
 use parking_lot::RwLock;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::{
     blockhash::{BlockHashes, KType, ORIGIN},
-    header::{ConsensusHeader, Header},
+    header::{ConsensusHeader, DagHeader},
 };
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -26,19 +26,21 @@ pub type DbGhostdagManager = GhostdagManager<
     MTReachabilityService<DbReachabilityStore>,
     DbHeadersStore,
 >;
+
+#[derive(Clone)]
 pub struct BlockDAG {
-    genesis: Header,
+    genesis_hash: Hash,
     ghostdag_manager: DbGhostdagManager,
     relations_store: DbRelationsStore,
     reachability_store: DbReachabilityStore,
     ghostdag_store: DbGhostdagStore,
     header_store: DbHeadersStore,
     /// orphan blocks, parent hash -> orphan block
-    missing_blocks: HashMap<Hash, HashSet<Header>>,
+    missing_blocks: HashMap<Hash, HashSet<DagHeader>>,
 }
 
 impl BlockDAG {
-    pub fn new(genesis: Header, k: KType, db: FlexiDagStorage) -> Self {
+    pub fn new(genesis_hash: Hash, k: KType, db: FlexiDagStorage) -> Self {
         let ghostdag_store = db.ghost_dag_store.clone();
         let header_store = db.header_store.clone();
         let relations_store = db.relations_store.clone();
@@ -47,7 +49,7 @@ impl BlockDAG {
         let reachability_service =
             MTReachabilityService::new(Arc::new(RwLock::new(reachability_store.clone())));
         let ghostdag_manager = DbGhostdagManager::new(
-            genesis.hash(),
+            genesis_hash,
             k,
             ghostdag_store.clone(),
             relations_store.clone(),
@@ -56,7 +58,7 @@ impl BlockDAG {
         );
 
         let mut dag = Self {
-            genesis,
+            genesis_hash,
             ghostdag_manager,
             relations_store,
             reachability_store,
@@ -64,7 +66,6 @@ impl BlockDAG {
             header_store,
             missing_blocks: HashMap::new(),
         };
-        dag.init_with_genesis();
         dag
     }
 
@@ -72,22 +73,21 @@ impl BlockDAG {
         self.missing_blocks.clear();
     }
 
-    pub fn init_with_genesis(&mut self) -> anyhow::Result<()> {
-        let exits = self.relations_store.has(Hash::new(ORIGIN))?;
-        if exits {
-            return Ok(());
-        }
+    pub fn init_with_genesis(&mut self, genesis: DagHeader) -> anyhow::Result<()> {
+        if self.relations_store.has(Hash::new(ORIGIN))? {
+            return Err(anyhow!("Already init with genesis"));
+        };
         self.relations_store
             .insert(Hash::new(ORIGIN), BlockHashes::new(vec![]))
             .unwrap();
-        self.commit_header(&self.genesis.clone())?;
-        Ok(())
+        self.commit_header(genesis)
     }
 
-    pub fn commit_header(&mut self, header: &Header) -> anyhow::Result<()> {
+    pub fn commit_header(&mut self, header: DagHeader) -> anyhow::Result<()> {
+        //TODO:check genesis
         // Generate ghostdag data
         let parents_hash = header.parents_hash();
-        let ghostdag_data = if header.hash() != self.genesis.hash() {
+        let ghostdag_data = if header.hash() != self.genesis_hash {
             self.ghostdag_manager.ghostdag(parents_hash)
         } else {
             self.ghostdag_manager.genesis_ghostdag_data()
@@ -114,43 +114,43 @@ impl BlockDAG {
         self.relations_store
             .insert(header.hash(), BlockHashes::new(parents_hash.to_vec()))?;
         // Store header store
-        self.header_store
+        let _ = self
+            .header_store
             .insert(header.hash(), Arc::new(header.to_owned()), 0)?;
-
         Ok(())
     }
 
     fn is_in_dag(&self, _hash: Hash) -> anyhow::Result<bool> {
         return Ok(true);
     }
-    pub fn verify_header(&self, _header: &Header) -> anyhow::Result<()> {
+    pub fn verify_header(&self, _header: &DagHeader) -> anyhow::Result<()> {
         //TODO: implemented it
         Ok(())
     }
 
-    pub fn connect_block(&mut self, header: &Header) -> anyhow::Result<()> {
-        let _ = self.verify_header(header)?;
-        let is_orphan_block = self.update_orphans(header)?;
+    pub fn connect_block(&mut self, header: DagHeader) -> anyhow::Result<()> {
+        let _ = self.verify_header(&header)?;
+        let is_orphan_block = self.update_orphans(&header)?;
         if is_orphan_block {
             return Ok(());
         }
-        self.commit_header(header);
+        self.commit_header(header.clone());
         self.check_missing_block(header)?;
         Ok(())
     }
 
-    pub fn check_missing_block(&mut self, header: &Header) -> anyhow::Result<()> {
+    pub fn check_missing_block(&mut self, header: DagHeader) -> anyhow::Result<()> {
         if let Some(orphans) = self.missing_blocks.remove(&header.hash()) {
             for orphan in orphans.iter() {
                 let is_orphan = self.is_orphan(&orphan)?;
                 if !is_orphan {
-                    self.commit_header(header);
+                    self.commit_header(header.clone());
                 }
             }
         }
         Ok(())
     }
-    fn is_orphan(&self, header: &Header) -> anyhow::Result<bool> {
+    fn is_orphan(&self, header: &DagHeader) -> anyhow::Result<bool> {
         for parent in header.parents_hash() {
             if !self.is_in_dag(parent.to_owned())? {
                 return Ok(false);
@@ -159,7 +159,7 @@ impl BlockDAG {
         return Ok(true);
     }
 
-    fn update_orphans(&mut self, block_header: &Header) -> anyhow::Result<bool> {
+    fn update_orphans(&mut self, block_header: &DagHeader) -> anyhow::Result<bool> {
         let mut is_orphan = false;
         for parent in block_header.parents_hash() {
             if self.is_in_dag(parent.to_owned())? {
@@ -178,7 +178,7 @@ impl BlockDAG {
         Ok(is_orphan)
     }
 
-    pub fn get_block_header(&self, hash: Hash) -> anyhow::Result<Header> {
+    pub fn get_block_header(&self, hash: Hash) -> anyhow::Result<DagHeader> {
         match self.header_store.get_header(hash) {
             anyhow::Result::Ok(header) => anyhow::Result::Ok(header),
             Err(error) => {
@@ -218,7 +218,7 @@ impl BlockDAG {
     }
 
     pub fn get_genesis_hash(&self) -> Hash {
-        self.genesis.hash()
+        self.genesis_hash
     }
 }
 
@@ -228,9 +228,10 @@ mod tests {
     use crate::consensusdb::prelude::{FlexiDagStorage, FlexiDagStorageConfig};
     use starcoin_types::block::BlockHeader;
     use std::{env, fs};
+
     #[test]
     fn base_test() {
-        let genesis = Header::new(BlockHeader::random(), vec![Hash::new(ORIGIN)]);
+        let genesis = DagHeader::new_genesis(BlockHeader::random());
         let genesis_hash = genesis.hash();
         let k = 16;
         let db_path = env::temp_dir().join("smolstc");
@@ -245,9 +246,9 @@ mod tests {
         let config = FlexiDagStorageConfig::create_with_params(1, 0, 1024);
         let db = FlexiDagStorage::create_from_path(db_path, config)
             .expect("Failed to create flexidag storage");
-        let mut dag = BlockDAG::new(genesis, k, db);
-
-        let block = Header::new(BlockHeader::random(), vec![genesis_hash]);
-        dag.commit_header(&block);
+        let mut dag = BlockDAG::new(genesis_hash, k, db);
+        dag.init_with_genesis(genesis);
+        let block = DagHeader::new(BlockHeader::random(), vec![genesis_hash]);
+        dag.commit_header(block);
     }
 }

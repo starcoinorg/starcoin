@@ -13,25 +13,33 @@ pub trait ConsensusHeader {
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct Header {
+pub struct DagHeader {
     block_header: BlockHeader,
     parents_hash: Vec<Hash>,
 }
 
-impl Header {
+impl DagHeader {
     pub fn new(block_header: BlockHeader, parents_hash: Vec<Hash>) -> Self {
         Self {
             block_header,
             parents_hash,
         }
     }
-
-    pub fn genesis_hash(&self) -> Hash {
-        Hash::new(ORIGIN)
+    pub fn new_genesis(genesis_header: BlockHeader) -> DagHeader {
+        Self {
+            block_header: genesis_header,
+            parents_hash: vec![Hash::new(ORIGIN)],
+        }
     }
 }
 
-impl ConsensusHeader for Header {
+impl Into<BlockHeader> for DagHeader {
+    fn into(self) -> BlockHeader {
+        self.block_header
+    }
+}
+
+impl ConsensusHeader for DagHeader {
     fn parents_hash(&self) -> &[Hash] {
         &self.parents_hash
     }
@@ -49,7 +57,7 @@ impl ConsensusHeader for Header {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct HeaderWithBlockLevel {
-    pub header: Arc<Header>,
+    pub header: Arc<DagHeader>,
     pub block_level: BlockLevel,
 }
 

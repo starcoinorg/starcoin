@@ -16,7 +16,7 @@ use starcoin_time_service::TimeService;
 use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::Block;
 use starcoin_types::blockhash::ORIGIN;
-use starcoin_types::header::Header;
+use starcoin_types::header::DagHeader;
 use starcoin_types::startup_info::StartupInfo;
 use std::sync::{Arc, Mutex};
 
@@ -48,7 +48,7 @@ pub async fn create_writeable_block_chain() -> (
         .expect("Failed to create flexidag storage");
 
     let dag = BlockDAG::new(
-        Header::new(
+        DagHeader::new(
             genesis.block().header().clone(),
             vec![HashValue::new(ORIGIN)],
         ),

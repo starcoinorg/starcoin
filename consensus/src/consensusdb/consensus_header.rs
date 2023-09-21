@@ -10,7 +10,7 @@ use rocksdb::WriteBatch;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::{
     blockhash::BlockLevel,
-    header::{CompactHeaderData, ConsensusHeader, Header, HeaderWithBlockLevel},
+    header::{CompactHeaderData, ConsensusHeader, DagHeader, HeaderWithBlockLevel},
     U256,
 };
 use std::sync::Arc;
@@ -20,7 +20,7 @@ pub trait HeaderStoreReader {
     fn get_blue_score(&self, hash: Hash) -> Result<u64, StoreError>;
     fn get_timestamp(&self, hash: Hash) -> Result<u64, StoreError>;
     fn get_difficulty(&self, hash: Hash) -> Result<U256, StoreError>;
-    fn get_header(&self, hash: Hash) -> Result<Arc<Header>, StoreError>;
+    fn get_header(&self, hash: Hash) -> Result<Arc<DagHeader>, StoreError>;
     fn get_header_with_block_level(&self, hash: Hash) -> Result<HeaderWithBlockLevel, StoreError>;
     fn get_compact_header_data(&self, hash: Hash) -> Result<CompactHeaderData, StoreError>;
 }
@@ -30,7 +30,7 @@ pub trait HeaderStore: HeaderStoreReader {
     fn insert(
         &self,
         hash: Hash,
-        header: Arc<Header>,
+        header: Arc<DagHeader>,
         block_level: BlockLevel,
     ) -> Result<(), StoreError>;
 }
@@ -108,7 +108,7 @@ impl DbHeadersStore {
         self.headers_access.has(hash)
     }
 
-    pub fn get_header(&self, hash: Hash) -> Result<Header, StoreError> {
+    pub fn get_header(&self, hash: Hash) -> Result<DagHeader, StoreError> {
         let result = self.headers_access.read(hash)?;
         Ok((*result.header).clone())
     }
@@ -117,7 +117,7 @@ impl DbHeadersStore {
         &self,
         batch: &mut WriteBatch,
         hash: Hash,
-        header: Arc<Header>,
+        header: Arc<DagHeader>,
         block_level: BlockLevel,
     ) -> Result<(), StoreError> {
         if self.headers_access.has(hash)? {
@@ -166,7 +166,7 @@ impl HeaderStoreReader for DbHeadersStore {
         Ok(self.compact_headers_access.read(hash)?.difficulty)
     }
 
-    fn get_header(&self, hash: Hash) -> Result<Arc<Header>, StoreError> {
+    fn get_header(&self, hash: Hash) -> Result<Arc<DagHeader>, StoreError> {
         Ok(self.headers_access.read(hash)?.header)
     }
 
@@ -186,7 +186,12 @@ impl HeaderStoreReader for DbHeadersStore {
 }
 
 impl HeaderStore for DbHeadersStore {
-    fn insert(&self, hash: Hash, header: Arc<Header>, block_level: u8) -> Result<(), StoreError> {
+    fn insert(
+        &self,
+        hash: Hash,
+        header: Arc<DagHeader>,
+        block_level: u8,
+    ) -> Result<(), StoreError> {
         if self.headers_access.has(hash)? {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }
