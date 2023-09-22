@@ -60,7 +60,7 @@ pub static CREATE_ACCOUNT_TOO_LOW_FIRST: Lazy<u64> = Lazy::new(|| {
     // The gas amount is the minimum that needs to be reserved, so use a value that's
     // clearly higher than that.
     let balance = TXN_RESERVED + 10_000;
-    let sender = AccountData::new(balance, 10);
+    let sender = AccountData::new(balance as u128, 10);
     executor.add_account_data(&sender);
     let receiver = Account::new();
 
@@ -77,7 +77,7 @@ pub static CREATE_ACCOUNT_TOO_LOW_NEXT: Lazy<u64> = Lazy::new(|| {
     // The gas amount is the minimum that needs to be reserved, so use a value that's
     // clearly higher than that.
     let balance = (2 * TXN_RESERVED) + 10_000;
-    let sender = AccountData::new(balance, 10);
+    let sender = AccountData::new(balance as u128, 10);
     executor.add_account_data(&sender);
 
     let txns = vec![
@@ -150,7 +150,7 @@ pub static PEER_TO_PEER_TOO_LOW: Lazy<u64> = Lazy::new(|| {
     // The gas amount is the minimum that needs to be reserved, so use a value that's clearly
     // higher than that.
     let balance = TXN_RESERVED + 10_000;
-    let sender = AccountData::new(balance, 10);
+    let sender = AccountData::new(balance as u128, 10);
     let receiver = AccountData::new(1_000_000, 10);
     executor.add_account_data(&sender);
     executor.add_account_data(&receiver);
@@ -206,7 +206,7 @@ pub static PEER_TO_PEER_NEW_RECEIVER_TOO_LOW_FIRST: Lazy<u64> = Lazy::new(|| {
     // The gas amount is the minimum that needs to be reserved, so use a value that's
     // clearly higher than that.
     let balance = TXN_RESERVED + 10_000;
-    let sender = AccountData::new(balance, 10);
+    let sender = AccountData::new(balance as u128, 10);
     executor.add_account_data(&sender);
     let receiver = Account::new();
 
@@ -224,7 +224,7 @@ pub static PEER_TO_PEER_NEW_RECEIVER_TOO_LOW_NEXT: Lazy<u64> = Lazy::new(|| {
     // The gas amount is the minimum that needs to be reserved, so use a value that's
     // clearly higher than that.
     let balance = (2 * TXN_RESERVED) + 20_000;
-    let sender = AccountData::new(balance, 10);
+    let sender = AccountData::new(balance as u128, 10);
     executor.add_account_data(&sender);
 
     let txns = vec![

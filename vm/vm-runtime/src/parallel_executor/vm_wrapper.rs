@@ -49,7 +49,7 @@ impl<'a, S: 'a + StateView> ExecutorTask for StarcoinVMWrapper<'a, S> {
         txn: &PreprocessedTransaction,
     ) -> ExecutionStatus<StarcoinTransactionOutput, VMStatus> {
         let versioned_view = VersionedView::new_view(self.base_view, view);
-
+        println!("StarcoinVMWrapper::execute_transaction, txn: {:#?}", txn);
         match self.vm.execute_single_transaction(txn, &versioned_view) {
             Ok((vm_status, output, sender)) => {
                 if output.status().is_discarded() {

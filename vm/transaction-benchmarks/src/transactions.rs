@@ -213,7 +213,9 @@ impl TransactionBenchState {
             HashValue::zero(),
             0,
             minter_account.address().clone(),
-            Some(AuthenticationKey::ed25519(&minter_account.account().pubkey)),
+            Some(AuthenticationKey::ed25519(
+                &minter_account.account().public_key(),
+            )),
             0,
             0,
             ChainId::test(),

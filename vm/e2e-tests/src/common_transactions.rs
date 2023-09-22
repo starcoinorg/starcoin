@@ -40,7 +40,7 @@ pub fn empty_txn(
 ) -> SignedUserTransaction {
     build_signed_empty_txn(
         sender.address().clone(),
-        &sender.privkey.clone().into(),
+        &sender.private_key(),
         seq_num,
         now_time() + DEFAULT_EXPIRATION_TIME,
         ChainId::test(),
@@ -60,11 +60,9 @@ pub fn create_account_txn(
     new_account: &Account,
     seq_num: u64,
 ) -> SignedUserTransaction {
-    let starcoin_acc = StarcoinAccount::with_keypair(
-        new_account.privkey.clone().into(),
-        new_account.pubkey.clone().into(),
-        Some(new_account.address().clone()),
-    );
+    let (pub_k, priv_k) = new_account.account_keypair();
+    let starcoin_acc =
+        StarcoinAccount::with_keypair(priv_k, pub_k, Some(new_account.address().clone()));
     create_account_txn_sent_as_association(
         &starcoin_acc,
         seq_num + 1,
@@ -98,11 +96,8 @@ pub fn peer_to_peer_txn(
     //     ))
     //     .sequence_number(seq_num)
     //     .sign()
-    let starcoin_acc = StarcoinAccount::with_keypair(
-        sender.privkey.clone().into(),
-        sender.pubkey.clone().into(),
-        Some(sender.address().clone()),
-    );
+    let (pub_k, priv_k) = sender.account_keypair();
+    let starcoin_acc = StarcoinAccount::with_keypair(priv_k, pub_k, Some(sender.address().clone()));
     peer_to_peer_v2(
         &starcoin_acc,
         receiver.address(),

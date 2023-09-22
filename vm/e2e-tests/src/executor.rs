@@ -64,7 +64,7 @@ pub type TraceSeqMapping = (usize, Vec<usize>, Vec<usize>);
 
 /// Provides an environment to run a VM instance.
 ///
-/// This struct is a mock in-memory implementation of the Aptos executor.
+/// This struct is a mock in-memory implementation of the Starcoin executor.
 #[derive(Debug)]
 pub struct FakeExecutor {
     data_store: FakeDataStore,
@@ -227,7 +227,7 @@ impl FakeExecutor {
     }
 
     /// Create one instance of [`AccountData`] without saving it to data store.
-    pub fn create_raw_account_data(&mut self, balance: u64, seq_num: u64) -> AccountData {
+    pub fn create_raw_account_data(&mut self, balance: u128, seq_num: u64) -> AccountData {
         AccountData::new_from_seed(&mut self.rng, balance, seq_num)
     }
 
@@ -236,7 +236,7 @@ impl FakeExecutor {
     pub fn create_accounts(&mut self, size: usize, balance: u64, seq_num: u64) -> Vec<Account> {
         let mut accounts: Vec<Account> = Vec::with_capacity(size);
         for _i in 0..size {
-            let account_data = AccountData::new_from_seed(&mut self.rng, balance, seq_num);
+            let account_data = AccountData::new_from_seed(&mut self.rng, balance as u128, seq_num);
             self.add_account_data(&account_data);
             accounts.push(account_data.into_account());
         }
@@ -481,7 +481,9 @@ impl FakeExecutor {
             HashValue::zero(),
             self.block_time,
             minter_account.address().clone(),
-            Some(AuthenticationKey::ed25519(&minter_account.account().pubkey)),
+            Some(AuthenticationKey::ed25519(
+                &minter_account.account().public_key(),
+            )),
             0,
             0,
             ChainId::test(),

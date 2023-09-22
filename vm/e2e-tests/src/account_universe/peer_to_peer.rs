@@ -14,7 +14,6 @@ use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::transaction::{SignedUserTransaction, TransactionStatus};
 use starcoin_vm_types::vm_status::{AbortLocation, StatusCode};
 use std::sync::Arc;
-use starcoin_vm_types::values::debug::print_locals;
 
 /// Represents a peer-to-peer transaction performed in the account universe.
 ///

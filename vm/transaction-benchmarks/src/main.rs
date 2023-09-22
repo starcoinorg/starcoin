@@ -8,22 +8,22 @@ fn main() {
     let default_num_transactions = 1_000;
 
     let bencher = TransactionBencher::new(
-        any_with::<P2PTransferGen>((1_000, 1_000_000)),
+        any_with::<P2PTransferGen>((1, 10)),
         default_num_accounts,
         default_num_transactions,
     );
 
     let acts = [2];
-    let txns = [1000];
-    let num_warmups = 2;
-    let num_runs = 10;
+    let txns = [1];
+    let num_warmups = 0;
+    let num_runs = 1;
 
     let mut measurements = Vec::new();
 
     for block_size in txns {
         for num_accounts in acts {
             let mut times =
-                bencher.manual_parallel(num_accounts, block_size, num_warmups, num_runs);
+                bencher.manual_sequence(num_accounts, block_size, num_warmups, num_runs);
             times.sort();
             measurements.push(times);
         }

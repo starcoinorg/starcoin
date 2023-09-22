@@ -12,8 +12,9 @@ use num_cpus;
 use once_cell::sync::Lazy;
 use starcoin_infallible::Mutex;
 use starcoin_mvhashmap::MVHashMap;
-use std::{collections::HashSet, hash::Hash, marker::PhantomData, sync::Arc, thread, thread::spawn};
-use std::any::Any;
+use std::{
+    collections::HashSet, hash::Hash, marker::PhantomData, sync::Arc, thread, thread::spawn,
+};
 
 static RAYON_EXEC_POOL: Lazy<rayon::ThreadPool> = Lazy::new(|| {
     rayon::ThreadPoolBuilder::new()
@@ -46,7 +47,7 @@ impl<'a, K: PartialOrd + Send + Clone + Hash + Eq, V: Send + Sync> MVHashMapView
 
     /// Captures a read from the VM execution.
     pub fn read(&self, key: &K) -> Option<Arc<V>> {
-        println!("{:?} - MVHashMapView::read | Entered, {}", thread::current().id(), self.txn_idx);
+        // println!("{:?} - MVHashMapView::read | Entered, {}", thread::current().id(), self.txn_idx);
         loop {
             match self.versioned_map.read(key, self.txn_idx) {
                 Ok((version, v)) => {
@@ -56,7 +57,7 @@ impl<'a, K: PartialOrd + Send + Clone + Hash + Eq, V: Send + Sync> MVHashMapView
                         txn_idx,
                         incarnation,
                     ));
-                    println!("{:?} - MVHashMapView::read | Exited, {} -> Some(v)", thread::current().id(), self.txn_idx);
+                    // println!("{:?} - MVHashMapView::read | Exited, {} -> Some(v)", thread::current().id(), self.txn_idx);
                     return Some(v);
                 }
                 Err(None) => {
@@ -64,7 +65,7 @@ impl<'a, K: PartialOrd + Send + Clone + Hash + Eq, V: Send + Sync> MVHashMapView
                         .lock()
                         .push(ReadDescriptor::from_storage(key.clone()));
 
-                    println!("{:?} - MVHashMapView::read | Exited, {}, -> None", thread::current().id(), self.txn_idx);
+                    // println!("{:?} - MVHashMapView::read | Exited, {}, -> None", thread::current().id(), self.txn_idx);
                     return None;
                 }
                 Err(Some(dep_idx)) => {
@@ -146,7 +147,7 @@ where
     ) -> SchedulerTask<'a> {
         let (idx_to_execute, incarnation) = version;
 
-        println!("{:?} - MVHashMap::execute | Entered, idx_to_execute:{:?}, incarnation: {:?}", thread::current().id(), idx_to_execute, incarnation);
+        println!("{:?} - ParallelTransactionExecutor::execute | Entered, idx_to_execute:{:?}, incarnation: {:?}", thread::current().id(), idx_to_execute, incarnation);
 
         let txn = &signature_verified_block[idx_to_execute];
 
@@ -160,8 +161,6 @@ where
         // VM execution.
         let execute_result = executor.execute_transaction(&state_view, txn);
         let mut prev_write_set: HashSet<T::Key> = last_input_output.write_set(idx_to_execute);
-
-        println!("{:?} - MVHashMap::execute | after executor.execute_transaction, execute_result: {:?}", thread::current().id(), execute_result.type_id());
 
         // For tracking whether the recent execution wrote outside of the previous write set.
         let mut writes_outside = false;
@@ -183,14 +182,17 @@ where
             ExecutionStatus::Success(output) => {
                 // Apply the writes to the versioned_data_cache.
                 apply_writes(&output);
+                println!("{:?} - ParallelTransactionExecutor::execute | after executor.execute_transaction, ExecutionStatus::Success, output len: {:?}", thread::current().id(), output.get_writes().len());
                 ExecutionStatus::Success(output)
             }
             ExecutionStatus::SkipRest(output) => {
                 // Apply the writes and record status indicating skip.
                 apply_writes(&output);
+                println!("{:?} - ParallelTransactionExecutor::execute | after executor.execute_transaction, ExecutionStatus::SkipRest", thread::current().id());
                 ExecutionStatus::SkipRest(output)
             }
             ExecutionStatus::Abort(err) => {
+                println!("{:?} - MVHashMap::execute | after executor.execute_transaction, ExecutionStatus::Abort", thread::current().id());
                 // Record the status indicating abort.
                 ExecutionStatus::Abort(Error::UserError(err))
             }
@@ -219,7 +221,11 @@ where
         versioned_data_cache: &MVHashMap<<T as Transaction>::Key, <T as Transaction>::Value>,
         scheduler: &'a Scheduler,
     ) -> SchedulerTask<'a> {
-        println!("{:?} - ParallelTransactionExecutor::validate | Entered {:?}", thread::current().id(), version_to_validate);
+        println!(
+            "{:?} - ParallelTransactionExecutor::validate | Entered {:?}",
+            thread::current().id(),
+            version_to_validate
+        );
 
         let (idx_to_validate, incarnation) = version_to_validate;
         let read_set = last_input_output
@@ -236,7 +242,12 @@ where
 
         let aborted = !valid && scheduler.try_abort(idx_to_validate, incarnation);
 
-        println!("{:?} - ParallelTransactionExecutor::validate | valid: {}, aborted: {}", thread::current().id(), valid, aborted);
+        println!(
+            "{:?} - ParallelTransactionExecutor::validate | valid: {}, aborted: {}",
+            thread::current().id(),
+            valid,
+            aborted
+        );
 
         if aborted {
             // Not valid and successfully aborted, mark the latest write-set as estimates.
@@ -244,13 +255,18 @@ where
                 versioned_data_cache.mark_estimate(k, idx_to_validate);
             }
 
-            println!("{:?} -  ParallelTransactionExecutor::validate | Exited, aborted == true", thread::current().id());
+            println!(
+                "{:?} -  ParallelTransactionExecutor::validate | Exited, aborted == true",
+                thread::current().id()
+            );
             scheduler.finish_abort(idx_to_validate, incarnation, guard)
         } else {
-            println!("{:?} - ParallelTransactionExecutor::validate | Exited, SchedulerTask::NoTask", thread::current().id());
+            println!(
+                "{:?} - ParallelTransactionExecutor::validate | Exited, SchedulerTask::NoTask",
+                thread::current().id()
+            );
             SchedulerTask::NoTask
         }
-
     }
 
     fn work_task_with_scope(
@@ -268,7 +284,10 @@ where
         // Make executor for each task. TODO: fast concurrent executor.
         let executor = E::init(*executor_arguments);
 
-        println!("{:?} - ParallelTransactionExecutor::work_task_with_scope | Entered", thread::current().id());
+        println!(
+            "{:?} - ParallelTransactionExecutor::work_task_with_scope | Entered",
+            thread::current().id()
+        );
 
         let mut scheduler_task = SchedulerTask::NoTask;
         loop {
@@ -305,7 +324,10 @@ where
             }
         }
 
-        println!("{:?} - ParallelTransactionExecutor::work_task_with_scope | Exited", thread::current().id());
+        println!(
+            "{:?} - ParallelTransactionExecutor::work_task_with_scope | Exited",
+            thread::current().id()
+        );
     }
 
     pub fn execute_transactions_parallel(
