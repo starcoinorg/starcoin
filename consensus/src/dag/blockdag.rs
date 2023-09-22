@@ -2,6 +2,7 @@ use super::ghostdag::protocol::{ColoringOutput, GhostdagManager};
 use super::reachability::{inquirer, reachability_service::MTReachabilityService};
 use super::types::ghostdata::GhostdagData;
 use crate::consensusdb::prelude::StoreError;
+use crate::consensusdb::schemadb::GhostdagStoreReader;
 use crate::consensusdb::{
     prelude::FlexiDagStorage,
     schemadb::{
@@ -80,10 +81,11 @@ impl BlockDAG {
         self.relations_store
             .insert(Hash::new(ORIGIN), BlockHashes::new(vec![]))
             .unwrap();
-        self.commit_header(genesis)
+        let _ = self.addToDag(genesis);
+        Ok(())
     }
 
-    pub fn commit_header(&mut self, header: DagHeader) -> anyhow::Result<()> {
+    pub fn addToDag(&mut self, header: DagHeader) -> anyhow::Result<GhostdagData> {
         //TODO:check genesis
         // Generate ghostdag data
         let parents_hash = header.parents_hash();
@@ -117,7 +119,7 @@ impl BlockDAG {
         let _ = self
             .header_store
             .insert(header.hash(), Arc::new(header.to_owned()), 0)?;
-        Ok(())
+        return Ok(ghostdag_data.clone())
     }
 
     fn is_in_dag(&self, _hash: Hash) -> anyhow::Result<bool> {
@@ -134,7 +136,7 @@ impl BlockDAG {
         if is_orphan_block {
             return Ok(());
         }
-        self.commit_header(header.clone());
+        self.addToDag(header.clone());
         self.check_missing_block(header)?;
         Ok(())
     }
@@ -144,7 +146,7 @@ impl BlockDAG {
             for orphan in orphans.iter() {
                 let is_orphan = self.is_orphan(&orphan)?;
                 if !is_orphan {
-                    self.commit_header(header.clone());
+                    self.addToDag(header.clone());
                 }
             }
         }
@@ -157,6 +159,10 @@ impl BlockDAG {
             }
         }
         return Ok(true);
+    }
+    pub fn get_ghostdag_data(&self, hash: Hash)->anyhow::Result<Arc<GhostdagData>>{
+        let ghostdata = self.ghostdag_store.get_data(hash)?;
+        return Ok(ghostdata)
     }
 
     fn update_orphans(&mut self, block_header: &DagHeader) -> anyhow::Result<bool> {
@@ -249,6 +255,6 @@ mod tests {
         let mut dag = BlockDAG::new(genesis_hash, k, db);
         dag.init_with_genesis(genesis);
         let block = DagHeader::new(BlockHeader::random(), vec![genesis_hash]);
-        dag.commit_header(block);
+        dag.addToDag(block);
     }
 }

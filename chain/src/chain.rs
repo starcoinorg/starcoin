@@ -47,6 +47,7 @@ use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::{collections::HashMap, sync::Arc};
+use starcoin_consensus::dag::types::ghostdata::GhostdagData;
 
 pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
@@ -65,7 +66,6 @@ pub struct BlockChain {
     epoch: Epoch,
     vm_metrics: Option<VMMetrics>,
     dag_accumulator: Option<MerkleAccumulator>,
-    dag: BlockDAG,
 }
 
 impl BlockChain {
@@ -74,12 +74,11 @@ impl BlockChain {
         head_block_hash: HashValue,
         storage: Arc<dyn Store>,
         vm_metrics: Option<VMMetrics>,
-        dag: BlockDAG,
     ) -> Result<Self> {
         let head = storage
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
-        Self::new_with_uncles(time_service, head, None, storage, vm_metrics, dag)
+        Self::new_with_uncles(time_service, head, None, storage, vm_metrics)
     }
 
     fn new_with_uncles(
@@ -88,7 +87,6 @@ impl BlockChain {
         uncles: Option<HashMap<HashValue, MintedUncleNumber>>,
         storage: Arc<dyn Store>,
         vm_metrics: Option<VMMetrics>,
-        dag: BlockDAG,
     ) -> Result<Self> {
         let block_info = storage
             .get_block_info(head_block.id())?
@@ -139,7 +137,6 @@ impl BlockChain {
             epoch,
             vm_metrics,
             dag_accumulator,
-            dag,
         };
         watch(CHAIN_WATCH_NAME, "n1251");
         match uncles {
@@ -155,7 +152,6 @@ impl BlockChain {
         storage: Arc<dyn Store>,
         genesis_epoch: Epoch,
         genesis_block: Block,
-        dag_store: FlexiDagStorage,
     ) -> Result<Self> {
         debug_assert!(genesis_block.header().is_genesis());
         let txn_accumulator = MerkleAccumulator::new_empty(
@@ -191,9 +187,7 @@ impl BlockChain {
             new_tips,
             dag_accumulator.get_info(),
         )?;
-        let mut dag = BlockDAG::new(genesis_id, 16, dag_store);
-        dag.init_with_genesis(DagHeader::new_genesis(genesis_header))?;
-        Self::new(time_service, executed_block.block.id(), storage, None, dag)
+        Self::new(time_service, executed_block.block.id(), storage, None)
     }
 
     pub fn current_epoch_uncles_size(&self) -> u64 {
@@ -371,8 +365,8 @@ impl BlockChain {
     }
 
     pub fn verify_with_verifier<V>(&mut self, block: Block) -> Result<VerifiedBlock>
-    where
-        V: BlockVerifier,
+        where
+            V: BlockVerifier,
     {
         V::verify_block(self, block)
     }
@@ -383,8 +377,8 @@ impl BlockChain {
         dag_block_parent: Option<HashValue>,
         next_tips: &mut Option<Vec<HashValue>>,
     ) -> Result<ExecutedBlock>
-    where
-        V: BlockVerifier,
+        where
+            V: BlockVerifier,
     {
         let verified_block = self.verify_with_verifier::<V>(block)?;
         watch(CHAIN_WATCH_NAME, "n1");
@@ -660,9 +654,9 @@ impl BlockChain {
 
         return Ok(next_tips_info
             == self
-                .dag_accumulator
-                .as_ref()
-                .map(|accumulator| accumulator.get_info()));
+            .dag_accumulator
+            .as_ref()
+            .map(|accumulator| accumulator.get_info()));
     }
 }
 
@@ -887,7 +881,6 @@ impl ChainReader for BlockChain {
             self.storage.clone(),
             self.vm_metrics.clone(),
             //TODO: check missing blocks need to be clean
-            self.dag.clone(),
         )
     }
 
@@ -1155,7 +1148,7 @@ impl ChainWriter for BlockChain {
                     .expect("dag blocks must have tips")
                     .clone(),
             )
-            .expect("failed to calculate the tips hash")
+                .expect("failed to calculate the tips hash")
                 == executed_block.block().header().parent_hash();
         }
     }

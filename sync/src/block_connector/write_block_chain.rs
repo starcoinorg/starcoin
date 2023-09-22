@@ -27,12 +27,14 @@ use starcoin_types::{
 };
 use std::fmt::Formatter;
 use std::sync::{Arc, Mutex};
+use starcoin_types::header::DagHeader;
+use crate::block_connector::write_block_chain::ConnectOk::{DagConnected, ExeConnectMain};
 
 const MAX_ROLL_BACK_BLOCK: usize = 10;
 
 pub struct WriteBlockChainService<P>
-where
-    P: TxPoolSyncService,
+    where
+        P: TxPoolSyncService,
 {
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
@@ -92,8 +94,8 @@ impl std::fmt::Display for ConnectOk {
 }
 
 impl<P> WriteableChainService for WriteBlockChainService<P>
-where
-    P: TxPoolSyncService + 'static,
+    where
+        P: TxPoolSyncService + 'static,
 {
     fn try_connect(&mut self, block: Block, tips_headers: Option<Vec<HashValue>>) -> Result<()> {
         let _timer = self
@@ -124,8 +126,8 @@ where
 }
 
 impl<P> WriteBlockChainService<P>
-where
-    P: TxPoolSyncService + 'static,
+    where
+        P: TxPoolSyncService + 'static,
 {
     pub fn new(
         config: Arc<NodeConfig>,
@@ -789,6 +791,19 @@ where
         let enacted_blocks = vec![executed_block.block().clone()];
         self.do_new_head(executed_block.clone(), 1, enacted_blocks, 0, vec![])?;
         return Ok(ConnectOk::ExeConnectMain(executed_block));
+    }
+
+    fn connect_dag_inner(&mut self, block: Block, parents_hash: Vec<HashValue>,
+    ) -> Result<ConnectOk> {
+        let ghost_dag_data = self.dag.lock().unwrap().addToDag(DagHeader::new(block.header, parents_hash))?;
+        let past_header = ghost_dag_data.selected_parent;
+        let mut chain = self.main.fork(past_header)?;
+        for blue_hash in ghost_dag_data.mergeset_blues{
+            chain.apply(blue_hash);
+        }
+
+        //self.broadcast_new_head();
+        Ok(DagConnected)
     }
 
     fn connect_inner(

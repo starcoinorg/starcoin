@@ -730,12 +730,7 @@ impl Block {
             .map(|uncles| uncles.len() as u64)
             .unwrap_or(0);
 
-        let parent = if dag_block_parent.is_some() {
-            dag_block_parent.unwrap()
-        } else {
-            self.header.parent_hash()
-        };
-
+        let parent = dag_block_parent.unwrap_or(self.header.parent_hash());
         BlockMetadata::new(
             parent,
             self.header.timestamp,
