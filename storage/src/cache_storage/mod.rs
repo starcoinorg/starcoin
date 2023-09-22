@@ -1,11 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::batch::GWriteBatch;
 use crate::{
+    batch::GWriteBatch,
     batch::WriteBatch,
     metrics::{record_metrics, StorageMetrics},
-    storage::{InnerStore, WriteOp},
+    storage::WriteOp,
 };
 use anyhow::{Error, Result};
 use core::hash::Hash;
@@ -44,14 +44,14 @@ impl<K: Hash + Eq, V> Default for GCacheStorage<K, V> {
     }
 }
 
-impl InnerStore for CacheStorage {
-    fn get_raw(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
+impl CacheStorage {
+    pub fn get_raw(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         let composed_key = compose_key(Some(prefix_name), key);
         record_metrics("cache", prefix_name, "get", self.metrics.as_ref())
             .call(|| Ok(self.get_inner(&composed_key)))
     }
 
-    fn put_raw(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+    pub fn put_raw(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         // remove record_metrics for performance
         // record_metrics add in write_batch to reduce Instant::now system call
         let composed_key = compose_key(Some(prefix_name), key);
@@ -62,12 +62,12 @@ impl InnerStore for CacheStorage {
         Ok(())
     }
 
-    fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool> {
+    pub fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool> {
         let composed_key = compose_key(Some(prefix_name), key);
         record_metrics("cache", prefix_name, "contains_key", self.metrics.as_ref())
             .call(|| Ok(self.contains_key_inner(&composed_key)))
     }
-    fn remove_raw(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
+    pub fn remove_raw(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
         // remove record_metrics for performance
         // record_metrics add in write_batch to reduce Instant::now system call
         let composed_key = compose_key(Some(prefix_name), key);
@@ -78,7 +78,7 @@ impl InnerStore for CacheStorage {
         Ok(())
     }
 
-    fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
+    pub fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
         let rows = batch
             .rows
             .into_iter()
@@ -94,11 +94,11 @@ impl InnerStore for CacheStorage {
         })
     }
 
-    fn get_len(&self) -> Result<u64, Error> {
+    pub fn get_len(&self) -> Result<u64, Error> {
         Ok(self.cache.lock().len() as u64)
     }
 
-    fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
+    pub fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
         let mut all_keys = vec![];
         for (key, _) in self.cache.lock().iter() {
             all_keys.push(key.to_vec());
@@ -106,15 +106,15 @@ impl InnerStore for CacheStorage {
         Ok(all_keys)
     }
 
-    fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+    pub fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         self.put_raw(prefix_name, key, value)
     }
 
-    fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
+    pub fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
         self.write_batch(prefix_name, batch)
     }
 
-    fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
+    pub fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
         let composed_keys = keys
             .into_iter()
             .map(|k| compose_key(Some(prefix_name), k))
@@ -123,7 +123,7 @@ impl InnerStore for CacheStorage {
     }
 }
 
-fn compose_key(prefix_name: Option<&str>, source_key: Vec<u8>) -> Vec<u8> {
+pub fn compose_key(prefix_name: Option<&str>, source_key: Vec<u8>) -> Vec<u8> {
     match prefix_name {
         Some(prefix_name) => {
             let temp_vec = prefix_name.as_bytes().to_vec();
