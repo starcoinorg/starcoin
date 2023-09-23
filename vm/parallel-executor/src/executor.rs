@@ -284,10 +284,10 @@ where
         // Make executor for each task. TODO: fast concurrent executor.
         let executor = E::init(*executor_arguments);
 
-        println!(
-            "{:?} - ParallelTransactionExecutor::work_task_with_scope | Entered",
-            thread::current().id()
-        );
+        // println!(
+        //     "{:?} - ParallelTransactionExecutor::work_task_with_scope | Entered",
+        //     thread::current().id()
+        // );
 
         let mut scheduler_task = SchedulerTask::NoTask;
         loop {
@@ -324,10 +324,10 @@ where
             }
         }
 
-        println!(
-            "{:?} - ParallelTransactionExecutor::work_task_with_scope | Exited",
-            thread::current().id()
-        );
+        // println!(
+        //     "{:?} - ParallelTransactionExecutor::work_task_with_scope | Exited",
+        //     thread::current().id()
+        // );
     }
 
     pub fn execute_transactions_parallel(

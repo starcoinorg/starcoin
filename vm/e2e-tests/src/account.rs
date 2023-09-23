@@ -672,6 +672,9 @@ impl AccountData {
             .iter()
             .map(|(code, balance)| (code.clone(), balance.to_value()))
             .collect();
+
+        // println!("AccountData::to_value | account:{:#?}, balances: {:#?}", self.account.addr, balances);
+
         let event_generator = self.event_generator.to_value();
         let account = Value::struct_(Struct::pack(vec![
             // TODO: this needs to compute the auth key instead

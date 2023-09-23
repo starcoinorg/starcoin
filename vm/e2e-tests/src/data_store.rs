@@ -46,7 +46,7 @@ impl FakeDataStore {
 
     /// Adds a [`WriteSet`] to this data store.
     pub fn add_write_set(&self, write_set: &WriteSet) {
-        println!("FakeDataStore::add_write_set | {:#?}", write_set);
+        // println!("FakeDataStore::add_write_set | {:#?}", write_set);
 
         let mut write_handle = self.state_data.write().expect("Panic for lock");
         for (state_key, write_op) in write_set {
@@ -101,8 +101,7 @@ impl FakeDataStore {
 // TODO: only the "sync" get is implemented
 impl StateView for FakeDataStore {
     fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
-        println!("StateView::get_state_value, state_key: {:#?}", state_key);
-
+        // println!("StateView::get_state_value, state_key: {:#?}", state_key);
         Ok(self.inner().get(state_key).cloned())
     }
 

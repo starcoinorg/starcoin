@@ -78,11 +78,11 @@ impl<K: Hash + Clone + Eq, V> MVHashMap<K, V> {
     pub fn write(&self, key: &K, version: Version, data: V) {
         let (txn_idx, incarnation) = version;
 
-        println!(
-            "{:?} - MVHashMap::write | Entered, version: {:?}",
-            thread::current().id(),
-            version
-        );
+        // println!(
+        //     "{:?} - MVHashMap::write | Entered, version: {:?}",
+        //     thread::current().id(),
+        //     version
+        // );
 
         let mut map = self.data.entry(key.clone()).or_insert(BTreeMap::new());
         let prev_cell = map.insert(
@@ -95,11 +95,11 @@ impl<K: Hash + Clone + Eq, V> MVHashMap<K, V> {
             .map(|cell| cell.incarnation < incarnation)
             .unwrap_or(true));
 
-        println!(
-            "{:?} - MVHashMap::write | Exited, version: {:?}",
-            thread::current().id(),
-            version
-        );
+        // println!(
+        //     "{:?} - MVHashMap::write | Exited, version: {:?}",
+        //     thread::current().id(),
+        //     version
+        // );
     }
 
     /// Mark an entry from transaction 'txn_idx' at access path 'key' as an estimated write
