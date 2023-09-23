@@ -219,8 +219,7 @@ impl DBStorage {
         Ok(self.db.flush_cf(cf_handle)?)
     }
 
-    // todo: make me private
-    pub fn write_batch_inner(&self, prefix_name: &str, rows: &[WriteOp], sync: bool) -> Result<()> {
+    fn write_batch_inner(&self, prefix_name: &str, rows: &[WriteOp], sync: bool) -> Result<()> {
         let mut db_batch = DBWriteBatch::default();
         let cf_handle = self.get_cf_handle(prefix_name)?;
         for write_op in rows {
@@ -465,32 +464,6 @@ impl DBStorage {
     ) -> Result<()> {
         let cf = self.get_cf_handle(cf_name)?;
         self.db.put_cf_opt(cf, key, value, opts).map_err(Into::into)
-    }
-
-    pub fn contains_key(&self, cf_name: &str, key: &[u8]) -> Result<bool> {
-        self.get_no_schema(cf_name, key).map(|s| s.is_some())
-    }
-
-    pub fn remove_no_schema(&self, cf_name: &str, key: &[u8]) -> Result<()> {
-        let cf_handle = self.get_cf_handle(cf_name)?;
-        self.db.delete_cf(cf_handle, key).map_err(Into::into)
-    }
-
-    pub fn multi_get_no_schema(
-        &self,
-        cf_name: &str,
-        keys: &[Vec<u8>],
-    ) -> Result<Vec<Option<Vec<u8>>>> {
-        let cf_handle = self.get_cf_handle(cf_name)?;
-        self.db
-            .batched_multi_get_cf(cf_handle, keys, false)
-            .into_iter()
-            .map(|result| {
-                result
-                    .map_err(Into::into)
-                    .map(|raw| raw.map(|v| v.to_vec()))
-            })
-            .collect::<Result<Vec<_>>>()
     }
 
     pub fn iter_no_schema(

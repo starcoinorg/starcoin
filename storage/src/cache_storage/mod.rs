@@ -7,7 +7,7 @@ use crate::{
     metrics::{record_metrics, StorageMetrics},
     storage::WriteOp,
 };
-use anyhow::{Error, Result};
+use anyhow::Result;
 use core::hash::Hash;
 use lru::LruCache;
 use parking_lot::Mutex;
@@ -94,26 +94,6 @@ impl CacheStorage {
         })
     }
 
-    pub fn get_len(&self) -> Result<u64, Error> {
-        Ok(self.cache.lock().len() as u64)
-    }
-
-    pub fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
-        let mut all_keys = vec![];
-        for (key, _) in self.cache.lock().iter() {
-            all_keys.push(key.to_vec());
-        }
-        Ok(all_keys)
-    }
-
-    pub fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
-        self.put_raw(prefix_name, key, value)
-    }
-
-    pub fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
-        self.write_batch(prefix_name, batch)
-    }
-
     pub fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
         let composed_keys = keys
             .into_iter()
@@ -147,7 +127,7 @@ impl<K: Hash + Eq, V: Clone> GCacheStorage<K, V> {
         cache.len()
     }
 
-    pub fn contains_key_inner(&self, key: &K) -> bool {
+    fn contains_key_inner(&self, key: &K) -> bool {
         self.cache.lock().contains(key)
     }
 
