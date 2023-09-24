@@ -37,6 +37,8 @@ impl AUTransactionGen for P2PTransferGen {
             ..
         } = self.sender_receiver.pick(universe);
 
+        // println!("sender balance : {:#?}, receiver: balance {:#?}", sender.balance, receiver.balance);
+
         let txn = peer_to_peer_txn(
             sender.account(),
             receiver.account(),
@@ -111,7 +113,7 @@ impl AUTransactionGen for P2PTransferGen {
                 );
             }
         }
-        println!("AUTransactionGen::apply | Exited: {:?}", status);
+        // println!("AUTransactionGen::apply | Exited: {:?}", status);
         (txn, (status, gas_used))
     }
 }

@@ -125,21 +125,21 @@ impl<K: Hash + Clone + Eq, V> MVHashMap<K, V> {
     /// Delete an entry from transaction 'txn_idx' at access path 'key'. Will panic
     /// if the access path has never been written before.
     pub fn delete(&self, key: &K, txn_idx: TxnIndex) {
-        println!(
-            "{:?} - MVHashMap::delete | Exit, txn_idx: {:?}",
-            thread::current().id(),
-            txn_idx
-        );
+        // println!(
+        //     "{:?} - MVHashMap::delete | Exit, txn_idx: {:?}",
+        //     thread::current().id(),
+        //     txn_idx
+        // );
 
         // TODO: investigate logical deletion.
         let mut map = self.data.get_mut(key).expect("Path must exist");
         map.remove(&txn_idx);
 
-        println!(
-            "{:?} - MVHashMap::delete | Exited, txn_idx: {:?}",
-            thread::current().id(),
-            txn_idx
-        );
+        // println!(
+        //     "{:?} - MVHashMap::delete | Exited, txn_idx: {:?}",
+        //     thread::current().id(),
+        //     txn_idx
+        // );
     }
 
     /// read may return Ok((Arc<V>, txn_idx, incarnation)), Err(dep_txn_idx) for

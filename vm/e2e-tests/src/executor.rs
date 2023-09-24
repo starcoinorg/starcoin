@@ -9,7 +9,7 @@ use move_core_types::vm_status::KeptVMStatus;
 use move_table_extension::NativeTableContext;
 use num_cpus;
 use serde::{Deserialize, Serialize};
-use starcoin_config::ChainNetwork;
+use starcoin_config::{ChainNetwork};
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::HashValue;
 use starcoin_gas::{StarcoinGasMeter, StarcoinGasParameters};
@@ -118,8 +118,9 @@ impl FakeExecutor {
         let fake_executor = Self::no_genesis();
         let net = ChainNetwork::new_test();
         let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
-        let _txn_info =
+        let useless =
             Genesis::execute_genesis_txn(fake_executor.get_state_view(), genesis_txn).unwrap();
+        drop(useless);
         fake_executor
     }
 
@@ -292,13 +293,13 @@ impl FakeExecutor {
     }
 
     /// Reads the CoinStore resource value for an account from this executor's data store.
-    pub fn read_coin_store_resource(&self, account: &Account) -> Option<BalanceResource> {
-        self.read_coin_store_resource_at_address(account.address())
+    pub fn read_balance_resource(&self, account: &Account) -> Option<BalanceResource> {
+        self.read_balance_resource_at_address(account.address())
     }
 
     /// Reads the CoinStore resource value for an account under the given address from this executor's
     /// data store.
-    pub fn read_coin_store_resource_at_address(
+    pub fn read_balance_resource_at_address(
         &self,
         addr: &AccountAddress,
     ) -> Option<BalanceResource> {

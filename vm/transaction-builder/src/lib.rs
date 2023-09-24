@@ -299,6 +299,7 @@ pub fn peer_to_peer_v2(
     sender: &Account,
     recipient: &AccountAddress,
     seq_num: u64,
+    expiration_timestamp_secs: u64,
     amount: u128,
     net: &ChainNetwork,
 ) -> SignedUserTransaction {
@@ -319,7 +320,7 @@ pub fn peer_to_peer_v2(
         )),
         10000000,
         1,
-        1000 + 60 * 60,
+        expiration_timestamp_secs,
         net.chain_id(),
     ))
 }

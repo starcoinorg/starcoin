@@ -147,7 +147,7 @@ where
     ) -> SchedulerTask<'a> {
         let (idx_to_execute, incarnation) = version;
 
-        println!("{:?} - ParallelTransactionExecutor::execute | Entered, idx_to_execute:{:?}, incarnation: {:?}", thread::current().id(), idx_to_execute, incarnation);
+        // println!("{:?} - ParallelTransactionExecutor::execute | Entered, idx_to_execute:{:?}, incarnation: {:?}", thread::current().id(), idx_to_execute, incarnation);
 
         let txn = &signature_verified_block[idx_to_execute];
 
@@ -221,11 +221,11 @@ where
         versioned_data_cache: &MVHashMap<<T as Transaction>::Key, <T as Transaction>::Value>,
         scheduler: &'a Scheduler,
     ) -> SchedulerTask<'a> {
-        println!(
-            "{:?} - ParallelTransactionExecutor::validate | Entered {:?}",
-            thread::current().id(),
-            version_to_validate
-        );
+        // println!(
+        //     "{:?} - ParallelTransactionExecutor::validate | Entered {:?}",
+        //     thread::current().id(),
+        //     version_to_validate
+        // );
 
         let (idx_to_validate, incarnation) = version_to_validate;
         let read_set = last_input_output
@@ -242,12 +242,12 @@ where
 
         let aborted = !valid && scheduler.try_abort(idx_to_validate, incarnation);
 
-        println!(
-            "{:?} - ParallelTransactionExecutor::validate | valid: {}, aborted: {}",
-            thread::current().id(),
-            valid,
-            aborted
-        );
+        // println!(
+        //     "{:?} - ParallelTransactionExecutor::validate | valid: {}, aborted: {}",
+        //     thread::current().id(),
+        //     valid,
+        //     aborted
+        // );
 
         if aborted {
             // Not valid and successfully aborted, mark the latest write-set as estimates.
@@ -255,16 +255,16 @@ where
                 versioned_data_cache.mark_estimate(k, idx_to_validate);
             }
 
-            println!(
-                "{:?} -  ParallelTransactionExecutor::validate | Exited, aborted == true",
-                thread::current().id()
-            );
+            // println!(
+            //     "{:?} -  ParallelTransactionExecutor::validate | Exited, aborted == true",
+            //     thread::current().id()
+            // );
             scheduler.finish_abort(idx_to_validate, incarnation, guard)
         } else {
-            println!(
-                "{:?} - ParallelTransactionExecutor::validate | Exited, SchedulerTask::NoTask",
-                thread::current().id()
-            );
+            // println!(
+            //     "{:?} - ParallelTransactionExecutor::validate | Exited, SchedulerTask::NoTask",
+            //     thread::current().id()
+            // );
             SchedulerTask::NoTask
         }
     }

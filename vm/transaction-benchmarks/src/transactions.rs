@@ -8,7 +8,7 @@ use proptest::{
     test_runner::TestRunner,
 };
 use starcoin_crypto::HashValue;
-use std::time::Instant;
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 use starcoin_language_e2e_tests::account::AccountData;
 use starcoin_language_e2e_tests::{
@@ -20,7 +20,7 @@ use starcoin_language_e2e_tests::{
 use starcoin_types::{block_metadata::BlockMetadata, transaction::Transaction};
 
 use starcoin_vm_runtime::{
-    parallel_executor::ParallelStarcoinVM, starcoin_vm::StarcoinVM, VMExecutor,
+    parallel_executor::ParallelStarcoinVM, starcoin_vm::StarcoinVM,
 };
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
@@ -106,11 +106,9 @@ where
         num_runs: usize,
     ) -> Vec<usize> {
         let mut ret = Vec::new();
-
         let total_runs = num_warmups + num_runs;
         for i in 0..total_runs {
             let state = TransactionBenchState::with_size(&self.strategy, num_accounts, num_txn);
-
             if i < num_warmups {
                 println!("WARMUP - ignore results");
                 state.execute();
@@ -208,23 +206,25 @@ impl TransactionBenchState {
         //     vec![],
         //     1,
         // );
-        let minter_account = AccountData::new(10000, 0);
+
+        let minter_account = AccountData::new(10_000_000_000, 0);
+        state.executor.add_account_data(&minter_account);
+        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64;
         let new_block = BlockMetadata::new(
             HashValue::zero(),
-            0,
+            timestamp,
             minter_account.address().clone(),
             Some(AuthenticationKey::ed25519(
                 &minter_account.account().public_key(),
             )),
             0,
-            0,
+            1,
             ChainId::test(),
             0,
         );
         state
             .transactions
             .insert(0, Transaction::BlockMetadata(new_block));
-
         state
     }
 
@@ -276,13 +276,17 @@ impl TransactionBenchState {
 
         // this bench execution with TPS
         let timer = Instant::now();
-        let useless = StarcoinVM::execute_block(
-            self.transactions,
-            self.executor.get_state_view(),
-            None,
-            None,
-        )
-        .expect("VM should not fail to start");
+        let useless = self
+            .executor
+            .execute_transaction_block(self.transactions)
+            .expect("VM should not fail to start");
+        // let useless = StarcoinVM::execute_block(
+        //     self.transactions,
+        //     self.executor.get_state_view(),
+        //     None,
+        //     None,
+        // )
+        // .expect("VM should not fail to start");
 
         drop(useless);
 

@@ -41,12 +41,12 @@ pub fn error_split(code: u64) -> (u8, u64) {
 }
 
 pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
+    println!("convert_prologue_runtime_error VMError: {:#?}", error);
     let status = error.into_vm_status();
-    println!("convert_prologue_runtime_error:  {:#?}", status.clone());
+
     Err(match status {
         VMStatus::Executed => VMStatus::Executed,
         VMStatus::MoveAbort(location, code) => {
-            println!("convert_prologue_runtime_error, error: {:#?}", location);
             let (category, reason) = error_split(code);
             let new_major_status = match (category, reason) {
                 (REQUIRES_ADDRESS, PROLOGUE_ACCOUNT_DOES_NOT_EXIST) => {
