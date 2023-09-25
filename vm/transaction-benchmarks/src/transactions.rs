@@ -207,6 +207,7 @@ impl TransactionBenchState {
 
         let minter_account = AccountData::new(10_000_000_000, 0);
         state.executor.add_account_data(&minter_account);
+
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -316,7 +317,7 @@ fn universe_strategy(
     num_transactions: usize,
 ) -> impl Strategy<Value = AccountUniverseGen> {
     // Multiply by 5 past the number of  to provide
-    let max_balance = TXN_RESERVED * num_transactions as u64 * 5;
+    let max_balance = 5_000_000_000;//TXN_RESERVED * num_transactions as u64 * 10_000;
     let balance_strategy = log_balance_strategy(max_balance);
     AccountUniverseGen::strategy(num_accounts, balance_strategy)
 }

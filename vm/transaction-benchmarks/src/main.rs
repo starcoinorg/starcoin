@@ -14,7 +14,7 @@ fn main() {
     );
 
     let acts = [2];
-    let txns = [1];
+    let txns = [1000];
     let num_warmups = 0;
     let num_runs = 1;
 
@@ -23,7 +23,7 @@ fn main() {
     for block_size in txns {
         for num_accounts in acts {
             let mut times =
-                bencher.manual_sequence(num_accounts, block_size, num_warmups, num_runs);
+                bencher.manual_parallel(num_accounts, block_size, num_warmups, num_runs);
             times.sort();
             measurements.push(times);
         }

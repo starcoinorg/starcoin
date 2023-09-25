@@ -4,6 +4,7 @@
 use anyhow::Result;
 use once_cell::sync::Lazy;
 use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_state_api::ChainStateWriter;
 use starcoin_transaction_builder::{
     encode_transfer_script_by_token_code, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
 };
@@ -27,7 +28,6 @@ use starcoin_vm_types::transaction::TransactionPayload;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::vm_status::StatusCode;
 use std::str::FromStr;
-use starcoin_state_api::ChainStateWriter;
 use test_helper::executor::*;
 use test_helper::executor::{association_execute, execute_and_apply, prepare_genesis};
 use test_helper::txn::create_account_txn_sent_as_association;
