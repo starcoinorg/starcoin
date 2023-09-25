@@ -102,7 +102,11 @@ pub fn peer_to_peer_txn(
         &starcoin_acc,
         receiver.address(),
         seq_num,
-        (SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() + 100) as u64,
+        (SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+            + 100) as u64,
         transfer_amount as u128,
         &ChainNetwork::new_test(),
     )

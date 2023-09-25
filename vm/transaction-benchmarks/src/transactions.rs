@@ -19,9 +19,7 @@ use starcoin_language_e2e_tests::{
 
 use starcoin_types::{block_metadata::BlockMetadata, transaction::Transaction};
 
-use starcoin_vm_runtime::{
-    parallel_executor::ParallelStarcoinVM, starcoin_vm::StarcoinVM,
-};
+use starcoin_vm_runtime::{parallel_executor::ParallelStarcoinVM, starcoin_vm::StarcoinVM};
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 
@@ -209,7 +207,10 @@ impl TransactionBenchState {
 
         let minter_account = AccountData::new(10_000_000_000, 0);
         state.executor.add_account_data(&minter_account);
-        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64;
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
         let new_block = BlockMetadata::new(
             HashValue::zero(),
             timestamp,

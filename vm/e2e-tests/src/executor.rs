@@ -9,7 +9,7 @@ use move_core_types::vm_status::KeptVMStatus;
 use move_table_extension::NativeTableContext;
 use num_cpus;
 use serde::{Deserialize, Serialize};
-use starcoin_config::{ChainNetwork};
+use starcoin_config::ChainNetwork;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::HashValue;
 use starcoin_gas::{StarcoinGasMeter, StarcoinGasParameters};
