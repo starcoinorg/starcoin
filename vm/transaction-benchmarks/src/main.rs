@@ -15,7 +15,7 @@ fn main() {
 
     let acts = [2];
     let txns = [1];
-    let num_warmups = 0;
+    let num_warmups = 2;
     let num_runs = 1;
 
     let mut measurements = Vec::new();

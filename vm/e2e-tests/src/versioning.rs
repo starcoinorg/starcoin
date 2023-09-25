@@ -2,11 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #![forbid(unsafe_code)]
+
+use starcoin_vm_types::on_chain_config::G_VERSION_CONFIG_IDENTIFIER;
 use crate::{account::Account, executor::FakeExecutor, utils};
 
 /// The current version numbers that e2e tests should be run against.
 // pub const CURRENT_RELEASE_VERSIONS: std::ops::RangeInclusive<u64> =
-//     starcoin_MAX_KNOWN_VERSION.major..=starcoin_MAX_KNOWN_VERSION.major;
+//     STARCOIN_MAX_KNOWN_VERSION.major..=STARCOIN_MAX_KNOWN_VERSION.major;
+
+pub const CURRENT_RELEASE_VERSIONS: std::ops::RangeInclusive<u64> = 1..=DIEM_MAX_KNOWN_VERSION.major;
 
 #[derive(Debug)]
 pub struct VersionedTestEnv {

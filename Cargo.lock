@@ -9693,7 +9693,7 @@ dependencies = [
 [[package]]
 name = "starcoin-framework"
 version = "11.0.0"
-source = "git+https://github.com/starcoinorg/starcoin-framework?rev=0d3921265ed6a519bd09b1111949db2593a6f9c1#0d3921265ed6a519bd09b1111949db2593a6f9c1"
+source = "git+https://github.com/starcoinorg/starcoin-framework?rev=345a3900a0064dc57a9560235bc72c12f03448b1#345a3900a0064dc57a9560235bc72c12f03448b1"
 dependencies = [
  "anyhow",
  "include_dir",
@@ -9840,6 +9840,30 @@ dependencies = [
  "starcoin-vm-types",
  "stdlib",
  "test-helper",
+]
+
+[[package]]
+name = "starcoin-language-e2e-testsuite"
+version = "1.13.7"
+dependencies = [
+ "bcs",
+ "hex",
+ "move-binary-format",
+ "move-bytecode-verifier",
+ "move-core-types",
+ "move-ir-compiler",
+ "move-vm-runtime",
+ "move-vm-types",
+ "proptest",
+ "read-write-set",
+ "serde_json",
+ "starcoin-crypto",
+ "starcoin-language-e2e-tests",
+ "starcoin-logger",
+ "starcoin-transaction-builder",
+ "starcoin-types",
+ "starcoin-vm-runtime",
+ "starcoin-vm-types",
 ]
 
 [[package]]
