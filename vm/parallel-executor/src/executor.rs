@@ -182,17 +182,17 @@ where
             ExecutionStatus::Success(output) => {
                 // Apply the writes to the versioned_data_cache.
                 apply_writes(&output);
-                println!("{:?} - ParallelTransactionExecutor::execute | after executor.execute_transaction, ExecutionStatus::Success, output len: {:?}", thread::current().id(), output.get_writes().len());
+                // println!("{:?} - ParallelTransactionExecutor::execute | after executor.execute_transaction, ExecutionStatus::Success, output len: {:?}", thread::current().id(), output.get_writes().len());
                 ExecutionStatus::Success(output)
             }
             ExecutionStatus::SkipRest(output) => {
                 // Apply the writes and record status indicating skip.
                 apply_writes(&output);
-                println!("{:?} - ParallelTransactionExecutor::execute | after executor.execute_transaction, ExecutionStatus::SkipRest", thread::current().id());
+                // println!("{:?} - ParallelTransactionExecutor::execute | after executor.execute_transaction, ExecutionStatus::SkipRest", thread::current().id());
                 ExecutionStatus::SkipRest(output)
             }
             ExecutionStatus::Abort(err) => {
-                println!("{:?} - MVHashMap::execute | after executor.execute_transaction, ExecutionStatus::Abort", thread::current().id());
+                // println!("{:?} - MVHashMap::execute | after executor.execute_transaction, ExecutionStatus::Abort", thread::current().id());
                 // Record the status indicating abort.
                 ExecutionStatus::Abort(Error::UserError(err))
             }
@@ -205,7 +205,7 @@ where
 
         last_input_output.record(idx_to_execute, state_view.take_reads(), result);
 
-        println!("{:?} - ParallelTransactionExecutor::execute | Exited, idx_to_execute:{:?}, incarnation: {:?}", thread::current().id(), idx_to_execute, incarnation);
+        // println!("{:?} - ParallelTransactionExecutor::execute | Exited, idx_to_execute:{:?}, incarnation: {:?}", thread::current().id(), idx_to_execute, incarnation);
         scheduler.finish_execution(idx_to_execute, incarnation, writes_outside, guard)
     }
 

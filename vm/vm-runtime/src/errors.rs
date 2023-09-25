@@ -41,7 +41,7 @@ pub fn error_split(code: u64) -> (u8, u64) {
 }
 
 pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
-    println!("convert_prologue_runtime_error VMError: {:#?}", error);
+    // println!("convert_prologue_runtime_error VMError: {:#?}", error);
     let status = error.into_vm_status();
 
     Err(match status {

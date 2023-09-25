@@ -105,21 +105,21 @@ impl<K: Hash + Clone + Eq, V> MVHashMap<K, V> {
     /// Mark an entry from transaction 'txn_idx' at access path 'key' as an estimated write
     /// (for future incarnation). Will panic if the entry is not in the data-structure.
     pub fn mark_estimate(&self, key: &K, txn_idx: TxnIndex) {
-        println!(
-            "{:?} - MVHashMap::mark_estimate | Entered, txn_id: {:?}",
-            thread::current().id(),
-            txn_idx
-        );
+        // println!(
+        //     "{:?} - MVHashMap::mark_estimate | Entered, txn_id: {:?}",
+        //     thread::current().id(),
+        //     txn_idx
+        // );
 
         let map = self.data.get(key).expect("Path must exist");
         map.get(&txn_idx)
             .expect("Entry by txn must exist")
             .mark_estimate();
 
-        println!(
-            "{:?} - MVHashMap::mark_estimate | Exited",
-            thread::current().id()
-        );
+        // println!(
+        //     "{:?} - MVHashMap::mark_estimate | Exited",
+        //     thread::current().id()
+        // );
     }
 
     /// Delete an entry from transaction 'txn_idx' at access path 'key'. Will panic

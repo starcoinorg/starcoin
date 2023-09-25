@@ -46,10 +46,10 @@ impl AUTransactionGen for P2PTransferGen {
             self.amount,
         );
 
-        println!(
-            "AUTransactionGen::apply | sender balance: {:#?}",
-            sender.balance
-        );
+        // println!(
+        //     "AUTransactionGen::apply | sender balance: {:#?}",
+        //     sender.balance
+        // );
 
         // Now figure out whether the transaction will actually work.
         // This means that we'll get through the main part of the transaction.
