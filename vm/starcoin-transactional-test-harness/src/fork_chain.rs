@@ -307,6 +307,13 @@ impl ChainApi for MockChainApi {
         Box::pin(fut.boxed().map_err(map_err))
     }
 
+    fn get_num_blocks(&self, number: BlockNumber, option: Option<GetBlocksOption>) -> FutureResult<Vec<BlockView>> {
+        let fut = async move {
+            bail!("not implemented.");
+        };
+        Box::pin(fut.boxed().map_err(map_err))
+    }
+
     fn get_block_info_by_number(&self, number: BlockNumber) -> FutureResult<Option<BlockInfoView>> {
         let chain = self.chain.lock().unwrap();
         let client = chain.remote_chain_client();

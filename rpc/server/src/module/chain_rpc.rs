@@ -171,6 +171,11 @@ where
         Box::pin(fut.boxed())
     }
 
+    fn get_num_blocks(&self, number: BlockNumber, option: Option<GetBlocksOption>) -> FutureResult<Vec<BlockView>> {
+        // XXX FIXME YSG
+        todo!()
+    }
+
     fn get_block_info_by_number(&self, number: u64) -> FutureResult<Option<BlockInfoView>> {
         let service = self.service.clone();
 

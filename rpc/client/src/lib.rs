@@ -799,6 +799,14 @@ impl RpcClient {
         .map_err(map_err)
     }
 
+    pub fn chain_get_num_blocks(&self,
+    number: BlockNumber,
+    option: Option<GetBlocksOption>,) -> anyhow::Result<Vec<BlockView>> {
+        self.call_rpc_blocking(|inner| {
+            inner.chain_client.get_num_blocks(number, option)
+        }).map_err(map_err)
+    }
+
     pub fn chain_get_transaction(
         &self,
         txn_id: HashValue,

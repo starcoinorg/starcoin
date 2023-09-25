@@ -47,6 +47,14 @@ pub trait ChainApi {
         count: u64,
         option: Option<GetBlocksOption>,
     ) -> FutureResult<Vec<BlockView>>;
+
+    /// Get height `number` blocks.
+    #[rpc(name = "chain.get_num_blocks")]
+    fn get_num_blocks(
+        &self,
+        number: BlockNumber,
+        option: Option<GetBlocksOption>,
+    ) -> FutureResult<Vec<BlockView>>;
     #[rpc(name = "chain.get_block_info_by_number")]
     fn get_block_info_by_number(&self, number: BlockNumber) -> FutureResult<Option<BlockInfoView>>;
     /// Get chain transactions

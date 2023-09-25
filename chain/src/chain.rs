@@ -605,6 +605,11 @@ impl ChainReader for BlockChain {
         Ok(blocks)
     }
 
+    fn get_num_blocks(&self, number: BlockNumber) -> Result<Vec<Block>> {
+        // XXX FIXME YSG
+        todo!()
+    }
+
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
         self.storage
             .get_block_by_hash(hash)

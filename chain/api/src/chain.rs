@@ -43,6 +43,10 @@ pub trait ChainReader {
         reverse: bool,
         count: u64,
     ) -> Result<Vec<Block>>;
+    fn get_num_blocks(
+        &self,
+        number: BlockNumber
+    ) -> Result<Vec<Block>>;
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>>;
     /// Get block hash by block number, if not exist, return None
     fn get_hash_by_number(&self, number: BlockNumber) -> Result<Option<HashValue>>;
