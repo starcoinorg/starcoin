@@ -336,6 +336,8 @@ fn test_stm_dependency() -> Result<()> {
             chain_state.commit().expect("commit should success.");
         }
     });
+    let balance = get_balance(*account2.address(), &chain_state);
 
+    assert_eq!(balance, 3000);
     Ok(())
 }
