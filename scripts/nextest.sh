@@ -14,7 +14,7 @@ ulimit -a
 
 # install cargo-nextest
 echo "Setup cargo-nextest."
-cargo nextest -V >/dev/null 2>&1 || cargo install cargo-nextest --locked
+cargo nextest -V >/dev/null 2>&1 || cargo install cargo-nextest --version "0.9.57" --locked
 
 # following options are tuned for current self hosted CI machine
 # --test-threads 12, proper test concurrency level, balance failure rate and test speed

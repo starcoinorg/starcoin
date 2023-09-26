@@ -32,6 +32,10 @@ pub trait DebugApi {
     /// Update vm concurrency level, level = min(level, num_cpus::get)
     #[rpc(name = "debug.set_concurrency_level")]
     fn set_concurrency_level(&self, level: usize) -> Result<()>;
+
+    /// Get vm concurrency level
+    #[rpc(name = "debug.get_concurrency_level")]
+    fn get_concurrency_level(&self) -> Result<usize>;
 }
 #[test]
 fn test() {

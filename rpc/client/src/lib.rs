@@ -736,6 +736,11 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn get_concurrency_level(&self) -> anyhow::Result<usize> {
+        self.call_rpc_blocking(|inner| inner.debug_client.get_concurrency_level())
+            .map_err(map_err)
+    }
+
     pub fn chain_id(&self) -> anyhow::Result<ChainId> {
         self.call_rpc_blocking(|inner| inner.chain_client.id())
             .map_err(map_err)
