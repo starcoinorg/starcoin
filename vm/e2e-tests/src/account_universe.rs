@@ -137,7 +137,7 @@ impl AccountCurrent {
         let received_events_count = initial_data.received_events_count();
         Self {
             initial_data,
-            balance,
+            balance: balance as u64,
             sequence_number,
             sent_events_count,
             received_events_count,
