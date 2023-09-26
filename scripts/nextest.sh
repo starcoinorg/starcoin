@@ -14,6 +14,7 @@ ulimit -a
 
 # install cargo-nextest
 echo "Setup cargo-nextest."
+cargo install clap --locked
 cargo nextest -V >/dev/null 2>&1 || cargo install cargo-nextest --locked
 
 # following options are tuned for current self hosted CI machine
