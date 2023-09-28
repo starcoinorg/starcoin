@@ -372,7 +372,9 @@ fn universe_strategy(
     num_transactions: usize,
 ) -> impl Strategy<Value = AccountUniverseGen> {
     // Multiply by 5 past the number of  to provide
-    let max_balance = TXN_RESERVED * num_transactions as u64 * 5;
+    // XXX FIXME YSG
+    // let max_balance = TXN_RESERVED * num_transactions as u64 * 5;
+    let max_balance = 5_000_000_000;
     let balance_strategy = log_balance_strategy(max_balance);
     AccountUniverseGen::strategy(num_accounts, balance_strategy)
 }
