@@ -9854,6 +9854,7 @@ dependencies = [
  "starcoin-proptest-helpers",
  "starcoin-state-tree",
  "starcoin-statedb",
+ "starcoin-time-service",
  "starcoin-transaction-builder",
  "starcoin-types",
  "starcoin-vm-runtime",

@@ -38,4 +38,5 @@ starcoin-gas = { workspace = true }
 move-table-extension = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-state-tree = { workspace = true }
+starcoin-time-service = { workspace = true }
 

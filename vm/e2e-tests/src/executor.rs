@@ -14,9 +14,9 @@ use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::HashValue;
 use starcoin_gas::{StarcoinGasMeter, StarcoinGasParameters};
 use starcoin_gas_algebra_ext::InitialGasSchedule;
+use starcoin_vm_runtime::block_executor::BlockStarcoinVM;
 use starcoin_vm_runtime::data_cache::{AsMoveResolver, RemoteStorage};
 use starcoin_vm_runtime::move_vm_ext::{MoveVmExt, SessionId, SessionOutput};
-use starcoin_vm_runtime::parallel_executor::ParallelStarcoinVM;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_runtime::VMExecutor;
 use starcoin_vm_types::{
@@ -118,8 +118,9 @@ impl FakeExecutor {
         let fake_executor = Self::no_genesis();
         let net = ChainNetwork::new_test();
         let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
-        let _txn_info =
+        let useless =
             Genesis::execute_genesis_txn(fake_executor.get_state_view(), genesis_txn).unwrap();
+        drop(useless);
         fake_executor
     }
 
@@ -292,13 +293,13 @@ impl FakeExecutor {
     }
 
     /// Reads the CoinStore resource value for an account from this executor's data store.
-    pub fn read_coin_store_resource(&self, account: &Account) -> Option<BalanceResource> {
-        self.read_coin_store_resource_at_address(account.address())
+    pub fn read_balance_resource(&self, account: &Account) -> Option<BalanceResource> {
+        self.read_balance_resource_at_address(account.address())
     }
 
-    /// Reads the CoinStore resource value for an account under the given address from this executor's
+    /// Reads the balance resource value for an account under the given address from this executor's
     /// data store.
-    pub fn read_coin_store_resource_at_address(
+    pub fn read_balance_resource_at_address(
         &self,
         addr: &AccountAddress,
     ) -> Option<BalanceResource> {
@@ -364,7 +365,7 @@ impl FakeExecutor {
         &self,
         txn_block: Vec<Transaction>,
     ) -> Result<Vec<TransactionOutput>, VMStatus> {
-        let (result, _) = ParallelStarcoinVM::execute_block(
+        let (result, _) = BlockStarcoinVM::execute_block(
             txn_block,
             &self.data_store,
             num_cpus::get(),

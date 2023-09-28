@@ -5,6 +5,7 @@
 
 use crate::account::Account;
 use starcoin_config::ChainNetwork;
+pub use starcoin_time_service::duration_since_epoch;
 use starcoin_transaction_builder::{build_signed_empty_txn, peer_to_peer_v2};
 use starcoin_types::account::Account as StarcoinAccount;
 use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
@@ -102,6 +103,7 @@ pub fn peer_to_peer_txn(
         &starcoin_acc,
         receiver.address(),
         seq_num,
+        duration_since_epoch().as_secs() + 100,
         transfer_amount as u128,
         &ChainNetwork::new_test(),
     )

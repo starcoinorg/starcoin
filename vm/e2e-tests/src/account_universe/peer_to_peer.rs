@@ -111,7 +111,7 @@ impl AUTransactionGen for P2PTransferGen {
                 );
             }
         }
-        println!("AUTransactionGen::apply | Exited: {:?}", status);
+        // println!("AUTransactionGen::apply | Exited: {:?}", status);
         (txn, (status, gas_used))
     }
 }

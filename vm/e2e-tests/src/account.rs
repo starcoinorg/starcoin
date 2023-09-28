@@ -19,9 +19,7 @@ use starcoin_vm_types::language_storage::StructTag;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::transaction::authenticator::{
-    AccountPrivateKey, AccountPublicKey
-};
+use starcoin_vm_types::transaction::authenticator::{AccountPrivateKey, AccountPublicKey};
 use starcoin_vm_types::transaction::{
     RawUserTransaction, Script, ScriptFunction, SignedUserTransaction, TransactionPayload,
 };
@@ -684,7 +682,6 @@ impl AccountData {
                 .as_ref()
                 .map(|v| v.value())
                 .unwrap_or_else(|| Value::vector_for_testing_only(vec![])),
-
             Value::struct_(Struct::pack(vec![
                 Value::u64(self.withdraw_events.count()),
                 Value::vector_u8(self.withdraw_events.key().to_vec()),
