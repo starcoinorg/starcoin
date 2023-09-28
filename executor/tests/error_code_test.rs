@@ -4,6 +4,7 @@
 use anyhow::Result;
 use once_cell::sync::Lazy;
 use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_state_api::ChainStateWriter;
 use starcoin_transaction_builder::{
     encode_transfer_script_by_token_code, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
 };
@@ -14,6 +15,7 @@ use starcoin_types::{
     account::Account, block_metadata::BlockMetadata, transaction::Transaction,
     transaction::TransactionStatus,
 };
+use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::account_config::{genesis_address, stc_type_tag};
@@ -250,5 +252,83 @@ fn test_call_deprecated_function() -> Result<()> {
 
     // TODO: now the status is Keep(MISCELLANEOUS_ERROR), and move_abort_code(status) return None.
     // assert_eq!(Some(4875), move_abort_code(status));
+    Ok(())
+}
+
+#[stest::test]
+fn test_stm_dependency() -> Result<()> {
+    let (chain_state, net) = prepare_genesis();
+    let account1 = Account::new();
+    let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+        &account1, 0, 50_000_000, 1, &net,
+    ));
+    let output1 = execute_and_apply(&chain_state, txn1);
+    assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
+    let account2 = Account::new();
+    let txn2 = Transaction::UserTransaction(account1.sign_txn(
+        starcoin_transaction_builder::build_transfer_txn(
+            *account1.address(),
+            *account2.address(),
+            0,
+            1000,
+            1,
+            DEFAULT_MAX_GAS_AMOUNT,
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            net.chain_id(),
+        ),
+    ));
+    let output2 = execute_and_apply(&chain_state, txn2);
+    assert_eq!(KeptVMStatus::Executed, output2.status().status().unwrap());
+    let txn3 = Transaction::UserTransaction(account1.sign_txn(
+        starcoin_transaction_builder::build_transfer_txn(
+            *account1.address(),
+            *account2.address(),
+            1,
+            1000,
+            1,
+            DEFAULT_MAX_GAS_AMOUNT,
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            net.chain_id(),
+        ),
+    ));
+    let txn4 = Transaction::UserTransaction(account1.sign_txn(
+        starcoin_transaction_builder::build_transfer_txn(
+            *account1.address(),
+            *account2.address(),
+            2,
+            1000,
+            1,
+            DEFAULT_MAX_GAS_AMOUNT,
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            net.chain_id(),
+        ),
+    ));
+    //
+    // let txn5 = Transaction::UserTransaction(account1.sign_txn(
+    //     starcoin_transaction_builder::build_transfer_txn(
+    //         *account1.address(),
+    //         *account2.address(),
+    //         1,
+    //         1000,
+    //         1,
+    //         DEFAULT_MAX_GAS_AMOUNT,
+    //         net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+    //         net.chain_id(),
+    //     ),
+    // ));
+    StarcoinVM::set_concurrency_level_once(4);
+    let outputs =
+        starcoin_executor::execute_transactions(&chain_state, vec![txn3, txn4], None).unwrap();
+    outputs.into_iter().for_each(|output| {
+        if let TransactionStatus::Keep(_) = output.status() {
+            chain_state
+                .apply_write_set(output.write_set().clone())
+                .expect("apply write_set should success.");
+            chain_state.commit().expect("commit should success.");
+        }
+    });
+    let balance = get_balance(*account2.address(), &chain_state);
+
+    assert_eq!(balance, 3000);
     Ok(())
 }

@@ -11,12 +11,12 @@ use starcoin_crypto::HashValue;
 use std::time::{Instant, SystemTime};
 
 use starcoin_language_e2e_tests::account::AccountData;
+use starcoin_language_e2e_tests::common_transactions::duration_since_epoch;
 use starcoin_language_e2e_tests::{
     account_universe::{log_balance_strategy, AUTransactionGen, AccountUniverseGen},
     executor::FakeExecutor,
     gas_costs::TXN_RESERVED,
 };
-use starcoin_language_e2e_tests::common_transactions::duration_since_epoch;
 
 use starcoin_types::{block_metadata::BlockMetadata, transaction::Transaction};
 
