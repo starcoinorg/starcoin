@@ -13,7 +13,7 @@ fn main() {
         default_num_transactions,
     );
 
-    let acts = [10000,];
+    let acts = [10000];
     let txns = [500000];
     let num_warmups = 2;
     let num_runs = 10;

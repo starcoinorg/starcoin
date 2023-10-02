@@ -9,7 +9,6 @@ use std::{
         atomic::{AtomicUsize, Ordering},
         Arc,
     },
-    thread,
 };
 
 #[cfg(test)]
