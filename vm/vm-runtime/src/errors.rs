@@ -96,7 +96,7 @@ pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
                     StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
                 }
             };
-            println!("YSG {:#?}", new_major_status);
+            // println!("YSG {:#?}", new_major_status);
             VMStatus::Error(new_major_status)
         }
         status @ VMStatus::ExecutionFailure { .. } | status @ VMStatus::Error(_) => {
