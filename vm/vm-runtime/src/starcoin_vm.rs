@@ -149,7 +149,7 @@ impl StarcoinVM {
                     StarcoinGasParameters::from_on_chain_gas_schedule(&gs.clone().to_btree_map());
                 if let Some(ref params) = gas_params {
                     if params.natives != self.native_params {
-                        debug!("update native_params");
+                       // debug!("update native_params");
                         match Arc::get_mut(&mut self.move_vm) {
                             None => {
                                 bail!("failed to get move vm when load config");
@@ -183,10 +183,10 @@ impl StarcoinVM {
             (self.gas_schedule, _message) = if stdlib_version
                 < StdlibVersion::Version(VMCONFIG_UPGRADE_VERSION_MARK)
             {
-                debug!(
+                /* debug!(
                     "stdlib version: {}, fetch VMConfig from onchain resource",
                     stdlib_version
-                );
+                ); */
                 let gas_cost_table = VMConfig::fetch_config(&remote_storage)?
                     .ok_or_else(|| format_err!("Load VMConfig fail, VMConfig resource not exist."))?
                     .gas_schedule;
@@ -197,10 +197,10 @@ impl StarcoinVM {
             } else if stdlib_version >= StdlibVersion::Version(VMCONFIG_UPGRADE_VERSION_MARK)
                 && stdlib_version < StdlibVersion::Version(GAS_SCHEDULE_UPGRADE_VERSION_MARK)
             {
-                debug!(
+              /*  debug!(
                     "stdlib version: {}, fetch VMConfig from onchain module",
                     stdlib_version
-                );
+                ); */
                 let instruction_schedule = {
                     let data = self
                         .execute_readonly_function_internal(
@@ -261,10 +261,10 @@ impl StarcoinVM {
                     "gas schedule from VMConfig",
                 )
             } else {
-                debug!(
+               /* debug!(
                     "stdlib version: {}, fetch schedule from onchain  module GasSchedule",
                     stdlib_version
-                );
+                ); */
                 let gas_schedule = GasSchedule::fetch_config(&remote_storage)?;
                 (gas_schedule, "gas schedule from GasSchedule")
             };
@@ -617,12 +617,13 @@ impl StarcoinVM {
                 } else {
                     txn_data.sender
                 };
+                /*
                 debug!(
                     "execute init script({}::{}) by account {:?}",
                     init_script.module(),
                     init_script.function(),
                     sender
-                );
+                ); */
                 session
                     .execute_entry_function(
                         init_script.module(),
@@ -668,7 +669,7 @@ impl StarcoinVM {
                     if let Ok(s) = CompiledScript::deserialize(script.code()) {
                         self.check_move_version(s.version() as u64)?;
                     };
-                    debug!("TransactionPayload::{:?}", script);
+                   // debug!("TransactionPayload::{:?}", script);
                     session.execute_script(
                         script.code().to_vec(),
                         script.ty_args().to_vec(),
@@ -678,7 +679,7 @@ impl StarcoinVM {
                     )
                 }
                 TransactionPayload::ScriptFunction(script_function) => {
-                    debug!("TransactionPayload::{:?}", script_function);
+                    // debug!("TransactionPayload::{:?}", script_function);
                     session.execute_entry_function(
                         script_function.module(),
                         script_function.function(),
@@ -1049,7 +1050,7 @@ impl StarcoinVM {
             if event.key().get_creator_address() == genesis_address()
                 && (event.is::<UpgradeEvent>() || event.is::<ConfigChangeEvent<Version>>())
             {
-                info!("Load vm configs trigger by reconfigure event. ");
+                // info!("Load vm configs trigger by reconfigure event. ");
                 self.load_configs(state_view)?;
             }
         }
@@ -1363,7 +1364,7 @@ impl StarcoinVM {
 
     pub fn get_gas_parameters(&self) -> Result<&StarcoinGasParameters, VMStatus> {
         self.gas_params.as_ref().ok_or_else(|| {
-            debug!("VM Startup Failed. Gas Parameters Not Found");
+            // debug!("VM Startup Failed. Gas Parameters Not Found");
             VMStatus::Error(StatusCode::VM_STARTUP_FAILURE)
         })
     }
@@ -1373,7 +1374,7 @@ impl StarcoinVM {
         concurrency_level = min(concurrency_level, num_cpus::get());
         // Only the first call succeeds, due to OnceCell semantics.
         EXECUTION_CONCURRENCY_LEVEL.set(concurrency_level).ok();
-        info!("TurboSTM executor concurrency_level {}", concurrency_level);
+        // info!("TurboSTM executor concurrency_level {}", concurrency_level);
     }
 
     /// Get the concurrency level if already set, otherwise return default 1
@@ -1517,17 +1518,17 @@ pub fn log_vm_status(
     match txn_output {
         Some(output) => {
             //TODO change log level after main network launch.
-            info!(
+           /* info!(
                 "[starcoin-vm] Executed txn: {:?} (sender: {:?}, sequence_number: {:?}) txn_status: {:?}, gas_used: {}, vm_status: {}",
                 txn_id, txn_data.sender, txn_data.sequence_number, output.status(), output.gas_used(), msg,
-            );
+            ); */
         }
         None => {
             let txn_status = TransactionStatus::from(status.clone());
-            info!(
+         /*   info!(
                 "[starcoin-vm] Executed txn: {:?} (sender: {:?}, sequence_number: {:?}) txn_status: {:?}, vm_status: {}",
                 txn_id, txn_data.sender, txn_data.sequence_number, txn_status, msg,
-            );
+            ); */
         }
     }
 }
@@ -1555,7 +1556,7 @@ impl VMExecutor for StarcoinVM {
                 metrics,
             )?;
             // debug!("TurboSTM executor concurrency_level {}", concurrency_level);
-            debug!("Parallel execution error {:?}", err);
+           // debug!("Parallel execution error {:?}", err);
             Ok(result)
         } else {
             let output = Self::execute_block_and_keep_vm_status(
@@ -1593,7 +1594,7 @@ impl VMAdapter for StarcoinVM {
             if event.key().get_creator_address() == genesis_address()
                 && (event.is::<UpgradeEvent>() || event.is::<ConfigChangeEvent<Version>>())
             {
-                info!("should_restart_execution happen");
+                // info!("should_restart_execution happen");
                 return true;
             }
         }

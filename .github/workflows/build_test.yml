@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   pull_request:
     branches:
-      - block_executor_optimize_tps
+      - block_executor_optimize_tps_without_easygas
 
 jobs:
   build-and-test:
