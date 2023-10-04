@@ -54,11 +54,7 @@ fn main() {
     //     run_par = true;
     // }
 
-    let bencher = TransactionBencher::new(
-        any_with::<P2PTransferGen>((1_000, 1_000_000)),
-        default_num_accounts,
-        default_num_transactions,
-    );
+    let bencher = TransactionBencher::new(any_with::<P2PTransferGen>((1_000, 1_000_000)));
 
     // let acts = [1000];
     //let txns = [10000, 50000, 100000];

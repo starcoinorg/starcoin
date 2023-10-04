@@ -38,16 +38,16 @@ where
     S::Value: AUTransactionGen,
 {
     /// The number of accounts created by default.
-    //pub const DEFAULT_NUM_ACCOUNTS: usize = 1000;
+    pub const DEFAULT_NUM_ACCOUNTS: usize = 1000;
 
     /// The number of transactions created by default.
-    // pub const DEFAULT_NUM_TRANSACTIONS: usize = 1000;
+    pub const DEFAULT_NUM_TRANSACTIONS: usize = 1000;
 
     /// Creates a new transaction bencher with default settings.
-    pub fn new(strategy: S, num_accounts: usize, num_transactions: usize) -> Self {
+    pub fn new(strategy: S) -> Self {
         Self {
-            num_accounts,
-            num_transactions,
+            num_accounts: Self::DEFAULT_NUM_ACCOUNTS,
+            num_transactions: Self::DEFAULT_NUM_TRANSACTIONS,
             strategy,
         }
     }
@@ -82,23 +82,18 @@ where
 
     /// Runs the bencher.
     pub fn bench_parallel<M: Measurement>(&self, b: &mut Bencher<M>) {
-        let start_time = SystemTime::now();
-        let num = 8;
         b.iter_batched(
             || {
-                ParallelBenchState::with_size(
+                TransactionBenchState::with_size(
                     &self.strategy,
                     self.num_accounts,
                     self.num_transactions,
-                    num,
                 )
             },
-            |state| state.execute(),
+            |state| state.execute_parallel(),
             // The input here is the entire list of signed transactions, so it's pretty large.
             BatchSize::LargeInput,
-        );
-        let use_time = SystemTime::now().duration_since(start_time).unwrap();
-        println!("cpu num = {}, cost time = {}", num, use_time.as_secs());
+        )
     }
 
     /// Runs the bencher.
@@ -136,71 +131,6 @@ where
         }
 
         (par_tps, seq_tps)
-    }
-
-    pub fn manual_sequence(
-        &self,
-        num_accounts: usize,
-        num_txn: usize,
-        num_warmups: usize,
-        num_runs: usize,
-        concurrency_level: usize,
-    ) -> Vec<usize> {
-        let mut ret = Vec::new();
-
-        let total_runs = num_warmups + num_runs;
-        for i in 0..total_runs {
-            let state = TransactionBenchState::with_size(&self.strategy, num_accounts, num_txn);
-
-            if i < num_warmups {
-                println!("WARMUP - ignore results");
-                state.execute();
-            } else {
-                println!(
-                    "RUN bencher for: num_threads = {}, \
-                          block_size = {}, \
-                          num_account = {}",
-                    concurrency_level, num_txn, num_accounts,
-                );
-                ret.push(state.execute());
-            }
-        }
-        ret
-    }
-
-    pub fn manual_parallel(
-        &self,
-        num_accounts: usize,
-        num_txn: usize,
-        num_warmups: usize,
-        num_runs: usize,
-        concurrency_level: usize,
-    ) -> Vec<usize> {
-        let mut ret = Vec::new();
-
-        let total_runs = num_warmups + num_runs;
-        for i in 0..total_runs {
-            let state = ParallelBenchState::with_size(
-                &self.strategy,
-                num_accounts,
-                num_txn,
-                concurrency_level,
-            );
-
-            if i < num_warmups {
-                println!("WARMUP - ignore results");
-                state.execute();
-            } else {
-                println!(
-                    "RUN bencher for: num_threads = {}, \
-                          block_size = {}, \
-                          num_account = {}",
-                    concurrency_level, num_txn, num_accounts,
-                );
-                ret.push(state.execute());
-            }
-        }
-        ret
     }
 }
 
@@ -336,19 +266,19 @@ impl TransactionBenchState {
         transactions_len * 1000 / exec_t.as_millis() as usize
     }
 
-    // /// Executes this state in a single block via parallel execution.
-    // fn execute_parallel(self) {
-    //     // The output is ignored here since we're just testing transaction performance, not trying
-    //     // to assert correctness.
-    //     ParallelStarcoinVM::execute_block(
-    //         self.transactions,
-    //         self.executor.get_state_view(),
-    //         num_cpus::get(),
-    //         None,
-    //         None,
-    //     )
-    //     .expect("VM should not fail to start");
-    // }
+     /// Executes this state in a single block via parallel execution.
+     fn execute_parallel(self) {
+         // The output is ignored here since we're just testing transaction performance, not trying
+         // to assert correctness.
+         BlockStarcoinVM::execute_block(
+             self.transactions,
+             self.executor.get_state_view(),
+             num_cpus::get(),
+             None,
+             None,
+         )
+         .expect("VM should not fail to start");
+     }
 
     fn execute_blockstm_benchmark(
         self,
@@ -374,52 +304,8 @@ fn universe_strategy(
     // Multiply by 5 past the number of  to provide
     // XXX FIXME YSG
     // let max_balance = TXN_RESERVED * num_transactions as u64 * 5;
-    let max_balance = 5_000_000_000;
-    let balance_strategy = log_balance_strategy(max_balance);
-    AccountUniverseGen::strategy(num_accounts, balance_strategy)
+    // let max_balance = 5_000_000_000;
+    let balance = TXN_RESERVED * num_transactions as u64 * 5;
+    AccountUniverseGen::strategy(num_accounts, balance..(balance + 1))
 }
 
-struct ParallelBenchState {
-    bench_state: TransactionBenchState,
-    num_threads: usize,
-}
-
-impl ParallelBenchState {
-    /// Creates a new benchmark state with the given number of accounts and transactions.
-    fn with_size<S>(
-        strategy: S,
-        num_accounts: usize,
-        num_transactions: usize,
-        num_threads: usize,
-    ) -> Self
-    where
-        S: Strategy,
-        S::Value: AUTransactionGen,
-    {
-        Self {
-            bench_state: TransactionBenchState::with_universe(
-                strategy,
-                universe_strategy(num_accounts, num_transactions),
-                num_transactions,
-            ),
-            num_threads,
-        }
-    }
-
-    fn execute(self) -> usize {
-        // let txns = self
-        //     .bench_state
-        //     .transactions
-        //     .into_iter()
-        //     .map(Transaction::UserTransaction)
-        //     .collect();
-
-        let state_view = self.bench_state.executor.get_state_view();
-        // measured - microseconds.
-        BlockStarcoinVM::execute_block_tps(
-            self.bench_state.transactions.clone(),
-            state_view,
-            self.num_threads,
-        )
-    }
-}
