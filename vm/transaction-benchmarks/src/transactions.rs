@@ -266,19 +266,19 @@ impl TransactionBenchState {
         transactions_len * 1000 / exec_t.as_millis() as usize
     }
 
-     /// Executes this state in a single block via parallel execution.
-     fn execute_parallel(self) {
-         // The output is ignored here since we're just testing transaction performance, not trying
-         // to assert correctness.
-         BlockStarcoinVM::execute_block(
-             self.transactions,
-             self.executor.get_state_view(),
-             num_cpus::get(),
-             None,
-             None,
-         )
-         .expect("VM should not fail to start");
-     }
+    /// Executes this state in a single block via parallel execution.
+    fn execute_parallel(self) {
+        // The output is ignored here since we're just testing transaction performance, not trying
+        // to assert correctness.
+        BlockStarcoinVM::execute_block(
+            self.transactions,
+            self.executor.get_state_view(),
+            num_cpus::get(),
+            None,
+            None,
+        )
+        .expect("VM should not fail to start");
+    }
 
     fn execute_blockstm_benchmark(
         self,
@@ -308,4 +308,3 @@ fn universe_strategy(
     let balance = TXN_RESERVED * num_transactions as u64 * 5;
     AccountUniverseGen::strategy(num_accounts, balance..(balance + 1))
 }
-

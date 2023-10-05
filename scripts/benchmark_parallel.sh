@@ -39,4 +39,4 @@ IFS=','
 power_of_two_str="${power_of_two_array[*]}"
 
 #echo "Power of two array: ${power_of_two_str[@]}"
-eval RUST_LOG=info cargo run --release -p "starcoin-transaction-benchmarks" --features fuzzing -- --concurrency-level "16" --txn-nums "$TXN_NUMS" --account-nums="$ACCOUNT_NUMS"
+eval RUST_LOG=info cargo run --release -p "starcoin-transaction-benchmarks" --features fuzzing -- --concurrency-level "24" --txn-nums "$TXN_NUMS" --account-nums="$ACCOUNT_NUMS"
