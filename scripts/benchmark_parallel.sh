@@ -4,7 +4,7 @@
 
 STARCOIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
 TXN_NUMS=500000
-ACCOUNT_NUMS=10000
+ACCOUNT_NUMS=1000000
 
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     # Linux
