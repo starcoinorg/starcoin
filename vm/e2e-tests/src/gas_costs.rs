@@ -134,16 +134,13 @@ pub static PEER_TO_PEER: Lazy<u64> = Lazy::new(|| {
     // Compute gas used by running a placeholder transaction.
     let mut executor = FakeExecutor::from_genesis_file();
     // XXX FIXME YSG
-    // let sender = AccountData::new(1_000_000, 10);
-    // let receiver = AccountData::new(1_000_000, 10);
-    let sender = AccountData::new(1_000_000_000, 10);
-    let receiver = AccountData::new(1_000_000_000, 10);
+    let sender = AccountData::new(1_000_000, 10);
+    let receiver = AccountData::new(1_000_000, 10);
     executor.add_account_data(&sender);
     executor.add_account_data(&receiver);
 
     // XXX FIXME YSG
-    // let txn = peer_to_peer_txn(sender.account(), receiver.account(), 10, 20_000);
-    let txn = peer_to_peer_txn(sender.account(), receiver.account(), 10, 10);
+    let txn = peer_to_peer_txn(sender.account(), receiver.account(), 10, 20_000);
     compute_gas_used(txn, &mut executor)
 });
 
