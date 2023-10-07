@@ -64,7 +64,7 @@ pub type TraceSeqMapping = (usize, Vec<usize>, Vec<usize>);
 
 /// Provides an environment to run a VM instance.
 ///
-/// This struct is a mock in-memory implementation of the Aptos executor.
+/// This struct is a mock in-memory implementation of the Starcoin executor.
 #[derive(Debug)]
 pub struct FakeExecutor {
     data_store: FakeDataStore,
@@ -118,8 +118,9 @@ impl FakeExecutor {
         let fake_executor = Self::no_genesis();
         let net = ChainNetwork::new_test();
         let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
-        let _txn_info =
+        let useless =
             Genesis::execute_genesis_txn(fake_executor.get_state_view(), genesis_txn).unwrap();
+        drop(useless);
         fake_executor
     }
 
@@ -227,7 +228,7 @@ impl FakeExecutor {
     }
 
     /// Create one instance of [`AccountData`] without saving it to data store.
-    pub fn create_raw_account_data(&mut self, balance: u64, seq_num: u64) -> AccountData {
+    pub fn create_raw_account_data(&mut self, balance: u128, seq_num: u64) -> AccountData {
         AccountData::new_from_seed(&mut self.rng, balance, seq_num)
     }
 
@@ -236,7 +237,7 @@ impl FakeExecutor {
     pub fn create_accounts(&mut self, size: usize, balance: u64, seq_num: u64) -> Vec<Account> {
         let mut accounts: Vec<Account> = Vec::with_capacity(size);
         for _i in 0..size {
-            let account_data = AccountData::new_from_seed(&mut self.rng, balance, seq_num);
+            let account_data = AccountData::new_from_seed(&mut self.rng, balance as u128, seq_num);
             self.add_account_data(&account_data);
             accounts.push(account_data.into_account());
         }
@@ -292,13 +293,13 @@ impl FakeExecutor {
     }
 
     /// Reads the CoinStore resource value for an account from this executor's data store.
-    pub fn read_coin_store_resource(&self, account: &Account) -> Option<BalanceResource> {
-        self.read_coin_store_resource_at_address(account.address())
+    pub fn read_balance_resource(&self, account: &Account) -> Option<BalanceResource> {
+        self.read_balance_resource_at_address(account.address())
     }
 
-    /// Reads the CoinStore resource value for an account under the given address from this executor's
+    /// Reads the balance resource value for an account under the given address from this executor's
     /// data store.
-    pub fn read_coin_store_resource_at_address(
+    pub fn read_balance_resource_at_address(
         &self,
         addr: &AccountAddress,
     ) -> Option<BalanceResource> {
@@ -481,7 +482,9 @@ impl FakeExecutor {
             HashValue::zero(),
             self.block_time,
             minter_account.address().clone(),
-            Some(AuthenticationKey::ed25519(&minter_account.account().pubkey)),
+            Some(AuthenticationKey::ed25519(
+                &minter_account.account().public_key(),
+            )),
             0,
             0,
             ChainId::test(),

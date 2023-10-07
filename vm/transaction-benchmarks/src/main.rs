@@ -37,26 +37,44 @@ fn main() {
     let mut run_par = opt.run_par;
     let run_seq = true;
 
-    assert!(!concurrency_levels.is_empty(), "Concurrcy level array is empty!");
-    assert!(!txns.is_empty(), "Transaction numbers level array is empty!");
-    assert!(!account_nums.is_empty(), "Transaction numbers level array is empty!");
+    assert!(
+        !concurrency_levels.is_empty(),
+        "Concurrcy level array is empty!"
+    );
+    assert!(
+        !txns.is_empty(),
+        "Transaction numbers level array is empty!"
+    );
+    assert!(
+        !account_nums.is_empty(),
+        "Transaction numbers level array is empty!"
+    );
 
     // if !concurrency_levels.is_empty() {
     //     run_par = true;
     // }
+
 
     // let acts = [1000];
     //let txns = [10000, 50000, 100000];
     let num_warmups = 2;
     let num_runs = 10;
 
-    println!("num cpus = {}, run_seq: {}, run_seq: {}", num_cpus::get(), run_seq, run_seq);
+    println!(
+        "num cpus = {}, run_seq: {}, run_seq: {}",
+        num_cpus::get(),
+        run_seq,
+        run_seq
+    );
 
     for concurrency_level in &concurrency_levels {
         let mut par_measurements = Vec::new();
         let mut seq_measurements = Vec::new();
 
-        println!("=========== concurrency_level:  {} started ===========", concurrency_level);
+        println!(
+            "=========== concurrency_level:  {} started ===========",
+            concurrency_level
+        );
 
         for num_accounts in &account_nums {
             let bencher = TransactionBencher::new(
@@ -101,7 +119,7 @@ fn main() {
                         seq_sum += m;
                     }
                     seq_tps = seq_sum / seq_measurement.len();
-                    println!("Avg Sequential TPS = {:?}", seq_tps, );
+                    println!("Avg Sequential TPS = {:?}", seq_tps,);
                 }
 
                 if run_par {
@@ -111,7 +129,7 @@ fn main() {
                         par_sum += m;
                     }
                     let par_tps = par_sum / par_measurement.len();
-                    println!("Avg Parallel TPS = {:?}", par_tps, );
+                    println!("Avg Parallel TPS = {:?}", par_tps,);
                     if run_seq {
                         println!("Speed up {}x over sequential", par_tps / seq_tps);
                     }
@@ -119,6 +137,9 @@ fn main() {
                 i += 1;
             }
         }
-        println!("=========== concurrency_level:  {} finished ===========", concurrency_level);
+        println!(
+            "=========== concurrency_level:  {} finished ===========",
+            concurrency_level
+        );
     }
 }

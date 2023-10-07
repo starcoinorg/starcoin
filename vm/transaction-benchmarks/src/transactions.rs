@@ -11,6 +11,7 @@ use starcoin_crypto::HashValue;
 use std::time::{Instant, SystemTime};
 
 use starcoin_language_e2e_tests::account::AccountData;
+use starcoin_language_e2e_tests::common_transactions::duration_since_epoch;
 use starcoin_language_e2e_tests::{
     account_universe::{log_balance_strategy, AUTransactionGen, AccountUniverseGen},
     executor::FakeExecutor,
@@ -19,7 +20,7 @@ use starcoin_language_e2e_tests::{
 
 use starcoin_types::{block_metadata::BlockMetadata, transaction::Transaction};
 
-use starcoin_vm_runtime::{block_executor::BlockStarcoinVM, starcoin_vm::StarcoinVM, VMExecutor};
+use starcoin_vm_runtime::{block_executor::BlockStarcoinVM, starcoin_vm::StarcoinVM};
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 
@@ -126,9 +127,7 @@ where
                     "RUN benchmark for: num_threads = {}, \
                         num_account = {}, \
                         block_size = {}",
-                    concurrency_level,
-                    num_accounts,
-                    num_txn,
+                    concurrency_level, num_accounts, num_txn,
                 );
                 let tps = state.execute_blockstm_benchmark(concurrency_level, run_par, run_seq);
                 par_tps.push(tps.0);
@@ -247,14 +246,20 @@ impl TransactionBenchState {
         //     vec![],
         //     1,
         // );
-        let minter_account = AccountData::new(10000, 0);
+        // XXX FIXME YSG
+        // let minter_account = AccountData::new(10000, 0);
+        let minter_account = AccountData::new(10_000_000_000, 0);
+        state.executor.add_account_data(&minter_account);
+        let timestamp = duration_since_epoch().as_millis() as u64;
         let new_block = BlockMetadata::new(
             HashValue::zero(),
-            0,
+            timestamp,
             minter_account.address().clone(),
-            Some(AuthenticationKey::ed25519(&minter_account.account().pubkey)),
+            Some(AuthenticationKey::ed25519(
+                &minter_account.account().public_key(),
+            )),
             0,
-            0,
+            1,
             ChainId::test(),
             0,
         );
@@ -313,13 +318,17 @@ impl TransactionBenchState {
 
         // this bench execution with TPS
         let timer = Instant::now();
-        let useless = StarcoinVM::execute_block(
-            self.transactions,
-            self.executor.get_state_view(),
-            None,
-            None,
-        )
-        .expect("VM should not fail to start");
+        let useless = self
+            .executor
+            .execute_transaction_block(self.transactions)
+            .expect("VM should not fail to start");
+        // let useless = StarcoinVM::execute_block(
+        //     self.transactions,
+        //     self.executor.get_state_view(),
+        //     None,
+        //     None,
+        // )
+        // .expect("VM should not fail to start");
 
         drop(useless);
 
@@ -363,7 +372,9 @@ fn universe_strategy(
     num_transactions: usize,
 ) -> impl Strategy<Value = AccountUniverseGen> {
     // Multiply by 5 past the number of  to provide
-    let max_balance = TXN_RESERVED * num_transactions as u64 * 5;
+    // XXX FIXME YSG
+    // let max_balance = TXN_RESERVED * num_transactions as u64 * 5;
+    let max_balance = 5_000_000_000;
     let balance_strategy = log_balance_strategy(max_balance);
     AccountUniverseGen::strategy(num_accounts, balance_strategy)
 }

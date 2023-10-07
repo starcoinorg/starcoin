@@ -7,44 +7,54 @@ use crate::gas_costs;
 use anyhow::{Error, Result};
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_crypto::keygen::KeyGen;
+use starcoin_crypto::ValidCryptoMaterial;
+use starcoin_types::account::{Balance, EventHandleGenerator};
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::account_config;
 use starcoin_vm_types::account_config::{genesis_address, AccountResource, BalanceResource};
 use starcoin_vm_types::event::EventHandle;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::language_storage::StructTag;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm_types::token::token_code::TokenCode;
+use starcoin_vm_types::transaction::authenticator::{AccountPrivateKey, AccountPublicKey};
 use starcoin_vm_types::transaction::{
     RawUserTransaction, Script, ScriptFunction, SignedUserTransaction, TransactionPayload,
 };
 use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use starcoin_vm_types::values::{Struct, Value};
 use starcoin_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
+use std::collections::BTreeMap;
 use std::str::FromStr;
+use std::sync::Arc;
 
 // TTL is 86400s. Initial time was set to 0.
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
 
-/// Details about a Aptos account.
+pub const STC_TOKEN_CODE_STR: &str = "0x1::STC::STC";
+
+/// Details about a Starcoin account.
 ///
 /// Tests will typically create a set of `Account` instances to run transactions on. This type
-/// encodes the logic to operate on and verify operations on any Aptos account.
+/// encodes the logic to operate on and verify operations on any Starcoin account.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Account {
-    addr: AccountAddress,
-    /// The current private key for this account.
-    pub privkey: Ed25519PrivateKey,
-    /// The current public key for this account.
-    pub pubkey: Ed25519PublicKey,
+    // addr: AccountAddress,
+    // /// The current private key for this account.
+    // pub privkey: Ed25519PrivateKey,
+    // /// The current public key for this account.
+    // pub pubkey: Ed25519PublicKey,
+    pub addr: AccountAddress,
+    private_key: Arc<AccountPrivateKey>,
 }
 
 impl Account {
     /// Creates a new account in memory.
     ///
     /// The account returned by this constructor is a purely logical entity, meaning that it does
-    /// not automatically get added to the Aptos store. To add an account to the store, use
+    /// not automatically get added to the Starcoin store. To add an account to the store, use
     /// [`AccountData`] instances with
     /// [`FakeExecutor::add_account_data`][crate::executor::FakeExecutor::add_account_data].
     /// This function returns distinct values upon every call.
@@ -67,9 +77,20 @@ impl Account {
         let addr = starcoin_vm_types::account_address::from_public_key(&pubkey);
         Account {
             addr,
-            privkey,
-            pubkey,
+            private_key: Arc::new(AccountPrivateKey::Single(privkey)),
+            // pubkey,
         }
+    }
+
+    /// Get the Key pair
+    pub fn ed25519_key_pair(&self) -> (Ed25519PublicKey, Ed25519PrivateKey) {
+        (
+            self.private_key.public_key().as_single().unwrap(),
+            match self.private_key.as_ref() {
+                AccountPrivateKey::Single(pk) => pk.clone(),
+                AccountPrivateKey::Multi(pk) => pk.private_keys().get(0).unwrap().clone(),
+            },
+        )
     }
 
     /// Creates a new account with the given addr and key pair
@@ -79,12 +100,12 @@ impl Account {
     pub fn new_validator(
         addr: AccountAddress,
         privkey: Ed25519PrivateKey,
-        pubkey: Ed25519PublicKey,
+        _pubkey: Ed25519PublicKey,
     ) -> Self {
         Account {
             addr,
-            privkey,
-            pubkey,
+            private_key: Arc::new(AccountPrivateKey::Single(privkey)),
+            // pubkey,
         }
     }
 
@@ -98,11 +119,10 @@ impl Account {
         //     pubkey: GENESIS_KEYPAIR.1.clone(),
         //     privkey: GENESIS_KEYPAIR.0.clone(),
         // }
-        let (privkey, pubkey) = KeyGen::from_os_rng().generate_keypair();
+        let (privkey, _pubkey) = KeyGen::from_os_rng().generate_keypair();
         Account {
             addr: address,
-            pubkey,
-            privkey,
+            private_key: Arc::new(AccountPrivateKey::Single(privkey)),
         }
     }
 
@@ -122,20 +142,17 @@ impl Account {
         &self.addr
     }
 
-    /// Returns the AccessPath that describes the Account resource instance.
+    /// Returns the AccessPath that describes the Account balance resource instance.
     ///
-    /// Use this to retrieve or publish the Account blob.
-    pub fn make_account_access_path(&self) -> AccessPath {
-        self.make_access_path(AccountResource::struct_tag())
-    }
-
-    /// Returns the AccessPath that describes the Account's CoinStore resource instance.
-    ///
-    /// Use this to retrieve or publish the Account CoinStore blob.
-    pub fn make_coin_store_access_path(&self) -> AccessPath {
-        // TODO(BobOng):
-        // self.make_access_path(CoinStoreResource::struct_tag())
-        self.make_access_path(BalanceResource::struct_tag())
+    /// Use this to retrieve or publish the Account balance blob.
+    pub fn make_balance_access_path(&self, token_code_str: &str) -> AccessPath {
+        let token_code =
+            TokenCode::from_str(token_code_str).expect("token code str should been valid.");
+        let token_type_tag = token_code
+            .try_into()
+            .expect("token code to type tag should be ok");
+        // TODO/XXX: Convert this to BalanceResource::struct_tag once that takes type args
+        self.make_access_path(BalanceResource::struct_tag_for_token(token_type_tag))
     }
 
     // TODO: plug in the account type
@@ -145,21 +162,59 @@ impl Account {
         AccessPath::resource_access_path(self.addr, tag)
     }
 
+    pub fn make_account_access_path(&self) -> AccessPath {
+        self.make_access_path(AccountResource::struct_tag())
+    }
+
+    /// Returns the AccessPath that describes the EventHandleGenerator resource instance.
+    ///
+    /// Use this to retrieve or publish the EventHandleGenerator blob.
+    pub fn make_event_generator_access_path(&self) -> AccessPath {
+        self.make_access_path(account_config::event_handle_generator_struct_tag())
+    }
+
     /// Changes the keys for this account to the provided ones.
-    pub fn rotate_key(&mut self, privkey: Ed25519PrivateKey, pubkey: Ed25519PublicKey) {
-        self.privkey = privkey;
-        self.pubkey = pubkey;
+    pub fn rotate_key(&mut self, privkey: Ed25519PrivateKey, _pubkey: Ed25519PublicKey) {
+        // self.privkey = privkey;
+        // self.pubkey = pubkey;
+        self.private_key = Arc::new(AccountPrivateKey::Single(privkey));
     }
 
     /// Computes the authentication key for this account, as stored on the chain.
     ///
     /// This is the same as the account's address if the keys have never been rotated.
     pub fn auth_key(&self) -> Vec<u8> {
-        AuthenticationKey::ed25519(&self.pubkey).to_vec()
+        self.private_key.public_key().authentication_key().to_vec()
+    }
+
+    pub fn public_key(&self) -> Ed25519PublicKey {
+        match self.private_key.as_ref() {
+            AccountPrivateKey::Single(k) => Ed25519PublicKey::from(k),
+            AccountPrivateKey::Multi(k) => k.public_key().public_keys().get(0).unwrap().clone(),
+        }
+    }
+
+    pub fn private_key(&self) -> &AccountPrivateKey {
+        &self.private_key
     }
 
     pub fn transaction(&self) -> TransactionBuilder {
         TransactionBuilder::new(self.clone())
+    }
+
+    pub fn account_keypair(&self) -> (AccountPublicKey, AccountPrivateKey) {
+        let (pub_key, priv_key) = self.ed25519_key_pair();
+        (
+            AccountPublicKey::Single(pub_key),
+            AccountPrivateKey::Single(priv_key),
+        )
+    }
+
+    pub fn public_key_bytes(&self) -> Vec<u8> {
+        match self.private_key.as_ref() {
+            AccountPrivateKey::Single(public_key) => public_key.to_bytes().to_vec(),
+            AccountPrivateKey::Multi(public_key) => public_key.to_bytes().to_vec(),
+        }
     }
 }
 
@@ -263,6 +318,7 @@ impl TransactionBuilder {
     }
 
     pub fn sign(self) -> SignedUserTransaction {
+        let (public_key, private_key) = self.sender.ed25519_key_pair();
         RawUserTransaction::new_with_default_gas_token(
             *self.sender.address(),
             self.sequence_number.expect("sequence number not set"),
@@ -272,7 +328,7 @@ impl TransactionBuilder {
             self.ttl.unwrap_or(DEFAULT_EXPIRATION_TIME),
             self.chain_id.unwrap_or_else(ChainId::test),
         )
-        .sign(&self.sender.privkey, self.sender.pubkey)
+        .sign(&private_key, public_key)
         .unwrap()
         .into_inner()
     }
@@ -307,64 +363,64 @@ impl TransactionBuilder {
     //     .into_inner()
     // }
 }
-
-//---------------------------------------------------------------------------
-// CoinStore resource represenation
-//---------------------------------------------------------------------------
-
-/// Struct that represents an account CoinStore resource for tests.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct CoinStore {
-    coin: u64,
-    deposit_events: EventHandle,
-    withdraw_events: EventHandle,
-}
-
-impl CoinStore {
-    /// Create a new CoinStore
-    pub fn new(coin: u64, deposit_events: EventHandle, withdraw_events: EventHandle) -> Self {
-        Self {
-            coin,
-            deposit_events,
-            withdraw_events,
-        }
-    }
-
-    /// Retrieve the balance inside of this
-    pub fn coin(&self) -> u64 {
-        self.coin
-    }
-
-    /// Returns the Move Value for the account's CoinStore
-    pub fn to_value(&self) -> Value {
-        Value::struct_(Struct::pack(vec![
-            Value::u64(self.coin),
-            Value::struct_(Struct::pack(vec![
-                Value::u64(self.withdraw_events.count()),
-                Value::vector_u8(self.withdraw_events.key().to_vec()),
-            ])),
-            Value::struct_(Struct::pack(vec![
-                Value::u64(self.deposit_events.count()),
-                Value::vector_u8(self.deposit_events.key().to_vec()),
-            ])),
-        ]))
-    }
-
-    /// Returns the value layout for the account's CoinStore
-    pub fn layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![
-            MoveTypeLayout::U64,
-            MoveTypeLayout::Struct(MoveStructLayout::new(vec![
-                MoveTypeLayout::U64,
-                MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
-            ])),
-            MoveTypeLayout::Struct(MoveStructLayout::new(vec![
-                MoveTypeLayout::U64,
-                MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
-            ])),
-        ])
-    }
-}
+//
+// //---------------------------------------------------------------------------
+// // CoinStore resource represenation
+// //---------------------------------------------------------------------------
+//
+// /// Struct that represents an account CoinStore resource for tests.
+// #[derive(Clone, Debug, Eq, PartialEq)]
+// pub struct CoinStore {
+//     coin: u64,
+//     deposit_events: EventHandle,
+//     withdraw_events: EventHandle,
+// }
+//
+// impl CoinStore {
+//     /// Create a new CoinStore
+//     pub fn new(coin: u64, deposit_events: EventHandle, withdraw_events: EventHandle) -> Self {
+//         Self {
+//             coin,
+//             deposit_events,
+//             withdraw_events,
+//         }
+//     }
+//
+//     /// Retrieve the balance inside of this
+//     pub fn coin(&self) -> u64 {
+//         self.coin
+//     }
+//
+//     /// Returns the Move Value for the account's CoinStore
+//     pub fn to_value(&self) -> Value {
+//         Value::struct_(Struct::pack(vec![
+//             Value::u64(self.coin),
+//             Value::struct_(Struct::pack(vec![
+//                 Value::u64(self.withdraw_events.count()),
+//                 Value::vector_u8(self.withdraw_events.key().to_vec()),
+//             ])),
+//             Value::struct_(Struct::pack(vec![
+//                 Value::u64(self.deposit_events.count()),
+//                 Value::vector_u8(self.deposit_events.key().to_vec()),
+//             ])),
+//         ]))
+//     }
+//
+//     /// Returns the value layout for the account's CoinStore
+//     pub fn layout() -> MoveStructLayout {
+//         MoveStructLayout::new(vec![
+//             MoveTypeLayout::U64,
+//             MoveTypeLayout::Struct(MoveStructLayout::new(vec![
+//                 MoveTypeLayout::U64,
+//                 MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
+//             ])),
+//             MoveTypeLayout::Struct(MoveStructLayout::new(vec![
+//                 MoveTypeLayout::U64,
+//                 MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
+//             ])),
+//         ])
+//     }
+// }
 
 //---------------------------------------------------------------------------
 // Account type represenation
@@ -372,7 +428,7 @@ impl CoinStore {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AccountRoleSpecifier {
-    AptosRoot,
+    Root,
     TreasuryCompliance,
     DesignatedDealer,
     Validator,
@@ -384,7 +440,7 @@ pub enum AccountRoleSpecifier {
 impl AccountRoleSpecifier {
     pub fn id(&self) -> u64 {
         match self {
-            Self::AptosRoot => 0,
+            Self::Root => 0,
             Self::TreasuryCompliance => 1,
             Self::DesignatedDealer => 2,
             Self::Validator => 3,
@@ -455,13 +511,22 @@ impl AccountRole {
 /// `AccountData` captures the initial state needed to create accounts for tests.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AccountData {
+    // account: Account,
+    // withdrawal_capability: Option<WithdrawCapability>,
+    // key_rotation_capability: Option<KeyRotationCapability>,
+    // sequence_number: u64,
+    //
+    // coin_store: CoinStore,
+    // account_role: AccountRole,
     account: Account,
-    withdrawal_capability: Option<WithdrawCapability>,
-    key_rotation_capability: Option<KeyRotationCapability>,
     sequence_number: u64,
-
-    coin_store: CoinStore,
-    account_role: AccountRole,
+    key_rotation_capability: Option<KeyRotationCapability>,
+    withdrawal_capability: Option<WithdrawCapability>,
+    withdraw_events: EventHandle,
+    deposit_events: EventHandle,
+    accept_token_events: EventHandle,
+    balances: BTreeMap<String, Balance>,
+    event_generator: EventHandleGenerator,
 }
 
 fn new_event_handle(count: u64, address: AccountAddress) -> EventHandle {
@@ -472,7 +537,7 @@ impl AccountData {
     /// Creates a new `AccountData` with a new account.
     ///
     /// This constructor is non-deterministic and should not be used against golden file.
-    pub fn new(balance: u64, sequence_number: u64) -> Self {
+    pub fn new(balance: u128, sequence_number: u64) -> Self {
         Self::with_account(
             Account::new(),
             balance,
@@ -484,7 +549,7 @@ impl AccountData {
     /// Creates a new `AccountData` with a new account.
     ///
     /// Most tests will want to use this constructor.
-    pub fn new_from_seed(seed: &mut KeyGen, balance: u64, sequence_number: u64) -> Self {
+    pub fn new_from_seed(seed: &mut KeyGen, balance: u128, sequence_number: u64) -> Self {
         Self::with_account(
             Account::new_from_seed(seed),
             balance,
@@ -496,7 +561,7 @@ impl AccountData {
     /// Creates a new `AccountData` with the provided account.
     pub fn with_account(
         account: Account,
-        balance: u64,
+        balance: u128,
         sequence_number: u64,
         account_specifier: AccountRoleSpecifier,
     ) -> Self {
@@ -514,7 +579,7 @@ impl AccountData {
     pub fn with_keypair(
         privkey: Ed25519PrivateKey,
         pubkey: Ed25519PublicKey,
-        balance: u64,
+        balance: u128,
         sequence_number: u64,
         account_specifier: AccountRoleSpecifier,
     ) -> Self {
@@ -525,24 +590,25 @@ impl AccountData {
     /// Creates a new `AccountData` with custom parameters.
     pub fn with_account_and_event_counts(
         account: Account,
-        balance: u64,
+        balance: u128,
         sequence_number: u64,
         sent_events_count: u64,
         received_events_count: u64,
-        account_specifier: AccountRoleSpecifier,
+        _account_specifier: AccountRoleSpecifier,
     ) -> Self {
         let addr = *account.address();
+        let mut balances_map = BTreeMap::new();
+        balances_map.insert(STC_TOKEN_CODE_STR.to_string(), Balance::new(balance));
         Self {
-            account_role: AccountRole::new(*account.address(), account_specifier),
-            withdrawal_capability: Some(WithdrawCapability::new(addr)),
-            key_rotation_capability: Some(KeyRotationCapability::new(addr)),
+            event_generator: EventHandleGenerator::new_with_event_count(addr, 3),
             account,
-            coin_store: CoinStore::new(
-                balance,
-                new_event_handle(received_events_count, addr),
-                new_event_handle(sent_events_count, addr),
-            ),
+            balances: balances_map,
             sequence_number,
+            key_rotation_capability: None,
+            withdrawal_capability: Some(WithdrawCapability::new(addr)),
+            withdraw_events: EventHandle::new_from_address(&addr, sent_events_count),
+            deposit_events: EventHandle::new_from_address(&addr, received_events_count),
+            accept_token_events: EventHandle::new_from_address(&addr, 0),
         }
     }
 
@@ -551,29 +617,86 @@ impl AccountData {
         self.account.rotate_key(privkey, pubkey)
     }
 
+    pub fn sent_payment_event_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![
+            MoveTypeLayout::U128,
+            MoveTypeLayout::Address,
+            MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
+        ])
+    }
+
+    pub fn received_payment_event_type() -> MoveStructLayout {
+        MoveStructLayout::new(vec![
+            MoveTypeLayout::U128,
+            MoveTypeLayout::Address,
+            MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
+        ])
+    }
+
+    pub fn event_handle_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![
+            MoveTypeLayout::U64,
+            MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
+        ])
+    }
+
     /// Returns the (Move value) layout of the Account::Account struct
     pub fn layout() -> MoveStructLayout {
         use MoveStructLayout as S;
         use MoveTypeLayout as T;
 
-        S::new(vec![T::Vector(Box::new(T::U8)), T::U64, T::Address])
+        S::new(vec![
+            T::Vector(Box::new(T::U8)),
+            T::Vector(Box::new(T::Struct(WithdrawCapability::layout()))),
+            T::Vector(Box::new(T::Struct(KeyRotationCapability::layout()))),
+            T::Struct(Self::event_handle_layout()),
+            T::Struct(Self::event_handle_layout()),
+            T::Struct(Self::event_handle_layout()),
+            T::U64,
+        ])
     }
 
     /// Returns the account role specifier
     pub fn account_role(&self) -> AccountRoleSpecifier {
-        self.account_role.account_specifier()
+        //self.account_role.account_specifier()
+        AccountRoleSpecifier::ParentVASP
     }
 
     /// Creates and returns the top-level resources to be published under the account
-    pub fn to_value(&self) -> (Value, Value) {
+    pub fn to_value(&self) -> (Value, Vec<(String, Value)>, Value) {
         // TODO: publish some concept of Account
+        let balances: Vec<_> = self
+            .balances
+            .iter()
+            .map(|(code, balance)| (code.clone(), balance.to_value()))
+            .collect();
+        let event_generator = self.event_generator.to_value();
         let account = Value::struct_(Struct::pack(vec![
             // TODO: this needs to compute the auth key instead
-            Value::vector_u8(AuthenticationKey::ed25519(&self.account.pubkey).to_vec()),
+            Value::vector_u8(self.account.auth_key().to_vec()),
+            self.withdrawal_capability
+                .as_ref()
+                .map(|v| v.value())
+                .unwrap_or_else(|| Value::vector_for_testing_only(vec![])),
+            self.key_rotation_capability
+                .as_ref()
+                .map(|v| v.value())
+                .unwrap_or_else(|| Value::vector_for_testing_only(vec![])),
+            Value::struct_(Struct::pack(vec![
+                Value::u64(self.withdraw_events.count()),
+                Value::vector_u8(self.withdraw_events.key().to_vec()),
+            ])),
+            Value::struct_(Struct::pack(vec![
+                Value::u64(self.deposit_events.count()),
+                Value::vector_u8(self.deposit_events.key().to_vec()),
+            ])),
+            Value::struct_(Struct::pack(vec![
+                Value::u64(self.accept_token_events.count()),
+                Value::vector_u8(self.accept_token_events.key().to_vec()),
+            ])),
             Value::u64(self.sequence_number),
-            Value::address(*self.address()),
         ]));
-        (account, self.coin_store.to_value())
+        (account, balances, event_generator)
     }
 
     /// Returns the AccessPath that describes the Account resource instance.
@@ -583,11 +706,15 @@ impl AccountData {
         self.account.make_account_access_path()
     }
 
-    /// Returns the AccessPath that describes the Account's CoinStore resource instance.
+    /// Returns the AccessPath that describes the Account's Balance resource instance.
     ///
-    /// Use this to retrieve or publish the Account's CoinStore blob.
-    pub fn make_coin_store_access_path(&self) -> AccessPath {
-        self.account.make_coin_store_access_path()
+    /// Use this to retrieve or publish the Account's Balance blob.
+    pub fn make_balance_access_path(&self, token_code: &str) -> AccessPath {
+        self.account.make_balance_access_path(token_code)
+    }
+
+    pub fn make_event_generator_access_path(&self) -> AccessPath {
+        self.account.make_event_generator_access_path()
     }
 
     pub fn transfer_event_layout() -> MoveStructLayout {
@@ -601,7 +728,7 @@ impl AccountData {
     /// Creates a writeset that contains the account data and can be patched to the storage
     /// directly.
     pub fn to_writeset(&self) -> WriteSet {
-        let (account_blob, coinstore_blob) = self.to_value();
+        let (account_blob, balance_blobs, event_generator_blob) = self.to_value();
         let mut write_set = Vec::new();
         let account = account_blob
             .value_as::<Struct>()
@@ -612,17 +739,27 @@ impl AccountData {
             StateKey::AccessPath(self.make_account_access_path()),
             WriteOp::Value(account),
         ));
+        for (code, balance_blob) in balance_blobs.into_iter() {
+            let balance = balance_blob
+                .value_as::<Struct>()
+                .unwrap()
+                .simple_serialize(&Balance::layout())
+                .unwrap();
+            write_set.push((
+                StateKey::AccessPath(self.make_balance_access_path(code.as_str())),
+                WriteOp::Value(balance),
+            ));
+        }
 
-        let balance = coinstore_blob
+        let event_generator = event_generator_blob
             .value_as::<Struct>()
             .unwrap()
-            .simple_serialize(&CoinStore::layout())
+            .simple_serialize(&EventHandleGenerator::layout())
             .unwrap();
         write_set.push((
-            StateKey::AccessPath(self.make_coin_store_access_path()),
-            WriteOp::Value(balance),
+            StateKey::AccessPath(self.make_event_generator_access_path()),
+            WriteOp::Value(event_generator),
         ));
-
         WriteSetMut::new(write_set).freeze().unwrap()
     }
 
@@ -645,8 +782,11 @@ impl AccountData {
     }
 
     /// Returns the initial balance.
-    pub fn balance(&self) -> u64 {
-        self.coin_store.coin()
+    pub fn balance(&self) -> u128 {
+        self.balances
+            .get(STC_TOKEN_CODE_STR)
+            .expect("get balance by currency_code fail")
+            .token()
     }
 
     /// Returns the initial sequence number.
@@ -656,22 +796,22 @@ impl AccountData {
 
     /// Returns the unique key for this sent events stream.
     pub fn sent_events_key(&self) -> &[u8] {
-        self.coin_store.withdraw_events.key().as_bytes()
+        self.withdraw_events.key().as_bytes()
     }
 
     /// Returns the initial sent events count.
     pub fn sent_events_count(&self) -> u64 {
-        self.coin_store.withdraw_events.count()
+        self.withdraw_events.count()
     }
 
     /// Returns the unique key for this received events stream.
     pub fn received_events_key(&self) -> &[u8] {
-        self.coin_store.deposit_events.key().as_bytes()
+        self.deposit_events.key().as_bytes()
     }
 
     /// Returns the initial received events count.
     pub fn received_events_count(&self) -> u64 {
-        self.coin_store.deposit_events.count()
+        self.deposit_events.count()
     }
 }
 
@@ -679,6 +819,7 @@ impl AccountData {
 pub struct WithdrawCapability {
     account_address: AccountAddress,
 }
+
 impl WithdrawCapability {
     pub fn new(account_address: AccountAddress) -> Self {
         Self { account_address }
@@ -699,6 +840,7 @@ impl WithdrawCapability {
 pub struct KeyRotationCapability {
     account_address: AccountAddress,
 }
+
 impl KeyRotationCapability {
     pub fn new(account_address: AccountAddress) -> Self {
         Self { account_address }

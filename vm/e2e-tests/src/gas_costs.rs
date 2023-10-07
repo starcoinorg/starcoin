@@ -13,7 +13,7 @@ use starcoin_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
 use starcoin_vm_types::transaction::{authenticator::AuthenticationKey, SignedUserTransaction};
 
 /// The gas each transaction is configured to reserve. If the gas available in the account,
-/// converted to microaptos, falls below this threshold, transactions are expected to fail with
+/// converted to micro STC, falls below this threshold, transactions are expected to fail with
 /// an insufficient balance.
 pub const TXN_RESERVED: u64 = 500_000;
 
@@ -60,7 +60,7 @@ pub static CREATE_ACCOUNT_TOO_LOW_FIRST: Lazy<u64> = Lazy::new(|| {
     // The gas amount is the minimum that needs to be reserved, so use a value that's
     // clearly higher than that.
     let balance = TXN_RESERVED + 10_000;
-    let sender = AccountData::new(balance, 10);
+    let sender = AccountData::new(balance as u128, 10);
     executor.add_account_data(&sender);
     let receiver = Account::new();
 
@@ -77,7 +77,7 @@ pub static CREATE_ACCOUNT_TOO_LOW_NEXT: Lazy<u64> = Lazy::new(|| {
     // The gas amount is the minimum that needs to be reserved, so use a value that's
     // clearly higher than that.
     let balance = (2 * TXN_RESERVED) + 10_000;
-    let sender = AccountData::new(balance, 10);
+    let sender = AccountData::new(balance as u128, 10);
     executor.add_account_data(&sender);
 
     let txns = vec![
@@ -133,12 +133,17 @@ pub static CREATE_EXISTING_ACCOUNT_NEXT: Lazy<u64> = Lazy::new(|| {
 pub static PEER_TO_PEER: Lazy<u64> = Lazy::new(|| {
     // Compute gas used by running a placeholder transaction.
     let mut executor = FakeExecutor::from_genesis_file();
-    let sender = AccountData::new(1_000_000, 10);
-    let receiver = AccountData::new(1_000_000, 10);
+    // XXX FIXME YSG
+    // let sender = AccountData::new(1_000_000, 10);
+    // let receiver = AccountData::new(1_000_000, 10);
+    let sender = AccountData::new(1_000_000_000, 10);
+    let receiver = AccountData::new(1_000_000_000, 10);
     executor.add_account_data(&sender);
     executor.add_account_data(&receiver);
 
-    let txn = peer_to_peer_txn(sender.account(), receiver.account(), 10, 20_000);
+    // XXX FIXME YSG
+    // let txn = peer_to_peer_txn(sender.account(), receiver.account(), 10, 20_000);
+    let txn = peer_to_peer_txn(sender.account(), receiver.account(), 10, 10);
     compute_gas_used(txn, &mut executor)
 });
 
@@ -150,7 +155,7 @@ pub static PEER_TO_PEER_TOO_LOW: Lazy<u64> = Lazy::new(|| {
     // The gas amount is the minimum that needs to be reserved, so use a value that's clearly
     // higher than that.
     let balance = TXN_RESERVED + 10_000;
-    let sender = AccountData::new(balance, 10);
+    let sender = AccountData::new(balance as u128, 10);
     let receiver = AccountData::new(1_000_000, 10);
     executor.add_account_data(&sender);
     executor.add_account_data(&receiver);
@@ -206,7 +211,7 @@ pub static PEER_TO_PEER_NEW_RECEIVER_TOO_LOW_FIRST: Lazy<u64> = Lazy::new(|| {
     // The gas amount is the minimum that needs to be reserved, so use a value that's
     // clearly higher than that.
     let balance = TXN_RESERVED + 10_000;
-    let sender = AccountData::new(balance, 10);
+    let sender = AccountData::new(balance as u128, 10);
     executor.add_account_data(&sender);
     let receiver = Account::new();
 
@@ -224,7 +229,7 @@ pub static PEER_TO_PEER_NEW_RECEIVER_TOO_LOW_NEXT: Lazy<u64> = Lazy::new(|| {
     // The gas amount is the minimum that needs to be reserved, so use a value that's
     // clearly higher than that.
     let balance = (2 * TXN_RESERVED) + 20_000;
-    let sender = AccountData::new(balance, 10);
+    let sender = AccountData::new(balance as u128, 10);
     executor.add_account_data(&sender);
 
     let txns = vec![
