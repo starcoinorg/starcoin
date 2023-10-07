@@ -26,6 +26,7 @@ criterion = { workspace = true, optional = true }
 proptest = { workspace = true, optional = true }
 proptest-derive = { workspace = true, optional = true }
 starcoin-vm-types = { workspace = true }
+parking_lot = { workspace = true }
 
 [dev-dependencies]
 criterion = { workspace = true }

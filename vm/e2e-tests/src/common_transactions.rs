@@ -103,7 +103,7 @@ pub fn peer_to_peer_txn(
         &starcoin_acc,
         receiver.address(),
         seq_num,
-        duration_since_epoch().as_secs() + 100,
+        duration_since_epoch().as_secs() + DEFAULT_EXPIRATION_TIME,
         transfer_amount as u128,
         &ChainNetwork::new_test(),
     )

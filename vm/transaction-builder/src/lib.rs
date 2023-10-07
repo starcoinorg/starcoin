@@ -318,8 +318,8 @@ pub fn peer_to_peer_v2(
                 bcs_ext::to_bytes(&amount).unwrap(),
             ],
         )),
-        10000000,
-        1,
+        500000,
+        0,
         expiration_timestamp_secs,
         net.chain_id(),
     ))
