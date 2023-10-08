@@ -1616,7 +1616,7 @@ impl VMAdapter for StarcoinVM {
                 (vm_status, output, Some(sender))
             }
             PreprocessedTransaction::BlockMetadata(block_meta) => {
-                println!("YSG BlockMetadata");
+                // println!("YSG BlockMetadata");
                 let (vm_status, output) =
                     match self.process_block_metadata(data_cache, block_meta.clone()) {
                         Ok(output) => (VMStatus::Executed, output),
