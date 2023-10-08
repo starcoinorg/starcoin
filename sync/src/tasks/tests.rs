@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #![allow(clippy::integer_arithmetic)]
+use crate::block_connector::{BlockConnectorService, CheckBlockConnectorHashValue};
 use crate::tasks::block_sync_task::SyncBlockData;
 use crate::tasks::mock::{ErrorStrategy, MockBlockIdFetcher, SyncNodeMocker};
 use crate::tasks::{
@@ -9,36 +10,45 @@ use crate::tasks::{
     BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask, SyncFetcher,
 };
 use crate::verified_rpc_client::RpcVerifyError;
-use anyhow::Context;
 use anyhow::{format_err, Result};
+use anyhow::{Context, Ok};
 use futures::channel::mpsc::unbounded;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use futures_timer::Delay;
 use network_api::{PeerId, PeerInfo, PeerSelector, PeerStrategy};
 use pin_utils::core_reexport::time::Duration;
+use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::tree_store::mock::MockAccumulatorStore;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
-use starcoin_config::{BuiltinNetworkID, ChainNetwork};
+use starcoin_config::{BuiltinNetworkID, ChainNetwork, NodeConfig};
 use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
+use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_logger::prelude::*;
-use starcoin_storage::BlockStore;
+use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef, ActorService};
+use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::SyncTarget;
+use starcoin_txpool::{TxPoolActorService, TxPoolService};
+use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeaderBuilder, BlockIdAndNumber, BlockInfo},
     U256,
 };
+use stest::actix_export::System;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use stream_task::{
     DefaultCustomErrorHandle, Generator, TaskError, TaskEventCounterHandle, TaskGenerator,
 };
 use test_helper::DummyNetworkService;
+
+use super::BlockConnectedEvent;
 
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_new_node() -> Result<()> {
@@ -983,4 +993,224 @@ async fn test_sync_target() {
     assert_eq!(target.peers.len(), 2);
     assert_eq!(target.target_id.number(), low_chain_info.head().number());
     assert_eq!(target.target_id.id(), low_chain_info.head().id());
+}
+
+fn sync_block_in_async_connection(
+    mut target_node: Arc<SyncNodeMocker>,
+    local_node: Arc<SyncNodeMocker>,
+    storage: Arc<Storage>,
+    block_count: u64,
+) -> Result<Arc<SyncNodeMocker>> {
+    Arc::get_mut(&mut target_node)
+        .unwrap()
+        .produce_block(block_count)?;
+    let target = target_node.sync_target();
+    let target_id = target.target_id.id();
+
+    let (sender, mut receiver) = futures::channel::mpsc::unbounded::<BlockConnectedEvent>();
+    let thread_local_node = local_node.clone();
+
+    let process_block = move || {
+        let mut chain = MockChain::new_with_storage(
+            thread_local_node.chain_mocker.net().clone(),
+            storage.clone(),
+            thread_local_node
+                .chain_mocker
+                .head()
+                .status()
+                .head
+                .id()
+                .clone(),
+            thread_local_node.chain_mocker.miner().clone(),
+        )
+        .unwrap();
+        loop {
+            match receiver.try_next() {
+                std::result::Result::Ok(result) => match result {
+                    Some(event) => {
+                        chain
+                            .select_head(event.block)
+                            .expect("select head must be successful");
+                        if event.feedback.is_some() {
+                            event
+                                .feedback
+                                .unwrap()
+                                .unbounded_send(super::BlockConnectedFinishEvent)
+                                .unwrap();
+                            assert_eq!(target_id, chain.head().status().head.id());
+                            break;
+                        }
+                    }
+                    None => break,
+                },
+                Err(_) => (),
+            }
+        }
+    };
+    let handle = std::thread::spawn(process_block);
+
+    let current_block_header = local_node.chain().current_header();
+    let storage = local_node.chain().get_storage();
+
+    let local_net = local_node.chain_mocker.net();
+    let (local_ancestor_sender, _local_ancestor_receiver) = unbounded();
+
+    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
+        current_block_header.id(),
+        target.clone(),
+        false,
+        local_net.time_service(),
+        storage.clone(),
+        sender.clone(),
+        target_node.clone(),
+        local_ancestor_sender,
+        DummyNetworkService::default(),
+        15,
+        None,
+        None,
+    )?;
+    let branch = async_std::task::block_on(sync_task)?;
+    assert_eq!(branch.current_header().id(), target.target_id.id());
+
+    handle.join().unwrap();
+
+    let reports = task_event_counter.get_reports();
+    reports
+        .iter()
+        .for_each(|report| debug!("reports: {}", report));
+
+    Ok(target_node)
+}
+
+#[stest::test]
+async fn test_sync_block_in_async_connection() -> Result<()> {
+    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let mut target_node = Arc::new(SyncNodeMocker::new(net.clone(), 1, 0)?);
+
+    let (storage, chain_info, _) =
+        Genesis::init_storage_for_test(&net).expect("init storage by genesis fail.");
+    let local_node = Arc::new(SyncNodeMocker::new_with_storage(
+        net.clone(),
+        storage.clone(),
+        chain_info.clone(),
+        AccountInfo::random(),
+        1,
+        0,
+    )?);
+
+    target_node =
+        sync_block_in_async_connection(target_node, local_node.clone(), storage.clone(), 10)?;
+    _ = sync_block_in_async_connection(target_node, local_node.clone(), storage.clone(), 20)?;
+
+    Ok(())
+}
+
+fn sync_block_in_block_connection_service_mock(
+    mut target_node: Arc<SyncNodeMocker>,
+    local_node: Arc<SyncNodeMocker>,
+    registry: &ServiceRef<RegistryService>,
+    block_count: u64,
+) -> Result<Arc<SyncNodeMocker>> {
+    Arc::get_mut(&mut target_node)
+        .unwrap()
+        .produce_block(block_count)?;
+    loop {
+        let target = target_node.sync_target();
+
+        let storage = local_node.chain().get_storage();
+        let startup_info = storage
+        .get_startup_info()?
+        .ok_or_else(|| format_err!("Startup info should exist."))?;
+        let current_block_id = startup_info.main;
+
+        let local_net = local_node.chain_mocker.net();
+        let (local_ancestor_sender, _local_ancestor_receiver) = unbounded();
+        
+        let (sync_task, _task_handle, task_event_counter) = full_sync_task(
+            current_block_id,
+            target.clone(),
+            false,
+            local_net.time_service(),
+            storage.clone(),
+            async_std::task::block_on(registry.service_ref::<BlockConnectorService<MockTxPoolService>>())?.clone(),
+            target_node.clone(),
+            local_ancestor_sender,
+            DummyNetworkService::default(),
+            15,
+            None,
+            None,
+        )?;
+        let branch = async_std::task::block_on(sync_task)?;
+        info!("checking branch in sync service is the same as target's branch");
+        assert_eq!(branch.current_header().id(), target.target_id.id());
+
+        let block_connector_service = async_std::task::block_on(registry.service_ref::<BlockConnectorService<MockTxPoolService>>())?.clone();
+        let result = async_std::task::block_on(block_connector_service.send(CheckBlockConnectorHashValue {
+            head_hash: target.target_id.id(),
+        }))?;
+        if result.is_ok() {
+            break;
+        }
+        let reports = task_event_counter.get_reports();
+        reports
+            .iter()
+            .for_each(|report| debug!("reports: {}", report));
+    }
+
+    Ok(target_node)
+}
+
+#[stest::test]
+async fn test_sync_block_apply_failed_but_connect_success() -> Result<()> {
+    let config = Arc::new(NodeConfig::random_for_test());
+    let (storage, chain_info, _) = StarcoinGenesis::init_storage_for_test(config.net())
+        .expect("init storage by genesis fail.");
+        
+    let target_node = Arc::new(SyncNodeMocker::new(config.net().clone(), 1, 0)?);
+    let local_node = Arc::new(SyncNodeMocker::new_with_storage(
+        config.net().clone(),
+        storage.clone(),
+        chain_info.clone(),
+        AccountInfo::random(),
+        1,
+        0,
+    )?);
+
+    let (registry_sender, registry_receiver) = async_std::channel::unbounded();
+
+    let _handle = timeout_join_handler::spawn(move|| {
+        let system = System::with_tokio_rt(|| {
+            tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .on_thread_stop(|| debug!("main thread stopped"))
+                .thread_name("main")
+                .build()
+                .expect("failed to create tokio runtime for main")
+        });
+        async_std::task::block_on(async {
+            let registry = RegistryService::launch();
+
+            registry.put_shared(config.clone()).await.unwrap();
+            registry.put_shared(storage.clone()).await.unwrap();
+            registry.put_shared(MockTxPoolService::new()).await.unwrap();
+
+            Delay::new(Duration::from_secs(2)).await;
+
+            registry
+                .register::<BlockConnectorService<MockTxPoolService>>()
+                .await.unwrap();
+
+            registry_sender.send(registry).await.unwrap();
+
+        });
+    
+        system.run().unwrap();
+    });
+
+    let registry = registry_receiver.recv().await.unwrap();
+
+    let target_node = sync_block_in_block_connection_service_mock(target_node, local_node.clone(), &registry, 10)?;
+    _ = sync_block_in_block_connection_service_mock(target_node, local_node.clone(), &registry, 20)?;
+
+    Ok(())
 }

@@ -18,7 +18,10 @@ use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Duration;
 use stream_task::{CollectorState, TaskError, TaskResultCollector, TaskState};
+
+use super::{BlockConnectAction, BlockConnectedFinishEvent};
 
 #[derive(Clone, Debug)]
 pub struct SyncBlockData {
@@ -217,6 +220,69 @@ where
         self.apply_block(block, None)
     }
 
+    fn notify_connected_block(
+        &mut self,
+        block: Block,
+        block_info: BlockInfo,
+        action: BlockConnectAction,
+        state: CollectorState,
+    ) -> Result<CollectorState> {
+        let total_difficulty = block_info.get_total_difficulty();
+
+        // if the new block's total difficulty is smaller than the current,
+        // do nothing because we do not need to update the current chain in any other services.
+        if total_difficulty <= self.current_block_info.total_difficulty {
+            return Ok(state); // nothing to do
+        }
+
+        // only try connect block when sync chain total_difficulty > node's current chain.
+
+        // first, create the sender and receiver for ensuring that
+        // the last block is connected before the next synchronization is triggered.
+        // if the block is not the last one, we do not want to do this.
+        let (sender, mut receiver) = match state {
+            CollectorState::Enough => {
+                let (s, r) = futures::channel::mpsc::unbounded::<BlockConnectedFinishEvent>();
+                (Some(s), Some(r))
+            }
+            CollectorState::Need => (None, None),
+        };
+
+        // second, construct the block connect event.
+        let block_connect_event = BlockConnectedEvent {
+            block,
+            feedback: sender,
+            action,
+        };
+
+        // third, broadcast it.
+        if let Err(e) = self.event_handle.handle(block_connect_event.clone()) {
+            error!(
+                "Send BlockConnectedEvent error: {:?}, block_id: {}",
+                e,
+                block_info.block_id()
+            );
+        }
+
+        // finally, if it is the last one, wait for the last block to be processed.
+        if block_connect_event.feedback.is_some() && receiver.is_some() {
+            let mut count = 0;
+            while count < 3 {
+                count += 1;
+                match receiver.as_mut().unwrap().try_next() {
+                    Ok(_) => {
+                        break;
+                    }
+                    Err(_) => {
+                        info!("Waiting for last block to be processed");
+                        async_std::task::block_on(async_std::task::sleep(Duration::from_secs(10)));
+                    }
+                }
+            }
+        }
+        return Ok(state);
+    }
+
     fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>) -> Result<()> {
         if let Some((_failed_block, pre_peer_id, err, version)) = self
             .chain
@@ -293,59 +359,53 @@ where
 
     fn collect(&mut self, item: SyncBlockData) -> Result<CollectorState> {
         let (block, block_info, peer_id) = item.into();
-        let block_id = block.id();
         let timestamp = block.header().timestamp();
-        let block_info = match block_info {
+        let (block_info, action) = match block_info {
             Some(block_info) => {
                 //If block_info exists, it means that this block was already executed and try connect in the previous sync, but the sync task was interrupted.
                 //So, we just need to update chain and continue
                 self.chain.connect(ExecutedBlock {
-                    block,
+                    block: block.clone(),
                     block_info: block_info.clone(),
                 })?;
-                block_info
+                (block_info, BlockConnectAction::ConnectExecutedBlock)
             }
             None => {
                 self.apply_block(block.clone(), peer_id)?;
                 self.chain.time_service().adjust(timestamp);
-                let block_info = self.chain.status().info;
-                let total_difficulty = block_info.get_total_difficulty();
-                // only try connect block when sync chain total_difficulty > node's current chain.
-                if total_difficulty > self.current_block_info.total_difficulty {
-                    if let Err(e) = self.event_handle.handle(BlockConnectedEvent { block }) {
-                        error!(
-                            "Send BlockConnectedEvent error: {:?}, block_id: {}",
-                            e, block_id
-                        );
-                    }
-                }
-                block_info
+                (
+                    self.chain.status().info,
+                    BlockConnectAction::ConnectNewBlock,
+                )
             }
         };
 
         //verify target
-        if block_info.block_accumulator_info.num_leaves
-            == self.target.block_info.block_accumulator_info.num_leaves
-        {
-            if block_info != self.target.block_info {
-                Err(TaskError::BreakError(
-                    RpcVerifyError::new_with_peers(
-                        self.target.peers.clone(),
-                        format!(
+        let state: Result<CollectorState, anyhow::Error> =
+            if block_info.block_accumulator_info.num_leaves
+                == self.target.block_info.block_accumulator_info.num_leaves
+            {
+                if block_info != self.target.block_info {
+                    Err(TaskError::BreakError(
+                        RpcVerifyError::new_with_peers(
+                            self.target.peers.clone(),
+                            format!(
                     "Verify target error, expect target: {:?}, collect target block_info:{:?}",
                     self.target.block_info,
                     block_info
                 ),
+                        )
+                        .into(),
                     )
-                    .into(),
-                )
-                .into())
+                    .into())
+                } else {
+                    Ok(CollectorState::Enough)
+                }
             } else {
-                Ok(CollectorState::Enough)
-            }
-        } else {
-            Ok(CollectorState::Need)
-        }
+                Ok(CollectorState::Need)
+            };
+
+        self.notify_connected_block(block, block_info, action, state?)
     }
 
     fn finish(self) -> Result<Self::Output> {

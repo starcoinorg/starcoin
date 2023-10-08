@@ -117,8 +117,8 @@ where
         )
         .and_then(move |(ancestor, accumulator), event_handle| {
             let check_local_store =
-                ancestor_block_info.total_difficulty < current_block_info.total_difficulty;
-
+                ancestor_block_info.total_difficulty <= current_block_info.total_difficulty;
+            
             let block_sync_task = BlockSyncTask::new(
                 accumulator,
                 ancestor,

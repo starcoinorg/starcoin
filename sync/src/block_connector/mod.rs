@@ -40,3 +40,15 @@ pub struct ExecuteRequest {
 impl ServiceRequest for ExecuteRequest {
     type Response = anyhow::Result<ExecutedBlock>;
 }
+
+#[cfg(test)]
+#[derive(Debug, Clone)]
+pub struct CheckBlockConnectorHashValue {
+    pub head_hash: HashValue,
+}
+
+#[cfg(test)]
+impl ServiceRequest for CheckBlockConnectorHashValue {
+    type Response = anyhow::Result<()>;
+}
+
