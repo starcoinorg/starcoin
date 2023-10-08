@@ -407,8 +407,7 @@ pub trait BlockConnectedEventHandle: Send + Clone + std::marker::Unpin {
     fn handle(&mut self, event: BlockConnectedEvent) -> Result<()>;
 }
 
-impl BlockConnectedEventHandle for ServiceRef<BlockConnectorService<TxPoolService>>
-{
+impl BlockConnectedEventHandle for ServiceRef<BlockConnectorService<TxPoolService>> {
     fn handle(&mut self, event: BlockConnectedEvent) -> Result<()> {
         self.notify(event)?;
         Ok(())
@@ -416,11 +415,10 @@ impl BlockConnectedEventHandle for ServiceRef<BlockConnectorService<TxPoolServic
 }
 
 #[cfg(test)]
-impl BlockConnectedEventHandle for ServiceRef<BlockConnectorService<MockTxPoolService>>
-{
+impl BlockConnectedEventHandle for ServiceRef<BlockConnectorService<MockTxPoolService>> {
     fn handle(&mut self, event: BlockConnectedEvent) -> Result<()> {
         self.notify(event)?;
-        return Ok(());
+        Ok(())
     }
 }
 

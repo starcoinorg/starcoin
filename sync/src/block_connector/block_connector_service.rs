@@ -1,12 +1,16 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(test)]
+use super::CheckBlockConnectorHashValue;
 use crate::block_connector::{ExecuteRequest, ResetRequest, WriteBlockChainService};
 use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskCheckEvent};
+#[cfg(test)]
+use anyhow::bail;
 use anyhow::{format_err, Result};
 use network_api::PeerProvider;
-use starcoin_chain_api::{ConnectBlockError, WriteableChainService, ChainReader};
+use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
@@ -26,8 +30,6 @@ use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
 use std::sync::Arc;
 use sysinfo::{DiskExt, System, SystemExt};
-#[cfg(test)]
-use super::CheckBlockConnectorHashValue;
 
 const DISK_CHECKPOINT_FOR_PANIC: u64 = 1024 * 1024 * 1024 * 3;
 const DISK_CHECKPOINT_FOR_WARN: u64 = 1024 * 1024 * 1024 * 5;
@@ -190,9 +192,7 @@ where
     }
 }
 
-impl EventHandler<Self, BlockConnectedEvent>
-    for BlockConnectorService<TxPoolService>
-{
+impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<TxPoolService> {
     fn handle_event(
         &mut self,
         msg: BlockConnectedEvent,
@@ -222,9 +222,7 @@ impl EventHandler<Self, BlockConnectedEvent>
 }
 
 #[cfg(test)]
-impl EventHandler<Self, BlockConnectedEvent>
-    for BlockConnectorService<MockTxPoolService>
-{
+impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<MockTxPoolService> {
     fn handle_event(
         &mut self,
         msg: BlockConnectedEvent,
@@ -386,11 +384,10 @@ where
     ) -> Result<()> {
         if self.chain_service.get_main().status().head().id() == msg.head_hash {
             info!("the branch in chain service is the same as target's branch");
-            return Ok(());
+            Ok(())
+        } else {
+            info!("mock branch in chain service is not the same as target's branch");
+            bail!("blockchain in chain service is not the same as target!");
         }
-        info!("mock branch in chain service is not the same as target's branch");
-        bail!("blockchain in chain service is not the same as target!");
     }
 }
-
-

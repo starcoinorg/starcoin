@@ -51,4 +51,3 @@ pub struct CheckBlockConnectorHashValue {
 impl ServiceRequest for CheckBlockConnectorHashValue {
     type Response = anyhow::Result<()>;
 }
-

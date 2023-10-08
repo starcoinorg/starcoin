@@ -266,9 +266,9 @@ where
 
         // finally, if it is the last one, wait for the last block to be processed.
         if block_connect_event.feedback.is_some() && receiver.is_some() {
-            let mut count = 0;
+            let mut count: i32 = 0;
             while count < 3 {
-                count += 1;
+                count = count.saturating_add(1);
                 match receiver.as_mut().unwrap().try_next() {
                     Ok(_) => {
                         break;
@@ -280,7 +280,7 @@ where
                 }
             }
         }
-        return Ok(state);
+        Ok(state)
     }
 
     fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>) -> Result<()> {
