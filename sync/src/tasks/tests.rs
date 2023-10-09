@@ -1177,7 +1177,9 @@ async fn test_sync_block_apply_failed_but_connect_success() -> Result<()> {
 
     let (registry_sender, registry_receiver) = async_std::channel::unbounded();
 
-    info!("in test_sync_block_apply_failed_but_connect_success, start tokio runtime for main thread");
+    info!(
+        "in test_sync_block_apply_failed_but_connect_success, start tokio runtime for main thread"
+    );
 
     let _handle = timeout_join_handler::spawn(move || {
         let system = System::with_tokio_rt(|| {
