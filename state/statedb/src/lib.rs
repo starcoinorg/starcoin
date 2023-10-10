@@ -576,7 +576,7 @@ impl ChainStateWriter for ChainStateDB {
         self.apply_write_set(
             WriteSetMut::new(vec![(
                 StateKey::AccessPath(access_path.clone()),
-                WriteOp::Value(value),
+                WriteOp::Creation(value),
             )])
             .freeze()
             .expect("freeze write_set must success."),
@@ -630,10 +630,17 @@ impl ChainStateWriter for ChainStateDB {
                     locks.insert(access_path.address);
                     let (account_address, data_path) = access_path.into_inner();
                     match write_op {
-                        WriteOp::Value(value) => {
+                        WriteOp::Creation(value) => {
                             let account_state_object =
                                 self.get_account_state_object(&account_address, true)?;
                             account_state_object.set(data_path, value);
+                        }
+                        WriteOp::Modification(value) => {
+                            // Just make sure the key has already existed.
+                            let account_state_object =
+                                self.get_account_state_object(&account_address, false)?;
+                            let _ = account_state_object.get(&data_path)?;
+                            account_state_object.set(data_path, value)
                         }
                         WriteOp::Deletion => {
                             let account_state_object =
@@ -648,7 +655,12 @@ impl ChainStateWriter for ChainStateDB {
                     let table_handle_state_object =
                         self.get_table_handle_state_object(&table_item.handle)?;
                     match write_op {
-                        WriteOp::Value(value) => {
+                        WriteOp::Creation(value) => {
+                            table_handle_state_object.set(table_item.key, value);
+                        }
+                        WriteOp::Modification(value) => {
+                            // Just make sure the key has already existed.
+                            let _ = table_handle_state_object.get(&table_item.key)?;
                             table_handle_state_object.set(table_item.key, value);
                         }
                         WriteOp::Deletion => {

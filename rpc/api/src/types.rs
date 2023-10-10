@@ -1233,15 +1233,17 @@ impl From<(AccessPath, WriteOp)> for TransactionOutputAction {
     fn from((access_path, op): (AccessPath, WriteOp)) -> Self {
         let (action, value) = match op {
             WriteOp::Deletion => (WriteOpView::Deletion, None),
-            WriteOp::Value(v) => (
-                WriteOpView::Value,
-                Some(if access_path.path.is_resource() {
-                    WriteOpValueView::Resource(v.into())
-                } else {
-                    WriteOpValueView::Code(v.into())
-                }),
-            ),
+            WriteOp::Creation(v) => (WriteOpView::Creation, Some(v)),
+            WriteOp::Modification(v) => (WriteOpView::Modification, Some(v)),
         };
+
+        let value = value.map(|v| {
+            if access_path.path.is_resource() {
+                WriteOpValueView::Resource(v.into())
+            } else {
+                WriteOpValueView::Code(v.into())
+            }
+        });
 
         TransactionOutputAction {
             access_path,
@@ -1267,14 +1269,16 @@ pub enum WriteOpValueView {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub enum WriteOpView {
     Deletion,
-    Value,
+    Creation,
+    Modification,
 }
 
 impl From<(TableItem, WriteOp)> for TransactionOutputTableItemAction {
     fn from((table_item, op): (TableItem, WriteOp)) -> Self {
         let (action, value) = match op {
             WriteOp::Deletion => (WriteOpView::Deletion, None),
-            WriteOp::Value(v) => (WriteOpView::Value, Some(StrView(v))),
+            WriteOp::Creation(v) => (WriteOpView::Creation, Some(StrView(v))),
+            WriteOp::Modification(v) => (WriteOpView::Modification, Some(StrView(v))),
         };
 
         TransactionOutputTableItemAction {
