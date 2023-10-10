@@ -49,7 +49,7 @@ impl FakeDataStore {
         let mut write_handle = self.state_data.write().expect("Panic for lock");
         for (state_key, write_op) in write_set {
             match write_op {
-                WriteOp::Value(blob) => {
+                WriteOp::Creation(blob) => {
                     write_handle.insert(state_key.clone(), blob.clone());
                 }
                 WriteOp::Deletion => {

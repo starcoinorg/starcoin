@@ -14,7 +14,7 @@ fn random_bytes() -> Vec<u8> {
 fn to_write_set(access_path: AccessPath, value: Vec<u8>) -> WriteSet {
     WriteSetMut::new(vec![(
         StateKey::AccessPath(access_path),
-        WriteOp::Value(value),
+        WriteOp::Creation(value),
     )])
     .freeze()
     .expect("freeze write_set must success.")
@@ -26,7 +26,7 @@ fn state_keys_to_write_set(state_keys: Vec<StateKey>, values: Vec<Vec<u8>>) -> W
             .into_iter()
             .zip(values)
             .into_iter()
-            .map(|(key, val)| (key, WriteOp::Value(val)))
+            .map(|(key, val)| (key, WriteOp::Creation(val)))
             .collect::<Vec<_>>(),
     )
     .freeze()
@@ -159,7 +159,7 @@ fn check_write_set(chain_state_db: &ChainStateDB, write_set: &WriteSet) -> Resul
     for (state_key, value) in write_set.iter() {
         let val = chain_state_db.get_state_value(state_key)?;
         assert!(val.is_some());
-        assert_eq!(WriteOp::Value(val.unwrap()), *value);
+        assert_eq!(WriteOp::Creation(val.unwrap()), *value);
     }
     Ok(())
 }

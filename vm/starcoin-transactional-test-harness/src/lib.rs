@@ -1148,7 +1148,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                             m.named_module.address.into_inner(),
                             Identifier::new(m.named_module.name.as_str()).unwrap(),
                         )),
-                        WriteOp::Value({
+                        WriteOp::Creation({
                             let mut bytes = vec![];
                             m.named_module.module.serialize(&mut bytes).unwrap();
                             bytes
