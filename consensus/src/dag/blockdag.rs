@@ -119,7 +119,7 @@ impl BlockDAG {
         let _ = self
             .header_store
             .insert(header.hash(), Arc::new(header.to_owned()), 0)?;
-        return Ok(ghostdag_data.clone())
+        return Ok(ghostdag_data.clone());
     }
 
     fn is_in_dag(&self, _hash: Hash) -> anyhow::Result<bool> {
@@ -160,9 +160,9 @@ impl BlockDAG {
         }
         return Ok(true);
     }
-    pub fn get_ghostdag_data(&self, hash: Hash)->anyhow::Result<Arc<GhostdagData>>{
+    pub fn get_ghostdag_data(&self, hash: Hash) -> anyhow::Result<Arc<GhostdagData>> {
         let ghostdata = self.ghostdag_store.get_data(hash)?;
-        return Ok(ghostdata)
+        return Ok(ghostdata);
     }
 
     fn update_orphans(&mut self, block_header: &DagHeader) -> anyhow::Result<bool> {

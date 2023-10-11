@@ -718,21 +718,15 @@ impl Block {
         }
     }
 
-    pub fn to_metadata(
-        &self,
-        parent_gas_used: u64,
-        dag_block_parent: Option<HashValue>,
-    ) -> BlockMetadata {
+    pub fn to_metadata(&self, parent_gas_used: u64) -> BlockMetadata {
         let uncles = self
             .body
             .uncles
             .as_ref()
             .map(|uncles| uncles.len() as u64)
             .unwrap_or(0);
-
-        let parent = dag_block_parent.unwrap_or(self.header.parent_hash());
         BlockMetadata::new(
-            parent,
+            self.header.parent_hash(),
             self.header.timestamp,
             self.header.author,
             self.header.author_auth_key,

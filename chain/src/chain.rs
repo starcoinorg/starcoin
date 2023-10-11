@@ -13,6 +13,7 @@ use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
     ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
+use starcoin_consensus::dag::types::ghostdata::GhostdagData;
 use starcoin_consensus::{BlockDAG, Consensus, FlexiDagStorage};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
@@ -47,7 +48,6 @@ use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::{collections::HashMap, sync::Arc};
-use starcoin_consensus::dag::types::ghostdata::GhostdagData;
 
 pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
@@ -365,26 +365,21 @@ impl BlockChain {
     }
 
     pub fn verify_with_verifier<V>(&mut self, block: Block) -> Result<VerifiedBlock>
-        where
-            V: BlockVerifier,
+    where
+        V: BlockVerifier,
     {
         V::verify_block(self, block)
     }
 
-    pub fn apply_with_verifier<V>(
-        &mut self,
-        block: Block,
-        dag_block_parent: Option<HashValue>,
-        next_tips: &mut Option<Vec<HashValue>>,
-    ) -> Result<ExecutedBlock>
-        where
-            V: BlockVerifier,
+    pub fn apply_with_verifier<V>(&mut self, block: Block) -> Result<ExecutedBlock>
+    where
+        V: BlockVerifier,
     {
         let verified_block = self.verify_with_verifier::<V>(block)?;
         watch(CHAIN_WATCH_NAME, "n1");
-        let executed_block = self.execute(verified_block, dag_block_parent)?;
+        let executed_block = self.execute(verified_block)?;
         watch(CHAIN_WATCH_NAME, "n2");
-        self.connect(executed_block, next_tips)
+        self.connect(executed_block)
     }
 
     //TODO remove this function.
@@ -416,7 +411,6 @@ impl BlockChain {
         epoch: &Epoch,
         parent_status: Option<ChainStatus>,
         block: Block,
-        dag_block_parent: Option<HashValue>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
         let header = block.header();
@@ -428,8 +422,7 @@ impl BlockChain {
             let mut t = match &parent_status {
                 None => vec![],
                 Some(parent) => {
-                    let block_metadata =
-                        block.to_metadata(parent.head().gas_used(), dag_block_parent);
+                    let block_metadata = block.to_metadata(parent.head().gas_used());
                     vec![Transaction::BlockMetadata(block_metadata)]
                 }
             };
@@ -654,9 +647,9 @@ impl BlockChain {
 
         return Ok(next_tips_info
             == self
-            .dag_accumulator
-            .as_ref()
-            .map(|accumulator| accumulator.get_info()));
+                .dag_accumulator
+                .as_ref()
+                .map(|accumulator| accumulator.get_info()));
     }
 }
 
@@ -915,11 +908,7 @@ impl ChainReader for BlockChain {
         FullVerifier::verify_block(self, block)
     }
 
-    fn execute(
-        &self,
-        verified_block: VerifiedBlock,
-        dag_block_parent: Option<HashValue>,
-    ) -> Result<ExecutedBlock> {
+    fn execute(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
         Self::execute_block_and_save(
             self.storage.as_ref(),
             self.statedb.fork(),
@@ -928,7 +917,6 @@ impl ChainReader for BlockChain {
             &self.epoch,
             Some(self.status.status.clone()),
             verified_block.0,
-            dag_block_parent,
             self.vm_metrics.clone(),
         )
     }
@@ -1148,15 +1136,11 @@ impl ChainWriter for BlockChain {
                     .expect("dag blocks must have tips")
                     .clone(),
             )
-                .expect("failed to calculate the tips hash")
+            .expect("failed to calculate the tips hash")
                 == executed_block.block().header().parent_hash();
         }
     }
-    fn connect(
-        &mut self,
-        executed_block: ExecutedBlock,
-        next_tips: &mut Option<Vec<HashValue>>,
-    ) -> Result<ExecutedBlock> {
+    fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
         let (block, block_info) = (executed_block.block(), executed_block.block_info());
         if self.status.status.tips_hash.is_some() {
             let mut tips = self.status.status.tips_hash.clone().unwrap();
@@ -1184,20 +1168,18 @@ impl ChainWriter for BlockChain {
         );
 
         self.statedb = ChainStateDB::new(self.storage.clone().into_super_arc(), Some(state_root));
-        match next_tips {
-            Some(tips) => {
+        let tips = self.status.status.tips_hash.clone();
+        let next_tips = match tips {
+            Some(mut tips) => {
                 if !tips.contains(&block.header().id()) {
-                    tips.push(block.header().id())
+                    tips.push(block.header().id());
                 }
+                Some(tips)
             }
-            None => (),
-        }
+            None => None,
+        };
         self.status = ChainStatusWithBlock {
-            status: ChainStatus::new(
-                block.header().clone(),
-                block_info.clone(),
-                next_tips.clone(),
-            ),
+            status: ChainStatus::new(block.header().clone(), block_info.clone(), next_tips),
             head: block.clone(),
         };
         if self.epoch.end_block_number() == block.header().number() {
@@ -1212,13 +1194,8 @@ impl ChainWriter for BlockChain {
         Ok(executed_block)
     }
 
-    fn apply(
-        &mut self,
-        block: Block,
-        dag_block_next_parent: Option<HashValue>,
-        next_tips: &mut Option<Vec<HashValue>>,
-    ) -> Result<ExecutedBlock> {
-        self.apply_with_verifier::<FullVerifier>(block, dag_block_next_parent, next_tips)
+    fn apply(&mut self, block: Block) -> Result<ExecutedBlock> {
+        self.apply_with_verifier::<FullVerifier>(block)
     }
 
     fn chain_state(&mut self) -> &ChainStateDB {

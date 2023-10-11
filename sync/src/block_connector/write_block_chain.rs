@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::metrics::ChainMetrics;
+use crate::block_connector::write_block_chain::ConnectOk::{
+    DagConnectMissingBlock, DagConnected, ExeConnectMain,
+};
 use anyhow::{bail, format_err, Ok, Result};
 use async_std::stream::StreamExt;
 use starcoin_chain::BlockChain;
@@ -11,6 +14,7 @@ use starcoin_consensus::dag::ghostdag::protocol::ColoringOutput;
 use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
+use starcoin_logger::prelude::Level::Error;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
@@ -20,6 +24,7 @@ use starcoin_time_service::{DagBlockTimeWindowService, TimeWindowResult};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
 use starcoin_types::blockhash::BlockHashMap;
+use starcoin_types::header::DagHeader;
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
@@ -27,14 +32,12 @@ use starcoin_types::{
 };
 use std::fmt::Formatter;
 use std::sync::{Arc, Mutex};
-use starcoin_types::header::DagHeader;
-use crate::block_connector::write_block_chain::ConnectOk::{DagConnected, ExeConnectMain};
 
 const MAX_ROLL_BACK_BLOCK: usize = 10;
 
 pub struct WriteBlockChainService<P>
-    where
-        P: TxPoolSyncService,
+where
+    P: TxPoolSyncService,
 {
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
@@ -64,6 +67,7 @@ pub enum ConnectOk {
     MainDuplicate,
     // the dag block waiting for the time window end
     DagPending,
+    DagConnectMissingBlock,
 }
 
 impl ConnectOk {
@@ -94,8 +98,8 @@ impl std::fmt::Display for ConnectOk {
 }
 
 impl<P> WriteableChainService for WriteBlockChainService<P>
-    where
-        P: TxPoolSyncService + 'static,
+where
+    P: TxPoolSyncService + 'static,
 {
     fn try_connect(&mut self, block: Block, tips_headers: Option<Vec<HashValue>>) -> Result<()> {
         let _timer = self
@@ -126,8 +130,8 @@ impl<P> WriteableChainService for WriteBlockChainService<P>
 }
 
 impl<P> WriteBlockChainService<P>
-    where
-        P: TxPoolSyncService + 'static,
+where
+    P: TxPoolSyncService + 'static,
 {
     pub fn new(
         config: Arc<NodeConfig>,
@@ -149,7 +153,6 @@ impl<P> WriteBlockChainService<P>
             .metrics
             .registry()
             .and_then(|registry| ChainMetrics::register(registry).ok());
-
         Ok(Self {
             config,
             startup_info,
@@ -793,15 +796,29 @@ impl<P> WriteBlockChainService<P>
         return Ok(ConnectOk::ExeConnectMain(executed_block));
     }
 
-    fn connect_dag_inner(&mut self, block: Block, parents_hash: Vec<HashValue>,
+    fn connect_dag_inner(
+        &mut self,
+        block: Block,
+        parents_hash: Vec<HashValue>,
     ) -> Result<ConnectOk> {
-        let ghost_dag_data = self.dag.lock().unwrap().addToDag(DagHeader::new(block.header, parents_hash))?;
-        let past_header = ghost_dag_data.selected_parent;
-        let mut chain = self.main.fork(past_header)?;
-        for blue_hash in ghost_dag_data.mergeset_blues{
-            chain.apply(blue_hash);
+        let ghost_dag_data = self
+            .dag
+            .lock()
+            .unwrap()
+            .addToDag(DagHeader::new(block.header, parents_hash))?;
+        let selected_parent = self
+            .storage
+            .get_block_by_hash(ghost_dag_data.selected_parent)?
+            .expect("selected parent should in storage");
+        let mut chain = self.main.fork(selected_parent.header.parent_hash())?;
+        for blue_hash in ghost_dag_data.mergeset_blues.iter() {
+            if let Some(blue_block) = self.storage.get_block(blue_hash.to_owned())? {
+                chain.apply(blue_block);
+            } else {
+                error!("Failed to get block {:?}", blue_hash);
+                return Ok(DagConnectMissingBlock);
+            }
         }
-
         //self.broadcast_new_head();
         Ok(DagConnected)
     }
