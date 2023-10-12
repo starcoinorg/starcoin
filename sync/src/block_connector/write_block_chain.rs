@@ -632,14 +632,15 @@ impl<P> WriteBlockChainService<P>
         block: Block,
         parents_hash: Option<Vec<HashValue>>,
     ) -> Result<ConnectOk> {
-        println!("fuck0 {:?},{:?}",parents_hash, block);
         let ghost_dag_data = self
             .dag
             .lock()
             .unwrap()
-            .addToDag(DagHeader::new(block.header.clone(), parents_hash.unwrap_or(vec![block.header.id()])))?;
-
-        let head_block_hash = self.dag.lock().unwrap().get_ghostdag_data(ghost_dag_data.selected_parent)?.selected_parent;
+            .addToDag(DagHeader::new(block.header.clone(), parents_hash.unwrap_or(vec![block.header.parent_hash()])))?;
+        if block.header.parent_hash() == self.storage.get_genesis()?.expect("genesis should exist"){
+            return Ok(ConnectOk::DagConnected)
+        }
+        let head_block_hash= self.dag.lock().unwrap().get_ghostdag_data(ghost_dag_data.selected_parent)?.selected_parent;
 
         let head_block = self
             .storage

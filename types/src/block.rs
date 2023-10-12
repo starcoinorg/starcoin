@@ -902,7 +902,7 @@ impl BlockTemplate {
 
     pub fn into_block(self, nonce: u32, extra: BlockHeaderExtra) -> Block {
         let header = BlockHeader::new(
-            self.generate_parent_header(),
+            self.parent_hash,
             self.timestamp,
             self.number,
             self.author,
@@ -972,7 +972,7 @@ impl BlockTemplate {
 
     pub fn as_raw_block_header(&self) -> RawBlockHeader {
         RawBlockHeader {
-            parent_hash: self.generate_parent_header(),
+            parent_hash: self.parent_hash,
             timestamp: self.timestamp,
             number: self.number,
             author: self.author,
