@@ -92,13 +92,13 @@ impl<P> WriteableChainService for WriteBlockChainService<P>
     where
         P: TxPoolSyncService + 'static,
 {
-    fn try_connect(&mut self, block: Block, tips_headers: Option<Vec<HashValue>>) -> Result<()> {
+    fn try_connect(&mut self, block: Block, parents_hash: Option<Vec<HashValue>>) -> Result<()> {
         let _timer = self
             .metrics
             .as_ref()
             .map(|metrics| metrics.chain_block_connect_time.start_timer());
 
-        let result = self.connect_dag_inner(block, tips_headers);
+        let result = self.connect_dag_inner(block, parents_hash);
 
         if let Some(metrics) = self.metrics.as_ref() {
             let result = match result.as_ref() {

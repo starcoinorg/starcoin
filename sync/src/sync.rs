@@ -660,11 +660,11 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService {
 
 impl EventHandler<Self, NewHeadBlock> for SyncService {
     fn handle_event(&mut self, msg: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
-        let NewHeadBlock(block) = msg;
+        let NewHeadBlock(block,tips_hash) = msg;
         if self.sync_status.update_chain_status(ChainStatus::new(
             block.header().clone(),
             block.block_info.clone(),
-            block.parents_hash.clone(),
+            tips_hash,
         )) {
             self.sync_status.update_dag_accumulator_info(
                 self.storage
