@@ -1038,7 +1038,7 @@ impl BlockTemplate {
 pub struct ExecutedBlock {
     pub block: Block,
     pub block_info: BlockInfo,
-    pub dag_parents: Option<Vec<HashValue>>,
+    pub parents_hash: Option<Vec<HashValue>>,
 }
 
 impl ExecutedBlock {
@@ -1046,7 +1046,7 @@ impl ExecutedBlock {
         ExecutedBlock {
             block,
             block_info,
-            dag_parents,
+            parents_hash: dag_parents,
         }
     }
 

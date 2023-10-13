@@ -371,13 +371,13 @@ impl BlockChain {
         V::verify_block(self, block)
     }
 
-    pub fn apply_with_verifier<V>(&mut self, block: Block) -> Result<ExecutedBlock>
+    pub fn apply_with_verifier<V>(&mut self, block: Block, parents_hash: Option<Vec<HashValue>>) -> Result<ExecutedBlock>
     where
         V: BlockVerifier,
     {
         let verified_block = self.verify_with_verifier::<V>(block)?;
         watch(CHAIN_WATCH_NAME, "n1");
-        let executed_block = self.execute(verified_block)?;
+        let executed_block = self.execute(verified_block, parents_hash)?;
         watch(CHAIN_WATCH_NAME, "n2");
         self.connect(executed_block)
     }
@@ -386,7 +386,7 @@ impl BlockChain {
     pub fn update_chain_head(
         &mut self,
         block: Block,
-        dag_parent: Option<HashValue>,
+        parents_hash: Option<Vec<HashValue>>,
     ) -> Result<ExecutedBlock> {
         let block_info = self
             .storage
@@ -396,9 +396,8 @@ impl BlockChain {
             ExecutedBlock {
                 block,
                 block_info,
-                dag_parent,
-            },
-            &mut Some(vec![]),
+                parents_hash,
+            }
         )
     }
 
@@ -412,6 +411,8 @@ impl BlockChain {
         parent_status: Option<ChainStatus>,
         block: Block,
         vm_metrics: Option<VMMetrics>,
+        parents_hash: Option<Vec<HashValue>>
+
     ) -> Result<ExecutedBlock> {
         let header = block.header();
         debug_assert!(header.is_genesis() || parent_status.is_some());
@@ -563,7 +564,7 @@ impl BlockChain {
         Ok(ExecutedBlock {
             block,
             block_info,
-            dag_parent: dag_block_parent,
+            parents_hash,
         })
     }
 
@@ -908,7 +909,7 @@ impl ChainReader for BlockChain {
         FullVerifier::verify_block(self, block)
     }
 
-    fn execute(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
+    fn execute(&self, verified_block: VerifiedBlock, parents_hash: Option<Vec<HashValue>>) -> Result<ExecutedBlock> {
         Self::execute_block_and_save(
             self.storage.as_ref(),
             self.statedb.fork(),
@@ -918,6 +919,7 @@ impl ChainReader for BlockChain {
             Some(self.status.status.clone()),
             verified_block.0,
             self.vm_metrics.clone(),
+            parents_hash
         )
     }
 
@@ -1194,8 +1196,8 @@ impl ChainWriter for BlockChain {
         Ok(executed_block)
     }
 
-    fn apply(&mut self, block: Block) -> Result<ExecutedBlock> {
-        self.apply_with_verifier::<FullVerifier>(block)
+    fn apply(&mut self, block: Block, parents_hash: Option<Vec<HashValue>>) -> Result<ExecutedBlock> {
+        self.apply_with_verifier::<FullVerifier>(block, parents_hash)
     }
 
     fn chain_state(&mut self) -> &ChainStateDB {

@@ -49,7 +49,7 @@ impl ServiceRequest for ExecuteRequest {
 #[derive(Debug, Clone)]
 pub struct BlockConnectedRequest {
     pub block: Block,
-    pub dag_parents: Option<Vec<HashValue>>,
+    pub parents_hash: Option<Vec<HashValue>>,
 }
 
 impl ServiceRequest for BlockConnectedRequest {

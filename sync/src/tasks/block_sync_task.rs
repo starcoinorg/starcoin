@@ -281,18 +281,16 @@ where
     pub fn apply_block_for_test(
         &mut self,
         block: Block,
-        dag_parent: Option<HashValue>,
-        next_tips: &mut Option<Vec<HashValue>>,
+        parents_hash: Option<Vec<HashValue>>,
     ) -> Result<()> {
-        self.apply_block(block, None, dag_parent, next_tips)
+        self.apply_block(block, None, parents_hash)
     }
 
     fn apply_block(
         &mut self,
         block: Block,
         peer_id: Option<PeerId>,
-        dag_parent: Option<HashValue>,
-        next_tips: &mut Option<Vec<HashValue>>,
+        parents_hash: Option<Vec<HashValue>>,
     ) -> Result<()> {
         if let Some((_failed_block, pre_peer_id, err, version)) = self
             .chain
@@ -322,9 +320,9 @@ where
         }
         let apply_result = if self.skip_pow_verify {
             self.chain
-                .apply_with_verifier::<BasicVerifier>(block.clone(), dag_parent, next_tips)
+                .apply_with_verifier::<BasicVerifier>(block.clone(), parents_hash)
         } else {
-            self.chain.apply(block.clone(), dag_parent, next_tips)
+            self.chain.apply(block.clone(), parents_hash)
         };
         if let Err(err) = apply_result {
             let error_msg = err.to_string();
@@ -399,13 +397,13 @@ where
     fn collect_item(
         &mut self,
         item: SyncBlockData,
-        next_tips: &mut Option<Vec<HashValue>>,
+        parents_hash: &mut Option<Vec<HashValue>>,
     ) -> Result<BlockInfo> {
-        let (block, block_info, peer_id, dag_parents, dag_transaction_header) = item.into();
+        let (block, block_info, peer_id, parents_hash, dag_transaction_header) = item.into();
         let block_id = block.id();
         let timestamp = block.header().timestamp();
 
-        if let Some(parents) = dag_parents.clone() {
+        if let Some(parents) = parents_hash.clone() {
             if let Some(dag) = &self.dag {
                 // let color = dag
                 //     .lock()
@@ -431,9 +429,8 @@ where
                     ExecutedBlock {
                         block: block.clone(),
                         block_info: block_info.clone(),
-                        dag_parent: dag_transaction_header,
+                        parents_hash,
                     },
-                    next_tips,
                 )?;
                 let block_info = self.chain.status().info;
                 let total_difficulty = block_info.get_total_difficulty();
@@ -448,7 +445,7 @@ where
                 Ok(block_info)
             }
             None => {
-                self.apply_block(block.clone(), peer_id, dag_transaction_header, next_tips)?;
+                self.apply_block(block.clone(), peer_id, parents_hash.clone())?;
                 self.chain.time_service().adjust(timestamp);
                 let block_info = self.chain.status().info;
                 let total_difficulty = block_info.get_total_difficulty();
@@ -456,7 +453,7 @@ where
                 if total_difficulty > self.current_block_info.total_difficulty {
                     async_std::task::block_on(
                         self.block_chain_service
-                            .send(BlockConnectedRequest { block, dag_parents }),
+                            .send(BlockConnectedRequest { block, parents_hash}),
                     )??;
                     // if let Err(e) = self
                     //     .event_handle

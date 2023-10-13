@@ -559,7 +559,6 @@ impl Inner {
                     peer_info.peer_info.update_chain_status(ChainStatus::new(
                         block_header.clone(),
                         compact_block_message.block_info.clone(),
-                        compact_block_message.tips_header.clone(),
                     ));
 
                     if self.self_peer.known_blocks.contains(&block_id) {

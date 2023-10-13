@@ -289,12 +289,11 @@ impl ServiceHandler<Self, NewBlockChainRequest> for BlockConnectorService {
         msg: NewBlockChainRequest,
         ctx: &mut ServiceContext<BlockConnectorService>,
     ) -> Result<()> {
+        //TODO:REMOVE or FIXME.
         let (new_branch, dag_parents, next_tips) =
             self.chain_service.switch_new_main(msg.new_head_block)?;
         ctx.broadcast(NewHeadBlock(
             Arc::new(new_branch.head_block()),
-            Some(dag_parents),
-            Some(next_tips),
         ));
         Ok(())
     }
@@ -307,7 +306,7 @@ impl ServiceHandler<Self, ExecuteRequest> for BlockConnectorService {
         _ctx: &mut ServiceContext<BlockConnectorService>,
     ) -> Result<ExecutedBlock> {
         self.chain_service
-            .execute(msg.block, msg.dag_transaction_parent)
+            .execute(msg.block, msg.dag_block_parent)
     }
 }
 
@@ -321,7 +320,7 @@ impl ServiceHandler<Self, BlockConnectedRequest> for BlockConnectorService {
         //TODO refactor connect and execute
 
         let block = msg.block;
-        let result = self.chain_service.try_connect(block, msg.dag_parents);
+        let result = self.chain_service.try_connect(block, msg.parents_hash);
         result
     }
 }

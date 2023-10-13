@@ -120,8 +120,8 @@ impl MockChain {
             .create_block(template, self.net.time_service().as_ref())
     }
 
-    pub fn apply(&mut self, block: Block, dag_parent: Option<HashValue>) -> Result<()> {
-        self.head.apply(block, dag_parent, &mut None)?;
+    pub fn apply(&mut self, block: Block, parents_hash: Option<Vec<HashValue>>) -> Result<()> {
+        self.head.apply(block, parents_hash)?;
         Ok(())
     }
 
