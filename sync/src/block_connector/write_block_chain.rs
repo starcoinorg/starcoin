@@ -343,9 +343,7 @@ where
                 .chain_txn_num
                 .set(executed_block.block_info.txn_accumulator_info.num_leaves);
         }
-
-        // self.broadcast_new_head(executed_block, dag_parents, next_tips);
-
+        self.broadcast_new_head(executed_block);
         Ok(())
     }
 
@@ -398,7 +396,7 @@ where
             .storage
             .get_tips_by_block_id(executed_block.block.header().id())
             .ok();
-        self.broadcast_new_head(executed_block, dag_block_parents, next_tips);
+        self.broadcast_new_head(executed_block);
 
         Ok(())
     }
@@ -625,8 +623,6 @@ where
     fn broadcast_new_head(
         &self,
         block: ExecutedBlock,
-        dag_parents: Option<Vec<HashValue>>,
-        next_tips: Option<Vec<HashValue>>,
     ) {
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
@@ -637,7 +633,7 @@ where
 
         if let Err(e) = self
             .bus
-            .broadcast(NewHeadBlock(Arc::new(block), dag_parents, next_tips))
+            .broadcast(NewHeadBlock(Arc::new(block)))
         {
             error!("Broadcast NewHeadBlock error: {:?}", e);
         }
@@ -646,7 +642,6 @@ where
     fn broadcast_new_branch(
         &self,
         block: ExecutedBlock,
-        dag_block_parents: Option<Vec<HashValue>>,
     ) {
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
@@ -656,141 +651,17 @@ where
         }
         if let Err(e) = self
             .bus
-            .broadcast(NewBranch(Arc::new(block), dag_block_parents))
+            .broadcast(NewBranch(Arc::new(block)))
         {
             error!("Broadcast NewBranch error: {:?}", e);
-        }
-    }
-
-    fn switch_branch(
-        &mut self,
-        block: Block,
-        dag_block_parents: Option<Vec<HashValue>>,
-        dag_block_next_parent: Option<HashValue>,
-        next_tips: &mut Option<Vec<HashValue>>,
-    ) -> Result<ConnectOk> {
-        let (block_info, fork) = self.find_or_fork(
-            block.header(),
-            dag_block_next_parent,
-            dag_block_parents.clone(),
-        )?;
-        match (block_info, fork) {
-            //block has been processed in some branch, so just trigger a head selection.
-            (Some(block_info), Some(branch)) => {
-                // both are different, select one
-                debug!(
-                    "Block {} has been processed, trigger head selection, total_difficulty: {}",
-                    block_info.block_id(),
-                    branch.get_total_difficulty()?
-                );
-                let exe_block = branch.head_block();
-                self.select_head(branch, dag_block_parents)?;
-                if let Some(new_tips) = next_tips {
-                    new_tips.push(block_info.block_id().clone());
-                }
-                Ok(ConnectOk::Duplicate(exe_block))
-            }
-            //block has been processed, and its parent is main chain, so just connect it to main chain.
-            (Some(block_info), None) => {
-                // both are identical
-                let block_id: HashValue = block_info.block_id().clone();
-                let executed_block = self.main.connect(
-                    ExecutedBlock {
-                        block: block.clone(),
-                        block_info,
-                        dag_parent: dag_block_next_parent,
-                    },
-                    next_tips,
-                )?;
-                info!(
-                    "Block {} main has been processed, trigger head selection",
-                    block_id,
-                );
-                self.do_new_head(executed_block.clone(), 1, vec![block], 0, vec![])?;
-                Ok(ConnectOk::Connect(executed_block))
-            }
-            (None, Some(mut branch)) => {
-                // the block is not in the block, but the parent is
-                let result = branch.apply(block, dag_block_next_parent, next_tips);
-                let executed_block = result?;
-                self.select_head(branch, dag_block_parents)?;
-                Ok(ConnectOk::ExeConnectBranch(executed_block))
-            }
-            (None, None) => Err(ConnectBlockError::FutureBlock(Box::new(block)).into()),
-        }
-    }
-
-    fn connect_to_main(
-        &mut self,
-        block: Block,
-        dag_block_parents: Option<Vec<HashValue>>,
-        dag_block_next_parent: Option<HashValue>,
-        next_tips: &mut Option<Vec<HashValue>>,
-    ) -> Result<ConnectOk> {
-        let block_id = block.id();
-        if block_id == *starcoin_storage::BARNARD_HARD_FORK_HASH
-            && block.header().number() == starcoin_storage::BARNARD_HARD_FORK_HEIGHT
-        {
-            debug!("barnard hard fork {}", block_id);
-            return Err(ConnectBlockError::BarnardHardFork(Box::new(block)).into());
-        }
-        if self.main.current_header().id() == block_id {
-            debug!("Repeat connect, current header is {} already.", block_id);
-            return Ok(ConnectOk::MainDuplicate);
-        }
-        if let Some(parents) = dag_block_parents {
-            assert!(parents.len() > 0);
-            // let color = self
-            //     .dag
-            //     .lock()
-            //     .as_mut()
-            //     .expect("failed to get the mut dag object")
-            //     .commit_header(&Header::new(block.header().clone(), parents.clone()))?;
-            let color = ColoringOutput::Blue(
-                0,
-                BlockHashMap::with_capacity(3), // k
-            );
-            match color {
-                ColoringOutput::Blue(_, _) => {
-                    if self
-                        .main
-                        .current_tips_hash()
-                        .expect("in dag block, the tips hash must exist")
-                        == block.header().parent_hash()
-                        && !self.block_exist(block_id)?
-                    {
-                        return self.apply_and_select_head(
-                            block,
-                            Some(parents),
-                            dag_block_next_parent,
-                            next_tips,
-                        );
-                    }
-                    self.switch_branch(block, Some(parents), dag_block_next_parent, next_tips)
-                }
-                ColoringOutput::Red => {
-                    self.switch_branch(block, Some(parents), dag_block_next_parent, next_tips)
-                }
-            }
-        } else {
-            if self.main.current_header().id() == block.header().parent_hash()
-                && !self.block_exist(block_id)?
-            {
-                return self.apply_and_select_head(block, None, None, &mut None);
-            }
-            // todo: should switch dag together
-            self.switch_branch(block, None, None, &mut None)
         }
     }
 
     fn apply_and_select_head(
         &mut self,
         block: Block,
-        dag_block_parents: Option<Vec<HashValue>>,
-        dag_block_next_parent: Option<HashValue>,
-        next_tips: &mut Option<Vec<HashValue>>,
     ) -> Result<ConnectOk> {
-        let executed_block = self.main.apply(block, dag_block_next_parent, next_tips)?;
+        let executed_block = self.main.apply(block)?;
         let enacted_blocks = vec![executed_block.block().clone()];
         self.do_new_head(executed_block.clone(), 1, enacted_blocks, 0, vec![])?;
         return Ok(ConnectOk::ExeConnectMain(executed_block));
@@ -806,20 +677,23 @@ where
             .lock()
             .unwrap()
             .addToDag(DagHeader::new(block.header, parents_hash))?;
-        let selected_parent = self
+        let head_block_hash = self.dag.lock().unwrap().get_ghostdag_data(ghost_dag_data.selected_parent)?.selected_parent;
+        let head_block = self
             .storage
-            .get_block_by_hash(ghost_dag_data.selected_parent)?
+            .get_block_by_hash(head_block_hash)?
             .expect("selected parent should in storage");
-        let mut chain = self.main.fork(selected_parent.header.parent_hash())?;
+        let mut chain = self.main.fork(head_block.id())?;
         for blue_hash in ghost_dag_data.mergeset_blues.iter() {
             if let Some(blue_block) = self.storage.get_block(blue_hash.to_owned())? {
-                chain.apply(blue_block);
+                let executed_block = chain.apply(blue_block)?;
+                let enacted_blocks = vec![executed_block.block().clone()];
+                self.do_new_head(executed_block, 1, enacted_blocks, 0, vec![])?;
             } else {
                 error!("Failed to get block {:?}", blue_hash);
                 return Ok(DagConnectMissingBlock);
             }
         }
-        //self.broadcast_new_head();
+        //TODO: broadcast new head
         Ok(DagConnected)
     }
 
@@ -837,166 +711,47 @@ where
         }
         if self.main.current_header().id() == block_id {
             debug!("Repeat connect, current header is {} already.", block_id);
-            return Ok(ConnectOk::MainDuplicate);
+            return Ok(ConnectOk::Duplicate);
         }
-
-        // if it received a block with tips, it is a dag block
-        if let Some(dag_block_parents) = tips_headers {
-            // tips header, check the dag time window to see if it is should apply the blocks
-            // checkout if it is time to settle down
-            let time_service = DagBlockTimeWindowService::new(
-                3 * 1000000,
-                self.config.net().time_service().clone(),
-            );
-            let block_id = block.header.id();
-            self.dag_block_pool
-                .lock()
-                .unwrap()
-                .push((block, dag_block_parents.clone()));
-
-            let _testing = self
-                .dag
-                .lock()
-                .unwrap()
-                .push_parent_children(block_id, Arc::new(dag_block_parents.clone()));
-
-            // if self.dag_block_pool.lock().unwrap().len() < 3 {
-            //     // TimeWindowResult::InTimeWindow => {
-            //     return Ok(ConnectOk::DagPending);
-            // } else {
-            // TimeWindowResult::BeforeTimeWindow => {
-            //     return Err(ConnectBlockError::DagBlockBeforeTimeWindow(Box::new(block)).into())
-            // }
-            // TimeWindowResult::AfterTimeWindow => {
-            // dump the block in the time window pool and put the block into the next time window pool
-            // self.main.status().tips_hash = None; // set the tips to None, and in connect_to_main, the block will be added to the tips
-
-            // 2, get the new tips and clear the blocks in the pool
-            let dag_blocks = self.dag_block_pool.lock().unwrap().clone();
-            self.dag_block_pool.lock().unwrap().clear();
-
-            return self.execute_dag_block_in_pool(dag_blocks, dag_block_parents);
-            // }
-        } else {
-            // normal block, just connect to main
-            let mut next_tips = Some(vec![]);
-            let executed_block = self
-                .connect_to_main(block, None, None, &mut next_tips)?
-                .clone();
-            if let Some(block) = executed_block.block() {
-                self.broadcast_new_head(block.clone(), None, None);
-            }
-            return Ok(executed_block);
+        if self.main.current_header().id() == block.header().parent_hash()
+            && !self.block_exist(block_id)?
+        {
+            let executed_block = self.main.apply(block)?;
+            let enacted_blocks = vec![executed_block.block().clone()];
+            self.do_new_head(executed_block, 1, enacted_blocks, 0, vec![])?;
+            return Ok(ConnectOk::ExeConnectMain);
         }
-    }
-
-    #[cfg(test)]
-    pub fn execute_dag_block_pool(&mut self) -> Result<ConnectOk> {
-        let mut dag_blocks = self.dag_block_pool.lock().unwrap().clone();
-        self.dag_block_pool.lock().unwrap().clear();
-        return self.execute_dag_block_in_pool(
-            dag_blocks,
-            self.main
-                .status()
-                .tips_hash
-                .expect("dag block must has current tips")
-                .clone(),
-        );
-    }
-
-    pub fn execute_dag_block_in_pool(
-        &mut self,
-        mut dag_blocks: Vec<(Block, Vec<HashValue>)>,
-        current_tips: Vec<HashValue>,
-    ) -> Result<ConnectOk> {
-        // 3, process the blocks that are got from the pool
-        // sort by id
-        dag_blocks.sort_by_key(|(block, _)| block.header().id());
-
-        let mut dag_block_next_parent = current_tips
-            .iter()
-            .max()
-            .expect("tips must be larger than 0")
-            .clone();
-        let mut next_tips = Some(vec![]);
-        let mut executed_blocks = vec![];
-        // connect the block one by one
-        dag_blocks
-            .into_iter()
-            .try_fold((), |_, (block, dag_block_parents)| {
-                let next_transaction_parent = block.header().id();
-                let result = self.connect_to_main(
-                    block,
-                    Some(dag_block_parents.clone()),
-                    Some(dag_block_next_parent),
-                    &mut next_tips,
+        let (block_info, fork) = self.find_or_fork(block.header())?;
+        match (block_info, fork) {
+            //block has been processed in some branch, so just trigger a head selection.
+            (Some(_block_info), Some(branch)) => {
+                debug!(
+                    "Block {} has been processed, trigger head selection, total_difficulty: {}",
+                    block_id,
+                    branch.get_total_difficulty()?
                 );
-                match result {
-                    std::result::Result::Ok(connect_ok) => {
-                        executed_blocks.push((connect_ok.block().clone(), dag_block_parents));
-                        dag_block_next_parent = next_transaction_parent;
-                        Ok(())
-                    }
-                    Err(error) => {
-                        bail!("apply_and_select_head failed, error: {}", error.to_string())
-                    }
-                }
-            })?;
-
-        match next_tips {
-            Some(new_tips) => {
-                if new_tips.is_empty() {
-                    bail!("no new block has been executed successfully!");
-                }
-
-                let mut connected = self.main.is_head_of_dag_accumulator(new_tips.clone())?;
-                if self.main.dag_parents_in_tips(new_tips.clone())? {
-                    // 1, write to disc
-                    if !connected {
-                        self.main.append_dag_accumulator_leaf(new_tips.clone())?;
-                        connected = true;
-                    }
-                }
-
-                if connected {
-                    // 2, broadcast the blocks sorted by their id
-                    executed_blocks
-                        .iter()
-                        .for_each(|(exe_block, dag_block_parents)| {
-                            if let Some(block) = exe_block {
-                                self.broadcast_new_head(
-                                    block.clone(),
-                                    Some(dag_block_parents.clone()),
-                                    Some(new_tips.clone()),
-                                );
-                            }
-                        });
-                }
-
-                return executed_blocks
-                    .last()
-                    .map(|(exe_block, _)| {
-                        if connected {
-                            ConnectOk::ExeConnectMain(
-                                exe_block
-                                    .as_ref()
-                                    .expect("exe block should not be None!")
-                                    .clone(),
-                            )
-                        } else {
-                            ConnectOk::ExeConnectBranch(
-                                exe_block
-                                    .as_ref()
-                                    .expect("exe block should not be None!")
-                                    .clone(),
-                            )
-                        }
-                    })
-                    .ok_or_else(|| format_err!("no block has been executed successfully!"));
+                self.select_head(branch)?;
+                Ok(ConnectOk::Duplicate)
             }
-            None => {
-                unreachable!("next tips should not be None");
+            //block has been processed, and its parent is main chain, so just connect it to main chain.
+            (Some(block_info), None) => {
+                let executed_block = self.main.connect(ExecutedBlock {
+                    block: block.clone(),
+                    block_info,
+                })?;
+                info!(
+                    "Block {} main has been processed, trigger head selection",
+                    block_id
+                );
+                self.do_new_head(executed_block, 1, vec![block], 0, vec![])?;
+                Ok(ConnectOk::Connect)
             }
-        };
+            (None, Some(mut branch)) => {
+                let _executed_block = branch.apply(block)?;
+                self.select_head(branch)?;
+                Ok(ConnectOk::ExeConnectBranch)
+            }
+            (None, None) => Err(ConnectBlockError::FutureBlock(Box::new(block)).into()),
+        }
     }
 }

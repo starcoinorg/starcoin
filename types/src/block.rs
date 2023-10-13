@@ -1038,15 +1038,15 @@ impl BlockTemplate {
 pub struct ExecutedBlock {
     pub block: Block,
     pub block_info: BlockInfo,
-    pub dag_parent: Option<HashValue>,
+    pub dag_parents: Option<Vec<HashValue>>,
 }
 
 impl ExecutedBlock {
-    pub fn new(block: Block, block_info: BlockInfo, dag_parent: Option<HashValue>) -> Self {
+    pub fn new(block: Block, block_info: BlockInfo, dag_parents: Option<Vec<HashValue>>) -> Self {
         ExecutedBlock {
             block,
             block_info,
-            dag_parent,
+            dag_parents,
         }
     }
 

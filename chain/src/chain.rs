@@ -676,7 +676,7 @@ impl ChainReader for BlockChain {
         ExecutedBlock::new(
             self.status.head.clone(),
             self.status.status.info.clone(),
-            self.status.status.get_last_tip_block_id(),
+            self.status.status.tips_hash.clone(),
         )
     }
 
