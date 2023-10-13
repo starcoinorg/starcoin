@@ -10,7 +10,7 @@ use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
-use starcoin_service_registry::ServiceRef;
+use starcoin_service_registry::{ServiceContext, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
@@ -21,6 +21,8 @@ use starcoin_types::{
 };
 use std::fmt::Formatter;
 use std::sync::Arc;
+
+use super::BlockConnectorService;
 
 const MAX_ROLL_BACK_BLOCK: usize = 10;
 
@@ -93,15 +95,15 @@ where
     }
 }
 
-impl<P> WriteBlockChainService<P>
+impl<TransactionPoolServiceT> WriteBlockChainService<TransactionPoolServiceT>
 where
-    P: TxPoolSyncService + 'static,
+    TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
     pub fn new(
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
-        txpool: P,
+        txpool: TransactionPoolServiceT,
         bus: ServiceRef<BusService>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
@@ -167,6 +169,42 @@ where
 
     pub fn get_main(&self) -> &BlockChain {
         &self.main
+    }
+
+    #[cfg(test)]
+    pub fn apply_failed(&mut self, block: Block) -> Result<()> {
+        use anyhow::bail;
+        use starcoin_chain::verifier::FullVerifier;
+
+        // apply but no connection
+        let verified_block = self.main.verify_with_verifier::<FullVerifier>(block)?;
+        let _executed_block = self.main.execute(verified_block)?;
+
+        bail!("failed to apply for tesing the connection later!");
+    }
+
+    // for sync task to connect to its chain, if chain's total difficulties is larger than the main
+    // switch by:
+    // 1, update the startup info
+    // 2, broadcast the new header
+    pub fn switch_new_main(
+        &mut self,
+        new_head_block: HashValue,
+        _ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
+    ) -> Result<()>
+    where
+        TransactionPoolServiceT: TxPoolSyncService,
+    {
+        let new_branch = BlockChain::new(
+            self.config.net().time_service(),
+            new_head_block,
+            self.storage.clone(),
+            self.vm_metrics.clone(),
+        )?;
+
+        self.select_head(new_branch)?;
+
+        Ok(())
     }
 
     pub fn select_head(&mut self, new_branch: BlockChain) -> Result<()> {

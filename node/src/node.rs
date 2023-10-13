@@ -51,7 +51,7 @@ use starcoin_sync::block_connector::{BlockConnectorService, ExecuteRequest, Rese
 use starcoin_sync::sync::SyncService;
 use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
-use starcoin_txpool::TxPoolActorService;
+use starcoin_txpool::{TxPoolActorService, TxPoolService};
 use starcoin_types::system_events::{SystemShutdown, SystemStarted};
 use starcoin_vm_runtime::metrics::VMMetrics;
 use std::sync::Arc;
@@ -133,7 +133,9 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                     .start_service_sync(GenerateBlockEventPacemaker::service_name()),
             ),
             NodeRequest::ResetNode(block_hash) => {
-                let connect_service = ctx.service_ref::<BlockConnectorService>()?.clone();
+                let connect_service = ctx
+                    .service_ref::<BlockConnectorService<TxPoolService>>()?
+                    .clone();
                 let fut = async move {
                     info!("Prepare to reset node startup info to {}", block_hash);
                     connect_service.send(ResetRequest { block_hash }).await?
@@ -147,7 +149,9 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                     .get_shared_sync::<Arc<Storage>>()
                     .expect("Storage must exist.");
 
-                let connect_service = ctx.service_ref::<BlockConnectorService>()?.clone();
+                let connect_service = ctx
+                    .service_ref::<BlockConnectorService<TxPoolService>>()?
+                    .clone();
                 let network = ctx.get_shared::<NetworkServiceRef>()?;
                 let fut = async move {
                     info!("Prepare to re execute block {}", block_hash);
@@ -347,7 +351,9 @@ impl NodeService {
 
         registry.register::<ChainNotifyHandlerService>().await?;
 
-        registry.register::<BlockConnectorService>().await?;
+        registry
+            .register::<BlockConnectorService<TxPoolService>>()
+            .await?;
         registry.register::<SyncService>().await?;
 
         let block_relayer = registry.register::<BlockRelayer>().await?;
