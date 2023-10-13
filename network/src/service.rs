@@ -56,7 +56,7 @@ impl NetworkActor for NetworkActorService {}
 impl NetworkActorService {
     pub fn new<H>(
         config: Arc<NodeConfig>,
-        chain_info: ChainInfo,
+        chain_state_info: ChainInfo,
         rpc: Option<(RpcInfo, ServiceRef<NetworkRpcService>)>,
         peer_message_handler: H,
     ) -> Result<Self>
@@ -65,7 +65,7 @@ impl NetworkActorService {
     {
         let (self_info, worker) = build_network_worker(
             &config.network,
-            chain_info,
+            chain_state_info,
             config.network.supported_network_protocols(),
             rpc,
             config.metrics.registry().cloned(),
@@ -488,7 +488,10 @@ impl Inner {
         self.self_peer
             .peer_info
             .update_chain_status(chain_status.clone());
-        match chain_status.encode() {
+        self.self_peer
+            .peer_info
+            .update_dag_accumulator_info(sync_status.dag_accumulator_info().clone());
+        match self.self_peer.peer_info.chain_info.encode() {
             Ok(status) => {
                 self.network_service.update_business_status(status);
             }
@@ -554,8 +557,9 @@ impl Inner {
                     );
                     peer_info.known_blocks.put(block_id, ());
                     peer_info.peer_info.update_chain_status(ChainStatus::new(
-                        block_header,
+                        block_header.clone(),
                         compact_block_message.block_info.clone(),
+                        compact_block_message.tips_header.clone(),
                     ));
 
                     if self.self_peer.known_blocks.contains(&block_id) {
@@ -714,11 +718,13 @@ impl Inner {
                 //2. Sync status change.
                 // may be update by repeat message, but can not find a more good way.
                 self.network_service.update_business_status(
-                    ChainStatus::new(msg.compact_block.header.clone(), msg.block_info.clone())
-                        .encode()
-                        .expect(
-                            "Encoding the compact_block.header and block_info must be successful",
-                        ),
+                    ChainStatus::new(
+                        msg.compact_block.header.clone(),
+                        msg.block_info.clone(),
+                        msg.tips_header.clone(),
+                    )
+                    .encode()
+                    .expect("Encoding the compact_block.header and block_info must be successful"),
                 );
 
                 self.self_peer.known_blocks.put(id, ());

@@ -318,7 +318,7 @@ impl Arbitrary for RawUserTransaction {
 }
 
 impl SignatureCheckedTransaction {
-    // This isn't an Arbitrary impl because this doesn't generate *any* possible SignedUserTransaction,
+    // This isn't an Arbitrary impl because this doesn't generate *any* possible SignedTransaction,
     // just one kind of them.
     pub fn script_strategy(
         keypair_strategy: impl Strategy<Value = KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>,

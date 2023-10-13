@@ -5,6 +5,10 @@ use crate::message::{ChainRequest, ChainResponse};
 use crate::TransactionInfoWithProof;
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
+use starcoin_network_rpc_api::dag_protocol::{
+    self, GetDagAccumulatorLeaves, GetTargetDagAccumulatorLeafDetail, TargetDagAccumulatorLeaf,
+    TargetDagAccumulatorLeafDetail,
+};
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
@@ -20,7 +24,10 @@ use starcoin_vm_types::access_path::AccessPath;
 pub trait ReadableChainService {
     fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>>;
     fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
-    fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>>;
+    fn get_blocks(
+        &self,
+        ids: Vec<HashValue>,
+    ) -> Result<Vec<Option<(Block, Option<Vec<HashValue>>, Option<HashValue>)>>>;
     fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockHeader>>>;
     fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
@@ -72,11 +79,19 @@ pub trait ReadableChainService {
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
+    fn get_dag_accumulator_leaves(
+        &self,
+        req: GetDagAccumulatorLeaves,
+    ) -> anyhow::Result<Vec<TargetDagAccumulatorLeaf>>;
+    fn get_target_dag_accumulator_leaf_detail(
+        &self,
+        req: GetTargetDagAccumulatorLeafDetail,
+    ) -> anyhow::Result<Vec<TargetDagAccumulatorLeafDetail>>;
 }
 
 /// Writeable block chain service trait
 pub trait WriteableChainService: Send + Sync {
-    fn try_connect(&mut self, block: Block) -> Result<()>;
+    fn try_connect(&mut self, block: Block, tips_header: Option<Vec<HashValue>>) -> Result<()>;
 }
 
 #[async_trait::async_trait]
@@ -85,7 +100,10 @@ pub trait ChainAsyncService:
 {
     async fn get_header_by_hash(&self, hash: &HashValue) -> Result<Option<BlockHeader>>;
     async fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
-    async fn get_blocks(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<Block>>>;
+    async fn get_blocks(
+        &self,
+        hashes: Vec<HashValue>,
+    ) -> Result<Vec<Option<(Block, Option<Vec<HashValue>>, Option<HashValue>)>>>;
     async fn get_headers(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockHeader>>>;
     async fn get_block_info_by_hash(&self, hash: &HashValue) -> Result<Option<BlockInfo>>;
     async fn get_block_info_by_number(&self, number: u64) -> Result<Option<BlockInfo>>;
@@ -139,6 +157,14 @@ pub trait ChainAsyncService:
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
+    async fn get_dag_accumulator_leaves(
+        &self,
+        req: dag_protocol::GetDagAccumulatorLeaves,
+    ) -> Result<Vec<dag_protocol::TargetDagAccumulatorLeaf>>;
+    async fn get_dag_accumulator_leaves_detail(
+        &self,
+        req: dag_protocol::GetTargetDagAccumulatorLeafDetail,
+    ) -> Result<Option<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>>>;
 }
 
 #[async_trait::async_trait]
@@ -170,13 +196,50 @@ where
         }
     }
 
-    async fn get_blocks(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<Block>>> {
+    async fn get_blocks(
+        &self,
+        hashes: Vec<HashValue>,
+    ) -> Result<Vec<Option<(Block, Option<Vec<HashValue>>, Option<HashValue>)>>> {
         if let ChainResponse::BlockOptionVec(blocks) =
             self.send(ChainRequest::GetBlocks(hashes)).await??
         {
             Ok(blocks)
         } else {
             bail!("get_blocks response type error.")
+        }
+    }
+
+    async fn get_dag_accumulator_leaves(
+        &self,
+        req: dag_protocol::GetDagAccumulatorLeaves,
+    ) -> Result<Vec<dag_protocol::TargetDagAccumulatorLeaf>> {
+        if let ChainResponse::TargetDagAccumulatorLeaf(leaves) = self
+            .send(ChainRequest::GetDagAccumulatorLeaves {
+                start_index: req.accumulator_leaf_index,
+                batch_size: req.batch_size,
+            })
+            .await??
+        {
+            Ok(leaves)
+        } else {
+            bail!("get_dag_accumulator_leaves response type error.")
+        }
+    }
+
+    async fn get_dag_accumulator_leaves_detail(
+        &self,
+        req: dag_protocol::GetTargetDagAccumulatorLeafDetail,
+    ) -> Result<Option<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>>> {
+        if let ChainResponse::TargetDagAccumulatorLeafDetail(details) = self
+            .send(ChainRequest::GetTargetDagAccumulatorLeafDetail {
+                leaf_index: req.leaf_index,
+                batch_size: req.batch_size,
+            })
+            .await??
+        {
+            Ok(Some(details))
+        } else {
+            Ok(None)
         }
     }
 

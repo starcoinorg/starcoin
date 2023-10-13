@@ -111,7 +111,7 @@ pub fn create_account_txn_sent_as_association(
     seq_num: u64,
     initial_amount: u128,
     expiration_timstamp_secs: u64,
-    net: &ChainNetwork,
+    net: &starcoin_config::ChainNetwork,
 ) -> SignedUserTransaction {
     let args = vec![
         bcs_ext::to_bytes(new_account.address()).unwrap(),

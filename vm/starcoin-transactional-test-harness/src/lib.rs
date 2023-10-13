@@ -646,7 +646,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             TransactionStatus::Keep(kept_vm_status) => match kept_vm_status {
                 KeptVMStatus::Executed => {
                     self.context
-                        .apply_write_set(output.clone().into_inner().1)?;
+                        .apply_write_set(output.clone().into_inner().0)?;
                 }
                 _ => {
                     bail!("Failed to execute transaction. VMStatus: {}", status)
@@ -654,9 +654,6 @@ impl<'a> StarcoinTestAdapter<'a> {
             },
             TransactionStatus::Discard(_) => {
                 bail!("Transaction discarded. VMStatus: {}", status)
-            }
-            TransactionStatus::Retry => {
-                bail!("Transaction Retry never happen")
             }
         }
         let mut chain = self.context.chain.lock().unwrap();
@@ -684,7 +681,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         match output.status() {
             TransactionStatus::Keep(_kept_vm_status) => {
                 self.context
-                    .apply_write_set(output.clone().into_inner().1)?;
+                    .apply_write_set(output.clone().into_inner().0)?;
                 let mut chain = self.context.chain.lock().unwrap();
                 chain.add_new_txn(
                     Transaction::UserTransaction(signed_txn.clone()),
@@ -692,7 +689,6 @@ impl<'a> StarcoinTestAdapter<'a> {
                 )?;
             }
             TransactionStatus::Discard(_) => {}
-            TransactionStatus::Retry => {}
         }
         let payload = decode_txn_payload(&self.context.storage, signed_txn.payload())?;
         let mut txn_view: SignedUserTransactionView = signed_txn.try_into()?;
@@ -873,7 +869,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         );
         let new_block = Block::new(block_header, block_body);
         let mut chain = self.context.chain.lock().unwrap();
-        chain.add_new_block(new_block)?;
+        chain.add_new_block(new_block, None)?;
 
         Ok((None, Some(serde_json::to_value(&new_block_meta)?)))
     }

@@ -17,6 +17,8 @@ use starcoin_block_relayer::BlockRelayer;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
+use starcoin_consensus::{BlockDAG, FlexiDagStorage, FlexiDagStorageConfig};
+use starcoin_crypto::HashValue;
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
 use starcoin_logger::structured_log::init_slog_logger;
@@ -52,9 +54,11 @@ use starcoin_sync::sync::SyncService;
 use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
+use starcoin_types::blockhash::ORIGIN;
+use starcoin_types::header::Header;
 use starcoin_types::system_events::{SystemShutdown, SystemStarted};
 use starcoin_vm_runtime::metrics::VMMetrics;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime};
 
 pub struct NodeService {
@@ -133,12 +137,32 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                     .start_service_sync(GenerateBlockEventPacemaker::service_name()),
             ),
             NodeRequest::ResetNode(block_hash) => {
-                let connect_service = ctx
-                    .service_ref::<BlockConnectorService<TxPoolService>>()?
-                    .clone();
+                let connect_service = ctx.service_ref::<BlockConnectorService>()?.clone();
+                let dag = ctx
+                    .get_shared::<Arc<BlockDAG>>()
+                    .expect("ghost dag object does not exits");
+                let parents = match dag.get_parents(block_hash) {
+                    Ok(parents) => {
+                        if parents.is_empty() {
+                            None
+                        } else {
+                            Some(parents)
+                        }
+                    }
+                    Err(error) => {
+                        error!("Get parents error: {:?}", error);
+                        None
+                    }
+                };
+
                 let fut = async move {
                     info!("Prepare to reset node startup info to {}", block_hash);
-                    connect_service.send(ResetRequest { block_hash }).await?
+                    connect_service
+                        .send(ResetRequest {
+                            block_hash,
+                            dag_block_parent: parents,
+                        })
+                        .await?
                 };
                 let receiver = ctx.exec(fut);
                 NodeResponse::AsyncResult(receiver)
@@ -153,6 +177,23 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                     .service_ref::<BlockConnectorService<TxPoolService>>()?
                     .clone();
                 let network = ctx.get_shared::<NetworkServiceRef>()?;
+                let dag = ctx
+                    .get_shared::<Arc<BlockDAG>>()
+                    .expect("ghost dag object does not exits");
+                let parents = match dag.get_parents(block_hash) {
+                    Ok(parents) => {
+                        if parents.is_empty() {
+                            None
+                        } else {
+                            Some(parents)
+                        }
+                    }
+                    Err(error) => {
+                        error!("Get parents error: {:?}", error);
+                        None
+                    }
+                };
+                // let dag_transaction_parent = storage.get_accumulator_store(AccumulatorStoreType::Block).?;
                 let fut = async move {
                     info!("Prepare to re execute block {}", block_hash);
                     let block = match storage.get_block(block_hash)? {
@@ -170,7 +211,7 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                                 peer_selector.retain_rpc_peers();
                                 let rpc_client = VerifiedRpcClient::new(peer_selector, network);
                                 let mut blocks = rpc_client.get_blocks(vec![block_hash]).await?;
-                                blocks.pop().flatten().map(|(block, _peer)| block)
+                                blocks.pop().flatten().map(|(block, _peer, _, _)| block)
                             }
                         }
                     };
@@ -180,7 +221,13 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                             block_hash
                         )
                     })?;
-                    let result = connect_service.send(ExecuteRequest { block }).await??;
+                    let result = connect_service
+                        .send(ExecuteRequest {
+                            block,
+                            dag_block_parent: parents,
+                            dag_transaction_parent: None,
+                        })
+                        .await??;
                     info!("Re execute result: {:?}", result);
                     Ok(())
                 };
@@ -315,8 +362,23 @@ impl NodeService {
         let upgrade_time = SystemTime::now().duration_since(start_time)?;
         let storage = Arc::new(Storage::new(storage_instance)?);
         registry.put_shared(storage.clone()).await?;
+
         let (chain_info, genesis) =
             Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;
+
+        let flex_dag_config = FlexiDagStorageConfig::create_with_params(1, 0, 1024);
+        let flex_dag_db = FlexiDagStorage::create_from_path("./smolstc", flex_dag_config)
+            .expect("Failed to create flexidag storage");
+
+        let dag = BlockDAG::new(
+            Header::new(
+                genesis.block().header().clone(),
+                vec![HashValue::new(ORIGIN)],
+            ),
+            3,
+            flex_dag_db,
+        );
+        registry.put_shared(Arc::new(Mutex::new(dag))).await?;
 
         info!(
             "Start node with chain info: {}, number {} upgrade_time cost {} secs, ",

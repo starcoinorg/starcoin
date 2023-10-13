@@ -66,7 +66,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     let new_block = block_chain
         .consensus()
         .create_block(block_template, net.time_service().as_ref())?;
-    let executed_block = block_chain.apply(new_block.clone())?;
+    let executed_block = block_chain.apply(new_block.clone(), None)?;
 
     let reader = block_chain.chain_state_reader();
     let balance = reader.get_balance(account_address)?;
@@ -109,7 +109,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 
     // send block
     let block_detail = Arc::new(executed_block);
-    bus.broadcast(NewHeadBlock(block_detail))?;
+    bus.broadcast(NewHeadBlock(block_detail, None, None))?;
 
     let mut receiver = receiver;
 

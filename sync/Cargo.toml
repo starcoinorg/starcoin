@@ -42,6 +42,7 @@ stest = { workspace = true }
 stream-task = { workspace = true }
 sysinfo = { workspace = true }
 thiserror = { workspace = true }
+starcoin-consensus = { workspace = true }
 timeout-join-handler = { workspace = true }
 
 [dev-dependencies]
@@ -58,6 +59,7 @@ starcoin-txpool-mock-service = { workspace = true }
 starcoin-executor = { workspace = true }
 test-helper = { workspace = true }
 tokio = { features = ["full"], workspace = true }
+starcoin-genesis = { workspace = true }
 
 [package]
 authors = { workspace = true }

@@ -10,6 +10,7 @@ use crate::tasks::{
     BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask, SyncFetcher,
 };
 use crate::verified_rpc_client::RpcVerifyError;
+use anyhow::Context;
 use anyhow::{format_err, Result};
 use anyhow::{Context, Ok};
 use futures::channel::mpsc::unbounded;
@@ -199,17 +200,22 @@ pub async fn test_failed_block() -> Result<()> {
     };
     let mut block_collector = BlockCollector::new_with_handle(
         chain_info.status().info.clone(),
-        target,
+        Some(target),
         chain,
         sender,
         DummyNetworkService::default(),
         true,
+        HashValue::zero(),
+        None,
     );
     let header = BlockHeaderBuilder::random().with_number(1).build();
     let body = BlockBody::new(Vec::new(), None);
     let failed_block = Block::new(header, body);
     let failed_block_id = failed_block.id();
-    if block_collector.apply_block_for_test(failed_block).is_err() {
+    if block_collector
+        .apply_block_for_test(failed_block, None, &mut None)
+        .is_err()
+    {
         assert!(storage.get_failed_block_by_id(failed_block_id)?.is_some());
         Ok(())
     } else {
@@ -688,13 +694,29 @@ impl BlockFetcher for MockBlockFetcher {
     fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>> {
+    ) -> BoxFuture<
+        Result<
+            Vec<(
+                Block,
+                Option<PeerId>,
+                Option<Vec<HashValue>>,
+                Option<HashValue>,
+            )>,
+        >,
+    > {
         let blocks = self.blocks.lock().unwrap();
-        let result: Result<Vec<(Block, Option<PeerId>)>> = block_ids
+        let result: Result<
+            Vec<(
+                Block,
+                Option<PeerId>,
+                Option<Vec<HashValue>>,
+                Option<HashValue>,
+            )>,
+        > = block_ids
             .iter()
             .map(|block_id| {
                 if let Some(block) = blocks.get(block_id).cloned() {
-                    Ok((block, None))
+                    Ok((block, None, None, None))
                 } else {
                     Err(format_err!("Can not find block by id: {:?}", block_id))
                 }
@@ -743,7 +765,7 @@ impl MockLocalBlockStore {
         );
         self.store.lock().unwrap().insert(
             block.id(),
-            SyncBlockData::new(block.clone(), Some(block_info), None),
+            SyncBlockData::new(block.clone(), Some(block_info), None, None, 1, None, None),
         );
     }
 }
@@ -985,7 +1007,7 @@ async fn test_sync_target() {
         .unwrap()
         .unwrap();
     let target = node2
-        .get_better_target(genesis_chain_info.total_difficulty(), full_target, 10, 0)
+        .get_better_target(genesis_chain_info.total_difficulty(), full_target.0, 10, 0)
         .await
         .unwrap();
     assert_eq!(target.peers.len(), 2);

@@ -378,6 +378,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e22d1f4b888c298a027c99dc9048015fac177587de20fc30232a057dfbe24a21"
 
 [[package]]
+name = "async-attributes"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3203e79f4dd9bdda415ed03cf14dae5a2bf775c683a00f94e9cd1faf0f596e5"
+dependencies = [
+ "quote 1.0.28",
+ "syn 1.0.107",
+]
+
+[[package]]
 name = "async-channel"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -428,6 +438,7 @@ dependencies = [
  "blocking",
  "futures-lite",
  "once_cell",
+ "tokio",
 ]
 
 [[package]]
@@ -466,6 +477,7 @@ version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "62565bb4402e926b29953c785397c6dc0391b7b446e45008b0049eb43cec6f5d"
 dependencies = [
+ "async-attributes",
  "async-channel",
  "async-global-executor",
  "async-io",
@@ -5246,7 +5258,7 @@ dependencies = [
 
 [[package]]
 name = "move-coverage"
-version = "1.13.7"
+version = "1.13.5"
 dependencies = [
  "anyhow",
  "bcs",
@@ -5440,7 +5452,7 @@ dependencies = [
 
 [[package]]
 name = "move-package-manager"
-version = "1.13.7"
+version = "1.13.5"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9270,6 +9282,7 @@ dependencies = [
  "starcoin-executor",
  "starcoin-genesis",
  "starcoin-logger",
+ "starcoin-network-rpc-api",
  "starcoin-open-block",
  "starcoin-resource-viewer",
  "starcoin-service-registry",
@@ -9300,6 +9313,7 @@ dependencies = [
  "serde 1.0.152",
  "starcoin-accumulator",
  "starcoin-crypto",
+ "starcoin-network-rpc-api",
  "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-statedb",
@@ -9361,11 +9375,14 @@ dependencies = [
  "rand 0.8.5",
  "rand_core 0.6.4",
  "serde 1.0.152",
+ "starcoin-accumulator",
  "starcoin-chain",
  "starcoin-chain-api",
  "starcoin-config",
+ "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-network-rpc-api",
  "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-storage",
@@ -9481,25 +9498,34 @@ name = "starcoin-consensus"
 version = "1.13.7"
 dependencies = [
  "anyhow",
+ "bcs-ext",
+ "bincode",
  "byteorder",
  "cryptonight-rs",
  "futures 0.3.26",
  "hex",
+ "itertools",
  "once_cell",
+ "parking_lot 0.12.1",
  "proptest",
  "proptest-derive",
  "rand 0.8.5",
  "rand_core 0.6.4",
+ "rocksdb",
  "rust-argon2",
+ "serde 1.0.152",
  "sha3",
  "starcoin-chain-api",
+ "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-state-api",
+ "starcoin-storage",
  "starcoin-time-service",
  "starcoin-types",
  "starcoin-vm-types",
  "stest",
+ "tempfile",
  "thiserror",
 ]
 
@@ -9562,7 +9588,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-dev"
-version = "1.13.7"
+version = "1.13.5"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -9681,7 +9707,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-gas"
-version = "1.13.7"
+version = "1.13.5"
 dependencies = [
  "clap 3.2.23",
  "move-binary-format",
@@ -9696,7 +9722,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-gas-algebra-ext"
-version = "1.13.7"
+version = "1.13.5"
 dependencies = [
  "move-binary-format",
  "move-core-types",
@@ -9951,7 +9977,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-move-compiler"
-version = "1.13.7"
+version = "1.13.5"
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -9970,7 +9996,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-move-explain"
-version = "1.13.7"
+version = "1.13.5"
 dependencies = [
  "bcs-ext",
  "clap 3.2.23",
@@ -9980,7 +10006,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-move-prover"
-version = "1.13.7"
+version = "1.13.5"
 dependencies = [
  "anyhow",
  "atty",
@@ -10022,7 +10048,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-natives"
-version = "1.13.7"
+version = "1.13.5"
 dependencies = [
  "arrayref",
  "hex",
@@ -10178,6 +10204,7 @@ dependencies = [
  "serde_json",
  "starcoin-account-api",
  "starcoin-account-service",
+ "starcoin-accumulator",
  "starcoin-block-relayer",
  "starcoin-chain-notify",
  "starcoin-chain-service",
@@ -10325,7 +10352,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-resource-viewer"
-version = "1.13.7"
+version = "1.13.5"
 dependencies = [
  "anyhow",
  "hex",
@@ -10800,14 +10827,13 @@ dependencies = [
 
 [[package]]
 name = "starcoin-transaction-builder"
-version = "1.13.7"
+version = "1.13.5"
 dependencies = [
  "anyhow",
  "bcs-ext",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
- "starcoin-types",
  "starcoin-vm-types",
  "stdlib",
  "stest",
@@ -10815,7 +10841,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-transactional-test-harness"
-version = "1.13.7"
+version = "1.13.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10998,7 +11024,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-vm-runtime"
-version = "1.13.7"
+version = "1.13.5"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -11006,12 +11032,10 @@ dependencies = [
  "move-stdlib",
  "move-table-extension",
  "move-vm-runtime",
- "num_cpus",
  "num_enum",
  "once_cell",
  "rand 0.8.5",
  "rand_core 0.6.4",
- "rayon",
  "serde 1.0.152",
  "starcoin-config",
  "starcoin-crypto",
@@ -11020,7 +11044,6 @@ dependencies = [
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-natives",
- "starcoin-parallel-executor",
  "starcoin-types",
  "starcoin-vm-types",
  "stdlib",
@@ -11029,7 +11052,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-vm-types"
-version = "1.13.7"
+version = "1.13.5"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -11068,7 +11091,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "stdlib"
-version = "1.13.7"
+version = "1.13.5"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -12034,7 +12057,7 @@ checksum = "efd1f82c56340fdf16f2a953d7bda4f8fdffba13d93b00844c25572110b26079"
 
 [[package]]
 name = "transaction-builder-generator"
-version = "1.13.7"
+version = "1.13.5"
 dependencies = [
  "anyhow",
  "bcs",
@@ -12479,7 +12502,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "vm-status-translator"
-version = "1.13.7"
+version = "1.13.5"
 dependencies = [
  "anyhow",
  "schemars",

@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 
 /// Current protocol version.
-pub(crate) const CURRENT_VERSION: u32 = 5;
+pub(crate) const CURRENT_VERSION: u32 = 6;
 /// Lowest version we support
 pub(crate) const MIN_VERSION: u32 = 3;
 
@@ -123,9 +123,9 @@ impl BusinessLayerHandle for Networkp2pHandle {
     }
 
     fn update_status(&mut self, peer_status: &[u8]) -> Result<(), anyhow::Error> {
-        match ChainStatus::decode(peer_status) {
-            std::result::Result::Ok(status) => {
-                self.status.info.update_status(status);
+        match ChainInfo::decode(peer_status) {
+            std::result::Result::Ok(chain_info) => {
+                self.status.info = chain_info;
                 Ok(())
             }
             Err(error) => {

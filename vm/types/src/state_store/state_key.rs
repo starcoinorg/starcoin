@@ -1,6 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+// Copyright (c) Aptos
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::access_path::AccessPath;
 use crate::state_store::table::TableHandle;
 use schemars::{self, JsonSchema};

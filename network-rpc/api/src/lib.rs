@@ -21,6 +21,7 @@ use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionInfo};
 use starcoin_vm_types::state_store::table::TableInfo;
 
+pub mod dag_protocol;
 mod remote_chain_state;
 
 pub use network_p2p_core::RawRpcClient;
@@ -280,7 +281,7 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         &self,
         peer_id: PeerId,
         ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<Option<Block>>>>;
+    ) -> BoxFuture<Result<Vec<Option<(Block, Option<Vec<HashValue>>, Option<HashValue>)>>>>;
 
     fn get_state_with_table_item_proof(
         &self,
@@ -288,6 +289,21 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         request: GetStateWithTableItemProof,
     ) -> BoxFuture<Result<StateWithTableItemProof>>;
 
+    fn get_dag_accumulator_leaves(
+        &self,
+        peer_id: PeerId,
+        req: dag_protocol::GetDagAccumulatorLeaves,
+    ) -> BoxFuture<Result<Vec<dag_protocol::TargetDagAccumulatorLeaf>>>;
+    fn get_accumulator_leaf_detail(
+        &self,
+        peer_id: PeerId,
+        req: dag_protocol::GetTargetDagAccumulatorLeafDetail,
+    ) -> BoxFuture<Result<Option<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>>>>;
+    fn get_dag_block_info(
+        &self,
+        peer_id: PeerId,
+        req: dag_protocol::GetSyncDagBlockInfo,
+    ) -> BoxFuture<Result<Option<Vec<dag_protocol::SyncDagBlockInfo>>>>;
     fn get_state_table_info(
         &self,
         peer_id: PeerId,

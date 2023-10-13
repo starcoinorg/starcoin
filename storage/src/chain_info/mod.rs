@@ -28,6 +28,22 @@ impl ChainInfoStorage {
     const STORAGE_VERSION_KEY: &'static str = "storage_version";
     const SNAPSHOT_RANGE_KEY: &'static str = "snapshot_height";
     const BARNARD_HARD_FORK: &'static str = "barnard_hard_fork";
+    const FLEXI_DAG_STARTUP_INFO_KEY: &'static str = "flexi_dag_startup_info";
+
+    pub fn get_flexi_dag_startup_info(&self) -> Result<Option<StartupInfo>> {
+        self.get(Self::FLEXI_DAG_STARTUP_INFO_KEY.as_bytes())
+            .and_then(|bytes| match bytes {
+                Some(bytes) => Ok(Some(bytes.try_into()?)),
+                None => Ok(None),
+            })
+    }
+
+    pub fn save_flexi_dag_startup_info(&self, startup_info: StartupInfo) -> Result<()> {
+        self.put_sync(
+            Self::FLEXI_DAG_STARTUP_INFO_KEY.as_bytes().to_vec(),
+            startup_info.try_into()?,
+        )
+    }
 
     pub fn get_startup_info(&self) -> Result<Option<StartupInfo>> {
         self.get(Self::STARTUP_INFO_KEY.as_bytes())

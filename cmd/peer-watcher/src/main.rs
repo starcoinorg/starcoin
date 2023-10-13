@@ -32,9 +32,9 @@ fn main() {
                         rpc_protocols,
                         version_string,
                     } => match ChainInfo::decode(&generic_data) {
-                        Ok(chain_info) => Some(PeerInfo::new(
+                        Ok(chain_state_info) => Some(PeerInfo::new(
                             remote.into(),
-                            chain_info,
+                            chain_state_info,
                             notif_protocols,
                             rpc_protocols,
                             version_string,

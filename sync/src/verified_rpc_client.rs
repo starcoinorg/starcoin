@@ -10,6 +10,7 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::hash::HashValue;
 use starcoin_logger::prelude::*;
+use starcoin_network_rpc_api::dag_protocol;
 use starcoin_network_rpc_api::{
     gen_client::NetworkRpcClient, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeadersByNumber,
     GetBlockIds, GetTxnsWithHash, RawRpcClient,
@@ -380,11 +381,19 @@ impl VerifiedRpcClient {
     pub async fn get_blocks(
         &self,
         ids: Vec<HashValue>,
-    ) -> Result<Vec<Option<(Block, Option<PeerId>)>>> {
+    ) -> Result<
+        Vec<
+            Option<(
+                Block,
+                Option<PeerId>,
+                Option<Vec<HashValue>>,
+                Option<HashValue>,
+            )>,
+        >,
+    > {
         let peer_id = self.select_a_peer()?;
         let start_time = Instant::now();
-        let blocks: Vec<Option<Block>> =
-            self.client.get_blocks(peer_id.clone(), ids.clone()).await?;
+        let blocks = self.client.get_blocks(peer_id.clone(), ids.clone()).await?;
         let time = (Instant::now()
             .saturating_duration_since(start_time)
             .as_millis()) as u32;
@@ -395,7 +404,7 @@ impl VerifiedRpcClient {
             .zip(blocks)
             .map(|(id, block)| {
                 if let Some(block) = block {
-                    let actual_id = block.id();
+                    let actual_id = block.0.id();
                     if actual_id != id {
                         warn!(
                             "Get block by id: {:?} from peer: {:?}, but got block: {:?}",
@@ -403,12 +412,44 @@ impl VerifiedRpcClient {
                         );
                         None
                     } else {
-                        Some((block, Some(peer_id.clone())))
+                        Some((block.0, Some(peer_id.clone()), block.1, block.2))
                     }
                 } else {
                     None
                 }
             })
             .collect())
+    }
+
+    pub async fn get_dag_accumulator_leaves(
+        &self,
+        req: dag_protocol::GetDagAccumulatorLeaves,
+    ) -> Result<Vec<dag_protocol::TargetDagAccumulatorLeaf>> {
+        let peer_id = self.select_a_peer()?;
+        self.client.get_dag_accumulator_leaves(peer_id, req).await
+    }
+
+    pub async fn get_accumulator_leaf_detail(
+        &self,
+        req: dag_protocol::GetTargetDagAccumulatorLeafDetail,
+    ) -> Result<Option<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>>> {
+        let peer_id = self.select_a_peer()?;
+        match self.client.get_accumulator_leaf_detail(peer_id, req).await {
+            Ok(result) => Ok(result),
+            Err(error) => {
+                warn!(
+                    "get_accumulator_leaf_detail return None, error: {}",
+                    error.to_string()
+                );
+                Ok(None)
+            }
+        }
+    }
+
+    pub async fn get_dag_block_info(
+        &self,
+        _req: dag_protocol::GetSyncDagBlockInfo,
+    ) -> Result<Option<Vec<dag_protocol::SyncDagBlockInfo>>> {
+        todo!()
     }
 }

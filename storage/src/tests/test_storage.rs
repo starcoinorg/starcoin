@@ -18,15 +18,15 @@ use anyhow::Result;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_config::RocksdbConfig;
 use starcoin_crypto::HashValue;
-use starcoin_types::{
-    account_address::AccountAddress,
-    block::{Block, BlockBody, BlockHeader, BlockInfo},
-    language_storage::TypeTag,
-    startup_info::SnapshotRange,
-    transaction::{RichTransactionInfo, SignedUserTransaction, Transaction, TransactionInfo},
-    vm_error::KeptVMStatus,
+use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockInfo};
+//use starcoin_types::language_storage::TypeTag;
+use starcoin_types::startup_info::SnapshotRange;
+use starcoin_types::transaction::{
+    RichTransactionInfo, SignedUserTransaction, Transaction, TransactionInfo,
 };
-use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_types::vm_error::KeptVMStatus;
+//use starcoin_vm_types::account_address::AccountAddress;
+//use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::path::Path;
 
 #[test]
@@ -296,7 +296,7 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
         BlockBody::new(vec![txn.clone()], None),
     );
     let mut txn_inf_ids = vec![];
-    let block_metadata = block.to_metadata(0);
+    let block_metadata = block.to_metadata(0, None);
     let txn_info_0 = TransactionInfo::new(
         block_metadata.id(),
         HashValue::random(),
