@@ -294,6 +294,8 @@ impl ServiceHandler<Self, NewBlockChainRequest> for BlockConnectorService {
             self.chain_service.switch_new_main(msg.new_head_block)?;
         ctx.broadcast(NewHeadBlock(
             Arc::new(new_branch.head_block()),
+            None
+
         ));
         Ok(())
     }

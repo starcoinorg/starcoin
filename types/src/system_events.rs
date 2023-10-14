@@ -17,7 +17,7 @@ pub struct NewHeadBlock(
 
 /// may be uncle block
 #[derive(Clone, Debug)]
-pub struct NewBranch(pub Arc<ExecutedBlock>);
+pub struct NewBranch(pub Arc<ExecutedBlock>,pub Option<Vec<HashValue>>);
 
 #[derive(Clone, Debug)]
 pub struct MinedBlock(pub Arc<Block>, pub Option<Vec<HashValue>>);

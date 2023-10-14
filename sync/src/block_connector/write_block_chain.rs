@@ -31,6 +31,7 @@ use starcoin_types::{
     system_events::{NewBranch, NewHeadBlock},
 };
 use std::fmt::Formatter;
+use std::hash::Hash;
 use std::sync::{Arc, Mutex};
 use starcoin_crypto::hash::CryptoHash;
 use starcoin_consensus::dag::types::ghostdata::GhostdagData;
@@ -273,7 +274,7 @@ impl<P> WriteBlockChainService<P>
             )?;
         } else {
             //send new branch event
-            self.broadcast_new_branch(executed_block);
+            self.broadcast_new_branch(executed_block, self.main.status().tips_hash);
         }
         Ok(())
     }
@@ -323,7 +324,7 @@ impl<P> WriteBlockChainService<P>
                 .chain_txn_num
                 .set(executed_block.block_info.txn_accumulator_info.num_leaves);
         }
-        self.broadcast_new_head(executed_block);
+        self.broadcast_new_head(executed_block, self.main.status().tips_hash);
         Ok(())
     }
 
@@ -376,7 +377,7 @@ impl<P> WriteBlockChainService<P>
             .storage
             .get_tips_by_block_id(executed_block.block.header().id())
             .ok();
-        self.broadcast_new_head(executed_block);
+        self.broadcast_new_head(executed_block, next_tips);
 
         Ok(())
     }
@@ -589,6 +590,7 @@ impl<P> WriteBlockChainService<P>
     fn broadcast_new_head(
         &self,
         block: ExecutedBlock,
+        tips_hash: Option<Vec<HashValue>>,
     ) {
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
@@ -599,7 +601,7 @@ impl<P> WriteBlockChainService<P>
 
         if let Err(e) = self
             .bus
-            .broadcast(NewHeadBlock(Arc::new(block)))
+            .broadcast(NewHeadBlock(Arc::new(block), tips_hash))
         {
             error!("Broadcast NewHeadBlock error: {:?}", e);
         }
@@ -608,6 +610,7 @@ impl<P> WriteBlockChainService<P>
     fn broadcast_new_branch(
         &self,
         block: ExecutedBlock,
+        tips_hash: Option<Vec<HashValue>>,
     ) {
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
@@ -617,7 +620,7 @@ impl<P> WriteBlockChainService<P>
         }
         if let Err(e) = self
             .bus
-            .broadcast(NewBranch(Arc::new(block)))
+            .broadcast(NewBranch(Arc::new(block), tips_hash))
         {
             error!("Broadcast NewBranch error: {:?}", e);
         }
@@ -633,7 +636,7 @@ impl<P> WriteBlockChainService<P>
             .dag
             .lock()
             .unwrap()
-            .addToDag(DagHeader::new(block.header.clone(), parents_hash.unwrap_or(vec![block.header.hash()])))?;
+            .addToDag(DagHeader::new(block.header.clone(), parents_hash.unwrap_or(vec![block.header.id()])))?;
 
         let head_block_hash = self.dag.lock().unwrap().get_ghostdag_data(ghost_dag_data.selected_parent)?.selected_parent;
 

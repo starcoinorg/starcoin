@@ -368,11 +368,8 @@ impl NodeService {
             .expect("Failed to create flexidag storage");
 
         let dag = BlockDAG::new(
-            DagHeader::new(
-                genesis.block().header().clone(),
-                vec![HashValue::new(ORIGIN)],
-            ),
-            3,
+                genesis.block().id(),
+                8,
             flex_dag_db,
         );
         registry.put_shared(Arc::new(Mutex::new(dag))).await?;
