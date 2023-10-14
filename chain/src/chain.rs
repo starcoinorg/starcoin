@@ -161,7 +161,6 @@ impl BlockChain {
             storage.get_accumulator_store(AccumulatorStoreType::Block),
         );
         let statedb = ChainStateDB::new(storage.clone().into_super_arc(), None);
-        let genesis_header = genesis_block.header.clone();
         let genesis_id = genesis_block.header.id();
         let executed_block = Self::execute_block_and_save(
             storage.as_ref(),

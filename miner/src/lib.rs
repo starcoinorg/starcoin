@@ -197,7 +197,7 @@ impl MinerService {
         ctx: &mut ServiceContext<MinerService>,
         block_template: BlockTemplate,
     ) -> Result<()> {
-        debug!("Mint block template: {:?}", block_template);
+        info!("Mint block template: {:?}", block_template);
         let difficulty = block_template.difficulty;
         let strategy = block_template.strategy;
         let number = block_template.number;

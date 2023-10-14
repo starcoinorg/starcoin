@@ -632,6 +632,7 @@ impl<P> WriteBlockChainService<P>
         block: Block,
         parents_hash: Option<Vec<HashValue>>,
     ) -> Result<ConnectOk> {
+        println!("fuck0 {:?},{:?}",parents_hash, block);
         let ghost_dag_data = self
             .dag
             .lock()

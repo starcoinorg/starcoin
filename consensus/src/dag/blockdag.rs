@@ -88,12 +88,14 @@ impl BlockDAG {
     pub fn addToDag(&mut self, header: DagHeader) -> anyhow::Result<GhostdagData> {
         //TODO:check genesis
         // Generate ghostdag data
+        println!("fuck");
         let parents_hash = header.parents_hash();
         let ghostdag_data = if header.hash() != self.genesis_hash {
             self.ghostdag_manager.ghostdag(parents_hash)
         } else {
             self.ghostdag_manager.genesis_ghostdag_data()
         };
+        println!("fuck {:?}",ghostdag_data.clone());
         // Store ghostdata
         self.ghostdag_store
             .insert(header.hash(), Arc::new(ghostdag_data.clone()))
