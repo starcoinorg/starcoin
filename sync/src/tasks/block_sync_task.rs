@@ -520,6 +520,60 @@ where
             }
         };
     }
+
+    fn process_received_block(&self, item: SyncBlockData, next_tips: &mut Option<Vec<HashValue>>) -> Result<CollectorState> {
+
+        let s = self.collect_item(item, next_tips)?;
+        /////////
+        // let (block, block_info, peer_id) = item.into();
+        // let timestamp = block.header().timestamp();
+        // let (block_info, action) = match block_info {
+        //     Some(block_info) => {
+        //         //If block_info exists, it means that this block was already executed and try connect in the previous sync, but the sync task was interrupted.
+        //         //So, we just need to update chain and continue
+        //         self.chain.connect(ExecutedBlock {
+        //             block: block.clone(),
+        //             block_info: block_info.clone(),
+        //         })?;
+        //         (block_info, BlockConnectAction::ConnectExecutedBlock)
+        //     }
+        //     None => {
+        //         self.apply_block(block.clone(), peer_id)?;
+        //         self.chain.time_service().adjust(timestamp);
+        //         (
+        //             self.chain.status().info,
+        //             BlockConnectAction::ConnectNewBlock,
+        //         )
+        //     }
+        // };
+
+        //verify target
+        let state: Result<CollectorState, anyhow::Error> =
+            if block_info.block_accumulator_info.num_leaves
+                == self.target.block_info.block_accumulator_info.num_leaves
+            {
+                if block_info != self.target.block_info {
+                    Err(TaskError::BreakError(
+                        RpcVerifyError::new_with_peers(
+                            self.target.peers.clone(),
+                            format!(
+                    "Verify target error, expect target: {:?}, collect target block_info:{:?}",
+                    self.target.block_info,
+                    block_info
+                ),
+                        )
+                        .into(),
+                    )
+                    .into())
+                } else {
+                    Ok(CollectorState::Enough)
+                }
+            } else {
+                Ok(CollectorState::Need)
+            };
+
+        self.notify_connected_block(block, block_info, action, state?)
+    }
 }
 
 impl<N, H> TaskResultCollector<SyncBlockData> for BlockCollector<N, H>
