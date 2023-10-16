@@ -1,6 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use std::any;
+use std::sync::Arc;
+
 use anyhow::Result;
 use network_api::PeerId;
 use network_api::PeerStrategy;
@@ -9,6 +12,7 @@ use serde::{Deserialize, Serialize};
 pub use service::{SyncAsyncService, SyncServiceHandler};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
+use starcoin_types::block::ExecutedBlock;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::U256;
@@ -23,11 +27,16 @@ pub struct StartSyncTxnEvent;
 pub struct PeerNewBlock {
     peer_id: PeerId,
     new_block: Block,
+    dag_parents: Option<Vec<HashValue>>,
 }
 
 impl PeerNewBlock {
-    pub fn new(peer_id: PeerId, new_block: Block) -> Self {
-        PeerNewBlock { peer_id, new_block }
+    pub fn new(peer_id: PeerId, new_block: Block, dag_parents: Option<Vec<HashValue>>) -> Self {
+        PeerNewBlock {
+            peer_id,
+            new_block,
+            dag_parents,
+        }
     }
 
     pub fn get_peer_id(&self) -> PeerId {
@@ -36,6 +45,10 @@ impl PeerNewBlock {
 
     pub fn get_block(&self) -> &Block {
         &self.new_block
+    }
+
+    pub fn get_dag_parents(&self) -> &Option<Vec<HashValue>> {
+        &self.dag_parents
     }
 }
 

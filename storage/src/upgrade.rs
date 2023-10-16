@@ -163,6 +163,11 @@ impl DBUpgrade {
         Ok(())
     }
 
+    fn db_upgrade_v3_v4(_instance: &mut StorageInstance) -> Result<()> {
+        // https://github.com/facebook/rocksdb/issues/1295
+        Ok(())
+    }
+
     pub fn do_upgrade(
         version_in_db: StorageVersion,
         version_in_code: StorageVersion,
@@ -184,6 +189,12 @@ impl DBUpgrade {
 
             (StorageVersion::V2, StorageVersion::V3) => {
                 Self::db_upgrade_v2_v3(instance)?;
+            }
+            (StorageVersion::V3, StorageVersion::V4)
+            | (StorageVersion::V1, StorageVersion::V4)
+            | (StorageVersion::V2, StorageVersion::V4) => {
+                // just for testing. todo
+                Self::db_upgrade_v3_v4(instance)?;
             }
             _ => bail!(
                 "Can not upgrade db from {:?} to {:?}",

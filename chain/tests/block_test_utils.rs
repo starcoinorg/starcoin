@@ -260,7 +260,7 @@ proptest! {
         // blocks in ;
         for block in blocks {
             if !block.header().is_genesis() {
-                let result = block_chain.apply(block.clone());
+                let result = block_chain.apply(block.clone(), None, &mut None);
                 info!("{:?}", result);
             }
         }

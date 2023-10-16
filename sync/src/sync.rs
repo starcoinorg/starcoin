@@ -3,16 +3,19 @@
 
 use crate::block_connector::BlockConnectorService;
 use crate::sync_metrics::SyncMetrics;
-use crate::tasks::{full_sync_task, AncestorEvent, SyncFetcher};
+use crate::tasks::{full_sync_task, sync_dag_full_task, AncestorEvent, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
+use futures::executor::block_on;
 use futures::FutureExt;
 use futures_timer::Delay;
 use network_api::peer_score::PeerScoreMetrics;
 use network_api::{PeerId, PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
+use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
-use starcoin_chain_api::ChainReader;
+use starcoin_chain_api::{ChainReader, ChainWriter};
 use starcoin_config::NodeConfig;
+use starcoin_consensus::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
@@ -21,16 +24,18 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::block_info::BlockInfoStore;
-use starcoin_storage::{BlockStore, Storage};
+use starcoin_storage::{BlockStore, Storage, Store, SyncFlexiDagStore};
 use starcoin_sync_api::{
     PeerScoreRequest, PeerScoreResponse, SyncCancelRequest, SyncProgressReport,
     SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
+use starcoin_txpool::TxPoolService;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
-use std::sync::Arc;
+use std::result::Result::Ok;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
 
@@ -88,8 +93,29 @@ impl SyncService {
             .metrics
             .registry()
             .and_then(|registry| PeerScoreMetrics::register(registry).ok());
+        // let genesis = storage
+        //     .get_genesis()?
+        //     .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
+        let dag_accumulator_info =
+            match storage.get_dag_accumulator_info(head_block_info.block_id().clone())? {
+                Some(info) => Some(info),
+                None => {
+                    warn!(
+                        "Can not find dag accumulator info by head block id: {}, use genesis info.",
+                        head_block_info.block_id(),
+                    );
+                    None
+                }
+            };
         Ok(Self {
-            sync_status: SyncStatus::new(ChainStatus::new(head_block.header, head_block_info)),
+            sync_status: SyncStatus::new(
+                ChainStatus::new(
+                    head_block.header.clone(),
+                    head_block_info,
+                    Some(storage.get_tips_by_block_id(head_block_hash)?),
+                ),
+                dag_accumulator_info,
+            ),
             stage: SyncStage::NotStart,
             config,
             storage,
@@ -142,13 +168,29 @@ impl SyncService {
         }
 
         let network = ctx.get_shared::<NetworkServiceRef>()?;
+        let block_chain_service = ctx.service_ref::<BlockConnectorService>()?.clone();
         let storage = self.storage.clone();
         let self_ref = ctx.self_ref();
-        let connector_service = ctx.service_ref::<BlockConnectorService>()?.clone();
+        let connector_service = ctx
+            .service_ref::<BlockConnectorService<TxPoolService>>()?
+            .clone();
         let config = self.config.clone();
         let peer_score_metrics = self.peer_score_metrics.clone();
         let sync_metrics = self.metrics.clone();
         let vm_metrics = self.vm_metrics.clone();
+
+        let dag_accumulator_store = ctx
+            .get_shared::<Arc<Storage>>()
+            .expect("storage must exist")
+            .get_accumulator_store(AccumulatorStoreType::SyncDag);
+        let dag_accumulator_snapshot = ctx
+            .get_shared::<Arc<Storage>>()
+            .expect("storage must exist")
+            .get_accumulator_snapshot_storage();
+
+        let dag = ctx.get_shared::<Arc<Mutex<BlockDAG>>>()?;
+
+        let test_storage = storage.clone();
         let fut = async move {
             let peer_select_strategy =
                 peer_strategy.unwrap_or_else(|| config.sync.peer_select_strategy());
@@ -217,36 +259,70 @@ impl SyncService {
                 peer_selector.clone(),
                 network.clone(),
             ));
-            if let Some(target) =
+
+            // for testing, we start dag sync directly
+            if let Some((target, op_dag_accumulator_info)) =
                 rpc_client.get_best_target(current_block_info.get_total_difficulty())?
             {
-                info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
+                if let Some(target_accumulator_info) = op_dag_accumulator_info {
+                    let local_dag_accumulator_info = storage
+                        .get_dag_accumulator_info(current_block_id)?
+                        .expect("current dag accumulator info should exist");
+                    let (fut, task_handle, task_event_handle) = sync_dag_full_task(
+                        local_dag_accumulator_info,
+                        target_accumulator_info,
+                        rpc_client.clone(),
+                        dag_accumulator_store,
+                        dag_accumulator_snapshot,
+                        storage.clone(),
+                        config.net().time_service(),
+                        vm_metrics.clone(),
+                        connector_service.clone(),
+                        network.clone(),
+                        skip_pow_verify,
+                        dag.clone(),
+                        block_chain_service.clone(),
+                    )?;
+                    self_ref.notify(SyncBeginEvent {
+                        target,
+                        task_handle,
+                        task_event_handle,
+                        peer_selector,
+                    })?;
+                    if let Some(sync_task_total) = sync_task_total.as_ref() {
+                        sync_task_total.with_label_values(&["start"]).inc();
+                    }
+                    Ok(Some(fut.await?))
+                } else {
+                    info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
 
-                let (fut, task_handle, task_event_handle) = full_sync_task(
-                    current_block_id,
-                    target.clone(),
-                    skip_pow_verify,
-                    config.net().time_service(),
-                    storage.clone(),
-                    connector_service.clone(),
-                    rpc_client.clone(),
-                    self_ref.clone(),
-                    network.clone(),
-                    config.sync.max_retry_times(),
-                    sync_metrics.clone(),
-                    vm_metrics.clone(),
-                )?;
+                    let (fut, task_handle, task_event_handle) = full_sync_task(
+                        current_block_id,
+                        target.clone(),
+                        skip_pow_verify,
+                        config.net().time_service(),
+                        storage.clone(),
+                        connector_service.clone(),
+                        rpc_client.clone(),
+                        self_ref.clone(),
+                        network.clone(),
+                        config.sync.max_retry_times(),
+                        block_chain_service.clone(),
+                        sync_metrics.clone(),
+                        vm_metrics.clone(),
+                    )?;
 
-                self_ref.notify(SyncBeginEvent {
-                    target,
-                    task_handle,
-                    task_event_handle,
-                    peer_selector,
-                })?;
-                if let Some(sync_task_total) = sync_task_total.as_ref() {
-                    sync_task_total.with_label_values(&["start"]).inc();
+                    self_ref.notify(SyncBeginEvent {
+                        target,
+                        task_handle,
+                        task_event_handle,
+                        peer_selector,
+                    })?;
+                    if let Some(sync_task_total) = sync_task_total.as_ref() {
+                        sync_task_total.with_label_values(&["start"]).inc();
+                    }
+                    Ok(Some(fut.await?))
                 }
-                Ok(Some(fut.await?))
             } else {
                 debug!("[sync]No best peer to request, current is beast.");
                 Ok(None)
@@ -268,7 +344,18 @@ impl SyncService {
             |result: Result<Option<BlockChain>, anyhow::Error>| async move {
                 let cancel = match result {
                     Ok(Some(chain)) => {
-                        info!("[sync] Sync to latest block: {:?}", chain.current_header());
+                        info!("[sync] Sync to latest block: {:?}", chain.status());
+                        info!("[sync] Sync to latest accumulator info: {:?}", chain.get_current_dag_accumulator_info());
+
+                        let startup_info = test_storage
+                        .get_startup_info().unwrap()
+                        .ok_or_else(|| format_err!("Startup info should exist.")).unwrap();
+                        let current_block_id = startup_info.main;
+
+                        let local_dag_accumulator_info = test_storage
+                        .get_dag_accumulator_info(current_block_id).unwrap()
+                        .expect("current dag accumulator info should exist");
+
                         if let Some(sync_task_total) = sync_task_total.as_ref() {
                             sync_task_total.with_label_values(&["done"]).inc();
                         }
@@ -520,6 +607,8 @@ impl CheckSyncEvent {
 
 impl EventHandler<Self, CheckSyncEvent> for SyncService {
     fn handle_event(&mut self, msg: CheckSyncEvent, ctx: &mut ServiceContext<Self>) {
+        // comment temporarily, for the dag branch, starcoin will sync dag only
+        // it will add some logic to determine which part to sync in the future
         if let Err(e) = self.check_and_start_sync(msg.peers, msg.skip_pow_verify, msg.strategy, ctx)
         {
             error!("[sync] Check sync error: {:?}", e);
@@ -574,11 +663,17 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService {
 
 impl EventHandler<Self, NewHeadBlock> for SyncService {
     fn handle_event(&mut self, msg: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
-        let NewHeadBlock(block) = msg;
+        let NewHeadBlock(block, _dag_parents, next_tips) = msg;
         if self.sync_status.update_chain_status(ChainStatus::new(
             block.header().clone(),
             block.block_info.clone(),
+            next_tips,
         )) {
+            self.sync_status.update_dag_accumulator_info(
+                self.storage
+                    .get_dag_accumulator_info(block.header().id())
+                    .expect("dag accumulator info must exist"),
+            );
             ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
         }
     }

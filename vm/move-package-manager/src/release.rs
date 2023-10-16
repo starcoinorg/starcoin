@@ -23,7 +23,7 @@ pub const DEFAULT_RELEASE_DIR: &str = "release";
 pub struct Release {
     #[clap(name = "move-version", long = "move-version", default_value="6", possible_values=&["5", "6"])]
     /// specify the move lang version for the release.
-    /// currently, only v6 are supported.
+    /// currently, only v5, v6 are supported.
     language_version: u8,
 
     #[clap(name="release-dir", long, parse(from_os_str), default_value=DEFAULT_RELEASE_DIR)]
@@ -78,6 +78,7 @@ pub fn handle_release(
     for m in pkg.root_compiled_units.as_slice() {
         let m = module(&m.unit)?;
         println!("\t {}", m.self_id());
+        // XXX FIXME YSG, mpm release
         let code = if language_version as u32 == VERSION_4 {
             ModuleBytecodeDowngrader::to_v4(m)?
         } else {

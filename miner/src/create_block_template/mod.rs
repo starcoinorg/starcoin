@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::create_block_template::metrics::BlockBuilderMetrics;
-use anyhow::{format_err, Result};
+use anyhow::{bail, format_err, Result};
 use futures::executor::block_on;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_account_service::AccountService;
@@ -111,7 +111,11 @@ impl ActorService for BlockBuilderService {
 
 impl EventHandler<Self, NewHeadBlock> for BlockBuilderService {
     fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<BlockBuilderService>) {
-        if let Err(e) = self.inner.update_chain(msg.0.as_ref().clone()) {
+        let mut next_tips = msg.2.clone();
+        if let Err(e) = self
+            .inner
+            .update_chain(msg.0.as_ref().clone(), &mut next_tips)
+        {
             error!("err : {:?}", e)
         }
     }
@@ -240,11 +244,15 @@ where
         }
     }
 
-    pub fn update_chain(&mut self, block: ExecutedBlock) -> Result<()> {
+    pub fn update_chain(
+        &mut self,
+        block: ExecutedBlock,
+        next_tips: &mut Option<Vec<HashValue>>,
+    ) -> Result<()> {
         let current_header = self.chain.current_header();
         let current_id = current_header.id();
         if self.chain.can_connect(&block) {
-            self.chain.connect(block)?;
+            self.chain.connect(block, next_tips)?;
         } else {
             self.chain = BlockChain::new(
                 self.chain.time_service(),
@@ -312,6 +320,12 @@ where
 
         let author = *self.miner_account.address();
         let previous_header = self.chain.current_header();
+
+        let tips_header = match self.chain.status().tips_hash {
+            Some(_) => self.chain.status().tips_hash,
+            None => bail!("currently, the chain must be dag, so the tips hash should not be None"),
+        };
+
         let uncles = self.find_uncles();
         let mut now_millis = self.chain.time_service().now_millis();
         if now_millis <= previous_header.timestamp() {
@@ -345,6 +359,7 @@ where
             difficulty,
             strategy,
             self.vm_metrics.clone(),
+            tips_header,
         )?;
         let excluded_txns = opened_block.push_txns(txns)?;
         let template = opened_block.finalize()?;

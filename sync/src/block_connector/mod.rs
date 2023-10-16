@@ -11,6 +11,8 @@ mod metrics;
 mod test_illegal_block;
 #[cfg(test)]
 mod test_write_block_chain;
+#[cfg(test)]
+mod test_write_dag_block_chain;
 mod write_block_chain;
 
 pub use block_connector_service::BlockConnectorService;
@@ -26,6 +28,7 @@ pub use test_write_block_chain::new_block;
 #[derive(Debug, Clone)]
 pub struct ResetRequest {
     pub block_hash: HashValue,
+    pub dag_block_parent: Option<Vec<HashValue>>,
 }
 
 impl ServiceRequest for ResetRequest {
@@ -35,8 +38,21 @@ impl ServiceRequest for ResetRequest {
 #[derive(Debug, Clone)]
 pub struct ExecuteRequest {
     pub block: Block,
+    pub dag_block_parent: Option<Vec<HashValue>>,
+    pub dag_transaction_parent: Option<HashValue>,
 }
 
 impl ServiceRequest for ExecuteRequest {
     type Response = anyhow::Result<ExecutedBlock>;
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone)]
+pub struct CheckBlockConnectorHashValue {
+    pub head_hash: HashValue,
+}
+
+#[cfg(test)]
+impl ServiceRequest for CheckBlockConnectorHashValue {
+    type Response = anyhow::Result<()>;
 }

@@ -256,7 +256,7 @@ pub fn run_benchmark(
     let chain_state = ChainStateDB::new(storage, None);
     let net = ChainNetwork::new_test();
     let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
-    let _ = Genesis::execute_genesis_txn(&chain_state, genesis_txn).unwrap();
+    let _txn_info = Genesis::execute_genesis_txn(&chain_state, genesis_txn).unwrap();
 
     let (block_sender, block_receiver) = mpsc::sync_channel(50 /* bound */);
 

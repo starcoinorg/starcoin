@@ -13,11 +13,9 @@ use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::event::EventKey;
 use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::transaction::SignatureCheckedTransaction;
 use starcoin_vm_types::transaction_metadata::TransactionMetadata;
 use starcoin_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
-use std::collections::BTreeMap;
 use std::convert::TryFrom;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
@@ -79,14 +77,7 @@ impl SessionOutput {
     pub fn into_change_set<C: AccessPathCache>(
         self,
         ap_cache: &mut C,
-    ) -> Result<
-        (
-            BTreeMap<TableHandle, TableInfo>,
-            WriteSet,
-            Vec<ContractEvent>,
-        ),
-        VMStatus,
-    > {
+    ) -> Result<(WriteSet, Vec<ContractEvent>), VMStatus> {
         let Self {
             change_set,
             events,
@@ -136,14 +127,6 @@ impl SessionOutput {
             }
         }
 
-        let mut table_infos = BTreeMap::new();
-        for (key, value) in table_change_set.new_tables {
-            let handle = TableHandle(key.0);
-            let info = TableInfo::new(value.key_type, value.value_type);
-
-            table_infos.insert(handle, info);
-        }
-
         let write_set = write_set_mut
             .freeze()
             .map_err(|_| VMStatus::Error(StatusCode::DATA_FORMAT_ERROR))?;
@@ -157,6 +140,6 @@ impl SessionOutput {
             })
             .collect::<Result<Vec<_>, VMStatus>>()?;
 
-        Ok((table_infos, write_set, events))
+        Ok((write_set, events))
     }
 }

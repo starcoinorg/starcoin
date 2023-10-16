@@ -5,29 +5,31 @@ use crate::storage::{CodecWriteBatch, KeyCodec, ValueCodec, WriteOp};
 use anyhow::Result;
 use std::convert::TryFrom;
 
+pub type WriteBatch = GWriteBatch<Vec<u8>, Vec<u8>>;
+
 #[derive(Debug, Default, Clone)]
-pub struct WriteBatch {
-    pub rows: Vec<(Vec<u8>, WriteOp<Vec<u8>>)>,
+pub struct GWriteBatch<K, V> {
+    pub rows: Vec<(K, WriteOp<V>)>,
 }
 
-impl WriteBatch {
+impl<K: Default, V: Default> GWriteBatch<K, V> {
     /// Creates an empty batch.
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn new_with_rows(rows: Vec<(Vec<u8>, WriteOp<Vec<u8>>)>) -> Self {
+    pub fn new_with_rows(rows: Vec<(K, WriteOp<V>)>) -> Self {
         Self { rows }
     }
 
     /// Adds an insert/update operation to the batch.
-    pub fn put(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+    pub fn put(&mut self, key: K, value: V) -> Result<()> {
         self.rows.push((key, WriteOp::Value(value)));
         Ok(())
     }
 
     /// Adds a delete operation to the batch.
-    pub fn delete(&mut self, key: Vec<u8>) -> Result<()> {
+    pub fn delete(&mut self, key: K) -> Result<()> {
         self.rows.push((key, WriteOp::Deletion));
         Ok(())
     }

@@ -7,7 +7,7 @@ use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
-use bcs_ext::Sample;
+use bcs_ext::{BCSCodec, Sample};
 use schemars::{self, JsonSchema};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -20,6 +20,7 @@ use starcoin_crypto::{
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use std::fmt::Formatter;
+use std::hash::Hash;
 /// Type for block number.
 pub type BlockNumber = u64;
 
@@ -717,7 +718,11 @@ impl Block {
         }
     }
 
-    pub fn to_metadata(&self, parent_gas_used: u64) -> BlockMetadata {
+    pub fn to_metadata(
+        &self,
+        parent_gas_used: u64,
+        dag_block_parent: Option<HashValue>,
+    ) -> BlockMetadata {
         let uncles = self
             .body
             .uncles
@@ -725,8 +730,14 @@ impl Block {
             .map(|uncles| uncles.len() as u64)
             .unwrap_or(0);
 
+        let parent = if dag_block_parent.is_some() {
+            dag_block_parent.unwrap()
+        } else {
+            self.header.parent_hash()
+        };
+
         BlockMetadata::new(
-            self.header.parent_hash(),
+            parent,
             self.header.timestamp,
             self.header.author,
             self.header.author_auth_key,
@@ -863,6 +874,8 @@ pub struct BlockTemplate {
     pub difficulty: U256,
     /// Block consensus strategy
     pub strategy: ConsensusStrategy,
+    /// Tips
+    pub tips_header: Option<Vec<HashValue>>,
 }
 
 impl BlockTemplate {
@@ -876,6 +889,7 @@ impl BlockTemplate {
         difficulty: U256,
         strategy: ConsensusStrategy,
         block_metadata: BlockMetadata,
+        current_tips: Option<Vec<HashValue>>,
     ) -> Self {
         let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _) =
             block_metadata.into_inner();
@@ -893,10 +907,33 @@ impl BlockTemplate {
             chain_id,
             difficulty,
             strategy,
+            tips_header: current_tips,
         }
     }
 
     pub fn into_block(self, nonce: u32, extra: BlockHeaderExtra) -> Block {
+        let header = BlockHeader::new(
+            self.generate_parent_header(),
+            self.timestamp,
+            self.number,
+            self.author,
+            self.txn_accumulator_root,
+            self.block_accumulator_root,
+            self.state_root,
+            self.gas_used,
+            self.difficulty,
+            self.body_hash,
+            self.chain_id,
+            nonce,
+            extra,
+        );
+        Block {
+            header,
+            body: self.body,
+        }
+    }
+
+    pub fn into_single_chain_block(self, nonce: u32, extra: BlockHeaderExtra) -> Block {
         let header = BlockHeader::new(
             self.parent_hash,
             self.timestamp,
@@ -918,7 +955,16 @@ impl BlockTemplate {
         }
     }
 
-    pub fn as_raw_block_header(&self) -> RawBlockHeader {
+    fn generate_parent_header(&self) -> HashValue {
+        if self.tips_header.is_none() {
+            return self.parent_hash;
+        }
+        let mut tips = self.tips_header.as_ref().unwrap().clone();
+        tips.sort();
+        HashValue::sha3_256_of(&tips.encode().expect("dag parent must encode successfully"))
+    }
+
+    pub fn as_raw_block_header_single_chain(&self) -> RawBlockHeader {
         RawBlockHeader {
             parent_hash: self.parent_hash,
             timestamp: self.timestamp,
@@ -935,6 +981,37 @@ impl BlockTemplate {
         }
     }
 
+    pub fn as_raw_block_header(&self) -> RawBlockHeader {
+        RawBlockHeader {
+            parent_hash: self.generate_parent_header(),
+            timestamp: self.timestamp,
+            number: self.number,
+            author: self.author,
+            author_auth_key: None,
+            accumulator_root: self.txn_accumulator_root,
+            parent_block_accumulator_root: self.block_accumulator_root,
+            state_root: self.state_root,
+            gas_used: self.gas_used,
+            body_hash: self.body_hash,
+            difficulty: self.difficulty,
+            chain_id: self.chain_id,
+        }
+    }
+
+    pub fn as_pow_header_blob_single_chain(&self) -> Vec<u8> {
+        let mut blob = Vec::new();
+        let raw_header = self.as_raw_block_header_single_chain();
+        let raw_header_hash = raw_header.crypto_hash();
+        let mut dh = [0u8; 32];
+        raw_header.difficulty.to_big_endian(&mut dh);
+        let extend_and_nonce = [0u8; 12];
+        blob.extend_from_slice(raw_header_hash.to_vec().as_slice());
+        blob.extend_from_slice(&extend_and_nonce);
+        blob.extend_from_slice(&dh);
+
+        blob
+    }
+
     pub fn as_pow_header_blob(&self) -> Vec<u8> {
         let mut blob = Vec::new();
         let raw_header = self.as_raw_block_header();
@@ -942,10 +1019,10 @@ impl BlockTemplate {
         let mut dh = [0u8; 32];
         raw_header.difficulty.to_big_endian(&mut dh);
         let extend_and_nonce = [0u8; 12];
-
         blob.extend_from_slice(raw_header_hash.to_vec().as_slice());
         blob.extend_from_slice(&extend_and_nonce);
         blob.extend_from_slice(&dh);
+
         blob
     }
 
@@ -972,11 +1049,16 @@ impl BlockTemplate {
 pub struct ExecutedBlock {
     pub block: Block,
     pub block_info: BlockInfo,
+    pub dag_parent: Option<HashValue>,
 }
 
 impl ExecutedBlock {
-    pub fn new(block: Block, block_info: BlockInfo) -> Self {
-        ExecutedBlock { block, block_info }
+    pub fn new(block: Block, block_info: BlockInfo, dag_parent: Option<HashValue>) -> Self {
+        ExecutedBlock {
+            block,
+            block_info,
+            dag_parent,
+        }
     }
 
     pub fn total_difficulty(&self) -> U256 {

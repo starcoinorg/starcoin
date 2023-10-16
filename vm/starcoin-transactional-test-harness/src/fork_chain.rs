@@ -114,7 +114,11 @@ impl ForkBlockChain {
         })
     }
 
-    pub fn add_new_block(&mut self, mut block: Block) -> Result<()> {
+    pub fn add_new_block(
+        &mut self,
+        mut block: Block,
+        dag_parent: Option<Vec<HashValue>>,
+    ) -> Result<()> {
         block.header = block.header().as_builder().build();
 
         let block_accumulator = MerkleAccumulator::new_empty(
@@ -132,7 +136,7 @@ impl ForkBlockChain {
         self.number_hash_map
             .insert(self.current_number, block.header().id());
         self.status = Some(ChainStatusWithBlock {
-            status: ChainStatus::new(block.header().clone(), block_info.clone()),
+            status: ChainStatus::new(block.header().clone(), block_info.clone(), dag_parent),
             head: block.clone(),
         });
         self.storage.save_block_info(block_info)?;
@@ -143,7 +147,7 @@ impl ForkBlockChain {
     pub fn add_new_txn(&mut self, txn: Transaction, output: TransactionOutput) -> Result<()> {
         let txn_hash = txn.id();
         let state_root = *self.state_root.lock().unwrap();
-        let (_, _, events, gas_used, status) = output.into_inner();
+        let (_, events, gas_used, status) = output.into_inner();
         let status = status
             .status()
             .expect("TransactionStatus at here must been KeptVMStatus");
@@ -198,6 +202,7 @@ impl ChainApi for MockChainApi {
                     status.head.header().chain_id(),
                     HashValue::random(),
                     status.status,
+                    None,
                 ))),
                 None => match client {
                     Some(client) => client.info().await.map_err(|e| anyhow!("{}", e)),

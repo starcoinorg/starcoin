@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::block_connector::BlockConnectorService;
 use crate::tasks::block_sync_task::SyncBlockData;
 use crate::tasks::inner_sync_task::InnerSyncTask;
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
@@ -10,6 +11,7 @@ use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
 use network_api::{PeerId, PeerProvider, PeerSelector};
 use network_p2p_core::{NetRpcError, RpcErrorCode};
+use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::MerkleAccumulator;
 use starcoin_chain::{BlockChain, ChainReader};
@@ -19,9 +21,13 @@ use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
 use starcoin_time_service::TimeService;
+use starcoin_txpool::TxPoolService;
+#[cfg(test)]
+use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::U256;
+use std::result::Result::Ok;
 use std::str::FromStr;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
@@ -32,43 +38,55 @@ use stream_task::{
 };
 
 pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {
-    fn get_best_target(&self, min_difficulty: U256) -> Result<Option<SyncTarget>> {
+    fn get_best_target(
+        &self,
+        min_difficulty: U256,
+    ) -> Result<Option<(SyncTarget, Option<AccumulatorInfo>)>> {
         if let Some(best_peers) = self.peer_selector().bests(min_difficulty) {
             //TODO fast verify best peers by accumulator
-            let mut chain_statuses: Vec<(ChainStatus, Vec<PeerId>)> =
+            let mut chain_statuses: Vec<(ChainStatus, Vec<PeerId>, Option<AccumulatorInfo>)> =
                 best_peers
                     .into_iter()
                     .fold(vec![], |mut chain_statuses, peer| {
                         let update = chain_statuses
                             .iter_mut()
-                            .find(|(chain_status, _peers)| {
+                            .find(|(chain_status, _peers, _)| {
                                 peer.chain_info().status() == chain_status
                             })
-                            .map(|(_chain_status, peers)| {
+                            .map(|(_chain_status, peers, _)| {
                                 peers.push(peer.peer_id());
                                 true
                             })
                             .unwrap_or(false);
 
                         if !update {
-                            chain_statuses
-                                .push((peer.chain_info().status().clone(), vec![peer.peer_id()]))
+                            chain_statuses.push((
+                                peer.chain_info().status().clone(),
+                                vec![peer.peer_id()],
+                                peer.chain_info().dag_accumulator_info().clone(),
+                            ))
                         }
                         chain_statuses
                     });
             //if all best peers block info is same, block_infos len should been 1, other use majority peers block_info
             if chain_statuses.len() > 1 {
-                chain_statuses.sort_by(|(_chain_status_1, peers_1), (_chain_status_2, peers_2)| {
-                    peers_1.len().cmp(&peers_2.len())
-                });
+                chain_statuses.sort_by(
+                    |(_chain_status_1, peers_1, _), (_chain_status_2, peers_2, _)| {
+                        peers_1.len().cmp(&peers_2.len())
+                    },
+                );
             }
-            let (chain_status, peers) = chain_statuses.pop().expect("chain statuses should exist");
+            let (chain_status, peers, dag_accumulator_info) =
+                chain_statuses.pop().expect("chain statuses should exist");
             let header = chain_status.head;
-            Ok(Some(SyncTarget {
-                target_id: BlockIdAndNumber::new(header.id(), header.number()),
-                block_info: chain_status.info,
-                peers,
-            }))
+            Ok(Some((
+                SyncTarget {
+                    target_id: BlockIdAndNumber::new(header.id(), header.number()),
+                    block_info: chain_status.info,
+                    peers,
+                },
+                dag_accumulator_info,
+            )))
         } else {
             debug!(
                 "get_best_target return None, total_peers_in_selector: {}, min_difficulty: {}",
@@ -279,7 +297,16 @@ pub trait BlockFetcher: Send + Sync {
     fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>>;
+    ) -> BoxFuture<
+        Result<
+            Vec<(
+                Block,
+                Option<PeerId>,
+                Option<Vec<HashValue>>,
+                Option<HashValue>,
+            )>,
+        >,
+    >;
 }
 
 impl<T> BlockFetcher for Arc<T>
@@ -289,7 +316,17 @@ where
     fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
+    ) -> BoxFuture<
+        '_,
+        Result<
+            Vec<(
+                Block,
+                Option<PeerId>,
+                Option<Vec<HashValue>>,
+                Option<HashValue>,
+            )>,
+        >,
+    > {
         BlockFetcher::fetch_blocks(self.as_ref(), block_ids)
     }
 }
@@ -298,10 +335,27 @@ impl BlockFetcher for VerifiedRpcClient {
     fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
+    ) -> BoxFuture<
+        '_,
+        Result<
+            Vec<(
+                Block,
+                Option<PeerId>,
+                Option<Vec<HashValue>>,
+                Option<HashValue>,
+            )>,
+        >,
+    > {
         self.get_blocks(block_ids.clone())
             .and_then(|blocks| async move {
-                let results: Result<Vec<(Block, Option<PeerId>)>> = block_ids
+                let results: Result<
+                    Vec<(
+                        Block,
+                        Option<PeerId>,
+                        Option<Vec<HashValue>>,
+                        Option<HashValue>,
+                    )>,
+                > = block_ids
                     .iter()
                     .zip(blocks)
                     .map(|(id, block)| {
@@ -372,7 +426,10 @@ impl BlockLocalStore for Arc<dyn Store> {
                 Some(block) => {
                     let id = block.id();
                     let block_info = self.get_block_info(id)?;
-                    Ok(Some(SyncBlockData::new(block, block_info, None)))
+
+                    Ok(Some(SyncBlockData::new(
+                        block, block_info, None, None, 1, None, None,
+                    )))
                 }
                 None => Ok(None),
             })
@@ -381,9 +438,21 @@ impl BlockLocalStore for Arc<dyn Store> {
 }
 
 #[derive(Clone, Debug)]
+pub enum BlockConnectAction {
+    ConnectNewBlock,
+    ConnectExecutedBlock,
+}
+
+#[derive(Clone, Debug)]
 pub struct BlockConnectedEvent {
     pub block: Block,
+    pub dag_parents: Option<Vec<HashValue>>,
+    pub feedback: Option<futures::channel::mpsc::UnboundedSender<BlockConnectedFinishEvent>>,
+    pub action: BlockConnectAction,
 }
+
+#[derive(Clone, Debug)]
+pub struct BlockConnectedFinishEvent;
 
 #[derive(Clone, Debug)]
 pub struct BlockDiskCheckEvent {}
@@ -392,10 +461,15 @@ pub trait BlockConnectedEventHandle: Send + Clone + std::marker::Unpin {
     fn handle(&mut self, event: BlockConnectedEvent) -> Result<()>;
 }
 
-impl<S> BlockConnectedEventHandle for ServiceRef<S>
-where
-    S: ActorService + EventHandler<S, BlockConnectedEvent>,
-{
+impl BlockConnectedEventHandle for ServiceRef<BlockConnectorService<TxPoolService>> {
+    fn handle(&mut self, event: BlockConnectedEvent) -> Result<()> {
+        self.notify(event)?;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+impl BlockConnectedEventHandle for ServiceRef<BlockConnectorService<MockTxPoolService>> {
     fn handle(&mut self, event: BlockConnectedEvent) -> Result<()> {
         self.notify(event)?;
         Ok(())
@@ -459,6 +533,24 @@ impl BlockConnectedEventHandle for UnboundedSender<BlockConnectedEvent> {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct BlockConnectEventHandleMock {
+    sender: UnboundedSender<BlockConnectedEvent>,
+}
+
+impl BlockConnectEventHandleMock {
+    pub fn new(sender: UnboundedSender<BlockConnectedEvent>) -> Result<Self> {
+        Ok(Self { sender })
+    }
+}
+
+impl BlockConnectedEventHandle for BlockConnectEventHandleMock {
+    fn handle(&mut self, event: BlockConnectedEvent) -> Result<()> {
+        self.sender.start_send(event)?;
+        Ok(())
+    }
+}
+
 pub struct ExtSyncTaskErrorHandle<F>
 where
     F: SyncFetcher + 'static,
@@ -508,6 +600,11 @@ mod find_ancestor_task;
 mod inner_sync_task;
 #[cfg(test)]
 pub(crate) mod mock;
+mod sync_dag_accumulator_task;
+mod sync_dag_block_task;
+mod sync_dag_full_task;
+mod sync_dag_protocol_trait;
+mod sync_find_ancestor_task;
 #[cfg(test)]
 mod tests;
 
@@ -516,6 +613,7 @@ pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
 use starcoin_executor::VMMetrics;
+pub use sync_dag_full_task::sync_dag_full_task;
 
 pub fn full_sync_task<H, A, F, N>(
     current_block_id: HashValue,
@@ -528,6 +626,7 @@ pub fn full_sync_task<H, A, F, N>(
     ancestor_event_handle: A,
     peer_provider: N,
     max_retry_times: u64,
+    block_chain_service: ServiceRef<BlockConnectorService>,
     sync_metrics: Option<SyncMetrics>,
     vm_metrics: Option<VMMetrics>,
 ) -> Result<(
@@ -643,6 +742,7 @@ where
                     max_retry_times,
                     delay_milliseconds_on_error,
                     skip_pow_verify,
+                    block_chain_service.clone(),
                     vm_metrics.clone(),
                 )
                 .await?;
