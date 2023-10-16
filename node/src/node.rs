@@ -371,14 +371,12 @@ impl NodeService {
         let flex_dag_db = FlexiDagStorage::create_from_path("./smolstc", flex_dag_config)
             .expect("Failed to create flexidag storage");
 
-        let dag = BlockDAG::new(
-            DagHeader::new(
-                genesis.block().header().clone(),
-                vec![HashValue::new(ORIGIN)],
-            ),
-            3,
+        let mut dag = BlockDAG::new(
+                genesis.block().id(),
+                8,
             flex_dag_db,
         );
+        dag.init_with_genesis(DagHeader::new_genesis(genesis.block().header().clone())).expect("dag init with genesis");
         registry.put_shared(Arc::new(Mutex::new(dag))).await?;
 
         info!(

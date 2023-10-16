@@ -64,6 +64,7 @@ pub enum ConnectOk {
     MainDuplicate,
     // the dag block waiting for the time window end
     DagPending,
+    DagConnectMissingBlock,
 }
 
 impl ConnectOk {
@@ -815,6 +816,33 @@ where
         let enacted_blocks = vec![executed_block.block().clone()];
         self.do_new_head(executed_block.clone(), 1, enacted_blocks, 0, vec![])?;
         return Ok(ConnectOk::ExeConnectMain(executed_block));
+    }
+
+    fn connect_dag_inner(
+        &mut self,
+        block: Block,
+        parents_hash: Vec<HashValue>,
+    ) -> Result<ConnectOk> {
+        let ghost_dag_data = self
+            .dag
+            .lock()
+            .unwrap()
+            .addToDag(DagHeader::new(block.header, parents_hash))?;
+        let selected_parent = self
+            .storage
+            .get_block_by_hash(ghost_dag_data.selected_parent)?
+            .expect("selected parent should in storage");
+        let mut chain = self.main.fork(selected_parent.header.parent_hash())?;
+        for blue_hash in ghost_dag_data.mergeset_blues.iter() {
+            if let Some(blue_block) = self.storage.get_block(blue_hash.to_owned())? {
+                chain.apply(blue_block);
+            } else {
+                error!("Failed to get block {:?}", blue_hash);
+                return Ok(DagConnectMissingBlock);
+            }
+        }
+        //self.broadcast_new_head();
+        Ok(DagConnected)
     }
 
     fn connect_inner(

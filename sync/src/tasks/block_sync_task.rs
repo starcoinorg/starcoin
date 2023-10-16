@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block_connector::BlockConnectorService;
+use crate::block_connector::{BlockConnectedRequest, BlockConnectorService};
 use crate::tasks::{BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{format_err, Ok, Result};
@@ -16,6 +16,7 @@ use starcoin_config::G_CRATE_VERSION;
 use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
+use starcoin_service_registry::ServiceRef;
 use starcoin_storage::BARNARD_HARD_FORK_HASH;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};

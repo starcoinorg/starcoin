@@ -52,11 +52,10 @@ impl EventHandler<Self, NewHeadBlock> for ChainNotifyHandlerService {
         item: NewHeadBlock,
         ctx: &mut ServiceContext<ChainNotifyHandlerService>,
     ) {
-        let NewHeadBlock(block_detail, _dag_parents, _next_tips) = item;
+        let NewHeadBlock(block_detail,tips_hash) = item;
         let block = block_detail.block();
         // notify header.
         self.notify_new_block(block, ctx);
-
         // notify events
         if let Err(e) = self.notify_events(block, self.store.clone(), ctx) {
             error!(target: "pubsub", "fail to notify events to client, err: {}", &e);

@@ -133,22 +133,22 @@ fn main() -> anyhow::Result<()> {
             match opts.verifier {
                 Verifier::Basic => {
                     chain2
-                        .apply_with_verifier::<BasicVerifier>(block, None, &mut None)
+                        .apply_with_verifier::<BasicVerifier>(block, None)
                         .unwrap();
                 }
                 Verifier::Consensus => {
                     chain2
-                        .apply_with_verifier::<ConsensusVerifier>(block, None, &mut None)
+                        .apply_with_verifier::<ConsensusVerifier>(block, None)
                         .unwrap();
                 }
                 Verifier::None => {
                     chain2
-                        .apply_with_verifier::<NoneVerifier>(block, None, &mut None)
+                        .apply_with_verifier::<NoneVerifier>(block, None)
                         .unwrap();
                 }
                 Verifier::Full => {
                     chain2
-                        .apply_with_verifier::<FullVerifier>(block, None, &mut None)
+                        .apply_with_verifier::<FullVerifier>(block, None)
                         .unwrap();
                 }
             };

@@ -111,10 +111,9 @@ impl ActorService for BlockBuilderService {
 
 impl EventHandler<Self, NewHeadBlock> for BlockBuilderService {
     fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<BlockBuilderService>) {
-        let mut next_tips = msg.2.clone();
         if let Err(e) = self
             .inner
-            .update_chain(msg.0.as_ref().clone(), &mut next_tips)
+            .update_chain(msg.0.as_ref().clone())
         {
             error!("err : {:?}", e)
         }
@@ -247,12 +246,11 @@ where
     pub fn update_chain(
         &mut self,
         block: ExecutedBlock,
-        next_tips: &mut Option<Vec<HashValue>>,
     ) -> Result<()> {
         let current_header = self.chain.current_header();
         let current_id = current_header.id();
         if self.chain.can_connect(&block) {
-            self.chain.connect(block, next_tips)?;
+            self.chain.connect(block)?;
         } else {
             self.chain = BlockChain::new(
                 self.chain.time_service(),

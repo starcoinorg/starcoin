@@ -84,7 +84,7 @@ pub trait ChainReader {
     fn execute(
         &self,
         block: VerifiedBlock,
-        dag_block_parents: Option<HashValue>,
+        parents_hash: Option<Vec<HashValue>>,
     ) -> Result<ExecutedBlock>;
     /// Get chain transaction infos
     fn get_transaction_infos(
@@ -113,19 +113,10 @@ pub trait ChainReader {
 pub trait ChainWriter {
     fn can_connect(&self, executed_block: &ExecutedBlock) -> bool;
     /// Connect a executed block to current chain.
-    fn connect(
-        &mut self,
-        executed_block: ExecutedBlock,
-        next_tips: &mut Option<Vec<HashValue>>,
-    ) -> Result<ExecutedBlock>;
+    fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock>;
 
     /// Verify, Execute and Connect block to current chain.
-    fn apply(
-        &mut self,
-        block: Block,
-        dag_block_next_parent: Option<HashValue>,
-        next_tips: &mut Option<Vec<HashValue>>,
-    ) -> Result<ExecutedBlock>;
+    fn apply(&mut self, block: Block,parents_hash:Option<Vec<HashValue>>) -> Result<ExecutedBlock>;
 
     fn chain_state(&mut self) -> &ChainStateDB;
 
