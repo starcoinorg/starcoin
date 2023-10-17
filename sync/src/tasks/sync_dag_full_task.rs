@@ -1,14 +1,13 @@
 use std::sync::{Arc, Mutex};
 
 use anyhow::{anyhow, format_err, Ok};
-use async_std::task::Task;
 use futures::{future::BoxFuture, FutureExt};
 use network_api::PeerProvider;
 use starcoin_accumulator::{
     accumulator_info::AccumulatorInfo, Accumulator, AccumulatorTreeStore, MerkleAccumulator,
 };
 use starcoin_chain::BlockChain;
-use starcoin_chain_api::{ChainReader, ChainWriter};
+use starcoin_chain_api::ChainReader;
 use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
@@ -17,6 +16,7 @@ use starcoin_network::NetworkServiceRef;
 use starcoin_service_registry::ServiceRef;
 use starcoin_storage::{flexi_dag::SyncFlexiDagSnapshotStorage, storage::CodecKVStore, Store};
 use starcoin_time_service::TimeService;
+use starcoin_txpool::TxPoolService;
 use stream_task::{
     Generator, TaskError, TaskEventCounterHandle, TaskFuture, TaskGenerator, TaskHandle,
 };
@@ -180,7 +180,7 @@ async fn sync_dag_block<H, N>(
     network: N,
     skip_pow_verify_when_sync: bool,
     dag: Arc<Mutex<BlockDAG>>,
-    block_chain_service: ServiceRef<BlockConnectorService>,
+    block_chain_service: ServiceRef<BlockConnectorService<TxPoolService>>,
     vm_metrics: Option<VMMetrics>,
 ) -> anyhow::Result<BlockChain>
 where
@@ -279,11 +279,11 @@ pub fn sync_dag_full_task(
     local_store: Arc<dyn Store>,
     time_service: Arc<dyn TimeService>,
     vm_metrics: Option<VMMetrics>,
-    connector_service: ServiceRef<BlockConnectorService>,
+    connector_service: ServiceRef<BlockConnectorService<TxPoolService>>,
     network: NetworkServiceRef,
     skip_pow_verify_when_sync: bool,
     dag: Arc<Mutex<BlockDAG>>,
-    block_chain_service: ServiceRef<BlockConnectorService>,
+    block_chain_service: ServiceRef<BlockConnectorService<TxPoolService>>,
 ) -> anyhow::Result<(
     BoxFuture<'static, anyhow::Result<BlockChain, TaskError>>,
     TaskHandle,

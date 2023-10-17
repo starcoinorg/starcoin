@@ -239,7 +239,7 @@ impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<MockTxPoo
 
         match msg.action {
             crate::tasks::BlockConnectAction::ConnectNewBlock => {
-                if let Err(e) = self.chain_service.apply_failed(block) {
+                if let Err(e) = self.chain_service.apply_failed(block, msg.dag_parents) {
                     error!("Process connected new block from sync error: {:?}", e);
                 }
             }
@@ -380,7 +380,7 @@ where
         _ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
     ) -> Result<ExecutedBlock> {
         self.chain_service
-            .execute(msg.block, msg.dag_transaction_parent)
+            .execute(msg.block, msg.dag_block_parent)
     }
 }
 

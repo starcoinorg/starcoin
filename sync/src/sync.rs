@@ -168,7 +168,7 @@ impl SyncService {
         }
 
         let network = ctx.get_shared::<NetworkServiceRef>()?;
-        let block_chain_service = ctx.service_ref::<BlockConnectorService>()?.clone();
+        let block_chain_service = ctx.service_ref::<BlockConnectorService<TxPoolService>>()?.clone();
         let storage = self.storage.clone();
         let self_ref = ctx.self_ref();
         let connector_service = ctx

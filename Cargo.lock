@@ -2315,7 +2315,7 @@ checksum = "850878694b7933ca4c9569d30a34b55031b9b139ee1fc7b94a527c4ef960d690"
 [[package]]
 name = "diem-crypto"
 version = "0.0.3"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00#a742ddc0674022800341182cbb4c3681807b2f00"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=8d41c280a227594ca0a2b6ecba580643518274ea#8d41c280a227594ca0a2b6ecba580643518274ea"
 dependencies = [
  "aes-gcm 0.8.0",
  "anyhow",
@@ -2350,7 +2350,7 @@ dependencies = [
 [[package]]
 name = "diem-crypto-derive"
 version = "0.0.3"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00#a742ddc0674022800341182cbb4c3681807b2f00"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=8d41c280a227594ca0a2b6ecba580643518274ea#8d41c280a227594ca0a2b6ecba580643518274ea"
 dependencies = [
  "proc-macro2 1.0.59",
  "quote 1.0.28",
@@ -5258,7 +5258,7 @@ dependencies = [
 
 [[package]]
 name = "move-coverage"
-version = "1.13.5"
+version = "1.13.7"
 dependencies = [
  "anyhow",
  "bcs",
@@ -5452,7 +5452,7 @@ dependencies = [
 
 [[package]]
 name = "move-package-manager"
-version = "1.13.5"
+version = "1.13.7"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9532,7 +9532,7 @@ dependencies = [
 [[package]]
 name = "starcoin-crypto"
 version = "1.10.0-rc.2"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00#a742ddc0674022800341182cbb4c3681807b2f00"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=8d41c280a227594ca0a2b6ecba580643518274ea#8d41c280a227594ca0a2b6ecba580643518274ea"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9551,7 +9551,7 @@ dependencies = [
 [[package]]
 name = "starcoin-crypto-macro"
 version = "1.10.0-rc.2"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00#a742ddc0674022800341182cbb4c3681807b2f00"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=8d41c280a227594ca0a2b6ecba580643518274ea#8d41c280a227594ca0a2b6ecba580643518274ea"
 dependencies = [
  "proc-macro2 1.0.59",
  "quote 1.0.28",
@@ -9588,7 +9588,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-dev"
-version = "1.13.5"
+version = "1.13.7"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -9707,7 +9707,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-gas"
-version = "1.13.5"
+version = "1.13.7"
 dependencies = [
  "clap 3.2.23",
  "move-binary-format",
@@ -9722,7 +9722,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-gas-algebra-ext"
-version = "1.13.5"
+version = "1.13.7"
 dependencies = [
  "move-binary-format",
  "move-core-types",
@@ -9977,7 +9977,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-move-compiler"
-version = "1.13.5"
+version = "1.13.7"
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -9996,7 +9996,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-move-explain"
-version = "1.13.5"
+version = "1.13.7"
 dependencies = [
  "bcs-ext",
  "clap 3.2.23",
@@ -10006,7 +10006,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-move-prover"
-version = "1.13.5"
+version = "1.13.7"
 dependencies = [
  "anyhow",
  "atty",
@@ -10048,7 +10048,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-natives"
-version = "1.13.5"
+version = "1.13.7"
 dependencies = [
  "arrayref",
  "hex",
@@ -10352,7 +10352,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-resource-viewer"
-version = "1.13.5"
+version = "1.13.7"
 dependencies = [
  "anyhow",
  "hex",
@@ -10827,13 +10827,14 @@ dependencies = [
 
 [[package]]
 name = "starcoin-transaction-builder"
-version = "1.13.5"
+version = "1.13.7"
 dependencies = [
  "anyhow",
  "bcs-ext",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-types",
  "starcoin-vm-types",
  "stdlib",
  "stest",
@@ -10841,7 +10842,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-transactional-test-harness"
-version = "1.13.5"
+version = "1.13.7"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -11024,7 +11025,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-vm-runtime"
-version = "1.13.5"
+version = "1.13.7"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -11032,10 +11033,12 @@ dependencies = [
  "move-stdlib",
  "move-table-extension",
  "move-vm-runtime",
+ "num_cpus",
  "num_enum",
  "once_cell",
  "rand 0.8.5",
  "rand_core 0.6.4",
+ "rayon",
  "serde 1.0.152",
  "starcoin-config",
  "starcoin-crypto",
@@ -11044,6 +11047,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-natives",
+ "starcoin-parallel-executor",
  "starcoin-types",
  "starcoin-vm-types",
  "stdlib",
@@ -11052,7 +11056,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-vm-types"
-version = "1.13.5"
+version = "1.13.7"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -11091,7 +11095,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "stdlib"
-version = "1.13.5"
+version = "1.13.7"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -12057,7 +12061,7 @@ checksum = "efd1f82c56340fdf16f2a953d7bda4f8fdffba13d93b00844c25572110b26079"
 
 [[package]]
 name = "transaction-builder-generator"
-version = "1.13.5"
+version = "1.13.7"
 dependencies = [
  "anyhow",
  "bcs",
@@ -12502,7 +12506,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "vm-status-translator"
-version = "1.13.5"
+version = "1.13.7"
 dependencies = [
  "anyhow",
  "schemars",

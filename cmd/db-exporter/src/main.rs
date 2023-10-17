@@ -1154,7 +1154,7 @@ pub fn execute_turbo_stm_transaction_with_fixed_account(
             ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
         println!("create account trans {}", block.transactions().len());
         let block_hash = block.header.id();
-        chain.apply_with_verifier::<BasicVerifier>(block)?;
+        chain.apply_with_verifier::<BasicVerifier>(block, None)?;
         let startup_info = StartupInfo::new(block_hash);
         storage.save_startup_info(startup_info)?;
         println!("receivers finish");
@@ -1181,7 +1181,7 @@ pub fn execute_turbo_stm_transaction_with_fixed_account(
             ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
         println!("p2p trans {}", block.transactions().len());
         let block_hash = block.header.id();
-        chain.apply_with_verifier::<BasicVerifier>(block)?;
+        chain.apply_with_verifier::<BasicVerifier>(block, None)?;
 
         let startup_info = StartupInfo::new(block_hash);
         storage.save_startup_info(startup_info)?;
@@ -2028,14 +2028,14 @@ pub fn apply_turbo_stm_block(
     println!("seq execution");
 
     for item in blocks.iter().take(4) {
-        chain_seq.apply_with_verifier::<NoneVerifier>(item.clone())?;
+        chain_seq.apply_with_verifier::<NoneVerifier>(item.clone(), None)?;
     }
     let mut block_hash = HashValue::zero();
     let start_time = SystemTime::now();
     for item in blocks.iter().skip(4) {
         let block = item.clone();
         block_hash = block.header().id();
-        chain_seq.apply_with_verifier::<NoneVerifier>(block)?;
+        chain_seq.apply_with_verifier::<NoneVerifier>(block, None)?;
     }
     let startup_info = StartupInfo::new(block_hash);
     storage_seq.save_startup_info(startup_info)?;
@@ -2063,7 +2063,7 @@ pub fn apply_turbo_stm_block(
 
     println!("stm execution");
     for item in blocks.iter().take(4) {
-        chain_stm.apply_with_verifier::<NoneVerifier>(item.clone())?;
+        chain_stm.apply_with_verifier::<NoneVerifier>(item.clone(), None)?;
     }
     let mut block_hash = HashValue::zero();
     let start_time = SystemTime::now();
@@ -2071,7 +2071,7 @@ pub fn apply_turbo_stm_block(
     for item in blocks.iter().skip(4) {
         let block = item.clone();
         block_hash = block.header().id();
-        chain_stm.apply_with_verifier::<NoneVerifier>(block)?;
+        chain_stm.apply_with_verifier::<NoneVerifier>(block, None)?;
     }
     let startup_info = StartupInfo::new(block_hash);
     storage_stm.save_startup_info(startup_info)?;

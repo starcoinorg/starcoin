@@ -20,6 +20,7 @@ use starcoin_time_service::{DagBlockTimeWindowService, TimeWindowResult};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
 use starcoin_types::blockhash::BlockHashMap;
+use starcoin_types::header::DagHeader;
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
@@ -74,7 +75,7 @@ impl ConnectOk {
             ConnectOk::ExeConnectMain(block) => Some(block.clone()),
             ConnectOk::ExeConnectBranch(block) => Some(block.clone()),
             ConnectOk::Connect(block) => Some(block.clone()),
-            ConnectOk::DagConnected | ConnectOk::MainDuplicate | ConnectOk::DagPending => None,
+            ConnectOk::DagConnected | ConnectOk::MainDuplicate | ConnectOk::DagPending | ConnectOk::DagConnectMissingBlock => None,
         }
     }
 }
@@ -89,6 +90,7 @@ impl std::fmt::Display for ConnectOk {
             ConnectOk::DagConnected => "DagConnect",
             ConnectOk::MainDuplicate => "MainDuplicate",
             ConnectOk::DagPending => "DagPending",
+            ConnectOk::DagConnectMissingBlock => "DagConnectMissingBlock",
         };
         write!(f, "{}", s)
     }
@@ -174,7 +176,7 @@ where
         let block_id = header.id();
         let block_info = self.storage.get_block_info(block_id)?;
         let block_chain = if block_info.is_some() {
-            if self.is_main_head(&header.parent_hash(), dag_block_parents) {
+            if self.is_main_head(&header.parent_hash()) {
                 None
             } else {
                 let net = self.config.net();
@@ -223,13 +225,13 @@ where
     }
     
     #[cfg(test)]
-    pub fn apply_failed(&mut self, block: Block) -> Result<()> {
+    pub fn apply_failed(&mut self, block: Block, parents_hash: Option<Vec<HashValue>>) -> Result<()> {
         use anyhow::bail;
         use starcoin_chain::verifier::FullVerifier;
 
         // apply but no connection
         let verified_block = self.main.verify_with_verifier::<FullVerifier>(block)?;
-        let _executed_block = self.main.execute(verified_block)?;
+        let _executed_block = self.main.execute(verified_block, parents_hash)?;
 
         bail!("failed to apply for tesing the connection later!");
     }
@@ -241,7 +243,7 @@ where
     pub fn switch_new_main(
         &mut self,
         new_head_block: HashValue,
-        _ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
+        ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
     ) -> Result<()>
     where
         TransactionPoolServiceT: TxPoolSyncService,
@@ -259,17 +261,9 @@ where
             self.update_startup_info(new_branch.head_block().header())?;
 
             let dag_parents = self.dag.lock().unwrap().get_parents(new_head_block)?;
-            let next_tips = self
-                .storage
-                .get_accumulator_snapshot_storage()
-                .get(new_head_block)?
-                .expect("the snapshot must exists!")
-                .child_hashes;
-
             ctx.broadcast(NewHeadBlock(
                 Arc::new(new_branch.head_block()),
                 Some(dag_parents),
-                Some(next_tips),
             ));
 
             Ok(())
@@ -288,7 +282,6 @@ where
         let branch_total_difficulty = new_branch.get_total_difficulty()?;
         let parent_is_main_head = self.is_main_head(
             &executed_block.header().parent_hash(),
-            dag_block_parents.clone(),
         );
 
         if branch_total_difficulty > main_total_difficulty {
@@ -429,7 +422,7 @@ where
     pub fn execute(
         &mut self,
         block: Block,
-        dag_block_parent: Option<HashValue>,
+        dag_block_parent: Option<Vec<HashValue>>,
     ) -> Result<ExecutedBlock> {
         let chain = BlockChain::new(
             self.config.net().time_service(),
@@ -444,24 +437,10 @@ where
     fn is_main_head(
         &self,
         parent_id: &HashValue,
-        dag_block_parents: Option<Vec<HashValue>>,
     ) -> bool {
         if parent_id == &self.startup_info.main {
             return true;
         }
-
-        if let Some(block_parents) = dag_block_parents {
-            if self.main.status().tips_hash.is_some() && !block_parents.is_empty() {
-                return block_parents.into_iter().all(|block_header| {
-                    self.main
-                        .status()
-                        .tips_hash
-                        .unwrap()
-                        .contains(&block_header)
-                });
-            }
-        }
-
         return false;
     }
 
@@ -659,7 +638,7 @@ where
 
         if let Err(e) = self
             .bus
-            .broadcast(NewHeadBlock(Arc::new(block), dag_parents, next_tips))
+            .broadcast(NewHeadBlock(Arc::new(block), dag_parents))
         {
             error!("Broadcast NewHeadBlock error: {:?}", e);
         }
@@ -720,9 +699,8 @@ where
                     ExecutedBlock {
                         block: block.clone(),
                         block_info,
-                        dag_parent: dag_block_next_parent,
+                        parents_hash: dag_block_parents,
                     },
-                    next_tips,
                 )?;
                 info!(
                     "Block {} main has been processed, trigger head selection",
@@ -733,7 +711,7 @@ where
             }
             (None, Some(mut branch)) => {
                 // the block is not in the block, but the parent is
-                let result = branch.apply(block, dag_block_next_parent, next_tips);
+                let result = branch.apply(block, dag_block_parents.clone());
                 let executed_block = result?;
                 self.select_head(branch, dag_block_parents)?;
                 Ok(ConnectOk::ExeConnectBranch(executed_block))
@@ -812,7 +790,7 @@ where
         dag_block_next_parent: Option<HashValue>,
         next_tips: &mut Option<Vec<HashValue>>,
     ) -> Result<ConnectOk> {
-        let executed_block = self.main.apply(block, dag_block_next_parent, next_tips)?;
+        let executed_block = self.main.apply(block, dag_block_parents)?;
         let enacted_blocks = vec![executed_block.block().clone()];
         self.do_new_head(executed_block.clone(), 1, enacted_blocks, 0, vec![])?;
         return Ok(ConnectOk::ExeConnectMain(executed_block));
@@ -827,7 +805,7 @@ where
             .dag
             .lock()
             .unwrap()
-            .addToDag(DagHeader::new(block.header, parents_hash))?;
+            .addToDag(DagHeader::new(block.header, parents_hash.clone()))?;
         let selected_parent = self
             .storage
             .get_block_by_hash(ghost_dag_data.selected_parent)?
@@ -835,14 +813,14 @@ where
         let mut chain = self.main.fork(selected_parent.header.parent_hash())?;
         for blue_hash in ghost_dag_data.mergeset_blues.iter() {
             if let Some(blue_block) = self.storage.get_block(blue_hash.to_owned())? {
-                chain.apply(blue_block);
+                chain.apply(blue_block, Some(parents_hash.clone()));
             } else {
                 error!("Failed to get block {:?}", blue_hash);
-                return Ok(DagConnectMissingBlock);
+                return Ok(ConnectOk::DagConnectMissingBlock);
             }
         }
         //self.broadcast_new_head();
-        Ok(DagConnected)
+        Ok(ConnectOk::DagConnected)
     }
 
     fn connect_inner(

@@ -138,7 +138,7 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                     .start_service_sync(GenerateBlockEventPacemaker::service_name()),
             ),
             NodeRequest::ResetNode(block_hash) => {
-                let connect_service = ctx.service_ref::<BlockConnectorService>()?.clone();
+                let connect_service = ctx.service_ref::<BlockConnectorService<TxPoolService>>()?.clone();
                 let dag = ctx
                     .get_shared::<Arc<BlockDAG>>()
                     .expect("ghost dag object does not exits");

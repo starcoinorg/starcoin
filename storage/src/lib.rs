@@ -33,7 +33,8 @@ use starcoin_types::{
     startup_info::{ChainInfo, ChainStatus, SnapshotRange, StartupInfo},
     transaction::{RichTransactionInfo, Transaction},
 };
-//use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_vm_types::{state_store::table::{TableInfo, TableHandle}, account_address::AccountAddress};
+use table_info::{TableInfoStore, TableInfoStorage};
 use std::{
     collections::BTreeMap,
     fmt::{Debug, Display, Formatter},
@@ -358,7 +359,7 @@ impl Storage {
             block_info_storage: BlockInfoStorage::new(instance.clone()),
             event_storage: ContractEventStorage::new(instance.clone()),
             chain_info_storage: ChainInfoStorage::new(instance.clone()),
-            flexi_dag_storage: SyncFlexiDagStorage::new(instance),
+            flexi_dag_storage: SyncFlexiDagStorage::new(instance.clone()),
             table_info_storage: TableInfoStorage::new(instance),
             // instance,
         };

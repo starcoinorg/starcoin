@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block_connector::{BlockConnectedRequest, BlockConnectorService};
 use crate::tasks::{BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{format_err, Ok, Result};
@@ -16,7 +15,6 @@ use starcoin_config::G_CRATE_VERSION;
 use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_service_registry::ServiceRef;
 use starcoin_storage::BARNARD_HARD_FORK_HASH;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
@@ -281,10 +279,10 @@ where
     pub fn apply_block_for_test(
         &mut self,
         block: Block,
-        dag_parent: Option<HashValue>,
+        parents_hash: Option<Vec<HashValue>>,
         next_tips: &mut Option<Vec<HashValue>>,
     ) -> Result<()> {
-        self.apply_block(block, None, dag_parent, next_tips)
+        self.apply_block(block, None, parents_hash, next_tips)
     }
 
     fn notify_connected_block(
@@ -356,7 +354,7 @@ where
         &mut self,
         block: Block,
         peer_id: Option<PeerId>,
-        dag_parent: Option<HashValue>,
+        parents_hash: Option<Vec<HashValue>>,
         next_tips: &mut Option<Vec<HashValue>>,
     ) -> Result<()> {
         if let Some((_failed_block, pre_peer_id, err, version)) = self
@@ -387,9 +385,9 @@ where
         }
         let apply_result = if self.skip_pow_verify {
             self.chain
-                .apply_with_verifier::<BasicVerifier>(block.clone(), dag_parent, next_tips)
+                .apply_with_verifier::<BasicVerifier>(block.clone(), parents_hash)
         } else {
-            self.chain.apply(block.clone(), dag_parent, next_tips)
+            self.chain.apply(block.clone(), parents_hash)
         };
         if let Err(err) = apply_result {
             let error_msg = err.to_string();
@@ -479,11 +477,11 @@ where
         item: SyncBlockData,
         next_tips: &mut Option<Vec<HashValue>>,
     ) -> Result<(Block, BlockInfo, Option<Vec<HashValue>>, BlockConnectAction)> {
-        let (block, block_info, peer_id, dag_parents, dag_transaction_header) = item.into();
+        let (block, block_info, peer_id, parents_hash, dag_transaction_header) = item.into();
         let block_id = block.id();
         let timestamp = block.header().timestamp();
 
-        if let Some(parents) = dag_parents.clone() {
+        if let Some(parents) = parents_hash.clone() {
             if let Some(dag) = &self.dag {
                 // let color = dag
                 //     .lock()
@@ -506,75 +504,74 @@ where
                     ExecutedBlock {
                         block: block.clone(),
                         block_info: block_info.clone(),
-                        dag_parent: dag_transaction_header,
+                        parents_hash: parents_hash.clone(),
                     },
-                    next_tips,
                 )?;
                 let block_info = self.chain.status().info;
-                Ok((block, block_info, dag_parents, BlockConnectAction::ConnectExecutedBlock))
+                Ok((block, block_info, parents_hash, BlockConnectAction::ConnectExecutedBlock))
             }
             None => {
-                self.apply_block(block.clone(), peer_id, dag_transaction_header, next_tips)?;
+                self.apply_block(block.clone(), peer_id, parents_hash.clone(), next_tips)?;
                 self.chain.time_service().adjust(timestamp);
                 let block_info = self.chain.status().info;
-                Ok((block, block_info, dag_parents, BlockConnectAction::ConnectNewBlock))
+                Ok((block, block_info, parents_hash, BlockConnectAction::ConnectNewBlock))
             }
         };
     }
 
-    fn process_received_block(&self, item: SyncBlockData, next_tips: &mut Option<Vec<HashValue>>) -> Result<CollectorState> {
+    // fn process_received_block(&self, item: SyncBlockData, next_tips: &mut Option<Vec<HashValue>>) -> Result<CollectorState> {
 
-        let s = self.collect_item(item, next_tips)?;
-        /////////
-        // let (block, block_info, peer_id) = item.into();
-        // let timestamp = block.header().timestamp();
-        // let (block_info, action) = match block_info {
-        //     Some(block_info) => {
-        //         //If block_info exists, it means that this block was already executed and try connect in the previous sync, but the sync task was interrupted.
-        //         //So, we just need to update chain and continue
-        //         self.chain.connect(ExecutedBlock {
-        //             block: block.clone(),
-        //             block_info: block_info.clone(),
-        //         })?;
-        //         (block_info, BlockConnectAction::ConnectExecutedBlock)
-        //     }
-        //     None => {
-        //         self.apply_block(block.clone(), peer_id)?;
-        //         self.chain.time_service().adjust(timestamp);
-        //         (
-        //             self.chain.status().info,
-        //             BlockConnectAction::ConnectNewBlock,
-        //         )
-        //     }
-        // };
+    //     let (block, block_info, parent_hash, action) = self.collect_item(item, next_tips)?;
+    //     /////////
+    //     // let (block, block_info, peer_id) = item.into();
+    //     // let timestamp = block.header().timestamp();
+    //     // let (block_info, action) = match block_info {
+    //     //     Some(block_info) => {
+    //     //         //If block_info exists, it means that this block was already executed and try connect in the previous sync, but the sync task was interrupted.
+    //     //         //So, we just need to update chain and continue
+    //     //         self.chain.connect(ExecutedBlock {
+    //     //             block: block.clone(),
+    //     //             block_info: block_info.clone(),
+    //     //         })?;
+    //     //         (block_info, BlockConnectAction::ConnectExecutedBlock)
+    //     //     }
+    //     //     None => {
+    //     //         self.apply_block(block.clone(), peer_id)?;
+    //     //         self.chain.time_service().adjust(timestamp);
+    //     //         (
+    //     //             self.chain.status().info,
+    //     //             BlockConnectAction::ConnectNewBlock,
+    //     //         )
+    //     //     }
+    //     // };
 
-        //verify target
-        let state: Result<CollectorState, anyhow::Error> =
-            if block_info.block_accumulator_info.num_leaves
-                == self.target.block_info.block_accumulator_info.num_leaves
-            {
-                if block_info != self.target.block_info {
-                    Err(TaskError::BreakError(
-                        RpcVerifyError::new_with_peers(
-                            self.target.peers.clone(),
-                            format!(
-                    "Verify target error, expect target: {:?}, collect target block_info:{:?}",
-                    self.target.block_info,
-                    block_info
-                ),
-                        )
-                        .into(),
-                    )
-                    .into())
-                } else {
-                    Ok(CollectorState::Enough)
-                }
-            } else {
-                Ok(CollectorState::Need)
-            };
+    //     //verify target
+    //     let state: Result<CollectorState, anyhow::Error> =
+    //         if block_info.block_accumulator_info.num_leaves
+    //             == self.target.block_info.block_accumulator_info.num_leaves
+    //         {
+    //             if block_info != self.target.block_info {
+    //                 Err(TaskError::BreakError(
+    //                     RpcVerifyError::new_with_peers(
+    //                         self.target.peers.clone(),
+    //                         format!(
+    //                 "Verify target error, expect target: {:?}, collect target block_info:{:?}",
+    //                 self.target.block_info,
+    //                 block_info
+    //             ),
+    //                     )
+    //                     .into(),
+    //                 )
+    //                 .into())
+    //             } else {
+    //                 Ok(CollectorState::Enough)
+    //             }
+    //         } else {
+    //             Ok(CollectorState::Need)
+    //         };
 
-        self.notify_connected_block(block, block_info, action, state?)
-    }
+    //     self.notify_connected_block(block, block_info, action, state?, parent_hash)
+    // }
 }
 
 impl<N, H> TaskResultCollector<SyncBlockData> for BlockCollector<N, H>
@@ -613,9 +610,9 @@ where
 
         let mut next_tips = Some(vec![]);
         let mut block_to_broadcast = vec![];
-        process_block_pool.into_iter().try_fold((), |_, item| {
-            block_to_broadcast.push(self.collect_item(item, &mut next_tips))
-        });
+        for item in process_block_pool {
+            block_to_broadcast.push(self.collect_item(item, &mut next_tips)?)
+        }
 
         //verify target
         match self.target {

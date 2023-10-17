@@ -15,6 +15,7 @@ use starcoin_service_registry::ServiceRef;
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
 use starcoin_time_service::TimeService;
+use starcoin_txpool::TxPoolService;
 use starcoin_types::block::{BlockIdAndNumber, BlockInfo};
 use std::cmp::min;
 use std::sync::Arc;
@@ -86,7 +87,7 @@ where
         max_retry_times: u64,
         delay_milliseconds_on_error: u64,
         skip_pow_verify_when_sync: bool,
-        block_chain_service: ServiceRef<BlockConnectorService>,
+        block_chain_service: ServiceRef<BlockConnectorService<TxPoolService>>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<(BlockChain, TaskHandle), TaskError> {
         let buffer_size = self.target.peers.len();
