@@ -100,13 +100,17 @@ impl<P> WriteableChainService for WriteBlockChainService<P>
 where
     P: TxPoolSyncService + 'static,
 {
-    fn try_connect(&mut self, block: Block, tips_headers: Option<Vec<HashValue>>) -> Result<()> {
+    fn try_connect(&mut self, block: Block, parents_hash: Option<Vec<HashValue>>) -> Result<()> {
         let _timer = self
             .metrics
             .as_ref()
             .map(|metrics| metrics.chain_block_connect_time.start_timer());
 
-        let result = self.connect_inner(block, tips_headers);
+        let result = if parents_hash.is_some() {
+            self.connect_dag_inner(block, parents_hash)
+        } else {
+            self.connect_inner(block)
+        };
 
         if let Some(metrics) = self.metrics.as_ref() {
             let result = match result.as_ref() {
@@ -826,7 +830,6 @@ where
     fn connect_inner(
         &mut self,
         block: Block,
-        tips_headers: Option<Vec<HashValue>>,
     ) -> Result<ConnectOk> {
         let block_id = block.id();
         if block_id == *starcoin_storage::BARNARD_HARD_FORK_HASH
@@ -839,55 +842,15 @@ where
             debug!("Repeat connect, current header is {} already.", block_id);
             return Ok(ConnectOk::MainDuplicate);
         }
-
-        // if it received a block with tips, it is a dag block
-        if let Some(dag_block_parents) = tips_headers {
-            // tips header, check the dag time window to see if it is should apply the blocks
-            // checkout if it is time to settle down
-            let time_service = DagBlockTimeWindowService::new(
-                3 * 1000000,
-                self.config.net().time_service().clone(),
-            );
-            let block_id = block.header.id();
-            self.dag_block_pool
-                .lock()
-                .unwrap()
-                .push((block, dag_block_parents.clone()));
-
-            let _testing = self
-                .dag
-                .lock()
-                .unwrap()
-                .push_parent_children(block_id, Arc::new(dag_block_parents.clone()));
-
-            // if self.dag_block_pool.lock().unwrap().len() < 3 {
-            //     // TimeWindowResult::InTimeWindow => {
-            //     return Ok(ConnectOk::DagPending);
-            // } else {
-            // TimeWindowResult::BeforeTimeWindow => {
-            //     return Err(ConnectBlockError::DagBlockBeforeTimeWindow(Box::new(block)).into())
-            // }
-            // TimeWindowResult::AfterTimeWindow => {
-            // dump the block in the time window pool and put the block into the next time window pool
-            // self.main.status().tips_hash = None; // set the tips to None, and in connect_to_main, the block will be added to the tips
-
-            // 2, get the new tips and clear the blocks in the pool
-            let dag_blocks = self.dag_block_pool.lock().unwrap().clone();
-            self.dag_block_pool.lock().unwrap().clear();
-
-            return self.execute_dag_block_in_pool(dag_blocks, dag_block_parents);
-            // }
-        } else {
-            // normal block, just connect to main
-            let mut next_tips = Some(vec![]);
-            let executed_block = self
-                .connect_to_main(block, None, None, &mut next_tips)?
-                .clone();
-            if let Some(block) = executed_block.block() {
-                self.broadcast_new_head(block.clone(), None, None);
-            }
-            return Ok(executed_block);
+        // normal block, just connect to main
+        let mut next_tips = Some(vec![]);
+        let executed_block = self
+            .connect_to_main(block, None, None, &mut next_tips)?
+            .clone();
+        if let Some(block) = executed_block.block() {
+            self.broadcast_new_head(block.clone(), None, None);
         }
+        return Ok(executed_block);
     }
 
     #[cfg(test)]
