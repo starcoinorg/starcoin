@@ -107,7 +107,7 @@ where
             .map(|metrics| metrics.chain_block_connect_time.start_timer());
 
         let result = if parents_hash.is_some() {
-            self.connect_dag_inner(block, parents_hash)
+            self.connect_dag_inner(block, parents_hash.expect("parents_hash should not be None"))
         } else {
             self.connect_inner(block)
         };
