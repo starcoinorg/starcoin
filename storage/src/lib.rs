@@ -767,11 +767,6 @@ impl SyncFlexiDagStore for Storage {
             (None, None)
         };
 
-        info!(
-            "jacktest: (dag_accumulator_info, tips) = ({:?}, {:?})",
-            dag_accumulator_info, tips
-        );
-
         Ok((dag_accumulator_info, tips))
     }
 }
