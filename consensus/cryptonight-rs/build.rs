@@ -26,10 +26,7 @@ fn main() {
         config.flag("-maes").flag("-msse2");
     }
     if target_os.contains("linux") || target_os.contains("macos") {
-        config
-            .flag("-Ofast")
-            .flag("-fexceptions")
-            .flag("-std=gnu99");
+        config.flag("-fexceptions").flag("-std=gnu99");
     }
     config.compile("cryptonight");
 }
