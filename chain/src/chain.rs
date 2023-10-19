@@ -13,6 +13,7 @@ use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
     ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
+use starcoin_config::ChainNetworkID;
 use starcoin_consensus::dag::types::ghostdata::GhostdagData;
 use starcoin_consensus::{BlockDAG, Consensus, FlexiDagStorage};
 use starcoin_crypto::hash::PlainCryptoHash;
@@ -66,6 +67,7 @@ pub struct BlockChain {
     epoch: Epoch,
     vm_metrics: Option<VMMetrics>,
     dag_accumulator: Option<MerkleAccumulator>,
+    net: ChainNetworkID,
 }
 
 impl BlockChain {
@@ -73,12 +75,35 @@ impl BlockChain {
         time_service: Arc<dyn TimeService>,
         head_block_hash: HashValue,
         storage: Arc<dyn Store>,
+        net: ChainNetworkID,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let head = storage
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
-        Self::new_with_uncles(time_service, head, None, storage, vm_metrics)
+        Self::new_with_uncles(time_service, head, None, storage, net, vm_metrics)
+    }
+
+    fn get_dag_data(
+        storage: Arc<dyn Store>,
+        header: &BlockHeader,
+        net: ChainNetworkID,
+    ) -> Result<(Option<MerkleAccumulator>, Option<Vec<HashValue>>)> {
+        let (op_dag_accumulator_info, op_tips) = storage.get_flexidag_init_data(header, net)?;
+        match (op_dag_accumulator_info, op_tips.clone()) {
+            (Some(dag_accumulator_info), Some(_tips)) => {
+                let dag_accumulator = Some(info_2_accumulator(
+                    dag_accumulator_info,
+                    AccumulatorStoreType::SyncDag,
+                    storage.as_ref(),
+                ));
+                Ok((dag_accumulator, op_tips))
+            }
+            (None, None) => Ok((None, None)),
+            _ => {
+                bail!("dag accumulator info and tips should be both None or Some")
+            }
+        }
     }
 
     fn new_with_uncles(
@@ -86,6 +111,7 @@ impl BlockChain {
         head_block: Block,
         uncles: Option<HashMap<HashValue, MintedUncleNumber>>,
         storage: Arc<dyn Store>,
+        net: ChainNetworkID,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let block_info = storage
@@ -102,18 +128,21 @@ impl BlockChain {
             .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
         let head_id = head_block.id();
         watch(CHAIN_WATCH_NAME, "n1253");
-        let dag_accumulator = match storage.get_dag_accumulator_info(head_id)? {
-            Some(accmulator_info) => Some(info_2_accumulator(
-                accmulator_info,
-                AccumulatorStoreType::SyncDag,
-                storage.as_ref(),
-            )),
-            None => None,
-        };
-        let dag_snapshot_tips = storage
-            .get_accumulator_snapshot_storage()
-            .get(head_id)?
-            .map(|snapshot| snapshot.child_hashes);
+
+        // let dag_accumulator = match storage.get_dag_accumulator_info(head_id)? {
+        //     Some(accmulator_info) => Some(info_2_accumulator(
+        //         accmulator_info,
+        //         AccumulatorStoreType::SyncDag,
+        //         storage.as_ref(),
+        //     )),
+        //     None => None,
+        // };
+        // let dag_snapshot_tips = storage
+        //     .get_accumulator_snapshot_storage()
+        //     .get(head_id)?
+        //     .map(|snapshot| snapshot.child_hashes);
+        let (dag_accumulator, dag_snapshot_tips) =
+            Self::get_dag_data(storage.clone(), head_block.header(), net.clone())?;
         let mut chain = Self {
             genesis_hash: genesis,
             time_service,
@@ -137,6 +166,7 @@ impl BlockChain {
             epoch,
             vm_metrics,
             dag_accumulator,
+            net,
         };
         watch(CHAIN_WATCH_NAME, "n1251");
         match uncles {
@@ -152,6 +182,7 @@ impl BlockChain {
         storage: Arc<dyn Store>,
         genesis_epoch: Epoch,
         genesis_block: Block,
+        net: ChainNetworkID,
     ) -> Result<Self> {
         debug_assert!(genesis_block.header().is_genesis());
         let txn_accumulator = MerkleAccumulator::new_empty(
@@ -186,7 +217,7 @@ impl BlockChain {
             new_tips,
             dag_accumulator.get_info(),
         )?;
-        Self::new(time_service, executed_block.block.id(), storage, None)
+        Self::new(time_service, executed_block.block.id(), storage, net, None)
     }
 
     pub fn current_epoch_uncles_size(&self) -> u64 {
@@ -370,7 +401,11 @@ impl BlockChain {
         V::verify_block(self, block)
     }
 
-    pub fn apply_with_verifier<V>(&mut self, block: Block, parents_hash: Option<Vec<HashValue>>) -> Result<ExecutedBlock>
+    pub fn apply_with_verifier<V>(
+        &mut self,
+        block: Block,
+        parents_hash: Option<Vec<HashValue>>,
+    ) -> Result<ExecutedBlock>
     where
         V: BlockVerifier,
     {
@@ -391,13 +426,11 @@ impl BlockChain {
             .storage
             .get_block_info(block.id())?
             .ok_or_else(|| format_err!("Can not find block info by hash {:?}", block.id()))?;
-        self.connect(
-            ExecutedBlock {
-                block,
-                block_info,
-                parents_hash,
-            }
-        )
+        self.connect(ExecutedBlock {
+            block,
+            block_info,
+            parents_hash,
+        })
     }
 
     //TODO consider move this logic to BlockExecutor
@@ -410,8 +443,7 @@ impl BlockChain {
         parent_status: Option<ChainStatus>,
         block: Block,
         vm_metrics: Option<VMMetrics>,
-        parents_hash: Option<Vec<HashValue>>
-
+        parents_hash: Option<Vec<HashValue>>,
     ) -> Result<ExecutedBlock> {
         let header = block.header();
         debug_assert!(header.is_genesis() || parent_status.is_some());
@@ -703,6 +735,10 @@ impl ChainReader for BlockChain {
         }
     }
 
+    fn net_id(&self) -> ChainNetworkID {
+        self.net.clone()
+    }
+
     fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
         self.storage
             .get_block_header_by_hash(hash)
@@ -878,6 +914,7 @@ impl ChainReader for BlockChain {
             head,
             uncles,
             self.storage.clone(),
+            self.net.clone(),
             self.vm_metrics.clone(),
             //TODO: check missing blocks need to be clean
         )
@@ -914,7 +951,11 @@ impl ChainReader for BlockChain {
         FullVerifier::verify_block(self, block)
     }
 
-    fn execute(&self, verified_block: VerifiedBlock, parents_hash: Option<Vec<HashValue>>) -> Result<ExecutedBlock> {
+    fn execute(
+        &self,
+        verified_block: VerifiedBlock,
+        parents_hash: Option<Vec<HashValue>>,
+    ) -> Result<ExecutedBlock> {
         Self::execute_block_and_save(
             self.storage.as_ref(),
             self.statedb.fork(),
@@ -924,7 +965,7 @@ impl ChainReader for BlockChain {
             Some(self.status.status.clone()),
             verified_block.0,
             self.vm_metrics.clone(),
-            parents_hash
+            parents_hash,
         )
     }
 
@@ -1201,7 +1242,11 @@ impl ChainWriter for BlockChain {
         Ok(executed_block)
     }
 
-    fn apply(&mut self, block: Block, parents_hash: Option<Vec<HashValue>>) -> Result<ExecutedBlock> {
+    fn apply(
+        &mut self,
+        block: Block,
+        parents_hash: Option<Vec<HashValue>>,
+    ) -> Result<ExecutedBlock> {
         self.apply_with_verifier::<FullVerifier>(block, parents_hash)
     }
 

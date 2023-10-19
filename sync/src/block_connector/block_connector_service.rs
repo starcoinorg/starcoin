@@ -379,8 +379,7 @@ where
         msg: ExecuteRequest,
         _ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
     ) -> Result<ExecutedBlock> {
-        self.chain_service
-            .execute(msg.block, msg.dag_block_parent)
+        self.chain_service.execute(msg.block, msg.dag_block_parent)
     }
 }
 

@@ -79,7 +79,14 @@ fn test_switch_main() {
 
     let net = node_config.net();
     for i in 0..times {
-        let mut main = BlockChain::new(net.time_service(), head_id, storage.clone(), None).unwrap();
+        let mut main = BlockChain::new(
+            net.time_service(),
+            head_id,
+            storage.clone(),
+            net.id().clone(),
+            None,
+        )
+        .unwrap();
 
         let mut tmp_inner = Inner::new(
             net,
@@ -116,8 +123,14 @@ fn test_switch_main() {
     }
 
     for i in 0..3 {
-        let mut new_main =
-            BlockChain::new(net.time_service(), head_id, storage.clone(), None).unwrap();
+        let mut new_main = BlockChain::new(
+            net.time_service(),
+            head_id,
+            storage.clone(),
+            net.id().clone(),
+            None,
+        )
+        .unwrap();
 
         let block_template = if i == 0 {
             let tmp = Inner::new(
@@ -196,7 +209,14 @@ fn test_do_uncles() {
 
     let net = node_config.net();
     for _i in 0..times {
-        let mut main = BlockChain::new(net.time_service(), head_id, storage.clone(), None).unwrap();
+        let mut main = BlockChain::new(
+            net.time_service(),
+            head_id,
+            storage.clone(),
+            net.id().clone(),
+            None,
+        )
+        .unwrap();
 
         let mut tmp_inner = Inner::new(
             net,
@@ -224,8 +244,14 @@ fn test_do_uncles() {
 
     // branch
     for _i in 0..times {
-        let mut branch =
-            BlockChain::new(net.time_service(), genesis_id, storage.clone(), None).unwrap();
+        let mut branch = BlockChain::new(
+            net.time_service(),
+            genesis_id,
+            storage.clone(),
+            net.id().clone(),
+            None,
+        )
+        .unwrap();
         let inner = Inner::new(
             net,
             storage.clone(),
@@ -254,7 +280,14 @@ fn test_do_uncles() {
 
     // uncles
     for i in 0..times {
-        let mut main = BlockChain::new(net.time_service(), head_id, storage.clone(), None).unwrap();
+        let mut main = BlockChain::new(
+            net.time_service(),
+            head_id,
+            storage.clone(),
+            net.id().clone(),
+            None,
+        )
+        .unwrap();
 
         let block_template = main_inner
             .as_ref()
@@ -367,8 +400,14 @@ fn test_new_branch() {
     let mut new_head_id = genesis_id;
     let net = node_config.net();
     for i in 0..(times * 2) {
-        let mut branch =
-            BlockChain::new(net.time_service(), new_head_id, storage.clone(), None).unwrap();
+        let mut branch = BlockChain::new(
+            net.time_service(),
+            new_head_id,
+            storage.clone(),
+            net.id().clone(),
+            None,
+        )
+        .unwrap();
         let inner = Inner::new(
             net,
             storage.clone(),

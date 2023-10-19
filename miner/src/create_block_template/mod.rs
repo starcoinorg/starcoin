@@ -111,10 +111,7 @@ impl ActorService for BlockBuilderService {
 
 impl EventHandler<Self, NewHeadBlock> for BlockBuilderService {
     fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<BlockBuilderService>) {
-        if let Err(e) = self
-            .inner
-            .update_chain(msg.0.as_ref().clone())
-        {
+        if let Err(e) = self.inner.update_chain(msg.0.as_ref().clone()) {
             error!("err : {:?}", e)
         }
     }
@@ -214,6 +211,7 @@ where
             net.time_service(),
             block_id,
             storage.clone(),
+            net.id().clone(),
             vm_metrics.clone(),
         )?;
 
@@ -243,10 +241,7 @@ where
         }
     }
 
-    pub fn update_chain(
-        &mut self,
-        block: ExecutedBlock,
-    ) -> Result<()> {
+    pub fn update_chain(&mut self, block: ExecutedBlock) -> Result<()> {
         let current_header = self.chain.current_header();
         let current_id = current_header.id();
         if self.chain.can_connect(&block) {
@@ -256,6 +251,7 @@ where
                 self.chain.time_service(),
                 block.header().id(),
                 self.storage.clone(),
+                self.chain.net_id(),
                 self.vm_metrics.clone(),
             )?;
             //current block possible be uncle.
@@ -321,7 +317,7 @@ where
 
         let tips_header = match self.chain.status().tips_hash {
             Some(_) => self.chain.status().tips_hash,
-            None => bail!("currently, the chain must be dag, so the tips hash should not be None"),
+            None => None,
         };
 
         let uncles = self.find_uncles();

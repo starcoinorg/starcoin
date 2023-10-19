@@ -9,6 +9,7 @@ use anyhow::format_err;
 use network_api::PeerProvider;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
+use starcoin_config::ChainNetworkID;
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_service_registry::ServiceRef;
@@ -38,6 +39,7 @@ where
     time_service: Arc<dyn TimeService>,
     peer_provider: N,
     custom_error_handle: Arc<dyn CustomErrorHandle>,
+    net_id: ChainNetworkID,
 }
 
 impl<H, F, N> InnerSyncTask<H, F, N>
@@ -56,6 +58,7 @@ where
         time_service: Arc<dyn TimeService>,
         peer_provider: N,
         custom_error_handle: Arc<dyn CustomErrorHandle>,
+        net_id: ChainNetworkID,
     ) -> Self {
         Self {
             ancestor,
@@ -67,6 +70,7 @@ where
             time_service,
             peer_provider,
             custom_error_handle,
+            net_id,
         }
     }
 
@@ -138,6 +142,7 @@ where
                 self.time_service.clone(),
                 ancestor.id,
                 self.storage.clone(),
+                self.net_id.clone(),
                 vm_metrics,
             )?;
             let block_collector = BlockCollector::new_with_handle(

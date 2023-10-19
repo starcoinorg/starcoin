@@ -9312,6 +9312,7 @@ dependencies = [
  "rand_core 0.6.4",
  "serde 1.0.152",
  "starcoin-accumulator",
+ "starcoin-config",
  "starcoin-crypto",
  "starcoin-network-rpc-api",
  "starcoin-service-registry",

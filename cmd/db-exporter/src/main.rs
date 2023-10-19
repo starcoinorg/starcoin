@@ -634,8 +634,14 @@ pub fn export_block_range(
     ))?);
     let (chain_info, _) =
         Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
-    let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)
-        .expect("create block chain should success.");
+    let chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage,
+        net.id().clone(),
+        None,
+    )
+    .expect("create block chain should success.");
     let cur_num = chain.status().head().number();
     let end = if cur_num > end + BLOCK_GAP {
         end
@@ -716,6 +722,7 @@ pub fn apply_block(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
+        net.id().clone(),
         None,
     )
     .expect("create block chain should success.");
@@ -757,12 +764,8 @@ pub fn apply_block(
         let block_hash = block.header().id();
         let block_number = block.header().number();
         match verifier {
-            Verifier::Basic => {
-                chain.apply_with_verifier::<BasicVerifier>(block, None)?
-            }
-            Verifier::Consensus => {
-                chain.apply_with_verifier::<ConsensusVerifier>(block, None)?
-            }
+            Verifier::Basic => chain.apply_with_verifier::<BasicVerifier>(block, None)?,
+            Verifier::Consensus => chain.apply_with_verifier::<ConsensusVerifier>(block, None)?,
             Verifier::Full => chain.apply_with_verifier::<FullVerifier>(block, None)?,
             Verifier::None => chain.apply_with_verifier::<NoneVerifier>(block, None)?,
         };
@@ -776,7 +779,7 @@ pub fn apply_block(
     let use_time = SystemTime::now().duration_since(start_time)?;
     println!("apply block use time: {:?}", use_time.as_secs());
     let chain_info = storage
-        .get_chain_info()?
+        .get_chain_info(net.id().clone())?
         .ok_or_else(|| format_err!("{}", "get chain_info error"))?;
     println!("chain_info {}", chain_info);
     Ok(())
@@ -798,6 +801,7 @@ pub fn startup_info_back(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
+        net.id().clone(),
         None,
     )
     .expect("create block chain should success.");
@@ -843,6 +847,7 @@ pub fn gen_block_transactions(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
+        net.id().clone(),
         None,
     )
     .expect("create block chain should success.");
@@ -944,7 +949,7 @@ pub fn execute_transaction_with_create_account(
             println!("trans {}", block.transactions().len());
         }
         let block_hash = block.header.id();
-        chain.apply_with_verifier::<BasicVerifier>(block, None, )?;
+        chain.apply_with_verifier::<BasicVerifier>(block, None)?;
 
         let startup_info = StartupInfo::new(block_hash);
         storage.save_startup_info(startup_info)?;
@@ -967,7 +972,7 @@ pub fn execute_transaction_with_miner_create_account(
     let block =
         ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
     let block_hash = block.header.id();
-    chain.apply_with_verifier::<BasicVerifier>(block, None,)?;
+    chain.apply_with_verifier::<BasicVerifier>(block, None)?;
     let startup_info = StartupInfo::new(block_hash);
     storage.save_startup_info(startup_info)?;
     for _i in 0..block_num {
@@ -996,7 +1001,7 @@ pub fn execute_transaction_with_miner_create_account(
         }
         send_sequence += block.transactions().len() as u64;
         let block_hash = block.header.id();
-        chain.apply_with_verifier::<BasicVerifier>(block, None, )?;
+        chain.apply_with_verifier::<BasicVerifier>(block, None)?;
 
         let startup_info = StartupInfo::new(block_hash);
         storage.save_startup_info(startup_info)?;
@@ -1019,7 +1024,7 @@ pub fn execute_empty_transaction_with_miner(
     let block =
         ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
     let block_hash = block.header.id();
-    chain.apply_with_verifier::<BasicVerifier>(block, None, )?;
+    chain.apply_with_verifier::<BasicVerifier>(block, None)?;
     let startup_info = StartupInfo::new(block_hash);
     storage.save_startup_info(startup_info)?;
     for _i in 0..block_num {
@@ -1046,7 +1051,7 @@ pub fn execute_empty_transaction_with_miner(
         }
         send_sequence += block.transactions().len() as u64;
         let block_hash = block.header.id();
-        chain.apply_with_verifier::<BasicVerifier>(block, None, )?;
+        chain.apply_with_verifier::<BasicVerifier>(block, None)?;
 
         let startup_info = StartupInfo::new(block_hash);
         storage.save_startup_info(startup_info)?;
@@ -1299,6 +1304,7 @@ pub fn export_snapshot(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
+        net.id().clone(),
         None,
     )
     .expect("create block chain should success.");
@@ -1317,8 +1323,14 @@ pub fn export_snapshot(
     let cur_block = chain
         .get_block_by_number(cur_num)?
         .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
-    let chain = BlockChain::new(net.time_service(), cur_block.id(), storage.clone(), None)
-        .expect("create block chain should success.");
+    let chain = BlockChain::new(
+        net.time_service(),
+        cur_block.id(),
+        storage.clone(),
+        net.id().clone(),
+        None,
+    )
+    .expect("create block chain should success.");
 
     let cur_num = chain.epoch().start_block_number();
 
@@ -1640,6 +1652,7 @@ pub fn apply_snapshot(
             net.time_service(),
             chain_info.head().id(),
             storage.clone(),
+            net.id().clone(),
             None,
         )
         .expect("create block chain should success."),
@@ -1973,6 +1986,7 @@ pub fn gen_turbo_stm_transactions(to_dir: PathBuf, block_num: Option<u64>) -> an
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
+        net.id().clone(),
         None,
     )
     .expect("create block chain should success.");
@@ -1999,6 +2013,7 @@ pub fn apply_turbo_stm_block(
         net.time_service(),
         chain_info_seq.head().id(),
         storage_seq.clone(),
+        net.id().clone(),
         None,
     )
     .expect("create block chain should success.");
@@ -2057,6 +2072,7 @@ pub fn apply_turbo_stm_block(
         net.time_service(),
         chain_info_stm.head().id(),
         storage_stm.clone(),
+        net.id().clone(),
         None,
     )
     .expect("create block chain should success.");

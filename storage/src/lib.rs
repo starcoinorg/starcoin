@@ -23,6 +23,7 @@ use once_cell::sync::Lazy;
 use starcoin_accumulator::{
     accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, AccumulatorTreeStore,
 };
+use starcoin_config::ChainNetworkID;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
@@ -33,12 +34,20 @@ use starcoin_types::{
     startup_info::{ChainInfo, ChainStatus, SnapshotRange, StartupInfo},
     transaction::{RichTransactionInfo, Transaction},
 };
-use starcoin_vm_types::{state_store::table::{TableInfo, TableHandle}, account_address::AccountAddress};
-use table_info::{TableInfoStore, TableInfoStorage};
+use starcoin_vm_types::{
+    account_address::AccountAddress,
+    dag_block_metadata,
+    state_store::table::{TableHandle, TableInfo},
+};
 use std::{
     collections::BTreeMap,
     fmt::{Debug, Display, Formatter},
     sync::Arc,
+};
+use table_info::{TableInfoStorage, TableInfoStore};
+use upgrade::{
+    BARNARD_FLEXIDAG_FORK_HEIGHT, DEV_FLEXIDAG_FORK_HEIGHT, HALLEY_FLEXIDAG_FORK_HEIGHT,
+    MAIN_FLEXIDAG_FORK_HEIGHT, PROXIMA_FLEXIDAG_FORK_HEIGHT, TEST_FLEXIDAG_FORK_HEIGHT,
 };
 pub use upgrade::{BARNARD_HARD_FORK_HASH, BARNARD_HARD_FORK_HEIGHT};
 
@@ -173,7 +182,7 @@ static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         FAILED_BLOCK_PREFIX_NAME,
         SYNC_FLEXI_DAG_ACCUMULATOR_PREFIX_NAME,
         SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME,
-        // TABLE_INFO_PREFIX_NAME,
+        TABLE_INFO_PREFIX_NAME,
     ]
 });
 
@@ -216,7 +225,7 @@ pub trait BlockStore {
 
     fn save_genesis(&self, genesis_hash: HashValue) -> Result<()>;
 
-    fn get_chain_info(&self) -> Result<Option<ChainInfo>>;
+    fn get_chain_info(&self, id: ChainNetworkID) -> Result<Option<ChainInfo>>;
 
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>>;
 
@@ -323,6 +332,11 @@ pub trait SyncFlexiDagStore {
     ) -> Result<()>;
     fn get_dag_accumulator_info(&self, block_id: HashValue) -> Result<Option<AccumulatorInfo>>;
     fn get_tips_by_block_id(&self, block_id: HashValue) -> Result<Vec<HashValue>>;
+    fn get_flexidag_init_data(
+        &self,
+        head_block: &BlockHeader,
+        id: ChainNetworkID,
+    ) -> Result<(Option<AccumulatorInfo>, Option<Vec<HashValue>>)>;
 }
 
 // TODO: remove Arc<dyn Store>, we can clone Storage directly.
@@ -425,7 +439,7 @@ impl BlockStore for Storage {
         self.chain_info_storage.save_genesis(genesis_hash)
     }
 
-    fn get_chain_info(&self) -> Result<Option<ChainInfo>> {
+    fn get_chain_info(&self, id: ChainNetworkID) -> Result<Option<ChainInfo>> {
         let genesis_hash = match self.get_genesis()? {
             Some(genesis_hash) => genesis_hash,
             None => return Ok(None),
@@ -441,18 +455,14 @@ impl BlockStore for Storage {
             format_err!("Startup block info {:?} should exist", startup_info.main)
         })?;
 
-        let flexi_dag_accumulator_info = self
-            .get_dag_accumulator_info(head_block.id())
-            .unwrap_or(Some(AccumulatorInfo::default()))
-            .unwrap();
-        let tips_header_hash = self
-            .get_tips_by_block_id(head_block.id())
-            .unwrap_or(vec![genesis_hash]);
+        let (flexi_dag_accumulator_info, tips_header_hash) =
+            self.get_flexidag_init_data(&head_block, id)?;
+
         let chain_info = ChainInfo::new(
             head_block.chain_id(),
             genesis_hash,
-            ChainStatus::new(head_block.clone(), head_block_info, Some(tips_header_hash)),
-            Some(flexi_dag_accumulator_info),
+            ChainStatus::new(head_block.clone(), head_block_info, tips_header_hash),
+            flexi_dag_accumulator_info,
         );
         Ok(Some(chain_info))
     }
@@ -719,6 +729,50 @@ impl SyncFlexiDagStore for Storage {
                 bail!("failed to get snapshot by hash: {}", block_id);
             }
         }
+    }
+
+    fn get_flexidag_init_data(
+        &self,
+        head_block: &BlockHeader,
+        id: ChainNetworkID,
+    ) -> Result<(Option<AccumulatorInfo>, Option<Vec<HashValue>>)> {
+        let flexi_dag_number = match id {
+            ChainNetworkID::Builtin(network_id) => match network_id {
+                starcoin_config::BuiltinNetworkID::Test => TEST_FLEXIDAG_FORK_HEIGHT,
+                starcoin_config::BuiltinNetworkID::Dev => DEV_FLEXIDAG_FORK_HEIGHT,
+                starcoin_config::BuiltinNetworkID::Halley => HALLEY_FLEXIDAG_FORK_HEIGHT,
+                starcoin_config::BuiltinNetworkID::Proxima => PROXIMA_FLEXIDAG_FORK_HEIGHT,
+                starcoin_config::BuiltinNetworkID::Barnard => BARNARD_FLEXIDAG_FORK_HEIGHT,
+                starcoin_config::BuiltinNetworkID::Main => MAIN_FLEXIDAG_FORK_HEIGHT,
+            },
+            ChainNetworkID::Custom(_) => DEV_FLEXIDAG_FORK_HEIGHT,
+        };
+
+        let (dag_accumulator_info, tips) = if flexi_dag_number == head_block.number() {
+            (
+                Some(AccumulatorInfo::default()),
+                Some(vec![head_block.id()]),
+            )
+        } else if flexi_dag_number < head_block.number() {
+            let dag_accumulator_info = self
+                .get_dag_accumulator_info(head_block.id())?
+                .expect("the dag accumulator info must exist!");
+            let tips = self.get_tips_by_block_id(head_block.id())?;
+            assert!(
+                tips.len() > 0,
+                "the length of the tips must be greater than 0"
+            );
+            (Some(dag_accumulator_info), Some(tips))
+        } else {
+            (None, None)
+        };
+
+        info!(
+            "jacktest: (dag_accumulator_info, tips) = ({:?}, {:?})",
+            dag_accumulator_info, tips
+        );
+
+        Ok((dag_accumulator_info, tips))
     }
 }
 

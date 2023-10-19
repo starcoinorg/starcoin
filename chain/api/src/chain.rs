@@ -3,6 +3,7 @@
 
 use anyhow::Result;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
+use starcoin_config::ChainNetworkID;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::ChainStateReader;
 use starcoin_statedb::ChainStateDB;
@@ -108,6 +109,7 @@ pub trait ChainReader {
 
     /// get the current tips hash value
     fn current_tips_hash(&self) -> Option<HashValue>;
+    fn net_id(&self) -> ChainNetworkID;
 }
 
 pub trait ChainWriter {
@@ -116,7 +118,11 @@ pub trait ChainWriter {
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock>;
 
     /// Verify, Execute and Connect block to current chain.
-    fn apply(&mut self, block: Block,parents_hash:Option<Vec<HashValue>>) -> Result<ExecutedBlock>;
+    fn apply(
+        &mut self,
+        block: Block,
+        parents_hash: Option<Vec<HashValue>>,
+    ) -> Result<ExecutedBlock>;
 
     fn chain_state(&mut self) -> &ChainStateDB;
 

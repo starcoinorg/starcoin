@@ -75,7 +75,10 @@ impl ConnectOk {
             ConnectOk::ExeConnectMain(block) => Some(block.clone()),
             ConnectOk::ExeConnectBranch(block) => Some(block.clone()),
             ConnectOk::Connect(block) => Some(block.clone()),
-            ConnectOk::DagConnected | ConnectOk::MainDuplicate | ConnectOk::DagPending | ConnectOk::DagConnectMissingBlock => None,
+            ConnectOk::DagConnected
+            | ConnectOk::MainDuplicate
+            | ConnectOk::DagPending
+            | ConnectOk::DagConnectMissingBlock => None,
         }
     }
 }
@@ -107,7 +110,10 @@ where
             .map(|metrics| metrics.chain_block_connect_time.start_timer());
 
         let result = if parents_hash.is_some() {
-            self.connect_dag_inner(block, parents_hash.expect("parents_hash should not be None"))
+            self.connect_dag_inner(
+                block,
+                parents_hash.expect("parents_hash should not be None"),
+            )
         } else {
             self.connect_inner(block)
         };
@@ -150,6 +156,7 @@ where
             net.time_service(),
             startup_info.main,
             storage.clone(),
+            config.net().id().clone(),
             vm_metrics.clone(),
         )?;
         let metrics = config
@@ -188,6 +195,7 @@ where
                     net.time_service(),
                     block_id,
                     self.storage.clone(),
+                    net.id().clone(),
                     self.vm_metrics.clone(),
                 )?)
             }
@@ -197,6 +205,7 @@ where
                 net.time_service(),
                 dag_block_next_parent.unwrap_or(header.parent_hash()),
                 self.storage.clone(),
+                net.id().clone(),
                 self.vm_metrics.clone(),
             )?)
         } else {
@@ -227,9 +236,13 @@ where
     pub fn time_sleep(&self, sec: u64) {
         self.config.net().time_service().sleep(sec * 1000000);
     }
-    
+
     #[cfg(test)]
-    pub fn apply_failed(&mut self, block: Block, parents_hash: Option<Vec<HashValue>>) -> Result<()> {
+    pub fn apply_failed(
+        &mut self,
+        block: Block,
+        parents_hash: Option<Vec<HashValue>>,
+    ) -> Result<()> {
         use anyhow::bail;
         use starcoin_chain::verifier::FullVerifier;
 
@@ -256,6 +269,7 @@ where
             self.config.net().time_service(),
             new_head_block,
             self.storage.clone(),
+            self.config.net().id().clone(),
             self.vm_metrics.clone(),
         )?;
 
@@ -284,9 +298,7 @@ where
         let executed_block = new_branch.head_block();
         let main_total_difficulty = self.main.get_total_difficulty()?;
         let branch_total_difficulty = new_branch.get_total_difficulty()?;
-        let parent_is_main_head = self.is_main_head(
-            &executed_block.header().parent_hash(),
-        );
+        let parent_is_main_head = self.is_main_head(&executed_block.header().parent_hash());
 
         if branch_total_difficulty > main_total_difficulty {
             let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
@@ -384,6 +396,7 @@ where
             self.config.net().time_service(),
             block_id,
             self.storage.clone(),
+            self.config.net().id().clone(),
             self.vm_metrics.clone(),
         )?;
 
@@ -432,16 +445,14 @@ where
             self.config.net().time_service(),
             block.header().parent_hash(),
             self.storage.clone(),
+            self.config.net().id().clone(),
             self.vm_metrics.clone(),
         )?;
         let verify_block = chain.verify(block)?;
         chain.execute(verify_block, dag_block_parent)
     }
 
-    fn is_main_head(
-        &self,
-        parent_id: &HashValue,
-    ) -> bool {
+    fn is_main_head(&self, parent_id: &HashValue) -> bool {
         if parent_id == &self.startup_info.main {
             return true;
         }
@@ -699,13 +710,11 @@ where
             (Some(block_info), None) => {
                 // both are identical
                 let block_id: HashValue = block_info.block_id().clone();
-                let executed_block = self.main.connect(
-                    ExecutedBlock {
-                        block: block.clone(),
-                        block_info,
-                        parents_hash: dag_block_parents,
-                    },
-                )?;
+                let executed_block = self.main.connect(ExecutedBlock {
+                    block: block.clone(),
+                    block_info,
+                    parents_hash: dag_block_parents,
+                })?;
                 info!(
                     "Block {} main has been processed, trigger head selection",
                     block_id,
@@ -827,10 +836,7 @@ where
         Ok(ConnectOk::DagConnected)
     }
 
-    fn connect_inner(
-        &mut self,
-        block: Block,
-    ) -> Result<ConnectOk> {
+    fn connect_inner(&mut self, block: Block) -> Result<ConnectOk> {
         let block_id = block.id();
         if block_id == *starcoin_storage::BARNARD_HARD_FORK_HASH
             && block.header().number() == starcoin_storage::BARNARD_HARD_FORK_HEIGHT
