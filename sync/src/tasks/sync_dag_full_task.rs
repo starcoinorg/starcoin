@@ -8,6 +8,7 @@ use starcoin_accumulator::{
 };
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
+use starcoin_config::ChainNetworkID;
 use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
@@ -181,6 +182,7 @@ async fn sync_dag_block<H, N>(
     skip_pow_verify_when_sync: bool,
     dag: Arc<Mutex<BlockDAG>>,
     block_chain_service: ServiceRef<BlockConnectorService<TxPoolService>>,
+    net_id: ChainNetworkID,
     vm_metrics: Option<VMMetrics>,
 ) -> anyhow::Result<BlockChain>
 where
@@ -198,6 +200,7 @@ where
         time_service.clone(),
         start_block_id?,
         local_store.clone(),
+        net_id,
         vm_metrics,
     )
     .map_err(|err| TaskError::BreakError(anyhow!(err)));
@@ -284,6 +287,7 @@ pub fn sync_dag_full_task(
     skip_pow_verify_when_sync: bool,
     dag: Arc<Mutex<BlockDAG>>,
     block_chain_service: ServiceRef<BlockConnectorService<TxPoolService>>,
+    net_id: ChainNetworkID,
 ) -> anyhow::Result<(
     BoxFuture<'static, anyhow::Result<BlockChain, TaskError>>,
     TaskHandle,
@@ -325,6 +329,7 @@ pub fn sync_dag_full_task(
             skip_pow_verify_when_sync,
             dag.clone(),
             block_chain_service.clone(),
+            net_id,
             vm_metrics,
         )
         .await

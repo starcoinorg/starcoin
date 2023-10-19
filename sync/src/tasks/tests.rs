@@ -189,6 +189,7 @@ pub async fn test_failed_block() -> Result<()> {
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
+        net.id().clone(),
         None,
     )?;
     let (sender, _) = unbounded();
@@ -1081,6 +1082,7 @@ fn sync_block_in_async_connection(
         15,
         None,
         None,
+        None,
     )?;
     let branch = async_std::task::block_on(sync_task)?;
     assert_eq!(branch.current_header().id(), target.target_id.id());
@@ -1153,6 +1155,7 @@ fn sync_block_in_block_connection_service_mock(
             local_ancestor_sender,
             DummyNetworkService::default(),
             15,
+            None,
             None,
             None,
         )?;

@@ -261,11 +261,12 @@ impl Genesis {
             storage.clone(),
             net.genesis_epoch(),
             self.block.clone(),
+            net.id().clone(),
         )?;
         let startup_info = StartupInfo::new(genesis_chain.current_header().id());
         storage.save_startup_info(startup_info)?;
         storage
-            .get_chain_info()?
+            .get_chain_info(net.id().clone())?
             .ok_or_else(|| format_err!("ChainInfo should exist after genesis block executed."))
     }
 
@@ -318,7 +319,7 @@ impl Genesis {
         data_dir: &Path,
     ) -> Result<(ChainInfo, Genesis)> {
         debug!("load startup_info.");
-        let (chain_info, genesis) = match storage.get_chain_info() {
+        let (chain_info, genesis) = match storage.get_chain_info(net.id().clone()) {
             Ok(Some(chain_info)) => {
                 debug!("Get chain info {:?} from db", chain_info);
                 info!("Check genesis file.");

@@ -291,7 +291,7 @@ where
         block_info: BlockInfo,
         action: BlockConnectAction,
         state: CollectorState,
-        dag_parents: Option<Vec<HashValue>>
+        dag_parents: Option<Vec<HashValue>>,
     ) -> Result<CollectorState> {
         let total_difficulty = block_info.get_total_difficulty();
 
@@ -422,7 +422,10 @@ where
         }
     }
 
-    fn broadcast_dag_chain_block(&mut self, broadcast_blocks: Vec<(Block, BlockInfo, Option<Vec<HashValue>>, BlockConnectAction)>) -> Result<CollectorState> {
+    fn broadcast_dag_chain_block(
+        &mut self,
+        broadcast_blocks: Vec<(Block, BlockInfo, Option<Vec<HashValue>>, BlockConnectAction)>,
+    ) -> Result<CollectorState> {
         let state = if self.last_accumulator_root == self.target_accumulator_root {
             CollectorState::Enough
         } else {
@@ -430,18 +433,37 @@ where
         };
 
         let last_index = broadcast_blocks.len() - 1;
-        broadcast_blocks.into_iter().enumerate().for_each(|(index, (block, block_info, dag_parents, action))| {
-            if last_index == index && state == CollectorState::Enough {
-                let _ = self.notify_connected_block(block, block_info, action, CollectorState::Enough, dag_parents);
-            } else {
-                let _ = self.notify_connected_block(block, block_info, action, CollectorState::Need, dag_parents);
-            }
-        });
+        broadcast_blocks.into_iter().enumerate().for_each(
+            |(index, (block, block_info, dag_parents, action))| {
+                if last_index == index && state == CollectorState::Enough {
+                    let _ = self.notify_connected_block(
+                        block,
+                        block_info,
+                        action,
+                        CollectorState::Enough,
+                        dag_parents,
+                    );
+                } else {
+                    let _ = self.notify_connected_block(
+                        block,
+                        block_info,
+                        action,
+                        CollectorState::Need,
+                        dag_parents,
+                    );
+                }
+            },
+        );
 
         return Ok(state);
     }
 
-    fn broadcast_single_chain_block(&mut self, block: Block, block_info: BlockInfo, action: BlockConnectAction) -> Result<CollectorState> {
+    fn broadcast_single_chain_block(
+        &mut self,
+        block: Block,
+        block_info: BlockInfo,
+        action: BlockConnectAction,
+    ) -> Result<CollectorState> {
         let target = self
             .target
             .as_ref()
@@ -471,7 +493,7 @@ where
 
         self.notify_connected_block(block, block_info, action, state?, None)
     }
-    
+
     fn collect_item(
         &mut self,
         item: SyncBlockData,
@@ -490,7 +512,10 @@ where
                 // if let ColoringOutput::Red = color {
                 //     panic!("the red block should not be applied or connected!");
                 // }
-                let _ = dag.lock().unwrap().push_parent_children(block_id, Arc::new(parents));
+                let _ = dag
+                    .lock()
+                    .unwrap()
+                    .push_parent_children(block_id, Arc::new(parents));
             } else {
                 panic!("in dag sync, the dag should not be None")
             }
@@ -500,21 +525,29 @@ where
             Some(block_info) => {
                 //If block_info exists, it means that this block was already executed and try connect in the previous sync, but the sync task was interrupted.
                 //So, we just need to update chain and continue
-                self.chain.connect(
-                    ExecutedBlock {
-                        block: block.clone(),
-                        block_info: block_info.clone(),
-                        parents_hash: parents_hash.clone(),
-                    },
-                )?;
+                self.chain.connect(ExecutedBlock {
+                    block: block.clone(),
+                    block_info: block_info.clone(),
+                    parents_hash: parents_hash.clone(),
+                })?;
                 let block_info = self.chain.status().info;
-                Ok((block, block_info, parents_hash, BlockConnectAction::ConnectExecutedBlock))
+                Ok((
+                    block,
+                    block_info,
+                    parents_hash,
+                    BlockConnectAction::ConnectExecutedBlock,
+                ))
             }
             None => {
                 self.apply_block(block.clone(), peer_id, parents_hash.clone(), next_tips)?;
                 self.chain.time_service().adjust(timestamp);
                 let block_info = self.chain.status().info;
-                Ok((block, block_info, parents_hash, BlockConnectAction::ConnectNewBlock))
+                Ok((
+                    block,
+                    block_info,
+                    parents_hash,
+                    BlockConnectAction::ConnectNewBlock,
+                ))
             }
         };
     }
@@ -617,8 +650,12 @@ where
         //verify target
         match self.target {
             Some(_) => {
-                assert_eq!(block_to_broadcast.len(), 1, "in single chain , block_info should exist!");
-                let (block, block_info, _, action) = block_to_broadcast.pop().unwrap(); 
+                assert_eq!(
+                    block_to_broadcast.len(),
+                    1,
+                    "in single chain , block_info should exist!"
+                );
+                let (block, block_info, _, action) = block_to_broadcast.pop().unwrap();
                 // self.check_if_sync_complete(block_info)
                 self.broadcast_single_chain_block(block, block_info, action)
             }

@@ -57,7 +57,8 @@ pub fn gen_dag_blocks(
         | super::write_block_chain::ConnectOk::Connect(block) => Some(block.header().id()),
         super::write_block_chain::ConnectOk::DagConnected
         | super::write_block_chain::ConnectOk::MainDuplicate
-        | super::write_block_chain::ConnectOk::DagPending => {
+        | super::write_block_chain::ConnectOk::DagPending
+        | super::write_block_chain::ConnectOk::DagConnectMissingBlock => {
             unreachable!("should not reach here, result: {:?}", result);
         }
     }
@@ -122,6 +123,7 @@ fn gen_fork_dag_block_chain(
                 net.time_service(),
                 parent_id,
                 writeable_block_chain_service.get_main().get_storage(),
+                net.id().clone(),
                 None,
             )
             .unwrap();

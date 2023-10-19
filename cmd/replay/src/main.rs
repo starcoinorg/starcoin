@@ -80,8 +80,14 @@ fn main() -> anyhow::Result<()> {
     );
     let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())
         .expect("init storage by genesis fail.");
-    let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)
-        .expect("create block chain should success.");
+    let chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage,
+        net.id().clone(),
+        None,
+    )
+    .expect("create block chain should success.");
 
     let storage2 = Arc::new(
         Storage::new(StorageInstance::new_cache_and_db_instance(
@@ -97,6 +103,7 @@ fn main() -> anyhow::Result<()> {
         net.time_service(),
         chain_info2.status().head().id(),
         storage2.clone(),
+        net.id().clone(),
         None,
     )
     .expect("create block chain should success.");

@@ -13,7 +13,13 @@ pub fn gen_blockchain_for_test(net: &ChainNetwork) -> Result<BlockChain> {
     let (storage, chain_info, _) =
         Genesis::init_storage_for_test(net).expect("init storage by genesis fail.");
 
-    let block_chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)?;
+    let block_chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage,
+        net.id().clone(),
+        None,
+    )?;
     Ok(block_chain)
 }
 
@@ -27,7 +33,7 @@ pub fn gen_blockchain_with_blocks_for_test(count: u64, net: &ChainNetwork) -> Re
         let block = block_chain
             .consensus()
             .create_block(block_template, net.time_service().as_ref())?;
-        block_chain.apply(block, None,)?;
+        block_chain.apply(block, None)?;
     }
 
     Ok(block_chain)

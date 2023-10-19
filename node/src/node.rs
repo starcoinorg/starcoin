@@ -138,7 +138,9 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                     .start_service_sync(GenerateBlockEventPacemaker::service_name()),
             ),
             NodeRequest::ResetNode(block_hash) => {
-                let connect_service = ctx.service_ref::<BlockConnectorService<TxPoolService>>()?.clone();
+                let connect_service = ctx
+                    .service_ref::<BlockConnectorService<TxPoolService>>()?
+                    .clone();
                 let dag = ctx
                     .get_shared::<Arc<BlockDAG>>()
                     .expect("ghost dag object does not exits");
@@ -371,12 +373,9 @@ impl NodeService {
         let flex_dag_db = FlexiDagStorage::create_from_path("./smolstc", flex_dag_config)
             .expect("Failed to create flexidag storage");
 
-        let mut dag = BlockDAG::new(
-                genesis.block().id(),
-                8,
-            flex_dag_db,
-        );
-        dag.init_with_genesis(DagHeader::new_genesis(genesis.block().header().clone())).expect("dag init with genesis");
+        let mut dag = BlockDAG::new(genesis.block().id(), 8, flex_dag_db);
+        dag.init_with_genesis(DagHeader::new_genesis(genesis.block().header().clone()))
+            .expect("dag init with genesis");
         registry.put_shared(Arc::new(Mutex::new(dag))).await?;
 
         info!(

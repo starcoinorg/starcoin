@@ -92,10 +92,7 @@ impl EventHandler<Self, NewHeadBlock> for ChainReaderService {
     fn handle_event(&mut self, event: NewHeadBlock, _ctx: &mut ServiceContext<ChainReaderService>) {
         let new_head = event.0.block().header();
         if let Err(e) = if self.inner.get_main().can_connect(event.0.as_ref()) {
-            match self
-                .inner
-                .update_chain_head(event.0.as_ref().clone())
-            {
+            match self.inner.update_chain_head(event.0.as_ref().clone()) {
                 Ok(_) => self.inner.update_dag_accumulator(new_head.id()),
                 Err(e) => Err(e),
             }
@@ -302,6 +299,7 @@ impl ChainReaderServiceInner {
             net.time_service(),
             startup_info.main,
             storage.clone(),
+            config.net().id().clone(),
             vm_metrics.clone(),
         )?;
         Ok(Self {
@@ -318,10 +316,7 @@ impl ChainReaderServiceInner {
         &self.main
     }
 
-    pub fn update_chain_head(
-        &mut self,
-        block: ExecutedBlock,
-    ) -> Result<()> {
+    pub fn update_chain_head(&mut self, block: ExecutedBlock) -> Result<()> {
         self.main.connect(block)?;
         Ok(())
     }
@@ -332,6 +327,7 @@ impl ChainReaderServiceInner {
             net.time_service(),
             new_head_id,
             self.storage.clone(),
+            self.config.net().id().clone(),
             self.vm_metrics.clone(),
         )?;
         Ok(())

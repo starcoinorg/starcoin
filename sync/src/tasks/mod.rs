@@ -15,6 +15,7 @@ use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::MerkleAccumulator;
 use starcoin_chain::{BlockChain, ChainReader};
+use starcoin_config::ChainNetworkID;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
@@ -627,6 +628,7 @@ pub fn full_sync_task<H, A, F, N>(
     peer_provider: N,
     max_retry_times: u64,
     block_chain_service: ServiceRef<BlockConnectorService<TxPoolService>>,
+    net_id: ChainNetworkID,
     sync_metrics: Option<SyncMetrics>,
     vm_metrics: Option<VMMetrics>,
 ) -> Result<(
@@ -734,6 +736,7 @@ where
                 time_service.clone(),
                 peer_provider.clone(),
                 ext_error_handle.clone(),
+                net_id.clone(),
             );
             let start_now = Instant::now();
             let (block_chain, _) = inner
