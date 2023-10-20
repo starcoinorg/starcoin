@@ -48,6 +48,10 @@ impl<'a, S: StateView> StateViewCache<'a, S> {
         }
     }
 
+    pub fn new_with_head(_data_view: &'a S, _head_block: u64) -> Self {
+        todo!()
+    }
+
     // Publishes a `WriteSet` computed at the end of a transaction.
     // The effect is to build a layer in front of the `StateView` which keeps
     // track of the data as if the changes were applied immediately.

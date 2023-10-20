@@ -17,6 +17,7 @@ pub use chain_state::{
 };
 use serde::de::DeserializeOwned;
 pub use starcoin_state_tree::StateNodeStore;
+use starcoin_types::block::BlockNumber;
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_vm_types::access_path::DataPath;
 use starcoin_vm_types::account_config::TABLE_HANDLE_ADDRESS_LIST;
@@ -94,6 +95,8 @@ pub trait ChainStateAsyncService: Clone + std::marker::Unpin + Send + Sync {
     ) -> Result<StateWithTableItemProof>;
 
     async fn get_table_info(self, address: AccountAddress) -> Result<Option<TableInfo>>;
+
+    async fn get_block_number(self) -> Result<Option<BlockNumber>>;
 }
 
 #[async_trait::async_trait]
@@ -223,6 +226,15 @@ where
         let response = self.send(StateRequest::GetTableInfo(address)).await??;
         if let StateResponse::TableInfo(state) = response {
             Ok(state)
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
+
+    async fn get_block_number(self) -> Result<Option<BlockNumber>> {
+        let response = self.send(StateRequest::GetBlockNumber).await??;
+        if let StateResponse::BlockNumber(n) = response {
+            Ok(n)
         } else {
             panic!("Unexpect response type.")
         }

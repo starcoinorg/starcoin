@@ -45,6 +45,7 @@ use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::Epoch;
+use starcoin_vm_types::state_view::StateView;
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
@@ -119,9 +120,14 @@ impl BlockChain {
             .ok_or_else(|| format_err!("Can not find block info by hash {:?}", head_block.id()))?;
         debug!("Init chain with block_info: {:?}", block_info);
         let state_root = head_block.header().state_root();
+        let block_number = head_block.header().number();
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
-        let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root));
+        let chain_state = ChainStateDB::new_with_root(
+            storage.clone().into_super_arc(),
+            Some(state_root),
+            Some(block_number),
+        );
         let epoch = get_epoch_from_statedb(&chain_state)?;
         let genesis = storage
             .get_genesis()?
@@ -191,11 +197,11 @@ impl BlockChain {
         let block_accumulator = MerkleAccumulator::new_empty(
             storage.get_accumulator_store(AccumulatorStoreType::Block),
         );
-        let statedb = ChainStateDB::new(storage.clone().into_super_arc(), None);
+        let statedb = ChainStateDB::new_with_root(storage.clone().into_super_arc(), None, None);
         let genesis_id = genesis_block.header.id();
         let executed_block = Self::execute_block_and_save(
             storage.as_ref(),
-            statedb,
+            &statedb,
             txn_accumulator,
             block_accumulator,
             &genesis_epoch,
@@ -204,6 +210,7 @@ impl BlockChain {
             None,
             None,
         )?;
+        statedb.update_block_number(0);
 
         let new_tips = vec![genesis_id];
         let dag_accumulator = MerkleAccumulator::new_empty(
@@ -436,7 +443,7 @@ impl BlockChain {
     //TODO consider move this logic to BlockExecutor
     fn execute_block_and_save(
         storage: &dyn Store,
-        statedb: ChainStateDB,
+        statedb: &ChainStateDB,
         txn_accumulator: MerkleAccumulator,
         block_accumulator: MerkleAccumulator,
         epoch: &Epoch,
@@ -446,9 +453,12 @@ impl BlockChain {
         parents_hash: Option<Vec<HashValue>>,
     ) -> Result<ExecutedBlock> {
         let header = block.header();
+        // Todo: add debug_assert for height_of_statedb
+        let height_of_state = statedb.get_block_number();
         debug_assert!(header.is_genesis() || parent_status.is_some());
         debug_assert!(!header.is_genesis() || parent_status.is_none());
         let block_id = header.id();
+        let block_num = header.number();
         let transactions = {
             // genesis block do not generate BlockMetadata transaction.
             let mut t = match &parent_status {
@@ -470,11 +480,13 @@ impl BlockChain {
 
         watch(CHAIN_WATCH_NAME, "n21");
         let executed_data = starcoin_executor::block_execute(
-            &statedb,
+            statedb,
             transactions.clone(),
             epoch.block_gas_limit(),
             vm_metrics,
         )?;
+        info!("executing block {block_num} at {height_of_state:?}");
+        statedb.update_block_number(block_num);
         watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;
         let vec_transaction_info = &executed_data.txn_infos;
@@ -958,7 +970,7 @@ impl ChainReader for BlockChain {
     ) -> Result<ExecutedBlock> {
         Self::execute_block_and_save(
             self.storage.as_ref(),
-            self.statedb.fork(),
+            &self.statedb.fork(),
             self.txn_accumulator.fork(None),
             self.block_accumulator.fork(None),
             &self.epoch,
@@ -1204,6 +1216,7 @@ impl ChainWriter for BlockChain {
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let state_root = block.header().state_root();
+        let block_number = block.header().number();
         self.txn_accumulator = info_2_accumulator(
             txn_accumulator_info.clone(),
             AccumulatorStoreType::Transaction,
@@ -1215,7 +1228,11 @@ impl ChainWriter for BlockChain {
             self.storage.as_ref(),
         );
 
-        self.statedb = ChainStateDB::new(self.storage.clone().into_super_arc(), Some(state_root));
+        self.statedb = ChainStateDB::new_with_root(
+            self.storage.clone().into_super_arc(),
+            Some(state_root),
+            Some(block_number),
+        );
         let tips = self.status.status.tips_hash.clone();
         let next_tips = match tips {
             Some(mut tips) => {

@@ -16,6 +16,7 @@ use starcoin_state_api::{
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{BlockStore, Storage};
+use starcoin_types::block::BlockNumber;
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::{
@@ -34,10 +35,11 @@ impl ChainStateService {
     pub fn new(
         store: Arc<dyn StateNodeStore>,
         root_hash: Option<HashValue>,
+        block_number: Option<BlockNumber>,
         time_service: Arc<dyn TimeService>,
     ) -> Self {
         Self {
-            service: Inner::new(store, root_hash, time_service),
+            service: Inner::new(store, root_hash, block_number, time_service),
         }
     }
 }
@@ -55,6 +57,7 @@ impl ServiceFactory<Self> for ChainStateService {
         Ok(Self::new(
             storage,
             Some(head_block.header().state_root()),
+            Some(head_block.header().number()),
             config.net().time_service(),
         ))
     }
@@ -124,6 +127,9 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
             StateRequest::GetTableInfo(address) => {
                 StateResponse::TableInfo(self.service.get_table_info(address)?)
             }
+            StateRequest::GetBlockNumber => {
+                StateResponse::BlockNumber(self.service.get_block_number())
+            }
         };
         Ok(response)
     }
@@ -149,10 +155,11 @@ impl Inner {
     pub fn new(
         store: Arc<dyn StateNodeStore>,
         root_hash: Option<HashValue>,
+        block_number: Option<BlockNumber>,
         time_service: Arc<dyn TimeService>,
     ) -> Self {
         Self {
-            state_db: ChainStateDB::new(store, root_hash),
+            state_db: ChainStateDB::new_with_root(store, root_hash, block_number),
             time_service,
         }
     }
@@ -260,6 +267,10 @@ impl StateView for Inner {
 
     fn is_genesis(&self) -> bool {
         false
+    }
+
+    fn get_block_number(&self) -> Option<u64> {
+        self.state_db.get_block_number()
     }
 }
 

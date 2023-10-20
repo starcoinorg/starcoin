@@ -19,6 +19,7 @@ use starcoin_rpc_api::state::StateApiClient;
 use starcoin_state_tree::StateNode;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_state::AccountState;
+use starcoin_types::block::BlockNumber;
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
@@ -166,5 +167,9 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
     async fn get_table_info(self, address: AccountAddress) -> Result<Option<TableInfo>> {
         let reader = self.state_db().fork();
         reader.get_table_info(address)
+    }
+
+    async fn get_block_number(self) -> Result<Option<BlockNumber>> {
+        Ok(self.state_db().get_block_number())
     }
 }

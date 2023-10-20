@@ -94,6 +94,7 @@ pub struct StarcoinVM {
 /// marking of stdlib version which includes vmconfig upgrades.
 const VMCONFIG_UPGRADE_VERSION_MARK: u64 = 10;
 const GAS_SCHEDULE_UPGRADE_VERSION_MARK: u64 = 12;
+const FLEXIDAG_UPGRADE_VERSION_MARK: u64 = 13;
 
 impl StarcoinVM {
     #[cfg(feature = "metrics")]
@@ -264,11 +265,24 @@ impl StarcoinVM {
                     "gas schedule from VMConfig",
                 )
             } else {
-                debug!(
-                    "stdlib version: {}, fetch schedule from onchain  module GasSchedule",
-                    stdlib_version
-                );
-                let gas_schedule = GasSchedule::fetch_config(&remote_storage)?;
+                let mut gas_schedule = None;
+                if stdlib_version >= StdlibVersion::Version(GAS_SCHEDULE_UPGRADE_VERSION_MARK) {
+                    debug!(
+                        "stdlib version: {}, fetch schedule from onchain  module GasSchedule",
+                        stdlib_version
+                    );
+                    gas_schedule = GasSchedule::fetch_config(&remote_storage)?;
+                }
+
+                let height_of_state = state.get_block_number().unwrap_or(u64::MAX);
+                const FLEXI_DAG_FORK_HEIGHT: u64 = 10240;
+
+                if height_of_state >= FLEXI_DAG_FORK_HEIGHT
+                    && stdlib_version >= StdlibVersion::Version(FLEXIDAG_UPGRADE_VERSION_MARK)
+                {
+                    todo!()
+                }
+
                 (gas_schedule, "gas schedule from GasSchedule")
             };
             #[cfg(feature = "print_gas_info")]

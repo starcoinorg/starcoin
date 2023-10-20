@@ -114,10 +114,12 @@ impl Genesis {
             let txn = Self::build_genesis_transaction(net)?;
 
             let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
-            let chain_state_db = ChainStateDB::new(storage.clone(), None);
+            let chain_state_db = ChainStateDB::new_with_root(storage.clone(), None, None);
 
             let (table_infos, transaction_info) =
                 Self::execute_genesis_txn(&chain_state_db, txn.clone())?;
+
+            chain_state_db.update_block_number(0);
 
             let accumulator = MerkleAccumulator::new_with_info(
                 AccumulatorInfo::default(),

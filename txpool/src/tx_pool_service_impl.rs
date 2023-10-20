@@ -246,9 +246,10 @@ impl Inner {
     }
 
     pub(crate) fn get_chain_reader(&self) -> ChainStateDB {
-        ChainStateDB::new(
+        ChainStateDB::new_with_root(
             self.storage.clone().into_super_arc(),
             Some(self.get_chain_header().state_root()),
+            Some(self.get_chain_header().number()),
         )
     }
     pub(crate) fn get_chain_header(&self) -> BlockHeader {

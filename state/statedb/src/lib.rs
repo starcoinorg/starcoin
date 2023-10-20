@@ -16,6 +16,7 @@ use starcoin_state_api::{StateWithTableItemProof, TABLE_PATH_LIST};
 use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_state_tree::{StateNodeStore, StateTree};
+use starcoin_types::block::BlockNumber;
 use starcoin_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 use starcoin_types::{
     access_path::{AccessPath, DataType},
@@ -213,6 +214,7 @@ impl AccountStateObject {
 
 #[allow(clippy::upper_case_acronyms)]
 pub struct ChainStateDB {
+    block_number: Mutex<Option<BlockNumber>>,
     store: Arc<dyn StateNodeStore>,
     ///global state tree.
     state_tree: StateTree<AccountAddress>,
@@ -231,11 +233,20 @@ static G_DEFAULT_CACHE_SIZE: usize = 10240;
 
 impl ChainStateDB {
     pub fn mock() -> Self {
-        Self::new(Arc::new(MockStateNodeStore::new()), None)
+        Self::new_with_root(Arc::new(MockStateNodeStore::new()), None, None)
     }
 
     pub fn new(store: Arc<dyn StateNodeStore>, root_hash: Option<HashValue>) -> Self {
+        Self::new_with_root(store, root_hash, None)
+    }
+
+    pub fn new_with_root(
+        store: Arc<dyn StateNodeStore>,
+        root_hash: Option<HashValue>,
+        block_number: Option<BlockNumber>,
+    ) -> Self {
         let mut chain_statedb = ChainStateDB {
+            block_number: Mutex::new(block_number),
             store: store.clone(),
             state_tree: StateTree::new(store.clone(), root_hash),
             cache: Mutex::new(LruCache::new(G_DEFAULT_CACHE_SIZE)),
@@ -272,12 +283,16 @@ impl ChainStateDB {
 
     /// Fork a new statedb base current statedb
     pub fn fork(&self) -> Self {
-        Self::new(self.store.clone(), Some(self.state_root()))
+        Self::new_with_root(
+            self.store.clone(),
+            Some(self.state_root()),
+            *self.block_number.lock(),
+        )
     }
 
     /// Fork a new statedb at `root_hash`
     pub fn fork_at(&self, state_root: HashValue) -> Self {
-        Self::new(self.store.clone(), Some(state_root))
+        Self::new_with_root(self.store.clone(), Some(state_root), None)
     }
 
     fn new_state_tree<K: RawKey>(&self, root_hash: HashValue) -> StateTree<K> {
@@ -428,6 +443,10 @@ impl StateView for ChainStateDB {
 
     fn is_genesis(&self) -> bool {
         self.state_tree.is_genesis()
+    }
+
+    fn get_block_number(&self) -> Option<u64> {
+        *self.block_number.lock()
     }
 }
 
@@ -730,6 +749,10 @@ impl ChainStateWriter for ChainStateDB {
 
         // self tree flush
         self.state_tree.flush()
+    }
+
+    fn update_block_number(&self, block_number: BlockNumber) {
+        *self.block_number.lock() = Some(block_number);
     }
 }
 
