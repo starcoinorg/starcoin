@@ -95,6 +95,190 @@ fn verify_header_test_barnard_block3_ubuntu22() {
         .unwrap()
 }
 
+#[stest::test]
+fn verify_header_test_barnard_block8_ubuntu22() {
+    let header = BlockHeader::new(
+        HashValue::from_hex_literal(
+            "0xc77be02f17ae90bdbca131ef535b0eab27c2824d76968bb88a0d04a60fba9698",
+        )
+            .unwrap(),
+        161684704549,
+        8,
+        AccountAddress::from_hex_literal("0x94e957321e7bb2d3eb08ff6be81a6fcd").unwrap(),
+        HashValue::from_hex_literal(
+            "0xf7e83302d19fef31fa15d50be2dc0d311c376f44d8dbcebf6689f9c09790d33a",
+        )
+            .unwrap(),
+        HashValue::from_hex_literal(
+            "0x5f2696529b7c9c1777ec13d3c5c16425c5b60eb7de3fa85543db4127c86a4e8f",
+        )
+            .unwrap(),
+        HashValue::from_hex_literal(
+            "0x8c509c07e266d643f6a6422892ace3a414ee25cf5abd3ff056ff0138a6ab818e",
+        )
+            .unwrap(),
+        0,
+        0x06f6.into(),
+        HashValue::from_hex_literal(
+            "0xc01e0329de6d899348a8ef4bd51db56175b3fa0988e57c3dcec8eaf13a164d97",
+        )
+            .unwrap(),
+        ChainId::new(251),
+        62493013,
+        BlockHeaderExtra::new([0u8; 4]),
+    );
+    G_CRYPTONIGHT
+        .verify_header_difficulty(header.difficulty(), &header)
+        .unwrap()
+}
+
+#[stest::test]
+fn verify_header_test_main_block2_ubuntu22() {
+    let header = BlockHeader::new(
+        HashValue::from_hex_literal(
+            "0xc2ce2515f48a2ffef2e69b0288bb2aa78c8bfa9a55312eb948758702cd55f805",
+        )
+            .unwrap(),
+        1621311561476,
+        2,
+        AccountAddress::from_hex_literal("0x000dc78e982dcdc5c80246f76d2140aa").unwrap(),
+        HashValue::from_hex_literal(
+            "0x40e0bb9454a40a6a2dd0579a60557c419bec995dfd80a81452a2fe0cd344ec1d",
+        )
+            .unwrap(),
+        HashValue::from_hex_literal(
+            "0xe2d703b76eb066b4453eb6b05f90f9fe498d85afbafc97110cc946702bf10459",
+        )
+            .unwrap(),
+        HashValue::from_hex_literal(
+            "0xa4be7b3d401da8ed15f7c4fa7c06a7cd25815f246b62fb0e7f05f32a59739c89",
+        )
+            .unwrap(),
+        0,
+        11660343.into(),
+        HashValue::from_hex_literal(
+            "0xc01e0329de6d899348a8ef4bd51db56175b3fa0988e57c3dcec8eaf13a164d97",
+        )
+            .unwrap(),
+        ChainId::new(1),
+        3221282425,
+        BlockHeaderExtra::new([0u8; 4]),
+    );
+    G_CRYPTONIGHT
+        .verify_header_difficulty(header.difficulty(), &header)
+        .unwrap()
+}
+
+#[stest::test]
+fn verify_header_test_main_block3_ubuntu22() {
+    let header = BlockHeader::new(
+        HashValue::from_hex_literal(
+            "0xdda5d70eac37fa646fd9cebb274acf98fba78ff1e8afeb8b4ac11a1d90ffc84c",
+        )
+            .unwrap(),
+        1621311660684,
+        3,
+        AccountAddress::from_hex_literal("0x34e2fd022578411aa8c249f8dc1da714").unwrap(),
+        HashValue::from_hex_literal(
+            "0xe1de0056ff0d4ff61927ed33b8a82bc4cff48c3a2eedea359d1359009cd40c45",
+        )
+            .unwrap(),
+        HashValue::from_hex_literal(
+            "0x2d349fee1bb6e95279dad8879023cc09abd4e809e24cd31390a30e69b23c01ed",
+        )
+            .unwrap(),
+        HashValue::from_hex_literal(
+            "0xecff23fdef37e2b4899ac78433349322518a0d08d1208bb50e5ac42ffebf3730",
+        )
+            .unwrap(),
+        0,
+        0x58f61b.into(),
+        HashValue::from_hex_literal(
+            "0xc01e0329de6d899348a8ef4bd51db56175b3fa0988e57c3dcec8eaf13a164d97",
+        )
+            .unwrap(),
+        ChainId::new(1),
+        1124080139,
+        BlockHeaderExtra::new([0u8; 4]),
+    );
+    G_CRYPTONIGHT
+        .verify_header_difficulty(header.difficulty(), &header)
+        .unwrap()
+}
+
+#[stest::test]
+fn verify_header_test_main_block9_ubuntu22() {
+    let header = BlockHeader::new(
+        HashValue::from_hex_literal(
+            "0xdda5d70eac37fa646fd9cebb274acf98fba78ff1e8afeb8b4ac11a1d90ffc84c",
+        )
+            .unwrap(),
+        1621311660684,
+        3,
+        AccountAddress::from_hex_literal("0x34e2fd022578411aa8c249f8dc1da714").unwrap(),
+        HashValue::from_hex_literal(
+            "0xe1de0056ff0d4ff61927ed33b8a82bc4cff48c3a2eedea359d1359009cd40c45",
+        )
+            .unwrap(),
+        HashValue::from_hex_literal(
+            "0x2d349fee1bb6e95279dad8879023cc09abd4e809e24cd31390a30e69b23c01ed",
+        )
+            .unwrap(),
+        HashValue::from_hex_literal(
+            "0xecff23fdef37e2b4899ac78433349322518a0d08d1208bb50e5ac42ffebf3730",
+        )
+            .unwrap(),
+        0,
+        0x58f61b.into(),
+        HashValue::from_hex_literal(
+            "0xc01e0329de6d899348a8ef4bd51db56175b3fa0988e57c3dcec8eaf13a164d97",
+        )
+            .unwrap(),
+        ChainId::new(1),
+        1124080139,
+        BlockHeaderExtra::new([0u8; 4]),
+    );
+    G_CRYPTONIGHT
+        .verify_header_difficulty(header.difficulty(), &header)
+        .unwrap()
+}
+#[stest::test]
+fn verify_header_test_main_block10_ubuntu22() {
+    let header = BlockHeader::new(
+        HashValue::from_hex_literal(
+            "0x34e51fcc0435a6c9f21d13c05281d37103e0aa684ebec5d8b03c0acaa3421b57",
+        )
+            .unwrap(),
+        1621311702957,
+        10,
+        AccountAddress::from_hex_literal("0x34e2fd022578411aa8c249f8dc1da714").unwrap(),
+        HashValue::from_hex_literal(
+            "0x81feec936ed7c20f64d7d636c1d8abeee67df79ae77fbac4a1e0e34d5bfc0222",
+        )
+            .unwrap(),
+        HashValue::from_hex_literal(
+            "0xe2e31f07c7a00b4eae270f746516790e7000d8f49540b4fef3216339fef5035a",
+        )
+            .unwrap(),
+        HashValue::from_hex_literal(
+            "0x842e4affbb7b1a897fd7f8649f34a67a07bd26c1a063d942b608296f03e04163",
+        )
+            .unwrap(),
+        0,
+        0x20597d.into(),
+        HashValue::from_hex_literal(
+            "0xc01e0329de6d899348a8ef4bd51db56175b3fa0988e57c3dcec8eaf13a164d97",
+        )
+            .unwrap(),
+        ChainId::new(1),
+        1957359399,
+        BlockHeaderExtra::new([0u8; 4]),
+    );
+    G_CRYPTONIGHT
+        .verify_header_difficulty(header.difficulty(), &header)
+        .unwrap()
+}
+
 fn simulate_blocks(time_plan: u64, init_difficulty: U256) -> u64 {
     fn liner_hash_pow(difficulty: U256, current: u64) -> u64 {
         let ts = MockTimeService::new_with_value(current);
