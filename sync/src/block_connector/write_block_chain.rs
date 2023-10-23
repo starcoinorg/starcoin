@@ -2,13 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::metrics::ChainMetrics;
+use crate::tasks::BlockDiskCheckEvent;
 use anyhow::{bail, format_err, Ok, Result};
 use async_std::stream::StreamExt;
+use futures::executor::block_on;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 use starcoin_config::NodeConfig;
+use starcoin_consensus::dag::ghostdag;
 use starcoin_consensus::dag::ghostdag::protocol::ColoringOutput;
-use starcoin_consensus::BlockDAG;
+use starcoin_consensus::dag::types::ghostdata::GhostdagData;
+use starcoin_consensus::{BlockDAG, FlexiDagStorage, FlexiDagStorageConfig};
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
@@ -33,6 +37,14 @@ use super::BlockConnectorService;
 
 const MAX_ROLL_BACK_BLOCK: usize = 10;
 
+#[derive(Clone)]
+pub enum InitDagState {
+    FailedToInitDag,
+    InitDagSuccess(Arc<Mutex<BlockDAG>>),
+    InitedDag,
+    NoNeedInitDag,
+}
+
 pub struct WriteBlockChainService<P>
 where
     P: TxPoolSyncService,
@@ -46,7 +58,7 @@ where
     metrics: Option<ChainMetrics>,
     vm_metrics: Option<VMMetrics>,
     dag_block_pool: Arc<Mutex<Vec<(Block, Vec<HashValue>)>>>,
-    dag: Arc<Mutex<BlockDAG>>,
+    dag: Option<Arc<Mutex<BlockDAG>>>,
 }
 
 #[derive(Clone, Debug)]
@@ -149,7 +161,7 @@ where
         txpool: TransactionPoolServiceT,
         bus: ServiceRef<BusService>,
         vm_metrics: Option<VMMetrics>,
-        dag: Arc<Mutex<BlockDAG>>,
+        dag: Option<Arc<Mutex<BlockDAG>>>,
     ) -> Result<Self> {
         let net = config.net();
         let main = BlockChain::new(
@@ -278,11 +290,21 @@ where
         if branch_total_difficulty > main_total_difficulty {
             self.update_startup_info(new_branch.head_block().header())?;
 
-            let dag_parents = self.dag.lock().unwrap().get_parents(new_head_block)?;
-            ctx.broadcast(NewHeadBlock(
-                Arc::new(new_branch.head_block()),
-                Some(dag_parents),
-            ));
+            if self.dag.is_none() {
+                ctx.broadcast(NewHeadBlock(Arc::new(new_branch.head_block()), None));
+            } else {
+                let dag_parents = self
+                    .dag
+                    .as_ref()
+                    .expect("the dag should not be None")
+                    .lock()
+                    .expect("failed to lock the dag")
+                    .get_parents(new_head_block)?;
+                ctx.broadcast(NewHeadBlock(
+                    Arc::new(new_branch.head_block()),
+                    Some(dag_parents),
+                ));
+            }
 
             Ok(())
         } else {
@@ -733,10 +755,7 @@ where
         }
     }
 
-    fn connect_to_main(
-        &mut self,
-        block: Block,
-    ) -> Result<ConnectOk> {
+    fn connect_to_main(&mut self, block: Block) -> Result<ConnectOk> {
         let block_id = block.id();
         if block_id == *starcoin_storage::BARNARD_HARD_FORK_HASH
             && block.header().number() == starcoin_storage::BARNARD_HARD_FORK_HEIGHT
@@ -771,16 +790,57 @@ where
         return Ok(ConnectOk::ExeConnectMain(executed_block));
     }
 
+    fn init_dag_if_needed(&mut self, header: &BlockHeader) -> Result<InitDagState> {
+        let dag_fork_number = self.storage.dag_fork_height(self.config.net().id().clone());
+        let current_block_number = header.number();
+        if current_block_number < dag_fork_number {
+            panic!("this function should not be invoked when connecting to the dag");
+        } else if current_block_number == dag_fork_number {
+            let flex_dag_config = FlexiDagStorageConfig::create_with_params(1, 0, 1024);
+            let flex_dag_db = FlexiDagStorage::create_from_path("./smolstc", flex_dag_config)
+                .expect("Failed to create flexidag storage");
+
+            let mut dag = BlockDAG::new(header.id(), 8, flex_dag_db);
+            dag.init_with_genesis(DagHeader::new_genesis(header.clone()))
+                .expect("dag init with genesis");
+            // registry.put_shared(Arc::new(Mutex::new(dag))).await?;
+            self.dag = Some(Arc::new(Mutex::new(dag)));
+            Ok(InitDagState::InitDagSuccess(
+                self.dag.as_ref()
+                    .expect("the dag is definitely uninitialized")
+                    .clone(),
+            ))
+        } else {
+            Ok(InitDagState::InitedDag)
+        }
+    }
+
+    fn addToDag(
+        &mut self,
+        header: &BlockHeader,
+        parents_hash: Vec<HashValue>,
+    ) -> Result<Arc<GhostdagData>> {
+        let dag = self.dag.as_mut().expect("dag must be inited before using");
+        match dag
+            .lock()
+            .expect("dag must be inited before using")
+            .get_ghostdag_data(header.id())
+        {
+            std::result::Result::Ok(ghost_dag_data) => Ok(ghost_dag_data),
+            Err(_) => std::result::Result::Ok(Arc::new(
+                dag.lock()
+                    .expect("failed to lock the dag")
+                    .addToDag(DagHeader::new(header.clone(), parents_hash.clone()))?,
+            )),
+        }
+    }
+
     fn connect_dag_inner(
         &mut self,
         block: Block,
         parents_hash: Vec<HashValue>,
     ) -> Result<ConnectOk> {
-        let ghost_dag_data = self
-            .dag
-            .lock()
-            .unwrap()
-            .addToDag(DagHeader::new(block.header, parents_hash.clone()))?;
+        let ghost_dag_data = self.addToDag(block.header(), parents_hash.clone())?;
         let selected_parent = self
             .storage
             .get_block_by_hash(ghost_dag_data.selected_parent)?
@@ -812,13 +872,23 @@ where
         }
         // normal block, just connect to main
         // let mut next_tips = Some(vec![]);
-        let executed_block = self
-            .connect_to_main(block)?
-            .clone();
+        let executed_block = self.connect_to_main(block)?.clone();
         if let Some(block) = executed_block.block() {
             self.broadcast_new_head(block.clone(), None, None);
         }
         return Ok(executed_block);
+    }
+
+    // call this function to replace of try_connect
+    // for the initialization of the dag
+    pub fn try_write_new_block(
+        &mut self,
+        block: Block,
+        parents_hash: Option<Vec<HashValue>>,
+    ) -> Result<InitDagState> {
+        let dag_init_result = self.init_dag_if_needed(block.header())?;
+        let connect_result = self.try_connect(block, parents_hash)?;
+        Ok(dag_init_result)
     }
 
     #[cfg(test)]

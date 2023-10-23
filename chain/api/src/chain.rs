@@ -137,6 +137,8 @@ pub trait ChainWriter {
         &mut self,
         tips: Vec<HashValue>,
     ) -> Result<(HashValue, AccumulatorInfo)>;
+
+    fn next_tips(&self, header: &BlockHeader) -> Result<Option<Vec<HashValue>>>;
 }
 
 /// `Chain` is a trait that defines a single Chain.

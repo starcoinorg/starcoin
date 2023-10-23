@@ -3,6 +3,7 @@
 
 #[cfg(test)]
 use super::CheckBlockConnectorHashValue;
+use crate::block_connector::write_block_chain::InitDagState;
 use crate::block_connector::{ExecuteRequest, ResetRequest, WriteBlockChainService};
 use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskCheckEvent};
@@ -140,7 +141,7 @@ where
             txpool,
             bus,
             vm_metrics,
-            dag.clone(),
+            Some(dag.clone()),
         )?;
 
         Ok(Self::new(chain_service, config))
@@ -259,16 +260,30 @@ impl<TransactionPoolServiceT> EventHandler<Self, MinedBlock>
 where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
-    fn handle_event(&mut self, msg: MinedBlock, _ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, msg: MinedBlock, ctx: &mut ServiceContext<Self>) {
         let MinedBlock(new_block, tips_headers) = msg;
         let id = new_block.header().id();
         debug!("try connect mined block: {}", id);
 
         match self
             .chain_service
-            .try_connect(new_block.as_ref().clone(), tips_headers)
+            .try_write_new_block(new_block.as_ref().clone(), tips_headers)
         {
-            std::result::Result::Ok(_) => debug!("Process mined block {} success.", id),
+            std::result::Result::Ok(dag_init_state) => {
+                debug!("Process mined block {} success.", id);
+                match dag_init_state {
+                    InitDagState::FailedToInitDag => panic!("failed to init dag"),
+                    InitDagState::InitDagSuccess(dag) => {
+                        if let std::result::Result::Ok(_) = ctx.get_shared::<Arc<Mutex<BlockDAG>>>()
+                        {
+                            panic!("dag should not exist in ctx");
+                        }
+                        ctx.put_shared(dag.clone())
+                            .expect("failed to put the dag into the ctx");
+                    }
+                    InitDagState::InitedDag | InitDagState::NoNeedInitDag => (),
+                }
+            }
             Err(e) => {
                 warn!("Process mined block {} fail, error: {:?}", id, e);
             }

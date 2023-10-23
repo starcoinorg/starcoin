@@ -89,6 +89,7 @@ impl BlockChain {
         header: &BlockHeader,
         net: ChainNetworkID,
     ) -> Result<(Option<MerkleAccumulator>, Option<Vec<HashValue>>)> {
+        info!("jacktest: get dag data from storage");
         let (op_dag_accumulator_info, op_tips) = storage.get_flexidag_init_data(header, net)?;
         match (op_dag_accumulator_info, op_tips.clone()) {
             (Some(dag_accumulator_info), Some(_tips)) => {
@@ -1216,18 +1217,12 @@ impl ChainWriter for BlockChain {
         );
 
         self.statedb = ChainStateDB::new(self.storage.clone().into_super_arc(), Some(state_root));
-        let tips = self.status.status.tips_hash.clone();
-        let next_tips = match tips {
-            Some(mut tips) => {
-                if !tips.contains(&block.header().id()) {
-                    tips.push(block.header().id());
-                }
-                Some(tips)
-            }
-            None => None,
-        };
         self.status = ChainStatusWithBlock {
-            status: ChainStatus::new(block.header().clone(), block_info.clone(), next_tips),
+            status: ChainStatus::new(
+                block.header().clone(),
+                block_info.clone(),
+                self.next_tips(executed_block.block.header())?,
+            ),
             head: block.clone(),
         };
         if self.epoch.end_block_number() == block.header().number() {
@@ -1240,6 +1235,29 @@ impl ChainWriter for BlockChain {
             });
         }
         Ok(executed_block)
+    }
+
+    fn next_tips(&self, header: &BlockHeader) -> Result<Option<Vec<HashValue>>> {
+        let tips = self.status.status.tips_hash.clone();
+        info!("jacktest: miners tips is {:?}", tips);
+        match tips {
+            Some(mut tips) => {
+                if !tips.contains(&header.id()) {
+                    tips.push(header.id());
+                }
+                Ok(Some(tips))
+            }
+            None => {
+                let fork_height = self.storage.dag_fork_height(self.net.clone());
+                if header.number() == fork_height {
+                    Ok(Some(vec![header.id()]))
+                } else if header.number() > fork_height {
+                    panic!("the number of a block is larger than the dag fork height but the tips is None");
+                } else {
+                    Ok(None)
+                }
+            }
+        }
     }
 
     fn apply(

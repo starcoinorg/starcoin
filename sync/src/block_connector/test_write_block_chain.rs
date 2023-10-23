@@ -65,7 +65,7 @@ pub async fn create_writeable_block_chain() -> (
             txpool_service,
             bus,
             None,
-            Arc::new(Mutex::new(dag)),
+            Some(Arc::new(Mutex::new(dag))),
         )
         .unwrap(),
         node_config,

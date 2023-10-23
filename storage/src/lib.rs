@@ -28,9 +28,10 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::{
-    block::{Block, BlockBody, BlockHeader, BlockInfo},
+    block::{Block, BlockBody, BlockHeader, BlockInfo, BlockNumber},
     blockhash::ORIGIN,
     contract_event::ContractEvent,
+    header,
     startup_info::{ChainInfo, ChainStatus, SnapshotRange, StartupInfo},
     transaction::{RichTransactionInfo, Transaction},
 };
@@ -337,6 +338,7 @@ pub trait SyncFlexiDagStore {
         head_block: &BlockHeader,
         id: ChainNetworkID,
     ) -> Result<(Option<AccumulatorInfo>, Option<Vec<HashValue>>)>;
+    fn dag_fork_height(&self, id: ChainNetworkID) -> BlockNumber;
 }
 
 // TODO: remove Arc<dyn Store>, we can clone Storage directly.
@@ -736,24 +738,23 @@ impl SyncFlexiDagStore for Storage {
         head_block: &BlockHeader,
         id: ChainNetworkID,
     ) -> Result<(Option<AccumulatorInfo>, Option<Vec<HashValue>>)> {
-        let flexi_dag_number = match id {
-            ChainNetworkID::Builtin(network_id) => match network_id {
-                starcoin_config::BuiltinNetworkID::Test => TEST_FLEXIDAG_FORK_HEIGHT,
-                starcoin_config::BuiltinNetworkID::Dev => DEV_FLEXIDAG_FORK_HEIGHT,
-                starcoin_config::BuiltinNetworkID::Halley => HALLEY_FLEXIDAG_FORK_HEIGHT,
-                starcoin_config::BuiltinNetworkID::Proxima => PROXIMA_FLEXIDAG_FORK_HEIGHT,
-                starcoin_config::BuiltinNetworkID::Barnard => BARNARD_FLEXIDAG_FORK_HEIGHT,
-                starcoin_config::BuiltinNetworkID::Main => MAIN_FLEXIDAG_FORK_HEIGHT,
-            },
-            ChainNetworkID::Custom(_) => DEV_FLEXIDAG_FORK_HEIGHT,
-        };
+        let flexi_dag_number = self.dag_fork_height(id);
 
+        info!(
+            "jacktest, in get_flexidag_init_data: now check the height: {}",
+            flexi_dag_number
+        );
         let (dag_accumulator_info, tips) = if flexi_dag_number == head_block.number() {
+            info!(
+                "jacktest: return some default value, and genesis info: {:?}",
+                head_block.id()
+            );
             (
                 Some(AccumulatorInfo::default()),
                 Some(vec![head_block.id()]),
             )
         } else if flexi_dag_number < head_block.number() {
+            info!("jacktest, in get_flexidag_init_data: return some specific value");
             let dag_accumulator_info = self
                 .get_dag_accumulator_info(head_block.id())?
                 .expect("the dag accumulator info must exist!");
@@ -764,10 +765,25 @@ impl SyncFlexiDagStore for Storage {
             );
             (Some(dag_accumulator_info), Some(tips))
         } else {
+            info!("jacktest, in get_flexidag_init_data: return None");
             (None, None)
         };
 
         Ok((dag_accumulator_info, tips))
+    }
+
+    fn dag_fork_height(&self, id: ChainNetworkID) -> BlockNumber {
+        match id {
+            ChainNetworkID::Builtin(network_id) => match network_id {
+                starcoin_config::BuiltinNetworkID::Test => TEST_FLEXIDAG_FORK_HEIGHT,
+                starcoin_config::BuiltinNetworkID::Dev => DEV_FLEXIDAG_FORK_HEIGHT,
+                starcoin_config::BuiltinNetworkID::Halley => HALLEY_FLEXIDAG_FORK_HEIGHT,
+                starcoin_config::BuiltinNetworkID::Proxima => PROXIMA_FLEXIDAG_FORK_HEIGHT,
+                starcoin_config::BuiltinNetworkID::Barnard => BARNARD_FLEXIDAG_FORK_HEIGHT,
+                starcoin_config::BuiltinNetworkID::Main => MAIN_FLEXIDAG_FORK_HEIGHT,
+            },
+            ChainNetworkID::Custom(_) => DEV_FLEXIDAG_FORK_HEIGHT,
+        }
     }
 }
 

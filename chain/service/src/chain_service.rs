@@ -93,6 +93,7 @@ impl EventHandler<Self, NewHeadBlock> for ChainReaderService {
         let new_head = event.0.block().header();
         if let Err(e) = if self.inner.get_main().can_connect(event.0.as_ref()) {
             match self.inner.update_chain_head(event.0.as_ref().clone()) {
+                // wait for fixing: update_dag_accumulator should be in BlockChain
                 Ok(_) => self.inner.update_dag_accumulator(new_head.id()),
                 Err(e) => Err(e),
             }
