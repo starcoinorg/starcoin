@@ -10,7 +10,6 @@ use std::{
         atomic::{AtomicBool, AtomicUsize, Ordering},
         Arc, Condvar,
     },
-    thread,
 };
 
 // Type aliases.

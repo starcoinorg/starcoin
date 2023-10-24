@@ -3,15 +3,13 @@
 
 #![forbid(unsafe_code)]
 
-use starcoin_vm_types::genesis_config::StdlibVersion;
 use crate::{account::Account, executor::FakeExecutor, utils};
 
 /// The current version numbers that e2e tests should be run against.
 // pub const CURRENT_RELEASE_VERSIONS: std::ops::RangeInclusive<u64> =
 //     STARCOIN_MAX_KNOWN_VERSION.major..=STARCOIN_MAX_KNOWN_VERSION.major;
 
-pub const CURRENT_RELEASE_VERSIONS: std::ops::RangeInclusive<u64> =
-    1..=StdlibVersion::Latest;
+pub const CURRENT_RELEASE_VERSIONS: std::ops::RangeInclusive<u64> = 1..=12;
 
 #[derive(Debug)]
 pub struct VersionedTestEnv {

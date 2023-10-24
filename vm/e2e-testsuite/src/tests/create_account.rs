@@ -6,7 +6,6 @@ use starcoin_language_e2e_tests::account::Account;
 use starcoin_language_e2e_tests::common_transactions::create_account_txn;
 use starcoin_language_e2e_tests::current_function_name;
 use starcoin_language_e2e_tests::executor::FakeExecutor;
-use starcoin_types::account_config;
 use starcoin_vm_types::transaction::TransactionStatus;
 
 #[test]

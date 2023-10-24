@@ -1,15 +1,15 @@
 // Copyright (c) Starcoin
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::account::Account;
+use crate::executor::FakeExecutor;
 use move_core_types::transaction_argument::{convert_txn_args, TransactionArgument};
 use move_ir_compiler::Compiler;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
-use starcoin_vm_types::genesis_config::StdlibVersion::Latest;
-use crate::executor::FakeExecutor;
+use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::on_chain_config::Version;
 use starcoin_vm_types::transaction::Script;
 use stdlib::{stdlib_compiled_modules, StdLibOptions};
-use crate::account::Account;
 
 pub fn set_starcoin_version(executor: &mut FakeExecutor, version: Version) {
     let account =
@@ -39,17 +39,20 @@ main(account: signer, language_version: u8) {
 }
 "#;
 
+        let modules = stdlib_compiled_modules(StdLibOptions::Compiled(StdlibVersion::Latest));
         let compiler = Compiler {
-            deps: stdlib_compiled_modules(StdLibOptions::Compiled(Latest))
-                .iter()
-                .collect(),
+            deps: modules.iter().collect(),
         };
         compiler.into_script_blob(code).expect("Failed to compile")
     };
     // let account = Account::new_starcoin_root();
     let txn = account
         .transaction()
-        .script(Script::new(script_body, vec![], convert_txn_args(&vec![TransactionArgument::U64(version.major)])))
+        .script(Script::new(
+            script_body,
+            vec![],
+            convert_txn_args(&vec![TransactionArgument::U64(version.major)]),
+        ))
         .sequence_number(0)
         .sign();
 
@@ -57,5 +60,5 @@ main(account: signer, language_version: u8) {
     executor.execute_and_apply(txn);
 
     let new_vm = StarcoinVM::new(None);
-    assert_eq!(new_vm.internals().version().unwrap(), version);
+    assert_eq!(new_vm.get_version().unwrap(), version);
 }

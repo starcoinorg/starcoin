@@ -1,12 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// use diem_transaction_builder::experimental_stdlib::encode_create_account_script_function;
-// use diem_types::vm_status::StatusCode;
-// use starcoin_language_e2e_tests::{
-//     account::Account, current_function_name, executor::FakeExecutor,
-// };
-
 use move_core_types::vm_status::StatusCode;
 use starcoin_language_e2e_tests::account::Account;
 use starcoin_language_e2e_tests::current_function_name;
