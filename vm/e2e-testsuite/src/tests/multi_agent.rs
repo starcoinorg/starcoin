@@ -3,20 +3,6 @@
 
 //! Tests for multi-agent transactions.
 
-use diem_transaction_builder::stdlib::*;
-use diem_types::{
-    account_config, test_helpers::transaction_test_helpers, transaction::TransactionStatus,
-    vm_status::KeptVMStatus,
-};
-use starcoin_language_e2e_tests::{
-    account::{self, xdx_currency_code, xus_currency_code, Account},
-    common_transactions::{
-        multi_agent_mint_txn, multi_agent_p2p_txn, multi_agent_swap_script, multi_agent_swap_txn,
-    },
-    current_function_name,
-    executor::FakeExecutor,
-};
-
 #[test]
 fn multi_agent_mint() {
     let mut executor = FakeExecutor::from_genesis_file();

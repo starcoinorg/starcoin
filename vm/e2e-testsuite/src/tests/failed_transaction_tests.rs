@@ -1,18 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use diem_state_view::StateView;
-use diem_types::vm_status::{KeptVMStatus, StatusCode, VMStatus};
-use diem_vm::{
-    data_cache::StateViewCache, logging::AdapterLogSchema,
-    transaction_metadata::TransactionMetadata, DiemVM,
-};
-use move_core_types::gas_schedule::{GasAlgebra, GasPrice, GasUnits};
-use move_vm_types::gas_schedule::{zero_cost_schedule, GasStatus};
-use starcoin_language_e2e_tests::{
-    account, common_transactions::peer_to_peer_txn, test_with_different_versions,
-    versioning::CURRENT_RELEASE_VERSIONS,
-};
+use starcoin_language_e2e_tests::test_with_different_versions;
 
 #[test]
 fn failed_transaction_cleanup_test() {

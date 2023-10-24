@@ -19,7 +19,7 @@ proptest! {
     ) {
         let executor = FakeExecutor::from_genesis_file();
         let accounts = vec![
-            (Account::new_diem_root(), 0),
+            (Account::new_starcoin_root(), 0),
             (Account::new_blessed_tc(), 0),
         ];
         let num_accounts = accounts.len();
@@ -43,7 +43,7 @@ proptest! {
     ) {
         let mut executor = FakeExecutor::from_genesis_file();
         let mut accounts = vec![];
-        let diem_root = Account::new_diem_root();
+        let diem_root = Account::new_starcoin_root();
         let coins = vec![account::xus_currency_code()];
         // Create a number of accounts
         for i in 0..10 {

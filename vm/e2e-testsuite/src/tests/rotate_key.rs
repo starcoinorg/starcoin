@@ -1,15 +1,15 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_crypto::{
-    ed25519::Ed25519PrivateKey,
-    multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature},
-    PrivateKey, SigningKey, Uniform,
-};
 use diem_keygen::KeyGen;
 use diem_types::{
     transaction::{authenticator::AuthenticationKey, SignedTransaction, TransactionStatus},
     vm_status::{KeptVMStatus, StatusCode},
+};
+use starcoin_crypto::{
+    ed25519::Ed25519PrivateKey,
+    multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature},
+    PrivateKey, SigningKey, Uniform,
 };
 use starcoin_language_e2e_tests::{
     account,

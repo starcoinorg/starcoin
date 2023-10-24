@@ -3,7 +3,6 @@
 
 #![forbid(unsafe_code)]
 
-use starcoin_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
 use diem_transaction_builder::stdlib::*;
 use diem_types::{
     account_config,
@@ -14,6 +13,7 @@ use move_core_types::{
     value::{serialize_values, MoveValue},
     vm_status::VMStatus,
 };
+use starcoin_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
 use starcoin_language_e2e_tests::{
     test_with_different_versions, versioning::CURRENT_RELEASE_VERSIONS,
 };

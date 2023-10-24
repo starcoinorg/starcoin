@@ -1,16 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use diem_transaction_builder::stdlib::*;
-use diem_types::{
-    account_config,
-    transaction::TransactionStatus,
-    vm_status::{known_locations, KeptVMStatus},
-};
-use starcoin_language_e2e_tests::{
-    account, gas_costs::TXN_RESERVED, test_with_different_versions,
-    versioning::CURRENT_RELEASE_VERSIONS,
-};
+use starcoin_language_e2e_tests::test_with_different_versions;
 
 #[test]
 fn tiered_mint_designated_dealer() {

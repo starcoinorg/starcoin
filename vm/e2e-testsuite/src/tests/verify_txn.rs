@@ -1,52 +1,16 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// use starcoin_crypto::{
-//     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
-//     multi_ed25519::{MultiEd25519PrivateKey, MultiEd25519PublicKey},
-//     PrivateKey, SigningKey, Uniform,
-// };
-// use starcoin_framework_releases::legacy::transaction_scripts::LegacyStdlibScript;
-// use starcoin_keygen::KeyGen;
-// use starcoin_transaction_builder::{
-//     stdlib as transaction_builder, stdlib::encode_peer_to_peer_with_metadata_script,
-// };
-// use starcoin_types::{
-//     account_address::AccountAddress,
-//     account_config,
-//     chain_id::ChainId,
-//     on_chain_config::VMPublishingOption,
-//     test_helpers::transaction_test_helpers,
-//     transaction::{
-//         authenticator::{AccountAuthenticator, AuthenticationKey, MAX_NUM_OF_SIGS},
-//         RawTransactionWithData, Script, SignedTransaction, TransactionArgument, TransactionPayload,
-//         TransactionStatus, WriteSetPayload,
-//     },
-//     vm_status::{KeptVMStatus, StatusCode},
-// };
-// use move_binary_format::file_format::CompiledModule;
-// use move_core_types::{
-//     gas_schedule::{GasAlgebra, GasConstants, MAX_TRANSACTION_SIZE_IN_BYTES},
-//     identifier::Identifier,
-//     language_storage::{StructTag, TypeTag},
-//     value::{serialize_values, MoveValue},
-// };
-// use move_ir_compiler::Compiler;
-// use starcoin_language_e2e_tests::{
-//     account::Account,
-//     assert_prologue_disparity, assert_prologue_parity,
-//     common_transactions::{
-//         multi_agent_mint_script, multi_agent_swap_script, raw_multi_agent_swap_txn, rotate_key_txn,
-//     },
-//     compile::compile_module,
-//     current_function_name,
-//     executor::FakeExecutor,
-//     gas_costs, test_with_different_versions, transaction_status_eq,
-//     versioning::CURRENT_RELEASE_VERSIONS,
-// };
-
+use move_binary_format::CompiledModule;
+use move_core_types::account_address::AccountAddress;
+use move_ir_compiler::Compiler;
+use starcoin_crypto::ed25519::Ed25519PrivateKey;
+use starcoin_crypto::Uniform;
+use starcoin_language_e2e_tests::account::Account;
 use starcoin_language_e2e_tests::executor::FakeExecutor;
-use starcoin_language_e2e_tests::test_with_different_versions;
+use starcoin_language_e2e_tests::{
+    assert_prologue_parity, current_function_name, test_with_different_versions,
+};
 
 #[test]
 fn verify_signature() {
@@ -985,7 +949,7 @@ pub fn test_no_publishing_diem_root_sender() {
     executor.set_golden_file(current_function_name!());
 
     // create a transaction trying to publish a new module.
-    let sender = Account::new_diem_root();
+    let sender = Account::new_starcoin_root();
 
     let module = String::from(
         "
@@ -1541,7 +1505,7 @@ pub fn publish_and_register_new_currency() {
     executor.set_golden_file(current_function_name!());
 
     // create a transaction trying to publish a new module.
-    let sender = Account::new_diem_root();
+    let sender = Account::new_starcoin_root();
     let tc_account = Account::new_blessed_tc();
 
     let module = r#"

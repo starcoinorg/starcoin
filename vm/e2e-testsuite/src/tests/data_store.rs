@@ -1,15 +1,17 @@
-// Copyright (c) The Diem Core Contributors
+// Copyright (c) The Starcoin Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use diem_types::{
-    transaction::{Module, SignedTransaction, Transaction, TransactionStatus},
-    vm_status::KeptVMStatus,
-};
 use move_binary_format::CompiledModule;
 use move_bytecode_verifier::verify_module;
+use move_core_types::vm_status::KeptVMStatus;
 use move_ir_compiler::Compiler;
 use starcoin_language_e2e_tests::{
     account::AccountData, compile::compile_script, current_function_name, executor::FakeExecutor,
+};
+use starcoin_transaction_builder::{stdlib_compiled_modules, StdLibOptions};
+use starcoin_vm_types::genesis_config::StdlibVersion::Latest;
+use starcoin_vm_types::transaction::{
+    Module, SignedUserTransaction, Transaction, TransactionStatus,
 };
 
 #[test]
@@ -203,7 +205,7 @@ fn change_after_move() {
     executor.apply_write_set(output.write_set());
 }
 
-fn add_module_txn(sender: &AccountData, seq_num: u64) -> (CompiledModule, SignedTransaction) {
+fn add_module_txn(sender: &AccountData, seq_num: u64) -> (CompiledModule, SignedUserTransaction) {
     let module_code = format!(
         "
         module 0x{}.M {{
@@ -243,7 +245,9 @@ fn add_module_txn(sender: &AccountData, seq_num: u64) -> (CompiledModule, Signed
     );
 
     let compiler = Compiler {
-        deps: diem_framework_releases::current_modules().iter().collect(),
+        deps: stdlib_compiled_modules(StdLibOptions::Compiled(Latest))
+            .iter()
+            .collect(),
     };
     let module = compiler
         .into_compiled_module(module_code.as_str())
@@ -268,7 +272,7 @@ fn add_resource_txn(
     sender: &AccountData,
     seq_num: u64,
     extra_deps: Vec<CompiledModule>,
-) -> SignedTransaction {
+) -> SignedUserTransaction {
     let program = format!(
         "
             import 0x{}.M;
@@ -295,7 +299,7 @@ fn remove_resource_txn(
     sender: &AccountData,
     seq_num: u64,
     extra_deps: Vec<CompiledModule>,
-) -> SignedTransaction {
+) -> SignedUserTransaction {
     let program = format!(
         "
             import 0x{}.M;
@@ -322,7 +326,7 @@ fn borrow_resource_txn(
     sender: &AccountData,
     seq_num: u64,
     extra_deps: Vec<CompiledModule>,
-) -> SignedTransaction {
+) -> SignedUserTransaction {
     let program = format!(
         "
             import 0x{}.M;
@@ -349,7 +353,7 @@ fn change_resource_txn(
     sender: &AccountData,
     seq_num: u64,
     extra_deps: Vec<CompiledModule>,
-) -> SignedTransaction {
+) -> SignedUserTransaction {
     let program = format!(
         "
             import 0x{}.M;

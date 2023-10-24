@@ -148,7 +148,7 @@ fn update_script_allow_list() {
     // create a FakeExecutor with a genesis from file
     let mut executor = FakeExecutor::allowlist_genesis();
     executor.set_golden_file(current_function_name!());
-    let dr = Account::new_diem_root();
+    let dr = Account::new_starcoin_root();
     // create and publish a sender with 5_000_000 coins and a receiver with 0 coins
     let sender = executor.create_raw_account_data(5_000_000, 10);
     executor.add_account_data(&sender);

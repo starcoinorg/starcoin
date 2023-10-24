@@ -1,11 +1,17 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use diem_transaction_builder::experimental_stdlib::encode_create_account_script_function;
-use diem_types::vm_status::StatusCode;
-use starcoin_language_e2e_tests::{
-    account::Account, current_function_name, executor::FakeExecutor,
-};
+// use diem_transaction_builder::experimental_stdlib::encode_create_account_script_function;
+// use diem_types::vm_status::StatusCode;
+// use starcoin_language_e2e_tests::{
+//     account::Account, current_function_name, executor::FakeExecutor,
+// };
+
+use move_core_types::vm_status::StatusCode;
+use starcoin_language_e2e_tests::account::Account;
+use starcoin_language_e2e_tests::current_function_name;
+use starcoin_language_e2e_tests::executor::FakeExecutor;
+use starcoin_transaction_builder::encode_create_account_script_function;
 
 // Make sure we can start the experimental genesis
 #[test]
@@ -20,10 +26,10 @@ fn experimental_genesis_execute_txn_successful() {
     executor.set_golden_file(current_function_name!());
     let new_account = executor.create_raw_account();
     let new_new_account = executor.create_raw_account();
-    let dr_account = Account::new_diem_root();
+    let dr_account = Account::new_starcoin_root();
     let txn = dr_account
         .transaction()
-        .payload(encode_create_account_script_function(
+        .script_function(encode_create_account_script_function(
             *new_account.address(),
             new_account.auth_key_prefix(),
         ))

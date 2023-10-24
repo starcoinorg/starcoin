@@ -1,19 +1,8 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use diem_types::{
-    account_config::{ReceivedPaymentEvent, SentPaymentEvent},
-    transaction::{SignedTransaction, TransactionOutput, TransactionStatus},
-    vm_status::{known_locations, KeptVMStatus},
-};
-use starcoin_language_e2e_tests::{
-    account::{self, Account},
-    common_transactions::peer_to_peer_txn,
-    executor::FakeExecutor,
-    test_with_different_versions, transaction_status_eq,
-    versioning::CURRENT_RELEASE_VERSIONS,
-};
-use std::{convert::TryFrom, time::Instant};
+use starcoin_language_e2e_tests::account::Account;
+use starcoin_language_e2e_tests::executor::FakeExecutor;
 
 #[test]
 fn single_peer_to_peer_with_event() {
