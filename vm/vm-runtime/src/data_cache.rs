@@ -89,6 +89,10 @@ impl<'block, S: StateView> StateView for StateViewCache<'block, S> {
     fn is_genesis(&self) -> bool {
         self.data_view.is_genesis()
     }
+
+    fn get_block_number(&self) -> Option<u64> {
+        self.data_view.get_block_number()
+    }
 }
 
 impl<'block, S: StateView> ModuleResolver for StateViewCache<'block, S> {

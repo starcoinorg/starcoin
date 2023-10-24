@@ -43,21 +43,25 @@ impl PlaygroudService {
     pub fn dry_run(
         &self,
         state_root: HashValue,
+        block_number: Option<u64>,
         txn: DryRunTransaction,
     ) -> Result<(VMStatus, TransactionOutput)> {
-        let state_view = ChainStateDB::new(self.state.clone(), Some(state_root));
+        let state_view =
+            ChainStateDB::new_with_root(self.state.clone(), Some(state_root), block_number);
         dry_run(&state_view, txn, self.metrics.clone())
     }
 
     pub fn call_contract(
         &self,
         state_root: HashValue,
+        block_number: Option<u64>,
         module_id: ModuleId,
         func: Identifier,
         type_args: Vec<TypeTag>,
         args: Vec<TransactionArgument>,
     ) -> Result<Vec<AnnotatedMoveValue>> {
-        let state_view = ChainStateDB::new(self.state.clone(), Some(state_root));
+        let state_view =
+            ChainStateDB::new_with_root(self.state.clone(), Some(state_root), block_number);
         let rets = call_contract(
             &state_view,
             module_id,

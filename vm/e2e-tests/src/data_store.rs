@@ -105,6 +105,10 @@ impl StateView for FakeDataStore {
     fn is_genesis(&self) -> bool {
         self.inner().is_empty()
     }
+
+    fn get_block_number(&self) -> Option<u64> {
+        None
+    }
 }
 
 impl ChainStateWriter for FakeDataStore {

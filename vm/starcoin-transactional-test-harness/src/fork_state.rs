@@ -117,7 +117,7 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
     ) -> Result<Option<AccountStateSet>> {
         match state_root {
             Some(root) => {
-                let reader = self.state_db().fork_at(root);
+                let reader = self.state_db().fork_at(root, None);
                 reader.get_account_state_set(&address)
             }
             None => self.state_db().get_account_state_set(&address),
@@ -132,7 +132,7 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
         access_path: AccessPath,
         state_root: HashValue,
     ) -> Result<StateWithProof> {
-        let reader = self.state_db().fork_at(state_root);
+        let reader = self.state_db().fork_at(state_root, None);
         reader.get_with_proof(&access_path)
     }
 
@@ -141,7 +141,7 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
         account_address: AccountAddress,
         state_root: HashValue,
     ) -> Result<Option<AccountState>> {
-        let reader = self.state_db().fork_at(state_root);
+        let reader = self.state_db().fork_at(state_root, None);
         reader.get_account_state(&account_address)
     }
 
@@ -160,7 +160,7 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
         key: Vec<u8>,
         state_root: HashValue,
     ) -> Result<StateWithTableItemProof> {
-        let reader = self.state_db().fork_at(state_root);
+        let reader = self.state_db().fork_at(state_root, None);
         reader.get_with_table_item_proof(&handle, &key)
     }
 

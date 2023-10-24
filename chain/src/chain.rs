@@ -453,12 +453,13 @@ impl BlockChain {
         parents_hash: Option<Vec<HashValue>>,
     ) -> Result<ExecutedBlock> {
         let header = block.header();
-        // Todo: add debug_assert for height_of_statedb
         let height_of_state = statedb.get_block_number();
         debug_assert!(header.is_genesis() || parent_status.is_some());
         debug_assert!(!header.is_genesis() || parent_status.is_none());
         let block_id = header.id();
         let block_num = header.number();
+        debug_assert!(header.is_genesis() && height_of_state.is_none());
+        debug_assert!(!header.is_genesis() && height_of_state.is_some());
         let transactions = {
             // genesis block do not generate BlockMetadata transaction.
             let mut t = match &parent_status {
@@ -1066,7 +1067,7 @@ impl ChainReader for BlockChain {
         let state_proof = if let Some(access_path) = access_path {
             let statedb = self
                 .statedb
-                .fork_at(transaction_info.txn_info().state_root_hash());
+                .fork_at(transaction_info.txn_info().state_root_hash(), None);
             Some(statedb.get_with_proof(&access_path)?)
         } else {
             None

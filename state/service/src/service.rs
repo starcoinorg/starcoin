@@ -140,8 +140,12 @@ impl EventHandler<Self, NewHeadBlock> for ChainStateService {
         let NewHeadBlock(block, _dag_parents) = msg;
 
         let state_root = block.header().state_root();
-        debug!("ChainStateActor change StateRoot to : {:?}", state_root);
-        self.service.change_root(state_root);
+        let block_number = block.header().number();
+        debug!(
+            "ChainStateActor change StateRoot to : {:?} {block_number}",
+            state_root
+        );
+        self.service.change_root(state_root, block_number);
     }
 }
 
@@ -171,7 +175,7 @@ impl Inner {
     ) -> Result<Option<AccountStateSet>> {
         match state_root {
             Some(root) => {
-                let reader = self.state_db.fork_at(root);
+                let reader = self.state_db.fork_at(root, None);
                 reader.get_account_state_set(&address)
             }
             None => self.get_account_state_set(&address),
@@ -183,7 +187,7 @@ impl Inner {
         access_path: AccessPath,
         state_root: HashValue,
     ) -> Result<StateWithProof> {
-        let reader = self.state_db.fork_at(state_root);
+        let reader = self.state_db.fork_at(state_root, None);
         reader.get_with_proof(&access_path)
     }
 
@@ -193,7 +197,7 @@ impl Inner {
         key: Vec<u8>,
         state_root: HashValue,
     ) -> Result<StateWithTableItemProof> {
-        let reader = self.state_db.fork_at(state_root);
+        let reader = self.state_db.fork_at(state_root, None);
         reader.get_with_table_item_proof(&handle, &key)
     }
 
@@ -202,12 +206,12 @@ impl Inner {
         account: AccountAddress,
         state_root: HashValue,
     ) -> Result<Option<AccountState>> {
-        let reader = self.state_db.fork_at(state_root);
+        let reader = self.state_db.fork_at(state_root, None);
         reader.get_account_state(&account)
     }
 
-    pub(crate) fn change_root(&mut self, state_root: HashValue) {
-        self.state_db = self.state_db.fork_at(state_root);
+    pub(crate) fn change_root(&mut self, state_root: HashValue, block_number: BlockNumber) {
+        self.state_db = self.state_db.fork_at(state_root, Some(block_number));
         self.adjust_time();
     }
 

@@ -291,8 +291,8 @@ impl ChainStateDB {
     }
 
     /// Fork a new statedb at `root_hash`
-    pub fn fork_at(&self, state_root: HashValue) -> Self {
-        Self::new_with_root(self.store.clone(), Some(state_root), None)
+    pub fn fork_at(&self, state_root: HashValue, block_number: Option<BlockNumber>) -> Self {
+        Self::new_with_root(self.store.clone(), Some(state_root), block_number)
     }
 
     fn new_state_tree<K: RawKey>(&self, root_hash: HashValue) -> StateTree<K> {

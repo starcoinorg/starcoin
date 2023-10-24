@@ -128,9 +128,11 @@ where
             args,
         } = call;
         let f = async move {
-            let state_root = service.state_root().await?;
+            let state_root = service.clone().state_root().await?;
+            let block_number = service.get_block_number().await?;
             let output = playground.call_contract(
                 state_root,
+                block_number,
                 function_id.0.module,
                 function_id.0.function,
                 type_args.into_iter().map(|v| v.0).collect(),
@@ -231,7 +233,9 @@ where
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
         let fut = async move {
-            let state = ChainStateDB::new(storage, Some(service.state_root().await?));
+            let state_root = service.clone().state_root().await?;
+            let block_number = service.get_block_number().await?;
+            let state = ChainStateDB::new_with_root(storage, Some(state_root), block_number);
             ABIResolver::new(&state)
                 .resolve_function(&function_id.0.module, function_id.0.function.as_ident_str())
         }

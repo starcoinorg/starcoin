@@ -280,7 +280,7 @@ impl StarcoinVM {
                 if height_of_state >= FLEXI_DAG_FORK_HEIGHT
                     && stdlib_version >= StdlibVersion::Version(FLEXIDAG_UPGRADE_VERSION_MARK)
                 {
-                    todo!()
+                    debug!("flexidag stdlib");
                 }
 
                 (gas_schedule, "gas schedule from GasSchedule")
