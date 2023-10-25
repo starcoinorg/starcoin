@@ -26,7 +26,22 @@ fn main() {
         config.flag("-maes").flag("-msse2");
     }
     if target_os.contains("linux") || target_os.contains("macos") {
-        config.flag("-fexceptions").flag("-std=gnu99");
+        let info = os_info::get();
+        let opt_level = env::var("OPT_LEVEL").expect("fetching OPT_LEVEL");
+        if info.os_type() == os_info::Type::Ubuntu
+            && info.version() == &os_info::Version::Custom("22.04".into())
+        {
+            if opt_level == "3" {
+                config.flag("-O2").flag("-fexceptions").flag("-std=gnu99");
+            } else {
+                config.flag("-fexceptions").flag("-std=gnu99");
+            }
+        } else {
+            config
+                .flag("-Ofast")
+                .flag("-fexceptions")
+                .flag("-std=gnu99");
+        }
     }
     config.compile("cryptonight");
 }
