@@ -369,14 +369,10 @@ impl NodeService {
         let (chain_info, genesis) =
             Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;
 
-        let flex_dag_config = FlexiDagStorageConfig::create_with_params(1, 0, 1024);
-        let flex_dag_db = FlexiDagStorage::create_from_path("./smolstc", flex_dag_config)
-            .expect("Failed to create flexidag storage");
-
-        let mut dag = BlockDAG::new(genesis.block().id(), 8, flex_dag_db);
-        dag.init_with_genesis(DagHeader::new_genesis(genesis.block().header().clone()))
-            .expect("dag init with genesis");
-        registry.put_shared(Arc::new(Mutex::new(dag))).await?;
+        match BlockDAG::init_with_storage(storage.clone(), config.clone())? {
+            Some(dag) => registry.put_shared(Arc::new(dag)).await?,
+            None => info!("dag will be initialized later when the height of the chain reaches the specific one"),
+        }
 
         info!(
             "Start node with chain info: {}, number {} upgrade_time cost {} secs, ",

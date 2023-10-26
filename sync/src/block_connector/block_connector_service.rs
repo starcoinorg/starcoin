@@ -3,7 +3,6 @@
 
 #[cfg(test)]
 use super::CheckBlockConnectorHashValue;
-use crate::block_connector::write_block_chain::InitDagState;
 use crate::block_connector::{ExecuteRequest, ResetRequest, WriteBlockChainService};
 use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskCheckEvent};
@@ -14,6 +13,7 @@ use network_api::PeerProvider;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
 use starcoin_consensus::BlockDAG;
+use starcoin_consensus::dag::blockdag::InitDagState;
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
@@ -133,7 +133,9 @@ where
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist."))?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        let dag = ctx.get_shared::<Arc<Mutex<BlockDAG>>>()?;
+        let dag = BlockDAG::init_with_storage(storage.clone(), config.clone())?.map(|dag| {
+            Arc::new(Mutex::new(dag))
+        });
         let chain_service = WriteBlockChainService::new(
             config.clone(),
             startup_info,
@@ -141,7 +143,7 @@ where
             txpool,
             bus,
             vm_metrics,
-            Some(dag.clone()),
+            dag,
         )?;
 
         Ok(Self::new(chain_service, config))

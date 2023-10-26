@@ -9,6 +9,7 @@ use futures::executor::block_on;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 use starcoin_config::NodeConfig;
+use starcoin_consensus::dag::blockdag::InitDagState;
 use starcoin_consensus::dag::ghostdag;
 use starcoin_consensus::dag::ghostdag::protocol::ColoringOutput;
 use starcoin_consensus::dag::types::ghostdata::GhostdagData;
@@ -36,14 +37,6 @@ use std::sync::{Arc, Mutex};
 use super::BlockConnectorService;
 
 const MAX_ROLL_BACK_BLOCK: usize = 10;
-
-#[derive(Clone)]
-pub enum InitDagState {
-    FailedToInitDag,
-    InitDagSuccess(Arc<Mutex<BlockDAG>>),
-    InitedDag,
-    NoNeedInitDag,
-}
 
 pub struct WriteBlockChainService<P>
 where
@@ -790,32 +783,27 @@ where
         return Ok(ConnectOk::ExeConnectMain(executed_block));
     }
 
-    fn init_dag_if_needed(&mut self, header: &BlockHeader) -> Result<InitDagState> {
+    fn init_dag(&mut self, header: BlockHeader) -> Result<InitDagState> {
         let dag_fork_number = self.storage.dag_fork_height(self.config.net().id().clone());
         let current_block_number = header.number();
         if current_block_number < dag_fork_number {
-            panic!("this function should not be invoked when connecting to the dag");
+            panic!("no need to init the dag, do not call this function");
         } else if current_block_number == dag_fork_number {
-            let flex_dag_config = FlexiDagStorageConfig::create_with_params(1, 0, 1024);
-            let flex_dag_db = FlexiDagStorage::create_from_path("./smolstc", flex_dag_config)
-                .expect("Failed to create flexidag storage");
-
-            let mut dag = BlockDAG::new(header.id(), 8, flex_dag_db);
-            dag.init_with_genesis(DagHeader::new_genesis(header.clone()))
-                .expect("dag init with genesis");
-            // registry.put_shared(Arc::new(Mutex::new(dag))).await?;
-            self.dag = Some(Arc::new(Mutex::new(dag)));
+            self.dag = BlockDAG::init_with_storage(self.storage.clone(), self.config.clone())?.map(|dag| {
+                Arc::new(Mutex::new(dag))
+            });
             Ok(InitDagState::InitDagSuccess(
                 self.dag.as_ref()
                     .expect("the dag is definitely uninitialized")
                     .clone(),
             ))
         } else {
+            assert!(self.dag.is_some(), "the dag must be initialized");
             Ok(InitDagState::InitedDag)
         }
     }
 
-    fn addToDag(
+    fn add_to_dag(
         &mut self,
         header: &BlockHeader,
         parents_hash: Vec<HashValue>,
@@ -830,7 +818,7 @@ where
             Err(_) => std::result::Result::Ok(Arc::new(
                 dag.lock()
                     .expect("failed to lock the dag")
-                    .addToDag(DagHeader::new(header.clone(), parents_hash.clone()))?,
+                    .add_to_dag(DagHeader::new(header.clone(), parents_hash.clone()))?,
             )),
         }
     }
@@ -840,7 +828,7 @@ where
         block: Block,
         parents_hash: Vec<HashValue>,
     ) -> Result<ConnectOk> {
-        let ghost_dag_data = self.addToDag(block.header(), parents_hash.clone())?;
+        let ghost_dag_data = self.add_to_dag(block.header(), parents_hash.clone())?;
         let selected_parent = self
             .storage
             .get_block_by_hash(ghost_dag_data.selected_parent)?
@@ -886,9 +874,17 @@ where
         block: Block,
         parents_hash: Option<Vec<HashValue>>,
     ) -> Result<InitDagState> {
-        let dag_init_result = self.init_dag_if_needed(block.header())?;
-        let connect_result = self.try_connect(block, parents_hash)?;
-        Ok(dag_init_result)
+        info!("jacktest: try_write_new_block, parent = {:?}, height = {}", parents_hash, block.header().number());
+
+        let dag_fork_number = self.storage.dag_fork_height(self.config.net().id().clone());
+        if block.header().number() < dag_fork_number {
+            self.try_connect(block, parents_hash)?;
+            Ok(InitDagState::NoNeedInitDag)
+        } else {
+            let dag_genesis = block.header().clone();
+            self.try_connect(block, parents_hash)?;
+            Ok(self.init_dag(dag_genesis)?)
+        }
     }
 
     #[cfg(test)]

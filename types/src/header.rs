@@ -1,4 +1,4 @@
-use crate::block::BlockHeader;
+use crate::block::{BlockHeader, BlockNumber};
 use crate::blockhash::{BlockLevel, ORIGIN};
 use crate::U256;
 use serde::{Deserialize, Serialize};
@@ -30,6 +30,10 @@ impl DagHeader {
             block_header: genesis_header,
             parents_hash: vec![Hash::new(ORIGIN)],
         }
+    }
+
+    pub fn number(&self) -> BlockNumber {
+        self.block_header.number()
     }
 }
 
