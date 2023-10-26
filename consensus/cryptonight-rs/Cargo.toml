@@ -4,7 +4,6 @@ name = "bench"
 
 [build-dependencies]
 cc = "1.0"
-os_info = { version = "3", default-features = false }
 
 [dependencies]
 libc = { workspace = true }
