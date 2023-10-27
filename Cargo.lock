@@ -9491,8 +9491,6 @@ dependencies = [
  "rand 0.8.5",
  "rand_core 0.6.4",
  "rust-argon2",
- "serde 1.0.152",
- "serde_json",
  "sha3",
  "starcoin-chain-api",
  "starcoin-crypto",

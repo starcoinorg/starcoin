@@ -189,7 +189,7 @@ impl BlockHeader {
     }
 
     // the author_auth_key field is deprecated, but keep this fn for compat with old block.
-    pub fn new_with_auth_key(
+    fn new_with_auth_key(
         parent_hash: HashValue,
         timestamp: u64,
         number: BlockNumber,
