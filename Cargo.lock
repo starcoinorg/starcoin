@@ -1726,7 +1726,6 @@ dependencies = [
  "bencher",
  "cc",
  "libc",
- "os_info",
  "rustc-serialize",
 ]
 
@@ -6506,16 +6505,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c80c1530f46e9d8985706d7deb80b83172b250538902f607dea6cd6028851083"
 dependencies = [
  "num-integer",
-]
-
-[[package]]
-name = "os_info"
-version = "3.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "006e42d5b888366f1880eda20371fedde764ed2213dc8496f49622fa0c99cd5e"
-dependencies = [
- "log 0.4.17",
- "winapi 0.3.9",
 ]
 
 [[package]]
