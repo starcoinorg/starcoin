@@ -267,6 +267,8 @@ where
         let id = new_block.header().id();
         debug!("try connect mined block: {}", id);
 
+        let _ = self.chain_service.update_dag_data();
+
         match self
             .chain_service
             .try_write_new_block(new_block.as_ref().clone(), tips_headers)

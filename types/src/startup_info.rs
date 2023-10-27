@@ -230,6 +230,9 @@ impl DagChainStatus {
 pub struct StartupInfo {
     /// main chain head block hash
     pub main: HashValue,
+
+    /// dag accumulator info hash
+    pub dag_main: Option<HashValue>
 }
 
 impl fmt::Display for StartupInfo {
@@ -243,7 +246,17 @@ impl fmt::Display for StartupInfo {
 
 impl StartupInfo {
     pub fn new(main: HashValue) -> Self {
-        Self { main }
+        Self { 
+            main,
+            dag_main: None,
+         }
+    }
+
+    pub fn new_with_dag(main: HashValue, dag_main: Option<HashValue>) -> Self {
+        Self { 
+            main,
+            dag_main,
+         }
     }
 
     pub fn update_main(&mut self, new_head: HashValue) {
@@ -253,6 +266,16 @@ impl StartupInfo {
     pub fn get_main(&self) -> &HashValue {
         &self.main
     }
+
+    pub fn update_dag_main(&mut self, new_head: HashValue) {
+        self.dag_main = Some(new_head);
+    }
+
+    pub fn get_dag_main(&self) -> Option<HashValue> {
+        self.dag_main
+    }
+
+
 }
 
 impl TryFrom<Vec<u8>> for StartupInfo {

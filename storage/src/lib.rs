@@ -688,6 +688,7 @@ impl SyncFlexiDagStore for Storage {
         }
     }
 
+    // update dag accumulator 
     fn append_dag_accumulator_leaf(
         &self,
         key: HashValue,
@@ -699,36 +700,22 @@ impl SyncFlexiDagStore for Storage {
             accumulator_info: accumulator_info.clone(),
         };
         // for sync
-        if self.flexi_dag_storage.get_hashes_by_hash(key)?.is_some() {
-            if let Some(t) = self.flexi_dag_storage.get_hashes_by_hash(key)? {
-                if t != snapshot {
-                    bail!("the accumulator differ from other");
-                }
+        if let Some(t) = self.flexi_dag_storage.get_hashes_by_hash(key)? {
+            if t != snapshot {
+                panic!("the accumulator differ from other");
             }
+        } else {
+            self.flexi_dag_storage.put_hashes(key, snapshot)?;
         }
-        self.flexi_dag_storage.put_hashes(key, snapshot.clone())?;
 
-        // for block chain
-        new_tips.iter().try_fold((), |_, block_id| {
-            if let Some(t) = self
-                .flexi_dag_storage
-                .get_hashes_by_hash(block_id.clone())?
-            {
-                if t != snapshot {
-                    bail!("the key {} should not exists", block_id);
-                }
-            }
-            self.flexi_dag_storage
-                .put_hashes(block_id.clone(), snapshot.clone())
-        })?;
         Ok(())
     }
 
-    fn get_tips_by_block_id(&self, block_id: HashValue) -> Result<Vec<HashValue>> {
-        match self.query_by_hash(block_id)? {
+    fn get_tips_by_block_id(&self, key: HashValue) -> Result<Vec<HashValue>> {
+        match self.query_by_hash(key)? {
             Some(snapshot) => Ok(snapshot.child_hashes),
             None => {
-                bail!("failed to get snapshot by hash: {}", block_id);
+                bail!("failed to get snapshot by hash: {}", key);
             }
         }
     }

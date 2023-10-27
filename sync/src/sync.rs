@@ -112,7 +112,9 @@ impl SyncService {
                 ChainStatus::new(
                     head_block.header.clone(),
                     head_block_info,
-                    Some(storage.get_tips_by_block_id(head_block_hash)?),
+                    startup_info.get_dag_main().and_then(|dag_main| {
+                        storage.get_tips_by_block_id(dag_main).ok()
+                    })
                 ),
                 dag_accumulator_info,
             ),

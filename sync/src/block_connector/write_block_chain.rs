@@ -836,14 +836,21 @@ where
         let mut chain = self.main.fork(selected_parent.header.parent_hash())?;
         for blue_hash in ghost_dag_data.mergeset_blues.iter() {
             if let Some(blue_block) = self.storage.get_block(blue_hash.to_owned())? {
-                chain.apply(blue_block, Some(parents_hash.clone()));
+                let _result = chain.apply(blue_block, Some(parents_hash.clone()));
             } else {
                 error!("Failed to get block {:?}", blue_hash);
                 return Ok(ConnectOk::DagConnectMissingBlock);
             }
         }
-        //self.broadcast_new_head();
+        // select new head and update startup info(main but dag main)
+        self.select_head_for_dag(chain)?;
         Ok(ConnectOk::DagConnected)
+    }
+
+    fn select_head_for_dag(&self, new_chain: BlockChain) -> Result<()> {
+        // self.broadcast_new_head();
+        
+        Ok(())
     }
 
     fn connect_inner(&mut self, block: Block) -> Result<ConnectOk> {
@@ -884,6 +891,18 @@ where
             let dag_genesis = block.header().clone();
             self.try_connect(block, parents_hash)?;
             Ok(self.init_dag(dag_genesis)?)
+        }
+    }
+
+
+    pub fn update_dag_data(&mut self) -> Result<()> {
+        match self.main.status().tips_hash {
+            Some(tips) => {
+                self.main.status().tips_hash = Some(vec![]);
+                self.main.append_dag_accumulator_leaf(tips)?;
+                Ok(())
+            }
+            None => Ok(()),
         }
     }
 
