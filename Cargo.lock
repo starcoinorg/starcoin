@@ -2814,6 +2814,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "flexidag"
+version = "1.13.7"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "futures 0.3.26",
+ "starcoin-accumulator",
+ "starcoin-config",
+ "starcoin-consensus",
+ "starcoin-crypto",
+ "starcoin-logger",
+ "starcoin-service-registry",
+ "starcoin-storage",
+ "starcoin-types",
+ "tokio",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"

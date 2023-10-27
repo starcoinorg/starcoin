@@ -12,6 +12,7 @@ use crate::consensusdb::{
     },
 };
 use anyhow::{anyhow, bail, Ok};
+use bcs_ext::BCSCodec;
 use parking_lot::RwLock;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::{MerkleAccumulator, Accumulator};
@@ -91,8 +92,8 @@ impl BlockDAG {
 
     pub fn init_with_storage(storage: Arc<dyn Store>, config: Arc<NodeConfig>) -> anyhow::Result<Option<Self>> {
         let startup_info = storage.get_startup_info()?.expect("startup info must exist");
-        let startup_info_header = startup_info.main;
-        if let Some(accumulator_info) = storage.get_dag_accumulator_info(startup_info_header)? {
+        if let Some(key) = startup_info.get_dag_main() {
+            let accumulator_info = storage.get_dag_accumulator_info(key)?;
             assert!(accumulator_info.get_num_leaves() > 0, "the number of dag accumulator leaf must be greater than 0");
             let dag_genesis_hash = MerkleAccumulator::new_with_info(
                 accumulator_info,
@@ -102,16 +103,17 @@ impl BlockDAG {
             let dag_genesis_header = storage.get_block_header_by_hash(dag_genesis_hash)?.expect("the genesis block in dag accumulator must none be none");
 
             Ok(Some(Self::new_by_config(DagHeader::new_genesis(dag_genesis_header), config.data_dir().join("flexidag").as_path())?))
+
         } else {
-            let block_header = storage.get_block_header_by_hash(startup_info_header)?.expect("the genesis block in dag accumulator must none be none");
+            let block_header = storage.get_block_header_by_hash(startup_info.get_main().clone())?.expect("the genesis block in dag accumulator must none be none");
             let fork_height = storage.dag_fork_height(config.net().id().clone());
             if block_header.number() < fork_height {
                 Ok(None)
             } else if block_header.number() == fork_height {
                 let dag_accumulator = MerkleAccumulator::new_with_info(AccumulatorInfo::default(), storage.get_accumulator_store(AccumulatorStoreType::SyncDag));
                 dag_accumulator.append(&[block_header.id()])?;
-                storage.get_accumulator_snapshot_storage().put(startup_info_header, SyncFlexiDagSnapshot {
-                    child_hashes: vec![startup_info_header],
+                storage.get_accumulator_snapshot_storage().put(Self::calculate_dag_accumulator_key(vec![block_header.id()])?, SyncFlexiDagSnapshot {
+                    child_hashes: vec![block_header.id()],
                     accumulator_info: dag_accumulator.get_info(),
                 })?;
                 Ok(Some(Self::new_by_config(DagHeader::new_genesis(block_header), config.data_dir().join("flexidag").as_path())?))
@@ -126,6 +128,13 @@ impl BlockDAG {
         let db = FlexiDagStorage::create_from_path(db_path, config)?;
         let dag = Self::new(header.hash(), 16, db);
         Ok(dag)
+    }
+
+    pub fn calculate_dag_accumulator_key(mut tips: Vec<Hash>) -> anyhow::Result<Hash> {
+        tips.sort();
+        Ok(Hash::sha3_256_of(&tips.encode().expect(
+            "encoding the sorted relatship set must be successful",
+        )))
     }
 
     pub fn clear_missing_block(&mut self) {

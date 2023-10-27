@@ -331,7 +331,7 @@ pub trait SyncFlexiDagStore {
         new_tips: Vec<HashValue>,
         accumulator_info: AccumulatorInfo,
     ) -> Result<()>;
-    fn get_dag_accumulator_info(&self, block_id: HashValue) -> Result<Option<AccumulatorInfo>>;
+    fn get_dag_accumulator_info(&self, key: HashValue) -> Result<AccumulatorInfo>;
     fn get_tips_by_block_id(&self, block_id: HashValue) -> Result<Vec<HashValue>>;
     fn get_flexidag_init_data(
         &self,
@@ -677,15 +677,11 @@ impl SyncFlexiDagStore for Storage {
         self.flexi_dag_storage.get_snapshot_storage()
     }
 
-    fn get_dag_accumulator_info(&self, block_id: HashValue) -> Result<Option<AccumulatorInfo>> {
-        match self
+    fn get_dag_accumulator_info(&self, key: HashValue) -> Result<AccumulatorInfo> {
+        Ok(self
             .flexi_dag_storage
             .get_snapshot_storage()
-            .get(block_id)?
-        {
-            Some(snapshot) => Ok(Some(snapshot.accumulator_info)),
-            None => Ok(None),
-        }
+            .get(key)?.expect("the dag snapshot should not be none if reading").accumulator_info)
     }
 
     // update dag accumulator 
@@ -743,8 +739,7 @@ impl SyncFlexiDagStore for Storage {
         } else if flexi_dag_number < head_block.number() {
             info!("jacktest, in get_flexidag_init_data: return some specific value");
             let dag_accumulator_info = self
-                .get_dag_accumulator_info(head_block.id())?
-                .expect("the dag accumulator info must exist!");
+                .get_dag_accumulator_info(head_block.id())?;
             let tips = self.get_tips_by_block_id(head_block.id())?;
             assert!(
                 tips.len() > 0,
