@@ -241,6 +241,7 @@ static HashReturn Init(hashState *state, int hashbitlen)
             case 224: memcpy(state->x,JH224_H0,128); break;
             case 256: memcpy(state->x,JH256_H0,128); break;
             case 384: memcpy(state->x,JH384_H0,128); break;
+          default:
             case 512: memcpy(state->x,JH512_H0,128); break;
       }
 
