@@ -783,7 +783,7 @@ where
         return Ok(ConnectOk::ExeConnectMain(executed_block));
     }
 
-    fn init_dag(&mut self, header: BlockHeader) -> Result<InitDagState> {
+    fn try_init_dag(&mut self, header: BlockHeader) -> Result<InitDagState> {
         let dag_fork_number = self.storage.dag_fork_height(self.config.net().id().clone());
         let current_block_number = header.number();
         if current_block_number < dag_fork_number {
@@ -890,7 +890,7 @@ where
         } else {
             let dag_genesis = block.header().clone();
             self.try_connect(block, parents_hash)?;
-            Ok(self.init_dag(dag_genesis)?)
+            Ok(self.try_init_dag(dag_genesis)?)
         }
     }
 
@@ -898,8 +898,10 @@ where
     pub fn update_dag_data(&mut self) -> Result<()> {
         match self.main.status().tips_hash {
             Some(tips) => {
-                self.main.status().tips_hash = Some(vec![]);
+                // append dag should be first since 
+                // if the starcoin is restarted, the dag should be initialized by dag
                 self.main.append_dag_accumulator_leaf(tips)?;
+                self.main.status().tips_hash = Some(vec![]);
                 Ok(())
             }
             None => Ok(()),

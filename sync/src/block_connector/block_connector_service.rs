@@ -267,7 +267,7 @@ where
         let id = new_block.header().id();
         debug!("try connect mined block: {}", id);
 
-        let _ = self.chain_service.update_dag_data();
+        self.chain_service.update_dag_data().expect("failed to update dag");
 
         match self
             .chain_service
