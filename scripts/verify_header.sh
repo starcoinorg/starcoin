@@ -31,15 +31,13 @@ function download() {
 }
 
 function usage() {
-  echo -e "usage: verify_header.sh net to_dir"
+  echo -e "usage: verify_header.sh net"
   echo -e "net is main, barnard, proxima, halley"
-  echo -e "to_dir like ~/.starcoin/main，~/.starcoin/barnard"
 }
 
-function import_block() {
+function verify_header() {
   net=$1
   block_list=$2
-  to_dir=$3
 
   download "$net" "$block_list"
 
@@ -62,15 +60,14 @@ function import_block() {
   echo -e "$net verify-header succ"
 }
 
-if [ $# != 2 ]; then
+if [ $# != 1 ]; then
   usage
   exit 1
 fi
 net=$1
-to_dir=$2
 case $net in
 "main" | "barnard" | "proxima" |"halley")
-  import_block "$net" block_list.csv "$to_dir"
+  verify_header "$net" block_list.csv
   ;;
 *)
   echo "$net not supported"
