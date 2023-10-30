@@ -16,12 +16,13 @@ use starcoin_consensus::BlockDAG;
 use starcoin_consensus::dag::blockdag::InitDagState;
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
+use starcoin_flexidag::FlexidagService;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
-use starcoin_storage::{BlockStore, Storage};
+use starcoin_storage::{BlockStore, Storage, flexi_dag};
 use starcoin_sync_api::PeerNewBlock;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
@@ -267,7 +268,13 @@ where
         let id = new_block.header().id();
         debug!("try connect mined block: {}", id);
 
-        self.chain_service.update_dag_data().expect("failed to update dag");
+        // self.chain_service.update_dag_data().expect("failed to update dag");
+
+        let flexi_dag_service = ctx
+            .service_ref::<FlexidagService>()?
+            .clone();
+        flexi_dag_service.send();
+
 
         match self
             .chain_service

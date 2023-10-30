@@ -25,6 +25,9 @@ use starcoin_types::transaction::{
     RichTransactionInfo, SignedUserTransaction, Transaction, TransactionInfo,
 };
 use starcoin_types::vm_error::KeptVMStatus;
+use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::language_storage::TypeTag;
+use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 //use starcoin_vm_types::account_address::AccountAddress;
 //use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::path::Path;
@@ -296,7 +299,7 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
         BlockBody::new(vec![txn.clone()], None),
     );
     let mut txn_inf_ids = vec![];
-    let block_metadata = block.to_metadata(0, None);
+    let block_metadata = block.to_metadata(0);
     let txn_info_0 = TransactionInfo::new(
         block_metadata.id(),
         HashValue::random(),

@@ -1,5 +1,5 @@
 [package]
-name = "flexidag"
+name = "starcoin-flexidag"
 authors = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }

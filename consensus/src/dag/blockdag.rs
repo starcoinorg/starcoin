@@ -90,7 +90,7 @@ impl BlockDAG {
         dag
     }
 
-    pub fn init_with_storage(storage: Arc<dyn Store>, config: Arc<NodeConfig>) -> anyhow::Result<Option<Self>> {
+    pub fn init_with_storage(storage: Arc<dyn Store>, config: Arc<NodeConfig>) -> anyhow::Result<(Option<Self>, Option<MerkleAccumulator>)> {
         let startup_info = storage.get_startup_info()?.expect("startup info must exist");
         if let Some(key) = startup_info.get_dag_main() {
             let accumulator_info = storage.get_dag_accumulator_info(key)?;
