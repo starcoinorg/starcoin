@@ -72,7 +72,7 @@ fn single_peer_to_peer_with_event() {
 
 // TODO test no longer simple as the legacy version takes an &signer but all
 // new scripts take an owned signer
-#[test]
+// #[test]
 // fn single_peer_to_peer_with_padding() {
 //     //::diem_logger::Logger::init_for_testing();
 //     // create a FakeExecutor with a genesis from file
