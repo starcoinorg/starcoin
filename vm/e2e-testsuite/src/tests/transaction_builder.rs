@@ -8,27 +8,45 @@
 
 #![forbid(unsafe_code)]
 
-use starcoin_crypto::{ed25519::Ed25519PrivateKey, traits::SigningKey, PrivateKey, Uniform};
-// use diem_keygen::KeyGen;
-use move_core_types::language_storage::TypeTag;
+use move_core_types::{
+    account_address::AccountAddress,
+    language_storage::TypeTag,
+    vm_status::KeptVMStatus
+};
+use move_core_types::vm_status::StatusCode;
+use starcoin_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, SigningKey, Uniform};
+use starcoin_crypto::keygen::KeyGen;
+
 use starcoin_language_e2e_tests::{
-    account::{self, Account},
-    common_transactions::rotate_key_txn,
-    //currencies, current_function_name,
-    executor::FakeExecutor,
-    gas_costs,
     test_with_different_versions,
     versioning::CURRENT_RELEASE_VERSIONS,
+    gas_costs,
+    common_transactions::rotate_key_txn
 };
-use starcoin_transaction_builder::stdlib::*;
-use starcoin_types::{
-    account_address::AccountAddress,
-    account_config,
-    transaction::{
-        authenticator::AuthenticationKey, Script, TransactionOutput, TransactionStatus,
-        WriteSetPayload,
-    },
-    vm_status::{KeptVMStatus, StatusCode},
+
+use starcoin_types::account_config;
+
+use starcoin_vm_types::transaction::{
+    Script,
+    TransactionOutput,
+    TransactionStatus,
+    authenticator::AuthenticationKey
+};
+
+use crate::tests::fake_stdlib::{
+    encode_create_child_vasp_account_script,
+    encode_create_designated_dealer_script,
+    encode_create_parent_vasp_account_script,
+    encode_create_recovery_address_script,
+    encode_freeze_account_script,
+    encode_peer_to_peer_with_metadata_script,
+    encode_publish_shared_ed25519_public_key_script,
+    encode_rotate_dual_attestation_info_script,
+    encode_rotate_shared_ed25519_public_key_script,
+    encode_unfreeze_account_script,
+    encode_rotate_authentication_key_with_nonce_admin_script,
+    encode_add_recovery_rotation_capability_script,
+    encode_rotate_authentication_key_with_recovery_address_script,
 };
 
 const XUS_THRESHOLD: u64 = 10_000_000_000 / 5;
@@ -40,6 +58,7 @@ const PAYEE_COMPLIANCE_KEY_NOT_SET_ERROR_CODE: u64 = 1281;
 fn test_rotate_authentication_key_with_nonce_admin() {
     test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
         let mut executor = test_env.executor;
+        //let mut executor = FakeExecutor::from_test_genesis();
         let new_account = executor.create_raw_account_data(100_000, 0);
         executor.add_account_data(&new_account);
 
@@ -48,14 +67,19 @@ fn test_rotate_authentication_key_with_nonce_admin() {
         let new_key_hash = AuthenticationKey::ed25519(&pubkey).to_vec();
 
         let account = test_env.dr_account;
+        // let txn = account
+        //     .transaction()
+        //     .write_set(WriteSetPayload::Script {
+        //         script: encode_rotate_authentication_key_with_nonce_admin_script(0, new_key_hash.clone()),
+        //         execute_as: *new_account.address(),
+        //     })
+        //     .sequence_number(test_env.dr_sequence_number)
+        //     .sign();
         let txn = account
-            .transaction()
-            .write_set(WriteSetPayload::Script {
-                script: encode_rotate_authentication_key_with_nonce_admin_script(0, new_key_hash.clone()),
-                execute_as: *new_account.address(),
-            })
+            .transaction().script(encode_rotate_authentication_key_with_nonce_admin_script(0, new_key_hash.clone()))
             .sequence_number(test_env.dr_sequence_number)
             .sign();
+
         executor.new_block();
         let output = executor.execute_and_apply(txn);
         assert_eq!(
@@ -78,14 +102,13 @@ fn freeze_unfreeze_account() {
         let mut executor = test_env.executor;
 
         let account = executor.create_raw_account();
-
         let blessed = test_env.tc_account;
 
         executor.execute_and_apply(
             blessed
                 .transaction()
                 .script(encode_create_parent_vasp_account_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     0,
                     *account.address(),
                     account.auth_key_prefix(),
@@ -152,7 +175,7 @@ fn create_parent_and_child_vasp() {
             blessed
                 .transaction()
                 .script(encode_create_parent_vasp_account_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     0,
                     *parent.address(),
                     parent.auth_key_prefix(),
@@ -168,7 +191,7 @@ fn create_parent_and_child_vasp() {
             parent
                 .transaction()
                 .script(encode_create_child_vasp_account_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     *child.address(),
                     child.auth_key_prefix(),
                     add_all_currencies,
@@ -180,9 +203,9 @@ fn create_parent_and_child_vasp() {
         // check for zero balance
         assert_eq!(
             executor
-                .read_balance_resource(&child, account::xus_currency_code())
+                .read_balance_resource(&child)
                 .unwrap()
-                .coin(),
+                .token(),
             0
         );
 
@@ -218,7 +241,7 @@ fn create_child_vasp_all_currencies() {
             blessed
                 .transaction()
                 .script(encode_create_parent_vasp_account_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     0,
                     *parent.address(),
                     parent.auth_key_prefix(),
@@ -234,7 +257,7 @@ fn create_child_vasp_all_currencies() {
         executor.execute_and_apply(
             dd.transaction()
                 .script(encode_peer_to_peer_with_metadata_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     *parent.address(),
                     amount,
                     vec![],
@@ -245,7 +268,7 @@ fn create_child_vasp_all_currencies() {
         );
 
         assert!(executor
-            .read_balance_resource(&parent, account::xus_currency_code())
+            .read_balance_resource(&parent)
             .is_some());
 
         // create a child VASP with a balance of amount
@@ -253,7 +276,7 @@ fn create_child_vasp_all_currencies() {
             parent
                 .transaction()
                 .script(encode_create_child_vasp_account_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     *child.address(),
                     child.auth_key_prefix(),
                     add_all_currencies,
@@ -265,7 +288,7 @@ fn create_child_vasp_all_currencies() {
         );
 
         assert!(executor
-            .read_balance_resource(&parent, account::xus_currency_code())
+            .read_balance_resource(&parent)
             .is_some());
     }
     }
@@ -287,7 +310,7 @@ fn create_child_vasp_with_balance() {
             blessed
                 .transaction()
                 .script(encode_create_parent_vasp_account_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     0,
                     *parent.address(),
                     parent.auth_key_prefix(),
@@ -303,7 +326,7 @@ fn create_child_vasp_with_balance() {
         executor.execute_and_apply(
             dd.transaction()
                 .script(encode_peer_to_peer_with_metadata_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     *parent.address(),
                     amount,
                     vec![],
@@ -315,9 +338,9 @@ fn create_child_vasp_with_balance() {
 
         assert_eq!(
             executor
-                .read_balance_resource(&parent, account::xus_currency_code())
+                .read_balance_resource(&parent)
                 .unwrap()
-                .coin(),
+                .token() as u64,
             amount
         );
 
@@ -326,7 +349,7 @@ fn create_child_vasp_with_balance() {
             parent
                 .transaction()
                 .script(encode_create_child_vasp_account_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     *child.address(),
                     child.auth_key_prefix(),
                     add_all_currencies,
@@ -340,9 +363,9 @@ fn create_child_vasp_with_balance() {
         // check balance
         assert_eq!(
             executor
-                .read_balance_resource(&child, account::xus_currency_code())
+                .read_balance_resource(&child)
                 .unwrap()
-                .coin(),
+                .token() as u64,
             amount
         );
     }
@@ -372,7 +395,7 @@ fn dual_attestation_payment() {
             blessed
                 .transaction()
                 .script(encode_create_parent_vasp_account_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     0,
                     *payment_sender.address(),
                     payment_sender.auth_key_prefix(),
@@ -387,7 +410,7 @@ fn dual_attestation_payment() {
             blessed
                 .transaction()
                 .script(encode_create_parent_vasp_account_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     0,
                     *payment_receiver.address(),
                     payment_receiver.auth_key_prefix(),
@@ -413,7 +436,7 @@ fn dual_attestation_payment() {
         executor.execute_and_apply(
             dd.transaction()
                 .script(encode_peer_to_peer_with_metadata_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     *payment_sender.address(),
                     XUS_THRESHOLD * 10,
                     vec![],
@@ -428,7 +451,7 @@ fn dual_attestation_payment() {
             payment_sender
                 .transaction()
                 .script(encode_create_child_vasp_account_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     *sender_child.address(),
                     sender_child.auth_key_prefix(),
                     false,
@@ -443,7 +466,7 @@ fn dual_attestation_payment() {
             payment_receiver
                 .transaction()
                 .script(encode_create_child_vasp_account_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     *payee_child.address(),
                     payee_child.auth_key_prefix(),
                     false,
@@ -464,7 +487,7 @@ fn dual_attestation_payment() {
                         *payment_sender.address(),
                         *payment_receiver.address(),
                         payment_amount,
-                        account_config::xus_tag(),
+                        account_config::stc_type_tag(),
                         ref_id,
                         &receiver_vasp_compliance_private_key,
                     ))
@@ -486,7 +509,7 @@ fn dual_attestation_payment() {
                         *payment_sender.address(),
                         *payee_child.address(),
                         payment_amount,
-                        account_config::xus_tag(),
+                        account_config::stc_type_tag(),
                         ref_id,
                         &receiver_vasp_compliance_private_key,
                     ))
@@ -503,7 +526,7 @@ fn dual_attestation_payment() {
                 payment_sender
                     .transaction()
                     .script(encode_peer_to_peer_with_metadata_script(
-                        account_config::xus_tag(),
+                        account_config::stc_type_tag(),
                         *payment_receiver.address(),
                         payment_amount,
                         ref_id,
@@ -532,7 +555,7 @@ fn dual_attestation_payment() {
                         *payment_sender.address(),
                         *payment_receiver.address(),
                         payment_amount,
-                        account_config::xus_tag(),
+                        account_config::stc_type_tag(),
                         ref_id,
                         // Sign with the wrong private key
                         &sender_vasp_compliance_private_key,
@@ -554,7 +577,7 @@ fn dual_attestation_payment() {
                         *payment_sender.address(),
                         *payment_receiver.address(),
                         payment_amount,
-                        account_config::xus_tag(),
+                        account_config::stc_type_tag(),
                         ref_id,
                         &sender_vasp_compliance_private_key,
                     ))
@@ -571,7 +594,7 @@ fn dual_attestation_payment() {
                 payment_sender
                     .transaction()
                     .script(encode_peer_to_peer_with_metadata_script(
-                        account_config::xus_tag(),
+                        account_config::stc_type_tag(),
                         *sender_child.address(),
                         payment_amount * 2,
                         vec![0],
@@ -586,7 +609,7 @@ fn dual_attestation_payment() {
                 payment_sender
                     .transaction()
                     .script(encode_peer_to_peer_with_metadata_script(
-                        account_config::xus_tag(),
+                        account_config::stc_type_tag(),
                         *sender_child.address(),
                         payment_amount * 2,
                         vec![0],
@@ -604,7 +627,7 @@ fn dual_attestation_payment() {
                 sender_child
                     .transaction()
                     .script(encode_peer_to_peer_with_metadata_script(
-                        account_config::xus_tag(),
+                        account_config::stc_type_tag(),
                         *payment_sender.address(),
                         payment_amount,
                         vec![0],
@@ -620,7 +643,7 @@ fn dual_attestation_payment() {
                 sender_child
                     .transaction()
                     .script(encode_peer_to_peer_with_metadata_script(
-                        account_config::xus_tag(),
+                        account_config::stc_type_tag(),
                         *sender_child.address(),
                         payment_amount,
                         vec![0],
@@ -655,7 +678,7 @@ fn dual_attestation_payment() {
                         *payment_sender.address(),
                         *payment_receiver.address(),
                         payment_amount,
-                        account_config::xus_tag(),
+                        account_config::stc_type_tag(),
                         // pick an arbitrary ref_id
                         bcs::to_bytes(&9999u64).unwrap(),
                         &receiver_vasp_compliance_private_key,
@@ -674,7 +697,7 @@ fn dual_attestation_payment() {
                         *payment_receiver.address(),
                         *payment_sender.address(),
                         payment_amount,
-                        account_config::xus_tag(),
+                        account_config::stc_type_tag(),
                         // pick an arbitrary ref_id
                         bcs::to_bytes(&9999u64).unwrap(),
                         &receiver_vasp_compliance_private_key,
@@ -751,7 +774,7 @@ fn dd_dual_attestation_payments() {
             blessed
                 .transaction()
                 .script(encode_create_parent_vasp_account_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     0,
                     *parent_vasp.address(),
                     parent_vasp.auth_key_prefix(),
@@ -766,7 +789,7 @@ fn dd_dual_attestation_payments() {
             blessed
                 .transaction()
                 .script(encode_create_designated_dealer_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     0,
                     *dd1.address(),
                     dd1.auth_key_prefix(),
@@ -781,7 +804,7 @@ fn dd_dual_attestation_payments() {
             blessed
                 .transaction()
                 .script(encode_create_designated_dealer_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     0,
                     *dd2.address(),
                     dd2.auth_key_prefix(),
@@ -827,7 +850,7 @@ fn dd_dual_attestation_payments() {
             mint_dd
                 .transaction()
                 .script(encode_peer_to_peer_with_metadata_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     *dd1.address(),
                     XUS_THRESHOLD * 4,
                     vec![],
@@ -841,7 +864,7 @@ fn dd_dual_attestation_payments() {
             mint_dd
                 .transaction()
                 .script(encode_peer_to_peer_with_metadata_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     *parent_vasp.address(),
                     XUS_THRESHOLD * 2,
                     vec![],
@@ -855,7 +878,7 @@ fn dd_dual_attestation_payments() {
         executor.execute_and_apply(
             dd1.transaction()
                 .script(encode_peer_to_peer_with_metadata_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     *dd2.address(),
                     XUS_THRESHOLD,
                     vec![0],
@@ -871,7 +894,7 @@ fn dd_dual_attestation_payments() {
                     *dd1.address(),
                     *dd2.address(),
                     XUS_THRESHOLD,
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     // pick an arbitrary ref_id
                     bcs::to_bytes(&9999u64).unwrap(),
                     &dd2_compliance_private_key,
@@ -884,7 +907,7 @@ fn dd_dual_attestation_payments() {
         executor.execute_and_apply(
             dd1.transaction()
                 .script(encode_peer_to_peer_with_metadata_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     *parent_vasp.address(),
                     XUS_THRESHOLD,
                     vec![0],
@@ -900,7 +923,7 @@ fn dd_dual_attestation_payments() {
                     *dd1.address(),
                     *parent_vasp.address(),
                     XUS_THRESHOLD,
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     // pick an arbitrary ref_id
                     bcs::to_bytes(&9999u64).unwrap(),
                     &parent_vasp_compliance_private_key,
@@ -914,7 +937,7 @@ fn dd_dual_attestation_payments() {
             parent_vasp
                 .transaction()
                 .script(encode_peer_to_peer_with_metadata_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     *dd1.address(),
                     XUS_THRESHOLD,
                     vec![0],
@@ -931,7 +954,7 @@ fn dd_dual_attestation_payments() {
                     *parent_vasp.address(),
                     *dd1.address(),
                     XUS_THRESHOLD,
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     // pick an arbitrary ref_id
                     bcs::to_bytes(&9999u64).unwrap(),
                     &dd1_compliance_private_key,
@@ -945,7 +968,7 @@ fn dd_dual_attestation_payments() {
             parent_vasp
                 .transaction()
                 .script(encode_peer_to_peer_with_metadata_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     *dd1.address(),
                     XUS_THRESHOLD,
                     vec![0],
@@ -1032,7 +1055,7 @@ fn recovery_address() {
             blessed
                 .transaction()
                 .script(encode_create_parent_vasp_account_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     0,
                     *parent.address(),
                     parent.auth_key_prefix(),
@@ -1048,7 +1071,7 @@ fn recovery_address() {
             parent
                 .transaction()
                 .script(encode_create_child_vasp_account_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     *child.address(),
                     child.auth_key_prefix(),
                     add_all_currencies,
@@ -1119,7 +1142,7 @@ fn recovery_address() {
             blessed
                 .transaction()
                 .script(encode_create_parent_vasp_account_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     0,
                     *other_vasp.address(),
                     other_vasp.auth_key_prefix(),
@@ -1163,107 +1186,108 @@ fn recovery_address() {
     }
 }
 
-#[test]
-fn add_child_currencies() {
-    let mut executor = FakeExecutor::from_genesis_file();
-    executor.set_golden_file(current_function_name!());
-
-    let vasp_a = executor.create_raw_account();
-    let vasp_a_child1 = executor.create_raw_account();
-    let vasp_b = executor.create_raw_account();
-    let vasp_b_child1 = executor.create_raw_account();
-    let vasp_b_child2 = executor.create_raw_account();
-    let blessed = Account::new_blessed_tc();
-    let dr_account = Account::new_starcoin_root();
-    let tc_sequence_number = 0;
-
-    currencies::add_currency_to_system(&mut executor, "COIN", &dr_account, 0);
-
-    executor.execute_and_apply(
-        blessed
-            .transaction()
-            .script(encode_create_parent_vasp_account_script(
-                account_config::xus_tag(),
-                0,
-                *vasp_a.address(),
-                vasp_a.auth_key_prefix(),
-                vec![],
-                false,
-            ))
-            .sequence_number(tc_sequence_number)
-            .sign(),
-    );
-
-    // Adding a child with the same currency is no issue
-    executor.execute_and_apply(
-        vasp_a
-            .transaction()
-            .script(encode_create_child_vasp_account_script(
-                account_config::xus_tag(),
-                *vasp_a_child1.address(),
-                vasp_a_child1.auth_key_prefix(),
-                false,
-                0,
-            ))
-            .sequence_number(0)
-            .sign(),
-    );
-
-    executor.execute_and_apply(
-        vasp_a
-            .transaction()
-            .script(encode_add_currency_to_account_script(
-                account_config::type_tag_for_currency_code(account::currency_code("COIN")),
-            ))
-            .sequence_number(1)
-            .sign(),
-    );
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Now make a parent with all currencies, and make sure the children are fine
-    ///////////////////////////////////////////////////////////////////////////
-
-    executor.execute_and_apply(
-        blessed
-            .transaction()
-            .script(encode_create_parent_vasp_account_script(
-                account_config::xus_tag(),
-                0,
-                *vasp_b.address(),
-                vasp_b.auth_key_prefix(),
-                vec![],
-                true,
-            ))
-            .sequence_number(tc_sequence_number.checked_add(1).unwrap())
-            .sign(),
-    );
-
-    // Adding a child with the same currency and all other currencies isn't an issue
-    executor.execute_and_apply(
-        vasp_b
-            .transaction()
-            .script(encode_create_child_vasp_account_script(
-                account_config::xus_tag(),
-                *vasp_b_child1.address(),
-                vasp_b_child1.auth_key_prefix(),
-                true,
-                0,
-            ))
-            .sequence_number(0)
-            .sign(),
-    );
-    // Adding a child with a different currency than the parent VASP is OK
-    executor.execute_and_apply(
-        vasp_b
-            .transaction()
-            .script(encode_create_child_vasp_account_script(
-                account_config::type_tag_for_currency_code(account::currency_code("COIN")),
-                *vasp_b_child2.address(),
-                vasp_b_child2.auth_key_prefix(),
-                false,
-                0,
-            ))
-            .sequence_number(1)
-            .sign(),
-    );
-}
+// TODO(bob): starcoin e2e-test not support
+//#[test]
+// fn add_child_currencies() {
+//     let mut executor = FakeExecutor::from_genesis_file();
+//     executor.set_golden_file(current_function_name!());
+//
+//     let vasp_a = executor.create_raw_account();
+//     let vasp_a_child1 = executor.create_raw_account();
+//     let vasp_b = executor.create_raw_account();
+//     let vasp_b_child1 = executor.create_raw_account();
+//     let vasp_b_child2 = executor.create_raw_account();
+//     let blessed = Account::new_blessed_tc();
+//     let dr_account = Account::new_starcoin_root();
+//     let tc_sequence_number = 0;
+//
+//     currencies::add_currency_to_system(&mut executor, "COIN", &dr_account, 0);
+//
+//     executor.execute_and_apply(
+//         blessed
+//             .transaction()
+//             .script(encode_create_parent_vasp_account_script(
+//                 account_config::stc_type_tag(),
+//                 0,
+//                 *vasp_a.address(),
+//                 vasp_a.auth_key_prefix(),
+//                 vec![],
+//                 false,
+//             ))
+//             .sequence_number(tc_sequence_number)
+//             .sign(),
+//     );
+//
+//     // Adding a child with the same currency is no issue
+//     executor.execute_and_apply(
+//         vasp_a
+//             .transaction()
+//             .script(encode_create_child_vasp_account_script(
+//                 account_config::stc_type_tag(),
+//                 *vasp_a_child1.address(),
+//                 vasp_a_child1.auth_key_prefix(),
+//                 false,
+//                 0,
+//             ))
+//             .sequence_number(0)
+//             .sign(),
+//     );
+//
+//     executor.execute_and_apply(
+//         vasp_a
+//             .transaction()
+//             .script(encode_add_currency_to_account_script(
+//                 account_config::type_tag_for_currency_code(account::currency_code("COIN")),
+//             ))
+//             .sequence_number(1)
+//             .sign(),
+//     );
+//
+//     ///////////////////////////////////////////////////////////////////////////
+//     // Now make a parent with all currencies, and make sure the children are fine
+//     ///////////////////////////////////////////////////////////////////////////
+//
+//     executor.execute_and_apply(
+//         blessed
+//             .transaction()
+//             .script(encode_create_parent_vasp_account_script(
+//                 account_config::stc_type_tag(),
+//                 0,
+//                 *vasp_b.address(),
+//                 vasp_b.auth_key_prefix(),
+//                 vec![],
+//                 true,
+//             ))
+//             .sequence_number(tc_sequence_number.checked_add(1).unwrap())
+//             .sign(),
+//     );
+//
+//     // Adding a child with the same currency and all other currencies isn't an issue
+//     executor.execute_and_apply(
+//         vasp_b
+//             .transaction()
+//             .script(encode_create_child_vasp_account_script(
+//                 account_config::stc_type_tag(),
+//                 *vasp_b_child1.address(),
+//                 vasp_b_child1.auth_key_prefix(),
+//                 true,
+//                 0,
+//             ))
+//             .sequence_number(0)
+//             .sign(),
+//     );
+//     // Adding a child with a different currency than the parent VASP is OK
+//     executor.execute_and_apply(
+//         vasp_b
+//             .transaction()
+//             .script(encode_create_child_vasp_account_script(
+//                 account_config::type_tag_for_currency_code(account::currency_code("COIN")),
+//                 *vasp_b_child2.address(),
+//                 vasp_b_child2.auth_key_prefix(),
+//                 false,
+//                 0,
+//             ))
+//             .sequence_number(1)
+//             .sign(),
+//     );
+// }
