@@ -12,6 +12,7 @@ use starcoin_chain_api::{
 use starcoin_config::NodeConfig;
 use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
+use starcoin_flexidag::FlexidagService;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::dag_protocol::{
     GetDagAccumulatorLeaves, GetTargetDagAccumulatorLeafDetail, TargetDagAccumulatorLeaf,
@@ -89,7 +90,7 @@ impl ActorService for ChainReaderService {
 }
 
 impl EventHandler<Self, NewHeadBlock> for ChainReaderService {
-    fn handle_event(&mut self, event: NewHeadBlock, _ctx: &mut ServiceContext<ChainReaderService>) {
+    fn handle_event(&mut self, event: NewHeadBlock, ctx: &mut ServiceContext<ChainReaderService>) {
         let new_head = event.0.block().header();
         if let Err(e) = if self.inner.get_main().can_connect(event.0.as_ref()) {
             match self.inner.update_chain_head(event.0.as_ref().clone()) {
@@ -109,7 +110,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
     fn handle(
         &mut self,
         msg: ChainRequest,
-        _ctx: &mut ServiceContext<ChainReaderService>,
+        ctx: &mut ServiceContext<ChainReaderService>,
     ) -> Result<ChainResponse> {
         match msg {
             ChainRequest::CurrentHeader() => Ok(ChainResponse::BlockHeader(Box::new(
@@ -266,14 +267,22 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetTargetDagAccumulatorLeafDetail {
                 leaf_index,
                 batch_size,
-            } => Ok(ChainResponse::TargetDagAccumulatorLeafDetail(
-                self.inner.get_target_dag_accumulator_leaf_detail(
-                    GetTargetDagAccumulatorLeafDetail {
-                        leaf_index,
-                        batch_size,
-                    },
-                )?,
-            )),
+            } => {
+                let  flexidag_service = ctx.service_ref::<FlexidagService>()?.clone();
+                flexidag_service.send(GetDagAccumulatorLeafDetail {
+                    accumulator_leaf_index: leaf_index,
+                    batch_size,
+                })
+                Ok(ChainResponse::TargetDagAccumulatorLeafDetail(
+                // self.inner.get_target_dag_accumulator_leaf_detail(
+                //     GetTargetDagAccumulatorLeafDetail {
+                //         leaf_index,
+                //         batch_size,
+                //     },
+                // )?,
+                ))
+
+            },
         }
     }
 }
@@ -284,7 +293,6 @@ pub struct ChainReaderServiceInner {
     main: BlockChain,
     storage: Arc<dyn Store>,
     vm_metrics: Option<VMMetrics>,
-    dag: Arc<Mutex<BlockDAG>>,
 }
 
 impl ChainReaderServiceInner {

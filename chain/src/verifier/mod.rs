@@ -182,33 +182,34 @@ impl BlockVerifier for BasicVerifier {
         let expect_number = current.number().saturating_add(1);
 
         // dag
-        if chain_status.tips_hash.is_some() {
-            let mut tips_hash = chain_status.tips_hash.clone().unwrap();
-            tips_hash.sort();
+        // jacktest: TODO: the verifying should be modified!!!
+        // if chain_status.tips_hash.is_some() {
+            // let mut tips_hash = chain_status.tips_hash.clone().unwrap();
+            // tips_hash.sort();
 
             // if it is a dag block
-            if HashValue::sha3_256_of(&tips_hash.encode().expect("hash encode must be successful"))
-                != new_block_parent
-            {
-                // or a block of a single chain
-                verify_block!(
-                    VerifyBlockField::Header,
-                    expect_number == new_block_header.number(),
-                    "Invalid block: Unexpect block number, expect:{}, got: {}.",
-                    expect_number,
-                    new_block_header.number()
-                );
+            // if HashValue::sha3_256_of(&tips_hash.encode().expect("hash encode must be successful"))
+            //     != new_block_parent
+            // {
+                // // or a block of a single chain
+                // verify_block!(
+                //     VerifyBlockField::Header,
+                //     expect_number == new_block_header.number(),
+                //     "Invalid block: Unexpect block number, expect:{}, got: {}.",
+                //     expect_number,
+                //     new_block_header.number()
+                // );
 
-                verify_block!(
-                    VerifyBlockField::Header,
-                    current_id == new_block_parent,
-                    "Invalid block: Parent id mismatch, expect:{}, got: {}, number:{}.",
-                    current_id,
-                    new_block_parent,
-                    new_block_header.number()
-                );
-            }
-        } else {
+                // verify_block!(
+                //     VerifyBlockField::Header,
+                //     current_id == new_block_parent,
+                //     "Invalid block: Parent id mismatch, expect:{}, got: {}, number:{}.",
+                //     current_id,
+                //     new_block_parent,
+                //     new_block_header.number()
+                // );
+            // }
+        // } else {
             // or a block of a single chain
             verify_block!(
                 VerifyBlockField::Header,
@@ -226,7 +227,7 @@ impl BlockVerifier for BasicVerifier {
                 new_block_parent,
                 new_block_header.number()
             );
-        }
+        // }
         verify_block!(
             VerifyBlockField::Header,
             new_block_header.timestamp() > current.timestamp(),

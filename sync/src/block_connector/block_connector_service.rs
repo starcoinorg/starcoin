@@ -265,35 +265,13 @@ where
 {
     fn handle_event(&mut self, msg: MinedBlock, ctx: &mut ServiceContext<Self>) {
         let MinedBlock(new_block, tips_headers) = msg;
+        let block_header = new_block.header().clone();
         let id = new_block.header().id();
         debug!("try connect mined block: {}", id);
 
-        // self.chain_service.update_dag_data().expect("failed to update dag");
-
-        let flexi_dag_service = ctx
-            .service_ref::<FlexidagService>()?
-            .clone();
-        flexi_dag_service.send();
-
-
-        match self
-            .chain_service
-            .try_write_new_block(new_block.as_ref().clone(), tips_headers)
-        {
-            std::result::Result::Ok(dag_init_state) => {
-                debug!("Process mined block {} success.", id);
-                match dag_init_state {
-                    InitDagState::FailedToInitDag => panic!("failed to init dag"),
-                    InitDagState::InitDagSuccess(dag) => {
-                        if let std::result::Result::Ok(_) = ctx.get_shared::<Arc<Mutex<BlockDAG>>>()
-                        {
-                            panic!("dag should not exist in ctx");
-                        }
-                        ctx.put_shared(dag.clone())
-                            .expect("failed to put the dag into the ctx");
-                    }
-                    InitDagState::InitedDag | InitDagState::NoNeedInitDag => (),
-                }
+        match self.chain_service.try_connect(block, parents_hash) {
+            std::result::Result::Ok(_) => {
+                self.chain_service.dump_tips(block_header, ctx.service_ref::<FlexidagService>()?.clone())
             }
             Err(e) => {
                 warn!("Process mined block {} fail, error: {:?}", id, e);
@@ -331,6 +309,7 @@ where
                 std::result::Result::Ok(connect_error) => {
                     match connect_error {
                         ConnectBlockError::FutureBlock(block) => {
+                            self.chain_service.update_tips(msg.get_block().header().clone(), ctx.service_ref::<FlexidagService>()?)?;
                             //TODO cache future block
                             if let std::result::Result::Ok(sync_service) =
                                 ctx.service_ref::<SyncService>()

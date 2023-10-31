@@ -122,16 +122,13 @@ pub struct ChainStatus {
     pub head: BlockHeader,
     /// Chain block info
     pub info: BlockInfo,
-    /// tips of the dag chain in dag accumulator snapshots
-    pub tips_hash: Option<Vec<HashValue>>,
 }
 
 impl ChainStatus {
-    pub fn new(head: BlockHeader, info: BlockInfo, tips_hash: Option<Vec<HashValue>>) -> Self {
+    pub fn new(head: BlockHeader, info: BlockInfo) -> Self {
         Self {
             head,
             info,
-            tips_hash,
         }
     }
 
@@ -156,7 +153,6 @@ impl ChainStatus {
         Self {
             head: head.clone(),
             info: block_info,
-            tips_hash: Some(vec![head.id()]),
         }
     }
 
@@ -175,14 +171,6 @@ impl ChainStatus {
     pub fn into_inner(self) -> (BlockHeader, BlockInfo) {
         (self.head, self.info)
     }
-
-    pub fn get_last_tip_block_id(&self) -> Option<HashValue> {
-        if let Some(tips) = &self.tips_hash {
-            tips.into_iter().max().cloned()
-        } else {
-            None
-        }
-    }
 }
 
 impl Sample for ChainStatus {
@@ -190,7 +178,6 @@ impl Sample for ChainStatus {
         Self {
             head: BlockHeader::sample(),
             info: BlockInfo::sample(),
-            tips_hash: Some(vec![HashValue::zero()]),
         }
     }
 }

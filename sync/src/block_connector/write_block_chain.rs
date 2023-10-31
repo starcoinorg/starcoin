@@ -783,26 +783,6 @@ where
         return Ok(ConnectOk::ExeConnectMain(executed_block));
     }
 
-    fn try_init_dag(&mut self, header: BlockHeader) -> Result<InitDagState> {
-        let dag_fork_number = self.storage.dag_fork_height(self.config.net().id().clone());
-        let current_block_number = header.number();
-        if current_block_number < dag_fork_number {
-            panic!("no need to init the dag, do not call this function");
-        } else if current_block_number == dag_fork_number {
-            self.dag = BlockDAG::init_with_storage(self.storage.clone(), self.config.clone())?.map(|dag| {
-                Arc::new(Mutex::new(dag))
-            });
-            Ok(InitDagState::InitDagSuccess(
-                self.dag.as_ref()
-                    .expect("the dag is definitely uninitialized")
-                    .clone(),
-            ))
-        } else {
-            assert!(self.dag.is_some(), "the dag must be initialized");
-            Ok(InitDagState::InitedDag)
-        }
-    }
-
     fn add_to_dag(
         &mut self,
         header: &BlockHeader,
@@ -848,9 +828,29 @@ where
     }
 
     fn select_head_for_dag(&self, new_chain: BlockChain) -> Result<()> {
-        // self.broadcast_new_head();
+        
         
         Ok(())
+    }
+
+    pub fn dump_tips(&self, block_header: BlockHeader, service: ServiceRef<FlexidagService>) -> Result<()> {
+        if block_header.number() < self.storage.dag_fork_height(self.config.net().id().clone())? {
+            Ok(())
+        } else {
+            service.send( DumpTipsToAccumulator {
+                block_header,
+            })
+        }
+    }
+
+    pub fn update_tips(&self, block_header: BlockHeader, service: ServiceRef<FlexidagService>) -> Result<()> {
+        if block_header.number() >= self.storage.dag_fork_height(self.config.net().id().clone())? {
+            service.send(UpdateDagTips {
+                block_header,
+            })
+        } else {
+            Ok(()) // nothing to do
+        }
     }
 
     fn connect_inner(&mut self, block: Block) -> Result<ConnectOk> {
@@ -872,40 +872,6 @@ where
             self.broadcast_new_head(block.clone(), None, None);
         }
         return Ok(executed_block);
-    }
-
-    // call this function to replace of try_connect
-    // for the initialization of the dag
-    pub fn try_write_new_block(
-        &mut self,
-        block: Block,
-        parents_hash: Option<Vec<HashValue>>,
-    ) -> Result<InitDagState> {
-        info!("jacktest: try_write_new_block, parent = {:?}, height = {}", parents_hash, block.header().number());
-
-        let dag_fork_number = self.storage.dag_fork_height(self.config.net().id().clone());
-        if block.header().number() < dag_fork_number {
-            self.try_connect(block, parents_hash)?;
-            Ok(InitDagState::NoNeedInitDag)
-        } else {
-            let dag_genesis = block.header().clone();
-            self.try_connect(block, parents_hash)?;
-            Ok(self.try_init_dag(dag_genesis)?)
-        }
-    }
-
-
-    pub fn update_dag_data(&mut self) -> Result<()> {
-        match self.main.status().tips_hash {
-            Some(tips) => {
-                // append dag should be first since 
-                // if the starcoin is restarted, the dag should be initialized by dag
-                self.main.append_dag_accumulator_leaf(tips)?;
-                self.main.status().tips_hash = Some(vec![]);
-                Ok(())
-            }
-            None => Ok(()),
-        }
     }
 
     #[cfg(test)]

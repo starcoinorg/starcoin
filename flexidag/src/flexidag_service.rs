@@ -1,57 +1,74 @@
 use std::sync::Arc;
 
-use anyhow::Result;
-use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator, accumulator_info::AccumulatorInfo};
+use anyhow::{Result, Ok};
+use starcoin_accumulator::{Accumulator, MerkleAccumulator, accumulator_info::AccumulatorInfo};
 use starcoin_config::NodeConfig;
 use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest};
-use starcoin_storage::{storage::{CodecKVStore, self}, Store, flexi_dag::SyncFlexiDagSnapshot, Storage, SyncFlexiDagStore};
-use starcoin_types::block::BlockHeader;
+use starcoin_storage::{storage::CodecKVStore, flexi_dag::SyncFlexiDagSnapshot, Storage, SyncFlexiDagStore, BlockStore};
+use starcoin_types::{block::BlockHeader, startup_info};
 
 #[derive(Debug, Clone)]
-pub struct UpdateDagTips;
+pub struct DumpTipsToAccumulator {
+    block_header: BlockHeader,
+}
+
+impl ServiceRequest for DumpTipsToAccumulator {
+    type Response = anyhow::Result<()>;
+}
+
+#[derive(Debug, Clone)]
+pub struct UpdateDagTips {
+    block_header: BlockHeader,
+}
 
 impl ServiceRequest for UpdateDagTips {
     type Response = anyhow::Result<()>;
 }
 
 #[derive(Debug, Clone)]
-pub struct NewDagBlock {
-    block_header: BlockHeader,
+pub struct GetDagTips;
+
+impl ServiceRequest for GetDagTips {
+    type Response = anyhow::Result<Option<Vec<HashValue>>>;
 }
 
-impl ServiceRequest for NewDagBlock {
-    type Response = anyhow::Result<()>;
+#[derive(Debug, Clone)]
+pub struct GetDagAccumulatorInfo;
+
+impl ServiceRequest for GetDagAccumulatorInfo {
+    type Response = anyhow::Result<Option<AccumulatorInfo>>;
+}
+
+#[derive(Debug, Clone)]
+pub struct GetDagAccumulatorLeafDetail {
+    pub leaf_index: u64,
+    pub batch_size: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct DagAccumulatorLeafDetail {
+    pub accumulator_root: HashValue,
+    pub tips: Vec<HashValue>,
+}
+
+impl ServiceRequest for GetDagAccumulatorLeafDetail {
+    type Response = anyhow::Result<Vec<DagAccumulatorLeafDetail>>;
 }
 
 pub struct FlexidagService {
     dag: Option<BlockDAG>,
     dag_accumulator: Option<MerkleAccumulator>,
     tips: Option<Vec<HashValue>>, // some is for dag or the state of the chain is still in old version
+    storage: Arc<Storage>,
 }
 
 impl ServiceFactory<Self> for FlexidagService {
     fn create(ctx: &mut ServiceContext<FlexidagService>) -> Result<Self> {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
-        let dag = BlockDAG::init_with_storage(storage.clone(), config.clone())?;
-        let startup_info = storage
-            .get_startup_info()?
-            .expect("StartupInfo should exist.");
-        let dag_accumulator = startup_info
-            .get_dag_main()
-            .map(|key| {
-                storage
-                    .get_dag_accumulator_info(key)
-                    .expect("the key of dag accumulator is not none but it is none in storage")
-            })
-            .map(|dag_accumulator_info| {
-                MerkleAccumulator::new_with_info(
-                    dag_accumulator_info,
-                    storage.get_accumulator_store(AccumulatorStoreType::SyncDag),
-                )
-            });
+        let (dag, dag_accumulator) = BlockDAG::try_init_with_storage(storage.clone(), config.clone())?;
         let tips = dag_accumulator.as_ref().map(|accumulator| {
             let tips_index = accumulator.num_leaves();
             let tips_key = accumulator
@@ -69,6 +86,7 @@ impl ServiceFactory<Self> for FlexidagService {
             dag,
             dag_accumulator,
             tips,
+            storage: storage.clone(),
         })
     }
 }
@@ -85,44 +103,110 @@ impl ActorService for FlexidagService {
     }
 }
 
-impl ServiceHandler<Self, UpdateDagTips> for FlexidagService {
-    fn handle(&mut self, _msg: UpdateDagTips, ctx: &mut ServiceContext<FlexidagService>) -> Result<()> {
+// send this message after minting a new block 
+// and the block was committed 
+// and startup info was updated
+impl ServiceHandler<Self, DumpTipsToAccumulator> for FlexidagService {
+    fn handle(&mut self, msg: DumpTipsToAccumulator, ctx: &mut ServiceContext<FlexidagService>) -> Result<()> {
+        let storage = ctx.get_shared::<Arc<Storage>>()?;
         if self.tips.is_none() {
-            Ok(())
+            let config = ctx.get_shared::<Arc<NodeConfig>>()?;
+            let (dag, dag_accumulator) = BlockDAG::try_init_with_storage(storage, config)?;
+            if dag.is_none() {
+                Ok(()) // the chain is still in single chain
+            } else {
+                // initialize the dag data, the chain will be the dag chain at next block
+                self.dag = dag;
+                self.tips = Some(vec![msg.block_header.id()]);
+                self.dag_accumulator = dag_accumulator;
+
+                Ok(())
+            }
         } else {
-            let storage = ctx.get_shared::<Arc<Storage>>()?;
+            // the chain became the flexidag chain
             let tips = self.tips.take().expect("the tips should not be none in this branch");
-            self.tips = Some(vec![]);
             let key = BlockDAG::calculate_dag_accumulator_key(tips.clone())?;
-            let dag = self.dag_accumulator.as_mut().expect("dag accumulator is none").fork(None);
+            let dag = self.dag_accumulator.as_mut().expect("the tips is not none but the dag accumulator is none");
             dag.append(&vec![key])?;
             storage.get_accumulator_snapshot_storage().put(key, SyncFlexiDagSnapshot {
-                child_hashes: tips.clone(),
+                child_hashes: tips,
                 accumulator_info: dag.get_info(),
             })?;
             dag.flush()?;
-            self.dag_accumulator = Some(dag);
+            self.tips = Some(vec![]);
             Ok(())
         }
     }
 }
 
-// To flush the dag accumulator and tips, NewDagBlock must be sent after startup info is updated 
-impl ServiceHandler<Self, NewDagBlock> for FlexidagService {
-    fn handle(&mut self, msg: NewDagBlock, ctx: &mut ServiceContext<FlexidagService>) -> Result<()> {
-        if self.tips.is_none() {
-            let storage = ctx.get_shared::<Arc<Storage>>()?;
-            let config = ctx.get_shared::<Arc<NodeConfig>>()?;
-            let dag = BlockDAG::init_with_storage(storage, config)?;
-            if dag.is_none() {
+impl ServiceHandler<Self, UpdateDagTips> for FlexidagService {
+    fn handle(&mut self, msg: UpdateDagTips, ctx: &mut ServiceContext<FlexidagService>) -> Result<()> {
+        let header = msg.block_header;
+        match self.tips.clone() {
+            Some(mut tips) => {
+                if !tips.contains(&header.id()) {
+                    tips.push(header.id());
+                    self.tips = Some(tips);
+                }
                 Ok(())
-            } else {
-                self.dag = dag;
-                self.tips = Some(vec![msg.block_header.id()]);
-                self.dag_accumulator = Some(MerkleAccumulator::new_with_info(AccumulatorInfo::new(accumulator_root, frozen_subtree_roots, num_leaves, num_nodes), node_store));
             }
-        } else {
-            Ok(())
+            None => {
+                let storage = ctx.get_shared::<Arc<Storage>>()?;
+                let config = ctx.get_shared::<Arc<NodeConfig>>()?;
+                if header.number() == storage.dag_fork_height(config.net().id().clone()) {
+                    let (dag, dag_accumulator) = BlockDAG::try_init_with_storage(storage.clone(), config)?;
+                    if dag.is_none() {
+                        Ok(()) // the chain is still in single chain
+                    } else {
+                        // initialize the dag data, the chain will be the dag chain at next block
+                        self.dag = dag;
+                        self.tips = Some(vec![header.id()]);
+                        self.dag_accumulator = dag_accumulator;
+
+                        storage.get_startup_info()?.map(|mut startup_info| {
+                            startup_info.dag_main = Some(header.id());
+                            storage.save_startup_info(startup_info)
+                        }).expect("starup info should not be none")
+                    }
+                } else {
+                    Ok(()) // drop the block, the chain is still in single chain
+                }
+            }
         }
+    }
+}
+
+impl ServiceHandler<Self, GetDagTips> for FlexidagService {
+    fn handle(&mut self, _msg: GetDagTips, _ctx: &mut ServiceContext<FlexidagService>) -> Result<Option<Vec<HashValue>>> {
+        Ok(self.tips.clone())
+    }
+}
+
+impl ServiceHandler<Self, GetDagAccumulatorInfo> for FlexidagService {
+    fn handle(&mut self, _msg: GetDagAccumulatorInfo, _ctx: &mut ServiceContext<FlexidagService>) -> Result<Option<AccumulatorInfo>> {
+        Ok(self.dag_accumulator.as_ref().map(|dag_accumulator_info| {
+            dag_accumulator_info.get_info()
+        }))
+    }
+}
+
+impl ServiceHandler<Self, GetDagAccumulatorLeafDetail> for FlexidagService {
+    fn handle(&mut self, msg: GetDagAccumulatorLeafDetail, _ctx: &mut ServiceContext<FlexidagService>) -> Result<Vec<DagAccumulatorLeafDetail>> {
+        let s = self.dag_accumulator.ok_or("dag accumulator is none").and_then(|dag_accumulator| {
+            let end_index = std::cmp::min(
+                msg.leaf_index + msg.batch_size - 1,
+                dag_accumulator.num_leaves() - 1,
+            );
+            let mut details = vec![];
+            for index in msg.leaf_index..=end_index {
+                let snapshot = self.storage.get_accumulator_snapshot_storage().get(dag_accumulator.get_leaf(index).expect("the hash of leaf must not be none"))?.expect("the dag snapshot must not be none"); 
+                details.push(DagAccumulatorLeafDetail {
+                    accumulator_root: snapshot.accumulator_info.accumulator_root,
+                    tips: snapshot.child_hashes,
+                });
+            }
+            std::result::Result::Ok(details)
+        })?;
+        Ok(s)
     }
 }

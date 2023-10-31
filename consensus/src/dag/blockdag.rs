@@ -90,25 +90,26 @@ impl BlockDAG {
         dag
     }
 
-    pub fn init_with_storage(storage: Arc<dyn Store>, config: Arc<NodeConfig>) -> anyhow::Result<(Option<Self>, Option<MerkleAccumulator>)> {
+    pub fn try_init_with_storage(storage: Arc<dyn Store>, config: Arc<NodeConfig>) -> anyhow::Result<(Option<Self>, Option<MerkleAccumulator>)> {
         let startup_info = storage.get_startup_info()?.expect("startup info must exist");
         if let Some(key) = startup_info.get_dag_main() {
-            let accumulator_info = storage.get_dag_accumulator_info(key)?;
+            let accumulator_info = storage.get_dag_accumulator_info()?.expect("dag accumulator info should exist");
             assert!(accumulator_info.get_num_leaves() > 0, "the number of dag accumulator leaf must be greater than 0");
-            let dag_genesis_hash = MerkleAccumulator::new_with_info(
+            let dag_accumulator = MerkleAccumulator::new_with_info(
                 accumulator_info,
                 storage.get_accumulator_store(AccumulatorStoreType::SyncDag),
-            ).get_leaf(0)?.expect("the genesis in dag accumulator must none be none");
+            );
+            let dag_genesis_hash = dag_accumulator.get_leaf(0)?.expect("the genesis in dag accumulator must none be none");
 
             let dag_genesis_header = storage.get_block_header_by_hash(dag_genesis_hash)?.expect("the genesis block in dag accumulator must none be none");
 
-            Ok(Some(Self::new_by_config(DagHeader::new_genesis(dag_genesis_header), config.data_dir().join("flexidag").as_path())?))
+            Ok((Some(Self::new_by_config(DagHeader::new_genesis(dag_genesis_header), config.data_dir().join("flexidag").as_path())?), Some(dag_accumulator)))
 
         } else {
             let block_header = storage.get_block_header_by_hash(startup_info.get_main().clone())?.expect("the genesis block in dag accumulator must none be none");
             let fork_height = storage.dag_fork_height(config.net().id().clone());
             if block_header.number() < fork_height {
-                Ok(None)
+                Ok((None, None))
             } else if block_header.number() == fork_height {
                 let dag_accumulator = MerkleAccumulator::new_with_info(AccumulatorInfo::default(), storage.get_accumulator_store(AccumulatorStoreType::SyncDag));
                 dag_accumulator.append(&[block_header.id()])?;
@@ -116,9 +117,9 @@ impl BlockDAG {
                     child_hashes: vec![block_header.id()],
                     accumulator_info: dag_accumulator.get_info(),
                 })?;
-                Ok(Some(Self::new_by_config(DagHeader::new_genesis(block_header), config.data_dir().join("flexidag").as_path())?))
+                Ok((Some(Self::new_by_config(DagHeader::new_genesis(block_header), config.data_dir().join("flexidag").as_path())?), Some(dag_accumulator)))
             } else {
-                panic!("the height is greater than the dag fork height but the dag accumulator info is none");
+                bail!("failed to init dag")
             }
         }
     }
