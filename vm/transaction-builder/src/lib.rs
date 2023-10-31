@@ -20,10 +20,7 @@ use starcoin_vm_types::on_chain_resource::nft::NFTUUID;
 use starcoin_vm_types::token::stc::{stc_type_tag, G_STC_TOKEN_CODE};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::authenticator::{AccountPrivateKey, AuthenticationKey};
-use starcoin_vm_types::transaction::{
-    Module, Package, RawUserTransaction, ScriptFunction, SignedUserTransaction, Transaction,
-    TransactionPayload,
-};
+use starcoin_vm_types::transaction::{Module, Package, RawUserTransaction, Script, ScriptFunction, SignedUserTransaction, Transaction, TransactionPayload};
 use starcoin_vm_types::value::MoveValue;
 use std::convert::TryInto;
 use stdlib::{module_to_package, stdlib_package};

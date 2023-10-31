@@ -33,6 +33,9 @@ starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-crypto = { workspace = true }
+starcoin-gas-algebra-ext = { workspace = true }
+starcoin-gas = { workspace = true }
+starcoin-config = { workspace = true }
 
 
 #diem-keygen = { path = "../diem-keygen" }
