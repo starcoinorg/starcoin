@@ -1,4 +1,4 @@
-mod flexidag_service;
+pub mod flexidag_service;
 pub use flexidag_service::FlexidagService;
 
 pub fn add(left: usize, right: usize) -> usize {

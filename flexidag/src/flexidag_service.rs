@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::{Result, Ok};
+use anyhow::{anyhow, Result, Ok, bail, Error};
 use starcoin_accumulator::{Accumulator, MerkleAccumulator, accumulator_info::AccumulatorInfo};
 use starcoin_config::NodeConfig;
 use starcoin_consensus::BlockDAG;
@@ -20,7 +20,7 @@ impl ServiceRequest for DumpTipsToAccumulator {
 
 #[derive(Debug, Clone)]
 pub struct UpdateDagTips {
-    block_header: BlockHeader,
+    pub block_header: BlockHeader,
 }
 
 impl ServiceRequest for UpdateDagTips {
@@ -55,6 +55,37 @@ pub struct DagAccumulatorLeafDetail {
 
 impl ServiceRequest for GetDagAccumulatorLeafDetail {
     type Response = anyhow::Result<Vec<DagAccumulatorLeafDetail>>;
+}
+
+#[derive(Debug, Clone)]
+pub struct GetDagBlockParents {
+    pub block_id: HashValue,
+}
+
+#[derive(Debug, Clone)]
+pub struct DagBlockParents {
+    pub parents: Vec<HashValue>,
+}
+
+impl ServiceRequest for GetDagBlockParents {
+    type Response = anyhow::Result<DagBlockParents>;
+}
+
+#[derive(Debug, Clone)]
+pub struct GetDagAccumulatorLeaves {
+    pub leaf_index: u64,
+    pub batch_size: u64,
+    pub reverse: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct DagAccumulatorLeaf {
+    pub leaf_index: u64,
+    pub dag_accumulator_root: HashValue,
+}
+
+impl ServiceRequest for GetDagAccumulatorLeaves {
+    type Response = anyhow::Result<Vec<DagAccumulatorLeaf>>;
 }
 
 pub struct FlexidagService {
@@ -190,23 +221,65 @@ impl ServiceHandler<Self, GetDagAccumulatorInfo> for FlexidagService {
     }
 }
 
+impl ServiceHandler<Self, GetDagAccumulatorLeaves> for FlexidagService {
+    fn handle(&mut self, msg: GetDagAccumulatorLeaves, _ctx: &mut ServiceContext<FlexidagService>) -> Result<Vec<DagAccumulatorLeaf>> {
+        match &self.dag_accumulator {
+            Some(dag_accumulator) => {
+                let end_index = std::cmp::min(
+                    msg.leaf_index + msg.batch_size - 1,
+                    dag_accumulator.num_leaves() - 1,
+                );
+                let mut result = vec![];
+                for index in msg.leaf_index..=end_index {
+                    let real_index = if msg.reverse {
+                        end_index - index + 1
+                    } else {
+                        index
+                    };
+                    let key = dag_accumulator.get_leaf(real_index)?.ok_or_else(|| anyhow!("the dag snapshot hash is none"))?;
+                    let snaptshot = self.storage.get_accumulator_snapshot_storage().get(key)?.expect("the snapshot should not be none");
+                    result.push(DagAccumulatorLeaf {
+                        leaf_index: real_index,
+                        dag_accumulator_root: snaptshot.accumulator_info.accumulator_root,
+                    });
+                }
+                Ok(result)
+            }
+            None => bail!("dag accumulator is none"),
+        }
+    }
+}
+
+impl ServiceHandler<Self, GetDagBlockParents> for FlexidagService {
+    fn handle(&mut self, msg: GetDagBlockParents, _ctx: &mut ServiceContext<FlexidagService>) -> Result<DagBlockParents> {
+        match &self.dag {
+            Some(dag) => Ok(DagBlockParents { parents: dag.get_parents(msg.block_id)? } ) ,
+            None => bail!("dag is none"),
+        }
+    }
+}
+
 impl ServiceHandler<Self, GetDagAccumulatorLeafDetail> for FlexidagService {
     fn handle(&mut self, msg: GetDagAccumulatorLeafDetail, _ctx: &mut ServiceContext<FlexidagService>) -> Result<Vec<DagAccumulatorLeafDetail>> {
-        let s = self.dag_accumulator.ok_or("dag accumulator is none").and_then(|dag_accumulator| {
-            let end_index = std::cmp::min(
-                msg.leaf_index + msg.batch_size - 1,
-                dag_accumulator.num_leaves() - 1,
-            );
-            let mut details = vec![];
-            for index in msg.leaf_index..=end_index {
-                let snapshot = self.storage.get_accumulator_snapshot_storage().get(dag_accumulator.get_leaf(index).expect("the hash of leaf must not be none"))?.expect("the dag snapshot must not be none"); 
-                details.push(DagAccumulatorLeafDetail {
-                    accumulator_root: snapshot.accumulator_info.accumulator_root,
-                    tips: snapshot.child_hashes,
-                });
+        match &self.dag_accumulator {
+            Some(dag_accumulator) => {
+                let end_index = std::cmp::min(
+                    msg.leaf_index + msg.batch_size - 1,
+                    dag_accumulator.num_leaves() - 1,
+                );
+                let mut details = vec![];
+                let snapshot_storage = self.storage.get_accumulator_snapshot_storage(); 
+                for index in msg.leaf_index..=end_index {
+                    let key = dag_accumulator.get_leaf(index)?.ok_or_else(|| anyhow!("the dag snapshot hash is none"))?;
+                    let snapshot = snapshot_storage.get(key)?.ok_or_else(|| anyhow!("the dag snapshot is none"))?;
+                    details.push(DagAccumulatorLeafDetail {
+                        accumulator_root: snapshot.accumulator_info.accumulator_root,
+                        tips: snapshot.child_hashes,
+                    });
+                }
+                Ok(details)
             }
-            std::result::Result::Ok(details)
-        })?;
-        Ok(s)
+            None => bail!("dag accumulator is none"),
+        }
     }
 }

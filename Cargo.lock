@@ -9265,6 +9265,7 @@ name = "starcoin-chain"
 version = "1.13.7"
 dependencies = [
  "anyhow",
+ "async-std",
  "bcs-ext",
  "clap 3.2.23",
  "proptest",
@@ -9371,6 +9372,7 @@ name = "starcoin-chain-service"
 version = "1.13.7"
 dependencies = [
  "anyhow",
+ "async-std",
  "async-trait",
  "futures 0.3.26",
  "rand 0.8.5",
@@ -9710,6 +9712,7 @@ dependencies = [
  "starcoin-service-registry",
  "starcoin-storage",
  "starcoin-types",
+ "thiserror",
  "tokio",
 ]
 

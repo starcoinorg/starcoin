@@ -1,5 +1,6 @@
 [dependencies]
 anyhow = { workspace = true }
+async-std = { workspace = true }
 async-trait = { workspace = true }
 futures = { workspace = true }
 rand = { workspace = true }
