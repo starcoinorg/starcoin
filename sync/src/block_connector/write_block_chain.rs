@@ -17,6 +17,7 @@ use starcoin_consensus::{BlockDAG, FlexiDagStorage, FlexiDagStorageConfig};
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_flexidag::FlexidagService;
+use starcoin_flexidag::flexidag_service::AddToDag;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{ServiceContext, ServiceRef};
@@ -118,7 +119,6 @@ where
         let result = if parents_hash.is_some() {
             self.connect_dag_inner(
                 block,
-                parents_hash.expect("parents_hash should not be None"),
             )
         } else {
             self.connect_inner(block)
@@ -769,7 +769,6 @@ where
     fn add_to_dag(
         &mut self,
         header: &BlockHeader,
-        parents_hash: Vec<HashValue>,
     ) -> Result<Arc<GhostdagData>> {
         let dag = self.dag.as_mut().expect("dag must be inited before using");
         match dag
@@ -781,7 +780,7 @@ where
             Err(_) => std::result::Result::Ok(Arc::new(
                 dag.lock()
                     .expect("failed to lock the dag")
-                    .add_to_dag(DagHeader::new(header.clone(), parents_hash.clone()))?,
+                    .add_to_dag(DagHeader::new(header.clone()))?,
             )),
         }
     }
@@ -789,15 +788,16 @@ where
     fn connect_dag_inner(
         &mut self,
         block: Block,
-        parents_hash: Vec<HashValue>,
     ) -> Result<ConnectOk> {
-        let ghost_dag_data = self.add_to_dag(block.header(), parents_hash.clone())?;
+        let add_dag_result = async_std::task::block_on(self.flexidag_service.send(AddToDag {
+            block_header: block.header().clone(),
+        }))??; 
         let selected_parent = self
             .storage
-            .get_block_by_hash(ghost_dag_data.selected_parent)?
+            .get_block_by_hash(add_dag_result.selected_parent)?
             .expect("selected parent should in storage");
         let mut chain = self.main.fork(selected_parent.header.parent_hash())?;
-        for blue_hash in ghost_dag_data.mergeset_blues.iter() {
+        for blue_hash in add_dag_result.mergeset_blues.mergeset_blues.iter() {
             if let Some(blue_block) = self.storage.get_block(blue_hash.to_owned())? {
                 let _result = chain.apply(blue_block);
             } else {

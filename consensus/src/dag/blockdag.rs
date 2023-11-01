@@ -322,7 +322,7 @@ mod tests {
             .expect("Failed to create flexidag storage");
         let mut dag = BlockDAG::new(genesis_hash, k, db);
         dag.init_with_genesis(genesis);
-        let block = DagHeader::new(BlockHeader::random(), vec![genesis_hash]);
+        let block = DagHeader::new(BlockHeader::random());
         dag.add_to_dag(block);
     }
 }

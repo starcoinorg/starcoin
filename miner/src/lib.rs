@@ -251,7 +251,7 @@ impl MinerService {
         }
 
         if let Some(task) = self.current_task.take() {
-            let tips_header = task.block_template.tips_header.clone();
+            let tips_header = task.block_template.parents_hash.clone();
             let block = task.finish(nonce, extra);
             let block_hash: HashValue = block.id();
             info!(target: "miner", "Mint new block: {}", block);
