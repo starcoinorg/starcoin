@@ -16,6 +16,7 @@ use starcoin_state_api::{
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{BlockStore, Storage};
+use starcoin_types::block::BlockNumber;
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::{
@@ -34,10 +35,11 @@ impl ChainStateService {
     pub fn new(
         store: Arc<dyn StateNodeStore>,
         root_hash: Option<HashValue>,
+        block_number: Option<BlockNumber>,
         time_service: Arc<dyn TimeService>,
     ) -> Self {
         Self {
-            service: Inner::new(store, root_hash, time_service),
+            service: Inner::new(store, root_hash, block_number, time_service),
         }
     }
 }
@@ -55,6 +57,7 @@ impl ServiceFactory<Self> for ChainStateService {
         Ok(Self::new(
             storage,
             Some(head_block.header().state_root()),
+            Some(head_block.header().number()),
             config.net().time_service(),
         ))
     }
@@ -124,6 +127,9 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
             StateRequest::GetTableInfo(address) => {
                 StateResponse::TableInfo(self.service.get_table_info(address)?)
             }
+            StateRequest::GetBlockNumber => {
+                StateResponse::BlockNumber(self.service.get_block_number())
+            }
         };
         Ok(response)
     }
@@ -134,8 +140,12 @@ impl EventHandler<Self, NewHeadBlock> for ChainStateService {
         let NewHeadBlock(block, _dag_parents) = msg;
 
         let state_root = block.header().state_root();
-        debug!("ChainStateActor change StateRoot to : {:?}", state_root);
-        self.service.change_root(state_root);
+        let block_number = block.header().number();
+        debug!(
+            "ChainStateActor change StateRoot to : {:?} {block_number}",
+            state_root
+        );
+        self.service.change_root(state_root, block_number);
     }
 }
 
@@ -149,10 +159,11 @@ impl Inner {
     pub fn new(
         store: Arc<dyn StateNodeStore>,
         root_hash: Option<HashValue>,
+        block_number: Option<BlockNumber>,
         time_service: Arc<dyn TimeService>,
     ) -> Self {
         Self {
-            state_db: ChainStateDB::new(store, root_hash),
+            state_db: ChainStateDB::new_with_root(store, root_hash, block_number),
             time_service,
         }
     }
@@ -164,7 +175,7 @@ impl Inner {
     ) -> Result<Option<AccountStateSet>> {
         match state_root {
             Some(root) => {
-                let reader = self.state_db.fork_at(root);
+                let reader = self.state_db.fork_at(root, None);
                 reader.get_account_state_set(&address)
             }
             None => self.get_account_state_set(&address),
@@ -176,7 +187,7 @@ impl Inner {
         access_path: AccessPath,
         state_root: HashValue,
     ) -> Result<StateWithProof> {
-        let reader = self.state_db.fork_at(state_root);
+        let reader = self.state_db.fork_at(state_root, None);
         reader.get_with_proof(&access_path)
     }
 
@@ -186,7 +197,7 @@ impl Inner {
         key: Vec<u8>,
         state_root: HashValue,
     ) -> Result<StateWithTableItemProof> {
-        let reader = self.state_db.fork_at(state_root);
+        let reader = self.state_db.fork_at(state_root, None);
         reader.get_with_table_item_proof(&handle, &key)
     }
 
@@ -195,12 +206,12 @@ impl Inner {
         account: AccountAddress,
         state_root: HashValue,
     ) -> Result<Option<AccountState>> {
-        let reader = self.state_db.fork_at(state_root);
+        let reader = self.state_db.fork_at(state_root, None);
         reader.get_account_state(&account)
     }
 
-    pub(crate) fn change_root(&mut self, state_root: HashValue) {
-        self.state_db = self.state_db.fork_at(state_root);
+    pub(crate) fn change_root(&mut self, state_root: HashValue, block_number: BlockNumber) {
+        self.state_db = self.state_db.fork_at(state_root, Some(block_number));
         self.adjust_time();
     }
 
@@ -260,6 +271,10 @@ impl StateView for Inner {
 
     fn is_genesis(&self) -> bool {
         false
+    }
+
+    fn get_block_number(&self) -> Option<u64> {
+        self.state_db.get_block_number()
     }
 }
 

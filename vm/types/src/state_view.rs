@@ -42,6 +42,8 @@ pub trait StateView: Sync {
     /// VM needs this method to know whether the current state view is for genesis state creation.
     /// Currently TransactionPayload::WriteSet is only valid for genesis state creation.
     fn is_genesis(&self) -> bool;
+
+    fn get_block_number(&self) -> Option<u64>;
 }
 
 impl<R, S> StateView for R
@@ -55,6 +57,10 @@ where
 
     fn is_genesis(&self) -> bool {
         self.deref().is_genesis()
+    }
+
+    fn get_block_number(&self) -> Option<u64> {
+        self.deref().get_block_number()
     }
 }
 

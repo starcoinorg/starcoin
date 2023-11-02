@@ -405,6 +405,10 @@ mod tests {
         fn is_genesis(&self) -> bool {
             todo!()
         }
+
+        fn get_block_number(&self) -> Option<u64> {
+            None
+        }
     }
 
     #[test]

@@ -7,6 +7,7 @@ use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::association_address;
+use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::transaction::{Package, ScriptFunction, TransactionPayload};
 use starcoin_vm_types::value::MoveValue;
 use test_helper::executor::{
@@ -38,6 +39,7 @@ fn test_starcoin_merkle() -> Result<()> {
     }
 
     let state_root = chain_state.state_root();
+    let block_number = chain_state.get_block_number();
 
     {
         let script_function = ScriptFunction::new(
@@ -62,7 +64,7 @@ fn test_starcoin_merkle() -> Result<()> {
 
     {
         // change to previous state root.
-        let old_chain_state = chain_state.fork_at(state_root);
+        let old_chain_state = chain_state.fork_at(state_root, block_number);
         // let state_root = chain_state.state_root();
         let _expected_root = MoveValue::vector_u8(state_root.to_vec());
 

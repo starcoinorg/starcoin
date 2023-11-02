@@ -324,4 +324,8 @@ impl StateView for NullStateView {
     fn is_genesis(&self) -> bool {
         false
     }
+
+    fn get_block_number(&self) -> Option<u64> {
+        None
+    }
 }

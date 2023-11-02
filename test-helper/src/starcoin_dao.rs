@@ -66,7 +66,7 @@ fn get_with_proof_by_root(
     access_path: AccessPath,
     state_root: HashValue,
 ) -> Result<StateWithProof> {
-    let reader = state_db.fork_at(state_root);
+    let reader = state_db.fork_at(state_root, None);
     reader.get_with_proof(&access_path)
 }
 

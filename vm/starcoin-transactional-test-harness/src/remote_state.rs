@@ -78,6 +78,10 @@ where
     fn is_genesis(&self) -> bool {
         false
     }
+
+    fn get_block_number(&self) -> Option<u64> {
+        None
+    }
 }
 impl<A, B> ChainStateWriter for SelectableStateView<A, B>
 where
@@ -183,6 +187,10 @@ where
 
     fn is_genesis(&self) -> bool {
         false
+    }
+
+    fn get_block_number(&self) -> Option<u64> {
+        None
     }
 }
 
@@ -404,5 +412,9 @@ impl StateView for RemoteViewer {
 
     fn is_genesis(&self) -> bool {
         false
+    }
+
+    fn get_block_number(&self) -> Option<u64> {
+        None
     }
 }

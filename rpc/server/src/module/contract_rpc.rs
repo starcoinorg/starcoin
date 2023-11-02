@@ -128,9 +128,11 @@ where
             args,
         } = call;
         let f = async move {
-            let state_root = service.state_root().await?;
+            let state_root = service.clone().state_root().await?;
+            let block_number = service.get_block_number().await?;
             let output = playground.call_contract(
                 state_root,
+                block_number,
                 function_id.0.module,
                 function_id.0.function,
                 type_args.into_iter().map(|v| v.0).collect(),
@@ -152,8 +154,9 @@ where
         } = call;
         let metrics = self.playground.metrics.clone();
         let f = async move {
-            let state_root = service.state_root().await?;
-            let state = ChainStateDB::new(storage, Some(state_root));
+            let state_root = service.clone().state_root().await?;
+            let block_number = service.get_block_number().await?;
+            let state = ChainStateDB::new_with_root(storage, Some(state_root), block_number);
             let output = call_contract(
                 &state,
                 function_id.0.module,
@@ -178,14 +181,15 @@ where
         let txn_builder = self.txn_request_filler();
         let metrics = self.playground.metrics.clone();
         let f = async move {
-            let state_root = service.state_root().await?;
+            let state_root = service.clone().state_root().await?;
+            let block_number = service.get_block_number().await?;
             let DryRunTransactionRequest {
                 transaction,
                 sender_public_key,
             } = txn;
 
             let txn = txn_builder.fill_transaction(transaction).await?;
-            let state_view = ChainStateDB::new(storage, Some(state_root));
+            let state_view = ChainStateDB::new_with_root(storage, Some(state_root), block_number);
             dry_run(
                 &state_view,
                 DryRunTransaction {
@@ -208,9 +212,10 @@ where
         let storage = self.storage.clone();
         let metrics = self.playground.metrics.clone();
         let f = async move {
-            let state_root = service.state_root().await?;
+            let state_root = service.clone().state_root().await?;
+            let block_number = service.get_block_number().await?;
             let raw_txn = RawUserTransaction::from_str(raw_txn.as_str())?;
-            let state_view = ChainStateDB::new(storage, Some(state_root));
+            let state_view = ChainStateDB::new_with_root(storage, Some(state_root), block_number);
             dry_run(
                 &state_view,
                 DryRunTransaction {
@@ -228,7 +233,9 @@ where
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
         let fut = async move {
-            let state = ChainStateDB::new(storage, Some(service.state_root().await?));
+            let state_root = service.clone().state_root().await?;
+            let block_number = service.get_block_number().await?;
+            let state = ChainStateDB::new_with_root(storage, Some(state_root), block_number);
             ABIResolver::new(&state)
                 .resolve_function(&function_id.0.module, function_id.0.function.as_ident_str())
         }

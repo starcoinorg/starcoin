@@ -9,6 +9,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_state_tree::AccountStateSetIterator;
+use starcoin_types::block::BlockNumber;
 use starcoin_types::language_storage::StructTag;
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_types::write_set::WriteSet;
@@ -154,6 +155,10 @@ pub trait ChainStateWriter {
     fn commit(&self) -> Result<HashValue>;
 
     fn flush(&self) -> Result<()>;
+
+    fn update_block_number(&self, _block_number: BlockNumber) {
+        panic!("Never call me and implement this function yourself")
+    }
 }
 /// `AccountStateReader` is a helper struct for read account state.
 pub struct AccountStateReader<'a, Reader> {

@@ -40,4 +40,8 @@ impl<'a, S: StateView> StateView for VersionedView<'a, S> {
     fn is_genesis(&self) -> bool {
         self.base_view.is_genesis()
     }
+
+    fn get_block_number(&self) -> Option<u64> {
+        self.base_view.get_block_number()
+    }
 }

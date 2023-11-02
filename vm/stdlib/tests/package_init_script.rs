@@ -30,6 +30,7 @@ fn test_package_init_function() -> Result<()> {
         "",
         "",
         "0x00000000000000000000000000000001::StdlibUpgradeScripts::upgrade_from_v11_to_v12",
+        "0x00000000000000000000000000000001::StdlibUpgradeScripts::upgrade_from_v12_to_v13",
     ];
     for (i, version) in (2..=12).collect::<Vec<usize>>().into_iter().enumerate() {
         let package_file = format!("{}/{}-{}/stdlib.blob", version, version - 1, version);

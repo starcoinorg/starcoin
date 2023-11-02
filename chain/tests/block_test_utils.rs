@@ -13,7 +13,7 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_transaction_builder::{build_empty_script, DEFAULT_EXPIRATION_TIME};
-use starcoin_types::block::BlockHeaderExtra;
+use starcoin_types::block::{BlockHeaderExtra, BlockNumber};
 use starcoin_types::proptest_types::{AccountInfoUniverse, Index, SignatureCheckedTransactionGen};
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionPayload};
 use starcoin_types::{
@@ -155,6 +155,7 @@ prop_compose! {
         storage,
         parent_header.txn_accumulator_root(),
         parent_header.state_root(),
+        parent_header.number(),
         txns,
         u64::max_value(), /*block_gas_limit*/
     );
@@ -216,11 +217,16 @@ fn gen_root_hashes(
     storage: Arc<Storage>,
     pre_accumulator_root: HashValue,
     pre_state_root: HashValue,
+    pre_block_number: BlockNumber,
     block_txns: Vec<Transaction>,
     block_gat_limit: u64,
 ) -> (HashValue, HashValue) {
     //state_db
-    let chain_state = ChainStateDB::new(storage.clone(), Some(pre_state_root));
+    let chain_state = ChainStateDB::new_with_root(
+        storage.clone(),
+        Some(pre_state_root),
+        Some(pre_block_number),
+    );
 
     match block_execute(&chain_state, block_txns, block_gat_limit, None) {
         Ok(executed_data) => {

@@ -19,6 +19,7 @@ use starcoin_rpc_api::state::StateApiClient;
 use starcoin_state_tree::StateNode;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_state::AccountState;
+use starcoin_types::block::BlockNumber;
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
@@ -116,7 +117,7 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
     ) -> Result<Option<AccountStateSet>> {
         match state_root {
             Some(root) => {
-                let reader = self.state_db().fork_at(root);
+                let reader = self.state_db().fork_at(root, None);
                 reader.get_account_state_set(&address)
             }
             None => self.state_db().get_account_state_set(&address),
@@ -131,7 +132,7 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
         access_path: AccessPath,
         state_root: HashValue,
     ) -> Result<StateWithProof> {
-        let reader = self.state_db().fork_at(state_root);
+        let reader = self.state_db().fork_at(state_root, None);
         reader.get_with_proof(&access_path)
     }
 
@@ -140,7 +141,7 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
         account_address: AccountAddress,
         state_root: HashValue,
     ) -> Result<Option<AccountState>> {
-        let reader = self.state_db().fork_at(state_root);
+        let reader = self.state_db().fork_at(state_root, None);
         reader.get_account_state(&account_address)
     }
 
@@ -159,12 +160,16 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
         key: Vec<u8>,
         state_root: HashValue,
     ) -> Result<StateWithTableItemProof> {
-        let reader = self.state_db().fork_at(state_root);
+        let reader = self.state_db().fork_at(state_root, None);
         reader.get_with_table_item_proof(&handle, &key)
     }
 
     async fn get_table_info(self, address: AccountAddress) -> Result<Option<TableInfo>> {
         let reader = self.state_db().fork();
         reader.get_table_info(address)
+    }
+
+    async fn get_block_number(self) -> Result<Option<BlockNumber>> {
+        Ok(self.state_db().get_block_number())
     }
 }

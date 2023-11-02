@@ -246,7 +246,11 @@ async fn test_rollback() -> Result<()> {
     {
         let main = storage.get_startup_info()?.unwrap().main;
         let block_header = storage.get_block_header_by_hash(main)?.unwrap();
-        let chain_state = ChainStateDB::new(storage.clone(), Some(block_header.state_root()));
+        let chain_state = ChainStateDB::new_with_root(
+            storage.clone(),
+            Some(block_header.state_root()),
+            Some(block_header.number()),
+        );
         let mut txns: Vec<_> = enacted_block
             .transactions()
             .iter()
