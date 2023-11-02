@@ -46,7 +46,7 @@ fn test_main_block2_jh_on_ubuntu22() {
 // add a test for ubuntu22
 // add -Ofast in build.rs, this test will failed on unbuntu22
 // the data is gen from verify_header_test_barnard_block3_ubuntu22
-// The test with 'ofast' flag passes using clang compiler under ubuntu22, but fails with using gcc
+// The test with 'Ofast' flag passes using clang compiler under ubuntu22, but fails with using gcc
 #[test]
 fn test_barnard_block3_on_ubuntu22() {
     let data = TestCase {
