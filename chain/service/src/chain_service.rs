@@ -232,6 +232,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetBlockInfos(ids) => Ok(ChainResponse::BlockInfoVec(Box::new(
                 self.inner.get_block_infos(ids)?,
             ))),
+            ChainRequest::GetHeightBlocks(number) => Ok(ChainResponse::BlockVec(
+                self.inner.get_height_blocks(number)?,
+            )),
         }
     }
 }
@@ -415,6 +418,10 @@ impl ReadableChainService for ChainReaderServiceInner {
 
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>> {
         self.storage.get_block_infos(ids)
+    }
+
+    fn get_height_blocks(&self, number: BlockNumber) -> Result<Vec<Block>> {
+        self.storage.get_height_blocks(number)
     }
 }
 

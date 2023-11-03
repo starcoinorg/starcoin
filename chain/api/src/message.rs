@@ -60,6 +60,7 @@ pub enum ChainRequest {
         access_path: Option<AccessPath>,
     },
     GetBlockInfos(Vec<HashValue>),
+    GetHeightBlocks(BlockNumber),
 }
 
 impl ServiceRequest for ChainRequest {

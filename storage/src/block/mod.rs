@@ -12,7 +12,7 @@ use network_p2p_types::peer_id::PeerId;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_types::block::{Block, BlockBody, BlockHeader};
+use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockNumber};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct OldFailedBlock {
@@ -313,5 +313,21 @@ impl BlockStorage {
         let old_block: OldFailedBlock = (block, peer_id, failed).into();
         self.failed_block_storage
             .put_raw(block_id, old_block.encode_value()?)
+    }
+
+    pub fn get_height_blocks(&self, number: BlockNumber) -> Result<Vec<Block>> {
+        let mut blocks = vec![];
+        let mut iter = self.header_store.iter()?;
+        iter.seek_to_first();
+        for item in iter {
+            let (id, block_header) = item?;
+            if block_header.number() == number {
+                let block = self.get(id)?;
+                if let Some(block) = block {
+                    blocks.push(block);
+                }
+            }
+        }
+        Ok(blocks)
     }
 }

@@ -30,6 +30,7 @@ use starcoin_types::{
 };
 //use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::block::BlockNumber;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
@@ -224,6 +225,7 @@ pub trait BlockStore {
 
     fn get_snapshot_range(&self) -> Result<Option<SnapshotRange>>;
     fn save_snapshot_range(&self, snapshot_height: SnapshotRange) -> Result<()>;
+    fn get_height_blocks(&self, number: BlockNumber) -> Result<Vec<Block>>;
 }
 
 pub trait BlockTransactionInfoStore {
@@ -467,6 +469,10 @@ impl BlockStore for Storage {
 
     fn save_snapshot_range(&self, snapshot_range: SnapshotRange) -> Result<()> {
         self.chain_info_storage.save_snapshot_range(snapshot_range)
+    }
+
+    fn get_height_blocks(&self, number: BlockNumber) -> Result<Vec<Block>> {
+        self.block_storage.get_height_blocks(number)
     }
 }
 

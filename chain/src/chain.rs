@@ -605,6 +605,10 @@ impl ChainReader for BlockChain {
         Ok(blocks)
     }
 
+    fn get_height_blocks(&self, number: BlockNumber) -> Result<Vec<Block>> {
+        self.storage.get_height_blocks(number)
+    }
+
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
         self.storage
             .get_block_by_hash(hash)

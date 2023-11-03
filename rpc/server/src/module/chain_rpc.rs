@@ -171,6 +171,19 @@ where
         Box::pin(fut.boxed())
     }
 
+    fn get_height_blocks(&self, number: BlockNumber) -> FutureResult<Vec<BlockView>> {
+        let service = self.service.clone();
+        let fut = async move {
+            let blocks = service.get_height_blocks(number).await?;
+            blocks
+                .into_iter()
+                .map(|blk| BlockView::try_from_block(blk, true, false))
+                .collect::<Result<Vec<_>, _>>()
+        }
+        .map_err(map_err);
+        Box::pin(fut.boxed())
+    }
+
     fn get_block_info_by_number(&self, number: u64) -> FutureResult<Option<BlockInfoView>> {
         let service = self.service.clone();
 

@@ -72,6 +72,7 @@ pub trait ReadableChainService {
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
+    fn get_height_blocks(&self, number: BlockNumber) -> Result<Vec<Block>>;
 }
 
 /// Writeable block chain service trait
@@ -106,6 +107,7 @@ pub trait ChainAsyncService:
     async fn main_head_header(&self) -> Result<BlockHeader>;
     async fn main_head_block(&self) -> Result<Block>;
     async fn main_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>>;
+    async fn get_height_blocks(&self, number: BlockNumber) -> Result<Vec<Block>>;
     async fn main_blocks_by_number(
         &self,
         number: Option<BlockNumber>,
@@ -307,6 +309,16 @@ where
             Ok(block.map(|b| *b))
         } else {
             bail!("Get chain block by number response error.")
+        }
+    }
+
+    async fn get_height_blocks(&self, number: BlockNumber) -> Result<Vec<Block>> {
+        if let ChainResponse::BlockVec(blocks) =
+            self.send(ChainRequest::GetHeightBlocks(number)).await??
+        {
+            Ok(blocks)
+        } else {
+            bail!("Get height blocks by number response error.")
         }
     }
 
