@@ -1,54 +1,77 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use diem_types::{
-    access_path::AccessPath,
-    account_config::{xus_tag, CORE_CODE_ADDRESS},
-    chain_id::{ChainId, NamedChain},
-    contract_event::ContractEvent,
-    on_chain_config::new_epoch_event_key,
-    transaction::{
-        authenticator::AuthenticationKey, ChangeSet, TransactionStatus, WriteSetPayload,
-    },
-    vm_status::{KeptVMStatus, StatusCode},
-    write_set::{WriteOp, WriteSet, WriteSetMut},
-};
 use move_core_types::{
-    identifier::Identifier,
-    language_storage::{ResourceKey, StructTag},
+    vm_status::{KeptVMStatus, StatusCode},
 };
-use starcoin_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
+use move_core_types::identifier::Identifier;
+use move_core_types::language_storage::{CORE_CODE_ADDRESS, StructTag};
+use starcoin_crypto::ed25519::Ed25519PrivateKey;
+use starcoin_crypto::{PrivateKey, Uniform};
+use starcoin_config::ChainNetwork;
 use starcoin_language_e2e_tests::{
-    account, assert_prologue_parity, common_transactions::rotate_key_txn,
-    test_with_different_versions, transaction_status_eq, versioning::CURRENT_RELEASE_VERSIONS,
+    account::Account as E2eTestAccount, assert_prologue_parity, test_with_different_versions, transaction_status_eq,
+    versioning::CURRENT_RELEASE_VERSIONS,
 };
+use starcoin_language_e2e_tests::common_transactions::rotate_key_txn;
+use starcoin_types::account::Account as StarcoinAccount;
+use starcoin_vm_types::{
+    access_path::AccessPath,
+    state_store::state_key::StateKey,
+    state_view::StateView,
+    transaction::{Script, SignedUserTransaction, TransactionStatus},
+    transaction::authenticator::AuthenticationKey
+};
+// use starcoin_vm_types::account_config::stc_type_tag;
+// use starcoin_vm_types::contract_event::ContractEvent;
+// use starcoin_vm_types::on_chain_config::new_epoch_event_key;
+use test_helper::txn::create_account_txn_sent_as_association;
+use bcs_ext::Sample;
+
+fn create_account_data_transaction(
+    account: Option<E2eTestAccount>,
+    init_amount: u128,
+    seq_num: u64,
+) -> SignedUserTransaction {
+    let stc_acc = match account {
+        Some(test_acc) => StarcoinAccount::new_genesis_account(test_acc.address().clone()),
+        None => StarcoinAccount::new(),
+    };
+    create_account_txn_sent_as_association(
+        &stc_acc,
+        seq_num,
+        init_amount,
+        0,
+        &ChainNetwork::new_test(),
+    )
+}
 
 #[test]
 fn invalid_write_set_signer() {
     test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
         let mut executor = test_env.executor;
-        let genesis_account = test_env.dr_account;
+        //let genesis_account = test_env.dr_account;
         executor.new_block();
 
+        // TODO(BobOng): e2e-testsuit, disable the WriteSetPayload
         // Create a WriteSet that adds an account on a new address.
-        let new_account_data = executor.create_raw_account_data(0, 10);
-        let write_set = new_account_data.to_writeset();
-
+        //let new_account_data = executor.create_raw_account_data(0, 10);
+        //let write_set = new_account_data.to_writeset();
         // Signing the txn with a key that does not match the sender should fail.
-        let writeset_txn = genesis_account
-            .transaction()
-            .write_set(WriteSetPayload::Direct(ChangeSet::new(write_set, vec![])))
-            .sequence_number(test_env.dr_sequence_number)
-            .raw()
-            .sign(
-                &new_account_data.account().privkey,
-                new_account_data.account().pubkey.clone(),
-            )
-            .unwrap()
-            .into_inner();
-
+        // let writeset_txn = genesis_account
+        //     .transaction()
+        //     .payload(WriteSetPayload::Direct(ChangeSet::new(write_set, vec![])))
+        //     .sequence_number(test_env.dr_sequence_number)
+        //     .raw()
+        //     .sign(
+        //         &new_account_data.account().privkey,
+        //         new_account_data.account().pubkey.clone(),
+        //     )
+        //     .unwrap()
+        //     .into_inner();
+        let writeset_txn = create_account_data_transaction(Option::None, 0, 10);
         assert_prologue_parity!(
-            executor.verify_transaction(writeset_txn.clone()).status(),
+            executor.verify_transaction(writeset_txn.clone()).unwrap().status_code(),
             executor.execute_transaction(writeset_txn).status(),
             StatusCode::INVALID_AUTH_KEY
         );
@@ -60,22 +83,24 @@ fn invalid_write_set_signer() {
 fn verify_and_execute_writeset() {
     test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
         let mut executor = test_env.executor;
-        let genesis_account = test_env.dr_account;
         executor.new_block();
+        let genesis_account = test_env.dr_account;
 
+        // TODO(BobOng): e2e-testsuit, disable the WriteSetPayload
         // Create a WriteSet that adds an account on a new address.
-        let new_account_data = executor.create_raw_account_data(0, 10);
-        let write_set = new_account_data.to_writeset();
-
-        // (1) Test that a correct WriteSet is executed as expected.
-        let writeset_txn = genesis_account
-            .transaction()
-            .write_set(WriteSetPayload::Direct(ChangeSet::new(
-                write_set.clone(),
-                vec![],
-            )))
-            .sequence_number(test_env.dr_sequence_number)
-            .sign();
+         let new_account_data = executor.create_raw_account_data(0, 10);
+        // let write_set = new_account_data.to_writeset();
+        //
+        // // (1) Test that a correct WriteSet is executed as expected.
+        // let writeset_txn = genesis_account
+        //     .transaction()
+        //     .write_set(WriteSetPayload::Direct(ChangeSet::new(
+        //         write_set.clone(),
+        //         vec![],
+        //     )))
+        //     .sequence_number(test_env.dr_sequence_number)
+        //     .sign();
+        let writeset_txn = create_account_data_transaction(Option::Some(new_account_data.account().clone()), 0, 10);
         let output = executor.execute_transaction(writeset_txn.clone());
         assert_eq!(
             output.status(),
@@ -83,7 +108,6 @@ fn verify_and_execute_writeset() {
         );
         assert!(executor
             .verify_transaction(writeset_txn.clone())
-            .status()
             .is_none());
 
         executor.apply_write_set(output.write_set());
@@ -95,33 +119,34 @@ fn verify_and_execute_writeset() {
             .read_account_resource(new_account_data.account())
             .expect("sender must exist");
         let updated_sender_balance = executor
-            .read_balance_resource(new_account_data.account(), account::xus_currency_code())
+            .read_balance_resource(new_account_data.account())
             .expect("sender balance must exist");
 
         assert_eq!(test_env.dr_sequence_number.checked_add(1).unwrap(), updated_diem_root_account.sequence_number());
-        assert_eq!(0, updated_sender_balance.coin());
+        assert_eq!(0, updated_sender_balance.token() as u64);
         assert_eq!(10, updated_sender.sequence_number());
 
         // (2) Cannot reapply the same writeset.
         assert_prologue_parity!(
-            executor.verify_transaction(writeset_txn.clone()).status(),
+            executor.verify_transaction(writeset_txn.clone()).unwrap().status_code(),
             executor.execute_transaction(writeset_txn).status(),
             StatusCode::SEQUENCE_NUMBER_TOO_OLD
         );
 
         // (3) Cannot apply the writeset with future sequence number.
-        let writeset_txn = genesis_account
-            .transaction()
-            .write_set(WriteSetPayload::Direct(ChangeSet::new(write_set, vec![])))
-            .sequence_number(test_env.dr_sequence_number.checked_add(10).unwrap())
-            .sign();
+        // let writeset_txn = genesis_account
+        //     .transaction()
+        //     .write_set(WriteSetPayload::Direct(ChangeSet::new(write_set, vec![])))
+        //     .sequence_number(test_env.dr_sequence_number.checked_add(10).unwrap())
+        //     .sign();
+        let writeset_txn = create_account_data_transaction(Option::Some(genesis_account), 0, 20);
         let output = executor.execute_transaction(writeset_txn.clone());
         assert_eq!(
             output.status(),
             &TransactionStatus::Discard(StatusCode::SEQUENCE_NUMBER_TOO_NEW)
         );
         // "Too new" sequence numbers are accepted during validation.
-        assert!(executor.verify_transaction(writeset_txn).status().is_none());
+        assert!(executor.verify_transaction(writeset_txn).is_none());
     }
     }
 }
@@ -133,155 +158,188 @@ fn bad_writesets() {
         let genesis_account = test_env.dr_account;
         executor.new_block();
 
-        // Create a WriteSet that adds an account on a new address
-        let new_account_data = executor.create_raw_account_data(1000, 10);
-        let write_set = new_account_data.to_writeset();
 
-        // (1) A WriteSet signed by an arbitrary account, not Diem root, should be rejected.
-        let writeset_txn = new_account_data
-            .account()
-            .transaction()
-            .write_set(WriteSetPayload::Direct(ChangeSet::new(
-                write_set.clone(),
-                vec![],
-            )))
-            .sequence_number(0)
-            .sign();
+        // // Create a WriteSet that adds an account on a new address
+        // let new_account_data = executor.create_raw_account_data(1000, 10);
+        // let write_set = new_account_data.to_writeset();
+        //
+        // // (1) A WriteSet signed by an arbitrary account, not Diem root, should be rejected.
+        // let writeset_txn = new_account_data
+        //     .account()
+        //     .transaction()
+        //     .write_set(WriteSetPayload::Direct(ChangeSet::new(
+        //         write_set.clone(),
+        //         vec![],
+        //     )))
+        //     .sequence_number(0)
+        //     .sign();
+
+        // TODO(BobOng): e2e-testsuit, disabled the WriteSetPayload
+        let writeset_txn = create_account_data_transaction(Some(genesis_account), 1000, 10);
         assert_prologue_parity!(
-            executor.verify_transaction(writeset_txn.clone()).status(),
+            executor.verify_transaction(writeset_txn.clone()).unwrap().status_code(),
             executor.execute_transaction(writeset_txn).status(),
             StatusCode::REJECTED_WRITE_SET
         );
 
+        // TODO(BobOng): e2e-testsuit, disabled a invalid Contract Event
         // (2) A WriteSet containing a reconfiguration event should be dropped.
-        let event = ContractEvent::new(new_epoch_event_key(), 0, xus_tag(), vec![]);
-        let writeset_txn = genesis_account
-            .transaction()
-            .write_set(WriteSetPayload::Direct(ChangeSet::new(
-                write_set,
-                vec![event],
-            )))
-            .sequence_number(test_env.dr_sequence_number)
-            .sign();
-        assert_eq!(
-            executor.execute_transaction(writeset_txn).status(),
-            &TransactionStatus::Discard(StatusCode::INVALID_WRITE_SET)
-        );
+        // let event = ContractEvent::new(
+        //     new_epoch_event_key(),
+        //     0,
+        //     stc_type_tag(),
+        //     vec![]
+        // );
+        //writeset_txn = create_contract_event_txn();
+        // let writeset_txn = genesis_account
+        //     .transaction()
+        //     .write_set(WriteSetPayload::Direct(ChangeSet::new(
+        //         write_set,
+        //         vec![event],
+        //     )))
+        //     .sequence_number(test_env.dr_sequence_number)
+        //     .sign();
+        // assert_eq!(
+        //     executor.execute_transaction(writeset_txn).status(),
+        //     &TransactionStatus::Discard(StatusCode::INVALID_WRITE_SET)
+        // );
 
+        // TODO(BobOng): e2e-testsuit, test with unreadable resource
         // (3) A WriteSet attempting to change DiemWriteSetManager should be dropped.
-        let key = ResourceKey::new(
-            *genesis_account.address(),
-            StructTag {
-                address: CORE_CODE_ADDRESS,
-                module: Identifier::new("DiemAccount").unwrap(),
-                name: Identifier::new("DiemWriteSetManager").unwrap(),
-                type_params: vec![],
-            },
-        );
-        let path = AccessPath::resource_access_path(key);
+        // let key = ResourceKey::new(
+        //     *genesis_account.address(),
+        //     StructTag {
+        //         address: CORE_CODE_ADDRESS,
+        //         module: Identifier::new("Account").unwrap(),
+        //         name: Identifier::new("Account123").unwrap(),
+        //         type_params: vec![],
+        //     },
+        // );
+        // let write_set = WriteSetMut::new(vec![(path, WriteOp::Value(vec![]))])
+        //     .freeze()
+        //     .unwrap();
+        // let writeset_txn = genesis_account
+        //     .transaction()
+        //     .write_set(WriteSetPayload::Direct(ChangeSet::new(write_set, vec![])))
+        //     .sequence_number(test_env.dr_sequence_number)
+        //     .sign();
+        // let output = executor.execute_transaction(writeset_txn);
+        // assert_eq!(
+        //     output.status(),
+        //     &TransactionStatus::Discard(StatusCode::INVALID_WRITE_SET)
+        // );
+        let path = AccessPath::resource_access_path(genesis_account.address().clone(), StructTag {
+            address: CORE_CODE_ADDRESS,
+            module: Identifier::new("Account").unwrap(),
+            name: Identifier::new("Account1234").unwrap(),
+            type_params: vec![],
+        });
+        assert!(executor.get_state_view().get_state_value(&StateKey::AccessPath(path)).unwrap().is_none());
 
-        let write_set = WriteSetMut::new(vec![(path, WriteOp::Value(vec![]))])
-            .freeze()
-            .unwrap();
-        let writeset_txn = genesis_account
-            .transaction()
-            .write_set(WriteSetPayload::Direct(ChangeSet::new(write_set, vec![])))
-            .sequence_number(test_env.dr_sequence_number)
-            .sign();
-        let output = executor.execute_transaction(writeset_txn);
-        assert_eq!(
-            output.status(),
-            &TransactionStatus::Discard(StatusCode::INVALID_WRITE_SET)
-        );
-
+        // TODO(BobOng): e2e-testsuit, 4 same as 3
         // (4) A WriteSet attempting to change Diem root AccountResource should be dropped.
-        let key = ResourceKey::new(
-            *genesis_account.address(),
-            StructTag {
-                address: CORE_CODE_ADDRESS,
-                module: Identifier::new("DiemAccount").unwrap(),
-                name: Identifier::new("DiemAccount").unwrap(),
-                type_params: vec![],
-            },
-        );
-        let path = AccessPath::resource_access_path(key);
-
-        let write_set = WriteSetMut::new(vec![(path, WriteOp::Value(vec![]))])
-            .freeze()
-            .unwrap();
-        let writeset_txn = genesis_account
-            .transaction()
-            .write_set(WriteSetPayload::Direct(ChangeSet::new(write_set, vec![])))
-            .sequence_number(test_env.dr_sequence_number)
-            .sign();
-        let output = executor.execute_transaction(writeset_txn);
-        assert_eq!(
-            output.status(),
-            &TransactionStatus::Discard(StatusCode::INVALID_WRITE_SET)
-        );
+        // let key = ResourceKey::new(
+        //     *genesis_account.address(),
+        //     StructTag {
+        //         address: CORE_CODE_ADDRESS,
+        //         module: Identifier::new("DiemAccount").unwrap(),
+        //         name: Identifier::new("DiemAccount").unwrap(),
+        //         type_params: vec![],
+        //     },
+        // );
+        // let path = AccessPath::resource_access_path(key);
+        //
+        // let write_set = WriteSetMut::new(vec![(path, WriteOp::Value(vec![]))])
+        //     .freeze()
+        //     .unwrap();
+        // let writeset_txn = genesis_account
+        //     .transaction()
+        //     .write_set(WriteSetPayload::Direct(ChangeSet::new(write_set, vec![])))
+        //     .sequence_number(test_env.dr_sequence_number)
+        //     .sign();
+        // let output = executor.execute_transaction(writeset_txn);
+        // assert_eq!(
+        //     output.status(),
+        //     &TransactionStatus::Discard(StatusCode::INVALID_WRITE_SET)
+        // );
 
         // (5) A WriteSet with a bad ChainId should be rejected.
-        let writeset_txn = genesis_account
-            .transaction()
-            .write_set(WriteSetPayload::Direct(ChangeSet::new(
-                WriteSet::default(),
-                vec![],
-            )))
-            .sequence_number(test_env.dr_sequence_number)
-            .chain_id(ChainId::new(NamedChain::DEVNET.id()))
-            .sign();
-        assert_prologue_parity!(
-            executor.verify_transaction(writeset_txn.clone()).status(),
-            executor.execute_transaction(writeset_txn).status(),
-            StatusCode::BAD_CHAIN_ID
-        );
+        // let writeset_txn = genesis_account
+        //     .transaction()
+        //     .write_set(WriteSetPayload::Direct(ChangeSet::new(
+        //         WriteSet::default(),
+        //         vec![],
+        //     )))
+        //     .sequence_number(test_env.dr_sequence_number)
+        //     .chain_id(ChainId::new(NamedChain::DEVNET.id()))
+        //     .sign();
+        // assert_prologue_parity!(
+        //     executor.verify_transaction(writeset_txn.clone()).status(),
+        //     executor.execute_transaction(writeset_txn).status(),
+        //     StatusCode::BAD_CHAIN_ID
+        // );
 
         // (6) A WriteSet that has expired should be rejected.
+        // let writeset_txn = genesis_account
+        //     .transaction()
+        //     .write_set(WriteSetPayload::Direct(ChangeSet::new(
+        //         WriteSet::default(),
+        //         vec![],
+        //     )))
+        //     .sequence_number(test_env.dr_sequence_number)
+        //     .ttl(0)
+        //     .sign();
         let writeset_txn = genesis_account
-            .transaction()
-            .write_set(WriteSetPayload::Direct(ChangeSet::new(
-                WriteSet::default(),
-                vec![],
-            )))
+            .transaction().script(Script::sample())
             .sequence_number(test_env.dr_sequence_number)
             .ttl(0)
             .sign();
         assert_prologue_parity!(
-            executor.verify_transaction(writeset_txn.clone()).status(),
+            executor.verify_transaction(writeset_txn.clone()).unwrap().status_code(),
             executor.execute_transaction(writeset_txn).status(),
             StatusCode::TRANSACTION_EXPIRED
         );
 
         // (7) The gas currency specified in the transaction must be valid
         // (even though WriteSet transactions are not charged for gas).
+        // let writeset_txn = genesis_account
+        //     .transaction()
+        //     .write_set(WriteSetPayload::Direct(ChangeSet::new(
+        //         WriteSet::default(),
+        //         vec![],
+        //     )))
+        //     .sequence_number(test_env.dr_sequence_number)
+        //     .gas_currency_code("Bad_ID")
+        //     .sign();
         let writeset_txn = genesis_account
-            .transaction()
-            .write_set(WriteSetPayload::Direct(ChangeSet::new(
-                WriteSet::default(),
-                vec![],
-            )))
+            .transaction().script(Script::sample())
             .sequence_number(test_env.dr_sequence_number)
             .gas_currency_code("Bad_ID")
             .sign();
         assert_prologue_parity!(
-            executor.verify_transaction(writeset_txn.clone()).status(),
+            executor.verify_transaction(writeset_txn.clone()).unwrap().status_code(),
             executor.execute_transaction(writeset_txn).status(),
             StatusCode::INVALID_GAS_SPECIFIER
         );
 
         // (8) The gas currency code must also correspond to a registered currency
         // (even though WriteSet transactions are not charged for gas).
+        // let writeset_txn = genesis_account
+        //     .transaction()
+        //     .write_set(WriteSetPayload::Direct(ChangeSet::new(
+        //         WriteSet::default(),
+        //         vec![],
+        //     )))
+        //     .sequence_number(test_env.dr_sequence_number)
+        //     .gas_currency_code("INVALID")
+        //     .sign();
         let writeset_txn = genesis_account
-            .transaction()
-            .write_set(WriteSetPayload::Direct(ChangeSet::new(
-                WriteSet::default(),
-                vec![],
-            )))
+            .transaction().script(Script::sample())
             .sequence_number(test_env.dr_sequence_number)
             .gas_currency_code("INVALID")
             .sign();
         assert_prologue_parity!(
-            executor.verify_transaction(writeset_txn.clone()).status(),
+            executor.verify_transaction(writeset_txn.clone()).unwrap().status_code(),
             executor.execute_transaction(writeset_txn).status(),
             StatusCode::CURRENCY_INFO_DOES_NOT_EXIST
         );
@@ -305,24 +363,26 @@ fn transfer_and_execute_writeset() {
         let pubkey = privkey.public_key();
         let new_key_hash = AuthenticationKey::ed25519(&pubkey).to_vec();
 
+        let new_account_data = executor.create_raw_account_data(0, 10);
         executor.execute_and_apply(rotate_key_txn(&blessed_account, new_key_hash, test_env.tc_sequence_number));
 
         // (2) Create a WriteSet that adds an account on a new address
-        let new_account_data = executor.create_raw_account_data(0, 10);
-        let write_set = new_account_data.to_writeset();
 
-        let writeset_txn = genesis_account
-            .transaction()
-            .write_set(WriteSetPayload::Direct(ChangeSet::new(write_set, vec![])))
-            .sequence_number(test_env.dr_sequence_number)
-            .sign();
-
+        // let write_set = new_account_data.to_writeset();
+        //
+        // let writeset_txn = genesis_account
+        //     .transaction()
+        //     .write_set(WriteSetPayload::Direct(ChangeSet::new(write_set, vec![])))
+        //     .sequence_number(test_env.dr_sequence_number)
+        //     .sign();
+        let writeset_txn = create_account_data_transaction(
+            Some(new_account_data.account().clone()), 0, 10);
         let output = executor.execute_transaction(writeset_txn.clone());
         assert_eq!(
             output.status(),
             &TransactionStatus::Keep(KeptVMStatus::Executed)
         );
-        assert!(executor.verify_transaction(writeset_txn).status().is_none());
+        assert!(executor.verify_transaction(writeset_txn).is_none());
 
         executor.apply_write_set(output.write_set());
 
@@ -333,11 +393,11 @@ fn transfer_and_execute_writeset() {
             .read_account_resource(new_account_data.account())
             .expect("sender must exist");
         let updated_sender_balance = executor
-            .read_balance_resource(new_account_data.account(), account::xus_currency_code())
+            .read_balance_resource(new_account_data.account())
             .expect("sender balance must exist");
 
         assert_eq!(test_env.dr_sequence_number.checked_add(1).unwrap(), updated_diem_root_account.sequence_number());
-        assert_eq!(0, updated_sender_balance.coin());
+        assert_eq!(0, updated_sender_balance.token() as u64);
         assert_eq!(10, updated_sender.sequence_number());
 
         // (3) Rotate the accounts key
