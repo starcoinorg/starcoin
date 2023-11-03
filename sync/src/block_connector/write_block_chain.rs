@@ -116,6 +116,10 @@ where
             .as_ref()
             .map(|metrics| metrics.chain_block_connect_time.start_timer());
 
+        //Todo: make sure the parents have been see
+        // 1. check if parents block exists in block_storage/dag_storage.
+        // 2. evict a event to activate a task to fetch the missing blocks
+        // 3. return error for further retrying
         let result = if block.header().parents_hash().is_some() {
             assert!(transaction_parent.is_some(), "in dag branch, the transaction parent should not be none");
             self.connect_dag_inner(
@@ -245,10 +249,7 @@ where
     }
 
     #[cfg(test)]
-    pub fn apply_failed(
-        &mut self,
-        block: Block,
-    ) -> Result<()> {
+    pub fn apply_failed(&mut self, block: Block) -> Result<()> {
         use anyhow::bail;
         use starcoin_chain::verifier::FullVerifier;
 
@@ -306,21 +307,19 @@ where
         }
     }
 
-    pub fn select_head(
-        &mut self,
-        new_branch: BlockChain,
-    ) -> Result<()> {
+    pub fn select_head(&mut self, new_branch: BlockChain) -> Result<()> {
         let executed_block = new_branch.head_block();
         let main_total_difficulty = self.main.get_total_difficulty()?;
         let branch_total_difficulty = new_branch.get_total_difficulty()?;
         let parent_is_main_head = self.is_main_head(&executed_block.header().parent_hash());
 
         if branch_total_difficulty > main_total_difficulty {
-            let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) = if !parent_is_main_head {
+            let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
+                if !parent_is_main_head {
                     self.find_ancestors_from_accumulator(&new_branch)?
                 } else {
                     (1, vec![executed_block.block.clone()], 0, vec![])
-            };
+                };
             self.main = new_branch;
 
             self.do_new_head(
@@ -444,11 +443,7 @@ where
     }
 
     ///Directly execute the block and save result, do not try to connect.
-    pub fn execute(
-        &mut self,
-        block: Block,
-        transaction_parent: Option<HashValue>,
-    ) -> Result<ExecutedBlock> {
+    pub fn execute(&mut self, block: Block) -> Result<ExecutedBlock> {
         let chain = BlockChain::new(
             self.config.net().time_service(),
             block.header().parent_hash(),
@@ -667,28 +662,19 @@ where
         }
     }
 
-    fn broadcast_new_branch(
-        &self,
-        block: ExecutedBlock,
-    ) {
+    fn broadcast_new_branch(&self, block: ExecutedBlock) {
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
                 .chain_select_head_total
                 .with_label_values(&["new_branch"])
                 .inc()
         }
-        if let Err(e) = self
-            .bus
-            .broadcast(NewBranch(Arc::new(block)))
-        {
+        if let Err(e) = self.bus.broadcast(NewBranch(Arc::new(block))) {
             error!("Broadcast NewBranch error: {:?}", e);
         }
     }
 
-    fn switch_branch(
-        &mut self,
-        block: Block,
-    ) -> Result<ConnectOk> {
+    fn switch_branch(&mut self, block: Block) -> Result<ConnectOk> {
         let (block_info, fork) = self.find_or_fork(
             block.header(),
             dag_block_next_parent,
@@ -738,16 +724,6 @@ where
 
     fn connect_to_main(&mut self, block: Block) -> Result<ConnectOk> {
         let block_id = block.id();
-        if block_id == *starcoin_storage::BARNARD_HARD_FORK_HASH
-            && block.header().number() == starcoin_storage::BARNARD_HARD_FORK_HEIGHT
-        {
-            debug!("barnard hard fork {}", block_id);
-            return Err(ConnectBlockError::BarnardHardFork(Box::new(block)).into());
-        }
-        if self.main.current_header().id() == block_id {
-            debug!("Repeat connect, current header is {} already.", block_id);
-            return Ok(ConnectOk::MainDuplicate);
-        }
 
         if self.main.current_header().id() == block.header().parent_hash()
             && !self.block_exist(block_id)?
@@ -758,20 +734,14 @@ where
         self.switch_branch(block)
     }
 
-    fn apply_and_select_head(
-        &mut self,
-        block: Block,
-    ) -> Result<ConnectOk> {
-        let executed_block = self.main.apply(block, None)?;
+    fn apply_and_select_head(&mut self, block: Block) -> Result<ConnectOk> {
+        let executed_block = self.main.apply(block)?;
         let enacted_blocks = vec![executed_block.block().clone()];
         self.do_new_head(executed_block.clone(), 1, enacted_blocks, 0, vec![])?;
         return Ok(ConnectOk::ExeConnectMain(executed_block));
     }
 
-    fn add_to_dag(
-        &mut self,
-        header: &BlockHeader,
-    ) -> Result<Arc<GhostdagData>> {
+    fn add_to_dag(&mut self, header: &BlockHeader) -> Result<Arc<GhostdagData>> {
         let dag = self.dag.as_mut().expect("dag must be inited before using");
         match dag
             .lock()
@@ -787,20 +757,17 @@ where
         }
     }
 
-    fn connect_dag_inner(
-        &mut self,
-        block: Block,
-    ) -> Result<ConnectOk> {
+    fn connect_dag_inner(&mut self, block: Block) -> Result<ConnectOk> {
         let add_dag_result = async_std::task::block_on(self.flexidag_service.send(AddToDag {
             block_header: block.header().clone(),
-        }))??; 
+        }))??;
         let selected_parent = self
             .storage
             .get_block_by_hash(add_dag_result.selected_parent)?
             .expect("selected parent should in storage");
         let mut chain = self.main.fork(selected_parent.header.parent_hash())?;
         let mut transaction_parent = chain.status().head().id().clone();
-        for blue_hash in add_dag_result.mergeset_blues.mergeset_blues.iter() {
+        for blue_hash in add_dag_result.mergeset_blues.iter() {
             if let Some(blue_block) = self.storage.get_block(blue_hash.to_owned())? {
                 match chain.apply(blue_block, Some(transaction_parent)) {
                     Ok(executed_block) => transaction_parent = executed_block,
@@ -817,8 +784,6 @@ where
     }
 
     fn select_head_for_dag(&self, new_chain: BlockChain) -> Result<()> {
-        
-        
         Ok(())
     }
 
@@ -857,7 +822,6 @@ where
             return Ok(ConnectOk::MainDuplicate);
         }
         // normal block, just connect to main
-        // let mut next_tips = Some(vec![]);
         let executed_block = self.connect_to_main(block)?.clone();
         if let Some(block) = executed_block.block() {
             self.broadcast_new_head(block.clone(), None, None);

@@ -168,7 +168,7 @@ async fn test_verify_gas_limit(succ: bool) -> Result<()> {
             .with_gas_used(u64::MAX)
             .build();
     }
-    main.apply(new_block, None)?;
+    main.apply(new_block)?;
     Ok(())
 }
 
