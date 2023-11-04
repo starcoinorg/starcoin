@@ -2,30 +2,38 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_core_types::vm_status::StatusCode;
+use starcoin_config::ChainNetwork;
 use starcoin_language_e2e_tests::account::Account;
 use starcoin_language_e2e_tests::current_function_name;
 use starcoin_language_e2e_tests::executor::FakeExecutor;
 use starcoin_transaction_builder::encode_create_account_script_function;
+use starcoin_vm_types::account_config::stc_type_tag;
+use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 
 // Make sure we can start the experimental genesis
 #[test]
 fn experimental_genesis_runs() {
-    FakeExecutor::from_experimental_genesis();
+    //FakeExecutor::from_experimental_genesis();
+    FakeExecutor::from_test_genesis();
 }
 
 // Make sure that we can execute transactions with the experimental genesis
 #[test]
 fn experimental_genesis_execute_txn_successful() {
-    let mut executor = FakeExecutor::from_experimental_genesis();
+    let mut executor = FakeExecutor::from_test_genesis();
     executor.set_golden_file(current_function_name!());
+    let net = ChainNetwork::new_test();
     let new_account = executor.create_raw_account();
     let new_new_account = executor.create_raw_account();
     let dr_account = Account::new_starcoin_root();
     let txn = dr_account
         .transaction()
         .script_function(encode_create_account_script_function(
-            *new_account.address(),
-            new_account.auth_key_prefix(),
+            net.stdlib_version(),
+            stc_type_tag(),
+            &new_account.address(),
+            AuthenticationKey::try_from(new_account.auth_key_prefix()).unwrap(),
+            0,
         ))
         .sequence_number(0)
         .sign();
@@ -34,9 +42,12 @@ fn experimental_genesis_execute_txn_successful() {
     // Other accounts can create accounts, no role checks
     let txn = new_account
         .transaction()
-        .payload(encode_create_account_script_function(
-            *new_new_account.address(),
-            new_new_account.auth_key_prefix(),
+        .script_function(encode_create_account_script_function(
+            net.stdlib_version(),
+            stc_type_tag(),
+            &new_account.address(),
+            AuthenticationKey::try_from(new_account.auth_key_prefix()).unwrap(),
+            0,
         ))
         .sequence_number(0)
         .sign();
@@ -46,14 +57,18 @@ fn experimental_genesis_execute_txn_successful() {
 // Make sure that we can handle prologue errors from the non-DPN account module
 #[test]
 fn experimental_genesis_execute_txn_non_existent_sender() {
-    let mut executor = FakeExecutor::from_experimental_genesis();
+    let mut executor = FakeExecutor::from_test_genesis();
     executor.set_golden_file(current_function_name!());
+    let net = ChainNetwork::new_test();
     let new_account = executor.create_raw_account();
     let txn = new_account
         .transaction()
-        .payload(encode_create_account_script_function(
-            *new_account.address(),
-            new_account.auth_key_prefix(),
+        .script_function(encode_create_account_script_function(
+            net.stdlib_version(),
+            stc_type_tag(),
+            &new_account.address(),
+            AuthenticationKey::try_from(new_account.auth_key_prefix()).unwrap(),
+            0,
         ))
         .sequence_number(0)
         .sign();

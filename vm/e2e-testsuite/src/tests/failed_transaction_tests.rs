@@ -4,33 +4,27 @@
 use move_core_types::gas_algebra::NumBytes;
 use move_core_types::vm_status::{KeptVMStatus, StatusCode, VMStatus};
 
-use starcoin_language_e2e_tests::{
-    common_transactions::peer_to_peer_txn,
-};
+use starcoin_language_e2e_tests::common_transactions::peer_to_peer_txn;
 use starcoin_language_e2e_tests::executor::FakeExecutor;
 
 use starcoin_vm_runtime::{
+    data_cache::{AsMoveResolver, StateViewCache},
     starcoin_vm::StarcoinVM,
-    data_cache::{
-        StateViewCache,
-        AsMoveResolver,
-    },
 };
 
 use starcoin_vm_types::{
-    account_config::G_STC_TOKEN_CODE,
-    transaction_metadata::TransactionMetadata,
+    account_config::G_STC_TOKEN_CODE, transaction_metadata::TransactionMetadata,
     transaction_metadata::TransactionPayloadMetadata,
 };
 
-use starcoin_gas_algebra_ext::{FeePerGasUnit, Gas, InitialGasSchedule};
 use starcoin_gas::{StarcoinGasMeter, StarcoinGasParameters};
+use starcoin_gas_algebra_ext::{FeePerGasUnit, Gas, InitialGasSchedule};
 use starcoin_vm_types::genesis_config::ChainId;
 
 #[test]
 fn failed_transaction_cleanup_test() {
     //test_with_different_versions!{CURRENT_RELEASE_VERSIONS, |test_env| {
-    let mut executor = FakeExecutor::from_test_genesis();//test_env.executor;
+    let mut executor = FakeExecutor::from_test_genesis(); //test_env.executor;
     let sender = executor.create_raw_account_data(1_000_000, 10);
     executor.add_account_data(&sender);
 
@@ -76,7 +70,7 @@ fn failed_transaction_cleanup_test() {
         VMStatus::Error(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR),
         &mut gas_meter,
         &txn_data,
-        &data_cache.as_move_resolver()
+        &data_cache.as_move_resolver(),
     );
     assert!(out2.write_set().is_empty());
     assert!(out2.gas_used() == 0);

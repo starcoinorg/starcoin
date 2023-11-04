@@ -1,7 +1,30 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_language_e2e_tests::test_with_different_versions;
+use starcoin_language_e2e_tests::{
+    common_transactions::peer_to_peer_txn, test_with_different_versions,
+    versioning::CURRENT_RELEASE_VERSIONS,
+};
+use starcoin_vm_types::{
+    on_chain_config::new_epoch_event_key,
+    transaction::Transaction,
+    value::{serialize_values, MoveValue},
+    vm_status::{KeptVMStatus, StatusCode},
+};
+
+use serde_json::json;
+use starcoin_types::transaction::TransactionStatus;
+
+use crate::tests::fake_stdlib::{
+    encode_add_validator_and_reconfigure_script,
+    encode_create_validator_account_script,
+    encode_create_validator_operator_account_script,
+    encode_custom_script, encode_halt_network_payload,
+    encode_register_validator_config_script,
+    encode_remove_validators_payload,
+    encode_rotate_authentication_key_script,
+    encode_set_validator_operator_script
+};
 
 #[test]
 fn validator_batch_remove() {
@@ -143,15 +166,15 @@ fn validator_batch_remove() {
                 .sign(),
         );
 
-        let txn1 = Transaction::GenesisTransaction(encode_remove_validators_payload(vec![
+        let txn1 = Transaction::UserTransaction(encode_remove_validators_payload(vec![
             *validator_account_0.address(),
             *validator_account_1.address(),
         ]));
 
-        let txn2 = Transaction::GenesisTransaction(encode_custom_script(
+        let txn2 = Transaction::UserTransaction(encode_custom_script(
             "remove_validators.move",
             &json!({ "addresses": [validator_account_0.address().to_string(), validator_account_1.address().to_string()]}),
-            Some(diem_root_address()),
+            Some(diem_root_account.address().clone()),
         ));
 
         assert_eq!(txn1, txn2);
@@ -204,7 +227,7 @@ fn validator_batch_remove() {
 fn halt_network() {
     // This can only run on versions >= 2 since
     // `DiemTransactionPublishingOption::halt_all_transactions` is not available in version 1.
-    test_with_different_versions! {2..=DIEM_MAX_KNOWN_VERSION.major, |test_env| {
+    test_with_different_versions! {2..=12, |test_env| {
         let mut executor = test_env.executor;
         let diem_root_account = test_env.dr_account;
         let sender = executor.create_raw_account_data(1_000_000, 10);
@@ -214,7 +237,7 @@ fn halt_network() {
 
         executor.new_block();
         let output = executor
-            .execute_transaction_block(vec![Transaction::GenesisTransaction(
+            .execute_transaction_block(vec![Transaction::UserTransaction(
                 encode_halt_network_payload(),
             )])
             .unwrap()
@@ -227,7 +250,7 @@ fn halt_network() {
 
         executor.apply_write_set(output.write_set());
 
-        let txn = peer_to_peer_txn(sender.account(), receiver.account(), 10, 1);
+        let txn = peer_to_peer_txn(sender.account(), receiver.account(), 0, 10);
         // Regular transactions like p2p are no longer allowed.
         let output = executor.execute_transaction(txn);
         assert_eq!(

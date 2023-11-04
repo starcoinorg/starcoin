@@ -1,10 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-
-use move_core_types::account_address::AccountAddress;
-use move_core_types::language_storage::TypeTag;
-use starcoin_vm_types::transaction::{Script, TransactionPayload};
+use move_core_types::{
+    account_address::AccountAddress,
+    language_storage::TypeTag,
+};
+use serde::Serialize;
+use bcs_ext::Sample;
+use starcoin_vm_types::transaction::{Script, SignedUserTransaction, TransactionPayload};
 
 pub fn encode_create_validator_account_script(
     _sliding_nonce: u64,
@@ -98,10 +101,7 @@ pub fn encode_add_validator_and_reconfigure_script(
     Script::sample()
 }
 
-
-pub fn encode_preburn_script(
-    _token: TypeTag, _amount: u64,
-) -> Script {
+pub fn encode_preburn_script(_token: TypeTag, _amount: u64) -> Script {
     // Script::new(
     //     CREATE_VALIDATOR_OPERATOR_ACCOUNT_CODE.to_vec(),
     //     vec![],
@@ -133,9 +133,7 @@ pub fn encode_burn_script(
     Script::sample()
 }
 
-pub fn encode_cancel_burn_script(
-    _token: TypeTag, _preburn_address: AccountAddress,
-) -> Script {
+pub fn encode_cancel_burn_script(_token: TypeTag, _preburn_address: AccountAddress) -> Script {
     // Script::new(
     //     CREATE_VALIDATOR_OPERATOR_ACCOUNT_CODE.to_vec(),
     //     vec![],
@@ -199,7 +197,6 @@ pub fn encode_rotate_authentication_key_with_nonce_admin_script(
 //     TransactionPayload::Script(Script::sample())
 // }
 
-
 pub fn encode_create_parent_vasp_account_script(
     _coin_type: TypeTag,
     _sliding_nonce: u64,
@@ -222,7 +219,6 @@ pub fn encode_create_parent_vasp_account_script(
     Script::sample()
 }
 
-
 pub fn encode_freeze_account_script(
     sliding_nonce: u64,
     to_freeze_account: AccountAddress,
@@ -237,7 +233,6 @@ pub fn encode_freeze_account_script(
     // )
     Script::sample()
 }
-
 
 pub fn encode_unfreeze_account_script(
     _sliding_nonce: u64,
@@ -352,7 +347,6 @@ pub fn encode_create_designated_dealer_script(
     Script::sample()
 }
 
-
 pub fn encode_publish_shared_ed25519_public_key_script(_public_key: Vec<u8>) -> Script {
     // Script::new(
     //     PUBLISH_SHARED_ED25519_PUBLIC_KEY_CODE.to_vec(),
@@ -375,7 +369,6 @@ pub fn encode_create_recovery_address_script() -> Script {
     //Script::new(CREATE_RECOVERY_ADDRESS_CODE.to_vec(), vec![], vec![])
     Script::sample()
 }
-
 
 pub fn encode_add_recovery_rotation_capability_script(_recovery_address: AccountAddress) -> Script {
     // Script::new(
@@ -419,6 +412,115 @@ pub fn encode_tiered_mint_script(
     //         TransactionArgument::U64(mint_amount),
     //         TransactionArgument::U64(tier_index),
     //     ],
+    // )
+    Script::sample()
+}
+
+pub fn encode_set_validator_operator_with_nonce_admin_script(
+    _sliding_nonce: u64,
+    _operator_name: Vec<u8>,
+    _operator_account: AccountAddress,
+) -> Script {
+    // Script::new(
+    //     SET_VALIDATOR_OPERATOR_WITH_NONCE_ADMIN_CODE.to_vec(),
+    //     vec![],
+    //     vec![
+    //         TransactionArgument::U64(sliding_nonce),
+    //         TransactionArgument::U8Vector(operator_name),
+    //         TransactionArgument::Address(operator_account),
+    //     ],
+    // )
+    Script::sample()
+}
+
+pub fn encode_set_validator_config_and_reconfigure_script(
+    _validator_account: AccountAddress,
+    _consensus_pubkey: Vec<u8>,
+    _validator_network_addresses: Vec<u8>,
+    _fullnode_network_addresses: Vec<u8>,
+) -> Script {
+    // Script::new(
+    //     SET_VALIDATOR_CONFIG_AND_RECONFIGURE_CODE.to_vec(),
+    //     vec![],
+    //     vec![
+    //         TransactionArgument::Address(validator_account),
+    //         TransactionArgument::U8Vector(consensus_pubkey),
+    //         TransactionArgument::U8Vector(validator_network_addresses),
+    //         TransactionArgument::U8Vector(fullnode_network_addresses),
+    //     ],
+    // )
+    Script::sample()
+}
+
+pub fn encode_remove_validators_payload(_validators: Vec<AccountAddress>) -> SignedUserTransaction {
+    // assert!(!validators.is_empty(), "Unexpected validator set length");
+    // let mut script = template_path();
+    // script.push("remove_validators.move");
+    //
+    // let script = {
+    //     let mut hb = Handlebars::new();
+    //     hb.set_strict_mode(true);
+    //     hb.register_template_file("script", script).unwrap();
+    //     let mut data = HashMap::new();
+    //     data.insert("addresses", validators);
+    //
+    //     let output = hb.render("script", &data).unwrap();
+    //
+    //     compile_admin_script(output.as_str()).unwrap()
+    // };
+    //
+    // WriteSetPayload::Script {
+    //     script,
+    //     execute_as: diem_root_address(),
+    // }
+    SignedUserTransaction::sample()
+}
+
+pub fn encode_custom_script<T: Serialize>(
+    _script_name_in_templates: &str,
+    _args: &T,
+    _execute_as: Option<AccountAddress>,
+) -> SignedUserTransaction {
+    // let mut script = template_path();
+    // script.push(script_name_in_templates);
+    //
+    // let script = {
+    //     let mut hb = Handlebars::new();
+    //     hb.register_template_file("script", script).unwrap();
+    //     hb.set_strict_mode(true);
+    //     let output = hb.render("script", args).unwrap();
+    //
+    //     compile_admin_script(output.as_str()).unwrap()
+    // };
+    //
+    // WriteSetPayload::Script {
+    //     script,
+    //     execute_as: execute_as.unwrap_or_else(diem_root_address),
+    // }
+    SignedUserTransaction::sample()
+}
+
+pub fn encode_halt_network_payload() -> SignedUserTransaction {
+    // let mut script = template_path();
+    // script.push("halt_transactions.move");
+    //
+    // WriteSetPayload::Script {
+    //     script: Script::new(
+    //         compile_script(script.to_str().unwrap().to_owned()),
+    //         vec![],
+    //         vec![],
+    //     ),
+    //     execute_as: diem_root_address(),
+    // }
+    SignedUserTransaction::sample()
+}
+
+
+pub fn encode_rotate_authentication_key_script(_new_key: Vec<u8>) -> Script {
+    // Script::new(
+    //     ROTATE_AUTHENTICATION_KEY_CODE.to_vec(),
+    //     vec![],
+    //     vec![TransactionArgument::U8Vector(new_key)],
     // )
     Script::sample()
 }
