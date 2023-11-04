@@ -1,20 +1,15 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-
-use move_core_types::account_address::AccountAddress;
-use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use starcoin_crypto::SigningKey;
+use crate::account_config::STC_TOKEN_CODE_STR;
+use crate::transaction::RawUserTransaction;
 use crate::{
     genesis_config::ChainId,
     transaction::{Module, Script, SignedUserTransaction, TransactionPayload},
 };
-use crate::account_config::{
-    STC_TOKEN_CODE_STR
-};
-use crate::transaction::{
-    RawUserTransaction
-};
+use move_core_types::account_address::AccountAddress;
+use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
+use starcoin_crypto::SigningKey;
 
 const MAX_GAS_AMOUNT: u64 = 1_000_000;
 const TEST_GAS_PRICE: u64 = 0;
@@ -141,7 +136,6 @@ pub fn get_test_signed_txn(
     public_key: Ed25519PublicKey,
     payload: Option<TransactionPayload>,
 ) -> SignedUserTransaction {
-
     let expiration_time = expiration_time(10);
     // let gas_token_code = gas_token.unwrap_or_else(|| Self::DEFAULT_GAS_TOKEN.to_string());
     get_test_signed_transaction(
@@ -153,7 +147,7 @@ pub fn get_test_signed_txn(
         expiration_time,
         TEST_GAS_PRICE,
         STC_TOKEN_CODE_STR.to_string(),
-        None
+        None,
     )
 }
 

@@ -1,32 +1,30 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::{
-    vm_status::{KeptVMStatus, StatusCode},
-};
 use move_core_types::identifier::Identifier;
-use move_core_types::language_storage::{CORE_CODE_ADDRESS, StructTag};
+use move_core_types::language_storage::{StructTag, CORE_CODE_ADDRESS};
+use move_core_types::vm_status::{KeptVMStatus, StatusCode};
+use starcoin_config::ChainNetwork;
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
 use starcoin_crypto::{PrivateKey, Uniform};
-use starcoin_config::ChainNetwork;
-use starcoin_language_e2e_tests::{
-    account::Account as E2eTestAccount, assert_prologue_parity, test_with_different_versions, transaction_status_eq,
-    versioning::CURRENT_RELEASE_VERSIONS,
-};
 use starcoin_language_e2e_tests::common_transactions::rotate_key_txn;
+use starcoin_language_e2e_tests::{
+    account::Account as E2eTestAccount, assert_prologue_parity, test_with_different_versions,
+    transaction_status_eq, versioning::CURRENT_RELEASE_VERSIONS,
+};
 use starcoin_types::account::Account as StarcoinAccount;
 use starcoin_vm_types::{
     access_path::AccessPath,
     state_store::state_key::StateKey,
     state_view::StateView,
+    transaction::authenticator::AuthenticationKey,
     transaction::{Script, SignedUserTransaction, TransactionStatus},
-    transaction::authenticator::AuthenticationKey
 };
 // use starcoin_vm_types::account_config::stc_type_tag;
 // use starcoin_vm_types::contract_event::ContractEvent;
 // use starcoin_vm_types::on_chain_config::new_epoch_event_key;
-use test_helper::txn::create_account_txn_sent_as_association;
 use bcs_ext::Sample;
+use test_helper::txn::create_account_txn_sent_as_association;
 
 fn create_account_data_transaction(
     account: Option<E2eTestAccount>,

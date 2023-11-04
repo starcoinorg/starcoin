@@ -1317,7 +1317,7 @@ impl StarcoinVM {
         ))
     }
 
-    fn failed_transaction_cleanup<S: MoveResolverExt + StateView>(
+    pub fn failed_transaction_cleanup<S: MoveResolverExt + StateView>(
         &self,
         error_code: VMStatus,
         gas_meter: &mut StarcoinGasMeter,

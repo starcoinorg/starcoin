@@ -19,9 +19,12 @@ use starcoin_vm_types::language_storage::StructTag;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::transaction::authenticator::{AccountPrivateKey, AccountPublicKey};
+use starcoin_vm_types::transaction::authenticator::{
+    AccountPrivateKey, AccountPublicKey, AuthenticationKey,
+};
 use starcoin_vm_types::transaction::{
-    RawUserTransaction, Script, ScriptFunction, SignedUserTransaction, TransactionPayload,
+    Module, Package, RawUserTransaction, Script, ScriptFunction, SignedUserTransaction,
+    TransactionPayload,
 };
 use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use starcoin_vm_types::values::{Struct, Value};
@@ -142,6 +145,26 @@ impl Account {
         &self.addr
     }
 
+    pub fn new_testing_dd() -> Self {
+        Self::new_genesis_account(
+            AccountAddress::from_hex_literal("0xDD")
+                .expect("Parsing valid hex literal should always succeed"),
+        )
+    }
+
+    pub fn new_blessed_tc() -> Self {
+        Self::new_genesis_account(
+            AccountAddress::from_hex_literal("0xB1E55ED")
+                .expect("Parsing valid hex literal should always succeed"),
+        )
+    }
+
+    pub fn auth_key_prefix(&self) -> Vec<u8> {
+        AuthenticationKey::ed25519(&self.public_key())
+            .prefix()
+            .to_vec()
+    }
+
     /// Returns the AccessPath that describes the Account balance resource instance.
     ///
     /// Use this to retrieve or publish the Account balance blob.
@@ -231,6 +254,7 @@ pub struct TransactionBuilder {
     pub program: Option<TransactionPayload>,
     pub max_gas_amount: Option<u64>,
     pub gas_unit_price: Option<u64>,
+    pub gas_currency_code: Option<String>,
     pub chain_id: Option<ChainId>,
     pub ttl: Option<u64>,
 }
@@ -246,6 +270,7 @@ impl TransactionBuilder {
             gas_unit_price: None,
             chain_id: None,
             ttl: None,
+            gas_currency_code: None,
         }
     }
 
@@ -279,10 +304,12 @@ impl TransactionBuilder {
         self
     }
 
-    // pub fn module(mut self, m: Module) -> Self {
-    //     self.program = Some(TransactionPayload::ModuleBundle(ModuleBundle::from(m)));
-    //     self
-    // }
+    pub fn module(mut self, m: Module) -> Self {
+        self.program = Some(TransactionPayload::Package(
+            Package::new_with_module(m).unwrap(),
+        ));
+        self
+    }
 
     // TODO(BobOng): e2e-test
     // pub fn write_set(mut self, w: WriteSetPayload) -> Self {
@@ -300,13 +327,18 @@ impl TransactionBuilder {
         self
     }
 
+    pub fn gas_currency_code(mut self, gas_currency_code: &str) -> Self {
+        self.gas_currency_code = Some(gas_currency_code.to_string());
+        self
+    }
+
     pub fn ttl(mut self, ttl: u64) -> Self {
         self.ttl = Some(ttl);
         self
     }
 
     pub fn raw(self) -> RawUserTransaction {
-        RawUserTransaction::new_with_default_gas_token(
+        RawUserTransaction::new(
             *self.sender.address(),
             self.sequence_number.expect("sequence number not set"),
             self.program.expect("transaction payload not set"),
@@ -314,6 +346,8 @@ impl TransactionBuilder {
             self.gas_unit_price.unwrap_or(0),
             self.ttl.unwrap_or(DEFAULT_EXPIRATION_TIME),
             ChainId::test(),
+            self.gas_currency_code
+                .unwrap_or_else(|| STC_TOKEN_CODE_STR.to_string()),
         )
     }
 

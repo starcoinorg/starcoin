@@ -1,13 +1,21 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tests::peer_to_peer::create_cyclic_transfers;
+use crate::tests::peer_to_peer::{check_and_apply_transfer_output, create_cyclic_transfers};
+use move_core_types::vm_status::{KeptVMStatus, StatusCode};
+use move_ir_compiler::Compiler;
+use starcoin_crypto::ed25519::Ed25519PrivateKey;
+use starcoin_crypto::{HashValue, PrivateKey, Uniform};
+use starcoin_language_e2e_tests::common_transactions::rotate_key_txn;
 use starcoin_language_e2e_tests::executor::FakeExecutor;
-use starcoin_vm_types::transaction::Transaction;
+use starcoin_vm_runtime::parallel_executor::ParallelStarcoinVM;
+use starcoin_vm_types::block_metadata::BlockMetadata;
+use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm_types::transaction::{Transaction, TransactionStatus};
 
 #[test]
 fn peer_to_peer_with_prologue_parallel() {
-    let mut executor = FakeExecutor::from_fresh_genesis();
+    let mut executor = FakeExecutor::from_test_genesis();
     let account_size = 1000usize;
     let initial_balance = 2_000_000u64;
     let initial_seq_num = 10u64;
@@ -36,7 +44,7 @@ fn peer_to_peer_with_prologue_parallel() {
     txns.insert(0, Transaction::BlockMetadata(new_block));
 
     let (mut results, parallel_status) =
-        ParallelDiemVM::execute_block(txns, executor.get_state_view()).unwrap();
+        ParallelStarcoinVM::execute_block(txns, executor.get_state_view()).unwrap();
 
     assert!(parallel_status.is_none());
 
@@ -60,7 +68,7 @@ fn rotate_ed25519_key() {
     let txn = rotate_key_txn(sender.account(), new_key_hash.clone(), 10);
 
     // execute transaction
-    let (mut results, parallel_status) = ParallelDiemVM::execute_block(
+    let (mut results, parallel_status) = ParallelStarcoinVM::execute_block(
         vec![Transaction::UserTransaction(txn)],
         executor.get_state_view(),
     )
@@ -80,10 +88,10 @@ fn rotate_ed25519_key() {
         .read_account_resource(sender.account())
         .expect("sender must exist");
     let updated_sender_balance = executor
-        .read_balance_resource(sender.account(), account::xus_currency_code())
+        .read_balance_resource(sender.account())
         .expect("sender balance must exist");
     assert_eq!(new_key_hash, updated_sender.authentication_key().to_vec());
-    assert_eq!(balance, updated_sender_balance.coin());
+    assert_eq!(balance, updated_sender_balance.token() as u64);
     assert_eq!(11, updated_sender.sequence_number());
 
     // Check that transactions cannot be sent with the old key any more.

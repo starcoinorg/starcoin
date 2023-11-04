@@ -1,18 +1,19 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::transaction_argument::TransactionArgument;
 use move_core_types::vm_status::StatusCode;
 use move_ir_compiler::Compiler;
-use starcoin_crypto::ed25519::Ed25519PrivateKey;
-use starcoin_crypto::{PrivateKey, Uniform};
-use starcoin_language_e2e_tests::account::Account;
-use starcoin_language_e2e_tests::{current_function_name, executor::FakeExecutor};
+use starcoin_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
+
+use starcoin_language_e2e_tests::{
+    account::Account, current_function_name, executor::FakeExecutor,
+};
 use starcoin_transaction_builder::{stdlib_compiled_modules, StdLibOptions};
-use starcoin_vm_types::genesis_config::StdlibVersion::Latest;
-use starcoin_vm_types::on_chain_config;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
-use starcoin_vm_types::transaction::Script;
+use starcoin_vm_types::{
+    genesis_config::StdlibVersion::Latest,
+    on_chain_config,
+    transaction::{authenticator::AuthenticationKey, Script},
+};
 
 #[test]
 fn admin_script_rotate_key_single_signer_no_epoch() {
@@ -85,7 +86,7 @@ fn admin_script_rotate_key_single_signer_new_epoch() {
     let script_body = {
         let code = r#"
 import 0x1.Account;
-import 0x1.DiemConfig;
+import 0x1.Config;
 
 main(dr_account: signer, account: signer, auth_key_prefix: vector<u8>) {
   let rotate_cap: Account.KeyRotationCapability;

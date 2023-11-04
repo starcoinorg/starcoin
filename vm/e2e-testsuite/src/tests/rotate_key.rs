@@ -5,14 +5,10 @@ use move_core_types::vm_status::{KeptVMStatus, StatusCode};
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
 use starcoin_crypto::{PrivateKey, Uniform};
 use starcoin_language_e2e_tests::{
-    common_transactions::rotate_key_txn,
-    test_with_different_versions,
+    common_transactions::rotate_key_txn, test_with_different_versions,
     versioning::CURRENT_RELEASE_VERSIONS,
 };
-use starcoin_vm_types::transaction::{
-    authenticator::AuthenticationKey,
-    TransactionStatus
-};
+use starcoin_vm_types::transaction::{authenticator::AuthenticationKey, TransactionStatus};
 
 #[test]
 fn rotate_ed25519_key() {

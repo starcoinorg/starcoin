@@ -6,25 +6,32 @@ use starcoin_config::{genesis_config::G_TOTAL_STC_AMOUNT, ChainNetwork};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_types::account::Account;
-use starcoin_vm_types::access::ModuleAccess;
-use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config;
-use starcoin_vm_types::account_config::{core_code_address, genesis_address};
-use starcoin_vm_types::file_format::CompiledModule;
-use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::identifier::Identifier;
-use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::language_storage::{StructTag, TypeTag};
-use starcoin_vm_types::on_chain_config::{GasSchedule, VMConfig};
-use starcoin_vm_types::on_chain_resource::nft::NFTUUID;
-use starcoin_vm_types::token::stc::{stc_type_tag, G_STC_TOKEN_CODE};
-use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::transaction::authenticator::{AccountPrivateKey, AuthenticationKey};
-use starcoin_vm_types::transaction::{Module, Package, RawUserTransaction, Script, ScriptFunction, SignedUserTransaction, Transaction, TransactionPayload};
-use starcoin_vm_types::value::MoveValue;
+use starcoin_vm_types::{
+    access::ModuleAccess,
+    account_address::AccountAddress,
+    account_config::{self, core_code_address, genesis_address},
+    file_format::CompiledModule,
+    genesis_config::ChainId,
+    identifier::Identifier,
+    language_storage::{ModuleId, StructTag, TypeTag},
+    on_chain_config::{GasSchedule, VMConfig},
+    on_chain_resource::nft::NFTUUID,
+    token::{
+        stc::{stc_type_tag, G_STC_TOKEN_CODE},
+        token_code::TokenCode,
+    },
+    transaction::{
+        authenticator::{AccountPrivateKey, AuthenticationKey},
+        Module, Package, RawUserTransaction, ScriptFunction, SignedUserTransaction, Transaction,
+        TransactionPayload,
+    },
+    value::MoveValue,
+};
 use std::convert::TryInto;
-use stdlib::{module_to_package, stdlib_package};
-pub use stdlib::{stdlib_compiled_modules, stdlib_modules, StdLibOptions, StdlibVersion};
+pub use stdlib::{
+    module_to_package, stdlib_compiled_modules, stdlib_modules, stdlib_package, StdLibOptions,
+    StdlibVersion,
+};
 
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
 pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 40000000;

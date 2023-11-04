@@ -1,16 +1,23 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use diem_types::{
-    on_chain_config::{new_epoch_event_key, VMPublishingOption},
-    transaction::{TransactionOutput, TransactionStatus, WriteSetPayload},
-    vm_status::KeptVMStatus,
-};
 use starcoin_language_e2e_tests::{
     account::Account, current_function_name, executor::FakeExecutor, test_with_different_versions,
     versioning::CURRENT_RELEASE_VERSIONS,
 };
-use starcoin_transaction_builder::stdlib::*;
+
+use starcoin_vm_types::{
+    on_chain_config::new_epoch_event_key,
+    transaction::{TransactionOutput, TransactionStatus},
+    vm_status::KeptVMStatus,
+};
+
+use crate::tests::fake_stdlib::{
+    encode_add_validator_and_reconfigure_script, encode_create_validator_account_script,
+    encode_create_validator_operator_account_script, encode_register_validator_config_script,
+    encode_set_validator_config_and_reconfigure_script, encode_set_validator_operator_script,
+    encode_set_validator_operator_with_nonce_admin_script,
+};
 
 fn assert_aborted_with(output: TransactionOutput, error_code: u64) {
     assert!(matches!(
@@ -117,12 +124,12 @@ fn validator_add() {
 
 #[test]
 fn validator_add_max_number() {
-    let mut executor = FakeExecutor::custom_genesis(
-        diem_framework_releases::current_module_blobs(),
-        Some(256),
-        VMPublishingOption::open(),
-    );
-
+    // let mut executor = FakeExecutor::custom_genesis(
+    //     diem_framework_releases::current_module_blobs(),
+    //     Some(256),
+    //     VMPublishingOption::open(),
+    // );
+    let mut executor = FakeExecutor::from_test_genesis();
     executor.set_golden_file(current_function_name!());
 
     let output = try_add_validator(&mut executor, &Account::new_starcoin_root(), 0);
@@ -324,17 +331,17 @@ fn validator_set_operator_set_key_reconfigure() {
             b"operator_1".to_vec(),
             *operator_account_1.address(),
         );
-        let txn = diem_root_account
-            .transaction()
-            .write_set(WriteSetPayload::Script {
-                script: admin_script,
-                execute_as: *validator_account.address(),
-            })
+        let txn = diem_root_account.transaction()
+            //.script(WriteSetPayload::Script {
+            //     script: admin_script,
+            //     execute_as: *validator_account.address(),
+            // })
+            .script(admin_script)
             .sequence_number(test_env.dr_sequence_number.checked_add(3).unwrap())
             .sign();
         executor.new_block();
-        let output = executor.execute_transaction(txn);
 
+        let output = executor.execute_transaction(txn);
         assert_eq!(
             output.status(),
             &TransactionStatus::Keep(KeptVMStatus::Executed)

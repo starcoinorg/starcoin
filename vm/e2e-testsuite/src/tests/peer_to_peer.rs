@@ -1,15 +1,18 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use move_core_types::vm_status::{known_locations, KeptVMStatus};
 use std::time::Instant;
-use move_core_types::{
-    vm_status::KeptVMStatus,
-};
-use move_core_types::vm_status::known_locations;
 
-use starcoin_language_e2e_tests::{account::Account, executor::FakeExecutor, common_transactions::peer_to_peer_txn, transaction_status_eq};
-use starcoin_vm_types::account_config::{DepositEvent, WithdrawEvent};
-use starcoin_vm_types::transaction::{SignedUserTransaction, TransactionOutput, TransactionStatus};
+use starcoin_language_e2e_tests::{
+    account::Account, common_transactions::peer_to_peer_txn, executor::FakeExecutor,
+    test_with_different_versions, transaction_status_eq, versioning::CURRENT_RELEASE_VERSIONS,
+};
+
+use starcoin_vm_types::{
+    account_config::{DepositEvent, WithdrawEvent},
+    transaction::{SignedUserTransaction, TransactionOutput, TransactionStatus},
+};
 
 #[test]
 fn single_peer_to_peer_with_event() {
@@ -66,8 +69,8 @@ fn single_peer_to_peer_with_event() {
                 || sent_ev_path.as_slice() == event.key().as_bytes()
         );
     }
-// }
-//}
+    // }
+    //}
 }
 
 // TODO test no longer simple as the legacy version takes an &signer but all
@@ -154,78 +157,77 @@ fn single_peer_to_peer_with_event() {
 // }
 #[test]
 fn few_peer_to_peer_with_event() {
-    //test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
-    //let mut executor = test_env.executor;
-    let mut executor = FakeExecutor::from_test_genesis();
+    test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
+        let mut executor = test_env.executor;
 
-    // create and publish a sender with 3_000_000 coins and a receiver with 3_000_000 coins=
-    let sender = executor.create_raw_account_data(3_000_000, 10);
-    let receiver = executor.create_raw_account_data(3_000_000, 10);
-    executor.add_account_data(&sender);
-    executor.add_account_data(&receiver);
+        // create and publish a sender with 3_000_000 coins and a receiver with 3_000_000 coins=
+        let sender = executor.create_raw_account_data(3_000_000, 10);
+        let receiver = executor.create_raw_account_data(3_000_000, 10);
+        executor.add_account_data(&sender);
+        executor.add_account_data(&receiver);
 
-    let transfer_amount = 1_000;
+        let transfer_amount = 1_000;
 
-    // execute transaction
-    let txns: Vec<SignedUserTransaction> = vec![
-        peer_to_peer_txn(sender.account(), receiver.account(), 10, transfer_amount),
-        peer_to_peer_txn(sender.account(), receiver.account(), 11, transfer_amount),
-        peer_to_peer_txn(sender.account(), receiver.account(), 12, transfer_amount),
-        peer_to_peer_txn(sender.account(), receiver.account(), 13, transfer_amount),
-    ];
-    let output = executor.execute_block(txns).unwrap();
-    for (idx, txn_output) in output.iter().enumerate() {
-        assert_eq!(
-            txn_output.status(),
-            &TransactionStatus::Keep(KeptVMStatus::Executed)
-        );
+        // execute transaction
+        let txns: Vec<SignedUserTransaction> = vec![
+            peer_to_peer_txn(sender.account(), receiver.account(), 10, transfer_amount),
+            peer_to_peer_txn(sender.account(), receiver.account(), 11, transfer_amount),
+            peer_to_peer_txn(sender.account(), receiver.account(), 12, transfer_amount),
+            peer_to_peer_txn(sender.account(), receiver.account(), 13, transfer_amount),
+        ];
+        let output = executor.execute_block(txns).unwrap();
+        for (idx, txn_output) in output.iter().enumerate() {
+            assert_eq!(
+                txn_output.status(),
+                &TransactionStatus::Keep(KeptVMStatus::Executed)
+            );
 
-        // check events
-        for event in txn_output.events() {
-            if let Ok(payload) = WithdrawEvent::try_from_bytes(event.event_data()) {
-                assert_eq!(transfer_amount, payload.amount() as u64);
-                //assert_eq!(receiver.address(), &payload.receiver());
-            } else if let Ok(payload) = DepositEvent::try_from_bytes(event.event_data()) {
-                assert_eq!(transfer_amount, payload.amount() as u64);
-                //assert_eq!(sender.address(), &payload.sender());
-            } else {
-                panic!("Unexpected Event Type")
+            // check events
+            for event in txn_output.events() {
+                if let Ok(payload) = WithdrawEvent::try_from_bytes(event.event_data()) {
+                    assert_eq!(transfer_amount, payload.amount() as u64);
+                    //assert_eq!(receiver.address(), &payload.receiver());
+                } else if let Ok(payload) = DepositEvent::try_from_bytes(event.event_data()) {
+                    assert_eq!(transfer_amount, payload.amount() as u64);
+                    //assert_eq!(sender.address(), &payload.sender());
+                } else {
+                    panic!("Unexpected Event Type")
+                }
             }
+
+            let original_sender_balance = executor
+                .read_balance_resource(sender.account())
+                .expect("sender balance must exist");
+            let original_receiver_balance = executor
+                .read_balance_resource(receiver.account())
+                .expect("receiver balcne must exist");
+            executor.apply_write_set(txn_output.write_set());
+
+            // check that numbers in stored DB are correct
+            let sender_balance = (original_sender_balance.token() as u64) - transfer_amount;
+            let receiver_balance = (original_receiver_balance.token() as u64) + transfer_amount;
+            let updated_sender = executor
+                .read_account_resource(sender.account())
+                .expect("sender must exist");
+            let updated_sender_balance = executor
+                .read_balance_resource(sender.account())
+                .expect("sender balance must exist");
+            let updated_receiver = executor
+                .read_account_resource(receiver.account())
+                .expect("receiver must exist");
+            let updated_receiver_balance = executor
+                .read_balance_resource(receiver.account())
+                .expect("receiver balance must exist");
+            assert_eq!(receiver_balance, updated_receiver_balance.token() as u64);
+            assert_eq!(sender_balance, updated_sender_balance.token() as u64);
+            assert_eq!(11 + idx as u64, updated_sender.sequence_number());
+            assert_eq!(0, updated_sender.withdraw_events().count());
+            assert_eq!(idx as u64 + 1, updated_sender.withdraw_events().count());
+            assert_eq!(idx as u64 + 1, updated_receiver.deposit_events().count());
+            assert_eq!(0, updated_receiver.withdraw_events().count());
         }
-
-        let original_sender_balance = executor
-            .read_balance_resource(sender.account())
-            .expect("sender balance must exist");
-        let original_receiver_balance = executor
-            .read_balance_resource(receiver.account())
-            .expect("receiver balcne must exist");
-        executor.apply_write_set(txn_output.write_set());
-
-        // check that numbers in stored DB are correct
-        let sender_balance = (original_sender_balance.token() as u64) - transfer_amount;
-        let receiver_balance = (original_receiver_balance.token() as u64) + transfer_amount;
-        let updated_sender = executor
-            .read_account_resource(sender.account())
-            .expect("sender must exist");
-        let updated_sender_balance = executor
-            .read_balance_resource(sender.account())
-            .expect("sender balance must exist");
-        let updated_receiver = executor
-            .read_account_resource(receiver.account())
-            .expect("receiver must exist");
-        let updated_receiver_balance = executor
-            .read_balance_resource(receiver.account())
-            .expect("receiver balance must exist");
-        assert_eq!(receiver_balance, updated_receiver_balance.token() as u64);
-        assert_eq!(sender_balance, updated_sender_balance.token() as u64);
-        assert_eq!(11 + idx as u64, updated_sender.sequence_number());
-        assert_eq!(0, updated_sender.withdraw_events().count());
-        assert_eq!(idx as u64 + 1, updated_sender.withdraw_events().count());
-        assert_eq!(idx as u64 + 1, updated_receiver.deposit_events().count());
-        assert_eq!(0, updated_receiver.withdraw_events().count());
     }
-    //}
-    //}
+    }
 }
 
 /// Test that a zero-amount transaction fails, per policy.
@@ -257,7 +259,7 @@ fn zero_amount_peer_to_peer() {
             519,
         )),
     ));
-//}
+    //}
     //}
 }
 
@@ -421,178 +423,174 @@ fn print_accounts(executor: &FakeExecutor, accounts: &[Account]) {
 
 #[test]
 fn cycle_peer_to_peer() {
-    //test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
-    //let mut executor = test_env.executor;
-    let mut executor = FakeExecutor::from_test_genesis();
-    let account_size = 100usize;
-    let initial_balance = 2_000_000u64;
-    let initial_seq_num = 10u64;
-    let accounts = executor.create_accounts(account_size, initial_balance, initial_seq_num);
+    test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
+        let mut executor = test_env.executor;
+        let account_size = 100usize;
+        let initial_balance = 2_000_000u64;
+        let initial_seq_num = 10u64;
+        let accounts = executor.create_accounts(account_size, initial_balance, initial_seq_num);
 
-    // set up the transactions
-    let transfer_amount = 1_000;
-    let (txns_info, txns) = create_cyclic_transfers(&executor, &accounts, transfer_amount);
+        // set up the transactions
+        let transfer_amount = 1_000;
+        let (txns_info, txns) = create_cyclic_transfers(&executor, &accounts, transfer_amount);
 
-    // execute transaction
-    let mut execution_time = 0u128;
-    let now = Instant::now();
-    let output = executor.execute_block(txns).unwrap();
-    execution_time += now.elapsed().as_nanos();
-    println!("EXECUTION TIME: {}", execution_time);
-    for txn_output in &output {
-        assert_eq!(
-            txn_output.status(),
-            &TransactionStatus::Keep(KeptVMStatus::Executed)
-        );
+        // execute transaction
+        let mut execution_time = 0u128;
+        let now = Instant::now();
+        let output = executor.execute_block(txns).unwrap();
+        execution_time += now.elapsed().as_nanos();
+        println!("EXECUTION TIME: {}", execution_time);
+        for txn_output in &output {
+            assert_eq!(
+                txn_output.status(),
+                &TransactionStatus::Keep(KeptVMStatus::Executed)
+            );
+        }
+        assert_eq!(accounts.len(), output.len());
+
+        check_and_apply_transfer_output(&mut executor, &txns_info, &output);
+        print_accounts(&executor, &accounts);
     }
-    assert_eq!(accounts.len(), output.len());
-
-    check_and_apply_transfer_output(&mut executor, &txns_info, &output);
-    print_accounts(&executor, &accounts);
-    // }
-    //}
+    }
 }
 
 #[test]
 fn cycle_peer_to_peer_multi_block() {
-    // test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
-    //let mut executor = test_env.executor;
-    let mut executor = FakeExecutor::from_test_genesis();
-    let account_size = 100usize;
-    let initial_balance = 1_000_000u64;
-    let initial_seq_num = 10u64;
-    let accounts = executor.create_accounts(account_size, initial_balance, initial_seq_num);
+    test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
+        let mut executor = test_env.executor;
+        let account_size = 100usize;
+        let initial_balance = 1_000_000u64;
+        let initial_seq_num = 10u64;
+        let accounts = executor.create_accounts(account_size, initial_balance, initial_seq_num);
 
-    // set up the transactions
-    let transfer_amount = 1_000;
-    let block_count = 5u64;
-    let cycle = account_size / (block_count as usize);
-    let mut range_left = 0usize;
-    let mut execution_time = 0u128;
-    for _i in 0..block_count {
-        range_left = if range_left + cycle >= account_size {
-            account_size - cycle
-        } else {
-            range_left
-        };
-        let (txns_info, txns) = create_cyclic_transfers(
-            &executor,
-            &accounts[range_left..range_left + cycle],
-            transfer_amount,
-        );
-
-        // execute transaction
-        let now = Instant::now();
-        let output = executor.execute_block(txns).unwrap();
-        execution_time += now.elapsed().as_nanos();
-        for txn_output in &output {
-            assert_eq!(
-                txn_output.status(),
-                &TransactionStatus::Keep(KeptVMStatus::Executed)
+        // set up the transactions
+        let transfer_amount = 1_000;
+        let block_count = 5u64;
+        let cycle = account_size / (block_count as usize);
+        let mut range_left = 0usize;
+        let mut execution_time = 0u128;
+        for _i in 0..block_count {
+            range_left = if range_left + cycle >= account_size {
+                account_size - cycle
+            } else {
+                range_left
+            };
+            let (txns_info, txns) = create_cyclic_transfers(
+                &executor,
+                &accounts[range_left..range_left + cycle],
+                transfer_amount,
             );
+
+            // execute transaction
+            let now = Instant::now();
+            let output = executor.execute_block(txns).unwrap();
+            execution_time += now.elapsed().as_nanos();
+            for txn_output in &output {
+                assert_eq!(
+                    txn_output.status(),
+                    &TransactionStatus::Keep(KeptVMStatus::Executed)
+                );
+            }
+            assert_eq!(cycle, output.len());
+            check_and_apply_transfer_output(&mut executor, &txns_info, &output);
+            range_left = (range_left + cycle) % account_size;
         }
-        assert_eq!(cycle, output.len());
-        check_and_apply_transfer_output(&mut executor, &txns_info, &output);
-        range_left = (range_left + cycle) % account_size;
+        println!("EXECUTION TIME: {}", execution_time);
+        print_accounts(&executor, &accounts);
     }
-    println!("EXECUTION TIME: {}", execution_time);
-    print_accounts(&executor, &accounts);
-    //}
-//}
+    }
 }
 
 #[test]
 fn one_to_many_peer_to_peer() {
-    //test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
-    // let mut executor = test_env.executor;
-    let mut executor = FakeExecutor::from_test_genesis();
-    let account_size = 100usize;
-    let initial_balance = 100_000_000u64;
-    let initial_seq_num = 10u64;
-    let accounts = executor.create_accounts(account_size, initial_balance, initial_seq_num);
+    test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
+        let mut executor = test_env.executor;
+        let account_size = 100usize;
+        let initial_balance = 100_000_000u64;
+        let initial_seq_num = 10u64;
+        let accounts = executor.create_accounts(account_size, initial_balance, initial_seq_num);
 
-    // set up the transactions
-    let transfer_amount = 1_000;
-    let block_count = 2u64;
-    let cycle = account_size / (block_count as usize);
-    let mut range_left = 0usize;
-    let mut execution_time = 0u128;
-    for _i in 0..block_count {
-        range_left = if range_left + cycle >= account_size {
-            account_size - cycle
-        } else {
-            range_left
-        };
-        let (txns_info, txns) = create_one_to_many_transfers(
-            &executor,
-            &accounts[range_left..range_left + cycle],
-            transfer_amount,
-        );
-
-        // execute transaction
-        let now = Instant::now();
-        let output = executor.execute_block(txns).unwrap();
-        execution_time += now.elapsed().as_nanos();
-        for txn_output in &output {
-            assert_eq!(
-                txn_output.status(),
-                &TransactionStatus::Keep(KeptVMStatus::Executed)
+        // set up the transactions
+        let transfer_amount = 1_000;
+        let block_count = 2u64;
+        let cycle = account_size / (block_count as usize);
+        let mut range_left = 0usize;
+        let mut execution_time = 0u128;
+        for _i in 0..block_count {
+            range_left = if range_left + cycle >= account_size {
+                account_size - cycle
+            } else {
+                range_left
+            };
+            let (txns_info, txns) = create_one_to_many_transfers(
+                &executor,
+                &accounts[range_left..range_left + cycle],
+                transfer_amount,
             );
+
+            // execute transaction
+            let now = Instant::now();
+            let output = executor.execute_block(txns).unwrap();
+            execution_time += now.elapsed().as_nanos();
+            for txn_output in &output {
+                assert_eq!(
+                    txn_output.status(),
+                    &TransactionStatus::Keep(KeptVMStatus::Executed)
+                );
+            }
+            assert_eq!(cycle - 1, output.len());
+            check_and_apply_transfer_output(&mut executor, &txns_info, &output);
+            range_left = (range_left + cycle) % account_size;
         }
-        assert_eq!(cycle - 1, output.len());
-        check_and_apply_transfer_output(&mut executor, &txns_info, &output);
-        range_left = (range_left + cycle) % account_size;
+        println!("EXECUTION TIME: {}", execution_time);
+        print_accounts(&executor, &accounts);
     }
-    println!("EXECUTION TIME: {}", execution_time);
-    print_accounts(&executor, &accounts);
-    //}
-    //}
+    }
 }
 
 #[test]
 fn many_to_one_peer_to_peer() {
-    //test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
-    // let mut executor = test_env.executor;
-    let mut executor = FakeExecutor::from_test_genesis();
-    let account_size = 100usize;
-    let initial_balance = 1_000_000u64;
-    let initial_seq_num = 10u64;
-    let accounts = executor.create_accounts(account_size, initial_balance, initial_seq_num);
+    test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
+        let mut executor = test_env.executor;
+        let account_size = 100usize;
+        let initial_balance = 1_000_000u64;
+        let initial_seq_num = 10u64;
+        let accounts = executor.create_accounts(account_size, initial_balance, initial_seq_num);
 
-    // set up the transactions
-    let transfer_amount = 1_000;
-    let block_count = 2u64;
-    let cycle = account_size / (block_count as usize);
-    let mut range_left = 0usize;
-    let mut execution_time = 0u128;
-    for _i in 0..block_count {
-        range_left = if range_left + cycle >= account_size {
-            account_size - cycle
-        } else {
-            range_left
-        };
-        let (txns_info, txns) = create_many_to_one_transfers(
-            &executor,
-            &accounts[range_left..range_left + cycle],
-            transfer_amount,
-        );
-
-        // execute transaction
-        let now = Instant::now();
-        let output = executor.execute_block(txns).unwrap();
-        execution_time += now.elapsed().as_nanos();
-        for txn_output in &output {
-            assert_eq!(
-                txn_output.status(),
-                &TransactionStatus::Keep(KeptVMStatus::Executed)
+        // set up the transactions
+        let transfer_amount = 1_000;
+        let block_count = 2u64;
+        let cycle = account_size / (block_count as usize);
+        let mut range_left = 0usize;
+        let mut execution_time = 0u128;
+        for _i in 0..block_count {
+            range_left = if range_left + cycle >= account_size {
+                account_size - cycle
+            } else {
+                range_left
+            };
+            let (txns_info, txns) = create_many_to_one_transfers(
+                &executor,
+                &accounts[range_left..range_left + cycle],
+                transfer_amount,
             );
+
+            // execute transaction
+            let now = Instant::now();
+            let output = executor.execute_block(txns).unwrap();
+            execution_time += now.elapsed().as_nanos();
+            for txn_output in &output {
+                assert_eq!(
+                    txn_output.status(),
+                    &TransactionStatus::Keep(KeptVMStatus::Executed)
+                );
+            }
+            assert_eq!(cycle - 1, output.len());
+            check_and_apply_transfer_output(&mut executor, &txns_info, &output);
+            range_left = (range_left + cycle) % account_size;
         }
-        assert_eq!(cycle - 1, output.len());
-        check_and_apply_transfer_output(&mut executor, &txns_info, &output);
-        range_left = (range_left + cycle) % account_size;
+        println!("EXECUTION TIME: {}", execution_time);
+        print_accounts(&executor, &accounts);
     }
-    println!("EXECUTION TIME: {}", execution_time);
-    print_accounts(&executor, &accounts);
-// }
-// }
+    }
 }

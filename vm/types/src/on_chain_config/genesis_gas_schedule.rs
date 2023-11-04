@@ -122,7 +122,7 @@ pub fn instruction_table_v1() -> Vec<GasCost> {
         ),
         (Nop, GasCost::new(1, 1)),
     ];
-    // Note that the DiemVM is expecting the table sorted by instruction order.
+    // Note that the StarcoinVM is expecting the table sorted by instruction order.
     instrs.sort_by_key(|cost| instruction_key(&cost.0));
 
     // {
@@ -255,7 +255,7 @@ pub fn instruction_table_v2() -> Vec<GasCost> {
         (VecUnpack(SignatureIndex::new(0), 0), GasCost::new(572, 1)),
         (VecSwap(SignatureIndex::new(0)), GasCost::new(1436, 1)),
     ];
-    // Note that the DiemVM is expecting the table sorted by instruction order.
+    // Note that the StarcoinVM is expecting the table sorted by instruction order.
     instrs.sort_by_key(|cost| instruction_key(&cost.0));
     instrs.into_iter().map(|(_, cost)| cost).collect::<Vec<_>>()
 }

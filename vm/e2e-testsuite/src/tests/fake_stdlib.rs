@@ -1,12 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::{
-    account_address::AccountAddress,
-    language_storage::TypeTag,
-};
-use serde::Serialize;
 use bcs_ext::Sample;
+use move_core_types::{account_address::AccountAddress, language_storage::TypeTag};
+use serde::Serialize;
 use starcoin_vm_types::transaction::{Script, SignedUserTransaction, TransactionPayload};
 
 pub fn encode_create_validator_account_script(
@@ -515,12 +512,34 @@ pub fn encode_halt_network_payload() -> SignedUserTransaction {
     SignedUserTransaction::sample()
 }
 
-
 pub fn encode_rotate_authentication_key_script(_new_key: Vec<u8>) -> Script {
     // Script::new(
     //     ROTATE_AUTHENTICATION_KEY_CODE.to_vec(),
     //     vec![],
     //     vec![TransactionArgument::U8Vector(new_key)],
+    // )
+    Script::sample()
+}
+
+pub fn encode_burn_txn_fees_script(_coin_type: TypeTag) -> Script {
+    //Script::new(BURN_TXN_FEES_CODE.to_vec(), vec![coin_type], vec![])
+    Script::sample()
+}
+
+pub fn encode_update_exchange_rate_script(
+    _currency: TypeTag,
+    _sliding_nonce: u64,
+    _new_exchange_rate_numerator: u64,
+    _new_exchange_rate_denominator: u64,
+) -> Script {
+    // Script::new(
+    //     UPDATE_EXCHANGE_RATE_CODE.to_vec(),
+    //     vec![currency],
+    //     vec![
+    //         TransactionArgument::U64(sliding_nonce),
+    //         TransactionArgument::U64(new_exchange_rate_numerator),
+    //         TransactionArgument::U64(new_exchange_rate_denominator),
+    //     ],
     // )
     Script::sample()
 }

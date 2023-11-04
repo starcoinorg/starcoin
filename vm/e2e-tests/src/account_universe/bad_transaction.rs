@@ -124,7 +124,7 @@ pub struct InvalidAuthkeyGen {
     #[proptest(
         strategy = "starcoin_crypto::test_utils::uniform_keypair_strategy_with_perturbation(1)"
     )]
-    new_keypair: KeyPair<Ed25519PrivateKey, Ed25519PublicKey>,
+    new_keypair0: KeyPair<Ed25519PrivateKey, Ed25519PublicKey>,
 }
 
 impl AUTransactionGen for InvalidAuthkeyGen {

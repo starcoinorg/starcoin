@@ -1,12 +1,16 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use diem_transaction_builder::stdlib::*;
-use diem_types::{account_config, transaction::TransactionOutput};
+use crate::tests::fake_stdlib::{
+    encode_burn_script, encode_burn_with_amount_script_function, encode_cancel_burn_script,
+    encode_cancel_burn_with_amount_script_function, encode_preburn_script,
+};
 use move_core_types::vm_status::{DiscardedVMStatus, KeptVMStatus};
 use starcoin_language_e2e_tests::{
     account::Account, current_function_name, executor::FakeExecutor, utils,
 };
+use starcoin_types::account_config;
+use starcoin_vm_types::transaction::TransactionOutput;
 
 fn create_preburn_balance(
     executor: &mut FakeExecutor,
@@ -15,7 +19,7 @@ fn create_preburn_balance(
     dd_seqno: &mut u64,
     should_fail: bool,
 ) -> Option<TransactionOutput> {
-    let script = encode_preburn_script(account_config::xus_tag(), preburn_amount);
+    let script = encode_preburn_script(account_config::stc_type_tag(), preburn_amount);
     let txn = dd_account
         .transaction()
         .script(script)
@@ -39,9 +43,9 @@ fn burn_old(
     let txn = tc_account
         .transaction()
         .script(encode_burn_script(
-            account_config::xus_tag(),
+            account_config::stc_type_tag(),
             0,
-            account_config::testnet_dd_account_address(),
+            account_config::genesis_address(),
         ))
         .sequence_number(*tc_seqno)
         .sign();
@@ -63,8 +67,8 @@ fn cancel_burn_old(
     let txn = tc_account
         .transaction()
         .script(encode_cancel_burn_script(
-            account_config::xus_tag(),
-            account_config::testnet_dd_account_address(),
+            account_config::stc_type_tag(),
+            account_config::genesis_address(),
         ))
         .sequence_number(*tc_seqno)
         .sign();
@@ -87,9 +91,9 @@ fn burn_with_amount_new(
     let txn = tc_account
         .transaction()
         .payload(encode_burn_with_amount_script_function(
-            account_config::xus_tag(),
+            account_config::stc_type_tag(),
             0,
-            account_config::testnet_dd_account_address(),
+            account_config::genesis_address(),
             amount,
         ))
         .sequence_number(*tc_seqno)
@@ -113,8 +117,8 @@ fn cancel_burn_with_amount_new(
     let txn = tc_account
         .transaction()
         .payload(encode_cancel_burn_with_amount_script_function(
-            account_config::xus_tag(),
-            account_config::testnet_dd_account_address(),
+            account_config::stc_type_tag(),
+            account_config::genesis_address(),
             amount,
         ))
         .sequence_number(*tc_seqno)

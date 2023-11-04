@@ -16,14 +16,11 @@ use serde_json::json;
 use starcoin_types::transaction::TransactionStatus;
 
 use crate::tests::fake_stdlib::{
-    encode_add_validator_and_reconfigure_script,
-    encode_create_validator_account_script,
-    encode_create_validator_operator_account_script,
-    encode_custom_script, encode_halt_network_payload,
-    encode_register_validator_config_script,
-    encode_remove_validators_payload,
-    encode_rotate_authentication_key_script,
-    encode_set_validator_operator_script
+    encode_add_validator_and_reconfigure_script, encode_create_validator_account_script,
+    encode_create_validator_operator_account_script, encode_custom_script,
+    encode_halt_network_payload, encode_register_validator_config_script,
+    encode_remove_validators_payload, encode_rotate_authentication_key_script,
+    encode_set_validator_operator_script,
 };
 
 #[test]

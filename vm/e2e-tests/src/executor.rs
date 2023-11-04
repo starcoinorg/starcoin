@@ -40,7 +40,11 @@ use starcoin_vm_types::{
 };
 
 use crate::data_store::FakeDataStore;
+use anyhow::Result as AnyhowResult;
 use starcoin_statedb::ChainStateWriter;
+use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_vm_types::transaction::TransactionInfo;
+use std::collections::BTreeMap;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -113,33 +117,40 @@ impl FakeExecutor {
         Self::no_genesis()
     }
 
-    pub fn from_test_genesis() -> Self {
+    pub fn from_test_genesis_with_info(
+    ) -> (Self, (BTreeMap<TableHandle, TableInfo>, TransactionInfo)) {
         //let (state_db, net) = prepare_genesis();
         let fake_executor = Self::no_genesis();
         let net = ChainNetwork::new_test();
         let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
-        let useless =
+        let result =
             Genesis::execute_genesis_txn(fake_executor.get_state_view(), genesis_txn).unwrap();
+        (fake_executor, result)
+    }
+
+    pub fn from_test_genesis() -> Self {
+        //let (state_db, net) = prepare_genesis();
+        let (executor, useless) = Self::from_test_genesis_with_info();
         drop(useless);
-        fake_executor
+        executor
     }
 
     /// Creates an executor from the genesis file GENESIS_FILE_LOCATION with script/module
     /// publishing options given by `publishing_options`. These can only be either `Open` or
     /// `CustomScript`.
-    pub fn from_genesis_with_options(_publishing_options: VMConfig) -> Self {
-        // if !publishing_options.is_open_script() {
-        //     panic!("Allowlisted transactions are not supported as a publishing option")
-        // }
+    //pub fn from_genesis_with_options(_publishing_options: VMPublishingOption) -> Self {
+    // if !publishing_options.is_open_script() {
+    //     panic!("Allowlisted transactions are not supported as a publishing option")
+    // }
 
-        // Self::custom_genesis(
-        //     cached_framework_packages::module_blobs(),
-        //     None,
-        //     publishing_options,
-        // )
-        // TODO(BobOng): e2e-test
-        Self::no_genesis()
-    }
+    // Self::custom_genesis(
+    //     cached_framework_packages::module_blobs(),
+    //     None,
+    //     publishing_options,
+    // )
+    // TODO(BobOng): e2e-test
+    //    Self::no_genesis()
+    //}
 
     /// Creates an executor in which no genesis state has been applied yet.
     pub fn no_genesis() -> Self {

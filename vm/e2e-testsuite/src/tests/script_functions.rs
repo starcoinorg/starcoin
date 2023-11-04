@@ -1,17 +1,15 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use diem_types::{
-    on_chain_config::DIEM_VERSION_2,
-    transaction::{ScriptFunction, TransactionStatus},
-    vm_status::{DiscardedVMStatus, KeptVMStatus},
-};
-use move_core_types::{identifier::Identifier, language_storage::ModuleId};
+use move_core_types::identifier::Identifier;
+use move_core_types::language_storage::ModuleId;
+use move_core_types::vm_status::{DiscardedVMStatus, KeptVMStatus};
 use starcoin_language_e2e_tests::{
     account::Account, compile::compile_module, current_function_name, executor::FakeExecutor,
-    transaction_status_eq, utils,
+    transaction_status_eq, utils, versioning::CURRENT_RELEASE_VERSIONS,
 };
 
+use starcoin_vm_types::transaction::{ScriptFunction, TransactionStatus};
 fn prepare_module(executor: &mut FakeExecutor, account: &Account, seq_num: u64) -> u64 {
     let program = format!(
         "
@@ -87,7 +85,7 @@ fn script_fn_payload_invoke_private_fn() {
         &mut executor,
         &dr_account,
         &mut dr_seqno,
-        Some(DIEM_VERSION_2.major),
+        Some(CURRENT_RELEASE_VERSIONS.max().unwrap()),
     );
 
     let output = executor.execute_transaction(txn);
@@ -131,7 +129,7 @@ fn script_fn_payload_invoke_public_fn() {
         &mut executor,
         &dr_account,
         &mut dr_seqno,
-        Some(DIEM_VERSION_2.major),
+        Some(CURRENT_RELEASE_VERSIONS.max().unwrap()),
     );
 
     let output = executor.execute_transaction(txn);
@@ -175,7 +173,7 @@ fn script_fn_payload_invoke_script_fn() {
         &mut executor,
         &dr_account,
         &mut dr_seqno,
-        Some(DIEM_VERSION_2.major),
+        Some(CURRENT_RELEASE_VERSIONS.max().unwrap()),
     );
 
     let output = executor.execute_transaction(txn);

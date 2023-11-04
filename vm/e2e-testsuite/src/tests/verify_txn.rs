@@ -2,67 +2,44 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_binary_format::CompiledModule;
+use move_core_types::transaction_argument::TransactionArgument;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
-    language_storage::{
-        StructTag,
-        TypeTag,
-    },
-    value::{
-        MoveValue,
-        serialize_values,
-    },
-    vm_status::{
-        KeptVMStatus,
-        StatusCode,
-    },
+    language_storage::{StructTag, TypeTag},
+    value::{serialize_values, MoveValue},
+    vm_status::{KeptVMStatus, StatusCode},
 };
-use move_core_types::transaction_argument::TransactionArgument;
 use move_ir_compiler::Compiler;
-use starcoin_crypto::{
-    ed25519::Ed25519PrivateKey,
-    PrivateKey,
-    Uniform,
-    keygen::KeyGen,
-};
+use starcoin_crypto::{ed25519::Ed25519PrivateKey, keygen::KeyGen, PrivateKey, Uniform};
 
 use starcoin_language_e2e_tests::{
+    account::Account,
     assert_prologue_parity,
+    compile::compile_module,
     //assert_prologue_disparity,
     current_function_name,
+    executor::FakeExecutor,
+    gas_costs,
     test_with_different_versions,
-    compile::compile_module,
-    versioning::CURRENT_RELEASE_VERSIONS,
-    executor::FakeExecutor, account::Account,
     transaction_status_eq,
-    gas_costs
+    versioning::CURRENT_RELEASE_VERSIONS,
 };
 use starcoin_transaction_builder::{stdlib_compiled_modules, StdLibOptions};
 use starcoin_types::{account_config, transaction};
-use starcoin_vm_types::{
-    test_helpers::transaction_test_helpers,
-    transaction::{
-        Script,
-        TransactionStatus,
-    },
-};
-use starcoin_vm_types::{
-    account_config::{
-        stc_type_tag,
-        STC_TOKEN_CODE_STR
-    },
-    transaction::TransactionPayload,
-};
+use starcoin_vm_types::gas_schedule::G_TEST_GAS_CONSTANTS;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::genesis_config::StdlibVersion::Latest;
-use starcoin_vm_types::gas_schedule::G_TEST_GAS_CONSTANTS;
-
-use crate::tests::fake_stdlib::{
-    self,
-    encode_peer_to_peer_with_metadata_script
+use starcoin_vm_types::{
+    account_config::{stc_type_tag, STC_TOKEN_CODE_STR},
+    transaction::TransactionPayload,
+};
+use starcoin_vm_types::{
+    test_helpers::transaction_test_helpers,
+    transaction::{Script, TransactionStatus},
 };
 
+use crate::tests::fake_stdlib::{self, encode_peer_to_peer_with_metadata_script};
 
 #[test]
 fn verify_signature() {
@@ -798,7 +775,10 @@ pub fn test_allowlist() {
         .gas_unit_price(1)
         .sign();
     assert_prologue_parity!(
-        executor.verify_transaction(txn.clone()).unwrap().status_code(),
+        executor
+            .verify_transaction(txn.clone())
+            .unwrap()
+            .status_code(),
         executor.execute_transaction(txn).status(),
         StatusCode::UNKNOWN_SCRIPT
     );
@@ -882,7 +862,10 @@ pub fn test_publish_from_diem_root() {
         .gas_unit_price(1)
         .sign();
     assert_prologue_parity!(
-        executor.verify_transaction(txn.clone()).unwrap().status_code(),
+        executor
+            .verify_transaction(txn.clone())
+            .unwrap()
+            .status_code(),
         executor.execute_transaction(txn).status(),
         StatusCode::INVALID_MODULE_PUBLISHER
     );
@@ -1656,7 +1639,7 @@ pub fn publish_and_register_new_currency() {
         executor.execute_and_apply(txn).status(),
         &TransactionStatus::Keep(KeptVMStatus::Executed)
     );
-    let coin_tag = stc_type_tag();//account_config::type_tag_for_currency_code(Identifier::new("COIN").unwrap());
+    let coin_tag = stc_type_tag(); //account_config::type_tag_for_currency_code(Identifier::new("COIN").unwrap());
 
     {
         let program = {
@@ -1725,15 +1708,13 @@ pub fn publish_and_register_new_currency() {
 
     let txn = dd
         .transaction()
-        .script(
-            encode_peer_to_peer_with_metadata_script(
-                coin_tag.clone(),
-                *dd.address(),
-                1,
-                b"".to_vec(),
-                b"".to_vec(),
-            ),
-        )
+        .script(encode_peer_to_peer_with_metadata_script(
+            coin_tag.clone(),
+            *dd.address(),
+            1,
+            b"".to_vec(),
+            b"".to_vec(),
+        ))
         .gas_unit_price(1)
         .max_gas_amount(800)
         .sequence_number(0)
@@ -1743,7 +1724,10 @@ pub fn publish_and_register_new_currency() {
     assert!(balance.unwrap().token() > 800);
 
     assert_prologue_parity!(
-        executor.verify_transaction(txn.clone()).unwrap().status_code(),
+        executor
+            .verify_transaction(txn.clone())
+            .unwrap()
+            .status_code(),
         executor.execute_transaction(txn.clone()).status(),
         StatusCode::BAD_TRANSACTION_FEE_CURRENCY
     );

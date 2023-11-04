@@ -1,21 +1,18 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// use diem_types::{
-//     account_config::{self},
-//     on_chain_config::VMPublishingOption,
-//     transaction::TransactionStatus,
-//     vm_status::{KeptVMStatus, StatusCode},
-// };
+use move_core_types::vm_status::{KeptVMStatus, StatusCode};
 use starcoin_language_e2e_tests::{
     account::Account, assert_prologue_parity, compile::compile_module, current_function_name,
     executor::FakeExecutor, transaction_status_eq,
 };
+use starcoin_types::account_config;
+use starcoin_vm_types::transaction::TransactionStatus;
 
 // A module with an address different from the sender's address should be rejected
 #[test]
 fn bad_module_address() {
-    let mut executor = FakeExecutor::from_genesis_with_options(VMPublishingOption::open());
+    let mut executor = FakeExecutor::from_test_genesis();
     executor.set_golden_file(current_function_name!());
 
     // create a transaction trying to publish a new module.
@@ -65,7 +62,7 @@ macro_rules! module_republish_test {
     ($name:ident, $prog1:literal, $prog2:literal, $result:ident) => {
         #[test]
         fn $name() {
-            let mut executor = FakeExecutor::from_genesis_with_options(VMPublishingOption::open());
+            let mut executor = FakeExecutor::from_test_genesis();
             executor.set_golden_file(current_function_name!());
 
             let sequence_number = 2;
@@ -266,8 +263,9 @@ module_republish_test!(
 #[test]
 pub fn test_publishing_no_modules_non_allowlist_script() {
     // create a FakeExecutor with a genesis from file
-    let mut executor =
-        FakeExecutor::from_genesis_with_options(VMPublishingOption::custom_scripts());
+    // let mut executor =
+    //     FakeExecutor::from_genesis_with_options(VMPublishingOption::custom_scripts());
+    let mut executor = FakeExecutor::from_test_genesis();
     executor.set_golden_file(current_function_name!());
 
     // create a transaction trying to publish a new module.
@@ -292,7 +290,10 @@ pub fn test_publishing_no_modules_non_allowlist_script() {
         .sign();
 
     assert_prologue_parity!(
-        executor.verify_transaction(txn.clone()).status(),
+        executor
+            .verify_transaction(txn.clone())
+            .unwrap()
+            .status_code(),
         executor.execute_transaction(txn).status(),
         StatusCode::INVALID_MODULE_PUBLISHER
     );
@@ -301,8 +302,9 @@ pub fn test_publishing_no_modules_non_allowlist_script() {
 #[test]
 pub fn test_publishing_no_modules_non_allowlist_script_proper_sender() {
     // create a FakeExecutor with a genesis from file
-    let mut executor =
-        FakeExecutor::from_genesis_with_options(VMPublishingOption::custom_scripts());
+    // let mut executor =
+    //        ::from_genesis_with_options(VMPublishingOption::custom_scripts());
+    let mut executor = FakeExecutor::from_test_genesis();
     executor.set_golden_file(current_function_name!());
 
     // create a transaction trying to publish a new module.
@@ -321,7 +323,7 @@ pub fn test_publishing_no_modules_non_allowlist_script_proper_sender() {
         .module(random_module)
         .sequence_number(0)
         .sign();
-    assert_eq!(executor.verify_transaction(txn.clone()).status(), None);
+    assert_eq!(executor.verify_transaction(txn.clone()), None);
     assert_eq!(
         executor.execute_transaction(txn).status(),
         &TransactionStatus::Keep(KeptVMStatus::Executed)
@@ -350,7 +352,7 @@ pub fn test_publishing_no_modules_proper_sender() {
         .module(random_script)
         .sequence_number(0)
         .sign();
-    assert_eq!(executor.verify_transaction(txn.clone()).status(), None);
+    assert_eq!(executor.verify_transaction(txn.clone()), None);
     assert_eq!(
         executor.execute_transaction(txn).status(),
         &TransactionStatus::Keep(KeptVMStatus::Executed)
@@ -381,7 +383,10 @@ pub fn test_publishing_no_modules_core_code_sender() {
         .sign();
     // Doesn't work because the core code address doesn't exist
     assert_prologue_parity!(
-        executor.verify_transaction(txn.clone()).status(),
+        executor
+            .verify_transaction(txn.clone())
+            .unwrap()
+            .status_code(),
         executor.execute_transaction(txn).status(),
         StatusCode::INVALID_MODULE_PUBLISHER
     );
@@ -413,7 +418,10 @@ pub fn test_publishing_no_modules_invalid_sender() {
         .sequence_number(10)
         .sign();
     assert_prologue_parity!(
-        executor.verify_transaction(txn.clone()).status(),
+        executor
+            .verify_transaction(txn.clone())
+            .unwrap()
+            .status_code(),
         executor.execute_transaction(txn).status(),
         StatusCode::INVALID_MODULE_PUBLISHER
     );
@@ -422,7 +430,7 @@ pub fn test_publishing_no_modules_invalid_sender() {
 #[test]
 pub fn test_publishing_allow_modules() {
     // create a FakeExecutor with a genesis from file
-    let mut executor = FakeExecutor::from_genesis_with_options(VMPublishingOption::open());
+    let mut executor = FakeExecutor::from_test_genesis();
     executor.set_golden_file(current_function_name!());
 
     // create a transaction trying to publish a new module.
@@ -444,7 +452,7 @@ pub fn test_publishing_allow_modules() {
         .module(random_script)
         .sequence_number(10)
         .sign();
-    assert_eq!(executor.verify_transaction(txn.clone()).status(), None);
+    assert_eq!(executor.verify_transaction(txn.clone()), None);
     assert_eq!(
         executor.execute_transaction(txn).status(),
         &TransactionStatus::Keep(KeptVMStatus::Executed)

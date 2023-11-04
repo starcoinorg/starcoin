@@ -9,9 +9,9 @@ use starcoin_language_e2e_tests::{
     account::AccountData, compile::compile_script, current_function_name, executor::FakeExecutor,
 };
 use starcoin_transaction_builder::{stdlib_compiled_modules, StdLibOptions};
-use starcoin_vm_types::genesis_config::StdlibVersion::Latest;
-use starcoin_vm_types::transaction::{
-    Module, SignedUserTransaction, Transaction, TransactionStatus,
+use starcoin_vm_types::{
+    genesis_config::StdlibVersion::Latest,
+    transaction::{Module, SignedUserTransaction, Transaction, TransactionStatus},
 };
 
 #[test]

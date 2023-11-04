@@ -151,14 +151,14 @@ fn test_diem_block_double_init() {
     let mut executor = FakeExecutor::stdlib_only_genesis();
 
     executor.exec(
-        "DiemBlock",
+        "Block",
         "initialize_block_metadata",
         vec![],
         serialize_values(&vec![MoveValue::Signer(account_config::genesis_address())]),
     );
 
     let output = executor.try_exec(
-        "DiemBlock",
+        "Block",
         "initialize_block_metadata",
         vec![],
         serialize_values(&vec![MoveValue::Signer(account_config::genesis_address())]),

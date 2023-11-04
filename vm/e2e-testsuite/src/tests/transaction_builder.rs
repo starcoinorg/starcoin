@@ -8,45 +8,33 @@
 
 #![forbid(unsafe_code)]
 
-use move_core_types::{
-    account_address::AccountAddress,
-    language_storage::TypeTag,
-    vm_status::KeptVMStatus
-};
 use move_core_types::vm_status::StatusCode;
-use starcoin_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, SigningKey, Uniform};
+use move_core_types::{
+    account_address::AccountAddress, language_storage::TypeTag, vm_status::KeptVMStatus,
+};
 use starcoin_crypto::keygen::KeyGen;
+use starcoin_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, SigningKey, Uniform};
 
 use starcoin_language_e2e_tests::{
-    test_with_different_versions,
+    common_transactions::rotate_key_txn, gas_costs, test_with_different_versions,
     versioning::CURRENT_RELEASE_VERSIONS,
-    gas_costs,
-    common_transactions::rotate_key_txn
 };
 
 use starcoin_types::account_config;
 
 use starcoin_vm_types::transaction::{
-    Script,
-    TransactionOutput,
-    TransactionStatus,
-    authenticator::AuthenticationKey
+    authenticator::AuthenticationKey, Script, TransactionOutput, TransactionStatus,
 };
 
 use crate::tests::fake_stdlib::{
-    encode_create_child_vasp_account_script,
-    encode_create_designated_dealer_script,
-    encode_create_parent_vasp_account_script,
-    encode_create_recovery_address_script,
-    encode_freeze_account_script,
-    encode_peer_to_peer_with_metadata_script,
-    encode_publish_shared_ed25519_public_key_script,
-    encode_rotate_dual_attestation_info_script,
-    encode_rotate_shared_ed25519_public_key_script,
-    encode_unfreeze_account_script,
+    encode_add_recovery_rotation_capability_script, encode_create_child_vasp_account_script,
+    encode_create_designated_dealer_script, encode_create_parent_vasp_account_script,
+    encode_create_recovery_address_script, encode_freeze_account_script,
+    encode_peer_to_peer_with_metadata_script, encode_publish_shared_ed25519_public_key_script,
     encode_rotate_authentication_key_with_nonce_admin_script,
-    encode_add_recovery_rotation_capability_script,
     encode_rotate_authentication_key_with_recovery_address_script,
+    encode_rotate_dual_attestation_info_script, encode_rotate_shared_ed25519_public_key_script,
+    encode_unfreeze_account_script,
 };
 
 const XUS_THRESHOLD: u64 = 10_000_000_000 / 5;

@@ -1,14 +1,12 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use diem_framework_releases::legacy::transaction_scripts::LegacyStdlibScript;
-use diem_transaction_builder::stdlib::{encode_create_parent_vasp_account_script, ScriptCall};
-use diem_types::account_config;
 use proptest::{collection::vec, prelude::*};
 use starcoin_language_e2e_tests::{
     account::{self, Account},
     executor::FakeExecutor,
 };
+use starcoin_types::account_config;
 use std::convert::TryFrom;
 
 proptest! {
