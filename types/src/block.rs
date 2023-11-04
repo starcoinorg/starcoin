@@ -845,6 +845,10 @@ impl BlockInfo {
     pub fn block_id(&self) -> &HashValue {
         &self.block_id
     }
+
+    pub fn transaction_parent(&self) -> Option<HashValue> {
+        self.transaction_parent.clone()
+    }
 }
 
 impl Sample for BlockInfo {

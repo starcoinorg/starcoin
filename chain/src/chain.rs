@@ -43,6 +43,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
+use starcoin_vm_types::effects::Op;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::Epoch;
 use std::cmp::min;
@@ -176,6 +177,7 @@ impl BlockChain {
             &genesis_epoch,
             None,
             genesis_block,
+            None,
             None,
         )?;
 
@@ -385,7 +387,7 @@ impl BlockChain {
     {
         let verified_block = self.verify_with_verifier::<V>(block)?;
         watch(CHAIN_WATCH_NAME, "n1");
-        let executed_block = self.execute(verified_block)?;
+        let executed_block = self.execute(verified_block, transaction_parent)?;
         watch(CHAIN_WATCH_NAME, "n2");
         self.connect(executed_block)
     }
@@ -414,6 +416,7 @@ impl BlockChain {
         epoch: &Epoch,
         parent_status: Option<ChainStatus>,
         block: Block,
+        transaction_parent: Option<HashValue>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
         let header = block.header();
@@ -833,6 +836,7 @@ impl ChainReader for BlockChain {
     fn execute(
         &self,
         verified_block: VerifiedBlock,
+        transaction_parent: Option<HashValue>,
     ) -> Result<ExecutedBlock> {
         Self::execute_block_and_save(
             self.storage.as_ref(),
@@ -842,6 +846,7 @@ impl ChainReader for BlockChain {
             &self.epoch,
             Some(self.status.status.clone()),
             verified_block.0,
+            transaction_parent,
             self.vm_metrics.clone(),
         )
     }

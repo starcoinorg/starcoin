@@ -116,6 +116,7 @@ impl BlockDAG {
                 storage.get_accumulator_snapshot_storage().put(Self::calculate_dag_accumulator_key(vec![block_header.id()])?, SyncFlexiDagSnapshot {
                     child_hashes: vec![block_header.id()],
                     accumulator_info: dag_accumulator.get_info(),
+                    head_block_id: block_header.id(),
                 })?;
                 Ok((Some(Self::new_by_config(DagHeader::new_genesis(block_header), config.data_dir().join("flexidag").as_path())?), Some(dag_accumulator)))
             } else {

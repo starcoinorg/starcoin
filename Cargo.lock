@@ -9906,6 +9906,7 @@ name = "starcoin-miner"
 version = "1.13.7"
 dependencies = [
  "anyhow",
+ "async-std",
  "bcs-ext",
  "futures 0.3.26",
  "futures-timer",
@@ -9921,6 +9922,7 @@ dependencies = [
  "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-executor",
+ "starcoin-flexidag",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-metrics",

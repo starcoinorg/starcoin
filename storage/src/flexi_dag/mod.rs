@@ -16,6 +16,7 @@ use starcoin_crypto::HashValue;
 pub struct SyncFlexiDagSnapshot {
     pub child_hashes: Vec<HashValue>, // child nodes(tips), to get the relationship, use dag's relationship store
     pub accumulator_info: AccumulatorInfo,
+    pub head_block_id: HashValue, // to initialize the BlockInfo
 }
 
 impl ValueCodec for SyncFlexiDagSnapshot {

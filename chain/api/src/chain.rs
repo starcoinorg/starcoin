@@ -85,6 +85,7 @@ pub trait ChainReader {
     fn execute(
         &self,
         block: VerifiedBlock,
+        transaction_parent: Option<HashValue>,
     ) -> Result<ExecutedBlock>;
     /// Get chain transaction infos
     fn get_transaction_infos(

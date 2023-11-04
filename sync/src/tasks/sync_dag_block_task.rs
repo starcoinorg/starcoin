@@ -58,13 +58,6 @@ impl SyncDagBlockTask {
             .expect(format!("index: {} must be valid for getting snapshot", index).as_str())
             .expect(format!("index: {} should not be None for getting snapshot", index).as_str());
 
-        // let block_with_infos = self
-        //     .local_store
-        //     .get_block_with_info(snapshot.child_hashes.clone())?;
-
-        // assert_eq!(block_with_infos.len(), snapshot.child_hashes.len());
-
-        // the order must be the same between snapshot.child_hashes and block_with_infos
         let mut absent_block = vec![];
         let mut result = vec![];
         snapshot.child_hashes.iter().for_each(|block_id| {
@@ -83,14 +76,12 @@ impl SyncDagBlockTask {
             .fetch_blocks(absent_block)
             .await?
             .iter()
-            .map(|(block, peer_info, parents, transaction_header)| {
+            .map(|(block, peer_info)| {
                 (
                     block.header().id(),
                     (
                         block.clone(),
                         peer_info.clone(),
-                        parents.clone(),
-                        transaction_header.clone(),
                     ),
                 )
             })
@@ -110,22 +101,7 @@ impl SyncDagBlockTask {
                 .expect("the block should be got from peer already")
                 .1
                 .to_owned();
-            block_info.dag_parents = fetched_block_info
-                .get(&block_info.block_id)
-                .expect("the block should be got from peer already")
-                .2
-                .to_owned()
-                .expect("dag block should have parents");
-            block_info.dag_transaction_header = Some(
-                fetched_block_info
-                    .get(&block_info.block_id)
-                    .expect("the block should be got from peer already")
-                    .3
-                    .to_owned()
-                    .expect("dag block should have parents"),
-            );
         });
-        result.sort_by_key(|item| item.block_id);
 
         let block_info = self
             .local_store
@@ -140,11 +116,6 @@ impl SyncDagBlockTask {
                 peer_id: item.peer_id,
                 accumulator_root: Some(snapshot.accumulator_info.get_accumulator_root().clone()),
                 count_in_leaf: snapshot.child_hashes.len() as u64,
-                dag_block_headers: Some(item.dag_parents),
-                dag_transaction_header: Some(
-                    item.dag_transaction_header
-                        .expect("dag transaction header should exists"),
-                ),
             })
             .collect())
     }

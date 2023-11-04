@@ -11,7 +11,8 @@ use starcoin_types::{block::BlockHeader, startup_info, header::DagHeader};
 
 #[derive(Debug, Clone)]
 pub struct DumpTipsToAccumulator {
-    block_header: BlockHeader,
+    pub block_header: BlockHeader,
+    pub current_head_block_id: HashValue,
 }
 
 impl ServiceRequest for DumpTipsToAccumulator {
@@ -21,6 +22,7 @@ impl ServiceRequest for DumpTipsToAccumulator {
 #[derive(Debug, Clone)]
 pub struct UpdateDagTips {
     pub block_header: BlockHeader,
+    pub current_head_block_id: HashValue,
 }
 
 impl ServiceRequest for UpdateDagTips {
@@ -103,6 +105,7 @@ impl ServiceRequest for AddToDag {
     type Response = anyhow::Result<MergesetBlues>;
 }
 
+
 pub struct FlexidagService {
     dag: Option<BlockDAG>,
     dag_accumulator: Option<MerkleAccumulator>,
@@ -115,7 +118,7 @@ impl FlexidagService {
         &mut self,
         header: BlockHeader,
     ) -> Result<Arc<GhostdagData>> {
-        let dag = match &self.dag {
+        let dag = match &mut self.dag {
             Some(dag) => dag,
             None => bail!("dag is none"),
         };
@@ -189,7 +192,7 @@ impl ServiceHandler<Self, DumpTipsToAccumulator> for FlexidagService {
                 Ok(())
             }
         } else {
-            // the chain became the flexidag chain
+            // the chain had became the flexidag chain
             let tips = self.tips.take().expect("the tips should not be none in this branch");
             let key = BlockDAG::calculate_dag_accumulator_key(tips.clone())?;
             let dag = self.dag_accumulator.as_mut().expect("the tips is not none but the dag accumulator is none");
@@ -197,9 +200,10 @@ impl ServiceHandler<Self, DumpTipsToAccumulator> for FlexidagService {
             storage.get_accumulator_snapshot_storage().put(key, SyncFlexiDagSnapshot {
                 child_hashes: tips,
                 accumulator_info: dag.get_info(),
+                head_block_id: msg.current_head_block_id,
             })?;
             dag.flush()?;
-            self.tips = Some(vec![]);
+            self.tips = Some(vec![msg.block_header.id()]);
             Ok(())
         }
     }
@@ -324,7 +328,7 @@ impl ServiceHandler<Self, AddToDag> for FlexidagService {
         let ghost_dag_data = self.add_to_dag(msg.block_header)?;
         Ok(MergesetBlues { 
             selected_parent: ghost_dag_data.selected_parent,
-            mergeset_blues: ghost_dag_data.mergeset_blues.into_iter().collect(), 
+            mergeset_blues: ghost_dag_data.mergeset_blues.as_ref().clone(), 
         })
     }
 }

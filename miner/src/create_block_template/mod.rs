@@ -13,10 +13,12 @@ use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::HashValue;
 use starcoin_executor::VMMetrics;
+use starcoin_flexidag::flexidag_service::GetDagTips;
+use starcoin_flexidag::{FlexidagService, flexidag_service};
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest, ServiceRef,
 };
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_txpool::TxPoolService;
@@ -79,6 +81,7 @@ impl ServiceFactory<Self> for BlockBuilderService {
             .and_then(|registry| BlockBuilderMetrics::register(registry).ok());
 
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
+        let flexidag_service = ctx.service_ref::<FlexidagService>()?.clone();
         let inner = Inner::new(
             config.net(),
             storage,
@@ -87,6 +90,7 @@ impl ServiceFactory<Self> for BlockBuilderService {
             config.miner.block_gas_limit,
             miner_account,
             metrics,
+            flexidag_service,
             vm_metrics,
         )?;
         Ok(Self { inner })
@@ -190,6 +194,7 @@ pub struct Inner<P> {
     local_block_gas_limit: Option<u64>,
     miner_account: AccountInfo,
     metrics: Option<BlockBuilderMetrics>,
+    flexidag_service: ServiceRef<FlexidagService>,
     vm_metrics: Option<VMMetrics>,
 }
 
@@ -205,6 +210,7 @@ where
         local_block_gas_limit: Option<u64>,
         miner_account: AccountInfo,
         metrics: Option<BlockBuilderMetrics>,
+        flexidag_service: ServiceRef<FlexidagService>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let chain = BlockChain::new(
@@ -224,6 +230,7 @@ where
             local_block_gas_limit,
             miner_account,
             metrics,
+            flexidag_service,
             vm_metrics,
         })
     }
@@ -315,10 +322,7 @@ where
         let author = *self.miner_account.address();
         let previous_header = self.chain.current_header();
 
-        let tips_header = match self.chain.status().tips_hash {
-            Some(_) => self.chain.status().tips_hash,
-            None => None,
-        };
+        let dag_block_parents = self.get_dag_block_parents();
 
         let uncles = self.find_uncles();
         let mut now_millis = self.chain.time_service().now_millis();
@@ -365,5 +369,9 @@ where
             parent: previous_header,
             template,
         })
+    }
+
+    fn get_dag_block_parents(&self) -> Result<Option<Vec<HashValue>>> {
+        Ok(async_std::task::block_on(self.flexidag_service.send(GetDagTips))??)
     }
 }

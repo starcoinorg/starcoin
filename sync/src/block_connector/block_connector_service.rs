@@ -31,6 +31,7 @@ use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
+use std::result;
 use std::sync::{Arc, Mutex};
 use sysinfo::{DiskExt, System, SystemExt};
 
@@ -134,9 +135,6 @@ where
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist."))?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        let dag = BlockDAG::init_with_storage(storage.clone(), config.clone())?.map(|dag| {
-            Arc::new(Mutex::new(dag))
-        });
         let chain_service = WriteBlockChainService::new(
             config.clone(),
             startup_info,
@@ -144,7 +142,7 @@ where
             txpool,
             bus,
             vm_metrics,
-            dag,
+            ctx.service_ref::<FlexidagService>()?.clone(),
         )?;
 
         Ok(Self::new(chain_service, config))
@@ -213,7 +211,7 @@ impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<TxPoolSer
 
         match msg.action {
             crate::tasks::BlockConnectAction::ConnectNewBlock => {
-                if let Err(e) = self.chain_service.try_connect(block, msg.dag_parents) {
+                if let Err(e) = self.chain_service.try_connect(block) {
                     error!("Process connected new block from sync error: {:?}", e);
                 }
             }
@@ -243,7 +241,7 @@ impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<MockTxPoo
 
         match msg.action {
             crate::tasks::BlockConnectAction::ConnectNewBlock => {
-                if let Err(e) = self.chain_service.apply_failed(block, msg.dag_parents) {
+                if let Err(e) = self.chain_service.apply_failed(block) {
                     error!("Process connected new block from sync error: {:?}", e);
                 }
             }
@@ -269,9 +267,12 @@ where
         let id = new_block.header().id();
         debug!("try connect mined block: {}", id);
 
-        match self.chain_service.try_connect(block, parents_hash) {
+        match self.chain_service.try_connect(block) {
             std::result::Result::Ok(_) => {
-                self.chain_service.dump_tips(block_header, ctx.service_ref::<FlexidagService>()?.clone())
+                match self.chain_service.dump_tips(block_header) {
+                    std::result::Result::Ok(_) => (),
+                    Err(e) => error!("failed to dump tips to dag accumulator: {}", e),
+                }
             }
             Err(e) => {
                 warn!("Process mined block {} fail, error: {:?}", id, e);
@@ -303,13 +304,13 @@ where
         let peer_id = msg.get_peer_id();
         if let Err(e) = self
             .chain_service
-            .try_connect(msg.get_block().clone(), msg.get_dag_parents().clone())
+            .try_connect(msg.get_block().clone())
         {
             match e.downcast::<ConnectBlockError>() {
                 std::result::Result::Ok(connect_error) => {
                     match connect_error {
                         ConnectBlockError::FutureBlock(block) => {
-                            self.chain_service.update_tips(msg.get_block().header().clone(), ctx.service_ref::<FlexidagService>()?)?;
+                            self.chain_service.update_tips(msg.get_block().header().clone())?;
                             //TODO cache future block
                             if let std::result::Result::Ok(sync_service) =
                                 ctx.service_ref::<SyncService>()
@@ -384,7 +385,7 @@ where
         msg: ExecuteRequest,
         _ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
     ) -> Result<ExecutedBlock> {
-        self.chain_service.execute(msg.block, msg.dag_block_parent)
+        self.chain_service.execute(msg.block, msg.block_parent)
     }
 }
 

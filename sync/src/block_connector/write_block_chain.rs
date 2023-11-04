@@ -17,7 +17,7 @@ use starcoin_consensus::{BlockDAG, FlexiDagStorage, FlexiDagStorageConfig};
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_flexidag::FlexidagService;
-use starcoin_flexidag::flexidag_service::AddToDag;
+use starcoin_flexidag::flexidag_service::{AddToDag, DumpTipsToAccumulator, UpdateDagTips};
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{ServiceContext, ServiceRef};
@@ -110,13 +110,14 @@ impl<P> WriteableChainService for WriteBlockChainService<P>
 where
     P: TxPoolSyncService + 'static,
 {
-    fn try_connect(&mut self, block: Block, parents_hash: Option<Vec<HashValue>>) -> Result<()> {
+    fn try_connect(&mut self, block: Block) -> Result<()> {
         let _timer = self
             .metrics
             .as_ref()
             .map(|metrics| metrics.chain_block_connect_time.start_timer());
 
-        let result = if parents_hash.is_some() {
+        let result = if block.header().parents_hash().is_some() {
+            assert!(transaction_parent.is_some(), "in dag branch, the transaction parent should not be none");
             self.connect_dag_inner(
                 block,
             )
@@ -446,6 +447,7 @@ where
     pub fn execute(
         &mut self,
         block: Block,
+        transaction_parent: Option<HashValue>,
     ) -> Result<ExecutedBlock> {
         let chain = BlockChain::new(
             self.config.net().time_service(),
@@ -725,7 +727,7 @@ where
             }
             (None, Some(mut branch)) => {
                 // the block is not in the block, but the parent is
-                let result = branch.apply(block);
+                let result = branch.apply(block, None);
                 let executed_block = result?;
                 self.select_head(branch)?;
                 Ok(ConnectOk::ExeConnectBranch(executed_block))
@@ -760,7 +762,7 @@ where
         &mut self,
         block: Block,
     ) -> Result<ConnectOk> {
-        let executed_block = self.main.apply(block)?;
+        let executed_block = self.main.apply(block, None)?;
         let enacted_blocks = vec![executed_block.block().clone()];
         self.do_new_head(executed_block.clone(), 1, enacted_blocks, 0, vec![])?;
         return Ok(ConnectOk::ExeConnectMain(executed_block));
@@ -797,9 +799,13 @@ where
             .get_block_by_hash(add_dag_result.selected_parent)?
             .expect("selected parent should in storage");
         let mut chain = self.main.fork(selected_parent.header.parent_hash())?;
+        let mut transaction_parent = chain.status().head().id().clone();
         for blue_hash in add_dag_result.mergeset_blues.mergeset_blues.iter() {
             if let Some(blue_block) = self.storage.get_block(blue_hash.to_owned())? {
-                let _result = chain.apply(blue_block);
+                match chain.apply(blue_block, Some(transaction_parent)) {
+                    Ok(executed_block) => transaction_parent = executed_block,
+                    Err(_) => warn!("failed to connect dag block: {:?}", e),
+                }
             } else {
                 error!("Failed to get block {:?}", blue_hash);
                 return Ok(ConnectOk::DagConnectMissingBlock);
@@ -816,20 +822,22 @@ where
         Ok(())
     }
 
-    pub fn dump_tips(&self, block_header: BlockHeader, service: ServiceRef<FlexidagService>) -> Result<()> {
-        if block_header.number() < self.storage.dag_fork_height(self.config.net().id().clone())? {
+    pub fn dump_tips(&self, block_header: BlockHeader) -> Result<()> {
+        if block_header.number() < self.storage.dag_fork_height(self.config.net().id().clone()) {
             Ok(())
         } else {
-            service.send( DumpTipsToAccumulator {
+            self.flexidag_service.send( DumpTipsToAccumulator {
                 block_header,
+                current_head_block_id: self.main.status().head().id().clone(),
             })
         }
     }
 
-    pub fn update_tips(&self, block_header: BlockHeader, service: ServiceRef<FlexidagService>) -> Result<()> {
-        if block_header.number() >= self.storage.dag_fork_height(self.config.net().id().clone())? {
-            service.send(UpdateDagTips {
+    pub fn update_tips(&self, block_header: BlockHeader) -> Result<()> {
+        if block_header.number() >= self.storage.dag_fork_height(self.config.net().id().clone()) {
+            self.flexidag_service.send(UpdateDagTips {
                 block_header,
+                current_head_block_id: self.main.status().head().id().clone(),
             })
         } else {
             Ok(()) // nothing to do

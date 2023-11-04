@@ -131,11 +131,11 @@ fn test_block_chain() -> Result<()> {
     let mut mock_chain = MockChain::new(ChainNetwork::new_test())?;
     let block = mock_chain.produce()?;
     assert_eq!(block.header().number(), 1);
-    mock_chain.apply(block, None)?;
+    mock_chain.apply(block)?;
     assert_eq!(mock_chain.head().current_header().number(), 1);
     let block = mock_chain.produce()?;
     assert_eq!(block.header().number(), 2);
-    mock_chain.apply(block, None)?;
+    mock_chain.apply(block)?;
     assert_eq!(mock_chain.head().current_header().number(), 2);
     Ok(())
 }
@@ -200,7 +200,7 @@ fn gen_uncle() -> (MockChain, BlockChain, BlockHeader) {
     let miner = mock_chain.miner();
     let block = product_a_block(&fork_block_chain, miner, Vec::new());
     let uncle_block_header = block.header().clone();
-    fork_block_chain.apply(block, None, &mut None).unwrap();
+    fork_block_chain.apply(block, None).unwrap();
     (mock_chain, fork_block_chain, uncle_block_header)
 }
 
@@ -221,7 +221,7 @@ fn test_uncle() {
     // 3. mock chain apply
     let uncles = vec![uncle_block_header.clone()];
     let block = product_a_block(mock_chain.head(), miner, uncles);
-    mock_chain.apply(block, None).unwrap();
+    mock_chain.apply(block).unwrap();
     assert!(mock_chain.head().head_block().block.uncles().is_some());
     assert!(mock_chain
         .head()
@@ -240,7 +240,7 @@ fn test_uncle_exist() {
     // 3. mock chain apply
     let uncles = vec![uncle_block_header.clone()];
     let block = product_a_block(mock_chain.head(), &miner, uncles);
-    mock_chain.apply(block, None).unwrap();
+    mock_chain.apply(block).unwrap();
     assert!(mock_chain.head().head_block().block.uncles().is_some());
     assert!(mock_chain
         .head()
@@ -254,7 +254,7 @@ fn test_uncle_exist() {
     // 4. uncle exist
     let uncles = vec![uncle_block_header];
     let block = product_a_block(mock_chain.head(), &miner, uncles);
-    assert!(mock_chain.apply(block, None).is_err());
+    assert!(mock_chain.apply(block).is_err());
 }
 
 #[stest::test(timeout = 120)]
@@ -264,12 +264,12 @@ fn test_uncle_son() {
     // 3. uncle son
     let uncle_son = product_a_block(&fork_block_chain, miner, Vec::new());
     let uncle_son_block_header = uncle_son.header().clone();
-    fork_block_chain.apply(uncle_son, None).unwrap();
+    fork_block_chain.apply(uncle_son).unwrap();
 
     // 4. mock chain apply
     let uncles = vec![uncle_son_block_header];
     let block = product_a_block(mock_chain.head(), miner, uncles);
-    assert!(mock_chain.apply(block, None).is_err());
+    assert!(mock_chain.apply(block).is_err());
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
 }
 
@@ -281,7 +281,7 @@ fn test_random_uncle() {
     // 3. random BlockHeader and apply
     let uncles = vec![BlockHeader::random()];
     let block = product_a_block(mock_chain.head(), miner, uncles);
-    assert!(mock_chain.apply(block, None).is_err());
+    assert!(mock_chain.apply(block).is_err());
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
 }
 
@@ -350,7 +350,7 @@ fn test_uncle_in_diff_epoch() {
     // 5. mock chain apply
     let uncles = vec![uncle_block_header];
     let block = product_a_block(mock_chain.head(), &miner, uncles);
-    assert!(mock_chain.apply(block, None).is_err());
+    assert!(mock_chain.apply(block).is_err());
 }
 
 #[stest::test(timeout = 480)]

@@ -314,6 +314,14 @@ impl PeerSelector {
         }
     }
 
+    pub fn peer_infos(&self) -> Vec<PeerInfo> {
+        self.details
+            .lock()
+            .iter()
+            .map(|peer| peer.peer_info)
+            .collect()
+    }
+
     pub fn peers(&self) -> Vec<PeerId> {
         self.details
             .lock()

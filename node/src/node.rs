@@ -227,8 +227,6 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                     let result = connect_service
                         .send(ExecuteRequest {
                             block,
-                            dag_block_parent: parents,
-                            dag_transaction_parent: None,
                         })
                         .await??;
                     info!("Re execute result: {:?}", result);
