@@ -217,8 +217,8 @@ pub fn encode_create_parent_vasp_account_script(
 }
 
 pub fn encode_freeze_account_script(
-    sliding_nonce: u64,
-    to_freeze_account: AccountAddress,
+    _sliding_nonce: u64,
+    _to_freeze_account: AccountAddress,
 ) -> Script {
     // Script::new(
     //     FREEZE_ACCOUNT_CODE.to_vec(),
@@ -541,5 +541,24 @@ pub fn encode_update_exchange_rate_script(
     //         TransactionArgument::U64(new_exchange_rate_denominator),
     //     ],
     // )
+    Script::sample()
+}
+
+pub fn encode_update_dual_attestation_limit_script(
+    _sliding_nonce: u64,
+    _new_micro_xdx_limit: u64,
+) -> Script {
+    // Script::new(
+    //     UPDATE_DUAL_ATTESTATION_LIMIT_CODE.to_vec(),
+    //     vec![],
+    //     vec![
+    //         TransactionArgument::U64(sliding_nonce),
+    //         TransactionArgument::U64(new_micro_xdx_limit),
+    //     ],
+    // )
+    Script::sample()
+}
+
+pub fn build_fake_module_upgrade_plan() -> Script {
     Script::sample()
 }

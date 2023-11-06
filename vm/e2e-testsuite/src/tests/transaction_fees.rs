@@ -1,12 +1,12 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::identifier::Identifier;
-use move_core_types::language_storage::{StructTag, TypeTag};
 use crate::tests::fake_stdlib::{
     encode_burn_txn_fees_script, encode_create_parent_vasp_account_script,
     encode_peer_to_peer_with_metadata_script,
 };
+use move_core_types::identifier::Identifier;
+use move_core_types::language_storage::{StructTag, TypeTag};
 use move_core_types::transaction_argument::TransactionArgument;
 use move_core_types::vm_status::KeptVMStatus;
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
