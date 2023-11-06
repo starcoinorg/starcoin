@@ -788,6 +788,7 @@ where
         let mut chain = self.main.fork(selected_parent.header.parent_hash())?;
         for blue_hash in ghost_dag_data.mergeset_blues.iter() {
             if let Some(blue_block) = self.storage.get_block(blue_hash.to_owned())? {
+
                 chain.apply(blue_block, Some(parents_hash.clone()));
             } else {
                 error!("Failed to get block {:?}", blue_hash);
