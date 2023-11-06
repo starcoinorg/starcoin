@@ -65,7 +65,7 @@ pub async fn create_writeable_block_chain() -> (
             txpool_service,
             bus,
             None,
-            Arc::new(Mutex::new(dag)),
+            Some(Arc::new(Mutex::new(dag))),
         )
         .unwrap(),
         node_config,
@@ -86,7 +86,7 @@ pub fn gen_blocks(
                 writeable_block_chain_service,
                 time_service,
             );
-            let e = writeable_block_chain_service.try_connect(block, None);
+            let e = writeable_block_chain_service.try_connect(block);
             println!("try_connect result: {:?}", e)
         }
     }
@@ -165,7 +165,7 @@ fn gen_fork_block_chain(
             parent_id = block.id();
 
             writeable_block_chain_service
-                .try_connect(block, None)
+                .try_connect(block)
                 .unwrap();
         }
     }

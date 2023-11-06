@@ -845,6 +845,10 @@ impl BlockInfo {
     pub fn block_id(&self) -> &HashValue {
         &self.block_id
     }
+
+    pub fn transaction_parent(&self) -> Option<HashValue> {
+        self.transaction_parent.clone()
+    }
 }
 
 impl Sample for BlockInfo {
@@ -1066,15 +1070,13 @@ impl BlockTemplate {
 pub struct ExecutedBlock {
     pub block: Block,
     pub block_info: BlockInfo,
-    pub parents_hash: Option<Vec<HashValue>>,
 }
 
 impl ExecutedBlock {
-    pub fn new(block: Block, block_info: BlockInfo, dag_parents: Option<Vec<HashValue>>) -> Self {
+    pub fn new(block: Block, block_info: BlockInfo) -> Self {
         ExecutedBlock {
             block,
             block_info,
-            parents_hash: dag_parents,
         }
     }
 

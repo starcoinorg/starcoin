@@ -89,6 +89,7 @@ fn verify_header_test_barnard_block3_ubuntu22() {
         ChainId::new(251),
         2894404328,
         BlockHeaderExtra::new([0u8; 4]),
+        None,
     );
     G_CRYPTONIGHT
         .verify_header_difficulty(header.difficulty(), &header)

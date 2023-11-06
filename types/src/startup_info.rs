@@ -122,16 +122,13 @@ pub struct ChainStatus {
     pub head: BlockHeader,
     /// Chain block info
     pub info: BlockInfo,
-    /// tips of the dag chain in dag accumulator snapshots
-    pub tips_hash: Option<Vec<HashValue>>,
 }
 
 impl ChainStatus {
-    pub fn new(head: BlockHeader, info: BlockInfo, tips_hash: Option<Vec<HashValue>>) -> Self {
+    pub fn new(head: BlockHeader, info: BlockInfo) -> Self {
         Self {
             head,
             info,
-            tips_hash,
         }
     }
 
@@ -156,7 +153,6 @@ impl ChainStatus {
         Self {
             head: head.clone(),
             info: block_info,
-            tips_hash: Some(vec![head.id()]),
         }
     }
 
@@ -175,14 +171,6 @@ impl ChainStatus {
     pub fn into_inner(self) -> (BlockHeader, BlockInfo) {
         (self.head, self.info)
     }
-
-    pub fn get_last_tip_block_id(&self) -> Option<HashValue> {
-        if let Some(tips) = &self.tips_hash {
-            tips.into_iter().max().cloned()
-        } else {
-            None
-        }
-    }
 }
 
 impl Sample for ChainStatus {
@@ -190,7 +178,6 @@ impl Sample for ChainStatus {
         Self {
             head: BlockHeader::sample(),
             info: BlockInfo::sample(),
-            tips_hash: Some(vec![HashValue::zero()]),
         }
     }
 }
@@ -230,6 +217,9 @@ impl DagChainStatus {
 pub struct StartupInfo {
     /// main chain head block hash
     pub main: HashValue,
+
+    /// dag accumulator info hash
+    pub dag_main: Option<HashValue>
 }
 
 impl fmt::Display for StartupInfo {
@@ -243,7 +233,17 @@ impl fmt::Display for StartupInfo {
 
 impl StartupInfo {
     pub fn new(main: HashValue) -> Self {
-        Self { main }
+        Self { 
+            main,
+            dag_main: None,
+         }
+    }
+
+    pub fn new_with_dag(main: HashValue, dag_main: Option<HashValue>) -> Self {
+        Self { 
+            main,
+            dag_main,
+         }
     }
 
     pub fn update_main(&mut self, new_head: HashValue) {
@@ -253,6 +253,16 @@ impl StartupInfo {
     pub fn get_main(&self) -> &HashValue {
         &self.main
     }
+
+    pub fn update_dag_main(&mut self, new_head: HashValue) {
+        self.dag_main = Some(new_head);
+    }
+
+    pub fn get_dag_main(&self) -> Option<HashValue> {
+        self.dag_main
+    }
+
+
 }
 
 impl TryFrom<Vec<u8>> for StartupInfo {

@@ -38,7 +38,6 @@ pub fn gen_dag_blocks(
             last_block_hash = Some(block.id());
             let e = writeable_block_chain_service.try_connect(
                 block,
-                writeable_block_chain_service.get_main().status().tips_hash,
             );
             println!("try_connect result: {:?}", e);
             assert!(e.is_ok());
@@ -137,7 +136,7 @@ fn gen_fork_dag_block_chain(
             parent_id = block.id();
 
             writeable_block_chain_service
-                .try_connect(block, None)
+                .try_connect(block)
                 .unwrap();
         }
         return Some(parent_id);

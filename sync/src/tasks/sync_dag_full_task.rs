@@ -170,6 +170,12 @@ fn get_start_block_id(
         .clone())
 }
 
+async fn sync_dag_block2(
+    start_index: u64,
+    accumulator: MerkleAccumulator,
+) -> anyhow::Result<BlockChain> {
+}
+
 async fn sync_dag_block<H, N>(
     start_index: u64,
     accumulator: MerkleAccumulator,
@@ -194,16 +200,16 @@ where
     let event_handle = Arc::new(TaskEventCounterHandle::new());
     let ext_error_handle = Arc::new(ExtSyncTaskErrorHandle::new(fetcher.clone()));
 
-    let start_block_id = get_start_block_id(&accumulator, start_index, local_store.clone())
-        .map_err(|err| TaskError::BreakError(anyhow!(err)));
-    let chain = BlockChain::new(
-        time_service.clone(),
-        start_block_id?,
-        local_store.clone(),
-        net_id,
-        vm_metrics,
-    )
-    .map_err(|err| TaskError::BreakError(anyhow!(err)));
+    // let start_block_id = get_start_block_id(&accumulator, start_index, local_store.clone())
+    //     .map_err(|err| TaskError::BreakError(anyhow!(err)));
+    // let chain = BlockChain::new(
+    //     time_service.clone(),
+    //     start_block_id?,
+    //     local_store.clone(),
+    //     net_id,
+    //     vm_metrics,
+    // )
+    // .map_err(|err| TaskError::BreakError(anyhow!(err)));
 
     let leaf = accumulator
         .get_leaf(start_index)
@@ -221,16 +227,16 @@ where
             .as_str(),
         );
 
-    snapshot.child_hashes.sort();
-    let last_chain_block = snapshot
-        .child_hashes
-        .iter()
-        .last()
-        .expect("block id should not be None")
-        .clone();
+    let chain = BlockChain::new(
+        time_service.clone(),
+        snapshot.head_block_id?,
+        local_store.clone(),
+        net_id,
+        vm_metrics,
+    )?;
 
     let current_block_info = local_store
-        .get_block_info(last_chain_block)?
+        .get_block_info(snapshot.head_block_id)?
         .ok_or_else(|| format_err!("Can not find block info by id: {}", last_chain_block))
         .map_err(|err| TaskError::BreakError(anyhow!(err)));
 
