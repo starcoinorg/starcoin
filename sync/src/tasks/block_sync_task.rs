@@ -385,9 +385,9 @@ where
         }
         let apply_result = if self.skip_pow_verify {
             self.chain
-                .apply_with_verifier::<BasicVerifier>(block.clone(), parents_hash)
+                .apply_with_verifier::<BasicVerifier>(block.clone())
         } else {
-            self.chain.apply(block.clone(), parents_hash)
+            self.chain.apply(block.clone())
         };
         if let Err(err) = apply_result {
             let error_msg = err.to_string();
@@ -528,7 +528,6 @@ where
                 self.chain.connect(ExecutedBlock {
                     block: block.clone(),
                     block_info: block_info.clone(),
-                    parents_hash: parents_hash.clone(),
                 })?;
                 let block_info = self.chain.status().info;
                 Ok((

@@ -131,7 +131,7 @@ fn apply_with_illegal_uncle(
         .current_header()
         .id();
     let mut main = BlockChain::new(net.time_service(), head_id, storage, net.id().clone(), None)?;
-    main.apply(new_block.clone(), None)?;
+    main.apply(new_block.clone())?;
     Ok(new_block)
 }
 
@@ -155,7 +155,7 @@ fn apply_legal_block(
         )
         .unwrap();
     writeable_block_chain_service
-        .try_connect(new_block, None)
+        .try_connect(new_block)
         .unwrap();
 }
 
@@ -168,7 +168,7 @@ async fn test_verify_gas_limit(succ: bool) -> Result<()> {
             .with_gas_used(u64::MAX)
             .build();
     }
-    main.apply(new_block, None)?;
+    main.apply(new_block)?;
     Ok(())
 }
 
@@ -191,7 +191,7 @@ async fn test_verify_body_hash(succ: bool) -> Result<()> {
             .with_body_hash(HashValue::random())
             .build();
     }
-    main.apply(new_block, None)?;
+    main.apply(new_block)?;
     Ok(())
 }
 
@@ -214,7 +214,7 @@ async fn test_verify_parent_id(succ: bool) -> Result<()> {
             .with_parent_hash(HashValue::random())
             .build();
     }
-    main.apply(new_block, None)?;
+    main.apply(new_block)?;
     Ok(())
 }
 
@@ -242,7 +242,7 @@ async fn test_verify_timestamp(succ: bool) -> Result<()> {
             .with_timestamp(main.current_header().timestamp())
             .build();
     }
-    main.apply(new_block, None)?;
+    main.apply(new_block)?;
     Ok(())
 }
 
@@ -271,7 +271,7 @@ async fn test_verify_future_timestamp(succ: bool) -> Result<()> {
             )
             .build();
     }
-    main.apply(new_block, None)?;
+    main.apply(new_block)?;
     Ok(())
 }
 
@@ -294,7 +294,7 @@ async fn test_verify_consensus(succ: bool) -> Result<()> {
             .with_difficulty(U256::from(1024u64))
             .build();
     }
-    main.apply(new_block, None)?;
+    main.apply(new_block)?;
     Ok(())
 }
 
@@ -385,7 +385,7 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
             .consensus()
             .create_block(block_template, net.time_service().as_ref())
             .unwrap();
-        new_branch.apply(new_block, None, &mut None).unwrap();
+        new_branch.apply(new_block).unwrap();
     }
 
     // 3. new block
@@ -482,7 +482,7 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
         .create_block(block_template, net.time_service().as_ref())
         .unwrap();
 
-    main_block_chain.apply(new_block, None, &mut None)?;
+    main_block_chain.apply(new_block)?;
     Ok(())
 }
 
@@ -505,7 +505,7 @@ async fn test_verify_state_root(succ: bool) -> Result<()> {
             .with_state_root(HashValue::random())
             .build();
     }
-    main.apply(new_block, None)?;
+    main.apply(new_block)?;
     Ok(())
 }
 
@@ -524,7 +524,7 @@ async fn test_verify_block_used_gas(succ: bool) -> Result<()> {
     if !succ {
         new_block.header = new_block.header().as_builder().with_gas_used(1).build();
     }
-    main.apply(new_block, None)?;
+    main.apply(new_block)?;
     Ok(())
 }
 
@@ -546,7 +546,7 @@ async fn test_verify_txn_count_failed() {
     let mut body = new_block.body.clone();
     body.transactions = txns;
     new_block.body = body;
-    let apply_failed = main.apply(new_block, None, &mut None);
+    let apply_failed = main.apply(new_block);
     assert!(apply_failed.is_err());
     if let Err(apply_err) = apply_failed {
         error!("apply failed : {:?}", apply_err);
@@ -562,7 +562,7 @@ async fn test_verify_accumulator_root(succ: bool) -> Result<()> {
             .with_accumulator_root(HashValue::random())
             .build();
     }
-    main.apply(new_block, None)?;
+    main.apply(new_block)?;
     Ok(())
 }
 
@@ -585,7 +585,7 @@ async fn test_verify_block_accumulator_root(succ: bool) -> Result<()> {
             .with_parent_block_accumulator_root(HashValue::random())
             .build();
     }
-    main.apply(new_block, None)?;
+    main.apply(new_block)?;
     Ok(())
 }
 
@@ -616,7 +616,7 @@ async fn test_verify_block_number_failed(succ: bool, order: bool) {
                 .build();
         }
     }
-    let apply_failed = main.apply(new_block, None);
+    let apply_failed = main.apply(new_block);
     if !succ {
         assert!(apply_failed.is_err());
         if let Err(apply_err) = apply_failed {
@@ -782,7 +782,7 @@ async fn test_verify_uncles_uncle_exist_failed() {
         .create_block(block_template, net.time_service().as_ref())
         .unwrap();
     writeable_block_chain_service
-        .try_connect(new_block, None)
+        .try_connect(new_block)
         .unwrap();
 
     info!(
@@ -852,7 +852,7 @@ async fn test_verify_uncle_and_parent_number_failed() {
         .create_block(block_template, net.time_service().as_ref())
         .unwrap();
     writeable_block_chain_service
-        .try_connect(new_block, None)
+        .try_connect(new_block)
         .unwrap();
     let new_number = writeable_block_chain_service
         .get_main()

@@ -19,7 +19,10 @@ pub struct DagHeader {
 }
 
 impl DagHeader {
-    pub fn new(block_header: BlockHeader, parents_hash: Vec<Hash>) -> Self {
+    pub fn new(block_header: BlockHeader) -> Self {
+        let parents_hash = block_header
+            .parents_hash()
+            .expect("parents_hash should exists for a dag block");
         Self {
             block_header,
             parents_hash,

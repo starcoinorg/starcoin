@@ -202,7 +202,6 @@ impl BlockChain {
             None,
             genesis_block,
             None,
-            None,
         )?;
 
         let new_tips = vec![genesis_id];
@@ -401,17 +400,13 @@ impl BlockChain {
         V::verify_block(self, block)
     }
 
-    pub fn apply_with_verifier<V>(
-        &mut self,
-        block: Block,
-        parents_hash: Option<Vec<HashValue>>,
-    ) -> Result<ExecutedBlock>
+    pub fn apply_with_verifier<V>(&mut self, block: Block) -> Result<ExecutedBlock>
     where
         V: BlockVerifier,
     {
         let verified_block = self.verify_with_verifier::<V>(block)?;
         watch(CHAIN_WATCH_NAME, "n1");
-        let executed_block = self.execute(verified_block, parents_hash)?;
+        let executed_block = self.execute(verified_block)?;
         watch(CHAIN_WATCH_NAME, "n2");
         self.connect(executed_block)
     }
@@ -426,11 +421,7 @@ impl BlockChain {
             .storage
             .get_block_info(block.id())?
             .ok_or_else(|| format_err!("Can not find block info by hash {:?}", block.id()))?;
-        self.connect(ExecutedBlock {
-            block,
-            block_info,
-            parents_hash,
-        })
+        self.connect(ExecutedBlock { block, block_info })
     }
 
     //TODO consider move this logic to BlockExecutor
@@ -443,7 +434,6 @@ impl BlockChain {
         parent_status: Option<ChainStatus>,
         block: Block,
         vm_metrics: Option<VMMetrics>,
-        parents_hash: Option<Vec<HashValue>>,
     ) -> Result<ExecutedBlock> {
         let header = block.header();
         debug_assert!(header.is_genesis() || parent_status.is_some());
@@ -598,11 +588,7 @@ impl BlockChain {
         storage.save_table_infos(txn_table_infos)?;
 
         watch(CHAIN_WATCH_NAME, "n26");
-        Ok(ExecutedBlock {
-            block,
-            block_info,
-            parents_hash,
-        })
+        Ok(ExecutedBlock { block, block_info })
     }
 
     pub fn get_txn_accumulator(&self) -> &MerkleAccumulator {
@@ -711,11 +697,7 @@ impl ChainReader for BlockChain {
     }
 
     fn head_block(&self) -> ExecutedBlock {
-        ExecutedBlock::new(
-            self.status.head.clone(),
-            self.status.status.info.clone(),
-            self.status.status.tips_hash.clone(),
-        )
+        ExecutedBlock::new(self.status.head.clone(), self.status.status.info.clone())
     }
 
     fn current_header(&self) -> BlockHeader {
@@ -951,11 +933,7 @@ impl ChainReader for BlockChain {
         FullVerifier::verify_block(self, block)
     }
 
-    fn execute(
-        &self,
-        verified_block: VerifiedBlock,
-        parents_hash: Option<Vec<HashValue>>,
-    ) -> Result<ExecutedBlock> {
+    fn execute(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
         Self::execute_block_and_save(
             self.storage.as_ref(),
             self.statedb.fork(),
@@ -965,7 +943,6 @@ impl ChainReader for BlockChain {
             Some(self.status.status.clone()),
             verified_block.0,
             self.vm_metrics.clone(),
-            parents_hash,
         )
     }
 
@@ -1242,12 +1219,8 @@ impl ChainWriter for BlockChain {
         Ok(executed_block)
     }
 
-    fn apply(
-        &mut self,
-        block: Block,
-        parents_hash: Option<Vec<HashValue>>,
-    ) -> Result<ExecutedBlock> {
-        self.apply_with_verifier::<FullVerifier>(block, parents_hash)
+    fn apply(&mut self, block: Block) -> Result<ExecutedBlock> {
+        self.apply_with_verifier::<FullVerifier>(block)
     }
 
     fn chain_state(&mut self) -> &ChainStateDB {

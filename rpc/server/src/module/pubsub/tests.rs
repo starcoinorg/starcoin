@@ -72,7 +72,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     let new_block = block_chain
         .consensus()
         .create_block(block_template, net.time_service().as_ref())?;
-    let executed_block = block_chain.apply(new_block.clone(), None)?;
+    let executed_block = block_chain.apply(new_block.clone())?;
 
     let reader = block_chain.chain_state_reader();
     let balance = reader.get_balance(account_address)?;

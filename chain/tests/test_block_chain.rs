@@ -200,7 +200,7 @@ fn gen_uncle() -> (MockChain, BlockChain, BlockHeader) {
     let miner = mock_chain.miner();
     let block = product_a_block(&fork_block_chain, miner, Vec::new());
     let uncle_block_header = block.header().clone();
-    fork_block_chain.apply(block, None, &mut None).unwrap();
+    fork_block_chain.apply(block).unwrap();
     (mock_chain, fork_block_chain, uncle_block_header)
 }
 
@@ -264,12 +264,12 @@ fn test_uncle_son() {
     // 3. uncle son
     let uncle_son = product_a_block(&fork_block_chain, miner, Vec::new());
     let uncle_son_block_header = uncle_son.header().clone();
-    fork_block_chain.apply(uncle_son, None).unwrap();
+    fork_block_chain.apply(uncle_son).unwrap();
 
     // 4. mock chain apply
     let uncles = vec![uncle_son_block_header];
     let block = product_a_block(mock_chain.head(), miner, uncles);
-    assert!(mock_chain.apply(block, None).is_err());
+    assert!(mock_chain.apply(block).is_err());
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
 }
 
@@ -373,7 +373,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let block_b1 = block_chain
         .consensus()
         .create_block(template_b1, config.net().time_service().as_ref())?;
-    block_chain.apply(block_b1.clone(), None, &mut None)?;
+    block_chain.apply(block_b1.clone())?;
 
     let mut block_chain2 = block_chain.fork(block_b1.id()).unwrap();
 
@@ -404,7 +404,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         .consensus()
         .create_block(template_b2, config.net().time_service().as_ref())?;
 
-    block_chain.apply(block_b2.clone(), None, &mut None)?;
+    block_chain.apply(block_b2.clone())?;
     let (template_b3, excluded) = block_chain2.create_block_template(
         *miner_account.address(),
         Some(block_b1.id()),
@@ -416,7 +416,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let block_b3 = block_chain2
         .consensus()
         .create_block(template_b3, config.net().time_service().as_ref())?;
-    block_chain2.apply(block_b3.clone(), None, &mut None)?;
+    block_chain2.apply(block_b3.clone())?;
 
     assert_ne!(
         block_chain.get_txn_accumulator().root_hash(),

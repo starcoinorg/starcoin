@@ -82,11 +82,7 @@ pub trait ChainReader {
     /// Verify block header and body, base current chain, but do not verify it execute state.
     fn verify(&self, block: Block) -> Result<VerifiedBlock>;
     /// Execute block and verify it execute state, and save result base current chain, but do not change current chain.
-    fn execute(
-        &self,
-        block: VerifiedBlock,
-        parents_hash: Option<Vec<HashValue>>,
-    ) -> Result<ExecutedBlock>;
+    fn execute(&self, block: VerifiedBlock) -> Result<ExecutedBlock>;
     /// Get chain transaction infos
     fn get_transaction_infos(
         &self,
@@ -118,11 +114,7 @@ pub trait ChainWriter {
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock>;
 
     /// Verify, Execute and Connect block to current chain.
-    fn apply(
-        &mut self,
-        block: Block,
-        parents_hash: Option<Vec<HashValue>>,
-    ) -> Result<ExecutedBlock>;
+    fn apply(&mut self, block: Block) -> Result<ExecutedBlock>;
 
     fn chain_state(&mut self) -> &ChainStateDB;
 

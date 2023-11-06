@@ -86,7 +86,7 @@ pub fn gen_blocks(
                 writeable_block_chain_service,
                 time_service,
             );
-            let e = writeable_block_chain_service.try_connect(block, None);
+            let e = writeable_block_chain_service.try_connect(block);
             println!("try_connect result: {:?}", e)
         }
     }
@@ -164,9 +164,7 @@ fn gen_fork_block_chain(
                 .unwrap();
             parent_id = block.id();
 
-            writeable_block_chain_service
-                .try_connect(block, None)
-                .unwrap();
+            writeable_block_chain_service.try_connect(block).unwrap();
         }
     }
 }

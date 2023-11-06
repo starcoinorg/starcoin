@@ -209,7 +209,7 @@ impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<TxPoolSer
 
         match msg.action {
             crate::tasks::BlockConnectAction::ConnectNewBlock => {
-                if let Err(e) = self.chain_service.try_connect(block, msg.dag_parents) {
+                if let Err(e) = self.chain_service.try_connect(block) {
                     error!("Process connected new block from sync error: {:?}", e);
                 }
             }
@@ -260,14 +260,11 @@ where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
     fn handle_event(&mut self, msg: MinedBlock, _ctx: &mut ServiceContext<Self>) {
-        let MinedBlock(new_block, tips_headers) = msg;
+        let MinedBlock(new_block, _tips_headers) = msg;
         let id = new_block.header().id();
         debug!("try connect mined block: {}", id);
 
-        match self
-            .chain_service
-            .try_connect(new_block.as_ref().clone(), tips_headers)
-        {
+        match self.chain_service.try_connect(new_block.as_ref().clone()) {
             std::result::Result::Ok(_) => debug!("Process mined block {} success.", id),
             Err(e) => {
                 warn!("Process mined block {} fail, error: {:?}", id, e);
@@ -297,10 +294,7 @@ where
             return;
         }
         let peer_id = msg.get_peer_id();
-        if let Err(e) = self
-            .chain_service
-            .try_connect(msg.get_block().clone(), msg.get_dag_parents().clone())
-        {
+        if let Err(e) = self.chain_service.try_connect(msg.get_block().clone()) {
             match e.downcast::<ConnectBlockError>() {
                 std::result::Result::Ok(connect_error) => {
                     match connect_error {
@@ -379,7 +373,7 @@ where
         msg: ExecuteRequest,
         _ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
     ) -> Result<ExecutedBlock> {
-        self.chain_service.execute(msg.block, msg.dag_block_parent)
+        self.chain_service.execute(msg.block)
     }
 }
 

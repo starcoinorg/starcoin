@@ -203,7 +203,7 @@ pub fn modify_on_chain_config_by_dao_block(
             .consensus()
             .create_block(template, chain.time_service().as_ref())?;
 
-        chain.apply(block1, None)?;
+        chain.apply(block1)?;
     }
 
     // block 2
@@ -223,7 +223,7 @@ pub fn modify_on_chain_config_by_dao_block(
                 block_timestamp / 1000,
             )],
         )?;
-        chain.apply(block2, None)?;
+        chain.apply(block2)?;
 
         let chain_state = chain.chain_state();
         let state = proposal_state(
@@ -255,7 +255,7 @@ pub fn modify_on_chain_config_by_dao_block(
                 block_timestamp / 1000,
             )],
         )?;
-        chain.apply(block3, None)?;
+        chain.apply(block3)?;
     }
     // block 4
     let chain_state = chain.chain_state();
@@ -263,7 +263,7 @@ pub fn modify_on_chain_config_by_dao_block(
     {
         chain.time_service().adjust(block_timestamp);
         let block4 = create_new_block(&chain, &alice, vec![])?;
-        chain.apply(block4, None)?;
+        chain.apply(block4)?;
         let chain_state = chain.chain_state();
         let quorum = quorum_vote(chain_state, stc_type_tag());
         println!("quorum: {}", quorum);
@@ -282,7 +282,7 @@ pub fn modify_on_chain_config_by_dao_block(
     let block_timestamp = block_timestamp + 20 * 1000;
     {
         chain.time_service().adjust(block_timestamp);
-        chain.apply(create_new_block(&chain, &alice, vec![])?, None)?;
+        chain.apply(create_new_block(&chain, &alice, vec![])?)?;
         let chain_state = chain.chain_state();
         let state = proposal_state(
             chain_state,
@@ -311,7 +311,7 @@ pub fn modify_on_chain_config_by_dao_block(
                 block_timestamp / 1000,
             )],
         )?;
-        chain.apply(block6, None)?;
+        chain.apply(block6)?;
         let chain_state = chain.chain_state();
         let state = proposal_state(
             chain_state,
@@ -328,7 +328,7 @@ pub fn modify_on_chain_config_by_dao_block(
     let block_timestamp = block_timestamp + min_action_delay(chain_state, stc_type_tag());
     {
         chain.time_service().adjust(block_timestamp);
-        chain.apply(create_new_block(&chain, &alice, vec![])?, None)?;
+        chain.apply(create_new_block(&chain, &alice, vec![])?)?;
         let chain_state = chain.chain_state();
         let state = proposal_state(
             chain_state,
@@ -353,7 +353,7 @@ pub fn modify_on_chain_config_by_dao_block(
                 block_timestamp / 1000,
             )],
         )?;
-        chain.apply(block8, None)?;
+        chain.apply(block8)?;
     }
 
     // block 9
@@ -361,7 +361,7 @@ pub fn modify_on_chain_config_by_dao_block(
     let _chain_state = chain.chain_state();
     {
         chain.time_service().adjust(block_timestamp);
-        chain.apply(create_new_block(&chain, &alice, vec![])?, None)?;
+        chain.apply(create_new_block(&chain, &alice, vec![])?)?;
         let chain_state = chain.chain_state();
         let state = proposal_state(
             chain_state,

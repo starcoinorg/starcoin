@@ -91,7 +91,7 @@ pub trait ReadableChainService {
 
 /// Writeable block chain service trait
 pub trait WriteableChainService: Send + Sync {
-    fn try_connect(&mut self, block: Block, tips_header: Option<Vec<HashValue>>) -> Result<()>;
+    fn try_connect(&mut self, block: Block) -> Result<()>;
 }
 
 #[async_trait::async_trait]
