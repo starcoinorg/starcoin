@@ -39,6 +39,12 @@ use stream_task::{
 };
 
 pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {
+    fn get_dag_targets(&self) -> Result<Vec<AccumulatorInfo>> {
+        Ok(self.peer_selector().peer_infos().into_iter().map(|peer_info| {
+            peer_info.chain_info().dag_accumulator_info().clone()
+        }).collect());
+    }
+
     fn get_best_target(
         &self,
         min_difficulty: U256,
@@ -303,8 +309,6 @@ pub trait BlockFetcher: Send + Sync {
             Vec<(
                 Block,
                 Option<PeerId>,
-                Option<Vec<HashValue>>,
-                Option<HashValue>,
             )>,
         >,
     >;
@@ -323,8 +327,6 @@ where
             Vec<(
                 Block,
                 Option<PeerId>,
-                Option<Vec<HashValue>>,
-                Option<HashValue>,
             )>,
         >,
     > {
@@ -342,21 +344,12 @@ impl BlockFetcher for VerifiedRpcClient {
             Vec<(
                 Block,
                 Option<PeerId>,
-                Option<Vec<HashValue>>,
-                Option<HashValue>,
             )>,
         >,
     > {
         self.get_blocks(block_ids.clone())
             .and_then(|blocks| async move {
-                let results: Result<
-                    Vec<(
-                        Block,
-                        Option<PeerId>,
-                        Option<Vec<HashValue>>,
-                        Option<HashValue>,
-                    )>,
-                > = block_ids
+                let results = block_ids
                     .iter()
                     .zip(blocks)
                     .map(|(id, block)| {

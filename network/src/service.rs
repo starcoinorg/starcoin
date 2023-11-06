@@ -484,7 +484,7 @@ impl Inner {
     }
 
     pub(crate) fn update_chain_status(&mut self, sync_status: SyncStatus) {
-        let chain_status = sync_status.chain_status().clone();
+        let chain_status: ChainStatus = sync_status.chain_status().clone();
         self.self_peer
             .peer_info
             .update_chain_status(chain_status.clone());
@@ -559,7 +559,6 @@ impl Inner {
                     peer_info.peer_info.update_chain_status(ChainStatus::new(
                         block_header.clone(),
                         compact_block_message.block_info.clone(),
-                        compact_block_message.tips_hash.clone(),
                     ));
 
                     if self.self_peer.known_blocks.contains(&block_id) {
@@ -721,7 +720,6 @@ impl Inner {
                     ChainStatus::new(
                         msg.compact_block.header.clone(),
                         msg.block_info.clone(),
-                        msg.tips_hash.clone(),
                     )
                     .encode()
                     .expect("Encoding the compact_block.header and block_info must be successful"),

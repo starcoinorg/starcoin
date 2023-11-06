@@ -21,17 +21,18 @@ use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use starcoin_accumulator::{
-    accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, AccumulatorTreeStore,
+    accumulator_info::{AccumulatorInfo, self}, node::AccumulatorStoreType, AccumulatorTreeStore,
 };
 use starcoin_config::ChainNetworkID;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::{
-    block::{Block, BlockBody, BlockHeader, BlockInfo},
+    block::{Block, BlockBody, BlockHeader, BlockInfo, BlockNumber},
     blockhash::ORIGIN,
     contract_event::ContractEvent,
-    startup_info::{ChainInfo, ChainStatus, SnapshotRange, StartupInfo},
+    header,
+    startup_info::{ChainInfo, ChainStatus, SnapshotRange, StartupInfo, self},
     transaction::{RichTransactionInfo, Transaction},
 };
 use starcoin_vm_types::{
@@ -330,13 +331,9 @@ pub trait SyncFlexiDagStore {
         new_tips: Vec<HashValue>,
         accumulator_info: AccumulatorInfo,
     ) -> Result<()>;
-    fn get_dag_accumulator_info(&self, block_id: HashValue) -> Result<Option<AccumulatorInfo>>;
+    fn get_dag_accumulator_info(&self) -> Result<Option<AccumulatorInfo>>;
     fn get_tips_by_block_id(&self, block_id: HashValue) -> Result<Vec<HashValue>>;
-    fn get_flexidag_init_data(
-        &self,
-        head_block: &BlockHeader,
-        id: ChainNetworkID,
-    ) -> Result<(Option<AccumulatorInfo>, Option<Vec<HashValue>>)>;
+    fn dag_fork_height(&self, id: ChainNetworkID) -> BlockNumber;
 }
 
 // TODO: remove Arc<dyn Store>, we can clone Storage directly.
@@ -455,14 +452,11 @@ impl BlockStore for Storage {
             format_err!("Startup block info {:?} should exist", startup_info.main)
         })?;
 
-        let (flexi_dag_accumulator_info, tips_header_hash) =
-            self.get_flexidag_init_data(&head_block, id)?;
-
         let chain_info = ChainInfo::new(
             head_block.chain_id(),
             genesis_hash,
-            ChainStatus::new(head_block.clone(), head_block_info, tips_header_hash),
-            flexi_dag_accumulator_info,
+            ChainStatus::new(head_block.clone(), head_block_info),
+            self.get_dag_accumulator_info()?,
         );
         Ok(Some(chain_info))
     }
@@ -675,17 +669,23 @@ impl SyncFlexiDagStore for Storage {
         self.flexi_dag_storage.get_snapshot_storage()
     }
 
-    fn get_dag_accumulator_info(&self, block_id: HashValue) -> Result<Option<AccumulatorInfo>> {
-        match self
-            .flexi_dag_storage
-            .get_snapshot_storage()
-            .get(block_id)?
-        {
-            Some(snapshot) => Ok(Some(snapshot.accumulator_info)),
-            None => Ok(None),
+    fn get_dag_accumulator_info(&self) -> Result<Option<AccumulatorInfo>> {
+        let startup_info = self.get_startup_info()?;
+        if startup_info.is_none() {
+            return Ok(None);
         }
+
+        let dag_main = startup_info.unwrap().get_dag_main();
+        if dag_main.is_none() {
+            return Ok(None);
+        }
+
+        let dag_main = dag_main.unwrap();
+
+        Ok(Some(self.flexi_dag_storage.get_snapshot_storage().get(dag_main)?.expect("snapshot should not be none").accumulator_info))
     }
 
+    // update dag accumulator 
     fn append_dag_accumulator_leaf(
         &self,
         key: HashValue,
@@ -697,46 +697,28 @@ impl SyncFlexiDagStore for Storage {
             accumulator_info: accumulator_info.clone(),
         };
         // for sync
-        if self.flexi_dag_storage.get_hashes_by_hash(key)?.is_some() {
-            if let Some(t) = self.flexi_dag_storage.get_hashes_by_hash(key)? {
-                if t != snapshot {
-                    bail!("the accumulator differ from other");
-                }
+        if let Some(t) = self.flexi_dag_storage.get_hashes_by_hash(key)? {
+            if t != snapshot {
+                panic!("the accumulator differ from other");
             }
+        } else {
+            self.flexi_dag_storage.put_hashes(key, snapshot)?;
         }
-        self.flexi_dag_storage.put_hashes(key, snapshot.clone())?;
 
-        // for block chain
-        new_tips.iter().try_fold((), |_, block_id| {
-            if let Some(t) = self
-                .flexi_dag_storage
-                .get_hashes_by_hash(block_id.clone())?
-            {
-                if t != snapshot {
-                    bail!("the key {} should not exists", block_id);
-                }
-            }
-            self.flexi_dag_storage
-                .put_hashes(block_id.clone(), snapshot.clone())
-        })?;
         Ok(())
     }
 
-    fn get_tips_by_block_id(&self, block_id: HashValue) -> Result<Vec<HashValue>> {
-        match self.query_by_hash(block_id)? {
+    fn get_tips_by_block_id(&self, key: HashValue) -> Result<Vec<HashValue>> {
+        match self.query_by_hash(key)? {
             Some(snapshot) => Ok(snapshot.child_hashes),
             None => {
-                bail!("failed to get snapshot by hash: {}", block_id);
+                bail!("failed to get snapshot by hash: {}", key);
             }
         }
     }
 
-    fn get_flexidag_init_data(
-        &self,
-        head_block: &BlockHeader,
-        id: ChainNetworkID,
-    ) -> Result<(Option<AccumulatorInfo>, Option<Vec<HashValue>>)> {
-        let flexi_dag_number = match id {
+    fn dag_fork_height(&self, id: ChainNetworkID) -> BlockNumber {
+        match id {
             ChainNetworkID::Builtin(network_id) => match network_id {
                 starcoin_config::BuiltinNetworkID::Test => TEST_FLEXIDAG_FORK_HEIGHT,
                 starcoin_config::BuiltinNetworkID::Dev => DEV_FLEXIDAG_FORK_HEIGHT,
@@ -746,28 +728,7 @@ impl SyncFlexiDagStore for Storage {
                 starcoin_config::BuiltinNetworkID::Main => MAIN_FLEXIDAG_FORK_HEIGHT,
             },
             ChainNetworkID::Custom(_) => DEV_FLEXIDAG_FORK_HEIGHT,
-        };
-
-        let (dag_accumulator_info, tips) = if flexi_dag_number == head_block.number() {
-            (
-                Some(AccumulatorInfo::default()),
-                Some(vec![head_block.id()]),
-            )
-        } else if flexi_dag_number < head_block.number() {
-            let dag_accumulator_info = self
-                .get_dag_accumulator_info(head_block.id())?
-                .expect("the dag accumulator info must exist!");
-            let tips = self.get_tips_by_block_id(head_block.id())?;
-            assert!(
-                tips.len() > 0,
-                "the length of the tips must be greater than 0"
-            );
-            (Some(dag_accumulator_info), Some(tips))
-        } else {
-            (None, None)
-        };
-
-        Ok((dag_accumulator_info, tips))
+        }
     }
 }
 

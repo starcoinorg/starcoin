@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
+use std::sync::{Arc, Mutex};
+
 use crate::message::{ChainRequest, ChainResponse};
 use crate::TransactionInfoWithProof;
 use anyhow::{bail, Result};
@@ -9,7 +11,7 @@ use starcoin_network_rpc_api::dag_protocol::{
     self, GetDagAccumulatorLeaves, GetTargetDagAccumulatorLeafDetail, TargetDagAccumulatorLeaf,
     TargetDagAccumulatorLeafDetail,
 };
-use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
+use starcoin_service_registry::{ActorService, ServiceContext, ServiceHandler, ServiceRef};
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainStatus;
@@ -91,7 +93,7 @@ pub trait ReadableChainService {
 
 /// Writeable block chain service trait
 pub trait WriteableChainService: Send + Sync {
-    fn try_connect(&mut self, block: Block, tips_header: Option<Vec<HashValue>>) -> Result<()>;
+    fn try_connect(&mut self, block: Block) -> Result<()>;
 }
 
 #[async_trait::async_trait]

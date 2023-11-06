@@ -134,15 +134,15 @@ impl MockChain {
             .create_block(template, self.net.time_service().as_ref())
     }
 
-    pub fn apply(&mut self, block: Block, parents_hash: Option<Vec<HashValue>>) -> Result<()> {
-        self.head.apply(block, parents_hash)?;
+    pub fn apply(&mut self, block: Block) -> Result<()> {
+        self.head.apply(block, None)?;
         Ok(())
     }
 
     pub fn produce_and_apply(&mut self) -> Result<BlockHeader> {
         let block = self.produce()?;
         let header = block.header().clone();
-        self.apply(block, None)?;
+        self.apply(block)?;
         Ok(header)
     }
 

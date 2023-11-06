@@ -79,6 +79,7 @@ fn gen_header(
         parent_header.chain_id(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
+        None,
     )
 }
 
@@ -260,7 +261,7 @@ proptest! {
         // blocks in ;
         for block in blocks {
             if !block.header().is_genesis() {
-                let result = block_chain.apply(block.clone(), None, &mut None);
+                let result = block_chain.apply(block.clone());
                 info!("{:?}", result);
             }
         }

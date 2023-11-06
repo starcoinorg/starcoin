@@ -386,8 +386,6 @@ impl VerifiedRpcClient {
             Option<(
                 Block,
                 Option<PeerId>,
-                Option<Vec<HashValue>>,
-                Option<HashValue>,
             )>,
         >,
     > {
@@ -412,7 +410,7 @@ impl VerifiedRpcClient {
                         );
                         None
                     } else {
-                        Some((block.0, Some(peer_id.clone()), block.1, block.2))
+                        Some((block.0, Some(peer_id.clone())))
                     }
                 } else {
                     None

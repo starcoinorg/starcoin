@@ -9265,6 +9265,7 @@ name = "starcoin-chain"
 version = "1.13.7"
 dependencies = [
  "anyhow",
+ "async-std",
  "bcs-ext",
  "clap 3.2.23",
  "proptest",
@@ -9371,6 +9372,7 @@ name = "starcoin-chain-service"
 version = "1.13.7"
 dependencies = [
  "anyhow",
+ "async-std",
  "async-trait",
  "futures 0.3.26",
  "rand 0.8.5",
@@ -9382,6 +9384,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
+ "starcoin-flexidag",
  "starcoin-logger",
  "starcoin-network-rpc-api",
  "starcoin-service-registry",
@@ -9516,6 +9519,7 @@ dependencies = [
  "rust-argon2",
  "serde 1.0.152",
  "sha3",
+ "starcoin-accumulator",
  "starcoin-chain-api",
  "starcoin-config",
  "starcoin-crypto",
@@ -9691,6 +9695,25 @@ dependencies = [
  "tiny_http",
  "tokio",
  "tokio-executor 0.2.0-alpha.6",
+]
+
+[[package]]
+name = "starcoin-flexidag"
+version = "1.13.7"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "futures 0.3.26",
+ "starcoin-accumulator",
+ "starcoin-config",
+ "starcoin-consensus",
+ "starcoin-crypto",
+ "starcoin-logger",
+ "starcoin-service-registry",
+ "starcoin-storage",
+ "starcoin-types",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -9883,6 +9906,7 @@ name = "starcoin-miner"
 version = "1.13.7"
 dependencies = [
  "anyhow",
+ "async-std",
  "bcs-ext",
  "futures 0.3.26",
  "futures-timer",
@@ -9898,6 +9922,7 @@ dependencies = [
  "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-executor",
+ "starcoin-flexidag",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-metrics",
@@ -10745,6 +10770,7 @@ dependencies = [
  "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-executor",
+ "starcoin-flexidag",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-metrics",
