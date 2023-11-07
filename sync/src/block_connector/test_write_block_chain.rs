@@ -2,14 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #![allow(clippy::integer_arithmetic)]
 use crate::block_connector::WriteBlockChainService;
+use parking_lot::Mutex;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_chain_service::WriteableChainService;
 use starcoin_config::NodeConfig;
-use starcoin_consensus::Consensus;
 use starcoin_consensus::{BlockDAG, Consensus, FlexiDagStorage, FlexiDagStorageConfig};
 use starcoin_crypto::HashValue;
-use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::Store;
@@ -19,7 +18,7 @@ use starcoin_types::block::Block;
 use starcoin_types::blockhash::ORIGIN;
 use starcoin_types::header::Header;
 use starcoin_types::startup_info::StartupInfo;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 pub async fn create_writeable_block_chain() -> (
     WriteBlockChainService<MockTxPoolService>,

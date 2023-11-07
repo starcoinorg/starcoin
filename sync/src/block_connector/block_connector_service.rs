@@ -10,6 +10,7 @@ use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskChec
 use anyhow::bail;
 use anyhow::{format_err, Ok, Result};
 use network_api::PeerProvider;
+use parking_lot::Mutex;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
 use starcoin_consensus::BlockDAG;
@@ -29,7 +30,7 @@ use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use sysinfo::{DiskExt, System, SystemExt};
 
 const DISK_CHECKPOINT_FOR_PANIC: u64 = 1024 * 1024 * 1024 * 3;
