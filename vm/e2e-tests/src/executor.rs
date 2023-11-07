@@ -14,11 +14,14 @@ use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::HashValue;
 use starcoin_gas::{StarcoinGasMeter, StarcoinGasParameters};
 use starcoin_gas_algebra_ext::InitialGasSchedule;
-use starcoin_vm_runtime::data_cache::{AsMoveResolver, RemoteStorage};
-use starcoin_vm_runtime::move_vm_ext::{MoveVmExt, SessionId, SessionOutput};
-use starcoin_vm_runtime::parallel_executor::ParallelStarcoinVM;
-use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
-use starcoin_vm_runtime::VMExecutor;
+use starcoin_vm_runtime::{
+    data_cache::{AsMoveResolver, RemoteStorage},
+    move_vm_ext::{MoveVmExt, SessionId, SessionOutput},
+    parallel_executor::ParallelStarcoinVM,
+    starcoin_vm::StarcoinVM,
+    VMExecutor,
+};
+
 use starcoin_vm_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -40,7 +43,6 @@ use starcoin_vm_types::{
 };
 
 use crate::data_store::FakeDataStore;
-use anyhow::Result as AnyhowResult;
 use starcoin_statedb::ChainStateWriter;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::transaction::TransactionInfo;

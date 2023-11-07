@@ -278,29 +278,6 @@ pub fn encode_create_child_vasp_account_script(
     Script::sample()
 }
 
-pub fn encode_create_child_vasp_account_script_function(
-    _coin_type: TypeTag,
-    _child_address: AccountAddress,
-    _auth_key_prefix: Vec<u8>,
-    _add_all_currencies: bool,
-    _child_initial_balance: u64,
-) -> TransactionPayload {
-    // TransactionPayload::ScriptFunction(ScriptFunction::new(
-    //     ModuleId::new(
-    //         AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
-    //         ident_str!("AccountCreationScripts").to_owned(),
-    //     ),
-    //     ident_str!("create_child_vasp_account").to_owned(),
-    //     vec![coin_type],
-    //     vec![
-    //         bcs::to_bytes(&child_address).unwrap(),
-    //         bcs::to_bytes(&auth_key_prefix).unwrap(),
-    //         bcs::to_bytes(&add_all_currencies).unwrap(),
-    //         bcs::to_bytes(&child_initial_balance).unwrap(),
-    //     ],
-    // ))
-    TransactionPayload::Script(Script::sample())
-}
 
 pub fn encode_peer_to_peer_with_metadata_script(
     _currency: TypeTag,
@@ -394,11 +371,11 @@ pub fn encode_rotate_authentication_key_with_recovery_address_script(
 }
 
 pub fn encode_tiered_mint_script(
-    coin_type: TypeTag,
-    sliding_nonce: u64,
-    designated_dealer_address: AccountAddress,
-    mint_amount: u64,
-    tier_index: u64,
+    _coin_type: TypeTag,
+    _sliding_nonce: u64,
+    _designated_dealer_address: AccountAddress,
+    _mint_amount: u64,
+    _tier_index: u64,
 ) -> Script {
     // Script::new(
     //     TIERED_MINT_CODE.to_vec(),

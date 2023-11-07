@@ -2,20 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::tests::fake_stdlib::{
-    encode_burn_txn_fees_script, encode_create_parent_vasp_account_script,
+    self, encode_burn_txn_fees_script, encode_create_parent_vasp_account_script,
     encode_peer_to_peer_with_metadata_script,
 };
-use move_core_types::identifier::Identifier;
-use move_core_types::language_storage::{StructTag, TypeTag};
-use move_core_types::transaction_argument::TransactionArgument;
-use move_core_types::vm_status::KeptVMStatus;
-use starcoin_crypto::ed25519::Ed25519PrivateKey;
-use starcoin_crypto::{PrivateKey, Uniform};
-use starcoin_language_e2e_tests::test_with_different_versions;
-use starcoin_language_e2e_tests::versioning::CURRENT_RELEASE_VERSIONS;
-use starcoin_vm_types::account_config;
-use starcoin_vm_types::account_config::BurnEvent;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
+use move_core_types::{
+    identifier::Identifier,
+    language_storage::{StructTag, TypeTag},
+    vm_status::KeptVMStatus,
+};
+use starcoin_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
+use starcoin_language_e2e_tests::{
+    account::STC_TOKEN_CODE_STR, test_with_different_versions, versioning::CURRENT_RELEASE_VERSIONS,
+};
+use starcoin_vm_types::{
+    account_config::{self, BurnEvent},
+    transaction::authenticator::AuthenticationKey,
+};
 
 #[test]
 fn burn_txn_fees() {
@@ -58,20 +60,22 @@ fn burn_txn_fees() {
             let privkey = Ed25519PrivateKey::generate_for_testing();
             let pubkey = privkey.public_key();
             let new_key_hash = AuthenticationKey::ed25519(&pubkey).to_vec();
-            let args = vec![TransactionArgument::U8Vector(new_key_hash)];
+            //let args = vec![TransactionArgument::U8Vector(new_key_hash)];
             let status = executor.execute_and_apply(
                 sender
                     .transaction()
-                    .script(Script::new(
-                        LegacyStdlibScript::RotateAuthenticationKey
-                            .compiled_bytes()
-                            .into_vec(),
-                        vec![],
-                        args,
-                    ))
+                    .script(
+                        // Script::new(
+                        // LegacyStdlibScript::RotateAuthenticationKey
+                        //     .compiled_bytes()
+                        //     .into_vec(),
+                        // vec![],
+                        // args)
+                        fake_stdlib::encode_rotate_authentication_key_script(new_key_hash)
+                    )
                     .sequence_number(0)
                     .gas_unit_price(1)
-                    .gas_currency_code(XUS_NAME)
+                    .gas_currency_code(STC_TOKEN_CODE_STR)
                     .sign(),
             );
             assert_eq!(status.status().status(), Ok(KeptVMStatus::Executed));
@@ -80,8 +84,8 @@ fn burn_txn_fees() {
 
         let xus_ty = TypeTag::Struct(Box::new(StructTag {
             address: account_config::CORE_CODE_ADDRESS,
-            module: Identifier::new("XUS").unwrap(),
-            name: Identifier::new("XUS").unwrap(),
+            module: Identifier::new("STC").unwrap(),
+            name: Identifier::new("STC").unwrap(),
             type_params: vec![],
         }));
 
@@ -96,16 +100,16 @@ fn burn_txn_fees() {
         let burn_events: Vec<_> = output
             .events()
             .iter()
-            .filter_map(|event| BurnEvent::try_from(event).ok())
+            .filter_map(|event| BurnEvent::try_from_bytes(event.event_data()).ok())
             .collect();
 
         assert_eq!(burn_events.len(), 1);
         assert!(burn_events
             .iter()
-            .any(|event| event.currency_code().as_str() == "XUS"));
+            .any(|event| event.token_code().to_string() == STC_TOKEN_CODE_STR));
         burn_events
             .iter()
-            .for_each(|event| assert_eq!(event.amount(), gas_used));
+            .for_each(|event| assert_eq!(event.amount(), gas_used as u128));
     }
     }
 }

@@ -451,12 +451,12 @@ fn verify_simple_payment() {
 
         // define the arguments to the peer to peer transaction
         let transfer_amount = 1_000;
-        let args: Vec<TransactionArgument> = vec![
-            TransactionArgument::Address(*receiver.address()),
-            TransactionArgument::U64(transfer_amount),
-            TransactionArgument::U8Vector(vec![]),
-            TransactionArgument::U8Vector(vec![]),
-        ];
+        // let args: Vec<TransactionArgument> = vec![
+        //     TransactionArgument::Address(*receiver.address()),
+        //     TransactionArgument::U64(transfer_amount),
+        //     TransactionArgument::U8Vector(vec![]),
+        //     TransactionArgument::U8Vector(vec![]),
+        // ];
 
         let p2p_script = encode_peer_to_peer_with_metadata_script(
             stc_type_tag(),
@@ -529,19 +529,19 @@ fn verify_simple_payment() {
         );
 
         // Create a new transaction that has a too new sequence number.
-        let txn = sender
-            .account()
-            .transaction()
-            .script(
-                p2p_script.clone()
-            //     Script::new(
-            //     p2p_script.clone(),
-            //     vec![account_config::stc_type_tag()],
-            //     args.clone(),
-            // )
-            )
-            .sequence_number(11)
-            .sign();
+        // let txn = sender
+        //     .account()
+        //     .transaction()
+        //     .script(
+        //         p2p_script.clone()
+        //     //     Script::new(
+        //     //     p2p_script.clone(),
+        //     //     vec![account_config::stc_type_tag()],
+        //     //     args.clone(),
+        //     // )
+        //     )
+        //     .sequence_number(11)
+        //     .sign();
 
         // TODO(bob): e2e-testsuite
         // assert_prologue_disparity!(
@@ -926,7 +926,7 @@ fn verify_chain_id() {
         let sender = executor.create_raw_account_data(900_000, 0);
         executor.add_account_data(&sender);
 
-        let (public_key, private_key) = sender.account().ed25519_key_pair();
+        let (public_key, _private_key) = sender.account().ed25519_key_pair();
 
         let private_key = Ed25519PrivateKey::generate_for_testing();
         let txn = transaction_test_helpers::get_test_txn_with_chain_id(
@@ -1216,7 +1216,7 @@ fn bad_module() -> (CompiledModule, Vec<u8>) {
 
 fn good_module_uses_bad(
     address: AccountAddress,
-    bad_dep: CompiledModule,
+    _bad_dep: CompiledModule,
 ) -> (CompiledModule, Vec<u8>) {
     let good_module_code = format!(
         "
@@ -1237,10 +1237,9 @@ fn good_module_uses_bad(
         address,
     );
 
+    let deps = stdlib_compiled_modules(StdLibOptions::Compiled(Latest));
     let compiler = Compiler {
-        deps: stdlib_compiled_modules(StdLibOptions::Compiled(Latest))
-            .iter()
-            .collect(),
+        deps: deps.iter().collect(),
     };
     let module = compiler
         .into_compiled_module(good_module_code.as_str())

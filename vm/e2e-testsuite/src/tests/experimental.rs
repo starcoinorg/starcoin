@@ -24,7 +24,7 @@ fn experimental_genesis_execute_txn_successful() {
     executor.set_golden_file(current_function_name!());
     let net = ChainNetwork::new_test();
     let new_account = executor.create_raw_account();
-    let new_new_account = executor.create_raw_account();
+    //let new_new_account = executor.create_raw_account();
     let dr_account = Account::new_starcoin_root();
     let txn = dr_account
         .transaction()

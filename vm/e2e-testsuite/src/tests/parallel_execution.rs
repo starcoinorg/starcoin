@@ -4,14 +4,10 @@
 use move_core_types::vm_status::{KeptVMStatus, StatusCode};
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
 use starcoin_crypto::{PrivateKey, Uniform};
-use starcoin_language_e2e_tests::{
-    common_transactions::rotate_key_txn,
-    executor::FakeExecutor,
-};
+use starcoin_language_e2e_tests::{common_transactions::rotate_key_txn, executor::FakeExecutor};
 use starcoin_vm_runtime::parallel_executor::ParallelStarcoinVM;
 use starcoin_vm_types::transaction::{
-    authenticator::AuthenticationKey,
-    Transaction, TransactionStatus,
+    authenticator::AuthenticationKey, Transaction, TransactionStatus,
 };
 
 // TODO(BobOng): No parallel execution config
