@@ -330,6 +330,7 @@ pub trait SyncFlexiDagStore {
         key: HashValue,
         new_tips: Vec<HashValue>,
         accumulator_info: AccumulatorInfo,
+        head_block_id: HashValue,
     ) -> Result<()>;
     fn get_dag_accumulator_info(&self) -> Result<Option<AccumulatorInfo>>;
     fn get_tips_by_block_id(&self, block_id: HashValue) -> Result<Vec<HashValue>>;
@@ -691,10 +692,12 @@ impl SyncFlexiDagStore for Storage {
         key: HashValue,
         new_tips: Vec<HashValue>,
         accumulator_info: AccumulatorInfo,
+        head_block_id: HashValue,
     ) -> Result<()> {
         let snapshot = SyncFlexiDagSnapshot {
             child_hashes: new_tips.clone(),
             accumulator_info: accumulator_info.clone(),
+            head_block_id,
         };
         // for sync
         if let Some(t) = self.flexi_dag_storage.get_hashes_by_hash(key)? {

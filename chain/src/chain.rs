@@ -192,6 +192,7 @@ impl BlockChain {
                 .expect("failed to calculate the dag key"),
             new_tips,
             dag_accumulator.get_info(),
+            genesis_id,
         )?;
         Self::new(time_service, executed_block.block.id(), storage, net, None)
     }

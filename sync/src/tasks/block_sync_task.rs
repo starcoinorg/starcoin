@@ -15,6 +15,7 @@ use starcoin_config::{G_CRATE_VERSION, Connect};
 use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
 use starcoin_flexidag::FlexidagService;
+use starcoin_flexidag::flexidag_service::GetDagTips;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::ServiceRef;
 use starcoin_storage::BARNARD_HARD_FORK_HASH;
@@ -267,6 +268,10 @@ where
         }
     }
 
+    pub fn check_if_became_dag(&self) -> Result<bool>{
+        Ok(async_std::task::block_on(self.flexidag_service.send(GetDagTips))??.is_some()) 
+    }
+
     #[cfg(test)]
     pub fn apply_block_for_test(
         &mut self,
@@ -283,7 +288,6 @@ where
         block_info: BlockInfo,
         action: BlockConnectAction,
         state: CollectorState,
-        dag_parents: Option<Vec<HashValue>>,
     ) -> Result<CollectorState> {
         let total_difficulty = block_info.get_total_difficulty();
 
@@ -309,7 +313,6 @@ where
         // second, construct the block connect event.
         let block_connect_event = BlockConnectedEvent {
             block,
-            dag_parents,
             feedback: sender,
             action,
         };
@@ -414,7 +417,7 @@ where
 
     fn broadcast_dag_chain_block(
         &mut self,
-        broadcast_blocks: Vec<(Block, BlockInfo, Option<Vec<HashValue>>, BlockConnectAction)>,
+        broadcast_blocks: Vec<(Block, BlockInfo, BlockConnectAction)>,
     ) -> Result<CollectorState> {
         let state = if self.last_accumulator_root == self.target_accumulator_root {
             CollectorState::Enough
@@ -431,7 +434,6 @@ where
                         block_info,
                         action,
                         CollectorState::Enough,
-                        dag_parents,
                     );
                 } else {
                     let _ = self.notify_connected_block(
@@ -439,7 +441,6 @@ where
                         block_info,
                         action,
                         CollectorState::Need,
-                        dag_parents,
                     );
                 }
             },
@@ -481,7 +482,16 @@ where
             Ok(CollectorState::Need)
         };
 
-        self.notify_connected_block(block, block_info, action, state?, None)
+        let result = self.notify_connected_block(block, block_info, action, state?);
+        match result {
+            Ok(state) => {
+
+            }
+            Err(e) => {
+                error!("notify connected block error: {:?}", e);
+                Err(e)
+            }
+        }
     }
 
     fn collect_dag_item(
@@ -664,17 +674,16 @@ where
                 );
                 let (block, block_info, _, action) = block_to_broadcast.pop().unwrap();
                 // self.check_if_sync_complete(block_info)
-                self.broadcast_single_chain_block(block, block_info, action)
+                match self.broadcast_single_chain_block(block, block_info, action) {
+                    Ok(_) => {
+                        if self.check_if_became_dag()? {
+                            Ok(CollectorState::Enough)
+                        }
+                    }
+                    Err(e) => Err(e),
+                }
             }
             None => {
-                // dag
-                // assert!(!next_tips
-                //     .as_ref()
-                //     .expect("next_tips should not be None")
-                //     .is_empty());
-                // // self.chain.append_dag_accumulator_leaf(
-                //     next_tips.expect("next_tips should not be None"),
-                // )?;
                 self.broadcast_dag_chain_block(block_to_broadcast)
             }
         }

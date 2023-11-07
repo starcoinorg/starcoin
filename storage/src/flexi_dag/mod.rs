@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, collections::{BinaryHeap, BTreeSet}};
 
 use crate::{
     accumulator::{AccumulatorStorage, DagBlockAccumulatorStorage},
@@ -11,12 +11,32 @@ use bcs_ext::BCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::HashValue;
+use starcoin_uint::U256;
 
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+pub struct KTotalDifficulty {
+    pub head_block_id: HashValue, 
+    pub total_difficulty: U256,
+}
+
+impl Ord for KTotalDifficulty {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // 注意这里我们改变了比较的顺序，来实现从大到小的排序
+        self.total_difficulty.cmp(&other.total_difficulty)
+    }
+}
+
+impl PartialOrd for KTotalDifficulty {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct SyncFlexiDagSnapshot {
     pub child_hashes: Vec<HashValue>, // child nodes(tips), to get the relationship, use dag's relationship store
     pub accumulator_info: AccumulatorInfo,
     pub head_block_id: HashValue, // to initialize the BlockInfo
+    pub k_total_difficulties: BTreeSet<KTotalDifficulty>, // the k-th smallest total difficulty 
 }
 
 impl ValueCodec for SyncFlexiDagSnapshot {

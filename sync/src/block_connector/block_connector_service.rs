@@ -3,6 +3,7 @@
 
 #[cfg(test)]
 use super::CheckBlockConnectorHashValue;
+use crate::block_connector::write_block_chain::ConnectOk;
 use crate::block_connector::{ExecuteRequest, ResetRequest, WriteBlockChainService};
 use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskCheckEvent};
@@ -268,8 +269,8 @@ where
         debug!("try connect mined block: {}", id);
 
         match self.chain_service.try_connect(block) {
-            std::result::Result::Ok(_) => {
-                match self.chain_service.dump_tips(block_header) {
+            std::result::Result::Ok(ConnectOk::DagConnected(k_total_difficulty)) => {
+                match self.chain_service.dump_tips(block_header, k_total_difficulty) {
                     std::result::Result::Ok(_) => (),
                     Err(e) => error!("failed to dump tips to dag accumulator: {}", e),
                 }

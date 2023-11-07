@@ -23,6 +23,7 @@ pub struct ChainInfo {
     genesis_hash: HashValue,
     status: ChainStatus,
     flexi_dag_accumulator_info: Option<AccumulatorInfo>,
+
 }
 
 impl ChainInfo {

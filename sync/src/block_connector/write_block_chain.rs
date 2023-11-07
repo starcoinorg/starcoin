@@ -21,6 +21,7 @@ use starcoin_flexidag::flexidag_service::{AddToDag, DumpTipsToAccumulator, Updat
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{ServiceContext, ServiceRef};
+use starcoin_storage::flexi_dag::KTotalDifficulty;
 use starcoin_storage::storage::CodecKVStore;
 use starcoin_storage::Store;
 use starcoin_time_service::{DagBlockTimeWindowService, TimeWindowResult};
@@ -67,7 +68,7 @@ pub enum ConnectOk {
     Connect(ExecutedBlock),
 
     //Block has executed, just connect.
-    DagConnected,
+    DagConnected(KTotalDifficulty),
     // the retry block
     MainDuplicate,
     // the dag block waiting for the time window end
@@ -438,7 +439,7 @@ where
             .storage
             .get_tips_by_block_id(executed_block.block.header().id())
             .ok();
-        self.broadcast_new_head(executed_block, dag_block_parents, next_tips);
+        self.broadcast_new_head(executed_block);
 
         Ok(())
     }
@@ -649,8 +650,6 @@ where
     fn broadcast_new_head(
         &self,
         block: ExecutedBlock,
-        dag_parents: Option<Vec<HashValue>>,
-        next_tips: Option<Vec<HashValue>>,
     ) {
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
@@ -727,7 +726,7 @@ where
             }
             (None, Some(mut branch)) => {
                 // the block is not in the block, but the parent is
-                let result = branch.apply(block, None);
+                let result = branch.apply(block);
                 let executed_block = result?;
                 self.select_head(branch)?;
                 Ok(ConnectOk::ExeConnectBranch(executed_block))
@@ -762,7 +761,7 @@ where
         &mut self,
         block: Block,
     ) -> Result<ConnectOk> {
-        let executed_block = self.main.apply(block, None)?;
+        let executed_block = self.main.apply(block)?;
         let enacted_blocks = vec![executed_block.block().clone()];
         self.do_new_head(executed_block.clone(), 1, enacted_blocks, 0, vec![])?;
         return Ok(ConnectOk::ExeConnectMain(executed_block));
@@ -802,7 +801,7 @@ where
         let mut transaction_parent = chain.status().head().id().clone();
         for blue_hash in add_dag_result.mergeset_blues.mergeset_blues.iter() {
             if let Some(blue_block) = self.storage.get_block(blue_hash.to_owned())? {
-                match chain.apply(blue_block, Some(transaction_parent)) {
+                match chain.apply(blue_block) {
                     Ok(executed_block) => transaction_parent = executed_block,
                     Err(_) => warn!("failed to connect dag block: {:?}", e),
                 }
@@ -813,22 +812,31 @@ where
         }
         // select new head and update startup info(main but dag main)
         self.select_head_for_dag(chain)?;
-        Ok(ConnectOk::DagConnected)
+        Ok(ConnectOk::DagConnected(KTotalDifficulty { 
+            head_block_id: self.main.status().head().id(), 
+            total_difficulty: self.main.status().info().get_total_difficulty() 
+        }))
     }
 
     fn select_head_for_dag(&self, new_chain: BlockChain) -> Result<()> {
-        
+        if new_chain.status().info.get_total_difficulty() > self.main.status().info.get_total_difficulty() {
+            let new_head_block = new_chain.head_block();
+            self.update_startup_info(new_head_block.header())?;
+            self.main = new_chain;
+            self.broadcast_new_head(new_head_block);
+        }
         
         Ok(())
     }
 
-    pub fn dump_tips(&self, block_header: BlockHeader) -> Result<()> {
+    pub fn dump_tips(&self, block_header: BlockHeader, k_total_difficulty: KTotalDifficulty) -> Result<()> {
         if block_header.number() < self.storage.dag_fork_height(self.config.net().id().clone()) {
             Ok(())
         } else {
             self.flexidag_service.send( DumpTipsToAccumulator {
                 block_header,
                 current_head_block_id: self.main.status().head().id().clone(),
+                k_total_difficulty,
             })
         }
     }
@@ -860,7 +868,7 @@ where
         // let mut next_tips = Some(vec![]);
         let executed_block = self.connect_to_main(block)?.clone();
         if let Some(block) = executed_block.block() {
-            self.broadcast_new_head(block.clone(), None, None);
+            self.broadcast_new_head(block.clone());
         }
         return Ok(executed_block);
     }

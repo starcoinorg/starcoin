@@ -440,7 +440,6 @@ pub enum BlockConnectAction {
 #[derive(Clone, Debug)]
 pub struct BlockConnectedEvent {
     pub block: Block,
-    pub dag_parents: Option<Vec<HashValue>>,
     pub feedback: Option<futures::channel::mpsc::UnboundedSender<BlockConnectedFinishEvent>>,
     pub action: BlockConnectAction,
 }

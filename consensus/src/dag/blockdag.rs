@@ -19,7 +19,7 @@ use starcoin_accumulator::{MerkleAccumulator, Accumulator};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue as Hash;
-use starcoin_storage::flexi_dag::SyncFlexiDagSnapshot;
+use starcoin_storage::flexi_dag::{SyncFlexiDagSnapshot, KTotalDifficulty};
 use starcoin_storage::storage::CodecKVStore;
 use starcoin_storage::{Store, SyncFlexiDagStore, Storage, BlockStore};
 use starcoin_types::block::BlockNumber;
@@ -28,7 +28,7 @@ use starcoin_types::{
     blockhash::{BlockHashes, KType, ORIGIN},
     header::{ConsensusHeader, DagHeader},
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, BinaryHeap};
 use std::collections::HashSet;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -113,10 +113,16 @@ impl BlockDAG {
             } else if block_header.number() == fork_height {
                 let dag_accumulator = MerkleAccumulator::new_with_info(AccumulatorInfo::default(), storage.get_accumulator_store(AccumulatorStoreType::SyncDag));
                 dag_accumulator.append(&[block_header.id()])?;
+                let k_total_difficulties = BinaryHeap::new();
+                k_total_difficulties.push(KTotalDifficulty {
+                    head_block_id: block_header.id(),
+                    total_difficulty: storage.get_block_info(block_header.id())?.expect("block info must exist").get_total_difficulty(),
+                });
                 storage.get_accumulator_snapshot_storage().put(Self::calculate_dag_accumulator_key(vec![block_header.id()])?, SyncFlexiDagSnapshot {
                     child_hashes: vec![block_header.id()],
                     accumulator_info: dag_accumulator.get_info(),
                     head_block_id: block_header.id(),
+                    k_total_difficulties,
                 })?;
                 Ok((Some(Self::new_by_config(DagHeader::new_genesis(block_header), config.data_dir().join("flexidag").as_path())?), Some(dag_accumulator)))
             } else {
