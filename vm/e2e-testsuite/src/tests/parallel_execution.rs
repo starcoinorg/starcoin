@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_core_types::vm_status::{KeptVMStatus, StatusCode};
-use starcoin_crypto::ed25519::Ed25519PrivateKey;
-use starcoin_crypto::{PrivateKey, Uniform};
+use starcoin_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
 use starcoin_language_e2e_tests::{common_transactions::rotate_key_txn, executor::FakeExecutor};
-use starcoin_vm_runtime::parallel_executor::ParallelStarcoinVM;
+use starcoin_vm_runtime::block_executor::BlockStarcoinVM;
 use starcoin_vm_types::transaction::{
     authenticator::AuthenticationKey, Transaction, TransactionStatus,
 };
@@ -66,7 +65,7 @@ fn rotate_ed25519_key() {
     let txn = rotate_key_txn(sender.account(), new_key_hash.clone(), 10);
 
     // execute transaction
-    let (mut results, parallel_status) = ParallelStarcoinVM::execute_block(
+    let (mut results, parallel_status) = BlockStarcoinVM::execute_block(
         vec![Transaction::UserTransaction(txn)],
         executor.get_state_view(),
         num_cpus::get(),

@@ -10,7 +10,7 @@ use starcoin_vm_types::transaction::TransactionStatus;
 
 #[test]
 fn create_account() {
-    let mut executor = FakeExecutor::from_genesis_file();
+    let mut executor = FakeExecutor::from_test_genesis();
     executor.set_golden_file(current_function_name!());
 
     // create and publish a sender with 1_000_000 coins
