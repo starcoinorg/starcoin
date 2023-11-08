@@ -1,25 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use diem_transaction_builder::stdlib::*;
-use diem_types::{
-    account_config::diem_root_address,
-    on_chain_config::{new_epoch_event_key, DIEM_MAX_KNOWN_VERSION},
-    transaction::{Transaction, TransactionStatus},
-    vm_status::KeptVMStatus,
-};
-use diem_writeset_generator::{
-    encode_custom_script, encode_halt_network_payload, encode_remove_validators_payload,
-};
-use move_core_types::{
-    value::{serialize_values, MoveValue},
-    vm_status::StatusCode,
-};
-use serde_json::json;
-use starcoin_language_e2e_tests::{
-    common_transactions::peer_to_peer_txn, test_with_different_versions,
-    versioning::CURRENT_RELEASE_VERSIONS,
-};
+use starcoin_language_e2e_tests::test_with_different_versions;
 
 #[test]
 fn validator_batch_remove() {

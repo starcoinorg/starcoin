@@ -10,6 +10,16 @@
 
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, traits::SigningKey, PrivateKey, Uniform};
 // use diem_keygen::KeyGen;
+use move_core_types::language_storage::TypeTag;
+use starcoin_language_e2e_tests::{
+    account::{self, Account},
+    common_transactions::rotate_key_txn,
+    //currencies, current_function_name,
+    executor::FakeExecutor,
+    gas_costs,
+    test_with_different_versions,
+    versioning::CURRENT_RELEASE_VERSIONS,
+};
 use starcoin_transaction_builder::stdlib::*;
 use starcoin_types::{
     account_address::AccountAddress,
@@ -19,15 +29,6 @@ use starcoin_types::{
         WriteSetPayload,
     },
     vm_status::{KeptVMStatus, StatusCode},
-};
-use move_core_types::language_storage::TypeTag;
-use starcoin_language_e2e_tests::{
-    account::{self, Account},
-    common_transactions::rotate_key_txn,
-    //currencies, current_function_name,
-    executor::FakeExecutor,
-    gas_costs, test_with_different_versions,
-    versioning::CURRENT_RELEASE_VERSIONS,
 };
 
 const XUS_THRESHOLD: u64 = 10_000_000_000 / 5;
@@ -1173,7 +1174,7 @@ fn add_child_currencies() {
     let vasp_b_child1 = executor.create_raw_account();
     let vasp_b_child2 = executor.create_raw_account();
     let blessed = Account::new_blessed_tc();
-    let dr_account = Account::new_diem_root();
+    let dr_account = Account::new_starcoin_root();
     let tc_sequence_number = 0;
 
     currencies::add_currency_to_system(&mut executor, "COIN", &dr_account, 0);

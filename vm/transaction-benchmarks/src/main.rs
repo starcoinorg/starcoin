@@ -63,8 +63,8 @@ fn main() {
 
     // let acts = [1000];
     //let txns = [10000, 50000, 100000];
-    // let num_warmups = 2;
-    // let num_runs = 10;
+    let num_warmups = 2;
+    let num_runs = 10;
 
     println!(
         "num cpus = {}, run_seq: {}, run_seq: {}",

@@ -1,22 +1,9 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tests::peer_to_peer::{check_and_apply_transfer_output, create_cyclic_transfers};
-use starcoin_crypto::{ed25519::Ed25519PrivateKey, HashValue, PrivateKey, Uniform};
-use diem_types::{
-    block_metadata::BlockMetadata,
-    on_chain_config::{OnChainConfig, ParallelExecutionConfig, ValidatorSet},
-    transaction::{
-        authenticator::AuthenticationKey, Script, Transaction, TransactionArgument,
-        TransactionStatus, WriteSetPayload,
-    },
-    vm_status::{KeptVMStatus, StatusCode},
-};
-use starcoin_vm::parallel_executor::ParallelDiemVM;
-use move_ir_compiler::Compiler;
-use starcoin_language_e2e_tests::{
-    account, common_transactions::rotate_key_txn, executor::FakeExecutor,
-};
+use crate::tests::peer_to_peer::create_cyclic_transfers;
+use starcoin_language_e2e_tests::executor::FakeExecutor;
+use starcoin_vm_types::transaction::Transaction;
 
 #[test]
 fn peer_to_peer_with_prologue_parallel() {
@@ -195,7 +182,7 @@ fn parallel_execution_with_bad_config() {
     // insert a block prologue transaction
     let (txns_info, transfer_txns) = create_cyclic_transfers(&executor, &accounts, transfer_amount);
 
-    let diem_root = account::Account::new_diem_root();
+    let diem_root = account::Account::new_starcoin_root();
     let seq_num = executor
         .read_account_resource_at_address(diem_root.address())
         .unwrap()

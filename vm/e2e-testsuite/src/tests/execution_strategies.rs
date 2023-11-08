@@ -1,32 +1,22 @@
-// Copyright (c) The Diem Core Contributors
+// Copyright (c) The Starcoin Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use diem_types::{account_config, transaction::SignedTransaction, vm_status::VMStatus};
-use starcoin_language_e2e_tests::{
-    account::Account,
-    common_transactions::create_account_txn,
-    execution_strategies::{
-        basic_strategy::BasicExecutor,
-        guided_strategy::{
-            AnnotatedTransaction, GuidedExecutor, PartitionedGuidedStrategy,
-            UnPartitionedGuidedStrategy,
-        },
-        multi_strategy::MultiExecutor,
-        random_strategy::RandomExecutor,
-        types::Executor,
-    },
+use move_core_types::vm_status::VMStatus;
+use starcoin_language_e2e_tests::account::Account;
+use starcoin_language_e2e_tests::common_transactions::create_account_txn;
+use starcoin_language_e2e_tests::execution_strategies::basic_strategy::BasicExecutor;
+use starcoin_language_e2e_tests::execution_strategies::guided_strategy::{
+    AnnotatedTransaction, GuidedExecutor, PartitionedGuidedStrategy, UnPartitionedGuidedStrategy,
 };
+use starcoin_language_e2e_tests::execution_strategies::multi_strategy::MultiExecutor;
+use starcoin_language_e2e_tests::execution_strategies::random_strategy::RandomExecutor;
+use starcoin_language_e2e_tests::execution_strategies::types::Executor;
+use starcoin_vm_types::transaction::SignedUserTransaction;
 
-fn txn(seq_num: u64) -> SignedTransaction {
+fn txn(seq_num: u64) -> SignedUserTransaction {
     let account = Account::new();
-    let diem_root = Account::new_diem_root();
-    create_account_txn(
-        &diem_root,
-        &account,
-        seq_num + 1,
-        0,
-        account_config::xus_tag(),
-    )
+    let diem_root = Account::new_starcoin_root();
+    create_account_txn(&diem_root, &account, seq_num + 1)
 }
 
 #[test]
@@ -111,7 +101,7 @@ fn test_execution_strategies() {
         println!("===========================================================================");
         let block = (0..10).map(txn).collect();
 
-        let mut exec = MultiExecutor::<SignedTransaction, VMStatus>::new();
+        let mut exec = MultiExecutor::<SignedUserTransaction, VMStatus>::new();
         exec.add_executor(RandomExecutor::from_os_rng());
         exec.add_executor(RandomExecutor::from_os_rng());
         exec.add_executor(RandomExecutor::from_os_rng());

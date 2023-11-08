@@ -9,11 +9,11 @@
 //! separate binary. The linker ends up repeating a lot of work for each binary to not much
 //! benefit.
 
-mod account_limits;
+// mod account_limits;
 mod account_universe;
 mod admin_script;
 mod create_account;
-mod crsn;
+// mod crsn;
 mod data_store;
 mod emergency_admin_script;
 mod execution_strategies;

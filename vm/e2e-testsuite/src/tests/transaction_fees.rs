@@ -1,7 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
 use diem_framework_releases::legacy::transaction_scripts::LegacyStdlibScript;
 use diem_transaction_builder::stdlib::*;
 use diem_types::{
@@ -13,6 +12,7 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::{StructTag, TypeTag},
 };
+use starcoin_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
 use starcoin_language_e2e_tests::{
     test_with_different_versions, versioning::CURRENT_RELEASE_VERSIONS,
 };

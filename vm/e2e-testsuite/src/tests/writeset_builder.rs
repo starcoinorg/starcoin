@@ -20,7 +20,7 @@ fn build_upgrade_writeset() {
     executor.set_golden_file(current_function_name!());
 
     // create a transaction trying to publish a new module.
-    let genesis_account = Account::new_diem_root();
+    let genesis_account = Account::new_starcoin_root();
 
     let program = String::from(
         "
@@ -38,7 +38,7 @@ fn build_upgrade_writeset() {
     };
     let change_set = {
         let (version_writes, events) = build_changeset(executor.get_state_view(), |session| {
-            session.set_diem_version(11);
+            session.set_starcoin_version(11);
         })
         .into_inner();
         let mut writeset = version_writes.into_mut();
