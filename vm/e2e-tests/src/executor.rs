@@ -25,7 +25,7 @@ use starcoin_vm_runtime::{
 use starcoin_vm_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
-    account_config::{AccountResource, BalanceResource, CORE_CODE_ADDRESS, block::NewBlockEvent},
+    account_config::{block::NewBlockEvent, AccountResource, BalanceResource, CORE_CODE_ADDRESS},
     block_metadata::BlockMetadata,
     errors::Location,
     genesis_config::ChainId,
@@ -34,23 +34,23 @@ use starcoin_vm_types::{
     move_resource::MoveResource,
     on_chain_config::{OnChainConfig, VMConfig, Version},
     state_store::state_key::StateKey,
+    state_store::table::{TableHandle, TableInfo},
     state_view::StateView,
     transaction::authenticator::AuthenticationKey,
+    transaction::TransactionInfo,
     transaction::{SignedUserTransaction, Transaction, TransactionOutput, TransactionStatus},
     vm_status::VMStatus,
     write_set::WriteSet,
-    state_store::table::{TableHandle, TableInfo},
-    transaction::TransactionInfo,
 };
 
 use crate::data_store::FakeDataStore;
 use starcoin_statedb::ChainStateWriter;
+use starcoin_vm_runtime::block_executor::BlockStarcoinVM;
 use std::collections::BTreeMap;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
-use starcoin_vm_runtime::block_executor::BlockStarcoinVM;
 use test_helper::Genesis;
 
 static RNG_SEED: [u8; 32] = [9u8; 32];

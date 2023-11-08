@@ -278,7 +278,6 @@ pub fn encode_create_child_vasp_account_script(
     Script::sample()
 }
 
-
 pub fn encode_peer_to_peer_with_metadata_script(
     _currency: TypeTag,
     _payee: AccountAddress,

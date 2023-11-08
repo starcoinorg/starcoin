@@ -43,7 +43,7 @@ label b0:
 
         let std_compiled_modules = stdlib_compiled_modules(StdLibOptions::Compiled(Latest));
         let compiler = Compiler {
-            deps: std_compiled_modules.iter().collect()
+            deps: std_compiled_modules.iter().collect(),
         };
         compiler.into_script_blob(code).expect("Failed to compile")
     };
@@ -153,7 +153,6 @@ label b0:
   return;
 }
 "#;
-
 
         let deps = stdlib_compiled_modules(StdLibOptions::Compiled(Latest));
         let compiler = Compiler {
