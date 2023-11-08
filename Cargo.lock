@@ -9865,6 +9865,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-language-e2e-testsuite"
+version = "1.13.7"
+dependencies = [
+ "bcs",
+ "hex",
+ "move-binary-format",
+ "move-bytecode-verifier",
+ "move-core-types",
+ "move-ir-compiler",
+ "move-vm-runtime",
+ "move-vm-types",
+ "proptest",
+ "read-write-set",
+ "serde_json",
+ "starcoin-crypto",
+ "starcoin-language-e2e-tests",
+ "starcoin-logger",
+ "starcoin-transaction-builder",
+ "starcoin-types",
+ "starcoin-vm-runtime",
+ "starcoin-vm-types",
+]
+
+[[package]]
 name = "starcoin-logger"
 version = "1.13.7"
 dependencies = [

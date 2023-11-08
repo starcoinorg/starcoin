@@ -50,16 +50,21 @@ fn main() {
         "Transaction numbers level array is empty!"
     );
 
-    // if !concurrency_levels.is_empty() {
-    //     run_par = true;
-    // }
+    if !concurrency_levels.is_empty() {
+        run_par = true;
+    }
+
+    // let acts = [2];
+    // let txns = [1];
+    // let num_warmups = 2;
+    // let num_runs = 1;
 
     let bencher = TransactionBencher::new(any_with::<P2PTransferGen>((1_000, 1_000_000)));
 
     // let acts = [1000];
     //let txns = [10000, 50000, 100000];
-    let num_warmups = 2;
-    let num_runs = 10;
+    // let num_warmups = 2;
+    // let num_runs = 10;
 
     println!(
         "num cpus = {}, run_seq: {}, run_seq: {}",

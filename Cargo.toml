@@ -90,6 +90,7 @@ members = [
     "vm/block-executor",
     "vm/transaction-benchmarks",
     "vm/e2e-tests",
+    "vm/e2e-testsuite",
     "vm/proptest-helpers",
     "abi/types",
     "abi/decoder",
@@ -358,6 +359,7 @@ move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "0b3686b4
 move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "0b3686b4edcd37fd0c61c1aa26859c21985f3848" }
 move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "0b3686b4edcd37fd0c61c1aa26859c21985f3848" }
 move-vm-test-utils = { git = "https://github.com/starcoinorg/move", rev = "0b3686b4edcd37fd0c61c1aa26859c21985f3848", features = ["table-extension"] }
+read-write-set = { git = "https://github.com/starcoinorg/move", rev = "0b3686b4edcd37fd0c61c1aa26859c21985f3848" }
 
 names = { version = "0.14.0", default-features = false }
 network-api = { path = "network/api", package = "network-api" }
@@ -495,6 +497,7 @@ starcoin-infallible = { path = "commons/infallible" }
 starcoin-block-executor = { path = "vm/block-executor" }
 starcoin-transaction-benchmarks = { path = "vm/transaction-benchmarks" }
 starcoin-language-e2e-tests = { path = "vm/e2e-tests" }
+starcoin-language-e2e-testsuite = { path = "vm/e2e-testsuite" }
 starcoin-proptest-helpers = { path = "vm/proptest-helpers" }
 
 syn = { version = "1.0.107", features = [

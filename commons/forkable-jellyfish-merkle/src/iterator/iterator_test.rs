@@ -9,7 +9,7 @@
 //     JellyfishMerkleTree,
 // };
 // use anyhow::Result;
-// use diem_crypto::HashValue;
+// use starcoin_crypto::HashValue;
 // use diem_types::{account_state_blob::AccountStateBlob, transaction::Version};
 // use rand::{rngs::StdRng, SeedableRng};
 // use std::{collections::BTreeMap, sync::Arc};
