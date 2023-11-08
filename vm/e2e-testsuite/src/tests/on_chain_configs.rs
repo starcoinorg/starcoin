@@ -1,45 +1,56 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::vm_status::KeptVMStatus;
+use crate::tests::fake_stdlib::{
+    build_fake_module_upgrade_plan, encode_update_dual_attestation_limit_script,
+};
+use move_core_types::identifier::Identifier;
+use move_core_types::language_storage::{ModuleId, CORE_CODE_ADDRESS};
+use move_core_types::transaction_argument::{convert_txn_args, TransactionArgument};
+use move_core_types::vm_status::{KeptVMStatus, StatusCode};
 use starcoin_language_e2e_tests::{
-    account::Account, assert_prologue_parity, current_function_name, executor::FakeExecutor,
-    test_with_different_versions, versioning::CURRENT_RELEASE_VERSIONS,
+    account::Account, assert_prologue_parity, common_transactions::peer_to_peer_txn,
+    current_function_name, executor::FakeExecutor, test_with_different_versions,
+    transaction_status_eq, versioning::CURRENT_RELEASE_VERSIONS,
 };
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
-use starcoin_vm_types::{
-    transaction::{Script, TransactionStatus},
-};
+use starcoin_vm_types::transaction::{Script, ScriptFunction, TransactionStatus};
 
 #[test]
 fn initial_starcoin_version() {
     test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
-    let vm = StarcoinVM::new(None);
+        let mut executor = test_env.executor;
+        let vm = StarcoinVM::new(None);
 
         assert_eq!(
-            vm.get_version(),
-            DiemVersion { major: test_env.version_number }
+            vm.get_version().unwrap().major,
+            test_env.version_number,
+            //DiemVersion { major: test_env.version_number }
         );
 
         let account = test_env.dr_account;
         let txn = account
             .transaction()
-            .script(Script::new(
-                LegacyStdlibScript::UpdateDiemVersion
-                    .compiled_bytes()
-                    .into_vec(),
-                vec![],
-                vec![TransactionArgument::U64(0), TransactionArgument::U64(test_env.version_number + 1)],
-            ))
+            .script(
+                build_fake_module_upgrade_plan(),
+                // Script::new(
+                // LegacyStdlibScript::UpdateDiemVersion
+                //     .compiled_bytes()
+                //     .into_vec(),
+                // vec![],
+                // vec![TransactionArgument::U64(0), TransactionArgument::U64(test_env.version_number + 1)]
+                // ),
+            )
             .sequence_number(test_env.dr_sequence_number)
             .sign();
         executor.new_block();
         executor.execute_and_apply(txn);
 
-        let new_vm = StarcoinVM::new(executor.get_state_view());
+        let new_vm = StarcoinVM::new(None);
         assert_eq!(
-            new_vm.internals().diem_version().unwrap(),
-            DiemVersion { major: test_env.version_number + 1 }
+            new_vm.get_version().unwrap().major,
+            //DiemVersion { major: test_env.version_number + 1 }
+            test_env.version_number + 1
         );
     }
     }
@@ -49,23 +60,27 @@ fn initial_starcoin_version() {
 fn drop_txn_after_reconfiguration() {
     test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
         let mut executor = test_env.executor;
-        let vm = StarcoinVM::new(executor.get_state_view());
+        let vm = StarcoinVM::new(None);
 
         assert_eq!(
-            vm.internals().diem_version().unwrap(),
-            DiemVersion { major: test_env.version_number }
+            vm.get_version().unwrap().major,
+            //DiemVersion { major: test_env.version_number }
+            //CURRENT_RELEASE_VERSIONS
+            test_env.version_number
         );
 
         let account = test_env.dr_account;
         let txn = account
             .transaction()
-            .script(Script::new(
-                LegacyStdlibScript::UpdateDiemVersion
-                    .compiled_bytes()
-                    .into_vec(),
-                vec![],
-                vec![TransactionArgument::U64(0), TransactionArgument::U64(test_env.version_number + 1)],
-            ))
+            .script(build_fake_module_upgrade_plan()
+            // Script::new(
+            //     LegacyStdlibScript::UpdateDiemVersion
+            //         .compiled_bytes()
+            //         .into_vec(),
+            //     vec![],
+            //     vec![TransactionArgument::U64(0), TransactionArgument::U64(test_env.version_number + 1)],
+            // )
+            )
             .sequence_number(test_env.dr_sequence_number)
             .sign();
         executor.new_block();
@@ -120,7 +135,7 @@ fn updated_limit_allows_txn() {
             .read_balance_resource(sender.account())
             .expect("sender balance must exist");
         let receiver_balance = executor
-            .read_balance_resource(receiver.account(), account::xus_currency_code())
+            .read_balance_resource(receiver.account())
             .expect("receiver balance must exist");
 
         assert_eq!(3_999_990, sender_balance.token() as u64);
@@ -151,7 +166,10 @@ fn update_script_allow_list() {
         .sign();
 
     assert_prologue_parity!(
-        executor.verify_transaction(txn.clone()).status(),
+        executor
+            .verify_transaction(txn.clone())
+            .unwrap()
+            .status_code(),
         executor.execute_transaction(txn).status(),
         StatusCode::UNKNOWN_SCRIPT
     );

@@ -173,7 +173,7 @@ fn bad_writesets() {
         //     .sign();
 
         // TODO(BobOng): e2e-testsuit, disabled the WriteSetPayload
-        let writeset_txn = create_account_data_transaction(Some(genesis_account), 1000, 10);
+        let writeset_txn = create_account_data_transaction(Some(genesis_account.clone()), 1000, 10);
         assert_prologue_parity!(
             executor.verify_transaction(writeset_txn.clone()).unwrap().status_code(),
             executor.execute_transaction(writeset_txn).status(),

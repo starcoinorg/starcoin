@@ -9877,6 +9877,7 @@ dependencies = [
  "move-ir-compiler",
  "move-vm-runtime",
  "move-vm-types",
+ "num_cpus",
  "proptest",
  "read-write-set",
  "serde 1.0.152",

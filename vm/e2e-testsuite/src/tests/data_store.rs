@@ -244,10 +244,9 @@ fn add_module_txn(sender: &AccountData, seq_num: u64) -> (CompiledModule, Signed
         sender.address(),
     );
 
+    let deps = stdlib_compiled_modules(StdLibOptions::Compiled(Latest));
     let compiler = Compiler {
-        deps: stdlib_compiled_modules(StdLibOptions::Compiled(Latest))
-            .iter()
-            .collect(),
+        deps: deps.iter().collect()
     };
     let module = compiler
         .into_compiled_module(module_code.as_str())

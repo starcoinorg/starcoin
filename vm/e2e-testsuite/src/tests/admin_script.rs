@@ -41,10 +41,9 @@ label b0:
 }
 "#;
 
+        let std_compiled_modules = stdlib_compiled_modules(StdLibOptions::Compiled(Latest));
         let compiler = Compiler {
-            deps: stdlib_compiled_modules(StdLibOptions::Compiled(Latest))
-                .iter()
-                .collect(),
+            deps: std_compiled_modules.iter().collect()
         };
         compiler.into_script_blob(code).expect("Failed to compile")
     };
@@ -100,10 +99,9 @@ label b0:
 }
 "#;
 
+        let deps = stdlib_compiled_modules(StdLibOptions::Compiled(Latest));
         let compiler = Compiler {
-            deps: stdlib_compiled_modules(StdLibOptions::Compiled(Latest))
-                .iter()
-                .collect(),
+            deps: deps.iter().collect(),
         };
         compiler.into_script_blob(code).expect("Failed to compile")
     };
@@ -156,10 +154,10 @@ label b0:
 }
 "#;
 
+
+        let deps = stdlib_compiled_modules(StdLibOptions::Compiled(Latest));
         let compiler = Compiler {
-            deps: stdlib_compiled_modules(StdLibOptions::Compiled(Latest))
-                .iter()
-                .collect(),
+            deps: deps.iter().collect(),
         };
         compiler.into_script_blob(code).expect("Failed to compile")
     };
