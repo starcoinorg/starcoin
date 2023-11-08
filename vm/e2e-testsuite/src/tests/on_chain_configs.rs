@@ -1,37 +1,23 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use diem_framework_releases::legacy::transaction_scripts::LegacyStdlibScript;
-use diem_transaction_builder::stdlib::encode_update_dual_attestation_limit_script;
-use diem_types::{
-    account_config::CORE_CODE_ADDRESS,
-    on_chain_config::DiemVersion,
-    transaction::{Script, ScriptFunction, TransactionArgument, TransactionStatus},
-    vm_status::{KeptVMStatus, StatusCode},
-};
-use diem_vm::DiemVM;
-use move_core_types::{
-    identifier::Identifier, language_storage::ModuleId, transaction_argument::convert_txn_args,
-};
+use move_core_types::vm_status::KeptVMStatus;
 use starcoin_language_e2e_tests::{
-    account::{self, Account},
-    assert_prologue_parity,
-    common_transactions::peer_to_peer_txn,
-    current_function_name,
-    executor::FakeExecutor,
-    test_with_different_versions, transaction_status_eq,
-    versioning::CURRENT_RELEASE_VERSIONS,
+    account::Account, assert_prologue_parity, current_function_name, executor::FakeExecutor,
+    test_with_different_versions, versioning::CURRENT_RELEASE_VERSIONS,
+};
+use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
+use starcoin_vm_types::{
+    transaction::{Script, TransactionStatus},
 };
 
 #[test]
-fn initial_diem_version() {
+fn initial_starcoin_version() {
     test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
-        let mut executor = test_env.executor;
-
-        let vm = DiemVM::new(executor.get_state_view());
+    let vm = StarcoinVM::new(None);
 
         assert_eq!(
-            vm.internals().diem_version().unwrap(),
+            vm.get_version(),
             DiemVersion { major: test_env.version_number }
         );
 
@@ -50,7 +36,7 @@ fn initial_diem_version() {
         executor.new_block();
         executor.execute_and_apply(txn);
 
-        let new_vm = DiemVM::new(executor.get_state_view());
+        let new_vm = StarcoinVM::new(executor.get_state_view());
         assert_eq!(
             new_vm.internals().diem_version().unwrap(),
             DiemVersion { major: test_env.version_number + 1 }
@@ -63,7 +49,7 @@ fn initial_diem_version() {
 fn drop_txn_after_reconfiguration() {
     test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
         let mut executor = test_env.executor;
-        let vm = DiemVM::new(executor.get_state_view());
+        let vm = StarcoinVM::new(executor.get_state_view());
 
         assert_eq!(
             vm.internals().diem_version().unwrap(),
@@ -131,14 +117,14 @@ fn updated_limit_allows_txn() {
             &TransactionStatus::Keep(KeptVMStatus::Executed)
         ));
         let sender_balance = executor
-            .read_balance_resource(sender.account(), account::xus_currency_code())
+            .read_balance_resource(sender.account())
             .expect("sender balance must exist");
         let receiver_balance = executor
             .read_balance_resource(receiver.account(), account::xus_currency_code())
             .expect("receiver balance must exist");
 
-        assert_eq!(3_999_990, sender_balance.coin());
-        assert_eq!(1_000_010, receiver_balance.coin());
+        assert_eq!(3_999_990, sender_balance.token() as u64);
+        assert_eq!(1_000_010, receiver_balance.token() as u64);
     }
     }
 }

@@ -9869,6 +9869,7 @@ name = "starcoin-language-e2e-testsuite"
 version = "1.13.7"
 dependencies = [
  "bcs",
+ "bcs-ext",
  "hex",
  "move-binary-format",
  "move-bytecode-verifier",
@@ -9878,14 +9879,19 @@ dependencies = [
  "move-vm-types",
  "proptest",
  "read-write-set",
+ "serde 1.0.152",
  "serde_json",
+ "starcoin-config",
  "starcoin-crypto",
+ "starcoin-gas",
+ "starcoin-gas-algebra-ext",
  "starcoin-language-e2e-tests",
  "starcoin-logger",
  "starcoin-transaction-builder",
  "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-vm-types",
+ "test-helper",
 ]
 
 [[package]]

@@ -45,7 +45,7 @@ pub fn transaction_status_eq(t1: &TransactionStatus, t2: &TransactionStatus) -> 
 #[macro_export]
 macro_rules! assert_prologue_parity {
     ($e1:expr, $e2:expr, $e3:expr) => {
-        assert_eq!($e1.unwrap(), $e3);
+        assert_eq!($e1, $e3);
         assert!(transaction_status_eq($e2, &TransactionStatus::Discard($e3)));
     };
 }

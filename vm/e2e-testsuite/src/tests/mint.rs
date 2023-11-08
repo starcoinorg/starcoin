@@ -1,7 +1,16 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::tests::fake_stdlib::{
+    encode_create_designated_dealer_script, encode_create_parent_vasp_account_script,
+    encode_tiered_mint_script, encode_update_exchange_rate_script,
+};
+use move_core_types::vm_status::{known_locations, KeptVMStatus};
+use starcoin_language_e2e_tests::gas_costs::TXN_RESERVED;
 use starcoin_language_e2e_tests::test_with_different_versions;
+use starcoin_language_e2e_tests::versioning::CURRENT_RELEASE_VERSIONS;
+use starcoin_vm_types::account_config;
+use starcoin_vm_types::transaction::TransactionStatus;
 
 #[test]
 fn tiered_mint_designated_dealer() {
@@ -16,7 +25,7 @@ fn tiered_mint_designated_dealer() {
             blessed
                 .transaction()
                 .script(encode_create_designated_dealer_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     0,
                     *dd.address(),
                     dd.auth_key_prefix(),
@@ -32,7 +41,7 @@ fn tiered_mint_designated_dealer() {
             blessed
                 .transaction()
                 .script(encode_tiered_mint_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     1,
                     *dd.address(),
                     mint_amount_one,
@@ -45,9 +54,9 @@ fn tiered_mint_designated_dealer() {
             .read_account_resource(&dd)
             .expect("receiver must exist");
         let dd_balance = executor
-            .read_balance_resource(&dd, account::xus_currency_code())
+            .read_balance_resource(&dd)
             .expect("receiver balance must exist");
-        assert_eq!(mint_amount_one, dd_balance.coin());
+        assert_eq!(mint_amount_one, dd_balance.token() as u64);
         assert_eq!(0, dd_post_mint.sequence_number());
 
         // --------------
@@ -57,7 +66,7 @@ fn tiered_mint_designated_dealer() {
             blessed
                 .transaction()
                 .script(encode_tiered_mint_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     2,
                     *dd.address(),
                     mint_amount_two,
@@ -67,9 +76,9 @@ fn tiered_mint_designated_dealer() {
                 .sign(),
         );
         let dd_balance = executor
-            .read_balance_resource(&dd, account::xus_currency_code())
+            .read_balance_resource(&dd)
             .expect("receiver balance must exist");
-        assert_eq!(mint_amount_one + mint_amount_two, dd_balance.coin());
+        assert_eq!(mint_amount_one + mint_amount_two, dd_balance.token() as u64);
     }
     }
 }
@@ -90,7 +99,7 @@ fn mint_to_existing_not_dd() {
             blessed
                 .transaction()
                 .script(encode_create_parent_vasp_account_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     0,
                     *receiver.address(),
                     receiver.auth_key_prefix(),
@@ -106,7 +115,7 @@ fn mint_to_existing_not_dd() {
             blessed
                 .transaction()
                 .script(encode_tiered_mint_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     0,
                     *receiver.address(),
                     mint_amount,
@@ -143,7 +152,7 @@ fn mint_to_new_account() {
         let output = executor.execute_transaction(
             tc.transaction()
                 .script(encode_tiered_mint_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     0,
                     *new_account.address(),
                     mint_amount,
@@ -176,7 +185,7 @@ fn tiered_update_exchange_rate() {
             blessed
                 .transaction()
                 .script(encode_update_exchange_rate_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     0,
                     123,
                     100,

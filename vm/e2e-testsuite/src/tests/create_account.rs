@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_core_types::vm_status::KeptVMStatus;
-use starcoin_language_e2e_tests::account::Account;
-use starcoin_language_e2e_tests::common_transactions::create_account_txn;
-use starcoin_language_e2e_tests::current_function_name;
-use starcoin_language_e2e_tests::executor::FakeExecutor;
+use starcoin_language_e2e_tests::{
+    account::Account, common_transactions::create_account_txn, current_function_name,
+    executor::FakeExecutor,
+};
 use starcoin_vm_types::transaction::TransactionStatus;
 
 #[test]
@@ -37,6 +37,6 @@ fn create_account() {
     let updated_receiver_balance = executor
         .read_balance_resource(&new_account)
         .expect("receiver balance must exist");
-    assert_eq!(initial_amount, updated_receiver_balance.coin());
+    assert_eq!(initial_amount, updated_receiver_balance.token() as u64);
     assert_eq!(1, updated_sender.sequence_number());
 }

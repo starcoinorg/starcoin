@@ -1,90 +1,118 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_language_e2e_tests::test_with_different_versions;
+use move_core_types::gas_algebra::NumBytes;
+use move_core_types::vm_status::{KeptVMStatus, StatusCode, VMStatus};
+
+use starcoin_language_e2e_tests::common_transactions::peer_to_peer_txn;
+use starcoin_language_e2e_tests::executor::FakeExecutor;
+
+use starcoin_vm_runtime::{
+    data_cache::{AsMoveResolver, StateViewCache},
+    starcoin_vm::StarcoinVM,
+};
+
+use starcoin_vm_types::{
+    account_config::G_STC_TOKEN_CODE, transaction_metadata::TransactionMetadata,
+    transaction_metadata::TransactionPayloadMetadata,
+};
+
+use starcoin_gas::{StarcoinGasMeter, StarcoinGasParameters};
+use starcoin_gas_algebra_ext::{FeePerGasUnit, Gas, InitialGasSchedule};
+use starcoin_vm_types::genesis_config::ChainId;
 
 #[test]
 fn failed_transaction_cleanup_test() {
-    test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
-        let mut executor = test_env.executor;
-        let sender = executor.create_raw_account_data(1_000_000, 10);
-        executor.add_account_data(&sender);
+    //test_with_different_versions!{CURRENT_RELEASE_VERSIONS, |test_env| {
+    let mut executor = FakeExecutor::from_test_genesis(); //test_env.executor;
+    let sender = executor.create_raw_account_data(1_000_000, 10);
+    executor.add_account_data(&sender);
 
-        let log_context = AdapterLogSchema::new(executor.get_state_view().id(), 0);
-        let diem_vm = DiemVM::new(executor.get_state_view());
-        let data_cache = StateViewCache::new(executor.get_state_view());
+    //let log_context = AdapterLogSchema::new(executor.get_state_view().id(), 0);
+    let vm = StarcoinVM::new(None);
+    let data_cache = StateViewCache::new(executor.get_state_view());
 
-        let txn_data = TransactionMetadata {
-            sender: *sender.address(),
-            max_gas_amount: GasUnits::new(100_000),
-            gas_unit_price: GasPrice::new(0),
-            sequence_number: 10,
-            ..Default::default()
-        };
+    let txn_data = TransactionMetadata {
+        sender: *sender.address(),
+        max_gas_amount: Gas::new(100_000),
+        gas_unit_price: FeePerGasUnit::new(0),
+        gas_token_code: G_STC_TOKEN_CODE.clone(),
+        transaction_size: NumBytes::new(0),
+        expiration_timestamp_secs: 0,
+        sequence_number: 10,
+        payload: TransactionPayloadMetadata::ScriptFunction,
+        authentication_key_preimage: vec![],
+        chain_id: ChainId::test(),
+    };
 
-        let gas_schedule = zero_cost_schedule();
-        let mut gas_status = GasStatus::new(&gas_schedule, GasUnits::new(10_000));
+    // let gas_schedule = zero_cost_schedule();
+    // let mut gas_status = GasStatus::new(&gas_schedule, GasUnits::new(10_000));
+    let mut gas_meter = make_test_starcoin_gas_parameter();
+    // TYPE_MISMATCH should be kept and charged.
+    let (_, out1) = vm.failed_transaction_cleanup(
+        VMStatus::Error(StatusCode::TYPE_MISMATCH),
+        &mut gas_meter,
+        &txn_data,
+        &data_cache.as_move_resolver(),
+    );
 
-        // TYPE_MISMATCH should be kept and charged.
-        let out1 = diem_vm.failed_transaction_cleanup(
-            VMStatus::Error(StatusCode::TYPE_MISMATCH),
-            &mut gas_status,
-            &txn_data,
-            &data_cache,
-            &account::xus_currency_code(),
-            &log_context,
-        );
-        assert!(!out1.write_set().is_empty());
-        assert_eq!(out1.gas_used(), 90_000);
-        assert!(!out1.status().is_discarded());
-        assert_eq!(
-            out1.status().status(),
-            // StatusCode::TYPE_MISMATCH
-            Ok(KeptVMStatus::MiscellaneousError)
-        );
+    assert!(!out1.write_set().is_empty());
+    assert_eq!(out1.gas_used(), 90_000);
+    assert!(!out1.status().is_discarded());
+    assert_eq!(
+        out1.status().status(),
+        // StatusCode::TYPE_MISMATCH
+        Ok(KeptVMStatus::MiscellaneousError)
+    );
 
-        // Invariant violations should be discarded and not charged.
-        let out2 = diem_vm.failed_transaction_cleanup(
-            VMStatus::Error(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR),
-            &mut gas_status,
-            &txn_data,
-            &data_cache,
-            &account::xus_currency_code(),
-            &log_context,
-        );
-        assert!(out2.write_set().is_empty());
-        assert!(out2.gas_used() == 0);
-        assert!(out2.status().is_discarded());
-        assert_eq!(
-            out2.status().status(),
-            Err(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-        );
-    }
-    }
+    // Invariant violations should be discarded and not charged.
+    let (_, out2) = vm.failed_transaction_cleanup(
+        VMStatus::Error(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR),
+        &mut gas_meter,
+        &txn_data,
+        &data_cache.as_move_resolver(),
+    );
+    assert!(out2.write_set().is_empty());
+    assert!(out2.gas_used() == 0);
+    assert!(out2.status().is_discarded());
+    assert_eq!(
+        out2.status().status(),
+        Err(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+    );
+    //}
+    //}
 }
 
 #[test]
 fn non_existent_sender() {
-    test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
-        let mut executor = test_env.executor;
-        let sequence_number = 0;
-        let sender = executor.create_raw_account();
-        let receiver = executor.create_raw_account_data(100_000, sequence_number);
-        executor.add_account_data(&receiver);
+    //test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
+    let mut executor = FakeExecutor::from_test_genesis();
+    let sequence_number = 0;
+    let sender = executor.create_raw_account();
+    let receiver = executor.create_raw_account_data(100_000, sequence_number);
+    executor.add_account_data(&receiver);
 
-        let transfer_amount = 10;
-        let txn = peer_to_peer_txn(
-            &sender,
-            receiver.account(),
-            sequence_number,
-            transfer_amount,
-        );
+    let transfer_amount = 10;
+    let txn = peer_to_peer_txn(
+        &sender,
+        receiver.account(),
+        sequence_number,
+        transfer_amount,
+    );
 
-        let output = &executor.execute_transaction(txn);
-        assert_eq!(
-            output.status().status(),
-            Err(StatusCode::SENDING_ACCOUNT_DOES_NOT_EXIST),
-        );
-    }
-    }
+    let output = &executor.execute_transaction(txn);
+    assert_eq!(
+        output.status().status(),
+        Err(StatusCode::SENDING_ACCOUNT_DOES_NOT_EXIST),
+    );
+}
+//}
+//}
+
+fn make_test_starcoin_gas_parameter() -> StarcoinGasMeter {
+    let gas_params = StarcoinGasParameters::initial();
+    let balance = gas_params.txn.maximum_number_of_gas_units.clone();
+    let mut gas_meter = StarcoinGasMeter::new(gas_params, balance);
+    gas_meter.set_metering(false);
+    gas_meter
 }

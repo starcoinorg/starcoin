@@ -1,22 +1,21 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use diem_framework_releases::legacy::transaction_scripts::LegacyStdlibScript;
-use diem_transaction_builder::stdlib::*;
-use diem_types::{
-    account_config::{self, BurnEvent, XUS_NAME},
-    transaction::{authenticator::AuthenticationKey, Script, TransactionArgument},
-    vm_status::KeptVMStatus,
+use move_core_types::identifier::Identifier;
+use move_core_types::language_storage::{StructTag, TypeTag};
+use crate::tests::fake_stdlib::{
+    encode_burn_txn_fees_script, encode_create_parent_vasp_account_script,
+    encode_peer_to_peer_with_metadata_script,
 };
-use move_core_types::{
-    identifier::Identifier,
-    language_storage::{StructTag, TypeTag},
-};
-use starcoin_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
-use starcoin_language_e2e_tests::{
-    test_with_different_versions, versioning::CURRENT_RELEASE_VERSIONS,
-};
-use std::convert::TryFrom;
+use move_core_types::transaction_argument::TransactionArgument;
+use move_core_types::vm_status::KeptVMStatus;
+use starcoin_crypto::ed25519::Ed25519PrivateKey;
+use starcoin_crypto::{PrivateKey, Uniform};
+use starcoin_language_e2e_tests::test_with_different_versions;
+use starcoin_language_e2e_tests::versioning::CURRENT_RELEASE_VERSIONS;
+use starcoin_vm_types::account_config;
+use starcoin_vm_types::account_config::BurnEvent;
+use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 
 #[test]
 fn burn_txn_fees() {
@@ -31,7 +30,7 @@ fn burn_txn_fees() {
             blessed
                 .transaction()
                 .script(encode_create_parent_vasp_account_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     0,
                     *sender.address(),
                     sender.auth_key_prefix(),
@@ -45,7 +44,7 @@ fn burn_txn_fees() {
         executor.execute_and_apply(
             dd.transaction()
                 .script(encode_peer_to_peer_with_metadata_script(
-                    account_config::xus_tag(),
+                    account_config::stc_type_tag(),
                     *sender.address(),
                     10_000_000,
                     vec![],
@@ -79,12 +78,12 @@ fn burn_txn_fees() {
             status.gas_used()
         };
 
-        let xus_ty = TypeTag::Struct(StructTag {
+        let xus_ty = TypeTag::Struct(Box::new(StructTag {
             address: account_config::CORE_CODE_ADDRESS,
             module: Identifier::new("XUS").unwrap(),
             name: Identifier::new("XUS").unwrap(),
             type_params: vec![],
-        });
+        }));
 
         let output = executor.execute_and_apply(
             blessed
