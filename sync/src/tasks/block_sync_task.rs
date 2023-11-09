@@ -8,14 +8,15 @@ use futures::future::BoxFuture;
 use futures::FutureExt;
 use network_api::PeerId;
 use network_api::PeerProvider;
+use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
-use starcoin_config::{G_CRATE_VERSION, Connect};
+use starcoin_config::{Connect, G_CRATE_VERSION};
 use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
+use starcoin_flexidag::flexidag_service::{AddToDag, GetDagTips, ForkDagAccumulator};
 use starcoin_flexidag::FlexidagService;
-use starcoin_flexidag::flexidag_service::GetDagTips;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::ServiceRef;
 use starcoin_storage::BARNARD_HARD_FORK_HASH;
@@ -33,9 +34,12 @@ pub struct SyncBlockData {
     pub(crate) block: Block,
     pub(crate) info: Option<BlockInfo>,
     pub(crate) peer_id: Option<PeerId>,
-    pub(crate) accumulator_root: Option<HashValue>, // the block belongs to this accumulator leaf
-    pub(crate) count_in_leaf: u64, // the number of the block in the accumulator leaf
+    pub(crate) accumulator_root: Option<HashValue>, // the block belongs to this dag accumulator leaf
+    pub(crate) count_in_leaf: u64, // the count of the block in the dag accumulator leaf
+    pub(crate) dag_accumulator_index: Option<u64>, // the index of the accumulator leaf which the block belogs to
 }
+
+
 
 impl SyncBlockData {
     pub fn new(
@@ -44,8 +48,7 @@ impl SyncBlockData {
         peer_id: Option<PeerId>,
         accumulator_root: Option<HashValue>,
         count_in_leaf: u64,
-        dag_block_headers: Option<Vec<HashValue>>,
-        dag_transaction_header: Option<HashValue>,
+        dag_acccumulator_index: Option<u64>,
     ) -> Self {
         Self {
             block,
@@ -53,30 +56,15 @@ impl SyncBlockData {
             peer_id,
             accumulator_root,
             count_in_leaf,
+            dag_accumulator_index,
         }
     }
 }
 
 #[allow(clippy::from_over_into)]
-impl
-    Into<(
-        Block,
-        Option<BlockInfo>,
-        Option<PeerId>,
-    )> for SyncBlockData
-{
-    fn into(
-        self,
-    ) -> (
-        Block,
-        Option<BlockInfo>,
-        Option<PeerId>,
-    ) {
-        (
-            self.block,
-            self.info,
-            self.peer_id,
-        )
+impl Into<(Block, Option<BlockInfo>, Option<PeerId>)> for SyncBlockData {
+    fn into(self) -> (Block, Option<BlockInfo>, Option<PeerId>) {
+        (self.block, self.info, self.peer_id)
     }
 }
 
@@ -164,7 +152,7 @@ impl TaskState for BlockSyncTask {
                         .fold(result_map, |mut result_map, (block, peer_id, _, _)| {
                             result_map.insert(
                                 block.id(),
-                                SyncBlockData::new(block, None, peer_id, None, 1, None, None),
+                                SyncBlockData::new(block, None, peer_id, None, 1, None),
                             );
                             result_map
                         })
@@ -186,7 +174,7 @@ impl TaskState for BlockSyncTask {
                     .await?
                     .into_iter()
                     .map(|(block, peer_id, _, _)| {
-                        SyncBlockData::new(block, None, peer_id, None, 1, None, None)
+                        SyncBlockData::new(block, None, peer_id, None, 1, None)
                     })
                     .collect())
             }
@@ -222,7 +210,7 @@ impl TaskState for BlockSyncTask {
 pub struct BlockCollector<N, H> {
     //node's current block info
     current_block_info: BlockInfo,
-    target: Option<SyncTarget>,
+    target: Option<SyncTarget>, // single chain use only
     // the block chain init by ancestor
     chain: BlockChain,
     event_handle: H,
@@ -232,6 +220,7 @@ pub struct BlockCollector<N, H> {
     dag_block_pool: Vec<SyncBlockData>,
     target_accumulator_root: HashValue,
     flexidag_service: ServiceRef<FlexidagService>,
+    new_dag_accumulator_info: Option<AccumulatorInfo>,
 }
 
 impl<N, H> BlockCollector<N, H>
@@ -265,11 +254,12 @@ where
             dag_block_pool: Vec::new(),
             target_accumulator_root,
             flexidag_service,
+            new_dag_accumulator_info: None,
         }
     }
 
-    pub fn check_if_became_dag(&self) -> Result<bool>{
-        Ok(async_std::task::block_on(self.flexidag_service.send(GetDagTips))??.is_some()) 
+    pub fn check_if_became_dag(&self) -> Result<bool> {
+        Ok(async_std::task::block_on(self.flexidag_service.send(GetDagTips))??.is_some())
     }
 
     #[cfg(test)]
@@ -345,11 +335,7 @@ where
         Ok(state)
     }
 
-    fn apply_block(
-        &mut self,
-        block: Block,
-        peer_id: Option<PeerId>,
-    ) -> Result<()> {
+    fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>) -> Result<()> {
         if let Some((_failed_block, pre_peer_id, err, version)) = self
             .chain
             .get_storage()
@@ -418,6 +404,7 @@ where
     fn broadcast_dag_chain_block(
         &mut self,
         broadcast_blocks: Vec<(Block, BlockInfo, BlockConnectAction)>,
+        start_index: u64,
     ) -> Result<CollectorState> {
         let state = if self.last_accumulator_root == self.target_accumulator_root {
             CollectorState::Enough
@@ -425,27 +412,11 @@ where
             CollectorState::Need
         };
 
-        let last_index = broadcast_blocks.len() - 1;
-        broadcast_blocks.into_iter().enumerate().for_each(
-            |(index, (block, block_info, dag_parents, action))| {
-                if last_index == index && state == CollectorState::Enough {
-                    let _ = self.notify_connected_block(
-                        block,
-                        block_info,
-                        action,
-                        CollectorState::Enough,
-                    );
-                } else {
-                    let _ = self.notify_connected_block(
-                        block,
-                        block_info,
-                        action,
-                        CollectorState::Need,
-                    );
-                }
-            },
-        );
-
+        self.new_dag_accumulator_info = Some(async_std::task::block_on(self.flexidag_service.send(ForkDagAccumulator {
+            new_blocks: broadcast_blocks.into_iter().map(|(block, _, _)| block.id()).collect(),
+            dag_accumulator_index: start_index, 
+            block_header_id: self.chain.head_block().id(),
+        }))??);
         return Ok(state);
     }
 
@@ -484,9 +455,7 @@ where
 
         let result = self.notify_connected_block(block, block_info, action, state?);
         match result {
-            Ok(state) => {
-
-            }
+            Ok(state) => {}
             Err(e) => {
                 error!("notify connected block error: {:?}", e);
                 Err(e)
@@ -494,17 +463,14 @@ where
         }
     }
 
-    fn collect_dag_item(
-        &mut self,
-        item: SyncBlockData,
-    ) -> Result<()> {
+    fn collect_dag_item(&mut self, item: SyncBlockData) -> Result<()> {
         let (block, block_info, peer_id) = item.into();
         let block_id = block.id();
         let timestamp = block.header().timestamp();
 
         let add_dag_result = async_std::task::block_on(self.flexidag_service.send(AddToDag {
             block_header: block.header().clone(),
-        }))??; 
+        }))??;
         let selected_parent = self
             .storage
             .get_block_by_hash(add_dag_result.selected_parent)?
@@ -538,85 +504,24 @@ where
 
         return match block_info {
             Some(block_info) => {
-                //If block_info exists, it means that this block was already executed and try connect in the previous sync, but the sync task was interrupted.
+                //If block_info exists, it means that this block was already executed and
+                // try connect in the previous sync, but the sync task was interrupted.
                 //So, we just need to update chain and continue
                 self.chain.connect(ExecutedBlock {
                     block: block.clone(),
                     block_info: block_info.clone(),
                 })?;
                 let block_info = self.chain.status().info;
-                Ok((
-                    block,
-                    block_info,
-                    BlockConnectAction::ConnectExecutedBlock,
-                ))
+                Ok((block, block_info, BlockConnectAction::ConnectExecutedBlock))
             }
             None => {
                 self.apply_block(block.clone(), peer_id)?;
                 self.chain.time_service().adjust(timestamp);
                 let block_info = self.chain.status().info;
-                Ok((
-                    block,
-                    block_info,
-                    BlockConnectAction::ConnectNewBlock,
-                ))
+                Ok((block, block_info, BlockConnectAction::ConnectNewBlock))
             }
         };
     }
-
-    // fn process_received_block(&self, item: SyncBlockData, next_tips: &mut Option<Vec<HashValue>>) -> Result<CollectorState> {
-
-    //     let (block, block_info, parent_hash, action) = self.collect_item(item, next_tips)?;
-    //     /////////
-    //     // let (block, block_info, peer_id) = item.into();
-    //     // let timestamp = block.header().timestamp();
-    //     // let (block_info, action) = match block_info {
-    //     //     Some(block_info) => {
-    //     //         //If block_info exists, it means that this block was already executed and try connect in the previous sync, but the sync task was interrupted.
-    //     //         //So, we just need to update chain and continue
-    //     //         self.chain.connect(ExecutedBlock {
-    //     //             block: block.clone(),
-    //     //             block_info: block_info.clone(),
-    //     //         })?;
-    //     //         (block_info, BlockConnectAction::ConnectExecutedBlock)
-    //     //     }
-    //     //     None => {
-    //     //         self.apply_block(block.clone(), peer_id)?;
-    //     //         self.chain.time_service().adjust(timestamp);
-    //     //         (
-    //     //             self.chain.status().info,
-    //     //             BlockConnectAction::ConnectNewBlock,
-    //     //         )
-    //     //     }
-    //     // };
-
-    //     //verify target
-    //     let state: Result<CollectorState, anyhow::Error> =
-    //         if block_info.block_accumulator_info.num_leaves
-    //             == self.target.block_info.block_accumulator_info.num_leaves
-    //         {
-    //             if block_info != self.target.block_info {
-    //                 Err(TaskError::BreakError(
-    //                     RpcVerifyError::new_with_peers(
-    //                         self.target.peers.clone(),
-    //                         format!(
-    //                 "Verify target error, expect target: {:?}, collect target block_info:{:?}",
-    //                 self.target.block_info,
-    //                 block_info
-    //             ),
-    //                     )
-    //                     .into(),
-    //                 )
-    //                 .into())
-    //             } else {
-    //                 Ok(CollectorState::Enough)
-    //             }
-    //         } else {
-    //             Ok(CollectorState::Need)
-    //         };
-
-    //     self.notify_connected_block(block, block_info, action, state?, parent_hash)
-    // }
 }
 
 impl<N, H> TaskResultCollector<SyncBlockData> for BlockCollector<N, H>
@@ -637,14 +542,6 @@ where
                 return Ok(CollectorState::Need);
             } else {
                 process_block_pool = std::mem::take(&mut self.dag_block_pool);
-
-                self.chain.status().tips_hash = Some(
-                    process_block_pool
-                        .iter()
-                        .clone()
-                        .map(|item| item.block.header().id())
-                        .collect(),
-                );
             }
         } else {
             // it is a single chain
@@ -683,9 +580,7 @@ where
                     Err(e) => Err(e),
                 }
             }
-            None => {
-                self.broadcast_dag_chain_block(block_to_broadcast)
-            }
+            None => self.broadcast_dag_chain_block(block_to_broadcast, item.dag_accumulator_index),
         }
     }
 

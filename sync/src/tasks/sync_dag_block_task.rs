@@ -66,8 +66,6 @@ impl SyncDagBlockTask {
                 block_id: block_id.clone(),
                 block: None,
                 peer_id: None,
-                dag_parents: vec![],
-                dag_transaction_header: None,
             });
         });
 
@@ -76,15 +74,7 @@ impl SyncDagBlockTask {
             .fetch_blocks(absent_block)
             .await?
             .iter()
-            .map(|(block, peer_info)| {
-                (
-                    block.header().id(),
-                    (
-                        block.clone(),
-                        peer_info.clone(),
-                    ),
-                )
-            })
+            .map(|(block, peer_info)| (block.header().id(), (block.clone(), peer_info.clone())))
             .collect::<HashMap<_, _>>();
 
         // should return the block in order
@@ -116,6 +106,7 @@ impl SyncDagBlockTask {
                 peer_id: item.peer_id,
                 accumulator_root: Some(snapshot.accumulator_info.get_accumulator_root().clone()),
                 count_in_leaf: snapshot.child_hashes.len() as u64,
+                dag_accumulator_index: Some(index),
             })
             .collect())
     }

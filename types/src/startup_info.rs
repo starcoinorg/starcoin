@@ -11,6 +11,7 @@ use starcoin_accumulator::MerkleAccumulator;
 use starcoin_crypto::HashValue;
 use starcoin_uint::U256;
 use starcoin_vm_types::genesis_config::ChainId;
+use std::collections::BTreeSet;
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
 use std::fmt::Formatter;
@@ -23,7 +24,7 @@ pub struct ChainInfo {
     genesis_hash: HashValue,
     status: ChainStatus,
     flexi_dag_accumulator_info: Option<AccumulatorInfo>,
-
+    k_total_difficulties: BTreeSet<KTotalDifficulty>,
 }
 
 impl ChainInfo {
@@ -127,10 +128,7 @@ pub struct ChainStatus {
 
 impl ChainStatus {
     pub fn new(head: BlockHeader, info: BlockInfo) -> Self {
-        Self {
-            head,
-            info,
-        }
+        Self { head, info }
     }
 
     pub fn random() -> Self {
@@ -220,7 +218,7 @@ pub struct StartupInfo {
     pub main: HashValue,
 
     /// dag accumulator info hash
-    pub dag_main: Option<HashValue>
+    pub dag_main: Option<HashValue>,
 }
 
 impl fmt::Display for StartupInfo {
@@ -234,17 +232,14 @@ impl fmt::Display for StartupInfo {
 
 impl StartupInfo {
     pub fn new(main: HashValue) -> Self {
-        Self { 
+        Self {
             main,
             dag_main: None,
-         }
+        }
     }
 
     pub fn new_with_dag(main: HashValue, dag_main: Option<HashValue>) -> Self {
-        Self { 
-            main,
-            dag_main,
-         }
+        Self { main, dag_main }
     }
 
     pub fn update_main(&mut self, new_head: HashValue) {
@@ -262,8 +257,6 @@ impl StartupInfo {
     pub fn get_dag_main(&self) -> Option<HashValue> {
         self.dag_main
     }
-
-
 }
 
 impl TryFrom<Vec<u8>> for StartupInfo {

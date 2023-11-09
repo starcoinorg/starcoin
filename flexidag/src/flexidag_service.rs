@@ -1,13 +1,22 @@
-use std::{sync::Arc, collections::{BinaryHeap, BTreeSet}};
+use std::{
+    collections::{BTreeSet, BinaryHeap},
+    sync::Arc,
+};
 
-use anyhow::{anyhow, Result, Ok, bail, Error};
-use starcoin_accumulator::{Accumulator, MerkleAccumulator, accumulator_info::AccumulatorInfo};
-use starcoin_config::NodeConfig;
-use starcoin_consensus::{BlockDAG, dag::types::ghostdata::GhostdagData};
+use anyhow::{anyhow, bail, Error, Ok, Result};
+use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator};
+use starcoin_config::{NodeConfig, TimeService};
+use starcoin_consensus::{dag::types::ghostdata::GhostdagData, BlockDAG};
 use starcoin_crypto::HashValue;
-use starcoin_service_registry::{ActorService, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest};
-use starcoin_storage::{storage::CodecKVStore, flexi_dag::{SyncFlexiDagSnapshot, KTotalDifficulty}, Storage, SyncFlexiDagStore, BlockStore};
-use starcoin_types::{block::BlockHeader, startup_info, header::DagHeader};
+use starcoin_service_registry::{
+    ActorService, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
+};
+use starcoin_storage::{
+    flexi_dag::{KTotalDifficulty, SyncFlexiDagSnapshot, SyncFlexiDagSnapshotHasher},
+    storage::CodecKVStore,
+    BlockStore, Storage, SyncFlexiDagStore, block_info::BlockInfoStore,
+};
+use starcoin_types::{block::BlockHeader, header::DagHeader, startup_info};
 
 #[derive(Debug, Clone)]
 pub struct DumpTipsToAccumulator {
@@ -103,24 +112,20 @@ pub struct MergesetBlues {
     pub mergeset_blues: Vec<HashValue>,
 }
 
-#[derive(Debug, Clone)]
-pub struct GetMaxTotalDifficultyBlock;
-
-#[derive(Debug, Clone)]
-pub struct MaxTotalDifficultyBlock {
-    pub selected_parent: HashValue,
-    pub mergeset_blues: Vec<HashValue>,
-}
-
-impl ServiceRequest for GetMaxTotalDifficultyBlock {
-    
-    type Response = anyhow::Result<MergesetBlues>;
-}
-
 impl ServiceRequest for AddToDag {
     type Response = anyhow::Result<MergesetBlues>;
 }
 
+#[derive(Debug, Clone)]
+pub struct ForkDagAccumulator {
+    pub new_blocks: Vec<HashValue>,
+    pub dag_accumulator_index: u64,
+    pub block_header_id: HashValue,
+}
+
+impl ServiceRequest for ForkDagAccumulator {
+    type Response = anyhow::Result<AccumulatorInfo>;
+}
 
 pub struct TipInfo {
     tips: Option<Vec<HashValue>>, // some is for dag or the state of the chain is still in old version
@@ -135,16 +140,12 @@ pub struct FlexidagService {
 }
 
 impl FlexidagService {
-    pub fn add_to_dag(
-        &mut self,
-        header: BlockHeader,
-    ) -> Result<Arc<GhostdagData>> {
+    pub fn add_to_dag(&mut self, header: BlockHeader) -> Result<Arc<GhostdagData>> {
         let dag = match &mut self.dag {
             Some(dag) => dag,
             None => bail!("dag is none"),
         };
-        match dag.get_ghostdag_data(header.id())
-        {
+        match dag.get_ghostdag_data(header.id()) {
             std::result::Result::Ok(ghost_dag_data) => Ok(ghost_dag_data),
             Err(_) => std::result::Result::Ok(Arc::new(
                 // jacktest: TODO:add_to_dag  should not use parents hash since the block header has them
@@ -152,13 +153,95 @@ impl FlexidagService {
             )),
         }
     }
+
+    fn create_snapshot_by_tips(tips: Vec<HashValue>, head_block_id: HashValue) -> Result<(HashValue, SyncFlexiDagSnapshotHasher)> {
+        let k_total_difficulties = BTreeSet::new();
+        tips.iter().for_each(|block_id| {
+            k_total_difficulties.insert(KTotalDifficulty {
+                head_block_id: block_id.clone(),
+                total_difficulty: self.storage.get_block_info(block_id.clone()).expect("block info should not be none").ok_or_else(error || anyhow!("block info should not be none"))?.total_difficulty,
+            });
+        });
+
+        let snaphot_hasher = SyncFlexiDagSnapshotHasher {
+            child_hashes: tips,
+            head_block_id,
+            k_total_difficulties,
+        };
+
+        Ok((BlockDAG::calculate_dag_accumulator_key(&snapshot_hasher)?, snaphot_hasher))
+    }
+
+    fn merge_from_big_dag(&mut self, msg: ForkDagAccumulator) -> Result<AccumulatorInfo> {
+        let dag_accumulator = self.dag_accumulator.as_mut().ok_or_else("the dag accumulator should not be none")?;
+        if dag_accumulator.num_leaves() != msg.dag_accumulator_index {
+            bail!("cannot merge dag accumulator since its number is not the same as other");
+        }
+        let tip_info = self.tip_info.as_mut().ok_or_else("the tips should not be none")?;
+        msg.new_blocks.iter().for_each(|block_id| {
+            if !tip_info.tips.contains(block_id) {
+                tip_info.tips.push(block_id.clone());
+            }
+        });
+  
+        let (key, snaphot_hasher) = Self::create_snapshot_by_tips(tip_info.tips, msg.block_header_id)?;
+        dag_accumulator.append(&vec![key])?;
+        let dag_accumulator_info = dag_accumulator.get_info();
+        self.storage.get_accumulator_snapshot_storage().put(key, snaphot_hasher.to_snapshot(dag_accumulator_info))?;
+        dag_accumulator.flush()?;
+        Ok(dag_accumulator_info)
+    }
+
+    fn merge_from_small_dag(&mut self, msg: ForkDagAccumulator) -> Result<AccumulatorInfo> {
+        let dag_accumulator = self
+            .dag_accumulator
+            .as_mut()
+            .ok_or_else(error || anyhow!("dag accumulator is none"))?;
+        // fetch the block in the dag according to the dag accumulator index
+        let previous_key = dag_accumulator.get_leaf(msg.dag_accumulator_index - 1)?
+            .ok_or_else(error || anyhow!("the dag snapshot hash is none"))?;
+
+        let current_key = dag_accumulator.get_leaf(msg.dag_accumulator_index)?
+            .ok_or_else(error || anyhow!("the dag snapshot hash is none"))?;
+
+        let pre_snapshot = self
+            .storage
+            .get_accumulator_snapshot_storage()
+            .get(previous_key)?
+            .ok_or_else(error || anyhow!("the dag snapshot is none"))?;
+
+        let current_snapshot = self
+            .storage
+            .get_accumulator_snapshot_storage()
+            .get(current_key)?
+            .ok_or_else(error || anyhow!("the dag snapshot is none"))?;
+
+        // fork the dag accumulator according to the ForkDagAccumulator.dag_accumulator_index
+        let fork = dag_accumulator.fork(Some(pre_snapshot.accumulator_info));
+
+        let mut new_blocks = msg.new_blocks;
+        current_snapshot.child_hashes.iter().for_each(|block_id| {
+            if !new_blocks.contains(block_id) {
+                new_blocks.push(block_id.clone());
+            }
+        });
+
+        let (key, snaphot_hasher) = Self::create_snapshot_by_tips(new_blocks, msg.block_header_id)?;
+        fork.append(&vec![key])?;
+        let dag_accumulator_info = fork.get_info();
+        self.storage.get_accumulator_snapshot_storage().put(key, snaphot_hasher.to_snapshot(dag_accumulator_info))?;
+        fork.flush()?;
+        Ok(dag_accumulator_info)  
+    }
+
 }
 
 impl ServiceFactory<Self> for FlexidagService {
     fn create(ctx: &mut ServiceContext<FlexidagService>) -> Result<Self> {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
-        let (dag, dag_accumulator) = BlockDAG::try_init_with_storage(storage.clone(), config.clone())?;
+        let (dag, dag_accumulator) =
+            BlockDAG::try_init_with_storage(storage.clone(), config.clone())?;
         let tip_info = dag_accumulator.as_ref().map(|accumulator| {
             let tips_index = accumulator.num_leaves();
             let tips_key = accumulator
@@ -196,11 +279,15 @@ impl ActorService for FlexidagService {
     }
 }
 
-// send this message after minting a new block 
-// and the block was committed 
+// send this message after minting a new block
+// and the block was committed
 // and startup info was updated
 impl ServiceHandler<Self, DumpTipsToAccumulator> for FlexidagService {
-    fn handle(&mut self, msg: DumpTipsToAccumulator, ctx: &mut ServiceContext<FlexidagService>) -> Result<()> {
+    fn handle(
+        &mut self,
+        msg: DumpTipsToAccumulator,
+        ctx: &mut ServiceContext<FlexidagService>,
+    ) -> Result<()> {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         if self.tips.is_none() {
             let config = ctx.get_shared::<Arc<NodeConfig>>()?;
@@ -220,16 +307,30 @@ impl ServiceHandler<Self, DumpTipsToAccumulator> for FlexidagService {
             }
         } else {
             // the chain had became the flexidag chain
-            let tip_info = self.tip_info.take().expect("the tips should not be none in this branch");
+            let tip_info = self
+                .tip_info
+                .take()
+                .expect("the tips should not be none in this branch");
             let key = BlockDAG::calculate_dag_accumulator_key(tips.clone())?;
-            let dag = self.dag_accumulator.as_mut().expect("the tips is not none but the dag accumulator is none");
+            let dag = self
+                .dag_accumulator
+                .as_mut()
+                .expect("the tips is not none but the dag accumulator is none");
             dag.append(&vec![key])?;
-            storage.get_accumulator_snapshot_storage().put(key, SyncFlexiDagSnapshot {
-                child_hashes: tip_info.tips.expect("the tips should not be none"),
-                accumulator_info: dag.get_info(),
-                head_block_id: msg.current_head_block_id,
-                k_total_difficulties: tip_info.k_total_difficulties.into_iter().take(16).cloned().collect(),
-            })?;
+            storage.get_accumulator_snapshot_storage().put(
+                key,
+                SyncFlexiDagSnapshot {
+                    child_hashes: tip_info.tips.expect("the tips should not be none"),
+                    accumulator_info: dag.get_info(),
+                    head_block_id: msg.current_head_block_id,
+                    k_total_difficulties: tip_info
+                        .k_total_difficulties
+                        .into_iter()
+                        .take(16)
+                        .cloned()
+                        .collect(),
+                },
+            )?;
             dag.flush()?;
             self.tip_info = Some(TipInfo {
                 tips: Some(vec![msg.block_header.id()]),
@@ -242,13 +343,20 @@ impl ServiceHandler<Self, DumpTipsToAccumulator> for FlexidagService {
 }
 
 impl ServiceHandler<Self, UpdateDagTips> for FlexidagService {
-    fn handle(&mut self, msg: UpdateDagTips, ctx: &mut ServiceContext<FlexidagService>) -> Result<()> {
+    fn handle(
+        &mut self,
+        msg: UpdateDagTips,
+        ctx: &mut ServiceContext<FlexidagService>,
+    ) -> Result<()> {
         let header = msg.block_header;
         match &mut self.tip_info {
             Some(tip_info) => {
                 if !tip_info.tips.contains(&header.id()) {
                     tip_info.tips.push(header.id());
-                    tip_info.k_total_difficulties.insert(KTotalDifficulty { head_block_id: msg.k_total_difficulty.head_block_id, total_difficulty: msg.k_total_difficulty.total_difficulty });
+                    tip_info.k_total_difficulties.insert(KTotalDifficulty {
+                        head_block_id: msg.k_total_difficulty.head_block_id,
+                        total_difficulty: msg.k_total_difficulty.total_difficulty,
+                    });
                 }
                 Ok(())
             }
@@ -256,7 +364,8 @@ impl ServiceHandler<Self, UpdateDagTips> for FlexidagService {
                 let storage = ctx.get_shared::<Arc<Storage>>()?;
                 let config = ctx.get_shared::<Arc<NodeConfig>>()?;
                 if header.number() == storage.dag_fork_height(config.net().id().clone()) {
-                    let (dag, dag_accumulator) = BlockDAG::try_init_with_storage(storage.clone(), config)?;
+                    let (dag, dag_accumulator) =
+                        BlockDAG::try_init_with_storage(storage.clone(), config)?;
                     if dag.is_none() {
                         Ok(()) // the chain is still in single chain
                     } else {
@@ -264,14 +373,20 @@ impl ServiceHandler<Self, UpdateDagTips> for FlexidagService {
                         self.dag = dag;
                         self.tip_info = Some(TipInfo {
                             tips: Some(vec![msg.block_header.id()]),
-                            k_total_difficulties: [msg.block_header.id()].into_iter().cloned().collect(),
+                            k_total_difficulties: [msg.block_header.id()]
+                                .into_iter()
+                                .cloned()
+                                .collect(),
                         });
                         self.dag_accumulator = dag_accumulator;
 
-                        storage.get_startup_info()?.map(|mut startup_info| {
-                            startup_info.dag_main = Some(header.id());
-                            storage.save_startup_info(startup_info)
-                        }).expect("starup info should not be none")
+                        storage
+                            .get_startup_info()?
+                            .map(|mut startup_info| {
+                                startup_info.dag_main = Some(header.id());
+                                storage.save_startup_info(startup_info)
+                            })
+                            .expect("starup info should not be none")
                     }
                 } else {
                     Ok(()) // drop the block, the chain is still in single chain
@@ -282,21 +397,34 @@ impl ServiceHandler<Self, UpdateDagTips> for FlexidagService {
 }
 
 impl ServiceHandler<Self, GetDagTips> for FlexidagService {
-    fn handle(&mut self, _msg: GetDagTips, _ctx: &mut ServiceContext<FlexidagService>) -> Result<Option<Vec<HashValue>>> {
+    fn handle(
+        &mut self,
+        _msg: GetDagTips,
+        _ctx: &mut ServiceContext<FlexidagService>,
+    ) -> Result<Option<Vec<HashValue>>> {
         Ok(self.tips.clone())
     }
 }
 
 impl ServiceHandler<Self, GetDagAccumulatorInfo> for FlexidagService {
-    fn handle(&mut self, _msg: GetDagAccumulatorInfo, _ctx: &mut ServiceContext<FlexidagService>) -> Result<Option<AccumulatorInfo>> {
-        Ok(self.dag_accumulator.as_ref().map(|dag_accumulator_info| {
-            dag_accumulator_info.get_info()
-        }))
+    fn handle(
+        &mut self,
+        _msg: GetDagAccumulatorInfo,
+        _ctx: &mut ServiceContext<FlexidagService>,
+    ) -> Result<Option<AccumulatorInfo>> {
+        Ok(self
+            .dag_accumulator
+            .as_ref()
+            .map(|dag_accumulator_info| dag_accumulator_info.get_info()))
     }
 }
 
 impl ServiceHandler<Self, GetDagAccumulatorLeaves> for FlexidagService {
-    fn handle(&mut self, msg: GetDagAccumulatorLeaves, _ctx: &mut ServiceContext<FlexidagService>) -> Result<Vec<DagAccumulatorLeaf>> {
+    fn handle(
+        &mut self,
+        msg: GetDagAccumulatorLeaves,
+        _ctx: &mut ServiceContext<FlexidagService>,
+    ) -> Result<Vec<DagAccumulatorLeaf>> {
         match &self.dag_accumulator {
             Some(dag_accumulator) => {
                 let end_index = std::cmp::min(
@@ -310,8 +438,14 @@ impl ServiceHandler<Self, GetDagAccumulatorLeaves> for FlexidagService {
                     } else {
                         index
                     };
-                    let key = dag_accumulator.get_leaf(real_index)?.ok_or_else(|| anyhow!("the dag snapshot hash is none"))?;
-                    let snaptshot = self.storage.get_accumulator_snapshot_storage().get(key)?.expect("the snapshot should not be none");
+                    let key = dag_accumulator
+                        .get_leaf(real_index)?
+                        .ok_or_else(|| anyhow!("the dag snapshot hash is none"))?;
+                    let snaptshot = self
+                        .storage
+                        .get_accumulator_snapshot_storage()
+                        .get(key)?
+                        .expect("the snapshot should not be none");
                     result.push(DagAccumulatorLeaf {
                         leaf_index: real_index,
                         dag_accumulator_root: snaptshot.accumulator_info.accumulator_root,
@@ -325,16 +459,26 @@ impl ServiceHandler<Self, GetDagAccumulatorLeaves> for FlexidagService {
 }
 
 impl ServiceHandler<Self, GetDagBlockParents> for FlexidagService {
-    fn handle(&mut self, msg: GetDagBlockParents, _ctx: &mut ServiceContext<FlexidagService>) -> Result<DagBlockParents> {
+    fn handle(
+        &mut self,
+        msg: GetDagBlockParents,
+        _ctx: &mut ServiceContext<FlexidagService>,
+    ) -> Result<DagBlockParents> {
         match &self.dag {
-            Some(dag) => Ok(DagBlockParents { parents: dag.get_parents(msg.block_id)? } ) ,
+            Some(dag) => Ok(DagBlockParents {
+                parents: dag.get_parents(msg.block_id)?,
+            }),
             None => bail!("dag is none"),
         }
     }
 }
 
 impl ServiceHandler<Self, GetDagAccumulatorLeafDetail> for FlexidagService {
-    fn handle(&mut self, msg: GetDagAccumulatorLeafDetail, _ctx: &mut ServiceContext<FlexidagService>) -> Result<Vec<DagAccumulatorLeafDetail>> {
+    fn handle(
+        &mut self,
+        msg: GetDagAccumulatorLeafDetail,
+        _ctx: &mut ServiceContext<FlexidagService>,
+    ) -> Result<Vec<DagAccumulatorLeafDetail>> {
         match &self.dag_accumulator {
             Some(dag_accumulator) => {
                 let end_index = std::cmp::min(
@@ -342,10 +486,14 @@ impl ServiceHandler<Self, GetDagAccumulatorLeafDetail> for FlexidagService {
                     dag_accumulator.num_leaves() - 1,
                 );
                 let mut details = vec![];
-                let snapshot_storage = self.storage.get_accumulator_snapshot_storage(); 
+                let snapshot_storage = self.storage.get_accumulator_snapshot_storage();
                 for index in msg.leaf_index..=end_index {
-                    let key = dag_accumulator.get_leaf(index)?.ok_or_else(|| anyhow!("the dag snapshot hash is none"))?;
-                    let snapshot = snapshot_storage.get(key)?.ok_or_else(|| anyhow!("the dag snapshot is none"))?;
+                    let key = dag_accumulator
+                        .get_leaf(index)?
+                        .ok_or_else(|| anyhow!("the dag snapshot hash is none"))?;
+                    let snapshot = snapshot_storage
+                        .get(key)?
+                        .ok_or_else(|| anyhow!("the dag snapshot is none"))?;
                     details.push(DagAccumulatorLeafDetail {
                         accumulator_root: snapshot.accumulator_info.accumulator_root,
                         tips: snapshot.child_hashes,
@@ -359,11 +507,37 @@ impl ServiceHandler<Self, GetDagAccumulatorLeafDetail> for FlexidagService {
 }
 
 impl ServiceHandler<Self, AddToDag> for FlexidagService {
-    fn handle(&mut self, msg: AddToDag, _ctx: &mut ServiceContext<FlexidagService>) -> Result<MergesetBlues> {
+    fn handle(
+        &mut self,
+        msg: AddToDag,
+        _ctx: &mut ServiceContext<FlexidagService>,
+    ) -> Result<MergesetBlues> {
         let ghost_dag_data = self.add_to_dag(msg.block_header)?;
-        Ok(MergesetBlues { 
+        Ok(MergesetBlues {
             selected_parent: ghost_dag_data.selected_parent,
-            mergeset_blues: ghost_dag_data.mergeset_blues.as_ref().clone(), 
+            mergeset_blues: ghost_dag_data.mergeset_blues.as_ref().clone(),
         })
+    }
+}
+
+impl ServiceHandler<Self, ForkDagAccumulator> for FlexidagService {
+    fn handle(
+        &mut self,
+        msg: ForkDagAccumulator,
+        _ctx: &mut ServiceContext<FlexidagService>,
+    ) -> Result<AccumulatorInfo> {
+        let dag_accumulator = self
+            .dag_accumulator
+            .as_ref()
+            .ok_or_else(error || anyhow!("dag accumulator is none"))?;
+
+        if msg.dag_accumulator_index > dag_accumulator.num_leaves() {
+            self.merge_from_big_dag(msg)
+        } else {
+            self.merge_from_small_dag(msg)
+        }
+
+
+        // append the ForkDagAccumulator.new_blocks and the fetched blocks above into the forked dag accumulator
     }
 }

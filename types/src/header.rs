@@ -21,7 +21,9 @@ pub struct DagHeader {
 impl DagHeader {
     pub fn new(block_header: BlockHeader) -> Self {
         Self {
-            parents_hash: block_header.parents_hash().expect("dag block must have parents hash"),
+            parents_hash: block_header
+                .parents_hash()
+                .expect("dag block must have parents hash"),
             block_header,
         }
     }

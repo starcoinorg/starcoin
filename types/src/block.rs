@@ -51,8 +51,8 @@ impl std::fmt::Display for BlockHeaderExtra {
 
 impl<'de> Deserialize<'de> for BlockHeaderExtra {
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         if deserializer.is_human_readable() {
             let s = <String>::deserialize(deserializer)?;
@@ -79,8 +79,8 @@ impl<'de> Deserialize<'de> for BlockHeaderExtra {
 
 impl Serialize for BlockHeaderExtra {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         if serializer.is_human_readable() {
             format!("0x{}", hex::encode(self.0)).serialize(serializer)
@@ -91,7 +91,7 @@ impl Serialize for BlockHeaderExtra {
 }
 
 #[derive(
-Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Deserialize, Serialize, JsonSchema,
+    Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Deserialize, Serialize, JsonSchema,
 )]
 pub struct BlockIdAndNumber {
     pub id: HashValue,
@@ -159,7 +159,6 @@ pub struct BlockHeader {
     /// Parents hash.
     #[serde(skip_serializing_if = "Option::is_none")]
     parents_hash: ParentsHash,
-
 }
 
 impl BlockHeader {
@@ -371,8 +370,8 @@ impl BlockHeader {
 
 impl<'de> Deserialize<'de> for BlockHeader {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         #[derive(Deserialize)]
         #[serde(rename = "BlockHeader")]
@@ -391,7 +390,7 @@ impl<'de> Deserialize<'de> for BlockHeader {
             chain_id: ChainId,
             nonce: u32,
             extra: BlockHeaderExtra,
-            parents_hash:ParentsHash,
+            parents_hash: ParentsHash,
         }
 
         let header_data = BlockHeaderData::deserialize(deserializer)?;
@@ -410,7 +409,7 @@ impl<'de> Deserialize<'de> for BlockHeader {
             header_data.chain_id,
             header_data.nonce,
             header_data.extra,
-            header_data.parents_hash
+            header_data.parents_hash,
         );
         Ok(block_header)
     }
@@ -507,7 +506,7 @@ pub struct RawBlockHeader {
     /// The chain id
     pub chain_id: ChainId,
     /// parents hash
-    pub parents_hash:ParentsHash,
+    pub parents_hash: ParentsHash,
 }
 
 #[derive(Default)]
@@ -610,7 +609,7 @@ impl BlockHeaderBuilder {
 }
 
 #[derive(
-Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash,
+    Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash,
 )]
 pub struct BlockBody {
     /// The transactions in this block.
@@ -680,8 +679,8 @@ pub struct Block {
 
 impl Block {
     pub fn new<B>(header: BlockHeader, body: B) -> Self
-        where
-            B: Into<BlockBody>,
+    where
+        B: Into<BlockBody>,
     {
         Block {
             header,
@@ -797,7 +796,7 @@ impl Sample for Block {
 /// `BlockInfo` is the object we store in the storage. It consists of the
 /// block as well as the execution result of this block.
 #[derive(
-Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
+    Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
 )]
 pub struct BlockInfo {
     /// Block id
@@ -1014,7 +1013,7 @@ impl BlockTemplate {
             body_hash: self.body_hash,
             difficulty: self.difficulty,
             chain_id: self.chain_id,
-            parents_hash: self.parents_hash.clone()
+            parents_hash: self.parents_hash.clone(),
         }
     }
 
@@ -1061,7 +1060,7 @@ impl BlockTemplate {
             self.chain_id,
             nonce,
             extra,
-            self.parents_hash
+            self.parents_hash,
         )
     }
 }
@@ -1074,10 +1073,7 @@ pub struct ExecutedBlock {
 
 impl ExecutedBlock {
     pub fn new(block: Block, block_info: BlockInfo) -> Self {
-        ExecutedBlock {
-            block,
-            block_info,
-        }
+        ExecutedBlock { block, block_info }
     }
 
     pub fn total_difficulty(&self) -> U256 {

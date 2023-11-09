@@ -44,6 +44,4 @@ pub struct SyncDagBlockInfo {
     pub block_id: HashValue,
     pub block: Option<Block>,
     pub peer_id: Option<PeerId>,
-    pub dag_parents: Vec<HashValue>,
-    pub dag_transaction_header: Option<HashValue>,
 }

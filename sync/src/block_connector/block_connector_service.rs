@@ -13,8 +13,8 @@ use anyhow::{format_err, Ok, Result};
 use network_api::PeerProvider;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
-use starcoin_consensus::BlockDAG;
 use starcoin_consensus::dag::blockdag::InitDagState;
+use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_flexidag::FlexidagService;
@@ -23,7 +23,7 @@ use starcoin_network::NetworkServiceRef;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
-use starcoin_storage::{BlockStore, Storage, flexi_dag};
+use starcoin_storage::{flexi_dag, BlockStore, Storage};
 use starcoin_sync_api::PeerNewBlock;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
@@ -269,8 +269,8 @@ where
         debug!("try connect mined block: {}", id);
 
         match self.chain_service.try_connect(block) {
-            std::result::Result::Ok(ConnectOk::DagConnected(k_total_difficulty)) => {
-                match self.chain_service.dump_tips(block_header, k_total_difficulty) {
+            std::result::Result::Ok(ConnectOk::DagConnected) => {
+                match self.chain_service.dump_tips(block_header) {
                     std::result::Result::Ok(_) => (),
                     Err(e) => error!("failed to dump tips to dag accumulator: {}", e),
                 }
@@ -303,15 +303,13 @@ where
             return;
         }
         let peer_id = msg.get_peer_id();
-        if let Err(e) = self
-            .chain_service
-            .try_connect(msg.get_block().clone())
-        {
+        if let Err(e) = self.chain_service.try_connect(msg.get_block().clone()) {
             match e.downcast::<ConnectBlockError>() {
                 std::result::Result::Ok(connect_error) => {
                     match connect_error {
                         ConnectBlockError::FutureBlock(block) => {
-                            self.chain_service.update_tips(msg.get_block().header().clone())?;
+                            self.chain_service
+                                .update_tips(msg.get_block().header().clone())?;
                             //TODO cache future block
                             if let std::result::Result::Ok(sync_service) =
                                 ctx.service_ref::<SyncService>()
