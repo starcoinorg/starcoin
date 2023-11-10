@@ -11,7 +11,7 @@ pub trait ConsensusHeader {
     fn hash(&self) -> Hash;
     fn timestamp(&self) -> u64;
 }
-
+//TODO: Remove it and it's store
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct DagHeader {
     block_header: BlockHeader,

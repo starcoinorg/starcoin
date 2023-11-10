@@ -11,6 +11,7 @@ rand_core = { default-features = false, workspace = true }
 sp-utils = { workspace = true }
 starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
 starcoin-consensus = { workspace = true }
+flexidag = { workspace = true }
 starcoin-chain-api = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-executor = { package = "starcoin-executor", workspace = true }

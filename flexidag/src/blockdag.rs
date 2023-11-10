@@ -38,7 +38,6 @@ pub struct BlockDAG {
     header_store: DbHeadersStore,
     /// orphan blocks, parent hash -> orphan block
     missing_blocks: HashMap<Hash, HashSet<DagHeader>>,
-
 }
 
 impl BlockDAG {

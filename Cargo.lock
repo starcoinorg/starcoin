@@ -9334,6 +9334,7 @@ dependencies = [
  "anyhow",
  "bcs-ext",
  "clap 3.2.23",
+ "flexidag",
  "proptest",
  "proptest-derive",
  "rand 0.8.5",

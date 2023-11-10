@@ -620,6 +620,7 @@ pub struct BlockBody {
     pub transactions: Vec<SignedUserTransaction>,
     /// uncles block header
     pub uncles: Option<Vec<BlockHeader>>,
+
 }
 
 impl BlockBody {
