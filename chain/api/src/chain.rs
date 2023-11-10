@@ -116,10 +116,7 @@ pub trait ChainWriter {
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock>;
 
     /// Verify, Execute and Connect block to current chain.
-    fn apply(
-        &mut self,
-        block: Block,
-    ) -> Result<ExecutedBlock>;
+    fn apply(&mut self, block: Block) -> Result<ExecutedBlock>;
 
     fn chain_state(&mut self) -> &ChainStateDB;
 }

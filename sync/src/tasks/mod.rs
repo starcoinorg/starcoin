@@ -40,9 +40,12 @@ use stream_task::{
 
 pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {
     fn get_dag_targets(&self) -> Result<Vec<AccumulatorInfo>> {
-        Ok(self.peer_selector().peer_infos().into_iter().map(|peer_info| {
-            peer_info.chain_info().dag_accumulator_info().clone()
-        }).collect());
+        Ok(self
+            .peer_selector()
+            .peer_infos()
+            .into_iter()
+            .map(|peer_info| peer_info.chain_info().dag_accumulator_info().clone())
+            .collect());
     }
 
     fn get_best_target(
@@ -304,14 +307,7 @@ pub trait BlockFetcher: Send + Sync {
     fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<
-        Result<
-            Vec<(
-                Block,
-                Option<PeerId>,
-            )>,
-        >,
-    >;
+    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>>;
 }
 
 impl<T> BlockFetcher for Arc<T>
@@ -321,15 +317,7 @@ where
     fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<
-        '_,
-        Result<
-            Vec<(
-                Block,
-                Option<PeerId>,
-            )>,
-        >,
-    > {
+    ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
         BlockFetcher::fetch_blocks(self.as_ref(), block_ids)
     }
 }
@@ -338,15 +326,7 @@ impl BlockFetcher for VerifiedRpcClient {
     fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<
-        '_,
-        Result<
-            Vec<(
-                Block,
-                Option<PeerId>,
-            )>,
-        >,
-    > {
+    ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
         self.get_blocks(block_ids.clone())
             .and_then(|blocks| async move {
                 let results = block_ids
@@ -422,7 +402,7 @@ impl BlockLocalStore for Arc<dyn Store> {
                     let block_info = self.get_block_info(id)?;
 
                     Ok(Some(SyncBlockData::new(
-                        block, block_info, None, None, 1, None, None,
+                        block, block_info, None, None, 1, None,
                     )))
                 }
                 None => Ok(None),
@@ -440,7 +420,6 @@ pub enum BlockConnectAction {
 #[derive(Clone, Debug)]
 pub struct BlockConnectedEvent {
     pub block: Block,
-    pub dag_parents: Option<Vec<HashValue>>,
     pub feedback: Option<futures::channel::mpsc::UnboundedSender<BlockConnectedFinishEvent>>,
     pub action: BlockConnectAction,
 }

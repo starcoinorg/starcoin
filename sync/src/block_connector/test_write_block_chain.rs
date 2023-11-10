@@ -164,9 +164,7 @@ fn gen_fork_block_chain(
                 .unwrap();
             parent_id = block.id();
 
-            writeable_block_chain_service
-                .try_connect(block)
-                .unwrap();
+            writeable_block_chain_service.try_connect(block).unwrap();
         }
     }
 }

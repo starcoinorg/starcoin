@@ -14,11 +14,12 @@ use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_flexidag::flexidag_service::GetDagTips;
-use starcoin_flexidag::{FlexidagService, flexidag_service};
+use starcoin_flexidag::{flexidag_service, FlexidagService};
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest, ServiceRef,
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
+    ServiceRequest,
 };
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_txpool::TxPoolService;
@@ -372,6 +373,8 @@ where
     }
 
     fn get_dag_block_parents(&self) -> Result<Option<Vec<HashValue>>> {
-        Ok(async_std::task::block_on(self.flexidag_service.send(GetDagTips))??)
+        Ok(async_std::task::block_on(
+            self.flexidag_service.send(GetDagTips),
+        )??)
     }
 }
