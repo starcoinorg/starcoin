@@ -12,7 +12,7 @@ use crate::consensusdb::{
 };
 use anyhow::{anyhow, bail, Ok};
 use parking_lot::RwLock;
-use starcoin_crypto::HashValue as Hash;
+use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_types::{
     blockhash::{BlockHashes, KType, ORIGIN},
     header::{ConsensusHeader, DagHeader},
@@ -81,11 +81,14 @@ impl BlockDAG {
         self.relations_store
             .insert(Hash::new(ORIGIN), BlockHashes::new(vec![]))
             .unwrap();
-        let _ = self.addToDag(genesis);
+        let _ = self.commit(genesis);
         Ok(())
     }
+    pub fn ghostdata(&self, parents: &[HashValue]) -> GhostdagData {
+        self.ghostdag_manager.ghostdag(parents)
+    }
 
-    pub fn addToDag(&mut self, header: DagHeader) -> anyhow::Result<GhostdagData> {
+    pub fn commit(&self, header: DagHeader) -> anyhow::Result<()> {
         //TODO:check genesis
         // Generate ghostdag data
         let parents_hash = header.parents_hash();
@@ -119,7 +122,7 @@ impl BlockDAG {
         let _ = self
             .header_store
             .insert(header.hash(), Arc::new(header.to_owned()), 0)?;
-        return Ok(ghostdag_data.clone());
+        return Ok(());
     }
 
     fn is_in_dag(&self, _hash: Hash) -> anyhow::Result<bool> {
@@ -136,7 +139,7 @@ impl BlockDAG {
         if is_orphan_block {
             return Ok(());
         }
-        self.addToDag(header.clone());
+        self.commit(header.clone());
         self.check_missing_block(header)?;
         Ok(())
     }
@@ -146,7 +149,7 @@ impl BlockDAG {
             for orphan in orphans.iter() {
                 let is_orphan = self.is_orphan(&orphan)?;
                 if !is_orphan {
-                    self.addToDag(header.clone());
+                    self.commit(header.clone());
                 }
             }
         }
@@ -254,7 +257,7 @@ mod tests {
             .expect("Failed to create flexidag storage");
         let mut dag = BlockDAG::new(genesis_hash, k, db);
         dag.init_with_genesis(genesis);
-        let block = DagHeader::new(BlockHeader::random(), vec![genesis_hash]);
-        dag.addToDag(block);
+        let block = DagHeader::new(BlockHeader::random());
+        dag.commit(block);
     }
 }

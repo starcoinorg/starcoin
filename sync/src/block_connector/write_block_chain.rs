@@ -687,7 +687,7 @@ where
 
     fn connect_dag_inner(&mut self, block: Block) -> Result<ConnectOk> {
         let block_id = block.id();
-        let ghost_dag_data = self.dag.lock().addToDag(DagHeader::new(block.header))?;
+        let ghost_dag_data = self.dag.lock().commit(DagHeader::new(block.header))?;
         let selected_parent = self
             .storage
             .get_block_by_hash(ghost_dag_data.selected_parent)?
