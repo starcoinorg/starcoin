@@ -267,7 +267,7 @@ impl SyncService {
 
             if let Some(local_dag_accumulator_info) = op_local_dag_accumulator_info {
                 let dag_sync_futs = rpc_client
-                    .get_dag_targets()?
+                    .get_dag_targets(current_block_info.get_total_difficulty(), local_dag_accumulator_info.get_num_leaves())?
                     .into_iter()
                     .fold(Ok(vec![]), |mut futs, target_accumulator_infos| {
                         let (fut, task_handle, task_event_handle) = sync_dag_full_task(
@@ -681,7 +681,7 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService {
 
 impl EventHandler<Self, NewHeadBlock> for SyncService {
     fn handle_event(&mut self, msg: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
-        let NewHeadBlock(block, tips_hash) = msg;
+        let NewHeadBlock(block) = msg;
         if self.sync_status.update_chain_status(ChainStatus::new(
             block.header().clone(),
             block.block_info.clone(),

@@ -24,6 +24,7 @@ pub fn build_lighting_network(
         chain_info.genesis_hash(),
         chain_info.status().clone(),
         chain_info.dag_accumulator_info().clone(),
+        chain_info.k_total_difficulties().clone(),
     );
     build_network_worker(
         network_config,

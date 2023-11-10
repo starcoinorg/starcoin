@@ -586,14 +586,15 @@ impl BlockChain {
 
 impl ChainReader for BlockChain {
     fn info(&self) -> ChainInfo {
+        let (dag_accumulator, k_total_difficulties) = self.storage.get_lastest_snapshot()?.map(|snapshot| {
+            (Some(snapshot.accumulator_info), Some(snapshot.k_total_difficulties))
+        }).unwrap_or((None, None));
         ChainInfo::new(
             self.status.head.header().chain_id(),
             self.genesis_hash,
             self.status.status.clone(),
-            self.storage.get_dag_accumulator_info().expect(&format!(
-                "the dag accumulator info cannot be found by id: {}",
-                self.status.head.header().id()
-            )),
+            dag_accumulator,
+            k_total_difficulties,
         )
     }
 
