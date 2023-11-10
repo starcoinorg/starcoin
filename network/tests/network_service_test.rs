@@ -39,6 +39,7 @@ fn build_test_network_services(num: usize) -> Vec<NetworkComponent> {
         HashValue::random(),
         ChainStatus::random(),
         None,
+        None,
     );
     for _index in 0..num {
         let mut boot_nodes = Vec::new();

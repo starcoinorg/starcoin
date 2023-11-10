@@ -15,7 +15,7 @@ use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBl
 use starcoin_config::{Connect, G_CRATE_VERSION};
 use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
-use starcoin_flexidag::flexidag_service::{AddToDag, GetDagTips, ForkDagAccumulator};
+use starcoin_flexidag::flexidag_service::{AddToDag, GetDagTips, ForkDagAccumulator, FinishSync};
 use starcoin_flexidag::FlexidagService;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::ServiceRef;
@@ -417,6 +417,11 @@ where
             dag_accumulator_index: start_index, 
             block_header_id: self.chain.head_block().id(),
         }))??);
+        if state == State::Enough {
+            async_std::task::block_on(self.flexidag_service.send(FinishSync {
+                dag_accumulator_info: self.new_dag_accumulator_info.clone(),
+            }))??
+        }
         return Ok(state);
     }
 

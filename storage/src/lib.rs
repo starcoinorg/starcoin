@@ -15,7 +15,7 @@ use crate::{
     transaction::TransactionStorage,
     transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage},
 };
-use anyhow::{bail, format_err, Error, Ok, Result};
+use anyhow::{anyhow, bail, format_err, Error, Ok, Result};
 use flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagSnapshotStorage, SyncFlexiDagStorage};
 use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
@@ -23,7 +23,7 @@ use once_cell::sync::Lazy;
 use starcoin_accumulator::{
     accumulator_info::{self, AccumulatorInfo},
     node::AccumulatorStoreType,
-    AccumulatorTreeStore,
+    AccumulatorTreeStore, MerkleAccumulator, Accumulator,
 };
 use starcoin_config::ChainNetworkID;
 use starcoin_crypto::HashValue;
@@ -339,6 +339,7 @@ pub trait SyncFlexiDagStore {
     fn get_dag_accumulator_info(&self) -> Result<Option<AccumulatorInfo>>;
     fn get_tips_by_block_id(&self, block_id: HashValue) -> Result<Vec<HashValue>>;
     fn dag_fork_height(&self, id: ChainNetworkID) -> BlockNumber;
+    fn get_lastest_snapshot(&self) -> Result<Option<SyncFlexiDagSnapshot>>;
 }
 
 // TODO: remove Arc<dyn Store>, we can clone Storage directly.
@@ -456,12 +457,13 @@ impl BlockStore for Storage {
         let head_block_info = self.get_block_info(head_block.id())?.ok_or_else(|| {
             format_err!("Startup block info {:?} should exist", startup_info.main)
         })?;
-
+        let snapshot = self.get_lastest_snapshot()?.ok_or_else(error || anyhow!("latest snapshot is  none"))?;
         let chain_info = ChainInfo::new(
             head_block.chain_id(),
             genesis_hash,
             ChainStatus::new(head_block.clone(), head_block_info),
-            self.get_dag_accumulator_info()?,
+            Some(snapshot.accumulator_info),
+            Some(snapshot.k_total_difficulties),
         );
         Ok(Some(chain_info))
     }
@@ -672,6 +674,13 @@ impl SyncFlexiDagStore for Storage {
 
     fn get_accumulator_snapshot_storage(&self) -> std::sync::Arc<SyncFlexiDagSnapshotStorage> {
         self.flexi_dag_storage.get_snapshot_storage()
+    }
+
+    fn get_lastest_snapshot(&self) -> Result<Option<SyncFlexiDagSnapshot>> {
+        let info = self.get_dag_accumulator_info()?.ok_or_else(error || anyhow!("dag startup info is none"))?;
+        let merkle_tree = MerkleAccumulator::new_with_info(info, storage.get_accumulator_store(AccumulatorStoreType::SyncDag));
+        let key = merkle_tree.get_leaf(merkle_tree.num_leaves() - 1)?.ok_or_else(errors || anyhow!("faile to get the key since it is none"))?;
+        self.query_by_hash(key)
     }
 
     fn get_dag_accumulator_info(&self) -> Result<Option<AccumulatorInfo>> {

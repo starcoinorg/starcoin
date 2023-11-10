@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::{anyhow, bail, Error, Ok, Result};
-use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator};
+use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator, node::AccumulatorStoreType};
 use starcoin_config::{NodeConfig, TimeService};
 use starcoin_consensus::{dag::types::ghostdata::GhostdagData, BlockDAG};
 use starcoin_crypto::HashValue;
@@ -14,7 +14,7 @@ use starcoin_service_registry::{
 use starcoin_storage::{
     flexi_dag::{KTotalDifficulty, SyncFlexiDagSnapshot, SyncFlexiDagSnapshotHasher},
     storage::CodecKVStore,
-    BlockStore, Storage, SyncFlexiDagStore, block_info::BlockInfoStore,
+    BlockStore, Storage, SyncFlexiDagStore, block_info::BlockInfoStore, Store,
 };
 use starcoin_types::{block::BlockHeader, header::DagHeader, startup_info};
 
@@ -125,6 +125,15 @@ pub struct ForkDagAccumulator {
 
 impl ServiceRequest for ForkDagAccumulator {
     type Response = anyhow::Result<AccumulatorInfo>;
+}
+
+#[derive(Debug, Clone)]
+pub struct FinishSync {
+    pub dag_accumulator_info: AccumulatorInfo,
+}
+
+impl ServiceRequest for FinishSync {
+    type Response = anyhow::Result<()>;
 }
 
 pub struct TipInfo {
@@ -536,8 +545,28 @@ impl ServiceHandler<Self, ForkDagAccumulator> for FlexidagService {
         } else {
             self.merge_from_small_dag(msg)
         }
+    }
+}
 
-
-        // append the ForkDagAccumulator.new_blocks and the fetched blocks above into the forked dag accumulator
+impl ServiceHandler<Self, FinishSync> for FlexidagService {
+    fn handle(
+        &mut self,
+        msg: FinishSync,
+        _ctx: &mut ServiceContext<FlexidagService>,
+    ) -> Result<()> {
+        let dag_accumulator = self.dag_accumulator.ok_or_else(|| anyhow!("the dag_accumulator is none when sync finish"))?;
+        let local_info = dag_accumulator.get_info();
+        if msg.dag_accumulator_info.get_num_leaves() < local_info.get_num_leaves() {
+            let mut new_dag_accumulator = MerkleAccumulator::new_with_info(msg.dag_accumulator_info, self.storage.get_accumulator_store(AccumulatorStoreType::SyncDag));
+            for index in msg.dag_accumulator_info.get_num_leaves()..local_info.get_num_leaves() {
+                let key = dag_accumulator.get_leaf(index)?.ok_or_else(|| anyhow!("the dag_accumulator leaf is none when sync finish"))?;
+                new_dag_accumulator.append(&[key])?;
+            }
+            self.dag_accumulator = Some(new_dag_accumulator);
+            Ok(())
+        } else {
+            self.dag_accumulator = Some(MerkleAccumulator::new_with_info(msg.dag_accumulator_info, self.storage.get_accumulator_store(AccumulatorStoreType::SyncDag)));
+            Ok(())
+        }
     }
 }

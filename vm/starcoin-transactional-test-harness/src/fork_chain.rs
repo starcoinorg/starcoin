@@ -132,7 +132,7 @@ impl ForkBlockChain {
         self.number_hash_map
             .insert(self.current_number, block.header().id());
         self.status = Some(ChainStatusWithBlock {
-            status: ChainStatus::new(block.header().clone(), block_info.clone(), None),
+            status: ChainStatus::new(block.header().clone(), block_info.clone()),
             head: block.clone(),
         });
         self.storage.save_block_info(block_info)?;
@@ -198,6 +198,7 @@ impl ChainApi for MockChainApi {
                     status.head.header().chain_id(),
                     HashValue::random(),
                     status.status,
+                    None,
                     None,
                 ))),
                 None => match client {

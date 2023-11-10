@@ -195,13 +195,16 @@ impl ServiceFactory<NetworkActorService> for MockNetworkServiceFactory {
             .ok_or_else(|| format_err!("can't get block info by hash {}", head_block_hash))?;
         let dag_tips = storage.get_tips_by_block_id(head_block_hash)?;
         let chain_status =
-            ChainStatus::new(head_block_header.clone(), head_block_info, Some(dag_tips));
-        let dag_accumulator_info = storage.get_dag_accumulator_info()?;
+            ChainStatus::new(head_block_header.clone(), head_block_info);
+        let (dag_accumulator_info, k_total_difficulties) = storage.get_lastest_snapshot()?.map(|snapshot| {
+            (Some(snapshot.accumulator_info), Some(snapshot.k_total_difficulties))
+        }).unwrap_or((None, None));
         let chain_state_info = ChainInfo::new(
             config.net().chain_id(),
             genesis_hash,
             chain_status.clone(),
             dag_accumulator_info.clone(),
+            k_total_difficulties,
         );
         let actor_service =
             NetworkActorService::new(config, chain_state_info, rpc, peer_message_handle.clone())?;

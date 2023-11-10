@@ -39,12 +39,26 @@ use stream_task::{
 };
 
 pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {
-    fn get_dag_targets(&self) -> Result<Vec<AccumulatorInfo>> {
+    fn get_dag_targets(&self, total_difficulty: U256, local_dag_accumulator_leaf_num: u64) -> Result<Vec<AccumulatorInfo>> {
         Ok(self
             .peer_selector()
             .peer_infos()
             .into_iter()
-            .map(|peer_info| peer_info.chain_info().dag_accumulator_info().clone())
+            .filter(|peer_info| {
+                match (peer_info.chain_info().dag_accumulator_info(), peer_info.chain_info().k_total_difficulties()) {
+                    (Some(info), Some(k)) => {
+                        k.first() <= total_difficulty || info.get_num_leaves() > local_dag_accumulator_leaf_num
+                    }
+                    (NOne, None) => false,
+                    _ => {
+                        warn!("dag accumulator is inconsistent with k total difficulty");
+                        false
+                    }
+                } 
+            })
+            .map(|peer_info| {
+                peer_info.chain_info().dag_accumulator_info().clone()
+            })
             .collect());
     }
 
