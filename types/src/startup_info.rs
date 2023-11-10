@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block::{BlockHeader, BlockInfo, BlockNumber};
+use crate::dag_block::KTotalDifficulty;
 use anyhow::Result;
 use bcs_ext::{BCSCodec, Sample};
 use schemars::JsonSchema;
@@ -24,7 +25,7 @@ pub struct ChainInfo {
     genesis_hash: HashValue,
     status: ChainStatus,
     flexi_dag_accumulator_info: Option<AccumulatorInfo>,
-    k_total_difficulties: BTreeSet<KTotalDifficulty>,
+    k_total_difficulties: Option<BTreeSet<KTotalDifficulty>>,
 }
 
 impl ChainInfo {
@@ -33,12 +34,14 @@ impl ChainInfo {
         genesis_hash: HashValue,
         status: ChainStatus,
         flexi_dag_accumulator_info: Option<AccumulatorInfo>,
+        k_total_difficulties: Option<BTreeSet<KTotalDifficulty>>,
     ) -> Self {
         Self {
             chain_id,
             genesis_hash,
             status,
             flexi_dag_accumulator_info,
+            k_total_difficulties,
         }
     }
 
@@ -77,6 +80,10 @@ impl ChainInfo {
         self.status.info.get_total_difficulty()
     }
 
+    pub fn k_total_difficulties(&self) -> &Option<BTreeSet<KTotalDifficulty>> {
+        &self.k_total_difficulties
+    }
+
     pub fn into_inner(self) -> (ChainId, HashValue, ChainStatus) {
         (self.chain_id, self.genesis_hash, self.status)
     }
@@ -92,6 +99,7 @@ impl ChainInfo {
                 rand::random::<u64>(),
                 rand::random::<u64>(),
             )),
+            k_total_difficulties: Some(BTreeSet::new()),
         }
     }
 }
@@ -103,6 +111,7 @@ impl std::default::Default for ChainInfo {
             genesis_hash: HashValue::default(),
             status: ChainStatus::sample(),
             flexi_dag_accumulator_info: Some(AccumulatorInfo::default()),
+            k_total_difficulties: Some(BTreeSet::new()),
         }
     }
 }

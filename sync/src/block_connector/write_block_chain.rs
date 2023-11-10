@@ -638,7 +638,7 @@ where
 
         if let Err(e) = self
             .bus
-            .broadcast(NewHeadBlock(Arc::new(block), dag_parents))
+            .broadcast(NewHeadBlock(Arc::new(block)))
         {
             error!("Broadcast NewHeadBlock error: {:?}", e);
         }
