@@ -29,6 +29,7 @@ use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
+use starcoin_types::dag_block::KTotalDifficulty;
 use starcoin_types::filter::Filter;
 use starcoin_types::header::DagHeader;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
@@ -47,6 +48,7 @@ use starcoin_vm_types::effects::Op;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::Epoch;
 use std::cmp::min;
+use std::collections::BTreeSet;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::{collections::HashMap, sync::Arc};
@@ -192,6 +194,13 @@ impl BlockChain {
                 .expect("failed to calculate the dag key"),
             new_tips,
             dag_accumulator.get_info(),
+            genesis_id,
+            [KTotalDifficulty {
+                head_block_id: genesis_id,
+                total_difficulty: executed_block.block_info().get_total_difficulty(),
+            }]
+            .into_iter()
+            .collect(),
         )?;
         Self::new(time_service, executed_block.block.id(), storage, net, None)
     }
@@ -378,10 +387,7 @@ impl BlockChain {
         V::verify_block(self, block)
     }
 
-    pub fn apply_with_verifier<V>(
-        &mut self,
-        block: Block,
-    ) -> Result<ExecutedBlock>
+    pub fn apply_with_verifier<V>(&mut self, block: Block) -> Result<ExecutedBlock>
     where
         V: BlockVerifier,
     {
@@ -393,18 +399,12 @@ impl BlockChain {
     }
 
     //TODO remove this function.
-    pub fn update_chain_head(
-        &mut self,
-        block: Block,
-    ) -> Result<ExecutedBlock> {
+    pub fn update_chain_head(&mut self, block: Block) -> Result<ExecutedBlock> {
         let block_info = self
             .storage
             .get_block_info(block.id())?
             .ok_or_else(|| format_err!("Can not find block info by hash {:?}", block.id()))?;
-        self.connect(ExecutedBlock {
-            block,
-            block_info,
-        })
+        self.connect(ExecutedBlock { block, block_info })
     }
 
     //TODO consider move this logic to BlockExecutor
@@ -572,10 +572,7 @@ impl BlockChain {
         storage.save_table_infos(txn_table_infos)?;
 
         watch(CHAIN_WATCH_NAME, "n26");
-        Ok(ExecutedBlock {
-            block,
-            block_info,
-        })
+        Ok(ExecutedBlock { block, block_info })
     }
 
     pub fn get_txn_accumulator(&self) -> &MerkleAccumulator {
@@ -593,12 +590,10 @@ impl ChainReader for BlockChain {
             self.status.head.header().chain_id(),
             self.genesis_hash,
             self.status.status.clone(),
-            self.storage
-                .get_dag_accumulator_info()
-                .expect(&format!(
-                    "the dag accumulator info cannot be found by id: {}",
-                    self.status.head.header().id()
-                )),
+            self.storage.get_dag_accumulator_info().expect(&format!(
+                "the dag accumulator info cannot be found by id: {}",
+                self.status.head.header().id()
+            )),
         )
     }
 
@@ -607,10 +602,7 @@ impl ChainReader for BlockChain {
     }
 
     fn head_block(&self) -> ExecutedBlock {
-        ExecutedBlock::new(
-            self.status.head.clone(),
-            self.status.status.info.clone(),
-        )
+        ExecutedBlock::new(self.status.head.clone(), self.status.status.info.clone())
     }
 
     fn current_header(&self) -> BlockHeader {
@@ -1082,10 +1074,7 @@ impl ChainWriter for BlockChain {
 
         self.statedb = ChainStateDB::new(self.storage.clone().into_super_arc(), Some(state_root));
         self.status = ChainStatusWithBlock {
-            status: ChainStatus::new(
-                block.header().clone(),
-                block_info.clone(),
-            ),
+            status: ChainStatus::new(block.header().clone(), block_info.clone()),
             head: block.clone(),
         };
         if self.epoch.end_block_number() == block.header().number() {
@@ -1100,10 +1089,7 @@ impl ChainWriter for BlockChain {
         Ok(executed_block)
     }
 
-    fn apply(
-        &mut self,
-        block: Block,
-    ) -> Result<ExecutedBlock> {
+    fn apply(&mut self, block: Block) -> Result<ExecutedBlock> {
         self.apply_with_verifier::<FullVerifier>(block)
     }
 

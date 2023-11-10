@@ -48,7 +48,6 @@ impl Sample for TransactionsMessage {
 pub struct CompactBlockMessage {
     pub compact_block: CompactBlock,
     pub block_info: BlockInfo,
-    pub tips_hash: Option<Vec<HashValue>>,
 }
 
 impl CompactBlockMessage {
@@ -60,7 +59,6 @@ impl CompactBlockMessage {
         Self {
             compact_block,
             block_info,
-            tips_hash,
         }
     }
 }

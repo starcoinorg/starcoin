@@ -5,7 +5,7 @@ use crate::block_connector::BlockConnectorService;
 use crate::sync_metrics::SyncMetrics;
 use crate::tasks::{full_sync_task, sync_dag_full_task, AncestorEvent, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
-use anyhow::{format_err, Result, Ok};
+use anyhow::{format_err, Ok, Result};
 use futures::executor::block_on;
 use futures::FutureExt;
 use futures_timer::Delay;
@@ -17,8 +17,8 @@ use starcoin_chain_api::{ChainReader, ChainWriter};
 use starcoin_config::NodeConfig;
 use starcoin_consensus::BlockDAG;
 use starcoin_executor::VMMetrics;
-use starcoin_flexidag::{FlexidagService, flexidag_service};
 use starcoin_flexidag::flexidag_service::GetDagAccumulatorInfo;
+use starcoin_flexidag::{flexidag_service, FlexidagService};
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
 use starcoin_network::PeerEvent;
@@ -100,23 +100,19 @@ impl SyncService {
         // let genesis = storage
         //     .get_genesis()?
         //     .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
-        let dag_accumulator_info =
-            match storage.get_dag_accumulator_info()? {
-                Some(info) => Some(info),
-                None => {
-                    warn!(
-                        "Can not find dag accumulator info by head block id: {}, use genesis info.",
-                        head_block_info.block_id(),
-                    );
-                    None
-                }
-            };
+        let dag_accumulator_info = match storage.get_dag_accumulator_info()? {
+            Some(info) => Some(info),
+            None => {
+                warn!(
+                    "Can not find dag accumulator info by head block id: {}, use genesis info.",
+                    head_block_info.block_id(),
+                );
+                None
+            }
+        };
         Ok(Self {
             sync_status: SyncStatus::new(
-                ChainStatus::new(
-                    head_block.header.clone(),
-                    head_block_info,
-                ),
+                ChainStatus::new(head_block.header.clone(), head_block_info),
                 dag_accumulator_info,
             ),
             stage: SyncStage::NotStart,
@@ -266,41 +262,43 @@ impl SyncService {
                 network.clone(),
             ));
 
-            let op_local_dag_accumulator_info = self.flexidag_service.send(GetDagAccumulatorInfo).await??;
+            let op_local_dag_accumulator_info =
+                self.flexidag_service.send(GetDagAccumulatorInfo).await??;
 
             if let Some(local_dag_accumulator_info) = op_local_dag_accumulator_info {
-                let dag_sync_futs = rpc_client.get_dag_targets()?.into_iter().fold(Ok(vec![]), |mut futs, target_accumulator_infos| {
-                    let (fut, task_handle, task_event_handle) = sync_dag_full_task(
-                        local_dag_accumulator_info,
-                        target_accumulator_info,
-                        rpc_client.clone(),
-                        dag_accumulator_store,
-                        dag_accumulator_snapshot,
-                        storage.clone(),
-                        config.net().time_service(),
-                        vm_metrics.clone(),
-                        connector_service.clone(),
-                        network.clone(),
-                        skip_pow_verify,
-                        dag.clone(),
-                        block_chain_service.clone(),
-                        config.net().id().clone(),
-                    )?;
-                    self_ref.notify(SyncBeginEvent {
-                        target,
-                        task_handle,
-                        task_event_handle,
-                        peer_selector,
-                    })?;
-                    if let Some(sync_task_total) = sync_task_total.as_ref() {
-                        sync_task_total.with_label_values(&["start"]).inc();
-                    }
-                    futs.and_then(|v| {
-                        v.push(fut)
-                    })
-                })?.into_iter().fold(Ok(vec![]), |chain, fut| {
-                    Ok(vec![fut.await?])
-                })?;
+                let dag_sync_futs = rpc_client
+                    .get_dag_targets()?
+                    .into_iter()
+                    .fold(Ok(vec![]), |mut futs, target_accumulator_infos| {
+                        let (fut, task_handle, task_event_handle) = sync_dag_full_task(
+                            local_dag_accumulator_info,
+                            target_accumulator_info,
+                            rpc_client.clone(),
+                            dag_accumulator_store,
+                            dag_accumulator_snapshot,
+                            storage.clone(),
+                            config.net().time_service(),
+                            vm_metrics.clone(),
+                            connector_service.clone(),
+                            network.clone(),
+                            skip_pow_verify,
+                            dag.clone(),
+                            block_chain_service.clone(),
+                            config.net().id().clone(),
+                        )?;
+                        self_ref.notify(SyncBeginEvent {
+                            target,
+                            task_handle,
+                            task_event_handle,
+                            peer_selector,
+                        })?;
+                        if let Some(sync_task_total) = sync_task_total.as_ref() {
+                            sync_task_total.with_label_values(&["start"]).inc();
+                        }
+                        futs.and_then(|v| v.push(fut))
+                    })?
+                    .into_iter()
+                    .fold(Ok(vec![]), |chain, fut| Ok(vec![fut.await?]))?;
                 assert!(dag_sync_futs.len() <= 1);
                 if dag_sync_futs.len() == 1 {
                     Ok(Some(dag_sync_futs[0]))

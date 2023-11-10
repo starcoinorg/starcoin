@@ -224,11 +224,7 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                             block_hash
                         )
                     })?;
-                    let result = connect_service
-                        .send(ExecuteRequest {
-                            block,
-                        })
-                        .await??;
+                    let result = connect_service.send(ExecuteRequest { block }).await??;
                     info!("Re execute result: {:?}", result);
                     Ok(())
                 };

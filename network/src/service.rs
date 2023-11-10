@@ -717,12 +717,11 @@ impl Inner {
                 //2. Sync status change.
                 // may be update by repeat message, but can not find a more good way.
                 self.network_service.update_business_status(
-                    ChainStatus::new(
-                        msg.compact_block.header.clone(),
-                        msg.block_info.clone(),
-                    )
-                    .encode()
-                    .expect("Encoding the compact_block.header and block_info must be successful"),
+                    ChainStatus::new(msg.compact_block.header.clone(), msg.block_info.clone())
+                        .encode()
+                        .expect(
+                            "Encoding the compact_block.header and block_info must be successful",
+                        ),
                 );
 
                 self.self_peer.known_blocks.put(id, ());

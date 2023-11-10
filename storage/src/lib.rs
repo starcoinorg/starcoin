@@ -21,7 +21,9 @@ use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use starcoin_accumulator::{
-    accumulator_info::{AccumulatorInfo, self}, node::AccumulatorStoreType, AccumulatorTreeStore,
+    accumulator_info::{self, AccumulatorInfo},
+    node::AccumulatorStoreType,
+    AccumulatorTreeStore,
 };
 use starcoin_config::ChainNetworkID;
 use starcoin_crypto::HashValue;
@@ -31,8 +33,9 @@ use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo, BlockNumber},
     blockhash::ORIGIN,
     contract_event::ContractEvent,
+    dag_block::KTotalDifficulty,
     header,
-    startup_info::{ChainInfo, ChainStatus, SnapshotRange, StartupInfo, self},
+    startup_info::{self, ChainInfo, ChainStatus, SnapshotRange, StartupInfo},
     transaction::{RichTransactionInfo, Transaction},
 };
 use starcoin_vm_types::{
@@ -41,7 +44,7 @@ use starcoin_vm_types::{
     state_store::table::{TableHandle, TableInfo},
 };
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     fmt::{Debug, Display, Formatter},
     sync::Arc,
 };
@@ -330,6 +333,8 @@ pub trait SyncFlexiDagStore {
         key: HashValue,
         new_tips: Vec<HashValue>,
         accumulator_info: AccumulatorInfo,
+        head_block_id: HashValue,
+        k_total_difficulties: BTreeSet<KTotalDifficulty>,
     ) -> Result<()>;
     fn get_dag_accumulator_info(&self) -> Result<Option<AccumulatorInfo>>;
     fn get_tips_by_block_id(&self, block_id: HashValue) -> Result<Vec<HashValue>>;
@@ -682,19 +687,29 @@ impl SyncFlexiDagStore for Storage {
 
         let dag_main = dag_main.unwrap();
 
-        Ok(Some(self.flexi_dag_storage.get_snapshot_storage().get(dag_main)?.expect("snapshot should not be none").accumulator_info))
+        Ok(Some(
+            self.flexi_dag_storage
+                .get_snapshot_storage()
+                .get(dag_main)?
+                .expect("snapshot should not be none")
+                .accumulator_info,
+        ))
     }
 
-    // update dag accumulator 
+    // update dag accumulator
     fn append_dag_accumulator_leaf(
         &self,
         key: HashValue,
         new_tips: Vec<HashValue>,
         accumulator_info: AccumulatorInfo,
+        head_block_id: HashValue,
+        k_total_difficulties: BTreeSet<KTotalDifficulty>,
     ) -> Result<()> {
         let snapshot = SyncFlexiDagSnapshot {
             child_hashes: new_tips.clone(),
             accumulator_info: accumulator_info.clone(),
+            head_block_id,
+            k_total_difficulties,
         };
         // for sync
         if let Some(t) = self.flexi_dag_storage.get_hashes_by_hash(key)? {

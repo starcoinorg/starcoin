@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{bail, format_err, Error, Result, Ok};
+use anyhow::{bail, format_err, Error, Ok, Result};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
@@ -12,8 +12,10 @@ use starcoin_chain_api::{
 use starcoin_config::NodeConfig;
 use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
-use starcoin_flexidag::{FlexidagService, flexidag_service};
-use starcoin_flexidag::flexidag_service::{GetDagAccumulatorLeafDetail, UpdateDagTips, GetDagBlockParents};
+use starcoin_flexidag::flexidag_service::{
+    GetDagAccumulatorLeafDetail, GetDagBlockParents, UpdateDagTips,
+};
+use starcoin_flexidag::{flexidag_service, FlexidagService};
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::dag_protocol::{
     GetDagAccumulatorLeaves, GetTargetDagAccumulatorLeafDetail, TargetDagAccumulatorLeaf,
@@ -25,6 +27,7 @@ use starcoin_service_registry::{
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::contract_event::ContractEventInfo;
+use starcoin_types::dag_block::KTotalDifficulty;
 use starcoin_types::filter::Filter;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::transaction::RichTransactionInfo;
@@ -93,8 +96,7 @@ impl EventHandler<Self, NewHeadBlock> for ChainReaderService {
         let new_head = event.0.block().header().clone();
         if let Err(e) = if self.inner.get_main().can_connect(event.0.as_ref()) {
             match self.inner.update_chain_head(event.0.as_ref().clone()) {
-                // wait for fixing: update_dag_accumulator should be in BlockChain
-                std::result::Result::Ok(_) => self.inner.update_dag_accumulator(new_head),
+                std::result::Result::Ok(_) => (),
                 Err(e) => Err(e),
             }
         } else {
@@ -266,12 +268,14 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetTargetDagAccumulatorLeafDetail {
                 leaf_index,
                 batch_size,
-            } => {
-                Ok(ChainResponse::TargetDagAccumulatorLeafDetail(self.inner.get_target_dag_accumulator_leaf_detail(GetTargetDagAccumulatorLeafDetail {
-                    leaf_index,
-                    batch_size,
-                })?))
-            },
+            } => Ok(ChainResponse::TargetDagAccumulatorLeafDetail(
+                self.inner.get_target_dag_accumulator_leaf_detail(
+                    GetTargetDagAccumulatorLeafDetail {
+                        leaf_index,
+                        batch_size,
+                    },
+                )?,
+            )),
         }
     }
 }
@@ -335,6 +339,11 @@ impl ChainReaderServiceInner {
     pub fn update_dag_accumulator(&mut self, new_block_header: BlockHeader) -> Result<()> {
         async_std::task::block_on(self.flexidag_service.send(UpdateDagTips {
             block_header: new_block_header,
+            current_head_block_id: self.main.status().info().id(),
+            k_total_difficulty: KTotalDifficulty {
+                head_block_id: self.main.status().info().id(),
+                total_difficulty: self.main.status().info().get_total_difficulty(),
+            },
         }))?
     }
 }
@@ -357,11 +366,12 @@ impl ReadableChainService for ChainReaderServiceInner {
             .into_iter()
             .map(|block| {
                 if let Some(block) = block {
-                    let result_parents = async_std::task::block_on(self.flexidag_service.send(GetDagBlockParents {
-                        block_id: block.id(),
-                    })).expect("failed to get the dag block parents");
-                    let parents = match result_parents
-                    {
+                    let result_parents =
+                        async_std::task::block_on(self.flexidag_service.send(GetDagBlockParents {
+                            block_id: block.id(),
+                        }))
+                        .expect("failed to get the dag block parents");
+                    let parents = match result_parents {
                         std::result::Result::Ok(parents) => parents.parents,
                         Err(_) => panic!("failed to get parents of block {}", block.id()),
                     };
@@ -510,32 +520,37 @@ impl ReadableChainService for ChainReaderServiceInner {
         &self,
         req: GetDagAccumulatorLeaves,
     ) -> anyhow::Result<Vec<TargetDagAccumulatorLeaf>> {
-        Ok(async_std::task::block_on(self.flexidag_service.send(flexidag_service::GetDagAccumulatorLeaves {
-            leaf_index: req.accumulator_leaf_index,
-            batch_size: req.batch_size,
-            reverse: true,
-        }))??.into_iter().map(|leaf| {
-            TargetDagAccumulatorLeaf {
-                accumulator_root: leaf.dag_accumulator_root,
-                leaf_index: leaf.leaf_index,
-            }
-        }).collect())
+        Ok(async_std::task::block_on(self.flexidag_service.send(
+            flexidag_service::GetDagAccumulatorLeaves {
+                leaf_index: req.accumulator_leaf_index,
+                batch_size: req.batch_size,
+                reverse: true,
+            },
+        ))??
+        .into_iter()
+        .map(|leaf| TargetDagAccumulatorLeaf {
+            accumulator_root: leaf.dag_accumulator_root,
+            leaf_index: leaf.leaf_index,
+        })
+        .collect())
     }
 
     fn get_target_dag_accumulator_leaf_detail(
         &self,
         req: GetTargetDagAccumulatorLeafDetail,
     ) -> anyhow::Result<Vec<TargetDagAccumulatorLeafDetail>> {
-        let dag_details = async_std::task::block_on(self.flexidag_service.send(GetDagAccumulatorLeafDetail {
-            leaf_index: req.leaf_index,
-            batch_size: req.batch_size,
-        }))??;
-        Ok(dag_details.into_iter().map(|detail| {
-            TargetDagAccumulatorLeafDetail {
+        let dag_details =
+            async_std::task::block_on(self.flexidag_service.send(GetDagAccumulatorLeafDetail {
+                leaf_index: req.leaf_index,
+                batch_size: req.batch_size,
+            }))??;
+        Ok(dag_details
+            .into_iter()
+            .map(|detail| TargetDagAccumulatorLeafDetail {
                 accumulator_root: detail.accumulator_root,
                 tips: detail.tips,
-            }
-        }).collect())
+            })
+            .collect())
     }
 }
 
