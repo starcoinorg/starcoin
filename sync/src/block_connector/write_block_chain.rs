@@ -687,11 +687,14 @@ where
 
     fn connect_dag_inner(&mut self, block: Block) -> Result<ConnectOk> {
         let block_id = block.id();
-        let ghost_dag_data = self.dag.lock().commit(DagHeader::new(block.header))?;
-        let selected_parent = self
-            .storage
-            .get_block_by_hash(ghost_dag_data.selected_parent)?
-            .expect("selected parent should in storage");
+
+        self.dag.lock().commit(DagHeader::new(block.header))?;
+
+        let (selected_parent, mine_tips) = block
+            .uncles()
+            .and_then(|u| u.split_first())
+            .expect("uncles must full filled");
+
         // todo:
         // 1. keep tracking received blocks in a multi-queue
         // 2. for a block, check if [selected_parent, ... mergeset_blues] is one queue
@@ -707,7 +710,7 @@ where
                 todo!()
             }
             let mut branch_tips_iter = branch.status.dag_tips().unwrap().iter();
-            let mut mine_tips_iter = ghost_dag_data.mergeset_blues.iter();
+            let mut mine_tips_iter = mine_tips.iter();
             loop {
                 match (branch_tips_iter.next(), mine_tips_iter.next()) {
                     (Some(b), Some(m)) if b == m => { /* nothing to do*/ }
@@ -727,7 +730,7 @@ where
         let mut longest = (None, 0);
         for branch in &self.dag_branches.branches {
             let mut branch_tips_iter = branch.1.status.dag_tips().unwrap().iter();
-            let mut mine_tips_iter = ghost_dag_data.mergeset_blues.iter();
+            let mut mine_tips_iter = mine_tips.iter();
             let mut index = 1usize;
 
             let res = loop {
@@ -742,7 +745,7 @@ where
         }
 
         let mut chain = match longest {
-            (None, _) => self.main.fork(selected_parent.header.parent_hash())?,
+            (None, _) => self.main.fork(selected_parent.id())?,
             (Some(v), index) => {
                 let _parent_hash = self
                     .dag_branches
@@ -758,15 +761,6 @@ where
             }
         };
 
-        //let mut chain = self.main.fork(selected_parent.header.parent_hash())?;
-        for blue_hash in ghost_dag_data.mergeset_blues.iter() {
-            if let Some(blue_block) = self.storage.get_block(blue_hash.to_owned())? {
-                chain.apply(blue_block);
-            } else {
-                error!("Failed to get block {:?}", blue_hash);
-                return Ok(ConnectOk::DagConnectMissingBlock);
-            }
-        }
         //self.broadcast_new_head();
         Ok(ConnectOk::DagConnected)
     }

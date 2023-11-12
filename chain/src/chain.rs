@@ -28,6 +28,7 @@ use starcoin_time_service::TimeService;
 use starcoin_types::block::{BlockIdAndNumber, ParentsHash};
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
+use starcoin_types::header::DagHeader;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
@@ -234,7 +235,14 @@ impl BlockChain {
             new_tips,
             dag_accumulator.get_info(),
         )?;
-        Self::new(time_service, executed_block.block.id(), storage, net, None, dag)
+        Self::new(
+            time_service,
+            executed_block.block.id(),
+            storage,
+            net,
+            None,
+            dag,
+        )
     }
 
     pub fn current_epoch_uncles_size(&self) -> u64 {
@@ -412,16 +420,15 @@ impl BlockChain {
     }
 
     pub fn verify_with_verifier<V>(&mut self, block: Block) -> Result<VerifiedBlock>
-        where
-            V: BlockVerifier,
+    where
+        V: BlockVerifier,
     {
         V::verify_block(self, block)
     }
 
-
     pub fn apply_with_verifier<V>(&mut self, block: Block) -> Result<ExecutedBlock>
-        where
-            V: BlockVerifier,
+    where
+        V: BlockVerifier,
     {
         let verified_block = self.verify_with_verifier::<V>(block)?;
         watch(CHAIN_WATCH_NAME, "n1");
@@ -448,19 +455,35 @@ impl BlockChain {
         let blues = block.uncles().expect("Blue blocks must exist");
         let (selected_parent, blues) = blues.split_at(1);
         let selected_parent = selected_parent[0].clone();
-        let block_info_past = self.storage.get_block_info(selected_parent.id())?.expect("selected parent must executed");
+        let block_info_past = self
+            .storage
+            .get_block_info(selected_parent.id())?
+            .expect("selected parent must executed");
         let header = block.header();
         let block_id = header.id();
         let block_metadata = block.to_metadata(selected_parent.gas_used());
         let mut transactions = vec![Transaction::BlockMetadata(block_metadata)];
         let mut total_difficulty = header.difficulty() + block_info_past.total_difficulty;
         for blue in blues {
-            let blue_block = self.storage.get_block_by_hash(blue.parent_hash())?.expect("block blue need exist");
-            transactions.extend(blue_block.transactions().iter().cloned().map(Transaction::UserTransaction));
+            let blue_block = self
+                .storage
+                .get_block_by_hash(blue.id())?
+                .expect("block blue need exist");
+            transactions.extend(
+                blue_block
+                    .transactions()
+                    .iter()
+                    .cloned()
+                    .map(Transaction::UserTransaction),
+            );
             total_difficulty += blue_block.header.difficulty();
         }
         transactions.extend(
-            block.transactions().iter().cloned().map(Transaction::UserTransaction),
+            block
+                .transactions()
+                .iter()
+                .cloned()
+                .map(Transaction::UserTransaction),
         );
 
         watch(CHAIN_WATCH_NAME, "n21");
@@ -512,7 +535,6 @@ impl BlockChain {
             txn_accumulator.append(&included_txn_info_hashes)?
         };
 
-
         verify_block!(
             VerifyBlockField::State,
             executed_accumulator_root == header.txn_accumulator_root(),
@@ -529,7 +551,6 @@ impl BlockChain {
         txn_accumulator
             .flush()
             .map_err(|_err| BlockExecutorError::BlockAccumulatorFlushErr)?;
-
 
         block_accumulator.append(&[block_id])?;
         block_accumulator.flush()?;
@@ -590,8 +611,10 @@ impl BlockChain {
         self.storage.save_transaction_batch(transactions)?;
 
         // save block's transactions
-        self.storage.save_block_transaction_ids(block_id, txn_id_vec)?;
-        self.storage.save_block_txn_info_ids(block_id, txn_info_ids)?;
+        self.storage
+            .save_block_transaction_ids(block_id, txn_id_vec)?;
+        self.storage
+            .save_block_txn_info_ids(block_id, txn_info_ids)?;
         self.storage.commit_block(block.clone())?;
         self.storage.save_block_info(block_info.clone())?;
 
@@ -846,9 +869,9 @@ impl BlockChain {
 
         return Ok(next_tips_info
             == self
-            .dag_accumulator
-            .as_ref()
-            .map(|accumulator| accumulator.get_info()));
+                .dag_accumulator
+                .as_ref()
+                .map(|accumulator| accumulator.get_info()));
     }
 }
 
@@ -1126,7 +1149,6 @@ impl ChainReader for BlockChain {
         }
     }
 
-
     fn get_transaction_infos(
         &self,
         start_index: u64,
@@ -1330,8 +1352,16 @@ impl BlockChain {
 
     fn connect_dag(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
         let (new_tip_block, _) = (executed_block.block(), executed_block.block_info());
-        let mut tips = self.status.dag_tips().expect("Tips should exist on dag").clone();
-        let parents = executed_block.block.header.parents_hash().expect("Dag parents need exist");
+        let mut tips = self
+            .status
+            .dag_tips()
+            .expect("Tips should exist on dag")
+            .clone();
+        let parents = executed_block
+            .block
+            .header
+            .parents_hash()
+            .expect("Dag parents need exist");
         for hash in parents {
             tips.retain(|x| *x != hash);
         }
@@ -1342,11 +1372,16 @@ impl BlockChain {
             ghost_of_tips.selected_parent
         };
         let (block, block_info) = {
-            let block = self.storage.get_block(block_hash)?.expect("Dag block should exist");
-            let block_info = self.storage.get_block_info(block_hash)?.expect("Dag block info should exist");
+            let block = self
+                .storage
+                .get_block(block_hash)?
+                .expect("Dag block should exist");
+            let block_info = self
+                .storage
+                .get_block_info(block_hash)?
+                .expect("Dag block info should exist");
             (block, block_info)
         };
-
 
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
@@ -1389,11 +1424,10 @@ impl ChainWriter for BlockChain {
                     .expect("dag blocks must have tips")
                     .clone(),
             )
-                .expect("failed to calculate the tips hash")
+            .expect("failed to calculate the tips hash")
                 == executed_block.block().header().parent_hash();
         }
     }
-
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
         let (block, block_info) = (executed_block.block(), executed_block.block_info());
