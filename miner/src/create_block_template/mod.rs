@@ -25,10 +25,10 @@ use starcoin_types::{
     block::{BlockHeader, BlockTemplate, ExecutedBlock},
     system_events::{NewBranch, NewHeadBlock},
 };
-use starcoin_vm_types::transaction::SignedUserTransaction;
+use starcoin_vm_types::transaction::{SignedUserTransaction, Transaction};
 use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
-use starcoin_crypto::ed25519::ed25519_dalek::ed25519::signature::digest::core_api::Block;
+
 
 mod metrics;
 #[cfg(test)]
@@ -199,8 +199,8 @@ pub struct Inner<P> {
 }
 
 impl<P> Inner<P>
-where
-    P: TemplateTxProvider,
+    where
+        P: TemplateTxProvider,
 {
     pub fn new(
         net: &ChainNetwork,
@@ -308,9 +308,6 @@ where
         }
     }
 
-    pub fn create_block_template_v2(&self)->Result<BlockTemplateResponse>{
-
-    }
 
     pub fn create_block_template(&self) -> Result<BlockTemplateResponse> {
         let on_chain_block_gas_limit = self.chain.epoch().block_gas_limit();
@@ -323,14 +320,28 @@ where
         // block_gas_limit / min_gas_per_txn
         let max_txns = (block_gas_limit / 200) * 2;
 
-        let txns = self.tx_provider.get_txns(max_txns);
+        let mut txns = self.tx_provider.get_txns(max_txns);
 
         let author = *self.miner_account.address();
         let previous_header = self.chain.current_header();
 
         let tips_hash = self.chain.status().tips_hash;
+        let uncles = {
+            match &tips_hash {
+                None => self.find_uncles(),
+                Some(tips) => {
+                    let mut blues = self.dag.ghostdata(tips).mergeset_blues.to_vec();
+                    let selected_parent = blues.remove(0);
+                    assert_eq!(previous_header.id(), selected_parent);
+                    for blue in &blues {
+                        let block = self.storage.ge_block_by_hash(blue.to_owned())?.expect("Block should exist");
+                        txns.extend(block.transactions().iter().cloned());
+                    }
+                    blues
+                }
+            }
+        };
 
-        let uncles = self.find_uncles();
         let mut now_millis = self.chain.time_service().now_millis();
         if now_millis <= previous_header.timestamp() {
             info!(

@@ -171,6 +171,7 @@ impl OpenedBlock {
 
         let mut discard_txns: Vec<SignedUserTransaction> = Vec::new();
         debug_assert_eq!(txns.len(), txn_outputs.len());
+
         for (txn, output) in txns.into_iter().zip(txn_outputs.into_iter()) {
             let txn_hash = txn.id();
             match output.status() {
