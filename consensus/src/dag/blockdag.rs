@@ -13,12 +13,12 @@ use crate::consensusdb::{
 use anyhow::{anyhow, bail, Ok};
 use parking_lot::RwLock;
 use starcoin_crypto::{HashValue as Hash, HashValue};
+use starcoin_types::block::BlockHeader;
 use starcoin_types::{
     blockhash::{BlockHashes, KType, ORIGIN},
     consensus_header::ConsensusHeader,
 };
 use std::sync::Arc;
-use starcoin_types::block::BlockHeader;
 
 pub type DbGhostdagManager = GhostdagManager<
     DbGhostdagStore,
@@ -30,7 +30,7 @@ pub type DbGhostdagManager = GhostdagManager<
 #[derive(Clone)]
 pub struct BlockDAG {
     storage: FlexiDagStorage,
-    ghostdag_manager:DbGhostdagManager
+    ghostdag_manager: DbGhostdagManager,
 }
 
 impl BlockDAG {
@@ -62,7 +62,8 @@ impl BlockDAG {
         if self.storage.relations_store.has(Hash::new(ORIGIN))? {
             return Err(anyhow!("Already init with genesis"));
         };
-        self.storage.relations_store
+        self.storage
+            .relations_store
             .insert(Hash::new(ORIGIN), BlockHashes::new(vec![]))
             .unwrap();
         let _ = self.commit(genesis);
@@ -76,13 +77,14 @@ impl BlockDAG {
         // Generate ghostdag data
         let parents_hash = header.parents();
 
-        let ghostdag_data = if !header.is_dag_genesis(){
+        let ghostdag_data = if !header.is_dag_genesis() {
             self.ghostdag_manager.ghostdag(parents_hash.as_slice())
         } else {
             self.ghostdag_manager.genesis_ghostdag_data()
         };
         // Store ghostdata
-        self.storage.ghost_dag_store
+        self.storage
+            .ghost_dag_store
             .insert(header.id(), Arc::new(ghostdag_data.clone()))
             .unwrap();
 
@@ -100,15 +102,16 @@ impl BlockDAG {
         )?;
 
         // store relations
-        self.storage.relations_store
+        self.storage
+            .relations_store
             .insert(header.id(), BlockHashes::new(parents_hash.to_vec()))?;
         // Store header store
         let _ = self
-            .storage.header_store
+            .storage
+            .header_store
             .insert(header.id(), Arc::new(header.to_owned()), 0)?;
         return Ok(());
     }
-
 
     pub fn get_parents(&self, hash: Hash) -> anyhow::Result<Vec<Hash>> {
         match self.storage.relations_store.get_parents(hash) {

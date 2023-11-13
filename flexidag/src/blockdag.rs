@@ -1,6 +1,3 @@
-use crate::dag::ghostdag::protocol::{ColoringOutput, GhostdagManager};
-use crate::dag::reachability::{inquirer, reachability_service::MTReachabilityService};
-use crate::dag::types::ghostdata::GhostdagData;
 use crate::consensusdb::prelude::StoreError;
 use crate::consensusdb::schemadb::GhostdagStoreReader;
 use crate::consensusdb::{
@@ -10,6 +7,9 @@ use crate::consensusdb::{
         HeaderStore, ReachabilityStoreReader, RelationsStore, RelationsStoreReader,
     },
 };
+use crate::dag::ghostdag::protocol::{ColoringOutput, GhostdagManager};
+use crate::dag::reachability::{inquirer, reachability_service::MTReachabilityService};
+use crate::dag::types::ghostdata::GhostdagData;
 use anyhow::{anyhow, bail, Ok};
 use parking_lot::RwLock;
 use starcoin_crypto::HashValue as Hash;

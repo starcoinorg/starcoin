@@ -3,6 +3,7 @@
 
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
+use crate::blockhash::ORIGIN;
 use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::transaction::SignedUserTransaction;
@@ -21,13 +22,12 @@ use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use std::fmt::Formatter;
 use std::hash::Hash;
-use crate::blockhash::ORIGIN;
 
 /// Type for block number.
 pub type BlockNumber = u64;
 
 //TODO: make sure height
-pub const DAG_FORK_HEIGHT:u64 = 100000;
+pub const DAG_FORK_HEIGHT: u64 = 100000;
 pub type ParentsHash = Option<Vec<HashValue>>;
 
 /// Type for block header extra
@@ -371,16 +371,16 @@ impl BlockHeader {
     }
 
     //for test
-    pub fn dag_genesis_random()->Self{
+    pub fn dag_genesis_random() -> Self {
         let mut header = Self::random();
         header.parents_hash = Some(vec![HashValue::new(ORIGIN)]);
         header
     }
-    pub fn set_parents(&mut self, parents:Vec<HashValue>){
-        self.parents_hash  = Some(parents);
+    pub fn set_parents(&mut self, parents: Vec<HashValue>) {
+        self.parents_hash = Some(parents);
     }
 
-    pub fn is_dag_genesis(&self,)->bool{
+    pub fn is_dag_genesis(&self) -> bool {
         self.number == DAG_FORK_HEIGHT
     }
 
@@ -637,7 +637,6 @@ pub struct BlockBody {
     pub transactions: Vec<SignedUserTransaction>,
     /// uncles block header
     pub uncles: Option<Vec<BlockHeader>>,
-
 }
 
 impl BlockBody {

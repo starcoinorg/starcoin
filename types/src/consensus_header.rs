@@ -1,9 +1,9 @@
+use crate::block::BlockHeader;
 use crate::blockhash::{BlockLevel, ORIGIN};
 use crate::U256;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use std::sync::Arc;
-use crate::block::BlockHeader;
 
 pub trait ConsensusHeader {
     fn parents(&self) -> Vec<HashValue>;
@@ -14,7 +14,9 @@ pub trait ConsensusHeader {
 
 impl ConsensusHeader for BlockHeader {
     fn parents(&self) -> Vec<HashValue> {
-        self.parents_hash().expect("parents in block dag should exists").clone()
+        self.parents_hash()
+            .expect("parents in block dag should exists")
+            .clone()
     }
     fn difficulty(&self) -> U256 {
         self.difficulty()

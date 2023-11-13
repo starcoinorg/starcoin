@@ -1,7 +1,4 @@
-use flexidag::dag::ghostdag::protocol::GhostdagManager;
-use flexidag::dag::reachability::{inquirer, reachability_service::MTReachabilityService};
-use flexidag::dag::types::ghostdata::GhostdagData;
-use flexidag::StoreError;
+use anyhow::{anyhow, bail, Ok};
 use flexidag::consensusdb::schemadb::GhostdagStoreReader;
 use flexidag::consensusdb::{
     prelude::FlexiDagStorage,
@@ -10,9 +7,13 @@ use flexidag::consensusdb::{
         HeaderStore, ReachabilityStoreReader, RelationsStore, RelationsStoreReader,
     },
 };
-use anyhow::{anyhow, bail, Ok};
+use flexidag::dag::ghostdag::protocol::GhostdagManager;
+use flexidag::dag::reachability::{inquirer, reachability_service::MTReachabilityService};
+use flexidag::dag::types::ghostdata::GhostdagData;
+use flexidag::StoreError;
 use parking_lot::RwLock;
 use starcoin_crypto::{HashValue as Hash, HashValue};
+use starcoin_types::startup_info::StartupInfo;
 use starcoin_types::{
     blockhash::{BlockHashes, KType, ORIGIN},
     consensus_header::{ConsensusHeader, DagHeader},
@@ -20,7 +21,6 @@ use starcoin_types::{
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::Arc;
-use starcoin_types::startup_info::StartupInfo;
 
 pub type DbGhostdagManager = GhostdagManager<
     DbGhostdagStore,
@@ -41,7 +41,7 @@ pub struct FlexiDAG {
     missing_blocks: HashMap<Hash, HashSet<DagHeader>>,
     tips: Vec<HashValue>,
     startup_info: StartupInfo,
-    storage: Storage
+    storage: Storage,
 }
 
 impl FlexiDAG {
@@ -261,5 +261,3 @@ mod tests {
         dag.addToDag(block);
     }
 }
-
-

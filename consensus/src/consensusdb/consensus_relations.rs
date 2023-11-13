@@ -180,7 +180,6 @@ impl RelationsStore for DbRelationsStore {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -188,8 +187,6 @@ mod tests {
         db::RelationsStoreConfig,
         prelude::{FlexiDagStorage, FlexiDagStorageConfig},
     };
-
-
 
     #[test]
     fn test_db_relations_store() {

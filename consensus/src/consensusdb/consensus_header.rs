@@ -8,13 +8,13 @@ use super::{
 use crate::define_schema;
 use rocksdb::WriteBatch;
 use starcoin_crypto::HashValue as Hash;
+use starcoin_types::block::BlockHeader;
 use starcoin_types::{
     blockhash::BlockLevel,
     consensus_header::{CompactHeaderData, ConsensusHeader, HeaderWithBlockLevel},
     U256,
 };
 use std::sync::Arc;
-use starcoin_types::block::BlockHeader;
 
 pub trait HeaderStoreReader {
     fn get_daa_score(&self, hash: Hash) -> Result<u64, StoreError>;

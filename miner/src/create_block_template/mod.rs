@@ -29,7 +29,6 @@ use starcoin_vm_types::transaction::{SignedUserTransaction, Transaction};
 use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
 
-
 mod metrics;
 #[cfg(test)]
 mod test_create_block_template;
@@ -199,8 +198,8 @@ pub struct Inner<P> {
 }
 
 impl<P> Inner<P>
-    where
-        P: TemplateTxProvider,
+where
+    P: TemplateTxProvider,
 {
     pub fn new(
         net: &ChainNetwork,
@@ -308,7 +307,6 @@ impl<P> Inner<P>
         }
     }
 
-
     pub fn create_block_template(&self) -> Result<BlockTemplateResponse> {
         let on_chain_block_gas_limit = self.chain.epoch().block_gas_limit();
         let block_gas_limit = self
@@ -334,7 +332,10 @@ impl<P> Inner<P>
                     let selected_parent = blues.remove(0);
                     assert_eq!(previous_header.id(), selected_parent);
                     for blue in &blues {
-                        let block = self.storage.ge_block_by_hash(blue.to_owned())?.expect("Block should exist");
+                        let block = self
+                            .storage
+                            .ge_block_by_hash(blue.to_owned())?
+                            .expect("Block should exist");
                         txns.extend(block.transactions().iter().cloned());
                     }
                     blues

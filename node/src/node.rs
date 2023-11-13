@@ -372,7 +372,7 @@ impl NodeService {
         let flexi_dag_config = FlexiDagStorageConfig::create_with_params(1, 0, 1024);
         let flexi_dag_db = FlexiDagStorage::create_from_path("./smolstc", flexi_dag_config)
             .expect("Failed to create flexidag storage");
-        let dag = BlockDAG::new(8,flexi_dag_db);
+        let dag = BlockDAG::new(8, flexi_dag_db);
         // TODO: init dag in the dag fork height
         let _ = dag.init_with_genesis(genesis.block().header().to_owned());
         registry.put_shared(dag).await?;
