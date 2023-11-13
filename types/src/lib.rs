@@ -107,4 +107,4 @@ pub mod proof {
 }
 
 pub mod blockhash;
-pub mod header;
+pub mod consensus_header;

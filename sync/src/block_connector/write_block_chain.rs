@@ -16,7 +16,7 @@ use starcoin_service_registry::{ServiceContext, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
-use starcoin_types::header::DagHeader;
+use starcoin_types::consensus_header::DagHeader;
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,

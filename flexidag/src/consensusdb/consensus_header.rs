@@ -10,7 +10,7 @@ use rocksdb::WriteBatch;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::{
     blockhash::BlockLevel,
-    header::{CompactHeaderData, ConsensusHeader, DagHeader, HeaderWithBlockLevel},
+    consensus_header::{CompactHeaderData, ConsensusHeader, DagHeader, HeaderWithBlockLevel},
     U256,
 };
 use std::sync::Arc;

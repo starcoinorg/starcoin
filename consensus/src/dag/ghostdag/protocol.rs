@@ -21,7 +21,6 @@ pub struct GhostdagManager<
     U: ReachabilityService,
     V: HeaderStoreReader,
 > {
-    genesis_hash: Hash,
     pub(super) k: KType,
     pub(super) ghostdag_store: T,
     pub(super) relations_store: S,
@@ -37,7 +36,6 @@ impl<
     > GhostdagManager<T, S, U, V>
 {
     pub fn new(
-        genesis_hash: Hash,
         k: KType,
         ghostdag_store: T,
         relations_store: S,
@@ -45,7 +43,6 @@ impl<
         reachability_service: U,
     ) -> Self {
         Self {
-            genesis_hash,
             k,
             ghostdag_store,
             relations_store,
@@ -235,13 +232,13 @@ impl<
             if let Some(size) = current_blues_anticone_sizes.get(&block) {
                 return *size;
             }
-
+            /* TODO: consider refactor it
             if current_selected_parent == self.genesis_hash
                 || current_selected_parent == Hash::new(blockhash::ORIGIN)
             {
                 panic!("block {block} is not in blue set of the given context");
             }
-
+            */
             current_blues_anticone_sizes = self
                 .ghostdag_store
                 .get_blues_anticone_sizes(current_selected_parent)

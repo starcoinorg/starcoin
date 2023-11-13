@@ -10,17 +10,18 @@ use rocksdb::WriteBatch;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::{
     blockhash::BlockLevel,
-    header::{CompactHeaderData, ConsensusHeader, DagHeader, HeaderWithBlockLevel},
+    consensus_header::{CompactHeaderData, ConsensusHeader, HeaderWithBlockLevel},
     U256,
 };
 use std::sync::Arc;
+use starcoin_types::block::BlockHeader;
 
 pub trait HeaderStoreReader {
     fn get_daa_score(&self, hash: Hash) -> Result<u64, StoreError>;
     fn get_blue_score(&self, hash: Hash) -> Result<u64, StoreError>;
     fn get_timestamp(&self, hash: Hash) -> Result<u64, StoreError>;
     fn get_difficulty(&self, hash: Hash) -> Result<U256, StoreError>;
-    fn get_header(&self, hash: Hash) -> Result<Arc<DagHeader>, StoreError>;
+    fn get_header(&self, hash: Hash) -> Result<Arc<BlockHeader>, StoreError>;
     fn get_header_with_block_level(&self, hash: Hash) -> Result<HeaderWithBlockLevel, StoreError>;
     fn get_compact_header_data(&self, hash: Hash) -> Result<CompactHeaderData, StoreError>;
 }
@@ -30,7 +31,7 @@ pub trait HeaderStore: HeaderStoreReader {
     fn insert(
         &self,
         hash: Hash,
-        header: Arc<DagHeader>,
+        header: Arc<BlockHeader>,
         block_level: BlockLevel,
     ) -> Result<(), StoreError>;
 }
@@ -38,7 +39,7 @@ pub trait HeaderStore: HeaderStoreReader {
 pub(crate) const HEADERS_STORE_CF: &str = "headers-store";
 pub(crate) const COMPACT_HEADER_DATA_STORE_CF: &str = "compact-header-data";
 
-define_schema!(BlockHeader, Hash, HeaderWithBlockLevel, HEADERS_STORE_CF);
+define_schema!(DagHeader, Hash, HeaderWithBlockLevel, HEADERS_STORE_CF);
 define_schema!(
     CompactBlockHeader,
     Hash,
@@ -46,7 +47,7 @@ define_schema!(
     COMPACT_HEADER_DATA_STORE_CF
 );
 
-impl KeyCodec<BlockHeader> for Hash {
+impl KeyCodec<DagHeader> for Hash {
     fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
         Ok(self.to_vec())
     }
@@ -55,7 +56,7 @@ impl KeyCodec<BlockHeader> for Hash {
         Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
     }
 }
-impl ValueCodec<BlockHeader> for HeaderWithBlockLevel {
+impl ValueCodec<DagHeader> for HeaderWithBlockLevel {
     fn encode_value(&self) -> Result<Vec<u8>, StoreError> {
         bcs_ext::to_bytes(&self).map_err(|e| StoreError::EncodeError(e.to_string()))
     }
@@ -87,7 +88,7 @@ impl ValueCodec<CompactBlockHeader> for CompactHeaderData {
 #[derive(Clone)]
 pub struct DbHeadersStore {
     db: Arc<DBStorage>,
-    headers_access: CachedDbAccess<BlockHeader>,
+    headers_access: CachedDbAccess<DagHeader>,
     compact_headers_access: CachedDbAccess<CompactBlockHeader>,
 }
 
@@ -108,7 +109,7 @@ impl DbHeadersStore {
         self.headers_access.has(hash)
     }
 
-    pub fn get_header(&self, hash: Hash) -> Result<DagHeader, StoreError> {
+    pub fn get_header(&self, hash: Hash) -> Result<BlockHeader, StoreError> {
         let result = self.headers_access.read(hash)?;
         Ok((*result.header).clone())
     }
@@ -117,7 +118,7 @@ impl DbHeadersStore {
         &self,
         batch: &mut WriteBatch,
         hash: Hash,
-        header: Arc<DagHeader>,
+        header: Arc<BlockHeader>,
         block_level: BlockLevel,
     ) -> Result<(), StoreError> {
         if self.headers_access.has(hash)? {
@@ -166,7 +167,7 @@ impl HeaderStoreReader for DbHeadersStore {
         Ok(self.compact_headers_access.read(hash)?.difficulty)
     }
 
-    fn get_header(&self, hash: Hash) -> Result<Arc<DagHeader>, StoreError> {
+    fn get_header(&self, hash: Hash) -> Result<Arc<BlockHeader>, StoreError> {
         Ok(self.headers_access.read(hash)?.header)
     }
 
@@ -189,7 +190,7 @@ impl HeaderStore for DbHeadersStore {
     fn insert(
         &self,
         hash: Hash,
-        header: Arc<DagHeader>,
+        header: Arc<BlockHeader>,
         block_level: u8,
     ) -> Result<(), StoreError> {
         if self.headers_access.has(hash)? {

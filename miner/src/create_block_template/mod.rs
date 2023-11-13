@@ -10,7 +10,7 @@ use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_config::ChainNetwork;
 use starcoin_config::NodeConfig;
-use starcoin_consensus::Consensus;
+use starcoin_consensus::{BlockDAG, Consensus, FlexiDagStorage};
 use starcoin_crypto::hash::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
@@ -79,6 +79,8 @@ impl ServiceFactory<Self> for BlockBuilderService {
             .and_then(|registry| BlockBuilderMetrics::register(registry).ok());
 
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
+        let dag = ctx.get_shared::<BlockDAG>()?;
+
         let inner = Inner::new(
             config.net(),
             storage,
@@ -88,6 +90,7 @@ impl ServiceFactory<Self> for BlockBuilderService {
             miner_account,
             metrics,
             vm_metrics,
+            dag,
         )?;
         Ok(Self { inner })
     }
@@ -191,6 +194,7 @@ pub struct Inner<P> {
     miner_account: AccountInfo,
     metrics: Option<BlockBuilderMetrics>,
     vm_metrics: Option<VMMetrics>,
+    dag: BlockDAG,
 }
 
 impl<P> Inner<P>
@@ -206,6 +210,7 @@ where
         miner_account: AccountInfo,
         metrics: Option<BlockBuilderMetrics>,
         vm_metrics: Option<VMMetrics>,
+        dag: BlockDAG,
     ) -> Result<Self> {
         let chain = BlockChain::new(
             net.time_service(),
@@ -213,6 +218,8 @@ where
             storage.clone(),
             net.id().clone(),
             vm_metrics.clone(),
+            dag.clone(),
+
         )?;
 
         Ok(Inner {
@@ -225,6 +232,7 @@ where
             miner_account,
             metrics,
             vm_metrics,
+            dag,
         })
     }
 
@@ -253,6 +261,7 @@ where
                 self.storage.clone(),
                 self.chain.net_id(),
                 self.vm_metrics.clone(),
+                self.dag.clone(),
             )?;
             //current block possible be uncle.
             self.uncles.insert(current_id, current_header);

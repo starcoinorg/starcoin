@@ -56,7 +56,7 @@ use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
 use starcoin_types::blockhash::ORIGIN;
-use starcoin_types::header::DagHeader;
+use starcoin_types::consensus_header::DagHeader;
 use starcoin_types::system_events::{SystemShutdown, SystemStarted};
 use starcoin_vm_runtime::metrics::VMMetrics;
 use std::sync::{Arc, Mutex};
@@ -372,7 +372,10 @@ impl NodeService {
         let flexi_dag_config = FlexiDagStorageConfig::create_with_params(1, 0, 1024);
         let flexi_dag_db = FlexiDagStorage::create_from_path("./smolstc", flexi_dag_config)
             .expect("Failed to create flexidag storage");
-        registry.put_shared(flexi_dag_db).await?;
+        let dag = BlockDAG::new(8,flexi_dag_db);
+        // TODO: init dag in the dag fork height
+        let _ = dag.init_with_genesis(genesis.block().header().to_owned());
+        registry.put_shared(dag).await?;
         info!(
             "Start node with chain info: {}, number {} upgrade_time cost {} secs, ",
             chain_info,

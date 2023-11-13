@@ -15,7 +15,7 @@ use parking_lot::RwLock;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::{
     blockhash::{BlockHashes, KType, ORIGIN},
-    header::{ConsensusHeader, DagHeader},
+    consensus_header::{ConsensusHeader, DagHeader},
 };
 use std::collections::HashMap;
 use std::collections::HashSet;

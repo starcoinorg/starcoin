@@ -17,7 +17,7 @@ use starcoin_time_service::TimeService;
 use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::Block;
 use starcoin_types::blockhash::ORIGIN;
-use starcoin_types::header::Header;
+use starcoin_types::consensus_header::Header;
 use starcoin_types::startup_info::StartupInfo;
 use std::sync::{Arc, Mutex};
 

@@ -25,7 +25,7 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::flexi_dag::SyncFlexiDagSnapshot;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
-use starcoin_types::block::BlockIdAndNumber;
+use starcoin_types::block::{BlockIdAndNumber, ParentsHash};
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
@@ -46,8 +46,6 @@ use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::{collections::HashMap, sync::Arc};
-use starcoin_types::header::DagHeader;
-
 
 pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
@@ -90,8 +88,7 @@ impl BlockChain {
         storage: Arc<dyn Store>,
         net: ChainNetworkID,
         vm_metrics: Option<VMMetrics>,
-        dag_store: FlexiDagStorage,
-        dag_genesis: HashValue,
+        dag: BlockDAG,
     ) -> Result<Self> {
         let head = storage
             .get_block_by_hash(head_block_hash)?
@@ -99,8 +96,6 @@ impl BlockChain {
         let dag_genesis_header = storage
             .get_block_header_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
-        let mut dag = BlockDAG::new(dag_genesis, 8, dag_store);
-        dag.init_with_genesis(DagHeader::new_genesis(dag_genesis_header))?;
         Self::new_with_uncles(time_service, head, None, storage, net, vm_metrics, dag)
     }
 
@@ -205,8 +200,7 @@ impl BlockChain {
         genesis_epoch: Epoch,
         genesis_block: Block,
         net: ChainNetworkID,
-        dag_store: FlexiDagStorage,
-        dag_genesis: HashValue,
+        dag: BlockDAG,
     ) -> Result<Self> {
         debug_assert!(genesis_block.header().is_genesis());
         let txn_accumulator = MerkleAccumulator::new_empty(
@@ -240,7 +234,7 @@ impl BlockChain {
             new_tips,
             dag_accumulator.get_info(),
         )?;
-        Self::new(time_service, executed_block.block.id(), storage, net, None, dag_store, dag_genesis)
+        Self::new(time_service, executed_block.block.id(), storage, net, None, dag)
     }
 
     pub fn current_epoch_uncles_size(&self) -> u64 {
@@ -424,6 +418,7 @@ impl BlockChain {
         V::verify_block(self, block)
     }
 
+
     pub fn apply_with_verifier<V>(&mut self, block: Block) -> Result<ExecutedBlock>
         where
             V: BlockVerifier,
@@ -601,7 +596,7 @@ impl BlockChain {
         self.storage.save_block_info(block_info.clone())?;
 
         self.storage.save_table_infos(txn_table_infos)?;
-        self.dag.commit(DagHeader::new(header.clone()))?;
+        self.dag.commit(header.to_owned())?;
         watch(CHAIN_WATCH_NAME, "n26");
         Ok(ExecutedBlock { block, block_info })
     }
@@ -1115,16 +1110,20 @@ impl ChainReader for BlockChain {
     }
 
     fn execute(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
-        Self::execute_block_and_save(
-            self.storage.as_ref(),
-            self.statedb.fork(),
-            self.txn_accumulator.fork(None),
-            self.block_accumulator.fork(None),
-            &self.epoch,
-            Some(self.status.status.clone()),
-            verified_block.0,
-            self.vm_metrics.clone(),
-        )
+        if !verified_block.0.is_dag() {
+            Self::execute_block_and_save(
+                self.storage.as_ref(),
+                self.statedb.fork(),
+                self.txn_accumulator.fork(None),
+                self.block_accumulator.fork(None),
+                &self.epoch,
+                Some(self.status.status.clone()),
+                verified_block.0,
+                self.vm_metrics.clone(),
+            )
+        } else {
+            self.execute_dag_block(verified_block)
+        }
     }
 
 
