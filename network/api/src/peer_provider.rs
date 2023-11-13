@@ -318,7 +318,7 @@ impl PeerSelector {
         self.details
             .lock()
             .iter()
-            .map(|peer| peer.peer_info)
+            .map(|peer| peer.peer_info.clone())
             .collect()
     }
 

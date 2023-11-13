@@ -457,7 +457,7 @@ impl BlockStore for Storage {
         let head_block_info = self.get_block_info(head_block.id())?.ok_or_else(|| {
             format_err!("Startup block info {:?} should exist", startup_info.main)
         })?;
-        let snapshot = self.get_lastest_snapshot()?.ok_or_else(error || anyhow!("latest snapshot is  none"))?;
+        let snapshot = self.get_lastest_snapshot()?.ok_or_else(|| anyhow!("latest snapshot is  none"))?;
         let chain_info = ChainInfo::new(
             head_block.chain_id(),
             genesis_hash,
@@ -677,9 +677,9 @@ impl SyncFlexiDagStore for Storage {
     }
 
     fn get_lastest_snapshot(&self) -> Result<Option<SyncFlexiDagSnapshot>> {
-        let info = self.get_dag_accumulator_info()?.ok_or_else(error || anyhow!("dag startup info is none"))?;
-        let merkle_tree = MerkleAccumulator::new_with_info(info, storage.get_accumulator_store(AccumulatorStoreType::SyncDag));
-        let key = merkle_tree.get_leaf(merkle_tree.num_leaves() - 1)?.ok_or_else(errors || anyhow!("faile to get the key since it is none"))?;
+        let info = self.get_dag_accumulator_info()?.ok_or_else(|| anyhow!("dag startup info is none"))?;
+        let merkle_tree = MerkleAccumulator::new_with_info(info, self.get_accumulator_store(AccumulatorStoreType::SyncDag));
+        let key = merkle_tree.get_leaf(merkle_tree.num_leaves() - 1)?.ok_or_else(|| anyhow!("faile to get the key since it is none"))?;
         self.query_by_hash(key)
     }
 
