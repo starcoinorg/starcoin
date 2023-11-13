@@ -64,13 +64,7 @@ pub fn create_account_txn(
     let (pub_k, priv_k) = new_account.account_keypair();
     let starcoin_acc =
         StarcoinAccount::with_keypair(priv_k, pub_k, Some(new_account.address().clone()));
-    create_account_txn_sent_as_association(
-        &starcoin_acc,
-        seq_num + 1,
-        0,
-        1,
-        &ChainNetwork::new_test(),
-    )
+    create_account_txn_sent_as_association(&starcoin_acc, seq_num, 0, 1, &ChainNetwork::new_test())
     // sender
     //     .transaction()
     //     .payload(starcoin_stdlib::encode_account_create_account(

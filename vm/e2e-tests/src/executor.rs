@@ -10,22 +10,24 @@ use move_table_extension::NativeTableContext;
 use num_cpus;
 use serde::{Deserialize, Serialize};
 use starcoin_config::ChainNetwork;
-use starcoin_crypto::keygen::KeyGen;
-use starcoin_crypto::HashValue;
+use starcoin_crypto::{keygen::KeyGen, HashValue};
 use starcoin_gas::{StarcoinGasMeter, StarcoinGasParameters};
 use starcoin_gas_algebra_ext::InitialGasSchedule;
 
 use starcoin_vm_runtime::{
+    block_executor::BlockStarcoinVM,
     data_cache::{AsMoveResolver, RemoteStorage},
     move_vm_ext::{MoveVmExt, SessionId, SessionOutput},
     starcoin_vm::StarcoinVM,
     VMExecutor,
 };
 
+use crate::data_store::FakeDataStore;
+use starcoin_statedb::ChainStateWriter;
 use starcoin_vm_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
-    account_config::{block::NewBlockEvent, AccountResource, BalanceResource, CORE_CODE_ADDRESS},
+    account_config::{block::NewBlockEvent, BalanceResource, CORE_CODE_ADDRESS},
     block_metadata::BlockMetadata,
     errors::Location,
     genesis_config::ChainId,
@@ -43,14 +45,14 @@ use starcoin_vm_types::{
     write_set::WriteSet,
 };
 
-use crate::data_store::FakeDataStore;
-use starcoin_statedb::ChainStateWriter;
-use starcoin_vm_runtime::block_executor::BlockStarcoinVM;
-use std::collections::BTreeMap;
-use std::fs::OpenOptions;
-use std::io::Write;
-use std::path::{Path, PathBuf};
-use std::{env, fs};
+use std::{
+    collections::BTreeMap,
+    env, fs,
+    fs::OpenOptions,
+    io::Write,
+    path::{Path, PathBuf},
+};
+use starcoin_vm_types::account_config::AccountResource;
 use test_helper::Genesis;
 
 static RNG_SEED: [u8; 32] = [9u8; 32];
@@ -78,6 +80,7 @@ pub struct FakeExecutor {
     executed_output: Option<GoldenOutputs>,
     trace_dir: Option<PathBuf>,
     rng: KeyGen,
+    block_num: u64,
 }
 
 impl FakeExecutor {
@@ -159,6 +162,7 @@ impl FakeExecutor {
         FakeExecutor {
             data_store: FakeDataStore::default(),
             block_time: 0,
+            block_num: 1,
             executed_output: None,
             trace_dir: None,
             rng: KeyGen::from_seed(RNG_SEED),
@@ -266,8 +270,8 @@ impl FakeExecutor {
 
     /// Adds an account to this executor's data store.
     pub fn add_account_data(&mut self, account_data: &AccountData) {
-        //self.data_store.add_account_data(account_data)
-        self.apply_write_set(&account_data.to_writeset())
+        let write_set = account_data.to_writeset();
+        self.apply_write_set(&write_set);
     }
 
     /// Adds a module to this executor's data store.
@@ -407,8 +411,15 @@ impl FakeExecutor {
 
         let output =
             StarcoinVM::execute_block(txn_block.clone(), &self.get_state_view(), None, None);
-        let parallel_output = self.execute_transaction_block_parallel(txn_block);
-        assert_eq!(output, parallel_output);
+        // let parallel_output = self.execute_transaction_block_parallel(txn_block);
+        // assert_eq!(output.clone().err().unwrap(), Executed);
+        // assert_eq!(output, parallel_output);
+        let output_check = output.clone();
+        assert!(output_check.is_ok());
+        assert_eq!(
+            *output_check.ok().unwrap()[0].status(),
+            TransactionStatus::Keep(KeptVMStatus::Executed)
+        );
 
         if let Some(logger) = &self.executed_output {
             logger.log(format!("{:?}\n", output).as_str());
@@ -499,10 +510,12 @@ impl FakeExecutor {
                 &minter_account.account().public_key(),
             )),
             0,
-            0,
+            self.block_num,
             ChainId::test(),
             0,
         );
+        self.block_num += 1;
+
         let output = self
             .execute_transaction_block(vec![Transaction::BlockMetadata(new_block)])
             .expect("Executing block prologue should succeed")

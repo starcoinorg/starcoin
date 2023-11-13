@@ -638,7 +638,7 @@ impl AccountData {
             account,
             balances: balances_map,
             sequence_number,
-            key_rotation_capability: None,
+            key_rotation_capability: Some(KeyRotationCapability::new(addr)),
             withdrawal_capability: Some(WithdrawCapability::new(addr)),
             withdraw_events: EventHandle::new_from_address(&addr, sent_events_count),
             deposit_events: EventHandle::new_from_address(&addr, received_events_count),

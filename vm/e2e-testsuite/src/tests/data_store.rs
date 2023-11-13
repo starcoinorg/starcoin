@@ -6,7 +6,8 @@ use move_bytecode_verifier::verify_module;
 use move_core_types::vm_status::KeptVMStatus;
 use move_ir_compiler::Compiler;
 use starcoin_language_e2e_tests::{
-    account::AccountData, compile::compile_script, current_function_name, executor::FakeExecutor,
+    account::AccountData, compile::compile_script_with_extra_deps, current_function_name,
+    executor::FakeExecutor,
 };
 use starcoin_transaction_builder::{stdlib_compiled_modules, StdLibOptions};
 use starcoin_vm_types::{
@@ -285,7 +286,7 @@ fn add_resource_txn(
         sender.address(),
     );
 
-    let module = compile_script(&program, extra_deps);
+    let module = compile_script_with_extra_deps(&program, extra_deps);
     sender
         .account()
         .transaction()
@@ -312,7 +313,7 @@ fn remove_resource_txn(
         sender.address(),
     );
 
-    let module = compile_script(&program, extra_deps);
+    let module = compile_script_with_extra_deps(&program, extra_deps);
     sender
         .account()
         .transaction()
@@ -339,7 +340,7 @@ fn borrow_resource_txn(
         sender.address(),
     );
 
-    let module = compile_script(&program, extra_deps);
+    let module = compile_script_with_extra_deps(&program, extra_deps);
     sender
         .account()
         .transaction()
@@ -366,7 +367,7 @@ fn change_resource_txn(
         sender.address(),
     );
 
-    let module = compile_script(&program, extra_deps);
+    let module = compile_script_with_extra_deps(&program, extra_deps);
     sender
         .account()
         .transaction()

@@ -24,6 +24,7 @@ use starcoin_types::{
     transaction::TransactionStatus,
 };
 use starcoin_vm_types::contract_event::ContractEvent;
+use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use stdlib::stdlib_files;
@@ -140,6 +141,26 @@ pub fn compile_ir_script(code: impl AsRef<str>) -> Result<Vec<u8>> {
     let modules = stdlib_compiled_modules(starcoin_transaction_builder::StdLibOptions::Compiled(
         StdlibVersion::Latest,
     ));
+    let (script, _) = IRCompiler::new(modules.iter().collect())
+        .into_compiled_script_and_source_map(code.as_ref())?;
+    let mut bytes = vec![];
+    script.serialize(&mut bytes)?;
+    Ok(bytes)
+}
+
+pub fn compile_ir_script_with_extra_module(
+    code: impl AsRef<str>,
+    extra_module: Vec<CompiledModule>,
+) -> Result<Vec<u8>> {
+    use move_ir_compiler::Compiler as IRCompiler;
+    let mut modules = stdlib_compiled_modules(
+        starcoin_transaction_builder::StdLibOptions::Compiled(StdlibVersion::Latest),
+    );
+
+    if !extra_module.is_empty() {
+        modules.extend(extra_module);
+    }
+
     let (script, _) = IRCompiler::new(modules.iter().collect())
         .into_compiled_script_and_source_map(code.as_ref())?;
     let mut bytes = vec![];
