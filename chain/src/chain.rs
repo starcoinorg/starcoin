@@ -28,7 +28,6 @@ use starcoin_time_service::TimeService;
 use starcoin_types::block::{BlockIdAndNumber, ParentsHash};
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
-use starcoin_types::header::DagHeader;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{

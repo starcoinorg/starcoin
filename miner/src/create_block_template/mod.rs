@@ -334,7 +334,7 @@ where
                     for blue in &blues {
                         let block = self
                             .storage
-                            .ge_block_by_hash(blue.to_owned())?
+                            .get_block_by_hash(blue.to_owned())?
                             .expect("Block should exist");
                         txns.extend(block.transactions().iter().cloned());
                     }
