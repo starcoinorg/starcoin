@@ -28,6 +28,7 @@ use starcoin_types::{
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
+use starcoin_crypto::ed25519::ed25519_dalek::ed25519::signature::digest::core_api::Block;
 
 mod metrics;
 #[cfg(test)]
@@ -219,7 +220,6 @@ where
             net.id().clone(),
             vm_metrics.clone(),
             dag.clone(),
-
         )?;
 
         Ok(Inner {
@@ -308,6 +308,10 @@ where
         }
     }
 
+    pub fn create_block_template_v2(&self)->Result<BlockTemplateResponse>{
+
+    }
+
     pub fn create_block_template(&self) -> Result<BlockTemplateResponse> {
         let on_chain_block_gas_limit = self.chain.epoch().block_gas_limit();
         let block_gas_limit = self
@@ -324,10 +328,7 @@ where
         let author = *self.miner_account.address();
         let previous_header = self.chain.current_header();
 
-        let tips_header = match self.chain.status().tips_hash {
-            Some(_) => self.chain.status().tips_hash,
-            None => None,
-        };
+        let tips_hash = self.chain.status().tips_hash;
 
         let uncles = self.find_uncles();
         let mut now_millis = self.chain.time_service().now_millis();
@@ -362,7 +363,7 @@ where
             difficulty,
             strategy,
             self.vm_metrics.clone(),
-            tips_header,
+            tips_hash,
         )?;
         let excluded_txns = opened_block.push_txns(txns)?;
         let template = opened_block.finalize()?;

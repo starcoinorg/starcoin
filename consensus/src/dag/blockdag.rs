@@ -73,7 +73,6 @@ impl BlockDAG {
     }
 
     pub fn commit(&self, header: BlockHeader) -> anyhow::Result<()> {
-        //TODO:check genesis
         // Generate ghostdag data
         let parents_hash = header.parents();
 
