@@ -19,16 +19,17 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue as Hash;
-use starcoin_storage::flexi_dag::{KTotalDifficulty, SyncFlexiDagSnapshot, SyncFlexiDagSnapshotHasher};
+use starcoin_storage::flexi_dag::SyncFlexiDagSnapshotHasher;
 use starcoin_storage::storage::CodecKVStore;
 use starcoin_storage::{BlockStore, Storage, Store, SyncFlexiDagStore};
 use starcoin_types::block::BlockNumber;
+use starcoin_types::dag_block::KTotalDifficulty;
 use starcoin_types::startup_info;
 use starcoin_types::{
     blockhash::{BlockHashes, KType, ORIGIN},
     header::{ConsensusHeader, DagHeader},
 };
-use std::collections::HashSet;
+use std::collections::{HashSet, BTreeSet};
 use std::collections::{BinaryHeap, HashMap};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -144,8 +145,8 @@ impl BlockDAG {
                 );
 
 
-                let k_total_difficulties = BinaryHeap::new();
-                k_total_difficulties.push(KTotalDifficulty {
+                let mut k_total_difficulties = BTreeSet::new();
+                k_total_difficulties.insert(KTotalDifficulty {
                     head_block_id: block_header.id(),
                     total_difficulty: storage
                         .get_block_info(block_header.id())?
