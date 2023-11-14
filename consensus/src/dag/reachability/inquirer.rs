@@ -6,7 +6,7 @@ use starcoin_types::blockhash;
 
 /// Init the reachability store to match the state required by the algorithmic layer.
 /// The function first checks the store for possibly being initialized already.
-pub fn init(store: &mut (impl ReachabilityStore + ?Sized),origin:HashValue) -> Result<()> {
+pub fn init(store: &mut (impl ReachabilityStore + ?Sized), origin: HashValue) -> Result<()> {
     init_with_params(store, origin, Interval::maximal())
 }
 

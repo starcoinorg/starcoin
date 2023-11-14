@@ -183,15 +183,12 @@ impl RelationsStore for DbRelationsStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::consensusdb::{
-        prelude::{FlexiDagStorage, FlexiDagStorageConfig},
-    };
+    use crate::consensusdb::prelude::{FlexiDagStorage, FlexiDagStorageConfig};
 
     #[test]
     fn test_db_relations_store() {
         let db_tempdir = tempfile::tempdir().unwrap();
         let config = FlexiDagStorageConfig::new();
-
 
         let db = FlexiDagStorage::create_from_path(db_tempdir.path(), config)
             .expect("failed to create flexidag storage");

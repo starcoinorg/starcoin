@@ -58,12 +58,11 @@ impl BlockDAG {
     }
 
     pub fn init_with_genesis(&self, genesis: BlockHeader) -> anyhow::Result<()> {
-
         let origin = genesis.parent_hash();
         if self.storage.relations_store.has(origin)? {
             return Err(anyhow!("Already init with genesis"));
         };
-        inquirer::init(&mut self.storage.reachability_store.clone(),origin)?;
+        inquirer::init(&mut self.storage.reachability_store.clone(), origin)?;
         self.storage
             .relations_store
             .insert(origin, BlockHashes::new(vec![]))?;
@@ -83,7 +82,6 @@ impl BlockDAG {
             self.ghostdag_manager.ghostdag(parents_hash.as_slice())
         } else {
             self.ghostdag_manager.genesis_ghostdag_data(&header)
-
         };
         // Store ghostdata
         self.storage
@@ -148,10 +146,10 @@ impl BlockDAG {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::FlexiDagStorageConfig;
+    use starcoin_config::RocksdbConfig;
     use starcoin_types::block::BlockHeader;
     use std::{env, fs};
-    use starcoin_config::RocksdbConfig;
-    use crate::FlexiDagStorageConfig;
 
     #[test]
     fn base_test() {

@@ -2,13 +2,11 @@ use super::util::Refs;
 use crate::consensusdb::schemadb::{GhostdagStoreReader, HeaderStoreReader, RelationsStoreReader};
 use crate::dag::reachability::reachability_service::ReachabilityService;
 use crate::dag::types::{ghostdata::GhostdagData, ordering::*};
-use starcoin_crypto::{HashValue as Hash};
-use starcoin_types::blockhash::{
-    BlockHashMap, BlockHashes, BlueWorkType, HashKTypeMap, KType,
-};
-use std::sync::Arc;
+use starcoin_crypto::HashValue as Hash;
 use starcoin_types::block::BlockHeader;
+use starcoin_types::blockhash::{BlockHashMap, BlockHashes, BlueWorkType, HashKTypeMap, KType};
 use starcoin_types::U256;
+use std::sync::Arc;
 // For GhostdagStoreReader-related functions, use GhostDagDataWrapper instead.
 //  ascending_mergeset_without_selected_parent
 //  descending_mergeset_without_selected_parent
@@ -31,11 +29,11 @@ pub struct GhostdagManager<
 }
 
 impl<
-    T: GhostdagStoreReader,
-    S: RelationsStoreReader,
-    U: ReachabilityService,
-    V: HeaderStoreReader,
-> GhostdagManager<T, S, U, V>
+        T: GhostdagStoreReader,
+        S: RelationsStoreReader,
+        U: ReachabilityService,
+        V: HeaderStoreReader,
+    > GhostdagManager<T, S, U, V>
 {
     pub fn new(
         k: KType,
@@ -56,7 +54,7 @@ impl<
     pub fn genesis_ghostdag_data(&self, genesis: &BlockHeader) -> GhostdagData {
         GhostdagData::new(
             0,
-            Default::default(),//todo:: difficulty
+            Default::default(), //todo:: difficulty
             genesis.parent_hash(),
             BlockHashes::new(Vec::new()),
             BlockHashes::new(Vec::new()),
@@ -75,7 +73,7 @@ impl<
         ))
     }
 
-    pub fn find_selected_parent(&self, parents: impl IntoIterator<Item=Hash>) -> Hash {
+    pub fn find_selected_parent(&self, parents: impl IntoIterator<Item = Hash>) -> Hash {
         parents
             .into_iter()
             .map(|parent| SortableBlock {
@@ -141,12 +139,7 @@ impl<
             .mergeset_blues
             .iter()
             .cloned()
-            .map(|hash| {
-
-                //TODO: implement caculate pow work
-                //let diff = self.headers_store.get_difficulty(hash).unwrap_or(0.into()) as u128
-                0
-            })
+            .map(|hash| self.headers_store.get_difficulty(hash).unwrap_or(0.into()))
             .sum();
 
         let blue_work = self
@@ -303,7 +296,7 @@ impl<
         }
     }
 
-    pub fn sort_blocks(&self, blocks: impl IntoIterator<Item=Hash>) -> Vec<Hash> {
+    pub fn sort_blocks(&self, blocks: impl IntoIterator<Item = Hash>) -> Vec<Hash> {
         let mut sorted_blocks: Vec<Hash> = blocks.into_iter().collect();
         sorted_blocks.sort_by_cached_key(|block| SortableBlock {
             hash: *block,

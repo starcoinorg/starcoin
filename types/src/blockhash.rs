@@ -5,6 +5,7 @@ pub const BLOCK_VERSION: u16 = 1;
 
 pub const HASH_LENGTH: usize = HashValue::LENGTH;
 
+use starcoin_uint::U256;
 use std::sync::Arc;
 
 pub type BlockHashes = Arc<Vec<HashValue>>;
@@ -49,8 +50,7 @@ pub fn new_unique() -> HashValue {
     HashValue::from_u64(c)
 }
 
-/// TODO:FIXME as u256
-pub type BlueWorkType = u128;
+pub type BlueWorkType = U256;
 
 /// The type used to represent the GHOSTDAG K parameter
 pub type KType = u16;

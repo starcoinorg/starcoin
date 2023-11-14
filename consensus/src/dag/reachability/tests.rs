@@ -59,8 +59,8 @@ impl<'a, T: ReachabilityStore + ?Sized> TreeBuilder<'a, T> {
         }
     }
 
-    pub fn init(&mut self,origin:Hash) -> &mut Self {
-        init(self.store,origin).unwrap();
+    pub fn init(&mut self, origin: Hash) -> &mut Self {
+        init(self.store, origin).unwrap();
         self
     }
 
@@ -114,7 +114,7 @@ impl<'a, T: ReachabilityStore + ?Sized> DagBuilder<'a, T> {
         }
     }
 
-    pub fn init(&mut self,origin: Hash) -> &mut Self {
+    pub fn init(&mut self, origin: Hash) -> &mut Self {
         init(self.store, origin).unwrap();
         self
     }
