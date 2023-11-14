@@ -1,13 +1,13 @@
 use super::{tree::*, *};
 use crate::consensusdb::schemadb::{ReachabilityStore, ReachabilityStoreReader};
 use crate::dag::types::{interval::Interval, perf};
-use starcoin_crypto::HashValue as Hash;
+use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_types::blockhash;
 
 /// Init the reachability store to match the state required by the algorithmic layer.
 /// The function first checks the store for possibly being initialized already.
-pub fn init(store: &mut (impl ReachabilityStore + ?Sized)) -> Result<()> {
-    init_with_params(store, Hash::new(blockhash::ORIGIN), Interval::maximal())
+pub fn init(store: &mut (impl ReachabilityStore + ?Sized),origin:HashValue) -> Result<()> {
+    init_with_params(store, origin, Interval::maximal())
 }
 
 pub(super) fn init_with_params(
@@ -300,7 +300,7 @@ mod tests {
         let origin_hash = Hash::new(ORIGIN);
         // Act
         DagBuilder::new(&mut store)
-            .init()
+            .init(origin_hash)
             .add_block(DagBlock::new(1.into(), vec![origin_hash]))
             .add_block(DagBlock::new(2.into(), vec![1.into()]))
             .add_block(DagBlock::new(3.into(), vec![1.into()]))

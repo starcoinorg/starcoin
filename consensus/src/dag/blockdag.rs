@@ -1,4 +1,4 @@
-use super::ghostdag::protocol::{ColoringOutput, GhostdagManager};
+use super::ghostdag::protocol::GhostdagManager;
 use super::reachability::{inquirer, reachability_service::MTReachabilityService};
 use super::types::ghostdata::GhostdagData;
 use crate::consensusdb::prelude::StoreError;
@@ -15,7 +15,7 @@ use parking_lot::RwLock;
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{
-    blockhash::{BlockHashes, KType, ORIGIN},
+    blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
 };
 use std::sync::Arc;
@@ -38,8 +38,7 @@ impl BlockDAG {
         let ghostdag_store = db.ghost_dag_store.clone();
         let header_store = db.header_store.clone();
         let relations_store = db.relations_store.clone();
-        let mut reachability_store = db.reachability_store.clone();
-        inquirer::init(&mut reachability_store).unwrap();
+        let reachability_store = db.reachability_store.clone();
         let reachability_service =
             MTReachabilityService::new(Arc::new(RwLock::new(reachability_store)));
 
@@ -59,14 +58,17 @@ impl BlockDAG {
     }
 
     pub fn init_with_genesis(&self, genesis: BlockHeader) -> anyhow::Result<()> {
-        if self.storage.relations_store.has(Hash::new(ORIGIN))? {
+
+        let origin = genesis.parent_hash();
+        if self.storage.relations_store.has(origin)? {
             return Err(anyhow!("Already init with genesis"));
         };
+        inquirer::init(&mut self.storage.reachability_store.clone(),origin)?;
         self.storage
             .relations_store
-            .insert(Hash::new(ORIGIN), BlockHashes::new(vec![]))
-            .unwrap();
-        let _ = self.commit(genesis);
+            .insert(origin, BlockHashes::new(vec![]))?;
+
+        self.commit(genesis)?;
         Ok(())
     }
     pub fn ghostdata(&self, parents: &[HashValue]) -> GhostdagData {
@@ -80,13 +82,13 @@ impl BlockDAG {
         let ghostdag_data = if !header.is_dag_genesis() {
             self.ghostdag_manager.ghostdag(parents_hash.as_slice())
         } else {
-            self.ghostdag_manager.genesis_ghostdag_data()
+            self.ghostdag_manager.genesis_ghostdag_data(&header)
+
         };
         // Store ghostdata
         self.storage
             .ghost_dag_store
-            .insert(header.id(), Arc::new(ghostdag_data.clone()))
-            .unwrap();
+            .insert(header.id(), Arc::new(ghostdag_data.clone()))?;
 
         // Update reachability store
         let mut reachability_store = self.storage.reachability_store.clone();
@@ -146,9 +148,10 @@ impl BlockDAG {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::consensusdb::prelude::{FlexiDagStorage, FlexiDagStorageConfig};
-    use starcoin_types::block::{BlockHeader, BlockTemplate};
+    use starcoin_types::block::BlockHeader;
     use std::{env, fs};
+    use starcoin_config::RocksdbConfig;
+    use crate::FlexiDagStorageConfig;
 
     #[test]
     fn base_test() {
@@ -164,13 +167,13 @@ mod tests {
         {
             fs::remove_dir_all(db_path.as_path()).expect("Failed to delete temporary directory");
         }
-        let config = FlexiDagStorageConfig::create_with_params(1, 0, 1024);
+        let config = FlexiDagStorageConfig::create_with_params(1, RocksdbConfig::default());
         let db = FlexiDagStorage::create_from_path(db_path, config)
             .expect("Failed to create flexidag storage");
         let mut dag = BlockDAG::new(k, db);
-        dag.init_with_genesis(genesis);
+        dag.init_with_genesis(genesis).unwrap();
         let mut block = BlockHeader::random();
         block.set_parents(vec![genesis_hash]);
-        dag.commit(block);
+        dag.commit(block).unwrap();
     }
 }

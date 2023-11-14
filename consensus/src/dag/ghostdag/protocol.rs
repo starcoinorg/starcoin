@@ -2,11 +2,13 @@ use super::util::Refs;
 use crate::consensusdb::schemadb::{GhostdagStoreReader, HeaderStoreReader, RelationsStoreReader};
 use crate::dag::reachability::reachability_service::ReachabilityService;
 use crate::dag::types::{ghostdata::GhostdagData, ordering::*};
-use starcoin_crypto::HashValue as Hash;
+use starcoin_crypto::{HashValue as Hash};
 use starcoin_types::blockhash::{
-    self, BlockHashExtensions, BlockHashMap, BlockHashes, BlueWorkType, HashKTypeMap, KType,
+    BlockHashMap, BlockHashes, BlueWorkType, HashKTypeMap, KType,
 };
 use std::sync::Arc;
+use starcoin_types::block::BlockHeader;
+use starcoin_types::U256;
 // For GhostdagStoreReader-related functions, use GhostDagDataWrapper instead.
 //  ascending_mergeset_without_selected_parent
 //  descending_mergeset_without_selected_parent
@@ -29,11 +31,11 @@ pub struct GhostdagManager<
 }
 
 impl<
-        T: GhostdagStoreReader,
-        S: RelationsStoreReader,
-        U: ReachabilityService,
-        V: HeaderStoreReader,
-    > GhostdagManager<T, S, U, V>
+    T: GhostdagStoreReader,
+    S: RelationsStoreReader,
+    U: ReachabilityService,
+    V: HeaderStoreReader,
+> GhostdagManager<T, S, U, V>
 {
     pub fn new(
         k: KType,
@@ -51,11 +53,11 @@ impl<
         }
     }
 
-    pub fn genesis_ghostdag_data(&self) -> GhostdagData {
+    pub fn genesis_ghostdag_data(&self, genesis: &BlockHeader) -> GhostdagData {
         GhostdagData::new(
             0,
-            Default::default(), // TODO: take blue score and work from actual genesis
-            Hash::new(blockhash::ORIGIN),
+            Default::default(),//todo:: difficulty
+            genesis.parent_hash(),
             BlockHashes::new(Vec::new()),
             BlockHashes::new(Vec::new()),
             HashKTypeMap::new(BlockHashMap::new()),
@@ -73,7 +75,7 @@ impl<
         ))
     }
 
-    pub fn find_selected_parent(&self, parents: impl IntoIterator<Item = Hash>) -> Hash {
+    pub fn find_selected_parent(&self, parents: impl IntoIterator<Item=Hash>) -> Hash {
         parents
             .into_iter()
             .map(|parent| SortableBlock {
@@ -140,13 +142,10 @@ impl<
             .iter()
             .cloned()
             .map(|hash| {
-                if hash.is_origin() {
-                    0u128
-                } else {
-                    //TODO: implement caculate pow work
-                    let _difficulty = self.headers_store.get_difficulty(hash).unwrap();
-                    1024u128
-                }
+
+                //TODO: implement caculate pow work
+                //let diff = self.headers_store.get_difficulty(hash).unwrap_or(0.into()) as u128
+                0
             })
             .sum();
 
@@ -287,7 +286,7 @@ impl<
                     return ColoringOutput::Blue(
                         candidate_blue_anticone_size,
                         candidate_blues_anticone_sizes,
-                    )
+                    );
                 }
                 ColoringState::Red => return ColoringOutput::Red,
                 ColoringState::Pending => (), // continue looping
@@ -304,7 +303,7 @@ impl<
         }
     }
 
-    pub fn sort_blocks(&self, blocks: impl IntoIterator<Item = Hash>) -> Vec<Hash> {
+    pub fn sort_blocks(&self, blocks: impl IntoIterator<Item=Hash>) -> Vec<Hash> {
         let mut sorted_blocks: Vec<Hash> = blocks.into_iter().collect();
         sorted_blocks.sort_by_cached_key(|block| SortableBlock {
             hash: *block,
@@ -316,7 +315,8 @@ impl<
 
 /// Chain block with attached ghostdag data
 struct ChainBlock<'a> {
-    hash: Option<Hash>, // if set to `None`, signals being the new block
+    hash: Option<Hash>,
+    // if set to `None`, signals being the new block
     data: Refs<'a, GhostdagData>,
 }
 
@@ -330,6 +330,7 @@ enum ColoringState {
 #[derive(Debug)]
 /// Represents the final output of GHOSTDAG coloring for the current candidate
 pub enum ColoringOutput {
-    Blue(KType, BlockHashMap<KType>), // (blue anticone size, map of blue anticone sizes for each affected blue)
+    Blue(KType, BlockHashMap<KType>),
+    // (blue anticone size, map of blue anticone sizes for each affected blue)
     Red,
 }

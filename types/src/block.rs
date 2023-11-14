@@ -3,7 +3,6 @@
 
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
-use crate::blockhash::ORIGIN;
 use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::transaction::SignedUserTransaction;
@@ -373,7 +372,8 @@ impl BlockHeader {
     //for test
     pub fn dag_genesis_random() -> Self {
         let mut header = Self::random();
-        header.parents_hash = Some(vec![HashValue::new(ORIGIN)]);
+        header.parents_hash = Some(vec![header.parent_hash]);
+        header.number = DAG_FORK_HEIGHT;
         header
     }
     pub fn set_parents(&mut self, parents: Vec<HashValue>) {
