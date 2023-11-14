@@ -465,13 +465,15 @@ impl BlockChain {
                 .storage
                 .get_block_by_hash(blue.id())?
                 .expect("block blue need exist");
-            transactions.extend(
-                blue_block
-                    .transactions()
-                    .iter()
-                    .cloned()
-                    .map(Transaction::UserTransaction),
-            );
+            // Todo: we already added txns of blue_blocks to target block when mining it.
+            // see create_block_template in MinerService
+            //transactions.extend(
+            //    blue_block
+            //        .transactions()
+            //        .iter()
+            //        .cloned()
+            //        .map(Transaction::UserTransaction),
+            //);
             total_difficulty += blue_block.header.difficulty();
         }
         transactions.extend(

@@ -48,26 +48,20 @@ impl Sample for TransactionsMessage {
 pub struct CompactBlockMessage {
     pub compact_block: CompactBlock,
     pub block_info: BlockInfo,
-    pub tips_hash: Option<Vec<HashValue>>,
 }
 
 impl CompactBlockMessage {
-    pub fn new(
-        compact_block: CompactBlock,
-        block_info: BlockInfo,
-        tips_hash: Option<Vec<HashValue>>,
-    ) -> Self {
+    pub fn new(compact_block: CompactBlock, block_info: BlockInfo) -> Self {
         Self {
             compact_block,
             block_info,
-            tips_hash,
         }
     }
 }
 
 impl Sample for CompactBlockMessage {
     fn sample() -> Self {
-        Self::new(CompactBlock::sample(), BlockInfo::sample(), None)
+        Self::new(CompactBlock::sample(), BlockInfo::sample())
     }
 }
 

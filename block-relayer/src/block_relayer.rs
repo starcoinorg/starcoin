@@ -78,7 +78,6 @@ impl BlockRelayer {
         &self,
         network: NetworkServiceRef,
         executed_block: Arc<ExecutedBlock>,
-        tips_hash: Option<Vec<HashValue>>,
     ) {
         if !self.is_nearly_synced() {
             debug!("[block-relay] Ignore NewHeadBlock event because the node has not been synchronized yet.");
@@ -86,7 +85,7 @@ impl BlockRelayer {
         }
         let compact_block = executed_block.block().clone().into();
         let compact_block_msg =
-            CompactBlockMessage::new(compact_block, executed_block.block_info.clone(), tips_hash);
+            CompactBlockMessage::new(compact_block, executed_block.block_info.clone());
         network.broadcast(NotificationMessage::CompactBlock(Box::new(
             compact_block_msg,
         )));
@@ -310,7 +309,7 @@ impl EventHandler<Self, NewBranch> for BlockRelayer {
                 return;
             }
         };
-        self.broadcast_compact_block(network, event.0, event.1);
+        self.broadcast_compact_block(network, event.0);
     }
 }
 

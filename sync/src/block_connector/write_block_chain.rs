@@ -4,7 +4,7 @@
 use crate::block_connector::metrics::ChainMetrics;
 use anyhow::{bail, format_err, Ok, Result};
 use parking_lot::Mutex;
-use starcoin_chain::{BlockChain, ChainStatusWithBlock};
+use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 use starcoin_config::NodeConfig;
 use starcoin_consensus::BlockDAG;
@@ -16,59 +16,14 @@ use starcoin_service_registry::{ServiceContext, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
-use starcoin_types::consensus_header::DagHeader;
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
     system_events::{NewBranch, NewHeadBlock},
 };
-use std::{collections::HashMap, fmt::Formatter, sync::Arc};
+use std::{fmt::Formatter, sync::Arc};
 
 use super::BlockConnectorService;
-
-struct DagBranch {
-    selected_parent: HashValue,
-    status: ChainStatusWithBlock,
-}
-
-impl DagBranch {
-    pub fn new(head: Block, selected_parent: HashValue, dag_tips: Vec<HashValue>) -> Self {
-        todo!()
-        //Self {
-        //    selected_parent,
-        //    status: ChainStatusWithBlock::new(block, dag_tips),
-        //}
-    }
-
-    pub fn selected_parent(&self) -> HashValue {
-        self.selected_parent
-    }
-
-    pub fn dag_tips(&self) -> Vec<HashValue> {
-        self.status
-            .dag_tips()
-            .clone()
-            .expect("invalid tips_hash for a dag branch")
-    }
-
-    pub fn appendable(&self, other: &DagBranch) -> Option<usize> {
-        if self.selected_parent == other.selected_parent {
-            match (self.status.dag_tips(), other.status.dag_tips()) {
-                (None, _) | (_, None) => None,
-                (Some(me), Some(other)) => {
-                    todo!()
-                }
-            }
-        } else {
-            None
-        }
-    }
-}
-
-#[derive(Default)]
-struct DagBranchesStatus {
-    branches: HashMap<HashValue, DagBranch>,
-}
 
 const MAX_ROLL_BACK_BLOCK: usize = 10;
 
@@ -79,7 +34,6 @@ where
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
     main: BlockChain,
-    dag_branches: DagBranchesStatus,
     storage: Arc<dyn Store>,
     txpool: P,
     bus: ServiceRef<BusService>,
@@ -201,7 +155,6 @@ where
             config,
             startup_info,
             main,
-            dag_branches: Default::default(),
             storage,
             txpool,
             bus,
@@ -212,14 +165,12 @@ where
         })
     }
 
-    fn find_or_fork(
-        &self,
-        header: &BlockHeader,
-    ) -> Result<(Option<BlockInfo>, Option<BlockChain>)> {
-        let block_id = header.id();
+    fn find_or_fork(&self, block: &Block) -> Result<(Option<BlockInfo>, Option<BlockChain>)> {
+        let block_id = block.header().id();
+        let parent_hash = block.parent_hash()?;
         let block_info = self.storage.get_block_info(block_id)?;
         let block_chain = if block_info.is_some() {
-            if self.is_main_head(&header.parent_hash()) {
+            if self.is_main_head(&parent_hash) {
                 None
             } else {
                 let net = self.config.net();
@@ -231,11 +182,11 @@ where
                     self.vm_metrics.clone(),
                 )?)
             }
-        } else if self.block_exist(header.parent_hash())? {
+        } else if self.block_exist(parent_hash)? {
             let net = self.config.net();
             Some(BlockChain::new(
                 net.time_service(),
-                header.parent_hash(),
+                parent_hash,
                 self.storage.clone(),
                 net.id().clone(),
                 self.vm_metrics.clone(),
@@ -679,90 +630,9 @@ where
                 .with_label_values(&["new_branch"])
                 .inc()
         }
-        let dag_parents = block.block.header().clone().parents_hash();
-        if let Err(e) = self.bus.broadcast(NewBranch(Arc::new(block), dag_parents)) {
+        if let Err(e) = self.bus.broadcast(NewBranch(Arc::new(block))) {
             error!("Broadcast NewBranch error: {:?}", e);
         }
-    }
-
-    fn connect_dag_inner(&mut self, block: Block) -> Result<ConnectOk> {
-        let block_id = block.id();
-
-        self.dag.lock().commit(DagHeader::new(block.header))?;
-
-        let (selected_parent, mine_tips) = block
-            .uncles()
-            .and_then(|u| u.split_first())
-            .expect("uncles must full filled");
-
-        // todo:
-        // 1. keep tracking received blocks in a multi-queue
-        // 2. for a block, check if [selected_parent, ... mergeset_blues] is one queue
-        // 2a. if there is a existing queue, append the block to it.
-        // 2b. if there is a shorter queue, extend it.
-        // 2c. if not, create a new queue, and append the block to it
-        // 3. select the longest queue as main
-
-        // This block has been processed before, should we update here?
-        if let Some(branch) = self.dag_branches.branches.get(&block_id) {
-            if branch.selected_parent != selected_parent.id() {
-                // inconsistency found
-                todo!()
-            }
-            let mut branch_tips_iter = branch.status.dag_tips().unwrap().iter();
-            let mut mine_tips_iter = mine_tips.iter();
-            loop {
-                match (branch_tips_iter.next(), mine_tips_iter.next()) {
-                    (Some(b), Some(m)) if b == m => { /* nothing to do*/ }
-                    (None, None) => {
-                        // we're done iterating. everything is good.
-                        break;
-                    }
-                    _ => {
-                        // inconsistency found
-                        todo!()
-                    }
-                }
-            }
-        }
-
-        // find the longest-same-prefix branch
-        let mut longest = (None, 0);
-        for branch in &self.dag_branches.branches {
-            let mut branch_tips_iter = branch.1.status.dag_tips().unwrap().iter();
-            let mut mine_tips_iter = mine_tips.iter();
-            let mut index = 1usize;
-
-            let res = loop {
-                match (branch_tips_iter.next(), mine_tips_iter.next()) {
-                    (Some(b), Some(m)) if b == m => index += 1,
-                    _ => break (branch.0, index - 1),
-                }
-            };
-            if res.1 > longest.1 {
-                longest = (Some(res.0), res.1)
-            }
-        }
-
-        let mut chain = match longest {
-            (None, _) => self.main.fork(selected_parent.id())?,
-            (Some(v), index) => {
-                let _parent_hash = self
-                    .dag_branches
-                    .branches
-                    .get(v)
-                    .and_then(|branch| branch.status.dag_tips())
-                    .and_then(|tips| tips.get(index))
-                    .expect("must exist")
-                    .clone();
-                // fork chain
-                //self.main.fork(parent_hash);
-                todo!()
-            }
-        };
-
-        //self.broadcast_new_head();
-        Ok(ConnectOk::DagConnected)
     }
 
     fn connect_inner(&mut self, block: Block) -> Result<ConnectOk> {
@@ -774,24 +644,20 @@ where
             return Err(ConnectBlockError::BarnardHardFork(Box::new(block)).into());
         }
 
-        if block.is_dag() {
-            return self.connect_dag_inner(block);
-        }
-
         if self.main.current_header().id() == block_id {
             debug!("Repeat connect, current header is {} already.", block_id);
             return Ok(ConnectOk::MainDuplicate);
         }
 
-        if self.main.current_header().id() == block.header().parent_hash()
-            && !self.block_exist(block_id)?
-        {
+        let parent_hash = block.parent_hash()?;
+
+        if self.main.current_header().id() == parent_hash && !self.block_exist(block_id)? {
             let executed_block = self.main.apply(block)?;
             let enacted_blocks = vec![executed_block.block().clone()];
             self.do_new_head(executed_block.clone(), 1, enacted_blocks, 0, vec![])?;
             return Ok(ConnectOk::ExeConnectMain(executed_block));
         }
-        let (block_info, fork) = self.find_or_fork(block.header())?;
+        let (block_info, fork) = self.find_or_fork(&block)?;
         match (block_info, fork) {
             //block has been processed in some branch, so just trigger a head selection.
             (Some(block_info), Some(branch)) => {

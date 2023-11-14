@@ -93,6 +93,7 @@ pub trait BlockVerifier {
         R: ChainReader,
     {
         let epoch = current_chain.epoch();
+        let is_dag = header.is_dag();
 
         let switch_epoch = header.number() == epoch.end_block_number();
         // epoch first block's uncles should empty.
@@ -128,9 +129,17 @@ pub trait BlockVerifier {
 
             verify_block!(
                 VerifyBlockField::Uncle,
-                uncle.number() < header.number() ,
+                uncle.number() < header.number(),
                "uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number(), header.number()
             );
+
+            if is_dag {
+                verify_block!(
+                VerifyBlockField::Uncle,
+                uncle.number() <= header.number(),
+               "For a Dag block, uncle block number bigger than current block ,uncle block number is {} , current block number is {}", uncle.number(), header.number()
+            );
+            }
 
             verify_block!(
                 VerifyBlockField::Uncle,
@@ -182,7 +191,11 @@ impl BlockVerifier for BasicVerifier {
         let expect_number = current.number().saturating_add(1);
 
         // dag
+        // todo: For a dag block
+        // 1. It could be the first dag block, the chain is just a normal single chain
+        // 2. Or, both block and dag are created for flexidag
         if chain_status.tips_hash.is_some() {
+            // todo: make sure current block is a dag block
             let mut tips_hash = chain_status.tips_hash.clone().unwrap();
             tips_hash.sort();
 
@@ -190,7 +203,6 @@ impl BlockVerifier for BasicVerifier {
             if HashValue::sha3_256_of(&tips_hash.encode().expect("hash encode must be successful"))
                 != new_block_parent
             {
-                // or a block of a single chain
                 verify_block!(
                     VerifyBlockField::Header,
                     expect_number == new_block_header.number(),
@@ -209,6 +221,7 @@ impl BlockVerifier for BasicVerifier {
                 );
             }
         } else {
+            // todo: handle the first dag block
             // or a block of a single chain
             verify_block!(
                 VerifyBlockField::Header,

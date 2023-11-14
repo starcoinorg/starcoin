@@ -559,7 +559,10 @@ impl Inner {
                     peer_info.peer_info.update_chain_status(ChainStatus::new(
                         block_header.clone(),
                         compact_block_message.block_info.clone(),
-                        compact_block_message.tips_hash.clone(),
+                        compact_block_message
+                            .compact_block
+                            .dag_parent_and_tips()
+                            .map(|s| s.1.iter().map(|h| h.id()).collect::<Vec<_>>()),
                     ));
 
                     if self.self_peer.known_blocks.contains(&block_id) {
@@ -721,7 +724,9 @@ impl Inner {
                     ChainStatus::new(
                         msg.compact_block.header.clone(),
                         msg.block_info.clone(),
-                        msg.tips_hash.clone(),
+                        msg.compact_block
+                            .dag_parent_and_tips()
+                            .map(|s| s.1.iter().map(|h| h.id()).collect::<Vec<_>>()),
                     )
                     .encode()
                     .expect("Encoding the compact_block.header and block_info must be successful"),

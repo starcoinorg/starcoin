@@ -44,6 +44,10 @@ impl CompactBlock {
     pub fn txn_len(&self) -> usize {
         self.short_ids.len()
     }
+
+    pub fn dag_parent_and_tips(&self) -> Option<(&BlockHeader, &[BlockHeader])> {
+        self.uncles.as_ref().and_then(|uncles| uncles.split_first())
+    }
 }
 
 impl From<Block> for CompactBlock {
