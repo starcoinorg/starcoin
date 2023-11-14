@@ -18,11 +18,10 @@ pub struct FlexiDagStorage {
     pub relations_store: DbRelationsStore,
 }
 
-
 #[derive(Clone, Default)]
 pub struct FlexiDagStorageConfig {
     pub cache_size: usize,
-    pub rocksdb_config:RocksdbConfig
+    pub rocksdb_config: RocksdbConfig,
 }
 
 impl FlexiDagStorageConfig {
@@ -30,7 +29,7 @@ impl FlexiDagStorageConfig {
         FlexiDagStorageConfig::default()
     }
 
-    pub fn create_with_params(cache_size: usize,rocksdb_config: RocksdbConfig) -> Self {
+    pub fn create_with_params(cache_size: usize, rocksdb_config: RocksdbConfig) -> Self {
         Self {
             cache_size,
             rocksdb_config,
@@ -42,7 +41,7 @@ impl From<StorageConfig> for FlexiDagStorageConfig {
     fn from(value: StorageConfig) -> Self {
         Self {
             cache_size: value.cache_size(),
-            rocksdb_config:value.rocksdb_config(),
+            rocksdb_config: value.rocksdb_config(),
         }
     }
 }
@@ -53,8 +52,6 @@ impl FlexiDagStorage {
         db_path: P,
         config: FlexiDagStorageConfig,
     ) -> Result<Self, StoreError> {
-
-
         let db = Arc::new(
             DBStorage::open_with_cfs(
                 db_path,
@@ -75,23 +72,15 @@ impl FlexiDagStorage {
                 config.rocksdb_config,
                 None,
             )
-                .map_err(|e| StoreError::DBIoError(e.to_string()))?,
+            .map_err(|e| StoreError::DBIoError(e.to_string()))?,
         );
 
         Ok(Self {
-            ghost_dag_store: DbGhostdagStore::new(
-                db.clone(),
-                1,
-                config.cache_size,
-            ),
+            ghost_dag_store: DbGhostdagStore::new(db.clone(), 1, config.cache_size),
 
             header_store: DbHeadersStore::new(db.clone(), config.cache_size),
             reachability_store: DbReachabilityStore::new(db.clone(), config.cache_size),
-            relations_store: DbRelationsStore::new(
-                db,
-                1,
-                config.cache_size,
-            ),
+            relations_store: DbRelationsStore::new(db, 1, config.cache_size),
         })
     }
 }

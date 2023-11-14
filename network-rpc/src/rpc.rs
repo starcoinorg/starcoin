@@ -197,7 +197,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
             let blocks = chain_reader.get_blocks(hashes).await?;
             let mut bodies = vec![];
             for block in blocks {
-                bodies.push(block.map(|(block, _, _)| block.body));
+                bodies.push(block.map(|block| block.body));
             }
             Ok(bodies)
         };
@@ -304,7 +304,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<Option<(Block, Option<Vec<HashValue>>, Option<HashValue>)>>>> {
+    ) -> BoxFuture<Result<Vec<Option<Block>>>> {
         let chain_service = self.chain_service.clone();
         let fut = async move {
             if ids.len() as u64 > MAX_BLOCK_REQUEST_SIZE {

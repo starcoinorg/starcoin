@@ -46,7 +46,7 @@ impl ChainReaderService {
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
-        dag: Arc<Mutex<BlockDAG>>,
+        dag: BlockDAG,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         Ok(Self {
@@ -54,7 +54,7 @@ impl ChainReaderService {
                 config.clone(),
                 startup_info,
                 storage.clone(),
-                dag.clone(),
+                dag,
                 vm_metrics.clone(),
             )?,
         })
@@ -70,9 +70,9 @@ impl ServiceFactory<Self> for ChainReaderService {
             .ok_or_else(|| format_err!("StartupInfo should exist at service init."))?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
         let dag = ctx
-            .get_shared_opt::<Arc<Mutex<BlockDAG>>>()?
+            .get_shared_opt::<BlockDAG>()?
             .expect("dag should be initialized at service init");
-        Self::new(config, startup_info, storage, dag.clone(), vm_metrics)
+        Self::new(config, startup_info, storage, dag, vm_metrics)
     }
 }
 
@@ -283,7 +283,7 @@ pub struct ChainReaderServiceInner {
     main: BlockChain,
     storage: Arc<dyn Store>,
     vm_metrics: Option<VMMetrics>,
-    dag: Arc<Mutex<BlockDAG>>,
+    dag: BlockDAG,
 }
 
 impl ChainReaderServiceInner {
@@ -291,7 +291,7 @@ impl ChainReaderServiceInner {
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
-        dag: Arc<Mutex<BlockDAG>>,
+        dag: BlockDAG,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let net = config.net();
@@ -301,13 +301,14 @@ impl ChainReaderServiceInner {
             storage.clone(),
             config.net().id().clone(),
             vm_metrics.clone(),
+            Some(dag.clone()),
         )?;
         Ok(Self {
             config,
             startup_info,
             main,
             storage,
-            dag: dag.clone(),
+            dag,
             vm_metrics,
         })
     }
@@ -329,6 +330,7 @@ impl ChainReaderServiceInner {
             self.storage.clone(),
             self.config.net().id().clone(),
             self.vm_metrics.clone(),
+            Some(self.dag.clone()),
         )?;
         Ok(())
     }
@@ -347,54 +349,15 @@ impl ReadableChainService for ChainReaderServiceInner {
         self.storage.get_block_by_hash(hash)
     }
 
-    fn get_blocks(
-        &self,
-        ids: Vec<HashValue>,
-    ) -> Result<Vec<Option<(Block, Option<Vec<HashValue>>, Option<HashValue>)>>> {
-        let blocks = self.storage.get_blocks(ids)?;
-        Ok(blocks
-            .into_iter()
-            .map(|block| {
-                if let Some(block) = block {
-                    let parents = match self
-                        .dag
-                        .lock()
-                        .expect("failed to lock dag")
-                        .get_parents(block.id())
-                    {
-                        Ok(parents) => parents,
-                        Err(_) => panic!("failed to get parents of block {}", block.id()),
-                    };
-                    let transaction_parent = match self.storage.get_block_info(block.id()) {
-                        Ok(block_info) => {
-                            if let Some(block_info) = &block_info {
-                                let block_accumulator = MerkleAccumulator::new_with_info(
-                                    block_info.block_accumulator_info.clone(),
-                                    self.storage
-                                        .get_accumulator_store(AccumulatorStoreType::Block),
-                                );
-                                block_accumulator
-                                    .get_leaf(block_info.block_accumulator_info.num_leaves - 2)
-                                    .expect("block should have transction header")
-                            } else {
-                                None
-                            }
-                        }
-                        Err(_) => todo!(),
-                    };
-                    Some((block, Some(parents), transaction_parent))
-                } else {
-                    None
-                }
-            })
-            .collect())
+    fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>> {
+        self.storage.get_blocks(ids)
     }
 
     fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockHeader>>> {
         Ok(self
             .get_blocks(ids)?
             .into_iter()
-            .map(|block| block.map(|b| b.0.header))
+            .map(|block| block.map(|b| b.header))
             .collect())
     }
 

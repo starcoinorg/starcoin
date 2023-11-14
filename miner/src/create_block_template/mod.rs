@@ -218,7 +218,7 @@ where
             storage.clone(),
             net.id().clone(),
             vm_metrics.clone(),
-            dag.clone(),
+            Some(dag.clone()),
         )?;
 
         Ok(Inner {
@@ -260,7 +260,7 @@ where
                 self.storage.clone(),
                 self.chain.net_id(),
                 self.vm_metrics.clone(),
-                self.dag.clone(),
+                Some(self.dag.clone()),
             )?;
             //current block possible be uncle.
             self.uncles.insert(current_id, current_header);

@@ -78,7 +78,7 @@ pub struct BlockChain {
     vm_metrics: Option<VMMetrics>,
     dag_accumulator: Option<MerkleAccumulator>,
     net: ChainNetworkID,
-    dag: BlockDAG,
+    dag: Option<BlockDAG>,
 }
 
 impl BlockChain {
@@ -88,7 +88,7 @@ impl BlockChain {
         storage: Arc<dyn Store>,
         net: ChainNetworkID,
         vm_metrics: Option<VMMetrics>,
-        dag: BlockDAG,
+        dag: Option<BlockDAG>,
     ) -> Result<Self> {
         let head = storage
             .get_block_by_hash(head_block_hash)?
@@ -126,7 +126,7 @@ impl BlockChain {
         storage: Arc<dyn Store>,
         net: ChainNetworkID,
         vm_metrics: Option<VMMetrics>,
-        dag: BlockDAG,
+        dag: Option<BlockDAG>,
     ) -> Result<Self> {
         let block_info = storage
             .get_block_info(head_block.id())?
@@ -198,7 +198,6 @@ impl BlockChain {
         genesis_epoch: Epoch,
         genesis_block: Block,
         net: ChainNetworkID,
-        dag: BlockDAG,
     ) -> Result<Self> {
         debug_assert!(genesis_block.header().is_genesis());
         let txn_accumulator = MerkleAccumulator::new_empty(
@@ -238,7 +237,7 @@ impl BlockChain {
             storage,
             net,
             None,
-            dag,
+            None,
         )
     }
 
@@ -616,7 +615,10 @@ impl BlockChain {
         self.storage.save_block_info(block_info.clone())?;
 
         self.storage.save_table_infos(txn_table_infos)?;
-        self.dag.commit(header.to_owned())?;
+        self.dag
+            .clone()
+            .expect("dag should init in blockchain")
+            .commit(header.to_owned())?;
         watch(CHAIN_WATCH_NAME, "n26");
         Ok(ExecutedBlock { block, block_info })
     }
@@ -1348,6 +1350,7 @@ impl BlockChain {
     }
 
     fn connect_dag(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
+        let dag = self.dag.clone().expect("dag should init with blockdag");
         let (new_tip_block, _) = (executed_block.block(), executed_block.block_info());
         let mut tips = self
             .status
@@ -1365,7 +1368,7 @@ impl BlockChain {
         tips.push(new_tip_block.id());
 
         let block_hash = {
-            let ghost_of_tips = self.dag.ghostdata(tips.as_slice());
+            let ghost_of_tips = dag.ghostdata(tips.as_slice());
             ghost_of_tips.selected_parent
         };
         let (block, block_info) = {

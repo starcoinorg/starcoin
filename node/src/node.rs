@@ -361,7 +361,10 @@ impl NodeService {
         let upgrade_time = SystemTime::now().duration_since(start_time)?;
         let storage = Arc::new(Storage::new(storage_instance)?);
         registry.put_shared(storage.clone()).await?;
-        let dag_storage = FlexiDagStorage::create_from_path(config.storage.dag_dir(), config.storage.clone().into())?;
+        let dag_storage = FlexiDagStorage::create_from_path(
+            config.storage.dag_dir(),
+            config.storage.clone().into(),
+        )?;
         let dag = BlockDAG::new(8, dag_storage);
         let (chain_info, genesis) =
             Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;
