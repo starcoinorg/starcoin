@@ -12,9 +12,9 @@ where
     K: Hash + Eq + Default,
     V: Default + Clone,
 {
-    pub(crate) fn new_with_capacity(size: u64) -> Self {
+    pub(crate) fn new_with_capacity(size: usize) -> Self {
         Self {
-            cache: Arc::new(GCacheStorage::new_with_capacity(size as usize, None)),
+            cache: Arc::new(GCacheStorage::new_with_capacity(size, None)),
         }
     }
 

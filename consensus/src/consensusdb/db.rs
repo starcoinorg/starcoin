@@ -6,7 +6,7 @@ use super::{
         HEADERS_STORE_CF, PARENTS_CF, REACHABILITY_DATA_CF,
     },
 };
-use starcoin_config::RocksdbConfig;
+use starcoin_config::{RocksdbConfig, StorageConfig};
 pub(crate) use starcoin_storage::db_storage::DBStorage;
 use std::{path::Path, sync::Arc};
 
@@ -18,35 +18,11 @@ pub struct FlexiDagStorage {
     pub relations_store: DbRelationsStore,
 }
 
-#[derive(Clone, Default)]
-pub struct GhostDagStoreConfig {
-    pub block_level: u8,
-    pub cache_size: u64,
-}
-
-#[derive(Clone, Default)]
-pub struct HeaderStoreConfig {
-    pub cache_size: u64,
-}
-
-#[derive(Clone, Default)]
-pub struct ReachabilityStoreConfig {
-    pub cache_size: u64,
-}
-
-#[derive(Clone, Default)]
-pub struct RelationsStoreConfig {
-    pub block_level: u8,
-    pub cache_size: u64,
-}
 
 #[derive(Clone, Default)]
 pub struct FlexiDagStorageConfig {
-    pub parallelism: u64,
-    pub gds_conf: GhostDagStoreConfig,
-    pub hs_conf: HeaderStoreConfig,
-    pub rbs_conf: ReachabilityStoreConfig,
-    pub rs_conf: RelationsStoreConfig,
+    pub cache_size: usize,
+    pub rocksdb_config:RocksdbConfig
 }
 
 impl FlexiDagStorageConfig {
@@ -54,45 +30,20 @@ impl FlexiDagStorageConfig {
         FlexiDagStorageConfig::default()
     }
 
-    pub fn create_with_params(parallelism: u64, block_level: u8, cache_size: u64) -> Self {
+    pub fn create_with_params(cache_size: usize,rocksdb_config: RocksdbConfig) -> Self {
         Self {
-            parallelism,
-            gds_conf: GhostDagStoreConfig {
-                block_level,
-                cache_size,
-            },
-            hs_conf: HeaderStoreConfig { cache_size },
-            rbs_conf: ReachabilityStoreConfig { cache_size },
-            rs_conf: RelationsStoreConfig {
-                block_level,
-                cache_size,
-            },
+            cache_size,
+            rocksdb_config,
         }
     }
+}
 
-    pub fn update_parallelism(mut self, parallelism: u64) -> Self {
-        self.parallelism = parallelism;
-        self
-    }
-
-    pub fn update_ghost_dag_conf(mut self, gds_conf: GhostDagStoreConfig) -> Self {
-        self.gds_conf = gds_conf;
-        self
-    }
-
-    pub fn update_headers_conf(mut self, hs_conf: HeaderStoreConfig) -> Self {
-        self.hs_conf = hs_conf;
-        self
-    }
-
-    pub fn update_reachability_conf(mut self, rbs_conf: ReachabilityStoreConfig) -> Self {
-        self.rbs_conf = rbs_conf;
-        self
-    }
-
-    pub fn update_relations_conf(mut self, rs_conf: RelationsStoreConfig) -> Self {
-        self.rs_conf = rs_conf;
-        self
+impl From<StorageConfig> for FlexiDagStorageConfig {
+    fn from(value: StorageConfig) -> Self {
+        Self {
+            cache_size: value.cache_size(),
+            rocksdb_config:value.rocksdb_config(),
+        }
     }
 }
 
@@ -102,10 +53,7 @@ impl FlexiDagStorage {
         db_path: P,
         config: FlexiDagStorageConfig,
     ) -> Result<Self, StoreError> {
-        let rocksdb_config = RocksdbConfig {
-            parallelism: config.parallelism,
-            ..Default::default()
-        };
+
 
         let db = Arc::new(
             DBStorage::open_with_cfs(
@@ -124,25 +72,25 @@ impl FlexiDagStorage {
                     COMPACT_GHOST_DAG_STORE_CF,
                 ],
                 false,
-                rocksdb_config,
+                config.rocksdb_config,
                 None,
             )
-            .map_err(|e| StoreError::DBIoError(e.to_string()))?,
+                .map_err(|e| StoreError::DBIoError(e.to_string()))?,
         );
 
         Ok(Self {
             ghost_dag_store: DbGhostdagStore::new(
                 db.clone(),
-                config.gds_conf.block_level,
-                config.gds_conf.cache_size,
+                1,
+                config.cache_size,
             ),
 
-            header_store: DbHeadersStore::new(db.clone(), config.hs_conf.cache_size),
-            reachability_store: DbReachabilityStore::new(db.clone(), config.rbs_conf.cache_size),
+            header_store: DbHeadersStore::new(db.clone(), config.cache_size),
+            reachability_store: DbReachabilityStore::new(db.clone(), config.cache_size),
             relations_store: DbRelationsStore::new(
                 db,
-                config.rs_conf.block_level,
-                config.rs_conf.cache_size,
+                1,
+                config.cache_size,
             ),
         })
     }

@@ -78,7 +78,7 @@ pub struct DbRelationsStore {
 }
 
 impl DbRelationsStore {
-    pub fn new(db: Arc<DBStorage>, level: BlockLevel, cache_size: u64) -> Self {
+    pub fn new(db: Arc<DBStorage>, level: BlockLevel, cache_size: usize) -> Self {
         Self {
             db: Arc::clone(&db),
             level,
@@ -87,7 +87,7 @@ impl DbRelationsStore {
         }
     }
 
-    pub fn clone_with_new_cache(&self, cache_size: u64) -> Self {
+    pub fn clone_with_new_cache(&self, cache_size: usize) -> Self {
         Self::new(Arc::clone(&self.db), self.level, cache_size)
     }
 

@@ -13,13 +13,11 @@ use futures::executor::block_on;
 use futures_timer::Delay;
 use network_api::{PeerProvider, PeerSelector, PeerStrategy};
 use starcoin_account_service::{AccountEventService, AccountService, AccountStorage};
-use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
-use starcoin_consensus::{BlockDAG, FlexiDagStorage, FlexiDagStorageConfig};
-use starcoin_crypto::HashValue;
+use starcoin_consensus::{BlockDAG, FlexiDagStorage};
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
 use starcoin_logger::structured_log::init_slog_logger;
@@ -55,11 +53,9 @@ use starcoin_sync::sync::SyncService;
 use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
-use starcoin_types::blockhash::ORIGIN;
-use starcoin_types::consensus_header::DagHeader;
 use starcoin_types::system_events::{SystemShutdown, SystemStarted};
 use starcoin_vm_runtime::metrics::VMMetrics;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
 pub struct NodeService {
@@ -365,14 +361,10 @@ impl NodeService {
         let upgrade_time = SystemTime::now().duration_since(start_time)?;
         let storage = Arc::new(Storage::new(storage_instance)?);
         registry.put_shared(storage.clone()).await?;
-
+        let dag_storage = FlexiDagStorage::create_from_path(config.storage.dag_dir(), config.storage.clone().into())?;
+        let dag = BlockDAG::new(8, dag_storage);
         let (chain_info, genesis) =
             Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;
-
-        let flexi_dag_config = FlexiDagStorageConfig::create_with_params(1, 0, 1024);
-        let flexi_dag_db = FlexiDagStorage::create_from_path("./smolstc", flexi_dag_config)
-            .expect("Failed to create flexidag storage");
-        let dag = BlockDAG::new(8, flexi_dag_db);
         // TODO: init dag in the dag fork height
         let _ = dag.init_with_genesis(genesis.block().header().to_owned());
         registry.put_shared(dag).await?;

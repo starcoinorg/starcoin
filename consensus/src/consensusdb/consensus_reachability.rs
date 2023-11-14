@@ -107,15 +107,15 @@ pub struct DbReachabilityStore {
 }
 
 impl DbReachabilityStore {
-    pub fn new(db: Arc<DBStorage>, cache_size: u64) -> Self {
+    pub fn new(db: Arc<DBStorage>, cache_size: usize) -> Self {
         Self::new_with_prefix_end(db, cache_size)
     }
 
-    pub fn new_with_alternative_prefix_end(db: Arc<DBStorage>, cache_size: u64) -> Self {
+    pub fn new_with_alternative_prefix_end(db: Arc<DBStorage>, cache_size: usize) -> Self {
         Self::new_with_prefix_end(db, cache_size)
     }
 
-    fn new_with_prefix_end(db: Arc<DBStorage>, cache_size: u64) -> Self {
+    fn new_with_prefix_end(db: Arc<DBStorage>, cache_size: usize) -> Self {
         Self {
             db: Arc::clone(&db),
             access: CachedDbAccess::new(Arc::clone(&db), cache_size),
@@ -123,7 +123,7 @@ impl DbReachabilityStore {
         }
     }
 
-    pub fn clone_with_new_cache(&self, cache_size: u64) -> Self {
+    pub fn clone_with_new_cache(&self, cache_size: usize) -> Self {
         Self::new_with_prefix_end(Arc::clone(&self.db), cache_size)
     }
 }

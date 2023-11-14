@@ -25,7 +25,7 @@ impl<S: Schema, R> CachedDbAccess<S, R>
 where
     R: BuildHasher + Default,
 {
-    pub fn new(db: Arc<DBStorage>, cache_size: u64) -> Self {
+    pub fn new(db: Arc<DBStorage>, cache_size: usize) -> Self {
         Self {
             db,
             cache: DagCache::new_with_capacity(cache_size),

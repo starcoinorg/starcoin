@@ -93,7 +93,7 @@ pub struct DbHeadersStore {
 }
 
 impl DbHeadersStore {
-    pub fn new(db: Arc<DBStorage>, cache_size: u64) -> Self {
+    pub fn new(db: Arc<DBStorage>, cache_size: usize) -> Self {
         Self {
             db: Arc::clone(&db),
             headers_access: CachedDbAccess::new(db.clone(), cache_size),
@@ -101,7 +101,7 @@ impl DbHeadersStore {
         }
     }
 
-    pub fn clone_with_new_cache(&self, cache_size: u64) -> Self {
+    pub fn clone_with_new_cache(&self, cache_size: usize) -> Self {
         Self::new(Arc::clone(&self.db), cache_size)
     }
 

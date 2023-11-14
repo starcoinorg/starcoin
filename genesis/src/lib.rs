@@ -37,6 +37,7 @@ use std::sync::Arc;
 
 mod errors;
 pub use errors::GenesisError;
+use starcoin_consensus::{BlockDAG, FlexiDagStorageConfig};
 use starcoin_storage::table_info::TableInfoStore;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;
@@ -262,6 +263,7 @@ impl Genesis {
             net.genesis_epoch(),
             self.block.clone(),
             net.id().clone(),
+
         )?;
         let startup_info = StartupInfo::new(genesis_chain.current_header().id());
         storage.save_startup_info(startup_info)?;

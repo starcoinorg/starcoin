@@ -75,6 +75,7 @@ impl Default for RocksdbConfig {
 }
 
 static G_DEFAULT_DB_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("starcoindb/db"));
+static G_DEFAULT_DAG_DB_DIR: Lazy<PathBuf> = Lazy::new(||PathBuf::from("dag/db"));
 pub const DEFAULT_CACHE_SIZE: usize = 20000;
 
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
@@ -129,7 +130,9 @@ impl StorageConfig {
     pub fn dir(&self) -> PathBuf {
         self.base().data_dir().join(G_DEFAULT_DB_DIR.as_path())
     }
-
+    pub fn dag_dir(&self) ->PathBuf{
+        self.base().data_dir().join(G_DEFAULT_DAG_DB_DIR.as_path())
+    }
     pub fn rocksdb_config(&self) -> RocksdbConfig {
         let default = RocksdbConfig::default();
         RocksdbConfig {

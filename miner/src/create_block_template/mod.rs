@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::create_block_template::metrics::BlockBuilderMetrics;
-use anyhow::{bail, format_err, Result};
+use anyhow::{format_err, Result};
 use futures::executor::block_on;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_account_service::AccountService;
@@ -10,7 +10,7 @@ use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_config::ChainNetwork;
 use starcoin_config::NodeConfig;
-use starcoin_consensus::{BlockDAG, Consensus, FlexiDagStorage};
+use starcoin_consensus::{BlockDAG, Consensus};
 use starcoin_crypto::hash::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
@@ -25,7 +25,7 @@ use starcoin_types::{
     block::{BlockHeader, BlockTemplate, ExecutedBlock},
     system_events::{NewBranch, NewHeadBlock},
 };
-use starcoin_vm_types::transaction::{SignedUserTransaction, Transaction};
+use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
 
@@ -329,6 +329,7 @@ where
                 None => self.find_uncles(),
                 Some(tips) => {
                     let mut blues = self.dag.ghostdata(tips).mergeset_blues.to_vec();
+                    let mut blues_header = vec![];
                     let selected_parent = blues.remove(0);
                     assert_eq!(previous_header.id(), selected_parent);
                     for blue in &blues {
@@ -337,8 +338,9 @@ where
                             .get_block_by_hash(blue.to_owned())?
                             .expect("Block should exist");
                         txns.extend(block.transactions().iter().cloned());
+                        blues_header.push(block.header);
                     }
-                    blues
+                    blues_header
                 }
             }
         };

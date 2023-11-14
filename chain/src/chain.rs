@@ -93,9 +93,7 @@ impl BlockChain {
         let head = storage
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
-        let dag_genesis_header = storage
-            .get_block_header_by_hash(head_block_hash)?
-            .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
+
         Self::new_with_uncles(time_service, head, None, storage, net, vm_metrics, dag)
     }
 
