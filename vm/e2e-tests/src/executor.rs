@@ -45,6 +45,7 @@ use starcoin_vm_types::{
     write_set::WriteSet,
 };
 
+use starcoin_vm_types::account_config::AccountResource;
 use std::{
     collections::BTreeMap,
     env, fs,
@@ -52,7 +53,6 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
-use starcoin_vm_types::account_config::AccountResource;
 use test_helper::Genesis;
 
 static RNG_SEED: [u8; 32] = [9u8; 32];
