@@ -386,8 +386,6 @@ impl VerifiedRpcClient {
             Option<(
                 Block,
                 Option<PeerId>,
-                Option<Vec<HashValue>>,
-                Option<HashValue>,
             )>,
         >,
     > {
@@ -404,7 +402,7 @@ impl VerifiedRpcClient {
             .zip(blocks)
             .map(|(id, block)| {
                 if let Some(block) = block {
-                    let actual_id = block.0.id();
+                    let actual_id = block.id();
                     if actual_id != id {
                         warn!(
                             "Get block by id: {:?} from peer: {:?}, but got block: {:?}",
@@ -412,7 +410,7 @@ impl VerifiedRpcClient {
                         );
                         None
                     } else {
-                        Some((block.0, Some(peer_id.clone()), block.1, block.2))
+                        Some((block, Some(peer_id.clone())))
                     }
                 } else {
                     None

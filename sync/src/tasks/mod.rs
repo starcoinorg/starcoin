@@ -303,8 +303,6 @@ pub trait BlockFetcher: Send + Sync {
             Vec<(
                 Block,
                 Option<PeerId>,
-                Option<Vec<HashValue>>,
-                Option<HashValue>,
             )>,
         >,
     >;
@@ -323,8 +321,6 @@ where
             Vec<(
                 Block,
                 Option<PeerId>,
-                Option<Vec<HashValue>>,
-                Option<HashValue>,
             )>,
         >,
     > {
@@ -342,8 +338,6 @@ impl BlockFetcher for VerifiedRpcClient {
             Vec<(
                 Block,
                 Option<PeerId>,
-                Option<Vec<HashValue>>,
-                Option<HashValue>,
             )>,
         >,
     > {
@@ -353,8 +347,6 @@ impl BlockFetcher for VerifiedRpcClient {
                     Vec<(
                         Block,
                         Option<PeerId>,
-                        Option<Vec<HashValue>>,
-                        Option<HashValue>,
                     )>,
                 > = block_ids
                     .iter()

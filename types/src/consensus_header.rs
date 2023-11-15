@@ -1,5 +1,5 @@
 use crate::block::BlockHeader;
-use crate::blockhash::{BlockLevel, ORIGIN};
+use crate::blockhash::BlockLevel;
 use crate::U256;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{HashValue as Hash, HashValue};

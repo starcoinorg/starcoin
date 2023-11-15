@@ -133,7 +133,7 @@ where
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist."))?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        let dag = ctx.get_shared::<Arc<Mutex<BlockDAG>>>()?;
+        let dag = ctx.get_shared::<BlockDAG>()?;
         let chain_service = WriteBlockChainService::new(
             config.clone(),
             startup_info,

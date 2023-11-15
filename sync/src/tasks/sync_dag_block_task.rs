@@ -73,8 +73,6 @@ impl SyncDagBlockTask {
                 block_id: block_id.clone(),
                 block: None,
                 peer_id: None,
-                dag_parents: vec![],
-                dag_transaction_header: None,
             });
         });
 
@@ -83,14 +81,12 @@ impl SyncDagBlockTask {
             .fetch_blocks(absent_block)
             .await?
             .iter()
-            .map(|(block, peer_info, parents, transaction_header)| {
+            .map(|(block, peer_info)| {
                 (
                     block.header().id(),
                     (
                         block.clone(),
                         peer_info.clone(),
-                        parents.clone(),
-                        transaction_header.clone(),
                     ),
                 )
             })
@@ -110,20 +106,6 @@ impl SyncDagBlockTask {
                 .expect("the block should be got from peer already")
                 .1
                 .to_owned();
-            block_info.dag_parents = fetched_block_info
-                .get(&block_info.block_id)
-                .expect("the block should be got from peer already")
-                .2
-                .to_owned()
-                .expect("dag block should have parents");
-            block_info.dag_transaction_header = Some(
-                fetched_block_info
-                    .get(&block_info.block_id)
-                    .expect("the block should be got from peer already")
-                    .3
-                    .to_owned()
-                    .expect("dag block should have parents"),
-            );
         });
         result.sort_by_key(|item| item.block_id);
 
@@ -140,11 +122,6 @@ impl SyncDagBlockTask {
                 peer_id: item.peer_id,
                 accumulator_root: Some(snapshot.accumulator_info.get_accumulator_root().clone()),
                 count_in_leaf: snapshot.child_hashes.len() as u64,
-                dag_block_headers: Some(item.dag_parents),
-                dag_transaction_header: Some(
-                    item.dag_transaction_header
-                        .expect("dag transaction header should exists"),
-                ),
             })
             .collect())
     }

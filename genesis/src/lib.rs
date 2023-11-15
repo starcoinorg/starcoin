@@ -37,7 +37,6 @@ use std::sync::Arc;
 
 mod errors;
 pub use errors::GenesisError;
-use starcoin_consensus::{BlockDAG, FlexiDagStorageConfig};
 use starcoin_storage::table_info::TableInfoStore;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;

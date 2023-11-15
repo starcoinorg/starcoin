@@ -6,8 +6,8 @@ use super::{
 use crate::define_schema;
 use rocksdb::WriteBatch;
 use starcoin_crypto::HashValue as Hash;
-use starcoin_types::blockhash::{BlockHashMap, BlockHashes, BlockLevel};
-use std::{collections::hash_map::Entry::Vacant, sync::Arc};
+use starcoin_types::blockhash::{BlockHashes, BlockLevel};
+use std::sync::Arc;
 
 /// Reader API for `RelationsStore`.
 pub trait RelationsStoreReader {

@@ -32,8 +32,6 @@ pub struct SyncBlockData {
     pub(crate) peer_id: Option<PeerId>,
     pub(crate) accumulator_root: Option<HashValue>, // the block belongs to this accumulator leaf
     pub(crate) count_in_leaf: u64, // the number of the block in the accumulator leaf
-    pub(crate) dag_block_headers: Option<Vec<HashValue>>,
-    pub(crate) dag_transaction_header: Option<HashValue>,
 }
 
 impl SyncBlockData {
@@ -52,8 +50,6 @@ impl SyncBlockData {
             peer_id,
             accumulator_root,
             count_in_leaf,
-            dag_block_headers,
-            dag_transaction_header,
         }
     }
 }
@@ -64,8 +60,6 @@ impl
         Block,
         Option<BlockInfo>,
         Option<PeerId>,
-        Option<Vec<HashValue>>,
-        Option<HashValue>,
     )> for SyncBlockData
 {
     fn into(
@@ -74,15 +68,11 @@ impl
         Block,
         Option<BlockInfo>,
         Option<PeerId>,
-        Option<Vec<HashValue>>,
-        Option<HashValue>,
     ) {
         (
             self.block,
             self.info,
             self.peer_id,
-            self.dag_block_headers,
-            self.dag_transaction_header,
         )
     }
 }
@@ -168,7 +158,7 @@ impl TaskState for BlockSyncTask {
                         .fetch_blocks(no_exist_block_ids)
                         .await?
                         .into_iter()
-                        .fold(result_map, |mut result_map, (block, peer_id, _, _)| {
+                        .fold(result_map, |mut result_map, (block, peer_id)| {
                             result_map.insert(
                                 block.id(),
                                 SyncBlockData::new(block, None, peer_id, None, 1, None, None),
@@ -192,7 +182,7 @@ impl TaskState for BlockSyncTask {
                     .fetch_blocks(block_ids)
                     .await?
                     .into_iter()
-                    .map(|(block, peer_id, _, _)| {
+                    .map(|(block, peer_id)| {
                         SyncBlockData::new(block, None, peer_id, None, 1, None, None)
                     })
                     .collect())
@@ -256,11 +246,6 @@ where
         target_accumulator_root: HashValue,
         dag: Option<Arc<Mutex<BlockDAG>>>,
     ) -> Self {
-        if let Some(dag) = &dag {
-            dag.lock()
-                .expect("failed to lock the dag")
-                .clear_missing_block();
-        }
         Self {
             current_block_info,
             target,
@@ -499,11 +484,11 @@ where
         item: SyncBlockData,
         next_tips: &mut Option<Vec<HashValue>>,
     ) -> Result<(Block, BlockInfo, Option<Vec<HashValue>>, BlockConnectAction)> {
-        let (block, block_info, peer_id, parents_hash, dag_transaction_header) = item.into();
+        let (block, block_info, peer_id) = item.into();
         let block_id = block.id();
         let timestamp = block.header().timestamp();
 
-        if let Some(parents) = parents_hash.clone() {
+        if let Some(parents) = block.header().parents_hash().clone() {
             if let Some(dag) = &self.dag {
                 // let color = dag
                 //     .lock()
@@ -529,22 +514,23 @@ where
                     block: block.clone(),
                     block_info: block_info.clone(),
                 })?;
+
                 let block_info = self.chain.status().info;
+                let tips_hash = self.chain.status().tips_hash;
                 Ok((
                     block,
                     block_info,
-                    parents_hash,
+                    tips_hash,
                     BlockConnectAction::ConnectExecutedBlock,
                 ))
             }
             None => {
-                self.apply_block(block.clone(), peer_id, parents_hash.clone(), next_tips)?;
+                self.apply_block(block.clone(), peer_id)?;
                 self.chain.time_service().adjust(timestamp);
                 let block_info = self.chain.status().info;
                 Ok((
                     block,
                     block_info,
-                    parents_hash,
                     BlockConnectAction::ConnectNewBlock,
                 ))
             }
