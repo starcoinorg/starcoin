@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, format_err, Error, Result};
-use starcoin_accumulator::node::AccumulatorStoreType;
-use starcoin_accumulator::{Accumulator, MerkleAccumulator};
+use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::{
@@ -34,7 +33,7 @@ use starcoin_types::{
 };
 use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_types::access_path::AccessPath;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 /// A Chain reader service to provider Reader API.
 pub struct ChainReaderService {

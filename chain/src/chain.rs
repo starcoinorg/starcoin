@@ -346,7 +346,7 @@ impl BlockChain {
         let final_block_gas_limit = block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
-
+        let tips_hash = self.status().tips_hash;
         let strategy = epoch.strategy();
         let difficulty = strategy.calculate_next_difficulty(self)?;
         let mut opened_block = OpenedBlock::new(
@@ -359,7 +359,7 @@ impl BlockChain {
             difficulty,
             strategy,
             None,
-            self.status.status.tips_hash.clone(),
+            tips_hash,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
         let template = opened_block.finalize()?;
@@ -1432,17 +1432,10 @@ impl ChainWriter for BlockChain {
     }
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
-        let (block, block_info) = (executed_block.block(), executed_block.block_info());
-        if self.status.status.tips_hash.is_some() {
-            let mut tips = self.status.status.tips_hash.clone().unwrap();
-            tips.sort();
-            debug_assert!(
-                block.header().parent_hash() == Self::calculate_dag_accumulator_key(tips.clone())?
-                    || block.header().parent_hash() == self.status.status.head().id()
-            );
-        } else {
-            debug_assert!(block.header().parent_hash() == self.status.status.head().id());
+        if executed_block.block.is_dag(){
+            return self.connect_dag(executed_block)
         }
+        let (block, block_info) = (executed_block.block(), executed_block.block_info());
         //TODO try reuse accumulator and state db.
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
