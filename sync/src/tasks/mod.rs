@@ -298,14 +298,7 @@ pub trait BlockFetcher: Send + Sync {
     fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<
-        Result<
-            Vec<(
-                Block,
-                Option<PeerId>,
-            )>,
-        >,
-    >;
+    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>>;
 }
 
 impl<T> BlockFetcher for Arc<T>
@@ -315,15 +308,7 @@ where
     fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<
-        '_,
-        Result<
-            Vec<(
-                Block,
-                Option<PeerId>,
-            )>,
-        >,
-    > {
+    ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
         BlockFetcher::fetch_blocks(self.as_ref(), block_ids)
     }
 }
@@ -332,23 +317,10 @@ impl BlockFetcher for VerifiedRpcClient {
     fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<
-        '_,
-        Result<
-            Vec<(
-                Block,
-                Option<PeerId>,
-            )>,
-        >,
-    > {
+    ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
         self.get_blocks(block_ids.clone())
             .and_then(|blocks| async move {
-                let results: Result<
-                    Vec<(
-                        Block,
-                        Option<PeerId>,
-                    )>,
-                > = block_ids
+                let results: Result<Vec<(Block, Option<PeerId>)>> = block_ids
                     .iter()
                     .zip(blocks)
                     .map(|(id, block)| {

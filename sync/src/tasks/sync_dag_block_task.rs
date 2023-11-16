@@ -81,15 +81,7 @@ impl SyncDagBlockTask {
             .fetch_blocks(absent_block)
             .await?
             .iter()
-            .map(|(block, peer_info)| {
-                (
-                    block.header().id(),
-                    (
-                        block.clone(),
-                        peer_info.clone(),
-                    ),
-                )
-            })
+            .map(|(block, peer_info)| (block.header().id(), (block.clone(), peer_info.clone())))
             .collect::<HashMap<_, _>>();
 
         // should return the block in order

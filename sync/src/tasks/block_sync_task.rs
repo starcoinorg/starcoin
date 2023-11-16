@@ -55,25 +55,9 @@ impl SyncBlockData {
 }
 
 #[allow(clippy::from_over_into)]
-impl
-    Into<(
-        Block,
-        Option<BlockInfo>,
-        Option<PeerId>,
-    )> for SyncBlockData
-{
-    fn into(
-        self,
-    ) -> (
-        Block,
-        Option<BlockInfo>,
-        Option<PeerId>,
-    ) {
-        (
-            self.block,
-            self.info,
-            self.peer_id,
-        )
+impl Into<(Block, Option<BlockInfo>, Option<PeerId>)> for SyncBlockData {
+    fn into(self) -> (Block, Option<BlockInfo>, Option<PeerId>) {
+        (self.block, self.info, self.peer_id)
     }
 }
 
@@ -528,11 +512,7 @@ where
                 self.apply_block(block.clone(), peer_id)?;
                 self.chain.time_service().adjust(timestamp);
                 let block_info = self.chain.status().info;
-                Ok((
-                    block,
-                    block_info,
-                    BlockConnectAction::ConnectNewBlock,
-                ))
+                Ok((block, block_info, BlockConnectAction::ConnectNewBlock))
             }
         };
     }

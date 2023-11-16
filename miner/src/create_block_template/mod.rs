@@ -25,7 +25,7 @@ use starcoin_types::{
     block::{BlockHeader, BlockTemplate, ExecutedBlock},
     system_events::{NewBranch, NewHeadBlock},
 };
-use starcoin_vm_types::transaction::SignedUserTransaction;
+use starcoin_vm_types::transaction::{SignedUserTransaction, Transaction};
 use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
 
@@ -318,32 +318,9 @@ where
         // block_gas_limit / min_gas_per_txn
         let max_txns = (block_gas_limit / 200) * 2;
 
-        let mut txns = self.tx_provider.get_txns(max_txns);
-
+        let txns = self.tx_provider.get_txns(max_txns);
         let author = *self.miner_account.address();
         let previous_header = self.chain.current_header();
-
-        let tips_hash = self.chain.status().tips_hash;
-        let uncles = {
-            match &tips_hash {
-                None => self.find_uncles(),
-                Some(tips) => {
-                    let mut blues = self.dag.ghostdata(tips).mergeset_blues.to_vec();
-                    let mut blues_header = vec![];
-                    let selected_parent = blues.remove(0);
-                    assert_eq!(previous_header.id(), selected_parent);
-                    for blue in &blues {
-                        let block = self
-                            .storage
-                            .get_block_by_hash(blue.to_owned())?
-                            .expect("Block should exist");
-                        txns.extend(block.transactions().iter().cloned());
-                        blues_header.push(block.header);
-                    }
-                    blues_header
-                }
-            }
-        };
 
         let mut now_millis = self.chain.time_service().now_millis();
         if now_millis <= previous_header.timestamp() {
@@ -353,6 +330,37 @@ where
             );
             now_millis = previous_header.timestamp() + 1;
         }
+
+        let epoch = self.chain.epoch();
+        let strategy = epoch.strategy();
+        let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
+        let tips_hash = self.chain.status().tips_hash;
+        let (uncles, blue_blocks) = {
+            match &tips_hash {
+                None => (self.find_uncles(), None),
+                Some(tips) => {
+                    let mut blues = self.dag.ghostdata(tips).mergeset_blues.to_vec();
+                    let mut blue_blocks = vec![];
+                    let selected_parent = blues.remove(0);
+                    assert_eq!(previous_header.id(), selected_parent);
+                    for blue in &blues {
+                        let block = self
+                            .storage
+                            .get_block_by_hash(blue.to_owned())?
+                            .expect("Block should exist");
+                        blue_blocks.push(block);
+                    }
+                    (
+                        blue_blocks
+                            .as_slice()
+                            .iter()
+                            .map(|b| b.header.clone())
+                            .collect(),
+                        Some(blue_blocks),
+                    )
+                }
+            }
+        };
         info!(
             "[CreateBlockTemplate] previous_header: {:?}, block_gas_limit: {}, max_txns: {}, txn len: {}, uncles len: {}, timestamp: {}",
             previous_header,
@@ -362,10 +370,6 @@ where
             uncles.len(),
             now_millis,
         );
-
-        let epoch = self.chain.epoch();
-        let strategy = epoch.strategy();
-        let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
 
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),
@@ -378,8 +382,11 @@ where
             strategy,
             self.vm_metrics.clone(),
             tips_hash,
+            blue_blocks,
         )?;
+
         let excluded_txns = opened_block.push_txns(txns)?;
+
         let template = opened_block.finalize()?;
         for invalid_txn in excluded_txns.discarded_txns {
             self.tx_provider.remove_invalid_txn(invalid_txn.id());

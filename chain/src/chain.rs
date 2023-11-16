@@ -360,6 +360,7 @@ impl BlockChain {
             strategy,
             None,
             tips_hash,
+            None,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
         let template = opened_block.finalize()?;
@@ -465,15 +466,13 @@ impl BlockChain {
                 .storage
                 .get_block_by_hash(blue.id())?
                 .expect("block blue need exist");
-            // Todo: we already added txns of blue_blocks to target block when mining it.
-            // see create_block_template in MinerService
-            //transactions.extend(
-            //    blue_block
-            //        .transactions()
-            //        .iter()
-            //        .cloned()
-            //        .map(Transaction::UserTransaction),
-            //);
+            transactions.extend(
+                blue_block
+                    .transactions()
+                    .iter()
+                    .cloned()
+                    .map(Transaction::UserTransaction),
+            );
             total_difficulty += blue_block.header.difficulty();
         }
         transactions.extend(
@@ -1432,8 +1431,8 @@ impl ChainWriter for BlockChain {
     }
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
-        if executed_block.block.is_dag(){
-            return self.connect_dag(executed_block)
+        if executed_block.block.is_dag() {
+            return self.connect_dag(executed_block);
         }
         let (block, block_info) = (executed_block.block(), executed_block.block_info());
         //TODO try reuse accumulator and state db.
