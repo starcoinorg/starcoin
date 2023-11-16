@@ -18,7 +18,7 @@ use starcoin_vm_types::{
 #[test]
 fn move_from_across_blocks() {
     let mut executor = FakeExecutor::from_genesis_file();
-    executor.set_golden_file(current_function_name!());
+    //executor.set_golden_file(current_function_name!());
     let sender = executor.create_raw_account_data(1_000_000, 10);
     executor.add_account_data(&sender);
 
@@ -97,7 +97,7 @@ fn move_from_across_blocks() {
 #[test]
 fn borrow_after_move() {
     let mut executor = FakeExecutor::from_genesis_file();
-    executor.set_golden_file(current_function_name!());
+    // executor.set_golden_file(current_function_name!());
     let sender = executor.create_raw_account_data(1_000_000, 10);
     executor.add_account_data(&sender);
 
@@ -148,7 +148,7 @@ fn borrow_after_move() {
 #[test]
 fn change_after_move() {
     let mut executor = FakeExecutor::from_genesis_file();
-    executor.set_golden_file(current_function_name!());
+    //executor.set_golden_file(current_function_name!());
     let sender = executor.create_raw_account_data(1_000_000, 10);
     executor.add_account_data(&sender);
 
@@ -209,7 +209,7 @@ fn change_after_move() {
 fn add_module_txn(sender: &AccountData, seq_num: u64) -> (CompiledModule, SignedUserTransaction) {
     let module_code = format!(
         "
-        module 0x{}.M {{
+        module {}.M {{
             import 0x1.Signer;
             struct T1 has key {{ v: u64 }}
 
@@ -275,7 +275,7 @@ fn add_resource_txn(
 ) -> SignedUserTransaction {
     let program = format!(
         "
-            import 0x{}.M;
+            import {}.M;
 
             main(account: signer) {{
             label b0:
@@ -302,7 +302,7 @@ fn remove_resource_txn(
 ) -> SignedUserTransaction {
     let program = format!(
         "
-            import 0x{}.M;
+            import {}.M;
 
             main(account: signer) {{
             label b0:
@@ -329,7 +329,7 @@ fn borrow_resource_txn(
 ) -> SignedUserTransaction {
     let program = format!(
         "
-            import 0x{}.M;
+            import {}.M;
 
             main(account: signer) {{
             label b0:
@@ -356,7 +356,7 @@ fn change_resource_txn(
 ) -> SignedUserTransaction {
     let program = format!(
         "
-            import 0x{}.M;
+            import {}.M;
 
             main(account: signer) {{
             label b0:

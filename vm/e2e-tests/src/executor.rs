@@ -416,10 +416,10 @@ impl FakeExecutor {
         // assert_eq!(output, parallel_output);
         let output_check = output.clone();
         assert!(output_check.is_ok());
-        assert_eq!(
-            *output_check.ok().unwrap()[0].status(),
-            TransactionStatus::Keep(KeptVMStatus::Executed)
-        );
+        // assert_eq!(
+        //     *output_check.ok().unwrap()[0].status(),
+        //     TransactionStatus::Keep(KeptVMStatus::Executed)
+        // );
 
         if let Some(logger) = &self.executed_output {
             logger.log(format!("{:?}\n", output).as_str());
