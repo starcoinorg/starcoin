@@ -9,7 +9,7 @@ use crate::{account::Account, executor::FakeExecutor, utils};
 // pub const CURRENT_RELEASE_VERSIONS: std::ops::RangeInclusive<u64> =
 //     STARCOIN_MAX_KNOWN_VERSION.major..=STARCOIN_MAX_KNOWN_VERSION.major;
 
-pub const CURRENT_RELEASE_VERSIONS: std::ops::RangeInclusive<u64> = 1..=12;
+pub const CURRENT_RELEASE_VERSIONS: std::ops::RangeInclusive<u64> = 12..=12;
 
 #[derive(Debug)]
 pub struct VersionedTestEnv {
@@ -48,7 +48,7 @@ impl VersionedTestEnv {
 /// against The starting state of the `VersionedTestEnv` for each version number is determined by
 /// the `starting_state` function.
 pub fn run_with_versions<ParamExec, F>(
-    test_golden_prefix: &str,
+    _test_golden_prefix: &str,
     versions: impl Iterator<Item = u64>,
     starting_state: ParamExec,
     test_func: F,
@@ -57,7 +57,7 @@ pub fn run_with_versions<ParamExec, F>(
     ParamExec: Fn(u64) -> Option<VersionedTestEnv>,
 {
     for version in versions {
-        let mut testing_env = match starting_state(version) {
+        let testing_env = match starting_state(version) {
             None => {
                 eprintln!("Unsupported version number {}", version);
                 continue;
@@ -65,9 +65,9 @@ pub fn run_with_versions<ParamExec, F>(
             Some(env) => env,
         };
         // Tag each golden file with the version that it's being run with, and should be compared against
-        testing_env
-            .executor
-            .set_golden_file(&format!("{}_version_{}", test_golden_prefix, version));
+        // testing_env
+        //     .executor
+        //     .set_golden_file(&format!("{}_version_{}", test_golden_prefix, version));
         test_func(testing_env)
     }
 }

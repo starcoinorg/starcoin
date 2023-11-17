@@ -634,7 +634,7 @@ impl AccountData {
         let mut balances_map = BTreeMap::new();
         balances_map.insert(STC_TOKEN_CODE_STR.to_string(), Balance::new(balance));
         Self {
-            event_generator: EventHandleGenerator::new_with_event_count(addr, 3),
+            event_generator: EventHandleGenerator::new_with_event_count(addr, sent_events_count),
             account,
             balances: balances_map,
             sequence_number,

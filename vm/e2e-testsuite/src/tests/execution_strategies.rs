@@ -16,7 +16,7 @@ use starcoin_vm_types::transaction::SignedUserTransaction;
 fn txn(seq_num: u64) -> SignedUserTransaction {
     let account = Account::new();
     let diem_root = Account::new_starcoin_root();
-    create_account_txn(&diem_root, &account, seq_num + 1)
+    create_account_txn(&diem_root, &account, seq_num)
 }
 
 #[test]
