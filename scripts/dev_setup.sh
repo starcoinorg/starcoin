@@ -16,9 +16,9 @@ set -eo pipefail
 
 SHELLCHECK_VERSION=0.7.1
 HADOLINT_VERSION=1.17.4
-SCCACHE_VERSION=0.2.16-alpha.0
+SCCACHE_VERSION=0.3.0
 #If installing sccache from a git repp set url@revision.
-SCCACHE_GIT='https://github.com/diem/sccache.git@ef50d87a58260c30767520045e242ccdbdb965af'
+#SCCACHE_GIT='https://github.com/diem/sccache.git@ef50d87a58260c30767520045e242ccdbdb965af'
 GRCOV_VERSION=0.8.2
 GUPPY_GIT='https://github.com/facebookincubator/cargo-guppy@39ec940f36b0a0df96a330243d127cbe2db9f919'
 KUBECTL_VERSION=1.18.6
