@@ -8,7 +8,7 @@ use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
 use anyhow::format_err;
-use bcs_ext::{BCSCodec, Sample};
+use bcs_ext::Sample;
 use schemars::{self, JsonSchema};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -1009,15 +1009,6 @@ impl BlockTemplate {
             header,
             body: self.body,
         }
-    }
-
-    fn generate_parent_header(&self) -> HashValue {
-        if self.parents_hash.is_none() {
-            return self.parent_hash;
-        }
-        let mut tips = self.parents_hash.as_ref().unwrap().clone();
-        tips.sort();
-        HashValue::sha3_256_of(&tips.encode().expect("dag parent must encode successfully"))
     }
 
     pub fn as_raw_block_header_single_chain(&self) -> RawBlockHeader {

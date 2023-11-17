@@ -23,7 +23,6 @@ rand = { workspace = true }
 rand_core = { default-features = false, workspace = true }
 rust-argon2 = { workspace = true }
 sha3 = { workspace = true }
-starcoin-config = { workspace = true }
 starcoin-chain-api = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }

@@ -779,7 +779,7 @@ pub fn apply_block(
     let use_time = SystemTime::now().duration_since(start_time)?;
     println!("apply block use time: {:?}", use_time.as_secs());
     let chain_info = storage
-        .get_chain_info(net.id().clone())?
+        .get_chain_info()?
         .ok_or_else(|| format_err!("{}", "get chain_info error"))?;
     println!("chain_info {}", chain_info);
     Ok(())

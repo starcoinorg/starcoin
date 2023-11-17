@@ -7,7 +7,6 @@ use anyhow::Result;
 use futures::channel::oneshot::Receiver;
 use futures::future::BoxFuture;
 use itertools::Itertools;
-use network_p2p_types::peer_id;
 use network_p2p_types::{peer_id::PeerId, ReputationChange};
 use parking_lot::Mutex;
 use rand::prelude::IteratorRandom;

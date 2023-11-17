@@ -8,7 +8,6 @@ use bcs_ext::{BCSCodec, Sample};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
-use starcoin_accumulator::MerkleAccumulator;
 use starcoin_crypto::HashValue;
 use starcoin_uint::U256;
 use starcoin_vm_types::genesis_config::ChainId;

@@ -21,19 +21,18 @@ use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use starcoin_accumulator::{
-    accumulator_info::{self, AccumulatorInfo},
-    node::AccumulatorStoreType,
-    AccumulatorTreeStore, MerkleAccumulator, Accumulator,
+    accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator,
+    AccumulatorTreeStore, MerkleAccumulator,
 };
 use starcoin_config::ChainNetworkID;
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
+use starcoin_types::block::BlockNumber;
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
     contract_event::ContractEvent,
     dag_block::KTotalDifficulty,
-    header,
-    startup_info::{self, ChainInfo, ChainStatus, SnapshotRange, StartupInfo},
+    startup_info::{ChainInfo, ChainStatus, SnapshotRange, StartupInfo},
     transaction::{RichTransactionInfo, Transaction},
 };
 use starcoin_vm_types::{
@@ -226,7 +225,7 @@ pub trait BlockStore {
 
     fn save_genesis(&self, genesis_hash: HashValue) -> Result<()>;
 
-    fn get_chain_info(&self, id: ChainNetworkID) -> Result<Option<ChainInfo>>;
+    fn get_chain_info(&self) -> Result<Option<ChainInfo>>;
 
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>>;
 
@@ -439,7 +438,7 @@ impl BlockStore for Storage {
         self.chain_info_storage.save_genesis(genesis_hash)
     }
 
-    fn get_chain_info(&self, id: ChainNetworkID) -> Result<Option<ChainInfo>> {
+    fn get_chain_info(&self) -> Result<Option<ChainInfo>> {
         let genesis_hash = match self.get_genesis()? {
             Some(genesis_hash) => genesis_hash,
             None => return Ok(None),
@@ -454,11 +453,13 @@ impl BlockStore for Storage {
         let head_block_info = self.get_block_info(head_block.id())?.ok_or_else(|| {
             format_err!("Startup block info {:?} should exist", startup_info.main)
         })?;
-        let snapshot = self.get_lastest_snapshot()?.ok_or_else(|| anyhow!("latest snapshot is  none"))?;
+        let snapshot = self
+            .get_lastest_snapshot()?
+            .ok_or_else(|| anyhow!("latest snapshot is  none"))?;
         let chain_info = ChainInfo::new(
             head_block.chain_id(),
             genesis_hash,
-            ChainStatus::new(head_block.clone(), head_block_info),
+            ChainStatus::new(head_block, head_block_info),
             Some(snapshot.accumulator_info),
             Some(snapshot.k_total_difficulties),
         );
@@ -674,9 +675,16 @@ impl SyncFlexiDagStore for Storage {
     }
 
     fn get_lastest_snapshot(&self) -> Result<Option<SyncFlexiDagSnapshot>> {
-        let info = self.get_dag_accumulator_info()?.ok_or_else(|| anyhow!("dag startup info is none"))?;
-        let merkle_tree = MerkleAccumulator::new_with_info(info, self.get_accumulator_store(AccumulatorStoreType::SyncDag));
-        let key = merkle_tree.get_leaf(merkle_tree.num_leaves() - 1)?.ok_or_else(|| anyhow!("faile to get the key since it is none"))?;
+        let info = self
+            .get_dag_accumulator_info()?
+            .ok_or_else(|| anyhow!("dag startup info is none"))?;
+        let merkle_tree = MerkleAccumulator::new_with_info(
+            info,
+            self.get_accumulator_store(AccumulatorStoreType::SyncDag),
+        );
+        let key = merkle_tree
+            .get_leaf(merkle_tree.num_leaves() - 1)?
+            .ok_or_else(|| anyhow!("faile to get the key since it is none"))?;
         self.query_by_hash(key)
     }
 

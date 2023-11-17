@@ -5,7 +5,7 @@ use crate::block::BlockIdAndNumber;
 use crate::startup_info::ChainStatus;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator};
+use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_uint::U256;
 #[derive(Eq, PartialEq, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 pub enum SyncState {
