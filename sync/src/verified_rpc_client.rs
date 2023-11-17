@@ -381,7 +381,16 @@ impl VerifiedRpcClient {
     pub async fn get_blocks(
         &self,
         ids: Vec<HashValue>,
-    ) -> Result<Vec<Option<(Block, Option<PeerId>)>>> {
+    ) -> Result<
+        Vec<
+            Option<(
+                Block,
+                Option<PeerId>,
+                Option<Vec<HashValue>>,
+                Option<HashValue>,
+            )>,
+        >,
+    > {
         let peer_id = self.select_a_peer()?;
         let start_time = Instant::now();
         let blocks = self.client.get_blocks(peer_id.clone(), ids.clone()).await?;
@@ -395,7 +404,7 @@ impl VerifiedRpcClient {
             .zip(blocks)
             .map(|(id, block)| {
                 if let Some(block) = block {
-                    let actual_id = block.id();
+                    let actual_id = block.0.id();
                     if actual_id != id {
                         warn!(
                             "Get block by id: {:?} from peer: {:?}, but got block: {:?}",
@@ -403,7 +412,7 @@ impl VerifiedRpcClient {
                         );
                         None
                     } else {
-                        Some((block, Some(peer_id.clone())))
+                        Some((block.0, Some(peer_id.clone()), block.1, block.2))
                     }
                 } else {
                     None

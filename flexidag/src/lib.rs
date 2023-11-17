@@ -7,3 +7,5 @@ pub use consensusdb::consensus_relations::{
 };
 pub use consensusdb::prelude::{FlexiDagStorage, FlexiDagStorageConfig, StoreError};
 pub use consensusdb::schema;
+pub mod flexidag_service;
+pub use flexidag_service::FlexidagService;

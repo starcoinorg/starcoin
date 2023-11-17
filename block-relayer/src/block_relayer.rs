@@ -240,11 +240,7 @@ impl BlockRelayer {
                 )
                 .await?;
 
-                block_connector_service.notify(PeerNewBlock::new(
-                    peer_id,
-                    block,
-                    compact_block_msg.message.tips_hash,
-                ))?;
+                block_connector_service.notify(PeerNewBlock::new(peer_id, block))?;
             }
             Ok(())
         };

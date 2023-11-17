@@ -38,4 +38,4 @@ parking_lot = { workspace = true }
 itertools = { workspace = true }
 starcoin-config = { workspace = true }
 bcs-ext = { workspace = true }
-flexidag = {workspace = true}
+starcoin-flexidag = {workspace = true}

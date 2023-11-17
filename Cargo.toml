@@ -503,7 +503,7 @@ starcoin-parallel-executor = { path = "vm/parallel-executor" }
 starcoin-transaction-benchmarks = { path = "vm/transaction-benchmarks" }
 starcoin-language-e2e-tests = { path = "vm/e2e-tests" }
 starcoin-proptest-helpers = { path = "vm/proptest-helpers" }
-flexidag = { path ="flexidag" }
+starcoin-flexidag = { path = "flexidag" }
 flexidag-service = { path ="flexidag/service" }
 syn = { version = "1.0.107", features = [
     "full",

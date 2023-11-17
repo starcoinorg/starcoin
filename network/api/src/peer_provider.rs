@@ -7,6 +7,7 @@ use anyhow::Result;
 use futures::channel::oneshot::Receiver;
 use futures::future::BoxFuture;
 use itertools::Itertools;
+use network_p2p_types::peer_id;
 use network_p2p_types::{peer_id::PeerId, ReputationChange};
 use parking_lot::Mutex;
 use rand::prelude::IteratorRandom;
@@ -91,6 +92,7 @@ pub enum PeerStrategy {
     WeightedRandom,
     Best,
     Avg,
+    DagSync(PeerId),
 }
 
 impl Default for PeerStrategy {
@@ -106,6 +108,7 @@ impl std::fmt::Display for PeerStrategy {
             Self::WeightedRandom => "weighted",
             Self::Best => "top",
             Self::Avg => "avg",
+            PeerStrategy::DagSync(_) => "dag_sync",
         };
         write!(f, "{}", display)
     }
@@ -314,6 +317,14 @@ impl PeerSelector {
         }
     }
 
+    pub fn peer_infos(&self) -> Vec<PeerInfo> {
+        self.details
+            .lock()
+            .iter()
+            .map(|peer| peer.peer_info.clone())
+            .collect()
+    }
+
     pub fn peers(&self) -> Vec<PeerId> {
         self.details
             .lock()
@@ -384,13 +395,18 @@ impl PeerSelector {
             .load(Ordering::SeqCst)
             .checked_div(self.len() as u64)?;
         if avg_score < 200 {
-            return self.random();
+            if let PeerStrategy::DagSync(peer_id) = &self.strategy {
+                return Some(peer_id.clone());
+            } else {
+                return self.random();
+            }
         }
         match &self.strategy {
             PeerStrategy::Random => self.random(),
             PeerStrategy::WeightedRandom => self.weighted_random(),
             PeerStrategy::Best => self.top_score(),
             PeerStrategy::Avg => self.avg_score(),
+            PeerStrategy::DagSync(peer_id) => Some(peer_id.clone()),
         }
     }
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::create_block_template::metrics::BlockBuilderMetrics;
-use anyhow::{format_err, Result};
+use anyhow::{bail, format_err, Result};
 use futures::executor::block_on;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_account_service::AccountService;
@@ -13,10 +13,13 @@ use starcoin_config::NodeConfig;
 use starcoin_consensus::{BlockDAG, Consensus};
 use starcoin_crypto::hash::HashValue;
 use starcoin_executor::VMMetrics;
+use starcoin_flexidag::flexidag_service::GetDagTips;
+use starcoin_flexidag::{flexidag_service, FlexidagService};
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
+    ServiceRequest,
 };
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_txpool::TxPoolService;
@@ -79,8 +82,7 @@ impl ServiceFactory<Self> for BlockBuilderService {
             .and_then(|registry| BlockBuilderMetrics::register(registry).ok());
 
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        let dag = ctx.get_shared::<BlockDAG>()?;
-
+        let flexidag_service = ctx.service_ref::<FlexidagService>()?.clone();
         let inner = Inner::new(
             config.net(),
             storage,
@@ -89,8 +91,8 @@ impl ServiceFactory<Self> for BlockBuilderService {
             config.miner.block_gas_limit,
             miner_account,
             metrics,
+            flexidag_service,
             vm_metrics,
-            dag,
         )?;
         Ok(Self { inner })
     }
@@ -193,8 +195,8 @@ pub struct Inner<P> {
     local_block_gas_limit: Option<u64>,
     miner_account: AccountInfo,
     metrics: Option<BlockBuilderMetrics>,
+    flexidag_service: ServiceRef<FlexidagService>,
     vm_metrics: Option<VMMetrics>,
-    dag: BlockDAG,
 }
 
 impl<P> Inner<P>
@@ -209,8 +211,8 @@ where
         local_block_gas_limit: Option<u64>,
         miner_account: AccountInfo,
         metrics: Option<BlockBuilderMetrics>,
+        flexidag_service: ServiceRef<FlexidagService>,
         vm_metrics: Option<VMMetrics>,
-        dag: BlockDAG,
     ) -> Result<Self> {
         let chain = BlockChain::new(
             net.time_service(),
@@ -218,7 +220,6 @@ where
             storage.clone(),
             net.id().clone(),
             vm_metrics.clone(),
-            Some(dag.clone()),
         )?;
 
         Ok(Inner {
@@ -230,8 +231,8 @@ where
             local_block_gas_limit,
             miner_account,
             metrics,
+            flexidag_service,
             vm_metrics,
-            dag,
         })
     }
 
@@ -260,7 +261,6 @@ where
                 self.storage.clone(),
                 self.chain.net_id(),
                 self.vm_metrics.clone(),
-                Some(self.dag.clone()),
             )?;
             //current block possible be uncle.
             self.uncles.insert(current_id, current_header);
@@ -318,7 +318,8 @@ where
         // block_gas_limit / min_gas_per_txn
         let max_txns = (block_gas_limit / 200) * 2;
 
-        let txns = self.tx_provider.get_txns(max_txns);
+        let mut txns = self.tx_provider.get_txns(max_txns);
+
         let author = *self.miner_account.address();
         let previous_header = self.chain.current_header();
 

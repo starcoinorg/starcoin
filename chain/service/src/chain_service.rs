@@ -1,8 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{bail, format_err, Error, Result};
-use starcoin_accumulator::Accumulator;
+use anyhow::{bail, format_err, Error, Ok, Result};
+use starcoin_accumulator::node::AccumulatorStoreType;
+use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::{
@@ -11,17 +12,22 @@ use starcoin_chain_api::{
 use starcoin_config::NodeConfig;
 use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
+use starcoin_flexidag::flexidag_service::{
+    GetDagAccumulatorLeafDetail, GetDagBlockParents, UpdateDagTips,
+};
+use starcoin_flexidag::{flexidag_service, FlexidagService};
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::dag_protocol::{
     GetDagAccumulatorLeaves, GetTargetDagAccumulatorLeafDetail, TargetDagAccumulatorLeaf,
     TargetDagAccumulatorLeafDetail,
 };
 use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
 };
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::contract_event::ContractEventInfo;
+use starcoin_types::dag_block::KTotalDifficulty;
 use starcoin_types::filter::Filter;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::transaction::RichTransactionInfo;
@@ -33,7 +39,7 @@ use starcoin_types::{
 };
 use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_types::access_path::AccessPath;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 /// A Chain reader service to provider Reader API.
 pub struct ChainReaderService {
@@ -45,7 +51,7 @@ impl ChainReaderService {
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
-        dag: BlockDAG,
+        flexidag_service: ServiceRef<FlexidagService>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         Ok(Self {
@@ -53,7 +59,7 @@ impl ChainReaderService {
                 config.clone(),
                 startup_info,
                 storage.clone(),
-                dag,
+                flexidag_service,
                 vm_metrics.clone(),
             )?,
         })
@@ -68,10 +74,8 @@ impl ServiceFactory<Self> for ChainReaderService {
             .get_startup_info()?
             .ok_or_else(|| format_err!("StartupInfo should exist at service init."))?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        let dag = ctx
-            .get_shared_opt::<BlockDAG>()?
-            .expect("dag should be initialized at service init");
-        Self::new(config, startup_info, storage, dag, vm_metrics)
+        let flexidag_service = ctx.service_ref::<FlexidagService>()?.clone();
+        Self::new(config, startup_info, storage, flexidag_service, vm_metrics)
     }
 }
 
@@ -88,11 +92,11 @@ impl ActorService for ChainReaderService {
 }
 
 impl EventHandler<Self, NewHeadBlock> for ChainReaderService {
-    fn handle_event(&mut self, event: NewHeadBlock, _ctx: &mut ServiceContext<ChainReaderService>) {
-        let new_head = event.0.block().header();
+    fn handle_event(&mut self, event: NewHeadBlock, ctx: &mut ServiceContext<ChainReaderService>) {
+        let new_head = event.0.block().header().clone();
         if let Err(e) = if self.inner.get_main().can_connect(event.0.as_ref()) {
             match self.inner.update_chain_head(event.0.as_ref().clone()) {
-                Ok(_) => self.inner.update_dag_accumulator(new_head.id()),
+                std::result::Result::Ok(_) => (),
                 Err(e) => Err(e),
             }
         } else {
@@ -107,7 +111,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
     fn handle(
         &mut self,
         msg: ChainRequest,
-        _ctx: &mut ServiceContext<ChainReaderService>,
+        ctx: &mut ServiceContext<ChainReaderService>,
     ) -> Result<ChainResponse> {
         match msg {
             ChainRequest::CurrentHeader() => Ok(ChainResponse::BlockHeader(Box::new(
@@ -281,8 +285,8 @@ pub struct ChainReaderServiceInner {
     startup_info: StartupInfo,
     main: BlockChain,
     storage: Arc<dyn Store>,
+    flexidag_service: ServiceRef<FlexidagService>,
     vm_metrics: Option<VMMetrics>,
-    dag: BlockDAG,
 }
 
 impl ChainReaderServiceInner {
@@ -290,7 +294,7 @@ impl ChainReaderServiceInner {
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
-        dag: BlockDAG,
+        flexidag_service: ServiceRef<FlexidagService>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let net = config.net();
@@ -300,14 +304,13 @@ impl ChainReaderServiceInner {
             storage.clone(),
             config.net().id().clone(),
             vm_metrics.clone(),
-            Some(dag.clone()),
         )?;
         Ok(Self {
             config,
             startup_info,
             main,
             storage,
-            dag,
+            flexidag_service,
             vm_metrics,
         })
     }
@@ -329,13 +332,19 @@ impl ChainReaderServiceInner {
             self.storage.clone(),
             self.config.net().id().clone(),
             self.vm_metrics.clone(),
-            Some(self.dag.clone()),
         )?;
         Ok(())
     }
 
-    pub fn update_dag_accumulator(&mut self, head_id: HashValue) -> Result<()> {
-        self.main.update_dag_accumulator(head_id)
+    pub fn update_dag_accumulator(&mut self, new_block_header: BlockHeader) -> Result<()> {
+        async_std::task::block_on(self.flexidag_service.send(UpdateDagTips {
+            block_header: new_block_header,
+            current_head_block_id: self.main.status().info().id(),
+            k_total_difficulty: KTotalDifficulty {
+                head_block_id: self.main.status().info().id(),
+                total_difficulty: self.main.status().info().get_total_difficulty(),
+            },
+        }))?
     }
 }
 
@@ -472,54 +481,37 @@ impl ReadableChainService for ChainReaderServiceInner {
         &self,
         req: GetDagAccumulatorLeaves,
     ) -> anyhow::Result<Vec<TargetDagAccumulatorLeaf>> {
-        match self
-            .main
-            .get_dag_leaves(req.accumulator_leaf_index, true, req.batch_size)
-        {
-            Ok(leaves) => Ok(leaves
-                .into_iter()
-                .enumerate()
-                .map(
-                    |(index, leaf)| match self.main.get_dag_accumulator_snapshot(leaf) {
-                        Ok(snapshot) => TargetDagAccumulatorLeaf {
-                            accumulator_root: snapshot.accumulator_info.accumulator_root,
-                            leaf_index: req.accumulator_leaf_index.saturating_sub(index as u64),
-                        },
-                        Err(error) => {
-                            panic!(
-                                "error occured when query the accumulator snapshot: {}",
-                                error.to_string()
-                            );
-                        }
-                    },
-                )
-                .collect()),
-            Err(error) => {
-                bail!(
-                    "an error occured when getting the leaves of the accumulator, {}",
-                    error.to_string()
-                );
-            }
-        }
+        Ok(async_std::task::block_on(self.flexidag_service.send(
+            flexidag_service::GetDagAccumulatorLeaves {
+                leaf_index: req.accumulator_leaf_index,
+                batch_size: req.batch_size,
+                reverse: true,
+            },
+        ))??
+        .into_iter()
+        .map(|leaf| TargetDagAccumulatorLeaf {
+            accumulator_root: leaf.dag_accumulator_root,
+            leaf_index: leaf.leaf_index,
+        })
+        .collect())
     }
 
     fn get_target_dag_accumulator_leaf_detail(
         &self,
         req: GetTargetDagAccumulatorLeafDetail,
     ) -> anyhow::Result<Vec<TargetDagAccumulatorLeafDetail>> {
-        let end_index = std::cmp::min(
-            req.leaf_index + req.batch_size - 1,
-            self.main.get_dag_current_leaf_number()? - 1,
-        );
-        let mut details = [].to_vec();
-        for index in req.leaf_index..=end_index {
-            let snapshot = self.main.get_dag_accumulator_snapshot_by_index(index)?;
-            details.push(TargetDagAccumulatorLeafDetail {
-                accumulator_root: snapshot.accumulator_info.accumulator_root,
-                tips: snapshot.child_hashes,
-            });
-        }
-        Ok(details)
+        let dag_details =
+            async_std::task::block_on(self.flexidag_service.send(GetDagAccumulatorLeafDetail {
+                leaf_index: req.leaf_index,
+                batch_size: req.batch_size,
+            }))??;
+        Ok(dag_details
+            .into_iter()
+            .map(|detail| TargetDagAccumulatorLeafDetail {
+                accumulator_root: detail.accumulator_root,
+                tips: detail.tips,
+            })
+            .collect())
     }
 }
 

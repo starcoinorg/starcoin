@@ -103,8 +103,6 @@ pub trait ChainReader {
         access_path: Option<AccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>>;
 
-    /// get the current tips hash value
-    fn current_tips_hash(&self) -> Option<HashValue>;
     fn net_id(&self) -> ChainNetworkID;
 }
 
@@ -117,18 +115,6 @@ pub trait ChainWriter {
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock>;
 
     fn chain_state(&mut self) -> &ChainStateDB;
-
-    /// Get the dag accumulator info
-    fn get_current_dag_accumulator_info(&self) -> Result<AccumulatorInfo>;
-
-    /// Fork the accumulator
-    fn fork_dag_accumulator(&mut self, accumulator_info: AccumulatorInfo) -> Result<()>;
-
-    /// Append the dag accumulator leaf
-    fn append_dag_accumulator_leaf(
-        &mut self,
-        tips: Vec<HashValue>,
-    ) -> Result<(HashValue, AccumulatorInfo)>;
 }
 
 /// `Chain` is a trait that defines a single Chain.

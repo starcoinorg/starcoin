@@ -27,16 +27,11 @@ pub struct StartSyncTxnEvent;
 pub struct PeerNewBlock {
     peer_id: PeerId,
     new_block: Block,
-    dag_parents: Option<Vec<HashValue>>,
 }
 
 impl PeerNewBlock {
-    pub fn new(peer_id: PeerId, new_block: Block, dag_parents: Option<Vec<HashValue>>) -> Self {
-        PeerNewBlock {
-            peer_id,
-            new_block,
-            dag_parents,
-        }
+    pub fn new(peer_id: PeerId, new_block: Block) -> Self {
+        PeerNewBlock { peer_id, new_block }
     }
 
     pub fn get_peer_id(&self) -> PeerId {
@@ -45,10 +40,6 @@ impl PeerNewBlock {
 
     pub fn get_block(&self) -> &Block {
         &self.new_block
-    }
-
-    pub fn get_dag_parents(&self) -> &Option<Vec<HashValue>> {
-        &self.dag_parents
     }
 }
 

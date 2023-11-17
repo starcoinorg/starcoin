@@ -5,7 +5,8 @@ use crate::block_connector::BlockConnectorService;
 use crate::sync_metrics::SyncMetrics;
 use crate::tasks::{full_sync_task, sync_dag_full_task, AncestorEvent, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
-use anyhow::{format_err, Result};
+use anyhow::{format_err, Ok, Result};
+use forkable_jellyfish_merkle::node_type::Node;
 use futures::executor::block_on;
 use futures::FutureExt;
 use futures_timer::Delay;
@@ -17,11 +18,13 @@ use starcoin_chain_api::{ChainReader, ChainWriter};
 use starcoin_config::NodeConfig;
 use starcoin_consensus::BlockDAG;
 use starcoin_executor::VMMetrics;
+use starcoin_flexidag::flexidag_service::GetDagAccumulatorInfo;
+use starcoin_flexidag::{flexidag_service, FlexidagService};
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
 use starcoin_network::PeerEvent;
 use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
 };
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage, Store, SyncFlexiDagStore};
@@ -65,6 +68,7 @@ pub struct SyncService {
     storage: Arc<Storage>,
     metrics: Option<SyncMetrics>,
     peer_score_metrics: Option<PeerScoreMetrics>,
+    flexidag_service: ServiceRef<FlexidagService>,
     vm_metrics: Option<VMMetrics>,
 }
 
@@ -72,6 +76,7 @@ impl SyncService {
     pub fn new(
         config: Arc<NodeConfig>,
         storage: Arc<Storage>,
+        flexidag_service: ServiceRef<FlexidagService>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let startup_info = storage
@@ -96,24 +101,19 @@ impl SyncService {
         // let genesis = storage
         //     .get_genesis()?
         //     .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
-        let dag_accumulator_info =
-            match storage.get_dag_accumulator_info(head_block_info.block_id().clone())? {
-                Some(info) => Some(info),
-                None => {
-                    warn!(
-                        "Can not find dag accumulator info by head block id: {}, use genesis info.",
-                        head_block_info.block_id(),
-                    );
-                    None
-                }
-            };
+        let dag_accumulator_info = match storage.get_dag_accumulator_info()? {
+            Some(info) => Some(info),
+            None => {
+                warn!(
+                    "Can not find dag accumulator info by head block id: {}, use genesis info.",
+                    head_block_info.block_id(),
+                );
+                None
+            }
+        };
         Ok(Self {
             sync_status: SyncStatus::new(
-                ChainStatus::new(
-                    head_block.header.clone(),
-                    head_block_info,
-                    Some(storage.get_tips_by_block_id(head_block_hash)?),
-                ),
+                ChainStatus::new(head_block.header.clone(), head_block_info),
                 dag_accumulator_info,
             ),
             stage: SyncStage::NotStart,
@@ -121,8 +121,76 @@ impl SyncService {
             storage,
             metrics,
             peer_score_metrics,
+            flexidag_service,
             vm_metrics,
         })
+    }
+
+     pub async fn create_verified_client(
+        &self,
+        network: NetworkServiceRef,
+        config: Arc<NodeConfig>,
+        peer_strategy: Option<PeerStrategy>,
+        peers: Vec<PeerId>,
+    ) -> Result<Arc<VerifiedRpcClient>> {
+        let peer_select_strategy =
+            peer_strategy.unwrap_or_else(|| config.sync.peer_select_strategy());
+
+        let mut peer_set = network.peer_set().await?;
+
+        loop {
+            if peer_set.is_empty() || peer_set.len() < (config.net().min_peers() as usize) {
+                let level = if config.net().is_dev() || config.net().is_test() {
+                    Level::Debug
+                } else {
+                    Level::Info
+                };
+                log!(
+                    level,
+                    "[sync]Waiting enough peers to sync, current: {:?} peers, min peers: {:?}",
+                    peer_set.len(),
+                    config.net().min_peers()
+                );
+
+                Delay::new(Duration::from_secs(1)).await;
+                peer_set = network.peer_set().await?;
+            } else {
+                break;
+            }
+        }
+
+        let peer_reputations = network
+            .reputations(REPUTATION_THRESHOLD)
+            .await?
+            .await?
+            .into_iter()
+            .map(|(peer, reputation)| {
+                (
+                    peer,
+                    (REPUTATION_THRESHOLD.abs().saturating_add(reputation)) as u64,
+                )
+            })
+            .collect();
+
+        let peer_selector = PeerSelector::new_with_reputation(
+            peer_reputations,
+            peer_set,
+            peer_select_strategy,
+            peer_score_metrics,
+        );
+
+        peer_selector.retain_rpc_peers();
+        if !peers.is_empty() {
+            peer_selector.retain(peers.as_ref())
+        }
+        if peer_selector.is_empty() {
+            return Err(format_err!("[sync] No peers to sync."));
+        }
+
+        Ok(Arc::new(VerifiedRpcClient::new(
+            peer_selector.clone(),
+            network.clone(),
+        )))
     }
 
     pub fn check_and_start_sync(
@@ -190,63 +258,8 @@ impl SyncService {
             .expect("storage must exist")
             .get_accumulator_snapshot_storage();
 
-        let dag = ctx.get_shared::<Arc<Mutex<BlockDAG>>>()?;
-
-        let test_storage = storage.clone();
         let fut = async move {
-            let peer_select_strategy =
-                peer_strategy.unwrap_or_else(|| config.sync.peer_select_strategy());
-
-            let mut peer_set = network.peer_set().await?;
-
-            loop {
-                if peer_set.is_empty() || peer_set.len() < (config.net().min_peers() as usize) {
-                    let level = if config.net().is_dev() || config.net().is_test() {
-                        Level::Debug
-                    } else {
-                        Level::Info
-                    };
-                    log!(
-                        level,
-                        "[sync]Waiting enough peers to sync, current: {:?} peers, min peers: {:?}",
-                        peer_set.len(),
-                        config.net().min_peers()
-                    );
-
-                    Delay::new(Duration::from_secs(1)).await;
-                    peer_set = network.peer_set().await?;
-                } else {
-                    break;
-                }
-            }
-
-            let peer_reputations = network
-                .reputations(REPUTATION_THRESHOLD)
-                .await?
-                .await?
-                .into_iter()
-                .map(|(peer, reputation)| {
-                    (
-                        peer,
-                        (REPUTATION_THRESHOLD.abs().saturating_add(reputation)) as u64,
-                    )
-                })
-                .collect();
-
-            let peer_selector = PeerSelector::new_with_reputation(
-                peer_reputations,
-                peer_set,
-                peer_select_strategy,
-                peer_score_metrics,
-            );
-
-            peer_selector.retain_rpc_peers();
-            if !peers.is_empty() {
-                peer_selector.retain(peers.as_ref())
-            }
-            if peer_selector.is_empty() {
-                return Err(format_err!("[sync] No peers to sync."));
-            }
+            let rpc_client = self.create_verified_client(network.clone(), config.clone(), peer_strategy, peers).await?;
 
             let startup_info = storage
                 .get_startup_info()?
@@ -257,46 +270,56 @@ impl SyncService {
                     format_err!("Can not find block info by id: {}", current_block_id)
                 })?;
 
-            let rpc_client = Arc::new(VerifiedRpcClient::new(
-                peer_selector.clone(),
-                network.clone(),
-            ));
 
-            // for testing, we start dag sync directly
-            if let Some((target, op_dag_accumulator_info)) =
-                rpc_client.get_best_target(current_block_info.get_total_difficulty())?
-            {
-                if let Some(target_accumulator_info) = op_dag_accumulator_info {
-                    let local_dag_accumulator_info = storage
-                        .get_dag_accumulator_info(current_block_id)?
-                        .expect("current dag accumulator info should exist");
-                    let (fut, task_handle, task_event_handle) = sync_dag_full_task(
-                        local_dag_accumulator_info,
-                        target_accumulator_info,
-                        rpc_client.clone(),
-                        dag_accumulator_store,
-                        dag_accumulator_snapshot,
-                        storage.clone(),
-                        config.net().time_service(),
-                        vm_metrics.clone(),
-                        connector_service.clone(),
-                        network.clone(),
-                        skip_pow_verify,
-                        dag.clone(),
-                        block_chain_service.clone(),
-                        config.net().id().clone(),
-                    )?;
-                    self_ref.notify(SyncBeginEvent {
-                        target,
-                        task_handle,
-                        task_event_handle,
-                        peer_selector,
-                    })?;
-                    if let Some(sync_task_total) = sync_task_total.as_ref() {
-                        sync_task_total.with_label_values(&["start"]).inc();
-                    }
-                    Ok(Some(fut.await?))
+            let op_local_dag_accumulator_info =
+                self.flexidag_service.send(GetDagAccumulatorInfo).await??;
+
+            if let Some(local_dag_accumulator_info) = op_local_dag_accumulator_info {
+                let dag_sync_futs = rpc_client
+                    .get_dag_targets(current_block_info.get_total_difficulty(), local_dag_accumulator_info.get_num_leaves())?
+                    .into_iter()
+                    .fold(Ok(vec![]), |mut futs, (peer_id, target_accumulator_infos)| {
+                        rpc_client.switch_strategy(PeerStrategy::DagSync(peer_id));
+                        let (fut, task_handle, task_event_handle) = sync_dag_full_task(
+                            local_dag_accumulator_info,
+                            target_accumulator_info,
+                            rpc_client.clone(),
+                            dag_accumulator_store,
+                            dag_accumulator_snapshot,
+                            storage.clone(),
+                            config.net().time_service(),
+                            vm_metrics.clone(),
+                            connector_service.clone(),
+                            network.clone(),
+                            skip_pow_verify,
+                            dag.clone(),
+                            block_chain_service.clone(),
+                            config.net().id().clone(),
+                        )?;
+                        self_ref.notify(SyncBeginEvent {
+                            target,
+                            task_handle,
+                            task_event_handle,
+                            peer_selector,
+                        })?;
+                        if let Some(sync_task_total) = sync_task_total.as_ref() {
+                            sync_task_total.with_label_values(&["start"]).inc();
+                        }
+                        futs.and_then(|v| v.push(fut))
+                    })?
+                    .into_iter()
+                    .fold(Ok(vec![]), |chain, fut| Ok(vec![fut.await?]))?;
+                assert!(dag_sync_futs.len() <= 1);
+                if dag_sync_futs.len() == 1 {
+                    Ok(Some(dag_sync_futs[0]))
                 } else {
+                    debug!("[sync]No best peer to request, current is beast.");
+                    Ok(None)
+                }
+            } else {
+                if let Some((target, _)) =
+                    rpc_client.get_best_target(current_block_info.get_total_difficulty())?
+                {
                     info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
 
                     let (fut, task_handle, task_event_handle) = full_sync_task(
@@ -326,10 +349,10 @@ impl SyncService {
                         sync_task_total.with_label_values(&["start"]).inc();
                     }
                     Ok(Some(fut.await?))
+                } else {
+                    debug!("[sync]No best peer to request, current is beast.");
+                    Ok(None)
                 }
-            } else {
-                debug!("[sync]No best peer to request, current is beast.");
-                Ok(None)
             }
         };
         let network = ctx.get_shared::<NetworkServiceRef>()?;
@@ -357,7 +380,7 @@ impl SyncService {
                         let current_block_id = startup_info.main;
 
                         let local_dag_accumulator_info = test_storage
-                        .get_dag_accumulator_info(current_block_id).unwrap()
+                        .get_dag_accumulator_info().unwrap()
                         .expect("current dag accumulator info should exist");
 
                         if let Some(sync_task_total) = sync_task_total.as_ref() {
@@ -456,8 +479,9 @@ impl ServiceFactory<Self> for SyncService {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<SyncService> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let flexidag_service = ctx.service_ref::<FlexidagService>()?.clone();
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        Self::new(config, storage, vm_metrics)
+        Self::new(config, storage, flexidag_service, vm_metrics)
     }
 }
 
@@ -667,15 +691,14 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService {
 
 impl EventHandler<Self, NewHeadBlock> for SyncService {
     fn handle_event(&mut self, msg: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
-        let NewHeadBlock(block, tips_hash) = msg;
+        let NewHeadBlock(block) = msg;
         if self.sync_status.update_chain_status(ChainStatus::new(
             block.header().clone(),
             block.block_info.clone(),
-            tips_hash,
         )) {
             self.sync_status.update_dag_accumulator_info(
                 self.storage
-                    .get_dag_accumulator_info(block.header().id())
+                    .get_dag_accumulator_info()
                     .expect("dag accumulator info must exist"),
             );
             ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));

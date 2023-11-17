@@ -13,11 +13,13 @@ use futures::executor::block_on;
 use futures_timer::Delay;
 use network_api::{PeerProvider, PeerSelector, PeerStrategy};
 use starcoin_account_service::{AccountEventService, AccountService, AccountStorage};
+use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
-use starcoin_consensus::{BlockDAG, FlexiDagStorage};
+use starcoin_consensus::{BlockDAG, FlexiDagStorage, FlexiDagStorageConfig};
+use starcoin_crypto::HashValue;
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
 use starcoin_logger::structured_log::init_slog_logger;
@@ -220,13 +222,7 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                             block_hash
                         )
                     })?;
-                    let result = connect_service
-                        .send(ExecuteRequest {
-                            block,
-                            dag_block_parent: parents,
-                            dag_transaction_parent: None,
-                        })
-                        .await??;
+                    let result = connect_service.send(ExecuteRequest { block }).await??;
                     info!("Re execute result: {:?}", result);
                     Ok(())
                 };

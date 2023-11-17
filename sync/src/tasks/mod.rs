@@ -39,6 +39,29 @@ use stream_task::{
 };
 
 pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {
+    fn get_dag_targets(&self, total_difficulty: U256, local_dag_accumulator_leaf_num: u64) -> Result<Vec<(PeerId, AccumulatorInfo)>> {
+        Ok(self
+            .peer_selector()
+            .peer_infos()
+            .into_iter()
+            .filter(|peer_info| {
+                match (peer_info.chain_info().dag_accumulator_info(), peer_info.chain_info().k_total_difficulties()) {
+                    (Some(info), Some(k)) => {
+                        k.first() <= total_difficulty || info.get_num_leaves() > local_dag_accumulator_leaf_num
+                    }
+                    (None, None) => false,
+                    _ => {
+                        warn!("dag accumulator is inconsistent with k total difficulty");
+                        false
+                    }
+                } 
+            })
+            .map(|peer_info| {
+                (peer_info.peer_id, peer_info.chain_info().dag_accumulator_info().clone())
+            })
+            .collect());
+    }
+
     fn get_best_target(
         &self,
         min_difficulty: U256,
@@ -320,7 +343,7 @@ impl BlockFetcher for VerifiedRpcClient {
     ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
         self.get_blocks(block_ids.clone())
             .and_then(|blocks| async move {
-                let results: Result<Vec<(Block, Option<PeerId>)>> = block_ids
+                let results = block_ids
                     .iter()
                     .zip(blocks)
                     .map(|(id, block)| {
@@ -393,7 +416,7 @@ impl BlockLocalStore for Arc<dyn Store> {
                     let block_info = self.get_block_info(id)?;
 
                     Ok(Some(SyncBlockData::new(
-                        block, block_info, None, None, 1, None, None,
+                        block, block_info, None, None, 1, None,
                     )))
                 }
                 None => Ok(None),
@@ -411,7 +434,6 @@ pub enum BlockConnectAction {
 #[derive(Clone, Debug)]
 pub struct BlockConnectedEvent {
     pub block: Block,
-    pub dag_parents: Option<Vec<HashValue>>,
     pub feedback: Option<futures::channel::mpsc::UnboundedSender<BlockConnectedFinishEvent>>,
     pub action: BlockConnectAction,
 }

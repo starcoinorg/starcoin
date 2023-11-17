@@ -189,6 +189,10 @@ impl BlockVerifier for BasicVerifier {
         let current = chain_status.head();
         let current_id = current.id();
         let expect_number = current.number().saturating_add(1);
+	
+        // if chain_status.tips_hash.is_some() {
+        // let mut tips_hash = chain_status.tips_hash.clone().unwrap();
+        // tips_hash.sort();
 
         // dag
         // todo: For a dag block

@@ -144,7 +144,6 @@ where
                 self.storage.clone(),
                 self.net_id.clone(),
                 vm_metrics,
-                None, //TODO: FIXME
             )?;
             let block_collector = BlockCollector::new_with_handle(
                 current_block_info.clone(),

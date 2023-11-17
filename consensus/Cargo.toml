@@ -27,6 +27,7 @@ parking_lot = { workspace = true }
 itertools = { workspace = true }
 starcoin-config = { workspace = true }
 bcs-ext = { workspace = true }
+starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

@@ -14,6 +14,7 @@ use starcoin_chain_api::{
     ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_config::ChainNetworkID;
+use starcoin_consensus::dag::types::ghostdata::GhostdagData;
 use starcoin_consensus::{BlockDAG, Consensus, FlexiDagStorage};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
@@ -23,11 +24,14 @@ use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::flexi_dag::SyncFlexiDagSnapshot;
+use starcoin_storage::storage::CodecKVStore;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
-use starcoin_types::block::{BlockIdAndNumber, ParentsHash};
+use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
+use starcoin_types::dag_block::KTotalDifficulty;
 use starcoin_types::filter::Filter;
+use starcoin_types::header::DagHeader;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
@@ -43,6 +47,7 @@ use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::Epoch;
 use std::cmp::min;
+use std::collections::BTreeSet;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::{collections::HashMap, sync::Arc};
@@ -50,19 +55,6 @@ use std::{collections::HashMap, sync::Arc};
 pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
     pub head: Block,
-}
-
-impl ChainStatusWithBlock {
-    pub fn new(head_block: Block, block_info: BlockInfo, dag_tips: Vec<HashValue>) -> Self {
-        Self {
-            status: ChainStatus::new(head_block.header.clone(), block_info, Some(dag_tips)),
-            head: head_block,
-        }
-    }
-
-    pub fn dag_tips(&self) -> Option<&Vec<HashValue>> {
-        self.status.tips_hash.as_ref()
-    }
 }
 
 pub struct BlockChain {
@@ -76,9 +68,7 @@ pub struct BlockChain {
     uncles: HashMap<HashValue, MintedUncleNumber>,
     epoch: Epoch,
     vm_metrics: Option<VMMetrics>,
-    dag_accumulator: Option<MerkleAccumulator>,
     net: ChainNetworkID,
-    dag: Option<BlockDAG>,
 }
 
 impl BlockChain {
@@ -88,35 +78,11 @@ impl BlockChain {
         storage: Arc<dyn Store>,
         net: ChainNetworkID,
         vm_metrics: Option<VMMetrics>,
-        dag: Option<BlockDAG>,
     ) -> Result<Self> {
         let head = storage
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
-
-        Self::new_with_uncles(time_service, head, None, storage, net, vm_metrics, dag)
-    }
-
-    fn get_dag_data(
-        storage: Arc<dyn Store>,
-        header: &BlockHeader,
-        net: ChainNetworkID,
-    ) -> Result<(Option<MerkleAccumulator>, Option<Vec<HashValue>>)> {
-        let (op_dag_accumulator_info, op_tips) = storage.get_flexidag_init_data(header, net)?;
-        match (op_dag_accumulator_info, op_tips.clone()) {
-            (Some(dag_accumulator_info), Some(_tips)) => {
-                let dag_accumulator = Some(info_2_accumulator(
-                    dag_accumulator_info,
-                    AccumulatorStoreType::SyncDag,
-                    storage.as_ref(),
-                ));
-                Ok((dag_accumulator, op_tips))
-            }
-            (None, None) => Ok((None, None)),
-            _ => {
-                bail!("dag accumulator info and tips should be both None or Some")
-            }
-        }
+        Self::new_with_uncles(time_service, head, None, storage, net, vm_metrics)
     }
 
     fn new_with_uncles(
@@ -126,7 +92,6 @@ impl BlockChain {
         storage: Arc<dyn Store>,
         net: ChainNetworkID,
         vm_metrics: Option<VMMetrics>,
-        dag: Option<BlockDAG>,
     ) -> Result<Self> {
         let block_info = storage
             .get_block_info(head_block.id())?
@@ -155,8 +120,6 @@ impl BlockChain {
         //     .get_accumulator_snapshot_storage()
         //     .get(head_id)?
         //     .map(|snapshot| snapshot.child_hashes);
-        let (dag_accumulator, dag_snapshot_tips) =
-            Self::get_dag_data(storage.clone(), head_block.header(), net.clone())?;
         let mut chain = Self {
             genesis_hash: genesis,
             time_service,
@@ -171,7 +134,7 @@ impl BlockChain {
                 storage.as_ref(),
             ),
             status: ChainStatusWithBlock {
-                status: ChainStatus::new(head_block.header.clone(), block_info, dag_snapshot_tips),
+                status: ChainStatus::new(head_block.header.clone(), block_info),
                 head: head_block,
             },
             statedb: chain_state,
@@ -179,9 +142,7 @@ impl BlockChain {
             uncles: HashMap::new(),
             epoch,
             vm_metrics,
-            dag_accumulator,
             net,
-            dag,
         };
         watch(CHAIN_WATCH_NAME, "n1251");
         match uncles {
@@ -217,6 +178,7 @@ impl BlockChain {
             None,
             genesis_block,
             None,
+            None,
         )?;
 
         let new_tips = vec![genesis_id];
@@ -230,15 +192,15 @@ impl BlockChain {
                 .expect("failed to calculate the dag key"),
             new_tips,
             dag_accumulator.get_info(),
+            genesis_id,
+            [KTotalDifficulty {
+                head_block_id: genesis_id,
+                total_difficulty: executed_block.block_info().get_total_difficulty(),
+            }]
+            .into_iter()
+            .collect(),
         )?;
-        Self::new(
-            time_service,
-            executed_block.block.id(),
-            storage,
-            net,
-            None,
-            None,
-        )
+        Self::new(time_service, executed_block.block.id(), storage, net, None)
     }
 
     pub fn current_epoch_uncles_size(&self) -> u64 {
@@ -346,7 +308,7 @@ impl BlockChain {
         let final_block_gas_limit = block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
-        let tips_hash = self.status().tips_hash;
+
         let strategy = epoch.strategy();
         let difficulty = strategy.calculate_next_difficulty(self)?;
         let mut opened_block = OpenedBlock::new(
@@ -359,7 +321,6 @@ impl BlockChain {
             difficulty,
             strategy,
             None,
-            tips_hash,
             None,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
@@ -435,11 +396,7 @@ impl BlockChain {
     }
 
     //TODO remove this function.
-    pub fn update_chain_head(
-        &mut self,
-        block: Block,
-        parents_hash: Option<Vec<HashValue>>,
-    ) -> Result<ExecutedBlock> {
+    pub fn update_chain_head(&mut self, block: Block) -> Result<ExecutedBlock> {
         let block_info = self
             .storage
             .get_block_info(block.id())?
@@ -466,13 +423,15 @@ impl BlockChain {
                 .storage
                 .get_block_by_hash(blue.id())?
                 .expect("block blue need exist");
-            transactions.extend(
-                blue_block
-                    .transactions()
-                    .iter()
-                    .cloned()
-                    .map(Transaction::UserTransaction),
-            );
+            // Todo: we already added txns of blue_blocks to target block when mining it.
+            // see create_block_template in MinerService
+            //transactions.extend(
+            //    blue_block
+            //        .transactions()
+            //        .iter()
+            //        .cloned()
+            //        .map(Transaction::UserTransaction),
+            //);
             total_difficulty += blue_block.header.difficulty();
         }
         transactions.extend(
@@ -796,97 +755,19 @@ impl BlockChain {
     pub fn get_block_accumulator(&self) -> &MerkleAccumulator {
         &self.block_accumulator
     }
-
-    pub fn get_dag_leaves(
-        &self,
-        start_index: u64,
-        reverse: bool,
-        batch_size: u64,
-    ) -> Result<Vec<HashValue>> {
-        self.dag_accumulator
-            .as_ref()
-            .ok_or_else(|| anyhow!("dag accumulator is None"))?
-            .get_leaves(start_index, reverse, batch_size)
-    }
-
-    pub fn get_dag_current_leaf_number(&self) -> Result<u64> {
-        Ok(self
-            .dag_accumulator
-            .as_ref()
-            .ok_or_else(|| anyhow!("dag accumulator is None"))?
-            .num_leaves())
-    }
-
-    pub fn get_dag_accumulator_snapshot(&self, key: HashValue) -> Result<SyncFlexiDagSnapshot> {
-        Ok(self
-            .storage
-            .query_by_hash(key)?
-            .expect("dag accumualator's snapshot should not be None"))
-    }
-
-    pub fn get_dag_accumulator_snapshot_by_index(
-        &self,
-        leaf_index: u64,
-    ) -> Result<SyncFlexiDagSnapshot> {
-        let leaf_hash = self
-            .dag_accumulator
-            .as_ref()
-            .ok_or_else(|| anyhow!("dag accumulator is None"))?
-            .get_leaf(leaf_index)?
-            .expect("dag accumulator's leaf should not be None");
-        Ok(self
-            .storage
-            .query_by_hash(leaf_hash)?
-            .expect("dag accumualator's snapshot should not be None"))
-    }
-
-    pub fn update_dag_accumulator(&mut self, head_id: HashValue) -> Result<()> {
-        self.dag_accumulator = Some(
-            self.dag_accumulator
-                .as_ref()
-                .ok_or_else(|| anyhow!("dag accumulator is None"))?
-                .fork(
-                    self.storage
-                        .get_dag_accumulator_info(head_id)
-                        .expect("accumulator info should not be None"),
-                ),
-        );
-        Ok(())
-    }
-
-    pub fn dag_parents_in_tips(&self, dag_parents: Vec<HashValue>) -> Result<bool> {
-        Ok(dag_parents
-            .into_iter()
-            .all(|parent| match &self.status.status.tips_hash {
-                Some(tips) => tips.contains(&parent),
-                None => false,
-            }))
-    }
-
-    pub fn is_head_of_dag_accumulator(&self, next_tips: Vec<HashValue>) -> Result<bool> {
-        let key = Self::calculate_dag_accumulator_key(next_tips)?;
-        let next_tips_info = self.storage.get_dag_accumulator_info(key)?;
-
-        return Ok(next_tips_info
-            == self
-                .dag_accumulator
-                .as_ref()
-                .map(|accumulator| accumulator.get_info()));
-    }
 }
 
 impl ChainReader for BlockChain {
     fn info(&self) -> ChainInfo {
+        let (dag_accumulator, k_total_difficulties) = self.storage.get_lastest_snapshot()?.map(|snapshot| {
+            (Some(snapshot.accumulator_info), Some(snapshot.k_total_difficulties))
+        }).unwrap_or((None, None));
         ChainInfo::new(
             self.status.head.header().chain_id(),
             self.genesis_hash,
             self.status.status.clone(),
-            self.storage
-                .get_dag_accumulator_info(self.status.head.header().id())
-                .expect(&format!(
-                    "the dag accumulator info cannot be found by id: {}",
-                    self.status.head.header().id()
-                )),
+            dag_accumulator,
+            k_total_difficulties,
         )
     }
 
@@ -900,19 +781,6 @@ impl ChainReader for BlockChain {
 
     fn current_header(&self) -> BlockHeader {
         self.status.status.head().clone()
-    }
-
-    fn current_tips_hash(&self) -> Option<HashValue> {
-        match self.status.status.tips_hash.clone() {
-            Some(tips_hash) => {
-                assert!(!tips_hash.is_empty());
-                Some(
-                    Self::calculate_dag_accumulator_key(tips_hash)
-                        .expect("calculate dag key should be successful"),
-                )
-            }
-            None => None,
-        }
     }
 
     fn net_id(&self) -> ChainNetworkID {
@@ -1096,7 +964,6 @@ impl ChainReader for BlockChain {
             self.storage.clone(),
             self.net.clone(),
             self.vm_metrics.clone(),
-            self.dag.clone(),
             //TODO: check missing blocks need to be clean
         )
     }
@@ -1431,10 +1298,17 @@ impl ChainWriter for BlockChain {
     }
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
-        if executed_block.block.is_dag() {
-            return self.connect_dag(executed_block);
-        }
         let (block, block_info) = (executed_block.block(), executed_block.block_info());
+        if self.status.status.tips_hash.is_some() {
+            let mut tips = self.status.status.tips_hash.clone().unwrap();
+            tips.sort();
+            debug_assert!(
+                block.header().parent_hash() == Self::calculate_dag_accumulator_key(tips.clone())?
+                    || block.header().parent_hash() == self.status.status.head().id()
+            );
+        } else {
+            debug_assert!(block.header().parent_hash() == self.status.status.head().id());
+        }
         //TODO try reuse accumulator and state db.
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
@@ -1483,43 +1357,6 @@ impl ChainWriter for BlockChain {
 
     fn chain_state(&mut self) -> &ChainStateDB {
         &self.statedb
-    }
-
-    fn get_current_dag_accumulator_info(&self) -> Result<AccumulatorInfo> {
-        Ok(self
-            .dag_accumulator
-            .as_ref()
-            .ok_or_else(|| anyhow!("dag accumualator is None"))?
-            .get_info())
-    }
-
-    fn fork_dag_accumulator(&mut self, accumulator_info: AccumulatorInfo) -> Result<()> {
-        self.dag_accumulator = Some(
-            self.dag_accumulator
-                .as_ref()
-                .ok_or_else(|| anyhow!("dag accumulator is None"))?
-                .fork(Some(accumulator_info)),
-        );
-        Ok(())
-    }
-
-    fn append_dag_accumulator_leaf(
-        &mut self,
-        tips: Vec<HashValue>,
-    ) -> Result<(HashValue, AccumulatorInfo)> {
-        let key = Self::calculate_dag_accumulator_key(tips.clone())?;
-        let dag_accumulator = self
-            .dag_accumulator
-            .as_ref()
-            .ok_or_else(|| anyhow!("dag accumulator is None"))?
-            .fork(None);
-        dag_accumulator.append(&[key])?;
-        dag_accumulator.flush()?;
-        self.storage
-            .append_dag_accumulator_leaf(key, tips, dag_accumulator.get_info())?;
-        let accumulator_info = dag_accumulator.get_info();
-        self.dag_accumulator = Some(dag_accumulator);
-        Ok((key, accumulator_info))
     }
 }
 

@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::metrics::ChainMetrics;
+use crate::tasks::BlockDiskCheckEvent;
 use anyhow::{bail, format_err, Ok, Result};
+use async_std::stream::StreamExt;
+use futures::executor::block_on;
 use parking_lot::Mutex;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
@@ -10,18 +13,26 @@ use starcoin_config::NodeConfig;
 use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
+use starcoin_flexidag::flexidag_service::{AddToDag, DumpTipsToAccumulator, UpdateDagTips};
+use starcoin_flexidag::FlexidagService;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{ServiceContext, ServiceRef};
+use starcoin_storage::flexi_dag::KTotalDifficulty;
+use starcoin_storage::storage::CodecKVStore;
 use starcoin_storage::Store;
+use starcoin_time_service::{DagBlockTimeWindowService, TimeWindowResult};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
+use starcoin_types::blockhash::BlockHashMap;
+use starcoin_types::dag_block::KTotalDifficulty;
+use starcoin_types::consensus_header::DagHeader;
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
     system_events::{NewBranch, NewHeadBlock},
 };
-use std::{fmt::Formatter, sync::Arc};
+use std::{fmt::Formatter, sync::Arc, sync::Mutex};
 
 use super::BlockConnectorService;
 
@@ -40,7 +51,7 @@ where
     metrics: Option<ChainMetrics>,
     vm_metrics: Option<VMMetrics>,
     dag_block_pool: Arc<Mutex<Vec<(Block, Vec<HashValue>)>>>,
-    dag: Arc<Mutex<BlockDAG>>,
+    flexidag_service: ServiceRef<FlexidagService>,
 }
 
 #[derive(Clone, Debug)]
@@ -136,7 +147,7 @@ where
         txpool: TransactionPoolServiceT,
         bus: ServiceRef<BusService>,
         vm_metrics: Option<VMMetrics>,
-        dag: Arc<Mutex<BlockDAG>>,
+        flexidag_service: ServiceRef<FlexidagService>,
     ) -> Result<Self> {
         let net = config.net();
         let main = BlockChain::new(
@@ -161,7 +172,7 @@ where
             metrics,
             vm_metrics,
             dag_block_pool: Arc::new(Mutex::new(vec![])),
-            dag,
+            flexidag_service,
         })
     }
 
@@ -255,13 +266,7 @@ where
         let branch_total_difficulty = new_branch.get_total_difficulty()?;
         if branch_total_difficulty > main_total_difficulty {
             self.update_startup_info(new_branch.head_block().header())?;
-
-            let dag_parents = self.dag.lock().get_parents(new_head_block)?;
-            ctx.broadcast(NewHeadBlock(
-                Arc::new(new_branch.head_block()),
-                Some(dag_parents),
-            ));
-
+            ctx.broadcast(NewHeadBlock(Arc::new(new_branch.head_block())));
             Ok(())
         } else {
             bail!("no need to switch");
@@ -398,7 +403,7 @@ where
             .storage
             .get_tips_by_block_id(executed_block.block.header().id())
             .ok();
-        self.broadcast_new_head(executed_block, dag_block_parents, next_tips);
+        self.broadcast_new_head(executed_block);
 
         Ok(())
     }
@@ -602,12 +607,7 @@ where
         Ok(blocks)
     }
 
-    fn broadcast_new_head(
-        &self,
-        block: ExecutedBlock,
-        dag_parents: Option<Vec<HashValue>>,
-        next_tips: Option<Vec<HashValue>>,
-    ) {
+    fn broadcast_new_head(&self, block: ExecutedBlock) {
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
                 .chain_select_head_total
@@ -617,7 +617,7 @@ where
 
         if let Err(e) = self
             .bus
-            .broadcast(NewHeadBlock(Arc::new(block), dag_parents))
+            .broadcast(NewHeadBlock(Arc::new(block)))
         {
             error!("Broadcast NewHeadBlock error: {:?}", e);
         }

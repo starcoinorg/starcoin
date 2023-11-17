@@ -1,8 +1,8 @@
 [package]
+name = "starcoin-flexidag"
 authors = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
-name = "flexidag"
 publish = { workspace = true }
 version = "1.13.7"
 homepage = { workspace = true }
@@ -11,6 +11,7 @@ rust-version = { workspace = true }
 
 [dependencies]
 anyhow = { workspace = true }
+async-trait = { workspace = true }
 byteorder = { workspace = true }
 
 futures = { workspace = true }
@@ -22,13 +23,17 @@ rand = { workspace = true }
 rand_core = { default-features = false, workspace = true }
 rust-argon2 = { workspace = true }
 sha3 = { workspace = true }
+starcoin-config = { workspace = true }
 starcoin-chain-api = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
+starcoin-service-registry = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
+tokio = { workspace = true }
+starcoin-accumulator = { workspace = true }
 thiserror = { workspace = true }
 rocksdb = { workspace = true }
 bincode = { workspace = true }

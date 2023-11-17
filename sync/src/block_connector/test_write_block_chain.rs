@@ -6,9 +6,11 @@ use parking_lot::Mutex;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_chain_service::WriteableChainService;
-use starcoin_config::NodeConfig;
+use starcoin_config::{NodeConfig, RocksdbConfig};
+use starcoin_consensus::Consensus;
 use starcoin_consensus::{BlockDAG, Consensus, FlexiDagStorage, FlexiDagStorageConfig};
 use starcoin_crypto::HashValue;
+use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::Store;
@@ -18,7 +20,7 @@ use starcoin_types::block::Block;
 use starcoin_types::blockhash::ORIGIN;
 use starcoin_types::consensus_header::Header;
 use starcoin_types::startup_info::StartupInfo;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 pub async fn create_writeable_block_chain() -> (
     WriteBlockChainService<MockTxPoolService>,
@@ -43,15 +45,11 @@ pub async fn create_writeable_block_chain() -> (
     )
     .expect("init chain and genesis error");
 
-    let flex_dag_config = FlexiDagStorageConfig::create_with_params(1, 0, 1024);
+    let flex_dag_config = FlexiDagStorageConfig::create_with_params(1, RocksdbConfig::default());
     let flex_dag_db = FlexiDagStorage::create_from_path("./smolstc", flex_dag_config)
         .expect("Failed to create flexidag storage");
 
     let dag = BlockDAG::new(
-        Header::new(
-            genesis.block().header().clone(),
-            vec![HashValue::new(ORIGIN)],
-        ),
         3,
         flex_dag_db,
     );

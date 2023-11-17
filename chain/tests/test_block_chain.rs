@@ -131,11 +131,11 @@ fn test_block_chain() -> Result<()> {
     let mut mock_chain = MockChain::new(ChainNetwork::new_test())?;
     let block = mock_chain.produce()?;
     assert_eq!(block.header().number(), 1);
-    mock_chain.apply(block, None)?;
+    mock_chain.apply(block)?;
     assert_eq!(mock_chain.head().current_header().number(), 1);
     let block = mock_chain.produce()?;
     assert_eq!(block.header().number(), 2);
-    mock_chain.apply(block, None)?;
+    mock_chain.apply(block)?;
     assert_eq!(mock_chain.head().current_header().number(), 2);
     Ok(())
 }

@@ -2814,7 +2814,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "flexidag"
+name = "flexidag-service"
 version = "1.13.7"
 dependencies = [
  "anyhow",
@@ -9332,6 +9332,7 @@ name = "starcoin-chain"
 version = "1.13.7"
 dependencies = [
  "anyhow",
+ "async-std",
  "bcs-ext",
  "clap 3.2.23",
  "proptest",
@@ -9438,6 +9439,7 @@ name = "starcoin-chain-service"
 version = "1.13.7"
 dependencies = [
  "anyhow",
+ "async-std",
  "async-trait",
  "futures 0.3.26",
  "rand 0.8.5",
@@ -9449,6 +9451,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
+ "starcoin-flexidag",
  "starcoin-logger",
  "starcoin-network-rpc-api",
  "starcoin-service-registry",
@@ -9583,6 +9586,7 @@ dependencies = [
  "rust-argon2",
  "serde 1.0.152",
  "sha3",
+ "starcoin-accumulator",
  "starcoin-chain-api",
  "starcoin-config",
  "starcoin-crypto",
@@ -9758,6 +9762,43 @@ dependencies = [
  "tiny_http",
  "tokio",
  "tokio-executor 0.2.0-alpha.6",
+]
+
+[[package]]
+name = "starcoin-flexidag"
+version = "1.13.7"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bcs-ext",
+ "bincode",
+ "byteorder",
+ "futures 0.3.26",
+ "hex",
+ "itertools",
+ "once_cell",
+ "parking_lot 0.12.1",
+ "proptest",
+ "proptest-derive",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "rocksdb",
+ "rust-argon2",
+ "serde 1.0.152",
+ "sha3",
+ "starcoin-accumulator",
+ "starcoin-chain-api",
+ "starcoin-config",
+ "starcoin-crypto",
+ "starcoin-logger",
+ "starcoin-service-registry",
+ "starcoin-state-api",
+ "starcoin-storage",
+ "starcoin-time-service",
+ "starcoin-types",
+ "starcoin-vm-types",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -9950,6 +9991,7 @@ name = "starcoin-miner"
 version = "1.13.7"
 dependencies = [
  "anyhow",
+ "async-std",
  "bcs-ext",
  "futures 0.3.26",
  "futures-timer",
@@ -9965,6 +10007,7 @@ dependencies = [
  "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-executor",
+ "starcoin-flexidag",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-metrics",
@@ -10812,6 +10855,7 @@ dependencies = [
  "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-executor",
+ "starcoin-flexidag",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-metrics",

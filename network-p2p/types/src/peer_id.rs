@@ -12,7 +12,7 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
 
-#[derive(Eq, PartialEq, Hash, Clone, Debug, JsonSchema)]
+#[derive(Eq, PartialEq, Hash, Clone, Debug, JsonSchema, Copy)]
 pub struct PeerId(#[schemars(with = "String")] Libp2pPeerId);
 
 impl PeerId {

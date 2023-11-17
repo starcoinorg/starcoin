@@ -27,6 +27,8 @@ starcoin-txpool-api = { workspace = true }
 starcoin-vm-types = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 starcoin-types = { package = "starcoin-types", workspace = true }
+starcoin-flexidag = { workspace = true }
+async-std = { workspace = true }
 
 [dev-dependencies]
 starcoin-network-rpc = { package = "starcoin-network-rpc", workspace = true }
