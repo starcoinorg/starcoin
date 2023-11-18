@@ -417,9 +417,9 @@ where
             dag_accumulator_index: start_index, 
             block_header_id: self.chain.head_block().id(),
         }))??);
-        if state == State::Enough {
+        if state == CollectorState::Enough {
             async_std::task::block_on(self.flexidag_service.send(FinishSync {
-                dag_accumulator_info: self.new_dag_accumulator_info.clone(),
+                dag_accumulator_info: self.new_dag_accumulator_info.clone().expect("dag acc should exists"),
             }))??
         }
         return Ok(state);

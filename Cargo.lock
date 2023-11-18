@@ -2814,40 +2814,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "flexidag-service"
-version = "1.13.7"
-dependencies = [
- "anyhow",
- "bcs-ext",
- "bincode",
- "byteorder",
- "futures 0.3.26",
- "hex",
- "itertools",
- "once_cell",
- "parking_lot 0.12.1",
- "proptest",
- "proptest-derive",
- "rand 0.8.5",
- "rand_core 0.6.4",
- "rocksdb",
- "rust-argon2",
- "serde 1.0.152",
- "sha3",
- "starcoin-chain-api",
- "starcoin-config",
- "starcoin-crypto",
- "starcoin-flexidag",
- "starcoin-logger",
- "starcoin-state-api",
- "starcoin-storage",
- "starcoin-time-service",
- "starcoin-types",
- "starcoin-vm-types",
- "thiserror",
-]
-
-[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9737,33 +9703,15 @@ version = "1.13.7"
 dependencies = [
  "anyhow",
  "async-trait",
- "bcs-ext",
- "bincode",
- "byteorder",
  "futures 0.3.26",
- "hex",
- "itertools",
- "once_cell",
- "parking_lot 0.12.1",
- "proptest",
- "proptest-derive",
- "rand 0.8.5",
- "rand_core 0.6.4",
- "rocksdb",
- "rust-argon2",
- "serde 1.0.152",
- "sha3",
  "starcoin-accumulator",
- "starcoin-chain-api",
  "starcoin-config",
+ "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-service-registry",
- "starcoin-state-api",
  "starcoin-storage",
- "starcoin-time-service",
  "starcoin-types",
- "starcoin-vm-types",
  "thiserror",
  "tokio",
 ]

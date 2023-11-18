@@ -18,11 +18,11 @@ use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::{NodeConfig, RocksdbConfig};
-use starcoin_crypto::HashValue as Hash;
+use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_storage::flexi_dag::SyncFlexiDagSnapshotHasher;
 use starcoin_storage::storage::CodecKVStore;
 use starcoin_storage::{BlockStore, Storage, Store, SyncFlexiDagStore};
-use starcoin_types::block::BlockNumber;
+use starcoin_types::block::{BlockHeader, BlockNumber};
 use starcoin_types::dag_block::KTotalDifficulty;
 use starcoin_types::startup_info;
 use starcoin_types::{
@@ -238,6 +238,12 @@ impl BlockDAG {
         parents: Arc<Vec<Hash>>,
     ) -> Result<(), StoreError> {
         self.storage.relations_store.insert(child, parents)
+    }
+
+
+    pub fn get_ghostdag_data_by_child(&self, hash: Hash) -> anyhow::Result<Arc<GhostdagData>> {
+        let ghostdata = self.storage.ghost_dag_store.get_data(hash)?;
+        return Ok(ghostdata);
     }
 }
 

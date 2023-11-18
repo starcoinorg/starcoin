@@ -112,7 +112,6 @@ members = [
     "cmd/db-exporter",
     "cmd/genesis-nft-miner",
     "flexidag",
-    "flexidag/service"
 ]
 
 default-members = [
@@ -220,7 +219,6 @@ default-members = [
     "cmd/miner_client/api",
     "cmd/db-exporter",
     "flexidag",
-    "flexidag/service",
 ]
 
 [profile.dev]

@@ -14,8 +14,7 @@ use starcoin_chain_api::{
     ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_config::ChainNetworkID;
-use starcoin_consensus::dag::types::ghostdata::GhostdagData;
-use starcoin_consensus::{BlockDAG, Consensus, FlexiDagStorage};
+use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
@@ -31,7 +30,6 @@ use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::dag_block::KTotalDifficulty;
 use starcoin_types::filter::Filter;
-use starcoin_types::header::DagHeader;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
@@ -47,7 +45,6 @@ use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::Epoch;
 use std::cmp::min;
-use std::collections::BTreeSet;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::{collections::HashMap, sync::Arc};
@@ -107,19 +104,6 @@ impl BlockChain {
             .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
         let head_id = head_block.id();
         watch(CHAIN_WATCH_NAME, "n1253");
-
-        // let dag_accumulator = match storage.get_dag_accumulator_info(head_id)? {
-        //     Some(accmulator_info) => Some(info_2_accumulator(
-        //         accmulator_info,
-        //         AccumulatorStoreType::SyncDag,
-        //         storage.as_ref(),
-        //     )),
-        //     None => None,
-        // };
-        // let dag_snapshot_tips = storage
-        //     .get_accumulator_snapshot_storage()
-        //     .get(head_id)?
-        //     .map(|snapshot| snapshot.child_hashes);
         let mut chain = Self {
             genesis_hash: genesis,
             time_service,

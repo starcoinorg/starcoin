@@ -270,7 +270,7 @@ where
         let id = new_block.header().id();
         debug!("try connect mined block: {}", id);
 
-        match self.chain_service.try_connect(block) {
+        match self.chain_service.try_connect(new_block.as_ref().clone()) {
             std::result::Result::Ok(ConnectOk::DagConnected) => {
                 match self.chain_service.dump_tips(block_header) {
                     std::result::Result::Ok(_) => (),
