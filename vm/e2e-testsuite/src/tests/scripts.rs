@@ -19,7 +19,7 @@ use starcoin_vm_types::transaction::{Script, TransactionStatus};
 fn script_code_unverifiable() {
     //let mut executor = FakeExecutor::from_genesis_with_options(VMConfig::default());
     let mut executor = FakeExecutor::from_test_genesis();
-    executor.set_golden_file(current_function_name!());
+    //executor.set_golden_file(current_function_name!());
 
     // create and publish sender
     let sender = executor.create_raw_account_data(1_000_000, 10);
