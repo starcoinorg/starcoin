@@ -52,8 +52,8 @@ use starcoin_vm_types::transaction::{
 
 #[test]
 fn rotate_ed25519_key() {
-    let balance = 1_000_000;
-    let mut executor = FakeExecutor::from_fresh_genesis();
+    let balance = 100_000_000;
+    let mut executor = FakeExecutor::from_test_genesis();
 
     // create and publish sender
     let mut sender = executor.create_raw_account_data(balance, 10);

@@ -3,14 +3,22 @@
 
 //! Support for encoding transactions for common situations.
 
-use crate::account::Account;
+use crate::account::{Account, TransactionBuilder};
+use crate::compile::compile_script;
+use move_core_types::identifier::Identifier;
+use move_core_types::language_storage::ModuleId;
+use move_core_types::transaction_argument::TransactionArgument;
+use move_core_types::value::MoveValue;
 use starcoin_config::ChainNetwork;
 pub use starcoin_time_service::duration_since_epoch;
 use starcoin_transaction_builder::{build_signed_empty_txn, peer_to_peer_v2};
 use starcoin_types::account::Account as StarcoinAccount;
 use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
+use starcoin_vm_types::account_config::{core_code_address, stc_type_tag};
 use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_vm_types::transaction::{
+    RawUserTransaction, Script, ScriptFunction, SignedUserTransaction, TransactionPayload,
+};
 use std::time::{SystemTime, UNIX_EPOCH};
 use test_helper::txn::create_account_txn_sent_as_association;
 
@@ -104,35 +112,39 @@ pub fn peer_to_peer_txn(
 }
 
 /// Returns a transaction to change the keys for the given account.
+pub fn rotate_key_txn_builder(
+    sender: &Account,
+    new_key_hash: Vec<u8>,
+    seq_num: u64,
+) -> TransactionBuilder {
+    sender
+        .transaction()
+        .payload(TransactionPayload::ScriptFunction(ScriptFunction::new(
+            ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
+            Identifier::new("rotate_authentication_key").unwrap(),
+            vec![],
+            vec![
+                MoveValue::from(TransactionArgument::U8Vector(new_key_hash.to_vec()))
+                    .simple_serialize()
+                    .expect("transaction arguments must serialize"),
+            ],
+        )))
+        .sequence_number(seq_num)
+}
+
 pub fn rotate_key_txn(
     sender: &Account,
-    _new_key_hash: Vec<u8>,
+    new_key_hash: Vec<u8>,
     seq_num: u64,
 ) -> SignedUserTransaction {
-    // sender
-    //     .transaction()
-    //     .payload(starcoin_stdlib::encode_account_rotate_authentication_key(
-    //         new_key_hash,
-    //     ))
-    //     .sequence_number(seq_num)
-    //     .sign()
-    // TODO(BobOng): e2e-test
-    empty_txn(sender, seq_num, 0, 0)
+    rotate_key_txn_builder(sender, new_key_hash, seq_num).sign()
 }
 
 /// Returns a transaction to change the keys for the given account.
-pub fn raw_rotate_key_txn(
+pub fn rotate_key_txn_raw(
     sender: &Account,
-    _new_key_hash: Vec<u8>,
+    new_key_hash: Vec<u8>,
     seq_num: u64,
 ) -> RawUserTransaction {
-    // sender
-    //     .transaction()
-    //     .payload(starcoin_stdlib::encode_account_rotate_authentication_key(
-    //         new_key_hash,
-    //     ))
-    //     .sequence_number(seq_num)
-    //     .raw()
-    // TODO(BobOng): e2e-test
-    empty_txn(sender, seq_num, 0, 0).into_raw_transaction()
+    rotate_key_txn(sender, new_key_hash, seq_num).raw_txn().clone()
 }

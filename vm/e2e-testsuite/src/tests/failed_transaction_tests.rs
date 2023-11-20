@@ -21,7 +21,7 @@ use starcoin_vm_types::{
     transaction_metadata::TransactionPayloadMetadata,
 };
 
-use starcoin_gas::{StarcoinGasMeter};
+use starcoin_gas::StarcoinGasMeter;
 use starcoin_gas_algebra_ext::{FeePerGasUnit, Gas};
 use starcoin_vm_types::genesis_config::ChainId;
 

@@ -27,12 +27,15 @@ fn execute_genesis_write_set() {
 
 #[test]
 fn execute_genesis_and_drop_other_transaction() {
-    let mut executor = FakeExecutor::no_genesis();
+    let mut executor = FakeExecutor::from_test_genesis();
     //let txn = Transaction::GenesisTransaction(WriteSetPayload::Direct(GENESIS_CHANGE_SET.clone()));
 
-    let sender = executor.create_raw_account_data(1_000_000, 10);
-    let receiver = executor.create_raw_account_data(100_000, 10);
-    let txn2 = peer_to_peer_txn(sender.account(), receiver.account(), 11, 1000);
+    let sender = executor.create_raw_account_data(1_000_000, 0);
+    executor.add_account_data(&sender);
+    let receiver = executor.create_raw_account_data(100_000, 0);
+    executor.add_account_data(&receiver);
+
+    let txn2 = peer_to_peer_txn(sender.account(), receiver.account(), 0, 1000);
 
     let mut output = executor
         .execute_transaction_block(vec![Transaction::UserTransaction(txn2)])
@@ -40,5 +43,8 @@ fn execute_genesis_and_drop_other_transaction() {
 
     // Transaction that comes after genesis should be dropped.
     assert_eq!(output.len(), 1);
-    assert_eq!(output.pop().unwrap().status(), &TransactionStatus::Retry)
+    assert_eq!(
+        output.pop().unwrap().status(),
+        &TransactionStatus::Keep(KeptVMStatus::Executed)
+    )
 }
