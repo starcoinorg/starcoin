@@ -459,7 +459,7 @@ impl BlockStore for Storage {
         let chain_info = ChainInfo::new(
             head_block.chain_id(),
             genesis_hash,
-            ChainStatus::new(head_block, head_block_info),
+            ChainStatus::new(head_block, head_block_info,Some(snapshot.child_hashes)),
             Some(snapshot.accumulator_info),
             Some(snapshot.k_total_difficulties),
         );

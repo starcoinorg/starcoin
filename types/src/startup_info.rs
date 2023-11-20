@@ -132,11 +132,13 @@ pub struct ChainStatus {
     pub head: BlockHeader,
     /// Chain block info
     pub info: BlockInfo,
+    /// tips
+    pub tips_hash:Option<Vec<HashValue>>
 }
 
 impl ChainStatus {
-    pub fn new(head: BlockHeader, info: BlockInfo) -> Self {
-        Self { head, info }
+    pub fn new(head: BlockHeader, info: BlockInfo,tips_hash: Option<Vec<HashValue>>) -> Self {
+        Self { head, info, tips_hash }
     }
 
     pub fn random() -> Self {
@@ -160,6 +162,7 @@ impl ChainStatus {
         Self {
             head: head.clone(),
             info: block_info,
+            tips_hash: None,
         }
     }
 
@@ -185,6 +188,7 @@ impl Sample for ChainStatus {
         Self {
             head: BlockHeader::sample(),
             info: BlockInfo::sample(),
+            tips_hash: None
         }
     }
 }

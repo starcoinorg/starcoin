@@ -14,7 +14,7 @@ use starcoin_chain_api::{
     ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_config::ChainNetworkID;
-use starcoin_consensus::Consensus;
+use starcoin_consensus::{BlockDAG, Consensus};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
@@ -53,7 +53,11 @@ pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
     pub head: Block,
 }
-
+impl ChainStatusWithBlock{
+    pub fn dag_tips(&self,)->&Option<Vec<HashValue>>{
+        &self.status.tips_hash
+    }
+}
 pub struct BlockChain {
     genesis_hash: HashValue,
     txn_accumulator: MerkleAccumulator,
@@ -66,6 +70,7 @@ pub struct BlockChain {
     epoch: Epoch,
     vm_metrics: Option<VMMetrics>,
     net: ChainNetworkID,
+    dag: Option<BlockDAG>,
 }
 
 impl BlockChain {
@@ -75,11 +80,12 @@ impl BlockChain {
         storage: Arc<dyn Store>,
         net: ChainNetworkID,
         vm_metrics: Option<VMMetrics>,
+        dag: Option<BlockDAG>,
     ) -> Result<Self> {
         let head = storage
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
-        Self::new_with_uncles(time_service, head, None, storage, net, vm_metrics)
+        Self::new_with_uncles(time_service, head, None, storage, net, vm_metrics, dag)
     }
 
     fn new_with_uncles(
@@ -89,6 +95,7 @@ impl BlockChain {
         storage: Arc<dyn Store>,
         net: ChainNetworkID,
         vm_metrics: Option<VMMetrics>,
+        dag: Option<BlockDAG>,
     ) -> Result<Self> {
         let block_info = storage
             .get_block_info(head_block.id())?
@@ -118,7 +125,7 @@ impl BlockChain {
                 storage.as_ref(),
             ),
             status: ChainStatusWithBlock {
-                status: ChainStatus::new(head_block.header.clone(), block_info),
+                status: ChainStatus::new(head_block.header.clone(), block_info,None), //FIXME:read from snapshot
                 head: head_block,
             },
             statedb: chain_state,
@@ -127,6 +134,7 @@ impl BlockChain {
             epoch,
             vm_metrics,
             net,
+            dag,
         };
         watch(CHAIN_WATCH_NAME, "n1251");
         match uncles {
@@ -162,7 +170,6 @@ impl BlockChain {
             None,
             genesis_block,
             None,
-            None,
         )?;
 
         let new_tips = vec![genesis_id];
@@ -181,10 +188,10 @@ impl BlockChain {
                 head_block_id: genesis_id,
                 total_difficulty: executed_block.block_info().get_total_difficulty(),
             }]
-            .into_iter()
-            .collect(),
+                .into_iter()
+                .collect(),
         )?;
-        Self::new(time_service, executed_block.block.id(), storage, net, None)
+        Self::new(time_service, executed_block.block.id(), storage, net, None, None)
     }
 
     pub fn current_epoch_uncles_size(&self) -> u64 {
@@ -306,6 +313,7 @@ impl BlockChain {
             strategy,
             None,
             None,
+            None,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
         let template = opened_block.finalize()?;
@@ -362,15 +370,15 @@ impl BlockChain {
     }
 
     pub fn verify_with_verifier<V>(&mut self, block: Block) -> Result<VerifiedBlock>
-    where
-        V: BlockVerifier,
+        where
+            V: BlockVerifier,
     {
         V::verify_block(self, block)
     }
 
     pub fn apply_with_verifier<V>(&mut self, block: Block) -> Result<ExecutedBlock>
-    where
-        V: BlockVerifier,
+        where
+            V: BlockVerifier,
     {
         let verified_block = self.verify_with_verifier::<V>(block)?;
         watch(CHAIN_WATCH_NAME, "n1");
@@ -743,7 +751,7 @@ impl BlockChain {
 
 impl ChainReader for BlockChain {
     fn info(&self) -> ChainInfo {
-        let (dag_accumulator, k_total_difficulties) = self.storage.get_lastest_snapshot()?.map(|snapshot| {
+        let (dag_accumulator, k_total_difficulties) = self.storage.get_lastest_snapshot().unwrap_or(None).map(|snapshot| {
             (Some(snapshot.accumulator_info), Some(snapshot.k_total_difficulties))
         }).unwrap_or((None, None));
         ChainInfo::new(
@@ -949,6 +957,7 @@ impl ChainReader for BlockChain {
             self.net.clone(),
             self.vm_metrics.clone(),
             //TODO: check missing blocks need to be clean
+            None,
         )
     }
 
@@ -1205,8 +1214,7 @@ impl BlockChain {
         let dag = self.dag.clone().expect("dag should init with blockdag");
         let (new_tip_block, _) = (executed_block.block(), executed_block.block_info());
         let mut tips = self
-            .status
-            .dag_tips()
+            .status.dag_tips().as_ref()
             .expect("Tips should exist on dag")
             .clone();
         let parents = executed_block
@@ -1276,7 +1284,7 @@ impl ChainWriter for BlockChain {
                     .expect("dag blocks must have tips")
                     .clone(),
             )
-            .expect("failed to calculate the tips hash")
+                .expect("failed to calculate the tips hash")
                 == executed_block.block().header().parent_hash();
         }
     }
