@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use anyhow::{anyhow, format_err, Ok};
 use futures::{future::BoxFuture, FutureExt};
 use network_api::PeerProvider;
@@ -7,18 +5,17 @@ use starcoin_accumulator::{
     accumulator_info::AccumulatorInfo, Accumulator, AccumulatorTreeStore, MerkleAccumulator,
 };
 use starcoin_chain::BlockChain;
-use starcoin_chain_api::ChainReader;
 use starcoin_config::ChainNetworkID;
 use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
-use starcoin_flexidag::{flexidag_service, FlexidagService};
-use starcoin_logger::prelude::{debug, info};
+use starcoin_flexidag::FlexidagService;
 use starcoin_network::NetworkServiceRef;
 use starcoin_service_registry::ServiceRef;
 use starcoin_storage::{flexi_dag::SyncFlexiDagSnapshotStorage, storage::CodecKVStore, Store};
 use starcoin_time_service::TimeService;
 use starcoin_txpool::TxPoolService;
+use std::sync::Arc;
 use stream_task::{
     Generator, TaskError, TaskEventCounterHandle, TaskFuture, TaskGenerator, TaskHandle,
 };
@@ -212,7 +209,7 @@ where
         .expect(format!("index: {} must be valid", start_index).as_str())
         .expect(format!("index: {} should not be None", start_index).as_str());
 
-    let mut snapshot = accumulator_snapshot
+    let snapshot = accumulator_snapshot
         .get(leaf)
         .expect(format!("index: {} must be valid for getting snapshot", start_index).as_str())
         .expect(

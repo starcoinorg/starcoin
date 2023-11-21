@@ -47,6 +47,11 @@ impl<T: ReachabilityStoreReader + ?Sized> ReachabilityService for MTReachability
         inquirer::is_dag_ancestor_of(read_guard.deref(), this, queried).unwrap()
     }
 
+    fn is_dag_ancestor_of_any(&self, this: Hash, queried: &mut impl Iterator<Item = Hash>) -> bool {
+        let read_guard = self.store.read();
+        queried.any(|hash| inquirer::is_dag_ancestor_of(read_guard.deref(), this, hash).unwrap())
+    }
+
     fn is_any_dag_ancestor(&self, list: &mut impl Iterator<Item = Hash>, queried: Hash) -> bool {
         let read_guard = self.store.read();
         list.any(|hash| inquirer::is_dag_ancestor_of(read_guard.deref(), hash, queried).unwrap())
@@ -64,11 +69,6 @@ impl<T: ReachabilityStoreReader + ?Sized> ReachabilityService for MTReachability
             }
         }
         Ok(false)
-    }
-
-    fn is_dag_ancestor_of_any(&self, this: Hash, queried: &mut impl Iterator<Item = Hash>) -> bool {
-        let read_guard = self.store.read();
-        queried.any(|hash| inquirer::is_dag_ancestor_of(read_guard.deref(), this, hash).unwrap())
     }
 
     fn get_next_chain_ancestor(&self, descendant: Hash, ancestor: Hash) -> Hash {

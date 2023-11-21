@@ -1,9 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{bail, format_err, Error, Ok, Result};
-use starcoin_accumulator::node::AccumulatorStoreType;
-use starcoin_accumulator::{Accumulator, MerkleAccumulator};
+use anyhow::{format_err, Error, Ok, Result};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::{
@@ -12,10 +10,10 @@ use starcoin_chain_api::{
 use starcoin_config::NodeConfig;
 use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
-use starcoin_flexidag::flexidag_service::{
-    GetDagAccumulatorLeafDetail, GetDagBlockParents, UpdateDagTips,
+use starcoin_flexidag::{
+    flexidag_service::{self, GetDagAccumulatorLeafDetail, UpdateDagTips},
+    FlexidagService,
 };
-use starcoin_flexidag::{flexidag_service, FlexidagService};
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::dag_protocol::{
     GetDagAccumulatorLeaves, GetTargetDagAccumulatorLeafDetail, TargetDagAccumulatorLeaf,
@@ -78,7 +76,14 @@ impl ServiceFactory<Self> for ChainReaderService {
         let dag = ctx.get_shared_opt::<BlockDAG>()?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
         let flexidag_service = ctx.service_ref::<FlexidagService>()?.clone();
-        Self::new(config, startup_info, storage, flexidag_service, dag, vm_metrics)
+        Self::new(
+            config,
+            startup_info,
+            storage,
+            flexidag_service,
+            dag,
+            vm_metrics,
+        )
     }
 }
 
@@ -95,10 +100,15 @@ impl ActorService for ChainReaderService {
 }
 
 impl EventHandler<Self, NewHeadBlock> for ChainReaderService {
-    fn handle_event(&mut self, event: NewHeadBlock, ctx: &mut ServiceContext<ChainReaderService>) {
+    fn handle_event(&mut self, event: NewHeadBlock, _ctx: &mut ServiceContext<ChainReaderService>) {
         let new_head = event.executed_block.block().header().clone();
-        if let Err(e) = if self.inner.get_main().can_connect(&event.executed_block.as_ref()) {
-            self.inner.update_chain_head(event.executed_block.as_ref().clone())
+        if let Err(e) = if self
+            .inner
+            .get_main()
+            .can_connect(event.executed_block.as_ref())
+        {
+            self.inner
+                .update_chain_head(event.executed_block.as_ref().clone())
         } else {
             self.inner.switch_main(new_head.id())
         } {
@@ -111,7 +121,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
     fn handle(
         &mut self,
         msg: ChainRequest,
-        ctx: &mut ServiceContext<ChainReaderService>,
+        _ctx: &mut ServiceContext<ChainReaderService>,
     ) -> Result<ChainResponse> {
         match msg {
             ChainRequest::CurrentHeader() => Ok(ChainResponse::BlockHeader(Box::new(

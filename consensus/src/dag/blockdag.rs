@@ -21,18 +21,16 @@ use starcoin_config::{NodeConfig, RocksdbConfig};
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_storage::flexi_dag::SyncFlexiDagSnapshotHasher;
 use starcoin_storage::storage::CodecKVStore;
-use starcoin_storage::{BlockStore, Storage, Store, SyncFlexiDagStore};
-use starcoin_types::block::{BlockHeader, BlockNumber};
+use starcoin_storage::Store;
+use starcoin_types::block::BlockHeader;
 use starcoin_types::dag_block::KTotalDifficulty;
-use starcoin_types::startup_info;
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
 };
-use std::collections::{HashSet, BTreeSet};
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::BTreeSet;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 pub type DbGhostdagManager = GhostdagManager<
     DbGhostdagStore,
@@ -64,14 +62,15 @@ impl BlockDAG {
             reachability_service,
         );
 
-        let mut dag = Self {
+        Self {
             ghostdag_manager,
             storage: db,
-        };
-        dag
+        }
     }
 
-    pub fn calculate_dag_accumulator_key(snapshot: &SyncFlexiDagSnapshotHasher) -> anyhow::Result<Hash> {
+    pub fn calculate_dag_accumulator_key(
+        snapshot: &SyncFlexiDagSnapshotHasher,
+    ) -> anyhow::Result<Hash> {
         Ok(Hash::sha3_256_of(&snapshot.encode().expect(
             "encoding the sorted relatship set must be successful",
         )))
@@ -84,7 +83,7 @@ impl BlockDAG {
         let startup_info = storage
             .get_startup_info()?
             .expect("startup info must exist");
-        if let Some(key) = startup_info.get_dag_main() {
+        if let Some(_key) = startup_info.get_dag_main() {
             let accumulator_info = storage
                 .get_dag_accumulator_info()?
                 .expect("dag accumulator info should exist");
@@ -96,7 +95,7 @@ impl BlockDAG {
                 accumulator_info,
                 storage.get_accumulator_store(AccumulatorStoreType::SyncDag),
             );
- 
+
             Ok((
                 Some(Self::new_by_config(
                     config.data_dir().join("flexidag").as_path(),
@@ -116,7 +115,6 @@ impl BlockDAG {
                     storage.get_accumulator_store(AccumulatorStoreType::SyncDag),
                 );
 
-
                 let mut k_total_difficulties = BTreeSet::new();
                 k_total_difficulties.insert(KTotalDifficulty {
                     head_block_id: block_header.id(),
@@ -129,13 +127,12 @@ impl BlockDAG {
                     child_hashes: vec![block_header.id()],
                     head_block_id: block_header.id(),
                     k_total_difficulties,
-                }; 
+                };
                 let key = Self::calculate_dag_accumulator_key(&snapshot_hasher)?;
                 dag_accumulator.append(&[key])?;
-                storage.get_accumulator_snapshot_storage().put(
-                    key,
-                    snapshot_hasher.to_snapshot(dag_accumulator.get_info()),
-                )?;
+                storage
+                    .get_accumulator_snapshot_storage()
+                    .put(key, snapshot_hasher.to_snapshot(dag_accumulator.get_info()))?;
                 dag_accumulator.flush()?;
                 Ok((
                     Some(Self::new_by_config(
@@ -239,7 +236,6 @@ impl BlockDAG {
     ) -> Result<(), StoreError> {
         self.storage.relations_store.insert(child, parents)
     }
-
 
     pub fn get_ghostdag_data_by_child(&self, hash: Hash) -> anyhow::Result<Arc<GhostdagData>> {
         let ghostdata = self.storage.ghost_dag_store.get_data(hash)?;

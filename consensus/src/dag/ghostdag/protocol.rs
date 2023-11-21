@@ -5,7 +5,6 @@ use crate::dag::types::{ghostdata::GhostdagData, ordering::*};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::blockhash::{BlockHashMap, BlockHashes, BlueWorkType, HashKTypeMap, KType};
-use starcoin_types::U256;
 use std::sync::Arc;
 // For GhostdagStoreReader-related functions, use GhostDagDataWrapper instead.
 //  ascending_mergeset_without_selected_parent

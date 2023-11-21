@@ -10,7 +10,7 @@ use network_p2p::business_layer_handle::HandshakeResult;
 use network_p2p::{business_layer_handle::BusinessLayerHandle, protocol::rep, PeerId};
 use sc_peerset::ReputationChange;
 use serde::{Deserialize, Serialize};
-use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use starcoin_types::startup_info::ChainInfo;
 
 /// Current protocol version.
 pub(crate) const CURRENT_VERSION: u32 = 6;

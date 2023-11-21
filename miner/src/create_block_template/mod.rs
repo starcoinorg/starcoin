@@ -25,7 +25,7 @@ use starcoin_types::{
     block::{BlockHeader, BlockTemplate, ExecutedBlock},
     system_events::{NewBranch, NewHeadBlock},
 };
-use starcoin_vm_types::transaction::{SignedUserTransaction, Transaction};
+use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
 
@@ -114,7 +114,7 @@ impl ActorService for BlockBuilderService {
 
 impl EventHandler<Self, NewHeadBlock> for BlockBuilderService {
     fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<BlockBuilderService>) {
-        if let Err(e) = self.inner.update_chain(msg.0.as_ref().clone()) {
+        if let Err(e) = self.inner.update_chain(msg.executed_block.as_ref().clone()) {
             error!("err : {:?}", e)
         }
     }

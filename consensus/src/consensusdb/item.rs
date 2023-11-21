@@ -37,7 +37,7 @@ impl<S: Schema> CachedDbItem<S> {
         } else {
             Err(StoreError::KeyNotFound(
                 String::from_utf8(self.key.encode_key()?)
-                    .unwrap_or(("unrecoverable key string").to_string()),
+                    .unwrap_or_else(|_| ("unrecoverable key string").to_string()),
             ))
         }
     }
@@ -48,13 +48,14 @@ impl<S: Schema> CachedDbItem<S> {
         Ok(())
     }
 
-    pub fn remove(&mut self, mut writer: impl DbWriter) -> Result<(), StoreError>
-where {
+    #[allow(dead_code)]
+    pub fn remove(&mut self, mut writer: impl DbWriter) -> Result<(), StoreError> {
         *self.cached_item.write() = None;
         writer.delete::<S>(&self.key)?;
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn update<F>(&mut self, mut writer: impl DbWriter, op: F) -> Result<S::Value, StoreError>
     where
         F: Fn(S::Value) -> S::Value,
@@ -67,8 +68,7 @@ where {
             .raw_get_pinned_cf(S::COLUMN_FAMILY, &self.key.encode_key()?)
             .map_err(|_| StoreError::CFNotExist(S::COLUMN_FAMILY.to_string()))?
         {
-            let item = S::Value::decode_value(&slice)?;
-            item
+            S::Value::decode_value(&slice)?
         } else {
             return Err(StoreError::KeyNotFound("".to_string()));
         };

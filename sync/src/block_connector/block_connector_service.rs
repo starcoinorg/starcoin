@@ -3,7 +3,6 @@
 
 #[cfg(test)]
 use super::CheckBlockConnectorHashValue;
-use crate::block_connector::write_block_chain::ConnectOk;
 use crate::block_connector::{ExecuteRequest, ResetRequest, WriteBlockChainService};
 use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskCheckEvent};
@@ -11,7 +10,6 @@ use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskChec
 use anyhow::bail;
 use anyhow::{format_err, Ok, Result};
 use network_api::PeerProvider;
-use parking_lot::Mutex;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
 use starcoin_consensus::BlockDAG;
@@ -23,7 +21,7 @@ use starcoin_network::NetworkServiceRef;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
-use starcoin_storage::{flexi_dag, BlockStore, Storage};
+use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::PeerNewBlock;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
@@ -32,7 +30,6 @@ use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
-use std::result;
 use std::sync::Arc;
 use sysinfo::{DiskExt, System, SystemExt};
 
@@ -307,7 +304,8 @@ where
                 std::result::Result::Ok(connect_error) => {
                     match connect_error {
                         ConnectBlockError::FutureBlock(block) => {
-                            let _ = self.chain_service
+                            let _ = self
+                                .chain_service
                                 .update_tips(msg.get_block().header().clone());
                             //TODO cache future block
                             if let std::result::Result::Ok(sync_service) =

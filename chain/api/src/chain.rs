@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2
 
 use anyhow::Result;
-use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_config::ChainNetworkID;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::ChainStateReader;
