@@ -146,5 +146,7 @@ pub fn rotate_key_txn_raw(
     new_key_hash: Vec<u8>,
     seq_num: u64,
 ) -> RawUserTransaction {
-    rotate_key_txn(sender, new_key_hash, seq_num).raw_txn().clone()
+    rotate_key_txn(sender, new_key_hash, seq_num)
+        .raw_txn()
+        .clone()
 }

@@ -2,10 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_core_types::vm_status::StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION;
-use starcoin_language_e2e_tests::{
-    compile::compile_module,
-    executor::FakeExecutor,
-};
+use starcoin_language_e2e_tests::{compile::compile_module, executor::FakeExecutor};
 use starcoin_vm_types::transaction::TransactionStatus;
 
 // A module with an address different from the sender's address should be rejected

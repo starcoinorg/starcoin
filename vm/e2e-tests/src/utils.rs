@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #![forbid(unsafe_code)]
+
+use crate::account::{AccountData, AccountRoleSpecifier};
 use crate::{account::Account, compile, executor::FakeExecutor};
 
 pub fn close_module_publishing(
@@ -32,7 +34,7 @@ pub fn close_module_publishing(
 }
 
 pub fn start_with_released_df() -> (FakeExecutor, Account, Account, Account) {
-    let executor = FakeExecutor::from_test_genesis();
+    let mut executor = FakeExecutor::from_test_genesis();
 
     let dd_account = Account::new_testing_dd();
     let dr_account = Account::new_starcoin_root();
@@ -50,6 +52,28 @@ pub fn start_with_released_df() -> (FakeExecutor, Account, Account, Account) {
     //     bcs::from_bytes(executor::RELEASE_1_1_GENESIS_PRIVKEY).unwrap(),
     //     bcs::from_bytes(executor::RELEASE_1_1_GENESIS_PUBKEY).unwrap(),
     // );
+
+    executor.add_account_data(&AccountData::with_account(
+        dd_account.clone(),
+        100_000_000,
+        0,
+        AccountRoleSpecifier::Root,
+    ));
+
+    executor.add_account_data(&AccountData::with_account(
+        dr_account.clone(),
+        100_000_000,
+        0,
+        AccountRoleSpecifier::Root,
+    ));
+
+    executor.add_account_data(&AccountData::with_account(
+        tc_account.clone(),
+        100_000_000,
+        0,
+        AccountRoleSpecifier::Root,
+    ));
+
     (executor, dr_account, tc_account, dd_account)
 
     // let executor = FakeExecutor::from_fresh_genesis();

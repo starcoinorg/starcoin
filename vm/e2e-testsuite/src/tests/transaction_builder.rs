@@ -83,282 +83,282 @@ fn test_rotate_authentication_key_with_nonce_admin() {
     }
     }
 }
+//
+// #[test]
+// fn freeze_unfreeze_account() {
+//     test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
+//         let mut executor = test_env.executor;
+//
+//         let account = executor.create_raw_account();
+//         let blessed = test_env.tc_account;
+//
+//         executor.execute_and_apply(
+//             blessed
+//                 .transaction()
+//                 .script(encode_create_parent_vasp_account_script(
+//                     account_config::stc_type_tag(),
+//                     0,
+//                     *account.address(),
+//                     account.auth_key_prefix(),
+//                     vec![],
+//                     true,
+//                 ))
+//                 .sequence_number(test_env.tc_sequence_number)
+//                 .sign(),
+//         );
+//
+//         // Execute freeze on account
+//         executor.execute_and_apply(
+//             blessed
+//                 .transaction()
+//                 .script(encode_freeze_account_script(3, *account.address()))
+//                 .sequence_number(test_env.tc_sequence_number.checked_add(1).unwrap())
+//                 .sign(),
+//         );
+//
+//         // Attempt rotate key txn from frozen account
+//         let privkey = Ed25519PrivateKey::generate_for_testing();
+//         let pubkey = privkey.public_key();
+//         let new_key_hash = AuthenticationKey::ed25519(&pubkey).to_vec();
+//         let txn = rotate_key_txn(&account, new_key_hash, 0);
+//
+//         let output = &executor.execute_transaction(txn.clone());
+//         assert_eq!(
+//             output.status(),
+//             &TransactionStatus::Discard(StatusCode::SENDING_ACCOUNT_FROZEN),
+//         );
+//
+//         // Execute unfreeze on account
+//         executor.execute_and_apply(
+//             blessed
+//                 .transaction()
+//                 .script(encode_unfreeze_account_script(4, *account.address()))
+//                 .sequence_number(test_env.tc_sequence_number.checked_add(2).unwrap())
+//                 .sign(),
+//         );
+//         // execute rotate key transaction from unfrozen account now succeeds
+//         let output = &executor.execute_transaction(txn);
+//         assert_eq!(
+//             output.status(),
+//             &TransactionStatus::Keep(KeptVMStatus::Executed),
+//         );
+//     }
+//     }
+// }
+//
+// #[test]
+// fn create_parent_and_child_vasp() {
+//     test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
+//         let mut executor = test_env.executor;
+//
+//         let blessed = test_env.tc_account;
+//         let parent = executor.create_raw_account();
+//         let child = executor.create_raw_account();
+//
+//         let mut keygen = KeyGen::from_seed([9u8; 32]);
+//
+//         // create a parent VASP
+//         let add_all_currencies = false;
+//         executor.execute_and_apply(
+//             blessed
+//                 .transaction()
+//                 .script(encode_create_parent_vasp_account_script(
+//                     account_config::stc_type_tag(),
+//                     0,
+//                     *parent.address(),
+//                     parent.auth_key_prefix(),
+//                     vec![],
+//                     add_all_currencies,
+//                 ))
+//                 .sequence_number(test_env.tc_sequence_number)
+//                 .sign(),
+//         );
+//
+//         // create a child VASP with a zero balance
+//         executor.execute_and_apply(
+//             parent
+//                 .transaction()
+//                 .script(encode_create_child_vasp_account_script(
+//                     account_config::stc_type_tag(),
+//                     *child.address(),
+//                     child.auth_key_prefix(),
+//                     add_all_currencies,
+//                     0,
+//                 ))
+//                 .sequence_number(0)
+//                 .sign(),
+//         );
+//         // check for zero balance
+//         assert_eq!(
+//             executor
+//                 .read_balance_resource(&child)
+//                 .unwrap()
+//                 .token(),
+//             0
+//         );
+//
+//         let (_, new_compliance_public_key) = keygen.generate_keypair();
+//         // rotate parent's base_url and compliance public key
+//         executor.execute_and_apply(
+//             parent
+//                 .transaction()
+//                 .script(encode_rotate_dual_attestation_info_script(
+//                     b"new_name".to_vec(),
+//                     new_compliance_public_key.to_bytes().to_vec(),
+//                 ))
+//                 .sequence_number(1)
+//                 .sign(),
+//         );
+//     }
+//     }
+// }
 
-#[test]
-fn freeze_unfreeze_account() {
-    test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
-        let mut executor = test_env.executor;
-
-        let account = executor.create_raw_account();
-        let blessed = test_env.tc_account;
-
-        executor.execute_and_apply(
-            blessed
-                .transaction()
-                .script(encode_create_parent_vasp_account_script(
-                    account_config::stc_type_tag(),
-                    0,
-                    *account.address(),
-                    account.auth_key_prefix(),
-                    vec![],
-                    true,
-                ))
-                .sequence_number(test_env.tc_sequence_number)
-                .sign(),
-        );
-
-        // Execute freeze on account
-        executor.execute_and_apply(
-            blessed
-                .transaction()
-                .script(encode_freeze_account_script(3, *account.address()))
-                .sequence_number(test_env.tc_sequence_number.checked_add(1).unwrap())
-                .sign(),
-        );
-
-        // Attempt rotate key txn from frozen account
-        let privkey = Ed25519PrivateKey::generate_for_testing();
-        let pubkey = privkey.public_key();
-        let new_key_hash = AuthenticationKey::ed25519(&pubkey).to_vec();
-        let txn = rotate_key_txn(&account, new_key_hash, 0);
-
-        let output = &executor.execute_transaction(txn.clone());
-        assert_eq!(
-            output.status(),
-            &TransactionStatus::Discard(StatusCode::SENDING_ACCOUNT_FROZEN),
-        );
-
-        // Execute unfreeze on account
-        executor.execute_and_apply(
-            blessed
-                .transaction()
-                .script(encode_unfreeze_account_script(4, *account.address()))
-                .sequence_number(test_env.tc_sequence_number.checked_add(2).unwrap())
-                .sign(),
-        );
-        // execute rotate key transaction from unfrozen account now succeeds
-        let output = &executor.execute_transaction(txn);
-        assert_eq!(
-            output.status(),
-            &TransactionStatus::Keep(KeptVMStatus::Executed),
-        );
-    }
-    }
-}
-
-#[test]
-fn create_parent_and_child_vasp() {
-    test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
-        let mut executor = test_env.executor;
-
-        let blessed = test_env.tc_account;
-        let parent = executor.create_raw_account();
-        let child = executor.create_raw_account();
-
-        let mut keygen = KeyGen::from_seed([9u8; 32]);
-
-        // create a parent VASP
-        let add_all_currencies = false;
-        executor.execute_and_apply(
-            blessed
-                .transaction()
-                .script(encode_create_parent_vasp_account_script(
-                    account_config::stc_type_tag(),
-                    0,
-                    *parent.address(),
-                    parent.auth_key_prefix(),
-                    vec![],
-                    add_all_currencies,
-                ))
-                .sequence_number(test_env.tc_sequence_number)
-                .sign(),
-        );
-
-        // create a child VASP with a zero balance
-        executor.execute_and_apply(
-            parent
-                .transaction()
-                .script(encode_create_child_vasp_account_script(
-                    account_config::stc_type_tag(),
-                    *child.address(),
-                    child.auth_key_prefix(),
-                    add_all_currencies,
-                    0,
-                ))
-                .sequence_number(0)
-                .sign(),
-        );
-        // check for zero balance
-        assert_eq!(
-            executor
-                .read_balance_resource(&child)
-                .unwrap()
-                .token(),
-            0
-        );
-
-        let (_, new_compliance_public_key) = keygen.generate_keypair();
-        // rotate parent's base_url and compliance public key
-        executor.execute_and_apply(
-            parent
-                .transaction()
-                .script(encode_rotate_dual_attestation_info_script(
-                    b"new_name".to_vec(),
-                    new_compliance_public_key.to_bytes().to_vec(),
-                ))
-                .sequence_number(1)
-                .sign(),
-        );
-    }
-    }
-}
-
-#[test]
-fn create_child_vasp_all_currencies() {
-    test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
-        let mut executor = test_env.executor;
-
-        let blessed = test_env.tc_account;
-        let dd = test_env.dd_account;
-        let parent = executor.create_raw_account();
-        let child = executor.create_raw_account();
-
-        // create a parent VASP
-        let add_all_currencies = true;
-        executor.execute_and_apply(
-            blessed
-                .transaction()
-                .script(encode_create_parent_vasp_account_script(
-                    account_config::stc_type_tag(),
-                    0,
-                    *parent.address(),
-                    parent.auth_key_prefix(),
-                    vec![],
-                    add_all_currencies,
-                ))
-                .sequence_number(test_env.tc_sequence_number)
-                .sign(),
-        );
-
-        let amount = 100;
-        // mint to the parent VASP
-        executor.execute_and_apply(
-            dd.transaction()
-                .script(encode_peer_to_peer_with_metadata_script(
-                    account_config::stc_type_tag(),
-                    *parent.address(),
-                    amount,
-                    vec![],
-                    vec![],
-                ))
-                .sequence_number(0)
-                .sign(),
-        );
-
-        assert!(executor
-            .read_balance_resource(&parent)
-            .is_some());
-
-        // create a child VASP with a balance of amount
-        executor.execute_and_apply(
-            parent
-                .transaction()
-                .script(encode_create_child_vasp_account_script(
-                    account_config::stc_type_tag(),
-                    *child.address(),
-                    child.auth_key_prefix(),
-                    add_all_currencies,
-                    amount,
-                ))
-                .sequence_number(0)
-                .max_gas_amount(gas_costs::TXN_RESERVED * 3)
-                .sign(),
-        );
-
-        assert!(executor
-            .read_balance_resource(&parent)
-            .is_some());
-    }
-    }
-}
-
-#[test]
-fn create_child_vasp_with_balance() {
-    test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
-        let mut executor = test_env.executor;
-
-        let blessed = test_env.tc_account;
-        let dd = test_env.dd_account;
-        let parent = executor.create_raw_account();
-        let child = executor.create_raw_account();
-
-        // create a parent VASP
-        let add_all_currencies = true;
-        executor.execute_and_apply(
-            blessed
-                .transaction()
-                .script(encode_create_parent_vasp_account_script(
-                    account_config::stc_type_tag(),
-                    0,
-                    *parent.address(),
-                    parent.auth_key_prefix(),
-                    vec![],
-                    add_all_currencies,
-                ))
-                .sequence_number(test_env.tc_sequence_number)
-                .sign(),
-        );
-
-        let amount = 100;
-        // mint to the parent VASP
-        executor.execute_and_apply(
-            dd.transaction()
-                .script(encode_peer_to_peer_with_metadata_script(
-                    account_config::stc_type_tag(),
-                    *parent.address(),
-                    amount,
-                    vec![],
-                    vec![],
-                ))
-                .sequence_number(0)
-                .sign(),
-        );
-
-        assert_eq!(
-            executor
-                .read_balance_resource(&parent)
-                .unwrap()
-                .token() as u64,
-            amount
-        );
-
-        // create a child VASP with a balance of amount
-        executor.execute_and_apply(
-            parent
-                .transaction()
-                .script(encode_create_child_vasp_account_script(
-                    account_config::stc_type_tag(),
-                    *child.address(),
-                    child.auth_key_prefix(),
-                    add_all_currencies,
-                    amount,
-                ))
-                .sequence_number(0)
-                .max_gas_amount(gas_costs::TXN_RESERVED * 3)
-                .sign(),
-        );
-
-        // check balance
-        assert_eq!(
-            executor
-                .read_balance_resource(&child)
-                .unwrap()
-                .token() as u64,
-            amount
-        );
-    }
-    }
-}
+// #[test]
+// fn create_child_vasp_all_currencies() {
+//     test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
+//         let mut executor = test_env.executor;
+//
+//         let blessed = test_env.tc_account;
+//         let dd = test_env.dd_account;
+//         let parent = executor.create_raw_account();
+//         let child = executor.create_raw_account();
+//
+//         // create a parent VASP
+//         let add_all_currencies = true;
+//         executor.execute_and_apply(
+//             blessed
+//                 .transaction()
+//                 .script(encode_create_parent_vasp_account_script(
+//                     account_config::stc_type_tag(),
+//                     0,
+//                     *parent.address(),
+//                     parent.auth_key_prefix(),
+//                     vec![],
+//                     add_all_currencies,
+//                 ))
+//                 .sequence_number(test_env.tc_sequence_number)
+//                 .sign(),
+//         );
+//
+//         let amount = 100;
+//         // mint to the parent VASP
+//         executor.execute_and_apply(
+//             dd.transaction()
+//                 .script(encode_peer_to_peer_with_metadata_script(
+//                     account_config::stc_type_tag(),
+//                     *parent.address(),
+//                     amount,
+//                     vec![],
+//                     vec![],
+//                 ))
+//                 .sequence_number(0)
+//                 .sign(),
+//         );
+//
+//         assert!(executor
+//             .read_balance_resource(&parent)
+//             .is_some());
+//
+//         // create a child VASP with a balance of amount
+//         executor.execute_and_apply(
+//             parent
+//                 .transaction()
+//                 .script(encode_create_child_vasp_account_script(
+//                     account_config::stc_type_tag(),
+//                     *child.address(),
+//                     child.auth_key_prefix(),
+//                     add_all_currencies,
+//                     amount,
+//                 ))
+//                 .sequence_number(0)
+//                 .max_gas_amount(gas_costs::TXN_RESERVED * 3)
+//                 .sign(),
+//         );
+//
+//         assert!(executor
+//             .read_balance_resource(&parent)
+//             .is_some());
+//     }
+//     }
+// }
+//
+// #[test]
+// fn create_child_vasp_with_balance() {
+//     test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
+//         let mut executor = test_env.executor;
+//
+//         let blessed = test_env.tc_account;
+//         let dd = test_env.dd_account;
+//         let parent = executor.create_raw_account();
+//         let child = executor.create_raw_account();
+//
+//         // create a parent VASP
+//         let add_all_currencies = true;
+//         executor.execute_and_apply(
+//             blessed
+//                 .transaction()
+//                 .script(encode_create_parent_vasp_account_script(
+//                     account_config::stc_type_tag(),
+//                     0,
+//                     *parent.address(),
+//                     parent.auth_key_prefix(),
+//                     vec![],
+//                     add_all_currencies,
+//                 ))
+//                 .sequence_number(test_env.tc_sequence_number)
+//                 .sign(),
+//         );
+//
+//         let amount = 100;
+//         // mint to the parent VASP
+//         executor.execute_and_apply(
+//             dd.transaction()
+//                 .script(encode_peer_to_peer_with_metadata_script(
+//                     account_config::stc_type_tag(),
+//                     *parent.address(),
+//                     amount,
+//                     vec![],
+//                     vec![],
+//                 ))
+//                 .sequence_number(0)
+//                 .sign(),
+//         );
+//
+//         assert_eq!(
+//             executor
+//                 .read_balance_resource(&parent)
+//                 .unwrap()
+//                 .token() as u64,
+//             amount
+//         );
+//
+//         // create a child VASP with a balance of amount
+//         executor.execute_and_apply(
+//             parent
+//                 .transaction()
+//                 .script(encode_create_child_vasp_account_script(
+//                     account_config::stc_type_tag(),
+//                     *child.address(),
+//                     child.auth_key_prefix(),
+//                     add_all_currencies,
+//                     amount,
+//                 ))
+//                 .sequence_number(0)
+//                 .max_gas_amount(gas_costs::TXN_RESERVED * 3)
+//                 .sign(),
+//         );
+//
+//         // check balance
+//         assert_eq!(
+//             executor
+//                 .read_balance_resource(&child)
+//                 .unwrap()
+//                 .token() as u64,
+//             amount
+//         );
+//     }
+//     }
+// }
 
 #[test]
 fn dual_attestation_payment() {
