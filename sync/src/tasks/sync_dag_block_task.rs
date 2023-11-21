@@ -2,18 +2,12 @@ use crate::{tasks::BlockFetcher, verified_rpc_client::VerifiedRpcClient};
 use anyhow::{Ok, Result};
 use futures::{future::BoxFuture, FutureExt};
 use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator};
-use starcoin_chain::BlockChain;
-use starcoin_chain_api::{ChainWriter, ExecutedBlock};
-use starcoin_logger::prelude::info;
-use starcoin_network_rpc_api::dag_protocol::{GetSyncDagBlockInfo, SyncDagBlockInfo};
-use starcoin_storage::{
-    block_info, flexi_dag::SyncFlexiDagSnapshotStorage, storage::CodecKVStore, Store,
-};
-use starcoin_types::block::Block;
+use starcoin_network_rpc_api::dag_protocol::SyncDagBlockInfo;
+use starcoin_storage::{flexi_dag::SyncFlexiDagSnapshotStorage, storage::CodecKVStore, Store};
 use std::{collections::HashMap, sync::Arc};
-use stream_task::{CollectorState, TaskResultCollector, TaskState};
+use stream_task::TaskState;
 
-use super::{block_sync_task::SyncBlockData, BlockLocalStore};
+use super::block_sync_task::SyncBlockData;
 
 #[derive(Clone)]
 pub struct SyncDagBlockTask {

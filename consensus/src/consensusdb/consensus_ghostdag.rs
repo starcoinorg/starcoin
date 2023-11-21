@@ -57,6 +57,7 @@ impl From<GhostdagData> for GhostDagDataWrapper {
 
 impl GhostDagDataWrapper {
     /// Returns an iterator to the mergeset in ascending blue work order (tie-breaking by hash)
+    #[allow(dead_code)]
     pub fn ascending_mergeset_without_selected_parent<'a>(
         &'a self,
         store: &'a (impl GhostdagStoreReader + ?Sized),
@@ -91,6 +92,7 @@ impl GhostDagDataWrapper {
     }
 
     /// Returns an iterator to the mergeset in descending blue work order (tie-breaking by hash)
+    #[allow(dead_code)]
     pub fn descending_mergeset_without_selected_parent<'a>(
         &'a self,
         store: &'a (impl GhostdagStoreReader + ?Sized),
@@ -129,6 +131,7 @@ impl GhostDagDataWrapper {
     /// Returns an iterator to the mergeset in topological consensus order -- starting with the selected parent,
     /// and adding the mergeset in increasing blue work order. Note that this is a topological order even though
     /// the selected parent has highest blue work by def -- since the mergeset is in its anticone.
+    #[allow(dead_code)]
     pub fn consensus_ordered_mergeset<'a>(
         &'a self,
         store: &'a (impl GhostdagStoreReader + ?Sized),
@@ -140,6 +143,7 @@ impl GhostDagDataWrapper {
     }
 
     /// Returns an iterator to the mergeset in topological consensus order without the selected parent
+    #[allow(dead_code)]
     pub fn consensus_ordered_mergeset_without_selected_parent<'a>(
         &'a self,
         store: &'a (impl GhostdagStoreReader + ?Sized),

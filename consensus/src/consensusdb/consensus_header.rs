@@ -11,7 +11,7 @@ use starcoin_crypto::HashValue as Hash;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{
     blockhash::BlockLevel,
-    consensus_header::{CompactHeaderData, ConsensusHeader, HeaderWithBlockLevel},
+    consensus_header::{CompactHeaderData, HeaderWithBlockLevel},
     U256,
 };
 use std::sync::Arc;

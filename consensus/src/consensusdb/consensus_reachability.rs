@@ -240,6 +240,7 @@ pub struct StagingReachabilityStore<'a> {
 }
 
 impl<'a> StagingReachabilityStore<'a> {
+    #[allow(dead_code)]
     pub fn new(store_read: RwLockUpgradableReadGuard<'a, DbReachabilityStore>) -> Self {
         Self {
             store_read,
@@ -248,6 +249,7 @@ impl<'a> StagingReachabilityStore<'a> {
         }
     }
 
+    #[allow(dead_code)]
     pub fn commit(
         self,
         batch: &mut WriteBatch,
@@ -269,6 +271,7 @@ impl<'a> StagingReachabilityStore<'a> {
 }
 
 impl ReachabilityStore for StagingReachabilityStore<'_> {
+    #[allow(dead_code)]
     fn init(&mut self, origin: Hash, capacity: Interval) -> Result<(), StoreError> {
         self.insert(origin, Hash::new(blockhash::NONE), capacity, 0)?;
         self.set_reindex_root(origin)?;

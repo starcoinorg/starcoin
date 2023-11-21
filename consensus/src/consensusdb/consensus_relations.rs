@@ -195,7 +195,7 @@ mod tests {
         test_relations_store(db.relations_store);
     }
 
-    fn test_relations_store<T: RelationsStore>(mut store: T) {
+    fn test_relations_store<T: RelationsStore>(store: T) {
         let parents = [
             (1, vec![]),
             (2, vec![1]),

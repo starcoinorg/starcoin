@@ -2,7 +2,6 @@ use super::{tree::*, *};
 use crate::consensusdb::schemadb::{ReachabilityStore, ReachabilityStoreReader};
 use crate::dag::types::{interval::Interval, perf};
 use starcoin_crypto::{HashValue as Hash, HashValue};
-use starcoin_types::blockhash;
 
 /// Init the reachability store to match the state required by the algorithmic layer.
 /// The function first checks the store for possibly being initialized already.
@@ -98,6 +97,7 @@ fn insert_to_future_covering_set(
 /// the `virtual selected parent` (`VSP`). This might affect internal reachability heuristics such
 /// as moving the reindex point. The consensus runtime is expected to call this function
 /// for a new header selected tip which is `header only` / `pending UTXO verification`, or for a completely resolved `VSP`.
+#[allow(dead_code)]
 pub fn hint_virtual_selected_parent(
     store: &mut (impl ReachabilityStore + ?Sized),
     hint: Hash,

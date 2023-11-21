@@ -63,6 +63,7 @@ where
         }
     }
 
+    #[allow(dead_code)]
     pub fn iterator(
         &self,
     ) -> Result<impl Iterator<Item = Result<(Box<[u8]>, S::Value), Box<dyn Error>>> + '_, StoreError>
@@ -96,6 +97,7 @@ where
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn write_many(
         &self,
         mut writer: impl DbWriter,
@@ -109,6 +111,7 @@ where
     }
 
     /// Write directly from an iterator and do not cache any data. NOTE: this action also clears the cache
+    #[allow(dead_code)]
     pub fn write_many_without_cache(
         &self,
         mut writer: impl DbWriter,
@@ -122,12 +125,14 @@ where
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn delete(&self, mut writer: impl DbWriter, key: S::Key) -> Result<(), StoreError> {
         self.cache.remove(&key);
         writer.delete::<S>(&key)?;
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn delete_many(
         &self,
         mut writer: impl DbWriter,
@@ -141,6 +146,7 @@ where
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn delete_all(&self, mut writer: impl DbWriter) -> Result<(), StoreError> {
         self.cache.remove_all();
         let keys = self
@@ -164,6 +170,7 @@ where
 
     /// A dynamic iterator that can iterate through a specific prefix, and from a certain start point.
     //TODO: loop and chain iterators for multi-prefix iterator.
+    #[allow(dead_code)]
     pub fn seek_iterator(
         &self,
         seek_from: Option<S::Key>, // iter whole range if None

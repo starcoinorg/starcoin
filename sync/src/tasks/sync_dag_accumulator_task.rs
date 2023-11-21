@@ -1,9 +1,7 @@
-use anyhow::{bail, ensure, Chain, Result};
-use bcs_ext::BCSCodec;
+use anyhow::{bail, ensure, Result};
 use futures::{future::BoxFuture, FutureExt};
 use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
-use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 use starcoin_network_rpc_api::dag_protocol::{self, TargetDagAccumulatorLeafDetail};
 use starcoin_storage::{

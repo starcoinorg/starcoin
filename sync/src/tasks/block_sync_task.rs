@@ -12,18 +12,17 @@ use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
-use starcoin_config::{Connect, G_CRATE_VERSION};
-use starcoin_consensus::BlockDAG;
+use starcoin_config::G_CRATE_VERSION;
 use starcoin_crypto::HashValue;
-use starcoin_flexidag::flexidag_service::{AddToDag, GetDagTips, ForkDagAccumulator, FinishSync};
+use starcoin_flexidag::flexidag_service::{FinishSync, ForkDagAccumulator};
 use starcoin_flexidag::FlexidagService;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::ServiceRef;
-use starcoin_storage::{BARNARD_HARD_FORK_HASH, Store};
+use starcoin_storage::{Store, BARNARD_HARD_FORK_HASH};
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::Duration;
 use stream_task::{CollectorState, TaskError, TaskResultCollector, TaskState};
 
@@ -38,8 +37,6 @@ pub struct SyncBlockData {
     pub(crate) count_in_leaf: u64, // the count of the block in the dag accumulator leaf
     pub(crate) dag_accumulator_index: Option<u64>, // the index of the accumulator leaf which the block belogs to
 }
-
-
 
 impl SyncBlockData {
     pub fn new(
@@ -173,9 +170,7 @@ impl TaskState for BlockSyncTask {
                     .fetch_blocks(block_ids)
                     .await?
                     .into_iter()
-                    .map(|(block, peer_id)| {
-                        SyncBlockData::new(block, None, peer_id, None, 1, None)
-                    })
+                    .map(|(block, peer_id)| SyncBlockData::new(block, None, peer_id, None, 1, None))
                     .collect())
             }
         }
@@ -406,16 +401,29 @@ where
             CollectorState::Need
         };
 
-        let service = self.flexidag_service.as_ref().expect("flexidag service is None");
-        self.new_dag_accumulator_info = Some(async_std::task::block_on(service.send(ForkDagAccumulator {
-            new_blocks: broadcast_blocks.into_iter().map(|(block, _, _)| block.id()).collect(),
-            dag_accumulator_index: start_index, 
-            block_header_id: self.chain.head_block().block().id(),
-        }))??);
+        let service = self
+            .flexidag_service
+            .as_ref()
+            .expect("flexidag service is None");
+        self.new_dag_accumulator_info = Some(async_std::task::block_on(
+            service.send(ForkDagAccumulator {
+                new_blocks: broadcast_blocks
+                    .into_iter()
+                    .map(|(block, _, _)| block.id())
+                    .collect(),
+                dag_accumulator_index: start_index,
+                block_header_id: self.chain.head_block().block().id(),
+            }),
+        )??);
         if state == CollectorState::Enough {
-            async_std::task::block_on(service.send(FinishSync {
-                dag_accumulator_info: self.new_dag_accumulator_info.clone().expect("dag acc should exists"),
-            }))??
+            async_std::task::block_on(
+                service.send(FinishSync {
+                    dag_accumulator_info: self
+                        .new_dag_accumulator_info
+                        .clone()
+                        .expect("dag acc should exists"),
+                }),
+            )??
         }
         return Ok(state);
     }
@@ -576,7 +584,11 @@ where
                     Err(e) => Err(e),
                 }
             }
-            None => self.broadcast_dag_chain_block(block_to_broadcast, item.dag_accumulator_index.expect("dag accumulator index is invalid")),
+            None => self.broadcast_dag_chain_block(
+                block_to_broadcast,
+                item.dag_accumulator_index
+                    .expect("dag accumulator index is invalid"),
+            ),
         }
     }
 

@@ -11,6 +11,7 @@ pub struct MTRelationsService<T: RelationsStoreReader> {
 }
 
 impl<T: RelationsStoreReader> MTRelationsService<T> {
+    #[allow(dead_code)]
     pub fn new(store: Arc<RwLock<Vec<T>>>, level: u8) -> Self {
         Self {
             store,
