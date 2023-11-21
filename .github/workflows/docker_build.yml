@@ -10,7 +10,7 @@ on:
 jobs:
   build-starcoin-docker:
     name: build starcoin docker
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v1
