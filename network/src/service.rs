@@ -559,6 +559,7 @@ impl Inner {
                     peer_info.peer_info.update_chain_status(ChainStatus::new(
                         block_header.clone(),
                         compact_block_message.block_info.clone(),
+                        compact_block_message.compact_block.tips.clone(),
                     ));
 
                     if self.self_peer.known_blocks.contains(&block_id) {
@@ -717,7 +718,7 @@ impl Inner {
                 //2. Sync status change.
                 // may be update by repeat message, but can not find a more good way.
                 self.network_service.update_business_status(
-                    ChainStatus::new(msg.compact_block.header.clone(), msg.block_info.clone())
+                    ChainStatus::new(msg.compact_block.header.clone(), msg.block_info.clone(), msg.compact_block.tips.clone())
                         .encode()
                         .expect(
                             "Encoding the compact_block.header and block_info must be successful",

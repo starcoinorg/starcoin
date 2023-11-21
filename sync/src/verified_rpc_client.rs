@@ -3,7 +3,7 @@
 
 use anyhow::{format_err, Result};
 use network_api::peer_score::{InverseScore, Score};
-use network_api::PeerId;
+use network_api::{PeerId, PeerStrategy};
 use network_api::PeerInfo;
 use network_api::PeerSelector;
 use starcoin_accumulator::node::AccumulatorStoreType;
@@ -123,6 +123,11 @@ impl VerifiedRpcClient {
             score_handler: InverseScore::new(100, 60),
         }
     }
+
+    pub fn switch_strategy(&mut self, strategy: PeerStrategy) {
+        self.peer_selector.switch_strategy(strategy)
+    }
+
 
     pub fn selector(&self) -> &PeerSelector {
         &self.peer_selector
@@ -386,8 +391,6 @@ impl VerifiedRpcClient {
             Option<(
                 Block,
                 Option<PeerId>,
-                Option<Vec<HashValue>>,
-                Option<HashValue>,
             )>,
         >,
     > {
@@ -404,7 +407,7 @@ impl VerifiedRpcClient {
             .zip(blocks)
             .map(|(id, block)| {
                 if let Some(block) = block {
-                    let actual_id = block.0.id();
+                    let actual_id = block.id();
                     if actual_id != id {
                         warn!(
                             "Get block by id: {:?} from peer: {:?}, but got block: {:?}",
@@ -412,7 +415,7 @@ impl VerifiedRpcClient {
                         );
                         None
                     } else {
-                        Some((block.0, Some(peer_id.clone()), block.1, block.2))
+                        Some((block, Some(peer_id.clone())))
                     }
                 } else {
                     None

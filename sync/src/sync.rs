@@ -5,7 +5,7 @@ use crate::block_connector::BlockConnectorService;
 use crate::sync_metrics::SyncMetrics;
 use crate::tasks::{full_sync_task, sync_dag_full_task, AncestorEvent, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
-use anyhow::{format_err, Ok, Result};
+use anyhow::{format_err, Result, anyhow};
 use forkable_jellyfish_merkle::node_type::Node;
 use futures::executor::block_on;
 use futures::FutureExt;
@@ -18,7 +18,7 @@ use starcoin_chain_api::{ChainReader, ChainWriter};
 use starcoin_config::NodeConfig;
 use starcoin_consensus::BlockDAG;
 use starcoin_executor::VMMetrics;
-use starcoin_flexidag::flexidag_service::GetDagAccumulatorInfo;
+use starcoin_flexidag::flexidag_service::{GetDagAccumulatorInfo, GetDagTips};
 use starcoin_flexidag::{flexidag_service, FlexidagService};
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
@@ -37,6 +37,7 @@ use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
+use std::borrow::BorrowMut;
 use std::result::Result::Ok;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -111,9 +112,10 @@ impl SyncService {
                 None
             }
         };
+        let tips = async_std::task::block_on(flexidag_service.send(GetDagTips))??;
         Ok(Self {
             sync_status: SyncStatus::new(
-                ChainStatus::new(head_block.header.clone(), head_block_info),
+                ChainStatus::new(head_block.header.clone(), head_block_info, tips),
                 dag_accumulator_info,
             ),
             stage: SyncStage::NotStart,
@@ -176,7 +178,7 @@ impl SyncService {
             peer_reputations,
             peer_set,
             peer_select_strategy,
-            peer_score_metrics,
+            self.peer_score_metrics.clone(),
         );
 
         peer_selector.retain_rpc_peers();
@@ -245,7 +247,6 @@ impl SyncService {
             .service_ref::<BlockConnectorService<TxPoolService>>()?
             .clone();
         let config = self.config.clone();
-        let peer_score_metrics = self.peer_score_metrics.clone();
         let sync_metrics = self.metrics.clone();
         let vm_metrics = self.vm_metrics.clone();
 
@@ -258,9 +259,10 @@ impl SyncService {
             .expect("storage must exist")
             .get_accumulator_snapshot_storage();
 
-        let fut = async move {
-            let rpc_client = self.create_verified_client(network.clone(), config.clone(), peer_strategy, peers).await?;
+        let dag = ctx.get_shared_opt::<BlockDAG>()?;
 
+        let rpc_client = self.create_verified_client(network.clone(), config.clone(), peer_strategy, peers).await?;
+        let fut = async move {
             let startup_info = storage
                 .get_startup_info()?
                 .ok_or_else(|| format_err!("Startup info should exist."))?;
@@ -270,23 +272,23 @@ impl SyncService {
                     format_err!("Can not find block info by id: {}", current_block_id)
                 })?;
 
-
             let op_local_dag_accumulator_info =
                 self.flexidag_service.send(GetDagAccumulatorInfo).await??;
 
+            let storage_for_dag = storage.clone();
             if let Some(local_dag_accumulator_info) = op_local_dag_accumulator_info {
                 let dag_sync_futs = rpc_client
                     .get_dag_targets(current_block_info.get_total_difficulty(), local_dag_accumulator_info.get_num_leaves())?
                     .into_iter()
-                    .fold(Ok(vec![]), |mut futs, (peer_id, target_accumulator_infos)| {
+                    .fold(anyhow::Ok(vec![]), |mut futs, (peer_id, target_accumulator_info, target)| {
                         rpc_client.switch_strategy(PeerStrategy::DagSync(peer_id));
                         let (fut, task_handle, task_event_handle) = sync_dag_full_task(
-                            local_dag_accumulator_info,
-                            target_accumulator_info,
+                            local_dag_accumulator_info.clone(),
+                            target_accumulator_info.expect("target accumulator info must exist"),
                             rpc_client.clone(),
-                            dag_accumulator_store,
-                            dag_accumulator_snapshot,
-                            storage.clone(),
+                            dag_accumulator_store.clone(),
+                            dag_accumulator_snapshot.clone(),
+                            storage_for_dag.clone(),
                             config.net().time_service(),
                             vm_metrics.clone(),
                             connector_service.clone(),
@@ -294,24 +296,44 @@ impl SyncService {
                             skip_pow_verify,
                             dag.clone(),
                             block_chain_service.clone(),
+                            self.flexidag_service.clone(),
                             config.net().id().clone(),
                         )?;
                         self_ref.notify(SyncBeginEvent {
                             target,
                             task_handle,
                             task_event_handle,
-                            peer_selector,
+                            peer_selector: rpc_client.selector().clone(),
                         })?;
                         if let Some(sync_task_total) = sync_task_total.as_ref() {
                             sync_task_total.with_label_values(&["start"]).inc();
                         }
-                        futs.and_then(|v| v.push(fut))
+                        futs.and_then(|mut v| {
+                            v.push(fut);
+                            Ok(v)
+                        })
                     })?
                     .into_iter()
-                    .fold(Ok(vec![]), |chain, fut| Ok(vec![fut.await?]))?;
+                    .fold(vec![], |chain, fut| {
+                        match async_std::task::block_on(fut) {
+                            Ok(new_chain) => {
+                                if chain.is_empty() {
+                                    vec![new_chain]
+                                } else if new_chain.status().total_difficulty() > chain[0].status().total_difficulty() {
+                                    vec![new_chain]
+                                } else {
+                                    chain
+                                }
+                            }
+                            Err(error) => {
+                                error!("[sync] sync dag error: {:?}", error);
+                                chain
+                            }
+                        }
+                    });
                 assert!(dag_sync_futs.len() <= 1);
                 if dag_sync_futs.len() == 1 {
-                    Ok(Some(dag_sync_futs[0]))
+                    Ok(Some(dag_sync_futs.into_iter().next().unwrap()))
                 } else {
                     debug!("[sync]No best peer to request, current is beast.");
                     Ok(None)
@@ -343,7 +365,7 @@ impl SyncService {
                         target,
                         task_handle,
                         task_event_handle,
-                        peer_selector,
+                        peer_selector: rpc_client.selector().clone(),
                     })?;
                     if let Some(sync_task_total) = sync_task_total.as_ref() {
                         sync_task_total.with_label_values(&["start"]).inc();
@@ -372,14 +394,13 @@ impl SyncService {
                 let cancel = match result {
                     Ok(Some(chain)) => {
                         info!("[sync] Sync to latest block: {:?}", chain.status());
-                        info!("[sync] Sync to latest accumulator info: {:?}", chain.get_current_dag_accumulator_info());
 
-                        let startup_info = test_storage
+                        let startup_info = storage 
                         .get_startup_info().unwrap()
                         .ok_or_else(|| format_err!("Startup info should exist.")).unwrap();
                         let current_block_id = startup_info.main;
 
-                        let local_dag_accumulator_info = test_storage
+                        let local_dag_accumulator_info = storage
                         .get_dag_accumulator_info().unwrap()
                         .expect("current dag accumulator info should exist");
 
@@ -691,10 +712,10 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService {
 
 impl EventHandler<Self, NewHeadBlock> for SyncService {
     fn handle_event(&mut self, msg: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
-        let NewHeadBlock(block) = msg;
         if self.sync_status.update_chain_status(ChainStatus::new(
-            block.header().clone(),
-            block.block_info.clone(),
+            msg.executed_block.header().clone(),
+            msg.executed_block.block_info.clone(),
+            msg.tips,
         )) {
             self.sync_status.update_dag_accumulator_info(
                 self.storage

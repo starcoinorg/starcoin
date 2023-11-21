@@ -64,6 +64,8 @@ pub struct GetDagAccumulatorLeafDetail {
 pub struct DagAccumulatorLeafDetail {
     pub accumulator_root: HashValue,
     pub tips: Vec<HashValue>,
+    pub head_block_id: HashValue,
+    pub k_total_difficulties: BTreeSet<KTotalDifficulty>,
 }
 
 impl ServiceRequest for GetDagAccumulatorLeafDetail {
@@ -501,6 +503,9 @@ impl ServiceHandler<Self, GetDagAccumulatorLeafDetail> for FlexidagService {
                     details.push(DagAccumulatorLeafDetail {
                         accumulator_root: snapshot.accumulator_info.accumulator_root,
                         tips: snapshot.child_hashes,
+                        head_block_id: snapshot.head_block_id,
+                        k_total_difficulties: snapshot.k_total_difficulties,
+                        
                     });
                 }
                 Ok(details)

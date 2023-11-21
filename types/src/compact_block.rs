@@ -10,6 +10,7 @@ pub struct CompactBlock {
     pub short_ids: Vec<ShortId>,
     pub prefilled_txn: Vec<PrefilledTxn>,
     pub uncles: Option<Vec<BlockHeader>>,
+    pub tips: Option<Vec<HashValue>>,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -23,7 +24,7 @@ pub struct PrefilledTxn {
 pub struct ShortId(pub HashValue);
 
 impl CompactBlock {
-    pub fn new(block: Block) -> Self {
+    pub fn new(block: Block, tips: Option<Vec<HashValue>>) -> Self {
         let prefilled_txn: Vec<PrefilledTxn> = vec![];
         let header = block.header;
         let short_ids: Vec<ShortId> = block
@@ -38,6 +39,7 @@ impl CompactBlock {
             short_ids,
             prefilled_txn,
             uncles: block.body.uncles,
+            tips,
         }
     }
 
@@ -50,14 +52,15 @@ impl CompactBlock {
     }
 }
 
-impl From<Block> for CompactBlock {
-    fn from(block: Block) -> Self {
-        CompactBlock::new(block)
-    }
-}
+// impl From<Block> for CompactBlock {
+//     fn from(block: Block) -> Self {
+//         CompactBlock::new(block)
+//     }
+// }
 
 impl Sample for CompactBlock {
     fn sample() -> Self {
-        Block::sample().into()
+        // Block::sample().into()
+        Self::new(Block::sample(), None)
     }
 }

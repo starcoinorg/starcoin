@@ -747,6 +747,10 @@ impl BlockChain {
     pub fn get_block_accumulator(&self) -> &MerkleAccumulator {
         &self.block_accumulator
     }
+
+    pub fn dag(&self) -> &Option<BlockDAG> {
+        &self.dag
+    }
 }
 
 impl ChainReader for BlockChain {

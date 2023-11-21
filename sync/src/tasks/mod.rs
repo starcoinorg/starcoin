@@ -28,7 +28,6 @@ use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::U256;
-use std::result::Result::Ok;
 use std::str::FromStr;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
@@ -39,7 +38,7 @@ use stream_task::{
 };
 
 pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {
-    fn get_dag_targets(&self, total_difficulty: U256, local_dag_accumulator_leaf_num: u64) -> Result<Vec<(PeerId, AccumulatorInfo)>> {
+    fn get_dag_targets(&self, total_difficulty: U256, local_dag_accumulator_leaf_num: u64) -> Result<Vec<(PeerId, Option<AccumulatorInfo>, SyncTarget)>> {
         Ok(self
             .peer_selector()
             .peer_infos()
@@ -47,7 +46,10 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
             .filter(|peer_info| {
                 match (peer_info.chain_info().dag_accumulator_info(), peer_info.chain_info().k_total_difficulties()) {
                     (Some(info), Some(k)) => {
-                        k.first() <= total_difficulty || info.get_num_leaves() > local_dag_accumulator_leaf_num
+                        match k.first() {
+                            Some(k_difficulty) => k_difficulty.total_difficulty <= total_difficulty || info.get_num_leaves() > local_dag_accumulator_leaf_num,
+                            None => false,
+                        }
                     }
                     (None, None) => false,
                     _ => {
@@ -57,9 +59,13 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                 } 
             })
             .map(|peer_info| {
-                (peer_info.peer_id, peer_info.chain_info().dag_accumulator_info().clone())
+                (peer_info.peer_id, peer_info.chain_info().dag_accumulator_info().clone(), SyncTarget {
+                    target_id: BlockIdAndNumber::new(peer_info.latest_header().id(), peer_info.latest_header().number()),
+                    block_info: peer_info.chain_info().status().info().clone(),
+                    peers: vec![peer_info.peer_id],
+                })
             })
-            .collect());
+            .collect())
     }
 
     fn get_best_target(
@@ -351,7 +357,7 @@ impl BlockFetcher for VerifiedRpcClient {
                             format_err!("Get block by id: {} failed, remote node return None", id)
                         })
                     })
-                    .collect();
+                    .collect::<Result<Vec<_>>>();
                 results.map_err(fetcher_err_map)
             })
             .boxed()

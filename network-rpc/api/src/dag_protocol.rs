@@ -1,7 +1,9 @@
+use std::collections::BTreeSet;
+
 use network_p2p_core::PeerId;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
-use starcoin_types::block::Block;
+use starcoin_types::{block::Block, dag_block::KTotalDifficulty};
 
 #[derive(Clone, Debug, Hash, Eq, PartialOrd, Ord, PartialEq, Serialize, Deserialize)]
 pub struct RelationshipPair {
@@ -31,6 +33,8 @@ pub struct GetTargetDagAccumulatorLeafDetail {
 pub struct TargetDagAccumulatorLeafDetail {
     pub accumulator_root: HashValue,
     pub tips: Vec<HashValue>,
+    pub head_block_id: HashValue,
+    pub k_total_difficulties: BTreeSet<KTotalDifficulty>
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

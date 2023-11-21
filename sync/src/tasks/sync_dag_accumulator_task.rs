@@ -130,6 +130,8 @@ impl TaskResultCollector<TargetDagAccumulatorLeafDetail> for SyncDagAccumulatorC
             SyncFlexiDagSnapshot {
                 child_hashes: item.tips.clone(),
                 accumulator_info: accumulator_info.clone(),
+                head_block_id: item.head_block_id,
+                k_total_difficulties: item.k_total_difficulties.clone(),
             },
         )?;
 
@@ -139,6 +141,8 @@ impl TaskResultCollector<TargetDagAccumulatorLeafDetail> for SyncDagAccumulatorC
                 SyncFlexiDagSnapshot {
                     child_hashes: item.tips.clone(),
                     accumulator_info: accumulator_info.clone(),
+                    head_block_id: item.head_block_id,
+                    k_total_difficulties: item.k_total_difficulties.clone(),
                 },
             )
         })?;

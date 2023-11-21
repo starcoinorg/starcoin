@@ -144,6 +144,7 @@ where
                 self.storage.clone(),
                 self.net_id.clone(),
                 vm_metrics,
+                None,
             )?;
             let block_collector = BlockCollector::new_with_handle(
                 current_block_info.clone(),
@@ -154,6 +155,7 @@ where
                 skip_pow_verify_when_sync,
                 HashValue::zero(),
                 None,
+                self.storage.clone(),
             );
             Ok(TaskGenerator::new(
                 block_sync_task,

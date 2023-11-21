@@ -39,7 +39,7 @@ use starcoin_types::{
 };
 use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_types::access_path::AccessPath;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 /// A Chain reader service to provider Reader API.
 pub struct ChainReaderService {
@@ -52,6 +52,7 @@ impl ChainReaderService {
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
         flexidag_service: ServiceRef<FlexidagService>,
+        dag: Option<BlockDAG>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         Ok(Self {
@@ -60,6 +61,7 @@ impl ChainReaderService {
                 startup_info,
                 storage.clone(),
                 flexidag_service,
+                dag,
                 vm_metrics.clone(),
             )?,
         })
@@ -73,9 +75,10 @@ impl ServiceFactory<Self> for ChainReaderService {
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("StartupInfo should exist at service init."))?;
+        let dag = ctx.get_shared_opt::<BlockDAG>()?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
         let flexidag_service = ctx.service_ref::<FlexidagService>()?.clone();
-        Self::new(config, startup_info, storage, flexidag_service, vm_metrics)
+        Self::new(config, startup_info, storage, flexidag_service, dag, vm_metrics)
     }
 }
 
@@ -93,12 +96,9 @@ impl ActorService for ChainReaderService {
 
 impl EventHandler<Self, NewHeadBlock> for ChainReaderService {
     fn handle_event(&mut self, event: NewHeadBlock, ctx: &mut ServiceContext<ChainReaderService>) {
-        let new_head = event.0.block().header().clone();
-        if let Err(e) = if self.inner.get_main().can_connect(event.0.as_ref()) {
-            match self.inner.update_chain_head(event.0.as_ref().clone()) {
-                std::result::Result::Ok(_) => (),
-                Err(e) => Err(e),
-            }
+        let new_head = event.executed_block.block().header().clone();
+        if let Err(e) = if self.inner.get_main().can_connect(&event.executed_block.as_ref()) {
+            self.inner.update_chain_head(event.executed_block.as_ref().clone())
         } else {
             self.inner.switch_main(new_head.id())
         } {
@@ -286,6 +286,7 @@ pub struct ChainReaderServiceInner {
     main: BlockChain,
     storage: Arc<dyn Store>,
     flexidag_service: ServiceRef<FlexidagService>,
+    dag: Option<BlockDAG>,
     vm_metrics: Option<VMMetrics>,
 }
 
@@ -295,6 +296,7 @@ impl ChainReaderServiceInner {
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
         flexidag_service: ServiceRef<FlexidagService>,
+        dag: Option<BlockDAG>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let net = config.net();
@@ -304,6 +306,7 @@ impl ChainReaderServiceInner {
             storage.clone(),
             config.net().id().clone(),
             vm_metrics.clone(),
+            dag.clone(),
         )?;
         Ok(Self {
             config,
@@ -311,6 +314,7 @@ impl ChainReaderServiceInner {
             main,
             storage,
             flexidag_service,
+            dag,
             vm_metrics,
         })
     }
@@ -332,6 +336,7 @@ impl ChainReaderServiceInner {
             self.storage.clone(),
             self.config.net().id().clone(),
             self.vm_metrics.clone(),
+            self.dag.clone(),
         )?;
         Ok(())
     }
@@ -510,6 +515,8 @@ impl ReadableChainService for ChainReaderServiceInner {
             .map(|detail| TargetDagAccumulatorLeafDetail {
                 accumulator_root: detail.accumulator_root,
                 tips: detail.tips,
+                head_block_id: detail.accumulator_root,
+                k_total_difficulties: todo!(),
             })
             .collect())
     }

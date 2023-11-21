@@ -12,6 +12,7 @@ use starcoin_config::ChainNetworkID;
 use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
+use starcoin_flexidag::{flexidag_service, FlexidagService};
 use starcoin_logger::prelude::{debug, info};
 use starcoin_network::NetworkServiceRef;
 use starcoin_service_registry::ServiceRef;
@@ -180,9 +181,10 @@ async fn sync_dag_block<H, N>(
     block_event_handle: H,
     network: N,
     skip_pow_verify_when_sync: bool,
-    dag: Arc<Mutex<BlockDAG>>,
+    dag: Option<BlockDAG>,
     block_chain_service: ServiceRef<BlockConnectorService<TxPoolService>>,
     net_id: ChainNetworkID,
+    flexidag_service: ServiceRef<FlexidagService>,
     vm_metrics: Option<VMMetrics>,
 ) -> anyhow::Result<BlockChain>
 where
@@ -223,15 +225,16 @@ where
 
     let chain = BlockChain::new(
         time_service.clone(),
-        snapshot.head_block_id?,
+        snapshot.head_block_id,
         local_store.clone(),
         net_id,
         vm_metrics,
+        dag.clone(),
     )?;
 
     let current_block_info = local_store
         .get_block_info(snapshot.head_block_id)?
-        .ok_or_else(|| format_err!("Can not find block info by id: {}", last_chain_block))
+        .ok_or_else(|| format_err!("Can not find block info by id: {}", snapshot.head_block_id))
         .map_err(|err| TaskError::BreakError(anyhow!(err)));
 
     let accumulator_info = accumulator.get_info();
@@ -251,12 +254,13 @@ where
         BlockCollector::new_with_handle(
             current_block_info?.clone(),
             None,
-            chain?,
+            chain,
             block_event_handle.clone(),
             network.clone(),
             skip_pow_verify_when_sync,
             accumulator_root,
-            Some(dag.clone()),
+            Some(flexidag_service.clone()),
+            local_store.clone(),
         ),
         event_handle.clone(),
         ext_error_handle,
@@ -285,11 +289,12 @@ pub fn sync_dag_full_task(
     connector_service: ServiceRef<BlockConnectorService<TxPoolService>>,
     network: NetworkServiceRef,
     skip_pow_verify_when_sync: bool,
-    dag: Arc<Mutex<BlockDAG>>,
+    dag: Option<BlockDAG>,
     block_chain_service: ServiceRef<BlockConnectorService<TxPoolService>>,
+    flexidag_service: ServiceRef<FlexidagService>,
     net_id: ChainNetworkID,
 ) -> anyhow::Result<(
-    BoxFuture<'static, anyhow::Result<BlockChain, TaskError>>,
+    BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
     Arc<TaskEventCounterHandle>,
 )> {
@@ -330,6 +335,7 @@ pub fn sync_dag_full_task(
             dag.clone(),
             block_chain_service.clone(),
             net_id,
+            flexidag_service.clone(),
             vm_metrics,
         )
         .await

@@ -14,7 +14,6 @@ use network_api::PeerProvider;
 use parking_lot::Mutex;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
-use starcoin_consensus::dag::blockdag::InitDagState;
 use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
@@ -34,7 +33,7 @@ use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
 use std::result;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use sysinfo::{DiskExt, System, SystemExt};
 
 const DISK_CHECKPOINT_FOR_PANIC: u64 = 1024 * 1024 * 1024 * 3;
@@ -137,7 +136,7 @@ where
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist."))?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        let dag = ctx.get_shared::<BlockDAG>()?;
+        let dag = ctx.get_shared_opt::<BlockDAG>()?;
         let chain_service = WriteBlockChainService::new(
             config.clone(),
             startup_info,
@@ -146,6 +145,7 @@ where
             bus,
             vm_metrics,
             ctx.service_ref::<FlexidagService>()?.clone(),
+            dag,
         )?;
 
         Ok(Self::new(chain_service, config))
@@ -271,11 +271,8 @@ where
         debug!("try connect mined block: {}", id);
 
         match self.chain_service.try_connect(new_block.as_ref().clone()) {
-            std::result::Result::Ok(ConnectOk::DagConnected) => {
-                match self.chain_service.dump_tips(block_header) {
-                    std::result::Result::Ok(_) => (),
-                    Err(e) => error!("failed to dump tips to dag accumulator: {}", e),
-                }
+            std::result::Result::Ok(()) => {
+                self.chain_service.dump_tips(block_header);
             }
             Err(e) => {
                 warn!("Process mined block {} fail, error: {:?}", id, e);
@@ -310,8 +307,8 @@ where
                 std::result::Result::Ok(connect_error) => {
                     match connect_error {
                         ConnectBlockError::FutureBlock(block) => {
-                            self.chain_service
-                                .update_tips(msg.get_block().header().clone())?;
+                            let _ = self.chain_service
+                                .update_tips(msg.get_block().header().clone());
                             //TODO cache future block
                             if let std::result::Result::Ok(sync_service) =
                                 ctx.service_ref::<SyncService>()

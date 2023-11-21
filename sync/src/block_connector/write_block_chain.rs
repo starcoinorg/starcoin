@@ -18,7 +18,6 @@ use starcoin_flexidag::FlexidagService;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{ServiceContext, ServiceRef};
-use starcoin_storage::flexi_dag::KTotalDifficulty;
 use starcoin_storage::storage::CodecKVStore;
 use starcoin_storage::Store;
 use starcoin_time_service::{DagBlockTimeWindowService, TimeWindowResult};
@@ -26,13 +25,12 @@ use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
 use starcoin_types::blockhash::BlockHashMap;
 use starcoin_types::dag_block::KTotalDifficulty;
-use starcoin_types::consensus_header::DagHeader;
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
     system_events::{NewBranch, NewHeadBlock},
 };
-use std::{fmt::Formatter, sync::Arc, sync::Mutex};
+use std::{fmt::Formatter, sync::Arc};
 
 use super::BlockConnectorService;
 
@@ -148,6 +146,7 @@ where
         bus: ServiceRef<BusService>,
         vm_metrics: Option<VMMetrics>,
         flexidag_service: ServiceRef<FlexidagService>,
+        dag: Option<BlockDAG>,
     ) -> Result<Self> {
         let net = config.net();
         let main = BlockChain::new(
@@ -156,6 +155,7 @@ where
             storage.clone(),
             config.net().id().clone(),
             vm_metrics.clone(),
+            dag.clone(),
         )?;
         let metrics = config
             .metrics
@@ -191,6 +191,7 @@ where
                     self.storage.clone(),
                     net.id().clone(),
                     self.vm_metrics.clone(),
+                    self.main.dag().clone(),
                 )?)
             }
         } else if self.block_exist(parent_hash)? {
@@ -201,6 +202,7 @@ where
                 self.storage.clone(),
                 net.id().clone(),
                 self.vm_metrics.clone(),
+                self.main.dag().clone(),
             )?)
         } else {
             None
@@ -260,13 +262,17 @@ where
             self.storage.clone(),
             self.config.net().id().clone(),
             self.vm_metrics.clone(),
+            self.main.dag().clone(),
         )?;
 
         let main_total_difficulty = self.main.get_total_difficulty()?;
         let branch_total_difficulty = new_branch.get_total_difficulty()?;
         if branch_total_difficulty > main_total_difficulty {
             self.update_startup_info(new_branch.head_block().header())?;
-            ctx.broadcast(NewHeadBlock(Arc::new(new_branch.head_block())));
+            ctx.broadcast(NewHeadBlock {
+                executed_block: Arc::new(new_branch.head_block()),
+                tips: self.main.status().tips_hash.clone(),
+            });
             Ok(())
         } else {
             bail!("no need to switch");
@@ -371,6 +377,7 @@ where
             self.storage.clone(),
             self.config.net().id().clone(),
             self.vm_metrics.clone(),
+            self.main.dag().clone(),
         )?;
 
         // delete block since from block.number + 1 to latest.
@@ -416,6 +423,7 @@ where
             self.storage.clone(),
             self.config.net().id().clone(),
             self.vm_metrics.clone(),
+            self.main.dag().clone(),
         )?;
         let verify_block = chain.verify(block)?;
         chain.execute(verify_block)
@@ -437,105 +445,6 @@ where
         if let Err(e) = self.txpool.chain_new_block(enacted, retracted) {
             error!("rollback err : {:?}", e);
         }
-    }
-
-    fn find_ancestors_from_dag_accumulator(
-        &self,
-        new_branch: &BlockChain,
-    ) -> Result<(u64, Vec<Block>, u64, Vec<Block>)> {
-        let mut min_leaf_index = std::cmp::min(
-            self.main.get_dag_current_leaf_number()?,
-            new_branch.get_dag_current_leaf_number()?,
-        ) - 1;
-
-        let mut retracted = vec![];
-        let mut enacted = vec![];
-
-        let snapshot =
-            new_branch.get_dag_accumulator_snapshot(new_branch.head_block().header().id())?;
-        let mut children = snapshot.child_hashes.clone();
-        children.sort();
-        for child in children {
-            match self.storage.get_block(child)? {
-                Some(block) => enacted.push(block),
-                None => bail!(
-                    "the block{} dose not exist in new branch, ignore",
-                    child.clone()
-                ),
-            }
-        }
-        enacted.reverse();
-
-        loop {
-            if min_leaf_index == 0 {
-                break;
-            }
-            let main_snapshot = self
-                .main
-                .get_dag_accumulator_snapshot_by_index(min_leaf_index)?;
-            let new_branch_snapshot =
-                new_branch.get_dag_accumulator_snapshot_by_index(min_leaf_index)?;
-
-            if main_snapshot.accumulator_info.get_accumulator_root()
-                == new_branch_snapshot.accumulator_info.get_accumulator_root()
-            {
-                break;
-            }
-
-            let mut temp_retracted = vec![];
-            temp_retracted.extend(
-                main_snapshot
-                    .child_hashes
-                    .iter()
-                    .try_fold(Vec::<Block>::new(), |mut rollback_blocks, child| {
-                        let block = self.storage.get_block(child.clone());
-                        if let anyhow::Result::Ok(Some(block)) = block {
-                            rollback_blocks.push(block);
-                        } else {
-                            bail!(
-                                "the block{} dose not exist in main branch, ignore",
-                                child.clone()
-                            );
-                        }
-                        return Ok(rollback_blocks);
-                    })?
-                    .into_iter(),
-            );
-            temp_retracted.sort_by(|a, b| b.header().id().cmp(&a.header().id()));
-            retracted.extend(temp_retracted.into_iter());
-
-            let mut temp_enacted = vec![];
-            temp_enacted.extend(
-                new_branch_snapshot
-                    .child_hashes
-                    .iter()
-                    .try_fold(Vec::<Block>::new(), |mut rollback_blocks, child| {
-                        let block = self.storage.get_block(child.clone());
-                        if let anyhow::Result::Ok(Some(block)) = block {
-                            rollback_blocks.push(block);
-                        } else {
-                            bail!(
-                                "the block{} dose not exist in new branch, ignore",
-                                child.clone()
-                            );
-                        }
-                        return Ok(rollback_blocks);
-                    })?
-                    .into_iter(),
-            );
-            temp_enacted.sort_by(|a, b| b.header().id().cmp(&a.header().id()));
-            enacted.extend(temp_enacted.into_iter());
-
-            min_leaf_index = min_leaf_index.saturating_sub(1);
-        }
-        enacted.reverse();
-        retracted.reverse();
-        Ok((
-            enacted.len() as u64,
-            enacted,
-            retracted.len() as u64,
-            retracted,
-        ))
     }
 
     fn find_ancestors_from_accumulator(
@@ -617,7 +526,10 @@ where
 
         if let Err(e) = self
             .bus
-            .broadcast(NewHeadBlock(Arc::new(block)))
+            .broadcast(NewHeadBlock {
+                executed_block: Arc::new(block),
+                tips: self.main.status().tips_hash.clone(),
+            })
         {
             error!("Broadcast NewHeadBlock error: {:?}", e);
         }
@@ -633,6 +545,37 @@ where
         if let Err(e) = self.bus.broadcast(NewBranch(Arc::new(block))) {
             error!("Broadcast NewBranch error: {:?}", e);
         }
+    }
+
+    pub fn update_tips(&mut self, block_header: BlockHeader) -> Result<()> {
+        self.main.status().tips_hash.map(|mut tips| {
+            if !tips.contains(&block_header.id()) {
+                tips.push(block_header.id())
+            }
+        });
+        async_std::task::block_on(self.flexidag_service.send( UpdateDagTips { 
+            block_header: block_header.clone(), 
+            current_head_block_id: self.main.status().head().id(), 
+            k_total_difficulty: KTotalDifficulty {
+                total_difficulty: self.main.status().total_difficulty(),
+                head_block_id: self.main.status().head().id(),
+            } 
+        }))?
+    }
+
+    pub fn dump_tips(&mut self, block_header: BlockHeader) -> Result<()> {
+        self.main.status().tips_hash.map(|mut tips| {
+            tips.clear();
+            tips.push(block_header.id());
+        });
+        async_std::task::block_on(self.flexidag_service.send(DumpTipsToAccumulator { 
+            block_header: block_header.clone(), 
+            current_head_block_id: self.main.status().head().id(), 
+            k_total_difficulty: KTotalDifficulty {
+                total_difficulty: self.main.status().total_difficulty(),
+                head_block_id: self.main.status().head().id(),
+            } 
+        }))?
     }
 
     fn connect_inner(&mut self, block: Block) -> Result<ConnectOk> {

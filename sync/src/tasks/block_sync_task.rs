@@ -19,7 +19,7 @@ use starcoin_flexidag::flexidag_service::{AddToDag, GetDagTips, ForkDagAccumulat
 use starcoin_flexidag::FlexidagService;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::ServiceRef;
-use starcoin_storage::BARNARD_HARD_FORK_HASH;
+use starcoin_storage::{BARNARD_HARD_FORK_HASH, Store};
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use std::collections::HashMap;
@@ -48,7 +48,7 @@ impl SyncBlockData {
         peer_id: Option<PeerId>,
         accumulator_root: Option<HashValue>,
         count_in_leaf: u64,
-        dag_acccumulator_index: Option<u64>,
+        dag_accumulator_index: Option<u64>,
     ) -> Self {
         Self {
             block,
@@ -149,7 +149,7 @@ impl TaskState for BlockSyncTask {
                         .fetch_blocks(no_exist_block_ids)
                         .await?
                         .into_iter()
-                        .fold(result_map, |mut result_map, (block, peer_id, _, _)| {
+                        .fold(result_map, |mut result_map, (block, peer_id)| {
                             result_map.insert(
                                 block.id(),
                                 SyncBlockData::new(block, None, peer_id, None, 1, None),
@@ -173,7 +173,7 @@ impl TaskState for BlockSyncTask {
                     .fetch_blocks(block_ids)
                     .await?
                     .into_iter()
-                    .map(|(block, peer_id, _, _)| {
+                    .map(|(block, peer_id)| {
                         SyncBlockData::new(block, None, peer_id, None, 1, None)
                     })
                     .collect())
@@ -219,8 +219,9 @@ pub struct BlockCollector<N, H> {
     last_accumulator_root: HashValue,
     dag_block_pool: Vec<SyncBlockData>,
     target_accumulator_root: HashValue,
-    flexidag_service: ServiceRef<FlexidagService>,
+    flexidag_service: Option<ServiceRef<FlexidagService>>,
     new_dag_accumulator_info: Option<AccumulatorInfo>,
+    storage: Arc<dyn Store>,
 }
 
 impl<N, H> BlockCollector<N, H>
@@ -236,13 +237,9 @@ where
         peer_provider: N,
         skip_pow_verify: bool,
         target_accumulator_root: HashValue,
-        flexidag_service: ServiceRef<FlexidagService>,
+        flexidag_service: Option<ServiceRef<FlexidagService>>,
+        storage: Arc<dyn Store>,
     ) -> Self {
-        if let Some(dag) = &dag {
-            dag.lock()
-                .expect("failed to lock the dag")
-                .clear_missing_block();
-        }
         Self {
             current_block_info,
             target,
@@ -255,11 +252,8 @@ where
             target_accumulator_root,
             flexidag_service,
             new_dag_accumulator_info: None,
+            storage,
         }
-    }
-
-    pub fn check_if_became_dag(&self) -> Result<bool> {
-        Ok(async_std::task::block_on(self.flexidag_service.send(GetDagTips))??.is_some())
     }
 
     #[cfg(test)]
@@ -412,13 +406,14 @@ where
             CollectorState::Need
         };
 
-        self.new_dag_accumulator_info = Some(async_std::task::block_on(self.flexidag_service.send(ForkDagAccumulator {
+        let service = self.flexidag_service.as_ref().expect("flexidag service is None");
+        self.new_dag_accumulator_info = Some(async_std::task::block_on(service.send(ForkDagAccumulator {
             new_blocks: broadcast_blocks.into_iter().map(|(block, _, _)| block.id()).collect(),
             dag_accumulator_index: start_index, 
-            block_header_id: self.chain.head_block().id(),
+            block_header_id: self.chain.head_block().block().id(),
         }))??);
         if state == CollectorState::Enough {
-            async_std::task::block_on(self.flexidag_service.send(FinishSync {
+            async_std::task::block_on(service.send(FinishSync {
                 dag_accumulator_info: self.new_dag_accumulator_info.clone().expect("dag acc should exists"),
             }))??
         }
@@ -458,43 +453,36 @@ where
             Ok(CollectorState::Need)
         };
 
-        let result = self.notify_connected_block(block, block_info, action, state?);
-        match result {
-            Ok(state) => {}
-            Err(e) => {
-                error!("notify connected block error: {:?}", e);
-                Err(e)
-            }
-        }
+        self.notify_connected_block(block, block_info, action, state?)
     }
 
     fn collect_dag_item(&mut self, item: SyncBlockData) -> Result<()> {
-        let (block, block_info, peer_id) = item.into();
-        let block_id = block.id();
-        let timestamp = block.header().timestamp();
+        // let (block, block_info, peer_id) = item.into();
+        // let block_id = block.id();
+        // let timestamp = block.header().timestamp();
 
-        let add_dag_result = async_std::task::block_on(self.flexidag_service.send(AddToDag {
-            block_header: block.header().clone(),
-        }))??;
-        let selected_parent = self
-            .storage
-            .get_block_by_hash(add_dag_result.selected_parent)?
-            .expect("selected parent should in storage");
-        let mut chain = self.chain.fork(selected_parent.header.parent_hash())?;
-        for blue_hash in add_dag_result.mergeset_blues.mergeset_blues.iter() {
-            if let Some(blue_block) = self.storage.get_block(blue_hash.to_owned())? {
-                match chain.apply(blue_block) {
-                    Ok(_executed_block) => (),
-                    Err(e) => warn!("failed to connect dag block: {:?}", e),
-                }
-            } else {
-                error!("Failed to get block {:?}", blue_hash);
-            }
-        }
+        // let add_dag_result = async_std::task::block_on(self.flexidag_service.send(AddToDag {
+        //     block_header: block.header().clone(),
+        // }))??;
+        // let selected_parent = self
+        //     .storage
+        //     .get_block_by_hash(add_dag_result.selected_parent)?
+        //     .expect("selected parent should in storage");
+        // let mut chain = self.chain.fork(selected_parent.header.parent_hash())?;
+        // for blue_hash in add_dag_result.mergeset_blues.mergeset_blues.iter() {
+        //     if let Some(blue_block) = self.storage.get_block(blue_hash.to_owned())? {
+        //         match chain.apply(blue_block) {
+        //             std::result::Result::Ok(_executed_block) => (),
+        //             Err(e) => warn!("failed to connect dag block: {:?}", e),
+        //         }
+        //     } else {
+        //         error!("Failed to get block {:?}", blue_hash);
+        //     }
+        // }
 
-        if chain.status().info().total_difficulty > self.chain.status().info().total_difficulty {
-            self.chain = chain;
-        }
+        // if chain.status().info().total_difficulty > self.chain.status().info().total_difficulty {
+        //     self.chain = chain;
+        // }
 
         Ok(())
     }
@@ -550,7 +538,7 @@ where
             }
         } else {
             // it is a single chain
-            process_block_pool.push(item);
+            process_block_pool.push(item.clone());
         }
 
         assert!(!process_block_pool.is_empty());
@@ -574,18 +562,21 @@ where
                     1,
                     "in single chain , block_info should exist!"
                 );
-                let (block, block_info, _, action) = block_to_broadcast.pop().unwrap();
+                let (block, block_info, action) = block_to_broadcast.pop().unwrap();
                 // self.check_if_sync_complete(block_info)
+                let block_number = block.header().number();
                 match self.broadcast_single_chain_block(block, block_info, action) {
-                    Ok(_) => {
-                        if self.check_if_became_dag()? {
+                    std::result::Result::Ok(state) => {
+                        if self.storage.dag_fork_height(self.chain.net_id()) == block_number {
                             Ok(CollectorState::Enough)
+                        } else {
+                            Ok(state)
                         }
                     }
                     Err(e) => Err(e),
                 }
             }
-            None => self.broadcast_dag_chain_block(block_to_broadcast, item.dag_accumulator_index),
+            None => self.broadcast_dag_chain_block(block_to_broadcast, item.dag_accumulator_index.expect("dag accumulator index is invalid")),
         }
     }
 
