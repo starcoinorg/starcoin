@@ -34,6 +34,13 @@ pub struct RocksdbConfig {
     pub wal_bytes_per_sync: u64,
     #[clap(name = "rocksdb-bytes-per-sync", long, help = "rocksdb bytes per sync")]
     pub bytes_per_sync: u64,
+
+    #[clap(
+        name = "rocksdb-parallelism",
+        long,
+        help = "rocksdb background threads, one for default"
+    )]
+    pub parallelism: u64,
 }
 
 impl RocksdbConfig {
@@ -61,11 +68,14 @@ impl Default for RocksdbConfig {
             bytes_per_sync: 1u64 << 20,
             // For wal sync every size to be 1MB
             wal_bytes_per_sync: 1u64 << 20,
+            // For background threads
+            parallelism: 1u64,
         }
     }
 }
 
 static G_DEFAULT_DB_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("starcoindb/db"));
+static G_DEFAULT_DAG_DB_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("dag/db"));
 pub const DEFAULT_CACHE_SIZE: usize = 20000;
 
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
@@ -102,6 +112,14 @@ pub struct StorageConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(name = "rocksdb-bytes-per-sync", long, help = "rocksdb bytes per sync")]
     pub bytes_per_sync: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(
+        name = "rocksdb-parallelism",
+        long,
+        help = "rocksdb background threads"
+    )]
+    pub parallelism: Option<u64>,
 }
 
 impl StorageConfig {
@@ -112,7 +130,9 @@ impl StorageConfig {
     pub fn dir(&self) -> PathBuf {
         self.base().data_dir().join(G_DEFAULT_DB_DIR.as_path())
     }
-
+    pub fn dag_dir(&self) -> PathBuf {
+        self.base().data_dir().join(G_DEFAULT_DAG_DB_DIR.as_path())
+    }
     pub fn rocksdb_config(&self) -> RocksdbConfig {
         let default = RocksdbConfig::default();
         RocksdbConfig {
@@ -124,6 +144,7 @@ impl StorageConfig {
             wal_bytes_per_sync: self
                 .wal_bytes_per_sync
                 .unwrap_or(default.wal_bytes_per_sync),
+            parallelism: self.parallelism.unwrap_or(default.parallelism),
         }
     }
     pub fn cache_size(&self) -> usize {

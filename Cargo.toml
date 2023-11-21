@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "consensus/dag",
     "benchmarks",
     "commons/stest",
     "commons/bcs_ext",
@@ -114,6 +115,7 @@ members = [
 ]
 
 default-members = [
+    "consensus/dag",
     "benchmarks",
     "commons/stest",
     "commons/bcs_ext",
@@ -438,7 +440,9 @@ starcoin-chain-service = { path = "chain/service" }
 starcoin-cmd = { path = "cmd/starcoin" }
 starcoin-config = { path = "config" }
 starcoin-consensus = { path = "consensus" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "a742ddc0674022800341182cbb4c3681807b2f00" }
+#starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "a742ddc0674022800341182cbb4c3681807b2f00" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "8d41c280a227594ca0a2b6ecba580643518274ea" }
+
 starcoin-decrypt = { path = "commons/decrypt" }
 starcoin-dev = { path = "vm/dev" }
 starcoin-executor = { path = "executor" }
@@ -531,7 +535,7 @@ walkdir = "2.3.1"
 wasm-timer = "0.2"
 which = "4.1.0"
 zeroize = "1.3.0"
-
+starcoin-dag = {path = "consensus/dag"}
 [profile.release.package]
 starcoin-service-registry.debug = 1
 starcoin-chain.debug = 1
