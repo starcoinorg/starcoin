@@ -13,6 +13,7 @@ use network_api::{PeerId, PeerProvider, PeerSelector, PeerStrategy, ReputationCh
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_config::NodeConfig;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
@@ -149,6 +150,7 @@ impl SyncService {
         let peer_score_metrics = self.peer_score_metrics.clone();
         let sync_metrics = self.metrics.clone();
         let vm_metrics = self.vm_metrics.clone();
+        let dag = ctx.get_shared::<BlockDAG>()?;
         let fut = async move {
             let peer_select_strategy =
                 peer_strategy.unwrap_or_else(|| config.sync.peer_select_strategy());
@@ -235,6 +237,7 @@ impl SyncService {
                     config.sync.max_retry_times(),
                     sync_metrics.clone(),
                     vm_metrics.clone(),
+                    dag,
                 )?;
 
                 self_ref.notify(SyncBeginEvent {

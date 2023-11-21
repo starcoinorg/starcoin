@@ -27,7 +27,7 @@ starcoin-txpool-api = { workspace = true }
 starcoin-vm-types = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 starcoin-types = { package = "starcoin-types", workspace = true }
-
+starcoin-dag = { workspace =true }
 [dev-dependencies]
 starcoin-network-rpc = { package = "starcoin-network-rpc", workspace = true }
 starcoin-genesis = { workspace = true }
@@ -44,7 +44,7 @@ test-helper = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 name = "starcoin-miner"
-version = "1.13.8"
+version = "1.13.7"
 homepage = { workspace = true }
 license = { workspace = true }
 publish = { workspace = true }

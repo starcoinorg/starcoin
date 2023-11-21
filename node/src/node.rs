@@ -311,9 +311,14 @@ impl NodeService {
         let upgrade_time = SystemTime::now().duration_since(start_time)?;
         let storage = Arc::new(Storage::new(storage_instance)?);
         registry.put_shared(storage.clone()).await?;
+        let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+            config.storage.dag_dir(),
+            config.storage.clone().into(),
+        )?;
+        let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage.clone());
+        registry.put_shared(dag.clone()).await?;
         let (chain_info, genesis) =
-            Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;
-
+            Genesis::init_and_check_storage(config.net(), storage.clone(), dag, config.data_dir())?;
         info!(
             "Start node with chain info: {}, number {} upgrade_time cost {} secs, ",
             chain_info,

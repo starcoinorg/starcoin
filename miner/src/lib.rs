@@ -252,7 +252,7 @@ impl MinerService {
 
         if let Some(task) = self.current_task.take() {
             let block = task.finish(nonce, extra);
-            let block_hash = block.id();
+            let block_hash: HashValue = block.id();
             info!(target: "miner", "Mint new block: {}", block);
             ctx.broadcast(MinedBlock(Arc::new(block)));
             if let Some(metrics) = self.metrics.as_ref() {

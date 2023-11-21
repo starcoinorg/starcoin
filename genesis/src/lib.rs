@@ -36,7 +36,10 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 mod errors;
+
 pub use errors::GenesisError;
+use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
 use starcoin_storage::table_info::TableInfoStore;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;
@@ -254,6 +257,7 @@ impl Genesis {
         &self,
         net: &ChainNetwork,
         storage: Arc<dyn Store>,
+        dag: BlockDAG,
     ) -> Result<ChainInfo> {
         storage.save_genesis(self.block.id())?;
         let genesis_chain = BlockChain::new_with_genesis(
@@ -261,6 +265,7 @@ impl Genesis {
             storage.clone(),
             net.genesis_epoch(),
             self.block.clone(),
+            dag,
         )?;
         let startup_info = StartupInfo::new(genesis_chain.current_header().id());
         storage.save_startup_info(startup_info)?;
@@ -315,6 +320,7 @@ impl Genesis {
     pub fn init_and_check_storage(
         net: &ChainNetwork,
         storage: Arc<Storage>,
+        dag: BlockDAG,
         data_dir: &Path,
     ) -> Result<(ChainInfo, Genesis)> {
         debug!("load startup_info.");
@@ -344,7 +350,7 @@ impl Genesis {
             }
             Ok(None) => {
                 let genesis = Self::load_and_check_genesis(net, data_dir, true)?;
-                let chain_info = genesis.execute_genesis_block(net, storage.clone())?;
+                let chain_info = genesis.execute_genesis_block(net, storage.clone(), dag)?;
                 (chain_info, genesis)
             }
             Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
@@ -357,7 +363,12 @@ impl Genesis {
         debug!("init storage by genesis for test.");
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let genesis = Genesis::load_or_build(net)?;
-        let chain_info = genesis.execute_genesis_block(net, storage.clone())?;
+        let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+            "/tmp/blockdag",
+            FlexiDagStorageConfig::new(),
+        )?;
+        let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
+        let chain_info = genesis.execute_genesis_block(net, storage.clone(), dag)?;
         Ok((storage, chain_info, genesis))
     }
 }

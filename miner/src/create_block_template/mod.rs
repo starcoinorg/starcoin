@@ -12,6 +12,7 @@ use starcoin_config::ChainNetwork;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
@@ -79,6 +80,8 @@ impl ServiceFactory<Self> for BlockBuilderService {
             .and_then(|registry| BlockBuilderMetrics::register(registry).ok());
 
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
+        let dag = ctx.get_shared::<BlockDAG>()?;
+
         let inner = Inner::new(
             config.net(),
             storage,
@@ -88,6 +91,7 @@ impl ServiceFactory<Self> for BlockBuilderService {
             miner_account,
             metrics,
             vm_metrics,
+            dag,
         )?;
         Ok(Self { inner })
     }
@@ -191,6 +195,7 @@ pub struct Inner<P> {
     miner_account: AccountInfo,
     metrics: Option<BlockBuilderMetrics>,
     vm_metrics: Option<VMMetrics>,
+    dag: BlockDAG,
 }
 
 impl<P> Inner<P>
@@ -206,12 +211,14 @@ where
         miner_account: AccountInfo,
         metrics: Option<BlockBuilderMetrics>,
         vm_metrics: Option<VMMetrics>,
+        dag: BlockDAG,
     ) -> Result<Self> {
         let chain = BlockChain::new(
             net.time_service(),
             block_id,
             storage.clone(),
             vm_metrics.clone(),
+            dag.clone(),
         )?;
 
         Ok(Inner {
@@ -224,6 +231,7 @@ where
             miner_account,
             metrics,
             vm_metrics,
+            dag,
         })
     }
 
@@ -251,6 +259,7 @@ where
                 block.header().id(),
                 self.storage.clone(),
                 self.vm_metrics.clone(),
+                self.dag.clone(),
             )?;
             //current block possible be uncle.
             self.uncles.insert(current_id, current_header);
@@ -309,10 +318,9 @@ where
         let max_txns = (block_gas_limit / 200) * 2;
 
         let txns = self.tx_provider.get_txns(max_txns);
-
         let author = *self.miner_account.address();
         let previous_header = self.chain.current_header();
-        let uncles = self.find_uncles();
+
         let mut now_millis = self.chain.time_service().now_millis();
         if now_millis <= previous_header.timestamp() {
             info!(
@@ -321,6 +329,37 @@ where
             );
             now_millis = previous_header.timestamp() + 1;
         }
+
+        let epoch = self.chain.epoch();
+        let strategy = epoch.strategy();
+        let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
+        let tips_hash = self.chain.current_tips_hash()?;
+        let (uncles, blue_blocks) = {
+            match &tips_hash {
+                None => (self.find_uncles(), None),
+                Some(tips) => {
+                    let mut blues = self.dag.ghostdata(tips).mergeset_blues.to_vec();
+                    let mut blue_blocks = vec![];
+                    let selected_parent = blues.remove(0);
+                    assert_eq!(previous_header.id(), selected_parent);
+                    for blue in &blues {
+                        let block = self
+                            .storage
+                            .get_block_by_hash(blue.to_owned())?
+                            .expect("Block should exist");
+                        blue_blocks.push(block);
+                    }
+                    (
+                        blue_blocks
+                            .as_slice()
+                            .iter()
+                            .map(|b| b.header.clone())
+                            .collect(),
+                        Some(blue_blocks),
+                    )
+                }
+            }
+        };
         info!(
             "[CreateBlockTemplate] previous_header: {:?}, block_gas_limit: {}, max_txns: {}, txn len: {}, uncles len: {}, timestamp: {}",
             previous_header,
@@ -330,10 +369,6 @@ where
             uncles.len(),
             now_millis,
         );
-
-        let epoch = self.chain.epoch();
-        let strategy = epoch.strategy();
-        let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
 
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),
@@ -345,8 +380,12 @@ where
             difficulty,
             strategy,
             self.vm_metrics.clone(),
+            tips_hash,
+            blue_blocks,
         )?;
+
         let excluded_txns = opened_block.push_txns(txns)?;
+
         let template = opened_block.finalize()?;
         for invalid_txn in excluded_txns.discarded_txns {
             self.tx_provider.remove_invalid_txn(invalid_txn.id());

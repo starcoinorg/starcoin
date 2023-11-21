@@ -13,6 +13,8 @@ use starcoin_vm_types::genesis_config::ChainId;
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
 use std::fmt::Formatter;
+use std::hash::Hash;
+
 /// The info of a chain.
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct ChainInfo {
@@ -43,15 +45,15 @@ impl ChainInfo {
     }
 
     pub fn update_status(&mut self, status: ChainStatus) {
-        self.status = status
+        self.status = status;
     }
 
     pub fn head(&self) -> &BlockHeader {
-        self.status.head()
+        &self.status.head
     }
 
     pub fn total_difficulty(&self) -> U256 {
-        self.status.total_difficulty()
+        self.status.info.get_total_difficulty()
     }
 
     pub fn into_inner(self) -> (ChainId, HashValue, ChainStatus) {
@@ -120,7 +122,7 @@ impl ChainStatus {
             ),
         );
         Self {
-            head,
+            head: head.clone(),
             info: block_info,
         }
     }
@@ -148,6 +150,27 @@ impl Sample for ChainStatus {
             head: BlockHeader::sample(),
             info: BlockInfo::sample(),
         }
+    }
+}
+
+#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
+pub struct DagState {
+    pub tips: Vec<HashValue>,
+}
+
+impl TryFrom<Vec<u8>> for DagState {
+    type Error = anyhow::Error;
+
+    fn try_from(value: Vec<u8>) -> Result<Self> {
+        DagState::decode(value.as_slice())
+    }
+}
+
+impl TryInto<Vec<u8>> for DagState {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<Vec<u8>> {
+        self.encode()
     }
 }
 

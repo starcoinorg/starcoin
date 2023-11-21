@@ -7,6 +7,7 @@ use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
@@ -36,6 +37,7 @@ where
     bus: ServiceRef<BusService>,
     metrics: Option<ChainMetrics>,
     vm_metrics: Option<VMMetrics>,
+    dag: BlockDAG,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -104,6 +106,7 @@ where
         txpool: P,
         bus: ServiceRef<BusService>,
         vm_metrics: Option<VMMetrics>,
+        dag: BlockDAG,
     ) -> Result<Self> {
         let net = config.net();
         let main = BlockChain::new(
@@ -111,6 +114,7 @@ where
             startup_info.main,
             storage.clone(),
             vm_metrics.clone(),
+            dag.clone(),
         )?;
         let metrics = config
             .metrics
@@ -126,6 +130,7 @@ where
             bus,
             metrics,
             vm_metrics,
+            dag,
         })
     }
 
@@ -145,6 +150,7 @@ where
                     block_id,
                     self.storage.clone(),
                     self.vm_metrics.clone(),
+                    self.dag.clone(),
                 )?)
             }
         } else if self.block_exist(header.parent_hash())? {
@@ -154,6 +160,7 @@ where
                 header.parent_hash(),
                 self.storage.clone(),
                 self.vm_metrics.clone(),
+                self.dag.clone(),
             )?)
         } else {
             None
@@ -247,6 +254,7 @@ where
             block_id,
             self.storage.clone(),
             self.vm_metrics.clone(),
+            self.dag.clone(),
         )?;
 
         // delete block since from block.number + 1 to latest.
@@ -284,6 +292,7 @@ where
             block.header().parent_hash(),
             self.storage.clone(),
             self.vm_metrics.clone(),
+            self.dag.clone(),
         )?;
         let verify_block = chain.verify(block)?;
         chain.execute(verify_block)

@@ -515,6 +515,7 @@ use crate::sync_metrics::SyncMetrics;
 pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 
 pub fn full_sync_task<H, A, F, N>(
@@ -530,6 +531,7 @@ pub fn full_sync_task<H, A, F, N>(
     max_retry_times: u64,
     sync_metrics: Option<SyncMetrics>,
     vm_metrics: Option<VMMetrics>,
+    dag: BlockDAG,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
@@ -635,6 +637,7 @@ where
                 time_service.clone(),
                 peer_provider.clone(),
                 ext_error_handle.clone(),
+                dag.clone(),
             );
             let start_now = Instant::now();
             let (block_chain, _) = inner

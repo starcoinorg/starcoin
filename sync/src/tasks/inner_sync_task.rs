@@ -6,6 +6,7 @@ use anyhow::format_err;
 use network_api::PeerProvider;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
@@ -32,6 +33,7 @@ where
     time_service: Arc<dyn TimeService>,
     peer_provider: N,
     custom_error_handle: Arc<dyn CustomErrorHandle>,
+    dag: BlockDAG,
 }
 
 impl<H, F, N> InnerSyncTask<H, F, N>
@@ -50,6 +52,7 @@ where
         time_service: Arc<dyn TimeService>,
         peer_provider: N,
         custom_error_handle: Arc<dyn CustomErrorHandle>,
+        dag: BlockDAG,
     ) -> Self {
         Self {
             ancestor,
@@ -61,6 +64,7 @@ where
             time_service,
             peer_provider,
             custom_error_handle,
+            dag,
         }
     }
 
@@ -132,6 +136,7 @@ where
                 ancestor.id,
                 self.storage.clone(),
                 vm_metrics,
+                self.dag,
             )?;
             let block_collector = BlockCollector::new_with_handle(
                 current_block_info.clone(),

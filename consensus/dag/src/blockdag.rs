@@ -41,7 +41,6 @@ impl BlockDAG {
         let reachability_store = db.reachability_store.clone();
         let reachability_service =
             MTReachabilityService::new(Arc::new(RwLock::new(reachability_store)));
-
         let ghostdag_manager = DbGhostdagManager::new(
             k,
             ghostdag_store.clone(),
@@ -50,11 +49,10 @@ impl BlockDAG {
             reachability_service,
         );
 
-        let mut dag = Self {
+        Self {
             ghostdag_manager,
             storage: db,
-        };
-        dag
+        }
     }
 
     pub fn init_with_genesis(&self, genesis: BlockHeader) -> anyhow::Result<()> {

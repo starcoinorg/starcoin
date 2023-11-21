@@ -24,7 +24,7 @@ use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_service_registry::ServiceRequest;
 use starcoin_state_api::{StateProof, StateWithProof, StateWithTableItemProof};
 use starcoin_types::block::{
-    Block, BlockBody, BlockHeader, BlockHeaderExtra, BlockInfo, BlockNumber,
+    Block, BlockBody, BlockHeader, BlockHeaderExtra, BlockInfo, BlockNumber, ParentsHash,
 };
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::event::EventKey;
@@ -433,6 +433,8 @@ pub struct BlockHeaderView {
     pub nonce: u32,
     /// block header extra
     pub extra: BlockHeaderExtra,
+    /// block parents
+    pub parents_hash: ParentsHash,
 }
 
 impl From<BlockHeader> for BlockHeaderView {
@@ -453,6 +455,7 @@ impl From<BlockHeader> for BlockHeaderView {
             chain_id: origin.chain_id().id(),
             nonce: origin.nonce(),
             extra: *origin.extra(),
+            parents_hash: origin.parents_hash(),
         }
     }
 }
@@ -473,6 +476,7 @@ impl From<BlockHeaderView> for BlockHeader {
             genesis_config::ChainId::new(header_view.chain_id),
             header_view.nonce,
             header_view.extra,
+            header_view.parents_hash,
         )
     }
 }

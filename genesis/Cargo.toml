@@ -19,6 +19,7 @@ starcoin-transaction-builder = { workspace = true }
 starcoin-types = { features = ["fuzzing"], workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
+starcoin-dag = { workspace = true }
 stdlib = { workspace = true }
 stest = { workspace = true }
 thiserror = { workspace = true }

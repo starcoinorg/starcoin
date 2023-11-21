@@ -48,7 +48,7 @@ thiserror = { workspace = true }
 timeout-join-handler = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 num_cpus = { workspace = true }
-
+starcoin-dag = { workspace = true }
 [dev-dependencies]
 stest = { workspace = true }
 

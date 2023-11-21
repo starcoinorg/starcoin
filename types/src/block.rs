@@ -160,7 +160,6 @@ pub struct BlockHeader {
     /// block header extra
     extra: BlockHeaderExtra,
     /// Parents hash.
-    #[serde(skip_serializing_if = "Option::is_none")]
     parents_hash: ParentsHash,
 }
 
@@ -1010,7 +1009,6 @@ impl BlockTemplate {
             body: self.body,
         }
     }
-
 
     pub fn as_raw_block_header_single_chain(&self) -> RawBlockHeader {
         RawBlockHeader {

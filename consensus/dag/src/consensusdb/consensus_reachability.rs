@@ -6,9 +6,9 @@ use starcoin_crypto::HashValue as Hash;
 use starcoin_storage::storage::RawDBStorage;
 
 use crate::{
-    types::{interval::Interval, reachability::ReachabilityData},
-    define_schema,
     consensusdb::schema::{KeyCodec, ValueCodec},
+    define_schema,
+    types::{interval::Interval, reachability::ReachabilityData},
 };
 use starcoin_types::blockhash::{self, BlockHashMap, BlockHashes};
 

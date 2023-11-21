@@ -56,7 +56,6 @@ impl EventHandler<Self, NewHeadBlock> for ChainNotifyHandlerService {
         let block = block_detail.block();
         // notify header.
         self.notify_new_block(block, ctx);
-
         // notify events
         if let Err(e) = self.notify_events(block, self.store.clone(), ctx) {
             error!(target: "pubsub", "fail to notify events to client, err: {}", &e);

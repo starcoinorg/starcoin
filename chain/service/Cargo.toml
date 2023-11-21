@@ -18,6 +18,10 @@ starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
+starcoin-network-rpc-api = { workspace = true }
+starcoin-consensus = { workspace = true }
+starcoin-dag = { workspace = true }
+starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }
@@ -32,7 +36,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-chain-service"
 publish = { workspace = true }
-version = "1.13.8"
+version = "1.13.7"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

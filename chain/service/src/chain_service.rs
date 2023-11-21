@@ -1,7 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{format_err, Error, Result};
+use anyhow::{bail, format_err, Error, Result};
+use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::{
@@ -9,7 +10,9 @@ use starcoin_chain_api::{
 };
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
+
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
@@ -39,10 +42,17 @@ impl ChainReaderService {
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
+        dag: BlockDAG,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         Ok(Self {
-            inner: ChainReaderServiceInner::new(config, startup_info, storage, vm_metrics)?,
+            inner: ChainReaderServiceInner::new(
+                config.clone(),
+                startup_info,
+                storage.clone(),
+                dag,
+                vm_metrics.clone(),
+            )?,
         })
     }
 }
@@ -55,7 +65,10 @@ impl ServiceFactory<Self> for ChainReaderService {
             .get_startup_info()?
             .ok_or_else(|| format_err!("StartupInfo should exist at service init."))?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        Self::new(config, startup_info, storage, vm_metrics)
+        let dag = ctx
+            .get_shared_opt::<BlockDAG>()?
+            .expect("dag should be initialized at service init");
+        Self::new(config, startup_info, storage, dag, vm_metrics)
     }
 }
 
@@ -242,6 +255,7 @@ pub struct ChainReaderServiceInner {
     main: BlockChain,
     storage: Arc<dyn Store>,
     vm_metrics: Option<VMMetrics>,
+    dag: BlockDAG,
 }
 
 impl ChainReaderServiceInner {
@@ -249,6 +263,7 @@ impl ChainReaderServiceInner {
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
+        dag: BlockDAG,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let net = config.net();
@@ -257,12 +272,14 @@ impl ChainReaderServiceInner {
             startup_info.main,
             storage.clone(),
             vm_metrics.clone(),
+            dag.clone(),
         )?;
         Ok(Self {
             config,
             startup_info,
             main,
             storage,
+            dag,
             vm_metrics,
         })
     }
@@ -283,6 +300,7 @@ impl ChainReaderServiceInner {
             new_head_id,
             self.storage.clone(),
             self.vm_metrics.clone(),
+            self.dag.clone(),
         )?;
         Ok(())
     }

@@ -22,7 +22,7 @@ use starcoin_accumulator::AccumulatorTreeStore;
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::contract_event::ContractEvent;
-use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
+use starcoin_types::startup_info::{ChainInfo, ChainStatus, DagState, SnapshotRange};
 use starcoin_types::transaction::{RichTransactionInfo, Transaction};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
@@ -143,6 +143,7 @@ static VEC_PREFIX_NAME_V3: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         TABLE_INFO_PREFIX_NAME,
     ]
 });
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, IntoPrimitive, TryFromPrimitive)]
 #[repr(u8)]
 pub enum StorageVersion {
@@ -224,6 +225,10 @@ pub trait BlockStore {
 
     fn get_snapshot_range(&self) -> Result<Option<SnapshotRange>>;
     fn save_snapshot_range(&self, snapshot_height: SnapshotRange) -> Result<()>;
+
+    fn get_dag_state(&self) -> Result<Option<DagState>>;
+
+    fn save_dag_state(&self, dag_state: DagState) -> Result<()>;
 }
 
 pub trait BlockTransactionInfoStore {
@@ -241,6 +246,7 @@ pub trait BlockTransactionInfoStore {
         ids: Vec<HashValue>,
     ) -> Result<Vec<Option<RichTransactionInfo>>>;
 }
+
 pub trait ContractEventStore {
     /// Save events by key `txn_info_id`.
     /// As txn_info has accumulator root of events, so there is a one-to-one mapping.
@@ -338,6 +344,7 @@ impl Display for Storage {
         write!(f, "{}", self.clone())
     }
 }
+
 impl Debug for Storage {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{}", self)
@@ -467,6 +474,14 @@ impl BlockStore for Storage {
 
     fn save_snapshot_range(&self, snapshot_range: SnapshotRange) -> Result<()> {
         self.chain_info_storage.save_snapshot_range(snapshot_range)
+    }
+
+    fn get_dag_state(&self) -> Result<Option<DagState>> {
+        self.chain_info_storage.get_dag_state()
+    }
+
+    fn save_dag_state(&self, dag_state: DagState) -> Result<()> {
+        self.chain_info_storage.save_dag_state(dag_state)
     }
 }
 

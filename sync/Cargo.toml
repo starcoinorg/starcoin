@@ -42,7 +42,7 @@ stest = { workspace = true }
 stream-task = { workspace = true }
 sysinfo = { workspace = true }
 thiserror = { workspace = true }
-
+starcoin-dag ={workspace = true}
 [dev-dependencies]
 hex = { workspace = true }
 starcoin-miner = { workspace = true }

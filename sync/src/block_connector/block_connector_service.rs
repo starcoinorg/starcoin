@@ -8,6 +8,7 @@ use anyhow::{format_err, Result};
 use network_api::PeerProvider;
 use starcoin_chain_api::{ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
@@ -107,6 +108,7 @@ impl ServiceFactory<Self> for BlockConnectorService {
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist."))?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
+        let dag = ctx.get_shared::<BlockDAG>()?;
         let chain_service = WriteBlockChainService::new(
             config.clone(),
             startup_info,
@@ -114,6 +116,7 @@ impl ServiceFactory<Self> for BlockConnectorService {
             txpool,
             bus,
             vm_metrics,
+            dag,
         )?;
 
         Ok(Self::new(chain_service, config))

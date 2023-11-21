@@ -10,6 +10,7 @@ use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
+use starcoin_types::block::Block;
 use starcoin_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_types::{
@@ -39,6 +40,8 @@ pub struct OpenedBlock {
     difficulty: U256,
     strategy: ConsensusStrategy,
     vm_metrics: Option<VMMetrics>,
+    tips_hash: Option<Vec<HashValue>>,
+    blue_blocks: Option<Vec<Block>>,
 }
 
 impl OpenedBlock {
@@ -52,6 +55,8 @@ impl OpenedBlock {
         difficulty: U256,
         strategy: ConsensusStrategy,
         vm_metrics: Option<VMMetrics>,
+        tips_hash: Option<Vec<HashValue>>,
+        blue_blocks: Option<Vec<Block>>,
     ) -> Result<Self> {
         let previous_block_id = previous_header.id();
         let block_info = storage
@@ -90,6 +95,8 @@ impl OpenedBlock {
             difficulty,
             strategy,
             vm_metrics,
+            tips_hash,
+            blue_blocks,
         };
         opened_block.initialize()?;
         Ok(opened_block)
@@ -136,6 +143,29 @@ impl OpenedBlock {
     /// as the internal state may be corrupted.
     /// TODO: make the function can be called again even last call returns error.  
     pub fn push_txns(&mut self, user_txns: Vec<SignedUserTransaction>) -> Result<ExcludedTxns> {
+        for block in self.blue_blocks.as_ref().unwrap_or(&vec![]) {
+            let mut transactions = vec![];
+            transactions.extend(
+                block
+                    .transactions()
+                    .iter()
+                    .cloned()
+                    .map(Transaction::UserTransaction),
+            );
+            let executed_data = starcoin_executor::block_execute(
+                &self.state,
+                transactions,
+                self.gas_limit,
+                self.vm_metrics.clone(),
+            )?;
+            let included_txn_info_hashes: Vec<_> = executed_data
+                .txn_infos
+                .iter()
+                .map(|info| info.id())
+                .collect();
+            self.txn_accumulator.append(&included_txn_info_hashes)?;
+        }
+
         let mut txns: Vec<_> = user_txns
             .iter()
             .cloned()
@@ -168,6 +198,7 @@ impl OpenedBlock {
 
         let mut discard_txns: Vec<SignedUserTransaction> = Vec::new();
         debug_assert_eq!(txns.len(), txn_outputs.len());
+
         for (txn, output) in txns.into_iter().zip(txn_outputs.into_iter()) {
             let txn_hash = txn.id();
             match output.status() {
@@ -264,8 +295,9 @@ impl OpenedBlock {
 
     /// Construct a block template for mining.
     pub fn finalize(self) -> Result<BlockTemplate> {
-        let accumulator_root = self.txn_accumulator.root_hash();
         let state_root = self.state.state_root();
+        let accumulator_root = self.txn_accumulator.root_hash();
+
         let uncles = if !self.uncles.is_empty() {
             Some(self.uncles)
         } else {
@@ -284,6 +316,7 @@ impl OpenedBlock {
             self.difficulty,
             self.strategy,
             self.block_meta,
+            self.tips_hash,
         );
         Ok(block_template)
     }
