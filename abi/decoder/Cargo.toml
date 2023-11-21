@@ -19,7 +19,7 @@ authors = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-abi-decoder"
-version = "1.13.7"
+version = "1.13.8"
 homepage = { workspace = true }
 publish = { workspace = true }
 repository = { workspace = true }
