@@ -52,6 +52,7 @@ impl ChainBencher {
             storage,
             net.id().clone(),
             None,
+            None,
         )
         .expect("create block chain should success.");
         let miner_account = AccountInfo::random();

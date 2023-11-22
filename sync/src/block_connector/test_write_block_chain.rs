@@ -49,10 +49,7 @@ pub async fn create_writeable_block_chain() -> (
     let flex_dag_db = FlexiDagStorage::create_from_path("./smolstc", flex_dag_config)
         .expect("Failed to create flexidag storage");
 
-    let dag = BlockDAG::new(
-        3,
-        flex_dag_db,
-    );
+    let dag = BlockDAG::new(3, flex_dag_db);
 
     (
         WriteBlockChainService::new(
@@ -149,6 +146,7 @@ fn gen_fork_block_chain(
                 parent_id,
                 writeable_block_chain_service.get_main().get_storage(),
                 net.id().clone(),
+                None,
                 None,
             )
             .unwrap();

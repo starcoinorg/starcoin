@@ -747,7 +747,7 @@ impl Block {
             .unwrap_or_default()
     }
 
-    fn dag_parent_and_tips(&self) -> Option<(&BlockHeader, &[BlockHeader])> {
+    pub fn dag_parent_and_tips(&self) -> Option<(&BlockHeader, &[BlockHeader])> {
         self.body
             .uncles
             .as_ref()

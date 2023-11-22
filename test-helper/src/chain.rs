@@ -19,6 +19,7 @@ pub fn gen_blockchain_for_test(net: &ChainNetwork) -> Result<BlockChain> {
         storage,
         net.id().clone(),
         None,
+        None,
     )?;
     Ok(block_chain)
 }

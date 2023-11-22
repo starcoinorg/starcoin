@@ -196,12 +196,14 @@ impl ServiceFactory<NetworkActorService> for MockNetworkServiceFactory {
         let dag_tips = storage.get_tips_by_block_id(head_block_hash)?;
         let chain_status =
             ChainStatus::new(head_block_header.clone(), head_block_info, Some(dag_tips));
-        let dag_accumulator_info = storage.get_dag_accumulator_info(head_block_hash)?;
+        let dag_accumulator_info = storage.get_dag_accumulator_info()?;
         let chain_state_info = ChainInfo::new(
             config.net().chain_id(),
             genesis_hash,
             chain_status.clone(),
             dag_accumulator_info.clone(),
+            // fixme: set proper parameter for k_total_difficulties
+            None,
         );
         let actor_service =
             NetworkActorService::new(config, chain_state_info, rpc, peer_message_handle.clone())?;

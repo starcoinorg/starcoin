@@ -52,11 +52,14 @@ impl CompactBlock {
     }
 }
 
-// impl From<Block> for CompactBlock {
-//     fn from(block: Block) -> Self {
-//         CompactBlock::new(block)
-//     }
-// }
+impl From<Block> for CompactBlock {
+    fn from(block: Block) -> Self {
+        let tips = block
+            .dag_parent_and_tips()
+            .map(|(_, tips)| tips.iter().map(|b| b.id()).collect::<Vec<_>>());
+        CompactBlock::new(block, tips)
+    }
+}
 
 impl Sample for CompactBlock {
     fn sample() -> Self {

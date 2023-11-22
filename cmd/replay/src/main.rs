@@ -86,6 +86,7 @@ fn main() -> anyhow::Result<()> {
         storage,
         net.id().clone(),
         None,
+        None,
     )
     .expect("create block chain should success.");
 
@@ -104,6 +105,7 @@ fn main() -> anyhow::Result<()> {
         chain_info2.status().head().id(),
         storage2.clone(),
         net.id().clone(),
+        None,
         None,
     )
     .expect("create block chain should success.");

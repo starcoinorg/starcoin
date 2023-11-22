@@ -640,6 +640,7 @@ pub fn export_block_range(
         storage,
         net.id().clone(),
         None,
+        None,
     )
     .expect("create block chain should success.");
     let cur_num = chain.status().head().number();
@@ -724,6 +725,7 @@ pub fn apply_block(
         storage.clone(),
         net.id().clone(),
         None,
+        None,
     )
     .expect("create block chain should success.");
     let start_time = SystemTime::now();
@@ -803,6 +805,7 @@ pub fn startup_info_back(
         storage.clone(),
         net.id().clone(),
         None,
+        None,
     )
     .expect("create block chain should success.");
 
@@ -848,6 +851,7 @@ pub fn gen_block_transactions(
         chain_info.head().id(),
         storage.clone(),
         net.id().clone(),
+        None,
         None,
     )
     .expect("create block chain should success.");
@@ -1306,6 +1310,7 @@ pub fn export_snapshot(
         storage.clone(),
         net.id().clone(),
         None,
+        None,
     )
     .expect("create block chain should success.");
     let block_num = chain.status().head().number();
@@ -1328,6 +1333,7 @@ pub fn export_snapshot(
         cur_block.id(),
         storage.clone(),
         net.id().clone(),
+        None,
         None,
     )
     .expect("create block chain should success.");
@@ -1653,6 +1659,7 @@ pub fn apply_snapshot(
             chain_info.head().id(),
             storage.clone(),
             net.id().clone(),
+            None,
             None,
         )
         .expect("create block chain should success."),
@@ -1988,6 +1995,7 @@ pub fn gen_turbo_stm_transactions(to_dir: PathBuf, block_num: Option<u64>) -> an
         storage.clone(),
         net.id().clone(),
         None,
+        None,
     )
     .expect("create block chain should success.");
     let block_num = block_num.unwrap_or(1000);
@@ -2014,6 +2022,7 @@ pub fn apply_turbo_stm_block(
         chain_info_seq.head().id(),
         storage_seq.clone(),
         net.id().clone(),
+        None,
         None,
     )
     .expect("create block chain should success.");
@@ -2073,6 +2082,7 @@ pub fn apply_turbo_stm_block(
         chain_info_stm.head().id(),
         storage_stm.clone(),
         net.id().clone(),
+        None,
         None,
     )
     .expect("create block chain should success.");

@@ -28,7 +28,7 @@ impl ServiceFactory<NetworkActorService> for NetworkServiceFactory {
             NodePeerMessageHandler::new(txpool_service, block_relayer, announcement_service);
 
         let chain_info = storage
-            .get_chain_info(config.net().id().clone())?
+            .get_chain_info()?
             .ok_or_else(|| format_err!("Can not get chain info."))?;
         let actor_service = NetworkActorService::new(
             config,

@@ -85,6 +85,7 @@ fn test_switch_main() {
             storage.clone(),
             net.id().clone(),
             None,
+            None,
         )
         .unwrap();
 
@@ -128,6 +129,7 @@ fn test_switch_main() {
             head_id,
             storage.clone(),
             net.id().clone(),
+            None,
             None,
         )
         .unwrap();
@@ -405,6 +407,7 @@ fn test_new_branch() {
             new_head_id,
             storage.clone(),
             net.id().clone(),
+            None,
             None,
         )
         .unwrap();

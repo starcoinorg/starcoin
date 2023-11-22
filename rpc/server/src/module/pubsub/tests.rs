@@ -44,6 +44,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
         storage,
         net.id().clone(),
         None,
+        None,
     )?;
     let miner_account = AccountInfo::random();
 

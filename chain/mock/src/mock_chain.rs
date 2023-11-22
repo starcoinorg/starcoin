@@ -25,11 +25,13 @@ impl MockChain {
         let (storage, chain_info, _) =
             Genesis::init_storage_for_test(&net).expect("init storage by genesis fail.");
 
+        // Todo: how to create a BlockChain with dag
         let chain = BlockChain::new(
             net.time_service(),
             chain_info.head().id(),
             storage,
             net.id().clone(),
+            None,
             None,
         )?;
         let miner = AccountInfo::random();
@@ -47,6 +49,7 @@ impl MockChain {
             head_block_hash,
             storage,
             net.id().clone(),
+            None,
             None,
         )?;
         Ok(Self::new_inner(net, chain, miner))
@@ -85,6 +88,7 @@ impl MockChain {
             self.head.get_storage(),
             self.net.id().clone(),
             None,
+            None,
         )
     }
 
@@ -106,6 +110,7 @@ impl MockChain {
             new_block_id,
             self.head.get_storage(),
             self.net.id().clone(),
+            None,
             None,
         )?;
         let branch_total_difficulty = branch.get_total_difficulty()?;

@@ -114,6 +114,24 @@ impl ForkBlockChain {
         })
     }
 
+    fn merge_tips(&self, block: &Block) -> Option<Vec<HashValue>> {
+        let tips = self
+            .status
+            .as_ref()
+            .and_then(|status| status.status.tips_hash.clone());
+        let parents = block.header.parents_hash();
+        match (tips, parents) {
+            (Some(mut tips), Some(parents)) => {
+                for hash in parents {
+                    tips.retain(|x| *x != hash);
+                }
+                tips.push(block.id());
+                Some(tips)
+            }
+            _ => None,
+        }
+    }
+
     pub fn add_new_block(&mut self, mut block: Block) -> Result<()> {
         block.header = block.header().as_builder().build();
 
@@ -132,7 +150,11 @@ impl ForkBlockChain {
         self.number_hash_map
             .insert(self.current_number, block.header().id());
         self.status = Some(ChainStatusWithBlock {
-            status: ChainStatus::new(block.header().clone(), block_info.clone()),
+            status: ChainStatus::new(
+                block.header().clone(),
+                block_info.clone(),
+                self.merge_tips(&block),
+            ),
             head: block.clone(),
         });
         self.storage.save_block_info(block_info)?;
