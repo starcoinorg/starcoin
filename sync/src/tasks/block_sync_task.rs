@@ -3,7 +3,7 @@
 
 use crate::tasks::{BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
-use anyhow::{format_err, Ok, Result};
+use anyhow::{format_err, Ok, Result, anyhow};
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use network_api::PeerId;
@@ -14,7 +14,7 @@ use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
 use starcoin_config::G_CRATE_VERSION;
 use starcoin_crypto::HashValue;
-use starcoin_flexidag::flexidag_service::{FinishSync, ForkDagAccumulator};
+use starcoin_flexidag::flexidag_service::{FinishSync, ForkDagAccumulator, AddToDag};
 use starcoin_flexidag::FlexidagService;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::ServiceRef;
@@ -465,32 +465,34 @@ where
     }
 
     fn collect_dag_item(&mut self, item: SyncBlockData) -> Result<()> {
-        // let (block, block_info, peer_id) = item.into();
-        // let block_id = block.id();
-        // let timestamp = block.header().timestamp();
+        let (block, block_info, peer_id) = item.into();
+        let block_id = block.id();
+        let timestamp = block.header().timestamp();
 
-        // let add_dag_result = async_std::task::block_on(self.flexidag_service.send(AddToDag {
-        //     block_header: block.header().clone(),
-        // }))??;
-        // let selected_parent = self
-        //     .storage
-        //     .get_block_by_hash(add_dag_result.selected_parent)?
-        //     .expect("selected parent should in storage");
-        // let mut chain = self.chain.fork(selected_parent.header.parent_hash())?;
-        // for blue_hash in add_dag_result.mergeset_blues.mergeset_blues.iter() {
-        //     if let Some(blue_block) = self.storage.get_block(blue_hash.to_owned())? {
-        //         match chain.apply(blue_block) {
-        //             std::result::Result::Ok(_executed_block) => (),
-        //             Err(e) => warn!("failed to connect dag block: {:?}", e),
-        //         }
-        //     } else {
-        //         error!("Failed to get block {:?}", blue_hash);
-        //     }
-        // }
+        let add_dag_result = self.flexidag_service.as_ref().map(|service| {
+            async_std::task::block_on(service.send(AddToDag {
+                        block_header: block.header().clone(),
+            }))? 
+        }).ok_or_else(|| anyhow!("flexidag service is None"))??;
+        let selected_parent = self
+            .storage
+            .get_block_by_hash(add_dag_result.selected_parent)?
+            .expect("selected parent should in storage");
+        let mut chain = self.chain.fork(selected_parent.header.parent_hash())?;
+        for blue_hash in add_dag_result.mergeset_blues.iter() {
+            if let Some(blue_block) = self.storage.get_block(blue_hash.to_owned())? {
+                match chain.apply(blue_block) {
+                    std::result::Result::Ok(_executed_block) => (),
+                    Err(e) => warn!("failed to connect dag block: {:?}", e),
+                }
+            } else {
+                error!("Failed to get block {:?}", blue_hash);
+            }
+        }
 
-        // if chain.status().info().total_difficulty > self.chain.status().info().total_difficulty {
-        //     self.chain = chain;
-        // }
+        if chain.status().info().total_difficulty > self.chain.status().info().total_difficulty {
+            self.chain = chain;
+        }
 
         Ok(())
     }

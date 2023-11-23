@@ -10239,6 +10239,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-dev",
  "starcoin-executor",
+ "starcoin-flexidag",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-metrics",

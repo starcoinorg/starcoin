@@ -19,6 +19,7 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::{NodeConfig, RocksdbConfig};
 use starcoin_crypto::{HashValue as Hash, HashValue};
+use starcoin_logger::prelude::info;
 use starcoin_storage::flexi_dag::SyncFlexiDagSnapshotHasher;
 use starcoin_storage::storage::CodecKVStore;
 use starcoin_storage::Store;

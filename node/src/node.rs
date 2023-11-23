@@ -20,6 +20,7 @@ use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::{BlockDAG, FlexiDagStorage, FlexiDagStorageConfig};
 use starcoin_crypto::HashValue;
+use starcoin_flexidag::FlexidagService;
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
 use starcoin_logger::structured_log::init_slog_logger;
@@ -357,16 +358,12 @@ impl NodeService {
         let upgrade_time = SystemTime::now().duration_since(start_time)?;
         let storage = Arc::new(Storage::new(storage_instance)?);
         registry.put_shared(storage.clone()).await?;
-        let dag_storage = FlexiDagStorage::create_from_path(
-            config.storage.dag_dir(),
-            config.storage.clone().into(),
-        )?;
-        let dag = BlockDAG::new(8, dag_storage);
+
         let (chain_info, genesis) =
             Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;
-        // TODO: init dag in the dag fork height
-        let _ = dag.init_with_genesis(genesis.block().header().to_owned());
-        registry.put_shared(dag).await?;
+        
+        registry.register::<FlexidagService>().await?;
+
         info!(
             "Start node with chain info: {}, number {} upgrade_time cost {} secs, ",
             chain_info,

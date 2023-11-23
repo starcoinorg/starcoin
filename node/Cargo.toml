@@ -49,6 +49,7 @@ timeout-join-handler = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 starcoin-accumulator = { workspace = true }
 num_cpus = { workspace = true }
+starcoin-flexidag = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }

@@ -295,6 +295,9 @@ impl ServiceFactory<Self> for FlexidagService {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let (dag, dag_accumulator) =
             BlockDAG::try_init_with_storage(storage.clone(), config.clone())?;
+        if let Some(dag) = &dag {
+            ctx.put_shared(dag.clone())?;
+        }
         let tip_info = dag_accumulator.as_ref().map(|accumulator| {
             let tips_index = accumulator.num_leaves();
             let tips_key = accumulator

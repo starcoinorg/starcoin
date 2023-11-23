@@ -26,6 +26,7 @@ use starcoin_accumulator::{
 };
 use starcoin_config::ChainNetworkID;
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::info;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::block::BlockNumber;
 use starcoin_types::{
@@ -37,7 +38,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::{
     account_address::AccountAddress,
-    state_store::table::{TableHandle, TableInfo},
+    state_store::table::{TableHandle, TableInfo}, account_config::key_rotation_capability,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -453,15 +454,25 @@ impl BlockStore for Storage {
         let head_block_info = self.get_block_info(head_block.id())?.ok_or_else(|| {
             format_err!("Startup block info {:?} should exist", startup_info.main)
         })?;
-        let snapshot = self
+        let (tips, dag_accumulator_info, k_total_difficulties) = self
             .get_lastest_snapshot()?
-            .ok_or_else(|| anyhow!("latest snapshot is  none"))?;
+            .map_or_else(|| {
+                info!("the dag data is none, the chain will be still a single chain");
+                (None, None, None)
+            }, |snapshot| {
+                info!("the dag data exists, the chain will be still a dag chain");
+                (
+                    Some(snapshot.child_hashes),
+                    Some(snapshot.accumulator_info),
+                    Some(snapshot.k_total_difficulties),
+                )
+            });
         let chain_info = ChainInfo::new(
             head_block.chain_id(),
             genesis_hash,
-            ChainStatus::new(head_block, head_block_info,Some(snapshot.child_hashes)),
-            Some(snapshot.accumulator_info),
-            Some(snapshot.k_total_difficulties),
+            ChainStatus::new(head_block, head_block_info, tips),
+            dag_accumulator_info,
+            k_total_difficulties,
         );
         Ok(Some(chain_info))
     }
@@ -675,9 +686,11 @@ impl SyncFlexiDagStore for Storage {
     }
 
     fn get_lastest_snapshot(&self) -> Result<Option<SyncFlexiDagSnapshot>> {
-        let info = self
-            .get_dag_accumulator_info()?
-            .ok_or_else(|| anyhow!("dag startup info is none"))?;
+        let info = match self
+            .get_dag_accumulator_info()? {
+                Some(info) => info,
+                None => return Ok(None),
+            };
         let merkle_tree = MerkleAccumulator::new_with_info(
             info,
             self.get_accumulator_store(AccumulatorStoreType::SyncDag),
