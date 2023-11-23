@@ -269,7 +269,9 @@ where
 
         match self.chain_service.try_connect(new_block.as_ref().clone()) {
             std::result::Result::Ok(()) => {
-                self.chain_service.dump_tips(block_header);
+                if let Err(e) = self.chain_service.dump_tips(block_header) {
+                    error!("Process mined block {} fail, error: {:?}", id, e);
+                }
             }
             Err(e) => {
                 warn!("Process mined block {} fail, error: {:?}", id, e);
