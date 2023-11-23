@@ -351,6 +351,7 @@ impl ChainReaderServiceInner {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn update_dag_accumulator(&mut self, new_block_header: BlockHeader) -> Result<()> {
         async_std::task::block_on(self.flexidag_service.send(UpdateDagTips {
             block_header: new_block_header,
@@ -526,7 +527,7 @@ impl ReadableChainService for ChainReaderServiceInner {
                 accumulator_root: detail.accumulator_root,
                 tips: detail.tips,
                 head_block_id: detail.accumulator_root,
-                k_total_difficulties: todo!(),
+                k_total_difficulties: detail.k_total_difficulties,
             })
             .collect())
     }

@@ -10,7 +10,6 @@ use crate::{
     state_node::StateStorage,
     storage::{CodecKVStore, CodecWriteBatch, ColumnFamilyName, StorageInstance},
 };
-//use crate::table_info::{TableInfoStorage, TableInfoStore};
 use crate::{
     transaction::TransactionStorage,
     transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage},
@@ -26,7 +25,6 @@ use starcoin_accumulator::{
 };
 use starcoin_config::ChainNetworkID;
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::info;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::block::BlockNumber;
 use starcoin_types::{
@@ -38,7 +36,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::{
     account_address::AccountAddress,
-    state_store::table::{TableHandle, TableInfo}, account_config::key_rotation_capability,
+    state_store::table::{TableHandle, TableInfo},
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -454,24 +452,21 @@ impl BlockStore for Storage {
         let head_block_info = self.get_block_info(head_block.id())?.ok_or_else(|| {
             format_err!("Startup block info {:?} should exist", startup_info.main)
         })?;
-        let (tips, dag_accumulator_info, k_total_difficulties) = self
-            .get_lastest_snapshot()?
-            .map_or_else(|| {
-                info!("the dag data is none, the chain will be still a single chain");
-                (None, None, None)
-            }, |snapshot| {
-                info!("the dag data exists, the chain will be still a dag chain");
+        let (tips_hash, flexi_dag_accumulator_info, k_total_difficulties) =
+            if let Some(snapshot) = self.get_lastest_snapshot()? {
                 (
                     Some(snapshot.child_hashes),
                     Some(snapshot.accumulator_info),
                     Some(snapshot.k_total_difficulties),
                 )
-            });
+            } else {
+                (None, None, None)
+            };
         let chain_info = ChainInfo::new(
             head_block.chain_id(),
             genesis_hash,
-            ChainStatus::new(head_block, head_block_info, tips),
-            dag_accumulator_info,
+            ChainStatus::new(head_block, head_block_info, tips_hash),
+            flexi_dag_accumulator_info,
             k_total_difficulties,
         );
         Ok(Some(chain_info))
@@ -686,19 +681,18 @@ impl SyncFlexiDagStore for Storage {
     }
 
     fn get_lastest_snapshot(&self) -> Result<Option<SyncFlexiDagSnapshot>> {
-        let info = match self
-            .get_dag_accumulator_info()? {
-                Some(info) => info,
-                None => return Ok(None),
-            };
-        let merkle_tree = MerkleAccumulator::new_with_info(
-            info,
-            self.get_accumulator_store(AccumulatorStoreType::SyncDag),
-        );
-        let key = merkle_tree
-            .get_leaf(merkle_tree.num_leaves() - 1)?
-            .ok_or_else(|| anyhow!("faile to get the key since it is none"))?;
-        self.query_by_hash(key)
+        if let Some(info) = self.get_dag_accumulator_info()? {
+            let merkle_tree = MerkleAccumulator::new_with_info(
+                info,
+                self.get_accumulator_store(AccumulatorStoreType::SyncDag),
+            );
+            let key = merkle_tree
+                .get_leaf(merkle_tree.num_leaves() - 1)?
+                .ok_or_else(|| anyhow!("failed to get the key since it is none"))?;
+            self.query_by_hash(key)
+        } else {
+            Ok(None)
+        }
     }
 
     fn get_dag_accumulator_info(&self) -> Result<Option<AccumulatorInfo>> {

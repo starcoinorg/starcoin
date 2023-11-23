@@ -15,7 +15,7 @@ use anyhow::{bail, ensure, format_err, Result};
 use once_cell::sync::Lazy;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::{debug, info, warn};
-use starcoin_types::block::BlockNumber;
+use starcoin_types::block::{BlockHeader, BlockNumber};
 use starcoin_types::startup_info::{BarnardHardFork, StartupInfo};
 use starcoin_types::transaction::Transaction;
 use std::cmp::Ordering;
@@ -231,7 +231,8 @@ impl DBUpgrade {
                 let mut iter = block_storage.header_store.iter()?;
                 iter.seek_to_first();
                 for item in iter {
-                    let (id, block_header) = item?;
+                    let (id, compat_block_header) = item?;
+                    let block_header: BlockHeader = compat_block_header.into();
                     if block_header.number() >= BARNARD_HARD_FORK_HEIGHT {
                         block_info_storage.remove(id)?;
                         processed_count += 1;

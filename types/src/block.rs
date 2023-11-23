@@ -161,6 +161,7 @@ pub struct BlockHeader {
     extra: BlockHeaderExtra,
     /// Parents hash.
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_deserializing)]
     parents_hash: ParentsHash,
 }
 
@@ -390,33 +391,53 @@ impl BlockHeader {
     }
 }
 
-impl<'de> Deserialize<'de> for BlockHeader {
-    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        #[serde(rename = "BlockHeader")]
-        struct BlockHeaderData {
-            parent_hash: HashValue,
-            timestamp: u64,
-            number: BlockNumber,
-            author: AccountAddress,
-            author_auth_key: Option<AuthenticationKey>,
-            txn_accumulator_root: HashValue,
-            block_accumulator_root: HashValue,
-            state_root: HashValue,
-            gas_used: u64,
-            difficulty: U256,
-            body_hash: HashValue,
-            chain_id: ChainId,
-            nonce: u32,
-            extra: BlockHeaderExtra,
-            parents_hash: ParentsHash,
-        }
+pub type CompatBlockHeader = BlockHeaderData;
 
-        let header_data = BlockHeaderData::deserialize(deserializer)?;
-        let block_header = Self::new_with_auth_key(
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename = "BlockHeader")]
+pub struct BlockHeaderData {
+    parent_hash: HashValue,
+    timestamp: u64,
+    number: BlockNumber,
+    author: AccountAddress,
+    author_auth_key: Option<AuthenticationKey>,
+    txn_accumulator_root: HashValue,
+    block_accumulator_root: HashValue,
+    state_root: HashValue,
+    gas_used: u64,
+    difficulty: U256,
+    body_hash: HashValue,
+    chain_id: ChainId,
+    nonce: u32,
+    extra: BlockHeaderExtra,
+    parents_hash: ParentsHash,
+}
+
+impl From<BlockHeader> for BlockHeaderData {
+    fn from(v: BlockHeader) -> Self {
+        Self {
+            parent_hash: v.parent_hash,
+            timestamp: v.timestamp,
+            number: v.number,
+            author: v.author,
+            author_auth_key: v.author_auth_key,
+            txn_accumulator_root: v.txn_accumulator_root,
+            block_accumulator_root: v.block_accumulator_root,
+            state_root: v.state_root,
+            gas_used: v.gas_used,
+            difficulty: v.difficulty,
+            body_hash: v.body_hash,
+            chain_id: v.chain_id,
+            nonce: v.nonce,
+            extra: v.extra,
+            parents_hash: v.parents_hash,
+        }
+    }
+}
+
+impl From<BlockHeaderData> for BlockHeader {
+    fn from(header_data: BlockHeaderData) -> Self {
+        Self::new_with_auth_key(
             header_data.parent_hash,
             header_data.timestamp,
             header_data.number,
@@ -432,8 +453,17 @@ impl<'de> Deserialize<'de> for BlockHeader {
             header_data.nonce,
             header_data.extra,
             header_data.parents_hash,
-        );
-        Ok(block_header)
+        )
+    }
+}
+
+impl<'de> Deserialize<'de> for BlockHeader {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let header_data = BlockHeaderData::deserialize(deserializer)?;
+        Ok(header_data.into())
     }
 }
 
@@ -697,6 +727,33 @@ pub struct Block {
     pub header: BlockHeader,
     /// The body of this block.
     pub body: BlockBody,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename = "Block")]
+pub struct CompatBlock {
+    header: CompatBlockHeader,
+    body: BlockBody,
+}
+
+impl From<Block> for CompatBlock {
+    fn from(value: Block) -> Self {
+        let Block { header, body } = value;
+        Self {
+            header: CompatBlockHeader::from(header),
+            body,
+        }
+    }
+}
+
+impl From<CompatBlock> for Block {
+    fn from(value: CompatBlock) -> Self {
+        let CompatBlock { header, body } = value;
+        Self {
+            header: header.into(),
+            body,
+        }
+    }
 }
 
 impl Block {

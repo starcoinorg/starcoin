@@ -36,6 +36,7 @@ use starcoin_storage::{
 use starcoin_transaction_builder::{
     build_signed_empty_txn, create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT,
 };
+use starcoin_types::block::{CompatBlock, CompatBlockHeader};
 use starcoin_types::{
     account::{peer_to_peer_txn, Account, DEFAULT_EXPIRATION_TIME},
     account_address::AccountAddress,
@@ -168,12 +169,14 @@ impl DbSchema {
     pub fn get_value_codec(&self) -> Box<dyn Fn(Vec<u8>) -> Result<serde_json::Value>> {
         Box::new(match self {
             DbSchema::Block => |arg| -> Result<serde_json::Value> {
-                Ok(serde_json::to_value(Block::decode_value(arg.as_slice())?)?)
+                Ok(serde_json::to_value(Block::from(
+                    CompatBlock::decode_value(arg.as_slice())?,
+                ))?)
             },
             DbSchema::BlockHeader => |arg| -> Result<serde_json::Value> {
-                Ok(serde_json::to_value(BlockHeader::decode_value(
-                    arg.as_slice(),
-                )?)?)
+                Ok(serde_json::to_value(BlockHeader::from(
+                    CompatBlockHeader::decode_value(arg.as_slice())?,
+                ))?)
             },
             DbSchema::FailedBlock => |arg| -> Result<serde_json::Value> {
                 Ok(serde_json::to_value(FailedBlock::decode_value(

@@ -38,6 +38,7 @@ use std::sync::Arc;
 mod errors;
 pub use errors::GenesisError;
 use starcoin_storage::table_info::TableInfoStore;
+use starcoin_types::block::CompatBlock;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;
 
@@ -47,6 +48,27 @@ pub const GENESIS_DIR: Dir = include_dir!("generated");
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Genesis {
     block: Block,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct CompatGenesis {
+    block: CompatBlock,
+}
+
+impl From<CompatGenesis> for Genesis {
+    fn from(value: CompatGenesis) -> Self {
+        Self {
+            block: value.block.into(),
+        }
+    }
+}
+
+impl From<&Genesis> for CompatGenesis {
+    fn from(value: &Genesis) -> Self {
+        Self {
+            block: value.block.clone().into(),
+        }
+    }
 }
 
 impl Display for Genesis {
@@ -232,8 +254,8 @@ impl Genesis {
         let mut genesis_file = File::open(genesis_file_path)?;
         let mut content = vec![];
         genesis_file.read_to_end(&mut content)?;
-        let genesis = bcs_ext::from_bytes(&content)?;
-        Ok(Some(genesis))
+        let compat_genesis: CompatGenesis = bcs_ext::from_bytes(&content)?;
+        Ok(Some(compat_genesis.into()))
     }
 
     fn genesis_bytes(net: BuiltinNetworkID) -> Option<&'static [u8]> {
@@ -245,7 +267,10 @@ impl Genesis {
 
     pub fn load_generated(net: BuiltinNetworkID) -> Result<Option<Self>> {
         match Self::genesis_bytes(net) {
-            Some(bytes) => Ok(Some(bcs_ext::from_bytes::<Genesis>(bytes)?)),
+            Some(bytes) => Ok(Some({
+                let data = bcs_ext::from_bytes::<CompatGenesis>(bytes)?;
+                data.into()
+            })),
             None => Ok(None),
         }
     }
@@ -280,7 +305,8 @@ impl Genesis {
         }
         let genesis_file = data_dir.join(Self::GENESIS_FILE_NAME);
         let mut file = File::create(genesis_file)?;
-        let contents = bcs_ext::to_bytes(self)?;
+        let compat_genesis: CompatGenesis = self.into();
+        let contents = bcs_ext::to_bytes(&compat_genesis)?;
         file.write_all(&contents)?;
         Ok(())
     }
@@ -318,7 +344,7 @@ impl Genesis {
         storage: Arc<Storage>,
         data_dir: &Path,
     ) -> Result<(ChainInfo, Genesis)> {
-        debug!("load startup_info.");
+        debug!("load startup_info {:?} from {:?}.", net.id(), data_dir);
         let (chain_info, genesis) = match storage.get_chain_info() {
             Ok(Some(chain_info)) => {
                 debug!("Get chain info {:?} from db", chain_info);
@@ -344,6 +370,7 @@ impl Genesis {
                 (chain_info, genesis)
             }
             Ok(None) => {
+                debug!("fresh genesis {:?} at {:?}", net.id(), data_dir);
                 let genesis = Self::load_and_check_genesis(net, data_dir, true)?;
                 let chain_info = genesis.execute_genesis_block(net, storage.clone())?;
                 (chain_info, genesis)
