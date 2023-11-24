@@ -6,7 +6,8 @@ use crate::consensusdb::{
     prelude::StoreError,
     schemadb::{ReachabilityStore, ReachabilityStoreReader},
 };
-use crate::dag::types::{interval::Interval, perf};
+use crate::types::interval::Interval;
+use crate::types::perf;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::blockhash::{BlockHashExtensions, BlockHashMap, BlockHashSet};
 use std::collections::VecDeque;

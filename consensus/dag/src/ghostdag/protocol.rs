@@ -5,14 +5,9 @@ use crate::types::{ghostdata::GhostdagData, ordering::*};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::blockhash::{BlockHashMap, BlockHashes, BlueWorkType, HashKTypeMap, KType};
+
 use starcoin_types::U256;
 use std::sync::Arc;
-// For GhostdagStoreReader-related functions, use GhostDagDataWrapper instead.
-//  ascending_mergeset_without_selected_parent
-//  descending_mergeset_without_selected_parent
-//  consensus_ordered_mergeset
-//  consensus_ordered_mergeset_without_selected_parent
-//use dag_database::consensus::GhostDagDataWrapper;
 
 #[derive(Clone)]
 pub struct GhostdagManager<
@@ -54,9 +49,9 @@ impl<
     pub fn genesis_ghostdag_data(&self, genesis: &BlockHeader) -> GhostdagData {
         GhostdagData::new(
             0,
-            Default::default(), //todo:: difficulty
+            genesis.difficulty(),
             genesis.parent_hash(),
-            BlockHashes::new(Vec::new()),
+            BlockHashes::new(vec![]),
             BlockHashes::new(Vec::new()),
             HashKTypeMap::new(BlockHashMap::new()),
         )
@@ -108,7 +103,6 @@ impl<
             !parents.is_empty(),
             "genesis must be added via a call to init"
         );
-
         // Run the GHOSTDAG parent selection algorithm
         let selected_parent = self.find_selected_parent(&mut parents.iter().copied());
         // Initialize new GHOSTDAG block data with the selected parent
@@ -148,6 +142,7 @@ impl<
             .unwrap()
             .checked_add(added_blue_work)
             .unwrap();
+
         new_block_data.finalize_score_and_work(blue_score, blue_work);
 
         new_block_data

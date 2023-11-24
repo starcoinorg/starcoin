@@ -334,6 +334,11 @@ where
         let strategy = epoch.strategy();
         let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
         let tips_hash = self.chain.current_tips_hash()?;
+        info!(
+            "block:{} tips:{:?}",
+            self.chain.current_header().number(),
+            &tips_hash
+        );
         let (uncles, blue_blocks) = {
             match &tips_hash {
                 None => (self.find_uncles(), None),

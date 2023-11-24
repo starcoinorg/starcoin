@@ -357,23 +357,24 @@ impl BlockChain {
     }
 
     fn execute_dag_block(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
+        info!("execute dag block:{:?}", verified_block.0);
         let block = verified_block.0;
-        let blues = block.uncles().expect("Blue blocks must exist");
-        let (selected_parent, blues) = blues.split_at(1);
-        let selected_parent = selected_parent[0].clone();
+        let selected_parent = block.parent_hash();
+        let blues = block.uncle_ids();
         let block_info_past = self
             .storage
-            .get_block_info(selected_parent.id())?
+            .get_block_info(selected_parent)?
             .expect("selected parent must executed");
         let header = block.header();
         let block_id = header.id();
-        let block_metadata = block.to_metadata(selected_parent.gas_used());
+        //TODO::FIXEME
+        let block_metadata = block.to_metadata(0);
         let mut transactions = vec![Transaction::BlockMetadata(block_metadata)];
         let mut total_difficulty = header.difficulty() + block_info_past.total_difficulty;
         for blue in blues {
             let blue_block = self
                 .storage
-                .get_block_by_hash(blue.id())?
+                .get_block_by_hash(blue)?
                 .expect("block blue need exist");
             transactions.extend(
                 blue_block
@@ -938,8 +939,9 @@ impl ChainReader for BlockChain {
     }
 
     fn execute(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
-        if !verified_block.0.is_dag() {
-            Self::execute_block_and_save(
+        let header = verified_block.0.header().clone();
+        if !header.is_dag() {
+            let executed = Self::execute_block_and_save(
                 self.storage.as_ref(),
                 self.statedb.fork(),
                 self.txn_accumulator.fork(None),
@@ -948,7 +950,16 @@ impl ChainReader for BlockChain {
                 Some(self.status.status.clone()),
                 verified_block.0,
                 self.vm_metrics.clone(),
-            )
+            )?;
+            if header.is_dag_genesis() {
+                info!("Init the dag genesis block");
+                let dag_genesis_id = header.id();
+                self.dag.init_with_genesis(header)?;
+                self.storage.save_dag_state(DagState {
+                    tips: vec![dag_genesis_id],
+                })?;
+            }
+            Ok(executed)
         } else {
             self.execute_dag_block(verified_block)
         }

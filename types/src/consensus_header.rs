@@ -14,9 +14,7 @@ pub trait ConsensusHeader {
 
 impl ConsensusHeader for BlockHeader {
     fn parents(&self) -> Vec<HashValue> {
-        self.parents_hash()
-            .expect("parents in block dag should exists")
-            .clone()
+        self.parents_hash().unwrap_or(vec![self.parent_hash()])
     }
     fn difficulty(&self) -> U256 {
         self.difficulty()

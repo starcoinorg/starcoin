@@ -10,7 +10,7 @@ use crate::consensusdb::{
         HeaderStore, ReachabilityStoreReader, RelationsStore, RelationsStoreReader,
     },
 };
-use anyhow::{anyhow, bail, Ok};
+use anyhow::{bail, Ok};
 use parking_lot::RwLock;
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_types::block::BlockHeader;
@@ -29,7 +29,7 @@ pub type DbGhostdagManager = GhostdagManager<
 
 #[derive(Clone)]
 pub struct BlockDAG {
-    storage: FlexiDagStorage,
+    pub storage: FlexiDagStorage,
     ghostdag_manager: DbGhostdagManager,
 }
 
@@ -58,13 +58,12 @@ impl BlockDAG {
     pub fn init_with_genesis(&self, genesis: BlockHeader) -> anyhow::Result<()> {
         let origin = genesis.parent_hash();
         if self.storage.relations_store.has(origin)? {
-            return Err(anyhow!("Already init with genesis"));
+            return Ok(());
         };
         inquirer::init(&mut self.storage.reachability_store.clone(), origin)?;
         self.storage
             .relations_store
             .insert(origin, BlockHashes::new(vec![]))?;
-
         self.commit(genesis)?;
         Ok(())
     }
@@ -72,37 +71,45 @@ impl BlockDAG {
         self.ghostdag_manager.ghostdag(parents)
     }
 
+    pub fn ghostdata_by_hash(&self, hash: HashValue) -> anyhow::Result<Option<Arc<GhostdagData>>> {
+        match self.storage.ghost_dag_store.get_data(hash) {
+            Result::Ok(value) => Ok(Some(value)),
+            Err(StoreError::KeyNotFound(_)) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
     pub fn commit(&self, header: BlockHeader) -> anyhow::Result<()> {
         // Generate ghostdag data
-        let parents_hash = header.parents();
-
-        let ghostdag_data = if !header.is_dag_genesis() {
-            self.ghostdag_manager.ghostdag(parents_hash.as_slice())
-        } else {
-            self.ghostdag_manager.genesis_ghostdag_data(&header)
-        };
+        let parents = header.parents();
+        let ghostdata = self.ghostdata_by_hash(header.id())?.unwrap_or_else(|| {
+            Arc::new(if header.is_dag_genesis() {
+                self.ghostdag_manager.genesis_ghostdag_data(&header)
+            } else {
+                self.ghostdag_manager.ghostdag(&parents)
+            })
+        });
         // Store ghostdata
         self.storage
             .ghost_dag_store
-            .insert(header.id(), Arc::new(ghostdag_data.clone()))?;
+            .insert(header.id(), ghostdata.clone())?;
 
         // Update reachability store
         let mut reachability_store = self.storage.reachability_store.clone();
-        let mut merge_set = ghostdag_data
+        let mut merge_set = ghostdata
             .unordered_mergeset_without_selected_parent()
             .filter(|hash| self.storage.reachability_store.has(*hash).unwrap());
 
         inquirer::add_block(
             &mut reachability_store,
             header.id(),
-            ghostdag_data.selected_parent,
+            ghostdata.selected_parent,
             &mut merge_set,
         )?;
-
         // store relations
         self.storage
             .relations_store
-            .insert(header.id(), BlockHashes::new(parents_hash.to_vec()))?;
+            .insert(header.id(), BlockHashes::new(parents))?;
         // Store header store
         let _ = self
             .storage
@@ -144,15 +151,13 @@ impl BlockDAG {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::FlexiDagStorageConfig;
+    use crate::consensusdb::prelude::FlexiDagStorageConfig;
     use starcoin_config::RocksdbConfig;
-    use starcoin_types::block::BlockHeader;
+    use starcoin_types::block::{BlockHeader, BlockHeaderBuilder};
     use std::{env, fs};
 
     #[test]
     fn base_test() {
-        let genesis = BlockHeader::dag_genesis_random();
-        let genesis_hash = genesis.hash();
         let k = 16;
         let db_path = env::temp_dir().join("smolstc");
         println!("db path:{}", db_path.to_string_lossy());
@@ -166,10 +171,29 @@ mod tests {
         let config = FlexiDagStorageConfig::create_with_params(1, RocksdbConfig::default());
         let db = FlexiDagStorage::create_from_path(db_path, config)
             .expect("Failed to create flexidag storage");
-        let mut dag = BlockDAG::new(k, db);
-        dag.init_with_genesis(genesis).unwrap();
-        let mut block = BlockHeader::random();
-        block.set_parents(vec![genesis_hash]);
-        dag.commit(block).unwrap();
+        let dag = BlockDAG::new(k, db);
+        let genesis = BlockHeader::dag_genesis_random();
+        let genesis_hash = genesis.hash();
+        dag.init_with_genesis(genesis.clone()).unwrap();
+        let headers = gen_headers(genesis, 10);
+        for header in headers {
+            dag.commit(header.clone()).unwrap();
+            let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
+            println!("ghostdag:{:?}", ghostdata);
+        }
+    }
+
+    fn gen_headers(genesis: BlockHeader, num: u64) -> Vec<BlockHeader> {
+        let mut headers = vec![];
+        let mut parents_hash = vec![genesis.id()];
+        for _ in 0..num {
+            let header_builder = BlockHeaderBuilder::random();
+            let header = header_builder
+                .with_parents_hash(Some(parents_hash.clone()))
+                .build();
+            parents_hash = vec![header.id()];
+            headers.push(header)
+        }
+        headers
     }
 }
