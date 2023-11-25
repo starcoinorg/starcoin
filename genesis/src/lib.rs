@@ -11,6 +11,7 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_config::{
     genesis_key_pair, BuiltinNetworkID, ChainNetwork, ChainNetworkID, GenesisBlockParameter,
+    NodeConfig,
 };
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainStateWriter;
@@ -37,6 +38,7 @@ use std::sync::Arc;
 
 mod errors;
 pub use errors::GenesisError;
+use starcoin_consensus::BlockDAG;
 use starcoin_storage::table_info::TableInfoStore;
 use starcoin_types::block::CompatBlock;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
@@ -387,6 +389,17 @@ impl Genesis {
         let genesis = Genesis::load_or_build(net)?;
         let chain_info = genesis.execute_genesis_block(net, storage.clone())?;
         Ok((storage, chain_info, genesis))
+    }
+
+    pub fn init_storage_for_test_with_dag(
+        config: &NodeConfig,
+    ) -> Result<(Arc<Storage>, ChainInfo, Genesis, BlockDAG)> {
+        let (storage, chain_info, genesis) = Self::init_storage_for_test(config.net())?;
+
+        let dag_dir = config.data_dir().join("flexi_dag_vaults");
+        let dag = BlockDAG::new_by_config(&dag_dir)?;
+
+        Ok((storage, chain_info, genesis, dag))
     }
 }
 

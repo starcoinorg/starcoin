@@ -157,9 +157,11 @@ async fn test_event_notify_receive() {
     let msg_send = PeerMessage::new_compact_block(
         network2.peer_id(),
         CompactBlockMessage::new(
-            CompactBlock::new(Block::new(BlockHeader::random(), BlockBody::new_empty())),
+            CompactBlock::new(
+                Block::new(BlockHeader::random(), BlockBody::new_empty()),
+                None,
+            ),
             mock_block_info(1.into()),
-            Some(vec![HashValue::zero()]),
         ),
     );
     let mut receiver = network2.message_handler.channel();
@@ -177,18 +179,26 @@ async fn test_event_notify_receive_repeat_block() {
     let msg_send1 = PeerMessage::new_compact_block(
         network2.peer_id(),
         CompactBlockMessage::new(
-            CompactBlock::new(block.clone()),
+            CompactBlock::new(
+                block.clone(),
+                block
+                    .dag_parent_and_tips()
+                    .map(|s| s.1.iter().map(|b| b.id()).collect::<Vec<_>>()),
+            ),
             mock_block_info(1.into()),
-            Some(vec![HashValue::zero()]),
         ),
     );
 
     let msg_send2 = PeerMessage::new_compact_block(
         network2.peer_id(),
         CompactBlockMessage::new(
-            CompactBlock::new(block.clone()),
+            CompactBlock::new(
+                block.clone(),
+                block
+                    .dag_parent_and_tips()
+                    .map(|s| s.1.iter().map(|b| b.id()).collect::<Vec<_>>()),
+            ),
             mock_block_info(1.into()),
-            Some(vec![HashValue::zero()]),
         ),
     );
 
@@ -272,10 +282,14 @@ async fn test_event_broadcast() {
 
     let block = Block::new(BlockHeader::random(), BlockBody::new_empty());
     let notification = NotificationMessage::CompactBlock(Box::new(CompactBlockMessage::new(
-        CompactBlock::new(block.clone()),
+        CompactBlock::new(
+            block.clone(),
+            block
+                .dag_parent_and_tips()
+                .map(|s| s.1.iter().map(|b| b.id()).collect::<Vec<_>>()),
+        ),
         //difficulty should > genesis block difficulty.
         mock_block_info(10.into()),
-        Some(vec![HashValue::zero()]),
     )));
     node1.service_ref.broadcast(notification.clone());
 

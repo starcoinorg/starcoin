@@ -268,7 +268,7 @@ mod tests {
         let config = FlexiDagStorageConfig::create_with_params(1, RocksdbConfig::default());
         let db = FlexiDagStorage::create_from_path(db_path, config)
             .expect("Failed to create flexidag storage");
-        let mut dag = BlockDAG::new(k, db);
+        let dag = BlockDAG::new(k, db);
         dag.init_with_genesis(genesis).unwrap();
         let mut block = BlockHeader::random();
         block.set_parents(vec![genesis_hash]);
