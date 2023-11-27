@@ -1,7 +1,4 @@
-use std::{
-    collections::BTreeSet,
-    sync::Arc,
-};
+use std::{collections::BTreeSet, sync::Arc};
 
 use crate::{
     accumulator::{AccumulatorStorage, DagBlockAccumulatorStorage},
@@ -27,7 +24,7 @@ pub struct SyncFlexiDagSnapshot {
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct SyncFlexiDagSnapshotHasher {
     pub child_hashes: Vec<HashValue>, // child nodes(tips), to get the relationship, use dag's relationship store
-    pub head_block_id: HashValue, // to initialize the BlockInfo
+    pub head_block_id: HashValue,     // to initialize the BlockInfo
     pub k_total_difficulties: BTreeSet<KTotalDifficulty>, // the k-th smallest total difficulty
 }
 
@@ -45,10 +42,10 @@ impl SyncFlexiDagSnapshotHasher {
 impl From<SyncFlexiDagSnapshot> for SyncFlexiDagSnapshotHasher {
     fn from(mut value: SyncFlexiDagSnapshot) -> Self {
         value.child_hashes.sort();
-        SyncFlexiDagSnapshotHasher { 
-            child_hashes: value.child_hashes, 
-            head_block_id: value.head_block_id, 
-            k_total_difficulties: value.k_total_difficulties 
+        SyncFlexiDagSnapshotHasher {
+            child_hashes: value.child_hashes,
+            head_block_id: value.head_block_id,
+            k_total_difficulties: value.k_total_difficulties,
         }
     }
 }
