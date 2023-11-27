@@ -30,6 +30,7 @@ trace-time = { workspace = true }
 transaction-pool = { workspace = true }
 proptest = { default-features = false, optional = true, workspace = true }
 proptest-derive = { default-features = false, optional = true, workspace = true }
+backtrace ={ workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

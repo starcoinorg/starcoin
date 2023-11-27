@@ -61,7 +61,8 @@ impl<C: AccountSeqNumberClient> tx_pool::Ready<VerifiedTransaction> for State<C>
             Some(nonce) if tx.transaction.sequence_number() > nonce => {
                 return tx_pool::Readiness::Future;
             }
-            _ => {}
+            _ => {
+            }
         }
 
         let sender = tx.sender();
@@ -77,10 +78,14 @@ impl<C: AccountSeqNumberClient> tx_pool::Ready<VerifiedTransaction> for State<C>
         match tx.transaction.sequence_number().cmp(nonce) {
             // Before marking as future check for stale ids
             cmp::Ordering::Greater => match self.stale_id {
-                Some(id) if tx.insertion_id() < id => tx_pool::Readiness::Stale,
+                Some(id) if tx.insertion_id() < id => {
+                    tx_pool::Readiness::Stale
+                }
                 _ => tx_pool::Readiness::Future,
             },
-            cmp::Ordering::Less => tx_pool::Readiness::Stale,
+            cmp::Ordering::Less => {
+                tx_pool::Readiness::Stale
+            },
             cmp::Ordering::Equal => {
                 *nonce = nonce.saturating_add(1);
                 tx_pool::Readiness::Ready
@@ -133,7 +138,9 @@ impl tx_pool::Ready<VerifiedTransaction> for Condition {
             Some(transaction::Condition::Timestamp(time)) if time > self.now => {
                 tx_pool::Readiness::Future
             }
-            _ => tx_pool::Readiness::Ready,
+            _ => {
+                tx_pool::Readiness::Ready
+            }
         }
     }
 }

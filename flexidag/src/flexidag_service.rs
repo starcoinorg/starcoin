@@ -458,12 +458,10 @@ impl ServiceHandler<Self, GetDagTips> for FlexidagService {
         _msg: GetDagTips,
         _ctx: &mut ServiceContext<FlexidagService>,
     ) -> Result<Option<Vec<HashValue>>> {
-        Ok(self
-            .tip_info
-            .as_ref()
-            .ok_or_else(|| anyhow!("tip info is none"))?
-            .tips
-            .clone())
+        match self.tip_info.as_ref() {
+            Some(tip_info) => Ok(tip_info.tips.clone()),
+            None => Ok(None),
+        }
     }
 }
 

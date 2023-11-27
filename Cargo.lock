@@ -10949,6 +10949,7 @@ version = "1.13.7"
 dependencies = [
  "anyhow",
  "async-trait",
+ "backtrace",
  "forkable-jellyfish-merkle",
  "futures 0.3.26",
  "futures-channel",
