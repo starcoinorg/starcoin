@@ -2,26 +2,26 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use bcs_ext::Sample;
+use move_core_types::language_storage::ModuleId;
 use move_core_types::{
     identifier::Identifier,
     language_storage::{StructTag, CORE_CODE_ADDRESS},
     vm_status::{KeptVMStatus, StatusCode},
 };
-use move_core_types::language_storage::ModuleId;
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
+use starcoin_language_e2e_tests::executor::FakeExecutor;
 use starcoin_language_e2e_tests::{
     account::Account as E2eTestAccount, assert_prologue_parity,
     common_transactions::rotate_key_txn, test_with_different_versions, transaction_status_eq,
     versioning::CURRENT_RELEASE_VERSIONS,
 };
-use starcoin_language_e2e_tests::executor::FakeExecutor;
 use starcoin_types::account::Account as StarcoinAccount;
 use starcoin_vm_types::{
+    account_config::stc_type_tag,
     transaction::authenticator::AuthenticationKey,
     transaction::{Script, SignedUserTransaction, TransactionStatus},
     transaction::{ScriptFunction, TransactionPayload},
-    account_config::stc_type_tag,
 };
 use test_helper::txn::create_account_txn_sent_as_association;
 
