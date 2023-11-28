@@ -1226,7 +1226,6 @@ impl BlockChain {
         Ok(event_with_infos)
     }
 
-    #[allow(dead_code)]
     fn connect_dag(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
         let dag = self.dag.clone().expect("dag should init with blockdag");
         let (new_tip_block, _) = (executed_block.block(), executed_block.block_info());
@@ -1310,16 +1309,7 @@ impl ChainWriter for BlockChain {
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
         let (block, block_info) = (executed_block.block(), executed_block.block_info());
-        if self.status.status.tips_hash.is_some() {
-            let mut tips = self.status.status.tips_hash.clone().unwrap();
-            tips.sort();
-            debug_assert!(
-                block.header().parent_hash() == Self::calculate_dag_accumulator_key(tips.clone())?
-                    || block.header().parent_hash() == self.status.status.head().id()
-            );
-        } else {
-            debug_assert!(block.header().parent_hash() == self.status.status.head().id());
-        }
+        debug_assert!(block.header().parent_hash() == self.status.status.head().id());
         //TODO try reuse accumulator and state db.
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
@@ -1368,6 +1358,11 @@ impl ChainWriter for BlockChain {
 
     fn chain_state(&mut self) -> &ChainStateDB {
         &self.statedb
+    }
+
+    fn update_tips(&mut self, new_tips: Vec<HashValue>) -> Result<()> {
+        self.status.status.tips_hash = Some(new_tips);
+        Ok(())
     }
 }
 

@@ -114,6 +114,8 @@ pub trait ChainWriter {
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock>;
 
     fn chain_state(&mut self) -> &ChainStateDB;
+
+    fn update_tips(&mut self, new_tips: Vec<HashValue>) -> Result<()>;
 }
 
 /// `Chain` is a trait that defines a single Chain.

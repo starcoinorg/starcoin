@@ -13,6 +13,7 @@ use starcoin_config::NodeConfig;
 use starcoin_consensus::{BlockDAG, Consensus};
 use starcoin_crypto::hash::HashValue;
 use starcoin_executor::VMMetrics;
+use starcoin_flexidag::flexidag_service::NewTips;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_service_registry::{
@@ -116,6 +117,14 @@ impl EventHandler<Self, NewHeadBlock> for BlockBuilderService {
     fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<BlockBuilderService>) {
         if let Err(e) = self.inner.update_chain(msg.executed_block.as_ref().clone()) {
             error!("err : {:?}", e)
+        }
+    }
+}
+
+impl EventHandler<Self, NewTips> for BlockBuilderService {
+    fn handle_event(&mut self, msg: NewTips, _ctx: &mut ServiceContext<BlockBuilderService>) {
+        if let Err(e) = self.inner.chain.update_tips(msg.tips) {
+            error!("failed to update miner tips for: {:?}", e);
         }
     }
 }
@@ -400,5 +409,9 @@ where
             parent: previous_header,
             template,
         })
+    }
+
+    pub fn update_tips(&mut self, new_tips: Vec<HashValue>) {
+        self.chain.update_tips(new_tips);
     }
 }

@@ -17,7 +17,7 @@ use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{ServiceContext, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::block::BlockInfo;
+use starcoin_types::block::{BlockInfo, self};
 use starcoin_types::dag_block::KTotalDifficulty;
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
@@ -106,7 +106,8 @@ where
             .as_ref()
             .map(|metrics| metrics.chain_block_connect_time.start_timer());
 
-        let result = self.connect_inner(block);
+        info!("jacktest: block's dag parent hash: {:?}", block.header().parents_hash());
+        let result = self.connect_inner(block.clone());
 
         if let Some(metrics) = self.metrics.as_ref() {
             let result = match result.as_ref() {

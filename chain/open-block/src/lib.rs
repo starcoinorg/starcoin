@@ -61,7 +61,7 @@ impl OpenedBlock {
         let previous_block_id = previous_header.id();
         let block_info = storage
             .get_block_info(previous_block_id)?
-            .ok_or_else(|| format_err!("Can not find block info by hash {}", previous_block_id))?;
+            .ok_or_else(|| format_err!("Cannot find block info by hash {}", previous_block_id))?;
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let txn_accumulator = MerkleAccumulator::new_with_info(
             txn_accumulator_info.clone(),

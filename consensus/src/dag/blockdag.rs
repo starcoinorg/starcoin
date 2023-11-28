@@ -19,6 +19,7 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::{NodeConfig, RocksdbConfig};
 use starcoin_crypto::{HashValue as Hash, HashValue};
+use starcoin_logger::prelude::info;
 use starcoin_storage::flexi_dag::SyncFlexiDagSnapshotHasher;
 use starcoin_storage::storage::CodecKVStore;
 use starcoin_storage::Store;
@@ -83,7 +84,8 @@ impl BlockDAG {
         let startup_info = storage
             .get_startup_info()?
             .expect("startup info must exist");
-        if let Some(_key) = startup_info.get_dag_main() {
+        if let Some(key) = startup_info.get_dag_main() {
+            info!("jacktest: load the dag accumulator key: {:?}", key);
             let accumulator_info = storage
                 .get_dag_accumulator_info()?
                 .expect("dag accumulator info should exist");
@@ -129,6 +131,7 @@ impl BlockDAG {
                     k_total_difficulties,
                 };
                 let key = Self::calculate_dag_accumulator_key(&snapshot_hasher)?;
+                info!("jacktest: create the dag genesis key: {:?}", key);
                 dag_accumulator.append(&[key])?;
                 storage
                     .get_accumulator_snapshot_storage()

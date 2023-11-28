@@ -7,6 +7,7 @@ use starcoin_accumulator::{
 use starcoin_config::NodeConfig;
 use starcoin_consensus::{dag::types::ghostdata::GhostdagData, BlockDAG};
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::info;
 use starcoin_service_registry::{
     ActorService, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
 };
@@ -15,6 +16,12 @@ use starcoin_storage::{
     BlockStore, Storage, Store, SyncFlexiDagStore,
 };
 use starcoin_types::{block::BlockHeader, dag_block::KTotalDifficulty};
+
+#[derive(Clone, Debug)]
+pub struct NewTips {
+    pub tips: Vec<HashValue>,
+}
+
 
 #[derive(Debug, Clone)]
 pub struct DumpTipsToAccumulator {
@@ -300,8 +307,9 @@ impl ServiceFactory<Self> for FlexidagService {
         }
         let tip_info = dag_accumulator.as_ref().map(|accumulator| {
             let tips_index = accumulator.num_leaves();
+            info!("jacktest: load the dag accumulator, and its tips leaf index is : {}", tips_index);
             let tips_key = accumulator
-                .get_leaf(tips_index)
+                .get_leaf(tips_index - 1)
                 .expect("failed to read the dag snapshot hash")
                 .expect("the dag snapshot hash is none");
             let snapshot = storage
@@ -314,6 +322,7 @@ impl ServiceFactory<Self> for FlexidagService {
                 k_total_difficulties: snapshot.k_total_difficulties,
             }
         });
+        info!("jacktest: dag: {:?}, dag accumulator: {:?}, tip_info: {:?}", dag.is_some(), dag_accumulator.is_some(), tip_info.is_some());
         Ok(Self {
             dag,
             dag_accumulator,
@@ -349,14 +358,20 @@ impl ServiceHandler<Self, DumpTipsToAccumulator> for FlexidagService {
             let config = ctx.get_shared::<Arc<NodeConfig>>()?;
             let (dag, dag_accumulator) = BlockDAG::try_init_with_storage(storage.clone(), config)?;
             if dag.is_none() {
+                info!("jacktest: dag is none, it is a single chain");
                 Ok(()) // the chain is still in single chain
             } else {
                 // initialize the dag data, the chain will be the dag chain at next block
+                info!("jacktest: dag is some, it is a dag chain");
                 self.dag = dag;
                 self.dag_accumulator = dag_accumulator;
+                let new_tips = vec![msg.block_header.id()];
                 self.tip_info = Some(TipInfo {
-                    tips: Some(vec![msg.block_header.id()]),
+                    tips: Some(new_tips.clone()),
                     k_total_difficulties: [msg.k_total_difficulty].into_iter().collect(),
+                });
+                ctx.broadcast(NewTips {
+                    tips: new_tips,
                 });
                 self.storage = storage.clone();
                 Ok(())
@@ -382,9 +397,14 @@ impl ServiceHandler<Self, DumpTipsToAccumulator> for FlexidagService {
                 .get_accumulator_snapshot_storage()
                 .put(key, snapshot_hasher.to_snapshot(dag.get_info()))?;
             dag.flush()?;
+            let new_tips = vec![msg.block_header.id()];
             self.tip_info = Some(TipInfo {
-                tips: Some(vec![msg.block_header.id()]),
+                tips: Some(new_tips.clone()),
                 k_total_difficulties: [msg.k_total_difficulty].into_iter().collect(),
+            });
+            // broadcast the tip
+            ctx.broadcast(NewTips {
+                tips: new_tips,
             });
             self.storage = storage.clone();
             Ok(())
@@ -401,6 +421,7 @@ impl ServiceHandler<Self, UpdateDagTips> for FlexidagService {
         let header = msg.block_header;
         match &mut self.tip_info {
             Some(tip_info) => {
+                info!("jacktest: dag is some, it is a dag chain4");
                 if !tip_info
                     .tips
                     .as_ref()
@@ -416,23 +437,34 @@ impl ServiceHandler<Self, UpdateDagTips> for FlexidagService {
                         head_block_id: msg.k_total_difficulty.head_block_id,
                         total_difficulty: msg.k_total_difficulty.total_difficulty,
                     });
+                    ctx.broadcast(NewTips {
+                        tips: tip_info.tips.as_ref().unwrap().clone(),
+                    });
                 }
                 Ok(())
             }
             None => {
+                info!("jacktest: dag is none, it is a single chain2");
                 let storage = ctx.get_shared::<Arc<Storage>>()?;
                 let config = ctx.get_shared::<Arc<NodeConfig>>()?;
                 if header.number() == storage.dag_fork_height(config.net().id().clone()) {
                     let (dag, dag_accumulator) =
                         BlockDAG::try_init_with_storage(storage.clone(), config)?;
                     if dag.is_none() {
+                        info!("jacktest: dag is none, it is a single chain3");
                         Ok(()) // the chain is still in single chain
                     } else {
                         // initialize the dag data, the chain will be the dag chain at next block
+                        info!("jacktest: dag is some, it is a dag chain2");
                         self.dag = dag;
+                        let new_tips = vec![header.id()];
                         self.tip_info = Some(TipInfo {
-                            tips: Some(vec![header.id()]),
+                            tips: Some(new_tips.clone()),
                             k_total_difficulties: [msg.k_total_difficulty].into_iter().collect(),
+                        });
+                        // broadcast the tip
+                        ctx.broadcast(NewTips {
+                            tips: new_tips,
                         });
                         self.dag_accumulator = dag_accumulator;
 
