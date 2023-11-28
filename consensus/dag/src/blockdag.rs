@@ -137,15 +137,6 @@ impl BlockDAG {
             }
         }
     }
-
-    // for testing
-    pub fn push_parent_children(
-        &mut self,
-        child: Hash,
-        parents: Arc<Vec<Hash>>,
-    ) -> Result<(), StoreError> {
-        self.storage.relations_store.insert(child, parents)
-    }
 }
 
 #[cfg(test)]
@@ -156,9 +147,7 @@ mod tests {
     use starcoin_types::block::{BlockHeader, BlockHeaderBuilder};
     use std::{env, fs};
 
-    #[test]
-    fn base_test() {
-        let k = 16;
+    fn build_block_dag(k: KType) -> BlockDAG {
         let db_path = env::temp_dir().join("smolstc");
         println!("db path:{}", db_path.to_string_lossy());
         if db_path
@@ -172,28 +161,86 @@ mod tests {
         let db = FlexiDagStorage::create_from_path(db_path, config)
             .expect("Failed to create flexidag storage");
         let dag = BlockDAG::new(k, db);
-        let genesis = BlockHeader::dag_genesis_random();
-        let genesis_hash = genesis.hash();
-        dag.init_with_genesis(genesis.clone()).unwrap();
-        let headers = gen_headers(genesis, 10);
-        for header in headers {
-            dag.commit(header.clone()).unwrap();
-            let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
-            println!("ghostdag:{:?}", ghostdata);
-        }
+        return dag;
     }
 
-    fn gen_headers(genesis: BlockHeader, num: u64) -> Vec<BlockHeader> {
-        let mut headers = vec![];
+    #[test]
+    fn test_dag_0() {
+        let dag = build_block_dag(16);
+        let genesis = BlockHeader::dag_genesis_random()
+            .as_builder()
+            .with_difficulty(0.into())
+            .build();
+
         let mut parents_hash = vec![genesis.id()];
-        for _ in 0..num {
+        dag.init_with_genesis(genesis.to_owned()).unwrap();
+
+        for _ in 0..10 {
             let header_builder = BlockHeaderBuilder::random();
             let header = header_builder
                 .with_parents_hash(Some(parents_hash.clone()))
                 .build();
             parents_hash = vec![header.id()];
-            headers.push(header)
+            dag.commit(header.to_owned()).unwrap();
+            let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
+            println!("{:?},{:?}", header, ghostdata);
         }
-        headers
+    }
+
+    #[test]
+    fn test_dag_1() {
+        let genesis = BlockHeader::dag_genesis_random()
+            .as_builder()
+            .with_difficulty(0.into())
+            .build();
+        let block1 = BlockHeaderBuilder::random()
+            .with_difficulty(1.into())
+            .with_parents_hash(Some(vec![genesis.id()]))
+            .build();
+        let block2 = BlockHeaderBuilder::random()
+            .with_difficulty(2.into())
+            .with_parents_hash(Some(vec![genesis.id()]))
+            .build();
+        let block3_1 = BlockHeaderBuilder::random()
+            .with_difficulty(1.into())
+            .with_parents_hash(Some(vec![genesis.id()]))
+            .build();
+        let block3 = BlockHeaderBuilder::random()
+            .with_difficulty(3.into())
+            .with_parents_hash(Some(vec![block3_1.id()]))
+            .build();
+        let block4 = BlockHeaderBuilder::random()
+            .with_difficulty(4.into())
+            .with_parents_hash(Some(vec![block1.id(), block2.id()]))
+            .build();
+        let block5 = BlockHeaderBuilder::random()
+            .with_difficulty(4.into())
+            .with_parents_hash(Some(vec![block2.id(), block3.id()]))
+            .build();
+        let block6 = BlockHeaderBuilder::random()
+            .with_difficulty(5.into())
+            .with_parents_hash(Some(vec![block4.id(), block5.id()]))
+            .build();
+        let mut latest_id = block6.id();
+        let genesis_id = genesis.id();
+        let dag = build_block_dag(3);
+        let expect_selected_parented = vec![block5.id(), block3.id(), block3_1.id(), genesis_id];
+        dag.init_with_genesis(genesis).unwrap();
+
+        dag.commit(block1).unwrap();
+        dag.commit(block2).unwrap();
+        dag.commit(block3_1).unwrap();
+        dag.commit(block3).unwrap();
+        dag.commit(block4).unwrap();
+        dag.commit(block5).unwrap();
+        dag.commit(block6).unwrap();
+
+        let mut count = 0;
+        while latest_id != genesis_id && count < 4 {
+            let ghostdata = dag.ghostdata_by_hash(latest_id).unwrap().unwrap();
+            latest_id = ghostdata.selected_parent;
+            assert_eq!(expect_selected_parented[count], latest_id);
+            count += 1;
+        }
     }
 }
