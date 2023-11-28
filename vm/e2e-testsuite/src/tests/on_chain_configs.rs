@@ -4,10 +4,12 @@
 use crate::tests::fake_stdlib::{
     build_fake_module_upgrade_plan, encode_update_dual_attestation_limit_script,
 };
-use move_core_types::identifier::Identifier;
-use move_core_types::language_storage::{ModuleId, CORE_CODE_ADDRESS};
-use move_core_types::transaction_argument::{convert_txn_args, TransactionArgument};
-use move_core_types::vm_status::{KeptVMStatus, StatusCode};
+use move_core_types::{
+    identifier::Identifier,
+    language_storage::{ModuleId, CORE_CODE_ADDRESS},
+    transaction_argument::{convert_txn_args, TransactionArgument},
+    vm_status::{KeptVMStatus, StatusCode},
+};
 use starcoin_language_e2e_tests::{
     account::Account, assert_prologue_parity, common_transactions::peer_to_peer_txn,
     current_function_name, executor::FakeExecutor, test_with_different_versions,

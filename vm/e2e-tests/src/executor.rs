@@ -3,8 +3,10 @@
 
 //! Support for running the VM to execute and verify transactions.
 
-use crate::account::{Account, AccountData};
-use crate::golden_outputs::GoldenOutputs;
+use crate::{
+    account::{Account, AccountData},
+    golden_outputs::GoldenOutputs,
+};
 use move_core_types::vm_status::KeptVMStatus;
 use move_table_extension::NativeTableContext;
 use num_cpus;
@@ -35,12 +37,15 @@ use starcoin_vm_types::{
     language_storage::{ModuleId, TypeTag},
     move_resource::MoveResource,
     on_chain_config::{OnChainConfig, VMConfig, Version},
-    state_store::state_key::StateKey,
-    state_store::table::{TableHandle, TableInfo},
+    state_store::{
+        state_key::StateKey,
+        table::{TableHandle, TableInfo},
+    },
     state_view::StateView,
-    transaction::authenticator::AuthenticationKey,
-    transaction::TransactionInfo,
-    transaction::{SignedUserTransaction, Transaction, TransactionOutput, TransactionStatus},
+    transaction::{
+        authenticator::AuthenticationKey, SignedUserTransaction, Transaction, TransactionInfo,
+        TransactionOutput, TransactionStatus,
+    },
     vm_status::VMStatus,
     write_set::WriteSet,
 };

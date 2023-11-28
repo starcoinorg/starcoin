@@ -3,8 +3,11 @@
 
 #![forbid(unsafe_code)]
 
-use crate::account::{AccountData, AccountRoleSpecifier};
-use crate::{account::Account, compile, executor::FakeExecutor};
+use crate::{
+    account::{Account, AccountData, AccountRoleSpecifier},
+    compile,
+    executor::FakeExecutor,
+};
 
 pub fn close_module_publishing(
     executor: &mut FakeExecutor,

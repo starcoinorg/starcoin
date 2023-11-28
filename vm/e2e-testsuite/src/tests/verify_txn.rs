@@ -2,38 +2,33 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_binary_format::CompiledModule;
-use move_core_types::language_storage::CORE_CODE_ADDRESS;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
-    language_storage::{StructTag, TypeTag},
-    value::{serialize_values, MoveValue},
+    language_storage::{ModuleId, StructTag, TypeTag, CORE_CODE_ADDRESS},
     vm_status::{KeptVMStatus, StatusCode},
 };
-use move_core_types::{language_storage::ModuleId, vm_status::VMStatus};
 use move_ir_compiler::Compiler;
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
 
-use starcoin_language_e2e_tests::account::{AccountData, AccountRoleSpecifier};
 use starcoin_language_e2e_tests::{
-    account::Account, assert_prologue_parity, common_transactions::peer_to_peer_txn,
-    compile::compile_module, executor::FakeExecutor, gas_costs, test_with_different_versions,
-    transaction_status_eq, versioning::CURRENT_RELEASE_VERSIONS,
+    account::{Account, AccountData, AccountRoleSpecifier},
+    assert_prologue_parity,
+    common_transactions::peer_to_peer_txn,
+    compile::compile_module,
+    executor::FakeExecutor,
+    gas_costs, test_with_different_versions, transaction_status_eq,
+    versioning::CURRENT_RELEASE_VERSIONS,
 };
 use starcoin_transaction_builder::{stdlib_compiled_modules, StdLibOptions};
 
 use starcoin_types::{account_config, transaction};
-use starcoin_vm_types::account_config::core_code_address;
-use starcoin_vm_types::transaction::ScriptFunction;
 use starcoin_vm_types::{
-    account_config::{stc_type_tag, STC_TOKEN_CODE_STR},
-    test_helpers::transaction_test_helpers,
-    transaction::TransactionPayload,
-    transaction::{Script, TransactionStatus},
-};
-use starcoin_vm_types::{
+    account_config::{core_code_address, stc_type_tag, STC_TOKEN_CODE_STR},
     gas_schedule::G_TEST_GAS_CONSTANTS,
     genesis_config::{ChainId, StdlibVersion::Latest},
+    test_helpers::transaction_test_helpers,
+    transaction::{Script, ScriptFunction, TransactionPayload, TransactionStatus},
 };
 
 use crate::tests::fake_stdlib::encode_peer_to_peer_with_metadata_script;

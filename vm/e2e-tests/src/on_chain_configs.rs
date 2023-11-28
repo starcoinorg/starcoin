@@ -1,14 +1,13 @@
 // Copyright (c) Starcoin
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::account::Account;
-use crate::executor::FakeExecutor;
+use crate::{account::Account, executor::FakeExecutor};
 use move_core_types::transaction_argument::{convert_txn_args, TransactionArgument};
 use move_ir_compiler::Compiler;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
-use starcoin_vm_types::genesis_config::StdlibVersion;
-use starcoin_vm_types::on_chain_config::Version;
-use starcoin_vm_types::transaction::Script;
+use starcoin_vm_types::{
+    genesis_config::StdlibVersion, on_chain_config::Version, transaction::Script,
+};
 use stdlib::{stdlib_compiled_modules, StdLibOptions};
 
 pub fn set_starcoin_version(executor: &mut FakeExecutor, version: Version) {

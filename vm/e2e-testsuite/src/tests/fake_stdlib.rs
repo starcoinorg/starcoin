@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use bcs_ext::Sample;
-use move_core_types::transaction_argument::TransactionArgument;
-use move_core_types::value::MoveValue;
-use move_core_types::{account_address::AccountAddress, language_storage::TypeTag};
+use move_core_types::{
+    account_address::AccountAddress, language_storage::TypeTag,
+    transaction_argument::TransactionArgument, value::MoveValue,
+};
 use move_ir_compiler::Compiler;
 use serde::Serialize;
 use starcoin_language_e2e_tests::compile::compile_script;

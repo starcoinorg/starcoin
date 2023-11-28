@@ -1,18 +1,19 @@
 // Copyright (c) Starcoin
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::account_universe::{AUTransactionGen, AccountPair, AccountPairGen, AccountUniverse};
-use crate::common_transactions::peer_to_peer_txn;
-use move_core_types::ident_str;
-use move_core_types::vm_status::KeptVMStatus;
-use proptest::arbitrary::any_with;
-use proptest::prelude::Strategy;
-use proptest::prop_oneof;
+use crate::{
+    account_universe::{AUTransactionGen, AccountPair, AccountPairGen, AccountUniverse},
+    common_transactions::peer_to_peer_txn,
+};
+use move_core_types::{ident_str, vm_status::KeptVMStatus};
+use proptest::{arbitrary::any_with, prelude::Strategy, prop_oneof};
 use proptest_derive::Arbitrary;
-use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
-use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::transaction::{SignedUserTransaction, TransactionStatus};
-use starcoin_vm_types::vm_status::{AbortLocation, StatusCode};
+use starcoin_vm_types::{
+    account_config::CORE_CODE_ADDRESS,
+    language_storage::ModuleId,
+    transaction::{SignedUserTransaction, TransactionStatus},
+    vm_status::{AbortLocation, StatusCode},
+};
 use std::sync::Arc;
 
 /// Represents a peer-to-peer transaction performed in the account universe.

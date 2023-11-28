@@ -5,11 +5,11 @@ use move_binary_format::file_format::{
     empty_script, AbilitySet, AddressIdentifierIndex, Bytecode, FunctionHandle,
     FunctionHandleIndex, IdentifierIndex, ModuleHandle, ModuleHandleIndex, SignatureIndex,
 };
-use move_core_types::account_address::AccountAddress;
-use move_core_types::vm_status::KeptVMStatus;
 use move_core_types::{
+    account_address::AccountAddress,
     identifier::Identifier,
     language_storage::{StructTag, TypeTag},
+    vm_status::KeptVMStatus,
 };
 use starcoin_language_e2e_tests::{current_function_name, executor::FakeExecutor};
 use starcoin_types::account_config;

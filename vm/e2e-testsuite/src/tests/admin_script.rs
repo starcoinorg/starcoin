@@ -1,19 +1,20 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::transaction_argument::TransactionArgument;
-use move_core_types::value::MoveValue;
+use move_core_types::{transaction_argument::TransactionArgument, value::MoveValue};
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
 use std::hash::Hash;
 
-use starcoin_language_e2e_tests::account::{Account, AccountData, AccountRoleSpecifier};
-use starcoin_language_e2e_tests::compile::compile_script;
-use starcoin_language_e2e_tests::{current_function_name, executor::FakeExecutor};
+use starcoin_language_e2e_tests::{
+    account::{Account, AccountData, AccountRoleSpecifier},
+    compile::compile_script,
+    current_function_name,
+    executor::FakeExecutor,
+};
 
-use starcoin_vm_types::transaction::TransactionOutput;
 use starcoin_vm_types::{
     on_chain_config,
-    transaction::{authenticator::AuthenticationKey, Script},
+    transaction::{authenticator::AuthenticationKey, Script, TransactionOutput},
 };
 
 fn execute_script_from_code(

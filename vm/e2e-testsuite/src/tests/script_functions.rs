@@ -1,9 +1,11 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::identifier::Identifier;
-use move_core_types::language_storage::ModuleId;
-use move_core_types::vm_status::{DiscardedVMStatus, KeptVMStatus};
+use move_core_types::{
+    identifier::Identifier,
+    language_storage::ModuleId,
+    vm_status::{DiscardedVMStatus, KeptVMStatus},
+};
 use starcoin_language_e2e_tests::{
     account::Account, compile::compile_module, current_function_name, executor::FakeExecutor,
     transaction_status_eq, utils, versioning::CURRENT_RELEASE_VERSIONS,

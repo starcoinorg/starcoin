@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_core_types::vm_status::{KeptVMStatus, StatusCode};
-use starcoin_crypto::ed25519::Ed25519PrivateKey;
-use starcoin_crypto::{PrivateKey, Uniform};
+use starcoin_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
 use starcoin_language_e2e_tests::{
     common_transactions::rotate_key_txn, test_with_different_versions,
     versioning::CURRENT_RELEASE_VERSIONS,

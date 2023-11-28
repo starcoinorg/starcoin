@@ -1,19 +1,23 @@
 // Copyright (c) Starcoin
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::account_universe::{AUTransactionGen, AccountUniverse};
-use crate::common_transactions::empty_txn;
-use crate::gas_costs;
-use proptest::arbitrary::any_with;
-use proptest::prelude::Strategy;
-use proptest::prop_oneof;
+use crate::{
+    account_universe::{AUTransactionGen, AccountUniverse},
+    common_transactions::empty_txn,
+    gas_costs,
+};
+use proptest::{arbitrary::any_with, prelude::Strategy, prop_oneof};
 use proptest_derive::Arbitrary;
-use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use starcoin_crypto::test_utils::KeyPair;
+use starcoin_crypto::{
+    ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
+    test_utils::KeyPair,
+};
 use starcoin_proptest_helpers::Index;
-use starcoin_vm_types::gas_schedule::G_TEST_GAS_CONSTANTS;
-use starcoin_vm_types::transaction::{SignedUserTransaction, TransactionStatus};
-use starcoin_vm_types::vm_status::StatusCode;
+use starcoin_vm_types::{
+    gas_schedule::G_TEST_GAS_CONSTANTS,
+    transaction::{SignedUserTransaction, TransactionStatus},
+    vm_status::StatusCode,
+};
 use std::sync::Arc;
 
 /// Represents a sequence number mismatch transaction

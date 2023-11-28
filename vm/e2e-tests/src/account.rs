@@ -5,33 +5,33 @@
 
 use crate::gas_costs;
 use anyhow::{Error, Result};
-use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use starcoin_crypto::keygen::KeyGen;
-use starcoin_crypto::ValidCryptoMaterial;
+use starcoin_crypto::{
+    ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
+    keygen::KeyGen,
+    ValidCryptoMaterial,
+};
 use starcoin_types::account::{Balance, EventHandleGenerator};
-use starcoin_vm_types::access_path::AccessPath;
-use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config;
-use starcoin_vm_types::account_config::{genesis_address, AccountResource, BalanceResource};
-use starcoin_vm_types::event::EventHandle;
-use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::language_storage::StructTag;
-use starcoin_vm_types::move_resource::MoveResource;
-use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::transaction::authenticator::{
-    AccountPrivateKey, AccountPublicKey, AuthenticationKey,
+use starcoin_vm_types::{
+    access_path::AccessPath,
+    account_address::AccountAddress,
+    account_config,
+    account_config::{genesis_address, AccountResource, BalanceResource},
+    event::EventHandle,
+    genesis_config::ChainId,
+    language_storage::StructTag,
+    move_resource::MoveResource,
+    state_store::state_key::StateKey,
+    token::token_code::TokenCode,
+    transaction::{
+        authenticator::{AccountPrivateKey, AccountPublicKey, AuthenticationKey},
+        Module, Package, RawUserTransaction, Script, ScriptFunction, SignedUserTransaction,
+        TransactionPayload,
+    },
+    value::{MoveStructLayout, MoveTypeLayout},
+    values::{Struct, Value},
+    write_set::{WriteOp, WriteSet, WriteSetMut},
 };
-use starcoin_vm_types::transaction::{
-    Module, Package, RawUserTransaction, Script, ScriptFunction, SignedUserTransaction,
-    TransactionPayload,
-};
-use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
-use starcoin_vm_types::values::{Struct, Value};
-use starcoin_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
-use std::collections::BTreeMap;
-use std::str::FromStr;
-use std::sync::Arc;
+use std::{collections::BTreeMap, str::FromStr, sync::Arc};
 
 // TTL is 86400s. Initial time was set to 0.
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;

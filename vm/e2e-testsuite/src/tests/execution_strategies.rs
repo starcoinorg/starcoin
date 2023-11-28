@@ -2,15 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_core_types::vm_status::VMStatus;
-use starcoin_language_e2e_tests::account::Account;
-use starcoin_language_e2e_tests::common_transactions::create_account_txn;
-use starcoin_language_e2e_tests::execution_strategies::basic_strategy::BasicExecutor;
-use starcoin_language_e2e_tests::execution_strategies::guided_strategy::{
-    AnnotatedTransaction, GuidedExecutor, PartitionedGuidedStrategy, UnPartitionedGuidedStrategy,
+use starcoin_language_e2e_tests::{
+    account::Account,
+    common_transactions::create_account_txn,
+    execution_strategies::{
+        basic_strategy::BasicExecutor,
+        guided_strategy::{
+            AnnotatedTransaction, GuidedExecutor, PartitionedGuidedStrategy,
+            UnPartitionedGuidedStrategy,
+        },
+        multi_strategy::MultiExecutor,
+        random_strategy::RandomExecutor,
+        types::Executor,
+    },
 };
-use starcoin_language_e2e_tests::execution_strategies::multi_strategy::MultiExecutor;
-use starcoin_language_e2e_tests::execution_strategies::random_strategy::RandomExecutor;
-use starcoin_language_e2e_tests::execution_strategies::types::Executor;
 use starcoin_vm_types::transaction::SignedUserTransaction;
 
 fn txn(seq_num: u64) -> SignedUserTransaction {

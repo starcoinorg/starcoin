@@ -17,8 +17,8 @@ use starcoin_vm_runtime::{
 };
 
 use starcoin_vm_types::{
-    account_config::G_STC_TOKEN_CODE, transaction_metadata::TransactionMetadata,
-    transaction_metadata::TransactionPayloadMetadata,
+    account_config::G_STC_TOKEN_CODE,
+    transaction_metadata::{TransactionMetadata, TransactionPayloadMetadata},
 };
 
 use starcoin_gas::StarcoinGasMeter;
