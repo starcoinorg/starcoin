@@ -586,9 +586,10 @@ where
         let parent_hash = block.parent_hash()?;
 
         if self.main.current_header().id() == parent_hash && !self.block_exist(block_id)? {
-            let executed_block = self.main.apply(block)?;
+            let executed_block = self.main.apply(block.clone())?;
             let enacted_blocks = vec![executed_block.block().clone()];
             self.do_new_head(executed_block.clone(), 1, enacted_blocks, 0, vec![])?;
+            self.broadcast_new_head(executed_block.clone());
             return Ok(ConnectOk::ExeConnectMain(executed_block));
         }
         let (block_info, fork) = self.find_or_fork(&block)?;
