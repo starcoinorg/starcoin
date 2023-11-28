@@ -24,6 +24,8 @@ thiserror = { workspace = true }
 proptest = { workspace = true }
 proptest-derive = { workspace = true }
 stest = { workspace = true }
+serde = { features = ["derive"], workspace = true }
+serde_json = { features = ["arbitrary_precision"], workspace = true }
 
 [features]
 default = []
@@ -35,7 +37,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-consensus"
 publish = { workspace = true }
-version = "1.13.7"
+version = "1.13.8"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

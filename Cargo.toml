@@ -553,3 +553,6 @@ starcoin-vm-runtime.debug = 1
 
 [profile.release.package."*"]
 debug = false
+
+#[profile.release.package.cryptonight-rs]
+#opt-level = 2
