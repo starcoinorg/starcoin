@@ -28,7 +28,6 @@ pub use test_write_block_chain::new_block;
 #[derive(Debug, Clone)]
 pub struct ResetRequest {
     pub block_hash: HashValue,
-    pub dag_block_parent: Option<Vec<HashValue>>,
 }
 
 impl ServiceRequest for ResetRequest {

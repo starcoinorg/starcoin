@@ -15,7 +15,7 @@ use crate::{
     transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage},
 };
 use anyhow::{anyhow, bail, format_err, Error, Ok, Result};
-use flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagSnapshotStorage, SyncFlexiDagStorage};
+use flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagSnapshotStorage, SyncFlexiDagStorage, DagTipsStorage, DagTips};
 use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
@@ -78,7 +78,6 @@ pub const BLOCK_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_block
 pub const TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_transaction";
 pub const BLOCK_PREFIX_NAME: ColumnFamilyName = "block";
 pub const BLOCK_HEADER_PREFIX_NAME: ColumnFamilyName = "block_header";
-pub const BLOCK_TIPS_HEADER_PREFIX_NAME: ColumnFamilyName = "block_tips_header";
 pub const BLOCK_BODY_PREFIX_NAME: ColumnFamilyName = "block_body";
 pub const BLOCK_INFO_PREFIX_NAME: ColumnFamilyName = "block_info";
 pub const BLOCK_TRANSACTIONS_PREFIX_NAME: ColumnFamilyName = "block_txns";
@@ -95,6 +94,7 @@ pub const FAILED_BLOCK_PREFIX_NAME: ColumnFamilyName = "failed_block";
 pub const TABLE_INFO_PREFIX_NAME: ColumnFamilyName = "table_info";
 pub const SYNC_FLEXI_DAG_ACCUMULATOR_PREFIX_NAME: ColumnFamilyName = "sync_flexi_dag_accumulator";
 pub const SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME: ColumnFamilyName = "sync_flexi_dag_snapshot";
+pub const DAG_TIPS_PREFIX_NAME: ColumnFamilyName = "dag_tips";
 
 ///db storage use prefix_name vec to init
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
@@ -181,6 +181,7 @@ static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         FAILED_BLOCK_PREFIX_NAME,
         SYNC_FLEXI_DAG_ACCUMULATOR_PREFIX_NAME,
         SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME,
+        DAG_TIPS_PREFIX_NAME,
         TABLE_INFO_PREFIX_NAME,
     ]
 });
@@ -238,11 +239,6 @@ pub trait BlockStore {
     fn delete_block(&self, block_id: HashValue) -> Result<()>;
 
     fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>>;
-
-    fn get_block_tips_header_by_hash(
-        &self,
-        block_id: HashValue,
-    ) -> Result<Option<Vec<BlockHeader>>>;
 
     fn get_block_by_hash(&self, block_id: HashValue) -> Result<Option<Block>>;
 
@@ -335,6 +331,8 @@ pub trait SyncFlexiDagStore {
     fn get_tips_by_block_id(&self, block_id: HashValue) -> Result<Vec<HashValue>>;
     fn dag_fork_height(&self, id: ChainNetworkID) -> BlockNumber;
     fn get_lastest_snapshot(&self) -> Result<Option<SyncFlexiDagSnapshot>>;
+    fn save_dag_tips(&self, tips: Vec<HashValue>) -> Result<()>;
+    fn get_dag_tips(&self) -> Result<Option<DagTips>>;
 }
 
 // TODO: remove Arc<dyn Store>, we can clone Storage directly.
@@ -495,13 +493,6 @@ impl BlockStore for Storage {
 
     fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {
         self.block_storage.get_block_header_by_hash(block_id)
-    }
-
-    fn get_block_tips_header_by_hash(
-        &self,
-        block_id: HashValue,
-    ) -> Result<Option<Vec<BlockHeader>>> {
-        self.block_storage.get_block_tips_header_by_hash(block_id)
     }
 
     fn get_block_by_hash(&self, block_id: HashValue) -> Result<Option<Block>> {
@@ -678,6 +669,14 @@ impl SyncFlexiDagStore for Storage {
 
     fn get_accumulator_snapshot_storage(&self) -> std::sync::Arc<SyncFlexiDagSnapshotStorage> {
         self.flexi_dag_storage.get_snapshot_storage()
+    }
+
+    fn save_dag_tips(&self, tips: Vec<HashValue>) -> Result<()> {
+        self.flexi_dag_storage.save_dag_tips(tips)
+    }
+
+    fn get_dag_tips(&self) -> Result<Option<DagTips>> {
+        self.flexi_dag_storage.get_dag_tips()
     }
 
     fn get_lastest_snapshot(&self) -> Result<Option<SyncFlexiDagSnapshot>> {

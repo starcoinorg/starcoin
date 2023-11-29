@@ -108,6 +108,7 @@ impl BlockChain {
             .get_genesis()?
             .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
         watch(CHAIN_WATCH_NAME, "n1253");
+        let dag_tips = storage.get_dag_tips()?;
         let mut chain = Self {
             genesis_hash: genesis,
             time_service,
@@ -122,7 +123,7 @@ impl BlockChain {
                 storage.as_ref(),
             ),
             status: ChainStatusWithBlock {
-                status: ChainStatus::new(head_block.header.clone(), block_info, None), //FIXME:read from snapshot
+                status: ChainStatus::new(head_block.header.clone(), block_info, dag_tips.map(|dag_tips| dag_tips.tips)), //FIXME:read from snapshot
                 head: head_block,
             },
             statedb: chain_state,

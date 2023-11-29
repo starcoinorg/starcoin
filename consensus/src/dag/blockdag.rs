@@ -85,7 +85,6 @@ impl BlockDAG {
             .get_startup_info()?
             .expect("startup info must exist");
         if let Some(key) = startup_info.get_dag_main() {
-            info!("jacktest: load the dag accumulator key: {:?}", key);
             let accumulator_info = storage
                 .get_dag_accumulator_info()?
                 .expect("dag accumulator info should exist");
@@ -131,7 +130,6 @@ impl BlockDAG {
                     k_total_difficulties,
                 };
                 let key = Self::calculate_dag_accumulator_key(&snapshot_hasher)?;
-                info!("jacktest: create the dag genesis key: {:?}", key);
                 dag_accumulator.append(&[key])?;
                 storage
                     .get_accumulator_snapshot_storage()

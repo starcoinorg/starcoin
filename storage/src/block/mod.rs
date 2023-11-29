@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 use crate::storage::{CodecKVStore, StorageInstance, ValueCodec};
-use crate::{define_storage, BLOCK_TIPS_HEADER_PREFIX_NAME};
+use crate::define_storage;
 use crate::{
     BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME,
     BLOCK_TRANSACTIONS_PREFIX_NAME, BLOCK_TRANSACTION_INFOS_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
@@ -84,18 +84,12 @@ define_storage!(
 );
 
 define_storage!(
-    BlockTipsHeaderStorage,
-    HashValue,
-    Vec<BlockHeader>,
-    BLOCK_TIPS_HEADER_PREFIX_NAME
-);
-
-define_storage!(
     BlockBodyStorage,
     HashValue,
     BlockBody,
     BLOCK_BODY_PREFIX_NAME
 );
+
 define_storage!(
     BlockTransactionsStorage,
     HashValue,
@@ -119,7 +113,6 @@ define_storage!(
 pub struct BlockStorage {
     block_store: BlockInnerStorage,
     pub(crate) header_store: BlockHeaderStorage,
-    pub(crate) tips_header_store: BlockTipsHeaderStorage,
     body_store: BlockBodyStorage,
     block_txns_store: BlockTransactionsStorage,
     block_txn_infos_store: BlockTransactionInfosStorage,
@@ -190,7 +183,6 @@ impl BlockStorage {
         BlockStorage {
             block_store: BlockInnerStorage::new(instance.clone()),
             header_store: BlockHeaderStorage::new(instance.clone()),
-            tips_header_store: BlockTipsHeaderStorage::new(instance.clone()),
             body_store: BlockBodyStorage::new(instance.clone()),
             block_txns_store: BlockTransactionsStorage::new(instance.clone()),
             block_txn_infos_store: BlockTransactionInfosStorage::new(instance.clone()),
@@ -262,13 +254,6 @@ impl BlockStorage {
     pub fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {
         let compat_header = self.header_store.get(block_id)?;
         Ok(compat_header.map(|c| c.into()))
-    }
-
-    pub fn get_block_tips_header_by_hash(
-        &self,
-        block_id: HashValue,
-    ) -> Result<Option<Vec<BlockHeader>>> {
-        self.tips_header_store.get(block_id)
     }
 
     pub fn get_block_by_hash(&self, block_id: HashValue) -> Result<Option<Block>> {

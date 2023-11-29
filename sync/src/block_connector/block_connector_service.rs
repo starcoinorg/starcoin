@@ -369,7 +369,7 @@ where
         _ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
     ) -> Result<()> {
         self.chain_service
-            .reset(msg.block_hash, msg.dag_block_parent)
+            .reset(msg.block_hash)
     }
 }
 

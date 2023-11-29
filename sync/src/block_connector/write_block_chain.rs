@@ -106,7 +106,6 @@ where
             .as_ref()
             .map(|metrics| metrics.chain_block_connect_time.start_timer());
 
-        info!("jacktest: block's dag parent hash: {:?}", block.header().parents_hash());
         let result = self.connect_inner(block.clone());
 
         if let Some(metrics) = self.metrics.as_ref() {
@@ -360,7 +359,6 @@ where
     pub fn reset(
         &mut self,
         block_id: HashValue,
-        dag_block_parents: Option<Vec<HashValue>>,
     ) -> Result<()> {
         let new_head_block = self
             .main

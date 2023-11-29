@@ -160,7 +160,6 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                     connect_service
                         .send(ResetRequest {
                             block_hash,
-                            dag_block_parent: parents,
                         })
                         .await?
                 };

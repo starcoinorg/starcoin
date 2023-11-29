@@ -307,7 +307,6 @@ impl ServiceFactory<Self> for FlexidagService {
         }
         let tip_info = dag_accumulator.as_ref().map(|accumulator| {
             let tips_index = accumulator.num_leaves();
-            info!("jacktest: load the dag accumulator, and its tips leaf index is : {}", tips_index);
             let tips_key = accumulator
                 .get_leaf(tips_index - 1)
                 .expect("failed to read the dag snapshot hash")
@@ -322,7 +321,6 @@ impl ServiceFactory<Self> for FlexidagService {
                 k_total_difficulties: snapshot.k_total_difficulties,
             }
         });
-        info!("jacktest: dag: {:?}, dag accumulator: {:?}, tip_info: {:?}", dag.is_some(), dag_accumulator.is_some(), tip_info.is_some());
         Ok(Self {
             dag,
             dag_accumulator,
@@ -358,11 +356,9 @@ impl ServiceHandler<Self, DumpTipsToAccumulator> for FlexidagService {
             let config = ctx.get_shared::<Arc<NodeConfig>>()?;
             let (dag, dag_accumulator) = BlockDAG::try_init_with_storage(storage.clone(), config)?;
             if dag.is_none() {
-                info!("jacktest: dag is none, it is a single chain");
                 Ok(()) // the chain is still in single chain
             } else {
                 // initialize the dag data, the chain will be the dag chain at next block
-                info!("jacktest: dag is some, it is a dag chain");
                 self.dag = dag;
                 self.dag_accumulator = dag_accumulator;
                 let new_tips = vec![msg.block_header.id()];
@@ -421,7 +417,6 @@ impl ServiceHandler<Self, UpdateDagTips> for FlexidagService {
         let header = msg.block_header;
         match &mut self.tip_info {
             Some(tip_info) => {
-                info!("jacktest: dag is some, it is a dag chain4");
                 if !tip_info
                     .tips
                     .as_ref()
@@ -444,18 +439,15 @@ impl ServiceHandler<Self, UpdateDagTips> for FlexidagService {
                 Ok(())
             }
             None => {
-                info!("jacktest: dag is none, it is a single chain2");
                 let storage = ctx.get_shared::<Arc<Storage>>()?;
                 let config = ctx.get_shared::<Arc<NodeConfig>>()?;
                 if header.number() == storage.dag_fork_height(config.net().id().clone()) {
                     let (dag, dag_accumulator) =
                         BlockDAG::try_init_with_storage(storage.clone(), config)?;
                     if dag.is_none() {
-                        info!("jacktest: dag is none, it is a single chain3");
                         Ok(()) // the chain is still in single chain
                     } else {
                         // initialize the dag data, the chain will be the dag chain at next block
-                        info!("jacktest: dag is some, it is a dag chain2");
                         self.dag = dag;
                         let new_tips = vec![header.id()];
                         self.tip_info = Some(TipInfo {

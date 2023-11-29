@@ -102,6 +102,7 @@ impl ActorService for BlockBuilderService {
         ctx.subscribe::<NewHeadBlock>();
         ctx.subscribe::<NewBranch>();
         ctx.subscribe::<DefaultAccountChangeEvent>();
+        ctx.subscribe::<NewTips>();
         Ok(())
     }
 
@@ -109,6 +110,7 @@ impl ActorService for BlockBuilderService {
         ctx.unsubscribe::<NewHeadBlock>();
         ctx.unsubscribe::<NewBranch>();
         ctx.unsubscribe::<DefaultAccountChangeEvent>();
+        ctx.unsubscribe::<NewTips>();
         Ok(())
     }
 }
@@ -123,8 +125,11 @@ impl EventHandler<Self, NewHeadBlock> for BlockBuilderService {
 
 impl EventHandler<Self, NewTips> for BlockBuilderService {
     fn handle_event(&mut self, msg: NewTips, _ctx: &mut ServiceContext<BlockBuilderService>) {
-        if let Err(e) = self.inner.chain.update_tips(msg.tips) {
+        if let Err(e) = self.inner.chain.update_tips(msg.tips.clone()) {
             error!("failed to update miner tips for: {:?}", e);
+        }
+        if let Err(e) = self.inner.storage.save_dag_tips(msg.tips) {
+            error!("failed to save miner tips for: {:?}", e);
         }
     }
 }
