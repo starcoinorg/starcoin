@@ -49,6 +49,7 @@ fn test_create_block_template_by_net(net: ChainNetworkID) {
         miner_account,
         None,
         None,
+        None,
     )
     .unwrap();
 
@@ -98,6 +99,7 @@ fn test_switch_main() {
             miner_account.clone(),
             None,
             None,
+            None,
         )
         .unwrap();
 
@@ -142,6 +144,7 @@ fn test_switch_main() {
                 txpool.clone(),
                 None,
                 miner_account.clone(),
+                None,
                 None,
                 None,
             )
@@ -217,6 +220,7 @@ fn test_do_uncles() {
             storage.clone(),
             net.id().clone(),
             None,
+            None,
         )
         .unwrap();
 
@@ -227,6 +231,7 @@ fn test_do_uncles() {
             txpool.clone(),
             None,
             miner_account.clone(),
+            None,
             None,
             None,
         )
@@ -252,6 +257,7 @@ fn test_do_uncles() {
             storage.clone(),
             net.id().clone(),
             None,
+            None,
         )
         .unwrap();
         let inner = Inner::new(
@@ -261,6 +267,7 @@ fn test_do_uncles() {
             txpool.clone(),
             None,
             miner_account.clone(),
+            None,
             None,
             None,
         )
@@ -287,6 +294,7 @@ fn test_do_uncles() {
             head_id,
             storage.clone(),
             net.id().clone(),
+            None,
             None,
         )
         .unwrap();
@@ -341,6 +349,7 @@ fn test_new_head() {
         miner_account,
         None,
         None,
+        None,
     )
     .unwrap();
 
@@ -386,6 +395,7 @@ fn test_new_branch() {
         miner_account.clone(),
         None,
         None,
+        None,
     )
     .unwrap();
     for _i in 0..times {
@@ -418,6 +428,7 @@ fn test_new_branch() {
             txpool.clone(),
             None,
             miner_account.clone(),
+            None,
             None,
             None,
         )
@@ -482,6 +493,7 @@ fn test_create_block_template_by_adjust_time() -> Result<()> {
         EmptyProvider,
         None,
         AccountInfo::random(),
+        None,
         None,
         None,
     )?;

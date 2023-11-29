@@ -1294,6 +1294,9 @@ impl ChainWriter for BlockChain {
     fn can_connect(&self, executed_block: &ExecutedBlock) -> bool {
         if executed_block.block.header().parent_hash() == self.status.status.head().id() {
             true
+        } else if self.dag.is_none() {
+            // this is a single chain
+            false
         } else {
             Self::calculate_dag_accumulator_key(
                 self.status
