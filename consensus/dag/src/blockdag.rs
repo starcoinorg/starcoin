@@ -1,7 +1,7 @@
 use super::ghostdag::protocol::GhostdagManager;
 use super::reachability::{inquirer, reachability_service::MTReachabilityService};
 use super::types::ghostdata::GhostdagData;
-use crate::consensusdb::prelude::StoreError;
+use crate::consensusdb::prelude::{FlexiDagStorageConfig, StoreError};
 use crate::consensusdb::schemadb::GhostdagStoreReader;
 use crate::consensusdb::{
     prelude::FlexiDagStorage,
@@ -12,6 +12,7 @@ use crate::consensusdb::{
 };
 use anyhow::{bail, Ok};
 use parking_lot::RwLock;
+use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{
@@ -54,9 +55,15 @@ impl BlockDAG {
             storage: db,
         }
     }
+    pub fn create_for_testing() -> anyhow::Result<Self> {
+        let dag_storage =
+            FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
+        Ok(BlockDAG::new(16, dag_storage))
+    }
 
     pub fn init_with_genesis(&self, genesis: BlockHeader) -> anyhow::Result<()> {
         let origin = genesis.parent_hash();
+
         if self.storage.relations_store.has(origin)? {
             return Ok(());
         };
@@ -99,7 +106,6 @@ impl BlockDAG {
         let mut merge_set = ghostdata
             .unordered_mergeset_without_selected_parent()
             .filter(|hash| self.storage.reachability_store.has(*hash).unwrap());
-
         inquirer::add_block(
             &mut reachability_store,
             header.id(),
@@ -166,7 +172,8 @@ mod tests {
 
     #[test]
     fn test_dag_0() {
-        let dag = build_block_dag(16);
+        //let dag = build_block_dag(16);
+        let dag = BlockDAG::create_for_testing().unwrap();
         let genesis = BlockHeader::dag_genesis_random()
             .as_builder()
             .with_difficulty(0.into())

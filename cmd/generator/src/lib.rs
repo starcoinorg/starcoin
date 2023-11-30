@@ -6,6 +6,7 @@ use starcoin_account::account_storage::AccountStorage;
 use starcoin_account::AccountManager;
 use starcoin_account_api::AccountInfo;
 use starcoin_config::{NodeConfig, StarcoinOpt};
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
@@ -22,7 +23,7 @@ pub mod gen_genesis_config;
 pub fn init_or_load_data_dir(
     global_opt: &StarcoinOpt,
     password: Option<String>,
-) -> Result<(NodeConfig, Arc<Storage>, ChainInfo, AccountInfo)> {
+) -> Result<(NodeConfig, Arc<Storage>, ChainInfo, AccountInfo, BlockDAG)> {
     let config = NodeConfig::load_with_opt(global_opt)?;
     if config.base().base_data_dir().is_temp() {
         bail!("Please set data_dir option.")
@@ -31,8 +32,17 @@ pub fn init_or_load_data_dir(
         CacheStorage::new_with_capacity(config.storage.cache_size(), None),
         DBStorage::new(config.storage.dir(), config.storage.rocksdb_config(), None)?,
     ))?);
-    let (chain_info, _genesis) =
-        Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;
+    let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+        config.storage.dag_dir(),
+        config.storage.clone().into(),
+    )?;
+    let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage.clone());
+    let (chain_info, _genesis) = Genesis::init_and_check_storage(
+        config.net(),
+        storage.clone(),
+        dag.clone(),
+        config.data_dir(),
+    )?;
     let vault_config = &config.vault;
     let account_storage =
         AccountStorage::create_from_path(vault_config.dir(), config.storage.rocksdb_config())?;
@@ -43,5 +53,5 @@ pub fn init_or_load_data_dir(
             .create_account(&password.unwrap_or_default())?
             .info(),
     };
-    Ok((config, storage, chain_info, account))
+    Ok((config, storage, chain_info, account, dag))
 }

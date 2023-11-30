@@ -23,7 +23,7 @@ starcoin-dag = { workspace = true }
 stdlib = { workspace = true }
 stest = { workspace = true }
 thiserror = { workspace = true }
-
+tempfile = {workspace = true}
 [features]
 default = []
 fuzzing = ["starcoin-types/fuzzing"]

@@ -176,6 +176,10 @@ impl BlockChain {
         self.time_service.clone()
     }
 
+    pub fn dag(&self) -> BlockDAG {
+        self.dag.clone()
+    }
+
     //TODO lazy init uncles cache.
     fn update_uncle_cache(&mut self) -> Result<()> {
         self.uncles = self.epoch_uncles()?;
@@ -262,6 +266,37 @@ impl BlockChain {
         let tips_hash = self.current_tips_hash()?;
         let strategy = epoch.strategy();
         let difficulty = strategy.calculate_next_difficulty(self)?;
+        let (uncles, blue_blocks) = {
+            match &tips_hash {
+                None => (uncles, None),
+                Some(tips) => {
+                    let mut blues = self.dag.ghostdata(tips).mergeset_blues.to_vec();
+                    info!(
+                        "create block template with tips:{:?},ghostdata blues:{:?}",
+                        &tips_hash, blues
+                    );
+                    let mut blue_blocks = vec![];
+                    let selected_parent = blues.remove(0);
+                    assert_eq!(previous_header.id(), selected_parent);
+                    for blue in &blues {
+                        let block = self
+                            .storage
+                            .get_block_by_hash(blue.to_owned())?
+                            .expect("Block should exist");
+                        blue_blocks.push(block);
+                    }
+                    (
+                        blue_blocks
+                            .as_slice()
+                            .iter()
+                            .map(|b| b.header.clone())
+                            .collect(),
+                        Some(blue_blocks),
+                    )
+                }
+            }
+        };
+        info!("Blue blocks:{:?}", blue_blocks);
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),
             previous_header,
@@ -273,7 +308,7 @@ impl BlockChain {
             strategy,
             None,
             tips_hash,
-            None,
+            blue_blocks,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
         let template = opened_block.finalize()?;
@@ -578,7 +613,7 @@ impl BlockChain {
         verify_block!(
             VerifyBlockField::State,
             state_root == header.state_root(),
-            "verify block:{:?} state_root fail",
+            "verify legacy block:{:?} state_root fail",
             block_id,
         );
         let block_gas_used = vec_transaction_info
@@ -952,7 +987,6 @@ impl ChainReader for BlockChain {
                 self.vm_metrics.clone(),
             )?;
             if header.is_dag_genesis() {
-                info!("Init the dag genesis block");
                 let dag_genesis_id = header.id();
                 self.dag.init_with_genesis(header)?;
                 self.storage.save_dag_state(DagState {
@@ -1176,7 +1210,6 @@ impl BlockChain {
         let mut tips = self
             .current_tips_hash()?
             .expect("tips should exists in dag");
-
         let parents = executed_block
             .block
             .header

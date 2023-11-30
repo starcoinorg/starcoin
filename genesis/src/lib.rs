@@ -39,7 +39,6 @@ mod errors;
 
 pub use errors::GenesisError;
 use starcoin_dag::blockdag::BlockDAG;
-use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
 use starcoin_storage::table_info::TableInfoStore;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;
@@ -359,17 +358,15 @@ impl Genesis {
         Ok((chain_info, genesis))
     }
 
-    pub fn init_storage_for_test(net: &ChainNetwork) -> Result<(Arc<Storage>, ChainInfo, Genesis)> {
+    pub fn init_storage_for_test(
+        net: &ChainNetwork,
+    ) -> Result<(Arc<Storage>, ChainInfo, Genesis, BlockDAG)> {
         debug!("init storage by genesis for test.");
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let genesis = Genesis::load_or_build(net)?;
-        let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
-            "/tmp/blockdag",
-            FlexiDagStorageConfig::new(),
-        )?;
-        let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
-        let chain_info = genesis.execute_genesis_block(net, storage.clone(), dag)?;
-        Ok((storage, chain_info, genesis))
+        let dag = BlockDAG::create_for_testing()?;
+        let chain_info = genesis.execute_genesis_block(net, storage.clone(), dag.clone())?;
+        Ok((storage, chain_info, genesis, dag))
     }
 }
 
@@ -439,12 +436,20 @@ mod tests {
 
     pub fn do_test_genesis(net: &ChainNetwork, data_dir: &Path) -> Result<()> {
         let storage1 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
-        let (chain_info1, genesis1) =
-            Genesis::init_and_check_storage(net, storage1.clone(), data_dir)?;
+        let (chain_info1, genesis1) = Genesis::init_and_check_storage(
+            net,
+            storage1.clone(),
+            BlockDAG::create_for_testing()?,
+            data_dir,
+        )?;
 
         let storage2 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
-        let (chain_info2, genesis2) =
-            Genesis::init_and_check_storage(net, storage2.clone(), data_dir)?;
+        let (chain_info2, genesis2) = Genesis::init_and_check_storage(
+            net,
+            storage2.clone(),
+            BlockDAG::create_for_testing()?,
+            data_dir,
+        )?;
 
         assert_eq!(genesis1, genesis2, "genesis execute chain info different.");
 

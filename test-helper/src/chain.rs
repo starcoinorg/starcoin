@@ -10,10 +10,16 @@ use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
 
 pub fn gen_blockchain_for_test(net: &ChainNetwork) -> Result<BlockChain> {
-    let (storage, chain_info, _) =
+    let (storage, chain_info, _, dag) =
         Genesis::init_storage_for_test(net).expect("init storage by genesis fail.");
 
-    let block_chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)?;
+    let block_chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage,
+        None,
+        dag,
+    )?;
     Ok(block_chain)
 }
 

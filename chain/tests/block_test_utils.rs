@@ -6,6 +6,7 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::ChainWriter;
 use starcoin_config::{ChainNetwork, NodeConfig};
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::block_execute;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
@@ -34,7 +35,8 @@ fn get_storage() -> impl Strategy<Value = Storage> {
 pub fn genesis_strategy(storage: Arc<Storage>) -> impl Strategy<Value = Block> {
     let net = &ChainNetwork::new_test();
     let genesis = Genesis::load_or_build(net).unwrap();
-    genesis.execute_genesis_block(net, storage).unwrap();
+    let dag = BlockDAG::create_for_testing().unwrap();
+    genesis.execute_genesis_block(net, storage, dag).unwrap();
     Just(genesis.block().clone())
 }
 

@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 #![allow(clippy::integer_arithmetic)]
+
 use crate::block_connector::{
     create_writeable_block_chain, gen_blocks, new_block, WriteBlockChainService,
 };
@@ -50,7 +51,8 @@ async fn new_block_and_main() -> (Block, BlockChain) {
         .get_main()
         .current_header()
         .id();
-    let main = BlockChain::new(net.time_service(), head_id, storage, None).unwrap();
+    let dag = writeable_block_chain_service.get_main().dag();
+    let main = BlockChain::new(net.time_service(), head_id, storage, None, dag).unwrap();
     let new_block = new_block(
         None,
         &mut writeable_block_chain_service,
@@ -86,8 +88,9 @@ async fn uncle_block_and_writeable_block_chain(
         .unwrap()
         .unwrap()
         .id();
-
-    let new_branch = BlockChain::new(net.time_service(), tmp_head, storage.clone(), None).unwrap();
+    let dag = writeable_block_chain_service.get_main().dag();
+    let new_branch =
+        BlockChain::new(net.time_service(), tmp_head, storage.clone(), None, dag).unwrap();
     let (block_template, _) = new_branch
         .create_block_template(*miner_account.address(), None, Vec::new(), vec![], None)
         .unwrap();
@@ -122,7 +125,8 @@ fn apply_with_illegal_uncle(
         .get_main()
         .current_header()
         .id();
-    let mut main = BlockChain::new(net.time_service(), head_id, storage, None)?;
+    let dag = writeable_block_chain_service.get_main().dag();
+    let mut main = BlockChain::new(net.time_service(), head_id, storage, None, dag)?;
     main.apply(new_block.clone())?;
     Ok(new_block)
 }
@@ -360,8 +364,9 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
         .unwrap()
         .unwrap()
         .id();
+    let dag = writeable_block_chain_service.get_main().dag();
     let mut new_branch =
-        BlockChain::new(net.time_service(), tmp_head, storage.clone(), None).unwrap();
+        BlockChain::new(net.time_service(), tmp_head, storage.clone(), None, dag).unwrap();
 
     for _i in 0..2 {
         let (block_template, _) = new_branch

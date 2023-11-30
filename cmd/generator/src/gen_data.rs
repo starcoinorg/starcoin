@@ -46,7 +46,7 @@ impl CommandAction for GenDataCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let global_opt = ctx.global_opt();
-        let (config, storage, chain_info, account) = init_or_load_data_dir(global_opt, None)?;
+        let (config, storage, chain_info, account, dag) = init_or_load_data_dir(global_opt, None)?;
         if chain_info.head().id() != chain_info.genesis_hash() {
             warn!("start block is not genesis.")
         }
@@ -56,6 +56,7 @@ impl CommandAction for GenDataCommand {
             storage.clone(),
             chain_info.head().id(),
             account,
+            dag,
         )?;
         let mut latest_header = mock_chain.head().current_header();
         for i in 0..opt.count {

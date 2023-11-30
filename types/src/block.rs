@@ -26,7 +26,7 @@ use std::hash::Hash;
 pub type BlockNumber = u64;
 
 //TODO: make sure height
-pub const DAG_FORK_HEIGHT: u64 = 2;
+pub const DAG_FORK_HEIGHT: u64 = 5;
 pub type ParentsHash = Option<Vec<HashValue>>;
 
 /// Type for block header extra

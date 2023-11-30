@@ -344,7 +344,10 @@ where
                 None => (self.find_uncles(), None),
                 Some(tips) => {
                     let mut blues = self.dag.ghostdata(tips).mergeset_blues.to_vec();
-                    info!("create block template with tips:{:?},ghostdata blues:{:?}", &tips_hash, blues);
+                    info!(
+                        "create block template with tips:{:?},ghostdata blues:{:?}",
+                        &tips_hash, blues
+                    );
                     let mut blue_blocks = vec![];
                     let selected_parent = blues.remove(0);
                     assert_eq!(previous_header.id(), selected_parent);

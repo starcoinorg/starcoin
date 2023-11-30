@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 #![allow(clippy::integer_arithmetic)]
+
 use crate::block_connector::WriteBlockChainService;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader};
@@ -25,7 +26,7 @@ pub async fn create_writeable_block_chain() -> (
     let node_config = NodeConfig::random_for_test();
     let node_config = Arc::new(node_config);
 
-    let (storage, chain_info, _) = StarcoinGenesis::init_storage_for_test(node_config.net())
+    let (storage, chain_info, _, dag) = StarcoinGenesis::init_storage_for_test(node_config.net())
         .expect("init storage by genesis fail.");
     let registry = RegistryService::launch();
     let bus = registry.service_ref::<BusService>().await.unwrap();
@@ -38,6 +39,7 @@ pub async fn create_writeable_block_chain() -> (
             txpool_service,
             bus,
             None,
+            dag,
         )
         .unwrap(),
         node_config,
@@ -108,6 +110,7 @@ fn gen_fork_block_chain(
     times: u64,
     writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
 ) {
+    let dag = writeable_block_chain_service.get_main().dag();
     let miner_account = AccountInfo::random();
     if let Some(block_header) = writeable_block_chain_service
         .get_main()
@@ -122,6 +125,7 @@ fn gen_fork_block_chain(
                 parent_id,
                 writeable_block_chain_service.get_main().get_storage(),
                 None,
+                dag,
             )
             .unwrap();
             let (block_template, _) = block_chain

@@ -18,12 +18,19 @@ pub struct FlexiDagStorage {
     pub relations_store: DbRelationsStore,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct FlexiDagStorageConfig {
     pub cache_size: usize,
     pub rocksdb_config: RocksdbConfig,
 }
-
+impl Default for FlexiDagStorageConfig {
+    fn default() -> Self {
+        Self {
+            cache_size: 1,
+            rocksdb_config: Default::default(),
+        }
+    }
+}
 impl FlexiDagStorageConfig {
     pub fn new() -> Self {
         FlexiDagStorageConfig::default()

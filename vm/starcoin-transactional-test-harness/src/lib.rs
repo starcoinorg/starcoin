@@ -870,6 +870,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             self.context.storage.get_chain_id()?,
             0,
             BlockHeaderExtra::new([0u8; 4]),
+            None,
         );
         let new_block = Block::new(block_header, block_body);
         let mut chain = self.context.chain.lock().unwrap();

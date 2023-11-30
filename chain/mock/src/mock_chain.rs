@@ -7,6 +7,7 @@ use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_config::ChainNetwork;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_storage::Storage;
@@ -22,15 +23,15 @@ pub struct MockChain {
 
 impl MockChain {
     pub fn new(net: ChainNetwork) -> Result<Self> {
-        let (storage, chain_info, _) =
+        let (storage, chain_info, _, dag) =
             Genesis::init_storage_for_test(&net).expect("init storage by genesis fail.");
 
         let chain = BlockChain::new(
             net.time_service(),
             chain_info.head().id(),
             storage,
-            net.id().clone(),
             None,
+            dag,
         )?;
         let miner = AccountInfo::random();
         Ok(Self::new_inner(net, chain, miner))
@@ -41,13 +42,14 @@ impl MockChain {
         storage: Arc<Storage>,
         head_block_hash: HashValue,
         miner: AccountInfo,
+        dag: BlockDAG,
     ) -> Result<Self> {
         let chain = BlockChain::new(
             net.time_service(),
             head_block_hash,
             storage,
-            net.id().clone(),
             None,
+            dag.clone(),
         )?;
         Ok(Self::new_inner(net, chain, miner))
     }
@@ -83,8 +85,8 @@ impl MockChain {
             self.head.time_service(),
             block_id,
             self.head.get_storage(),
-            self.net.id().clone(),
             None,
+            self.head.dag(),
         )
     }
 
@@ -105,8 +107,8 @@ impl MockChain {
             self.net.time_service(),
             new_block_id,
             self.head.get_storage(),
-            self.net.id().clone(),
             None,
+            self.head.dag(),
         )?;
         let branch_total_difficulty = branch.get_total_difficulty()?;
         let head_total_difficulty = self.head.get_total_difficulty()?;

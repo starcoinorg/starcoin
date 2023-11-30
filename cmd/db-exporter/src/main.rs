@@ -20,6 +20,7 @@ use starcoin_chain::{
 use starcoin_config::{BuiltinNetworkID, ChainNetwork, RocksdbConfig};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
+use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
 use starcoin_genesis::Genesis;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
 use starcoin_statedb::{ChainStateDB, ChainStateReader, ChainStateWriter};
@@ -259,7 +260,7 @@ pub struct CheckKeyOptions {
     /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db/starcoindb
     pub db_path: PathBuf,
     #[clap(long, short = 'n',
-    possible_values=&["block", "block_header"],)]
+    possible_values = & ["block", "block_header"],)]
     pub cf_name: String,
     #[clap(long, short = 'b')]
     pub block_hash: HashValue,
@@ -350,7 +351,7 @@ pub struct GenBlockTransactionsOptions {
     pub block_num: Option<u64>,
     #[clap(long, short = 't')]
     pub trans_num: Option<u64>,
-    #[clap(long, short = 'p', possible_values=&["CreateAccount", "FixAccount", "EmptyTxn"],)]
+    #[clap(long, short = 'p', possible_values = & ["CreateAccount", "FixAccount", "EmptyTxn"],)]
     /// txn type
     pub txn_type: Txntype,
 }
@@ -404,9 +405,9 @@ pub struct ExportResourceOptions {
     pub block_hash: HashValue,
 
     #[clap(
-        short='r',
-        default_value = "0x1::Account::Balance<0x1::STC::STC>",
-        parse(try_from_str=parse_struct_tag)
+    short = 'r',
+    default_value = "0x1::Account::Balance<0x1::STC::STC>",
+    parse(try_from_str = parse_struct_tag)
     )]
     /// resource struct tag.
     resource_type: StructTag,
@@ -628,14 +629,26 @@ pub fn export_block_range(
         Default::default(),
         None,
     )?;
+    let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+        from_dir.join("dag/db/starcoindb"),
+        FlexiDagStorageConfig::new(),
+    )?;
+    let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
+
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
         db_storage,
     ))?);
     let (chain_info, _) =
-        Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
-    let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)
-        .expect("create block chain should success.");
+        Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), from_dir.as_ref())?;
+    let chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage,
+        None,
+        dag,
+    )
+    .expect("create block chain should success.");
     let cur_num = chain.status().head().number();
     let end = if cur_num > end + BLOCK_GAP {
         end
@@ -710,13 +723,20 @@ pub fn apply_block(
         CacheStorage::new(None),
         db_storage,
     ))?);
+    let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+        to_dir.join("dag/db/starcoindb"),
+        FlexiDagStorageConfig::new(),
+    )?;
+    let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
     StarcoinVM::set_concurrency_level_once(num_cpus::get());
-    let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
+    let (chain_info, _) =
+        Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), to_dir.as_ref())?;
     let mut chain = BlockChain::new(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
         None,
+        dag,
     )
     .expect("create block chain should success.");
     let start_time = SystemTime::now();
@@ -789,12 +809,19 @@ pub fn startup_info_back(
         CacheStorage::new(None),
         db_storage,
     ))?);
-    let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
+    let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+        to_dir.join("dag/db/starcoindb"),
+        FlexiDagStorageConfig::new(),
+    )?;
+    let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
+    let (chain_info, _) =
+        Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), to_dir.as_ref())?;
     let chain = BlockChain::new(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
         None,
+        dag,
     )
     .expect("create block chain should success.");
 
@@ -834,12 +861,19 @@ pub fn gen_block_transactions(
         CacheStorage::new(None),
         db_storage,
     ))?);
-    let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
+    let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+        to_dir.join("dag/db/starcoindb"),
+        FlexiDagStorageConfig::new(),
+    )?;
+    let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
+    let (chain_info, _) =
+        Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), to_dir.as_ref())?;
     let mut chain = BlockChain::new(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
         None,
+        dag,
     )
     .expect("create block chain should success.");
     let block_num = block_num.unwrap_or(1000);
@@ -856,6 +890,7 @@ pub fn gen_block_transactions(
         }
     }
 }
+
 /// Returns a transaction to create a new account with the given arguments.
 pub fn create_account_txn_sent_as_association(
     new_account: &Account,
@@ -1289,13 +1324,19 @@ pub fn export_snapshot(
         CacheStorage::new(None),
         db_storage,
     ))?);
+    let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+        from_dir.join("dag/db/starcoindb"),
+        FlexiDagStorageConfig::new(),
+    )?;
+    let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
     let (chain_info, _) =
-        Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
+        Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), from_dir.as_ref())?;
     let chain = BlockChain::new(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
         None,
+        dag.clone(),
     )
     .expect("create block chain should success.");
     let block_num = chain.status().head().number();
@@ -1313,8 +1354,14 @@ pub fn export_snapshot(
     let cur_block = chain
         .get_block_by_number(cur_num)?
         .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
-    let chain = BlockChain::new(net.time_service(), cur_block.id(), storage.clone(), None)
-        .expect("create block chain should success.");
+    let chain = BlockChain::new(
+        net.time_service(),
+        cur_block.id(),
+        storage.clone(),
+        None,
+        dag,
+    )
+    .expect("create block chain should success.");
 
     let cur_num = chain.epoch().start_block_number();
 
@@ -1629,14 +1676,21 @@ pub fn apply_snapshot(
         CacheStorage::new(None),
         db_storage,
     ))?);
+    let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+        to_dir.join("dag/db/starcoindb"),
+        FlexiDagStorageConfig::new(),
+    )?;
+    let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
 
-    let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
+    let (chain_info, _) =
+        Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), to_dir.as_ref())?;
     let chain = Arc::new(std::sync::Mutex::new(
         BlockChain::new(
             net.time_service(),
             chain_info.head().id(),
             storage.clone(),
             None,
+            dag,
         )
         .expect("create block chain should success."),
     ));
@@ -1964,12 +2018,19 @@ pub fn gen_turbo_stm_transactions(to_dir: PathBuf, block_num: Option<u64>) -> an
         CacheStorage::new(None),
         db_storage,
     ))?);
-    let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
+    let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+        to_dir.join("dag/db/starcoindb"),
+        FlexiDagStorageConfig::new(),
+    )?;
+    let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
+    let (chain_info, _) =
+        Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), to_dir.as_ref())?;
     let mut chain = BlockChain::new(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
         None,
+        dag,
     )
     .expect("create block chain should success.");
     let block_num = block_num.unwrap_or(1000);
@@ -1989,13 +2050,19 @@ pub fn apply_turbo_stm_block(
         CacheStorage::new(None),
         db_storage_seq,
     ))?);
+    let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+        to_dir.join("dag/db/starcoindb"),
+        FlexiDagStorageConfig::new(),
+    )?;
+    let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
     let (chain_info_seq, _) =
-        Genesis::init_and_check_storage(&net, storage_seq.clone(), to_dir.as_ref())?;
+        Genesis::init_and_check_storage(&net, storage_seq.clone(), dag.clone(), to_dir.as_ref())?;
     let mut chain_seq = BlockChain::new(
         net.time_service(),
         chain_info_seq.head().id(),
         storage_seq.clone(),
         None,
+        dag,
     )
     .expect("create block chain should success.");
     let cur_num = chain_seq.status().head().number();
@@ -2047,13 +2114,23 @@ pub fn apply_turbo_stm_block(
         CacheStorage::new(None),
         db_storage_stm,
     ))?);
-    let (chain_info_stm, _) =
-        Genesis::init_and_check_storage(&net, storage_stm.clone(), turbo_stm_to_dir.as_ref())?;
+    let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+        to_dir.join("dag/db/starcoindb"),
+        FlexiDagStorageConfig::new(),
+    )?;
+    let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
+    let (chain_info_stm, _) = Genesis::init_and_check_storage(
+        &net,
+        storage_stm.clone(),
+        dag.clone(),
+        turbo_stm_to_dir.as_ref(),
+    )?;
     let mut chain_stm = BlockChain::new(
         net.time_service(),
         chain_info_stm.head().id(),
         storage_stm.clone(),
         None,
+        dag,
     )
     .expect("create block chain should success.");
 
