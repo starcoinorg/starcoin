@@ -135,10 +135,12 @@ impl BlockDAG {
                     .get_accumulator_snapshot_storage()
                     .put(key, snapshot_hasher.to_snapshot(dag_accumulator.get_info()))?;
                 dag_accumulator.flush()?;
-                Ok((
-                    Some(Self::new_by_config(
+                let dag = Self::new_by_config(
                         config.data_dir().join("flexidag").as_path(),
-                    )?),
+                    )?; 
+                dag.commit(block_header)?;
+                Ok((
+                    Some(dag),
                     Some(dag_accumulator),
                 ))
             } else {
