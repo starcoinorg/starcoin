@@ -27,7 +27,7 @@ use starcoin_types::{
     transaction,
     transaction::SignedUserTransaction,
 };
-use std::{sync::Arc, backtrace::Backtrace};
+use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 pub struct TxPoolService {
