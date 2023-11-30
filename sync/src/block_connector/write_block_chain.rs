@@ -625,19 +625,19 @@ where
         }
     }
 
-    #[cfg(test)]
-    pub fn execute_dag_block_pool(&mut self) -> Result<ConnectOk> {
-        let mut dag_blocks = self.dag_block_pool.lock().unwrap().clone();
-        self.dag_block_pool.lock().unwrap().clear();
-        return self.execute_dag_block_in_pool(
-            dag_blocks,
-            self.main
-                .status()
-                .tips_hash
-                .expect("dag block must has current tips")
-                .clone(),
-        );
-    }
+    // #[cfg(test)]
+    // pub fn execute_dag_block_pool(&mut self) -> Result<ConnectOk> {
+    //     let mut dag_blocks = self.dag_block_pool.lock().unwrap().clone();
+    //     self.dag_block_pool.lock().unwrap().clear();
+    //     return self.execute_dag_block_in_pool(
+    //         dag_blocks,
+    //         self.main
+    //             .status()
+    //             .tips_hash
+    //             .expect("dag block must has current tips")
+    //             .clone(),
+    //     );
+    // }
 
     // pub fn execute_dag_block_in_pool(
     //     &mut self,

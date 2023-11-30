@@ -767,12 +767,12 @@ impl Block {
         }
     }
 
-    pub fn is_dag(&self) -> bool {
-        self.header.is_dag()
-    }
+    // pub fn is_dag(&self) -> bool {
+    //     self.header.is_dag()
+    // }
 
     pub fn parent_hash(&self) -> anyhow::Result<HashValue> {
-        if self.is_dag() {
+        if self.header().parents_hash.is_some() {
             self.dag_parent_and_tips()
                 .map(|dag| dag.0.id())
                 .ok_or_else(|| format_err!("missing parent and tips for dag block"))
