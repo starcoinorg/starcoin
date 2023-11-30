@@ -274,5 +274,8 @@ mod tests {
         let mut block = BlockHeader::random();
         block.set_parents(vec![genesis_hash]);
         dag.commit(block).unwrap();
+        let data  =dag.ghostdag_manager.ghostdag(&vec![genesis_hash]);
+        assert_eq!(data.selected_parent,genesis_hash);
+        assert_eq!(data.mergeset_blues[0],genesis_hash);
     }
 }
