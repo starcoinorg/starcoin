@@ -27,9 +27,14 @@ use std::hash::Hash;
 pub type BlockNumber = u64;
 
 //TODO: make sure height
-pub const DAG_FORK_HEIGHT: u64 = 100000;
 pub type ParentsHash = Option<Vec<HashValue>>;
 
+pub static DEV_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
+pub static TEST_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
+pub static PROXIMA_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
+pub static HALLEY_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
+pub static BARNARD_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
+pub static MAIN_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
 /// Type for block header extra
 #[derive(Clone, Default, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, JsonSchema)]
 pub struct BlockHeaderExtra(#[schemars(with = "String")] [u8; 4]);
@@ -317,10 +322,6 @@ impl BlockHeader {
         &self.extra
     }
 
-    pub fn is_dag(&self) -> bool {
-        self.number > DAG_FORK_HEIGHT
-    }
-
     pub fn is_genesis(&self) -> bool {
         self.number == 0
     }
@@ -375,15 +376,11 @@ impl BlockHeader {
     pub fn dag_genesis_random() -> Self {
         let mut header = Self::random();
         header.parents_hash = Some(vec![header.parent_hash]);
-        header.number = DAG_FORK_HEIGHT;
+        header.number = TEST_FLEXIDAG_FORK_HEIGHT;
         header
     }
     pub fn set_parents(&mut self, parents: Vec<HashValue>) {
         self.parents_hash = Some(parents);
-    }
-
-    pub fn is_dag_genesis(&self) -> bool {
-        self.number == DAG_FORK_HEIGHT
     }
 
     pub fn as_builder(&self) -> BlockHeaderBuilder {

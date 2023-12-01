@@ -441,7 +441,7 @@ impl ServiceHandler<Self, UpdateDagTips> for FlexidagService {
             None => {
                 let storage = ctx.get_shared::<Arc<Storage>>()?;
                 let config = ctx.get_shared::<Arc<NodeConfig>>()?;
-                if header.number() == storage.dag_fork_height(config.net().id().clone()) {
+                if header.number() == BlockDAG::dag_fork_height_with_net(config.net().id().clone()) {
                     let (dag, dag_accumulator) =
                         BlockDAG::try_init_with_storage(storage.clone(), config)?;
                     if dag.is_none() {

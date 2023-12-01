@@ -2,6 +2,7 @@ use super::{tree::*, *};
 use crate::consensusdb::schemadb::{ReachabilityStore, ReachabilityStoreReader};
 use crate::dag::types::{interval::Interval, perf};
 use starcoin_crypto::{HashValue as Hash, HashValue};
+use starcoin_logger::prelude::info;
 
 /// Init the reachability store to match the state required by the algorithmic layer.
 /// The function first checks the store for possibly being initialized already.

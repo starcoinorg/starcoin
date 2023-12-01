@@ -17,13 +17,13 @@ use parking_lot::RwLock;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
-use starcoin_config::{NodeConfig, RocksdbConfig};
+use starcoin_config::{NodeConfig, RocksdbConfig, ChainNetworkID};
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::info;
 use starcoin_storage::flexi_dag::SyncFlexiDagSnapshotHasher;
 use starcoin_storage::storage::CodecKVStore;
 use starcoin_storage::Store;
-use starcoin_types::block::BlockHeader;
+use starcoin_types::block::{BlockHeader, TEST_FLEXIDAG_FORK_HEIGHT, DEV_FLEXIDAG_FORK_HEIGHT, HALLEY_FLEXIDAG_FORK_HEIGHT, PROXIMA_FLEXIDAG_FORK_HEIGHT, BARNARD_FLEXIDAG_FORK_HEIGHT, MAIN_FLEXIDAG_FORK_HEIGHT, BlockNumber};
 use starcoin_types::dag_block::KTotalDifficulty;
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
@@ -44,10 +44,11 @@ pub type DbGhostdagManager = GhostdagManager<
 pub struct BlockDAG {
     storage: FlexiDagStorage,
     ghostdag_manager: DbGhostdagManager,
+    net: ChainNetworkID,
 }
 
 impl BlockDAG {
-    pub fn new(k: KType, db: FlexiDagStorage) -> Self {
+    pub fn new(k: KType, db: FlexiDagStorage, net: ChainNetworkID) -> Self {
         let ghostdag_store = db.ghost_dag_store.clone();
         let header_store = db.header_store.clone();
         let relations_store = db.relations_store.clone();
@@ -66,6 +67,7 @@ impl BlockDAG {
         Self {
             ghostdag_manager,
             storage: db,
+            net,
         }
     }
 
@@ -75,6 +77,24 @@ impl BlockDAG {
         Ok(Hash::sha3_256_of(&snapshot.encode().expect(
             "encoding the sorted relatship set must be successful",
         )))
+    }
+
+    pub fn dag_fork_height_with_net(net: ChainNetworkID) -> BlockNumber {
+        match net {
+            ChainNetworkID::Builtin(network_id) => match network_id {
+                starcoin_config::BuiltinNetworkID::Test => TEST_FLEXIDAG_FORK_HEIGHT,
+                starcoin_config::BuiltinNetworkID::Dev => DEV_FLEXIDAG_FORK_HEIGHT,
+                starcoin_config::BuiltinNetworkID::Halley => HALLEY_FLEXIDAG_FORK_HEIGHT,
+                starcoin_config::BuiltinNetworkID::Proxima => PROXIMA_FLEXIDAG_FORK_HEIGHT,
+                starcoin_config::BuiltinNetworkID::Barnard => BARNARD_FLEXIDAG_FORK_HEIGHT,
+                starcoin_config::BuiltinNetworkID::Main => MAIN_FLEXIDAG_FORK_HEIGHT,
+            },
+            ChainNetworkID::Custom(_) => DEV_FLEXIDAG_FORK_HEIGHT,
+        }
+    }
+
+    fn dag_fork_height(&self) -> BlockNumber {
+       Self::dag_fork_height_with_net(self.net.clone())
     }
 
     pub fn try_init_with_storage(
@@ -99,7 +119,7 @@ impl BlockDAG {
 
             Ok((
                 Some(Self::new_by_config(
-                    config.data_dir().join("flexidag").as_path(),
+                    config.data_dir().join("flexidag").as_path(), config.net().id().clone(),
                 )?),
                 Some(dag_accumulator),
             ))
@@ -107,7 +127,7 @@ impl BlockDAG {
             let block_header = storage
                 .get_block_header_by_hash(startup_info.get_main().clone())?
                 .expect("the genesis block in dag accumulator must none be none");
-            let fork_height = storage.dag_fork_height(config.net().id().clone());
+            let fork_height = Self::dag_fork_height_with_net(config.net().id().clone());
             if block_header.number() < fork_height {
                 Ok((None, None))
             } else if block_header.number() == fork_height {
@@ -137,6 +157,7 @@ impl BlockDAG {
                 dag_accumulator.flush()?;
                 let dag = Self::new_by_config(
                         config.data_dir().join("flexidag").as_path(),
+                        config.net().id().clone(),
                     )?; 
                 dag.commit(block_header)?;
                 Ok((
@@ -149,10 +170,10 @@ impl BlockDAG {
         }
     }
 
-    pub fn new_by_config(db_path: &Path) -> anyhow::Result<BlockDAG> {
+    pub fn new_by_config(db_path: &Path, net: ChainNetworkID) -> anyhow::Result<BlockDAG> {
         let config = FlexiDagStorageConfig::create_with_params(1, RocksdbConfig::default());
         let db = FlexiDagStorage::create_from_path(db_path, config)?;
-        let dag = Self::new(16, db);
+        let dag = Self::new(16, db, net);
         Ok(dag)
     }
     pub fn init_with_genesis(&self, genesis: BlockHeader) -> anyhow::Result<()> {
@@ -176,10 +197,10 @@ impl BlockDAG {
         // Generate ghostdag data
         let parents_hash = header.parents();
 
-        let ghostdag_data = if !header.is_dag_genesis() {
-            self.ghostdag_manager.ghostdag(parents_hash.as_slice())
-        } else {
+        let ghostdag_data = if header.number() == self.dag_fork_height() {
             self.ghostdag_manager.genesis_ghostdag_data(&header)
+        } else {
+            self.ghostdag_manager.ghostdag(parents_hash.as_slice())
         };
         // Store ghostdata
         self.storage
@@ -271,7 +292,7 @@ mod tests {
         let config = FlexiDagStorageConfig::create_with_params(1, RocksdbConfig::default());
         let db = FlexiDagStorage::create_from_path(db_path, config)
             .expect("Failed to create flexidag storage");
-        let dag = BlockDAG::new(k, db);
+        let dag = BlockDAG::new(k, db, ChainNetworkID::TEST);
         dag.init_with_genesis(genesis).unwrap();
         let mut block = BlockHeader::random();
         block.set_parents(vec![genesis_hash]);

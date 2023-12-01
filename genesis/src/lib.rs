@@ -397,7 +397,7 @@ impl Genesis {
         let (storage, chain_info, genesis) = Self::init_storage_for_test(config.net())?;
 
         let dag_dir = config.data_dir().join("flexi_dag_vaults");
-        let dag = BlockDAG::new_by_config(&dag_dir)?;
+        let dag = BlockDAG::new_by_config(&dag_dir, config.net().id().clone())?;
 
         Ok((storage, chain_info, genesis, dag))
     }

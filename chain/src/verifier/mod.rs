@@ -93,7 +93,7 @@ pub trait BlockVerifier {
         R: ChainReader,
     {
         let epoch = current_chain.epoch();
-        let is_dag = header.is_dag();
+        let is_dag = header.number() == current_chain.dag_fork_height();
 
         let switch_epoch = header.number() == epoch.end_block_number();
         // epoch first block's uncles should empty.

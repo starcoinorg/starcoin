@@ -13,6 +13,7 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
 use starcoin_config::G_CRATE_VERSION;
+use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
 use starcoin_flexidag::flexidag_service::{FinishSync, ForkDagAccumulator, AddToDag};
 use starcoin_flexidag::FlexidagService;
@@ -577,7 +578,7 @@ where
                 let block_number = block.header().number();
                 match self.broadcast_single_chain_block(block, block_info, action) {
                     std::result::Result::Ok(state) => {
-                        if self.storage.dag_fork_height(self.chain.net_id()) == block_number {
+                        if self.chain.dag_fork_height() == block_number {
                             Ok(CollectorState::Enough)
                         } else {
                             Ok(state)

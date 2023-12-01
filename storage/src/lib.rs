@@ -44,10 +44,6 @@ use std::{
     sync::Arc,
 };
 use table_info::{TableInfoStorage, TableInfoStore};
-use upgrade::{
-    BARNARD_FLEXIDAG_FORK_HEIGHT, DEV_FLEXIDAG_FORK_HEIGHT, HALLEY_FLEXIDAG_FORK_HEIGHT,
-    MAIN_FLEXIDAG_FORK_HEIGHT, PROXIMA_FLEXIDAG_FORK_HEIGHT, TEST_FLEXIDAG_FORK_HEIGHT,
-};
 pub use upgrade::{BARNARD_HARD_FORK_HASH, BARNARD_HARD_FORK_HEIGHT};
 
 pub mod accumulator;
@@ -329,7 +325,6 @@ pub trait SyncFlexiDagStore {
     ) -> Result<()>;
     fn get_dag_accumulator_info(&self) -> Result<Option<AccumulatorInfo>>;
     fn get_tips_by_block_id(&self, block_id: HashValue) -> Result<Vec<HashValue>>;
-    fn dag_fork_height(&self, id: ChainNetworkID) -> BlockNumber;
     fn get_lastest_snapshot(&self) -> Result<Option<SyncFlexiDagSnapshot>>;
     fn save_dag_tips(&self, tips: Vec<HashValue>) -> Result<()>;
     fn get_dag_tips(&self) -> Result<Option<DagTips>>;
@@ -749,20 +744,6 @@ impl SyncFlexiDagStore for Storage {
             None => {
                 bail!("failed to get snapshot by hash: {}", key);
             }
-        }
-    }
-
-    fn dag_fork_height(&self, id: ChainNetworkID) -> BlockNumber {
-        match id {
-            ChainNetworkID::Builtin(network_id) => match network_id {
-                starcoin_config::BuiltinNetworkID::Test => TEST_FLEXIDAG_FORK_HEIGHT,
-                starcoin_config::BuiltinNetworkID::Dev => DEV_FLEXIDAG_FORK_HEIGHT,
-                starcoin_config::BuiltinNetworkID::Halley => HALLEY_FLEXIDAG_FORK_HEIGHT,
-                starcoin_config::BuiltinNetworkID::Proxima => PROXIMA_FLEXIDAG_FORK_HEIGHT,
-                starcoin_config::BuiltinNetworkID::Barnard => BARNARD_FLEXIDAG_FORK_HEIGHT,
-                starcoin_config::BuiltinNetworkID::Main => MAIN_FLEXIDAG_FORK_HEIGHT,
-            },
-            ChainNetworkID::Custom(_) => DEV_FLEXIDAG_FORK_HEIGHT,
         }
     }
 }

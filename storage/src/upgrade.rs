@@ -29,12 +29,6 @@ pub static BARNARD_HARD_FORK_HASH: Lazy<HashValue> = Lazy::new(|| {
     )
     .expect("")
 });
-pub static DEV_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
-pub static TEST_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
-pub static PROXIMA_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
-pub static HALLEY_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
-pub static BARNARD_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
-pub static MAIN_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
 
 impl DBUpgrade {
     pub fn check_upgrade(instance: &mut StorageInstance) -> Result<()> {
