@@ -406,33 +406,32 @@ impl BlockChain {
     }
 
     fn execute_dag_block(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
+                info!("execute dag block:{:?}", verified_block.0);
         let block = verified_block.0;
-        let blues = block.uncles().expect("Blue blocks must exist");
-        let (selected_parent, blues) = blues.split_at(1);
-        let selected_parent = selected_parent[0].clone();
+        let selected_parent = block.parent_hash().unwrap();
+        let blues = block.uncle_ids();
         let block_info_past = self
             .storage
-            .get_block_info(selected_parent.id())?
+            .get_block_info(selected_parent)?
             .expect("selected parent must executed");
         let header = block.header();
         let block_id = header.id();
-        let block_metadata = block.to_metadata(selected_parent.gas_used());
+        //TODO::FIXEME
+        let block_metadata = block.to_metadata(0);
         let mut transactions = vec![Transaction::BlockMetadata(block_metadata)];
         let mut total_difficulty = header.difficulty() + block_info_past.total_difficulty;
         for blue in blues {
             let blue_block = self
                 .storage
-                .get_block_by_hash(blue.id())?
+                .get_block_by_hash(blue)?
                 .expect("block blue need exist");
-            // Todo: we already added txns of blue_blocks to target block when mining it.
-            // see create_block_template in MinerService
-            //transactions.extend(
-            //    blue_block
-            //        .transactions()
-            //        .iter()
-            //        .cloned()
-            //        .map(Transaction::UserTransaction),
-            //);
+            transactions.extend(
+                blue_block
+                    .transactions()
+                    .iter()
+                    .cloned()
+                    .map(Transaction::UserTransaction),
+            );
             total_difficulty += blue_block.header.difficulty();
         }
         transactions.extend(
@@ -576,12 +575,10 @@ impl BlockChain {
         self.storage.save_block_info(block_info.clone())?;
 
         self.storage.save_table_infos(txn_table_infos)?;
-        self.dag
-            .clone()
-            .expect("dag should init in blockchain")
-            .commit(header.to_owned())?;
+        self.dag.clone().unwrap().commit(header.to_owned())?;
         watch(CHAIN_WATCH_NAME, "n26");
         Ok(ExecutedBlock { block, block_info })
+
     }
 
     //TODO consider move this logic to BlockExecutor
