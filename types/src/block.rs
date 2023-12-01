@@ -717,6 +717,46 @@ impl Sample for BlockBody {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CompatBlockBody {
+    /// The transactions in this block.
+    pub transactions: Vec<SignedUserTransaction>,
+    /// uncles block header
+    pub uncles: Option<Vec<CompatBlockHeader>>,
+}
+
+impl From<BlockBody> for CompatBlockBody {
+    fn from(value: BlockBody) -> Self {
+        let BlockBody {
+            transactions,
+            uncles,
+        } = value;
+
+        Self {
+            transactions,
+            uncles: uncles.map(|u| {
+                u.into_iter()
+                    .map(CompatBlockHeader::from)
+                    .collect::<Vec<_>>()
+            }),
+        }
+    }
+}
+
+impl From<CompatBlockBody> for BlockBody {
+    fn from(value: CompatBlockBody) -> Self {
+        let CompatBlockBody {
+            transactions,
+            uncles,
+        } = value;
+
+        Self {
+            transactions,
+            uncles: uncles.map(|u| u.into_iter().map(BlockHeader::from).collect::<Vec<_>>()),
+        }
+    }
+}
+
 /// A block, encoded as it is on the block chain.
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct Block {
@@ -730,7 +770,7 @@ pub struct Block {
 #[serde(rename = "Block")]
 pub struct CompatBlock {
     header: CompatBlockHeader,
-    body: BlockBody,
+    body: CompatBlockBody,
 }
 
 impl From<Block> for CompatBlock {
@@ -738,7 +778,7 @@ impl From<Block> for CompatBlock {
         let Block { header, body } = value;
         Self {
             header: CompatBlockHeader::from(header),
-            body,
+            body: CompatBlockBody::from(body),
         }
     }
 }
@@ -748,7 +788,7 @@ impl From<CompatBlock> for Block {
         let CompatBlock { header, body } = value;
         Self {
             header: header.into(),
-            body,
+            body: body.into(),
         }
     }
 }

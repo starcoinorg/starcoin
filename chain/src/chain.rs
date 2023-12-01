@@ -123,7 +123,11 @@ impl BlockChain {
                 storage.as_ref(),
             ),
             status: ChainStatusWithBlock {
-                status: ChainStatus::new(head_block.header.clone(), block_info, dag_tips.map(|dag_tips| dag_tips.tips)), //FIXME:read from snapshot
+                status: ChainStatus::new(
+                    head_block.header.clone(),
+                    block_info,
+                    dag_tips.map(|dag_tips| dag_tips.tips),
+                ), //FIXME:read from snapshot
                 head: head_block,
             },
             statedb: chain_state,
