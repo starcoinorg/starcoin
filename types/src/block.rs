@@ -165,9 +165,66 @@ pub struct BlockHeader {
     /// block header extra
     extra: BlockHeaderExtra,
     /// Parents hash.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(skip_deserializing)]
     parents_hash: ParentsHash,
+}
+
+// For single chain before FlexiDag upgrade
+#[derive(Serialize, Deserialize, CryptoHasher, CryptoHash)]
+pub struct OldBlockHeader {
+    #[serde(skip)]
+    #[allow(dead_code)]
+    id: Option<HashValue>,
+    /// Parent hash.
+    parent_hash: HashValue,
+    /// Block timestamp.
+    timestamp: u64,
+    /// Block number.
+    number: BlockNumber,
+    /// Block author.
+    author: AccountAddress,
+    /// Block author auth key.
+    /// this field is deprecated
+    author_auth_key: Option<AuthenticationKey>,
+    /// The transaction accumulator root hash after executing this block.
+    txn_accumulator_root: HashValue,
+    /// The parent block info's block accumulator root hash.
+    block_accumulator_root: HashValue,
+    /// The last transaction state_root of this block after execute.
+    state_root: HashValue,
+    /// Gas used for contracts execution.
+    gas_used: u64,
+    /// Block difficulty
+    difficulty: U256,
+    /// hash for block body
+    body_hash: HashValue,
+    /// The chain id
+    chain_id: ChainId,
+    /// Consensus nonce field.
+    nonce: u32,
+    /// block header extra
+    extra: BlockHeaderExtra,
+}
+
+impl From<BlockHeader> for OldBlockHeader {
+    fn from(v: BlockHeader) -> Self {
+        Self {
+            id: None,
+            parent_hash: v.parent_hash,
+            timestamp: v.timestamp,
+            number: v.number,
+            author: v.author,
+            author_auth_key: v.author_auth_key,
+            txn_accumulator_root: v.txn_accumulator_root,
+            block_accumulator_root: v.block_accumulator_root,
+            state_root: v.state_root,
+            gas_used: v.gas_used,
+            difficulty: v.difficulty,
+            body_hash: v.body_hash,
+            chain_id: v.chain_id,
+            nonce: v.nonce,
+            extra: v.extra,
+        }
+    }
 }
 
 impl BlockHeader {
@@ -242,7 +299,11 @@ impl BlockHeader {
             extra,
             parents_hash,
         };
-        header.id = Some(header.crypto_hash());
+        header.id = Some(if header.parents_hash.is_none() {
+            OldBlockHeader::from(header.clone()).crypto_hash()
+        } else {
+            header.crypto_hash()
+        });
         header
     }
 
@@ -388,53 +449,33 @@ impl BlockHeader {
     }
 }
 
-pub type CompatBlockHeader = BlockHeaderData;
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename = "BlockHeader")]
-pub struct BlockHeaderData {
-    parent_hash: HashValue,
-    timestamp: u64,
-    number: BlockNumber,
-    author: AccountAddress,
-    author_auth_key: Option<AuthenticationKey>,
-    txn_accumulator_root: HashValue,
-    block_accumulator_root: HashValue,
-    state_root: HashValue,
-    gas_used: u64,
-    difficulty: U256,
-    body_hash: HashValue,
-    chain_id: ChainId,
-    nonce: u32,
-    extra: BlockHeaderExtra,
-    parents_hash: ParentsHash,
-}
-
-impl From<BlockHeader> for BlockHeaderData {
-    fn from(v: BlockHeader) -> Self {
-        Self {
-            parent_hash: v.parent_hash,
-            timestamp: v.timestamp,
-            number: v.number,
-            author: v.author,
-            author_auth_key: v.author_auth_key,
-            txn_accumulator_root: v.txn_accumulator_root,
-            block_accumulator_root: v.block_accumulator_root,
-            state_root: v.state_root,
-            gas_used: v.gas_used,
-            difficulty: v.difficulty,
-            body_hash: v.body_hash,
-            chain_id: v.chain_id,
-            nonce: v.nonce,
-            extra: v.extra,
-            parents_hash: v.parents_hash,
+impl<'de> Deserialize<'de> for BlockHeader {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(rename = "BlockHeader")]
+        struct BlockHeaderData {
+            parent_hash: HashValue,
+            timestamp: u64,
+            number: BlockNumber,
+            author: AccountAddress,
+            author_auth_key: Option<AuthenticationKey>,
+            txn_accumulator_root: HashValue,
+            block_accumulator_root: HashValue,
+            state_root: HashValue,
+            gas_used: u64,
+            difficulty: U256,
+            body_hash: HashValue,
+            chain_id: ChainId,
+            nonce: u32,
+            extra: BlockHeaderExtra,
+            parents_hash: ParentsHash,
         }
-    }
-}
 
-impl From<BlockHeaderData> for BlockHeader {
-    fn from(header_data: BlockHeaderData) -> Self {
-        Self::new_with_auth_key(
+        let header_data = BlockHeaderData::deserialize(deserializer)?;
+        let block_header = Self::new_with_auth_key(
             header_data.parent_hash,
             header_data.timestamp,
             header_data.number,
@@ -450,17 +491,8 @@ impl From<BlockHeaderData> for BlockHeader {
             header_data.nonce,
             header_data.extra,
             header_data.parents_hash,
-        )
-    }
-}
-
-impl<'de> Deserialize<'de> for BlockHeader {
-    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let header_data = BlockHeaderData::deserialize(deserializer)?;
-        Ok(header_data.into())
+        );
+        Ok(block_header)
     }
 }
 
@@ -717,46 +749,6 @@ impl Sample for BlockBody {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct CompatBlockBody {
-    /// The transactions in this block.
-    pub transactions: Vec<SignedUserTransaction>,
-    /// uncles block header
-    pub uncles: Option<Vec<CompatBlockHeader>>,
-}
-
-impl From<BlockBody> for CompatBlockBody {
-    fn from(value: BlockBody) -> Self {
-        let BlockBody {
-            transactions,
-            uncles,
-        } = value;
-
-        Self {
-            transactions,
-            uncles: uncles.map(|u| {
-                u.into_iter()
-                    .map(CompatBlockHeader::from)
-                    .collect::<Vec<_>>()
-            }),
-        }
-    }
-}
-
-impl From<CompatBlockBody> for BlockBody {
-    fn from(value: CompatBlockBody) -> Self {
-        let CompatBlockBody {
-            transactions,
-            uncles,
-        } = value;
-
-        Self {
-            transactions,
-            uncles: uncles.map(|u| u.into_iter().map(BlockHeader::from).collect::<Vec<_>>()),
-        }
-    }
-}
-
 /// A block, encoded as it is on the block chain.
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct Block {
@@ -764,33 +756,6 @@ pub struct Block {
     pub header: BlockHeader,
     /// The body of this block.
     pub body: BlockBody,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename = "Block")]
-pub struct CompatBlock {
-    header: CompatBlockHeader,
-    body: CompatBlockBody,
-}
-
-impl From<Block> for CompatBlock {
-    fn from(value: Block) -> Self {
-        let Block { header, body } = value;
-        Self {
-            header: CompatBlockHeader::from(header),
-            body: CompatBlockBody::from(body),
-        }
-    }
-}
-
-impl From<CompatBlock> for Block {
-    fn from(value: CompatBlock) -> Self {
-        let CompatBlock { header, body } = value;
-        Self {
-            header: header.into(),
-            body: body.into(),
-        }
-    }
 }
 
 impl Block {

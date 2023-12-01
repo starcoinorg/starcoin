@@ -406,7 +406,7 @@ impl BlockChain {
     }
 
     fn execute_dag_block(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
-                info!("execute dag block:{:?}", verified_block.0);
+        info!("execute dag block:{:?}", verified_block.0);
         let block = verified_block.0;
         let selected_parent = block.parent_hash().unwrap();
         let blues = block.uncle_ids();
@@ -578,7 +578,6 @@ impl BlockChain {
         self.dag.clone().unwrap().commit(header.to_owned())?;
         watch(CHAIN_WATCH_NAME, "n26");
         Ok(ExecutedBlock { block, block_info })
-
     }
 
     //TODO consider move this logic to BlockExecutor
@@ -1007,7 +1006,9 @@ impl ChainReader for BlockChain {
     }
 
     fn execute(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
-        if verified_block.0.header().number() <= self.dag_fork_height() {
+        if self.dag.is_none()
+            || verified_block.0.header().number() <= self.storage.dag_fork_height(self.net.clone())
+        {
             Self::execute_block_and_save(
                 self.storage.as_ref(),
                 self.statedb.fork(),

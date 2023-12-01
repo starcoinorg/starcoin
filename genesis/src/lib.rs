@@ -40,7 +40,6 @@ mod errors;
 pub use errors::GenesisError;
 use starcoin_consensus::BlockDAG;
 use starcoin_storage::table_info::TableInfoStore;
-use starcoin_types::block::CompatBlock;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;
 
@@ -50,27 +49,6 @@ pub const GENESIS_DIR: Dir = include_dir!("generated");
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Genesis {
     block: Block,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct CompatGenesis {
-    block: CompatBlock,
-}
-
-impl From<CompatGenesis> for Genesis {
-    fn from(value: CompatGenesis) -> Self {
-        Self {
-            block: value.block.into(),
-        }
-    }
-}
-
-impl From<&Genesis> for CompatGenesis {
-    fn from(value: &Genesis) -> Self {
-        Self {
-            block: value.block.clone().into(),
-        }
-    }
 }
 
 impl Display for Genesis {
@@ -256,8 +234,7 @@ impl Genesis {
         let mut genesis_file = File::open(genesis_file_path)?;
         let mut content = vec![];
         genesis_file.read_to_end(&mut content)?;
-        let compat_genesis: CompatGenesis = bcs_ext::from_bytes(&content)?;
-        Ok(Some(compat_genesis.into()))
+        Ok(Some(bcs_ext::from_bytes(&content)?))
     }
 
     fn genesis_bytes(net: BuiltinNetworkID) -> Option<&'static [u8]> {
@@ -269,10 +246,7 @@ impl Genesis {
 
     pub fn load_generated(net: BuiltinNetworkID) -> Result<Option<Self>> {
         match Self::genesis_bytes(net) {
-            Some(bytes) => Ok(Some({
-                let data = bcs_ext::from_bytes::<CompatGenesis>(bytes)?;
-                data.into()
-            })),
+            Some(bytes) => Ok(Some(bcs_ext::from_bytes(bytes)?)),
             None => Ok(None),
         }
     }
@@ -307,8 +281,7 @@ impl Genesis {
         }
         let genesis_file = data_dir.join(Self::GENESIS_FILE_NAME);
         let mut file = File::create(genesis_file)?;
-        let compat_genesis: CompatGenesis = self.into();
-        let contents = bcs_ext::to_bytes(&compat_genesis)?;
+        let contents = bcs_ext::to_bytes(self)?;
         file.write_all(&contents)?;
         Ok(())
     }

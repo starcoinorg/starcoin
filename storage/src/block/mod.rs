@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-use crate::storage::{CodecKVStore, StorageInstance, ValueCodec};
 use crate::define_storage;
+use crate::storage::{CodecKVStore, StorageInstance, ValueCodec};
 use crate::{
     BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME,
     BLOCK_TRANSACTIONS_PREFIX_NAME, BLOCK_TRANSACTION_INFOS_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
@@ -12,7 +12,7 @@ use network_p2p_types::peer_id::PeerId;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_types::block::{Block, BlockBody, BlockHeader, CompatBlock, CompatBlockHeader};
+use starcoin_types::block::{Block, BlockBody, BlockHeader};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct OldFailedBlock {
@@ -75,11 +75,11 @@ impl Sample for FailedBlock {
     }
 }
 
-define_storage!(BlockInnerStorage, HashValue, CompatBlock, BLOCK_PREFIX_NAME);
+define_storage!(BlockInnerStorage, HashValue, Block, BLOCK_PREFIX_NAME);
 define_storage!(
     BlockHeaderStorage,
     HashValue,
-    CompatBlockHeader,
+    BlockHeader,
     BLOCK_HEADER_PREFIX_NAME
 );
 
@@ -119,7 +119,7 @@ pub struct BlockStorage {
     failed_block_storage: FailedBlockStorage,
 }
 
-impl ValueCodec for CompatBlock {
+impl ValueCodec for Block {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
     }
@@ -129,7 +129,7 @@ impl ValueCodec for CompatBlock {
     }
 }
 
-impl ValueCodec for CompatBlockHeader {
+impl ValueCodec for BlockHeader {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
     }
@@ -196,12 +196,11 @@ impl BlockStorage {
             block.header().parent_hash()
         );
         let block_id = block.header().id();
-        self.block_store.put(block_id, block.into())
+        self.block_store.put(block_id, block)
     }
 
     pub fn save_header(&self, header: BlockHeader) -> Result<()> {
-        self.header_store
-            .put(header.id(), CompatBlockHeader::from(header))
+        self.header_store.put(header.id(), header)
     }
 
     pub fn get_headers(&self) -> Result<Vec<HashValue>> {
@@ -217,8 +216,7 @@ impl BlockStorage {
     }
 
     pub fn get(&self, block_id: HashValue) -> Result<Option<Block>> {
-        let compat_block = self.block_store.get(block_id)?;
-        Ok(compat_block.map(|c| c.into()))
+        self.block_store.get(block_id)
     }
 
     pub fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>> {
@@ -252,8 +250,7 @@ impl BlockStorage {
     }
 
     pub fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {
-        let compat_header = self.header_store.get(block_id)?;
-        Ok(compat_header.map(|c| c.into()))
+        self.header_store.get(block_id)
     }
 
     pub fn get_block_by_hash(&self, block_id: HashValue) -> Result<Option<Block>> {
