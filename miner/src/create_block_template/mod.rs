@@ -384,8 +384,10 @@ where
                         let mut blues = dag.ghostdata(tips).mergeset_blues.to_vec();
                         assert!(blues.len() > 0, "the count of the blue block should be larger than 0");
                         let mut blue_blocks = vec![];
-                        let selected_parent = blues.remove(0);
-                        assert_eq!(previous_header.id(), selected_parent);
+                        if !self.is_dag_genesis(blues[0])? {
+                            let selected_parent = blues.remove(0);
+                            assert_eq!(previous_header.id(), selected_parent);
+                        }
                         for blue in &blues {
                             let block = self
                                 .storage
