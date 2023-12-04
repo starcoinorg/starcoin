@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::create_block_template::metrics::BlockBuilderMetrics;
-use anyhow::{format_err, Result};
+use anyhow::{format_err, Result, Ok};
 use futures::executor::block_on;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_account_service::AccountService;
@@ -13,7 +13,7 @@ use starcoin_config::NodeConfig;
 use starcoin_consensus::{BlockDAG, Consensus};
 use starcoin_crypto::hash::HashValue;
 use starcoin_executor::VMMetrics;
-use starcoin_flexidag::flexidag_service::NewTips;
+use starcoin_flexidag::flexidag_service::{NewTips, NewTipsAndCreateDag};
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_service_registry::{
@@ -103,6 +103,7 @@ impl ActorService for BlockBuilderService {
         ctx.subscribe::<NewBranch>();
         ctx.subscribe::<DefaultAccountChangeEvent>();
         ctx.subscribe::<NewTips>();
+        ctx.subscribe::<NewTipsAndCreateDag>();
         Ok(())
     }
 
@@ -111,6 +112,7 @@ impl ActorService for BlockBuilderService {
         ctx.unsubscribe::<NewBranch>();
         ctx.unsubscribe::<DefaultAccountChangeEvent>();
         ctx.unsubscribe::<NewTips>();
+        ctx.unsubscribe::<NewTipsAndCreateDag>();
         Ok(())
     }
 }
@@ -119,6 +121,19 @@ impl EventHandler<Self, NewHeadBlock> for BlockBuilderService {
     fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<BlockBuilderService>) {
         if let Err(e) = self.inner.update_chain(msg.executed_block.as_ref().clone()) {
             error!("err : {:?}", e)
+        }
+    }
+}
+
+impl EventHandler<Self, NewTipsAndCreateDag> for BlockBuilderService {
+    fn handle_event(&mut self, msg: NewTipsAndCreateDag, _ctx: &mut ServiceContext<BlockBuilderService>) {
+        assert!(self.inner.dag.is_none(), "the dag should be none but it was initialized before");
+        self.inner.dag = Some(msg.dag);
+        if let Err(e) = self.inner.chain.update_tips(msg.tips.clone()) {
+            error!("failed to update miner tips for: {:?}", e);
+        }
+        if let Err(e) = self.inner.storage.save_dag_tips(msg.tips) {
+            error!("failed to save miner tips for: {:?}", e);
         }
     }
 }
@@ -321,6 +336,18 @@ where
         }
     }
 
+    pub fn is_dag_genesis(&self, id: HashValue) -> Result<bool> {
+        if let Some(header) = self.storage.get_block_header_by_hash(id)? {
+            if header.number() == BlockDAG::dag_fork_height_with_net(self.chain.net_id()) {
+                Ok(true)
+            } else {
+                Ok(false)
+            }
+        } else {
+            Ok(false)
+        }
+    }
+
     pub fn create_block_template(&self) -> Result<BlockTemplateResponse> {
         let on_chain_block_gas_limit = self.chain.epoch().block_gas_limit();
         let block_gas_limit = self
@@ -355,6 +382,7 @@ where
                 Some(tips) => {
                     if let Some(dag) = &self.dag {
                         let mut blues = dag.ghostdata(tips).mergeset_blues.to_vec();
+                        assert!(blues.len() > 0, "the count of the blue block should be larger than 0");
                         let mut blue_blocks = vec![];
                         let selected_parent = blues.remove(0);
                         assert_eq!(previous_header.id(), selected_parent);
@@ -409,7 +437,6 @@ where
         for invalid_txn in excluded_txns.discarded_txns {
             self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
-
         Ok(BlockTemplateResponse {
             parent: previous_header,
             template,

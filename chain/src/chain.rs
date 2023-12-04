@@ -1007,7 +1007,7 @@ impl ChainReader for BlockChain {
 
     fn execute(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
         if self.dag.is_none()
-            || verified_block.0.header().number() <= self.storage.dag_fork_height(self.net.clone())
+            || verified_block.0.header().number() <= BlockDAG::dag_fork_height_with_net(self.net.clone())
         {
             Self::execute_block_and_save(
                 self.storage.as_ref(),

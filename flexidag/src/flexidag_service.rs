@@ -22,6 +22,11 @@ pub struct NewTips {
     pub tips: Vec<HashValue>,
 }
 
+#[derive(Clone, Debug)]
+pub struct NewTipsAndCreateDag {
+    pub tips: Vec<HashValue>,
+    pub dag: BlockDAG,
+}
 
 #[derive(Debug, Clone)]
 pub struct DumpTipsToAccumulator {
@@ -366,8 +371,9 @@ impl ServiceHandler<Self, DumpTipsToAccumulator> for FlexidagService {
                     tips: Some(new_tips.clone()),
                     k_total_difficulties: [msg.k_total_difficulty].into_iter().collect(),
                 });
-                ctx.broadcast(NewTips {
+                ctx.broadcast(NewTipsAndCreateDag {
                     tips: new_tips,
+                    dag: self.dag.as_ref().unwrap().clone(),
                 });
                 self.storage = storage.clone();
                 Ok(())
@@ -455,8 +461,9 @@ impl ServiceHandler<Self, UpdateDagTips> for FlexidagService {
                             k_total_difficulties: [msg.k_total_difficulty].into_iter().collect(),
                         });
                         // broadcast the tip
-                        ctx.broadcast(NewTips {
+                        ctx.broadcast(NewTipsAndCreateDag {
                             tips: new_tips,
+                            dag: self.dag.as_ref().unwrap().clone(),
                         });
                         self.dag_accumulator = dag_accumulator;
 

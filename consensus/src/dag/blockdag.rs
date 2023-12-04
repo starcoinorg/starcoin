@@ -30,6 +30,7 @@ use starcoin_types::{
     consensus_header::ConsensusHeader,
 };
 use std::collections::BTreeSet;
+use std::fmt;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -159,7 +160,8 @@ impl BlockDAG {
                         config.data_dir().join("flexidag").as_path(),
                         config.net().id().clone(),
                     )?; 
-                dag.commit(block_header)?;
+                // dag.commit(block_header)?;
+                dag.init_with_genesis(block_header)?;
                 Ok((
                     Some(dag),
                     Some(dag_accumulator),
@@ -264,6 +266,12 @@ impl BlockDAG {
     pub fn get_ghostdag_data_by_child(&self, hash: Hash) -> anyhow::Result<Arc<GhostdagData>> {
         let ghostdata = self.storage.ghost_dag_store.get_data(hash)?;
         return Ok(ghostdata);
+    }
+}
+
+impl fmt::Debug for BlockDAG {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("print BlockDAG").finish()
     }
 }
 
