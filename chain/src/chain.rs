@@ -403,7 +403,7 @@ impl BlockChain {
         let header = block.header();
         let block_id = header.id();
         //TODO::FIXEME
-        let block_metadata = block.to_metadata(0);
+        let block_metadata = block.to_metadata(self.status.status.clone().head.gas_used());
         let mut transactions = vec![Transaction::BlockMetadata(block_metadata)];
         let mut total_difficulty = header.difficulty() + block_info_past.total_difficulty;
         for blue in blues {
@@ -789,12 +789,11 @@ impl ChainReader for BlockChain {
         reverse: bool,
         count: u64,
     ) -> Result<Vec<Block>> {
-        let num_leaves = self.block_accumulator.num_leaves();
         let end_num = match number {
-            None => num_leaves.saturating_sub(1),
+            None => self.current_header().number(),
             Some(number) => number,
         };
-
+        let num_leaves = self.block_accumulator.num_leaves();
         if end_num > num_leaves.saturating_sub(1) {
             bail!("Can not find block by number {}", end_num);
         };
