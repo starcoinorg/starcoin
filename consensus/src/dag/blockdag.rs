@@ -17,13 +17,16 @@ use parking_lot::RwLock;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
-use starcoin_config::{NodeConfig, RocksdbConfig, ChainNetworkID};
+use starcoin_config::{ChainNetworkID, NodeConfig, RocksdbConfig};
 use starcoin_crypto::{HashValue as Hash, HashValue};
-use starcoin_logger::prelude::info;
 use starcoin_storage::flexi_dag::SyncFlexiDagSnapshotHasher;
 use starcoin_storage::storage::CodecKVStore;
 use starcoin_storage::Store;
-use starcoin_types::block::{BlockHeader, TEST_FLEXIDAG_FORK_HEIGHT, DEV_FLEXIDAG_FORK_HEIGHT, HALLEY_FLEXIDAG_FORK_HEIGHT, PROXIMA_FLEXIDAG_FORK_HEIGHT, BARNARD_FLEXIDAG_FORK_HEIGHT, MAIN_FLEXIDAG_FORK_HEIGHT, BlockNumber};
+use starcoin_types::block::{
+    BlockHeader, BlockNumber, BARNARD_FLEXIDAG_FORK_HEIGHT, DEV_FLEXIDAG_FORK_HEIGHT,
+    HALLEY_FLEXIDAG_FORK_HEIGHT, MAIN_FLEXIDAG_FORK_HEIGHT, PROXIMA_FLEXIDAG_FORK_HEIGHT,
+    TEST_FLEXIDAG_FORK_HEIGHT,
+};
 use starcoin_types::dag_block::KTotalDifficulty;
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
@@ -95,7 +98,7 @@ impl BlockDAG {
     }
 
     fn dag_fork_height(&self) -> BlockNumber {
-       Self::dag_fork_height_with_net(self.net.clone())
+        Self::dag_fork_height_with_net(self.net.clone())
     }
 
     pub fn try_init_with_storage(
@@ -120,7 +123,8 @@ impl BlockDAG {
 
             Ok((
                 Some(Self::new_by_config(
-                    config.data_dir().join("flexidag").as_path(), config.net().id().clone(),
+                    config.data_dir().join("flexidag").as_path(),
+                    config.net().id().clone(),
                 )?),
                 Some(dag_accumulator),
             ))
@@ -157,15 +161,12 @@ impl BlockDAG {
                     .put(key, snapshot_hasher.to_snapshot(dag_accumulator.get_info()))?;
                 dag_accumulator.flush()?;
                 let dag = Self::new_by_config(
-                        config.data_dir().join("flexidag").as_path(),
-                        config.net().id().clone(),
-                    )?; 
+                    config.data_dir().join("flexidag").as_path(),
+                    config.net().id().clone(),
+                )?;
                 // dag.commit(block_header)?;
                 dag.init_with_genesis(block_header)?;
-                Ok((
-                    Some(dag),
-                    Some(dag_accumulator),
-                ))
+                Ok((Some(dag), Some(dag_accumulator)))
             } else {
                 bail!("failed to init dag")
             }
@@ -305,8 +306,8 @@ mod tests {
         let mut block = BlockHeader::random();
         block.set_parents(vec![genesis_hash]);
         dag.commit(block).unwrap();
-        let data  =dag.ghostdag_manager.ghostdag(&vec![genesis_hash]);
-        assert_eq!(data.selected_parent,genesis_hash);
-        assert_eq!(data.mergeset_blues[0],genesis_hash);
+        let data = dag.ghostdag_manager.ghostdag(&vec![genesis_hash]);
+        assert_eq!(data.selected_parent, genesis_hash);
+        assert_eq!(data.mergeset_blues[0], genesis_hash);
     }
 }

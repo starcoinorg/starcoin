@@ -17,7 +17,7 @@ use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{ServiceContext, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::block::{BlockInfo, self};
+use starcoin_types::block::BlockInfo;
 use starcoin_types::dag_block::KTotalDifficulty;
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
@@ -356,10 +356,7 @@ where
     pub fn do_new_head_with_broadcast() {}
 
     /// Reset the node to `block_id`, and replay blocks after the block
-    pub fn reset(
-        &mut self,
-        block_id: HashValue,
-    ) -> Result<()> {
+    pub fn reset(&mut self, block_id: HashValue) -> Result<()> {
         let new_head_block = self
             .main
             .get_block(block_id)?

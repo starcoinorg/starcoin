@@ -5,7 +5,7 @@ use anyhow::Result;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_config::ChainNetwork;
-use starcoin_consensus::{BlockDAG, Consensus};
+use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;

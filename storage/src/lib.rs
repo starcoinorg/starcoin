@@ -15,9 +15,7 @@ use crate::{
     transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage},
 };
 use anyhow::{anyhow, bail, format_err, Error, Ok, Result};
-use flexi_dag::{
-    DagTips, DagTipsStorage, SyncFlexiDagSnapshot, SyncFlexiDagSnapshotStorage, SyncFlexiDagStorage,
-};
+use flexi_dag::{DagTips, SyncFlexiDagSnapshot, SyncFlexiDagSnapshotStorage, SyncFlexiDagStorage};
 use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
