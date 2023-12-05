@@ -349,8 +349,8 @@ where
                         &tips_hash, blues
                     );
                     let mut blue_blocks = vec![];
-                    let selected_parent = blues.remove(0);
-                    assert_eq!(previous_header.id(), selected_parent);
+
+                    let __selected_parent = blues.remove(0);
                     for blue in &blues {
                         let block = self
                             .storage

@@ -1,6 +1,7 @@
 use anyhow::{format_err, Result};
 use rand::Rng;
 use starcoin_account_api::AccountInfo;
+use starcoin_accumulator::node::AccumulatorStoreType::Block;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain_api::{ChainReader, ChainWriter};
 use starcoin_config::NodeConfig;
@@ -15,6 +16,70 @@ use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::transaction::{SignedUserTransaction, Transaction};
 use std::collections::HashMap;
 use std::sync::Arc;
+
+pub fn gen_txns() -> Result<Vec<SignedUserTransaction>> {
+    let mut rng = rand::thread_rng();
+    let txn_count: u64 = rng.gen_range(1..10);
+    let mut seq_number = 0;
+    let config = Arc::new(NodeConfig::random_for_test());
+    let txns: Vec<SignedUserTransaction> = (0..txn_count)
+        .map(|_txn_idx| {
+            let account_address = AccountAddress::random();
+
+            let txn = peer_to_peer_txn_sent_as_association(
+                account_address,
+                seq_number,
+                10000,
+                config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                config.net(),
+            );
+            seq_number += 1;
+            txn
+        })
+        .collect();
+    Ok(txns)
+}
+
+#[stest::test(timeout = 480)]
+fn test_transaction_info_and_proof_1() -> Result<()> {
+    let config = Arc::new(NodeConfig::random_for_test());
+    let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
+    let mut current_header = block_chain.current_header();
+    let miner_account = AccountInfo::random();
+
+    (0..5).for_each(|_| {
+        let txns = gen_txns().unwrap();
+        let (template, _) = block_chain
+            .create_block_template(*miner_account.address(), None, txns.clone(), vec![], None)
+            .unwrap();
+        let block = block_chain
+            .consensus()
+            .create_block(template, config.net().time_service().as_ref())
+            .unwrap();
+        debug!("apply block:{:?}", &block);
+        block_chain.apply(block.clone()).unwrap();
+    });
+    let fork_point = block_chain.get_block_by_number(3).unwrap().unwrap();
+    let txns = gen_txns().unwrap();
+    let mut fork_chain = block_chain.fork(fork_point.id()).unwrap();
+    let (template, _) = fork_chain
+        .create_block_template(
+            *miner_account.address(),
+            Some(fork_point.header.id()),
+            txns.clone(),
+            vec![],
+            None,
+        )
+        .unwrap();
+    let block = fork_chain
+        .consensus()
+        .create_block(template, config.net().time_service().as_ref())
+        .unwrap();
+
+    debug!("apply block:{:?}", &block);
+    fork_chain.apply(block.clone()).unwrap();
+    Ok(())
+}
 
 #[stest::test(timeout = 480)]
 fn test_transaction_info_and_proof() -> Result<()> {
@@ -150,6 +215,5 @@ fn test_transaction_info_and_proof() -> Result<()> {
             );
         }
     }
-
     Ok(())
 }

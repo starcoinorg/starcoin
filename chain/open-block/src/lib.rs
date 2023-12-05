@@ -143,34 +143,19 @@ impl OpenedBlock {
     /// as the internal state may be corrupted.
     /// TODO: make the function can be called again even last call returns error.  
     pub fn push_txns(&mut self, user_txns: Vec<SignedUserTransaction>) -> Result<ExcludedTxns> {
+        let mut txns = vec![];
         for block in self.blue_blocks.as_ref().unwrap_or(&vec![]) {
-            let mut transactions = vec![];
-            transactions.extend(
+            txns.extend(
                 block
                     .transactions()
                     .iter()
+                    .skip(1)
                     .cloned()
                     .map(Transaction::UserTransaction),
             );
-            let executed_data = starcoin_executor::block_execute(
-                &self.state,
-                transactions,
-                self.gas_limit,
-                self.vm_metrics.clone(),
-            )?;
-            let included_txn_info_hashes: Vec<_> = executed_data
-                .txn_infos
-                .iter()
-                .map(|info| info.id())
-                .collect();
-            self.txn_accumulator.append(&included_txn_info_hashes)?;
         }
 
-        let mut txns: Vec<_> = user_txns
-            .iter()
-            .cloned()
-            .map(Transaction::UserTransaction)
-            .collect();
+        txns.extend(user_txns.iter().cloned().map(Transaction::UserTransaction));
 
         let txn_outputs = {
             let gas_left = self.gas_limit.checked_sub(self.gas_used).ok_or_else(|| {
@@ -187,7 +172,6 @@ impl OpenedBlock {
                 self.vm_metrics.clone(),
             )?
         };
-
         let untouched_user_txns: Vec<SignedUserTransaction> = if txn_outputs.len() >= txns.len() {
             vec![]
         } else {

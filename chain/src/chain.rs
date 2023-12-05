@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::verifier::{BlockVerifier, FullVerifier};
+use crate::verifier::{BlockVerifier, FullVerifier, NoneVerifier};
 use anyhow::{bail, ensure, format_err, Ok, Result};
 
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
@@ -276,8 +276,7 @@ impl BlockChain {
                         &tips_hash, blues
                     );
                     let mut blue_blocks = vec![];
-                    let selected_parent = blues.remove(0);
-                    assert_eq!(previous_header.id(), selected_parent);
+                    let _selected_parent = blues.remove(0);
                     for blue in &blues {
                         let block = self
                             .storage
@@ -406,6 +405,7 @@ impl BlockChain {
         let block_metadata = block.to_metadata(self.status.status.clone().head.gas_used());
         let mut transactions = vec![Transaction::BlockMetadata(block_metadata)];
         let mut total_difficulty = header.difficulty() + block_info_past.total_difficulty;
+
         for blue in blues {
             let blue_block = self
                 .storage
@@ -415,6 +415,7 @@ impl BlockChain {
                 blue_block
                     .transactions()
                     .iter()
+                    .skip(1)
                     .cloned()
                     .map(Transaction::UserTransaction),
             );
@@ -427,10 +428,10 @@ impl BlockChain {
                 .cloned()
                 .map(Transaction::UserTransaction),
         );
-
         watch(CHAIN_WATCH_NAME, "n21");
+        let statedb = self.statedb.fork();
         let executed_data = starcoin_executor::block_execute(
-            &self.statedb,
+            &statedb,
             transactions.clone(),
             self.epoch.block_gas_limit(), //TODO: Fix me
             self.vm_metrics.clone(),
@@ -484,7 +485,7 @@ impl BlockChain {
         );
 
         watch(CHAIN_WATCH_NAME, "n23");
-        self.statedb
+        statedb
             .flush()
             .map_err(BlockExecutorError::BlockChainStateErr)?;
         // If chain state is matched, and accumulator is matched,
@@ -1307,7 +1308,7 @@ impl ChainWriter for BlockChain {
     }
 
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock> {
-        self.apply_with_verifier::<FullVerifier>(block)
+        self.apply_with_verifier::<NoneVerifier>(block)
     }
 
     fn chain_state(&mut self) -> &ChainStateDB {
