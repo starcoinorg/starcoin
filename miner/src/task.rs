@@ -3,6 +3,7 @@
 
 use crate::metrics::MinerMetrics;
 use crate::BlockHeaderExtra;
+use starcoin_logger::prelude::info;
 use starcoin_metrics::HistogramTimer;
 use starcoin_types::block::{Block, BlockTemplate};
 

@@ -53,7 +53,7 @@ pub struct ChainStatusWithBlock {
 }
 impl ChainStatusWithBlock {
     pub fn dag_tips(&self) -> &Option<Vec<HashValue>> {
-        &self.status.tips_hash
+        &self.status.tips_hash()
     }
 }
 pub struct BlockChain {
@@ -1305,7 +1305,7 @@ impl ChainWriter for BlockChain {
             Self::calculate_dag_accumulator_key(
                 self.status
                     .status
-                    .tips_hash
+                    .tips_hash()
                     .as_ref()
                     .expect("dag blocks must have tips")
                     .clone(),
@@ -1334,18 +1334,18 @@ impl ChainWriter for BlockChain {
         );
 
         self.statedb = ChainStateDB::new(self.storage.clone().into_super_arc(), Some(state_root));
-        let tips = self.status.status.tips_hash.clone();
-        let next_tips = match tips {
-            Some(mut tips) => {
-                if !tips.contains(&block.header().id()) {
-                    tips.push(block.header().id());
-                }
-                Some(tips)
-            }
-            None => None,
-        };
+        // let tips = self.status.status.tips_hash.clone();
+        // let next_tips = match tips {
+        //     Some(mut tips) => {
+        //         if !tips.contains(&block.header().id()) {
+        //             tips.push(block.header().id());
+        //         }
+        //         Some(tips)
+        //     }
+        //     None => None,
+        // };
         self.status = ChainStatusWithBlock {
-            status: ChainStatus::new(block.header().clone(), block_info.clone(), next_tips),
+            status: ChainStatus::new(block.header().clone(), block_info.clone(), self.status().tips_hash().clone()),
             head: block.clone(),
         };
         if self.epoch.end_block_number() == block.header().number() {
@@ -1369,7 +1369,7 @@ impl ChainWriter for BlockChain {
     }
 
     fn update_tips(&mut self, new_tips: Vec<HashValue>) -> Result<()> {
-        self.status.status.tips_hash = Some(new_tips);
+        self.status.status.update_tips(Some(new_tips));
         Ok(())
     }
 }

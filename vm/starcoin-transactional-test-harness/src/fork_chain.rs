@@ -118,7 +118,7 @@ impl ForkBlockChain {
         let tips = self
             .status
             .as_ref()
-            .and_then(|status| status.status.tips_hash.clone());
+            .and_then(|status| status.status.tips_hash().clone());
         let parents = block.header.parents_hash();
         match (tips, parents) {
             (Some(mut tips), Some(parents)) => {

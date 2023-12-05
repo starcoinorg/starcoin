@@ -774,13 +774,13 @@ impl Block {
     // }
 
     pub fn parent_hash(&self) -> anyhow::Result<HashValue> {
-        if self.header().parents_hash.is_some() {
-            self.dag_parent_and_tips()
-                .map(|dag| dag.0.id())
-                .ok_or_else(|| format_err!("missing parent and tips for dag block"))
-        } else {
+        // if self.header().parents_hash.is_some() {
+        //     self.dag_parent_and_tips()
+        //         .map(|dag| dag.0.id())
+        //         .ok_or_else(|| format_err!("missing parent and tips for dag block"))
+        // } else {
             Ok(self.header().parent_hash())
-        }
+        // }
     }
 
     pub fn id(&self) -> HashValue {

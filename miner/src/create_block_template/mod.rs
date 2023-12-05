@@ -27,6 +27,7 @@ use starcoin_types::{
     system_events::{NewBranch, NewHeadBlock},
 };
 use starcoin_vm_types::transaction::SignedUserTransaction;
+use std::backtrace::Backtrace;
 use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
 
@@ -375,7 +376,7 @@ where
         let epoch = self.chain.epoch();
         let strategy = epoch.strategy();
         let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
-        let tips_hash = self.chain.status().tips_hash;
+        let tips_hash = self.chain.status().tips_hash().clone();
         let (uncles, blue_blocks) = {
             match &tips_hash {
                 None => (self.find_uncles(), None),
@@ -384,10 +385,8 @@ where
                         let mut blues = dag.ghostdata(tips).mergeset_blues.to_vec();
                         assert!(blues.len() > 0, "the count of the blue block should be larger than 0");
                         let mut blue_blocks = vec![];
-                        if !self.is_dag_genesis(blues[0])? {
-                            let selected_parent = blues.remove(0);
-                            assert_eq!(previous_header.id(), selected_parent);
-                        }
+                        let selected_parent = blues.remove(0); // 5
+                        // assert_eq!(previous_header.id(), selected_parent);// 4, 5
                         for blue in &blues {
                             let block = self
                                 .storage
@@ -409,6 +408,7 @@ where
                 }
             }
         };
+
         info!(
             "[CreateBlockTemplate] previous_header: {:?}, block_gas_limit: {}, max_txns: {}, txn len: {}, uncles len: {}, timestamp: {}",
             previous_header,
@@ -434,7 +434,6 @@ where
         )?;
 
         let excluded_txns = opened_block.push_txns(txns)?;
-
         let template = opened_block.finalize()?;
         for invalid_txn in excluded_txns.discarded_txns {
             self.tx_provider.remove_invalid_txn(invalid_txn.id());

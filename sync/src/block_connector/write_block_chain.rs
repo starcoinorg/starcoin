@@ -107,7 +107,6 @@ where
             .map(|metrics| metrics.chain_block_connect_time.start_timer());
 
         let result = self.connect_inner(block.clone());
-
         if let Some(metrics) = self.metrics.as_ref() {
             let result = match result.as_ref() {
                 std::result::Result::Ok(connect) => format!("Ok_{}", connect),
@@ -265,7 +264,7 @@ where
             self.update_startup_info(new_branch.head_block().header())?;
             ctx.broadcast(NewHeadBlock {
                 executed_block: Arc::new(new_branch.head_block()),
-                tips: self.main.status().tips_hash.clone(),
+                // tips: self.main.status().tips_hash.clone(),
             });
             Ok(())
         } else {
@@ -516,7 +515,7 @@ where
 
         if let Err(e) = self.bus.broadcast(NewHeadBlock {
             executed_block: Arc::new(block),
-            tips: self.main.status().tips_hash.clone(),
+            // tips: self.main.status().tips_hash.clone(),
         }) {
             error!("Broadcast NewHeadBlock error: {:?}", e);
         }
@@ -535,9 +534,10 @@ where
     }
 
     pub fn update_tips(&mut self, block_header: BlockHeader) -> Result<()> {
-        self.main.status().tips_hash.map(|mut tips| {
+        self.main.status().tips_hash().clone().map(|mut tips| {
             if !tips.contains(&block_header.id()) {
-                tips.push(block_header.id())
+                tips.push(block_header.id());
+                self.main.status().update_tips(Some(tips));
             }
         });
         async_std::task::block_on(self.flexidag_service.send(UpdateDagTips {
@@ -551,10 +551,7 @@ where
     }
 
     pub fn dump_tips(&mut self, block_header: BlockHeader) -> Result<()> {
-        self.main.status().tips_hash.map(|mut tips| {
-            tips.clear();
-            tips.push(block_header.id());
-        });
+        self.main.status().update_tips(Some(vec![block_header.id()]));
         async_std::task::block_on(self.flexidag_service.send(DumpTipsToAccumulator {
             block_header: block_header.clone(),
             current_head_block_id: self.main.status().head().id(),
@@ -578,6 +575,7 @@ where
             debug!("Repeat connect, current header is {} already.", block_id);
             return Ok(ConnectOk::MainDuplicate);
         }
+
 
         let parent_hash = block.parent_hash()?;
 

@@ -133,7 +133,7 @@ pub struct ChainStatus {
     /// Chain block info
     pub info: BlockInfo,
     /// tips
-    pub tips_hash:Option<Vec<HashValue>>
+    tips_hash:Option<Vec<HashValue>>
 }
 
 impl ChainStatus {
@@ -174,12 +174,20 @@ impl ChainStatus {
         &self.info
     }
 
+    pub fn tips_hash(&self) -> &Option<Vec<HashValue>> {
+        &self.tips_hash
+    }
+
     pub fn total_difficulty(&self) -> U256 {
         self.info.total_difficulty
     }
 
     pub fn into_inner(self) -> (BlockHeader, BlockInfo) {
         (self.head, self.info)
+    }
+
+    pub fn update_tips(&mut self, tips: Option<Vec<HashValue>>) {
+        self.tips_hash = tips;
     }
 }
 

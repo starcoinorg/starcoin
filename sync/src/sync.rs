@@ -718,7 +718,7 @@ impl EventHandler<Self, NewHeadBlock> for SyncService {
         if self.sync_status.update_chain_status(ChainStatus::new(
             msg.executed_block.header().clone(),
             msg.executed_block.block_info.clone(),
-            msg.tips,
+            self.sync_status.chain_status().tips_hash().clone(),
         )) {
             self.sync_status.update_dag_accumulator_info(
                 self.storage

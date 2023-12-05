@@ -198,9 +198,9 @@ impl BlockVerifier for BasicVerifier {
         // todo: For a dag block
         // 1. It could be the first dag block, the chain is just a normal single chain
         // 2. Or, both block and dag are created for flexidag
-        if chain_status.tips_hash.is_some() {
+        if chain_status.tips_hash().is_some() {
             // todo: make sure current block is a dag block
-            let mut tips_hash = chain_status.tips_hash.clone().unwrap();
+            let mut tips_hash = chain_status.tips_hash().clone().unwrap();
             tips_hash.sort();
 
             // if it is a dag block
