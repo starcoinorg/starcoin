@@ -15,7 +15,7 @@ use anyhow::{bail, ensure, format_err, Result};
 use once_cell::sync::Lazy;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::{debug, info, warn};
-use starcoin_types::block::{BlockHeader, BlockNumber};
+use starcoin_types::block::BlockNumber;
 use starcoin_types::startup_info::{BarnardHardFork, StartupInfo};
 use starcoin_types::transaction::Transaction;
 use std::cmp::Ordering;
@@ -163,8 +163,12 @@ impl DBUpgrade {
         Ok(())
     }
 
-    fn db_upgrade_v3_v4(_instance: &mut StorageInstance) -> Result<()> {
-        // https://github.com/facebook/rocksdb/issues/1295
+    fn db_upgrade_v3_v4(instance: &mut StorageInstance) -> Result<()> {
+        let chain_info_storage = ChainInfoStorage::new(instance.clone());
+        chain_info_storage.upgrade_startup_info()?;
+
+        BlockStorage::upgrade_block_header(instance.clone())?;
+
         Ok(())
     }
 
@@ -190,10 +194,16 @@ impl DBUpgrade {
             (StorageVersion::V2, StorageVersion::V3) => {
                 Self::db_upgrade_v2_v3(instance)?;
             }
-            (StorageVersion::V3, StorageVersion::V4)
-            | (StorageVersion::V1, StorageVersion::V4)
-            | (StorageVersion::V2, StorageVersion::V4) => {
-                // just for testing. todo
+            (StorageVersion::V1, StorageVersion::V4) => {
+                Self::db_upgrade_v1_v2(instance)?;
+                Self::db_upgrade_v2_v3(instance)?;
+                Self::db_upgrade_v3_v4(instance)?;
+            }
+            (StorageVersion::V2, StorageVersion::V4) => {
+                Self::db_upgrade_v2_v3(instance)?;
+                Self::db_upgrade_v3_v4(instance)?;
+            }
+            (StorageVersion::V3, StorageVersion::V4) => {
                 Self::db_upgrade_v3_v4(instance)?;
             }
             _ => bail!(
@@ -225,8 +235,7 @@ impl DBUpgrade {
                 let mut iter = block_storage.header_store.iter()?;
                 iter.seek_to_first();
                 for item in iter {
-                    let (id, compat_block_header) = item?;
-                    let block_header: BlockHeader = compat_block_header.into();
+                    let (id, block_header) = item?;
                     if block_header.number() >= BARNARD_HARD_FORK_HEIGHT {
                         block_info_storage.remove(id)?;
                         processed_count += 1;

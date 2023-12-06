@@ -4,8 +4,10 @@
 use crate::storage::{ColumnFamily, InnerStorage, KVStore};
 use crate::{StorageVersion, CHAIN_INFO_PREFIX_NAME};
 use anyhow::Result;
+use bcs_ext::BCSCodec;
 use starcoin_crypto::HashValue;
-use starcoin_types::startup_info::{BarnardHardFork, SnapshotRange, StartupInfo};
+use starcoin_logger::prelude::warn;
+use starcoin_types::startup_info::{BarnardHardFork, OldStartupInfo, SnapshotRange, StartupInfo};
 use std::convert::{TryFrom, TryInto};
 
 #[derive(Clone)]
@@ -24,6 +26,7 @@ pub type ChainInfoStorage = InnerStorage<ChainInfoColumnFamily>;
 
 impl ChainInfoStorage {
     const STARTUP_INFO_KEY: &'static str = "startup_info";
+    const STARTUP_INFO_KEY_V2: &'static str = "startup_info_v2";
     const GENESIS_KEY: &'static str = "genesis";
     const STORAGE_VERSION_KEY: &'static str = "storage_version";
     const SNAPSHOT_RANGE_KEY: &'static str = "snapshot_height";
@@ -46,7 +49,7 @@ impl ChainInfoStorage {
     }
 
     pub fn get_startup_info(&self) -> Result<Option<StartupInfo>> {
-        self.get(Self::STARTUP_INFO_KEY.as_bytes())
+        self.get(Self::STARTUP_INFO_KEY_V2.as_bytes())
             .and_then(|bytes| match bytes {
                 Some(bytes) => Ok(Some(bytes.try_into()?)),
                 None => Ok(None),
@@ -55,7 +58,7 @@ impl ChainInfoStorage {
 
     pub fn save_startup_info(&self, startup_info: StartupInfo) -> Result<()> {
         self.put_sync(
-            Self::STARTUP_INFO_KEY.as_bytes().to_vec(),
+            Self::STARTUP_INFO_KEY_V2.as_bytes().to_vec(),
             startup_info.try_into()?,
         )
     }
@@ -126,5 +129,24 @@ impl ChainInfoStorage {
             Self::BARNARD_HARD_FORK.as_bytes().to_vec(),
             barnard_hard_fork.try_into()?,
         )
+    }
+
+    // todo:
+    // 1. try to generic this function
+    pub fn upgrade_startup_info(&self) -> Result<()> {
+        if let Some(raw) = self.get(Self::STARTUP_INFO_KEY.as_bytes())? {
+            warn!(
+                "upgrading key {} to {}...",
+                Self::STARTUP_INFO_KEY,
+                Self::STARTUP_INFO_KEY_V2
+            );
+            let old = OldStartupInfo::decode(raw.as_slice())?;
+            let new = StartupInfo::new(old.main);
+            self.save_startup_info(new)?;
+            self.remove(Self::STARTUP_INFO_KEY.as_bytes().to_vec())
+        } else {
+            warn!("key {} does not exist", Self::STARTUP_INFO_KEY);
+            Ok(())
+        }
     }
 }

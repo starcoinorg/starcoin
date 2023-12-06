@@ -23,10 +23,8 @@ use starcoin_accumulator::{
     accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator,
     AccumulatorTreeStore, MerkleAccumulator,
 };
-use starcoin_config::ChainNetworkID;
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
-use starcoin_types::block::BlockNumber;
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
     contract_event::ContractEvent,
@@ -74,6 +72,8 @@ pub const BLOCK_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_block
 pub const TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_transaction";
 pub const BLOCK_PREFIX_NAME: ColumnFamilyName = "block";
 pub const BLOCK_HEADER_PREFIX_NAME: ColumnFamilyName = "block_header";
+pub const BLOCK_PREFIX_NAME_V2: ColumnFamilyName = "block_v2";
+pub const BLOCK_HEADER_PREFIX_NAME_V2: ColumnFamilyName = "block_header_v2";
 pub const BLOCK_BODY_PREFIX_NAME: ColumnFamilyName = "block_body";
 pub const BLOCK_INFO_PREFIX_NAME: ColumnFamilyName = "block_info";
 pub const BLOCK_TRANSACTIONS_PREFIX_NAME: ColumnFamilyName = "block_txns";
@@ -87,6 +87,7 @@ pub const TRANSACTION_INFO_PREFIX_NAME_V2: ColumnFamilyName = "transaction_info_
 pub const TRANSACTION_INFO_HASH_PREFIX_NAME: ColumnFamilyName = "transaction_info_hash";
 pub const CONTRACT_EVENT_PREFIX_NAME: ColumnFamilyName = "contract_event";
 pub const FAILED_BLOCK_PREFIX_NAME: ColumnFamilyName = "failed_block";
+pub const FAILED_BLOCK_PREFIX_NAME_V2: ColumnFamilyName = "failed_block_v2";
 pub const TABLE_INFO_PREFIX_NAME: ColumnFamilyName = "table_info";
 pub const SYNC_FLEXI_DAG_ACCUMULATOR_PREFIX_NAME: ColumnFamilyName = "sync_flexi_dag_accumulator";
 pub const SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME: ColumnFamilyName = "sync_flexi_dag_snapshot";
@@ -163,6 +164,8 @@ static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
         BLOCK_PREFIX_NAME,
         BLOCK_HEADER_PREFIX_NAME,
+        BLOCK_PREFIX_NAME_V2,
+        BLOCK_HEADER_PREFIX_NAME_V2,
         BLOCK_BODY_PREFIX_NAME, // unused column
         BLOCK_INFO_PREFIX_NAME,
         BLOCK_TRANSACTIONS_PREFIX_NAME,
@@ -175,6 +178,7 @@ static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         TRANSACTION_INFO_HASH_PREFIX_NAME,
         CONTRACT_EVENT_PREFIX_NAME,
         FAILED_BLOCK_PREFIX_NAME,
+        FAILED_BLOCK_PREFIX_NAME_V2,
         SYNC_FLEXI_DAG_ACCUMULATOR_PREFIX_NAME,
         SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME,
         DAG_TIPS_PREFIX_NAME,
@@ -721,8 +725,8 @@ impl SyncFlexiDagStore for Storage {
         k_total_difficulties: BTreeSet<KTotalDifficulty>,
     ) -> Result<()> {
         let snapshot = SyncFlexiDagSnapshot {
-            child_hashes: new_tips.clone(),
-            accumulator_info: accumulator_info.clone(),
+            child_hashes: new_tips,
+            accumulator_info,
             head_block_id,
             k_total_difficulties,
         };

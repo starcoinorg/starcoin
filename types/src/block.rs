@@ -7,7 +7,6 @@ use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
-use anyhow::format_err;
 use bcs_ext::Sample;
 use schemars::{self, JsonSchema};
 use serde::de::Error;
@@ -169,7 +168,8 @@ pub struct BlockHeader {
 }
 
 // For single chain before FlexiDag upgrade
-#[derive(Serialize, Deserialize, CryptoHasher, CryptoHash)]
+#[derive(Clone, Debug, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+#[serde(rename = "BlockHeader")]
 pub struct OldBlockHeader {
     #[serde(skip)]
     #[allow(dead_code)]
@@ -223,6 +223,29 @@ impl From<BlockHeader> for OldBlockHeader {
             chain_id: v.chain_id,
             nonce: v.nonce,
             extra: v.extra,
+        }
+    }
+}
+
+impl From<OldBlockHeader> for BlockHeader {
+    fn from(v: OldBlockHeader) -> Self {
+        Self {
+            id: v.id,
+            parent_hash: v.parent_hash,
+            timestamp: v.timestamp,
+            number: v.number,
+            author: v.author,
+            author_auth_key: v.author_auth_key,
+            txn_accumulator_root: v.txn_accumulator_root,
+            block_accumulator_root: v.block_accumulator_root,
+            state_root: v.state_root,
+            gas_used: v.gas_used,
+            difficulty: v.difficulty,
+            body_hash: v.body_hash,
+            chain_id: v.chain_id,
+            nonce: v.nonce,
+            extra: v.extra,
+            parents_hash: None,
         }
     }
 }
@@ -699,6 +722,26 @@ pub struct BlockBody {
     pub uncles: Option<Vec<BlockHeader>>,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct OldBlockBody {
+    pub transactions: Vec<SignedUserTransaction>,
+    pub uncles: Option<Vec<OldBlockHeader>>,
+}
+
+impl From<OldBlockBody> for BlockBody {
+    fn from(value: OldBlockBody) -> Self {
+        let OldBlockBody {
+            transactions,
+            uncles,
+        } = value;
+
+        Self {
+            transactions,
+            uncles: uncles.map(|u| u.into_iter().map(|h| h.into()).collect::<Vec<_>>()),
+        }
+    }
+}
+
 impl BlockBody {
     pub fn new(transactions: Vec<SignedUserTransaction>, uncles: Option<Vec<BlockHeader>>) -> Self {
         Self {
@@ -758,6 +801,22 @@ pub struct Block {
     pub body: BlockBody,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename(deserialize = "Block"))]
+pub struct OldBlock {
+    pub header: OldBlockHeader,
+    pub body: OldBlockBody,
+}
+
+impl From<OldBlock> for Block {
+    fn from(value: OldBlock) -> Self {
+        Self {
+            header: value.header.into(),
+            body: value.body.into(),
+        }
+    }
+}
+
 impl Block {
     pub fn new<B>(header: BlockHeader, body: B) -> Self
     where
@@ -779,7 +838,7 @@ impl Block {
         //         .map(|dag| dag.0.id())
         //         .ok_or_else(|| format_err!("missing parent and tips for dag block"))
         // } else {
-            Ok(self.header().parent_hash())
+        Ok(self.header().parent_hash())
         // }
     }
 

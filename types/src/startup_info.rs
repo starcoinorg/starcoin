@@ -137,8 +137,12 @@ pub struct ChainStatus {
 }
 
 impl ChainStatus {
-    pub fn new(head: BlockHeader, info: BlockInfo,tips_hash: Option<Vec<HashValue>>) -> Self {
-        Self { head, info, tips_hash }
+    pub fn new(head: BlockHeader, info: BlockInfo, tips_hash: Option<Vec<HashValue>>) -> Self {
+        Self {
+            head,
+            info,
+            tips_hash,
+        }
     }
 
     pub fn random() -> Self {
@@ -196,7 +200,7 @@ impl Sample for ChainStatus {
         Self {
             head: BlockHeader::sample(),
             info: BlockInfo::sample(),
-            tips_hash: None
+            tips_hash: None,
         }
     }
 }
@@ -241,10 +245,16 @@ pub struct StartupInfo {
     pub dag_main: Option<HashValue>,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct OldStartupInfo {
+    pub main: HashValue,
+}
+
 impl fmt::Display for StartupInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "StartupInfo {{")?;
         write!(f, "main: {:?},", self.main)?;
+        write!(f, "dag_main: {:?}", self.dag_main)?;
         write!(f, "}}")?;
         Ok(())
     }
@@ -258,8 +268,11 @@ impl StartupInfo {
         }
     }
 
-    pub fn new_with_dag(main: HashValue, dag_main: Option<HashValue>) -> Self {
-        Self { main, dag_main }
+    pub fn new_with_dag(main: HashValue, dag_main: HashValue) -> Self {
+        Self {
+            main,
+            dag_main: Some(dag_main),
+        }
     }
 
     pub fn update_main(&mut self, new_head: HashValue) {

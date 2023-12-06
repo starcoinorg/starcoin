@@ -261,6 +261,7 @@ where
         let main_total_difficulty = self.main.get_total_difficulty()?;
         let branch_total_difficulty = new_branch.get_total_difficulty()?;
         if branch_total_difficulty > main_total_difficulty {
+            // todo: handle StartupInfo.dag_main
             self.update_startup_info(new_branch.head_block().header())?;
             ctx.broadcast(NewHeadBlock {
                 executed_block: Arc::new(new_branch.head_block()),
@@ -324,6 +325,7 @@ where
             enacted_blocks.last().unwrap().header,
             executed_block.block().header
         );
+        // todo: handle StartupInfo.dag_main
         self.update_startup_info(executed_block.block().header())?;
         if retracted_count > 0 {
             if let Some(metrics) = self.metrics.as_ref() {
@@ -427,7 +429,9 @@ where
 
     fn update_startup_info(&mut self, main_head: &BlockHeader) -> Result<()> {
         self.startup_info.update_main(main_head.id());
-        self.storage.save_startup_info(self.startup_info.clone())
+        self.storage.save_startup_info(self.startup_info.clone());
+
+        todo!("how to handle dag_main");
     }
 
     fn commit_2_txpool(&self, enacted: Vec<Block>, retracted: Vec<Block>) {

@@ -405,9 +405,7 @@ impl ServiceHandler<Self, DumpTipsToAccumulator> for FlexidagService {
                 k_total_difficulties: [msg.k_total_difficulty].into_iter().collect(),
             });
             // broadcast the tip
-            ctx.broadcast(NewTips {
-                tips: new_tips,
-            });
+            ctx.broadcast(NewTips { tips: new_tips });
             self.storage = storage.clone();
             Ok(())
         }
@@ -447,7 +445,8 @@ impl ServiceHandler<Self, UpdateDagTips> for FlexidagService {
             None => {
                 let storage = ctx.get_shared::<Arc<Storage>>()?;
                 let config = ctx.get_shared::<Arc<NodeConfig>>()?;
-                if header.number() == BlockDAG::dag_fork_height_with_net(config.net().id().clone()) {
+                if header.number() == BlockDAG::dag_fork_height_with_net(config.net().id().clone())
+                {
                     let (dag, dag_accumulator) =
                         BlockDAG::try_init_with_storage(storage.clone(), config)?;
                     if dag.is_none() {
@@ -470,7 +469,7 @@ impl ServiceHandler<Self, UpdateDagTips> for FlexidagService {
                         storage
                             .get_startup_info()?
                             .map(|mut startup_info| {
-                                startup_info.dag_main = Some(header.id());
+                                startup_info.update_dag_main(header.id());
                                 storage.save_startup_info(startup_info)
                             })
                             .expect("starup info should not be none")
