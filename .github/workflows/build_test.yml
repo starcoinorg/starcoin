@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   pull_request:
     branches:
-      - block_executor_optimize_tps_validate
+      - master
 
 jobs:
   build-and-test:
