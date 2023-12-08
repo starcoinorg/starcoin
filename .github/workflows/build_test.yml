@@ -21,17 +21,49 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clean
-      - name: run flamegraph
-        run: bash ./scripts/benchmark_parallel.sh
+      - name: run cargo check
+        uses: actions-rs/cargo@v1
         env:
-          RUST_LOG: error
-          RUST_BACKTRACE: full
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      - name: upload flamegraph to artifact
-        uses: actions/upload-artifact@v2
+          RUSTFLAGS: -D warnings
         with:
-          name: flamegraph-artifact
-          path: |
-            ./target/criterion/peer_to_peer/profile/flamegraph.svg
-            ./target/criterion/peer_to_peer_parallel/profile/flamegraph.svg
+          command: clippy
+          args: --all-targets
+      - name: build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --all
+      - name: test
+        run: ./scripts/nextest.sh
+      #       - name: check changed files
+      #         run: bash ./scripts/changed_files.sh
+      - name: Doc Tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --doc
+      - name: integration test dev environment
+        env:
+          RUST_LOG: info
+          RUST_BACKTRACE: full
+          STARCOIN_WS: ${{ secrets.STARCOIN_WS }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --test integration -- -e cmd
+
+      # only for benchmark
+#      - name: run flamegraph
+#        run: bash ./scripts/benchmark_parallel.sh
+#        env:
+#          RUST_LOG: error
+#          RUST_BACKTRACE: full
+#          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#      - name: upload flamegraph to artifact
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: flamegraph-artifact
+#          path: |
+#            ./target/criterion/peer_to_peer/profile/flamegraph.svg
+#            ./target/criterion/peer_to_peer_parallel/profile/flamegraph.svg
