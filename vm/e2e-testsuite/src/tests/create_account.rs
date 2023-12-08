@@ -5,7 +5,6 @@ use move_core_types::vm_status::KeptVMStatus;
 use starcoin_language_e2e_tests::{
     account::{Account, AccountData, AccountRoleSpecifier},
     common_transactions::create_account_txn,
-    current_function_name,
     executor::FakeExecutor,
 };
 use starcoin_vm_types::transaction::TransactionStatus;

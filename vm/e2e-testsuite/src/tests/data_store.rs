@@ -6,8 +6,7 @@ use move_bytecode_verifier::verify_module;
 use move_core_types::vm_status::KeptVMStatus;
 use move_ir_compiler::Compiler;
 use starcoin_language_e2e_tests::{
-    account::AccountData, compile::compile_script_with_extra_deps, current_function_name,
-    executor::FakeExecutor,
+    account::AccountData, compile::compile_script_with_extra_deps, executor::FakeExecutor,
 };
 use starcoin_transaction_builder::{stdlib_compiled_modules, StdLibOptions};
 use starcoin_vm_types::{

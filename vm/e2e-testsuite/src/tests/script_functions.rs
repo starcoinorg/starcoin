@@ -2,13 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_core_types::{
-    identifier::Identifier,
-    language_storage::ModuleId,
-    vm_status::{DiscardedVMStatus, KeptVMStatus},
+    identifier::Identifier, language_storage::ModuleId, vm_status::KeptVMStatus,
 };
 use starcoin_language_e2e_tests::{
-    account::Account, compile::compile_module, current_function_name, executor::FakeExecutor,
-    transaction_status_eq, utils, versioning::CURRENT_RELEASE_VERSIONS,
+    account::Account, compile::compile_module, executor::FakeExecutor, transaction_status_eq, utils,
 };
 
 use starcoin_vm_types::transaction::{ScriptFunction, TransactionStatus};
@@ -55,8 +52,8 @@ fn prepare_module(executor: &mut FakeExecutor, account: &Account, seq_num: u64) 
 
 #[test]
 fn script_fn_payload_invoke_private_fn() {
-    let (mut executor, dr_account, _, _) = utils::start_with_released_df();
-    let mut dr_seqno = 1;
+    let (mut executor, _, _, _) = utils::start_with_released_df();
+    // let mut dr_seqno = 1;
     //executor.set_golden_file(current_function_name!());
 
     let sequence_number = 2;
@@ -99,8 +96,8 @@ fn script_fn_payload_invoke_private_fn() {
 
 #[test]
 fn script_fn_payload_invoke_public_fn() {
-    let (mut executor, dr_account, _, _) = utils::start_with_released_df();
-    let mut dr_seqno = 1;
+    let (mut executor, _, _, _) = utils::start_with_released_df();
+    // let mut dr_seqno = 1;
     // executor.set_golden_file(current_function_name!());
 
     let sequence_number = 2;
@@ -143,8 +140,8 @@ fn script_fn_payload_invoke_public_fn() {
 
 #[test]
 fn script_fn_payload_invoke_script_fn() {
-    let (mut executor, dr_account, _, _) = utils::start_with_released_df();
-    let mut dr_seqno = 1;
+    let (mut executor, _, _, _) = utils::start_with_released_df();
+    //let mut dr_seqno = 1;
     //executor.set_golden_file(current_function_name!());
 
     let sequence_number = 2;

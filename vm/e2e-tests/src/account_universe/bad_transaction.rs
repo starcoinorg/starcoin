@@ -8,10 +8,6 @@ use crate::{
 };
 use proptest::{arbitrary::any_with, prelude::Strategy, prop_oneof};
 use proptest_derive::Arbitrary;
-use starcoin_crypto::{
-    ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
-    test_utils::KeyPair,
-};
 use starcoin_proptest_helpers::Index;
 use starcoin_vm_types::{
     gas_schedule::G_TEST_GAS_CONSTANTS,
@@ -125,10 +121,10 @@ impl AUTransactionGen for InsufficientBalanceGen {
 #[proptest(no_params)]
 pub struct InvalidAuthkeyGen {
     sender: Index,
-    #[proptest(
-        strategy = "starcoin_crypto::test_utils::uniform_keypair_strategy_with_perturbation(1)"
-    )]
-    new_keypair0: KeyPair<Ed25519PrivateKey, Ed25519PublicKey>,
+    // #[proptest(
+    //     strategy = "starcoin_crypto::test_utils::uniform_keypair_strategy_with_perturbation(1)"
+    // )]
+    // new_keypair0: KeyPair<Ed25519PrivateKey, Ed25519PublicKey>,
 }
 
 impl AUTransactionGen for InvalidAuthkeyGen {

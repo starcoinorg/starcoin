@@ -3,10 +3,13 @@
 
 use crate::transactions::TransactionBencher;
 use proptest::arbitrary::any_with;
-use starcoin_language_e2e_tests::account::AccountData;
-use starcoin_language_e2e_tests::account_universe::P2PTransferGen;
-use starcoin_language_e2e_tests::common_transactions::peer_to_peer_txn;
-use starcoin_language_e2e_tests::executor::FakeExecutor;
+use starcoin_language_e2e_tests::{
+    account::AccountData,
+    account_universe::P2PTransferGen,
+    common_transactions::peer_to_peer_txn,
+    executor::FakeExecutor,
+};
+
 
 #[test]
 pub fn bencher_sequence() {
@@ -17,10 +20,20 @@ pub fn bencher_sequence() {
 
     let bencher = TransactionBencher::new(
         any_with::<P2PTransferGen>((minium_transfer_balance, maxium_transfer_balance)),
+        // default_num_account,
+        // default_num_transactions,
+    );
+    //bencher.manual_sequence(default_num_account, default_num_transactions, 1, 1);
+    let ret = bencher.blockstm_benchmark(
         default_num_account,
         default_num_transactions,
+        true,
+        true,
+        10,
+        1,
+        num_cpus::get(),
     );
-    bencher.manual_sequence(default_num_account, default_num_transactions, 1, 1);
+    drop(ret);
 }
 
 #[test]

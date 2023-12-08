@@ -263,12 +263,12 @@ impl Scheduler {
         None
     }
 
-    #[cfg(test)]
+    //#[cfg(test)]
     /// Return the TxnIndex and Wave of current commit index
-    pub fn commit_state(&self) -> (usize, u32) {
-        let commit_state = self.commit_state.lock();
-        (commit_state.0, commit_state.1)
-    }
+    // pub fn commit_state(&self) -> (usize, u32) {
+    //     let commit_state = self.commit_state.lock();
+    //     (commit_state.0, commit_state.1)
+    // }
 
     /// Try to abort version = (txn_idx, incarnation), called upon validation failure.
     /// When the invocation manages to update the status of the transaction, it changes

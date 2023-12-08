@@ -1,10 +1,9 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use bcs_ext::Sample;
 use move_core_types::{
     identifier::Identifier,
-    language_storage::{ModuleId, StructTag, CORE_CODE_ADDRESS},
+    language_storage::ModuleId,
     vm_status::{KeptVMStatus, StatusCode},
 };
 use starcoin_config::ChainNetwork;
@@ -18,7 +17,7 @@ use starcoin_types::account::Account as StarcoinAccount;
 use starcoin_vm_types::{
     account_config::stc_type_tag,
     transaction::{
-        authenticator::AuthenticationKey, Script, ScriptFunction, SignedUserTransaction,
+        authenticator::AuthenticationKey, ScriptFunction, SignedUserTransaction,
         TransactionPayload, TransactionStatus,
     },
 };
@@ -142,10 +141,10 @@ fn verify_and_execute_writeset() {
             .is_none());
         executor.apply_write_set(output.write_set());
 
-        let updated_account = executor
+        let _updated_account = executor
             .read_account_resource(&new_account)
             .expect("sender must exist");
-        let updated_sender = executor
+        let _updated_sender = executor
             .read_account_resource(new_account_data.account())
             .expect("sender must exist");
         let updated_sender_balance = executor
@@ -415,10 +414,10 @@ fn transfer_and_execute_writeset() {
 
         executor.apply_write_set(output.write_set());
 
-        let updated_diem_root_account = executor
+        let _updated_diem_root_account = executor
             .read_account_resource(&genesis_account)
             .expect("sender must exist");
-        let updated_sender = executor
+        let _updated_sender = executor
             .read_account_resource(new_account_data.account())
             .expect("sender must exist");
         let updated_sender_balance = executor

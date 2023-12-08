@@ -1,29 +1,18 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tests::fake_stdlib::{
-    build_fake_module_upgrade_plan, encode_update_dual_attestation_limit_script,
-};
-use move_core_types::{
-    identifier::Identifier,
-    language_storage::{ModuleId, CORE_CODE_ADDRESS},
-    transaction_argument::{convert_txn_args, TransactionArgument},
-    vm_status::{KeptVMStatus, StatusCode},
-};
 use starcoin_language_e2e_tests::{
-    account::Account, assert_prologue_parity, common_transactions::peer_to_peer_txn,
-    current_function_name, executor::FakeExecutor, test_with_different_versions,
-    transaction_status_eq, versioning::CURRENT_RELEASE_VERSIONS,
+    test_with_different_versions, versioning::CURRENT_RELEASE_VERSIONS,
 };
 use starcoin_vm_runtime::{data_cache::StateViewCache, starcoin_vm::StarcoinVM};
-use starcoin_vm_types::transaction::{Script, ScriptFunction, TransactionStatus};
 
 #[test]
 fn initial_starcoin_version() {
     test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
-        let mut executor = test_env.executor;
+        let executor = test_env.executor;
         let mut vm = StarcoinVM::new(None);
-        vm.load_configs(&StateViewCache::new(executor.get_state_view()));
+        let ret = vm.load_configs(&StateViewCache::new(executor.get_state_view()));
+        assert!(ret.is_ok());
         assert_eq!(vm.get_version().unwrap().major, 0
             // test_env.version_number,
             //DiemVersion { major: test_env.version_number }

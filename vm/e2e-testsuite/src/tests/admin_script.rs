@@ -3,13 +3,9 @@
 
 use move_core_types::{transaction_argument::TransactionArgument, value::MoveValue};
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
-use std::hash::Hash;
 
 use starcoin_language_e2e_tests::{
-    account::{Account, AccountData, AccountRoleSpecifier},
-    compile::compile_script,
-    current_function_name,
-    executor::FakeExecutor,
+    account::Account, compile::compile_script, executor::FakeExecutor,
 };
 
 use starcoin_vm_types::{

@@ -7,7 +7,7 @@ use move_core_types::{
 };
 
 use starcoin_language_e2e_tests::{
-    common_transactions::peer_to_peer_txn, executor::FakeExecutor, test_with_different_versions,
+    common_transactions::peer_to_peer_txn, test_with_different_versions,
     versioning::CURRENT_RELEASE_VERSIONS,
 };
 
@@ -36,7 +36,8 @@ fn failed_transaction_cleanup_test() {
         //let log_context = AdapterLogSchema::new(executor.get_state_view().id(), 0);
         let mut vm = StarcoinVM::new(None);
         let data_cache = StateViewCache::new(executor.get_state_view());
-        vm.load_configs(&data_cache);
+        let ret = vm.load_configs(&data_cache);
+        assert!(ret.is_ok());
 
         let txn_data = TransactionMetadata {
             sender: *sender.address(),
@@ -92,7 +93,7 @@ fn failed_transaction_cleanup_test() {
 #[test]
 fn non_existent_sender() {
     test_with_different_versions! {CURRENT_RELEASE_VERSIONS, |test_env| {
-        let mut executor = FakeExecutor::from_test_genesis();
+        let mut executor = test_env.executor;
         let sequence_number = 0;
         let sender = executor.create_raw_account();
         let receiver = executor.create_raw_account_data(100_000, sequence_number);

@@ -5,9 +5,10 @@ use move_binary_format::CompiledModule;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
-    language_storage::{ModuleId, StructTag, TypeTag, CORE_CODE_ADDRESS},
-    vm_status::{KeptVMStatus, StatusCode},
+    language_storage::{ModuleId, StructTag, TypeTag},
+    vm_status::{KeptVMStatus, StatusCode, VMStatus},
 };
+
 use move_ir_compiler::Compiler;
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
 
@@ -33,14 +34,14 @@ use starcoin_vm_types::{
 
 use crate::tests::fake_stdlib::encode_peer_to_peer_with_metadata_script;
 
-pub fn type_tag_for_currency_code(currency_code: Identifier) -> TypeTag {
-    TypeTag::Struct(Box::from(StructTag {
-        address: CORE_CODE_ADDRESS,
-        module: currency_code.clone(),
-        name: currency_code,
-        type_params: vec![],
-    }))
-}
+// pub fn type_tag_for_currency_code(currency_code: Identifier) -> TypeTag {
+//     TypeTag::Struct(Box::from(StructTag {
+//         address: CORE_CODE_ADDRESS,
+//         module: currency_code.clone(),
+//         name: currency_code,
+//         type_params: vec![],
+//     }))
+// }
 
 #[test]
 fn verify_signature() {

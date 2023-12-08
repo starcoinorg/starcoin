@@ -11,7 +11,7 @@ use move_core_types::{
     language_storage::{StructTag, TypeTag},
     vm_status::KeptVMStatus,
 };
-use starcoin_language_e2e_tests::{current_function_name, executor::FakeExecutor};
+use starcoin_language_e2e_tests::executor::FakeExecutor;
 use starcoin_types::account_config;
 use starcoin_vm_types::transaction::{Script, TransactionStatus};
 

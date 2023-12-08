@@ -1,3 +1,5 @@
+extern crate starcoin_transaction_benchmarks;
+
 use clap::Parser;
 use num_cpus;
 use proptest::prelude::*;
@@ -29,8 +31,8 @@ pub struct ConcurrencyLevelOpt {
 
 fn main() {
     let opt: ConcurrencyLevelOpt = ConcurrencyLevelOpt::parse();
-    let default_num_accounts = 100;
-    let default_num_transactions = 1_000;
+    // let default_num_accounts = 100;
+    // let default_num_transactions = 1_000;
     let concurrency_levels = opt.concurrency_level;
     let txns = opt.txn_nums;
     let account_nums = opt.account_nums;

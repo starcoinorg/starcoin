@@ -3,10 +3,7 @@
 
 //! Support for encoding transactions for common situations.
 
-use crate::{
-    account::{Account, TransactionBuilder},
-    compile::compile_script,
-};
+use crate::account::{Account, TransactionBuilder};
 use move_core_types::{
     identifier::Identifier, language_storage::ModuleId, transaction_argument::TransactionArgument,
     value::MoveValue,
@@ -16,11 +13,9 @@ pub use starcoin_time_service::duration_since_epoch;
 use starcoin_transaction_builder::{build_signed_empty_txn, peer_to_peer_v2};
 use starcoin_types::account::{Account as StarcoinAccount, DEFAULT_EXPIRATION_TIME};
 use starcoin_vm_types::{
-    account_config::{core_code_address, stc_type_tag},
+    account_config::core_code_address,
     genesis_config::ChainId,
-    transaction::{
-        RawUserTransaction, Script, ScriptFunction, SignedUserTransaction, TransactionPayload,
-    },
+    transaction::{RawUserTransaction, ScriptFunction, SignedUserTransaction, TransactionPayload},
 };
 use std::time::{SystemTime, UNIX_EPOCH};
 use test_helper::txn::create_account_txn_sent_as_association;

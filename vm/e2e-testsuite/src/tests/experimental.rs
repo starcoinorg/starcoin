@@ -5,7 +5,6 @@ use move_core_types::vm_status::StatusCode;
 use starcoin_config::ChainNetwork;
 use starcoin_language_e2e_tests::{
     account::{Account, AccountData, AccountRoleSpecifier},
-    current_function_name,
     executor::FakeExecutor,
 };
 

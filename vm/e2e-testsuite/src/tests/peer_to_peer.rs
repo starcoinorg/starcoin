@@ -1,7 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::vm_status::{known_locations, KeptVMStatus};
+use move_core_types::vm_status::KeptVMStatus;
 use std::time::Instant;
 
 use starcoin_language_e2e_tests::{

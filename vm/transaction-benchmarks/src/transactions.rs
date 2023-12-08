@@ -8,21 +8,18 @@ use proptest::{
     test_runner::TestRunner,
 };
 use starcoin_crypto::HashValue;
-use std::time::{Instant, SystemTime};
+use std::time::Instant;
 
-use starcoin_language_e2e_tests::account::AccountData;
-use starcoin_language_e2e_tests::common_transactions::duration_since_epoch;
 use starcoin_language_e2e_tests::{
-    account_universe::{log_balance_strategy, AUTransactionGen, AccountUniverseGen},
+    account::AccountData,
+    account_universe::{AUTransactionGen, AccountUniverseGen},
+    common_transactions::duration_since_epoch,
     executor::FakeExecutor,
     gas_costs::TXN_RESERVED,
 };
-
 use starcoin_types::{block_metadata::BlockMetadata, transaction::Transaction};
-
 use starcoin_vm_runtime::{block_executor::BlockStarcoinVM, starcoin_vm::StarcoinVM};
-use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm_types::{genesis_config::ChainId, transaction::authenticator::AuthenticationKey};
 
 /// Benchmarking support for transactions.
 #[derive(Clone, Debug)]

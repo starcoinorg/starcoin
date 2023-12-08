@@ -15,7 +15,7 @@ use starcoin_vm_types::{
     genesis_config::ChainId,
     identifier::Identifier,
     language_storage::{ModuleId, StructTag, TypeTag},
-    on_chain_config::{GasSchedule, VMConfig},
+    on_chain_config::VMConfig,
     on_chain_resource::nft::NFTUUID,
     token::{
         stc::{stc_type_tag, G_STC_TOKEN_CODE},

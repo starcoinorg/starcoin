@@ -563,9 +563,9 @@ pub struct AccountData {
     event_generator: EventHandleGenerator,
 }
 
-fn new_event_handle(count: u64, address: AccountAddress) -> EventHandle {
-    EventHandle::new_from_address(&address, count)
-}
+// fn new_event_handle(count: u64, address: AccountAddress) -> EventHandle {
+//     EventHandle::new_from_address(&address, count)
+// }
 
 impl AccountData {
     /// Creates a new `AccountData` with a new account.
