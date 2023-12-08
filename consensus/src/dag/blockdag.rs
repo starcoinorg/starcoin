@@ -134,42 +134,43 @@ impl BlockDAG {
                 .get_block_header_by_hash(startup_info.get_main().clone())?
                 .expect("the genesis block in dag accumulator must none be none");
             let fork_height = Self::dag_fork_height_with_net(config.net().id().clone());
-            if block_header.number() < fork_height {
-                Ok((None, None))
-            } else if block_header.number() == fork_height {
-                let dag_accumulator = MerkleAccumulator::new_with_info(
-                    AccumulatorInfo::default(),
-                    storage.get_accumulator_store(AccumulatorStoreType::SyncDag),
-                );
+            match block_header.number().cmp(&fork_height) {
+                std::cmp::Ordering::Less => Ok((None, None)),
+                std::cmp::Ordering::Equal => {
+                    let dag_accumulator = MerkleAccumulator::new_with_info(
+                        AccumulatorInfo::default(),
+                        storage.get_accumulator_store(AccumulatorStoreType::SyncDag),
+                    );
 
-                let mut k_total_difficulties = BTreeSet::new();
-                k_total_difficulties.insert(KTotalDifficulty {
-                    head_block_id: block_header.id(),
-                    total_difficulty: storage
-                        .get_block_info(block_header.id())?
-                        .expect("block info must exist")
-                        .get_total_difficulty(),
-                });
-                let snapshot_hasher = SyncFlexiDagSnapshotHasher {
-                    child_hashes: vec![block_header.id()],
-                    head_block_id: block_header.id(),
-                    k_total_difficulties,
-                };
-                let key = Self::calculate_dag_accumulator_key(&snapshot_hasher)?;
-                dag_accumulator.append(&[key])?;
-                storage
-                    .get_accumulator_snapshot_storage()
-                    .put(key, snapshot_hasher.to_snapshot(dag_accumulator.get_info()))?;
-                dag_accumulator.flush()?;
-                let dag = Self::new_by_config(
-                    config.data_dir().join("flexidag").as_path(),
-                    config.net().id().clone(),
-                )?;
-                // dag.commit(block_header)?;
-                dag.init_with_genesis(block_header)?;
-                Ok((Some(dag), Some(dag_accumulator)))
-            } else {
-                bail!("failed to init dag")
+                    let mut k_total_difficulties = BTreeSet::new();
+                    k_total_difficulties.insert(KTotalDifficulty {
+                        head_block_id: block_header.id(),
+                        total_difficulty: storage
+                            .get_block_info(block_header.id())?
+                            .expect("block info must exist")
+                            .get_total_difficulty(),
+                    });
+                    let snapshot_hasher = SyncFlexiDagSnapshotHasher {
+                        child_hashes: vec![block_header.id()],
+                        head_block_id: block_header.id(),
+                        k_total_difficulties,
+                    };
+                    let key = Self::calculate_dag_accumulator_key(&snapshot_hasher)?;
+                    dag_accumulator.append(&[key])?;
+                    storage
+                        .put_hashes(key, snapshot_hasher.to_snapshot(dag_accumulator.get_info()))?;
+                    dag_accumulator.flush()?;
+                    let dag = Self::new_by_config(
+                        config.data_dir().join("flexidag").as_path(),
+                        config.net().id().clone(),
+                    )?;
+                    // dag.commit(block_header)?;
+                    dag.init_with_genesis(block_header)?;
+                    Ok((Some(dag), Some(dag_accumulator)))
+                }
+                std::cmp::Ordering::Greater => {
+                    bail!("failed to init dag")
+                }
             }
         }
     }

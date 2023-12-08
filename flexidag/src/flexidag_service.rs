@@ -7,13 +7,12 @@ use starcoin_accumulator::{
 use starcoin_config::NodeConfig;
 use starcoin_consensus::{dag::types::ghostdata::GhostdagData, BlockDAG};
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::info;
 use starcoin_service_registry::{
     ActorService, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
 };
 use starcoin_storage::{
-    block_info::BlockInfoStore, flexi_dag::SyncFlexiDagSnapshotHasher, storage::CodecKVStore,
-    BlockStore, Storage, Store, SyncFlexiDagStore,
+    block_info::BlockInfoStore, flexi_dag::SyncFlexiDagSnapshotHasher, BlockStore, Storage, Store,
+    SyncFlexiDagStore,
 };
 use starcoin_types::{block::BlockHeader, dag_block::KTotalDifficulty};
 
@@ -244,7 +243,7 @@ impl FlexidagService {
         )?;
         dag_accumulator.append(&vec![key])?;
         let dag_accumulator_info = dag_accumulator.get_info();
-        self.storage.get_accumulator_snapshot_storage().put(
+        self.storage.put_hashes(
             key,
             snaphot_hasher.to_snapshot(dag_accumulator_info.clone()),
         )?;
@@ -268,14 +267,12 @@ impl FlexidagService {
 
         let pre_snapshot = self
             .storage
-            .get_accumulator_snapshot_storage()
-            .get(previous_key)?
+            .query_by_hash(previous_key)?
             .ok_or_else(|| anyhow!("the dag snapshot is none"))?;
 
         let current_snapshot = self
             .storage
-            .get_accumulator_snapshot_storage()
-            .get(current_key)?
+            .query_by_hash(current_key)?
             .ok_or_else(|| anyhow!("the dag snapshot is none"))?;
 
         // fork the dag accumulator according to the ForkDagAccumulator.dag_accumulator_index
@@ -292,7 +289,7 @@ impl FlexidagService {
             Self::create_snapshot_by_tips(new_blocks, msg.block_header_id, self.storage.clone())?;
         fork.append(&vec![key])?;
         let dag_accumulator_info = fork.get_info();
-        self.storage.get_accumulator_snapshot_storage().put(
+        self.storage.put_hashes(
             key,
             snaphot_hasher.to_snapshot(dag_accumulator_info.clone()),
         )?;
@@ -317,8 +314,7 @@ impl ServiceFactory<Self> for FlexidagService {
                 .expect("failed to read the dag snapshot hash")
                 .expect("the dag snapshot hash is none");
             let snapshot = storage
-                .get_accumulator_snapshot_storage()
-                .get(tips_key)
+                .query_by_hash(tips_key)
                 .expect("failed to read the snapsho object")
                 .expect("dag snapshot object is none");
             TipInfo {
@@ -395,9 +391,7 @@ impl ServiceHandler<Self, DumpTipsToAccumulator> for FlexidagService {
                 .as_mut()
                 .expect("the tips is not none but the dag accumulator is none");
             dag.append(&vec![key])?;
-            storage
-                .get_accumulator_snapshot_storage()
-                .put(key, snapshot_hasher.to_snapshot(dag.get_info()))?;
+            storage.put_hashes(key, snapshot_hasher.to_snapshot(dag.get_info()))?;
             dag.flush()?;
             let new_tips = vec![msg.block_header.id()];
             self.tip_info = Some(TipInfo {
@@ -532,8 +526,7 @@ impl ServiceHandler<Self, GetDagAccumulatorLeaves> for FlexidagService {
                         .ok_or_else(|| anyhow!("the dag snapshot hash is none"))?;
                     let snaptshot = self
                         .storage
-                        .get_accumulator_snapshot_storage()
-                        .get(key)?
+                        .query_by_hash(key)?
                         .expect("the snapshot should not be none");
                     result.push(DagAccumulatorLeaf {
                         leaf_index: real_index,
@@ -575,13 +568,13 @@ impl ServiceHandler<Self, GetDagAccumulatorLeafDetail> for FlexidagService {
                     dag_accumulator.num_leaves() - 1,
                 );
                 let mut details = vec![];
-                let snapshot_storage = self.storage.get_accumulator_snapshot_storage();
                 for index in msg.leaf_index..=end_index {
                     let key = dag_accumulator
                         .get_leaf(index)?
                         .ok_or_else(|| anyhow!("the dag snapshot hash is none"))?;
-                    let snapshot = snapshot_storage
-                        .get(key)?
+                    let snapshot = self
+                        .storage
+                        .query_by_hash(key)?
                         .ok_or_else(|| anyhow!("the dag snapshot is none"))?;
                     details.push(DagAccumulatorLeafDetail {
                         accumulator_root: snapshot.accumulator_info.accumulator_root,

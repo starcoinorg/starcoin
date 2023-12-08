@@ -762,7 +762,7 @@ impl ChainReader for BlockChain {
     fn info(&self) -> ChainInfo {
         let (dag_accumulator, k_total_difficulties) = self
             .storage
-            .get_lastest_snapshot()
+            .get_latest_snapshot()
             .unwrap_or(None)
             .map(|snapshot| {
                 (
@@ -1345,7 +1345,11 @@ impl ChainWriter for BlockChain {
         //     None => None,
         // };
         self.status = ChainStatusWithBlock {
-            status: ChainStatus::new(block.header().clone(), block_info.clone(), self.status().tips_hash().clone()),
+            status: ChainStatus::new(
+                block.header().clone(),
+                block_info.clone(),
+                self.status().tips_hash().clone(),
+            ),
             head: block.clone(),
         };
         if self.epoch.end_block_number() == block.header().number() {

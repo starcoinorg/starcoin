@@ -264,7 +264,6 @@ impl Genesis {
             self.block.clone(),
             net.id().clone(),
         )?;
-        // todo: check if it's dag genesis, and update StartupInfo.dag_main
         let startup_info = StartupInfo::new(genesis_chain.current_header().id());
         storage.save_startup_info(startup_info)?;
         storage

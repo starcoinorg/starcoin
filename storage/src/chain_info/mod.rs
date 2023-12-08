@@ -33,34 +33,42 @@ impl ChainInfoStorage {
     const BARNARD_HARD_FORK: &'static str = "barnard_hard_fork";
     const FLEXI_DAG_STARTUP_INFO_KEY: &'static str = "flexi_dag_startup_info";
 
+    fn get_value<DataT>(&self, key: &[u8]) -> Result<Option<DataT>>
+    where
+        DataT: TryFrom<Vec<u8>>,
+        DataT::Error: Into<anyhow::Error>,
+    {
+        self.get(key).and_then(|bytes| match bytes {
+            Some(bytes) => Ok(Some(DataT::try_from(bytes).map_err(Into::into)?)),
+            None => Ok(None),
+        })
+    }
+
+    fn update_value<DataT>(&self, key: Vec<u8>, value: DataT) -> Result<()>
+    where
+        DataT: TryInto<Vec<u8>>,
+        DataT::Error: Into<anyhow::Error>,
+    {
+        self.put_sync(key, value.try_into().map_err(Into::into)?)
+    }
+
     pub fn get_flexi_dag_startup_info(&self) -> Result<Option<StartupInfo>> {
-        self.get(Self::FLEXI_DAG_STARTUP_INFO_KEY.as_bytes())
-            .and_then(|bytes| match bytes {
-                Some(bytes) => Ok(Some(bytes.try_into()?)),
-                None => Ok(None),
-            })
+        self.get_value(Self::FLEXI_DAG_STARTUP_INFO_KEY.as_bytes())
     }
 
     pub fn save_flexi_dag_startup_info(&self, startup_info: StartupInfo) -> Result<()> {
-        self.put_sync(
+        self.update_value(
             Self::FLEXI_DAG_STARTUP_INFO_KEY.as_bytes().to_vec(),
-            startup_info.try_into()?,
+            startup_info,
         )
     }
 
     pub fn get_startup_info(&self) -> Result<Option<StartupInfo>> {
-        self.get(Self::STARTUP_INFO_KEY_V2.as_bytes())
-            .and_then(|bytes| match bytes {
-                Some(bytes) => Ok(Some(bytes.try_into()?)),
-                None => Ok(None),
-            })
+        self.get_value(Self::STARTUP_INFO_KEY_V2.as_bytes())
     }
 
     pub fn save_startup_info(&self, startup_info: StartupInfo) -> Result<()> {
-        self.put_sync(
-            Self::STARTUP_INFO_KEY_V2.as_bytes().to_vec(),
-            startup_info.try_into()?,
-        )
+        self.update_value(Self::STARTUP_INFO_KEY_V2.as_bytes().to_vec(), startup_info)
     }
 
     pub fn get_genesis(&self) -> Result<Option<HashValue>> {
@@ -102,32 +110,21 @@ impl ChainInfoStorage {
     }
 
     pub fn get_snapshot_range(&self) -> Result<Option<SnapshotRange>> {
-        self.get(Self::SNAPSHOT_RANGE_KEY.as_bytes())
-            .and_then(|bytes| match bytes {
-                Some(bytes) => Ok(Some(bytes.try_into()?)),
-                None => Ok(None),
-            })
+        self.get_value(Self::SNAPSHOT_RANGE_KEY.as_bytes())
     }
 
     pub fn save_snapshot_range(&self, snapshot_range: SnapshotRange) -> Result<()> {
-        self.put_sync(
-            Self::SNAPSHOT_RANGE_KEY.as_bytes().to_vec(),
-            snapshot_range.try_into()?,
-        )
+        self.update_value(Self::SNAPSHOT_RANGE_KEY.as_bytes().to_vec(), snapshot_range)
     }
 
     pub fn get_barnard_hard_fork(&self) -> Result<Option<BarnardHardFork>> {
-        self.get(Self::BARNARD_HARD_FORK.as_bytes())
-            .and_then(|bytes| match bytes {
-                Some(bytes) => Ok(Some(bytes.try_into()?)),
-                None => Ok(None),
-            })
+        self.get_value(Self::BARNARD_HARD_FORK.as_bytes())
     }
 
     pub fn save_barnard_hard_fork(&self, barnard_hard_fork: BarnardHardFork) -> Result<()> {
-        self.put_sync(
+        self.update_value(
             Self::BARNARD_HARD_FORK.as_bytes().to_vec(),
-            barnard_hard_fork.try_into()?,
+            barnard_hard_fork,
         )
     }
 

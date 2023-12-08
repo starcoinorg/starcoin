@@ -14,14 +14,13 @@ use crate::{
     transaction::TransactionStorage,
     transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage},
 };
-use anyhow::{anyhow, bail, format_err, Error, Ok, Result};
+use anyhow::{bail, format_err, Error, Ok, Result};
 use flexi_dag::{DagTips, SyncFlexiDagSnapshot, SyncFlexiDagSnapshotStorage, SyncFlexiDagStorage};
 use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use starcoin_accumulator::{
-    accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator,
-    AccumulatorTreeStore, MerkleAccumulator,
+    accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, AccumulatorTreeStore,
 };
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
@@ -318,7 +317,7 @@ pub trait TransactionStore {
 pub trait SyncFlexiDagStore {
     fn put_hashes(&self, key: HashValue, accumulator_snapshot: SyncFlexiDagSnapshot) -> Result<()>;
     fn query_by_hash(&self, key: HashValue) -> Result<Option<SyncFlexiDagSnapshot>>;
-    fn get_accumulator_snapshot_storage(&self) -> std::sync::Arc<SyncFlexiDagSnapshotStorage>;
+    fn get_accumulator_snapshot_storage(&self) -> Arc<SyncFlexiDagSnapshotStorage>;
     fn append_dag_accumulator_leaf(
         &self,
         key: HashValue,
@@ -329,7 +328,7 @@ pub trait SyncFlexiDagStore {
     ) -> Result<()>;
     fn get_dag_accumulator_info(&self) -> Result<Option<AccumulatorInfo>>;
     fn get_tips_by_block_id(&self, block_id: HashValue) -> Result<Vec<HashValue>>;
-    fn get_lastest_snapshot(&self) -> Result<Option<SyncFlexiDagSnapshot>>;
+    fn get_latest_snapshot(&self) -> Result<Option<SyncFlexiDagSnapshot>>;
     fn save_dag_tips(&self, tips: Vec<HashValue>) -> Result<()>;
     fn get_dag_tips(&self) -> Result<Option<DagTips>>;
 }
@@ -450,7 +449,7 @@ impl BlockStore for Storage {
             format_err!("Startup block info {:?} should exist", startup_info.main)
         })?;
         let (tips_hash, flexi_dag_accumulator_info, k_total_difficulties) =
-            if let Some(snapshot) = self.get_lastest_snapshot()? {
+            if let Some(snapshot) = self.get_latest_snapshot()? {
                 (
                     Some(snapshot.child_hashes),
                     Some(snapshot.accumulator_info),
@@ -666,53 +665,8 @@ impl SyncFlexiDagStore for Storage {
         self.flexi_dag_storage.get_hashes_by_hash(key)
     }
 
-    fn get_accumulator_snapshot_storage(&self) -> std::sync::Arc<SyncFlexiDagSnapshotStorage> {
+    fn get_accumulator_snapshot_storage(&self) -> Arc<SyncFlexiDagSnapshotStorage> {
         self.flexi_dag_storage.get_snapshot_storage()
-    }
-
-    fn save_dag_tips(&self, tips: Vec<HashValue>) -> Result<()> {
-        self.flexi_dag_storage.save_dag_tips(tips)
-    }
-
-    fn get_dag_tips(&self) -> Result<Option<DagTips>> {
-        self.flexi_dag_storage.get_dag_tips()
-    }
-
-    fn get_lastest_snapshot(&self) -> Result<Option<SyncFlexiDagSnapshot>> {
-        if let Some(info) = self.get_dag_accumulator_info()? {
-            let merkle_tree = MerkleAccumulator::new_with_info(
-                info,
-                self.get_accumulator_store(AccumulatorStoreType::SyncDag),
-            );
-            let key = merkle_tree
-                .get_leaf(merkle_tree.num_leaves() - 1)?
-                .ok_or_else(|| anyhow!("failed to get the key since it is none"))?;
-            self.query_by_hash(key)
-        } else {
-            Ok(None)
-        }
-    }
-
-    fn get_dag_accumulator_info(&self) -> Result<Option<AccumulatorInfo>> {
-        let startup_info = self.get_startup_info()?;
-        if startup_info.is_none() {
-            return Ok(None);
-        }
-
-        let dag_main = startup_info.unwrap().get_dag_main();
-        if dag_main.is_none() {
-            return Ok(None);
-        }
-
-        let dag_main = dag_main.unwrap();
-
-        Ok(Some(
-            self.flexi_dag_storage
-                .get_snapshot_storage()
-                .get(dag_main)?
-                .expect("snapshot should not be none")
-                .accumulator_info,
-        ))
     }
 
     // update dag accumulator
@@ -731,15 +685,27 @@ impl SyncFlexiDagStore for Storage {
             k_total_difficulties,
         };
         // for sync
-        if let Some(t) = self.flexi_dag_storage.get_hashes_by_hash(key)? {
-            if t != snapshot {
-                panic!("the accumulator differ from other");
-            }
+        if let Some(t) = self.query_by_hash(key)? {
+            assert_eq!(t, snapshot, "the accumulator differ from other");
         } else {
-            self.flexi_dag_storage.put_hashes(key, snapshot)?;
+            self.put_hashes(key, snapshot)?;
         }
 
         Ok(())
+    }
+
+    fn get_dag_accumulator_info(&self) -> Result<Option<AccumulatorInfo>> {
+        Ok(
+            if let Some(dag_main) = self.get_startup_info()?.and_then(|i| i.get_dag_main()) {
+                Some(
+                    self.query_by_hash(dag_main)?
+                        .expect("snapshot should not be none")
+                        .accumulator_info,
+                )
+            } else {
+                None
+            },
+        )
     }
 
     fn get_tips_by_block_id(&self, key: HashValue) -> Result<Vec<HashValue>> {
@@ -749,6 +715,24 @@ impl SyncFlexiDagStore for Storage {
                 bail!("failed to get snapshot by hash: {}", key);
             }
         }
+    }
+
+    fn get_latest_snapshot(&self) -> Result<Option<SyncFlexiDagSnapshot>> {
+        Ok(
+            if let Some(dag_main) = self.get_startup_info()?.and_then(|i| i.get_dag_main()) {
+                self.query_by_hash(dag_main)?
+            } else {
+                None
+            },
+        )
+    }
+
+    fn save_dag_tips(&self, tips: Vec<HashValue>) -> Result<()> {
+        self.flexi_dag_storage.save_dag_tips(tips)
+    }
+
+    fn get_dag_tips(&self) -> Result<Option<DagTips>> {
+        self.flexi_dag_storage.get_dag_tips()
     }
 }
 

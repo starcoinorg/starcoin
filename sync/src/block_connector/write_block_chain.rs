@@ -421,17 +421,13 @@ where
     }
 
     fn is_main_head(&self, parent_id: &HashValue) -> bool {
-        if parent_id == &self.startup_info.main {
-            return true;
-        }
-        return false;
+        parent_id == &self.startup_info.main
     }
 
     fn update_startup_info(&mut self, main_head: &BlockHeader) -> Result<()> {
+        //todo: handle StartupInfo.dag_main
         self.startup_info.update_main(main_head.id());
-        self.storage.save_startup_info(self.startup_info.clone());
-
-        todo!("how to handle dag_main");
+        self.storage.save_startup_info(self.startup_info.clone())
     }
 
     fn commit_2_txpool(&self, enacted: Vec<Block>, retracted: Vec<Block>) {
@@ -555,7 +551,9 @@ where
     }
 
     pub fn dump_tips(&mut self, block_header: BlockHeader) -> Result<()> {
-        self.main.status().update_tips(Some(vec![block_header.id()]));
+        self.main
+            .status()
+            .update_tips(Some(vec![block_header.id()]));
         async_std::task::block_on(self.flexidag_service.send(DumpTipsToAccumulator {
             block_header: block_header.clone(),
             current_head_block_id: self.main.status().head().id(),
@@ -579,7 +577,6 @@ where
             debug!("Repeat connect, current header is {} already.", block_id);
             return Ok(ConnectOk::MainDuplicate);
         }
-
 
         let parent_hash = block.parent_hash()?;
 
