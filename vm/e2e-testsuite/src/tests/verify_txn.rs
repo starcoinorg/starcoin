@@ -57,7 +57,7 @@ fn verify_signature() {
             *sender.address(),
             100,
             vec![],
-            vec![],
+            //vec![],
         );
         let signed_txn = transaction_test_helpers::get_test_unchecked_txn(
             *sender.address(),
@@ -422,7 +422,7 @@ fn verify_reserved_sender() {
             *sender.address(),
             100,
             vec![],
-            vec![],
+            //vec![],
         );
         let signed_txn = transaction_test_helpers::get_test_signed_txn(
             account_config::reserved_vm_address(),
@@ -1631,7 +1631,7 @@ fn charge_gas_invalid_args() {
             AccountAddress::random(),
             1,
             vec![],
-            vec![]
+            // vec![]
         );
         let txn = sender
             .account()

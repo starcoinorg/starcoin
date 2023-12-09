@@ -16,34 +16,32 @@ fn to_vec(arg: TransactionArgument) -> Vec<u8> {
 }
 
 pub fn encode_peer_to_peer_with_metadata_script(
-    currency: TypeTag,
+    _currency: TypeTag,
     payee: AccountAddress,
-    amount: u64,
+    amount: u128,
     metadata: Vec<u8>,
-    metadata_signature: Vec<u8>,
+    //metadata_signature: Vec<u8>,
 ) -> Script {
     let compiler = compile_script(
         r#"
         script {
-            use 0x1::TransferScripts;
+            use 0x1::Account;
             use 0x1::STC::STC;
-            fun main(account: signer, payee: address, payee_auth_key: vector<u8>, amount: u128, metadata: vector<u8>) {
-                TransferScripts::peer_to_peer_with_metadata<STC>(account, payee, payee_auth_key, amount, metadata);
+            fun main(account: signer, payee: address, amount: u128, metadata: vector<u8>) {
+                Account::pay_from_with_metadata<STC>(&account, payee, amount, metadata);
         }
     }
     "#,
     );
     Script::new(
         compiler.unwrap(),
-        vec![currency],
+        vec![],
         vec![
             to_vec(TransactionArgument::Address(payee)),
-            to_vec(TransactionArgument::U64(amount)),
+            to_vec(TransactionArgument::U128(amount)),
             to_vec(TransactionArgument::U8Vector(metadata)),
-            to_vec(TransactionArgument::U8Vector(metadata_signature)),
         ],
     )
-    //Script::sample()
 }
 
 // pub fn encode_tiered_mint_script(
