@@ -42,14 +42,16 @@ fn now_time() -> u64 {
 pub fn empty_txn(
     sender: &Account,
     seq_num: u64,
-    _max_gas_amount: u64,
-    _gas_unit_price: u64,
+    max_gas_amount: u64,
+    gas_unit_price: u64,
 ) -> SignedUserTransaction {
     build_signed_empty_txn(
         sender.address().clone(),
         &sender.private_key(),
         seq_num,
         now_time() + DEFAULT_EXPIRATION_TIME,
+        max_gas_amount,
+        gas_unit_price,
         ChainId::test(),
     )
     // sender

@@ -4,12 +4,9 @@
 use crate::transactions::TransactionBencher;
 use proptest::arbitrary::any_with;
 use starcoin_language_e2e_tests::{
-    account::AccountData,
-    account_universe::P2PTransferGen,
-    common_transactions::peer_to_peer_txn,
+    account::AccountData, account_universe::P2PTransferGen, common_transactions::peer_to_peer_txn,
     executor::FakeExecutor,
 };
-
 
 #[test]
 pub fn bencher_sequence() {

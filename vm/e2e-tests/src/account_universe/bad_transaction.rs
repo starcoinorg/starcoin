@@ -6,9 +6,17 @@ use crate::{
     common_transactions::empty_txn,
     gas_costs,
 };
+use move_core_types::gas_algebra::{NumBytes};
 use proptest::{arbitrary::any_with, prelude::Strategy, prop_oneof};
 use proptest_derive::Arbitrary;
+use starcoin_crypto::{
+    ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
+    test_utils::KeyPair,
+};
+use starcoin_gas::{StarcoinGasMeter, StarcoinGasParameters};
+use starcoin_gas_algebra_ext::InitialGasSchedule;
 use starcoin_proptest_helpers::Index;
+use starcoin_transaction_builder::build_empty_script;
 use starcoin_vm_types::{
     gas_schedule::G_TEST_GAS_CONSTANTS,
     transaction::{SignedUserTransaction, TransactionStatus},
@@ -81,16 +89,24 @@ impl AUTransactionGen for InsufficientBalanceGen {
         );
 
         // TODO: Move such config to AccountUniverse
-        let default_constants = G_TEST_GAS_CONSTANTS.clone();
-        // let raw_bytes_len = AbstractMemorySize::new(txn.raw_txn_bytes_len() as u64);
-        // let min_cost = txn.gas_unit_price()
+        // let default_constants = GasConstants::default();
+        // let raw_bytes_len = AbstractMemorySize::new(txn.raw_txn_bytes_len() as GasCarrier);
+        // let min_cost = GasConstants::default()
         //     .to_external_units(calculate_intrinsic_gas(
         //         raw_bytes_len,
-        //         &default_constants,
+        //         &GasConstants::default(),
         //     ))
         //     .get();
+
         // TODO(BobOng): e2e-test calculate_intrinsic_gas
-        let min_cost = txn.gas_unit_price();
+        let default_constants = G_TEST_GAS_CONSTANTS.clone();
+        let raw_bytes_len = NumBytes::new(txn.raw_txn_bytes_len() as u64);
+
+        let gas_params = StarcoinGasParameters::initial();
+        let min_cost = gas_params
+            .txn
+            .calculate_intrinsic_gas(raw_bytes_len)
+            .to_unit_round_up_with_params(&gas_params.txn).into();
         (
             txn,
             (
@@ -121,10 +137,10 @@ impl AUTransactionGen for InsufficientBalanceGen {
 #[proptest(no_params)]
 pub struct InvalidAuthkeyGen {
     sender: Index,
-    // #[proptest(
-    //     strategy = "starcoin_crypto::test_utils::uniform_keypair_strategy_with_perturbation(1)"
-    // )]
-    // new_keypair0: KeyPair<Ed25519PrivateKey, Ed25519PublicKey>,
+    #[proptest(
+        strategy = "starcoin_crypto::test_utils::uniform_keypair_strategy_with_perturbation(1)"
+    )]
+    new_keypair: KeyPair<Ed25519PrivateKey, Ed25519PublicKey>,
 }
 
 impl AUTransactionGen for InvalidAuthkeyGen {
@@ -134,19 +150,18 @@ impl AUTransactionGen for InvalidAuthkeyGen {
     ) -> (SignedUserTransaction, (TransactionStatus, u64)) {
         let sender = universe.pick(self.sender).1;
 
-        // let txn = sender
-        //     .account()
-        //     .transaction()
-        //     .script(Script::new(EMPTY_SCRIPT.clone(), vec![], vec![]))
-        //     .sequence_number(sender.sequence_number)
-        //     .raw()
-        //     .sign(
-        //         &self.new_keypair.private_key,
-        //         self.new_keypair.public_key.clone(),
-        //     )
-        //     .unwrap()
-        //     .into_inner();
-        let txn = empty_txn(sender.account(), sender.sequence_number, 0, 0);
+        let txn = sender
+            .account()
+            .transaction()
+            .script_function(build_empty_script())
+            .sequence_number(sender.sequence_number)
+            .raw()
+            .sign(
+                &self.new_keypair.private_key,
+                self.new_keypair.public_key.clone(),
+            )
+            .unwrap()
+            .into_inner();
         (
             txn,
             (TransactionStatus::Discard(StatusCode::INVALID_AUTH_KEY), 0),

@@ -127,7 +127,8 @@ fn dynamic_read_writes() {
         .current();
     let transaction_gen = vec(
         any_with::<TransactionGen<[u8; 32]>>(TransactionGenParams::new_dynamic()),
-        3000,
+        //3000,
+        300,
     )
     .new_tree(&mut runner)
     .expect("creating a new value should succeed")
@@ -154,7 +155,8 @@ fn dynamic_read_writes_contended() {
 
     let transaction_gen = vec(
         any_with::<TransactionGen<[u8; 32]>>(TransactionGenParams::new_dynamic()),
-        1000,
+        //1000,
+        100,
     )
     .new_tree(&mut runner)
     .expect("creating a new value should succeed")

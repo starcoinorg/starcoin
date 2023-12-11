@@ -13,7 +13,7 @@ proptest! {
 
     #[test]
     fn bad_sequence(
-        universe in AccountUniverseGen::success_strategy(2),
+        universe in AccountUniverseGen::strategy(2, 1_000_000_000_000u64 .. 10_000_000_000_000u64),
         txns in vec(any_with::<SequenceNumberMismatchGen>((0, 10_000)), 0..default_num_transactions()),
     ) {
         run_and_assert_gas_cost_stability(universe, txns)?;
@@ -21,7 +21,7 @@ proptest! {
 
     #[test]
     fn bad_auth_key(
-        universe in AccountUniverseGen::success_strategy(2),
+        universe in AccountUniverseGen::strategy(2, 1_000_000_000_000u64 .. 10_000_000_000_000u64),
         txns in vec(any_with::<InvalidAuthkeyGen>(()), 0..default_num_transactions()),
     ) {
         run_and_assert_gas_cost_stability(universe, txns)?;

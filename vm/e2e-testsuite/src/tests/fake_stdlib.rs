@@ -7,7 +7,7 @@ use move_core_types::{
 };
 
 use starcoin_language_e2e_tests::compile::compile_script;
-use starcoin_vm_types::transaction::{Script};
+use starcoin_vm_types::transaction::Script;
 
 fn to_vec(arg: TransactionArgument) -> Vec<u8> {
     MoveValue::from(arg)
