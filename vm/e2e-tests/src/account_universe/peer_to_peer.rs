@@ -102,7 +102,7 @@ impl AUTransactionGen for P2PTransferGen {
                         CORE_CODE_ADDRESS,
                         ident_str!("Token").to_owned(),
                     )),
-                    1287,
+                    26120, // (0x1::Token::EAMOUNT_EXCEEDS_COIN_VALUE == (102 >> 8) = 26112)
                 ));
             }
             (false, _, _) => {
