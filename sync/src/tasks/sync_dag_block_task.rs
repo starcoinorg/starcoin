@@ -32,7 +32,7 @@ impl SyncDagBlockTask {
             start_index,
             target,
             fetcher,
-            accumulator_snapshot: accumulator_snapshot.clone(),
+            accumulator_snapshot,
             local_store: local_store.clone(),
         }
     }

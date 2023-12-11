@@ -248,6 +248,8 @@ impl FlexidagService {
             key,
             snaphot_hasher.to_snapshot(dag_accumulator_info.clone()),
         )?;
+        self.storage
+            .save_dag_startup_info(DagStartupInfo::new(key))?;
         dag_accumulator.flush()?;
         Ok(dag_accumulator_info)
     }
@@ -294,6 +296,8 @@ impl FlexidagService {
             key,
             snaphot_hasher.to_snapshot(dag_accumulator_info.clone()),
         )?;
+        self.storage
+            .save_dag_startup_info(DagStartupInfo::new(key))?;
         fork.flush()?;
         Ok(dag_accumulator_info)
     }
@@ -393,6 +397,7 @@ impl ServiceHandler<Self, DumpTipsToAccumulator> for FlexidagService {
                 .expect("the tips is not none but the dag accumulator is none");
             dag.append(&vec![key])?;
             storage.put_hashes(key, snapshot_hasher.to_snapshot(dag.get_info()))?;
+            storage.save_dag_startup_info(DagStartupInfo::new(key))?;
             dag.flush()?;
             let new_tips = vec![msg.block_header.id()];
             self.tip_info = Some(TipInfo {

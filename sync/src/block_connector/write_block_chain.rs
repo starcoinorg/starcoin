@@ -425,7 +425,7 @@ where
     }
 
     fn update_startup_info(&mut self, main_head: &BlockHeader) -> Result<()> {
-        //todo: handle StartupInfo.dag_main
+        // the dag_main updated by flexidag service
         self.startup_info.update_main(main_head.id());
         self.storage.save_startup_info(self.startup_info.clone())
     }

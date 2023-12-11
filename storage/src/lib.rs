@@ -702,6 +702,7 @@ impl SyncFlexiDagStore for Storage {
             assert_eq!(t, snapshot, "the accumulator differ from other");
         } else {
             self.put_hashes(key, snapshot)?;
+            self.save_dag_startup_info(DagStartupInfo::new(key))?;
         }
 
         Ok(())

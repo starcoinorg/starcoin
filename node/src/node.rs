@@ -141,7 +141,7 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                 let dag = ctx
                     .get_shared::<Arc<BlockDAG>>()
                     .expect("ghost dag object does not exits");
-                let parents = match dag.get_parents(block_hash) {
+                let _parents = match dag.get_parents(block_hash) {
                     Ok(parents) => {
                         if parents.is_empty() {
                             None
@@ -157,11 +157,7 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
 
                 let fut = async move {
                     info!("Prepare to reset node startup info to {}", block_hash);
-                    connect_service
-                        .send(ResetRequest {
-                            block_hash,
-                        })
-                        .await?
+                    connect_service.send(ResetRequest { block_hash }).await?
                 };
                 let receiver = ctx.exec(fut);
                 NodeResponse::AsyncResult(receiver)

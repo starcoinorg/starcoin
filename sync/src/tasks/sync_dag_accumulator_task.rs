@@ -7,7 +7,9 @@ use starcoin_network_rpc_api::dag_protocol::{self, TargetDagAccumulatorLeafDetai
 use starcoin_storage::{
     flexi_dag::{SyncFlexiDagSnapshot, SyncFlexiDagSnapshotStorage},
     storage::CodecKVStore,
+    Store,
 };
+use starcoin_types::startup_info::DagStartupInfo;
 use std::sync::Arc;
 use stream_task::{CollectorState, TaskResultCollector, TaskState};
 
@@ -83,6 +85,7 @@ impl TaskState for SyncDagAccumulatorTask {
 pub struct SyncDagAccumulatorCollector {
     accumulator: MerkleAccumulator,
     accumulator_snapshot: Arc<SyncFlexiDagSnapshotStorage>,
+    local_store: Arc<dyn Store>,
     target: AccumulatorInfo,
     start_leaf_index: u64,
 }
@@ -91,12 +94,14 @@ impl SyncDagAccumulatorCollector {
     pub fn new(
         accumulator: MerkleAccumulator,
         accumulator_snapshot: Arc<SyncFlexiDagSnapshotStorage>,
+        local_store: Arc<dyn Store>,
         target: AccumulatorInfo,
         start_leaf_index: u64,
     ) -> Self {
         Self {
             accumulator,
             accumulator_snapshot,
+            local_store,
             target,
             start_leaf_index,
         }
@@ -123,19 +128,9 @@ impl TaskResultCollector<TargetDagAccumulatorLeafDetail> for SyncDagAccumulatorC
         self.accumulator.flush()?;
 
         let num_leaves = accumulator_info.num_leaves;
-        self.accumulator_snapshot.put(
-            accumulator_leaf,
-            SyncFlexiDagSnapshot {
-                child_hashes: item.tips.clone(),
-                accumulator_info: accumulator_info.clone(),
-                head_block_id: item.head_block_id,
-                k_total_difficulties: item.k_total_difficulties.clone(),
-            },
-        )?;
-
-        item.tips.iter().try_fold((), |_, block_id| {
-            self.accumulator_snapshot.put(
-                block_id.clone(),
+        self.accumulator_snapshot
+            .put(
+                accumulator_leaf,
                 SyncFlexiDagSnapshot {
                     child_hashes: item.tips.clone(),
                     accumulator_info: accumulator_info.clone(),
@@ -143,6 +138,26 @@ impl TaskResultCollector<TargetDagAccumulatorLeafDetail> for SyncDagAccumulatorC
                     k_total_difficulties: item.k_total_difficulties.clone(),
                 },
             )
+            .and_then(|_| {
+                self.local_store
+                    .save_dag_startup_info(DagStartupInfo::new(accumulator_leaf))
+            })?;
+
+        item.tips.iter().try_fold((), |_, &block_id| {
+            self.accumulator_snapshot
+                .put(
+                    block_id,
+                    SyncFlexiDagSnapshot {
+                        child_hashes: item.tips.clone(),
+                        accumulator_info: accumulator_info.clone(),
+                        head_block_id: item.head_block_id,
+                        k_total_difficulties: item.k_total_difficulties.clone(),
+                    },
+                )
+                .and_then(|_| {
+                    self.local_store
+                        .save_dag_startup_info(DagStartupInfo::new(block_id))
+                })
         })?;
 
         if num_leaves == self.target.num_leaves {

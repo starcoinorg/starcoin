@@ -64,14 +64,10 @@ pub async fn find_dag_ancestor_task(
     )
     .generate();
     let (fut, _handle) = sync_task.with_handle();
-    match fut.await {
-        anyhow::Result::Ok(ancestor) => {
-            return Ok(ancestor);
-        }
-        Err(error) => {
-            return Err(anyhow!(error));
-        }
-    }
+    return match fut.await {
+        Result::Ok(ancestor) => Ok(ancestor),
+        Err(error) => Err(anyhow!(error)),
+    };
 }
 
 async fn sync_accumulator(
@@ -80,6 +76,7 @@ async fn sync_accumulator(
     fetcher: Arc<VerifiedRpcClient>,
     accumulator_store: Arc<dyn AccumulatorTreeStore>,
     accumulator_snapshot: Arc<SyncFlexiDagSnapshotStorage>,
+    local_store: Arc<dyn Store>,
 ) -> anyhow::Result<(u64, MerkleAccumulator)> {
     let max_retry_times = 10; // in startcoin, it is in config
     let delay_milliseconds_on_error = 100;
@@ -103,6 +100,7 @@ async fn sync_accumulator(
         SyncDagAccumulatorCollector::new(
             MerkleAccumulator::new_with_info(local_accumulator_info, accumulator_store.clone()),
             accumulator_snapshot.clone(),
+            local_store.clone(),
             target_accumulator_info,
             start_index,
         ),
@@ -168,6 +166,7 @@ fn get_start_block_id(
         .clone())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn sync_dag_block<H, N>(
     start_index: u64,
     accumulator: MerkleAccumulator,
@@ -274,6 +273,7 @@ where
     };
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn sync_dag_full_task(
     local_accumulator_info: AccumulatorInfo,
     target_accumulator_info: AccumulatorInfo,
@@ -315,6 +315,7 @@ pub fn sync_dag_full_task(
             fetcher.clone(),
             accumulator_store.clone(),
             accumulator_snapshot.clone(),
+            local_store.clone(),
         )
         .await
         .map_err(|err| TaskError::BreakError(anyhow!(err)))?;
@@ -337,7 +338,7 @@ pub fn sync_dag_full_task(
         )
         .await
         .map_err(|err| TaskError::BreakError(anyhow!(err)))?;
-        return anyhow::Result::Ok(block_chain);
+        Result::Ok(block_chain)
     };
 
     let task = TaskFuture::new(all_fut.boxed());

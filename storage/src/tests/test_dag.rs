@@ -6,9 +6,10 @@ use starcoin_crypto::HashValue;
 
 use crate::{
     cache_storage::CacheStorage, db_storage::DBStorage, flexi_dag::SyncFlexiDagSnapshot,
-    storage::StorageInstance, Storage, Store, SyncFlexiDagStore,
+    storage::StorageInstance, BlockStore, Storage, Store, SyncFlexiDagStore,
 };
 use anyhow::{Ok, Result};
+use starcoin_types::startup_info::DagStartupInfo;
 
 trait SyncFlexiDagManager {
     fn insert_hashes(&self, hashes: Vec<HashValue>) -> Result<HashValue>;
@@ -19,6 +20,7 @@ trait SyncFlexiDagManager {
 }
 
 struct SyncFlexiDagManagerImp {
+    storage: Storage,
     flexi_dag_storage: Box<dyn SyncFlexiDagStore>,
     accumulator: MerkleAccumulator,
 }
@@ -40,6 +42,7 @@ impl SyncFlexiDagManagerImp {
                 .get_accumulator_store(starcoin_accumulator::node::AccumulatorStoreType::SyncDag),
         );
         SyncFlexiDagManagerImp {
+            storage: flexi_dag_storage.clone(),
             flexi_dag_storage: Box::new(flexi_dag_storage),
             accumulator,
         }
@@ -54,7 +57,7 @@ impl SyncFlexiDagManagerImp {
     }
 }
 
-// jacktest todo: fix this 
+// jacktest todo: fix this
 impl SyncFlexiDagManager for SyncFlexiDagManagerImp {
     fn insert_hashes(&self, mut child_hashes: Vec<HashValue>) -> Result<HashValue> {
         child_hashes.sort();
@@ -69,6 +72,8 @@ impl SyncFlexiDagManager for SyncFlexiDagManagerImp {
                 head_block_id: accumulator_key,
             },
         )?;
+        self.storage
+            .save_dag_startup_info(DagStartupInfo::new(accumulator_key))?;
         Ok(accumulator_key)
     }
 

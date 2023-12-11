@@ -99,12 +99,14 @@ impl TaskResultCollector<TargetDagAccumulatorLeaf> for AncestorCollector {
             None => panic!("failed to get the snapshot, it is none."),
         };
 
-        if item.accumulator_root == accumulator_info.accumulator_root {
-            self.ancestor = Some(accumulator_info);
-            return anyhow::Result::Ok(CollectorState::Enough);
-        } else {
-            Ok(CollectorState::Need)
-        }
+        Ok(
+            if item.accumulator_root == accumulator_info.accumulator_root {
+                self.ancestor = Some(accumulator_info);
+                CollectorState::Enough
+            } else {
+                CollectorState::Need
+            },
+        )
     }
 
     fn finish(mut self) -> Result<Self::Output> {
