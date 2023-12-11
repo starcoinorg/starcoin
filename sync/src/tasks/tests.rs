@@ -10,7 +10,6 @@ use crate::tasks::{
     BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask, SyncFetcher,
 };
 use crate::verified_rpc_client::RpcVerifyError;
-use anyhow::Context;
 use anyhow::{format_err, Result};
 use anyhow::{Context, Ok};
 use futures::channel::mpsc::unbounded;
@@ -26,7 +25,7 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
-use starcoin_config::{BuiltinNetworkID, ChainNetwork, NodeConfig};
+use starcoin_config::{BuiltinNetworkID, ChainNetwork, NodeConfig, ChainNetworkID};
 use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_genesis::Genesis as StarcoinGenesis;
@@ -79,6 +78,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
         sender_2,
         DummyNetworkService::default(),
         15,
+        ChainNetworkID::TEST,
         None,
         None,
     )?;
@@ -110,6 +110,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
         sender_2,
         DummyNetworkService::default(),
         15,
+        ChainNetworkID::TEST,
         None,
         None,
     )?;
@@ -160,6 +161,7 @@ pub async fn test_sync_invalid_target() -> Result<()> {
         sender_2,
         DummyNetworkService::default(),
         15,
+        ChainNetworkID::TEST,
         None,
         None,
     )?;
@@ -191,6 +193,7 @@ pub async fn test_failed_block() -> Result<()> {
         storage.clone(),
         net.id().clone(),
         None,
+        None,
     )?;
     let (sender, _) = unbounded();
     let chain_status = chain.status();
@@ -208,6 +211,7 @@ pub async fn test_failed_block() -> Result<()> {
         true,
         HashValue::zero(),
         None,
+        storage.clone(),
     );
     let header = BlockHeaderBuilder::random().with_number(1).build();
     let body = BlockBody::new(Vec::new(), None);
@@ -254,6 +258,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         sender_2,
         DummyNetworkService::default(),
         15,
+        ChainNetworkID::TEST,
         None,
         None,
     )?;
@@ -287,6 +292,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         sender_2,
         DummyNetworkService::default(),
         15,
+        ChainNetworkID::TEST,
         None,
         None,
     )?;
@@ -336,6 +342,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
         sender_2,
         DummyNetworkService::default(),
         15,
+        ChainNetworkID::TEST,
         None,
         None,
     )?;
@@ -390,6 +397,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         sender_2,
         DummyNetworkService::default(),
         15,
+        ChainNetworkID::TEST,
         None,
         None,
     )?;
@@ -425,6 +433,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         sender_2,
         DummyNetworkService::default(),
         15,
+        ChainNetworkID::TEST,
         None,
         None,
     )?;
@@ -477,6 +486,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
         sender_2,
         DummyNetworkService::default(),
         15,
+        ChainNetworkID::TEST,
         None,
         None,
     )?;
@@ -700,8 +710,6 @@ impl BlockFetcher for MockBlockFetcher {
             Vec<(
                 Block,
                 Option<PeerId>,
-                Option<Vec<HashValue>>,
-                Option<HashValue>,
             )>,
         >,
     > {
@@ -710,14 +718,12 @@ impl BlockFetcher for MockBlockFetcher {
             Vec<(
                 Block,
                 Option<PeerId>,
-                Option<Vec<HashValue>>,
-                Option<HashValue>,
             )>,
         > = block_ids
             .iter()
             .map(|block_id| {
                 if let Some(block) = blocks.get(block_id).cloned() {
-                    Ok((block, None, None, None))
+                    Ok((block, None))
                 } else {
                     Err(format_err!("Can not find block by id: {:?}", block_id))
                 }
@@ -936,6 +942,7 @@ async fn test_net_rpc_err() -> Result<()> {
         sender_2,
         DummyNetworkService::default(),
         15,
+        ChainNetworkID::TEST,
         None,
         None,
     )?;
@@ -1080,7 +1087,7 @@ fn sync_block_in_async_connection(
         local_ancestor_sender,
         DummyNetworkService::default(),
         15,
-        None,
+        ChainNetworkID::TEST,
         None,
         None,
     )?;
@@ -1141,21 +1148,22 @@ fn sync_block_in_block_connection_service_mock(
         let local_net = local_node.chain_mocker.net();
         let (local_ancestor_sender, _local_ancestor_receiver) = unbounded();
 
+        let block_chain_service = async_std::task::block_on(
+                registry.service_ref::<BlockConnectorService<MockTxPoolService>>(),
+            )?;
+
         let (sync_task, _task_handle, task_event_counter) = full_sync_task(
             current_block_id,
             target.clone(),
             false,
             local_net.time_service(),
             storage.clone(),
-            async_std::task::block_on(
-                registry.service_ref::<BlockConnectorService<MockTxPoolService>>(),
-            )?
-            .clone(),
+            block_chain_service,
             target_node.clone(),
             local_ancestor_sender,
             DummyNetworkService::default(),
             15,
-            None,
+            ChainNetworkID::TEST,
             None,
             None,
         )?;

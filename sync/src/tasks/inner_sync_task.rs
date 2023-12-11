@@ -91,7 +91,6 @@ where
         max_retry_times: u64,
         delay_milliseconds_on_error: u64,
         skip_pow_verify_when_sync: bool,
-        block_chain_service: ServiceRef<BlockConnectorService<TxPoolService>>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<(BlockChain, TaskHandle), TaskError> {
         let buffer_size = self.target.peers.len();

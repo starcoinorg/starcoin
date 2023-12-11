@@ -619,7 +619,6 @@ pub fn full_sync_task<H, A, F, N>(
     ancestor_event_handle: A,
     peer_provider: N,
     max_retry_times: u64,
-    block_chain_service: ServiceRef<BlockConnectorService<TxPoolService>>,
     net_id: ChainNetworkID,
     sync_metrics: Option<SyncMetrics>,
     vm_metrics: Option<VMMetrics>,
@@ -737,7 +736,6 @@ where
                     max_retry_times,
                     delay_milliseconds_on_error,
                     skip_pow_verify,
-                    block_chain_service.clone(),
                     vm_metrics.clone(),
                 )
                 .await?;

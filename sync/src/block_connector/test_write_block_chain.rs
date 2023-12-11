@@ -6,9 +6,10 @@ use parking_lot::Mutex;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_chain_service::WriteableChainService;
-use starcoin_config::{NodeConfig, RocksdbConfig};
+use starcoin_config::{NodeConfig, RocksdbConfig, ChainNetworkID};
 use starcoin_consensus::{BlockDAG, Consensus, FlexiDagStorage, FlexiDagStorageConfig};
 use starcoin_crypto::HashValue;
+use starcoin_flexidag::FlexidagService;
 use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
@@ -17,7 +18,6 @@ use starcoin_time_service::TimeService;
 use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::Block;
 use starcoin_types::blockhash::ORIGIN;
-use starcoin_types::consensus_header::Header;
 use starcoin_types::startup_info::StartupInfo;
 use std::sync::Arc;
 
@@ -35,6 +35,7 @@ pub async fn create_writeable_block_chain() -> (
     let bus = registry.service_ref::<BusService>().await.unwrap();
     let txpool_service = MockTxPoolService::new();
 
+
     genesis.save(node_config.data_dir()).unwrap();
 
     let (chain_info, genesis) = StarcoinGenesis::init_and_check_storage(
@@ -48,7 +49,10 @@ pub async fn create_writeable_block_chain() -> (
     let flex_dag_db = FlexiDagStorage::create_from_path("./smolstc", flex_dag_config)
         .expect("Failed to create flexidag storage");
 
-    let dag = BlockDAG::new(3, flex_dag_db);
+    let dag = BlockDAG::new(3, flex_dag_db, ChainNetworkID::TEST);
+    
+    registry.register::<FlexidagService>().await.unwrap();
+    let flexidag_service = registry.service_ref::<FlexidagService>().await.unwrap();
 
     (
         WriteBlockChainService::new(
@@ -58,7 +62,8 @@ pub async fn create_writeable_block_chain() -> (
             txpool_service,
             bus,
             None,
-            Arc::new(Mutex::new(dag)),
+            flexidag_service,
+            Some(dag),
         )
         .unwrap(),
         node_config,
@@ -252,7 +257,7 @@ async fn test_block_chain_reset() -> anyhow::Result<()> {
         .get_main()
         .get_block_by_number(3)?
         .unwrap();
-    writeable_block_chain_service.reset(block.id(), None)?;
+    writeable_block_chain_service.reset(block.id())?;
     assert_eq!(
         writeable_block_chain_service
             .get_main()

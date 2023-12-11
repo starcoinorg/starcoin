@@ -358,7 +358,6 @@ impl SyncService {
                         self_ref.clone(),
                         network.clone(),
                         config.sync.max_retry_times(),
-                        block_chain_service.clone(),
                         config.net().id().clone(),
                         sync_metrics.clone(),
                         vm_metrics.clone(),

@@ -17,7 +17,6 @@ use starcoin_time_service::TimeService;
 use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::Block;
 use starcoin_types::blockhash::ORIGIN;
-use starcoin_types::consensus_header::Header;
 use starcoin_types::startup_info::StartupInfo;
 use std::sync::{Arc, Mutex};
 
@@ -26,39 +25,40 @@ pub fn gen_dag_blocks(
     writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
     time_service: &dyn TimeService,
 ) -> Option<HashValue> {
-    let miner_account = AccountInfo::random();
-    let mut last_block_hash = None;
-    if times > 0 {
-        for i in 0..times {
-            let block = new_dag_block(
-                Some(&miner_account),
-                writeable_block_chain_service,
-                time_service,
-            );
-            last_block_hash = Some(block.id());
-            let e = writeable_block_chain_service.try_connect(block);
-            println!("try_connect result: {:?}", e);
-            assert!(e.is_ok());
-            if (i + 1) % 3 == 0 {
-                writeable_block_chain_service.time_sleep(5);
-            }
-        }
-    }
+    panic!("rewrite the testing")
+    // let miner_account = AccountInfo::random();
+    // let mut last_block_hash = None;
+    // if times > 0 {
+    //     for i in 0..times {
+    //         let block = new_dag_block(
+    //             Some(&miner_account),
+    //             writeable_block_chain_service,
+    //             time_service,
+    //         );
+    //         last_block_hash = Some(block.id());
+    //         let e = writeable_block_chain_service.try_connect(block);
+    //         println!("try_connect result: {:?}", e);
+    //         assert!(e.is_ok());
+    //         if (i + 1) % 3 == 0 {
+    //             writeable_block_chain_service.time_sleep(5);
+    //         }
+    //     }
+    // }
 
-    let result = writeable_block_chain_service.execute_dag_block_pool();
-    let result = result.unwrap();
-    match result {
-        super::write_block_chain::ConnectOk::Duplicate(block)
-        | super::write_block_chain::ConnectOk::ExeConnectMain(block)
-        | super::write_block_chain::ConnectOk::ExeConnectBranch(block)
-        | super::write_block_chain::ConnectOk::Connect(block) => Some(block.header().id()),
-        super::write_block_chain::ConnectOk::DagConnected
-        | super::write_block_chain::ConnectOk::MainDuplicate
-        | super::write_block_chain::ConnectOk::DagPending
-        | super::write_block_chain::ConnectOk::DagConnectMissingBlock => {
-            unreachable!("should not reach here, result: {:?}", result);
-        }
-    }
+    // let result = writeable_block_chain_service.execute_dag_block_pool();
+    // let result = result.unwrap();
+    // match result {
+    //     super::write_block_chain::ConnectOk::Duplicate(block)
+    //     | super::write_block_chain::ConnectOk::ExeConnectMain(block)
+    //     | super::write_block_chain::ConnectOk::ExeConnectBranch(block)
+    //     | super::write_block_chain::ConnectOk::Connect(block) => Some(block.header().id()),
+    //     super::write_block_chain::ConnectOk::DagConnected
+    //     | super::write_block_chain::ConnectOk::MainDuplicate
+    //     | super::write_block_chain::ConnectOk::DagPending
+    //     | super::write_block_chain::ConnectOk::DagConnectMissingBlock => {
+    //         unreachable!("should not reach here, result: {:?}", result);
+    //     }
+    // }
 }
 
 pub fn new_dag_block(
@@ -121,6 +121,7 @@ fn gen_fork_dag_block_chain(
                 parent_id,
                 writeable_block_chain_service.get_main().get_storage(),
                 net.id().clone(),
+                None,
                 None,
             )
             .unwrap();
@@ -195,7 +196,7 @@ async fn test_block_chain_reset() -> anyhow::Result<()> {
         .get_main()
         .get_block_by_number(3)?
         .unwrap();
-    writeable_block_chain_service.reset(block.id(), None)?;
+    writeable_block_chain_service.reset(block.id())?;
     assert_eq!(
         writeable_block_chain_service
             .get_main()

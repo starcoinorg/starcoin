@@ -32,6 +32,7 @@ pub fn test_open_block() -> Result<()> {
             chain.consensus(),
             None,
             None,
+            None,
         )?
     };
 
