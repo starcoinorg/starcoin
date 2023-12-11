@@ -13,10 +13,23 @@ use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     contract_event::ContractEventInfo,
     filter::Filter,
-    startup_info::{ChainStatus, StartupInfo},
+    startup_info::ChainStatus,
     transaction::Transaction,
 };
 use starcoin_vm_types::access_path::AccessPath;
+
+pub struct StartupInfo {
+    #[allow(dead_code)]
+    main: HashValue,
+    #[allow(dead_code)]
+    dag_main: Option<HashValue>,
+}
+
+impl StartupInfo {
+    pub fn new(main: HashValue, dag_main: Option<HashValue>) -> Self {
+        Self { main, dag_main }
+    }
+}
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug)]

@@ -19,9 +19,7 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::{ChainNetworkID, NodeConfig, RocksdbConfig};
 use starcoin_crypto::{HashValue as Hash, HashValue};
-use starcoin_logger::prelude::info;
 use starcoin_storage::flexi_dag::SyncFlexiDagSnapshotHasher;
-use starcoin_storage::storage::CodecKVStore;
 use starcoin_storage::Store;
 use starcoin_types::block::{
     BlockHeader, BlockNumber, BARNARD_FLEXIDAG_FORK_HEIGHT, DEV_FLEXIDAG_FORK_HEIGHT,
@@ -29,6 +27,7 @@ use starcoin_types::block::{
     TEST_FLEXIDAG_FORK_HEIGHT,
 };
 use starcoin_types::dag_block::KTotalDifficulty;
+use starcoin_types::startup_info::DagStartupInfo;
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
@@ -109,7 +108,7 @@ impl BlockDAG {
         let startup_info = storage
             .get_startup_info()?
             .expect("startup info must exist");
-        if let Some(key) = startup_info.get_dag_main() {
+        if storage.get_dag_startup_info()?.is_some() {
             let accumulator_info = storage
                 .get_dag_accumulator_info()?
                 .expect("dag accumulator info should exist");
@@ -159,6 +158,7 @@ impl BlockDAG {
                     dag_accumulator.append(&[key])?;
                     storage
                         .put_hashes(key, snapshot_hasher.to_snapshot(dag_accumulator.get_info()))?;
+                    storage.save_dag_startup_info(DagStartupInfo::new(key))?;
                     dag_accumulator.flush()?;
                     let dag = Self::new_by_config(
                         config.data_dir().join("flexidag").as_path(),

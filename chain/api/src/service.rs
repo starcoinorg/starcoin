@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::message::{ChainRequest, ChainResponse};
+use crate::message::{ChainRequest, ChainResponse, StartupInfo as ApiStartupInfo};
 use crate::TransactionInfoWithProof;
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
@@ -10,14 +10,11 @@ use starcoin_network_rpc_api::dag_protocol::{
     TargetDagAccumulatorLeafDetail,
 };
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
+use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
-use starcoin_types::startup_info::ChainStatus;
+use starcoin_types::startup_info::{ChainStatus, DagStartupInfo, StartupInfo};
 use starcoin_types::transaction::{RichTransactionInfo, Transaction};
-use starcoin_types::{
-    block::{Block, BlockHeader, BlockInfo, BlockNumber},
-    startup_info::StartupInfo,
-};
 use starcoin_vm_types::access_path::AccessPath;
 
 /// Readable block chain service trait
@@ -46,6 +43,7 @@ pub trait ReadableChainService {
     fn main_block_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>>;
     fn main_block_info_by_number(&self, number: BlockNumber) -> Result<Option<BlockInfo>>;
     fn main_startup_info(&self) -> StartupInfo;
+    fn dag_startup_info(&self) -> Option<DagStartupInfo>;
     fn main_blocks_by_number(
         &self,
         number: Option<BlockNumber>,
@@ -126,7 +124,7 @@ pub trait ChainAsyncService:
     ) -> Result<Vec<Block>>;
     async fn main_block_header_by_number(&self, number: BlockNumber)
         -> Result<Option<BlockHeader>>;
-    async fn main_startup_info(&self) -> Result<StartupInfo>;
+    async fn main_startup_info(&self) -> Result<ApiStartupInfo>;
     async fn main_status(&self) -> Result<ChainStatus>;
     async fn main_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>>;
     async fn get_block_ids(
@@ -393,7 +391,7 @@ where
         bail!("Get chain block header by number response error.")
     }
 
-    async fn main_startup_info(&self) -> Result<StartupInfo> {
+    async fn main_startup_info(&self) -> Result<ApiStartupInfo> {
         let response = self.send(ChainRequest::GetStartupInfo()).await??;
         if let ChainResponse::StartupInfo(startup_info) = response {
             Ok(*startup_info)

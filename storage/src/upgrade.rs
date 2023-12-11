@@ -164,9 +164,6 @@ impl DBUpgrade {
     }
 
     fn db_upgrade_v3_v4(instance: &mut StorageInstance) -> Result<()> {
-        let chain_info_storage = ChainInfoStorage::new(instance.clone());
-        chain_info_storage.upgrade_startup_info()?;
-
         BlockStorage::upgrade_block_header(instance.clone())?;
 
         Ok(())

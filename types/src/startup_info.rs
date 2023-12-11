@@ -13,8 +13,7 @@ use starcoin_uint::U256;
 use starcoin_vm_types::genesis_config::ChainId;
 use std::collections::BTreeSet;
 use std::convert::{TryFrom, TryInto};
-use std::fmt;
-use std::fmt::Formatter;
+use std::fmt::{self, Display, Formatter};
 use std::hash::Hash;
 
 /// The info of a chain.
@@ -103,7 +102,7 @@ impl ChainInfo {
     }
 }
 
-impl std::default::Default for ChainInfo {
+impl Default for ChainInfo {
     fn default() -> Self {
         Self {
             chain_id: ChainId::test(),
@@ -133,7 +132,7 @@ pub struct ChainStatus {
     /// Chain block info
     pub info: BlockInfo,
     /// tips
-    tips_hash:Option<Vec<HashValue>>
+    tips_hash: Option<Vec<HashValue>>,
 }
 
 impl ChainStatus {
@@ -240,21 +239,12 @@ impl DagChainStatus {
 pub struct StartupInfo {
     /// main chain head block hash
     pub main: HashValue,
-
-    /// dag accumulator info hash
-    pub dag_main: Option<HashValue>,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct OldStartupInfo {
-    pub main: HashValue,
-}
-
-impl fmt::Display for StartupInfo {
+impl Display for StartupInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "StartupInfo {{")?;
         write!(f, "main: {:?},", self.main)?;
-        write!(f, "dag_main: {:?}", self.dag_main)?;
         write!(f, "}}")?;
         Ok(())
     }
@@ -262,17 +252,7 @@ impl fmt::Display for StartupInfo {
 
 impl StartupInfo {
     pub fn new(main: HashValue) -> Self {
-        Self {
-            main,
-            dag_main: None,
-        }
-    }
-
-    pub fn new_with_dag(main: HashValue, dag_main: HashValue) -> Self {
-        Self {
-            main,
-            dag_main: Some(dag_main),
-        }
+        Self { main }
     }
 
     pub fn update_main(&mut self, new_head: HashValue) {
@@ -281,14 +261,6 @@ impl StartupInfo {
 
     pub fn get_main(&self) -> &HashValue {
         &self.main
-    }
-
-    pub fn update_dag_main(&mut self, new_head: HashValue) {
-        self.dag_main = Some(new_head);
-    }
-
-    pub fn get_dag_main(&self) -> Option<HashValue> {
-        self.dag_main
     }
 }
 
@@ -309,13 +281,52 @@ impl TryInto<Vec<u8>> for StartupInfo {
 }
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
+pub struct DagStartupInfo {
+    /// dag accumulator info hash
+    dag_main: HashValue,
+}
+
+impl DagStartupInfo {
+    pub fn new(value: HashValue) -> Self {
+        Self { dag_main: value }
+    }
+
+    pub fn get_dag_main(&self) -> &HashValue {
+        &self.dag_main
+    }
+}
+
+impl Display for DagStartupInfo {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "DagStartupInfo {{")?;
+        write!(f, "dag_main: {:?},", self.dag_main)?;
+        write!(f, "}}")?;
+        Ok(())
+    }
+}
+
+impl TryFrom<Vec<u8>> for DagStartupInfo {
+    type Error = anyhow::Error;
+    fn try_from(value: Vec<u8>) -> std::result::Result<Self, Self::Error> {
+        Self::decode(value.as_slice())
+    }
+}
+
+impl TryInto<Vec<u8>> for DagStartupInfo {
+    type Error = anyhow::Error;
+    fn try_into(self) -> std::result::Result<Vec<u8>, Self::Error> {
+        self.encode()
+    }
+}
+
+#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct SnapshotRange {
     /// snapshot [start, end] block number
     start: BlockNumber,
     end: BlockNumber,
 }
 
-impl fmt::Display for SnapshotRange {
+impl Display for SnapshotRange {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "SnapshotHeight [{}, {}],", self.start, self.end)?;
         Ok(())

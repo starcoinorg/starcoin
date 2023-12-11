@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::create_block_template::metrics::BlockBuilderMetrics;
-use anyhow::{format_err, Result, Ok};
+use anyhow::{format_err, Ok, Result};
 use futures::executor::block_on;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_account_service::AccountService;
@@ -27,7 +27,6 @@ use starcoin_types::{
     system_events::{NewBranch, NewHeadBlock},
 };
 use starcoin_vm_types::transaction::SignedUserTransaction;
-use std::backtrace::Backtrace;
 use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
 
@@ -127,8 +126,15 @@ impl EventHandler<Self, NewHeadBlock> for BlockBuilderService {
 }
 
 impl EventHandler<Self, NewTipsAndCreateDag> for BlockBuilderService {
-    fn handle_event(&mut self, msg: NewTipsAndCreateDag, _ctx: &mut ServiceContext<BlockBuilderService>) {
-        assert!(self.inner.dag.is_none(), "the dag should be none but it was initialized before");
+    fn handle_event(
+        &mut self,
+        msg: NewTipsAndCreateDag,
+        _ctx: &mut ServiceContext<BlockBuilderService>,
+    ) {
+        assert!(
+            self.inner.dag.is_none(),
+            "the dag should be none but it was initialized before"
+        );
         self.inner.dag = Some(msg.dag);
         if let Err(e) = self.inner.chain.update_tips(msg.tips.clone()) {
             error!("failed to update miner tips for: {:?}", e);
@@ -383,10 +389,13 @@ where
                 Some(tips) => {
                     if let Some(dag) = &self.dag {
                         let mut blues = dag.ghostdata(tips).mergeset_blues.to_vec();
-                        assert!(blues.len() > 0, "the count of the blue block should be larger than 0");
+                        assert!(
+                            blues.len() > 0,
+                            "the count of the blue block should be larger than 0"
+                        );
                         let mut blue_blocks = vec![];
                         let selected_parent = blues.remove(0); // 5
-                        // assert_eq!(previous_header.id(), selected_parent);// 4, 5
+                                                               // assert_eq!(previous_header.id(), selected_parent);// 4, 5
                         for blue in &blues {
                             let block = self
                                 .storage
@@ -403,7 +412,7 @@ where
                             Some(blue_blocks),
                         )
                     } else {
-                       (self.find_uncles(), None) 
+                        (self.find_uncles(), None)
                     }
                 }
             }

@@ -3,7 +3,7 @@
 
 use anyhow::{format_err, Error, Ok, Result};
 use starcoin_chain::BlockChain;
-use starcoin_chain_api::message::{ChainRequest, ChainResponse};
+use starcoin_chain_api::message::{ChainRequest, ChainResponse, StartupInfo as ApiStartupInfo};
 use starcoin_chain_api::{
     ChainReader, ChainWriter, ReadableChainService, TransactionInfoWithProof,
 };
@@ -27,6 +27,7 @@ use starcoin_types::block::ExecutedBlock;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::dag_block::KTotalDifficulty;
 use starcoin_types::filter::Filter;
+use starcoin_types::startup_info::DagStartupInfo;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
@@ -48,6 +49,7 @@ impl ChainReaderService {
     pub fn new(
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
+        dag_startup_info: Option<DagStartupInfo>,
         storage: Arc<dyn Store>,
         flexidag_service: ServiceRef<FlexidagService>,
         dag: Option<BlockDAG>,
@@ -55,12 +57,13 @@ impl ChainReaderService {
     ) -> Result<Self> {
         Ok(Self {
             inner: ChainReaderServiceInner::new(
-                config.clone(),
+                config,
                 startup_info,
+                dag_startup_info,
                 storage.clone(),
                 flexidag_service,
                 dag,
-                vm_metrics.clone(),
+                vm_metrics,
             )?,
         })
     }
@@ -73,12 +76,14 @@ impl ServiceFactory<Self> for ChainReaderService {
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("StartupInfo should exist at service init."))?;
+        let dag_startup_info = storage.get_dag_startup_info()?;
         let dag = ctx.get_shared_opt::<BlockDAG>()?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
         let flexidag_service = ctx.service_ref::<FlexidagService>()?.clone();
         Self::new(
             config,
             startup_info,
+            dag_startup_info,
             storage,
             flexidag_service,
             dag,
@@ -157,9 +162,12 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetBlockInfoByNumber(number) => Ok(ChainResponse::BlockInfoOption(
                 Box::new(self.inner.main_block_info_by_number(number)?),
             )),
-            ChainRequest::GetStartupInfo() => Ok(ChainResponse::StartupInfo(Box::new(
-                self.inner.main_startup_info(),
-            ))),
+            ChainRequest::GetStartupInfo() => {
+                Ok(ChainResponse::StartupInfo(Box::new(ApiStartupInfo::new(
+                    *self.inner.main_startup_info().get_main(),
+                    self.inner.dag_startup_info().map(|i| *i.get_dag_main()),
+                ))))
+            }
             ChainRequest::GetHeadChainStatus() => Ok(ChainResponse::ChainStatus(Box::new(
                 self.inner.main.status(),
             ))),
@@ -293,6 +301,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
 pub struct ChainReaderServiceInner {
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
+    dag_startup_info: Option<DagStartupInfo>,
     main: BlockChain,
     storage: Arc<dyn Store>,
     flexidag_service: ServiceRef<FlexidagService>,
@@ -304,6 +313,7 @@ impl ChainReaderServiceInner {
     pub fn new(
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
+        dag_startup_info: Option<DagStartupInfo>,
         storage: Arc<dyn Store>,
         flexidag_service: ServiceRef<FlexidagService>,
         dag: Option<BlockDAG>,
@@ -321,6 +331,7 @@ impl ChainReaderServiceInner {
         Ok(Self {
             config,
             startup_info,
+            dag_startup_info,
             main,
             storage,
             flexidag_service,
@@ -442,6 +453,9 @@ impl ReadableChainService for ChainReaderServiceInner {
     fn main_startup_info(&self) -> StartupInfo {
         self.startup_info.clone()
     }
+    fn dag_startup_info(&self) -> Option<DagStartupInfo> {
+        self.dag_startup_info.clone()
+    }
     fn main_blocks_by_number(
         &self,
         number: Option<BlockNumber>,
@@ -496,7 +510,7 @@ impl ReadableChainService for ChainReaderServiceInner {
     fn get_dag_accumulator_leaves(
         &self,
         req: GetDagAccumulatorLeaves,
-    ) -> anyhow::Result<Vec<TargetDagAccumulatorLeaf>> {
+    ) -> Result<Vec<TargetDagAccumulatorLeaf>> {
         Ok(async_std::task::block_on(self.flexidag_service.send(
             flexidag_service::GetDagAccumulatorLeaves {
                 leaf_index: req.accumulator_leaf_index,
@@ -515,7 +529,7 @@ impl ReadableChainService for ChainReaderServiceInner {
     fn get_target_dag_accumulator_leaf_detail(
         &self,
         req: GetTargetDagAccumulatorLeafDetail,
-    ) -> anyhow::Result<Vec<TargetDagAccumulatorLeafDetail>> {
+    ) -> Result<Vec<TargetDagAccumulatorLeafDetail>> {
         let dag_details =
             async_std::task::block_on(self.flexidag_service.send(GetDagAccumulatorLeafDetail {
                 leaf_index: req.leaf_index,

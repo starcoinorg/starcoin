@@ -14,6 +14,7 @@ use starcoin_storage::{
     block_info::BlockInfoStore, flexi_dag::SyncFlexiDagSnapshotHasher, BlockStore, Storage, Store,
     SyncFlexiDagStore,
 };
+use starcoin_types::startup_info::DagStartupInfo;
 use starcoin_types::{block::BlockHeader, dag_block::KTotalDifficulty};
 
 #[derive(Clone, Debug)]
@@ -460,13 +461,7 @@ impl ServiceHandler<Self, UpdateDagTips> for FlexidagService {
                         });
                         self.dag_accumulator = dag_accumulator;
 
-                        storage
-                            .get_startup_info()?
-                            .map(|mut startup_info| {
-                                startup_info.update_dag_main(header.id());
-                                storage.save_startup_info(startup_info)
-                            })
-                            .expect("starup info should not be none")
+                        storage.save_dag_startup_info(DagStartupInfo::new(header.id()))
                     }
                 } else {
                     Ok(()) // drop the block, the chain is still in single chain

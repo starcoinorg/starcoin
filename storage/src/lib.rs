@@ -24,6 +24,7 @@ use starcoin_accumulator::{
 };
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
+use starcoin_types::startup_info::DagStartupInfo;
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
     contract_event::ContractEvent,
@@ -219,6 +220,9 @@ impl StorageVersion {
 pub trait BlockStore {
     fn get_startup_info(&self) -> Result<Option<StartupInfo>>;
     fn save_startup_info(&self, startup_info: StartupInfo) -> Result<()>;
+
+    fn get_dag_startup_info(&self) -> Result<Option<DagStartupInfo>>;
+    fn save_dag_startup_info(&self, dag_startup_info: DagStartupInfo) -> Result<()>;
 
     fn get_genesis(&self) -> Result<Option<HashValue>>;
 
@@ -423,6 +427,15 @@ impl BlockStore for Storage {
 
     fn save_startup_info(&self, startup_info: StartupInfo) -> Result<()> {
         self.chain_info_storage.save_startup_info(startup_info)
+    }
+
+    fn get_dag_startup_info(&self) -> Result<Option<DagStartupInfo>> {
+        self.chain_info_storage.get_flexi_dag_startup_info()
+    }
+
+    fn save_dag_startup_info(&self, dag_startup_info: DagStartupInfo) -> Result<()> {
+        self.chain_info_storage
+            .save_flexi_dag_startup_info(dag_startup_info)
     }
 
     fn get_genesis(&self) -> Result<Option<HashValue>> {
@@ -696,7 +709,7 @@ impl SyncFlexiDagStore for Storage {
 
     fn get_dag_accumulator_info(&self) -> Result<Option<AccumulatorInfo>> {
         Ok(
-            if let Some(dag_main) = self.get_startup_info()?.and_then(|i| i.get_dag_main()) {
+            if let Some(dag_main) = self.get_dag_startup_info()?.map(|i| *i.get_dag_main()) {
                 Some(
                     self.query_by_hash(dag_main)?
                         .expect("snapshot should not be none")
@@ -719,7 +732,10 @@ impl SyncFlexiDagStore for Storage {
 
     fn get_latest_snapshot(&self) -> Result<Option<SyncFlexiDagSnapshot>> {
         Ok(
-            if let Some(dag_main) = self.get_startup_info()?.and_then(|i| i.get_dag_main()) {
+            if let Some(dag_main) = self
+                .get_dag_startup_info()?
+                .map(|info| *info.get_dag_main())
+            {
                 self.query_by_hash(dag_main)?
             } else {
                 None
