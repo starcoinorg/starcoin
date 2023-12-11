@@ -1027,6 +1027,8 @@ pub fn execute_empty_transaction_with_miner(
                 miner_account.private_key(),
                 sequence,
                 net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                DEFAULT_MAX_GAS_AMOUNT,
+                1,
                 net.chain_id(),
             );
             txns.push(txn);

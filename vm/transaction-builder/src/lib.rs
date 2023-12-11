@@ -910,7 +910,6 @@ pub fn build_signed_empty_txn(
         user_address,
         seq_num,
         empty_txn_payload(),
-        //DEFAULT_MAX_GAS_AMOUNT,
         max_gas_amount,
         gas_unit_price,
         expiration_timestamp_secs,
