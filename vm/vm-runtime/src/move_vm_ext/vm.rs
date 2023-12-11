@@ -1,13 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::move_vm_ext::session::SessionId;
-use crate::move_vm_ext::MoveResolverExt;
-use crate::natives;
+use crate::{
+    move_vm_ext::{session::SessionId, MoveResolverExt},
+    natives,
+};
 use move_table_extension::NativeTableContext;
-use move_vm_runtime::move_vm::MoveVM;
-use move_vm_runtime::native_extensions::NativeContextExtensions;
-use move_vm_runtime::session::Session;
+use move_vm_runtime::{
+    move_vm::MoveVM, native_extensions::NativeContextExtensions, session::Session,
+};
 use starcoin_gas::NativeGasParameters;
 use starcoin_vm_types::errors::{PartialVMResult, VMResult};
 use std::ops::Deref;

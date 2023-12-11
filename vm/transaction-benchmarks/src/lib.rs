@@ -3,8 +3,8 @@
 
 #![forbid(unsafe_code)]
 
-#[cfg(any(test, feature = "fuzzing"))]
 pub mod measurement;
-
-#[cfg(any(test, feature = "fuzzing"))]
 pub mod transactions;
+
+#[cfg(test)]
+mod test_peer_to_peer;

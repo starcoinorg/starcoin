@@ -22,6 +22,24 @@ impl WriteOp {
             WriteOp::Value(_) => false,
         }
     }
+
+    pub fn into_bytes(self) -> Option<Vec<u8>> {
+        use WriteOp::*;
+        match self {
+            Value(data) => Some(data),
+            Deletion => None,
+        }
+    }
+}
+
+pub trait TransactionWrite {
+    fn extract_raw_bytes(&self) -> Option<Vec<u8>>;
+}
+
+impl TransactionWrite for WriteOp {
+    fn extract_raw_bytes(&self) -> Option<Vec<u8>> {
+        self.clone().into_bytes()
+    }
 }
 
 impl std::fmt::Debug for WriteOp {

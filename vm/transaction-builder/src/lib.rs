@@ -6,28 +6,33 @@ use starcoin_config::{genesis_config::G_TOTAL_STC_AMOUNT, ChainNetwork};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_types::account::Account;
-use starcoin_vm_types::access::ModuleAccess;
-use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config;
-use starcoin_vm_types::account_config::{core_code_address, genesis_address};
-use starcoin_vm_types::file_format::CompiledModule;
-use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::identifier::Identifier;
-use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::language_storage::{StructTag, TypeTag};
-use starcoin_vm_types::on_chain_config::VMConfig;
-use starcoin_vm_types::on_chain_resource::nft::NFTUUID;
-use starcoin_vm_types::token::stc::{stc_type_tag, G_STC_TOKEN_CODE};
-use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::transaction::authenticator::{AccountPrivateKey, AuthenticationKey};
-use starcoin_vm_types::transaction::{
-    Module, Package, RawUserTransaction, ScriptFunction, SignedUserTransaction, Transaction,
-    TransactionPayload,
+
+use starcoin_vm_types::{
+    access::ModuleAccess,
+    account_address::AccountAddress,
+    account_config::{self, core_code_address, genesis_address},
+    file_format::CompiledModule,
+    genesis_config::ChainId,
+    identifier::Identifier,
+    language_storage::{ModuleId, StructTag, TypeTag},
+    on_chain_config::VMConfig,
+    on_chain_resource::nft::NFTUUID,
+    token::{
+        stc::{stc_type_tag, G_STC_TOKEN_CODE},
+        token_code::TokenCode,
+    },
+    transaction::{
+        authenticator::{AccountPrivateKey, AuthenticationKey},
+        Module, Package, RawUserTransaction, ScriptFunction, SignedUserTransaction, Transaction,
+        TransactionPayload,
+    },
+    value::MoveValue,
 };
-use starcoin_vm_types::value::MoveValue;
 use std::convert::TryInto;
-use stdlib::{module_to_package, stdlib_package};
-pub use stdlib::{stdlib_compiled_modules, stdlib_modules, StdLibOptions, StdlibVersion};
+pub use stdlib::{
+    module_to_package, stdlib_compiled_modules, stdlib_modules, stdlib_package, StdLibOptions,
+    StdlibVersion,
+};
 
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
 pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 40000000;
@@ -299,6 +304,7 @@ pub fn peer_to_peer_v2(
     sender: &Account,
     recipient: &AccountAddress,
     seq_num: u64,
+    expiration_timestamp_secs: u64,
     amount: u128,
     net: &ChainNetwork,
 ) -> SignedUserTransaction {
@@ -317,9 +323,9 @@ pub fn peer_to_peer_v2(
                 bcs_ext::to_bytes(&amount).unwrap(),
             ],
         )),
-        10000000,
-        1,
-        1000 + 60 * 60,
+        500000,
+        0,
+        expiration_timestamp_secs,
         net.chain_id(),
     ))
 }
@@ -896,14 +902,16 @@ pub fn build_signed_empty_txn(
     prikey: &AccountPrivateKey,
     seq_num: u64,
     expiration_timestamp_secs: u64,
+    max_gas_amount: u64,
+    gas_unit_price: u64,
     chain_id: ChainId,
 ) -> SignedUserTransaction {
     let txn = RawUserTransaction::new_with_default_gas_token(
         user_address,
         seq_num,
         empty_txn_payload(),
-        DEFAULT_MAX_GAS_AMOUNT,
-        1,
+        max_gas_amount,
+        gas_unit_price,
         expiration_timestamp_secs,
         chain_id,
     );

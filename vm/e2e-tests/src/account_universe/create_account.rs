@@ -55,7 +55,7 @@ impl AUTransactionGen for CreateAccountGen {
             sender.event_counter_created = true;
             universe.add_account(AccountData::with_account(
                 self.new_account.clone(),
-                self.amount,
+                self.amount as u128,
                 0,
                 AccountRoleSpecifier::default(),
             ));

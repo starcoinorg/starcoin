@@ -11,9 +11,9 @@ pub mod starcoin_vm;
 use move_core_types::vm_status::VMStatus;
 pub use move_vm_runtime::{move_vm, session};
 mod access_path_cache;
+pub mod block_executor;
 mod errors;
 pub mod move_vm_ext;
-pub mod parallel_executor;
 use crate::metrics::VMMetrics;
 use starcoin_vm_types::{
     access_path::AccessPath,

@@ -3,10 +3,10 @@
 
 use starcoin_crypto::HashValue;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
-use starcoin_types::error::BlockExecutorError;
-use starcoin_types::error::ExecutorResult;
-use starcoin_types::transaction::TransactionStatus;
-use starcoin_types::transaction::{Transaction, TransactionInfo};
+use starcoin_types::{
+    error::{BlockExecutorError, ExecutorResult},
+    transaction::{Transaction, TransactionInfo, TransactionStatus},
+};
 use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};

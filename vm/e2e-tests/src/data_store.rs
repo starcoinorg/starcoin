@@ -1,7 +1,7 @@
 // Copyright (c) Starcoin
 // SPDX-License-Identifier: Apache-2.0
 
-//! Support for mocking the Aptos data store.
+//! Support for mocking the Starcoin data store.
 use crate::account::AccountData;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -16,8 +16,10 @@ use starcoin_vm_types::{
 use starcoin_crypto::HashValue;
 use starcoin_statedb::ChainStateWriter;
 use starcoin_types::state_set::ChainStateSet;
-use std::collections::HashMap;
-use std::sync::{RwLock, RwLockReadGuard};
+use std::{
+    collections::HashMap,
+    sync::{RwLock, RwLockReadGuard},
+};
 
 /// Dummy genesis ChangeSet for testing
 // TODO(BobOng): e2e-test
@@ -46,6 +48,8 @@ impl FakeDataStore {
 
     /// Adds a [`WriteSet`] to this data store.
     pub fn add_write_set(&self, write_set: &WriteSet) {
+        //println!("FakeDataStore::add_write_set | {:#?}", write_set);
+
         let mut write_handle = self.state_data.write().expect("Panic for lock");
         for (state_key, write_op) in write_set {
             match write_op {
@@ -99,6 +103,7 @@ impl FakeDataStore {
 // TODO: only the "sync" get is implemented
 impl StateView for FakeDataStore {
     fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+        // println!("StateView::get_state_value, state_key: {:#?}", state_key);
         Ok(self.inner().get(state_key).cloned())
     }
 

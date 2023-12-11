@@ -1,4 +1,4 @@
-// Copyright (c) Starcoin
+// Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 use criterion::Criterion;

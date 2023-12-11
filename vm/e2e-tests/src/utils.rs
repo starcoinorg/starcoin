@@ -2,7 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #![forbid(unsafe_code)]
-use crate::{account::Account, compile, executor::FakeExecutor};
+
+use crate::{
+    account::{Account, AccountData, AccountRoleSpecifier},
+    compile,
+    executor::FakeExecutor,
+};
 
 pub fn close_module_publishing(
     executor: &mut FakeExecutor,
@@ -18,7 +23,7 @@ pub fn close_module_publishing(
             return;
         }
         ";
-        compile::compile_script(script, vec![])
+        compile::compile_script_with_extra_deps(script, vec![])
     };
 
     let txn = dr_account
@@ -31,8 +36,49 @@ pub fn close_module_publishing(
     *dr_seqno = dr_seqno.checked_add(1).unwrap();
 }
 
-pub fn start_with_released_df() -> (FakeExecutor, Account) {
-    // TODO(BobOng): e2e-test
+pub fn start_with_released_df() -> (FakeExecutor, Account, Account, Account) {
+    let mut executor = FakeExecutor::from_test_genesis();
+
+    let dd_account = Account::new_testing_dd();
+    let dr_account = Account::new_starcoin_root();
+    let tc_account = Account::new_blessed_tc();
+
+    // dd_account.rotate_key(
+    //     bcs::from_bytes(executor::RELEASE_1_1_GENESIS_PRIVKEY).unwrap(),
+    //     bcs::from_bytes(executor::RELEASE_1_1_GENESIS_PUBKEY).unwrap(),
+    // );
+    // dr_account.rotate_key(
+    //     bcs::from_bytes(executor::RELEASE_1_1_GENESIS_PRIVKEY).unwrap(),
+    //     bcs::from_bytes(executor::RELEASE_1_1_GENESIS_PUBKEY).unwrap(),
+    // );
+    // tc_account.rotate_key(
+    //     bcs::from_bytes(executor::RELEASE_1_1_GENESIS_PRIVKEY).unwrap(),
+    //     bcs::from_bytes(executor::RELEASE_1_1_GENESIS_PUBKEY).unwrap(),
+    // );
+
+    executor.add_account_data(&AccountData::with_account(
+        dd_account.clone(),
+        100_000_000,
+        0,
+        AccountRoleSpecifier::Root,
+    ));
+
+    executor.add_account_data(&AccountData::with_account(
+        dr_account.clone(),
+        100_000_000,
+        0,
+        AccountRoleSpecifier::Root,
+    ));
+
+    executor.add_account_data(&AccountData::with_account(
+        tc_account.clone(),
+        100_000_000,
+        0,
+        AccountRoleSpecifier::Root,
+    ));
+
+    (executor, dr_account, tc_account, dd_account)
+
     // let executor = FakeExecutor::from_fresh_genesis();
     // let mut dr_account = Account::new_starcoin_root();
     //
@@ -40,10 +86,10 @@ pub fn start_with_released_df() -> (FakeExecutor, Account) {
     // dr_account.rotate_key(private_key, public_key);
     //
     // (executor, dr_account)
-    (
-        FakeExecutor::from_fresh_genesis(),
-        Account::new_starcoin_root(),
-    )
+    // (
+    //     FakeExecutor::from_fresh_genesis(),
+    //     Account::new_starcoin_root(),
+    // )
 }
 
 pub fn upgrade_df(

@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_logger::prelude::*;
-use starcoin_vm_types::account_config::G_ACCOUNT_MODULE;
-use starcoin_vm_types::errors::VMError;
-use starcoin_vm_types::vm_status::{AbortLocation, StatusCode, VMStatus};
+use starcoin_vm_types::{
+    account_config::G_ACCOUNT_MODULE,
+    errors::VMError,
+    vm_status::{AbortLocation, StatusCode, VMStatus},
+};
 
 //should be consistent with ErrorCode.move
 const PROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0;
@@ -94,6 +96,7 @@ pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
                     StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
                 }
             };
+            // println!("YSG {:#?}", new_major_status);
             VMStatus::Error(new_major_status)
         }
         status @ VMStatus::ExecutionFailure { .. } | status @ VMStatus::Error(_) => {

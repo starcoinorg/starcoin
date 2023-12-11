@@ -5,9 +5,9 @@ use crate::move_vm_ext::{MoveResolverExt, SessionId};
 use anyhow::Result;
 use move_core_types::vm_status::{StatusCode, VMStatus};
 use move_vm_runtime::move_vm_adapter::SessionAdapter;
-use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::{
     block_metadata::BlockMetadata,
+    state_view::StateView,
     transaction::{
         SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionOutput,
         TransactionStatus,

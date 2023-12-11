@@ -113,6 +113,10 @@ impl AccessPath {
             _ => None,
         }
     }
+
+    pub fn is_code(&self) -> bool {
+        self.path.is_code()
+    }
 }
 
 impl Serialize for AccessPath {

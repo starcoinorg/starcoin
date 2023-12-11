@@ -17,6 +17,15 @@ pub fn genesis_address() -> AccountAddress {
     CORE_CODE_ADDRESS
 }
 
+pub fn reserved_vm_address() -> AccountAddress {
+    AccountAddress::new([0u8; AccountAddress::LENGTH])
+}
+
+pub fn treasury_compliance_account_address() -> AccountAddress {
+    AccountAddress::from_hex_literal("0xB1E55ED")
+        .expect("Parsing valid hex literal should always succeed")
+}
+
 pub const TABLE_ADDRESS_LIST_LEN: usize = 32;
 pub const TABLE_ADDRESS_LIST: [&str; TABLE_ADDRESS_LIST_LEN] = [
     "0x31", "0x32", "0x33", "0x34", "0x35", "0x36", "0x37", "0x38", "0x39", "0x3a", "0x3b", "0x3c",

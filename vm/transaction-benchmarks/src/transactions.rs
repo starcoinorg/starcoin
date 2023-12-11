@@ -8,21 +8,18 @@ use proptest::{
     test_runner::TestRunner,
 };
 use starcoin_crypto::HashValue;
+use std::time::Instant;
 
-use starcoin_language_e2e_tests::account::AccountData;
 use starcoin_language_e2e_tests::{
-    account_universe::{log_balance_strategy, AUTransactionGen, AccountUniverseGen},
+    account::AccountData,
+    account_universe::{AUTransactionGen, AccountUniverseGen},
+    common_transactions::duration_since_epoch,
     executor::FakeExecutor,
     gas_costs::TXN_RESERVED,
 };
-
 use starcoin_types::{block_metadata::BlockMetadata, transaction::Transaction};
-
-use starcoin_vm_runtime::{
-    parallel_executor::ParallelStarcoinVM, starcoin_vm::StarcoinVM, VMExecutor,
-};
-use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm_runtime::{block_executor::BlockStarcoinVM, starcoin_vm::StarcoinVM};
+use starcoin_vm_types::{genesis_config::ChainId, transaction::authenticator::AuthenticationKey};
 
 /// Benchmarking support for transactions.
 #[derive(Clone, Debug)]
@@ -38,16 +35,16 @@ where
     S::Value: AUTransactionGen,
 {
     /// The number of accounts created by default.
-    //pub const DEFAULT_NUM_ACCOUNTS: usize = 1000;
+    pub const DEFAULT_NUM_ACCOUNTS: usize = 1000;
 
     /// The number of transactions created by default.
-    // pub const DEFAULT_NUM_TRANSACTIONS: usize = 1000;
+    pub const DEFAULT_NUM_TRANSACTIONS: usize = 1000;
 
     /// Creates a new transaction bencher with default settings.
-    pub fn new(strategy: S, num_accounts: usize, num_transactions: usize) -> Self {
+    pub fn new(strategy: S) -> Self {
         Self {
-            num_accounts,
-            num_transactions,
+            num_accounts: Self::DEFAULT_NUM_ACCOUNTS,
+            num_transactions: Self::DEFAULT_NUM_TRANSACTIONS,
             strategy,
         }
     }
@@ -95,6 +92,43 @@ where
             BatchSize::LargeInput,
         )
     }
+
+    /// Runs the bencher.
+    pub fn blockstm_benchmark(
+        &self,
+        num_accounts: usize,
+        num_txn: usize,
+        run_par: bool,
+        run_seq: bool,
+        num_warmups: usize,
+        num_runs: usize,
+        concurrency_level: usize,
+    ) -> (Vec<usize>, Vec<usize>) {
+        let mut par_tps = Vec::new();
+        let mut seq_tps = Vec::new();
+
+        let total_runs = num_warmups + num_runs;
+        for i in 0..total_runs {
+            let state = TransactionBenchState::with_size(&self.strategy, num_accounts, num_txn);
+
+            if i < num_warmups {
+                println!("WARMUP - ignore results");
+                state.execute_blockstm_benchmark(concurrency_level, run_par, run_seq);
+            } else {
+                println!(
+                    "RUN benchmark for: num_threads = {}, \
+                        num_account = {}, \
+                        block_size = {}",
+                    concurrency_level, num_accounts, num_txn,
+                );
+                let tps = state.execute_blockstm_benchmark(concurrency_level, run_par, run_seq);
+                par_tps.push(tps.0);
+                seq_tps.push(tps.1);
+            }
+        }
+
+        (par_tps, seq_tps)
+    }
 }
 
 struct TransactionBenchState {
@@ -139,14 +173,20 @@ impl TransactionBenchState {
         //     vec![],
         //     1,
         // );
-        let minter_account = AccountData::new(10000, 0);
+        // XXX FIXME YSG
+        // let minter_account = AccountData::new(10000, 0);
+        let minter_account = AccountData::new(10_000_000_000, 0);
+        state.executor.add_account_data(&minter_account);
+        let timestamp = duration_since_epoch().as_millis() as u64;
         let new_block = BlockMetadata::new(
             HashValue::zero(),
-            0,
+            timestamp,
             minter_account.address().clone(),
-            Some(AuthenticationKey::ed25519(&minter_account.account().pubkey)),
+            Some(AuthenticationKey::ed25519(
+                &minter_account.account().public_key(),
+            )),
             0,
-            0,
+            1,
             ChainId::test(),
             0,
         );
@@ -196,23 +236,38 @@ impl TransactionBenchState {
     }
 
     /// Executes this state in a single block.
-    fn execute(self) {
+    fn execute(self) -> usize {
         // The output is ignored here since we're just testing transaction performance, not trying
         // to assert correctness.
-        StarcoinVM::execute_block(
-            self.transactions,
-            self.executor.get_state_view(),
-            None,
-            None,
-        )
-        .expect("VM should not fail to start");
+        StarcoinVM::set_concurrency_level_once(1);
+
+        let transactions_len = self.transactions.len();
+
+        // this bench execution with TPS
+        let timer = Instant::now();
+        let useless = self
+            .executor
+            .execute_transaction_block(self.transactions)
+            .expect("VM should not fail to start");
+        // let useless = StarcoinVM::execute_block(
+        //     self.transactions,
+        //     self.executor.get_state_view(),
+        //     None,
+        //     None,
+        // )
+        // .expect("VM should not fail to start");
+
+        drop(useless);
+
+        let exec_t = timer.elapsed();
+        transactions_len * 1000 / exec_t.as_millis() as usize
     }
 
     /// Executes this state in a single block via parallel execution.
     fn execute_parallel(self) {
         // The output is ignored here since we're just testing transaction performance, not trying
         // to assert correctness.
-        ParallelStarcoinVM::execute_block(
+        BlockStarcoinVM::execute_block(
             self.transactions,
             self.executor.get_state_view(),
             num_cpus::get(),
@@ -220,6 +275,21 @@ impl TransactionBenchState {
             None,
         )
         .expect("VM should not fail to start");
+    }
+
+    fn execute_blockstm_benchmark(
+        self,
+        concurrency_level: usize,
+        run_par: bool,
+        run_seq: bool,
+    ) -> (usize, usize) {
+        BlockStarcoinVM::execute_block_benchmark(
+            self.transactions,
+            self.executor.get_state_view(),
+            concurrency_level,
+            run_par,
+            run_seq,
+        )
     }
 }
 
@@ -229,7 +299,9 @@ fn universe_strategy(
     num_transactions: usize,
 ) -> impl Strategy<Value = AccountUniverseGen> {
     // Multiply by 5 past the number of  to provide
-    let max_balance = TXN_RESERVED * num_transactions as u64 * 5;
-    let balance_strategy = log_balance_strategy(max_balance);
-    AccountUniverseGen::strategy(num_accounts, balance_strategy)
+    // XXX FIXME YSG
+    // let max_balance = TXN_RESERVED * num_transactions as u64 * 5;
+    // let max_balance = 5_000_000_000;
+    let balance = TXN_RESERVED * num_transactions as u64 * 5;
+    AccountUniverseGen::strategy(num_accounts, balance..(balance + 1))
 }

@@ -35,7 +35,7 @@ impl AccountData {
                 |(account, balance, sequence_number, sent_events_count, received_events_count)| {
                     AccountData::with_account_and_event_counts(
                         account,
-                        balance,
+                        balance as u128,
                         sequence_number,
                         sent_events_count,
                         received_events_count,

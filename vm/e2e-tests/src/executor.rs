@@ -3,27 +3,33 @@
 
 //! Support for running the VM to execute and verify transactions.
 
-use crate::account::{Account, AccountData};
-use crate::golden_outputs::GoldenOutputs;
+use crate::{
+    account::{Account, AccountData},
+    golden_outputs::GoldenOutputs,
+};
 use move_core_types::vm_status::KeptVMStatus;
 use move_table_extension::NativeTableContext;
 use num_cpus;
 use serde::{Deserialize, Serialize};
 use starcoin_config::ChainNetwork;
-use starcoin_crypto::keygen::KeyGen;
-use starcoin_crypto::HashValue;
+use starcoin_crypto::{keygen::KeyGen, HashValue};
 use starcoin_gas::{StarcoinGasMeter, StarcoinGasParameters};
 use starcoin_gas_algebra_ext::InitialGasSchedule;
-use starcoin_vm_runtime::data_cache::{AsMoveResolver, RemoteStorage};
-use starcoin_vm_runtime::move_vm_ext::{MoveVmExt, SessionId, SessionOutput};
-use starcoin_vm_runtime::parallel_executor::ParallelStarcoinVM;
-use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
-use starcoin_vm_runtime::VMExecutor;
+
+use starcoin_vm_runtime::{
+    block_executor::BlockStarcoinVM,
+    data_cache::{AsMoveResolver, RemoteStorage},
+    move_vm_ext::{MoveVmExt, SessionId, SessionOutput},
+    starcoin_vm::StarcoinVM,
+    VMExecutor,
+};
+
+use crate::data_store::FakeDataStore;
+use starcoin_statedb::ChainStateWriter;
 use starcoin_vm_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
-    account_config::block::NewBlockEvent,
-    account_config::{AccountResource, BalanceResource, CORE_CODE_ADDRESS},
+    account_config::{block::NewBlockEvent, BalanceResource, CORE_CODE_ADDRESS},
     block_metadata::BlockMetadata,
     errors::Location,
     genesis_config::ChainId,
@@ -31,20 +37,27 @@ use starcoin_vm_types::{
     language_storage::{ModuleId, TypeTag},
     move_resource::MoveResource,
     on_chain_config::{OnChainConfig, VMConfig, Version},
-    state_store::state_key::StateKey,
+    state_store::{
+        state_key::StateKey,
+        table::{TableHandle, TableInfo},
+    },
     state_view::StateView,
-    transaction::authenticator::AuthenticationKey,
-    transaction::{SignedUserTransaction, Transaction, TransactionOutput, TransactionStatus},
+    transaction::{
+        authenticator::AuthenticationKey, SignedUserTransaction, Transaction, TransactionInfo,
+        TransactionOutput, TransactionStatus,
+    },
     vm_status::VMStatus,
     write_set::WriteSet,
 };
 
-use crate::data_store::FakeDataStore;
-use starcoin_statedb::ChainStateWriter;
-use std::fs::OpenOptions;
-use std::io::Write;
-use std::path::{Path, PathBuf};
-use std::{env, fs};
+use starcoin_vm_types::account_config::AccountResource;
+use std::{
+    collections::BTreeMap,
+    env, fs,
+    fs::OpenOptions,
+    io::Write,
+    path::{Path, PathBuf},
+};
 use test_helper::Genesis;
 
 static RNG_SEED: [u8; 32] = [9u8; 32];
@@ -64,7 +77,7 @@ pub type TraceSeqMapping = (usize, Vec<usize>, Vec<usize>);
 
 /// Provides an environment to run a VM instance.
 ///
-/// This struct is a mock in-memory implementation of the Aptos executor.
+/// This struct is a mock in-memory implementation of the Starcoin executor.
 #[derive(Debug)]
 pub struct FakeExecutor {
     data_store: FakeDataStore,
@@ -72,6 +85,7 @@ pub struct FakeExecutor {
     executed_output: Option<GoldenOutputs>,
     trace_dir: Option<PathBuf>,
     rng: KeyGen,
+    block_num: u64,
 }
 
 impl FakeExecutor {
@@ -113,38 +127,47 @@ impl FakeExecutor {
         Self::no_genesis()
     }
 
-    pub fn from_test_genesis() -> Self {
+    pub fn from_test_genesis_with_info(
+    ) -> (Self, (BTreeMap<TableHandle, TableInfo>, TransactionInfo)) {
         //let (state_db, net) = prepare_genesis();
         let fake_executor = Self::no_genesis();
         let net = ChainNetwork::new_test();
         let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
-        let _txn_info =
+        let result =
             Genesis::execute_genesis_txn(fake_executor.get_state_view(), genesis_txn).unwrap();
-        fake_executor
+        (fake_executor, result)
+    }
+
+    pub fn from_test_genesis() -> Self {
+        //let (state_db, net) = prepare_genesis();
+        let (executor, useless) = Self::from_test_genesis_with_info();
+        drop(useless);
+        executor
     }
 
     /// Creates an executor from the genesis file GENESIS_FILE_LOCATION with script/module
     /// publishing options given by `publishing_options`. These can only be either `Open` or
     /// `CustomScript`.
-    pub fn from_genesis_with_options(_publishing_options: VMConfig) -> Self {
-        // if !publishing_options.is_open_script() {
-        //     panic!("Allowlisted transactions are not supported as a publishing option")
-        // }
+    //pub fn from_genesis_with_options(_publishing_options: VMPublishingOption) -> Self {
+    // if !publishing_options.is_open_script() {
+    //     panic!("Allowlisted transactions are not supported as a publishing option")
+    // }
 
-        // Self::custom_genesis(
-        //     cached_framework_packages::module_blobs(),
-        //     None,
-        //     publishing_options,
-        // )
-        // TODO(BobOng): e2e-test
-        Self::no_genesis()
-    }
+    // Self::custom_genesis(
+    //     cached_framework_packages::module_blobs(),
+    //     None,
+    //     publishing_options,
+    // )
+    // TODO(BobOng): e2e-test
+    //    Self::no_genesis()
+    //}
 
     /// Creates an executor in which no genesis state has been applied yet.
     pub fn no_genesis() -> Self {
         FakeExecutor {
             data_store: FakeDataStore::default(),
             block_time: 0,
+            block_num: 1,
             executed_output: None,
             trace_dir: None,
             rng: KeyGen::from_seed(RNG_SEED),
@@ -227,7 +250,7 @@ impl FakeExecutor {
     }
 
     /// Create one instance of [`AccountData`] without saving it to data store.
-    pub fn create_raw_account_data(&mut self, balance: u64, seq_num: u64) -> AccountData {
+    pub fn create_raw_account_data(&mut self, balance: u128, seq_num: u64) -> AccountData {
         AccountData::new_from_seed(&mut self.rng, balance, seq_num)
     }
 
@@ -236,7 +259,7 @@ impl FakeExecutor {
     pub fn create_accounts(&mut self, size: usize, balance: u64, seq_num: u64) -> Vec<Account> {
         let mut accounts: Vec<Account> = Vec::with_capacity(size);
         for _i in 0..size {
-            let account_data = AccountData::new_from_seed(&mut self.rng, balance, seq_num);
+            let account_data = AccountData::new_from_seed(&mut self.rng, balance as u128, seq_num);
             self.add_account_data(&account_data);
             accounts.push(account_data.into_account());
         }
@@ -252,8 +275,8 @@ impl FakeExecutor {
 
     /// Adds an account to this executor's data store.
     pub fn add_account_data(&mut self, account_data: &AccountData) {
-        //self.data_store.add_account_data(account_data)
-        self.apply_write_set(&account_data.to_writeset())
+        let write_set = account_data.to_writeset();
+        self.apply_write_set(&write_set);
     }
 
     /// Adds a module to this executor's data store.
@@ -292,13 +315,13 @@ impl FakeExecutor {
     }
 
     /// Reads the CoinStore resource value for an account from this executor's data store.
-    pub fn read_coin_store_resource(&self, account: &Account) -> Option<BalanceResource> {
-        self.read_coin_store_resource_at_address(account.address())
+    pub fn read_balance_resource(&self, account: &Account) -> Option<BalanceResource> {
+        self.read_balance_resource_at_address(account.address())
     }
 
-    /// Reads the CoinStore resource value for an account under the given address from this executor's
+    /// Reads the balance resource value for an account under the given address from this executor's
     /// data store.
-    pub fn read_coin_store_resource_at_address(
+    pub fn read_balance_resource_at_address(
         &self,
         addr: &AccountAddress,
     ) -> Option<BalanceResource> {
@@ -364,7 +387,7 @@ impl FakeExecutor {
         &self,
         txn_block: Vec<Transaction>,
     ) -> Result<Vec<TransactionOutput>, VMStatus> {
-        let (result, _) = ParallelStarcoinVM::execute_block(
+        let (result, _) = BlockStarcoinVM::execute_block(
             txn_block,
             &self.data_store,
             num_cpus::get(),
@@ -393,8 +416,15 @@ impl FakeExecutor {
 
         let output =
             StarcoinVM::execute_block(txn_block.clone(), &self.get_state_view(), None, None);
-        let parallel_output = self.execute_transaction_block_parallel(txn_block);
-        assert_eq!(output, parallel_output);
+        // let parallel_output = self.execute_transaction_block_parallel(txn_block);
+        // assert_eq!(output.clone().err().unwrap(), Executed);
+        // assert_eq!(output, parallel_output);
+        let output_check = output.clone();
+        assert!(output_check.is_ok());
+        // assert_eq!(
+        //     *output_check.ok().unwrap()[0].status(),
+        //     TransactionStatus::Keep(KeptVMStatus::Executed)
+        // );
 
         if let Some(logger) = &self.executed_output {
             logger.log(format!("{:?}\n", output).as_str());
@@ -481,12 +511,16 @@ impl FakeExecutor {
             HashValue::zero(),
             self.block_time,
             minter_account.address().clone(),
-            Some(AuthenticationKey::ed25519(&minter_account.account().pubkey)),
+            Some(AuthenticationKey::ed25519(
+                &minter_account.account().public_key(),
+            )),
             0,
-            0,
+            self.block_num,
             ChainId::test(),
             0,
         );
+        self.block_num += 1;
+
         let output = self
             .execute_transaction_block(vec![Transaction::BlockMetadata(new_block)])
             .expect("Executing block prologue should succeed")

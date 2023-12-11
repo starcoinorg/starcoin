@@ -731,6 +731,10 @@ impl TransactionOutput {
         }
         table_items
     }
+
+    pub fn get_writes(&self) -> WriteSet {
+        self.write_set.clone()
+    }
 }
 
 /// `TransactionInfo` is the object we store in the transaction accumulator. It consists of the
