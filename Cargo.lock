@@ -9245,7 +9245,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-block-executor"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "anyhow",
  "arc-swap",
@@ -9868,7 +9868,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-language-e2e-testsuite"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "bcs",
  "bcs-ext",
@@ -10087,7 +10087,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-mvhashmap"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "arc-swap",
  "crossbeam",
@@ -10360,7 +10360,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-proptest-helpers"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "crossbeam",
  "proptest",
