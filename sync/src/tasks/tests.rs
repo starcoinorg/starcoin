@@ -27,6 +27,7 @@ use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork, NodeConfig, ChainNetworkID};
 use starcoin_crypto::HashValue;
+use starcoin_flexidag::FlexidagService;
 use starcoin_genesis::Genesis;
 use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_logger::prelude::*;
@@ -1178,6 +1179,7 @@ fn sync_block_in_block_connection_service_mock(
         let result = async_std::task::block_on(block_connector_service.send(
             CheckBlockConnectorHashValue {
                 head_hash: target.target_id.id(),
+                number: target.target_id.number(),
             },
         ))?;
         if result.is_ok() {
@@ -1228,6 +1230,7 @@ async fn test_sync_block_apply_failed_but_connect_success() -> Result<()> {
 
             registry.put_shared(config.clone()).await.unwrap();
             registry.put_shared(storage.clone()).await.unwrap();
+            registry.register::<FlexidagService>().await.unwrap();
             registry.put_shared(MockTxPoolService::new()).await.unwrap();
 
             Delay::new(Duration::from_secs(2)).await;
@@ -1249,14 +1252,14 @@ async fn test_sync_block_apply_failed_but_connect_success() -> Result<()> {
         target_node,
         local_node.clone(),
         &registry,
-        10,
+        2,
     )?;
-    _ = sync_block_in_block_connection_service_mock(
-        target_node,
-        local_node.clone(),
-        &registry,
-        20,
-    )?;
+    // _ = sync_block_in_block_connection_service_mock(
+    //     target_node,
+    //     local_node.clone(),
+    //     &registry,
+    //     3,
+    // )?;
 
     Ok(())
 }

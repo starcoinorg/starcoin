@@ -232,9 +232,11 @@ where
 
         // apply but no connection
         let verified_block = self.main.verify_with_verifier::<FullVerifier>(block)?;
-        let _executed_block = self.main.execute(verified_block)?;
-
-        bail!("failed to apply for tesing the connection later!");
+        let executed_block = self.main.execute(verified_block)?;
+        let enacted_blocks = vec![executed_block.block().clone()];
+        self.do_new_head(executed_block, 1, enacted_blocks, 0, vec![])?;
+        // bail!("failed to apply for tesing the connection later!");
+        Ok(())
     }
 
     // for sync task to connect to its chain, if chain's total difficulties is larger than the main
@@ -262,9 +264,10 @@ where
         let branch_total_difficulty = new_branch.get_total_difficulty()?;
         if branch_total_difficulty > main_total_difficulty {
             // todo: handle StartupInfo.dag_main
-            self.update_startup_info(new_branch.head_block().header())?;
+            self.main = new_branch;
+            self.update_startup_info(self.main.head_block().header())?;
             ctx.broadcast(NewHeadBlock {
-                executed_block: Arc::new(new_branch.head_block()),
+                executed_block: Arc::new(self.main.head_block()),
                 // tips: self.main.status().tips_hash.clone(),
             });
             Ok(())

@@ -47,6 +47,7 @@ impl ServiceRequest for ExecuteRequest {
 #[derive(Debug, Clone)]
 pub struct CheckBlockConnectorHashValue {
     pub head_hash: HashValue,
+    pub number: u64,
 }
 
 #[cfg(test)]
