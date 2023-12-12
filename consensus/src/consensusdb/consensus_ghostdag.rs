@@ -6,7 +6,6 @@ use super::{
     writer::BatchDbWriter,
 };
 use crate::define_schema;
-use starcoin_logger::prelude::info;
 use starcoin_types::blockhash::{
     BlockHashMap, BlockHashes, BlockLevel, BlueWorkType, HashKTypeMap,
 };

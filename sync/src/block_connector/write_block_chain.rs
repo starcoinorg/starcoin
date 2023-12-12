@@ -579,10 +579,10 @@ where
             return Ok(ConnectOk::MainDuplicate);
         }
 
-        let parent_hash = block.parent_hash()?;
-
-        if self.main.current_header().id() == parent_hash && !self.block_exist(block_id)? {
-            let executed_block = self.main.apply(block.clone())?;
+        if self.main.current_header().id() == block.header().parent_hash()
+            && !self.block_exist(block_id)?
+        {
+            let executed_block = self.main.apply(block)?;
             let enacted_blocks = vec![executed_block.block().clone()];
             self.do_new_head(executed_block.clone(), 1, enacted_blocks, 0, vec![])?;
             self.broadcast_new_head(executed_block.clone());

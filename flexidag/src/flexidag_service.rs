@@ -307,31 +307,30 @@ impl ServiceFactory<Self> for FlexidagService {
     fn create(ctx: &mut ServiceContext<FlexidagService>) -> Result<Self> {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
-        let (dag, dag_accumulator) =
-            BlockDAG::try_init_with_storage(storage.clone(), config.clone())?;
+        let (dag, dag_accumulator) = BlockDAG::try_init_with_storage(storage.clone(), config)?;
         if let Some(dag) = &dag {
             ctx.put_shared(dag.clone())?;
         }
-        let tip_info = dag_accumulator.as_ref().map(|accumulator| {
+        let tip_info = dag_accumulator.as_ref().and_then(|accumulator| {
             let tips_index = accumulator.num_leaves();
-            let tips_key = accumulator
+            accumulator
                 .get_leaf(tips_index - 1)
                 .expect("failed to read the dag snapshot hash")
-                .expect("the dag snapshot hash is none");
-            let snapshot = storage
-                .query_by_hash(tips_key)
-                .expect("failed to read the snapsho object")
-                .expect("dag snapshot object is none");
-            TipInfo {
-                tips: Some(snapshot.child_hashes),
-                k_total_difficulties: snapshot.k_total_difficulties,
-            }
+                .and_then(|tips_key| {
+                    storage
+                        .query_by_hash(tips_key)
+                        .expect("failed to read the snapshot object")
+                })
+                .map(|snapshot| TipInfo {
+                    tips: Some(snapshot.child_hashes),
+                    k_total_difficulties: snapshot.k_total_difficulties,
+                })
         });
         Ok(Self {
             dag,
             dag_accumulator,
             tip_info,
-            storage: storage.clone(),
+            storage,
         })
     }
 }

@@ -11,7 +11,7 @@ use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::debug;
 use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
-use std::{backtrace::Backtrace, collections::HashSet, str::FromStr};
+use std::{collections::HashSet, str::FromStr};
 
 #[derive(Debug)]
 pub enum Verifier {

@@ -433,7 +433,7 @@ impl BlockHeader {
             chain_id,
             0,
             BlockHeaderExtra::default(),
-            Some(vec![]),
+            None,
         )
     }
 

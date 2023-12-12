@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::{BlockHeader, BlockInfo, BlockNumber};
+use crate::block::{BlockHeader, BlockInfo, BlockNumber, OldBlockHeader};
 use crate::dag_block::KTotalDifficulty;
 use anyhow::Result;
 use bcs_ext::{BCSCodec, Sample};
@@ -24,6 +24,36 @@ pub struct ChainInfo {
     status: ChainStatus,
     flexi_dag_accumulator_info: Option<AccumulatorInfo>,
     k_total_difficulties: Option<BTreeSet<KTotalDifficulty>>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename = "ChainInfo")]
+pub struct OldChainInfo {
+    chain_id: ChainId,
+    genesis_hash: HashValue,
+    status: OldChainStatus,
+}
+
+impl From<ChainInfo> for OldChainInfo {
+    fn from(value: ChainInfo) -> Self {
+        Self {
+            chain_id: value.chain_id,
+            genesis_hash: value.genesis_hash,
+            status: value.status.into(),
+        }
+    }
+}
+
+impl From<OldChainInfo> for ChainInfo {
+    fn from(value: OldChainInfo) -> Self {
+        Self {
+            chain_id: value.chain_id,
+            genesis_hash: value.genesis_hash,
+            status: value.status.into(),
+            flexi_dag_accumulator_info: None,
+            k_total_difficulties: None,
+        }
+    }
 }
 
 impl ChainInfo {
@@ -133,6 +163,32 @@ pub struct ChainStatus {
     pub info: BlockInfo,
     /// tips
     tips_hash: Option<Vec<HashValue>>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename = "ChainStatus")]
+pub struct OldChainStatus {
+    pub head: OldBlockHeader,
+    pub info: BlockInfo,
+}
+
+impl From<ChainStatus> for OldChainStatus {
+    fn from(value: ChainStatus) -> Self {
+        Self {
+            head: value.head.into(),
+            info: value.info,
+        }
+    }
+}
+
+impl From<OldChainStatus> for ChainStatus {
+    fn from(value: OldChainStatus) -> Self {
+        Self {
+            head: value.head.into(),
+            info: value.info,
+            tips_hash: None,
+        }
+    }
 }
 
 impl ChainStatus {

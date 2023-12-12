@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::{anyhow, Ok};
@@ -10,7 +8,8 @@ use network_p2p::business_layer_handle::HandshakeResult;
 use network_p2p::{business_layer_handle::BusinessLayerHandle, protocol::rep, PeerId};
 use sc_peerset::ReputationChange;
 use serde::{Deserialize, Serialize};
-use starcoin_types::startup_info::ChainInfo;
+use starcoin_types::startup_info::{ChainInfo, OldChainInfo};
+use std::borrow::Cow;
 
 /// Current protocol version.
 pub(crate) const CURRENT_VERSION: u32 = 6;
@@ -30,6 +29,45 @@ pub struct Status {
     pub rpc_protocols: Vec<Cow<'static, str>>,
     /// the generic data related to the peer
     pub info: ChainInfo,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename = "Status")]
+pub struct StatusV5 {
+    /// Protocol version.
+    pub version: u32,
+    /// Minimum supported version.
+    pub min_supported_version: u32,
+    /// Tell other peer which notification protocols we support.
+    pub notif_protocols: Vec<Cow<'static, str>>,
+    /// Tell other peer which rpc api we support.
+    pub rpc_protocols: Vec<Cow<'static, str>>,
+    /// the generic data related to the peer
+    pub info: OldChainInfo,
+}
+
+impl From<StatusV5> for Status {
+    fn from(value: StatusV5) -> Self {
+        Self {
+            version: value.version,
+            min_supported_version: value.min_supported_version,
+            notif_protocols: value.notif_protocols,
+            rpc_protocols: value.rpc_protocols,
+            info: value.info.into(),
+        }
+    }
+}
+
+impl From<Status> for StatusV5 {
+    fn from(value: Status) -> Self {
+        Self {
+            version: value.version,
+            min_supported_version: value.min_supported_version,
+            notif_protocols: value.notif_protocols,
+            rpc_protocols: value.rpc_protocols,
+            info: value.info.into(),
+        }
+    }
 }
 
 pub struct Networkp2pHandle {
@@ -96,11 +134,25 @@ impl BusinessLayerHandle for Networkp2pHandle {
     ) -> Result<HandshakeResult, ReputationChange> {
         match Status::decode(&received_handshake[..]) {
             std::result::Result::Ok(status) => self.inner_handshake(peer_id, status),
-            Err(err) => {
-                error!(target: "network-p2p", "Couldn't decode handshake packet sent by {}: {:?}: {}", peer_id, hex::encode(received_handshake), err);
-                Err(rep::BAD_MESSAGE)
-            }
+            Err(err) => match StatusV5::decode(&received_handshake[..]) {
+                Result::Ok(s5) => self.inner_handshake(peer_id, Status::from(s5)),
+                Err(_) => {
+                    error!(target: "network-p2p", "Couldn't decode handshake packet sent by {}: {:?}: {}", peer_id, hex::encode(received_handshake), err);
+                    Err(rep::BAD_MESSAGE)
+                }
+            },
         }
+    }
+
+    fn build_handshake_msg(
+        &mut self,
+        notif_protocols: Vec<std::borrow::Cow<'static, str>>,
+        rpc_protocols: Vec<std::borrow::Cow<'static, str>>,
+    ) -> Result<Vec<u8>, anyhow::Error> {
+        self.status.notif_protocols = notif_protocols;
+        self.status.rpc_protocols = rpc_protocols;
+
+        StatusV5::from(self.status.clone()).encode()
     }
 
     fn get_generic_data(&self) -> Result<Vec<u8>, anyhow::Error> {
@@ -135,15 +187,5 @@ impl BusinessLayerHandle for Networkp2pHandle {
                 ))
             }
         }
-    }
-
-    fn build_handshake_msg(
-        &mut self,
-        notif_protocols: Vec<std::borrow::Cow<'static, str>>,
-        rpc_protocols: Vec<std::borrow::Cow<'static, str>>,
-    ) -> Result<Vec<u8>, anyhow::Error> {
-        self.status.notif_protocols = notif_protocols;
-        self.status.rpc_protocols = rpc_protocols;
-        self.status.encode()
     }
 }

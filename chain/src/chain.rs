@@ -22,7 +22,7 @@ use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::{block_info, Store};
+use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
@@ -1316,6 +1316,9 @@ impl ChainWriter for BlockChain {
     }
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
+        if executed_block.block.header.number() >= self.dag_fork_height() {
+            return self.connect_dag(executed_block);
+        }
         let (block, block_info) = (executed_block.block(), executed_block.block_info());
         debug_assert!(block.header().parent_hash() == self.status.status.head().id());
         //TODO try reuse accumulator and state db.
@@ -1334,16 +1337,6 @@ impl ChainWriter for BlockChain {
         );
 
         self.statedb = ChainStateDB::new(self.storage.clone().into_super_arc(), Some(state_root));
-        // let tips = self.status.status.tips_hash.clone();
-        // let next_tips = match tips {
-        //     Some(mut tips) => {
-        //         if !tips.contains(&block.header().id()) {
-        //             tips.push(block.header().id());
-        //         }
-        //         Some(tips)
-        //     }
-        //     None => None,
-        // };
         self.status = ChainStatusWithBlock {
             status: ChainStatus::new(
                 block.header().clone(),
