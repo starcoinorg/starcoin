@@ -34,7 +34,7 @@ pub struct TargetDagAccumulatorLeafDetail {
     pub accumulator_root: HashValue,
     pub tips: Vec<HashValue>,
     pub head_block_id: HashValue,
-    pub k_total_difficulties: BTreeSet<KTotalDifficulty>
+    pub k_total_difficulties: BTreeSet<KTotalDifficulty>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

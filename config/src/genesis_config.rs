@@ -561,8 +561,6 @@ impl ChainNetwork {
     }
 }
 
-
-
 pub trait FutureBlockParameterResolver {
     fn resolve(&self, parameter: &FutureBlockParameter) -> Result<GenesisBlockParameter>;
 }
@@ -687,8 +685,6 @@ impl GenesisConfig {
         ConsensusStrategy::try_from(self.consensus_config.strategy)
             .expect("consensus strategy config error.")
     }
-
-
 }
 
 static G_UNCLE_RATE_TARGET: u64 = 240;

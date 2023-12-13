@@ -12,12 +12,12 @@ use network_api::peer_score::PeerScoreMetrics;
 use network_api::{PeerId, PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
-use starcoin_chain_api::{ChainReader};
+use starcoin_chain_api::ChainReader;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_flexidag::flexidag_service::{GetDagAccumulatorInfo, GetDagTips};
-use starcoin_flexidag::{FlexidagService};
+use starcoin_flexidag::FlexidagService;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
 use starcoin_network::PeerEvent;
@@ -36,7 +36,7 @@ use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
 use std::result::Result::Ok;
-use std::sync::{Arc};
+use std::sync::Arc;
 use std::time::Duration;
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
 
@@ -125,7 +125,7 @@ impl SyncService {
         })
     }
 
-     pub async fn create_verified_client(
+    pub async fn create_verified_client(
         network: NetworkServiceRef,
         config: Arc<NodeConfig>,
         peer_strategy: Option<PeerStrategy>,
@@ -275,62 +275,84 @@ impl SyncService {
                     format_err!("Can not find block info by id: {}", current_block_id)
                 })?;
 
-            let op_local_dag_accumulator_info = flexidag_service.send(GetDagAccumulatorInfo).await??;
+            let op_local_dag_accumulator_info =
+                flexidag_service.send(GetDagAccumulatorInfo).await??;
 
             if let Some(local_dag_accumulator_info) = op_local_dag_accumulator_info {
-                let rpc_client = Self::create_verified_client(network.clone(), config.clone(), peer_strategy, peers.clone(), peer_score_metrics.clone()).await?;
+                let rpc_client = Self::create_verified_client(
+                    network.clone(),
+                    config.clone(),
+                    peer_strategy,
+                    peers.clone(),
+                    peer_score_metrics.clone(),
+                )
+                .await?;
                 let dag_sync_futs = rpc_client
-                    .get_dag_targets(current_block_info.get_total_difficulty(), local_dag_accumulator_info.get_num_leaves())?
+                    .get_dag_targets(
+                        current_block_info.get_total_difficulty(),
+                        local_dag_accumulator_info.get_num_leaves(),
+                    )?
                     .into_iter()
-                    .fold(anyhow::Ok(vec![]), |mut futs, (peer_id, target_accumulator_info, target)| {
-                        let api_rpc_client = async_std::task::block_on(Self::create_verified_client(network.clone(), config.clone(), Some(PeerStrategy::DagSync(peer_id)), peers.clone(), peer_score_metrics.clone()))?;
-                        let (fut, task_handle, task_event_handle) = sync_dag_full_task(
-                            local_dag_accumulator_info.clone(),
-                            target_accumulator_info.expect("target accumulator info must exist"),
-                            api_rpc_client,
-                            dag_accumulator_store.clone(),
-                            dag_accumulator_snapshot.clone(),
-                            storage_for_dag.clone(),
-                            config.net().time_service(),
-                            vm_metrics.clone(),
-                            connector_service.clone(),
-                            network.clone(),
-                            skip_pow_verify,
-                            dag.clone(),
-                            block_chain_service.clone(),
-                            flexidag_service.clone(),
-                            config.net().id().clone(),
-                        )?;
-                        self_ref.notify(SyncBeginEvent {
-                            target,
-                            task_handle,
-                            task_event_handle,
-                            peer_selector: rpc_client.selector().clone(),
-                        })?;
-                        if let Some(sync_task_total) = sync_task_total.as_ref() {
-                            sync_task_total.with_label_values(&["start"]).inc();
-                        }
-                        futs.and_then(|mut v| {
-                            v.push(fut);
-                            Ok(v)
-                        })
-                    })?
-                    .into_iter()
-                    .fold(vec![], |chain, fut| {
-                        match async_std::task::block_on(fut) {
-                            Ok(new_chain) => {
-                                if chain.is_empty() {
-                                    vec![new_chain]
-                                } else if new_chain.status().total_difficulty() > chain[0].status().total_difficulty() {
-                                    vec![new_chain]
-                                } else {
-                                    chain
-                                }
+                    .fold(
+                        anyhow::Ok(vec![]),
+                        |mut futs, (peer_id, target_accumulator_info, target)| {
+                            let api_rpc_client =
+                                async_std::task::block_on(Self::create_verified_client(
+                                    network.clone(),
+                                    config.clone(),
+                                    Some(PeerStrategy::DagSync(peer_id)),
+                                    peers.clone(),
+                                    peer_score_metrics.clone(),
+                                ))?;
+                            let (fut, task_handle, task_event_handle) = sync_dag_full_task(
+                                local_dag_accumulator_info.clone(),
+                                target_accumulator_info
+                                    .expect("target accumulator info must exist"),
+                                api_rpc_client,
+                                dag_accumulator_store.clone(),
+                                dag_accumulator_snapshot.clone(),
+                                storage_for_dag.clone(),
+                                config.net().time_service(),
+                                vm_metrics.clone(),
+                                connector_service.clone(),
+                                network.clone(),
+                                skip_pow_verify,
+                                dag.clone(),
+                                block_chain_service.clone(),
+                                flexidag_service.clone(),
+                                config.net().id().clone(),
+                            )?;
+                            self_ref.notify(SyncBeginEvent {
+                                target,
+                                task_handle,
+                                task_event_handle,
+                                peer_selector: rpc_client.selector().clone(),
+                            })?;
+                            if let Some(sync_task_total) = sync_task_total.as_ref() {
+                                sync_task_total.with_label_values(&["start"]).inc();
                             }
-                            Err(error) => {
-                                error!("[sync] sync dag error: {:?}", error);
+                            futs.and_then(|mut v| {
+                                v.push(fut);
+                                Ok(v)
+                            })
+                        },
+                    )?
+                    .into_iter()
+                    .fold(vec![], |chain, fut| match async_std::task::block_on(fut) {
+                        Ok(new_chain) => {
+                            if chain.is_empty() {
+                                vec![new_chain]
+                            } else if new_chain.status().total_difficulty()
+                                > chain[0].status().total_difficulty()
+                            {
+                                vec![new_chain]
+                            } else {
                                 chain
                             }
+                        }
+                        Err(error) => {
+                            error!("[sync] sync dag error: {:?}", error);
+                            chain
                         }
                     });
                 assert!(dag_sync_futs.len() <= 1);
@@ -341,7 +363,14 @@ impl SyncService {
                     Ok(None)
                 }
             } else {
-                let rpc_client = Self::create_verified_client(network.clone(), config.clone(), peer_strategy, peers, peer_score_metrics).await?;
+                let rpc_client = Self::create_verified_client(
+                    network.clone(),
+                    config.clone(),
+                    peer_strategy,
+                    peers,
+                    peer_score_metrics,
+                )
+                .await?;
                 if let Some((target, _)) =
                     rpc_client.get_best_target(current_block_info.get_total_difficulty())?
                 {
@@ -397,7 +426,7 @@ impl SyncService {
                     Ok(Some(chain)) => {
                         info!("[sync] Sync to latest block: {:?}", chain.status());
 
-                        let startup_info = storage_for_single 
+                        let startup_info = storage_for_single
                         .get_startup_info().unwrap()
                         .ok_or_else(|| format_err!("Startup info should exist.")).unwrap();
                         let current_block_id = startup_info.main;

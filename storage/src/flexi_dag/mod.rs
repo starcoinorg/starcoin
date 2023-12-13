@@ -4,7 +4,7 @@ use crate::{
     accumulator::{AccumulatorStorage, DagBlockAccumulatorStorage},
     define_storage,
     storage::{CodecKVStore, StorageInstance, ValueCodec},
-    SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME, DAG_TIPS_PREFIX_NAME,
+    DAG_TIPS_PREFIX_NAME, SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME,
 };
 use anyhow::Result;
 use bcs_ext::BCSCodec;
@@ -82,12 +82,7 @@ define_storage!(
     SYNC_FLEXI_DAG_SNAPSHOT_PREFIX_NAME
 );
 
-define_storage!(
-    DagTipsStorage,
-    HashValue,
-    DagTips,
-    DAG_TIPS_PREFIX_NAME
-);
+define_storage!(DagTipsStorage, HashValue, DagTips, DAG_TIPS_PREFIX_NAME);
 
 #[derive(Clone)]
 pub struct SyncFlexiDagStorage {
@@ -128,9 +123,7 @@ impl SyncFlexiDagStorage {
         self.snapshot_storage.put(key, accumulator_info)
     }
 
-    pub fn get_dag_tips(
-        &self,
-    ) -> std::result::Result<Option<DagTips>, anyhow::Error> {
+    pub fn get_dag_tips(&self) -> std::result::Result<Option<DagTips>, anyhow::Error> {
         self.dag_tips_storage.get(0.into())
     }
 

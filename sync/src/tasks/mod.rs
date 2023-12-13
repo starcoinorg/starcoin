@@ -38,32 +38,47 @@ use stream_task::{
 };
 
 pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {
-    fn get_dag_targets(&self, total_difficulty: U256, local_dag_accumulator_leaf_num: u64) -> Result<Vec<(PeerId, Option<AccumulatorInfo>, SyncTarget)>> {
+    fn get_dag_targets(
+        &self,
+        total_difficulty: U256,
+        local_dag_accumulator_leaf_num: u64,
+    ) -> Result<Vec<(PeerId, Option<AccumulatorInfo>, SyncTarget)>> {
         Ok(self
             .peer_selector()
             .peer_infos()
             .into_iter()
             .filter(|peer_info| {
-                match (peer_info.chain_info().dag_accumulator_info(), peer_info.chain_info().k_total_difficulties()) {
-                    (Some(info), Some(k)) => {
-                        match k.first() {
-                            Some(k_difficulty) => k_difficulty.total_difficulty <= total_difficulty || info.get_num_leaves() > local_dag_accumulator_leaf_num,
-                            None => false,
+                match (
+                    peer_info.chain_info().dag_accumulator_info(),
+                    peer_info.chain_info().k_total_difficulties(),
+                ) {
+                    (Some(info), Some(k)) => match k.first() {
+                        Some(k_difficulty) => {
+                            k_difficulty.total_difficulty <= total_difficulty
+                                || info.get_num_leaves() > local_dag_accumulator_leaf_num
                         }
-                    }
+                        None => false,
+                    },
                     (None, None) => false,
                     _ => {
                         warn!("dag accumulator is inconsistent with k total difficulty");
                         false
                     }
-                } 
+                }
             })
             .map(|peer_info| {
-                (peer_info.peer_id, peer_info.chain_info().dag_accumulator_info().clone(), SyncTarget {
-                    target_id: BlockIdAndNumber::new(peer_info.latest_header().id(), peer_info.latest_header().number()),
-                    block_info: peer_info.chain_info().status().info().clone(),
-                    peers: vec![peer_info.peer_id],
-                })
+                (
+                    peer_info.peer_id,
+                    peer_info.chain_info().dag_accumulator_info().clone(),
+                    SyncTarget {
+                        target_id: BlockIdAndNumber::new(
+                            peer_info.latest_header().id(),
+                            peer_info.latest_header().number(),
+                        ),
+                        block_info: peer_info.chain_info().status().info().clone(),
+                        peers: vec![peer_info.peer_id],
+                    },
+                )
             })
             .collect())
     }

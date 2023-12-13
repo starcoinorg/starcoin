@@ -3,9 +3,9 @@
 
 use anyhow::{format_err, Result};
 use network_api::peer_score::{InverseScore, Score};
-use network_api::{PeerId, PeerStrategy};
 use network_api::PeerInfo;
 use network_api::PeerSelector;
+use network_api::{PeerId, PeerStrategy};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::hash::HashValue;
@@ -127,7 +127,6 @@ impl VerifiedRpcClient {
     pub fn switch_strategy(&mut self, strategy: PeerStrategy) {
         self.peer_selector.switch_strategy(strategy)
     }
-
 
     pub fn selector(&self) -> &PeerSelector {
         &self.peer_selector
@@ -386,14 +385,7 @@ impl VerifiedRpcClient {
     pub async fn get_blocks(
         &self,
         ids: Vec<HashValue>,
-    ) -> Result<
-        Vec<
-            Option<(
-                Block,
-                Option<PeerId>,
-            )>,
-        >,
-    > {
+    ) -> Result<Vec<Option<(Block, Option<PeerId>)>>> {
         let peer_id = self.select_a_peer()?;
         let start_time = Instant::now();
         let blocks = self.client.get_blocks(peer_id.clone(), ids.clone()).await?;

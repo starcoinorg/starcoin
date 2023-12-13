@@ -3,7 +3,7 @@
 
 use crate::tasks::{BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
-use anyhow::{format_err, Ok, Result, anyhow};
+use anyhow::{anyhow, format_err, Ok, Result};
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use network_api::PeerId;
@@ -15,7 +15,7 @@ use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBl
 use starcoin_config::G_CRATE_VERSION;
 use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
-use starcoin_flexidag::flexidag_service::{FinishSync, ForkDagAccumulator, AddToDag};
+use starcoin_flexidag::flexidag_service::{AddToDag, FinishSync, ForkDagAccumulator};
 use starcoin_flexidag::FlexidagService;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::ServiceRef;
@@ -470,11 +470,15 @@ where
         let block_id = block.id();
         let timestamp = block.header().timestamp();
 
-        let add_dag_result = self.flexidag_service.as_ref().map(|service| {
-            async_std::task::block_on(service.send(AddToDag {
-                        block_header: block.header().clone(),
-            }))? 
-        }).ok_or_else(|| anyhow!("flexidag service is None"))??;
+        let add_dag_result = self
+            .flexidag_service
+            .as_ref()
+            .map(|service| {
+                async_std::task::block_on(service.send(AddToDag {
+                    block_header: block.header().clone(),
+                }))?
+            })
+            .ok_or_else(|| anyhow!("flexidag service is None"))??;
         let selected_parent = self
             .storage
             .get_block_by_hash(add_dag_result.selected_parent)?

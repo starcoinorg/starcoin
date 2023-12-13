@@ -42,7 +42,6 @@ where
     bus: ServiceRef<BusService>,
     metrics: Option<ChainMetrics>,
     vm_metrics: Option<VMMetrics>,
-    dag_block_pool: Arc<Mutex<Vec<(Block, Vec<HashValue>)>>>,
     flexidag_service: ServiceRef<FlexidagService>,
 }
 
@@ -164,7 +163,6 @@ where
             bus,
             metrics,
             vm_metrics,
-            dag_block_pool: Arc::new(Mutex::new(vec![])),
             flexidag_service,
         })
     }

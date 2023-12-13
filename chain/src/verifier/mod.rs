@@ -11,7 +11,7 @@ use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::debug;
 use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
-use std::{collections::HashSet, str::FromStr, backtrace::Backtrace};
+use std::{backtrace::Backtrace, collections::HashSet, str::FromStr};
 
 #[derive(Debug)]
 pub enum Verifier {
@@ -189,7 +189,7 @@ impl BlockVerifier for BasicVerifier {
         let current = chain_status.head();
         let current_id = current.id();
         let expect_number = current.number().saturating_add(1);
-	
+
         // if chain_status.tips_hash.is_some() {
         // let mut tips_hash = chain_status.tips_hash.clone().unwrap();
         // tips_hash.sort();

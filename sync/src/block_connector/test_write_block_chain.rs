@@ -6,7 +6,7 @@ use parking_lot::Mutex;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_chain_service::WriteableChainService;
-use starcoin_config::{NodeConfig, RocksdbConfig, ChainNetworkID};
+use starcoin_config::{ChainNetworkID, NodeConfig, RocksdbConfig};
 use starcoin_consensus::{BlockDAG, Consensus, FlexiDagStorage, FlexiDagStorageConfig};
 use starcoin_crypto::HashValue;
 use starcoin_flexidag::FlexidagService;
@@ -35,7 +35,6 @@ pub async fn create_writeable_block_chain() -> (
     let bus = registry.service_ref::<BusService>().await.unwrap();
     let txpool_service = MockTxPoolService::new();
 
-
     genesis.save(node_config.data_dir()).unwrap();
 
     let (chain_info, genesis) = StarcoinGenesis::init_and_check_storage(
@@ -50,7 +49,7 @@ pub async fn create_writeable_block_chain() -> (
         .expect("Failed to create flexidag storage");
 
     let dag = BlockDAG::new(3, flex_dag_db, ChainNetworkID::TEST);
-    
+
     registry.register::<FlexidagService>().await.unwrap();
     let flexidag_service = registry.service_ref::<FlexidagService>().await.unwrap();
 
