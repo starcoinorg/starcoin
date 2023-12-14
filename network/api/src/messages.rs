@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::block::BlockInfo;
-use starcoin_types::compact_block::CompactBlock;
+use starcoin_types::compact_block::{CompactBlock, OldCompactBlock};
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::SignedUserTransaction;
 use std::borrow::Cow;
@@ -48,6 +48,38 @@ impl Sample for TransactionsMessage {
 pub struct CompactBlockMessage {
     pub compact_block: CompactBlock,
     pub block_info: BlockInfo,
+}
+
+impl CompactBlockMessage {
+    fn convertable(&self) -> bool {
+        // todo: double check
+        self.compact_block.tips.is_none()
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename = "CompactBlockMessage")]
+pub struct OldCompactBlockMessage {
+    pub compact_block: OldCompactBlock,
+    pub block_info: BlockInfo,
+}
+
+impl From<OldCompactBlockMessage> for CompactBlockMessage {
+    fn from(value: OldCompactBlockMessage) -> Self {
+        Self {
+            compact_block: value.compact_block.into(),
+            block_info: value.block_info,
+        }
+    }
+}
+
+impl From<CompactBlockMessage> for OldCompactBlockMessage {
+    fn from(value: CompactBlockMessage) -> Self {
+        Self {
+            compact_block: value.compact_block.into(),
+            block_info: value.block_info,
+        }
+    }
 }
 
 impl CompactBlockMessage {
@@ -131,9 +163,11 @@ impl NotificationMessage {
             TXN_PROTOCOL_NAME => {
                 NotificationMessage::Transactions(TransactionsMessage::decode(bytes)?)
             }
-            BLOCK_PROTOCOL_NAME => {
-                NotificationMessage::CompactBlock(Box::new(CompactBlockMessage::decode(bytes)?))
-            }
+            BLOCK_PROTOCOL_NAME => NotificationMessage::CompactBlock(Box::new(
+                CompactBlockMessage::decode(bytes).or_else(|_| {
+                    OldCompactBlockMessage::decode(bytes).map(CompactBlockMessage::from)
+                })?,
+            )),
             ANNOUNCEMENT_PROTOCOL_NAME => {
                 NotificationMessage::Announcement(Announcement::decode(bytes)?)
             }
@@ -148,7 +182,14 @@ impl NotificationMessage {
     pub fn encode_notification(&self) -> Result<(Cow<'static, str>, Vec<u8>)> {
         Ok(match self {
             NotificationMessage::Transactions(msg) => (TXN_PROTOCOL_NAME.into(), msg.encode()?),
-            NotificationMessage::CompactBlock(msg) => (BLOCK_PROTOCOL_NAME.into(), msg.encode()?),
+            NotificationMessage::CompactBlock(msg) => (
+                BLOCK_PROTOCOL_NAME.into(),
+                if !msg.convertable() {
+                    msg.encode()
+                } else {
+                    OldCompactBlockMessage::from(*msg.clone()).encode()
+                }?,
+            ),
             NotificationMessage::Announcement(msg) => {
                 (ANNOUNCEMENT_PROTOCOL_NAME.into(), msg.encode()?)
             }

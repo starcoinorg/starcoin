@@ -207,8 +207,9 @@ pub struct OldBlockHeader {
 
 impl From<BlockHeader> for OldBlockHeader {
     fn from(v: BlockHeader) -> Self {
+        assert!(v.parents_hash.is_none());
         Self {
-            id: None,
+            id: v.id,
             parent_hash: v.parent_hash,
             timestamp: v.timestamp,
             number: v.number,
@@ -229,8 +230,9 @@ impl From<BlockHeader> for OldBlockHeader {
 
 impl From<OldBlockHeader> for BlockHeader {
     fn from(v: OldBlockHeader) -> Self {
+        let id = v.id.or_else(|| Some(v.crypto_hash()));
         Self {
-            id: v.id,
+            id,
             parent_hash: v.parent_hash,
             timestamp: v.timestamp,
             number: v.number,
