@@ -230,6 +230,7 @@ impl BlockChain {
         user_txns: Vec<SignedUserTransaction>,
         uncles: Vec<BlockHeader>,
         block_gas_limit: Option<u64>,
+        tips: Option<Vec<HashValue>>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
         //FIXME create block template by parent may be use invalid chain state, such as epoch.
         //So the right way should be creating a BlockChain by parent_hash, then create block template.
@@ -247,6 +248,7 @@ impl BlockChain {
             user_txns,
             uncles,
             block_gas_limit,
+            tips,
         )
     }
 
@@ -257,13 +259,18 @@ impl BlockChain {
         user_txns: Vec<SignedUserTransaction>,
         uncles: Vec<BlockHeader>,
         block_gas_limit: Option<u64>,
+        tips: Option<Vec<HashValue>>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
         let epoch = self.epoch();
         let on_chain_block_gas_limit = epoch.block_gas_limit();
         let final_block_gas_limit = block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
-        let tips_hash = self.current_tips_hash()?;
+        let tips_hash = if tips.is_some() {
+            tips
+        } else {
+            self.current_tips_hash()?
+        };
         let strategy = epoch.strategy();
         let difficulty = strategy.calculate_next_difficulty(self)?;
         let (uncles, blue_blocks) = {
@@ -402,7 +409,13 @@ impl BlockChain {
         let header = block.header();
         let block_id = header.id();
         //TODO::FIXEME
-        let block_metadata = block.to_metadata(self.status.status.clone().head.gas_used());
+        let selected_head = self
+            .storage
+            .get_block_by_hash(selected_parent)?
+            .ok_or_else(|| {
+                format_err!("Can not find selected block by hash {:?}", selected_parent)
+            })?;
+        let block_metadata = block.to_metadata(selected_head.header().gas_used());
         let mut transactions = vec![Transaction::BlockMetadata(block_metadata)];
         let mut total_difficulty = header.difficulty() + block_info_past.total_difficulty;
 
@@ -429,11 +442,12 @@ impl BlockChain {
                 .map(Transaction::UserTransaction),
         );
         watch(CHAIN_WATCH_NAME, "n21");
-        let statedb = self.statedb.fork();
+        let statedb = self.statedb.fork_at(selected_head.header.state_root());
+        let epoch = get_epoch_from_statedb(&statedb)?;
         let executed_data = starcoin_executor::block_execute(
             &statedb,
             transactions.clone(),
-            self.epoch.block_gas_limit(), //TODO: Fix me
+            epoch.block_gas_limit(), //TODO: Fix me
             self.vm_metrics.clone(),
         )?;
         watch(CHAIN_WATCH_NAME, "n22");
@@ -1219,11 +1233,16 @@ impl BlockChain {
             tips.retain(|x| *x != hash);
         }
         tips.push(new_tip_block.id());
-
+        // Caculate the ghostdata of the virutal node created by all tips.
+        // And the ghostdata.selected of the tips will be the latest head.
         let block_hash = {
             let ghost_of_tips = dag.ghostdata(tips.as_slice());
             ghost_of_tips.selected_parent
         };
+        debug!(
+            "connect dag info block hash: {},tips: {:?}",
+            block_hash, tips
+        );
         let (block, block_info) = {
             let block = self
                 .storage

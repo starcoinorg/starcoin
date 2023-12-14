@@ -61,6 +61,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
         vec![txn.clone()],
         vec![],
         None,
+        None,
     )?;
     debug!("block_template: gas_used: {}", block_template.gas_used);
     let new_block = block_chain

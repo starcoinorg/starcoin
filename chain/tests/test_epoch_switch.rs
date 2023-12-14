@@ -33,7 +33,7 @@ pub fn create_new_block(
     txns: Vec<SignedUserTransaction>,
 ) -> Result<Block> {
     let (template, _) =
-        chain.create_block_template(*account.address(), None, txns, vec![], None)?;
+        chain.create_block_template(*account.address(), None, txns, vec![], None, None)?;
     chain
         .consensus()
         .create_block(template, chain.time_service().as_ref())
@@ -197,6 +197,7 @@ pub fn modify_on_chain_config_by_dao_block(
                 block_timestamp / 1000,
             )?,
             vec![],
+            None,
             None,
         )?;
         let block1 = chain

@@ -241,7 +241,6 @@ mod tests {
         dag.commit(block4).unwrap();
         dag.commit(block5).unwrap();
         dag.commit(block6).unwrap();
-
         let mut count = 0;
         while latest_id != genesis_id && count < 4 {
             let ghostdata = dag.ghostdata_by_hash(latest_id).unwrap().unwrap();

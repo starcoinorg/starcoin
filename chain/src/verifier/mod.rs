@@ -40,6 +40,7 @@ impl FromStr for Verifier {
 }
 
 pub struct StaticVerifier;
+
 impl StaticVerifier {
     pub fn verify_body_hash(block: &Block) -> Result<()> {
         //verify body
