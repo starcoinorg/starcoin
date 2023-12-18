@@ -1349,13 +1349,15 @@ async fn test_sync_single_chain_to_dag_chain() -> Result<()> {
         test_system.local_node.clone(),
         &test_system.registry,
         10,
-    ).await?;
+    )
+    .await?;
     _ = sync_block_in_block_connection_service_mock(
         target_node,
         test_system.local_node.clone(),
         &test_system.registry,
         10,
-    ).await?;
+    )
+    .await?;
 
     Ok(())
 }

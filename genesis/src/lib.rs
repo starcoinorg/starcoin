@@ -363,17 +363,6 @@ impl Genesis {
         let chain_info = genesis.execute_genesis_block(net, storage.clone())?;
         Ok((storage, chain_info, genesis))
     }
-
-    pub fn init_storage_for_test_with_dag(
-        config: &NodeConfig,
-    ) -> Result<(Arc<Storage>, ChainInfo, Genesis, BlockDAG)> {
-        let (storage, chain_info, genesis) = Self::init_storage_for_test(config.net())?;
-
-        let dag_dir = config.data_dir().join("flexi_dag_vaults");
-        let dag = BlockDAG::new_by_config(&dag_dir, config.net().id().clone())?;
-
-        Ok((storage, chain_info, genesis, dag))
-    }
 }
 
 #[cfg(test)]

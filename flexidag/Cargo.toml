@@ -25,4 +25,5 @@ tokio = { workspace = true }
 starcoin-consensus = { workspace = true }
 starcoin-accumulator = { workspace = true }
 thiserror = { workspace = true }
-
+starcoin-dag = { workspace = true }
+bcs-ext = { workspace = true }

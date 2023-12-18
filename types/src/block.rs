@@ -34,6 +34,7 @@ pub static PROXIMA_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
 pub static HALLEY_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
 pub static BARNARD_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
 pub static MAIN_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
+
 /// Type for block header extra
 #[derive(Clone, Default, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, JsonSchema)]
 pub struct BlockHeaderExtra(#[schemars(with = "String")] [u8; 4]);
@@ -410,6 +411,28 @@ impl BlockHeader {
 
     pub fn is_genesis(&self) -> bool {
         self.number == 0
+    }
+    pub fn dag_fork_height(&self) -> BlockNumber {
+        if self.chain_id.is_test() {
+            TEST_FLEXIDAG_FORK_HEIGHT
+        } else if self.chain_id.is_halley() {
+            HALLEY_FLEXIDAG_FORK_HEIGHT
+        } else if self.chain_id.is_proxima() {
+            PROXIMA_FLEXIDAG_FORK_HEIGHT
+        } else if self.chain_id.is_barnard() {
+            BARNARD_FLEXIDAG_FORK_HEIGHT
+        } else if self.chain_id.is_main() {
+            MAIN_FLEXIDAG_FORK_HEIGHT
+        } else {
+            DEV_FLEXIDAG_FORK_HEIGHT
+        }
+    }
+
+    pub fn is_dag(&self) -> bool {
+        self.number > self.dag_fork_height()
+    }
+    pub fn is_dag_genesis(&self) -> bool {
+        self.number == self.dag_fork_height()
     }
 
     pub fn genesis_block_header(
@@ -830,9 +853,13 @@ impl Block {
         }
     }
 
-    // pub fn is_dag(&self) -> bool {
-    //     self.header.is_dag()
-    // }
+    pub fn is_dag(&self) -> bool {
+        self.header.is_dag()
+    }
+
+    pub fn is_dag_genesis_block(&self) -> bool {
+        self.header.is_dag_genesis()
+    }
 
     pub fn parent_hash(&self) -> anyhow::Result<HashValue> {
         // if self.header().parents_hash.is_some() {
