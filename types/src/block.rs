@@ -747,7 +747,7 @@ pub struct BlockBody {
     pub uncles: Option<Vec<BlockHeader>>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct OldBlockBody {
     pub transactions: Vec<SignedUserTransaction>,
     pub uncles: Option<Vec<OldBlockHeader>>,
@@ -762,7 +762,21 @@ impl From<OldBlockBody> for BlockBody {
 
         Self {
             transactions,
-            uncles: uncles.map(|u| u.into_iter().map(|h| h.into()).collect::<Vec<_>>()),
+            uncles: uncles.map(|u| u.into_iter().map(Into::into).collect()),
+        }
+    }
+}
+
+impl From<BlockBody> for OldBlockBody {
+    fn from(value: BlockBody) -> Self {
+        let BlockBody {
+            transactions,
+            uncles,
+        } = value;
+
+        Self {
+            transactions,
+            uncles: uncles.map(|u| u.into_iter().map(Into::into).collect()),
         }
     }
 }
@@ -835,6 +849,15 @@ pub struct OldBlock {
 
 impl From<OldBlock> for Block {
     fn from(value: OldBlock) -> Self {
+        Self {
+            header: value.header.into(),
+            body: value.body.into(),
+        }
+    }
+}
+
+impl From<Block> for OldBlock {
+    fn from(value: Block) -> Self {
         Self {
             header: value.header.into(),
             body: value.body.into(),

@@ -30,6 +30,11 @@ use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 //use starcoin_vm_types::account_address::AccountAddress;
 //use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use crate::block::{
+    FailedBlock, OldBlockHeaderStorage, OldBlockInnerStorage, OldFailedBlockStorage,
+    OldFailedBlockV2,
+};
+use bcs_ext::Sample;
 use std::path::Path;
 
 #[test]
@@ -284,13 +289,52 @@ fn test_missing_key_handle() -> Result<()> {
     Ok(())
 }
 
-fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
+fn generate_old_block_data(instance: StorageInstance) -> Result<(Vec<HashValue>, Vec<HashValue>)> {
+    const BLOCK_COUNT: u64 = 10;
+    let old_block_header_storage = OldBlockHeaderStorage::new(instance.clone());
+    let old_block_storage = OldBlockInnerStorage::new(instance.clone());
+    let old_failed_block_storage = OldFailedBlockStorage::new(instance);
+
+    let failed_block_ids = (0..BLOCK_COUNT)
+        .map(|_| {
+            let failed_block = FailedBlock::sample();
+            let failed_block_id = {
+                let (block, _, _, _) = failed_block.clone().into();
+                block.id()
+            };
+            let old_failed_block: OldFailedBlockV2 = failed_block.into();
+            old_failed_block_storage
+                .put(failed_block_id, old_failed_block)
+                .unwrap();
+            failed_block_id
+        })
+        .collect::<Vec<_>>();
+
+    let block_ids = (0..BLOCK_COUNT)
+        .map(|_| {
+            let block = Block::sample();
+            let block_id = block.id();
+            let old_block = block.clone().into();
+            let old_block_header = block.header.into();
+
+            old_block_storage.put(block_id, old_block).unwrap();
+            old_block_header_storage
+                .put(block_id, old_block_header)
+                .unwrap();
+            block_id
+        })
+        .collect::<Vec<_>>();
+
+    Ok((block_ids, failed_block_ids))
+}
+
+fn generate_old_db(path: &Path) -> Result<(Vec<HashValue>, Vec<HashValue>, Vec<HashValue>)> {
     let instance = StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
         DBStorage::new(path, RocksdbConfig::default(), None)?,
     );
     let storage = Storage::new(instance.clone())?;
-    let old_transaction_info_storage = OldTransactionInfoStorage::new(instance);
+    let old_transaction_info_storage = OldTransactionInfoStorage::new(instance.clone());
 
     let block_header = BlockHeader::random();
     let txn = SignedUserTransaction::mock();
@@ -346,13 +390,15 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
         },
     )?;
 
-    Ok(txn_inf_ids)
+    let (block_ids, failed_block_ids) = generate_old_block_data(instance)?;
+
+    Ok((txn_inf_ids, block_ids, failed_block_ids))
 }
 
 #[stest::test]
 pub fn test_db_upgrade() -> Result<()> {
     let tmpdir = starcoin_config::temp_dir();
-    let txn_info_ids = generate_old_db(tmpdir.path())?;
+    let (txn_info_ids, block_ids, failed_block_ids) = generate_old_db(tmpdir.path())?;
     let mut instance = StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None)?,
@@ -360,6 +406,9 @@ pub fn test_db_upgrade() -> Result<()> {
 
     instance.check_upgrade()?;
     let storage = Storage::new(instance.clone())?;
+    let old_block_header_storage = OldBlockHeaderStorage::new(instance.clone());
+    let old_block_storage = OldBlockInnerStorage::new(instance.clone());
+    let old_failed_block_storage = OldFailedBlockStorage::new(instance.clone());
     let old_transaction_info_storage = OldTransactionInfoStorage::new(instance);
 
     for txn_info_id in txn_info_ids {
@@ -372,6 +421,38 @@ pub fn test_db_upgrade() -> Result<()> {
             "expect RichTransactionInfo is some"
         );
     }
+
+    for block_id in block_ids {
+        assert!(
+            old_block_header_storage.get(block_id)?.is_none(),
+            "expect OldBlockHeader is none"
+        );
+        assert!(
+            storage.get_block_header_by_hash(block_id)?.is_some(),
+            "expect BlockHeader is some"
+        );
+
+        assert!(
+            old_block_storage.get(block_id)?.is_none(),
+            "expect OldBlock is none"
+        );
+        assert!(
+            storage.get_block_by_hash(block_id)?.is_some(),
+            "expect Block is some"
+        );
+    }
+
+    for failed_block_id in failed_block_ids {
+        assert!(
+            old_failed_block_storage.get(failed_block_id)?.is_none(),
+            "expect OldBlock is none"
+        );
+        assert!(
+            storage.get_failed_block_by_id(failed_block_id)?.is_some(),
+            "expect Block is some"
+        );
+    }
+
     Ok(())
 }
 

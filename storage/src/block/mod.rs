@@ -67,6 +67,17 @@ impl From<OldFailedBlockV2> for FailedBlock {
     }
 }
 
+impl From<FailedBlock> for OldFailedBlockV2 {
+    fn from(value: FailedBlock) -> Self {
+        Self {
+            block: value.block.into(),
+            peer_id: value.peer_id,
+            failed: value.failed,
+            version: value.version,
+        }
+    }
+}
+
 #[allow(clippy::from_over_into)]
 impl Into<(Block, Option<PeerId>, String, String)> for FailedBlock {
     fn into(self) -> (Block, Option<PeerId>, String, String) {
