@@ -556,21 +556,24 @@ impl BlockStorage {
         let old_header_store = OldBlockHeaderStorage::new(instance.clone());
         let header_store = BlockHeaderStorage::new(instance.clone());
 
-        let _total_size = Self::upgrade_header_store(old_header_store, header_store, BATCH_SIZE)?;
+        let total_size = Self::upgrade_header_store(old_header_store, header_store, BATCH_SIZE)?;
+        info!("upgraded {total_size} blocks in block_header_store");
 
         let old_block_store = OldBlockInnerStorage::new(instance.clone());
         let block_store = BlockInnerStorage::new(instance.clone());
 
-        let _total_blocks = Self::upgrade_block_store(old_block_store, block_store, BATCH_SIZE)?;
+        let total_blocks = Self::upgrade_block_store(old_block_store, block_store, BATCH_SIZE)?;
+        info!("upgraded {total_blocks} blocks in block_store");
 
         let old_failed_block_store = OldFailedBlockStorage::new(instance.clone());
         let failed_block_store = FailedBlockStorage::new(instance);
 
-        let _total_failed_blocks = Self::upgrade_failed_block_store(
+        let total_failed_blocks = Self::upgrade_failed_block_store(
             old_failed_block_store,
             failed_block_store,
             BATCH_SIZE,
         )?;
+        info!("upgraded {total_failed_blocks} blocks in failed_block_store");
 
         Ok(())
     }

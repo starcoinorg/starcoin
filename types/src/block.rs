@@ -169,11 +169,10 @@ pub struct BlockHeader {
 }
 
 // For single chain before FlexiDag upgrade
-#[derive(Clone, Debug, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+#[derive(Clone, Debug, Serialize, CryptoHasher, CryptoHash)]
 #[serde(rename = "BlockHeader")]
 pub struct OldBlockHeader {
     #[serde(skip)]
-    #[allow(dead_code)]
     id: Option<HashValue>,
     /// Parent hash.
     parent_hash: HashValue,
@@ -540,6 +539,53 @@ impl<'de> Deserialize<'de> for BlockHeader {
             header_data.extra,
             header_data.parents_hash,
         );
+        Ok(block_header)
+    }
+}
+
+impl<'de> Deserialize<'de> for OldBlockHeader {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(rename = "BlockHeader")]
+        struct OldBlockHeaderData {
+            parent_hash: HashValue,
+            timestamp: u64,
+            number: BlockNumber,
+            author: AccountAddress,
+            author_auth_key: Option<AuthenticationKey>,
+            txn_accumulator_root: HashValue,
+            block_accumulator_root: HashValue,
+            state_root: HashValue,
+            gas_used: u64,
+            difficulty: U256,
+            body_hash: HashValue,
+            chain_id: ChainId,
+            nonce: u32,
+            extra: BlockHeaderExtra,
+        }
+
+        let header_data = OldBlockHeaderData::deserialize(deserializer)?;
+        let mut block_header = Self {
+            id: None,
+            parent_hash: header_data.parent_hash,
+            timestamp: header_data.timestamp,
+            number: header_data.number,
+            author: header_data.author,
+            author_auth_key: header_data.author_auth_key,
+            txn_accumulator_root: header_data.txn_accumulator_root,
+            block_accumulator_root: header_data.block_accumulator_root,
+            state_root: header_data.state_root,
+            gas_used: header_data.gas_used,
+            difficulty: header_data.difficulty,
+            body_hash: header_data.body_hash,
+            chain_id: header_data.chain_id,
+            nonce: header_data.nonce,
+            extra: header_data.extra,
+        };
+        block_header.id = Some(block_header.crypto_hash());
         Ok(block_header)
     }
 }
