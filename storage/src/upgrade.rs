@@ -163,6 +163,12 @@ impl DBUpgrade {
         Ok(())
     }
 
+    fn db_upgrade_v3_v4(instance: &mut StorageInstance) -> Result<()> {
+        BlockStorage::upgrade_block_header(instance.clone())?;
+
+        Ok(())
+    }
+
     pub fn do_upgrade(
         version_in_db: StorageVersion,
         version_in_code: StorageVersion,
@@ -184,6 +190,18 @@ impl DBUpgrade {
 
             (StorageVersion::V2, StorageVersion::V3) => {
                 Self::db_upgrade_v2_v3(instance)?;
+            }
+            (StorageVersion::V1, StorageVersion::V4) => {
+                Self::db_upgrade_v1_v2(instance)?;
+                Self::db_upgrade_v2_v3(instance)?;
+                Self::db_upgrade_v3_v4(instance)?;
+            }
+            (StorageVersion::V2, StorageVersion::V4) => {
+                Self::db_upgrade_v2_v3(instance)?;
+                Self::db_upgrade_v3_v4(instance)?;
+            }
+            (StorageVersion::V3, StorageVersion::V4) => {
+                Self::db_upgrade_v3_v4(instance)?;
             }
             _ => bail!(
                 "Can not upgrade db from {:?} to {:?}",

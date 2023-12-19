@@ -1,10 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 use crate::define_storage;
-use crate::storage::{CodecKVStore, StorageInstance, ValueCodec};
+use crate::storage::{CodecKVStore, CodecWriteBatch, StorageInstance, ValueCodec};
 use crate::{
-    BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME,
-    BLOCK_TRANSACTIONS_PREFIX_NAME, BLOCK_TRANSACTION_INFOS_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
+    BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME_V2,
+    BLOCK_PREFIX_NAME, BLOCK_PREFIX_NAME_V2, BLOCK_TRANSACTIONS_PREFIX_NAME,
+    BLOCK_TRANSACTION_INFOS_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME_V2,
 };
 use anyhow::{bail, Result};
 use bcs_ext::{BCSCodec, Sample};
@@ -12,7 +13,7 @@ use network_p2p_types::peer_id::PeerId;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_types::block::{Block, BlockBody, BlockHeader};
+use starcoin_types::block::{Block, BlockBody, BlockHeader, OldBlock, OldBlockHeader};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct OldFailedBlock {
@@ -46,6 +47,26 @@ pub struct FailedBlock {
     version: String,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename(deserialize = "FailedBlock"))]
+pub struct OldFailedBlockV2 {
+    block: OldBlock,
+    peer_id: Option<PeerId>,
+    failed: String,
+    version: String,
+}
+
+impl From<OldFailedBlockV2> for FailedBlock {
+    fn from(value: OldFailedBlockV2) -> Self {
+        Self {
+            block: value.block.into(),
+            peer_id: value.peer_id,
+            failed: value.failed,
+            version: value.version,
+        }
+    }
+}
+
 #[allow(clippy::from_over_into)]
 impl Into<(Block, Option<PeerId>, String, String)> for FailedBlock {
     fn into(self) -> (Block, Option<PeerId>, String, String) {
@@ -75,19 +96,28 @@ impl Sample for FailedBlock {
     }
 }
 
-define_storage!(BlockInnerStorage, HashValue, Block, BLOCK_PREFIX_NAME);
+define_storage!(BlockInnerStorage, HashValue, Block, BLOCK_PREFIX_NAME_V2);
 define_storage!(
     BlockHeaderStorage,
     HashValue,
     BlockHeader,
+    BLOCK_HEADER_PREFIX_NAME_V2
+);
+define_storage!(OldBlockInnerStorage, HashValue, OldBlock, BLOCK_PREFIX_NAME);
+define_storage!(
+    OldBlockHeaderStorage,
+    HashValue,
+    OldBlockHeader,
     BLOCK_HEADER_PREFIX_NAME
 );
+
 define_storage!(
     BlockBodyStorage,
     HashValue,
     BlockBody,
     BLOCK_BODY_PREFIX_NAME
 );
+
 define_storage!(
     BlockTransactionsStorage,
     HashValue,
@@ -100,10 +130,18 @@ define_storage!(
     Vec<HashValue>,
     BLOCK_TRANSACTION_INFOS_PREFIX_NAME
 );
+
 define_storage!(
     FailedBlockStorage,
     HashValue,
     FailedBlock,
+    FAILED_BLOCK_PREFIX_NAME_V2
+);
+
+define_storage!(
+    OldFailedBlockStorage,
+    HashValue,
+    OldFailedBlockV2,
     FAILED_BLOCK_PREFIX_NAME
 );
 
@@ -137,6 +175,36 @@ impl ValueCodec for BlockHeader {
     }
 }
 
+impl ValueCodec for OldBlock {
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        Self::decode(data)
+    }
+}
+
+impl ValueCodec for OldBlockHeader {
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        Self::decode(data)
+    }
+}
+
+impl ValueCodec for Vec<BlockHeader> {
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        Self::decode(data)
+    }
+}
+
 impl ValueCodec for BlockBody {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
@@ -157,6 +225,16 @@ impl ValueCodec for OldFailedBlock {
     }
 }
 impl ValueCodec for FailedBlock {
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        Self::decode(data)
+    }
+}
+
+impl ValueCodec for OldFailedBlockV2 {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
     }
@@ -313,5 +391,176 @@ impl BlockStorage {
         let old_block: OldFailedBlock = (block, peer_id, failed).into();
         self.failed_block_storage
             .put_raw(block_id, old_block.encode_value()?)
+    }
+
+    fn upgrade_header_store(
+        old_header_store: OldBlockHeaderStorage,
+        header_store: BlockHeaderStorage,
+        batch_size: usize,
+    ) -> Result<usize> {
+        let mut total_size: usize = 0;
+        let mut old_header_iter = old_header_store.iter()?;
+        old_header_iter.seek_to_first();
+        let mut to_deleted = Some(CodecWriteBatch::<HashValue, OldBlockHeader>::new());
+        let mut to_put = Some(CodecWriteBatch::<HashValue, BlockHeader>::new());
+        let mut item_count = 0usize;
+        for item in old_header_iter {
+            let (id, old_header) = item?;
+            let header: BlockHeader = old_header.into();
+            to_deleted
+                .as_mut()
+                .unwrap()
+                .delete(id)
+                .expect("should never fail");
+            to_put
+                .as_mut()
+                .unwrap()
+                .put(id, header)
+                .expect("should never fail");
+            item_count += 1;
+            if item_count == batch_size {
+                total_size = total_size.saturating_add(item_count);
+                item_count = 0;
+                old_header_store.write_batch(to_deleted.take().unwrap())?;
+                header_store.write_batch(to_put.take().unwrap())?;
+                to_deleted = Some(CodecWriteBatch::<HashValue, OldBlockHeader>::new());
+                to_put = Some(CodecWriteBatch::<HashValue, BlockHeader>::new());
+            }
+        }
+        if item_count != 0 {
+            total_size = total_size.saturating_add(item_count);
+            old_header_store.write_batch(to_deleted.take().unwrap())?;
+            header_store.write_batch(to_put.take().unwrap())?;
+        }
+
+        Ok(total_size)
+    }
+
+    fn upgrade_block_store(
+        old_block_store: OldBlockInnerStorage,
+        block_store: BlockInnerStorage,
+        batch_size: usize,
+    ) -> Result<usize> {
+        let mut total_size: usize = 0;
+        let mut old_block_iter = old_block_store.iter()?;
+        old_block_iter.seek_to_first();
+
+        let mut to_delete = Some(CodecWriteBatch::new());
+        let mut to_put = Some(CodecWriteBatch::new());
+        let mut item_count = 0;
+
+        for item in old_block_iter {
+            let (id, old_block) = item?;
+            let block: Block = old_block.into();
+            to_delete
+                .as_mut()
+                .unwrap()
+                .delete(id)
+                .expect("should never fail");
+            to_put
+                .as_mut()
+                .unwrap()
+                .put(id, block)
+                .expect("should never fail");
+
+            item_count += 1;
+            if item_count == batch_size {
+                total_size = total_size.saturating_add(item_count);
+                item_count = 0;
+                old_block_store
+                    .write_batch(to_delete.take().unwrap())
+                    .expect("should never fail");
+                block_store
+                    .write_batch(to_put.take().unwrap())
+                    .expect("should never fail");
+            }
+        }
+        if item_count != 0 {
+            total_size = total_size.saturating_add(item_count);
+            old_block_store
+                .write_batch(to_delete.take().unwrap())
+                .expect("should never fail");
+            block_store
+                .write_batch(to_put.take().unwrap())
+                .expect("should never fail");
+        }
+
+        Ok(total_size)
+    }
+
+    fn upgrade_failed_block_store(
+        old_failed_block_store: OldFailedBlockStorage,
+        failed_block_store: FailedBlockStorage,
+        batch_size: usize,
+    ) -> Result<usize> {
+        let mut total_size: usize = 0;
+        let mut old_failed_block_iter = old_failed_block_store.iter()?;
+        old_failed_block_iter.seek_to_first();
+
+        let mut to_delete = Some(CodecWriteBatch::new());
+        let mut to_put = Some(CodecWriteBatch::new());
+        let mut item_count = 0;
+
+        for item in old_failed_block_iter {
+            let (id, old_block) = item?;
+            let block: FailedBlock = old_block.into();
+            to_delete
+                .as_mut()
+                .unwrap()
+                .delete(id)
+                .expect("should never fail");
+            to_put
+                .as_mut()
+                .unwrap()
+                .put(id, block)
+                .expect("should never fail");
+
+            item_count += 1;
+            if item_count == batch_size {
+                total_size = total_size.saturating_add(item_count);
+                item_count = 0;
+                old_failed_block_store
+                    .write_batch(to_delete.take().unwrap())
+                    .expect("should never fail");
+                failed_block_store
+                    .write_batch(to_put.take().unwrap())
+                    .expect("should never fail");
+            }
+        }
+        if item_count != 0 {
+            total_size = total_size.saturating_add(item_count);
+            old_failed_block_store
+                .write_batch(to_delete.take().unwrap())
+                .expect("should never fail");
+            failed_block_store
+                .write_batch(to_put.take().unwrap())
+                .expect("should never fail");
+        }
+
+        Ok(total_size)
+    }
+
+    pub fn upgrade_block_header(instance: StorageInstance) -> Result<()> {
+        const BATCH_SIZE: usize = 1000usize;
+        let old_header_store = OldBlockHeaderStorage::new(instance.clone());
+        let header_store = BlockHeaderStorage::new(instance.clone());
+
+        let _total_size = Self::upgrade_header_store(old_header_store, header_store, BATCH_SIZE)?;
+
+        let old_block_store = OldBlockInnerStorage::new(instance.clone());
+        let block_store = BlockInnerStorage::new(instance.clone());
+
+        let _total_blocks = Self::upgrade_block_store(old_block_store, block_store, BATCH_SIZE)?;
+
+        let old_failed_block_store = OldFailedBlockStorage::new(instance.clone());
+        let failed_block_store = FailedBlockStorage::new(instance);
+
+        let _total_failed_blocks = Self::upgrade_failed_block_store(
+            old_failed_block_store,
+            failed_block_store,
+            BATCH_SIZE,
+        )?;
+
+        Ok(())
     }
 }

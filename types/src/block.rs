@@ -26,8 +26,14 @@ use std::hash::Hash;
 pub type BlockNumber = u64;
 
 //TODO: make sure height
-pub const DAG_FORK_HEIGHT: u64 = 2;
 pub type ParentsHash = Option<Vec<HashValue>>;
+
+pub static DEV_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
+pub static TEST_FLEXIDAG_FORK_HEIGHT: BlockNumber = 2;
+pub static PROXIMA_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
+pub static HALLEY_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
+pub static BARNARD_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
+pub static MAIN_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
 
 /// Type for block header extra
 #[derive(Clone, Default, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, JsonSchema)]
@@ -162,6 +168,91 @@ pub struct BlockHeader {
     parents_hash: ParentsHash,
 }
 
+// For single chain before FlexiDag upgrade
+#[derive(Clone, Debug, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+#[serde(rename = "BlockHeader")]
+pub struct OldBlockHeader {
+    #[serde(skip)]
+    #[allow(dead_code)]
+    id: Option<HashValue>,
+    /// Parent hash.
+    parent_hash: HashValue,
+    /// Block timestamp.
+    timestamp: u64,
+    /// Block number.
+    number: BlockNumber,
+    /// Block author.
+    author: AccountAddress,
+    /// Block author auth key.
+    /// this field is deprecated
+    author_auth_key: Option<AuthenticationKey>,
+    /// The transaction accumulator root hash after executing this block.
+    txn_accumulator_root: HashValue,
+    /// The parent block info's block accumulator root hash.
+    block_accumulator_root: HashValue,
+    /// The last transaction state_root of this block after execute.
+    state_root: HashValue,
+    /// Gas used for contracts execution.
+    gas_used: u64,
+    /// Block difficulty
+    difficulty: U256,
+    /// hash for block body
+    body_hash: HashValue,
+    /// The chain id
+    chain_id: ChainId,
+    /// Consensus nonce field.
+    nonce: u32,
+    /// block header extra
+    extra: BlockHeaderExtra,
+}
+
+impl From<BlockHeader> for OldBlockHeader {
+    fn from(v: BlockHeader) -> Self {
+        assert!(v.parents_hash.is_none());
+        Self {
+            id: v.id,
+            parent_hash: v.parent_hash,
+            timestamp: v.timestamp,
+            number: v.number,
+            author: v.author,
+            author_auth_key: v.author_auth_key,
+            txn_accumulator_root: v.txn_accumulator_root,
+            block_accumulator_root: v.block_accumulator_root,
+            state_root: v.state_root,
+            gas_used: v.gas_used,
+            difficulty: v.difficulty,
+            body_hash: v.body_hash,
+            chain_id: v.chain_id,
+            nonce: v.nonce,
+            extra: v.extra,
+        }
+    }
+}
+
+impl From<OldBlockHeader> for BlockHeader {
+    fn from(v: OldBlockHeader) -> Self {
+        let id = v.id.or_else(|| Some(v.crypto_hash()));
+        Self {
+            id,
+            parent_hash: v.parent_hash,
+            timestamp: v.timestamp,
+            number: v.number,
+            author: v.author,
+            author_auth_key: v.author_auth_key,
+            txn_accumulator_root: v.txn_accumulator_root,
+            block_accumulator_root: v.block_accumulator_root,
+            state_root: v.state_root,
+            gas_used: v.gas_used,
+            difficulty: v.difficulty,
+            body_hash: v.body_hash,
+            chain_id: v.chain_id,
+            nonce: v.nonce,
+            extra: v.extra,
+            parents_hash: None,
+        }
+    }
+}
+
 impl BlockHeader {
     pub fn new(
         parent_hash: HashValue,
@@ -234,7 +325,11 @@ impl BlockHeader {
             extra,
             parents_hash,
         };
-        header.id = Some(header.crypto_hash());
+        header.id = Some(if header.parents_hash.is_none() {
+            OldBlockHeader::from(header.clone()).crypto_hash()
+        } else {
+            header.crypto_hash()
+        });
         header
     }
 
@@ -314,12 +409,30 @@ impl BlockHeader {
         &self.extra
     }
 
-    pub fn is_dag(&self) -> bool {
-        self.number > DAG_FORK_HEIGHT
-    }
-
     pub fn is_genesis(&self) -> bool {
         self.number == 0
+    }
+    pub fn dag_fork_height(&self) -> BlockNumber {
+        if self.chain_id.is_test() {
+            TEST_FLEXIDAG_FORK_HEIGHT
+        } else if self.chain_id.is_halley() {
+            HALLEY_FLEXIDAG_FORK_HEIGHT
+        } else if self.chain_id.is_proxima() {
+            PROXIMA_FLEXIDAG_FORK_HEIGHT
+        } else if self.chain_id.is_barnard() {
+            BARNARD_FLEXIDAG_FORK_HEIGHT
+        } else if self.chain_id.is_main() {
+            MAIN_FLEXIDAG_FORK_HEIGHT
+        } else {
+            DEV_FLEXIDAG_FORK_HEIGHT
+        }
+    }
+
+    pub fn is_dag(&self) -> bool {
+        self.number > self.dag_fork_height()
+    }
+    pub fn is_dag_genesis(&self) -> bool {
+        self.number == self.dag_fork_height()
     }
 
     pub fn genesis_block_header(
@@ -348,6 +461,13 @@ impl BlockHeader {
             None,
         )
     }
+    //for test
+    pub fn dag_genesis_random() -> Self {
+        let mut header = Self::random();
+        header.parents_hash = Some(vec![header.parent_hash]);
+        header.number = TEST_FLEXIDAG_FORK_HEIGHT;
+        header
+    }
 
     pub fn random() -> Self {
         Self::new(
@@ -366,18 +486,6 @@ impl BlockHeader {
             BlockHeaderExtra([0u8; 4]),
             None,
         )
-    }
-
-    //for test
-    pub fn dag_genesis_random() -> Self {
-        let mut header = Self::random();
-        header.parents_hash = Some(vec![header.parent_hash]);
-        header.number = DAG_FORK_HEIGHT;
-        header
-    }
-
-    pub fn is_dag_genesis(&self) -> bool {
-        self.number == DAG_FORK_HEIGHT
     }
 
     pub fn as_builder(&self) -> BlockHeaderBuilder {
@@ -545,13 +653,13 @@ impl BlockHeaderBuilder {
     fn new_with(buffer: BlockHeader) -> Self {
         Self { buffer }
     }
+    pub fn with_parents_hash(mut self, parent_hash: ParentsHash) -> Self {
+        self.buffer.parents_hash = parent_hash;
+        self
+    }
 
     pub fn with_parent_hash(mut self, parent_hash: HashValue) -> Self {
         self.buffer.parent_hash = parent_hash;
-        self
-    }
-    pub fn with_parents_hash(mut self, parent_hash: ParentsHash) -> Self {
-        self.buffer.parents_hash = parent_hash;
         self
     }
 
@@ -639,6 +747,26 @@ pub struct BlockBody {
     pub uncles: Option<Vec<BlockHeader>>,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct OldBlockBody {
+    pub transactions: Vec<SignedUserTransaction>,
+    pub uncles: Option<Vec<OldBlockHeader>>,
+}
+
+impl From<OldBlockBody> for BlockBody {
+    fn from(value: OldBlockBody) -> Self {
+        let OldBlockBody {
+            transactions,
+            uncles,
+        } = value;
+
+        Self {
+            transactions,
+            uncles: uncles.map(|u| u.into_iter().map(|h| h.into()).collect::<Vec<_>>()),
+        }
+    }
+}
+
 impl BlockBody {
     pub fn new(transactions: Vec<SignedUserTransaction>, uncles: Option<Vec<BlockHeader>>) -> Self {
         Self {
@@ -698,6 +826,22 @@ pub struct Block {
     pub body: BlockBody,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename(deserialize = "Block"))]
+pub struct OldBlock {
+    pub header: OldBlockHeader,
+    pub body: OldBlockBody,
+}
+
+impl From<OldBlock> for Block {
+    fn from(value: OldBlock) -> Self {
+        Self {
+            header: value.header.into(),
+            body: value.body.into(),
+        }
+    }
+}
+
 impl Block {
     pub fn new<B>(header: BlockHeader, body: B) -> Self
     where
@@ -712,11 +856,13 @@ impl Block {
     pub fn is_dag(&self) -> bool {
         self.header.is_dag()
     }
+
     pub fn is_dag_genesis_block(&self) -> bool {
         self.header.is_dag_genesis()
     }
+
     pub fn parent_hash(&self) -> HashValue {
-        self.header.parent_hash
+        self.header.parent_hash()
     }
 
     pub fn id(&self) -> HashValue {
@@ -740,6 +886,13 @@ impl Block {
         self.uncles()
             .map(|uncles| uncles.iter().map(|header| header.id()).collect())
             .unwrap_or_default()
+    }
+
+    pub fn dag_parent_and_tips(&self) -> Option<(&BlockHeader, &[BlockHeader])> {
+        self.body
+            .uncles
+            .as_ref()
+            .and_then(|uncles| uncles.split_first())
     }
 
     pub fn into_inner(self) -> (BlockHeader, BlockBody) {
