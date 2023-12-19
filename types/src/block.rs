@@ -762,7 +762,21 @@ impl From<OldBlockBody> for BlockBody {
 
         Self {
             transactions,
-            uncles: uncles.map(|u| u.into_iter().map(|h| h.into()).collect::<Vec<_>>()),
+            uncles: uncles.map(|u| u.into_iter().map(Into::into).collect()),
+        }
+    }
+}
+
+impl From<BlockBody> for OldBlockBody {
+    fn from(value: BlockBody) -> Self {
+        let BlockBody {
+            transactions,
+            uncles,
+        } = value;
+
+        Self {
+            transactions,
+            uncles: uncles.map(|u| u.into_iter().map(Into::into).collect()),
         }
     }
 }
@@ -831,6 +845,15 @@ pub struct Block {
 pub struct OldBlock {
     pub header: OldBlockHeader,
     pub body: OldBlockBody,
+}
+
+impl From<Block> for OldBlock {
+    fn from(value: Block) -> Self {
+        Self {
+            header: value.header.into(),
+            body: value.body.into(),
+        }
+    }
 }
 
 impl From<OldBlock> for Block {
@@ -941,6 +964,9 @@ impl Block {
             self.header.chain_id,
             parent_gas_used,
         )
+    }
+    pub fn random_for_test() -> Block {
+        Block::new(BlockHeader::random(), BlockBody::sample())
     }
 }
 

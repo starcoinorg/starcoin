@@ -67,6 +67,17 @@ impl From<OldFailedBlockV2> for FailedBlock {
     }
 }
 
+impl From<FailedBlock> for OldFailedBlockV2 {
+    fn from(value: FailedBlock) -> Self {
+        Self {
+            block: value.block.into(),
+            peer_id: value.peer_id,
+            failed: value.failed,
+            version: value.version,
+        }
+    }
+}
+
 #[allow(clippy::from_over_into)]
 impl Into<(Block, Option<PeerId>, String, String)> for FailedBlock {
     fn into(self) -> (Block, Option<PeerId>, String, String) {
@@ -452,6 +463,7 @@ impl BlockStorage {
         for item in old_block_iter {
             let (id, old_block) = item?;
             let block: Block = old_block.into();
+            debug!("Process block {:?}", block);
             to_delete
                 .as_mut()
                 .unwrap()
@@ -473,6 +485,8 @@ impl BlockStorage {
                 block_store
                     .write_batch(to_put.take().unwrap())
                     .expect("should never fail");
+                to_delete = Some(CodecWriteBatch::new());
+                to_put = Some(CodecWriteBatch::new());
             }
         }
         if item_count != 0 {
@@ -525,6 +539,8 @@ impl BlockStorage {
                 failed_block_store
                     .write_batch(to_put.take().unwrap())
                     .expect("should never fail");
+                to_delete = Some(CodecWriteBatch::new());
+                to_put = Some(CodecWriteBatch::new());
             }
         }
         if item_count != 0 {
