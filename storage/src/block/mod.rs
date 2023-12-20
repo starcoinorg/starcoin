@@ -107,6 +107,17 @@ impl Sample for FailedBlock {
     }
 }
 
+impl FailedBlock {
+    pub fn random() -> Self {
+        Self {
+            block: Block::random(),
+            peer_id: Some(PeerId::random()),
+            failed: "Unknown reason".to_string(),
+            version: "Unknown version".to_string(),
+        }
+    }
+}
+
 define_storage!(BlockInnerStorage, HashValue, Block, BLOCK_PREFIX_NAME_V2);
 define_storage!(
     BlockHeaderStorage,
@@ -434,6 +445,7 @@ impl BlockStorage {
                 item_count = 0;
                 old_header_store.write_batch(to_deleted.take().unwrap())?;
                 header_store.write_batch(to_put.take().unwrap())?;
+
                 to_deleted = Some(CodecWriteBatch::<HashValue, OldBlockHeader>::new());
                 to_put = Some(CodecWriteBatch::<HashValue, BlockHeader>::new());
             }
@@ -484,6 +496,9 @@ impl BlockStorage {
                 block_store
                     .write_batch(to_put.take().unwrap())
                     .expect("should never fail");
+
+                to_delete = Some(CodecWriteBatch::new());
+                to_put = Some(CodecWriteBatch::new());
             }
         }
         if item_count != 0 {
@@ -536,6 +551,9 @@ impl BlockStorage {
                 failed_block_store
                     .write_batch(to_put.take().unwrap())
                     .expect("should never fail");
+
+                to_delete = Some(CodecWriteBatch::new());
+                to_put = Some(CodecWriteBatch::new());
             }
         }
         if item_count != 0 {

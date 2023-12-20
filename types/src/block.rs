@@ -1017,6 +1017,14 @@ impl Block {
             parent_gas_used,
         )
     }
+
+    pub fn random() -> Self {
+        let body = BlockBody::sample();
+        let mut header = BlockHeader::random();
+        header.body_hash = body.hash();
+
+        Self { header, body }
+    }
 }
 
 impl std::fmt::Display for Block {

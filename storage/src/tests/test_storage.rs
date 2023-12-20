@@ -3,6 +3,10 @@
 
 extern crate chrono;
 
+use crate::block::{
+    FailedBlock, OldBlockHeaderStorage, OldBlockInnerStorage, OldFailedBlockStorage,
+    OldFailedBlockV2,
+};
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::{CodecKVStore, InnerStore, StorageInstance, ValueCodec};
@@ -19,7 +23,6 @@ use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_config::RocksdbConfig;
 use starcoin_crypto::HashValue;
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockInfo};
-//use starcoin_types::language_storage::TypeTag;
 use starcoin_types::startup_info::SnapshotRange;
 use starcoin_types::transaction::{
     RichTransactionInfo, SignedUserTransaction, Transaction, TransactionInfo,
@@ -28,13 +31,6 @@ use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-//use starcoin_vm_types::account_address::AccountAddress;
-//use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-use crate::block::{
-    FailedBlock, OldBlockHeaderStorage, OldBlockInnerStorage, OldFailedBlockStorage,
-    OldFailedBlockV2,
-};
-use bcs_ext::Sample;
 use std::path::Path;
 
 #[test]
@@ -297,7 +293,7 @@ fn generate_old_block_data(instance: StorageInstance) -> Result<(Vec<HashValue>,
 
     let failed_block_ids = (0..BLOCK_COUNT)
         .map(|_| {
-            let failed_block = FailedBlock::sample();
+            let failed_block = FailedBlock::random();
             let failed_block_id = {
                 let (block, _, _, _) = failed_block.clone().into();
                 block.id()
@@ -312,7 +308,7 @@ fn generate_old_block_data(instance: StorageInstance) -> Result<(Vec<HashValue>,
 
     let block_ids = (0..BLOCK_COUNT)
         .map(|_| {
-            let block = Block::sample();
+            let block = Block::random();
             let block_id = block.id();
             let old_block = block.clone().into();
             let old_block_header = block.header.into();
