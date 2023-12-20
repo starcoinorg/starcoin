@@ -1316,7 +1316,7 @@ impl ChainWriter for BlockChain {
     }
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
-        if executed_block.block.header.number() >= self.dag_fork_height() {
+        if executed_block.block.header.number() > self.dag_fork_height() {
             return self.connect_dag(executed_block);
         }
         let (block, block_info) = (executed_block.block(), executed_block.block_info());

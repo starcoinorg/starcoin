@@ -947,7 +947,6 @@ impl EpochUncleSummary {
 }
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct KTotalDifficulty {
-    pub head_block_id: HashValue,
     pub total_difficulty: U256,
 }
 

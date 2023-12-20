@@ -551,10 +551,7 @@ where
         }))?
     }
 
-    pub fn dump_tips(&mut self, block_header: BlockHeader) -> Result<()> {
-        self.main
-            .status()
-            .update_tips(Some(vec![block_header.id()]));
+    pub fn append_new_dag_block(&mut self, block_header: BlockHeader) -> Result<()> {
         async_std::task::block_on(self.flexidag_service.send(DumpTipsToAccumulator {
             block_header: block_header.clone(),
             current_head_block_id: self.main.status().head().id(),

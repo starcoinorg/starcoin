@@ -1,4 +1,4 @@
-use std::{collections::BTreeSet, sync::Arc};
+use std::sync::Arc;
 
 use crate::{
     accumulator::{AccumulatorStorage, DagBlockAccumulatorStorage},
@@ -11,7 +11,7 @@ use bcs_ext::BCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::HashValue;
-use starcoin_types::dag_block::KTotalDifficulty;
+use starcoin_types::block::BlockNumber;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct DagTips {
@@ -30,39 +30,8 @@ impl ValueCodec for DagTips {
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct SyncFlexiDagSnapshot {
-    pub child_hashes: Vec<HashValue>, // child nodes(tips), to get the relationship, use dag's relationship store
-    pub accumulator_info: AccumulatorInfo,
-    pub head_block_id: HashValue, // to initialize the BlockInfo
-    pub k_total_difficulties: BTreeSet<KTotalDifficulty>, // the k-th smallest total difficulty
-}
-
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub struct SyncFlexiDagSnapshotHasher {
-    pub child_hashes: Vec<HashValue>, // child nodes(tips), to get the relationship, use dag's relationship store
-    pub head_block_id: HashValue,     // to initialize the BlockInfo
-    pub k_total_difficulties: BTreeSet<KTotalDifficulty>, // the k-th smallest total difficulty
-}
-
-impl SyncFlexiDagSnapshotHasher {
-    pub fn to_snapshot(self, accumulator_info: AccumulatorInfo) -> SyncFlexiDagSnapshot {
-        SyncFlexiDagSnapshot {
-            child_hashes: self.child_hashes,
-            accumulator_info,
-            head_block_id: self.head_block_id,
-            k_total_difficulties: self.k_total_difficulties,
-        }
-    }
-}
-
-impl From<SyncFlexiDagSnapshot> for SyncFlexiDagSnapshotHasher {
-    fn from(mut value: SyncFlexiDagSnapshot) -> Self {
-        value.child_hashes.sort();
-        SyncFlexiDagSnapshotHasher {
-            child_hashes: value.child_hashes,
-            head_block_id: value.head_block_id,
-            k_total_difficulties: value.k_total_difficulties,
-        }
-    }
+    pub dag_blocks: Vec<HashValue>,
+    pub number: BlockNumber,
 }
 
 impl ValueCodec for SyncFlexiDagSnapshot {

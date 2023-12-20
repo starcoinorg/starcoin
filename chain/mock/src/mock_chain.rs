@@ -145,9 +145,13 @@ impl MockChain {
     }
 
     pub fn produce_and_apply(&mut self) -> Result<BlockHeader> {
+        println!("jacktest: produce_and_apply1");
         let block = self.produce()?;
+        println!("jacktest: produce_and_apply2");
         let header = block.header().clone();
+        println!("jacktest: produce_and_apply3");
         self.apply(block)?;
+        println!("jacktest: produce_and_apply4");
         Ok(header)
     }
 

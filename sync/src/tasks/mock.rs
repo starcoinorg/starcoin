@@ -15,13 +15,16 @@ use network_api::{PeerId, PeerInfo, PeerSelector, PeerStrategy};
 use network_p2p_core::{NetRpcError, RpcErrorCode};
 use rand::Rng;
 use starcoin_account_api::AccountInfo;
+use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
+use starcoin_flexidag::{FlexidagService, flexidag_service};
 use starcoin_network_rpc_api::G_RPC_INFO;
+use starcoin_service_registry::{ServiceRef, RegistryService, RegistryAsyncService};
 use starcoin_storage::Storage;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
@@ -284,6 +287,11 @@ impl SyncNodeMocker {
         self.chain_mocker.produce_and_apply_times(times)
     }
 
+    pub fn produce_block_and_create_dag(&mut self, times: u64) -> Result<()> {
+        self.chain_mocker.produce_and_apply_times(times)?;
+        Ok(())
+    }
+
     pub fn select_head(&mut self, block: Block) -> Result<()> {
         self.chain_mocker.select_head(block)
     }
@@ -307,6 +315,10 @@ impl SyncNodeMocker {
         self.peer_selector
             .select_peer()
             .ok_or_else(|| format_err!("No peers for send request."))
+    }
+
+    pub fn get_dag_targets(&self) -> Result<Vec<AccumulatorInfo>> {
+       Ok(vec![]) 
     }
 }
 

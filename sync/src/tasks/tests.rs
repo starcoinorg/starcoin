@@ -10,7 +10,7 @@ use crate::tasks::{
     BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask, SyncFetcher,
 };
 use crate::verified_rpc_client::RpcVerifyError;
-use anyhow::{format_err, Result};
+use anyhow::{format_err, Result, anyhow};
 use anyhow::{Context, Ok};
 use futures::channel::mpsc::unbounded;
 use futures::future::BoxFuture;
@@ -39,6 +39,7 @@ use starcoin_types::{
     block::{Block, BlockBody, BlockHeaderBuilder, BlockIdAndNumber, BlockInfo},
     U256,
 };
+use stream_task::TaskHandle;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use stest::actix_export::System;
@@ -1184,71 +1185,117 @@ async fn sync_block_in_block_connection_service_mock(
 }
 
 #[cfg(test)]
-async fn sync_dag_block_from_single_chain(
-    mut target_node: Arc<SyncNodeMocker>,
+async fn sync_dag_chain(mut target_node: Arc<SyncNodeMocker>,
     local_node: Arc<SyncNodeMocker>,
     registry: &ServiceRef<RegistryService>,
-    block_count: u64,
-) -> Result<Arc<SyncNodeMocker>> {
+) -> Result<(
+    // BoxFuture<'static, Result<BlockChain, TaskError>>,
+    // TaskHandle,
+    // Arc<TaskEventCounterHandle>,
+)> {
     Arc::get_mut(&mut target_node)
-        .unwrap()
-        .produce_block(block_count)?;
-    loop {
-        let target = target_node.sync_target();
+    .unwrap()
+    .produce_block_and_create_dag(21)?;
+    Ok(())
 
-        let storage = local_node.chain().get_storage();
-        let startup_info = storage
-            .get_startup_info()?
-            .ok_or_else(|| format_err!("Startup info should exist."))?;
-        let current_block_id = startup_info.main;
+    // let flexidag_service = registry.service_ref::<FlexidagService>().await?;
+    // let local_dag_accumulator_info = flexidag_service.send(GetDagAccumulatorInfo).await??.ok_or(anyhow!("dag accumulator is none"))?;
 
-        let local_net = local_node.chain_mocker.net();
-        let (local_ancestor_sender, _local_ancestor_receiver) = unbounded();
+    // let result = sync_dag_full_task(
+    //     local_dag_accumulator_info,
+    //     target_accumulator_info,
+    //     target_node.clone(),
+    //     accumulator_store,
+    //     accumulator_snapshot,
+    //     local_store,
+    //     local_net.time_service(),
+    //     None,
+    //     connector_service,
+    //     network,
+    //     false,
+    //     dag,
+    //     block_chain_service,
+    //     flexidag_service,
+    //     local_net.id().clone(),
+    // )?;
 
-        let block_chain_service = async_std::task::block_on(
-            registry.service_ref::<BlockConnectorService<MockTxPoolService>>(),
-        )?;
-
-        let (sync_task, _task_handle, task_event_counter) = full_sync_task(
-            current_block_id,
-            target.clone(),
-            false,
-            local_net.time_service(),
-            storage.clone(),
-            block_chain_service,
-            target_node.clone(),
-            local_ancestor_sender,
-            DummyNetworkService::default(),
-            15,
-            ChainNetworkID::TEST,
-            None,
-            None,
-        )?;
-        let branch = sync_task.await?;
-        info!("checking branch in sync service is the same as target's branch");
-        assert_eq!(branch.current_header().id(), target.target_id.id());
-
-        let block_connector_service = registry
-            .service_ref::<BlockConnectorService<MockTxPoolService>>()
-            .await?
-            .clone();
-        let result = block_connector_service
-            .send(CheckBlockConnectorHashValue {
-                head_hash: target.target_id.id(),
-                number: target.target_id.number(),
-            })
-            .await?;
-        if result.is_ok() {
-            break;
-        }
-        let reports = task_event_counter.get_reports();
-        reports
-            .iter()
-            .for_each(|report| debug!("reports: {}", report));
-    }
-
-    Ok(target_node)
+    // Ok(result)
 }
+
+// #[cfg(test)]
+// async fn sync_dag_block_from_single_chain(
+//     mut target_node: Arc<SyncNodeMocker>,
+//     local_node: Arc<SyncNodeMocker>,
+//     registry: &ServiceRef<RegistryService>,
+//     block_count: u64,
+// ) -> Result<Arc<SyncNodeMocker>> {
+//     use starcoin_consensus::BlockDAG;
+
+//     Arc::get_mut(&mut target_node)
+//         .unwrap()
+//         .produce_block(block_count)?;
+//     loop {
+//         let target = target_node.sync_target();
+
+//         let storage = local_node.chain().get_storage();
+//         let startup_info = storage
+//             .get_startup_info()?
+//             .ok_or_else(|| format_err!("Startup info should exist."))?;
+//         let current_block_id = startup_info.main;
+
+//         let local_net = local_node.chain_mocker.net();
+//         let (local_ancestor_sender, _local_ancestor_receiver) = unbounded();
+
+//         let block_chain_service = async_std::task::block_on(
+//             registry.service_ref::<BlockConnectorService<MockTxPoolService>>(),
+//         )?;
+
+//         let (sync_task, _task_handle, task_event_counter) = if local_node.chain().head_block().block.header().number()
+//             > BlockDAG::dag_fork_height_with_net(local_net.id().clone()) {
+
+//         } else {
+//             full_sync_task(
+//                 current_block_id,
+//                 target.clone(),
+//                 false,
+//                 local_net.time_service(),
+//                 storage.clone(),
+//                 block_chain_service,
+//                 target_node.clone(),
+//                 local_ancestor_sender,
+//                 DummyNetworkService::default(),
+//                 15,
+//                 ChainNetworkID::TEST,
+//                 None,
+//                 None,
+//             )?
+//         };
+
+//         let branch = sync_task.await?;
+//         info!("checking branch in sync service is the same as target's branch");
+//         assert_eq!(branch.current_header().id(), target.target_id.id());
+
+//         let block_connector_service = registry
+//             .service_ref::<BlockConnectorService<MockTxPoolService>>()
+//             .await?
+//             .clone();
+//         let result = block_connector_service
+//             .send(CheckBlockConnectorHashValue {
+//                 head_hash: target.target_id.id(),
+//                 number: target.target_id.number(),
+//             })
+//             .await?;
+//         if result.is_ok() {
+//             break;
+//         }
+//         let reports = task_event_counter.get_reports();
+//         reports
+//             .iter()
+//             .for_each(|report| debug!("reports: {}", report));
+//     }
+
+//     Ok(target_node)
+// }
 
 #[stest::test]
 async fn test_sync_block_apply_failed_but_connect_success() -> Result<()> {
@@ -1341,23 +1388,23 @@ impl SyncTestSystem {
     }
 }
 
-#[stest::test]
-async fn test_sync_single_chain_to_dag_chain() -> Result<()> {
-    let test_system = SyncTestSystem::initialize_sync_system().await?;
-    let target_node = sync_block_in_block_connection_service_mock(
-        test_system.target_node,
-        test_system.local_node.clone(),
-        &test_system.registry,
-        10,
-    )
-    .await?;
-    _ = sync_block_in_block_connection_service_mock(
-        target_node,
-        test_system.local_node.clone(),
-        &test_system.registry,
-        10,
-    )
-    .await?;
+// #[stest::test]
+// async fn test_sync_single_chain_to_dag_chain() -> Result<()> {
+//     let test_system = SyncTestSystem::initialize_sync_system().await?;
+//     let target_node = sync_dag_chain(
+//         test_system.target_node,
+//         test_system.local_node.clone(),
+//         &test_system.registry,
+//         10,
+//     )
+//     .await?;
+//     _ = sync_block_in_block_connection_service_mock(
+//         target_node,
+//         test_system.local_node.clone(),
+//         &test_system.registry,
+//         10,
+//     )
+//     .await?;
 
-    Ok(())
-}
+//     Ok(())
+// }

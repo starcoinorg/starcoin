@@ -11,7 +11,6 @@ use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::HashValue;
 use starcoin_uint::U256;
 use starcoin_vm_types::genesis_config::ChainId;
-use std::collections::BTreeSet;
 use std::convert::{TryFrom, TryInto};
 use std::fmt::{self, Display, Formatter};
 use std::hash::Hash;
@@ -23,7 +22,7 @@ pub struct ChainInfo {
     genesis_hash: HashValue,
     status: ChainStatus,
     flexi_dag_accumulator_info: Option<AccumulatorInfo>,
-    k_total_difficulties: Option<BTreeSet<KTotalDifficulty>>,
+    k_total_difficulty: KTotalDifficulty,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -51,7 +50,9 @@ impl From<OldChainInfo> for ChainInfo {
             genesis_hash: value.genesis_hash,
             status: value.status.into(),
             flexi_dag_accumulator_info: None,
-            k_total_difficulties: None,
+            k_total_difficulty: KTotalDifficulty {
+                total_difficulty: 0.into(),
+            },
         }
     }
 }
@@ -62,14 +63,14 @@ impl ChainInfo {
         genesis_hash: HashValue,
         status: ChainStatus,
         flexi_dag_accumulator_info: Option<AccumulatorInfo>,
-        k_total_difficulties: Option<BTreeSet<KTotalDifficulty>>,
+        k_total_difficulty: KTotalDifficulty,
     ) -> Self {
         Self {
             chain_id,
             genesis_hash,
             status,
             flexi_dag_accumulator_info,
-            k_total_difficulties,
+            k_total_difficulty,
         }
     }
 
@@ -108,8 +109,8 @@ impl ChainInfo {
         self.status.info.get_total_difficulty()
     }
 
-    pub fn k_total_difficulties(&self) -> &Option<BTreeSet<KTotalDifficulty>> {
-        &self.k_total_difficulties
+    pub fn k_total_difficulties(&self) -> &KTotalDifficulty {
+        &self.k_total_difficulty
     }
 
     pub fn into_inner(self) -> (ChainId, HashValue, ChainStatus) {
@@ -127,7 +128,9 @@ impl ChainInfo {
                 rand::random::<u64>(),
                 rand::random::<u64>(),
             )),
-            k_total_difficulties: Some(BTreeSet::new()),
+            k_total_difficulty: KTotalDifficulty {
+                total_difficulty: U256::from_big_endian(&rand::random::<u128>().to_be_bytes().iter().chain(rand::random::<u128>().to_be_bytes().iter()).cloned().collect::<Vec<u8>>()),
+            },
         }
     }
 }
@@ -139,7 +142,9 @@ impl Default for ChainInfo {
             genesis_hash: HashValue::default(),
             status: ChainStatus::sample(),
             flexi_dag_accumulator_info: Some(AccumulatorInfo::default()),
-            k_total_difficulties: Some(BTreeSet::new()),
+            k_total_difficulty: KTotalDifficulty {
+                total_difficulty: U256::default(), 
+            },
         }
     }
 }
@@ -209,6 +214,12 @@ impl ChainStatus {
                 head.txn_accumulator_root(),
                 vec![],
                 rand::random::<u64>(),
+                rand::random::<u64>(),
+            ),
+            AccumulatorInfo::new(
+                head.block_accumulator_root(),
+                vec![],
+                head.number().saturating_sub(1),
                 rand::random::<u64>(),
             ),
             AccumulatorInfo::new(

@@ -20,7 +20,7 @@ use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use starcoin_accumulator::{
-    accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, AccumulatorTreeStore,
+    accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, AccumulatorTreeStore, MerkleAccumulator, Accumulator,
 };
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
@@ -37,7 +37,7 @@ use starcoin_vm_types::{
     state_store::table::{TableHandle, TableInfo},
 };
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::BTreeMap,
     fmt::{Debug, Display, Formatter},
     sync::Arc,
 };
@@ -322,14 +322,6 @@ pub trait SyncFlexiDagStore {
     fn put_hashes(&self, key: HashValue, accumulator_snapshot: SyncFlexiDagSnapshot) -> Result<()>;
     fn query_by_hash(&self, key: HashValue) -> Result<Option<SyncFlexiDagSnapshot>>;
     fn get_accumulator_snapshot_storage(&self) -> Arc<SyncFlexiDagSnapshotStorage>;
-    fn append_dag_accumulator_leaf(
-        &self,
-        key: HashValue,
-        new_tips: Vec<HashValue>,
-        accumulator_info: AccumulatorInfo,
-        head_block_id: HashValue,
-        k_total_difficulties: BTreeSet<KTotalDifficulty>,
-    ) -> Result<()>;
     fn get_dag_accumulator_info(&self) -> Result<Option<AccumulatorInfo>>;
     fn get_tips_by_block_id(&self, block_id: HashValue) -> Result<Vec<HashValue>>;
     fn get_latest_snapshot(&self) -> Result<Option<SyncFlexiDagSnapshot>>;
@@ -461,22 +453,26 @@ impl BlockStore for Storage {
         let head_block_info = self.get_block_info(head_block.id())?.ok_or_else(|| {
             format_err!("Startup block info {:?} should exist", startup_info.main)
         })?;
-        let (tips_hash, flexi_dag_accumulator_info, k_total_difficulties) =
-            if let Some(snapshot) = self.get_latest_snapshot()? {
-                (
-                    Some(snapshot.child_hashes),
-                    Some(snapshot.accumulator_info),
-                    Some(snapshot.k_total_difficulties),
-                )
-            } else {
-                (None, None, None)
-            };
+        let tips = self.get_dag_tips()?;
+
+        let block_accumulator = MerkleAccumulator::new_with_info(
+            head_block_info.block_accumulator_info.clone(),
+            self.get_accumulator_store(AccumulatorStoreType::Block),
+        );
+        // todo: k should be read from node config 
+        let k_key = block_accumulator.get_leaf(std::cmp::max(head_block.number() - 8, 0))?.ok_or_else(|| format_err!("failed to find the k-smallest total difficulty"))?;
+        let k_block_info = self.get_block_info(k_key)?.ok_or_else(|| {
+            format_err!("kth block info {:?} should exist", k_key)
+        })?;
+        let flexidag_dag_accumulator_info = Some(head_block_info.dag_accumulator_info.clone());
         let chain_info = ChainInfo::new(
             head_block.chain_id(),
             genesis_hash,
-            ChainStatus::new(head_block, head_block_info, tips_hash),
-            flexi_dag_accumulator_info,
-            k_total_difficulties,
+            ChainStatus::new(head_block, head_block_info, tips.map(|t| t.tips)),
+            flexidag_dag_accumulator_info,
+            KTotalDifficulty {
+                total_difficulty: k_block_info.total_difficulty
+            },
         );
         Ok(Some(chain_info))
     }
@@ -680,32 +676,6 @@ impl SyncFlexiDagStore for Storage {
 
     fn get_accumulator_snapshot_storage(&self) -> Arc<SyncFlexiDagSnapshotStorage> {
         self.flexi_dag_storage.get_snapshot_storage()
-    }
-
-    // update dag accumulator
-    fn append_dag_accumulator_leaf(
-        &self,
-        key: HashValue,
-        new_tips: Vec<HashValue>,
-        accumulator_info: AccumulatorInfo,
-        head_block_id: HashValue,
-        k_total_difficulties: BTreeSet<KTotalDifficulty>,
-    ) -> Result<()> {
-        let snapshot = SyncFlexiDagSnapshot {
-            child_hashes: new_tips,
-            accumulator_info,
-            head_block_id,
-            k_total_difficulties,
-        };
-        // for sync
-        if let Some(t) = self.query_by_hash(key)? {
-            assert_eq!(t, snapshot, "the accumulator differ from other");
-        } else {
-            self.put_hashes(key, snapshot)?;
-            self.save_dag_startup_info(DagStartupInfo::new(key))?;
-        }
-
-        Ok(())
     }
 
     fn get_dag_accumulator_info(&self) -> Result<Option<AccumulatorInfo>> {
