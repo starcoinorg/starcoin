@@ -28,12 +28,12 @@ pub type BlockNumber = u64;
 //TODO: make sure height
 pub type ParentsHash = Option<Vec<HashValue>>;
 
-pub static DEV_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
-pub static TEST_FLEXIDAG_FORK_HEIGHT: BlockNumber = 2;
-pub static PROXIMA_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
-pub static HALLEY_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
-pub static BARNARD_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
-pub static MAIN_FLEXIDAG_FORK_HEIGHT: BlockNumber = 4;
+pub static DEV_FLEXIDAG_FORK_HEIGHT: BlockNumber = 100000;
+pub static TEST_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
+pub static PROXIMA_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
+pub static HALLEY_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
+pub static BARNARD_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
+pub static MAIN_FLEXIDAG_FORK_HEIGHT: BlockNumber = 1000000;
 
 /// Type for block header extra
 #[derive(Clone, Default, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, JsonSchema)]
@@ -169,7 +169,7 @@ pub struct BlockHeader {
 }
 
 // For single chain before FlexiDag upgrade
-#[derive(Clone, Debug, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+#[derive(Clone, Debug, Serialize, Deserialize, CryptoHasher, CryptoHash, PartialEq, Hash, Eq)]
 #[serde(rename = "BlockHeader")]
 pub struct OldBlockHeader {
     #[serde(skip)]
@@ -747,7 +747,8 @@ pub struct BlockBody {
     pub uncles: Option<Vec<BlockHeader>>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, CryptoHash, CryptoHasher)]
+#[serde(rename = "BlockBody")]
 pub struct OldBlockBody {
     pub transactions: Vec<SignedUserTransaction>,
     pub uncles: Option<Vec<OldBlockHeader>>,
@@ -840,7 +841,7 @@ pub struct Block {
     pub body: BlockBody,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, CryptoHash, CryptoHasher)]
 #[serde(rename(deserialize = "Block"))]
 pub struct OldBlock {
     pub header: OldBlockHeader,

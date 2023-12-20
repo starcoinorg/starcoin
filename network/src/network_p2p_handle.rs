@@ -10,12 +10,38 @@ use network_p2p::business_layer_handle::HandshakeResult;
 use network_p2p::{business_layer_handle::BusinessLayerHandle, protocol::rep, PeerId};
 use sc_peerset::ReputationChange;
 use serde::{Deserialize, Serialize};
-use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use starcoin_types::startup_info::{ChainInfo, ChainStatus, OldChainInfo};
 
 /// Current protocol version.
-pub(crate) const CURRENT_VERSION: u32 = 5;
+pub(crate) const CURRENT_VERSION: u32 = 6;
 /// Lowest version we support
 pub(crate) const MIN_VERSION: u32 = 3;
+#[derive(Deserialize, Serialize)]
+#[serde(rename = "Status")]
+pub struct LegacyStatus {
+    /// Protocol version.
+    pub version: u32,
+    /// Minimum supported version.
+    pub min_supported_version: u32,
+    /// Tell other peer which notification protocols we support.
+    pub notif_protocols: Vec<Cow<'static, str>>,
+    /// Tell other peer which rpc api we support.
+    pub rpc_protocols: Vec<Cow<'static, str>>,
+    /// the generic data related to the peer
+    pub info: OldChainInfo,
+}
+
+impl From<LegacyStatus> for Status {
+    fn from(value: LegacyStatus) -> Self {
+        Self {
+            version: value.version,
+            min_supported_version: value.min_supported_version,
+            notif_protocols: value.notif_protocols,
+            rpc_protocols: value.rpc_protocols,
+            info: value.info.into(),
+        }
+    }
+}
 
 /// Status sent on connection.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
@@ -95,11 +121,14 @@ impl BusinessLayerHandle for Networkp2pHandle {
         received_handshake: Vec<u8>,
     ) -> Result<HandshakeResult, ReputationChange> {
         match Status::decode(&received_handshake[..]) {
-            std::result::Result::Ok(status) => self.inner_handshake(peer_id, status),
-            Err(err) => {
-                error!(target: "network-p2p", "Couldn't decode handshake packet sent by {}: {:?}: {}", peer_id, hex::encode(received_handshake), err);
-                Err(rep::BAD_MESSAGE)
-            }
+            Result::Ok(status) => self.inner_handshake(peer_id, status),
+            Err(err) => match LegacyStatus::decode(&received_handshake[..]) {
+                Result::Ok(s5) => self.inner_handshake(peer_id, s5.into()),
+                Err(err_inner) => {
+                    error!(target: "network-p2p", "Couldn't decode handshake packet sent by {}: {:?}: {}, {}", peer_id, hex::encode(received_handshake), err_inner, err);
+                    Err(rep::BAD_MESSAGE)
+                }
+            },
         }
     }
 

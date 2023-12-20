@@ -57,6 +57,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
     let current_block_header = node2.chain().current_header();
 
     let storage = node2.chain().get_storage();
+    let dag = node2.chain().dag();
     let (sender_1, receiver_1) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
@@ -72,6 +73,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
         15,
         None,
         None,
+        dag.clone(),
     )?;
     let join_handle = node2.process_block_connect_event(receiver_1).await;
     let branch = sync_task.await?;
@@ -103,6 +105,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
         15,
         None,
         None,
+        dag,
     )?;
     let join_handle = node2.process_block_connect_event(receiver_1).await;
     let branch = sync_task.await?;
@@ -130,7 +133,7 @@ pub async fn test_sync_invalid_target() -> Result<()> {
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
 
     let node2 = SyncNodeMocker::new(net2.clone(), 1, 0)?;
-
+    let dag = node2.chain().dag();
     let mut target = arc_node1.sync_target();
 
     target.block_info.total_difficulty = U256::max_value();
@@ -153,6 +156,7 @@ pub async fn test_sync_invalid_target() -> Result<()> {
         15,
         None,
         None,
+        dag,
     )?;
     let _join_handle = node2.process_block_connect_event(receiver_1).await;
     let sync_result = sync_task.await;
@@ -174,13 +178,14 @@ pub async fn test_sync_invalid_target() -> Result<()> {
 #[stest::test]
 pub async fn test_failed_block() -> Result<()> {
     let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
-    let (storage, chain_info, _) = Genesis::init_storage_for_test(&net)?;
+    let (storage, chain_info, _, dag) = Genesis::init_storage_for_test(&net)?;
 
     let chain = BlockChain::new(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
         None,
+        dag,
     )?;
     let (sender, _) = unbounded();
     let chain_status = chain.status();
@@ -224,7 +229,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
     let target = arc_node1.sync_target();
 
     let current_block_header = node2.chain().current_header();
-
+    let dag = node2.chain().dag();
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
@@ -241,6 +246,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         15,
         None,
         None,
+        dag.clone(),
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -274,6 +280,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         15,
         None,
         None,
+        dag,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -306,7 +313,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
     let target = arc_node1.sync_target();
 
     let current_block_header = node2.chain().current_header();
-
+    let dag = node2.chain().dag();
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
@@ -323,6 +330,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
         15,
         None,
         None,
+        dag,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -346,12 +354,10 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
 pub async fn test_full_sync_continue() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let mut node1 = SyncNodeMocker::new(net1, 10, 50)?;
+    let dag = node1.chain().dag();
     node1.produce_block(10)?;
-
     let arc_node1 = Arc::new(node1);
-
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-
     //fork from genesis
     let mut node2 = SyncNodeMocker::new(net2.clone(), 1, 50)?;
     node2.produce_block(7)?;
@@ -377,6 +383,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         15,
         None,
         None,
+        dag.clone(),
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -412,6 +419,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         15,
         None,
         None,
+        dag,
     )?;
 
     let join_handle = node2.process_block_connect_event(receiver).await;
@@ -447,7 +455,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
     let target = arc_node1.sync_target();
 
     let current_block_header = node2.chain().current_header();
-
+    let dag = node2.chain().dag();
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
@@ -464,6 +472,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
         15,
         None,
         None,
+        dag,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let sync_join_handle = tokio::task::spawn(sync_task);
@@ -890,7 +899,7 @@ async fn test_net_rpc_err() -> Result<()> {
     let target = arc_node1.sync_target();
 
     let current_block_header = node2.chain().current_header();
-
+    let dag = node2.chain().dag();
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
@@ -907,6 +916,7 @@ async fn test_net_rpc_err() -> Result<()> {
         15,
         None,
         None,
+        dag,
     )?;
     let _join_handle = node2.process_block_connect_event(receiver).await;
     let sync_join_handle = tokio::task::spawn(sync_task);
@@ -956,7 +966,7 @@ async fn test_sync_target() {
     ));
 
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let (_, genesis_chain_info, _) =
+    let (_, genesis_chain_info, _, _) =
         Genesis::init_storage_for_test(&net2).expect("init storage by genesis fail.");
     let mock_chain = MockChain::new_with_chain(
         net2,

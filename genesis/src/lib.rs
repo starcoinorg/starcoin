@@ -19,6 +19,7 @@ use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_transaction_builder::build_stdlib_package_with_modules;
 use starcoin_transaction_builder::{build_stdlib_package, StdLibOptions};
+use starcoin_types::block::OldBlock;
 use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::transaction::Package;
 use starcoin_types::transaction::TransactionInfo;
@@ -51,6 +52,25 @@ pub struct Genesis {
     block: Block,
 }
 
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename(deserialize = "Genesis"))]
+pub struct LegacyGenesis {
+    pub block: OldBlock,
+}
+impl From<LegacyGenesis> for Genesis {
+    fn from(value: LegacyGenesis) -> Self {
+        Self {
+            block: value.block.into(),
+        }
+    }
+}
+impl From<Genesis> for LegacyGenesis {
+    fn from(value: Genesis) -> Self {
+        Self {
+            block: value.block.into(),
+        }
+    }
+}
 impl Display for Genesis {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Genesis {{")?;
@@ -99,6 +119,7 @@ impl Genesis {
     pub fn build(net: &ChainNetwork) -> Result<Self> {
         debug!("Init genesis for {}", net);
         let block = Self::build_genesis_block(net)?;
+
         assert_eq!(block.header().number(), 0);
         debug!("Genesis block id : {:?}", block.header().id());
         let genesis = Self { block };
@@ -234,7 +255,7 @@ impl Genesis {
         let mut genesis_file = File::open(genesis_file_path)?;
         let mut content = vec![];
         genesis_file.read_to_end(&mut content)?;
-        let genesis = bcs_ext::from_bytes(&content)?;
+        let genesis = bcs_ext::from_bytes::<LegacyGenesis>(&content)?.into();
         Ok(Some(genesis))
     }
 
@@ -247,7 +268,7 @@ impl Genesis {
 
     pub fn load_generated(net: BuiltinNetworkID) -> Result<Option<Self>> {
         match Self::genesis_bytes(net) {
-            Some(bytes) => Ok(Some(bcs_ext::from_bytes::<Genesis>(bytes)?)),
+            Some(bytes) => Ok(Some(bcs_ext::from_bytes::<LegacyGenesis>(bytes)?.into())),
             None => Ok(None),
         }
     }
@@ -283,7 +304,7 @@ impl Genesis {
         }
         let genesis_file = data_dir.join(Self::GENESIS_FILE_NAME);
         let mut file = File::create(genesis_file)?;
-        let contents = bcs_ext::to_bytes(self)?;
+        let contents = bcs_ext::to_bytes::<LegacyGenesis>(&LegacyGenesis::from(self.to_owned()))?;
         file.write_all(&contents)?;
         Ok(())
     }

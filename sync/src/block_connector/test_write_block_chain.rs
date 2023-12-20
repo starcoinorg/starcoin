@@ -125,7 +125,7 @@ fn gen_fork_block_chain(
                 parent_id,
                 writeable_block_chain_service.get_main().get_storage(),
                 None,
-                dag,
+                dag.clone(),
             )
             .unwrap();
             let (block_template, _) = block_chain
