@@ -67,6 +67,17 @@ impl From<OldFailedBlockV2> for FailedBlock {
     }
 }
 
+impl From<FailedBlock> for OldFailedBlockV2 {
+    fn from(value: FailedBlock) -> Self {
+        Self {
+            block: value.block.into(),
+            peer_id: value.peer_id,
+            failed: value.failed,
+            version: value.version,
+        }
+    }
+}
+
 #[allow(clippy::from_over_into)]
 impl Into<(Block, Option<PeerId>, String, String)> for FailedBlock {
     fn into(self) -> (Block, Option<PeerId>, String, String) {
@@ -89,6 +100,17 @@ impl Sample for FailedBlock {
     fn sample() -> Self {
         Self {
             block: Block::sample(),
+            peer_id: Some(PeerId::random()),
+            failed: "Unknown reason".to_string(),
+            version: "Unknown version".to_string(),
+        }
+    }
+}
+
+impl FailedBlock {
+    pub fn random() -> Self {
+        Self {
+            block: Block::random(),
             peer_id: Some(PeerId::random()),
             failed: "Unknown reason".to_string(),
             version: "Unknown version".to_string(),
@@ -423,6 +445,7 @@ impl BlockStorage {
                 item_count = 0;
                 old_header_store.write_batch(to_deleted.take().unwrap())?;
                 header_store.write_batch(to_put.take().unwrap())?;
+
                 to_deleted = Some(CodecWriteBatch::<HashValue, OldBlockHeader>::new());
                 to_put = Some(CodecWriteBatch::<HashValue, BlockHeader>::new());
             }
@@ -473,6 +496,9 @@ impl BlockStorage {
                 block_store
                     .write_batch(to_put.take().unwrap())
                     .expect("should never fail");
+
+                to_delete = Some(CodecWriteBatch::new());
+                to_put = Some(CodecWriteBatch::new());
             }
         }
         if item_count != 0 {
@@ -525,6 +551,9 @@ impl BlockStorage {
                 failed_block_store
                     .write_batch(to_put.take().unwrap())
                     .expect("should never fail");
+
+                to_delete = Some(CodecWriteBatch::new());
+                to_put = Some(CodecWriteBatch::new());
             }
         }
         if item_count != 0 {
@@ -545,21 +574,24 @@ impl BlockStorage {
         let old_header_store = OldBlockHeaderStorage::new(instance.clone());
         let header_store = BlockHeaderStorage::new(instance.clone());
 
-        let _total_size = Self::upgrade_header_store(old_header_store, header_store, BATCH_SIZE)?;
+        let total_size = Self::upgrade_header_store(old_header_store, header_store, BATCH_SIZE)?;
+        info!("upgraded {total_size} blocks in block_header_store");
 
         let old_block_store = OldBlockInnerStorage::new(instance.clone());
         let block_store = BlockInnerStorage::new(instance.clone());
 
-        let _total_blocks = Self::upgrade_block_store(old_block_store, block_store, BATCH_SIZE)?;
+        let total_blocks = Self::upgrade_block_store(old_block_store, block_store, BATCH_SIZE)?;
+        info!("upgraded {total_blocks} blocks in block_store");
 
         let old_failed_block_store = OldFailedBlockStorage::new(instance.clone());
         let failed_block_store = FailedBlockStorage::new(instance);
 
-        let _total_failed_blocks = Self::upgrade_failed_block_store(
+        let total_failed_blocks = Self::upgrade_failed_block_store(
             old_failed_block_store,
             failed_block_store,
             BATCH_SIZE,
         )?;
+        info!("upgraded {total_failed_blocks} blocks in failed_block_store");
 
         Ok(())
     }

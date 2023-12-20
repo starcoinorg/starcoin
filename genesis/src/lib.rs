@@ -11,7 +11,6 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_config::{
     genesis_key_pair, BuiltinNetworkID, ChainNetwork, ChainNetworkID, GenesisBlockParameter,
-    NodeConfig,
 };
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainStateWriter;
@@ -38,8 +37,8 @@ use std::sync::Arc;
 
 mod errors;
 pub use errors::GenesisError;
-use starcoin_consensus::BlockDAG;
 use starcoin_storage::table_info::TableInfoStore;
+use starcoin_types::block::OldBlock;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;
 
@@ -49,6 +48,12 @@ pub const GENESIS_DIR: Dir = include_dir!("generated");
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Genesis {
     block: Block,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename = "Genesis")]
+struct OldGenesis {
+    block: OldBlock,
 }
 
 impl Display for Genesis {
@@ -234,7 +239,9 @@ impl Genesis {
         let mut genesis_file = File::open(genesis_file_path)?;
         let mut content = vec![];
         genesis_file.read_to_end(&mut content)?;
-        Ok(Some(bcs_ext::from_bytes(&content)?))
+        Ok(Some(Genesis {
+            block: bcs_ext::from_bytes::<OldGenesis>(&content)?.block.into(),
+        }))
     }
 
     fn genesis_bytes(net: BuiltinNetworkID) -> Option<&'static [u8]> {
@@ -246,7 +253,9 @@ impl Genesis {
 
     pub fn load_generated(net: BuiltinNetworkID) -> Result<Option<Self>> {
         match Self::genesis_bytes(net) {
-            Some(bytes) => Ok(Some(bcs_ext::from_bytes(bytes)?)),
+            Some(bytes) => Ok(Some(Genesis {
+                block: bcs_ext::from_bytes::<OldGenesis>(bytes)?.block.into(),
+            })),
             None => Ok(None),
         }
     }
@@ -281,7 +290,9 @@ impl Genesis {
         }
         let genesis_file = data_dir.join(Self::GENESIS_FILE_NAME);
         let mut file = File::create(genesis_file)?;
-        let contents = bcs_ext::to_bytes(self)?;
+        let contents = bcs_ext::to_bytes(&OldGenesis {
+            block: self.block.clone().into(),
+        })?;
         file.write_all(&contents)?;
         Ok(())
     }
