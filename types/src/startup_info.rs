@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::{BlockHeader, BlockInfo, BlockNumber, OldBlockHeader};
+use crate::block::{BlockHeader, BlockInfo, BlockNumber, LegacyBlockHeader};
 use crate::dag_block::KTotalDifficulty;
 use anyhow::Result;
 use bcs_ext::{BCSCodec, Sample};
@@ -168,7 +168,7 @@ pub struct ChainStatus {
 #[derive(Deserialize, Serialize)]
 #[serde(rename = "ChainStatus")]
 pub struct OldChainStatus {
-    pub head: OldBlockHeader,
+    pub head: LegacyBlockHeader,
     pub info: BlockInfo,
 }
 

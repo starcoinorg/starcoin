@@ -10,7 +10,7 @@ use starcoin_chain_api::{
 use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::{debug, info};
+use starcoin_logger::prelude::debug;
 use starcoin_types::block::{Block, BlockHeader, LegacyBlockBody, ALLOWED_FUTURE_BLOCKTIME};
 use std::{collections::HashSet, str::FromStr};
 
