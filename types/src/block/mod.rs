@@ -1,6 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+mod legacy;
+#[cfg(test)]
+mod tests;
+
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::genesis_config::{ChainId, ConsensusStrategy};
@@ -8,6 +12,9 @@ use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
 use bcs_ext::Sample;
+pub use legacy::{
+    Block as LegacyBlock, BlockBody as LegacyBlockBody, BlockHeader as LegacyBlockHeader,
+};
 use schemars::{self, JsonSchema};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};

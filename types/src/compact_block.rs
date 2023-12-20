@@ -1,4 +1,4 @@
-use crate::block::{Block, BlockHeader, OldBlockHeader};
+use crate::block::{Block, BlockHeader, LegacyBlockHeader};
 use crate::transaction::SignedUserTransaction;
 use bcs_ext::Sample;
 use serde::{Deserialize, Serialize};
@@ -16,10 +16,10 @@ pub struct CompactBlock {
 #[derive(Serialize, Deserialize)]
 #[serde(rename = "CompactBlock")]
 pub struct OldCompactBlock {
-    pub header: OldBlockHeader,
+    pub header: LegacyBlockHeader,
     pub short_ids: Vec<ShortId>,
     pub prefilled_txn: Vec<PrefilledTxn>,
-    pub uncles: Option<Vec<OldBlockHeader>>,
+    pub uncles: Option<Vec<LegacyBlockHeader>>,
 }
 
 impl From<OldCompactBlock> for CompactBlock {
