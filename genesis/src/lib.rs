@@ -1,7 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+mod errors;
+
 use anyhow::{bail, ensure, format_err, Result};
+pub use errors::GenesisError;
 use include_dir::include_dir;
 use include_dir::Dir;
 use serde::{Deserialize, Serialize};
@@ -12,19 +15,23 @@ use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_config::{
     genesis_key_pair, BuiltinNetworkID, ChainNetwork, ChainNetworkID, GenesisBlockParameter,
 };
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::storage::StorageInstance;
+use starcoin_storage::table_info::TableInfoStore;
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_transaction_builder::build_stdlib_package_with_modules;
 use starcoin_transaction_builder::{build_stdlib_package, StdLibOptions};
-use starcoin_types::block::OldBlock;
+use starcoin_types::block::LegacyBlock;
 use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::transaction::Package;
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::{block::Block, transaction::Transaction};
 use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
+use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::transaction::{
     RawUserTransaction, SignedUserTransaction, TransactionPayload,
 };
@@ -35,14 +42,6 @@ use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-
-mod errors;
-
-pub use errors::GenesisError;
-use starcoin_dag::blockdag::BlockDAG;
-use starcoin_storage::table_info::TableInfoStore;
-use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-use starcoin_vm_types::state_view::StateView;
 
 pub static G_GENESIS_GENERATED_DIR: &str = "generated";
 pub const GENESIS_DIR: Dir = include_dir!("generated");
@@ -55,7 +54,7 @@ pub struct Genesis {
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename(deserialize = "Genesis"))]
 pub struct LegacyGenesis {
-    pub block: OldBlock,
+    pub block: LegacyBlock,
 }
 impl From<LegacyGenesis> for Genesis {
     fn from(value: LegacyGenesis) -> Self {

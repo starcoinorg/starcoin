@@ -1,6 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+mod legacy;
+#[cfg(test)]
+mod tests;
+
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::genesis_config::{ChainId, ConsensusStrategy};
@@ -8,6 +12,9 @@ use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
 use bcs_ext::Sample;
+pub use legacy::{
+    Block as LegacyBlock, BlockBody as LegacyBlockBody, BlockHeader as LegacyBlockHeader,
+};
 use schemars::{self, JsonSchema};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -168,91 +175,6 @@ pub struct BlockHeader {
     parents_hash: ParentsHash,
 }
 
-// For single chain before FlexiDag upgrade
-#[derive(Clone, Debug, Serialize, Deserialize, CryptoHasher, CryptoHash, PartialEq, Hash, Eq)]
-#[serde(rename = "BlockHeader")]
-pub struct OldBlockHeader {
-    #[serde(skip)]
-    #[allow(dead_code)]
-    id: Option<HashValue>,
-    /// Parent hash.
-    parent_hash: HashValue,
-    /// Block timestamp.
-    timestamp: u64,
-    /// Block number.
-    number: BlockNumber,
-    /// Block author.
-    author: AccountAddress,
-    /// Block author auth key.
-    /// this field is deprecated
-    author_auth_key: Option<AuthenticationKey>,
-    /// The transaction accumulator root hash after executing this block.
-    txn_accumulator_root: HashValue,
-    /// The parent block info's block accumulator root hash.
-    block_accumulator_root: HashValue,
-    /// The last transaction state_root of this block after execute.
-    state_root: HashValue,
-    /// Gas used for contracts execution.
-    gas_used: u64,
-    /// Block difficulty
-    difficulty: U256,
-    /// hash for block body
-    body_hash: HashValue,
-    /// The chain id
-    chain_id: ChainId,
-    /// Consensus nonce field.
-    nonce: u32,
-    /// block header extra
-    extra: BlockHeaderExtra,
-}
-
-impl From<BlockHeader> for OldBlockHeader {
-    fn from(v: BlockHeader) -> Self {
-        assert!(v.parents_hash.is_none());
-        Self {
-            id: v.id,
-            parent_hash: v.parent_hash,
-            timestamp: v.timestamp,
-            number: v.number,
-            author: v.author,
-            author_auth_key: v.author_auth_key,
-            txn_accumulator_root: v.txn_accumulator_root,
-            block_accumulator_root: v.block_accumulator_root,
-            state_root: v.state_root,
-            gas_used: v.gas_used,
-            difficulty: v.difficulty,
-            body_hash: v.body_hash,
-            chain_id: v.chain_id,
-            nonce: v.nonce,
-            extra: v.extra,
-        }
-    }
-}
-
-impl From<OldBlockHeader> for BlockHeader {
-    fn from(v: OldBlockHeader) -> Self {
-        let id = v.id.or_else(|| Some(v.crypto_hash()));
-        Self {
-            id,
-            parent_hash: v.parent_hash,
-            timestamp: v.timestamp,
-            number: v.number,
-            author: v.author,
-            author_auth_key: v.author_auth_key,
-            txn_accumulator_root: v.txn_accumulator_root,
-            block_accumulator_root: v.block_accumulator_root,
-            state_root: v.state_root,
-            gas_used: v.gas_used,
-            difficulty: v.difficulty,
-            body_hash: v.body_hash,
-            chain_id: v.chain_id,
-            nonce: v.nonce,
-            extra: v.extra,
-            parents_hash: None,
-        }
-    }
-}
-
 impl BlockHeader {
     pub fn new(
         parent_hash: HashValue,
@@ -326,7 +248,7 @@ impl BlockHeader {
             parents_hash,
         };
         header.id = Some(if header.parents_hash.is_none() {
-            OldBlockHeader::from(header.clone()).crypto_hash()
+            LegacyBlockHeader::from(header.clone()).crypto_hash()
         } else {
             header.crypto_hash()
         });
@@ -747,41 +669,6 @@ pub struct BlockBody {
     pub uncles: Option<Vec<BlockHeader>>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, CryptoHash, CryptoHasher)]
-#[serde(rename = "BlockBody")]
-pub struct OldBlockBody {
-    pub transactions: Vec<SignedUserTransaction>,
-    pub uncles: Option<Vec<OldBlockHeader>>,
-}
-
-impl From<OldBlockBody> for BlockBody {
-    fn from(value: OldBlockBody) -> Self {
-        let OldBlockBody {
-            transactions,
-            uncles,
-        } = value;
-
-        Self {
-            transactions,
-            uncles: uncles.map(|u| u.into_iter().map(Into::into).collect()),
-        }
-    }
-}
-
-impl From<BlockBody> for OldBlockBody {
-    fn from(value: BlockBody) -> Self {
-        let BlockBody {
-            transactions,
-            uncles,
-        } = value;
-
-        Self {
-            transactions,
-            uncles: uncles.map(|u| u.into_iter().map(Into::into).collect()),
-        }
-    }
-}
-
 impl BlockBody {
     pub fn new(transactions: Vec<SignedUserTransaction>, uncles: Option<Vec<BlockHeader>>) -> Self {
         Self {
@@ -839,31 +726,6 @@ pub struct Block {
     pub header: BlockHeader,
     /// The body of this block.
     pub body: BlockBody,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, CryptoHash, CryptoHasher)]
-#[serde(rename(deserialize = "Block"))]
-pub struct OldBlock {
-    pub header: OldBlockHeader,
-    pub body: OldBlockBody,
-}
-
-impl From<Block> for OldBlock {
-    fn from(value: Block) -> Self {
-        Self {
-            header: value.header.into(),
-            body: value.body.into(),
-        }
-    }
-}
-
-impl From<OldBlock> for Block {
-    fn from(value: OldBlock) -> Self {
-        Self {
-            header: value.header.into(),
-            body: value.body.into(),
-        }
-    }
 }
 
 impl Block {
@@ -966,8 +828,13 @@ impl Block {
             parent_gas_used,
         )
     }
-    pub fn random_for_test() -> Block {
-        Block::new(BlockHeader::random(), BlockBody::sample())
+
+    pub fn random() -> Self {
+        let body = BlockBody::sample();
+        let mut header = BlockHeader::random();
+        header.body_hash = body.hash();
+
+        Self { header, body }
     }
 }
 

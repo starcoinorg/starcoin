@@ -1,4 +1,4 @@
-use crate::block::{Block, BlockHeader};
+use crate::block::{Block, BlockHeader, LegacyBlockHeader};
 use crate::transaction::SignedUserTransaction;
 use bcs_ext::Sample;
 use serde::{Deserialize, Serialize};
@@ -10,6 +10,41 @@ pub struct CompactBlock {
     pub short_ids: Vec<ShortId>,
     pub prefilled_txn: Vec<PrefilledTxn>,
     pub uncles: Option<Vec<BlockHeader>>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename = "CompactBlock")]
+pub struct OldCompactBlock {
+    pub header: LegacyBlockHeader,
+    pub short_ids: Vec<ShortId>,
+    pub prefilled_txn: Vec<PrefilledTxn>,
+    pub uncles: Option<Vec<LegacyBlockHeader>>,
+}
+
+impl From<OldCompactBlock> for CompactBlock {
+    fn from(value: OldCompactBlock) -> Self {
+        Self {
+            header: value.header.into(),
+            short_ids: value.short_ids,
+            prefilled_txn: value.prefilled_txn,
+            uncles: value
+                .uncles
+                .map(|u| u.into_iter().map(Into::into).collect()),
+        }
+    }
+}
+
+impl From<CompactBlock> for OldCompactBlock {
+    fn from(value: CompactBlock) -> Self {
+        Self {
+            header: value.header.into(),
+            short_ids: value.short_ids,
+            prefilled_txn: value.prefilled_txn,
+            uncles: value
+                .uncles
+                .map(|u| u.into_iter().map(Into::into).collect()),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
