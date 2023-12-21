@@ -20,7 +20,8 @@ use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use starcoin_accumulator::{
-    accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, AccumulatorTreeStore, MerkleAccumulator, Accumulator,
+    accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator,
+    AccumulatorTreeStore, MerkleAccumulator,
 };
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
@@ -459,11 +460,13 @@ impl BlockStore for Storage {
             head_block_info.block_accumulator_info.clone(),
             self.get_accumulator_store(AccumulatorStoreType::Block),
         );
-        // todo: k should be read from node config 
-        let k_key = block_accumulator.get_leaf(std::cmp::max(head_block.number() - 8, 0))?.ok_or_else(|| format_err!("failed to find the k-smallest total difficulty"))?;
-        let k_block_info = self.get_block_info(k_key)?.ok_or_else(|| {
-            format_err!("kth block info {:?} should exist", k_key)
-        })?;
+        // todo: k should be read from node config
+        let k_key = block_accumulator
+            .get_leaf(std::cmp::max(head_block.number() - 8, 0))?
+            .ok_or_else(|| format_err!("failed to find the k-smallest total difficulty"))?;
+        let k_block_info = self
+            .get_block_info(k_key)?
+            .ok_or_else(|| format_err!("kth block info {:?} should exist", k_key))?;
         let flexidag_dag_accumulator_info = Some(head_block_info.dag_accumulator_info.clone());
         let chain_info = ChainInfo::new(
             head_block.chain_id(),
@@ -471,7 +474,7 @@ impl BlockStore for Storage {
             ChainStatus::new(head_block, head_block_info, tips.map(|t| t.tips)),
             flexidag_dag_accumulator_info,
             KTotalDifficulty {
-                total_difficulty: k_block_info.total_difficulty
+                total_difficulty: k_block_info.total_difficulty,
             },
         );
         Ok(Some(chain_info))

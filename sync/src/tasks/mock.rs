@@ -22,9 +22,9 @@ use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
-use starcoin_flexidag::{FlexidagService, flexidag_service};
+use starcoin_flexidag::{flexidag_service, FlexidagService};
 use starcoin_network_rpc_api::G_RPC_INFO;
-use starcoin_service_registry::{ServiceRef, RegistryService, RegistryAsyncService};
+use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_storage::Storage;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
@@ -318,7 +318,7 @@ impl SyncNodeMocker {
     }
 
     pub fn get_dag_targets(&self) -> Result<Vec<AccumulatorInfo>> {
-       Ok(vec![]) 
+        Ok(vec![])
     }
 }
 

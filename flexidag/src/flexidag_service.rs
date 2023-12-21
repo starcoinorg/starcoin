@@ -8,7 +8,7 @@ use starcoin_config::NodeConfig;
 use starcoin_consensus::{dag::types::ghostdata::GhostdagData, BlockDAG};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{
-    ActorService, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest, EventHandler,
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
 };
 use starcoin_storage::{
     block_info::BlockInfoStore, flexi_dag::SyncFlexiDagSnapshotHasher, BlockStore, Storage, Store,
@@ -152,7 +152,6 @@ pub struct TipInfo {
 pub struct FlexidagService {
     dag: Option<BlockDAG>,
     // dag_accumulator: Option<MerkleAccumulator>,
-    dag_accumulator_controller: DagAccumulatorController,
     tip_info: Option<TipInfo>,
     storage: Arc<Storage>,
 }
@@ -298,12 +297,25 @@ impl FlexidagService {
         Ok(dag_accumulator_info)
     }
 
-    pub fn append_dag_accumulator(&mut self, msg: AppendDagAccumulator, ctx: &mut ServiceContext<Self>) -> Result<()> {
+    pub fn append_dag_accumulator(
+        &mut self,
+        msg: AppendDagAccumulator,
+        ctx: &mut ServiceContext<Self>,
+    ) -> Result<()> {
         if self.dag.is_none() {
-            assert!(self.dag_accumulator.is_none(), "dag is none but dag accumulator is not none");
-            (self.dag, self.dag_accumulator) = BlockDAG::try_init_with_storage(self.storage.clone(), ctx.get_shared::<Arc<NodeConfig>>()?)?;
+            assert!(
+                self.dag_accumulator.is_none(),
+                "dag is none but dag accumulator is not none"
+            );
+            (self.dag, self.dag_accumulator) = BlockDAG::try_init_with_storage(
+                self.storage.clone(),
+                ctx.get_shared::<Arc<NodeConfig>>()?,
+            )?;
         } else {
-            assert!(self.dag_accumulator.is_some(), "dag is some but dag accumulator is none");
+            assert!(
+                self.dag_accumulator.is_some(),
+                "dag is some but dag accumulator is none"
+            );
         }
         Ok(())
     }
@@ -416,9 +428,7 @@ impl EventHandler<Self, AppendDagAccumulator> for FlexidagService {
     //     }
     // }
 
-    fn handle_event(&mut self, msg: AppendDagAccumulator, ctx: &mut ServiceContext<Self>) {
-        
-    }
+    fn handle_event(&mut self, msg: AppendDagAccumulator, ctx: &mut ServiceContext<Self>) {}
 }
 
 impl ServiceHandler<Self, UpdateDagTips> for FlexidagService {

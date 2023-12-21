@@ -5,8 +5,6 @@ use std::sync::Arc;
 
 use anyhow::bail;
 pub use flexidag_service::FlexidagService;
-pub mod dag_accumulator_controller;
-pub use dag_accumulator_controller::DagAccumulatorController;
 
 use bcs_ext::BCSCodec;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;

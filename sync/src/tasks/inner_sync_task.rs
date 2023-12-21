@@ -152,9 +152,6 @@ where
                 self.block_event_handle.clone(),
                 self.peer_provider.clone(),
                 skip_pow_verify_when_sync,
-                HashValue::zero(),
-                None,
-                self.storage.clone(),
             );
             Ok(TaskGenerator::new(
                 block_sync_task,

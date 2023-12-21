@@ -10,7 +10,7 @@ use crate::tasks::{
     BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask, SyncFetcher,
 };
 use crate::verified_rpc_client::RpcVerifyError;
-use anyhow::{format_err, Result, anyhow};
+use anyhow::{anyhow, format_err, Result};
 use anyhow::{Context, Ok};
 use futures::channel::mpsc::unbounded;
 use futures::future::BoxFuture;
@@ -39,10 +39,10 @@ use starcoin_types::{
     block::{Block, BlockBody, BlockHeaderBuilder, BlockIdAndNumber, BlockInfo},
     U256,
 };
-use stream_task::TaskHandle;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use stest::actix_export::System;
+use stream_task::TaskHandle;
 use stream_task::{
     DefaultCustomErrorHandle, Generator, TaskError, TaskEventCounterHandle, TaskGenerator,
 };
@@ -1185,17 +1185,14 @@ async fn sync_block_in_block_connection_service_mock(
 }
 
 #[cfg(test)]
-async fn sync_dag_chain(mut target_node: Arc<SyncNodeMocker>,
+async fn sync_dag_chain(
+    mut target_node: Arc<SyncNodeMocker>,
     local_node: Arc<SyncNodeMocker>,
     registry: &ServiceRef<RegistryService>,
-) -> Result<(
-    // BoxFuture<'static, Result<BlockChain, TaskError>>,
-    // TaskHandle,
-    // Arc<TaskEventCounterHandle>,
-)> {
+) -> Result<()> {
     Arc::get_mut(&mut target_node)
-    .unwrap()
-    .produce_block_and_create_dag(21)?;
+        .unwrap()
+        .produce_block_and_create_dag(21)?;
     Ok(())
 
     // let flexidag_service = registry.service_ref::<FlexidagService>().await?;

@@ -25,7 +25,7 @@ use starcoin_time_service::TimeService;
 use starcoin_txpool::TxPoolService;
 #[cfg(test)]
 use starcoin_txpool_mock_service::MockTxPoolService;
-use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
+use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber, BlockHeader};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::U256;
 use std::str::FromStr;
@@ -343,6 +343,13 @@ pub trait BlockFetcher: Send + Sync {
         &self,
         block_ids: Vec<HashValue>,
     ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>>;
+
+    fn fetch_block_headers(
+        &self,
+        block_ids: Vec<HashValue>,
+        peer_id: PeerId,
+    ) -> BoxFuture<Result<Vec<(BlockHeader, Option<PeerId>)>>>;
+
 }
 
 impl<T> BlockFetcher for Arc<T>
@@ -354,6 +361,14 @@ where
         block_ids: Vec<HashValue>,
     ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
         BlockFetcher::fetch_blocks(self.as_ref(), block_ids)
+    }
+
+    fn fetch_block_headers(
+        &self,
+        block_ids: Vec<HashValue>,
+        peer_id: PeerId,
+    ) -> BoxFuture<Result<Vec<(BlockHeader, Option<PeerId>)>>> {
+        BlockFetcher::fetch_block_headers(self.as_ref(), block_ids, peer_id)
     }
 }
 
@@ -375,6 +390,16 @@ impl BlockFetcher for VerifiedRpcClient {
                     .collect::<Result<Vec<_>>>();
                 results.map_err(fetcher_err_map)
             })
+            .boxed()
+    }
+
+    fn fetch_block_headers(
+        &self,
+        block_ids: Vec<HashValue>,
+        peer_id: PeerId,
+    ) -> BoxFuture<Result<Vec<(BlockHeader, Option<PeerId>)>>> {
+        self.get_block_headers_by_hash(block_ids.clone(), peer_id)
+            .map_err(fetcher_err_map)
             .boxed()
     }
 }
@@ -437,7 +462,7 @@ impl BlockLocalStore for Arc<dyn Store> {
                     let block_info = self.get_block_info(id)?;
 
                     Ok(Some(SyncBlockData::new(
-                        block, block_info, None, None, 1, None,
+                        block, block_info, None,
                     )))
                 }
                 None => Ok(None),

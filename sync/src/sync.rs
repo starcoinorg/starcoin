@@ -278,134 +278,48 @@ impl SyncService {
             let op_local_dag_accumulator_info =
                 flexidag_service.send(GetDagAccumulatorInfo).await??;
 
-            if let Some(local_dag_accumulator_info) = op_local_dag_accumulator_info {
-                let rpc_client = Self::create_verified_client(
+            let rpc_client = Self::create_verified_client(
+                network.clone(),
+                config.clone(),
+                peer_strategy,
+                peers,
+                peer_score_metrics,
+            )
+            .await?;
+            if let Some((target, _)) =
+                rpc_client.get_best_target(current_block_info.get_total_difficulty())?
+            {
+                info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
+
+                let (fut, task_handle, task_event_handle) = full_sync_task(
+                    current_block_id,
+                    target.clone(),
+                    skip_pow_verify,
+                    config.net().time_service(),
+                    storage.clone(),
+                    connector_service.clone(),
+                    rpc_client.clone(),
+                    self_ref.clone(),
                     network.clone(),
-                    config.clone(),
-                    peer_strategy,
-                    peers.clone(),
-                    peer_score_metrics.clone(),
-                )
-                .await?;
-                let dag_sync_futs = rpc_client
-                    .get_dag_targets(
-                        current_block_info.get_total_difficulty(),
-                        local_dag_accumulator_info.get_num_leaves(),
-                    )?
-                    .into_iter()
-                    .fold(
-                        anyhow::Ok(vec![]),
-                        |mut futs, (peer_id, target_accumulator_info, target)| {
-                            let api_rpc_client =
-                                async_std::task::block_on(Self::create_verified_client(
-                                    network.clone(),
-                                    config.clone(),
-                                    Some(PeerStrategy::DagSync(peer_id)),
-                                    peers.clone(),
-                                    peer_score_metrics.clone(),
-                                ))?;
-                            let (fut, task_handle, task_event_handle) = sync_dag_full_task(
-                                local_dag_accumulator_info.clone(),
-                                target_accumulator_info
-                                    .expect("target accumulator info must exist"),
-                                api_rpc_client,
-                                dag_accumulator_store.clone(),
-                                dag_accumulator_snapshot.clone(),
-                                storage_for_dag.clone(),
-                                config.net().time_service(),
-                                vm_metrics.clone(),
-                                connector_service.clone(),
-                                network.clone(),
-                                skip_pow_verify,
-                                dag.clone(),
-                                block_chain_service.clone(),
-                                flexidag_service.clone(),
-                                config.net().id().clone(),
-                            )?;
-                            self_ref.notify(SyncBeginEvent {
-                                target,
-                                task_handle,
-                                task_event_handle,
-                                peer_selector: rpc_client.selector().clone(),
-                            })?;
-                            if let Some(sync_task_total) = sync_task_total.as_ref() {
-                                sync_task_total.with_label_values(&["start"]).inc();
-                            }
-                            futs.and_then(|mut v| {
-                                v.push(fut);
-                                Ok(v)
-                            })
-                        },
-                    )?
-                    .into_iter()
-                    .fold(vec![], |chain, fut| match async_std::task::block_on(fut) {
-                        Ok(new_chain) => {
-                            if chain.is_empty() {
-                                vec![new_chain]
-                            } else if new_chain.status().total_difficulty()
-                                > chain[0].status().total_difficulty()
-                            {
-                                vec![new_chain]
-                            } else {
-                                chain
-                            }
-                        }
-                        Err(error) => {
-                            error!("[sync] sync dag error: {:?}", error);
-                            chain
-                        }
-                    });
-                assert!(dag_sync_futs.len() <= 1);
-                if dag_sync_futs.len() == 1 {
-                    Ok(Some(dag_sync_futs.into_iter().next().unwrap()))
-                } else {
-                    debug!("[sync]No best peer to request, current is beast.");
-                    Ok(None)
+                    config.sync.max_retry_times(),
+                    config.net().id().clone(),
+                    sync_metrics.clone(),
+                    vm_metrics.clone(),
+                )?;
+
+                self_ref.notify(SyncBeginEvent {
+                    target,
+                    task_handle,
+                    task_event_handle,
+                    peer_selector: rpc_client.selector().clone(),
+                })?;
+                if let Some(sync_task_total) = sync_task_total.as_ref() {
+                    sync_task_total.with_label_values(&["start"]).inc();
                 }
+                Ok(Some(fut.await?))
             } else {
-                let rpc_client = Self::create_verified_client(
-                    network.clone(),
-                    config.clone(),
-                    peer_strategy,
-                    peers,
-                    peer_score_metrics,
-                )
-                .await?;
-                if let Some((target, _)) =
-                    rpc_client.get_best_target(current_block_info.get_total_difficulty())?
-                {
-                    info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
-
-                    let (fut, task_handle, task_event_handle) = full_sync_task(
-                        current_block_id,
-                        target.clone(),
-                        skip_pow_verify,
-                        config.net().time_service(),
-                        storage.clone(),
-                        connector_service.clone(),
-                        rpc_client.clone(),
-                        self_ref.clone(),
-                        network.clone(),
-                        config.sync.max_retry_times(),
-                        config.net().id().clone(),
-                        sync_metrics.clone(),
-                        vm_metrics.clone(),
-                    )?;
-
-                    self_ref.notify(SyncBeginEvent {
-                        target,
-                        task_handle,
-                        task_event_handle,
-                        peer_selector: rpc_client.selector().clone(),
-                    })?;
-                    if let Some(sync_task_total) = sync_task_total.as_ref() {
-                        sync_task_total.with_label_values(&["start"]).inc();
-                    }
-                    Ok(Some(fut.await?))
-                } else {
-                    debug!("[sync]No best peer to request, current is beast.");
-                    Ok(None)
-                }
+                debug!("[sync]No best peer to request, current is best.");
+                Ok(None)
             }
         };
         let network = ctx.get_shared::<NetworkServiceRef>()?;

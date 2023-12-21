@@ -129,7 +129,14 @@ impl ChainInfo {
                 rand::random::<u64>(),
             )),
             k_total_difficulty: KTotalDifficulty {
-                total_difficulty: U256::from_big_endian(&rand::random::<u128>().to_be_bytes().iter().chain(rand::random::<u128>().to_be_bytes().iter()).cloned().collect::<Vec<u8>>()),
+                total_difficulty: U256::from_big_endian(
+                    &rand::random::<u128>()
+                        .to_be_bytes()
+                        .iter()
+                        .chain(rand::random::<u128>().to_be_bytes().iter())
+                        .cloned()
+                        .collect::<Vec<u8>>(),
+                ),
             },
         }
     }
@@ -143,7 +150,7 @@ impl Default for ChainInfo {
             status: ChainStatus::sample(),
             flexi_dag_accumulator_info: Some(AccumulatorInfo::default()),
             k_total_difficulty: KTotalDifficulty {
-                total_difficulty: U256::default(), 
+                total_difficulty: U256::default(),
             },
         }
     }

@@ -110,18 +110,16 @@ impl BlockDAG {
             return Ok(None);
         } else if block_header.number() == fork_height {
             let dag = Self::new_by_config(
-            config.data_dir().join("flexidag").as_path(),
-            config.net().id().clone(),
+                config.data_dir().join("flexidag").as_path(),
+                config.net().id().clone(),
             )?;
             dag.init_with_genesis(block_header)?;
             Ok(Some(dag))
         } else {
-            Ok(
-                Some(Self::new_by_config(
-                    config.data_dir().join("flexidag").as_path(),
-                    config.net().id().clone(),
-                )?,
-            ))
+            Ok(Some(Self::new_by_config(
+                config.data_dir().join("flexidag").as_path(),
+                config.net().id().clone(),
+            )?))
         }
     }
 
