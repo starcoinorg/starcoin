@@ -8,9 +8,10 @@ use starcoin_chain_api::{
     verify_block, ChainReader, ConnectBlockError, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_consensus::{Consensus, ConsensusVerifyError};
+use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::debug;
-use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
+use starcoin_types::block::{Block, BlockHeader, LegacyBlockBody, ALLOWED_FUTURE_BLOCKTIME};
 use std::{collections::HashSet, str::FromStr};
 
 #[derive(Debug)]
@@ -45,7 +46,13 @@ pub struct StaticVerifier;
 impl StaticVerifier {
     pub fn verify_body_hash(block: &Block) -> Result<()> {
         //verify body
-        let body_hash = block.body.hash();
+        // todo: double check
+        let body_hash = if block.header.parents_hash().is_none() && block.body.uncles.is_some() {
+            LegacyBlockBody::from(block.body.clone()).crypto_hash()
+        } else {
+            block.body.hash()
+        };
+
         verify_block!(
             VerifyBlockField::Body,
             body_hash == block.header().body_hash(),

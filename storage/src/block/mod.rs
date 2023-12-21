@@ -13,7 +13,7 @@ use network_p2p_types::peer_id::PeerId;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_types::block::{Block, BlockBody, BlockHeader, OldBlock, OldBlockHeader};
+use starcoin_types::block::{Block, BlockBody, BlockHeader, LegacyBlock, LegacyBlockHeader};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct OldFailedBlock {
@@ -50,7 +50,7 @@ pub struct FailedBlock {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename(deserialize = "FailedBlock"))]
 pub struct OldFailedBlockV2 {
-    block: OldBlock,
+    block: LegacyBlock,
     peer_id: Option<PeerId>,
     failed: String,
     version: String,
@@ -125,11 +125,16 @@ define_storage!(
     BlockHeader,
     BLOCK_HEADER_PREFIX_NAME_V2
 );
-define_storage!(OldBlockInnerStorage, HashValue, OldBlock, BLOCK_PREFIX_NAME);
+define_storage!(
+    OldBlockInnerStorage,
+    HashValue,
+    LegacyBlock,
+    BLOCK_PREFIX_NAME
+);
 define_storage!(
     OldBlockHeaderStorage,
     HashValue,
-    OldBlockHeader,
+    LegacyBlockHeader,
     BLOCK_HEADER_PREFIX_NAME
 );
 
@@ -197,7 +202,7 @@ impl ValueCodec for BlockHeader {
     }
 }
 
-impl ValueCodec for OldBlock {
+impl ValueCodec for LegacyBlock {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
     }
@@ -207,7 +212,7 @@ impl ValueCodec for OldBlock {
     }
 }
 
-impl ValueCodec for OldBlockHeader {
+impl ValueCodec for LegacyBlockHeader {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
     }
@@ -423,7 +428,7 @@ impl BlockStorage {
         let mut total_size: usize = 0;
         let mut old_header_iter = old_header_store.iter()?;
         old_header_iter.seek_to_first();
-        let mut to_deleted = Some(CodecWriteBatch::<HashValue, OldBlockHeader>::new());
+        let mut to_deleted = Some(CodecWriteBatch::<HashValue, LegacyBlockHeader>::new());
         let mut to_put = Some(CodecWriteBatch::<HashValue, BlockHeader>::new());
         let mut item_count = 0usize;
         for item in old_header_iter {
@@ -446,7 +451,7 @@ impl BlockStorage {
                 old_header_store.write_batch(to_deleted.take().unwrap())?;
                 header_store.write_batch(to_put.take().unwrap())?;
 
-                to_deleted = Some(CodecWriteBatch::<HashValue, OldBlockHeader>::new());
+                to_deleted = Some(CodecWriteBatch::<HashValue, LegacyBlockHeader>::new());
                 to_put = Some(CodecWriteBatch::<HashValue, BlockHeader>::new());
             }
         }

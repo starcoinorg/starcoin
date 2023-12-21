@@ -38,7 +38,7 @@ use std::sync::Arc;
 mod errors;
 pub use errors::GenesisError;
 use starcoin_storage::table_info::TableInfoStore;
-use starcoin_types::block::OldBlock;
+use starcoin_types::block::LegacyBlock;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;
 
@@ -53,7 +53,7 @@ pub struct Genesis {
 #[derive(Serialize, Deserialize)]
 #[serde(rename = "Genesis")]
 struct OldGenesis {
-    block: OldBlock,
+    block: LegacyBlock,
 }
 
 impl Display for Genesis {
