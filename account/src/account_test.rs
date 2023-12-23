@@ -224,7 +224,7 @@ pub fn test_wallet_account() -> Result<()> {
     );
     //println!("verify result is {:?}", sign.verify(&raw_txn, &public_key)?);
     println!("public key is {:?}", public_key.to_bytes().as_ref());
-    //println!("hash value is {:?}", hash_value.as_ref());
+    println!("hash value is {:?}", &hash_value);
     println!("key is {:?}", key.derived_address());
     println!("address is {:?},result is {:?}", address, result);
 

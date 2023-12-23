@@ -11566,6 +11566,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
+ "starcoin-dag",
  "starcoin-dev",
  "starcoin-executor",
  "starcoin-genesis",

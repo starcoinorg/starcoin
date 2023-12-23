@@ -33,7 +33,7 @@ pub struct BlockDAG {
     pub storage: FlexiDagStorage,
     ghostdag_manager: DbGhostdagManager,
 }
-
+const FLEXIDAG_K: KType = 16;
 impl BlockDAG {
     pub fn new(k: KType, db: FlexiDagStorage) -> Self {
         let ghostdag_store = db.ghost_dag_store.clone();
@@ -55,6 +55,11 @@ impl BlockDAG {
             storage: db,
         }
     }
+
+    pub fn create_flexidag(db: FlexiDagStorage) -> Self {
+        Self::new(FLEXIDAG_K, db)
+    }
+
     pub fn create_for_testing() -> anyhow::Result<Self> {
         let dag_storage =
             FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;

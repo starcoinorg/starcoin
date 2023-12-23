@@ -4,6 +4,7 @@
 use futures_timer::Delay;
 use starcoin_account_service::{AccountService, AccountStorage};
 use starcoin_config::NodeConfig;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_miner::{BlockBuilderService, MinerService};
 use starcoin_service_registry::bus::BusService;
@@ -12,7 +13,6 @@ use starcoin_storage::Storage;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
 use std::sync::Arc;
 use std::time::Duration;
-
 pub async fn start_txpool_with_size(
     pool_size: u64,
 ) -> (
@@ -21,6 +21,7 @@ pub async fn start_txpool_with_size(
     Arc<NodeConfig>,
     ServiceRef<TxPoolActorService>,
     ServiceRef<RegistryService>,
+    BlockDAG,
 ) {
     start_txpool_with_miner(pool_size, false).await
 }
@@ -34,6 +35,7 @@ pub async fn start_txpool_with_miner(
     Arc<NodeConfig>,
     ServiceRef<TxPoolActorService>,
     ServiceRef<RegistryService>,
+    BlockDAG,
 ) {
     let mut config = NodeConfig::random_for_test();
     config.tx_pool.set_max_count(pool_size);
@@ -41,7 +43,7 @@ pub async fn start_txpool_with_miner(
 
     let node_config = Arc::new(config);
 
-    let (storage, _chain_info, _, _) =
+    let (storage, _chain_info, _, dag) =
         Genesis::init_storage_for_test(node_config.net()).expect("init storage by genesis fail.");
     let registry = RegistryService::launch();
     registry.put_shared(node_config.clone()).await.unwrap();
@@ -68,7 +70,14 @@ pub async fn start_txpool_with_miner(
     Delay::new(Duration::from_millis(200)).await;
     let txpool_service = registry.get_shared::<TxPoolService>().await.unwrap();
 
-    (txpool_service, storage, node_config, pool_actor, registry)
+    (
+        txpool_service,
+        storage,
+        node_config,
+        pool_actor,
+        registry,
+        dag,
+    )
 }
 
 pub async fn start_txpool() -> (
@@ -77,6 +86,7 @@ pub async fn start_txpool() -> (
     Arc<NodeConfig>,
     ServiceRef<TxPoolActorService>,
     ServiceRef<RegistryService>,
+    BlockDAG,
 ) {
     start_txpool_with_size(1000).await
 }
