@@ -22,7 +22,6 @@ use starcoin_state_tree::StateNode;
 use starcoin_storage::Store;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::block::Block;
 use starcoin_types::{
     account_state::AccountState,
     block::{BlockHeader, BlockInfo, BlockNumber},
@@ -303,7 +302,31 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<Option<Block>>>> {
+    ) -> BoxFuture<Result<Vec<Option<starcoin_types::block::LegacyBlock>>>> {
+        let chain_service = self.chain_service.clone();
+        let fut = async move {
+            if ids.len() as u64 > MAX_BLOCK_REQUEST_SIZE {
+                return Err(NetRpcError::client_err(format!(
+                    "max block ids size > {}",
+                    MAX_BLOCK_REQUEST_SIZE
+                ))
+                .into());
+            }
+            chain_service.get_blocks(ids).await.map(|blocks| {
+                blocks
+                    .into_iter()
+                    .map(|opt_block| opt_block.map(|block| block.into()))
+                    .collect()
+            })
+        };
+        Box::pin(fut)
+    }
+
+    fn get_blocks_v1(
+        &self,
+        _peer_id: PeerId,
+        ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<Option<starcoin_types::block::Block>>>> {
         let chain_service = self.chain_service.clone();
         let fut = async move {
             if ids.len() as u64 > MAX_BLOCK_REQUEST_SIZE {

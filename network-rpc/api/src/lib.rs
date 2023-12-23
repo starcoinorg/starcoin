@@ -17,7 +17,7 @@ use starcoin_state_tree::StateNode;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
-use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
+use starcoin_types::block::{BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionInfo};
 use starcoin_vm_types::state_store::table::TableInfo;
 
@@ -280,7 +280,13 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         &self,
         peer_id: PeerId,
         ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<Option<Block>>>>;
+    ) -> BoxFuture<Result<Vec<Option<starcoin_types::block::LegacyBlock>>>>;
+
+    fn get_blocks_v1(
+        &self,
+        peer_id: PeerId,
+        ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<Option<starcoin_types::block::Block>>>>;
 
     fn get_state_with_table_item_proof(
         &self,

@@ -383,8 +383,23 @@ impl VerifiedRpcClient {
     ) -> Result<Vec<Option<(Block, Option<PeerId>)>>> {
         let peer_id = self.select_a_peer()?;
         let start_time = Instant::now();
-        let blocks: Vec<Option<Block>> =
-            self.client.get_blocks(peer_id.clone(), ids.clone()).await?;
+        let blocks = match self
+            .client
+            .get_blocks_v1(peer_id.clone(), ids.clone())
+            .await
+        {
+            Ok(blocks) => blocks,
+            Err(err) => {
+                warn!("get blocks failed:{}, call get blocks legacy", err);
+                self.client
+                    .get_blocks(peer_id.clone(), ids.clone())
+                    .await?
+                    .into_iter()
+                    .map(|opt_block| opt_block.map(Into::into))
+                    .collect()
+            }
+        };
+
         let time = (Instant::now()
             .saturating_duration_since(start_time)
             .as_millis()) as u32;

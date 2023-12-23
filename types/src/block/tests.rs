@@ -1,7 +1,7 @@
 use super::legacy::{BlockBody, BlockHeader};
 use crate::{
-    account_config::CORE_CODE_ADDRESS;
     account_address::AccountAddress,
+    account_config::CORE_CODE_ADDRESS,
     block::{BlockBody as DagBlockBody, BlockHeaderExtra},
 };
 use bcs_ext::Sample;
