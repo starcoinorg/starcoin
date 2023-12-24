@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block::{BlockHeader, BlockInfo, BlockNumber, LegacyBlockHeader};
-use crate::dag_block::KTotalDifficulty;
 use anyhow::Result;
 use bcs_ext::{BCSCodec, Sample};
 use schemars::JsonSchema;
@@ -21,8 +20,6 @@ pub struct ChainInfo {
     chain_id: ChainId,
     genesis_hash: HashValue,
     status: ChainStatus,
-    flexi_dag_accumulator_info: Option<AccumulatorInfo>,
-    k_total_difficulty: KTotalDifficulty,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -49,10 +46,6 @@ impl From<OldChainInfo> for ChainInfo {
             chain_id: value.chain_id,
             genesis_hash: value.genesis_hash,
             status: value.status.into(),
-            flexi_dag_accumulator_info: None,
-            k_total_difficulty: KTotalDifficulty {
-                total_difficulty: 0.into(),
-            },
         }
     }
 }
@@ -62,15 +55,11 @@ impl ChainInfo {
         chain_id: ChainId,
         genesis_hash: HashValue,
         status: ChainStatus,
-        flexi_dag_accumulator_info: Option<AccumulatorInfo>,
-        k_total_difficulty: KTotalDifficulty,
     ) -> Self {
         Self {
             chain_id,
             genesis_hash,
             status,
-            flexi_dag_accumulator_info,
-            k_total_difficulty,
         }
     }
 
@@ -90,27 +79,12 @@ impl ChainInfo {
         self.status = status;
     }
 
-    pub fn update_dag_accumulator_info(
-        &mut self,
-        flexi_dag_accumulator_info: Option<AccumulatorInfo>,
-    ) {
-        self.flexi_dag_accumulator_info = flexi_dag_accumulator_info;
-    }
-
     pub fn head(&self) -> &BlockHeader {
         &self.status.head
     }
 
-    pub fn dag_accumulator_info(&self) -> &Option<AccumulatorInfo> {
-        &self.flexi_dag_accumulator_info
-    }
-
     pub fn total_difficulty(&self) -> U256 {
         self.status.info.get_total_difficulty()
-    }
-
-    pub fn k_total_difficulties(&self) -> &KTotalDifficulty {
-        &self.k_total_difficulty
     }
 
     pub fn into_inner(self) -> (ChainId, HashValue, ChainStatus) {
@@ -122,22 +96,6 @@ impl ChainInfo {
             chain_id: ChainId::new(rand::random()),
             genesis_hash: HashValue::random(),
             status: ChainStatus::random(),
-            flexi_dag_accumulator_info: Some(AccumulatorInfo::new(
-                HashValue::random(),
-                vec![],
-                rand::random::<u64>(),
-                rand::random::<u64>(),
-            )),
-            k_total_difficulty: KTotalDifficulty {
-                total_difficulty: U256::from_big_endian(
-                    &rand::random::<u128>()
-                        .to_be_bytes()
-                        .iter()
-                        .chain(rand::random::<u128>().to_be_bytes().iter())
-                        .cloned()
-                        .collect::<Vec<u8>>(),
-                ),
-            },
         }
     }
 }
@@ -148,10 +106,6 @@ impl Default for ChainInfo {
             chain_id: ChainId::test(),
             genesis_hash: HashValue::default(),
             status: ChainStatus::sample(),
-            flexi_dag_accumulator_info: Some(AccumulatorInfo::default()),
-            k_total_difficulty: KTotalDifficulty {
-                total_difficulty: U256::default(),
-            },
         }
     }
 }
@@ -221,12 +175,6 @@ impl ChainStatus {
                 head.txn_accumulator_root(),
                 vec![],
                 rand::random::<u64>(),
-                rand::random::<u64>(),
-            ),
-            AccumulatorInfo::new(
-                head.block_accumulator_root(),
-                vec![],
-                head.number().saturating_sub(1),
                 rand::random::<u64>(),
             ),
             AccumulatorInfo::new(
@@ -350,45 +298,6 @@ impl TryInto<Vec<u8>> for StartupInfo {
     type Error = anyhow::Error;
 
     fn try_into(self) -> Result<Vec<u8>> {
-        self.encode()
-    }
-}
-
-#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
-pub struct DagStartupInfo {
-    /// dag accumulator info hash
-    dag_main: HashValue,
-}
-
-impl DagStartupInfo {
-    pub fn new(value: HashValue) -> Self {
-        Self { dag_main: value }
-    }
-
-    pub fn get_dag_main(&self) -> &HashValue {
-        &self.dag_main
-    }
-}
-
-impl Display for DagStartupInfo {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "DagStartupInfo {{")?;
-        write!(f, "dag_main: {:?},", self.dag_main)?;
-        write!(f, "}}")?;
-        Ok(())
-    }
-}
-
-impl TryFrom<Vec<u8>> for DagStartupInfo {
-    type Error = anyhow::Error;
-    fn try_from(value: Vec<u8>) -> std::result::Result<Self, Self::Error> {
-        Self::decode(value.as_slice())
-    }
-}
-
-impl TryInto<Vec<u8>> for DagStartupInfo {
-    type Error = anyhow::Error;
-    fn try_into(self) -> std::result::Result<Vec<u8>, Self::Error> {
         self.encode()
     }
 }

@@ -17,6 +17,7 @@ use starcoin_accumulator::MerkleAccumulator;
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_config::ChainNetworkID;
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
 use starcoin_storage::Store;
@@ -25,7 +26,7 @@ use starcoin_time_service::TimeService;
 use starcoin_txpool::TxPoolService;
 #[cfg(test)]
 use starcoin_txpool_mock_service::MockTxPoolService;
-use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber, BlockHeader};
+use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::U256;
 use std::str::FromStr;
@@ -38,100 +39,46 @@ use stream_task::{
 };
 
 pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {
-    fn get_dag_targets(
-        &self,
-        total_difficulty: U256,
-        local_dag_accumulator_leaf_num: u64,
-    ) -> Result<Vec<(PeerId, Option<AccumulatorInfo>, SyncTarget)>> {
-        Ok(self
-            .peer_selector()
-            .peer_infos()
-            .into_iter()
-            .filter(|peer_info| {
-                match (
-                    peer_info.chain_info().dag_accumulator_info(),
-                    peer_info.chain_info().k_total_difficulties(),
-                ) {
-                    (Some(info), Some(k)) => match k.first() {
-                        Some(k_difficulty) => {
-                            k_difficulty.total_difficulty <= total_difficulty
-                                || info.get_num_leaves() > local_dag_accumulator_leaf_num
-                        }
-                        None => false,
-                    },
-                    (None, None) => false,
-                    _ => {
-                        warn!("dag accumulator is inconsistent with k total difficulty");
-                        false
-                    }
-                }
-            })
-            .map(|peer_info| {
-                (
-                    peer_info.peer_id,
-                    peer_info.chain_info().dag_accumulator_info().clone(),
-                    SyncTarget {
-                        target_id: BlockIdAndNumber::new(
-                            peer_info.latest_header().id(),
-                            peer_info.latest_header().number(),
-                        ),
-                        block_info: peer_info.chain_info().status().info().clone(),
-                        peers: vec![peer_info.peer_id],
-                    },
-                )
-            })
-            .collect())
-    }
-
     fn get_best_target(
         &self,
         min_difficulty: U256,
-    ) -> Result<Option<(SyncTarget, Option<AccumulatorInfo>)>> {
+    ) -> Result<Option<SyncTarget>> {
         if let Some(best_peers) = self.peer_selector().bests(min_difficulty) {
             //TODO fast verify best peers by accumulator
-            let mut chain_statuses: Vec<(ChainStatus, Vec<PeerId>, Option<AccumulatorInfo>)> =
+            let mut chain_statuses: Vec<(ChainStatus, Vec<PeerId>)> =
                 best_peers
                     .into_iter()
                     .fold(vec![], |mut chain_statuses, peer| {
                         let update = chain_statuses
                             .iter_mut()
-                            .find(|(chain_status, _peers, _)| {
+                            .find(|(chain_status, _peers)| {
                                 peer.chain_info().status() == chain_status
                             })
-                            .map(|(_chain_status, peers, _)| {
+                            .map(|(_chain_status, peers)| {
                                 peers.push(peer.peer_id());
                                 true
                             })
                             .unwrap_or(false);
 
                         if !update {
-                            chain_statuses.push((
-                                peer.chain_info().status().clone(),
-                                vec![peer.peer_id()],
-                                peer.chain_info().dag_accumulator_info().clone(),
-                            ))
+                            chain_statuses
+                                .push((peer.chain_info().status().clone(), vec![peer.peer_id()]))
                         }
                         chain_statuses
                     });
             //if all best peers block info is same, block_infos len should been 1, other use majority peers block_info
             if chain_statuses.len() > 1 {
-                chain_statuses.sort_by(
-                    |(_chain_status_1, peers_1, _), (_chain_status_2, peers_2, _)| {
-                        peers_1.len().cmp(&peers_2.len())
-                    },
-                );
+                chain_statuses.sort_by(|(_chain_status_1, peers_1), (_chain_status_2, peers_2)| {
+                    peers_1.len().cmp(&peers_2.len())
+                });
             }
-            let (chain_status, peers, dag_accumulator_info) =
-                chain_statuses.pop().expect("chain statuses should exist");
+            let (chain_status, peers) = chain_statuses.pop().expect("chain statuses should exist");
             let header = chain_status.head;
-            Ok(Some((
-                SyncTarget {
-                    target_id: BlockIdAndNumber::new(header.id(), header.number()),
-                    block_info: chain_status.info,
-                    peers,
-                },
-                dag_accumulator_info,
-            )))
+            Ok(Some(SyncTarget {
+                target_id: BlockIdAndNumber::new(header.id(), header.number()),
+                block_info: chain_status.info,
+                peers,
+            }))
         } else {
             debug!(
                 "get_best_target return None, total_peers_in_selector: {}, min_difficulty: {}",
@@ -139,7 +86,7 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                 min_difficulty
             );
             Ok(None)
-        }
+        } 
     }
 
     fn get_better_target(
@@ -348,8 +295,19 @@ pub trait BlockFetcher: Send + Sync {
         &self,
         block_ids: Vec<HashValue>,
         peer_id: PeerId,
-    ) -> BoxFuture<Result<Vec<(BlockHeader, Option<PeerId>)>>>;
+    ) -> BoxFuture<Result<Vec<(HashValue, Option<BlockHeader>)>>>;
 
+    fn fetch_blocks_by_peerid(
+        &self,
+        block_ids: Vec<HashValue>,
+        peer_id: PeerId,
+    ) -> BoxFuture<Result<Vec<Option<Block>>>>;
+
+    fn fetch_dag_block_children(
+        &self,
+        block_ids: Vec<HashValue>,
+        peer_id: PeerId,
+    ) -> BoxFuture<Result<Vec<HashValue>>>;
 }
 
 impl<T> BlockFetcher for Arc<T>
@@ -367,8 +325,24 @@ where
         &self,
         block_ids: Vec<HashValue>,
         peer_id: PeerId,
-    ) -> BoxFuture<Result<Vec<(BlockHeader, Option<PeerId>)>>> {
+    ) -> BoxFuture<Result<Vec<(HashValue, Option<BlockHeader>)>>> {
         BlockFetcher::fetch_block_headers(self.as_ref(), block_ids, peer_id)
+    }
+
+    fn fetch_blocks_by_peerid(
+        &self,
+        block_ids: Vec<HashValue>,
+        peer_id: PeerId,
+    ) -> BoxFuture<Result<Vec<Option<Block>>>> {
+        BlockFetcher::fetch_blocks_by_peerid(self.as_ref(), block_ids, peer_id)
+    }
+
+    fn fetch_dag_block_children(
+        &self,
+        block_ids: Vec<HashValue>,
+        peer_id: PeerId,
+    ) -> BoxFuture<Result<Vec<HashValue>>> {
+        BlockFetcher::fetch_dag_block_children(self.as_ref(), block_ids, peer_id)
     }
 }
 
@@ -397,8 +371,28 @@ impl BlockFetcher for VerifiedRpcClient {
         &self,
         block_ids: Vec<HashValue>,
         peer_id: PeerId,
-    ) -> BoxFuture<Result<Vec<(BlockHeader, Option<PeerId>)>>> {
+    ) -> BoxFuture<Result<Vec<(HashValue, Option<BlockHeader>)>>> {
         self.get_block_headers_by_hash(block_ids.clone(), peer_id)
+            .map_err(fetcher_err_map)
+            .boxed()
+    }
+
+    fn fetch_blocks_by_peerid(
+        &self,
+        block_ids: Vec<HashValue>,
+        peer_id: PeerId,
+    ) -> BoxFuture<Result<Vec<Option<Block>>>> {
+        self.get_blocks_by_peerid(block_ids.clone(), peer_id)
+            .map_err(fetcher_err_map)
+            .boxed()
+    }
+
+    fn fetch_dag_block_children(
+        &self,
+        block_ids: Vec<HashValue>,
+        peer_id: PeerId,
+    ) -> BoxFuture<Result<Vec<HashValue>>> {
+        self.get_dag_block_children(block_ids, peer_id)
             .map_err(fetcher_err_map)
             .boxed()
     }
@@ -461,9 +455,7 @@ impl BlockLocalStore for Arc<dyn Store> {
                     let id = block.id();
                     let block_info = self.get_block_info(id)?;
 
-                    Ok(Some(SyncBlockData::new(
-                        block, block_info, None,
-                    )))
+                    Ok(Some(SyncBlockData::new(block, block_info, None)))
                 }
                 None => Ok(None),
             })
@@ -633,11 +625,6 @@ mod find_ancestor_task;
 mod inner_sync_task;
 #[cfg(test)]
 pub(crate) mod mock;
-mod sync_dag_accumulator_task;
-mod sync_dag_block_task;
-mod sync_dag_full_task;
-mod sync_dag_protocol_trait;
-mod sync_find_ancestor_task;
 #[cfg(test)]
 mod tests;
 
@@ -646,7 +633,6 @@ pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
 use starcoin_executor::VMMetrics;
-pub use sync_dag_full_task::sync_dag_full_task;
 
 pub fn full_sync_task<H, A, F, N>(
     current_block_id: HashValue,
@@ -692,6 +678,7 @@ where
     //only keep the best peer for find ancestor.
     fetcher.peer_selector().retain(target.peers.as_slice());
     let ext_error_handle = Arc::new(ExtSyncTaskErrorHandle::new(fetcher.clone()));
+    let dag = BlockDAG::try_init_with_storage(storage.clone())?;
 
     let sync_task = TaskGenerator::new(
         FindAncestorTask::new(
@@ -776,6 +763,7 @@ where
                     max_retry_times,
                     delay_milliseconds_on_error,
                     skip_pow_verify,
+                    dag.clone(),
                     vm_metrics.clone(),
                 )
                 .await?;

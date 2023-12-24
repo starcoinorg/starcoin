@@ -49,6 +49,7 @@ stdlib = { workspace = true }
 thiserror = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 move-ir-compiler = { workspace = true }
+starcoin-dag = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }

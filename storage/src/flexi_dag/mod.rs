@@ -9,7 +9,6 @@ use crate::{
 use anyhow::Result;
 use bcs_ext::BCSCodec;
 use serde::{Deserialize, Serialize};
-use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockNumber;
 

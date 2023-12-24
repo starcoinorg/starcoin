@@ -103,8 +103,7 @@ pub trait ChainReader {
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     fn net_id(&self) -> ChainNetworkID;
-
-    fn dag_fork_height(&self) -> BlockNumber;
+    fn has_dag_block(&self, hash: HashValue) -> Result<bool>;
 }
 
 pub trait ChainWriter {

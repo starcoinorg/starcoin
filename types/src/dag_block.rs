@@ -945,19 +945,3 @@ impl EpochUncleSummary {
         }
     }
 }
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub struct KTotalDifficulty {
-    pub total_difficulty: U256,
-}
-
-impl Ord for KTotalDifficulty {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.total_difficulty.cmp(&other.total_difficulty)
-    }
-}
-
-impl PartialOrd for KTotalDifficulty {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}

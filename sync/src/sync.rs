@@ -3,7 +3,7 @@
 
 use crate::block_connector::BlockConnectorService;
 use crate::sync_metrics::SyncMetrics;
-use crate::tasks::{full_sync_task, sync_dag_full_task, AncestorEvent, SyncFetcher};
+use crate::tasks::{full_sync_task, AncestorEvent, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
 use futures::FutureExt;
@@ -16,7 +16,6 @@ use starcoin_chain_api::ChainReader;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::BlockDAG;
 use starcoin_executor::VMMetrics;
-use starcoin_flexidag::flexidag_service::{GetDagAccumulatorInfo, GetDagTips};
 use starcoin_flexidag::FlexidagService;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
@@ -96,24 +95,12 @@ impl SyncService {
             .metrics
             .registry()
             .and_then(|registry| PeerScoreMetrics::register(registry).ok());
-        // let genesis = storage
-        //     .get_genesis()?
-        //     .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
-        let dag_accumulator_info = match storage.get_dag_accumulator_info()? {
-            Some(info) => Some(info),
-            None => {
-                warn!(
-                    "Can not find dag accumulator info by head block id: {}, use genesis info.",
-                    head_block_info.block_id(),
-                );
-                None
-            }
-        };
-        let tips = async_std::task::block_on(flexidag_service.send(GetDagTips))??;
+        let tips = storage.get_dag_tips()?.map(|dag_tips| {
+            dag_tips.tips
+        });
         Ok(Self {
             sync_status: SyncStatus::new(
                 ChainStatus::new(head_block.header.clone(), head_block_info, tips),
-                dag_accumulator_info,
             ),
             stage: SyncStage::NotStart,
             config,
@@ -251,10 +238,6 @@ impl SyncService {
             .get_shared::<Arc<Storage>>()
             .expect("storage must exist")
             .get_accumulator_store(AccumulatorStoreType::SyncDag);
-        let dag_accumulator_snapshot = ctx
-            .get_shared::<Arc<Storage>>()
-            .expect("storage must exist")
-            .get_accumulator_snapshot_storage();
 
         let dag = ctx.get_shared_opt::<BlockDAG>()?;
 
@@ -275,9 +258,6 @@ impl SyncService {
                     format_err!("Can not find block info by id: {}", current_block_id)
                 })?;
 
-            let op_local_dag_accumulator_info =
-                flexidag_service.send(GetDagAccumulatorInfo).await??;
-
             let rpc_client = Self::create_verified_client(
                 network.clone(),
                 config.clone(),
@@ -286,7 +266,7 @@ impl SyncService {
                 peer_score_metrics,
             )
             .await?;
-            if let Some((target, _)) =
+            if let Some(target) =
                 rpc_client.get_best_target(current_block_info.get_total_difficulty())?
             {
                 info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
@@ -344,10 +324,6 @@ impl SyncService {
                         .get_startup_info().unwrap()
                         .ok_or_else(|| format_err!("Startup info should exist.")).unwrap();
                         let current_block_id = startup_info.main;
-
-                        let local_dag_accumulator_info = storage_for_single
-                        .get_dag_accumulator_info().unwrap()
-                        .expect("current dag accumulator info should exist");
 
                         if let Some(sync_task_total) = sync_task_total.as_ref() {
                             sync_task_total.with_label_values(&["done"]).inc();
@@ -662,11 +638,6 @@ impl EventHandler<Self, NewHeadBlock> for SyncService {
             msg.executed_block.block_info.clone(),
             self.sync_status.chain_status().tips_hash().clone(),
         )) {
-            self.sync_status.update_dag_accumulator_info(
-                self.storage
-                    .get_dag_accumulator_info()
-                    .expect("dag accumulator info must exist"),
-            );
             ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
         }
     }

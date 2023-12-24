@@ -23,6 +23,7 @@ starcoin-storage = { workspace = true }
 starcoin-types = { package = "starcoin-types", workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
+starcoin-dag ={ workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

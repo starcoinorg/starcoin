@@ -12,11 +12,7 @@ use crate::consensusdb::{
 };
 use crate::FlexiDagStorageConfig;
 use anyhow::{anyhow, bail, Ok};
-use bcs_ext::BCSCodec;
 use parking_lot::RwLock;
-use starcoin_accumulator::accumulator_info::AccumulatorInfo;
-use starcoin_accumulator::node::AccumulatorStoreType;
-use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::{ChainNetworkID, NodeConfig, RocksdbConfig};
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_storage::Store;
@@ -25,13 +21,10 @@ use starcoin_types::block::{
     HALLEY_FLEXIDAG_FORK_HEIGHT, MAIN_FLEXIDAG_FORK_HEIGHT, PROXIMA_FLEXIDAG_FORK_HEIGHT,
     TEST_FLEXIDAG_FORK_HEIGHT,
 };
-use starcoin_types::dag_block::KTotalDifficulty;
-use starcoin_types::startup_info::DagStartupInfo;
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
 };
-use std::collections::BTreeSet;
 use std::fmt;
 use std::path::Path;
 use std::sync::Arc;
@@ -95,7 +88,8 @@ impl BlockDAG {
     pub fn try_init_with_storage(
         storage: Arc<dyn Store>,
         config: Arc<NodeConfig>,
-    ) -> anyhow::Result<Option<Self>> {
+        net_id: ChainNetworkID,
+    ) -> anyhow::Result<Self> {
         let startup_info = storage
             .get_startup_info()?
             .expect("startup info must exist");
@@ -104,22 +98,20 @@ impl BlockDAG {
             .get_block_header_by_hash(startup_info.get_main().clone())?
             .expect("the genesis block in dag accumulator must none be none");
 
-        let fork_height = Self::dag_fork_height_with_net(config.net().id().clone());
+        let dag = Self::new_by_config(
+            config.data_dir().join("flexidag").as_path(),
+            net_id.clone(),
+        )?;
+
+        let fork_height = Self::dag_fork_height_with_net(net_id);
 
         if block_header.number() < fork_height {
-            return Ok(None);
+            Ok(dag)
         } else if block_header.number() == fork_height {
-            let dag = Self::new_by_config(
-                config.data_dir().join("flexidag").as_path(),
-                config.net().id().clone(),
-            )?;
             dag.init_with_genesis(block_header)?;
-            Ok(Some(dag))
+            Ok(dag)
         } else {
-            Ok(Some(Self::new_by_config(
-                config.data_dir().join("flexidag").as_path(),
-                config.net().id().clone(),
-            )?))
+            Ok(dag)
         }
     }
 
@@ -217,6 +209,10 @@ impl BlockDAG {
     pub fn get_ghostdag_data_by_child(&self, hash: Hash) -> anyhow::Result<Arc<GhostdagData>> {
         let ghostdata = self.storage.ghost_dag_store.get_data(hash)?;
         return Ok(ghostdata);
+    }
+
+    pub fn has_dag_block(&self, hash: Hash) -> anyhow::Result<bool> {
+        Ok(self.storage.header_store.has(hash)?)
     }
 }
 

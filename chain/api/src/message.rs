@@ -4,9 +4,6 @@
 use crate::TransactionInfoWithProof;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
-use starcoin_network_rpc_api::dag_protocol::{
-    TargetDagAccumulatorLeaf, TargetDagAccumulatorLeafDetail,
-};
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
@@ -21,13 +18,11 @@ use starcoin_vm_types::access_path::AccessPath;
 pub struct StartupInfo {
     #[allow(dead_code)]
     main: HashValue,
-    #[allow(dead_code)]
-    dag_main: Option<HashValue>,
 }
 
 impl StartupInfo {
-    pub fn new(main: HashValue, dag_main: Option<HashValue>) -> Self {
-        Self { main, dag_main }
+    pub fn new(main: HashValue) -> Self {
+        Self { main }
     }
 }
 
@@ -76,14 +71,9 @@ pub enum ChainRequest {
         access_path: Option<AccessPath>,
     },
     GetBlockInfos(Vec<HashValue>),
-    GetDagAccumulatorLeaves {
-        start_index: u64,
-        batch_size: u64,
-    },
-    GetTargetDagAccumulatorLeafDetail {
-        leaf_index: u64,
-        batch_size: u64,
-    },
+    GetDagBlockChildren {
+        block_ids: Vec<HashValue>,
+    }
 }
 
 impl ServiceRequest for ChainRequest {
@@ -112,6 +102,4 @@ pub enum ChainResponse {
     HashVec(Vec<HashValue>),
     TransactionProof(Box<Option<TransactionInfoWithProof>>),
     BlockInfoVec(Box<Vec<Option<BlockInfo>>>),
-    TargetDagAccumulatorLeaf(Vec<TargetDagAccumulatorLeaf>),
-    TargetDagAccumulatorLeafDetail(Vec<TargetDagAccumulatorLeafDetail>),
 }

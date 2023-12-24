@@ -13,10 +13,11 @@ use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
     ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
-use starcoin_config::ChainNetworkID;
-use starcoin_consensus::{BlockDAG, Consensus};
+use starcoin_config::{ChainNetworkID, NodeConfig};
+use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
@@ -26,7 +27,6 @@ use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
-use starcoin_types::dag_block::KTotalDifficulty;
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::RichTransactionInfo;
@@ -68,7 +68,7 @@ pub struct BlockChain {
     epoch: Epoch,
     vm_metrics: Option<VMMetrics>,
     net: ChainNetworkID,
-    dag: Option<BlockDAG>,
+    dag: BlockDAG,
 }
 
 impl BlockChain {
@@ -78,7 +78,7 @@ impl BlockChain {
         storage: Arc<dyn Store>,
         net: ChainNetworkID,
         vm_metrics: Option<VMMetrics>,
-        dag: Option<BlockDAG>,
+        dag: BlockDAG,
     ) -> Result<Self> {
         let head = storage
             .get_block_by_hash(head_block_hash)?
@@ -93,7 +93,7 @@ impl BlockChain {
         storage: Arc<dyn Store>,
         net: ChainNetworkID,
         vm_metrics: Option<VMMetrics>,
-        dag: Option<BlockDAG>,
+        dag: BlockDAG,
     ) -> Result<Self> {
         let block_info = storage
             .get_block_info(head_block.id())?
@@ -175,31 +175,13 @@ impl BlockChain {
         )?;
 
         let new_tips = vec![genesis_id];
-        let dag_accumulator = MerkleAccumulator::new_empty(
-            storage.get_accumulator_store(AccumulatorStoreType::SyncDag),
-        );
-        dag_accumulator.append(&new_tips)?;
-        dag_accumulator.flush()?;
-        storage.append_dag_accumulator_leaf(
-            Self::calculate_dag_accumulator_key(new_tips.clone())
-                .expect("failed to calculate the dag key"),
-            new_tips,
-            dag_accumulator.get_info(),
-            genesis_id,
-            [KTotalDifficulty {
-                head_block_id: genesis_id,
-                total_difficulty: executed_block.block_info().get_total_difficulty(),
-            }]
-            .into_iter()
-            .collect(),
-        )?;
         Self::new(
             time_service,
             executed_block.block.id(),
-            storage,
+            storage.clone(),
             net,
             None,
-            None,
+            BlockDAG::try_init_with_storage(storage)?,
         )
     }
 
@@ -575,7 +557,7 @@ impl BlockChain {
         self.storage.save_block_info(block_info.clone())?;
 
         self.storage.save_table_infos(txn_table_infos)?;
-        self.dag.clone().unwrap().commit(header.to_owned())?;
+        self.dag.commit(header.to_owned())?;
         watch(CHAIN_WATCH_NAME, "n26");
         Ok(ExecutedBlock { block, block_info })
     }
@@ -753,30 +735,17 @@ impl BlockChain {
         &self.block_accumulator
     }
 
-    pub fn dag(&self) -> &Option<BlockDAG> {
+    pub fn dag(&self) -> &BlockDAG {
         &self.dag
     }
 }
 
 impl ChainReader for BlockChain {
     fn info(&self) -> ChainInfo {
-        let (dag_accumulator, k_total_difficulties) = self
-            .storage
-            .get_latest_snapshot()
-            .unwrap_or(None)
-            .map(|snapshot| {
-                (
-                    Some(snapshot.accumulator_info),
-                    Some(snapshot.k_total_difficulties),
-                )
-            })
-            .unwrap_or((None, None));
         ChainInfo::new(
             self.status.head.header().chain_id(),
             self.genesis_hash,
             self.status.status.clone(),
-            dag_accumulator,
-            k_total_difficulties,
         )
     }
 
@@ -970,7 +939,7 @@ impl ChainReader for BlockChain {
             self.net.clone(),
             self.vm_metrics.clone(),
             //TODO: check missing blocks need to be clean
-            None,
+            self.dag.clone(),
         )
     }
 
@@ -1006,7 +975,7 @@ impl ChainReader for BlockChain {
     }
 
     fn execute(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
-        if self.dag.is_none() || verified_block.0.header().number() <= self.dag_fork_height() {
+        if !verified_block.0.is_dag() {
             Self::execute_block_and_save(
                 self.storage.as_ref(),
                 self.statedb.fork(),
@@ -1124,8 +1093,8 @@ impl ChainReader for BlockChain {
         self.net.clone()
     }
 
-    fn dag_fork_height(&self) -> BlockNumber {
-        BlockDAG::dag_fork_height_with_net(self.net.clone())
+    fn has_dag_block(&self, hash: HashValue) -> Result<bool> {
+        self.dag.has_dag_block(hash)
     }
 }
 
@@ -1232,7 +1201,6 @@ impl BlockChain {
     }
 
     fn connect_dag(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
-        let dag = self.dag.clone().expect("dag should init with blockdag");
         let (new_tip_block, _) = (executed_block.block(), executed_block.block_info());
         let mut tips = self
             .status
@@ -1251,7 +1219,7 @@ impl BlockChain {
         tips.push(new_tip_block.id());
 
         let block_hash = {
-            let ghost_of_tips = dag.ghostdata(tips.as_slice());
+            let ghost_of_tips = self.dag.ghostdata(tips.as_slice());
             ghost_of_tips.selected_parent
         };
         let (block, block_info) = {
@@ -1298,25 +1266,13 @@ impl ChainWriter for BlockChain {
     fn can_connect(&self, executed_block: &ExecutedBlock) -> bool {
         if executed_block.block.header().parent_hash() == self.status.status.head().id() {
             true
-        } else if self.dag.is_none() {
-            // this is a single chain
-            false
         } else {
-            Self::calculate_dag_accumulator_key(
-                self.status
-                    .status
-                    .tips_hash()
-                    .as_ref()
-                    .expect("dag blocks must have tips")
-                    .clone(),
-            )
-            .expect("failed to calculate the tips hash")
-                == executed_block.block().header().parent_hash()
+            false
         }
     }
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
-        if executed_block.block.header.number() > self.dag_fork_height() {
+        if executed_block.block.header().is_dag() {
             return self.connect_dag(executed_block);
         }
         let (block, block_info) = (executed_block.block(), executed_block.block_info());

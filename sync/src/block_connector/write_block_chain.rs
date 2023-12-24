@@ -7,10 +7,9 @@ use parking_lot::Mutex;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 use starcoin_config::NodeConfig;
-use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
-use starcoin_flexidag::flexidag_service::{DumpTipsToAccumulator, UpdateDagTips};
 use starcoin_flexidag::FlexidagService;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
@@ -18,7 +17,6 @@ use starcoin_service_registry::{ServiceContext, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
-use starcoin_types::dag_block::KTotalDifficulty;
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
@@ -138,7 +136,7 @@ where
         bus: ServiceRef<BusService>,
         vm_metrics: Option<VMMetrics>,
         flexidag_service: ServiceRef<FlexidagService>,
-        dag: Option<BlockDAG>,
+        dag: BlockDAG,
     ) -> Result<Self> {
         let net = config.net();
         let main = BlockChain::new(
@@ -398,10 +396,6 @@ where
             retracted_blocks,
         )?;
 
-        let next_tips = self
-            .storage
-            .get_tips_by_block_id(executed_block.block.header().id())
-            .ok();
         self.broadcast_new_head(executed_block);
 
         Ok(())
@@ -541,25 +535,7 @@ where
                 self.main.status().update_tips(Some(tips));
             }
         });
-        async_std::task::block_on(self.flexidag_service.send(UpdateDagTips {
-            block_header: block_header.clone(),
-            current_head_block_id: self.main.status().head().id(),
-            k_total_difficulty: KTotalDifficulty {
-                total_difficulty: self.main.status().total_difficulty(),
-                head_block_id: self.main.status().head().id(),
-            },
-        }))?
-    }
-
-    pub fn append_new_dag_block(&mut self, block_header: BlockHeader) -> Result<()> {
-        async_std::task::block_on(self.flexidag_service.send(DumpTipsToAccumulator {
-            block_header: block_header.clone(),
-            current_head_block_id: self.main.status().head().id(),
-            k_total_difficulty: KTotalDifficulty {
-                total_difficulty: self.main.status().total_difficulty(),
-                head_block_id: self.main.status().head().id(),
-            },
-        }))?
+        Ok(())
     }
 
     fn connect_inner(&mut self, block: Block) -> Result<ConnectOk> {

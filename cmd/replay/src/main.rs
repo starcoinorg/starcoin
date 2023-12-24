@@ -8,6 +8,7 @@ use starcoin_chain::verifier::{BasicVerifier, ConsensusVerifier, FullVerifier, N
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_config::RocksdbConfig;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
@@ -83,10 +84,10 @@ fn main() -> anyhow::Result<()> {
     let chain = BlockChain::new(
         net.time_service(),
         chain_info.head().id(),
-        storage,
+        storage.clone(),
         net.id().clone(),
         None,
-        None,
+        BlockDAG::try_init_with_storage(storage)?,
     )
     .expect("create block chain should success.");
 
@@ -106,7 +107,7 @@ fn main() -> anyhow::Result<()> {
         storage2.clone(),
         net.id().clone(),
         None,
-        None,
+        BlockDAG::try_init_with_storage(storage2.clone())?,
     )
     .expect("create block chain should success.");
 

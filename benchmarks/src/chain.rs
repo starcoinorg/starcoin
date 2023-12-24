@@ -9,6 +9,7 @@ use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_config::{temp_dir, ChainNetwork, DataDirPath, RocksdbConfig};
 use starcoin_consensus::Consensus;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
@@ -49,10 +50,10 @@ impl ChainBencher {
         let chain = BlockChain::new(
             net.time_service(),
             chain_info.head().id(),
-            storage,
+            storage.clone(),
             net.id().clone(),
             None,
-            None,
+            BlockDAG::try_init_with_storage(storage).unwrap(),
         )
         .expect("create block chain should success.");
         let miner_account = AccountInfo::random();

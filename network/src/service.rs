@@ -488,9 +488,6 @@ impl Inner {
         self.self_peer
             .peer_info
             .update_chain_status(chain_status.clone());
-        self.self_peer
-            .peer_info
-            .update_dag_accumulator_info(sync_status.dag_accumulator_info().clone());
         match self.self_peer.peer_info.chain_info.encode() {
             Ok(status) => {
                 self.network_service.update_business_status(status);

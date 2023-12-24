@@ -12,8 +12,8 @@ use anyhow::{format_err, Ok, Result};
 use network_api::PeerProvider;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
-use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_flexidag::FlexidagService;
 use starcoin_logger::prelude::*;
@@ -133,7 +133,7 @@ where
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist."))?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        let dag = ctx.get_shared_opt::<BlockDAG>()?;
+        let dag = ctx.get_shared::<BlockDAG>()?;
         let chain_service = WriteBlockChainService::new(
             config.clone(),
             startup_info,
@@ -262,16 +262,13 @@ where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
     fn handle_event(&mut self, msg: MinedBlock, ctx: &mut ServiceContext<Self>) {
-        let MinedBlock(new_block) = msg;
+        let MinedBlock(new_block) = msg.clone();
         let block_header = new_block.header().clone();
         let id = new_block.header().id();
         debug!("try connect mined block: {}", id);
 
         match self.chain_service.try_connect(new_block.as_ref().clone()) {
             std::result::Result::Ok(()) => {
-                // if let Err(e) = self.chain_service.append_new_dag_block(block_header) {
-                //     error!("Process mined block {} fail, error: {:?}", id, e);
-                // }
                 ctx.broadcast(msg)
             }
             Err(e) => {

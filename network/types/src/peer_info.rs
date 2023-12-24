@@ -68,11 +68,6 @@ impl PeerInfo {
         self.chain_info.update_status(chain_status)
     }
 
-    pub fn update_dag_accumulator_info(&mut self, dag_accumulator_info: Option<AccumulatorInfo>) {
-        self.chain_info
-            .update_dag_accumulator_info(dag_accumulator_info)
-    }
-
     /// This peer is support notification
     pub fn is_support_notification(&self) -> bool {
         !self.notif_protocols.is_empty()

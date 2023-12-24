@@ -13,6 +13,7 @@ starcoin-logger = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
+starcoin-dag = { workspace = true }
 
 [package]
 authors = { workspace = true }

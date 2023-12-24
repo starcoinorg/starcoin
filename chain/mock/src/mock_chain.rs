@@ -7,6 +7,7 @@ use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_config::ChainNetwork;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_storage::Storage;
@@ -29,10 +30,10 @@ impl MockChain {
         let chain = BlockChain::new(
             net.time_service(),
             chain_info.head().id(),
-            storage,
+            storage.clone(),
             net.id().clone(),
             None,
-            None,
+            BlockDAG::try_init_with_storage(storage)?,
         )?;
         let miner = AccountInfo::random();
         Ok(Self::new_inner(net, chain, miner))
@@ -47,10 +48,10 @@ impl MockChain {
         let chain = BlockChain::new(
             net.time_service(),
             head_block_hash,
-            storage,
+            storage.clone(),
             net.id().clone(),
             None,
-            None,
+            BlockDAG::try_init_with_storage(storage)?,
         )?;
         Ok(Self::new_inner(net, chain, miner))
     }
@@ -88,7 +89,7 @@ impl MockChain {
             self.head.get_storage(),
             self.net.id().clone(),
             None,
-            None,
+            self.head.dag().clone(),
         )
     }
 
@@ -111,7 +112,7 @@ impl MockChain {
             self.head.get_storage(),
             self.net.id().clone(),
             None,
-            None,
+            self.head.dag().clone(),
         )?;
         let branch_total_difficulty = branch.get_total_difficulty()?;
         let head_total_difficulty = self.head.get_total_difficulty()?;

@@ -73,7 +73,7 @@ where
         let fut = async move {
             let chain_status = service.main_status().await?;
             //TODO get chain info from chain service.
-            Ok(ChainInfo::new(chain_id, genesis_hash, chain_status, None, None).into())
+            Ok(ChainInfo::new(chain_id, genesis_hash, chain_status).into())
         };
         Box::pin(fut.boxed().map_err(map_err))
     }

@@ -5,7 +5,7 @@ use crate::storage::{ColumnFamily, InnerStorage, KVStore};
 use crate::{StorageVersion, CHAIN_INFO_PREFIX_NAME};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
-use starcoin_types::startup_info::{BarnardHardFork, DagStartupInfo, SnapshotRange, StartupInfo};
+use starcoin_types::startup_info::{BarnardHardFork, SnapshotRange, StartupInfo};
 use std::convert::{TryFrom, TryInto};
 
 #[derive(Clone)]
@@ -47,17 +47,6 @@ impl ChainInfoStorage {
         DataT::Error: Into<anyhow::Error>,
     {
         self.put_sync(key, value.try_into().map_err(Into::into)?)
-    }
-
-    pub fn get_flexi_dag_startup_info(&self) -> Result<Option<DagStartupInfo>> {
-        self.get_value(Self::FLEXI_DAG_STARTUP_INFO_KEY.as_bytes())
-    }
-
-    pub fn save_flexi_dag_startup_info(&self, dag_startup_info: DagStartupInfo) -> Result<()> {
-        self.update_value(
-            Self::FLEXI_DAG_STARTUP_INFO_KEY.as_bytes().to_vec(),
-            dag_startup_info,
-        )
     }
 
     pub fn get_startup_info(&self) -> Result<Option<StartupInfo>> {

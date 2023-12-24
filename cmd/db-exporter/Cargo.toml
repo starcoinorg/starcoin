@@ -35,6 +35,7 @@ starcoin-vm-runtime = { workspace = true }
 futures = { workspace = true }
 rayon = { workspace = true }
 num_cpus = { workspace = true }
+starcoin-dag = { workspace = true }
 
 [package]
 authors = { workspace = true }

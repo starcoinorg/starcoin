@@ -39,6 +39,7 @@ starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-executor-benchmark = { workspace = true }
+starcoin-dag = { workspace = true }
 
 [dev-dependencies]
 

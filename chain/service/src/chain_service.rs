@@ -8,26 +8,17 @@ use starcoin_chain_api::{
     ChainReader, ChainWriter, ReadableChainService, TransactionInfoWithProof,
 };
 use starcoin_config::NodeConfig;
-use starcoin_consensus::BlockDAG;
 use starcoin_crypto::HashValue;
-use starcoin_flexidag::{
-    flexidag_service::{self, GetDagAccumulatorLeafDetail, UpdateDagTips},
-    FlexidagService,
-};
+use starcoin_dag::blockdag::BlockDAG;
+use starcoin_flexidag::FlexidagService;
 use starcoin_logger::prelude::*;
-use starcoin_network_rpc_api::dag_protocol::{
-    GetDagAccumulatorLeaves, GetTargetDagAccumulatorLeafDetail, TargetDagAccumulatorLeaf,
-    TargetDagAccumulatorLeafDetail,
-};
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
 };
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::contract_event::ContractEventInfo;
-use starcoin_types::dag_block::KTotalDifficulty;
 use starcoin_types::filter::Filter;
-use starcoin_types::startup_info::DagStartupInfo;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
@@ -49,18 +40,16 @@ impl ChainReaderService {
     pub fn new(
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
-        dag_startup_info: Option<DagStartupInfo>,
         storage: Arc<dyn Store>,
         flexidag_service: ServiceRef<FlexidagService>,
-        dag: Option<BlockDAG>,
+        dag: BlockDAG,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         Ok(Self {
             inner: ChainReaderServiceInner::new(
                 config,
                 startup_info,
-                dag_startup_info,
-                storage.clone(),
+                storage,
                 flexidag_service,
                 dag,
                 vm_metrics,
@@ -76,14 +65,12 @@ impl ServiceFactory<Self> for ChainReaderService {
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("StartupInfo should exist at service init."))?;
-        let dag_startup_info = storage.get_dag_startup_info()?;
-        let dag = ctx.get_shared_opt::<BlockDAG>()?;
+        let dag = ctx.get_shared::<BlockDAG>()?.clone();
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
         let flexidag_service = ctx.service_ref::<FlexidagService>()?.clone();
         Self::new(
             config,
             startup_info,
-            dag_startup_info,
             storage,
             flexidag_service,
             dag,
@@ -165,7 +152,6 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetStartupInfo() => {
                 Ok(ChainResponse::StartupInfo(Box::new(ApiStartupInfo::new(
                     *self.inner.main_startup_info().get_main(),
-                    self.inner.dag_startup_info().map(|i| *i.get_dag_main()),
                 ))))
             }
             ChainRequest::GetHeadChainStatus() => Ok(ChainResponse::ChainStatus(Box::new(
@@ -273,26 +259,8 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetBlockInfos(ids) => Ok(ChainResponse::BlockInfoVec(Box::new(
                 self.inner.get_block_infos(ids)?,
             ))),
-            ChainRequest::GetDagAccumulatorLeaves {
-                start_index,
-                batch_size,
-            } => Ok(ChainResponse::TargetDagAccumulatorLeaf(
-                self.inner
-                    .get_dag_accumulator_leaves(GetDagAccumulatorLeaves {
-                        accumulator_leaf_index: start_index,
-                        batch_size,
-                    })?,
-            )),
-            ChainRequest::GetTargetDagAccumulatorLeafDetail {
-                leaf_index,
-                batch_size,
-            } => Ok(ChainResponse::TargetDagAccumulatorLeafDetail(
-                self.inner.get_target_dag_accumulator_leaf_detail(
-                    GetTargetDagAccumulatorLeafDetail {
-                        leaf_index,
-                        batch_size,
-                    },
-                )?,
+            ChainRequest::GetDagBlockChildren { block_ids } => Ok(ChainResponse::HashVec(
+                self.inner.get_dag_block_children(block_ids)?,
             )),
         }
     }
@@ -301,11 +269,10 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
 pub struct ChainReaderServiceInner {
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
-    dag_startup_info: Option<DagStartupInfo>,
     main: BlockChain,
     storage: Arc<dyn Store>,
     flexidag_service: ServiceRef<FlexidagService>,
-    dag: Option<BlockDAG>,
+    dag: BlockDAG,
     vm_metrics: Option<VMMetrics>,
 }
 
@@ -313,10 +280,9 @@ impl ChainReaderServiceInner {
     pub fn new(
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
-        dag_startup_info: Option<DagStartupInfo>,
         storage: Arc<dyn Store>,
         flexidag_service: ServiceRef<FlexidagService>,
-        dag: Option<BlockDAG>,
+        dag: BlockDAG,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let net = config.net();
@@ -331,7 +297,6 @@ impl ChainReaderServiceInner {
         Ok(Self {
             config,
             startup_info,
-            dag_startup_info,
             main,
             storage,
             flexidag_service,
@@ -360,18 +325,6 @@ impl ChainReaderServiceInner {
             self.dag.clone(),
         )?;
         Ok(())
-    }
-
-    #[allow(dead_code)]
-    pub fn update_dag_accumulator(&mut self, new_block_header: BlockHeader) -> Result<()> {
-        async_std::task::block_on(self.flexidag_service.send(UpdateDagTips {
-            block_header: new_block_header,
-            current_head_block_id: self.main.status().info().id(),
-            k_total_difficulty: KTotalDifficulty {
-                head_block_id: self.main.status().info().id(),
-                total_difficulty: self.main.status().info().get_total_difficulty(),
-            },
-        }))?
     }
 }
 
@@ -453,9 +406,7 @@ impl ReadableChainService for ChainReaderServiceInner {
     fn main_startup_info(&self) -> StartupInfo {
         self.startup_info.clone()
     }
-    fn dag_startup_info(&self) -> Option<DagStartupInfo> {
-        self.dag_startup_info.clone()
-    }
+
     fn main_blocks_by_number(
         &self,
         number: Option<BlockNumber>,
@@ -507,43 +458,16 @@ impl ReadableChainService for ChainReaderServiceInner {
         self.storage.get_block_infos(ids)
     }
 
-    fn get_dag_accumulator_leaves(
-        &self,
-        req: GetDagAccumulatorLeaves,
-    ) -> Result<Vec<TargetDagAccumulatorLeaf>> {
-        Ok(async_std::task::block_on(self.flexidag_service.send(
-            flexidag_service::GetDagAccumulatorLeaves {
-                leaf_index: req.accumulator_leaf_index,
-                batch_size: req.batch_size,
-                reverse: true,
-            },
-        ))??
-        .into_iter()
-        .map(|leaf| TargetDagAccumulatorLeaf {
-            accumulator_root: leaf.dag_accumulator_root,
-            leaf_index: leaf.leaf_index,
+    fn get_dag_block_children(&self, ids: Vec<HashValue>) -> Result<Vec<HashValue>> {
+        ids.into_iter().fold(Ok(vec![]), |mut result, id| {
+            match self.dag.get_children(id) {
+                anyhow::Result::Ok(children) => {
+                    result.as_mut().map(|r| r.extend(children));
+                    Ok(result?)
+                }
+                Err(e) => Err(e),
+            }
         })
-        .collect())
-    }
-
-    fn get_target_dag_accumulator_leaf_detail(
-        &self,
-        req: GetTargetDagAccumulatorLeafDetail,
-    ) -> Result<Vec<TargetDagAccumulatorLeafDetail>> {
-        let dag_details =
-            async_std::task::block_on(self.flexidag_service.send(GetDagAccumulatorLeafDetail {
-                leaf_index: req.leaf_index,
-                batch_size: req.batch_size,
-            }))??;
-        Ok(dag_details
-            .into_iter()
-            .map(|detail| TargetDagAccumulatorLeafDetail {
-                accumulator_root: detail.accumulator_root,
-                tips: detail.tips,
-                head_block_id: detail.accumulator_root,
-                k_total_difficulties: detail.k_total_difficulties,
-            })
-            .collect())
     }
 }
 

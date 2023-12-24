@@ -20,6 +20,7 @@ use starcoin_chain::{
 use starcoin_config::{BuiltinNetworkID, ChainNetwork, RocksdbConfig};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
 use starcoin_statedb::{ChainStateDB, ChainStateReader, ChainStateWriter};
@@ -637,10 +638,10 @@ pub fn export_block_range(
     let chain = BlockChain::new(
         net.time_service(),
         chain_info.head().id(),
-        storage,
+        storage.clone(),
         net.id().clone(),
         None,
-        None,
+        BlockDAG::try_init_with_storage(storage.clone())?,
     )
     .expect("create block chain should success.");
     let cur_num = chain.status().head().number();
@@ -725,7 +726,7 @@ pub fn apply_block(
         storage.clone(),
         net.id().clone(),
         None,
-        None,
+        BlockDAG::try_init_with_storage(storage.clone())?,
     )
     .expect("create block chain should success.");
     let start_time = SystemTime::now();
@@ -805,7 +806,7 @@ pub fn startup_info_back(
         storage.clone(),
         net.id().clone(),
         None,
-        None,
+        BlockDAG::try_init_with_storage(storage.clone())?,
     )
     .expect("create block chain should success.");
 
@@ -852,7 +853,7 @@ pub fn gen_block_transactions(
         storage.clone(),
         net.id().clone(),
         None,
-        None,
+        BlockDAG::try_init_with_storage(storage.clone())?,
     )
     .expect("create block chain should success.");
     let block_num = block_num.unwrap_or(1000);
@@ -1310,7 +1311,7 @@ pub fn export_snapshot(
         storage.clone(),
         net.id().clone(),
         None,
-        None,
+        BlockDAG::try_init_with_storage(storage.clone())?,
     )
     .expect("create block chain should success.");
     let block_num = chain.status().head().number();
@@ -1334,7 +1335,7 @@ pub fn export_snapshot(
         storage.clone(),
         net.id().clone(),
         None,
-        None,
+        BlockDAG::try_init_with_storage(storage.clone())?,
     )
     .expect("create block chain should success.");
 
@@ -1660,7 +1661,7 @@ pub fn apply_snapshot(
             storage.clone(),
             net.id().clone(),
             None,
-            None,
+            BlockDAG::try_init_with_storage(storage.clone())?,
         )
         .expect("create block chain should success."),
     ));
@@ -1988,6 +1989,7 @@ pub fn gen_turbo_stm_transactions(to_dir: PathBuf, block_num: Option<u64>) -> an
         CacheStorage::new(None),
         db_storage,
     ))?);
+    let dag = BlockDAG::try_init_with_storage(storage.clone())?;
     let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
     let mut chain = BlockChain::new(
         net.time_service(),
@@ -1995,7 +1997,7 @@ pub fn gen_turbo_stm_transactions(to_dir: PathBuf, block_num: Option<u64>) -> an
         storage.clone(),
         net.id().clone(),
         None,
-        None,
+        dag,
     )
     .expect("create block chain should success.");
     let block_num = block_num.unwrap_or(1000);
@@ -2023,7 +2025,7 @@ pub fn apply_turbo_stm_block(
         storage_seq.clone(),
         net.id().clone(),
         None,
-        None,
+        BlockDAG::try_init_with_storage(storage_seq.clone())?,
     )
     .expect("create block chain should success.");
     let cur_num = chain_seq.status().head().number();
@@ -2083,7 +2085,7 @@ pub fn apply_turbo_stm_block(
         storage_stm.clone(),
         net.id().clone(),
         None,
-        None,
+        BlockDAG::try_init_with_storage(storage_stm.clone())?,
     )
     .expect("create block chain should success.");
 

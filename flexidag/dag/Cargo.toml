@@ -21,7 +21,6 @@ starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
 rocksdb = { workspace = true }
 bincode = { version = "1", default-features = false }
-
 serde = { workspace = true }
 starcoin-storage = { workspace = true }
 parking_lot = { workspace = true }

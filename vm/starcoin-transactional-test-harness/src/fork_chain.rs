@@ -220,8 +220,6 @@ impl ChainApi for MockChainApi {
                     status.head.header().chain_id(),
                     HashValue::random(),
                     status.status,
-                    None,
-                    None,
                 ))),
                 None => match client {
                     Some(client) => client.info().await.map_err(|e| anyhow!("{}", e)),

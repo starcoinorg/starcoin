@@ -9,6 +9,7 @@ use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{BlockChain, ChainReader};
+use starcoin_config::NodeConfig;
 use starcoin_config::{
     genesis_key_pair, BuiltinNetworkID, ChainNetwork, ChainNetworkID, GenesisBlockParameter,
 };

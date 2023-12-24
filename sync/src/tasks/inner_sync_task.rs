@@ -11,6 +11,7 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
 use starcoin_config::ChainNetworkID;
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_service_registry::ServiceRef;
 use starcoin_storage::Store;
@@ -91,6 +92,7 @@ where
         max_retry_times: u64,
         delay_milliseconds_on_error: u64,
         skip_pow_verify_when_sync: bool,
+        dag: BlockDAG,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<(BlockChain, TaskHandle), TaskError> {
         let buffer_size = self.target.peers.len();
@@ -143,15 +145,17 @@ where
                 self.storage.clone(),
                 self.net_id.clone(),
                 vm_metrics,
-                None,
+                dag.clone(),
             )?;
             let block_collector = BlockCollector::new_with_handle(
                 current_block_info.clone(),
-                Some(self.target.clone()),
+                self.target.clone(),
                 chain,
                 self.block_event_handle.clone(),
                 self.peer_provider.clone(),
                 skip_pow_verify_when_sync,
+                self.storage.clone(),
+                self.fetcher.clone(),
             );
             Ok(TaskGenerator::new(
                 block_sync_task,

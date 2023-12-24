@@ -23,6 +23,7 @@ starcoin-network-rpc-api = { workspace = true }
 starcoin-consensus = { workspace = true }
 starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
 starcoin-flexidag = { workspace = true }
+starcoin-dag = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }

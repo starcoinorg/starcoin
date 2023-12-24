@@ -10,7 +10,7 @@ use starcoin_accumulator::AccumulatorNode;
 use starcoin_chain_service::{ChainAsyncService, ChainReaderService};
 use starcoin_crypto::HashValue;
 use starcoin_network_rpc_api::{
-    dag_protocol, gen_server, BlockBody, GetAccountState, GetAccumulatorNodeByNodeHash,
+    gen_server, BlockBody, GetAccountState, GetAccumulatorNodeByNodeHash,
     GetBlockHeadersByNumber, GetBlockIds, GetStateWithProof, GetStateWithTableItemProof,
     GetTableInfo, GetTxnsWithHash, GetTxnsWithSize, Ping, RpcRequest,
     MAX_BLOCK_HEADER_REQUEST_SIZE, MAX_BLOCK_INFO_REQUEST_SIZE, MAX_BLOCK_REQUEST_SIZE,
@@ -319,31 +319,12 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         Box::pin(fut)
     }
 
-    fn get_dag_accumulator_leaves(
-        &self,
-        _peer_id: PeerId,
-        req: dag_protocol::GetDagAccumulatorLeaves,
-    ) -> BoxFuture<Result<Vec<dag_protocol::TargetDagAccumulatorLeaf>>> {
+    fn get_dag_block_children(&self, _peer_id:PeerId, request:Vec<HashValue>) -> BoxFuture<Result<Vec<HashValue> > >  {
         let chain_service = self.chain_service.clone();
-        let fut = async move { chain_service.get_dag_accumulator_leaves(req).await };
+        let fut = async move {
+            chain_service.get_dag_block_children(request).await
+        };
         Box::pin(fut)
     }
 
-    fn get_accumulator_leaf_detail(
-        &self,
-        _peer_id: PeerId,
-        req: dag_protocol::GetTargetDagAccumulatorLeafDetail,
-    ) -> BoxFuture<Result<Option<Vec<dag_protocol::TargetDagAccumulatorLeafDetail>>>> {
-        let chain_service = self.chain_service.clone();
-        let fut = async move { chain_service.get_dag_accumulator_leaves_detail(req).await };
-        Box::pin(fut)
-    }
-
-    fn get_dag_block_info(
-        &self,
-        _peer_id: PeerId,
-        _req: dag_protocol::GetSyncDagBlockInfo,
-    ) -> BoxFuture<Result<Option<Vec<dag_protocol::SyncDagBlockInfo>>>> {
-        todo!()
-    }
 }

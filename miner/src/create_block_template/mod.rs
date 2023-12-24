@@ -10,10 +10,10 @@ use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_config::ChainNetwork;
 use starcoin_config::NodeConfig;
-use starcoin_consensus::{BlockDAG, Consensus};
+use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
-use starcoin_flexidag::flexidag_service::{NewTips, NewTipsAndCreateDag};
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_service_registry::{
@@ -80,7 +80,7 @@ impl ServiceFactory<Self> for BlockBuilderService {
             .and_then(|registry| BlockBuilderMetrics::register(registry).ok());
 
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        let dag = ctx.get_shared_opt::<BlockDAG>()?;
+        let dag = ctx.get_shared::<BlockDAG>()?;
 
         let inner = Inner::new(
             config.net(),
@@ -102,8 +102,6 @@ impl ActorService for BlockBuilderService {
         ctx.subscribe::<NewHeadBlock>();
         ctx.subscribe::<NewBranch>();
         ctx.subscribe::<DefaultAccountChangeEvent>();
-        ctx.subscribe::<NewTips>();
-        ctx.subscribe::<NewTipsAndCreateDag>();
         Ok(())
     }
 
@@ -111,8 +109,6 @@ impl ActorService for BlockBuilderService {
         ctx.unsubscribe::<NewHeadBlock>();
         ctx.unsubscribe::<NewBranch>();
         ctx.unsubscribe::<DefaultAccountChangeEvent>();
-        ctx.unsubscribe::<NewTips>();
-        ctx.unsubscribe::<NewTipsAndCreateDag>();
         Ok(())
     }
 }
@@ -121,37 +117,6 @@ impl EventHandler<Self, NewHeadBlock> for BlockBuilderService {
     fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<BlockBuilderService>) {
         if let Err(e) = self.inner.update_chain(msg.executed_block.as_ref().clone()) {
             error!("err : {:?}", e)
-        }
-    }
-}
-
-impl EventHandler<Self, NewTipsAndCreateDag> for BlockBuilderService {
-    fn handle_event(
-        &mut self,
-        msg: NewTipsAndCreateDag,
-        _ctx: &mut ServiceContext<BlockBuilderService>,
-    ) {
-        assert!(
-            self.inner.dag.is_none(),
-            "the dag should be none but it was initialized before"
-        );
-        self.inner.dag = Some(msg.dag);
-        if let Err(e) = self.inner.chain.update_tips(msg.tips.clone()) {
-            error!("failed to update miner tips for: {:?}", e);
-        }
-        if let Err(e) = self.inner.storage.save_dag_tips(msg.tips) {
-            error!("failed to save miner tips for: {:?}", e);
-        }
-    }
-}
-
-impl EventHandler<Self, NewTips> for BlockBuilderService {
-    fn handle_event(&mut self, msg: NewTips, _ctx: &mut ServiceContext<BlockBuilderService>) {
-        if let Err(e) = self.inner.chain.update_tips(msg.tips.clone()) {
-            error!("failed to update miner tips for: {:?}", e);
-        }
-        if let Err(e) = self.inner.storage.save_dag_tips(msg.tips) {
-            error!("failed to save miner tips for: {:?}", e);
         }
     }
 }
@@ -230,7 +195,7 @@ pub struct Inner<P> {
     miner_account: AccountInfo,
     metrics: Option<BlockBuilderMetrics>,
     vm_metrics: Option<VMMetrics>,
-    dag: Option<BlockDAG>,
+    dag: BlockDAG,
 }
 
 impl<P> Inner<P>
@@ -246,7 +211,7 @@ where
         miner_account: AccountInfo,
         metrics: Option<BlockBuilderMetrics>,
         vm_metrics: Option<VMMetrics>,
-        dag: Option<BlockDAG>,
+        dag: BlockDAG,
     ) -> Result<Self> {
         let chain = BlockChain::new(
             net.time_service(),
@@ -387,33 +352,29 @@ where
             match &tips_hash {
                 None => (self.find_uncles(), None),
                 Some(tips) => {
-                    if let Some(dag) = &self.dag {
-                        let mut blues = dag.ghostdata(tips).mergeset_blues.to_vec();
-                        assert!(
-                            blues.len() > 0,
-                            "the count of the blue block should be larger than 0"
-                        );
-                        let mut blue_blocks = vec![];
-                        let selected_parent = blues.remove(0); // 5
-                                                               // assert_eq!(previous_header.id(), selected_parent);// 4, 5
-                        for blue in &blues {
-                            let block = self
-                                .storage
-                                .get_block_by_hash(blue.to_owned())?
-                                .expect("Block should exist");
-                            blue_blocks.push(block);
-                        }
-                        (
-                            blue_blocks
-                                .as_slice()
-                                .iter()
-                                .map(|b| b.header.clone())
-                                .collect(),
-                            Some(blue_blocks),
-                        )
-                    } else {
-                        (self.find_uncles(), None)
+                    let mut blues = self.dag.ghostdata(tips).mergeset_blues.to_vec();
+                    assert!(
+                        blues.len() > 0,
+                        "the count of the blue block should be larger than 0"
+                    );
+                    let mut blue_blocks = vec![];
+                    let selected_parent = blues.remove(0); // 5
+                                                            // assert_eq!(previous_header.id(), selected_parent);// 4, 5
+                    for blue in &blues {
+                        let block = self
+                            .storage
+                            .get_block_by_hash(blue.to_owned())?
+                            .expect("Block should exist");
+                        blue_blocks.push(block);
                     }
+                    (
+                        blue_blocks
+                            .as_slice()
+                            .iter()
+                            .map(|b| b.header.clone())
+                            .collect(),
+                        Some(blue_blocks),
+                    )
                 }
             }
         };

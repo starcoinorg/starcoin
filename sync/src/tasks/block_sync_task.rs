@@ -3,7 +3,7 @@
 
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
-use anyhow::{format_err, Result, Ok};
+use anyhow::{bail, format_err, Result};
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use network_api::PeerId;
@@ -14,9 +14,10 @@ use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBl
 use starcoin_config::G_CRATE_VERSION;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_storage::{BARNARD_HARD_FORK_HASH, Store};
+use starcoin_storage::{Store, BARNARD_HARD_FORK_HASH};
 use starcoin_sync_api::SyncTarget;
-use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber, BlockHeader};
+use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
+use starcoin_vm_types::account_address::HashAccountAddress;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -207,7 +208,7 @@ where
         event_handle: H,
         peer_provider: N,
         skip_pow_verify: bool,
-        local_store: Arc<dyn BlockLocalStore>,
+        local_store: Arc<dyn Store>,
         fetcher: Arc<dyn BlockFetcher>,
     ) -> Self {
         Self {
@@ -356,25 +357,141 @@ where
         }
     }
 
-    fn find_absent_dag_blocks(&self, block_header: &BlockHeader) -> Result<Vec<HashValue>> {
-        Ok(block_header.parents_hash().and_then(|parent_blocks| {
-            let block_infos = self.local_store.get_block_infos(parent_blocks.clone())?;
-            Ok(parent_blocks.into_iter().zip(block_infos).fold(
-                vec![],
-                |mut absent_blocks, (block_id, block_info)| {
-                    if block_info.is_none() {
-                        absent_blocks.push(block_id);
-                    }
-                    absent_blocks
-                },
-            ))
-        })?)
-    }
-    
-    pub fn ensure_dag_parent_blocks_exist(&self, block_header: &BlockHeader, peer_id: PeerId) -> Result<()> {
-        let absent_blocks = self.find_absent_dag_blocks(block_header)?;
-        let s = self.fetcher.fetch_block_headers(absent_blocks, peer_id).await?;
+    fn find_absent_parent_dag_blocks(
+        &self,
+        block_header: BlockHeader,
+        ancestors: &mut Vec<HashValue>,
+        absent_blocks: &mut Vec<HashValue>,
+    ) -> Result<()> {
+        let parents = block_header.parents_hash().unwrap_or_default();
+        if parents.is_empty() {
+            return Ok(());
+        }
+        for parent in parents {
+            if !self.chain.has_dag_block(parent)? {
+                absent_blocks.push(parent)
+            } else {
+                ancestors.push(parent);
+            }
+        }
         Ok(())
+    }
+
+    fn find_absent_parent_dag_blocks_for_blocks(
+        &self,
+        block_headers: Vec<BlockHeader>,
+        ancestors: &mut Vec<HashValue>,
+        absent_blocks: &mut Vec<HashValue>,
+    ) -> Result<()> {
+        for block_header in block_headers {
+            self.find_absent_parent_dag_blocks(block_header, ancestors, absent_blocks)?;
+        }
+        Ok(())
+    }
+
+    async fn find_ancestor_dag_block_header(
+        &self,
+        mut block_headers: Vec<BlockHeader>,
+        peer_id: PeerId,
+    ) -> Result<Vec<HashValue>> {
+        let mut ancestors = vec![];
+        loop {
+            let mut absent_blocks = vec![];
+            self.find_absent_parent_dag_blocks_for_blocks(
+                block_headers,
+                &mut ancestors,
+                &mut absent_blocks,
+            )?;
+            if absent_blocks.is_empty() {
+                return Ok(ancestors);
+            }
+            let absent_block_headers = self
+                .fetcher
+                .fetch_block_headers(absent_blocks, peer_id.clone())
+                .await?;
+            if absent_block_headers.iter().any(|(id, header)| {
+                if header.is_none() {
+                    error!(
+                        "fetch absent block header failed, block id: {:?}, peer_id: {:?}, it should not be absent!",
+                        id, peer_id
+                    );
+                    return true;
+                }
+                false
+            }) {
+                bail!("fetch absent block header failed, it should not be absent!");
+            }
+            block_headers = absent_block_headers
+                .into_iter()
+                .map(|(_, header)| header.expect("block header should not be none!"))
+                .collect();
+        }
+    }
+
+    pub fn ensure_dag_parent_blocks_exist(
+        &mut self,
+        block_header: &BlockHeader,
+        peer_id: Option<PeerId>,
+    ) -> Result<()> {
+        if !block_header.is_dag() {
+            return Ok(());
+        }
+        let peer_id = peer_id.ok_or_else(|| format_err!("peer_id should not be none!"))?;
+        let fut = async {
+            let dag_ancestors = self
+                .find_ancestor_dag_block_header(vec![block_header.clone()], peer_id.clone())
+                .await?;
+
+            let mut dag_ancestors = dag_ancestors
+                .into_iter()
+                .map(|header| header)
+                .collect::<Vec<_>>();
+
+            while !dag_ancestors.is_empty() {
+                for ancestor_block_header_id in &dag_ancestors {
+                    if block_header.id() == *ancestor_block_header_id {
+                        continue;
+                    }
+
+                    match self
+                        .local_store
+                        .get_block_by_hash(ancestor_block_header_id.clone())?
+                    {
+                        Some(block) => {
+                            self.chain.apply(block)?;
+                        }
+                        None => {
+                            for block in self
+                                .fetcher
+                                .fetch_blocks_by_peerid(
+                                    vec![ancestor_block_header_id.clone()],
+                                    peer_id.clone(),
+                                )
+                                .await?
+                            {
+                                match block {
+                                    Some(block) => {
+                                        let _ = self.chain.apply(block)?;
+                                    }
+                                    None => bail!(
+                                        "fetch ancestor block failed, block id: {:?}, peer_id: {:?}",
+                                        ancestor_block_header_id,
+                                        peer_id
+                                    ),
+                                }
+                            }
+                        }
+                    }
+                }
+                dag_ancestors = self
+                    .fetcher
+                    .fetch_dag_block_children(dag_ancestors, peer_id)
+                    .await?;
+            }
+
+            Ok(())
+        };
+        async_std::task::block_on(fut)
     }
 }
 

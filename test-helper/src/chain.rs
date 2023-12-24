@@ -7,6 +7,7 @@ use starcoin_chain::BlockChain;
 use starcoin_chain::ChainWriter;
 use starcoin_config::ChainNetwork;
 use starcoin_consensus::Consensus;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 
 pub fn gen_blockchain_for_test(net: &ChainNetwork) -> Result<BlockChain> {
@@ -16,10 +17,10 @@ pub fn gen_blockchain_for_test(net: &ChainNetwork) -> Result<BlockChain> {
     let block_chain = BlockChain::new(
         net.time_service(),
         chain_info.head().id(),
-        storage,
+        storage.clone(),
         net.id().clone(),
         None,
-        None,
+        BlockDAG::try_init_with_storage(storage)?,
     )?;
     Ok(block_chain)
 }

@@ -14,7 +14,7 @@ use rocksdb::{
     WriteOptions, DB,
 };
 use starcoin_config::{check_open_fds_limit, RocksdbConfig};
-use std::{collections::HashSet, iter, marker::PhantomData, path::Path};
+use std::{collections::HashSet, iter, marker::PhantomData, path::{Path, PathBuf}};
 
 const RES_FDS: u64 = 4096;
 
@@ -22,6 +22,7 @@ const RES_FDS: u64 = 4096;
 pub struct DBStorage {
     db: DB,
     cfs: Vec<ColumnFamilyName>,
+    path: PathBuf,
     metrics: Option<StorageMetrics>,
 }
 
@@ -101,6 +102,7 @@ impl DBStorage {
         Ok(DBStorage {
             db,
             cfs: column_families,
+            path: path.to_path_buf(),
             metrics,
         })
     }
@@ -272,6 +274,10 @@ impl DBStorage {
         let mut opts = WriteOptions::new();
         opts.set_sync(true);
         opts
+    }
+
+    pub fn path(&self) -> PathBuf {
+        self.path.clone()
     }
 }
 

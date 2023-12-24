@@ -100,7 +100,6 @@ pub trait BlockVerifier {
         R: ChainReader,
     {
         let epoch = current_chain.epoch();
-        let is_dag = header.number() == current_chain.dag_fork_height();
 
         let switch_epoch = header.number() == epoch.end_block_number();
         // epoch first block's uncles should empty.
@@ -140,7 +139,7 @@ pub trait BlockVerifier {
                "uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number(), header.number()
             );
 
-            if is_dag {
+            if header.is_dag() {
                 verify_block!(
                 VerifyBlockField::Uncle,
                 uncle.number() <= header.number(),
