@@ -2,16 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::metrics::ChainMetrics;
-use anyhow::{format_err, Result};
+use anyhow::{bail, format_err, Ok, Result};
+use parking_lot::Mutex;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
+use starcoin_flexidag::FlexidagService;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
-use starcoin_service_registry::ServiceRef;
+use starcoin_service_registry::{ServiceContext, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
@@ -20,8 +22,9 @@ use starcoin_types::{
     startup_info::StartupInfo,
     system_events::{NewBranch, NewHeadBlock},
 };
-use std::fmt::Formatter;
-use std::sync::Arc;
+use std::{fmt::Formatter, sync::Arc};
+
+use super::BlockConnectorService;
 
 const MAX_ROLL_BACK_BLOCK: usize = 10;
 
@@ -95,15 +98,15 @@ where
     }
 }
 
-impl<P> WriteBlockChainService<P>
+impl<TransactionPoolServiceT> WriteBlockChainService<TransactionPoolServiceT>
 where
-    P: TxPoolSyncService + 'static,
+    TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
     pub fn new(
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
-        txpool: P,
+        txpool: TransactionPoolServiceT,
         bus: ServiceRef<BusService>,
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
@@ -174,6 +177,61 @@ where
 
     pub fn get_main(&self) -> &BlockChain {
         &self.main
+    }
+
+    #[cfg(test)]
+    pub fn time_sleep(&self, sec: u64) {
+        self.config.net().time_service().sleep(sec * 1000000);
+    }
+
+    #[cfg(test)]
+    pub fn apply_failed(&mut self, block: Block) -> Result<()> {
+        use anyhow::bail;
+        use starcoin_chain::verifier::FullVerifier;
+
+        // apply but no connection
+        let verified_block = self.main.verify_with_verifier::<FullVerifier>(block)?;
+        let executed_block = self.main.execute(verified_block)?;
+        let enacted_blocks = vec![executed_block.block().clone()];
+        self.do_new_head(executed_block, 1, enacted_blocks, 0, vec![])?;
+        // bail!("failed to apply for tesing the connection later!");
+        Ok(())
+    }
+
+    // for sync task to connect to its chain, if chain's total difficulties is larger than the main
+    // switch by:
+    // 1, update the startup info
+    // 2, broadcast the new header
+    pub fn switch_new_main(
+        &mut self,
+        new_head_block: HashValue,
+        ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
+    ) -> Result<()>
+    where
+        TransactionPoolServiceT: TxPoolSyncService,
+    {
+        let new_branch = BlockChain::new(
+            self.config.net().time_service(),
+            new_head_block,
+            self.storage.clone(),
+            self.vm_metrics.clone(),
+            self.main.dag().clone(),
+        )?;
+
+        let main_total_difficulty = self.main.get_total_difficulty()?;
+        let branch_total_difficulty = new_branch.get_total_difficulty()?;
+        if branch_total_difficulty > main_total_difficulty {
+            // todo: handle StartupInfo.dag_main
+            self.main = new_branch;
+            self.update_startup_info(self.main.head_block().header())?;
+            ctx.broadcast(NewHeadBlock {
+                executed_block: Arc::new(self.main.head_block()),
+                // tips: self.main.status().tips_hash.clone(),
+            });
+            Ok(())
+        } else {
+            bail!("no need to switch");
+        }
     }
 
     pub fn select_head(&mut self, new_branch: BlockChain) -> Result<()> {
@@ -390,7 +448,10 @@ where
                 .inc()
         }
 
-        if let Err(e) = self.bus.broadcast(NewHeadBlock(Arc::new(block))) {
+        if let Err(e) = self.bus.broadcast(NewHeadBlock {
+            executed_block: Arc::new(block),
+            // tips: self.main.status().tips_hash.clone(),
+        }) {
             error!("Broadcast NewHeadBlock error: {:?}", e);
         }
     }

@@ -9360,9 +9360,10 @@ dependencies = [
 
 [[package]]
 name = "starcoin-chain-service"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "anyhow",
+ "async-std",
  "async-trait",
  "futures 0.3.26",
  "rand 0.8.5",

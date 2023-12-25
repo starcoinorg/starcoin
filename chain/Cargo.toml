@@ -24,7 +24,10 @@ starcoin-vm-types = { workspace = true }
 starcoin-storage = { workspace = true }
 thiserror = { workspace = true }
 starcoin-network-rpc-api = { workspace = true }
-starcoin-dag = {workspace = true}
+async-std = { workspace = true }
+starcoin-flexidag ={ workspace = true }
+starcoin-dag ={ workspace = true }
+
 [dev-dependencies]
 proptest = { workspace = true }
 proptest-derive = { workspace = true }

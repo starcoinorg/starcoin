@@ -115,7 +115,7 @@ impl ActorService for BlockBuilderService {
 
 impl EventHandler<Self, NewHeadBlock> for BlockBuilderService {
     fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<BlockBuilderService>) {
-        if let Err(e) = self.inner.update_chain(msg.0.as_ref().clone()) {
+        if let Err(e) = self.inner.update_chain(msg.executed_block.as_ref().clone()) {
             error!("err : {:?}", e)
         }
     }
@@ -306,6 +306,18 @@ where
         }
     }
 
+    pub fn is_dag_genesis(&self, id: HashValue) -> Result<bool> {
+        if let Some(header) = self.storage.get_block_header_by_hash(id)? {
+            if header.number() == BlockDAG::dag_fork_height_with_net(self.chain.status().head().chain_id()) {
+                Ok(true)
+            } else {
+                Ok(false)
+            }
+        } else {
+            Ok(false)
+        }
+    }
+
     pub fn create_block_template(&self) -> Result<BlockTemplateResponse> {
         let on_chain_block_gas_limit = self.chain.epoch().block_gas_limit();
         let block_gas_limit = self
@@ -404,5 +416,9 @@ where
             parent: previous_header,
             template,
         })
+    }
+
+    pub fn update_tips(&mut self, new_tips: Vec<HashValue>) {
+        self.chain.update_tips(new_tips);
     }
 }

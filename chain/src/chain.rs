@@ -3,7 +3,7 @@
 
 use crate::verifier::{BlockVerifier, FullVerifier, NoneVerifier};
 use anyhow::{bail, ensure, format_err, Ok, Result};
-
+use bcs_ext::BCSCodec;
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
 use starcoin_accumulator::{
@@ -13,6 +13,7 @@ use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
     ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
+use starcoin_config::{ChainNetworkID, NodeConfig};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
@@ -50,7 +51,11 @@ pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
     pub head: Block,
 }
-
+impl ChainStatusWithBlock {
+    pub fn dag_tips(&self) -> &Option<Vec<HashValue>> {
+        &self.status.tips_hash()
+    }
+}
 pub struct BlockChain {
     genesis_hash: HashValue,
     txn_accumulator: MerkleAccumulator,
@@ -1113,6 +1118,10 @@ impl ChainReader for BlockChain {
 
     fn current_tips_hash(&self) -> Result<Option<Vec<HashValue>>> {
         Ok(self.storage.get_dag_state()?.map(|state| state.tips))
+    }
+    
+    fn has_dag_block(&self, hash: HashValue) -> Result<bool> {
+        self.dag.has_dag_block(hash)
     }
 }
 
