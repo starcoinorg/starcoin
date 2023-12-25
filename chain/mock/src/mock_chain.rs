@@ -31,7 +31,6 @@ impl MockChain {
             net.time_service(),
             chain_info.head().id(),
             storage.clone(),
-            net.id().clone(),
             None,
             BlockDAG::try_init_with_storage(storage)?,
         )?;
@@ -49,7 +48,6 @@ impl MockChain {
             net.time_service(),
             head_block_hash,
             storage.clone(),
-            net.id().clone(),
             None,
             BlockDAG::try_init_with_storage(storage)?,
         )?;
@@ -87,7 +85,6 @@ impl MockChain {
             self.head.time_service(),
             block_id,
             self.head.get_storage(),
-            self.net.id().clone(),
             None,
             self.head.dag().clone(),
         )
@@ -110,7 +107,6 @@ impl MockChain {
             self.net.time_service(),
             new_block_id,
             self.head.get_storage(),
-            self.net.id().clone(),
             None,
             self.head.dag().clone(),
         )?;

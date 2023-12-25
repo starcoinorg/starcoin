@@ -85,7 +85,6 @@ fn main() -> anyhow::Result<()> {
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
-        net.id().clone(),
         None,
         BlockDAG::try_init_with_storage(storage)?,
     )
@@ -105,7 +104,6 @@ fn main() -> anyhow::Result<()> {
         net.time_service(),
         chain_info2.status().head().id(),
         storage2.clone(),
-        net.id().clone(),
         None,
         BlockDAG::try_init_with_storage(storage2.clone())?,
     )

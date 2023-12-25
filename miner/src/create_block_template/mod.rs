@@ -217,7 +217,6 @@ where
             net.time_service(),
             block_id,
             storage.clone(),
-            net.id().clone(),
             vm_metrics.clone(),
             dag.clone(),
         )?;
@@ -259,7 +258,6 @@ where
                 self.chain.time_service(),
                 block.header().id(),
                 self.storage.clone(),
-                self.chain.net_id(),
                 self.vm_metrics.clone(),
                 self.dag.clone(),
             )?;
@@ -310,7 +308,7 @@ where
 
     pub fn is_dag_genesis(&self, id: HashValue) -> Result<bool> {
         if let Some(header) = self.storage.get_block_header_by_hash(id)? {
-            if header.number() == BlockDAG::dag_fork_height_with_net(self.chain.net_id()) {
+            if header.number() == BlockDAG::dag_fork_height_with_net(self.chain.status().head().chain_id()) {
                 Ok(true)
             } else {
                 Ok(false)

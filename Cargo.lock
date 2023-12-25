@@ -9086,7 +9086,7 @@ checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 
 [[package]]
 name = "starcoin-abi-decoder"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9106,7 +9106,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-abi-resolver"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "anyhow",
  "move-model",
@@ -9120,7 +9120,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-abi-types"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "anyhow",
  "hex",
@@ -9134,7 +9134,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-account"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9158,7 +9158,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-account-api"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9179,7 +9179,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-account-provider"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "anyhow",
  "starcoin-account",
@@ -9192,7 +9192,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-account-service"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "anyhow",
  "async-trait",

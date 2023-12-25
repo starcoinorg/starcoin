@@ -20,6 +20,7 @@ use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
 };
+use starcoin_vm_types::genesis_config::ChainId;
 use std::path::{self, Path};
 use std::sync::Arc;
 
@@ -97,17 +98,21 @@ impl BlockDAG {
         }
     }
 
-    pub fn dag_fork_height_with_net(net: ChainNetworkID) -> BlockNumber {
-        match net {
-            ChainNetworkID::Builtin(network_id) => match network_id {
-                starcoin_config::BuiltinNetworkID::Test => TEST_FLEXIDAG_FORK_HEIGHT,
-                starcoin_config::BuiltinNetworkID::Dev => DEV_FLEXIDAG_FORK_HEIGHT,
-                starcoin_config::BuiltinNetworkID::Halley => HALLEY_FLEXIDAG_FORK_HEIGHT,
-                starcoin_config::BuiltinNetworkID::Proxima => PROXIMA_FLEXIDAG_FORK_HEIGHT,
-                starcoin_config::BuiltinNetworkID::Barnard => BARNARD_FLEXIDAG_FORK_HEIGHT,
-                starcoin_config::BuiltinNetworkID::Main => MAIN_FLEXIDAG_FORK_HEIGHT,
-            },
-            ChainNetworkID::Custom(_) => DEV_FLEXIDAG_FORK_HEIGHT,
+    pub fn dag_fork_height_with_net(net: ChainId) -> BlockNumber {
+        if net.is_barnard() {
+            BARNARD_FLEXIDAG_FORK_HEIGHT
+        } else if net.is_dev() {
+            DEV_FLEXIDAG_FORK_HEIGHT
+        } else if net.is_halley() {
+            HALLEY_FLEXIDAG_FORK_HEIGHT
+        } else if net.is_main() {
+            MAIN_FLEXIDAG_FORK_HEIGHT
+        } else if net.is_test() {
+            TEST_FLEXIDAG_FORK_HEIGHT
+        } else if net.is_proxima() {
+            PROXIMA_FLEXIDAG_FORK_HEIGHT
+        } else {
+            DEV_FLEXIDAG_FORK_HEIGHT
         }
     }
 

@@ -67,7 +67,6 @@ pub struct BlockChain {
     uncles: HashMap<HashValue, MintedUncleNumber>,
     epoch: Epoch,
     vm_metrics: Option<VMMetrics>,
-    net: ChainNetworkID,
     dag: BlockDAG,
 }
 
@@ -76,14 +75,13 @@ impl BlockChain {
         time_service: Arc<dyn TimeService>,
         head_block_hash: HashValue,
         storage: Arc<dyn Store>,
-        net: ChainNetworkID,
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
     ) -> Result<Self> {
         let head = storage
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
-        Self::new_with_uncles(time_service, head, None, storage, net, vm_metrics, dag)
+        Self::new_with_uncles(time_service, head, None, storage, vm_metrics, dag)
     }
 
     fn new_with_uncles(
@@ -91,7 +89,6 @@ impl BlockChain {
         head_block: Block,
         uncles: Option<HashMap<HashValue, MintedUncleNumber>>,
         storage: Arc<dyn Store>,
-        net: ChainNetworkID,
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
     ) -> Result<Self> {
@@ -135,7 +132,6 @@ impl BlockChain {
             uncles: HashMap::new(),
             epoch,
             vm_metrics,
-            net,
             dag,
         };
         watch(CHAIN_WATCH_NAME, "n1251");
@@ -152,7 +148,6 @@ impl BlockChain {
         storage: Arc<dyn Store>,
         genesis_epoch: Epoch,
         genesis_block: Block,
-        net: ChainNetworkID,
     ) -> Result<Self> {
         debug_assert!(genesis_block.header().is_genesis());
         let txn_accumulator = MerkleAccumulator::new_empty(
@@ -179,7 +174,6 @@ impl BlockChain {
             time_service,
             executed_block.block.id(),
             storage.clone(),
-            net,
             None,
             BlockDAG::try_init_with_storage(storage)?,
         )
@@ -936,7 +930,6 @@ impl ChainReader for BlockChain {
             head,
             uncles,
             self.storage.clone(),
-            self.net.clone(),
             self.vm_metrics.clone(),
             //TODO: check missing blocks need to be clean
             self.dag.clone(),
@@ -1087,10 +1080,6 @@ impl ChainReader for BlockChain {
             event_proof,
             state_proof,
         }))
-    }
-
-    fn net_id(&self) -> ChainNetworkID {
-        self.net.clone()
     }
 
     fn has_dag_block(&self, hash: HashValue) -> Result<bool> {

@@ -290,7 +290,6 @@ impl ChainReaderServiceInner {
             net.time_service(),
             startup_info.main,
             storage.clone(),
-            config.net().id().clone(),
             vm_metrics.clone(),
             dag.clone(),
         )?;
@@ -320,7 +319,6 @@ impl ChainReaderServiceInner {
             net.time_service(),
             new_head_id,
             self.storage.clone(),
-            self.config.net().id().clone(),
             self.vm_metrics.clone(),
             self.dag.clone(),
         )?;

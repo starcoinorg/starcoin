@@ -143,7 +143,6 @@ where
                 self.time_service.clone(),
                 ancestor.id,
                 self.storage.clone(),
-                self.net_id.clone(),
                 vm_metrics,
                 dag.clone(),
             )?;

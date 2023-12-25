@@ -102,7 +102,6 @@ pub trait ChainReader {
         access_path: Option<AccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>>;
 
-    fn net_id(&self) -> ChainNetworkID;
     fn has_dag_block(&self, hash: HashValue) -> Result<bool>;
 }
 

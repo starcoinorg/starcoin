@@ -26,7 +26,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-account"
 publish = { workspace = true }
-version = "1.13.7"
+version = "1.13.8"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

@@ -639,7 +639,6 @@ pub fn export_block_range(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
-        net.id().clone(),
         None,
         BlockDAG::try_init_with_storage(storage.clone())?,
     )
@@ -724,7 +723,6 @@ pub fn apply_block(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
-        net.id().clone(),
         None,
         BlockDAG::try_init_with_storage(storage.clone())?,
     )
@@ -804,7 +802,6 @@ pub fn startup_info_back(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
-        net.id().clone(),
         None,
         BlockDAG::try_init_with_storage(storage.clone())?,
     )
@@ -851,7 +848,6 @@ pub fn gen_block_transactions(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
-        net.id().clone(),
         None,
         BlockDAG::try_init_with_storage(storage.clone())?,
     )
@@ -1309,7 +1305,6 @@ pub fn export_snapshot(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
-        net.id().clone(),
         None,
         BlockDAG::try_init_with_storage(storage.clone())?,
     )
@@ -1333,7 +1328,6 @@ pub fn export_snapshot(
         net.time_service(),
         cur_block.id(),
         storage.clone(),
-        net.id().clone(),
         None,
         BlockDAG::try_init_with_storage(storage.clone())?,
     )
@@ -1659,7 +1653,6 @@ pub fn apply_snapshot(
             net.time_service(),
             chain_info.head().id(),
             storage.clone(),
-            net.id().clone(),
             None,
             BlockDAG::try_init_with_storage(storage.clone())?,
         )
@@ -1995,7 +1988,6 @@ pub fn gen_turbo_stm_transactions(to_dir: PathBuf, block_num: Option<u64>) -> an
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
-        net.id().clone(),
         None,
         dag,
     )
@@ -2023,7 +2015,6 @@ pub fn apply_turbo_stm_block(
         net.time_service(),
         chain_info_seq.head().id(),
         storage_seq.clone(),
-        net.id().clone(),
         None,
         BlockDAG::try_init_with_storage(storage_seq.clone())?,
     )
@@ -2083,7 +2074,6 @@ pub fn apply_turbo_stm_block(
         net.time_service(),
         chain_info_stm.head().id(),
         storage_stm.clone(),
-        net.id().clone(),
         None,
         BlockDAG::try_init_with_storage(storage_stm.clone())?,
     )

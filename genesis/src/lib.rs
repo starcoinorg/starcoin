@@ -272,7 +272,6 @@ impl Genesis {
             storage.clone(),
             net.genesis_epoch(),
             self.block.clone(),
-            net.id().clone(),
         )?;
         let startup_info = StartupInfo::new(genesis_chain.current_header().id());
         storage.save_startup_info(startup_info)?;

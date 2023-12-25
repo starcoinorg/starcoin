@@ -143,7 +143,6 @@ where
             net.time_service(),
             startup_info.main,
             storage.clone(),
-            config.net().id().clone(),
             vm_metrics.clone(),
             dag.clone(),
         )?;
@@ -178,7 +177,6 @@ where
                     net.time_service(),
                     block_id,
                     self.storage.clone(),
-                    net.id().clone(),
                     self.vm_metrics.clone(),
                     self.main.dag().clone(),
                 )?)
@@ -189,7 +187,6 @@ where
                 net.time_service(),
                 parent_hash,
                 self.storage.clone(),
-                net.id().clone(),
                 self.vm_metrics.clone(),
                 self.main.dag().clone(),
             )?)
@@ -251,7 +248,6 @@ where
             self.config.net().time_service(),
             new_head_block,
             self.storage.clone(),
-            self.config.net().id().clone(),
             self.vm_metrics.clone(),
             self.main.dag().clone(),
         )?;
@@ -365,7 +361,6 @@ where
             self.config.net().time_service(),
             block_id,
             self.storage.clone(),
-            self.config.net().id().clone(),
             self.vm_metrics.clone(),
             self.main.dag().clone(),
         )?;
@@ -407,7 +402,6 @@ where
             self.config.net().time_service(),
             block.header().parent_hash(),
             self.storage.clone(),
-            self.config.net().id().clone(),
             self.vm_metrics.clone(),
             self.main.dag().clone(),
         )?;
