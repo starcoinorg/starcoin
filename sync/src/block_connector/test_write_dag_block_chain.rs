@@ -3,50 +3,46 @@
 #![allow(clippy::integer_arithmetic)]
 use crate::block_connector::test_write_block_chain::create_writeable_block_chain;
 use crate::block_connector::WriteBlockChainService;
+use async_std::path::Path;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_chain_service::WriteableChainService;
 use starcoin_config::NodeConfig;
-use starcoin_consensus::{BlockDAG, Consensus, FlexiDagStorage, FlexiDagStorageConfig};
+use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
-use starcoin_genesis::Genesis as StarcoinGenesis;
-use starcoin_service_registry::bus::BusService;
-use starcoin_service_registry::{RegistryAsyncService, RegistryService};
-use starcoin_storage::Store;
+use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
 use starcoin_time_service::TimeService;
 use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::Block;
-use starcoin_types::blockhash::ORIGIN;
-use starcoin_types::startup_info::StartupInfo;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 pub fn gen_dag_blocks(
     times: u64,
     writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
     time_service: &dyn TimeService,
 ) -> Option<HashValue> {
-    panic!("rewrite the testing")
-    // let miner_account = AccountInfo::random();
-    // let mut last_block_hash = None;
-    // if times > 0 {
-    //     for i in 0..times {
-    //         let block = new_dag_block(
-    //             Some(&miner_account),
-    //             writeable_block_chain_service,
-    //             time_service,
-    //         );
-    //         last_block_hash = Some(block.id());
-    //         let e = writeable_block_chain_service.try_connect(block);
-    //         println!("try_connect result: {:?}", e);
-    //         assert!(e.is_ok());
-    //         if (i + 1) % 3 == 0 {
-    //             writeable_block_chain_service.time_sleep(5);
-    //         }
-    //     }
-    // }
+    let miner_account = AccountInfo::random();
+    let mut last_block_hash = None;
+    if times > 0 {
+        for i in 0..times {
+            let block = new_dag_block(
+                Some(&miner_account),
+                writeable_block_chain_service,
+                time_service,
+            );
+            last_block_hash = Some(block.id());
+            let e = writeable_block_chain_service.try_connect(block);
+            println!("try_connect result: {:?}", e);
+            assert!(e.is_ok());
+            if (i + 1) % 3 == 0 {
+                writeable_block_chain_service.time_sleep(5);
+            }
+        }
+        last_block_hash
+    } else {
+        None
+    }
 
-    // let result = writeable_block_chain_service.execute_dag_block_pool();
-    // let result = result.unwrap();
     // match result {
     //     super::write_block_chain::ConnectOk::Duplicate(block)
     //     | super::write_block_chain::ConnectOk::ExeConnectMain(block)
@@ -73,7 +69,7 @@ pub fn new_dag_block(
     let miner_address = *miner.address();
     let block_chain = writeable_block_chain_service.get_main();
     let (block_template, _) = block_chain
-        .create_block_template(miner_address, None, Vec::new(), vec![], None)
+        .create_block_template(miner_address, None, Vec::new(), vec![], None, None)
         .unwrap();
     block_chain
         .consensus()
@@ -108,6 +104,11 @@ fn gen_fork_dag_block_chain(
     writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
 ) -> Option<HashValue> {
     let miner_account = AccountInfo::random();
+    let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+        Path::new("dag/db/starcoindb"),
+        FlexiDagStorageConfig::new(),
+    ).expect("create dag storage fail");
+    let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
     if let Some(block_header) = writeable_block_chain_service
         .get_main()
         .get_header_by_number(fork_number)
@@ -120,13 +121,12 @@ fn gen_fork_dag_block_chain(
                 net.time_service(),
                 parent_id,
                 writeable_block_chain_service.get_main().get_storage(),
-                net.id().clone(),
                 None,
-                None,
+                dag.clone(),
             )
             .unwrap();
             let (block_template, _) = block_chain
-                .create_block_template(*miner_account.address(), None, Vec::new(), vec![], None)
+                .create_block_template(*miner_account.address(), None, Vec::new(), vec![], None, None)
                 .unwrap();
             let block = block_chain
                 .consensus()
