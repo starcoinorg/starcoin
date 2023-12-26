@@ -417,8 +417,4 @@ where
             template,
         })
     }
-
-    pub fn update_tips(&mut self, new_tips: Vec<HashValue>) {
-        self.chain.update_tips(new_tips);
-    }
 }

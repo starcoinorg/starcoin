@@ -10,21 +10,19 @@ use futures::FutureExt;
 use futures_timer::Delay;
 use network_api::peer_score::PeerScoreMetrics;
 use network_api::{PeerId, PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
-use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_config::NodeConfig;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
-use starcoin_flexidag::FlexidagService;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
 use starcoin_network::PeerEvent;
 use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::block_info::BlockInfoStore;
-use starcoin_storage::{BlockStore, Storage, Store, SyncFlexiDagStore};
+use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::{
     PeerScoreRequest, PeerScoreResponse, SyncCancelRequest, SyncProgressReport,
     SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
@@ -603,7 +601,6 @@ impl EventHandler<Self, NewHeadBlock> for SyncService {
         if self.sync_status.update_chain_status(ChainStatus::new(
             msg.executed_block.header().clone(),
             msg.executed_block.block_info.clone(),
-            self.sync_status.chain_status().tips_hash().clone(),
         )) {
             ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
         }

@@ -15,7 +15,6 @@ use starcoin_config::{NodeConfig, G_CRATE_VERSION};
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
-use starcoin_flexidag::FlexidagService;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
 use starcoin_service_registry::{

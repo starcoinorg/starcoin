@@ -1,10 +1,8 @@
-pub mod flexidag_service;
 use std::collections::BTreeSet;
 use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::bail;
-pub use flexidag_service::FlexidagService;
 
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;

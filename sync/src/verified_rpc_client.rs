@@ -6,7 +6,7 @@ use network_api::peer_score::{InverseScore, Score};
 use network_api::PeerId;
 use network_api::PeerInfo;
 use network_api::PeerSelector;
-use network_api::{PeerId, PeerStrategy};
+use network_api::PeerStrategy;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::hash::HashValue;
@@ -398,7 +398,7 @@ impl VerifiedRpcClient {
         &self,
         ids: Vec<HashValue>,
         peer_id: PeerId,
-    ) -> Result<Vec<Option<Block>>> {
+    ) -> Result<Vec<Option<starcoin_types::block::LegacyBlock>>> {
         self.client.get_blocks(peer_id, ids.clone()).await
     }
 

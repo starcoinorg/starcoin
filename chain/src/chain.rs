@@ -51,11 +51,7 @@ pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
     pub head: Block,
 }
-impl ChainStatusWithBlock {
-    pub fn dag_tips(&self) -> &Option<Vec<HashValue>> {
-        &self.status.tips_hash()
-    }
-}
+
 pub struct BlockChain {
     genesis_hash: HashValue,
     txn_accumulator: MerkleAccumulator,

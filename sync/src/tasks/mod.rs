@@ -11,11 +11,9 @@ use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
 use network_api::{PeerId, PeerProvider, PeerSelector};
 use network_p2p_core::{NetRpcError, RpcErrorCode};
-use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::MerkleAccumulator;
 use starcoin_chain::{BlockChain, ChainReader};
-use starcoin_config::ChainNetworkID;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
@@ -26,7 +24,7 @@ use starcoin_time_service::TimeService;
 use starcoin_txpool::TxPoolService;
 #[cfg(test)]
 use starcoin_txpool_mock_service::MockTxPoolService;
-use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
+use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber, LegacyBlock};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::U256;
 use std::str::FromStr;
@@ -301,7 +299,7 @@ pub trait BlockFetcher: Send + Sync {
         &self,
         block_ids: Vec<HashValue>,
         peer_id: PeerId,
-    ) -> BoxFuture<Result<Vec<Option<Block>>>>;
+    ) -> BoxFuture<Result<Vec<Option<LegacyBlock>>>>;
 
     fn fetch_dag_block_children(
         &self,
@@ -333,7 +331,7 @@ where
         &self,
         block_ids: Vec<HashValue>,
         peer_id: PeerId,
-    ) -> BoxFuture<Result<Vec<Option<Block>>>> {
+    ) -> BoxFuture<Result<Vec<Option<LegacyBlock>>>> {
         BlockFetcher::fetch_blocks_by_peerid(self.as_ref(), block_ids, peer_id)
     }
 
@@ -381,7 +379,7 @@ impl BlockFetcher for VerifiedRpcClient {
         &self,
         block_ids: Vec<HashValue>,
         peer_id: PeerId,
-    ) -> BoxFuture<Result<Vec<Option<Block>>>> {
+    ) -> BoxFuture<Result<Vec<Option<LegacyBlock>>>> {
         self.get_blocks_by_peerid(block_ids.clone(), peer_id)
             .map_err(fetcher_err_map)
             .boxed()

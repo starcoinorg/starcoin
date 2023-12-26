@@ -471,7 +471,7 @@ where
                             {
                                 match block {
                                     Some(block) => {
-                                        let _ = self.chain.apply(block)?;
+                                        let _ = self.chain.apply(block.into())?;
                                     }
                                     None => bail!(
                                         "fetch ancestor block failed, block id: {:?}, peer_id: {:?}",
@@ -485,7 +485,7 @@ where
                 }
                 dag_ancestors = self
                     .fetcher
-                    .fetch_dag_block_children(dag_ancestors, peer_id)
+                    .fetch_dag_block_children(dag_ancestors, peer_id.clone())
                     .await?;
             }
 

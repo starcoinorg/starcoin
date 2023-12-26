@@ -3,14 +3,12 @@
 
 use crate::block_connector::metrics::ChainMetrics;
 use anyhow::{bail, format_err, Ok, Result};
-use parking_lot::Mutex;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
-use starcoin_flexidag::FlexidagService;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{ServiceContext, ServiceRef};
@@ -80,7 +78,7 @@ where
 
         if let Some(metrics) = self.metrics.as_ref() {
             let result = match result.as_ref() {
-                Ok(connect) => format!("Ok_{}", connect),
+                std::result::Result::Ok(connect) => format!("Ok_{}", connect),
                 Err(err) => {
                     if let Some(connect_err) = err.downcast_ref::<ConnectBlockError>() {
                         format!("Err_{}", connect_err.reason())

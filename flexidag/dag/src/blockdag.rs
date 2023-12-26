@@ -71,33 +71,6 @@ impl BlockDAG {
         Ok(dag)
     }
 
-    pub fn try_init_with_storage(
-        storage: Arc<dyn Store>,
-    ) -> anyhow::Result<Self> {
-        let startup_info = storage
-            .get_startup_info()?
-            .expect("startup info must exist");
-
-        let block_header = storage
-            .get_block_header_by_hash(startup_info.get_main().clone())?
-            .expect("the genesis block in dag accumulator must none be none");
-
-        let dag = Self::new_by_config(
-            storage.path().join("flexidag").as_path(),
-        )?;
-
-        let fork_height = block_header.dag_fork_height();
-
-        if block_header.number() < fork_height {
-            Ok(dag)
-        } else if block_header.number() == fork_height {
-            dag.init_with_genesis(block_header)?;
-            Ok(dag)
-        } else {
-            Ok(dag)
-        }
-    }
-
     pub fn dag_fork_height_with_net(net: ChainId) -> BlockNumber {
         if net.is_barnard() {
             BARNARD_FLEXIDAG_FORK_HEIGHT
