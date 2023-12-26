@@ -61,13 +61,13 @@ impl BlockDAG {
     pub fn create_for_testing() -> anyhow::Result<Self> {
         let dag_storage =
             FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
-        Ok(BlockDAG::new(16, dag_storage))
+        Ok(BlockDAG::new(8, dag_storage))
     }
 
     pub fn new_by_config(db_path: &Path) -> anyhow::Result<BlockDAG> {
         let config = FlexiDagStorageConfig::create_with_params(1, RocksdbConfig::default());
         let db = FlexiDagStorage::create_from_path(db_path, config)?;
-        let dag = Self::new(16, db);
+        let dag = Self::new(8, db);
         Ok(dag)
     }
 

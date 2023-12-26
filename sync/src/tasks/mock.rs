@@ -360,7 +360,7 @@ impl BlockFetcher for SyncNodeMocker {
             .into_iter()
             .map(|block_id| {
                 if let Some(block) = self.chain().get_block(block_id)? {
-                    Ok((block, None))
+                    Ok((block, Some(PeerId::random())))
                 } else {
                     Err(format_err!("Can not find block by id: {}", block_id))
                 }
@@ -393,7 +393,7 @@ impl BlockFetcher for SyncNodeMocker {
         &self,
         block_ids: Vec<HashValue>,
         peer_id: PeerId,
-    ) -> BoxFuture<Result<Vec<Option<starcoin_types::block::LegacyBlock>>>> {
+    ) -> BoxFuture<Result<Vec<Option<Block>>>> {
         async move {
             let blocks = self.fetch_blocks(block_ids).await?;
             blocks

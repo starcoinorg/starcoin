@@ -17,7 +17,6 @@ use starcoin_logger::prelude::*;
 use starcoin_storage::{Store, BARNARD_HARD_FORK_HASH};
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
-use starcoin_vm_types::account_address::HashAccountAddress;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -434,23 +433,24 @@ where
         peer_id: Option<PeerId>,
     ) -> Result<()> {
         if !block_header.is_dag() {
+            println!("jacktest: block is not a dag block, skipping, its id: {:?}, its number {:?}", block_header.id(), block_header.number());
             return Ok(());
         }
+        if self.chain.has_dag_block(block_header.id())? {
+            println!("jacktest: the dag block exists, skipping, its id: {:?}, its number {:?}", block_header.id(), block_header.number());
+            return Ok(());
+        }
+        println!("jacktest: block is a dag block, its id: {:?}, its parents: {:?}", block_header.id(), block_header.parents_hash());
         let peer_id = peer_id.ok_or_else(|| format_err!("peer_id should not be none!"))?;
         let fut = async {
-            let dag_ancestors = self
+            let mut dag_ancestors = self
                 .find_ancestor_dag_block_header(vec![block_header.clone()], peer_id.clone())
                 .await?;
-
-            let mut dag_ancestors = dag_ancestors
-                .into_iter()
-                .map(|header| header)
-                .collect::<Vec<_>>();
 
             while !dag_ancestors.is_empty() {
                 for ancestor_block_header_id in &dag_ancestors {
                     if block_header.id() == *ancestor_block_header_id {
-                        continue;
+                        continue;// this block should be applied outside
                     }
 
                     match self
@@ -458,6 +458,11 @@ where
                         .get_block_by_hash(ancestor_block_header_id.clone())?
                     {
                         Some(block) => {
+                            if self.chain.has_dag_block(block.id())? {
+                                println!("jacktest: block is already in chain, skipping, its id: {:?}, number: {}", block.id(), block.header().number());
+                                continue;
+                            }
+                            println!("jacktest: now apply for sync: {:?}, number: {:?}", block.id(), block.header().number());
                             self.chain.apply(block)?;
                         }
                         None => {
@@ -471,6 +476,10 @@ where
                             {
                                 match block {
                                     Some(block) => {
+                                        if self.chain.has_dag_block(block.id())? {
+                                            continue;
+                                        }
+                                        println!("jacktest: now apply for sync after fetching: {:?}, number: {:?}", block.id(), block.header().number());
                                         let _ = self.chain.apply(block.into())?;
                                     }
                                     None => bail!(
@@ -507,7 +516,9 @@ where
 
         // if it is a dag block, we must ensure that its dag parent blocks exist.
         // if it is not, we must pull the dag parent blocks from the peer.
+        println!("jacktest: now sync dag block -- ensure_dag_parent_blocks_exist");
         self.ensure_dag_parent_blocks_exist(block.header(), peer_id.clone())?;
+        println!("jacktest: now sync dag block -- ensure_dag_parent_blocks_exist2");
         ////////////
 
         let timestamp = block.header().timestamp();

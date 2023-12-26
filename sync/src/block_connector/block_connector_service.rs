@@ -143,6 +143,7 @@ where
             dag,
         )?;
 
+        println!("jacktest: init block connec service succeeded");
         Ok(Self::new(chain_service, config))
     }
 }

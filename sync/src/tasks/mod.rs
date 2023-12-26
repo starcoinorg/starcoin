@@ -299,7 +299,7 @@ pub trait BlockFetcher: Send + Sync {
         &self,
         block_ids: Vec<HashValue>,
         peer_id: PeerId,
-    ) -> BoxFuture<Result<Vec<Option<LegacyBlock>>>>;
+    ) -> BoxFuture<Result<Vec<Option<Block>>>>;
 
     fn fetch_dag_block_children(
         &self,
@@ -331,7 +331,7 @@ where
         &self,
         block_ids: Vec<HashValue>,
         peer_id: PeerId,
-    ) -> BoxFuture<Result<Vec<Option<LegacyBlock>>>> {
+    ) -> BoxFuture<Result<Vec<Option<Block>>>> {
         BlockFetcher::fetch_blocks_by_peerid(self.as_ref(), block_ids, peer_id)
     }
 
@@ -379,7 +379,7 @@ impl BlockFetcher for VerifiedRpcClient {
         &self,
         block_ids: Vec<HashValue>,
         peer_id: PeerId,
-    ) -> BoxFuture<Result<Vec<Option<LegacyBlock>>>> {
+    ) -> BoxFuture<Result<Vec<Option<Block>>>> {
         self.get_blocks_by_peerid(block_ids.clone(), peer_id)
             .map_err(fetcher_err_map)
             .boxed()
@@ -760,7 +760,6 @@ where
                     max_retry_times,
                     delay_milliseconds_on_error,
                     skip_pow_verify,
-                    dag.clone(),
                     vm_metrics.clone(),
                 )
                 .await?;

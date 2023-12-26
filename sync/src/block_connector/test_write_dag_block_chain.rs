@@ -68,8 +68,9 @@ pub fn new_dag_block(
     };
     let miner_address = *miner.address();
     let block_chain = writeable_block_chain_service.get_main();
+    let tips = block_chain.current_tips_hash().expect("failed to get tips").map(|tips| tips);
     let (block_template, _) = block_chain
-        .create_block_template(miner_address, None, Vec::new(), vec![], None, None)
+        .create_block_template(miner_address, None, Vec::new(), vec![], None, tips)
         .unwrap();
     block_chain
         .consensus()

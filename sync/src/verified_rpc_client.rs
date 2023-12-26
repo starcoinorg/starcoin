@@ -398,8 +398,16 @@ impl VerifiedRpcClient {
         &self,
         ids: Vec<HashValue>,
         peer_id: PeerId,
-    ) -> Result<Vec<Option<starcoin_types::block::LegacyBlock>>> {
-        self.client.get_blocks(peer_id, ids.clone()).await
+    ) -> Result<Vec<Option<Block>>> {
+        let legacy_blocks = self.client.get_blocks(peer_id, ids.clone()).await?;
+        Ok(legacy_blocks.into_iter().map(|block| {
+            block.map(|b| {
+                println!("jacktest: get block of legacy: {:?}", b.header());
+                let old_block: Block = b.into();
+                println!("jacktest: get block of old: {:?}", old_block.header());
+                old_block
+            })
+        }).collect())
     }
 
     pub async fn get_blocks(
