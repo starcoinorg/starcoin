@@ -1,7 +1,3 @@
-use crate::tasks::{
-    AccumulatorCollector, BlockAccumulatorSyncTask, BlockCollector, BlockConnectedEventHandle,
-    BlockFetcher, BlockIdFetcher, BlockSyncTask, PeerOperator,
-};
 use anyhow::format_err;
 use network_api::PeerProvider;
 use starcoin_accumulator::node::AccumulatorStoreType;
@@ -17,6 +13,8 @@ use std::sync::Arc;
 use stream_task::{
     CustomErrorHandle, Generator, TaskError, TaskEventHandle, TaskGenerator, TaskHandle, TaskState,
 };
+
+use super::{BlockAccumulatorSyncTask, AccumulatorCollector, BlockSyncTask, BlockCollector, PeerOperator, BlockFetcher, BlockIdFetcher, BlockConnectedEventHandle};
 
 pub struct InnerSyncTask<H, F, N>
 where
@@ -121,7 +119,7 @@ where
         )
         .and_then(move |(ancestor, accumulator), event_handle| {
             let check_local_store =
-                ancestor_block_info.total_difficulty < current_block_info.total_difficulty;
+                ancestor_block_info.total_difficulty <= current_block_info.total_difficulty;
 
             let block_sync_task = BlockSyncTask::new(
                 accumulator,
@@ -136,7 +134,7 @@ where
                 ancestor.id,
                 self.storage.clone(),
                 vm_metrics,
-                self.dag,
+                self.dag.clone(),
             )?;
             let block_collector = BlockCollector::new_with_handle(
                 current_block_info.clone(),
@@ -145,6 +143,8 @@ where
                 self.block_event_handle.clone(),
                 self.peer_provider.clone(),
                 skip_pow_verify_when_sync,
+                self.storage.clone(),
+                self.fetcher.clone(),
             );
             Ok(TaskGenerator::new(
                 block_sync_task,

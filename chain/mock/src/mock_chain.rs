@@ -128,14 +128,9 @@ impl MockChain {
     }
 
     pub fn produce(&self) -> Result<Block> {
-        let (template, _) = self.head.create_block_template(
-            *self.miner.address(),
-            None,
-            vec![],
-            vec![],
-            None,
-            None,
-        )?;
+        let (template, _) =
+            self.head
+                .create_block_template(*self.miner.address(), None, vec![], vec![], None, None)?;
         self.head
             .consensus()
             .create_block(template, self.net.time_service().as_ref())
@@ -149,6 +144,7 @@ impl MockChain {
     pub fn produce_and_apply(&mut self) -> Result<BlockHeader> {
         let block = self.produce()?;
         let header = block.header().clone();
+        println!("jacktest: produce testing block: {:?}, number: {:?}", block.id(), block.header().number());
         self.apply(block)?;
         Ok(header)
     }

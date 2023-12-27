@@ -111,7 +111,9 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 
     // send block
     let block_detail = Arc::new(executed_block);
-    bus.broadcast(NewHeadBlock(block_detail))?;
+    bus.broadcast(NewHeadBlock {
+        executed_block: block_detail.clone(),
+    })?;
 
     let mut receiver = receiver;
 

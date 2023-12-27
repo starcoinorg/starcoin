@@ -378,6 +378,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e22d1f4b888c298a027c99dc9048015fac177587de20fc30232a057dfbe24a21"
 
 [[package]]
+name = "async-attributes"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3203e79f4dd9bdda415ed03cf14dae5a2bf775c683a00f94e9cd1faf0f596e5"
+dependencies = [
+ "quote 1.0.28",
+ "syn 1.0.107",
+]
+
+[[package]]
 name = "async-channel"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -428,6 +438,7 @@ dependencies = [
  "blocking",
  "futures-lite",
  "once_cell",
+ "tokio",
 ]
 
 [[package]]
@@ -466,6 +477,7 @@ version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "62565bb4402e926b29953c785397c6dc0391b7b446e45008b0049eb43cec6f5d"
 dependencies = [
+ "async-attributes",
  "async-channel",
  "async-global-executor",
  "async-io",
@@ -9255,6 +9267,7 @@ name = "starcoin-chain"
 version = "1.13.7"
 dependencies = [
  "anyhow",
+ "async-std",
  "bcs-ext",
  "clap 3.2.23",
  "proptest",
@@ -9271,6 +9284,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-dag",
  "starcoin-executor",
+ "starcoin-flexidag",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-network-rpc-api",
@@ -9360,9 +9374,10 @@ dependencies = [
 
 [[package]]
 name = "starcoin-chain-service"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "anyhow",
+ "async-std",
  "async-trait",
  "futures 0.3.26",
  "rand 0.8.5",
@@ -9547,7 +9562,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-dag"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -9713,6 +9728,27 @@ dependencies = [
  "tiny_http",
  "tokio",
  "tokio-executor 0.2.0-alpha.6",
+]
+
+[[package]]
+name = "starcoin-flexidag"
+version = "1.13.7"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bcs-ext",
+ "futures 0.3.26",
+ "starcoin-accumulator",
+ "starcoin-config",
+ "starcoin-consensus",
+ "starcoin-crypto",
+ "starcoin-dag",
+ "starcoin-logger",
+ "starcoin-service-registry",
+ "starcoin-storage",
+ "starcoin-types",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -10774,6 +10810,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-dag",
  "starcoin-executor",
+ "starcoin-flexidag",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-metrics",
@@ -10801,6 +10838,7 @@ dependencies = [
  "sysinfo",
  "test-helper",
  "thiserror",
+ "timeout-join-handler",
  "tokio",
 ]
 

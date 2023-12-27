@@ -6,6 +6,7 @@ use network_api::peer_score::{InverseScore, Score};
 use network_api::PeerId;
 use network_api::PeerInfo;
 use network_api::PeerSelector;
+use network_api::PeerStrategy;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::hash::HashValue;
@@ -121,6 +122,10 @@ impl VerifiedRpcClient {
             client,
             score_handler: InverseScore::new(100, 60),
         }
+    }
+
+    pub fn switch_strategy(&mut self, strategy: PeerStrategy) {
+        self.peer_selector.switch_strategy(strategy)
     }
 
     pub fn selector(&self) -> &PeerSelector {
@@ -377,6 +382,34 @@ impl VerifiedRpcClient {
         self.client.get_block_ids(peer_id, request).await
     }
 
+    pub async fn get_block_headers_by_hash(
+        &self,
+        ids: Vec<HashValue>,
+        peer_id: PeerId,
+    ) -> Result<Vec<(HashValue, Option<BlockHeader>)>> {
+        let block_headers = self
+            .client
+            .get_headers_by_hash(peer_id, ids.clone())
+            .await?;
+        Ok(ids.into_iter().zip(block_headers.into_iter()).collect())
+    }
+
+    pub async fn get_blocks_by_peerid(
+        &self,
+        ids: Vec<HashValue>,
+        peer_id: PeerId,
+    ) -> Result<Vec<Option<Block>>> {
+        let legacy_blocks = self.client.get_blocks(peer_id, ids.clone()).await?;
+        Ok(legacy_blocks.into_iter().map(|block| {
+            block.map(|b| {
+                println!("jacktest: get block of legacy: {:?}", b.header());
+                let old_block: Block = b.into();
+                println!("jacktest: get block of old: {:?}", old_block.header());
+                old_block
+            })
+        }).collect())
+    }
+
     pub async fn get_blocks(
         &self,
         ids: Vec<HashValue>,
@@ -425,5 +458,13 @@ impl VerifiedRpcClient {
                 }
             })
             .collect())
+    }
+
+    pub async fn get_dag_block_children(
+        &self,
+        req: Vec<HashValue>,
+        peer_id: PeerId,
+    ) -> Result<Vec<HashValue>> {
+        Ok(self.client.get_dag_block_children(peer_id, req).await?)
     }
 }
