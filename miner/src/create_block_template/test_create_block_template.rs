@@ -460,7 +460,7 @@ async fn test_create_block_template_actor() {
     //TODO mock txpool.
     let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header, None);
     registry.put_shared(txpool).await.unwrap();
-
+    registry.put_shared(dag).await.unwrap();
     registry.put_shared(storage).await.unwrap();
     registry
         .register_mocker(AccountService::mock().unwrap())

@@ -220,6 +220,17 @@
                   "type": "string",
                   "format": "HashValue"
                 },
+                "parents_hash": {
+                  "description": "block parents",
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "string",
+                    "format": "HashValue"
+                  }
+                },
                 "state_root": {
                   "description": "The last transaction state_root of this block after execute.",
                   "type": "string",
@@ -652,6 +663,17 @@
                   "type": "string",
                   "format": "HashValue"
                 },
+                "parents_hash": {
+                  "description": "block parents",
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "string",
+                    "format": "HashValue"
+                  }
+                },
                 "state_root": {
                   "description": "The last transaction state_root of this block after execute.",
                   "type": "string",
@@ -768,6 +790,17 @@
                     "description": "Parent hash.",
                     "type": "string",
                     "format": "HashValue"
+                  },
+                  "parents_hash": {
+                    "description": "block parents",
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "string",
+                      "format": "HashValue"
+                    }
                   },
                   "state_root": {
                     "description": "The last transaction state_root of this block after execute.",
@@ -1203,6 +1236,17 @@
                   "type": "string",
                   "format": "HashValue"
                 },
+                "parents_hash": {
+                  "description": "block parents",
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "string",
+                    "format": "HashValue"
+                  }
+                },
                 "state_root": {
                   "description": "The last transaction state_root of this block after execute.",
                   "type": "string",
@@ -1319,6 +1363,17 @@
                     "description": "Parent hash.",
                     "type": "string",
                     "format": "HashValue"
+                  },
+                  "parents_hash": {
+                    "description": "block parents",
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "string",
+                      "format": "HashValue"
+                    }
                   },
                   "state_root": {
                     "description": "The last transaction state_root of this block after execute.",
@@ -1762,6 +1817,17 @@
                     "type": "string",
                     "format": "HashValue"
                   },
+                  "parents_hash": {
+                    "description": "block parents",
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "string",
+                      "format": "HashValue"
+                    }
+                  },
                   "state_root": {
                     "description": "The last transaction state_root of this block after execute.",
                     "type": "string",
@@ -1878,6 +1944,17 @@
                       "description": "Parent hash.",
                       "type": "string",
                       "format": "HashValue"
+                    },
+                    "parents_hash": {
+                      "description": "block parents",
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": {
+                        "type": "string",
+                        "format": "HashValue"
+                      }
                     },
                     "state_root": {
                       "description": "The last transaction state_root of this block after execute.",
@@ -3275,6 +3352,17 @@
                 "description": "Parent hash.",
                 "type": "string",
                 "format": "HashValue"
+              },
+              "parents_hash": {
+                "description": "block parents",
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "string",
+                  "format": "HashValue"
+                }
               },
               "state_root": {
                 "description": "The last transaction state_root of this block after execute.",

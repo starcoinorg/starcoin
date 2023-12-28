@@ -137,7 +137,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 #[stest::test]
 pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     // given
-    let (txpool_service, _, config, _, registry, dag) =
+    let (txpool_service, _, config, _, registry, _dag) =
         test_helper::start_txpool_with_miner(1000, true).await;
     let service = registry
         .register_by_factory::<PubSubService, PubSubServiceFactory>()
@@ -197,7 +197,7 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
 
 #[stest::test]
 pub async fn test_subscribe_to_mint_block() -> Result<()> {
-    let (_txpool_service, .., registry, dag) =
+    let (_txpool_service, .., registry, _dag) =
         test_helper::start_txpool_with_miner(1000, true).await;
     let bus = registry.service_ref::<BusService>().await?;
     let service = registry
