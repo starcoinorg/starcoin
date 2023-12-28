@@ -385,29 +385,12 @@ impl VerifiedRpcClient {
     pub async fn get_block_headers_by_hash(
         &self,
         ids: Vec<HashValue>,
-        peer_id: PeerId,
     ) -> Result<Vec<(HashValue, Option<BlockHeader>)>> {
         let block_headers = self
             .client
-            .get_headers_by_hash(peer_id, ids.clone())
+            .get_headers_by_hash(self.select_a_peer()?, ids.clone())
             .await?;
         Ok(ids.into_iter().zip(block_headers.into_iter()).collect())
-    }
-
-    pub async fn get_blocks_by_peerid(
-        &self,
-        ids: Vec<HashValue>,
-        peer_id: PeerId,
-    ) -> Result<Vec<Option<Block>>> {
-        let legacy_blocks = self.client.get_blocks(peer_id, ids.clone()).await?;
-        Ok(legacy_blocks.into_iter().map(|block| {
-            block.map(|b| {
-                println!("jacktest: get block of legacy: {:?}", b.header());
-                let old_block: Block = b.into();
-                println!("jacktest: get block of old: {:?}", old_block.header());
-                old_block
-            })
-        }).collect())
     }
 
     pub async fn get_blocks(
@@ -463,8 +446,7 @@ impl VerifiedRpcClient {
     pub async fn get_dag_block_children(
         &self,
         req: Vec<HashValue>,
-        peer_id: PeerId,
     ) -> Result<Vec<HashValue>> {
-        Ok(self.client.get_dag_block_children(peer_id, req).await?)
+        Ok(self.client.get_dag_block_children(self.select_a_peer()?, req).await?)
     }
 }

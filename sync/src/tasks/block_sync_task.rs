@@ -391,7 +391,6 @@ where
     async fn find_ancestor_dag_block_header(
         &self,
         mut block_headers: Vec<BlockHeader>,
-        peer_id: PeerId,
     ) -> Result<Vec<HashValue>> {
         let mut ancestors = vec![];
         loop {
@@ -406,13 +405,13 @@ where
             }
             let absent_block_headers = self
                 .fetcher
-                .fetch_block_headers(absent_blocks, peer_id.clone())
+                .fetch_block_headers(absent_blocks)
                 .await?;
             if absent_block_headers.iter().any(|(id, header)| {
                 if header.is_none() {
                     error!(
-                        "fetch absent block header failed, block id: {:?}, peer_id: {:?}, it should not be absent!",
-                        id, peer_id
+                        "fetch absent block header failed, block id: {:?}, it should not be absent!",
+                        id
                     );
                     return true;
                 }
@@ -430,21 +429,19 @@ where
     pub fn ensure_dag_parent_blocks_exist(
         &mut self,
         block_header: &BlockHeader,
-        peer_id: Option<PeerId>,
     ) -> Result<()> {
         if !block_header.is_dag() {
-            info!("jacktest: block is not a dag block, skipping, its id: {:?}, its number {:?}", block_header.id(), block_header.number());
+            println!("jacktest: block is not a dag block, skipping, its id: {:?}, its number {:?}", block_header.id(), block_header.number());
             return Ok(());
         }
-        if self.chain.has_dag_block(block_header.id())? {
-            info!("jacktest: the dag block exists, skipping, its id: {:?}, its number {:?}", block_header.id(), block_header.number());
-            return Ok(());
-        }
-        info!("jacktest: block is a dag block, its id: {:?}, its parents: {:?}", block_header.id(), block_header.parents_hash());
-        let peer_id = peer_id.ok_or_else(|| format_err!("peer_id should not be none!"))?;
+        // if self.chain.has_dag_block(block_header.id())? {
+        //     println!("jacktest: the dag block exists, skipping, its id: {:?}, its number {:?}", block_header.id(), block_header.number());
+        //     return Ok(());
+        // }
+        println!("jacktest: block is a dag block, its id: {:?}, its parents: {:?}", block_header.id(), block_header.parents_hash());
         let fut = async {
             let mut dag_ancestors = self
-                .find_ancestor_dag_block_header(vec![block_header.clone()], peer_id.clone())
+                .find_ancestor_dag_block_header(vec![block_header.clone()])
                 .await?;
 
             while !dag_ancestors.is_empty() {
@@ -455,47 +452,44 @@ where
 
                     match self
                         .local_store
-                        .get_block_by_hash(ancestor_block_header_id.clone())?
+                        .get_block_info(ancestor_block_header_id.clone())?
                     {
-                        Some(block) => {
-                            if self.chain.has_dag_block(block.id())? {
-                                info!("jacktest: block is already in chain, skipping, its id: {:?}, number: {}", block.id(), block.header().number());
-                                continue;
-                            }
-                            info!("jacktest: now apply for sync: {:?}, number: {:?}", block.id(), block.header().number());
-                            self.chain.apply(block)?;
+                        Some(block_info) => {
+                            // if self.chain.has_dag_block(block.id())? {
+                            //     println!("jacktest: block is already in chain, skipping, its id: {:?}, number: {}", block.id(), block.header().number());
+                            //     continue;
+                            // }
+                            // println!("jacktest: now apply for sync: {:?}, number: {:?}", block.id(), block.header().number());
+                            let block = self.local_store.get_block_by_hash(ancestor_block_header_id.clone())?.expect("failed to get block by hash");
+                            println!("jacktest: connect block: {:?}, number: {:?}", block.id(), block.header().number());
+                            self.chain.connect(ExecutedBlock {
+                                block,
+                                block_info,
+                            })?;
                         }
                         None => {
-                            for block in self
+                            for (block, _peer_id) in self
                                 .fetcher
-                                .fetch_blocks_by_peerid(
+                                .fetch_blocks(
                                     vec![ancestor_block_header_id.clone()],
-                                    peer_id.clone(),
                                 )
                                 .await?
                             {
-                                match block {
-                                    Some(block) => {
-                                        if self.chain.has_dag_block(block.id())? {
-                                            continue;
-                                        }
-                                        info!("jacktest: now apply for sync after fetching: {:?}, number: {:?}", block.id(), block.header().number());
-                                        let _ = self.chain.apply(block.into())?;
-                                    }
-                                    None => bail!(
-                                        "fetch ancestor block failed, block id: {:?}, peer_id: {:?}",
-                                        ancestor_block_header_id,
-                                        peer_id
-                                    ),
+                                if self.chain.has_dag_block(block.id())? {
+                                    continue;
                                 }
+                                println!("jacktest: now apply for sync after fetching: {:?}, number: {:?}", block.id(), block.header().number());
+                                let _ = self.chain.apply(block.into())?;
+
                             }
                         }
                     }
                 }
                 dag_ancestors = self
                     .fetcher
-                    .fetch_dag_block_children(dag_ancestors, peer_id.clone())
+                    .fetch_dag_block_children(dag_ancestors)
                     .await?;
+                println!("jacktest: next children: {:?}", dag_ancestors);
             }
 
             Ok(())
@@ -516,9 +510,9 @@ where
 
         // if it is a dag block, we must ensure that its dag parent blocks exist.
         // if it is not, we must pull the dag parent blocks from the peer.
-        info!("jacktest: now sync dag block -- ensure_dag_parent_blocks_exist");
-        self.ensure_dag_parent_blocks_exist(block.header(), peer_id.clone())?;
-        info!("jacktest: now sync dag block -- ensure_dag_parent_blocks_exist2");
+        println!("jacktest: now sync dag block -- ensure_dag_parent_blocks_exist");
+        self.ensure_dag_parent_blocks_exist(block.header())?;
+        println!("jacktest: now sync dag block -- ensure_dag_parent_blocks_exist2");
         ////////////
 
         let timestamp = block.header().timestamp();

@@ -18,6 +18,7 @@ use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::consensusdb::prelude::StoreError;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
@@ -42,6 +43,7 @@ use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::Epoch;
+use std::backtrace;
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
@@ -278,6 +280,7 @@ impl BlockChain {
             match &tips_hash {
                 None => (uncles, None),
                 Some(tips) => {
+                    println!("jacktest: tips is {:?}", tips);
                     let mut blues = self.dag.ghostdata(tips).mergeset_blues.to_vec();
                     info!(
                         "create block template with tips:{:?},ghostdata blues:{:?}",
@@ -577,7 +580,17 @@ impl BlockChain {
         self.storage.save_block_info(block_info.clone())?;
 
         self.storage.save_table_infos(txn_table_infos)?;
-        self.dag.commit(header.to_owned())?;
+        let result = self.dag.commit(header.to_owned());
+        match result {
+            anyhow::Result::Ok(_) => (),
+            Err(e) => {
+                if let Some(StoreError::KeyAlreadyExists(_)) = e.downcast_ref::<StoreError>() {
+                    info!("dag block already exist, ignore");
+                } else {
+                    return Err(e);
+                }
+            }
+        }
         watch(CHAIN_WATCH_NAME, "n26");
         Ok(ExecutedBlock { block, block_info })
     }
@@ -1296,6 +1309,7 @@ impl ChainWriter for BlockChain {
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
         if executed_block.block.is_dag() {
+            println!("jacktest: connect dag, {:?}, number: {:?}", executed_block.block.id(), executed_block.block.header().number());
             return self.connect_dag(executed_block);
         }
         let (block, block_info) = (executed_block.block(), executed_block.block_info());

@@ -292,19 +292,11 @@ pub trait BlockFetcher: Send + Sync {
     fn fetch_block_headers(
         &self,
         block_ids: Vec<HashValue>,
-        peer_id: PeerId,
     ) -> BoxFuture<Result<Vec<(HashValue, Option<BlockHeader>)>>>;
-
-    fn fetch_blocks_by_peerid(
-        &self,
-        block_ids: Vec<HashValue>,
-        peer_id: PeerId,
-    ) -> BoxFuture<Result<Vec<Option<Block>>>>;
 
     fn fetch_dag_block_children(
         &self,
         block_ids: Vec<HashValue>,
-        peer_id: PeerId,
     ) -> BoxFuture<Result<Vec<HashValue>>>;
 }
 
@@ -322,25 +314,15 @@ where
     fn fetch_block_headers(
         &self,
         block_ids: Vec<HashValue>,
-        peer_id: PeerId,
     ) -> BoxFuture<Result<Vec<(HashValue, Option<BlockHeader>)>>> {
-        BlockFetcher::fetch_block_headers(self.as_ref(), block_ids, peer_id)
-    }
-
-    fn fetch_blocks_by_peerid(
-        &self,
-        block_ids: Vec<HashValue>,
-        peer_id: PeerId,
-    ) -> BoxFuture<Result<Vec<Option<Block>>>> {
-        BlockFetcher::fetch_blocks_by_peerid(self.as_ref(), block_ids, peer_id)
+        BlockFetcher::fetch_block_headers(self.as_ref(), block_ids)
     }
 
     fn fetch_dag_block_children(
         &self,
         block_ids: Vec<HashValue>,
-        peer_id: PeerId,
     ) -> BoxFuture<Result<Vec<HashValue>>> {
-        BlockFetcher::fetch_dag_block_children(self.as_ref(), block_ids, peer_id)
+        BlockFetcher::fetch_dag_block_children(self.as_ref(), block_ids)
     }
 }
 
@@ -368,19 +350,8 @@ impl BlockFetcher for VerifiedRpcClient {
     fn fetch_block_headers(
         &self,
         block_ids: Vec<HashValue>,
-        peer_id: PeerId,
     ) -> BoxFuture<Result<Vec<(HashValue, Option<BlockHeader>)>>> {
-        self.get_block_headers_by_hash(block_ids.clone(), peer_id)
-            .map_err(fetcher_err_map)
-            .boxed()
-    }
-
-    fn fetch_blocks_by_peerid(
-        &self,
-        block_ids: Vec<HashValue>,
-        peer_id: PeerId,
-    ) -> BoxFuture<Result<Vec<Option<Block>>>> {
-        self.get_blocks_by_peerid(block_ids.clone(), peer_id)
+        self.get_block_headers_by_hash(block_ids.clone())
             .map_err(fetcher_err_map)
             .boxed()
     }
@@ -388,9 +359,8 @@ impl BlockFetcher for VerifiedRpcClient {
     fn fetch_dag_block_children(
         &self,
         block_ids: Vec<HashValue>,
-        peer_id: PeerId,
     ) -> BoxFuture<Result<Vec<HashValue>>> {
-        self.get_dag_block_children(block_ids, peer_id)
+        self.get_dag_block_children(block_ids)
             .map_err(fetcher_err_map)
             .boxed()
     }

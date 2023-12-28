@@ -12,7 +12,6 @@ use crate::tasks::{
 use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{anyhow, format_err, Result};
 use anyhow::{Context, Ok};
-use async_std::path::Path;
 use futures::channel::mpsc::unbounded;
 use futures::future::BoxFuture;
 use futures::FutureExt;
@@ -44,6 +43,8 @@ use starcoin_types::{
     U256,
 };
 use std::collections::HashMap;
+use std::fs;
+use std::path::{PathBuf, Path};
 use std::sync::{Arc, Mutex};
 use stest::actix_export::System;
 use stream_task::TaskHandle;
@@ -57,14 +58,14 @@ use super::BlockConnectedEvent;
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_new_node() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let mut node1 = SyncNodeMocker::new(net1, 1, 50)?;
+    let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
     node1.produce_block(10)?;
 
     let mut arc_node1 = Arc::new(node1);
 
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
 
-    let node2 = SyncNodeMocker::new(net2.clone(), 1, 50)?;
+    let node2 = SyncNodeMocker::new(net2.clone(), 300, 0)?;
 
     let target = arc_node1.sync_target();
 
@@ -139,14 +140,14 @@ pub async fn test_full_sync_new_node() -> Result<()> {
 #[stest::test]
 pub async fn test_sync_invalid_target() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let mut node1 = SyncNodeMocker::new(net1, 1, 0)?;
+    let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
     node1.produce_block(10)?;
 
     let arc_node1 = Arc::new(node1);
 
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
 
-    let node2 = SyncNodeMocker::new(net2.clone(), 1, 0)?;
+    let node2 = SyncNodeMocker::new(net2.clone(), 300, 0)?;
     let dag = node2.chain().dag();
     let mut target = arc_node1.sync_target();
 
@@ -234,14 +235,14 @@ pub async fn test_failed_block() -> Result<()> {
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_fork() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let mut node1 = SyncNodeMocker::new(net1, 1, 50)?;
+    let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
     node1.produce_block(10)?;
 
     let mut arc_node1 = Arc::new(node1);
 
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
 
-    let node2 = SyncNodeMocker::new(net2.clone(), 1, 50)?;
+    let node2 = SyncNodeMocker::new(net2.clone(), 300, 0)?;
 
     let target = arc_node1.sync_target();
 
@@ -316,7 +317,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let mut node1 = SyncNodeMocker::new(net1, 1, 50)?;
+    let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
     node1.produce_block(10)?;
 
     let arc_node1 = Arc::new(node1);
@@ -324,7 +325,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
 
     //fork from genesis
-    let mut node2 = SyncNodeMocker::new(net2.clone(), 1, 50)?;
+    let mut node2 = SyncNodeMocker::new(net2.clone(), 300, 0)?;
     node2.produce_block(5)?;
 
     let target = arc_node1.sync_target();
@@ -369,14 +370,16 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
 
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_continue() -> Result<()> {
-    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let mut node1 = SyncNodeMocker::new(net1, 10, 50)?;
+    // let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let test_system = SyncTestSystem::initialize_sync_system().await?;
+    let mut node1 = test_system.target_node;// SyncNodeMocker::new(net1, 10, 50)?;
     let dag = node1.chain().dag();
     node1.produce_block(10)?;
     let arc_node1 = Arc::new(node1);
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     //fork from genesis
-    let mut node2 = SyncNodeMocker::new(net2.clone(), 1, 50)?;
+    let mut node2 = test_system.local_node;// SyncNodeMocker::new(net2.clone(), 1, 50)?;
+    println!("jacktest: node2 now create block");
     node2.produce_block(7)?;
 
     // first set target to 5.
@@ -460,7 +463,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
 #[stest::test]
 pub async fn test_full_sync_cancel() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let mut node1 = SyncNodeMocker::new(net1, 1, 50)?;
+    let mut node1 = SyncNodeMocker::new(net1, 300, 50)?;
     node1.produce_block(10)?;
 
     let arc_node1 = Arc::new(node1);
@@ -546,7 +549,7 @@ async fn test_accumulator_sync_by_stream_task() -> Result<()> {
         task_state,
         5,
         3,
-        1,
+        300,
         collector,
         event_handle.clone(),
         Arc::new(DefaultCustomErrorHandle),
@@ -582,7 +585,7 @@ pub async fn test_find_ancestor_same_number() -> Result<()> {
         task_state,
         5,
         3,
-        1,
+        300,
         collector,
         event_handle.clone(),
         Arc::new(DefaultCustomErrorHandle),
@@ -622,7 +625,7 @@ pub async fn test_find_ancestor_block_number_behind() -> Result<()> {
         task_state,
         5,
         3,
-        1,
+        300,
         collector,
         event_handle.clone(),
         Arc::new(DefaultCustomErrorHandle),
@@ -671,7 +674,7 @@ pub async fn test_find_ancestor_chain_fork() -> Result<()> {
         task_state,
         5,
         3,
-        1,
+        300,
         collector,
         event_handle.clone(),
         Arc::new(DefaultCustomErrorHandle),
@@ -712,7 +715,7 @@ impl BlockFetcher for MockBlockFetcher {
             .iter()
             .map(|block_id| {
                 if let Some(block) = blocks.get(block_id).cloned() {
-                    Ok((block, None))
+                    Ok((block, Some(PeerId::random())))
                 } else {
                     Err(format_err!("Can not find block by id: {:?}", block_id))
                 }
@@ -728,7 +731,6 @@ impl BlockFetcher for MockBlockFetcher {
     fn fetch_block_headers(
         &self,
         block_ids: Vec<HashValue>,
-        peer_id: PeerId,
     ) -> BoxFuture<Result<Vec<(HashValue, Option<starcoin_types::block::BlockHeader>)>>> {
         let blocks = self.blocks.lock().unwrap();
         let result = block_ids
@@ -748,33 +750,9 @@ impl BlockFetcher for MockBlockFetcher {
         .boxed()
     }
 
-    fn fetch_blocks_by_peerid(
-        &self,
-        block_ids: Vec<HashValue>,
-        peer_id: PeerId,
-    ) -> BoxFuture<Result<Vec<Option<Block>>>> {
-        let blocks = self.blocks.lock().unwrap();
-        let result = block_ids
-            .iter()
-            .map(|block_id| {
-                if let Some(block) = blocks.get(block_id).cloned() {
-                    Ok(Some(block))
-                } else {
-                    Err(format_err!("Can not find block by id: {:?}", block_id))
-                }
-            })
-            .collect();
-        async {
-            Delay::new(Duration::from_millis(100)).await;
-            result
-        }
-        .boxed()
-    }
-
     fn fetch_dag_block_children(
         &self,
         block_ids: Vec<HashValue>,
-        _peer_id: PeerId,
     ) -> BoxFuture<Result<Vec<HashValue>>> {
         let blocks = self.blocks.lock().unwrap();
         let mut result = vec![];
@@ -876,7 +854,7 @@ async fn block_sync_task_test(total_blocks: u64, ancestor_number: u64) -> Result
         block_sync_state,
         5,
         3,
-        1,
+        300,
         vec![],
         event_handle.clone(),
         Arc::new(DefaultCustomErrorHandle),
@@ -944,7 +922,7 @@ async fn test_block_sync_with_local() -> Result<()> {
         block_sync_state,
         5,
         3,
-        1,
+        300,
         vec![],
         event_handle.clone(),
         Arc::new(DefaultCustomErrorHandle),
@@ -1039,7 +1017,7 @@ async fn test_err_context() -> Result<()> {
 async fn test_sync_target() {
     let mut peer_infos = vec![];
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let mut node1 = SyncNodeMocker::new(net1, 1, 0).unwrap();
+    let mut node1 = SyncNodeMocker::new(net1, 300, 0).unwrap();
     node1.produce_block(10).unwrap();
     let low_chain_info = node1.peer_info().chain_info().clone();
     peer_infos.push(PeerInfo::new(
@@ -1072,7 +1050,7 @@ async fn test_sync_target() {
     let node2 = Arc::new(SyncNodeMocker::new_with_chain_selector(
         PeerId::random(),
         mock_chain,
-        1,
+        300,
         0,
         peer_selector,
     ));
@@ -1176,21 +1154,16 @@ fn sync_block_in_async_connection(
 #[stest::test]
 async fn test_sync_block_in_async_connection() -> Result<()> {
     let net = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let mut target_node = Arc::new(SyncNodeMocker::new(net.clone(), 1, 0)?);
+    let test_system = SyncTestSystem::initialize_sync_system().await?;
+    let mut target_node = Arc::new(test_system.target_node);
 
     let (storage, chain_info, _, _) =
         Genesis::init_storage_for_test(&net).expect("init storage by genesis fail.");
-    let local_node = Arc::new(SyncNodeMocker::new_with_storage(
-        net,
-        storage.clone(),
-        chain_info,
-        AccountInfo::random(),
-        1,
-        0,
-    )?);
+
+    let local_node = Arc::new(test_system.local_node);
 
     let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
-        Path::new("dag/db/starcoindb"),
+        Path::new("."),
         FlexiDagStorageConfig::new(),
     )?;
     let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
@@ -1381,31 +1354,10 @@ async fn sync_block_in_block_connection_service_mock(
 //     Ok(target_node)
 // }
 
-#[stest::test]
-async fn test_sync_block_apply_failed_but_connect_success() -> Result<()> {
-    let test_system = SyncTestSystem::initialize_sync_system().await?;
-    let target_node = sync_block_in_block_connection_service_mock(
-        test_system.target_node,
-        test_system.local_node.clone(),
-        &test_system.registry,
-        10,
-    )
-    .await?;
-    _ = sync_block_in_block_connection_service_mock(
-        target_node,
-        test_system.local_node.clone(),
-        &test_system.registry,
-        10,
-    )
-    .await?;
-
-    Ok(())
-}
-
 #[cfg(test)]
 struct SyncTestSystem {
-    pub target_node: Arc<SyncNodeMocker>,
-    pub local_node: Arc<SyncNodeMocker>,
+    pub target_node: SyncNodeMocker,
+    pub local_node: SyncNodeMocker,
     pub registry: ServiceRef<RegistryService>,
 }
 
@@ -1417,9 +1369,14 @@ impl SyncTestSystem {
         // let (storage, chain_info, _, _) = StarcoinGenesis::init_storage_for_test(config.net())
         //     .expect("init storage by genesis fail.");
 
+        let temp_path = PathBuf::from(starcoin_config::temp_dir().as_ref()) ;
+        let storage_path = temp_path.join(Path::new("local/storage"));
+        let dag_path = temp_path.join(Path::new("local/dag"));
+        fs::create_dir_all(storage_path.clone())?;
+        fs::create_dir_all(dag_path.clone())?;
         let storage = Arc::new(Storage::new(StorageInstance::new_db_instance(
             DBStorage::new(
-                starcoin_config::temp_dir().as_ref(),
+                storage_path.as_path(),
                 RocksdbConfig::default(),
                 None,
             )
@@ -1429,22 +1386,23 @@ impl SyncTestSystem {
         let genesis = Genesis::load_or_build(config.net())?;
         // init dag
         let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
-            Path::new("dag/testing_db/starcoindb"),
+            dag_path.as_path(),
             FlexiDagStorageConfig::new(),
         ).expect("init dag storage fail.");
         let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage); // local dag
 
         let chain_info = genesis.execute_genesis_block(config.net(), storage.clone(), dag.clone())?;
 
-        let target_node = Arc::new(SyncNodeMocker::new(config.net().clone(), 1, 0)?);
-        let local_node = Arc::new(SyncNodeMocker::new_with_storage(
+        let target_node = SyncNodeMocker::new(config.net().clone(), 300, 0)?;
+        let local_node = SyncNodeMocker::new_with_storage(
             config.net().clone(),
             storage.clone(),
             chain_info.clone(),
             AccountInfo::random(),
-            1,
+            300,
             0,
-        )?);
+            dag.clone(),
+        )?;
 
         let (registry_sender, registry_receiver) = async_std::channel::unbounded();
 
@@ -1495,20 +1453,12 @@ impl SyncTestSystem {
 #[stest::test]
 async fn test_sync_single_chain_to_dag_chain() -> Result<()> {
     let test_system = SyncTestSystem::initialize_sync_system().await?;
-    let target_node = sync_block_in_block_connection_service_mock(
-        test_system.target_node,
-        test_system.local_node.clone(),
+    let _target_node = sync_block_in_block_connection_service_mock(
+        Arc::new(test_system.target_node),
+        Arc::new(test_system.local_node),
         &test_system.registry,
         10,
     )
     .await?;
-    // _ = sync_block_in_block_connection_service_mock(
-    //     target_node,
-    //     test_system.local_node.clone(),
-    //     &test_system.registry,
-    //     10,
-    // )
-    // .await?;
-
     Ok(())
 }

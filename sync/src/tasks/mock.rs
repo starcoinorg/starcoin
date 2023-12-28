@@ -23,6 +23,7 @@ use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::{HashValue, hash};
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
 use starcoin_network_rpc_api::G_RPC_INFO;
 use starcoin_storage::Storage;
@@ -175,12 +176,8 @@ impl SyncNodeMocker {
         miner: AccountInfo,
         delay_milliseconds: u64,
         random_error_percent: u32,
+        dag: BlockDAG,
     ) -> Result<Self> {
-        let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
-            Path::new("dag/db/starcoindb"),
-            FlexiDagStorageConfig::new(),
-        )?;
-        let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
         let chain = MockChain::new_with_storage(net, storage, chain_info.head().id(), miner, dag)?;
         let peer_id = PeerId::random();
         let peer_info = PeerInfo::new(
@@ -377,7 +374,6 @@ impl BlockFetcher for SyncNodeMocker {
     fn fetch_block_headers(
         &self,
         block_ids: Vec<HashValue>,
-        _peer_id: PeerId,
     ) -> BoxFuture<Result<Vec<(HashValue, Option<starcoin_types::block::BlockHeader>)>>> {
         async move {
             let blocks = self.fetch_blocks(block_ids).await?;
@@ -389,25 +385,9 @@ impl BlockFetcher for SyncNodeMocker {
         .boxed()
     }
 
-    fn fetch_blocks_by_peerid(
-        &self,
-        block_ids: Vec<HashValue>,
-        peer_id: PeerId,
-    ) -> BoxFuture<Result<Vec<Option<Block>>>> {
-        async move {
-            let blocks = self.fetch_blocks(block_ids).await?;
-            blocks
-                .into_iter()
-                .map(|(block, _)| Ok(Some(block.into())))
-                .collect()
-        }
-        .boxed()
-    }
-
     fn fetch_dag_block_children(
         &self,
         block_ids: Vec<HashValue>,
-        peer_id: PeerId,
     ) -> BoxFuture<Result<Vec<HashValue>>> {
         async move {
             let blocks = self.fetch_blocks(block_ids).await?;
