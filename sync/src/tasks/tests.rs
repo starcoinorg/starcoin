@@ -315,7 +315,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
 }
 
 #[stest::test(timeout = 120)]
-pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
+pub async fn test_full_sync_1fork_from_genesis() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
     node1.produce_block(10)?;
@@ -1457,7 +1457,7 @@ async fn test_sync_single_chain_to_dag_chain() -> Result<()> {
         Arc::new(test_system.target_node),
         Arc::new(test_system.local_node),
         &test_system.registry,
-        10,
+        18,
     )
     .await?;
     Ok(())

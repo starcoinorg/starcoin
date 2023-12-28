@@ -428,16 +428,16 @@ where
 
     pub fn ensure_dag_parent_blocks_exist(
         &mut self,
-        block_header: &BlockHeader,
+        block_header: BlockHeader,
     ) -> Result<()> {
         if !block_header.is_dag() {
             println!("jacktest: block is not a dag block, skipping, its id: {:?}, its number {:?}", block_header.id(), block_header.number());
             return Ok(());
         }
-        // if self.chain.has_dag_block(block_header.id())? {
-        //     println!("jacktest: the dag block exists, skipping, its id: {:?}, its number {:?}", block_header.id(), block_header.number());
-        //     return Ok(());
-        // }
+        if self.chain.has_dag_block(block_header.id())? {
+            println!("jacktest: the dag block exists, skipping, its id: {:?}, its number {:?}", block_header.id(), block_header.number());
+            return Ok(());
+        }
         println!("jacktest: block is a dag block, its id: {:?}, its parents: {:?}", block_header.id(), block_header.parents_hash());
         let fut = async {
             let mut dag_ancestors = self
@@ -446,10 +446,6 @@ where
 
             while !dag_ancestors.is_empty() {
                 for ancestor_block_header_id in &dag_ancestors {
-                    if block_header.id() == *ancestor_block_header_id {
-                        continue;// this block should be applied outside
-                    }
-
                     match self
                         .local_store
                         .get_block_info(ancestor_block_header_id.clone())?
@@ -462,10 +458,11 @@ where
                             // println!("jacktest: now apply for sync: {:?}, number: {:?}", block.id(), block.header().number());
                             let block = self.local_store.get_block_by_hash(ancestor_block_header_id.clone())?.expect("failed to get block by hash");
                             println!("jacktest: connect block: {:?}, number: {:?}", block.id(), block.header().number());
-                            self.chain.connect(ExecutedBlock {
+                            let executed_block = self.chain.connect(ExecutedBlock {
                                 block,
                                 block_info,
                             })?;
+                            self.notify_connected_block(executed_block.block, executed_block.block_info.clone(), BlockConnectAction::ConnectExecutedBlock, self.check_enough_by_info(executed_block.block_info)?)?;
                         }
                         None => {
                             for (block, _peer_id) in self
@@ -479,8 +476,9 @@ where
                                     continue;
                                 }
                                 println!("jacktest: now apply for sync after fetching: {:?}, number: {:?}", block.id(), block.header().number());
-                                let _ = self.chain.apply(block.into())?;
+                                let executed_block = self.chain.apply(block.into())?;
 
+                                self.notify_connected_block(executed_block.block, executed_block.block_info.clone(), BlockConnectAction::ConnectNewBlock, self.check_enough_by_info(executed_block.block_info)?)?;
                             }
                         }
                     }
@@ -489,12 +487,44 @@ where
                     .fetcher
                     .fetch_dag_block_children(dag_ancestors)
                     .await?;
-                println!("jacktest: next children: {:?}", dag_ancestors);
             }
 
             Ok(())
         };
         async_std::task::block_on(fut)
+    }
+
+    pub fn check_enough_by_info(&self, block_info: BlockInfo) -> Result<CollectorState> {
+        if block_info.block_accumulator_info.num_leaves
+            == self.target.block_info.block_accumulator_info.num_leaves
+        {
+            if block_info != self.target.block_info {
+                Err(TaskError::BreakError(
+                    RpcVerifyError::new_with_peers(
+                        self.target.peers.clone(),
+                        format!(
+                "Verify target error, expect target: {:?}, collect target block_info:{:?}",
+                self.target.block_info,
+                block_info
+            ),
+                    )
+                    .into(),
+                )
+                .into())
+            } else {
+                Ok(CollectorState::Enough)
+            }
+        } else {
+            Ok(CollectorState::Need)
+        }
+    }
+
+    pub fn check_enough(&self) -> Result<CollectorState> {
+        if let Some(block_info) = self.local_store.get_block_info(self.chain.current_header().id())? {
+            self.check_enough_by_info(block_info)
+        } else {
+            Ok(CollectorState::Need)
+        } 
     }
 }
 
@@ -511,7 +541,12 @@ where
         // if it is a dag block, we must ensure that its dag parent blocks exist.
         // if it is not, we must pull the dag parent blocks from the peer.
         println!("jacktest: now sync dag block -- ensure_dag_parent_blocks_exist");
-        self.ensure_dag_parent_blocks_exist(block.header())?;
+        self.ensure_dag_parent_blocks_exist(block.header().clone())?;
+        let state = self.check_enough();
+        if let anyhow::Result::Ok(CollectorState::Enough) = &state {
+            let header = block.header().clone();
+            return self.notify_connected_block(block, self.local_store.get_block_info(header.id())?.expect("block info should exist"), BlockConnectAction::ConnectExecutedBlock, state?);
+        }
         println!("jacktest: now sync dag block -- ensure_dag_parent_blocks_exist2");
         ////////////
 
@@ -537,29 +572,7 @@ where
         };
 
         //verify target
-        let state: Result<CollectorState, anyhow::Error> =
-            if block_info.block_accumulator_info.num_leaves
-                == self.target.block_info.block_accumulator_info.num_leaves
-            {
-                if block_info != self.target.block_info {
-                    Err(TaskError::BreakError(
-                        RpcVerifyError::new_with_peers(
-                            self.target.peers.clone(),
-                            format!(
-                    "Verify target error, expect target: {:?}, collect target block_info:{:?}",
-                    self.target.block_info,
-                    block_info
-                ),
-                        )
-                        .into(),
-                    )
-                    .into())
-                } else {
-                    Ok(CollectorState::Enough)
-                }
-            } else {
-                Ok(CollectorState::Need)
-            };
+        let state: Result<CollectorState, anyhow::Error> = self.check_enough_by_info(block_info.clone()); 
 
         self.notify_connected_block(block, block_info, action, state?)
     }
