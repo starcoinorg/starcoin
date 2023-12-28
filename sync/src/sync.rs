@@ -27,12 +27,10 @@ use starcoin_sync_api::{
     PeerScoreRequest, PeerScoreResponse, SyncCancelRequest, SyncProgressReport,
     SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
-use starcoin_txpool::TxPoolService;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
-use std::result::Result::Ok;
 use std::sync::Arc;
 use std::time::Duration;
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
@@ -101,73 +99,6 @@ impl SyncService {
             vm_metrics,
         })
     }
-    
-    pub async fn create_verified_client(
-        network: NetworkServiceRef,
-        config: Arc<NodeConfig>,
-        peer_strategy: Option<PeerStrategy>,
-        peers: Vec<PeerId>,
-        peer_score_metrics: Option<PeerScoreMetrics>,
-    ) -> Result<Arc<VerifiedRpcClient>> {
-        let peer_select_strategy =
-            peer_strategy.unwrap_or_else(|| config.sync.peer_select_strategy());
-
-        let mut peer_set = network.peer_set().await?;
-
-        loop {
-            if peer_set.is_empty() || peer_set.len() < (config.net().min_peers() as usize) {
-                let level = if config.net().is_dev() || config.net().is_test() {
-                    Level::Debug
-                } else {
-                    Level::Info
-                };
-                log!(
-                    level,
-                    "[sync]Waiting enough peers to sync, current: {:?} peers, min peers: {:?}",
-                    peer_set.len(),
-                    config.net().min_peers()
-                );
-
-                Delay::new(Duration::from_secs(1)).await;
-                peer_set = network.peer_set().await?;
-            } else {
-                break;
-            }
-        }
-
-        let peer_reputations = network
-            .reputations(REPUTATION_THRESHOLD)
-            .await?
-            .await?
-            .into_iter()
-            .map(|(peer, reputation)| {
-                (
-                    peer,
-                    (REPUTATION_THRESHOLD.abs().saturating_add(reputation)) as u64,
-                )
-            })
-            .collect();
-
-        let peer_selector = PeerSelector::new_with_reputation(
-            peer_reputations,
-            peer_set,
-            peer_select_strategy,
-            peer_score_metrics,
-        );
-
-        peer_selector.retain_rpc_peers();
-        if !peers.is_empty() {
-            peer_selector.retain(peers.as_ref())
-        }
-        if peer_selector.is_empty() {
-            return Err(format_err!("[sync] No peers to sync."));
-        }
-
-        Ok(Arc::new(VerifiedRpcClient::new(
-            peer_selector.clone(),
-            network.clone(),
-        )))
-    }
 
     pub fn check_and_start_sync(
         &mut self,
@@ -214,15 +145,67 @@ impl SyncService {
         let network = ctx.get_shared::<NetworkServiceRef>()?;
         let storage = self.storage.clone();
         let self_ref = ctx.self_ref();
-        let connector_service = ctx
-            .service_ref::<BlockConnectorService<TxPoolService>>()?
-            .clone();
+        let connector_service = ctx.service_ref::<BlockConnectorService>()?.clone();
         let config = self.config.clone();
         let peer_score_metrics = self.peer_score_metrics.clone();
         let sync_metrics = self.metrics.clone();
         let vm_metrics = self.vm_metrics.clone();
         let dag = ctx.get_shared::<BlockDAG>()?;
         let fut = async move {
+            let peer_select_strategy =
+                peer_strategy.unwrap_or_else(|| config.sync.peer_select_strategy());
+
+            let mut peer_set = network.peer_set().await?;
+
+            loop {
+                if peer_set.is_empty() || peer_set.len() < (config.net().min_peers() as usize) {
+                    let level = if config.net().is_dev() || config.net().is_test() {
+                        Level::Debug
+                    } else {
+                        Level::Info
+                    };
+                    log!(
+                        level,
+                        "[sync]Waiting enough peers to sync, current: {:?} peers, min peers: {:?}",
+                        peer_set.len(),
+                        config.net().min_peers()
+                    );
+
+                    Delay::new(Duration::from_secs(1)).await;
+                    peer_set = network.peer_set().await?;
+                } else {
+                    break;
+                }
+            }
+
+            let peer_reputations = network
+                .reputations(REPUTATION_THRESHOLD)
+                .await?
+                .await?
+                .into_iter()
+                .map(|(peer, reputation)| {
+                    (
+                        peer,
+                        (REPUTATION_THRESHOLD.abs().saturating_add(reputation)) as u64,
+                    )
+                })
+                .collect();
+
+            let peer_selector = PeerSelector::new_with_reputation(
+                peer_reputations,
+                peer_set,
+                peer_select_strategy,
+                peer_score_metrics,
+            );
+
+            peer_selector.retain_rpc_peers();
+            if !peers.is_empty() {
+                peer_selector.retain(peers.as_ref())
+            }
+            if peer_selector.is_empty() {
+                return Err(format_err!("[sync] No peers to sync."));
+            }
+
             let startup_info = storage
                 .get_startup_info()?
                 .ok_or_else(|| format_err!("Startup info should exist."))?;
@@ -232,14 +215,10 @@ impl SyncService {
                     format_err!("Can not find block info by id: {}", current_block_id)
                 })?;
 
-            let rpc_client = Self::create_verified_client(
+            let rpc_client = Arc::new(VerifiedRpcClient::new(
+                peer_selector.clone(),
                 network.clone(),
-                config.clone(),
-                peer_strategy,
-                peers,
-                peer_score_metrics,
-            )
-            .await?;
+            ));
             if let Some(target) =
                 rpc_client.get_best_target(current_block_info.get_total_difficulty())?
             {
@@ -265,14 +244,14 @@ impl SyncService {
                     target,
                     task_handle,
                     task_event_handle,
-                    peer_selector: rpc_client.selector().clone(),
+                    peer_selector,
                 })?;
                 if let Some(sync_task_total) = sync_task_total.as_ref() {
                     sync_task_total.with_label_values(&["start"]).inc();
                 }
                 Ok(Some(fut.await?))
             } else {
-                debug!("[sync]No best peer to request, current is best.");
+                debug!("[sync]No best peer to request, current is beast.");
                 Ok(None)
             }
         };
@@ -598,9 +577,10 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService {
 
 impl EventHandler<Self, NewHeadBlock> for SyncService {
     fn handle_event(&mut self, msg: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
+        let NewHeadBlock(block) = msg;
         if self.sync_status.update_chain_status(ChainStatus::new(
-            msg.executed_block.header().clone(),
-            msg.executed_block.block_info.clone(),
+            block.header().clone(),
+            block.block_info.clone(),
         )) {
             ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
         }

@@ -239,10 +239,6 @@ impl Block {
     pub fn id(&self) -> HashValue {
         self.header.id()
     }
-
-    pub fn header(&self) -> &BlockHeader {
-        &self.header
-    }
 }
 
 impl From<Block> for crate::block::Block {

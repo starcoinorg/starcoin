@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2
 
 use anyhow::Result;
-use starcoin_config::ChainNetworkID;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::ChainStateReader;
 use starcoin_statedb::ChainStateDB;
@@ -103,7 +102,6 @@ pub trait ChainReader {
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     fn current_tips_hash(&self) -> Result<Option<Vec<HashValue>>>;
-     fn has_dag_block(&self, hash: HashValue) -> Result<bool>;
 }
 
 pub trait ChainWriter {

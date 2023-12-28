@@ -52,7 +52,8 @@ impl EventHandler<Self, NewHeadBlock> for ChainNotifyHandlerService {
         item: NewHeadBlock,
         ctx: &mut ServiceContext<ChainNotifyHandlerService>,
     ) {
-        let block = item.executed_block.block();
+        let NewHeadBlock(block_detail) = item;
+        let block = block_detail.block();
         // notify header.
         self.notify_new_block(block, ctx);
         // notify events

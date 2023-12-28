@@ -1,18 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#[cfg(test)]
-use super::CheckBlockConnectorHashValue;
 use crate::block_connector::{ExecuteRequest, ResetRequest, WriteBlockChainService};
 use crate::sync::{CheckSyncEvent, SyncService};
-use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskCheckEvent};
-#[cfg(test)]
-use anyhow::bail;
-use anyhow::{format_err, Ok, Result};
+use crate::tasks::{BlockConnectedEvent, BlockDiskCheckEvent};
+use anyhow::{format_err, Result};
 use network_api::PeerProvider;
-use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
+use starcoin_chain_api::{ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
-use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
@@ -23,9 +18,6 @@ use starcoin_service_registry::{
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::PeerNewBlock;
 use starcoin_txpool::TxPoolService;
-use starcoin_txpool_api::TxPoolSyncService;
-#[cfg(test)]
-use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
@@ -35,21 +27,15 @@ use sysinfo::{DiskExt, System, SystemExt};
 const DISK_CHECKPOINT_FOR_PANIC: u64 = 1024 * 1024 * 1024 * 3;
 const DISK_CHECKPOINT_FOR_WARN: u64 = 1024 * 1024 * 1024 * 5;
 
-pub struct BlockConnectorService<TransactionPoolServiceT>
-where
-    TransactionPoolServiceT: TxPoolSyncService + 'static,
-{
-    chain_service: WriteBlockChainService<TransactionPoolServiceT>,
+pub struct BlockConnectorService {
+    chain_service: WriteBlockChainService<TxPoolService>,
     sync_status: Option<SyncStatus>,
     config: Arc<NodeConfig>,
 }
 
-impl<TransactionPoolServiceT> BlockConnectorService<TransactionPoolServiceT>
-where
-    TransactionPoolServiceT: TxPoolSyncService + 'static,
-{
+impl BlockConnectorService {
     pub fn new(
-        chain_service: WriteBlockChainService<TransactionPoolServiceT>,
+        chain_service: WriteBlockChainService<TxPoolService>,
         config: Arc<NodeConfig>,
     ) -> Self {
         Self {
@@ -64,10 +50,6 @@ where
             Some(sync_status) => sync_status.is_synced(),
             None => false,
         }
-    }
-
-    pub fn chain_head_id(&self) -> HashValue {
-        self.chain_service.get_main().status().head.id()
     }
 
     pub fn check_disk_space(&mut self) -> Option<Result<u64>> {
@@ -116,17 +98,11 @@ where
     }
 }
 
-impl<TransactionPoolServiceT> ServiceFactory<Self>
-    for BlockConnectorService<TransactionPoolServiceT>
-where
-    TransactionPoolServiceT: TxPoolSyncService + 'static,
-{
-    fn create(
-        ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
-    ) -> Result<BlockConnectorService<TransactionPoolServiceT>> {
+impl ServiceFactory<Self> for BlockConnectorService {
+    fn create(ctx: &mut ServiceContext<BlockConnectorService>) -> Result<BlockConnectorService> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let bus = ctx.bus_ref().clone();
-        let txpool = ctx.get_shared::<TransactionPoolServiceT>()?;
+        let txpool = ctx.get_shared::<TxPoolService>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let startup_info = storage
             .get_startup_info()?
@@ -143,15 +119,11 @@ where
             dag,
         )?;
 
-        println!("jacktest: init block connec service succeeded");
         Ok(Self::new(chain_service, config))
     }
 }
 
-impl<TransactionPoolServiceT> ActorService for BlockConnectorService<TransactionPoolServiceT>
-where
-    TransactionPoolServiceT: TxPoolSyncService + 'static,
-{
+impl ActorService for BlockConnectorService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         //TODO figure out a more suitable value.
         ctx.set_mailbox_capacity(1024);
@@ -172,19 +144,15 @@ where
     }
 }
 
-impl<TransactionPoolServiceT> EventHandler<Self, BlockDiskCheckEvent>
-    for BlockConnectorService<TransactionPoolServiceT>
-where
-    TransactionPoolServiceT: TxPoolSyncService + 'static,
-{
+impl EventHandler<Self, BlockDiskCheckEvent> for BlockConnectorService {
     fn handle_event(
         &mut self,
         _: BlockDiskCheckEvent,
-        ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
+        ctx: &mut ServiceContext<BlockConnectorService>,
     ) {
         if let Some(res) = self.check_disk_space() {
             match res {
-                std::result::Result::Ok(available_space) => {
+                Ok(available_space) => {
                     warn!("Available diskspace only {}/GB left ", available_space)
                 }
                 Err(e) => {
@@ -196,80 +164,30 @@ where
     }
 }
 
-impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<TxPoolService> {
+impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService {
     fn handle_event(
         &mut self,
         msg: BlockConnectedEvent,
-        ctx: &mut ServiceContext<BlockConnectorService<TxPoolService>>,
+        _ctx: &mut ServiceContext<BlockConnectorService>,
     ) {
         //because this block has execute at sync task, so just try connect to select head chain.
         //TODO refactor connect and execute
 
         let block = msg.block;
-        let feedback = msg.feedback;
-
-        match msg.action {
-            crate::tasks::BlockConnectAction::ConnectNewBlock => {
-                if let Err(e) = self.chain_service.try_connect(block) {
-                    error!("Process connected new block from sync error: {:?}", e);
-                }
-            }
-            crate::tasks::BlockConnectAction::ConnectExecutedBlock => {
-                if let Err(e) = self.chain_service.switch_new_main(block.header().id(), ctx) {
-                    error!("Process connected executed block from sync error: {:?}", e);
-                }
-            }
+        if let Err(e) = self.chain_service.try_connect(block) {
+            error!("Process connected block error: {:?}", e);
         }
-
-        feedback.map(|f| f.unbounded_send(BlockConnectedFinishEvent));
     }
 }
 
-#[cfg(test)]
-impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<MockTxPoolService> {
-    fn handle_event(
-        &mut self,
-        msg: BlockConnectedEvent,
-        ctx: &mut ServiceContext<BlockConnectorService<MockTxPoolService>>,
-    ) {
-        //because this block has execute at sync task, so just try connect to select head chain.
-        //TODO refactor connect and execute
-
-        let block = msg.block;
-        let feedback = msg.feedback;
-
-        match msg.action {
-            crate::tasks::BlockConnectAction::ConnectNewBlock => {
-                if let Err(e) = self.chain_service.apply_failed(block) {
-                    error!("Process connected new block from sync error: {:?}", e);
-                }
-            }
-            crate::tasks::BlockConnectAction::ConnectExecutedBlock => {
-                if let Err(e) = self.chain_service.switch_new_main(block.header().id(), ctx) {
-                    error!("Process connected executed block from sync error: {:?}", e);
-                }
-            }
-        }
-
-        feedback.map(|f| f.unbounded_send(BlockConnectedFinishEvent));
-    }
-}
-
-impl<TransactionPoolServiceT> EventHandler<Self, MinedBlock>
-    for BlockConnectorService<TransactionPoolServiceT>
-where
-    TransactionPoolServiceT: TxPoolSyncService + 'static,
-{
-    fn handle_event(&mut self, msg: MinedBlock, ctx: &mut ServiceContext<Self>) {
-        let MinedBlock(new_block) = msg.clone();
-        let block_header = new_block.header().clone();
+impl EventHandler<Self, MinedBlock> for BlockConnectorService {
+    fn handle_event(&mut self, msg: MinedBlock, _ctx: &mut ServiceContext<Self>) {
+        let MinedBlock(new_block) = msg;
         let id = new_block.header().id();
         debug!("try connect mined block: {}", id);
 
         match self.chain_service.try_connect(new_block.as_ref().clone()) {
-            std::result::Result::Ok(()) => {
-                ctx.broadcast(msg)
-            }
+            Ok(_) => debug!("Process mined block {} success.", id),
             Err(e) => {
                 warn!("Process mined block {} fail, error: {:?}", id, e);
             }
@@ -277,21 +195,13 @@ where
     }
 }
 
-impl<TransactionPoolServiceT> EventHandler<Self, SyncStatusChangeEvent>
-    for BlockConnectorService<TransactionPoolServiceT>
-where
-    TransactionPoolServiceT: TxPoolSyncService + 'static,
-{
+impl EventHandler<Self, SyncStatusChangeEvent> for BlockConnectorService {
     fn handle_event(&mut self, msg: SyncStatusChangeEvent, _ctx: &mut ServiceContext<Self>) {
         self.sync_status = Some(msg.0);
     }
 }
 
-impl<TransactionPoolServiceT> EventHandler<Self, PeerNewBlock>
-    for BlockConnectorService<TransactionPoolServiceT>
-where
-    TransactionPoolServiceT: TxPoolSyncService + 'static,
-{
+impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
     fn handle_event(&mut self, msg: PeerNewBlock, ctx: &mut ServiceContext<Self>) {
         if !self.is_synced() {
             debug!("[connector] Ignore PeerNewBlock event because the node has not been synchronized yet.");
@@ -300,13 +210,11 @@ where
         let peer_id = msg.get_peer_id();
         if let Err(e) = self.chain_service.try_connect(msg.get_block().clone()) {
             match e.downcast::<ConnectBlockError>() {
-                std::result::Result::Ok(connect_error) => {
+                Ok(connect_error) => {
                     match connect_error {
                         ConnectBlockError::FutureBlock(block) => {
                             //TODO cache future block
-                            if let std::result::Result::Ok(sync_service) =
-                                ctx.service_ref::<SyncService>()
-                            {
+                            if let Ok(sync_service) = ctx.service_ref::<SyncService>() {
                                 info!(
                                     "BlockConnector try connect future block ({:?},{}), peer_id:{:?}, notify Sync service check sync.",
                                     block.id(),
@@ -352,51 +260,22 @@ where
     }
 }
 
-impl<TransactionPoolServiceT> ServiceHandler<Self, ResetRequest>
-    for BlockConnectorService<TransactionPoolServiceT>
-where
-    TransactionPoolServiceT: TxPoolSyncService + 'static,
-{
+impl ServiceHandler<Self, ResetRequest> for BlockConnectorService {
     fn handle(
         &mut self,
         msg: ResetRequest,
-        _ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
+        _ctx: &mut ServiceContext<BlockConnectorService>,
     ) -> Result<()> {
         self.chain_service.reset(msg.block_hash)
     }
 }
 
-impl<TransactionPoolServiceT> ServiceHandler<Self, ExecuteRequest>
-    for BlockConnectorService<TransactionPoolServiceT>
-where
-    TransactionPoolServiceT: TxPoolSyncService + 'static,
-{
+impl ServiceHandler<Self, ExecuteRequest> for BlockConnectorService {
     fn handle(
         &mut self,
         msg: ExecuteRequest,
-        _ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
+        _ctx: &mut ServiceContext<BlockConnectorService>,
     ) -> Result<ExecutedBlock> {
         self.chain_service.execute(msg.block)
-    }
-}
-
-#[cfg(test)]
-impl<TransactionPoolServiceT> ServiceHandler<Self, CheckBlockConnectorHashValue>
-    for BlockConnectorService<TransactionPoolServiceT>
-where
-    TransactionPoolServiceT: TxPoolSyncService + 'static,
-{
-    fn handle(
-        &mut self,
-        msg: CheckBlockConnectorHashValue,
-        _ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
-    ) -> Result<()> {
-        if self.chain_service.get_main().status().head().id() == msg.head_hash {
-            info!("the branch in chain service is the same as target's branch");
-            Ok(())
-        } else {
-            info!("mock branch in chain service is not the same as target's branch");
-            bail!("blockchain in chain service is not the same as target!");
-        }
     }
 }

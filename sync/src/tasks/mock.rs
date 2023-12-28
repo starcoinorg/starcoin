@@ -4,8 +4,7 @@
 use crate::tasks::{
     BlockConnectedEvent, BlockFetcher, BlockIdFetcher, BlockInfoFetcher, PeerOperator, SyncFetcher,
 };
-use anyhow::{format_err, Context, Ok, Result};
-use async_std::path::Path;
+use anyhow::{format_err, Context, Result};
 use async_std::task::JoinHandle;
 use futures::channel::mpsc::UnboundedReceiver;
 use futures::future::BoxFuture;
@@ -15,20 +14,15 @@ use network_api::messages::NotificationMessage;
 use network_api::{PeerId, PeerInfo, PeerSelector, PeerStrategy};
 use network_p2p_core::{NetRpcError, RpcErrorCode};
 use rand::Rng;
-use starcoin_account_api::AccountInfo;
-use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
 use starcoin_config::ChainNetwork;
-use starcoin_crypto::{HashValue, hash};
-use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
+use starcoin_crypto::HashValue;
 use starcoin_network_rpc_api::G_RPC_INFO;
-use starcoin_storage::Storage;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
-use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -168,38 +162,6 @@ impl SyncNodeMocker {
         ))
     }
 
-    pub fn new_with_storage(
-        net: ChainNetwork,
-        storage: Arc<Storage>,
-        chain_info: ChainInfo,
-        miner: AccountInfo,
-        delay_milliseconds: u64,
-        random_error_percent: u32,
-    ) -> Result<Self> {
-        let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
-            Path::new("dag/db/starcoindb"),
-            FlexiDagStorageConfig::new(),
-        )?;
-        let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
-        let chain = MockChain::new_with_storage(net, storage, chain_info.head().id(), miner, dag)?;
-        let peer_id = PeerId::random();
-        let peer_info = PeerInfo::new(
-            peer_id.clone(),
-            chain.chain_info(),
-            NotificationMessage::protocols(),
-            G_RPC_INFO.clone().into_protocols(),
-            None,
-        );
-        let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default(), None);
-        Ok(Self::new_inner(
-            peer_id,
-            chain,
-            ErrorStrategy::Timeout(delay_milliseconds),
-            random_error_percent,
-            peer_selector,
-        ))
-    }
-
     pub fn new_with_strategy(
         net: ChainNetwork,
         error_strategy: ErrorStrategy,
@@ -292,11 +254,6 @@ impl SyncNodeMocker {
         self.chain_mocker.produce_and_apply_times(times)
     }
 
-    pub fn produce_block_and_create_dag(&mut self, times: u64) -> Result<()> {
-        self.chain_mocker.produce_and_apply_times(times)?;
-        Ok(())
-    }
-
     pub fn select_head(&mut self, block: Block) -> Result<()> {
         self.chain_mocker.select_head(block)
     }
@@ -320,10 +277,6 @@ impl SyncNodeMocker {
         self.peer_selector
             .select_peer()
             .ok_or_else(|| format_err!("No peers for send request."))
-    }
-
-    pub fn get_dag_targets(&self) -> Result<Vec<AccumulatorInfo>> {
-        Ok(vec![])
     }
 }
 
@@ -360,7 +313,7 @@ impl BlockFetcher for SyncNodeMocker {
             .into_iter()
             .map(|block_id| {
                 if let Some(block) = self.chain().get_block(block_id)? {
-                    Ok((block, Some(PeerId::random())))
+                    Ok((block, None))
                 } else {
                     Err(format_err!("Can not find block by id: {}", block_id))
                 }
@@ -370,61 +323,6 @@ impl BlockFetcher for SyncNodeMocker {
             let _ = self.select_a_peer()?;
             self.err_mocker.random_err().await?;
             result
-        }
-        .boxed()
-    }
-
-    fn fetch_block_headers(
-        &self,
-        block_ids: Vec<HashValue>,
-        _peer_id: PeerId,
-    ) -> BoxFuture<Result<Vec<(HashValue, Option<starcoin_types::block::BlockHeader>)>>> {
-        async move {
-            let blocks = self.fetch_blocks(block_ids).await?;
-            blocks
-                .into_iter()
-                .map(|(block, _)| Ok((block.id(), Some(block.header().clone()))))
-                .collect()
-        }
-        .boxed()
-    }
-
-    fn fetch_blocks_by_peerid(
-        &self,
-        block_ids: Vec<HashValue>,
-        peer_id: PeerId,
-    ) -> BoxFuture<Result<Vec<Option<Block>>>> {
-        async move {
-            let blocks = self.fetch_blocks(block_ids).await?;
-            blocks
-                .into_iter()
-                .map(|(block, _)| Ok(Some(block.into())))
-                .collect()
-        }
-        .boxed()
-    }
-
-    fn fetch_dag_block_children(
-        &self,
-        block_ids: Vec<HashValue>,
-        peer_id: PeerId,
-    ) -> BoxFuture<Result<Vec<HashValue>>> {
-        async move {
-            let blocks = self.fetch_blocks(block_ids).await?;
-            let mut result = vec![];
-            for block in blocks {
-                let hashes = block.0.header().parents_hash();
-                if hashes.is_none() {
-                    continue;
-                }
-                for hash in hashes.unwrap() {
-                    if result.contains(&hash) {
-                        continue;
-                    }
-                    result.push(hash)
-                }
-            }
-            Ok(result)
         }
         .boxed()
     }

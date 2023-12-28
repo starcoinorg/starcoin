@@ -12,16 +12,13 @@ use crate::consensusdb::{
 };
 use anyhow::{bail, Ok};
 use parking_lot::RwLock;
-use starcoin_config::{temp_dir, ChainNetworkID, RocksdbConfig};
+use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
-use starcoin_storage::Store;
-use starcoin_types::block::{BlockHeader, BlockNumber, TEST_FLEXIDAG_FORK_HEIGHT, DEV_FLEXIDAG_FORK_HEIGHT, HALLEY_FLEXIDAG_FORK_HEIGHT, PROXIMA_FLEXIDAG_FORK_HEIGHT, BARNARD_FLEXIDAG_FORK_HEIGHT, MAIN_FLEXIDAG_FORK_HEIGHT};
+use starcoin_types::block::BlockHeader;
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
 };
-use starcoin_vm_types::genesis_config::ChainId;
-use std::path::{self, Path};
 use std::sync::Arc;
 
 pub type DbGhostdagManager = GhostdagManager<
@@ -36,7 +33,7 @@ pub struct BlockDAG {
     pub storage: FlexiDagStorage,
     ghostdag_manager: DbGhostdagManager,
 }
-
+const FLEXIDAG_K: KType = 16;
 impl BlockDAG {
     pub fn new(k: KType, db: FlexiDagStorage) -> Self {
         let ghostdag_store = db.ghost_dag_store.clone();
@@ -58,39 +55,15 @@ impl BlockDAG {
             storage: db,
         }
     }
+
+    pub fn create_flexidag(db: FlexiDagStorage) -> Self {
+        Self::new(FLEXIDAG_K, db)
+    }
+
     pub fn create_for_testing() -> anyhow::Result<Self> {
         let dag_storage =
             FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
-        Ok(BlockDAG::new(8, dag_storage))
-    }
-
-    pub fn new_by_config(db_path: &Path) -> anyhow::Result<BlockDAG> {
-        let config = FlexiDagStorageConfig::create_with_params(1, RocksdbConfig::default());
-        let db = FlexiDagStorage::create_from_path(db_path, config)?;
-        let dag = Self::new(8, db);
-        Ok(dag)
-    }
-
-    pub fn dag_fork_height_with_net(net: ChainId) -> BlockNumber {
-        if net.is_barnard() {
-            BARNARD_FLEXIDAG_FORK_HEIGHT
-        } else if net.is_dev() {
-            DEV_FLEXIDAG_FORK_HEIGHT
-        } else if net.is_halley() {
-            HALLEY_FLEXIDAG_FORK_HEIGHT
-        } else if net.is_main() {
-            MAIN_FLEXIDAG_FORK_HEIGHT
-        } else if net.is_test() {
-            TEST_FLEXIDAG_FORK_HEIGHT
-        } else if net.is_proxima() {
-            PROXIMA_FLEXIDAG_FORK_HEIGHT
-        } else {
-            DEV_FLEXIDAG_FORK_HEIGHT
-        }
-    }
-
-    pub fn has_dag_block(&self, hash: Hash) -> anyhow::Result<bool> {
-        Ok(self.storage.header_store.has(hash)?)
+        Ok(BlockDAG::new(16, dag_storage))
     }
 
     pub fn init_with_genesis(&self, genesis: BlockHeader) -> anyhow::Result<()> {
