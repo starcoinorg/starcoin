@@ -21,6 +21,7 @@ starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
 rocksdb = { workspace = true }
 bincode = { version = "1", default-features = false }
+
 serde = { workspace = true }
 starcoin-storage = { workspace = true }
 parking_lot = { workspace = true }
@@ -44,7 +45,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-dag"
 publish = { workspace = true }
-version = "1.13.8"
+version = "1.13.7"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

@@ -72,7 +72,6 @@ pub trait ReadableChainService {
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
-    fn get_dag_block_children(&self, ids: Vec<HashValue>) -> Result<Vec<HashValue>>;
 }
 
 /// Writeable block chain service trait
@@ -140,7 +139,6 @@ pub trait ChainAsyncService:
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
-    async fn get_dag_block_children(&self, hashes: Vec<HashValue>) -> Result<Vec<HashValue>>;
 }
 
 #[async_trait::async_trait]
@@ -436,17 +434,6 @@ where
             Ok(*block_infos)
         } else {
             bail!("get block_infos error")
-        }
-    }
-
-    async fn get_dag_block_children(&self, hashes: Vec<HashValue>) -> Result<Vec<HashValue>> {
-        let response = self.send(ChainRequest::GetDagBlockChildren {
-            block_ids: hashes,
-        }).await??;
-        if let ChainResponse::HashVec(children) = response {
-            Ok(children)
-        } else {
-            bail!("get dag block children error")
         }
     }
 }

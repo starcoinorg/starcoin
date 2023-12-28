@@ -190,7 +190,7 @@ impl NodeHandle {
             {
                 //wait for new block event to been processed.
                 Delay::new(Duration::from_millis(100)).await;
-                event.executed_block.block().clone()
+                event.0.block().clone()
             } else {
                 let latest_head = chain_service.main_head_block().await?;
                 debug!(

@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 #![allow(clippy::integer_arithmetic)]
+
 use crate::block_connector::{
     create_writeable_block_chain, gen_blocks, new_block, WriteBlockChainService,
 };

@@ -35,7 +35,7 @@ fn test_reconnected_peers() -> anyhow::Result<()> {
 
     // stop node2, node1's peers is empty
     node2.stop()?;
-    thread::sleep(Duration::from_secs(12));
+    thread::sleep(Duration::from_secs(3));
     loop {
         let network_state = block_on(async { node1_network.network_state().await })?;
         debug!("network_state: {:?}", network_state);

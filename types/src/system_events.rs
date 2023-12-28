@@ -10,10 +10,7 @@ use starcoin_crypto::HashValue;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::Arc;
 #[derive(Clone, Debug)]
-pub struct NewHeadBlock {
-    pub executed_block: Arc<ExecutedBlock>,
-    // pub tips: Option<Vec<HashValue>>,
-}
+pub struct NewHeadBlock(pub Arc<ExecutedBlock>);
 
 /// may be uncle block
 #[derive(Clone, Debug)]

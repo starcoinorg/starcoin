@@ -299,8 +299,6 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         peer_id: PeerId,
         request: GetTableInfo,
     ) -> BoxFuture<Result<Option<TableInfo>>>;
-
-    fn get_dag_block_children(&self, peer_id: PeerId, request: Vec<HashValue>) -> BoxFuture<Result<Vec<HashValue>>>;
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
