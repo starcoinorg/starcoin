@@ -431,14 +431,14 @@ where
         block_header: BlockHeader,
     ) -> Result<()> {
         if !block_header.is_dag() {
-            println!("jacktest: block is not a dag block, skipping, its id: {:?}, its number {:?}", block_header.id(), block_header.number());
+            info!("the block is not a dag block, skipping, its id: {:?}, its number {:?}", block_header.id(), block_header.number());
             return Ok(());
         }
         if self.chain.has_dag_block(block_header.id())? {
-            println!("jacktest: the dag block exists, skipping, its id: {:?}, its number {:?}", block_header.id(), block_header.number());
+            info!("the dag block exists, skipping, its id: {:?}, its number {:?}", block_header.id(), block_header.number());
             return Ok(());
         }
-        println!("jacktest: block is a dag block, its id: {:?}, its parents: {:?}", block_header.id(), block_header.parents_hash());
+        info!("the block is a dag block, its id: {:?}, number: {:?}, its parents: {:?}", block_header.id(), block_header.number(), block_header.parents_hash());
         let fut = async {
             let mut dag_ancestors = self
                 .find_ancestor_dag_block_header(vec![block_header.clone()])
@@ -451,13 +451,8 @@ where
                         .get_block_info(ancestor_block_header_id.clone())?
                     {
                         Some(block_info) => {
-                            // if self.chain.has_dag_block(block.id())? {
-                            //     println!("jacktest: block is already in chain, skipping, its id: {:?}, number: {}", block.id(), block.header().number());
-                            //     continue;
-                            // }
-                            // println!("jacktest: now apply for sync: {:?}, number: {:?}", block.id(), block.header().number());
                             let block = self.local_store.get_block_by_hash(ancestor_block_header_id.clone())?.expect("failed to get block by hash");
-                            println!("jacktest: connect block: {:?}, number: {:?}", block.id(), block.header().number());
+                            info!("connect a dag block: {:?}, number: {:?}", block.id(), block.header().number());
                             let executed_block = self.chain.connect(ExecutedBlock {
                                 block,
                                 block_info,
@@ -475,7 +470,7 @@ where
                                 if self.chain.has_dag_block(block.id())? {
                                     continue;
                                 }
-                                println!("jacktest: now apply for sync after fetching: {:?}, number: {:?}", block.id(), block.header().number());
+                                info!("now apply for sync after fetching a dag block: {:?}, number: {:?}", block.id(), block.header().number());
                                 let executed_block = self.chain.apply(block.into())?;
 
                                 self.notify_connected_block(executed_block.block, executed_block.block_info.clone(), BlockConnectAction::ConnectNewBlock, self.check_enough_by_info(executed_block.block_info)?)?;
@@ -487,6 +482,8 @@ where
                     .fetcher
                     .fetch_dag_block_children(dag_ancestors)
                     .await?;
+
+                info!("next dag children blocks: {:?}", dag_ancestors);
             }
 
             Ok(())
@@ -540,15 +537,13 @@ where
 
         // if it is a dag block, we must ensure that its dag parent blocks exist.
         // if it is not, we must pull the dag parent blocks from the peer.
-        println!("jacktest: now sync dag block -- ensure_dag_parent_blocks_exist");
+        info!("now sync dag block -- ensure_dag_parent_blocks_exist");
         self.ensure_dag_parent_blocks_exist(block.header().clone())?;
         let state = self.check_enough();
         if let anyhow::Result::Ok(CollectorState::Enough) = &state {
             let header = block.header().clone();
             return self.notify_connected_block(block, self.local_store.get_block_info(header.id())?.expect("block info should exist"), BlockConnectAction::ConnectExecutedBlock, state?);
         }
-        println!("jacktest: now sync dag block -- ensure_dag_parent_blocks_exist2");
-        ////////////
 
         let timestamp = block.header().timestamp();
         let (block_info, action) = match block_info {

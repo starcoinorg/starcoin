@@ -379,7 +379,6 @@ pub async fn test_full_sync_continue() -> Result<()> {
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     //fork from genesis
     let mut node2 = test_system.local_node;// SyncNodeMocker::new(net2.clone(), 1, 50)?;
-    println!("jacktest: node2 now create block");
     node2.produce_block(7)?;
 
     // first set target to 5.
@@ -1182,12 +1181,10 @@ async fn sync_block_in_block_connection_service_mock(
     registry: &ServiceRef<RegistryService>,
     block_count: u64,
 ) -> Result<Arc<SyncNodeMocker>> {
-    println!("jacktest: now go to sync dag blocks4");
     Arc::get_mut(&mut target_node)
         .unwrap()
         .produce_block(block_count)?;
     loop {
-        println!("jacktest: now go to sync dag blocks3");
         let target = target_node.sync_target();
 
         let storage = local_node.chain().get_storage();

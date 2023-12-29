@@ -280,7 +280,6 @@ impl BlockChain {
             match &tips_hash {
                 None => (uncles, None),
                 Some(tips) => {
-                    println!("jacktest: tips is {:?}", tips);
                     let mut blues = self.dag.ghostdata(tips).mergeset_blues.to_vec();
                     info!(
                         "create block template with tips:{:?},ghostdata blues:{:?}",
@@ -1309,7 +1308,7 @@ impl ChainWriter for BlockChain {
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
         if executed_block.block.is_dag() {
-            println!("jacktest: connect dag, {:?}, number: {:?}", executed_block.block.id(), executed_block.block.header().number());
+            info!("connect a dag block, {:?}, number: {:?}", executed_block.block.id(), executed_block.block.header().number());
             return self.connect_dag(executed_block);
         }
         let (block, block_info) = (executed_block.block(), executed_block.block_info());
