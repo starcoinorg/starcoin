@@ -389,8 +389,9 @@ where
     }
 
     async fn fetch_block_headers(&self, absent_blocks: Vec<HashValue>) -> Result<Vec<(HashValue, Option<BlockHeader>)>> {
-        let mut count: i32 = 5;
+        let mut count: i32 = 20;
         while count > 0 {
+            info!("fetch block header retry count = {}", count);
             match self
                 .fetcher
                 .fetch_block_headers(absent_blocks.clone())
@@ -403,7 +404,7 @@ where
                         if count == 0 {
                             bail!("failed to fetch block headers due to: {:?}", e);
                         }
-                        async_std::task::sleep(Duration::from_secs(10)).await;
+                        async_std::task::sleep(Duration::from_secs(1)).await;
                     }
                 }
         }
@@ -512,8 +513,9 @@ where
     }
 
     async fn fetch_blocks(&self, block_ids: Vec<HashValue>) -> Result<Vec<(Block, Option<PeerId>)>> {
-        let mut count: i32 = 5;
+        let mut count: i32 = 20;
         while count > 0 {
+            info!("fetch blocks retry count = {}", count);
             match self.fetcher.fetch_blocks(block_ids.clone()).await {
                 Ok(result) => {
                     return Ok(result);
@@ -523,7 +525,7 @@ where
                     if count == 0 {
                         bail!("failed to fetch blocks due to: {:?}", e);
                     }
-                    async_std::task::sleep(Duration::from_secs(10)).await;
+                    async_std::task::sleep(Duration::from_secs(1)).await;
                 }
             }
         }
@@ -531,8 +533,9 @@ where
     }
 
     async fn fetch_dag_block_children(&self, dag_ancestors: Vec<HashValue>) -> Result<Vec<HashValue>> {
-        let mut count: i32 = 5;
+        let mut count: i32 = 20;
         while count > 0 {
+            info!("fetch block chidlren retry count = {}", count);
             match self
                 .fetcher
                 .fetch_dag_block_children(dag_ancestors.clone())
@@ -545,7 +548,7 @@ where
                         if count == 0 {
                             bail!("failed to fetch dag block children due to: {:?}", e);
                         }
-                        async_std::task::sleep(Duration::from_secs(10)).await;
+                        async_std::task::sleep(Duration::from_secs(1)).await;
                     }
                 }
         }
