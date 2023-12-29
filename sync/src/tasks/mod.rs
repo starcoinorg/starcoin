@@ -24,7 +24,7 @@ use starcoin_time_service::TimeService;
 use starcoin_txpool::TxPoolService;
 #[cfg(test)]
 use starcoin_txpool_mock_service::MockTxPoolService;
-use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber, LegacyBlock};
+use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::U256;
 use std::str::FromStr;
@@ -37,10 +37,7 @@ use stream_task::{
 };
 
 pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {
-    fn get_best_target(
-        &self,
-        min_difficulty: U256,
-    ) -> Result<Option<SyncTarget>> {
+    fn get_best_target(&self, min_difficulty: U256) -> Result<Option<SyncTarget>> {
         if let Some(best_peers) = self.peer_selector().bests(min_difficulty) {
             //TODO fast verify best peers by accumulator
             let mut chain_statuses: Vec<(ChainStatus, Vec<PeerId>)> =
@@ -84,7 +81,7 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                 min_difficulty
             );
             Ok(None)
-        } 
+        }
     }
 
     fn get_better_target(
@@ -351,7 +348,7 @@ impl BlockFetcher for VerifiedRpcClient {
         &self,
         block_ids: Vec<HashValue>,
     ) -> BoxFuture<Result<Vec<(HashValue, Option<BlockHeader>)>>> {
-        self.get_block_headers_by_hash(block_ids.clone())
+        self.get_block_headers_by_hash(block_ids)
             .map_err(fetcher_err_map)
             .boxed()
     }

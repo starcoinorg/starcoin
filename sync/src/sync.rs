@@ -101,7 +101,7 @@ impl SyncService {
             vm_metrics,
         })
     }
-    
+
     pub async fn create_verified_client(
         network: NetworkServiceRef,
         config: Arc<NodeConfig>,
@@ -164,7 +164,7 @@ impl SyncService {
         }
 
         Ok(Arc::new(VerifiedRpcClient::new(
-            peer_selector.clone(),
+            peer_selector,
             network.clone(),
         )))
     }

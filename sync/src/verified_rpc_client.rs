@@ -443,10 +443,9 @@ impl VerifiedRpcClient {
             .collect())
     }
 
-    pub async fn get_dag_block_children(
-        &self,
-        req: Vec<HashValue>,
-    ) -> Result<Vec<HashValue>> {
-        Ok(self.client.get_dag_block_children(self.select_a_peer()?, req).await?)
+    pub async fn get_dag_block_children(&self, req: Vec<HashValue>) -> Result<Vec<HashValue>> {
+        self.client
+            .get_dag_block_children(self.select_a_peer()?, req)
+            .await
     }
 }

@@ -178,13 +178,12 @@ where
     }
 
     #[cfg(test)]
-    pub fn time_sleep(&self, sec: u64) {
-        self.config.net().time_service().sleep(sec * 1000000);
+    pub fn time_sleep(&self, millis: u64) {
+        self.config.net().time_service().sleep(millis);
     }
 
     #[cfg(test)]
     pub fn apply_failed(&mut self, block: Block) -> Result<()> {
-        use anyhow::bail;
         use starcoin_chain::verifier::FullVerifier;
 
         // apply but no connection
@@ -213,7 +212,7 @@ where
             new_head_block,
             self.storage.clone(),
             self.vm_metrics.clone(),
-            self.main.dag().clone(),
+            self.main.dag(),
         )?;
 
         let main_total_difficulty = self.main.get_total_difficulty()?;

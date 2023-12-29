@@ -14,7 +14,10 @@ use stream_task::{
     CustomErrorHandle, Generator, TaskError, TaskEventHandle, TaskGenerator, TaskHandle, TaskState,
 };
 
-use super::{BlockAccumulatorSyncTask, AccumulatorCollector, BlockSyncTask, BlockCollector, PeerOperator, BlockFetcher, BlockIdFetcher, BlockConnectedEventHandle};
+use super::{
+    AccumulatorCollector, BlockAccumulatorSyncTask, BlockCollector, BlockConnectedEventHandle,
+    BlockFetcher, BlockIdFetcher, BlockSyncTask, PeerOperator,
+};
 
 pub struct InnerSyncTask<H, F, N>
 where

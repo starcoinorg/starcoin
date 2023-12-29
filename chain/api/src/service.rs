@@ -440,9 +440,9 @@ where
     }
 
     async fn get_dag_block_children(&self, hashes: Vec<HashValue>) -> Result<Vec<HashValue>> {
-        let response = self.send(ChainRequest::GetDagBlockChildren {
-            block_ids: hashes,
-        }).await??;
+        let response = self
+            .send(ChainRequest::GetDagBlockChildren { block_ids: hashes })
+            .await??;
         if let ChainResponse::HashVec(children) = response {
             Ok(children)
         } else {

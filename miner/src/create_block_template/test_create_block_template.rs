@@ -345,7 +345,7 @@ fn test_new_head() {
         miner_account,
         None,
         None,
-        dag.clone(),
+        dag,
     )
     .unwrap();
 

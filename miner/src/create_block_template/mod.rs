@@ -306,9 +306,12 @@ where
         }
     }
 
+    #[allow(dead_code)]
     pub fn is_dag_genesis(&self, id: HashValue) -> Result<bool> {
         if let Some(header) = self.storage.get_block_header_by_hash(id)? {
-            if header.number() == BlockDAG::dag_fork_height_with_net(self.chain.status().head().chain_id()) {
+            if header.number()
+                == BlockDAG::dag_fork_height_with_net(self.chain.status().head().chain_id())
+            {
                 Ok(true)
             } else {
                 Ok(false)

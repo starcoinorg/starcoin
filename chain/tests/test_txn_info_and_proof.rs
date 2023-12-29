@@ -52,28 +52,21 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
     (0..5).for_each(|_| {
         let txns = gen_txns(&mut seq_num).unwrap();
         let (template, _) = block_chain
-            .create_block_template(
-                *miner_account.address(),
-                None,
-                txns.clone(),
-                vec![],
-                None,
-                None,
-            )
+            .create_block_template(*miner_account.address(), None, txns, vec![], None, None)
             .unwrap();
         let block = block_chain
             .consensus()
             .create_block(template, config.net().time_service().as_ref())
             .unwrap();
         debug!("apply block:{:?}", &block);
-        block_chain.apply(block.clone()).unwrap();
+        block_chain.apply(block).unwrap();
     });
     // fork from 3 block
     let fork_point = block_chain.get_block_by_number(3).unwrap().unwrap();
     let fork_chain = block_chain.fork(fork_point.id()).unwrap();
     let account_reader = fork_chain.chain_state_reader();
     seq_num = account_reader.get_sequence_number(account_config::association_address())?;
-    let txns = gen_txns(&mut seq_num).unwrap();
+    let _txns = gen_txns(&mut seq_num).unwrap();
     let (template, _) = fork_chain
         .create_block_template(
             *miner_account.address(),
@@ -89,7 +82,7 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
         .create_block(template, config.net().time_service().as_ref())
         .unwrap();
     debug!("Apply block:{:?}", &block);
-    block_chain.apply(block.clone()).unwrap();
+    block_chain.apply(block).unwrap();
     assert_eq!(
         block_chain.current_header().id(),
         block_chain.get_block_by_number(5).unwrap().unwrap().id()
@@ -97,7 +90,7 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
     // create latest block
     let account_reader = block_chain.chain_state_reader();
     seq_num = account_reader.get_sequence_number(account_config::association_address())?;
-    let txns = gen_txns(&mut seq_num).unwrap();
+    let _txns = gen_txns(&mut seq_num).unwrap();
     let (template, _) = block_chain
         .create_block_template(*miner_account.address(), None, vec![], vec![], None, None)
         .unwrap();
@@ -106,7 +99,7 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
         .create_block(template, config.net().time_service().as_ref())
         .unwrap();
     debug!("Apply latest block:{:?}", &block);
-    block_chain.apply(block.clone()).unwrap();
+    block_chain.apply(block).unwrap();
     assert_eq!(
         block_chain.current_header().id(),
         block_chain.get_block_by_number(6).unwrap().unwrap().id()

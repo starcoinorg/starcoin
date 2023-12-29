@@ -9264,7 +9264,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-chain"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "anyhow",
  "async-std",
@@ -9307,7 +9307,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-chain-api"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9331,7 +9331,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-chain-mock"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9362,7 +9362,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-chain-notify"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "anyhow",
  "starcoin-crypto",
@@ -9732,7 +9732,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-flexidag"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9941,7 +9941,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-miner"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -10328,7 +10328,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-open-block"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -11079,7 +11079,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-uint"
-version = "1.13.7"
+version = "1.13.8"
 dependencies = [
  "bcs-ext",
  "hex",

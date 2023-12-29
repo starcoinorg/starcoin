@@ -163,7 +163,7 @@ impl ChainStatus {
             ),
         );
         Self {
-            head: head.clone(),
+            head,
             info: block_info,
         }
     }

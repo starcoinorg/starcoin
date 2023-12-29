@@ -12,7 +12,7 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::block::ExecutedBlock;
@@ -44,13 +44,7 @@ impl ChainReaderService {
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         Ok(Self {
-            inner: ChainReaderServiceInner::new(
-                config,
-                startup_info,
-                storage,
-                dag,
-                vm_metrics,
-            )?,
+            inner: ChainReaderServiceInner::new(config, startup_info, storage, dag, vm_metrics)?,
         })
     }
 }
@@ -62,15 +56,9 @@ impl ServiceFactory<Self> for ChainReaderService {
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("StartupInfo should exist at service init."))?;
-        let dag = ctx.get_shared::<BlockDAG>()?.clone();
+        let dag = ctx.get_shared::<BlockDAG>()?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        Self::new(
-            config,
-            startup_info,
-            storage,
-            dag,
-            vm_metrics,
-        )
+        Self::new(config, startup_info, storage, dag, vm_metrics)
     }
 }
 
@@ -450,7 +438,7 @@ impl ReadableChainService for ChainReaderServiceInner {
         ids.into_iter().fold(Ok(vec![]), |mut result, id| {
             match self.dag.get_children(id) {
                 anyhow::Result::Ok(children) => {
-                    result.as_mut().map(|r| r.extend(children));
+                    let _ = result.as_mut().map(|r| r.extend(children));
                     Ok(result?)
                 }
                 Err(e) => Err(e),

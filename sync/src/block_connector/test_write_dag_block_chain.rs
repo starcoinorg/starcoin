@@ -35,7 +35,7 @@ pub fn gen_dag_blocks(
             println!("try_connect result: {:?}", e);
             assert!(e.is_ok());
             if (i + 1) % 3 == 0 {
-                writeable_block_chain_service.time_sleep(5);
+                writeable_block_chain_service.time_sleep(5000000);
             }
         }
         last_block_hash
@@ -68,7 +68,7 @@ pub fn new_dag_block(
     };
     let miner_address = *miner.address();
     let block_chain = writeable_block_chain_service.get_main();
-    let tips = block_chain.current_tips_hash().expect("failed to get tips").map(|tips| tips);
+    let tips = block_chain.current_tips_hash().expect("failed to get tips");
     let (block_template, _) = block_chain
         .create_block_template(miner_address, None, Vec::new(), vec![], None, tips)
         .unwrap();
@@ -108,7 +108,8 @@ fn gen_fork_dag_block_chain(
     let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
         Path::new("dag/db/starcoindb"),
         FlexiDagStorageConfig::new(),
-    ).expect("create dag storage fail");
+    )
+    .expect("create dag storage fail");
     let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
     if let Some(block_header) = writeable_block_chain_service
         .get_main()
@@ -127,7 +128,14 @@ fn gen_fork_dag_block_chain(
             )
             .unwrap();
             let (block_template, _) = block_chain
-                .create_block_template(*miner_account.address(), None, Vec::new(), vec![], None, None)
+                .create_block_template(
+                    *miner_account.address(),
+                    None,
+                    Vec::new(),
+                    vec![],
+                    None,
+                    None,
+                )
                 .unwrap();
             let block = block_chain
                 .consensus()
@@ -137,9 +145,10 @@ fn gen_fork_dag_block_chain(
 
             writeable_block_chain_service.try_connect(block).unwrap();
         }
-        return Some(parent_id);
+        Some(parent_id)
+    } else {
+        None
     }
-    return None;
 }
 
 #[stest::test(timeout = 120)]
@@ -181,7 +190,7 @@ async fn test_block_chain_reset() -> anyhow::Result<()> {
     let times = 10;
     let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
     let net = node_config.net();
-    let mut last_block = gen_dag_blocks(
+    let last_block = gen_dag_blocks(
         times,
         &mut writeable_block_chain_service,
         net.time_service().as_ref(),

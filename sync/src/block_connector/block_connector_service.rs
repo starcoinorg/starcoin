@@ -261,14 +261,11 @@ where
 {
     fn handle_event(&mut self, msg: MinedBlock, ctx: &mut ServiceContext<Self>) {
         let MinedBlock(new_block) = msg.clone();
-        let block_header = new_block.header().clone();
         let id = new_block.header().id();
         debug!("try connect mined block: {}", id);
 
         match self.chain_service.try_connect(new_block.as_ref().clone()) {
-            std::result::Result::Ok(()) => {
-                ctx.broadcast(msg)
-            }
+            std::result::Result::Ok(()) => ctx.broadcast(msg),
             Err(e) => {
                 warn!("Process mined block {} fail, error: {:?}", id, e);
             }

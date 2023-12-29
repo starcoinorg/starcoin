@@ -62,7 +62,7 @@ pub enum ChainRequest {
     GetBlockInfos(Vec<HashValue>),
     GetDagBlockChildren {
         block_ids: Vec<HashValue>,
-    }
+    },
 }
 
 impl ServiceRequest for ChainRequest {
