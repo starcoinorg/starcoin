@@ -388,6 +388,28 @@ where
         Ok(())
     }
 
+    async fn fetch_block_headers(&self, absent_blocks: Vec<HashValue>) -> Result<Vec<(HashValue, Option<BlockHeader>)>> {
+        let mut count: i32 = 5;
+        while count > 0 {
+            match self
+                .fetcher
+                .fetch_block_headers(absent_blocks.clone())
+                .await {
+                    Ok(result) => {
+                        return Ok(result);
+                    }
+                    Err(e) => {
+                        count = count.saturating_sub(1);
+                        if count == 0 {
+                            bail!("failed to fetch block headers due to: {:?}", e);
+                        }
+                        async_std::task::sleep(Duration::from_secs(10)).await;
+                    }
+                }
+        }
+        bail!("failed to fetch block headers");
+    }
+
     async fn find_ancestor_dag_block_header(
         &self,
         mut block_headers: Vec<BlockHeader>,
@@ -404,7 +426,6 @@ where
                 return Ok(ancestors);
             }
             let absent_block_headers = self
-                .fetcher
                 .fetch_block_headers(absent_blocks)
                 .await?;
             if absent_block_headers.iter().any(|(id, header)| {
@@ -457,11 +478,11 @@ where
                                 block,
                                 block_info,
                             })?;
+                            info!("succeed to connect a dag block: {:?}, number: {:?}", executed_block.block.id(), executed_block.block.header().number());
                             self.notify_connected_block(executed_block.block, executed_block.block_info.clone(), BlockConnectAction::ConnectExecutedBlock, self.check_enough_by_info(executed_block.block_info)?)?;
                         }
                         None => {
                             for (block, _peer_id) in self
-                                .fetcher
                                 .fetch_blocks(
                                     vec![ancestor_block_header_id.clone()],
                                 )
@@ -472,14 +493,13 @@ where
                                 }
                                 info!("now apply for sync after fetching a dag block: {:?}, number: {:?}", block.id(), block.header().number());
                                 let executed_block = self.chain.apply(block.into())?;
-
+                                info!("succeed to apply a dag block: {:?}, number: {:?}", executed_block.block.id(), executed_block.block.header().number());
                                 self.notify_connected_block(executed_block.block, executed_block.block_info.clone(), BlockConnectAction::ConnectNewBlock, self.check_enough_by_info(executed_block.block_info)?)?;
                             }
                         }
                     }
                 }
                 dag_ancestors = self
-                    .fetcher
                     .fetch_dag_block_children(dag_ancestors)
                     .await?;
 
@@ -489,6 +509,47 @@ where
             Ok(())
         };
         async_std::task::block_on(fut)
+    }
+
+    async fn fetch_blocks(&self, block_ids: Vec<HashValue>) -> Result<Vec<(Block, Option<PeerId>)>> {
+        let mut count: i32 = 5;
+        while count > 0 {
+            match self.fetcher.fetch_blocks(block_ids.clone()).await {
+                Ok(result) => {
+                    return Ok(result);
+                }
+                Err(e) => {
+                    count = count.saturating_sub(1);
+                    if count == 0 {
+                        bail!("failed to fetch blocks due to: {:?}", e);
+                    }
+                    async_std::task::sleep(Duration::from_secs(10)).await;
+                }
+            }
+        }
+        bail!("failed to fetch blocks");
+    }
+
+    async fn fetch_dag_block_children(&self, dag_ancestors: Vec<HashValue>) -> Result<Vec<HashValue>> {
+        let mut count: i32 = 5;
+        while count > 0 {
+            match self
+                .fetcher
+                .fetch_dag_block_children(dag_ancestors.clone())
+                .await {
+                    Ok(result) => {
+                        return Ok(result);
+                    }
+                    Err(e) => {
+                        count = count.saturating_sub(1);
+                        if count == 0 {
+                            bail!("failed to fetch dag block children due to: {:?}", e);
+                        }
+                        async_std::task::sleep(Duration::from_secs(10)).await;
+                    }
+                }
+        }
+        bail!("failed to fetch dag block children");
     }
 
     pub fn check_enough_by_info(&self, block_info: BlockInfo) -> Result<CollectorState> {

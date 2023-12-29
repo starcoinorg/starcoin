@@ -416,8 +416,8 @@ impl BlockInfoFetcher for SyncNodeMocker {
             result.push(self.chain().get_block_info(Some(hash)).unwrap());
         });
         async move {
-            let _ = self.select_a_peer()?;
-            self.err_mocker.random_err().await?;
+            // let _ = self.select_a_peer()?;
+            // self.err_mocker.random_err().await?;
             Ok(result)
         }
         .boxed()

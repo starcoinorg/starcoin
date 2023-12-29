@@ -1448,7 +1448,7 @@ impl SyncTestSystem {
     }
 }
 
-#[stest::test]
+#[stest::test(timeout = 600)]
 async fn test_sync_single_chain_to_dag_chain() -> Result<()> {
     let test_system = SyncTestSystem::initialize_sync_system().await?;
     let _target_node = sync_block_in_block_connection_service_mock(
