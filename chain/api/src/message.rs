@@ -60,6 +60,9 @@ pub enum ChainRequest {
         access_path: Option<AccessPath>,
     },
     GetBlockInfos(Vec<HashValue>),
+    GetDagBlockChildren {
+        block_ids: Vec<HashValue>,
+    }
 }
 
 impl ServiceRequest for ChainRequest {

@@ -35,12 +35,13 @@ pub type BlockNumber = u64;
 //TODO: make sure height
 pub type ParentsHash = Option<Vec<HashValue>>;
 
-pub static DEV_FLEXIDAG_FORK_HEIGHT: BlockNumber = 100000;
+pub static DEV_FLEXIDAG_FORK_HEIGHT: BlockNumber = 2;
 pub static TEST_FLEXIDAG_FORK_HEIGHT: BlockNumber = 2;
 pub static PROXIMA_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
 pub static HALLEY_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
 pub static BARNARD_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
 pub static MAIN_FLEXIDAG_FORK_HEIGHT: BlockNumber = 1000000;
+pub static CUSTOM_FLEXIDAG_FORK_HEIGHT: BlockNumber = 3;
 
 /// Type for block header extra
 #[derive(Clone, Default, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, JsonSchema)]
@@ -346,7 +347,7 @@ impl BlockHeader {
         } else if self.chain_id.is_main() {
             MAIN_FLEXIDAG_FORK_HEIGHT
         } else {
-            DEV_FLEXIDAG_FORK_HEIGHT
+           CUSTOM_FLEXIDAG_FORK_HEIGHT 
         }
     }
 

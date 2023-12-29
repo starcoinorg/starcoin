@@ -6,6 +6,7 @@ use network_api::peer_score::{InverseScore, Score};
 use network_api::PeerId;
 use network_api::PeerInfo;
 use network_api::PeerSelector;
+use network_api::PeerStrategy;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::hash::HashValue;
@@ -121,6 +122,10 @@ impl VerifiedRpcClient {
             client,
             score_handler: InverseScore::new(100, 60),
         }
+    }
+
+    pub fn switch_strategy(&mut self, strategy: PeerStrategy) {
+        self.peer_selector.switch_strategy(strategy)
     }
 
     pub fn selector(&self) -> &PeerSelector {
@@ -377,6 +382,17 @@ impl VerifiedRpcClient {
         self.client.get_block_ids(peer_id, request).await
     }
 
+    pub async fn get_block_headers_by_hash(
+        &self,
+        ids: Vec<HashValue>,
+    ) -> Result<Vec<(HashValue, Option<BlockHeader>)>> {
+        let block_headers = self
+            .client
+            .get_headers_by_hash(self.select_a_peer()?, ids.clone())
+            .await?;
+        Ok(ids.into_iter().zip(block_headers.into_iter()).collect())
+    }
+
     pub async fn get_blocks(
         &self,
         ids: Vec<HashValue>,
@@ -425,5 +441,12 @@ impl VerifiedRpcClient {
                 }
             })
             .collect())
+    }
+
+    pub async fn get_dag_block_children(
+        &self,
+        req: Vec<HashValue>,
+    ) -> Result<Vec<HashValue>> {
+        Ok(self.client.get_dag_block_children(self.select_a_peer()?, req).await?)
     }
 }

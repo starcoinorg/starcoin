@@ -3,7 +3,7 @@
 
 use crate::verifier::{BlockVerifier, FullVerifier, NoneVerifier};
 use anyhow::{bail, ensure, format_err, Ok, Result};
-
+use bcs_ext::BCSCodec;
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
 use starcoin_accumulator::{
@@ -13,10 +13,12 @@ use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
     ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
+use starcoin_config::{ChainNetworkID, NodeConfig};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::consensusdb::prelude::StoreError;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
@@ -41,6 +43,7 @@ use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::Epoch;
+use std::backtrace;
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
@@ -576,7 +579,17 @@ impl BlockChain {
         self.storage.save_block_info(block_info.clone())?;
 
         self.storage.save_table_infos(txn_table_infos)?;
-        self.dag.commit(header.to_owned())?;
+        let result = self.dag.commit(header.to_owned());
+        match result {
+            anyhow::Result::Ok(_) => (),
+            Err(e) => {
+                if let Some(StoreError::KeyAlreadyExists(_)) = e.downcast_ref::<StoreError>() {
+                    info!("dag block already exist, ignore");
+                } else {
+                    return Err(e);
+                }
+            }
+        }
         watch(CHAIN_WATCH_NAME, "n26");
         Ok(ExecutedBlock { block, block_info })
     }
@@ -1114,6 +1127,10 @@ impl ChainReader for BlockChain {
     fn current_tips_hash(&self) -> Result<Option<Vec<HashValue>>> {
         Ok(self.storage.get_dag_state()?.map(|state| state.tips))
     }
+    
+    fn has_dag_block(&self, hash: HashValue) -> Result<bool> {
+        self.dag.has_dag_block(hash)
+    }
 }
 
 impl BlockChain {
@@ -1291,6 +1308,7 @@ impl ChainWriter for BlockChain {
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
         if executed_block.block.is_dag() {
+            info!("connect a dag block, {:?}, number: {:?}", executed_block.block.id(), executed_block.block.header().number());
             return self.connect_dag(executed_block);
         }
         let (block, block_info) = (executed_block.block(), executed_block.block_info());

@@ -11,6 +11,8 @@ mod metrics;
 mod test_illegal_block;
 #[cfg(test)]
 mod test_write_block_chain;
+#[cfg(test)]
+mod test_write_dag_block_chain;
 mod write_block_chain;
 
 pub use block_connector_service::BlockConnectorService;
@@ -39,4 +41,16 @@ pub struct ExecuteRequest {
 
 impl ServiceRequest for ExecuteRequest {
     type Response = anyhow::Result<ExecutedBlock>;
+}
+
+#[cfg(test)]
+#[derive(Debug, Clone)]
+pub struct CheckBlockConnectorHashValue {
+    pub head_hash: HashValue,
+    pub number: u64,
+}
+
+#[cfg(test)]
+impl ServiceRequest for CheckBlockConnectorHashValue {
+    type Response = anyhow::Result<()>;
 }

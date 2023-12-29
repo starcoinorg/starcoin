@@ -19,6 +19,7 @@ pub struct MockChain {
     net: ChainNetwork,
     head: BlockChain,
     miner: AccountInfo,
+    storage: Arc<Storage>,
 }
 
 impl MockChain {
@@ -29,12 +30,12 @@ impl MockChain {
         let chain = BlockChain::new(
             net.time_service(),
             chain_info.head().id(),
-            storage,
+            storage.clone(),
             None,
             dag,
         )?;
         let miner = AccountInfo::random();
-        Ok(Self::new_inner(net, chain, miner))
+        Ok(Self::new_inner(net, chain, miner, storage))
     }
 
     pub fn new_with_storage(
@@ -47,20 +48,20 @@ impl MockChain {
         let chain = BlockChain::new(
             net.time_service(),
             head_block_hash,
-            storage,
+            storage.clone(),
             None,
             dag.clone(),
         )?;
-        Ok(Self::new_inner(net, chain, miner))
+        Ok(Self::new_inner(net, chain, miner, storage))
     }
 
-    pub fn new_with_chain(net: ChainNetwork, chain: BlockChain) -> Result<Self> {
+    pub fn new_with_chain(net: ChainNetwork, chain: BlockChain, storage: Arc<Storage>) -> Result<Self> {
         let miner = AccountInfo::random();
-        Ok(Self::new_inner(net, chain, miner))
+        Ok(Self::new_inner(net, chain, miner, storage))
     }
 
-    fn new_inner(net: ChainNetwork, head: BlockChain, miner: AccountInfo) -> Self {
-        Self { net, head, miner }
+    fn new_inner(net: ChainNetwork, head: BlockChain, miner: AccountInfo, storage: Arc<Storage>) -> Self {
+        Self { net, head, miner, storage }
     }
 
     pub fn net(&self) -> &ChainNetwork {
@@ -96,7 +97,12 @@ impl MockChain {
             head: chain,
             net: self.net.clone(),
             miner: AccountInfo::random(),
+            storage: self.storage.clone(),
         })
+    }
+
+    pub fn get_storage(&self) -> Arc<Storage> {
+        self.storage.clone()
     }
 
     pub fn select_head(&mut self, new_block: Block) -> Result<()> {
@@ -128,14 +134,9 @@ impl MockChain {
     }
 
     pub fn produce(&self) -> Result<Block> {
-        let (template, _) = self.head.create_block_template(
-            *self.miner.address(),
-            None,
-            vec![],
-            vec![],
-            None,
-            None,
-        )?;
+        let (template, _) =
+            self.head
+                .create_block_template(*self.miner.address(), None, vec![], vec![], None, None)?;
         self.head
             .consensus()
             .create_block(template, self.net.time_service().as_ref())

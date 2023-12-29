@@ -20,7 +20,7 @@ use starcoin_chain::{
 use starcoin_config::{BuiltinNetworkID, ChainNetwork, RocksdbConfig};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
+use starcoin_dag::{blockdag::BlockDAG, consensusdb::prelude::FlexiDagStorageConfig};
 use starcoin_genesis::Genesis;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
 use starcoin_statedb::{ChainStateDB, ChainStateReader, ChainStateWriter};
@@ -260,7 +260,7 @@ pub struct CheckKeyOptions {
     /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db/starcoindb
     pub db_path: PathBuf,
     #[clap(long, short = 'n',
-    possible_values = & ["block", "block_header"],)]
+    possible_values=&["block", "block_header"],)]
     pub cf_name: String,
     #[clap(long, short = 'b')]
     pub block_hash: HashValue,
@@ -351,7 +351,7 @@ pub struct GenBlockTransactionsOptions {
     pub block_num: Option<u64>,
     #[clap(long, short = 't')]
     pub trans_num: Option<u64>,
-    #[clap(long, short = 'p', possible_values = & ["CreateAccount", "FixAccount", "EmptyTxn"],)]
+    #[clap(long, short = 'p', possible_values=&["CreateAccount", "FixAccount", "EmptyTxn"],)]
     /// txn type
     pub txn_type: Txntype,
 }
@@ -405,9 +405,9 @@ pub struct ExportResourceOptions {
     pub block_hash: HashValue,
 
     #[clap(
-    short = 'r',
-    default_value = "0x1::Account::Balance<0x1::STC::STC>",
-    parse(try_from_str = parse_struct_tag)
+        short='r',
+        default_value = "0x1::Account::Balance<0x1::STC::STC>",
+        parse(try_from_str=parse_struct_tag)
     )]
     /// resource struct tag.
     resource_type: StructTag,
