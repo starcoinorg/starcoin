@@ -341,12 +341,13 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         Box::pin(fut)
     }
 
-    fn get_dag_block_children(&self, _peer_id:PeerId, request:Vec<HashValue>) -> BoxFuture<Result<Vec<HashValue> > >  {
+    fn get_dag_block_children(
+        &self,
+        _peer_id: PeerId,
+        request: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<HashValue>>> {
         let chain_service = self.chain_service.clone();
-        let fut = async move {
-            chain_service.get_dag_block_children(request).await
-        };
+        let fut = async move { chain_service.get_dag_block_children(request).await };
         Box::pin(fut)
     }
-
 }

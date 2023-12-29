@@ -5,7 +5,6 @@ use crate::tasks::{
     BlockConnectedEvent, BlockFetcher, BlockIdFetcher, BlockInfoFetcher, PeerOperator, SyncFetcher,
 };
 use anyhow::{format_err, Context, Ok, Result};
-use async_std::path::Path;
 use async_std::task::JoinHandle;
 use futures::channel::mpsc::UnboundedReceiver;
 use futures::future::BoxFuture;
@@ -16,15 +15,13 @@ use network_api::{PeerId, PeerInfo, PeerSelector, PeerStrategy};
 use network_p2p_core::{NetRpcError, RpcErrorCode};
 use rand::Rng;
 use starcoin_account_api::AccountInfo;
-use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
 use starcoin_config::ChainNetwork;
-use starcoin_crypto::{HashValue, hash};
+use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
-use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
 use starcoin_network_rpc_api::G_RPC_INFO;
 use starcoin_storage::Storage;
 use starcoin_sync_api::SyncTarget;
@@ -178,7 +175,7 @@ impl SyncNodeMocker {
         random_error_percent: u32,
         dag: BlockDAG,
     ) -> Result<Self> {
-        let chain = MockChain::new_with_storage(net, storage.clone(), chain_info.head().id(), miner, dag)?;
+        let chain = MockChain::new_with_storage(net, storage, chain_info.head().id(), miner, dag)?;
         let peer_id = PeerId::random();
         let peer_info = PeerInfo::new(
             peer_id.clone(),
@@ -293,10 +290,10 @@ impl SyncNodeMocker {
         self.chain_mocker.produce_and_apply_times(times)
     }
 
-    pub fn produce_block_and_create_dag(&mut self, times: u64) -> Result<()> {
-        self.chain_mocker.produce_and_apply_times(times)?;
-        Ok(())
-    }
+    // pub fn produce_block_and_create_dag(&mut self, times: u64) -> Result<()> {
+    //     self.chain_mocker.produce_and_apply_times(times)?;
+    //     Ok(())
+    // }
 
     pub fn select_head(&mut self, block: Block) -> Result<()> {
         self.chain_mocker.select_head(block)
@@ -321,10 +318,6 @@ impl SyncNodeMocker {
         self.peer_selector
             .select_peer()
             .ok_or_else(|| format_err!("No peers for send request."))
-    }
-
-    pub fn get_dag_targets(&self) -> Result<Vec<AccumulatorInfo>> {
-        Ok(vec![])
     }
 }
 

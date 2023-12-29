@@ -14,7 +14,8 @@ pub trait ConsensusHeader {
 
 impl ConsensusHeader for BlockHeader {
     fn parents(&self) -> Vec<HashValue> {
-        self.parents_hash().unwrap_or(vec![self.parent_hash()])
+        self.parents_hash()
+            .unwrap_or_else(|| vec![self.parent_hash()])
     }
     fn difficulty(&self) -> U256 {
         self.difficulty()

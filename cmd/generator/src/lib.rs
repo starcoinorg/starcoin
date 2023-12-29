@@ -36,7 +36,7 @@ pub fn init_or_load_data_dir(
         config.storage.dag_dir(),
         config.storage.clone().into(),
     )?;
-    let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage.clone());
+    let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
     let (chain_info, _genesis) = Genesis::init_and_check_storage(
         config.net(),
         storage.clone(),

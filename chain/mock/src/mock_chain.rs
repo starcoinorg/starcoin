@@ -50,18 +50,32 @@ impl MockChain {
             head_block_hash,
             storage.clone(),
             None,
-            dag.clone(),
+            dag,
         )?;
         Ok(Self::new_inner(net, chain, miner, storage))
     }
 
-    pub fn new_with_chain(net: ChainNetwork, chain: BlockChain, storage: Arc<Storage>) -> Result<Self> {
+    pub fn new_with_chain(
+        net: ChainNetwork,
+        chain: BlockChain,
+        storage: Arc<Storage>,
+    ) -> Result<Self> {
         let miner = AccountInfo::random();
         Ok(Self::new_inner(net, chain, miner, storage))
     }
 
-    fn new_inner(net: ChainNetwork, head: BlockChain, miner: AccountInfo, storage: Arc<Storage>) -> Self {
-        Self { net, head, miner, storage }
+    fn new_inner(
+        net: ChainNetwork,
+        head: BlockChain,
+        miner: AccountInfo,
+        storage: Arc<Storage>,
+    ) -> Self {
+        Self {
+            net,
+            head,
+            miner,
+            storage,
+        }
     }
 
     pub fn net(&self) -> &ChainNetwork {
@@ -134,9 +148,14 @@ impl MockChain {
     }
 
     pub fn produce(&self) -> Result<Block> {
-        let (template, _) =
-            self.head
-                .create_block_template(*self.miner.address(), None, vec![], vec![], None, None)?;
+        let (template, _) = self.head.create_block_template(
+            *self.miner.address(),
+            None,
+            vec![],
+            vec![],
+            None,
+            None,
+        )?;
         self.head
             .consensus()
             .create_block(template, self.net.time_service().as_ref())

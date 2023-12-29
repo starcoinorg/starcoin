@@ -347,7 +347,7 @@ impl BlockHeader {
         } else if self.chain_id.is_main() {
             MAIN_FLEXIDAG_FORK_HEIGHT
         } else {
-           CUSTOM_FLEXIDAG_FORK_HEIGHT 
+            CUSTOM_FLEXIDAG_FORK_HEIGHT
         }
     }
 

@@ -10,7 +10,7 @@ use crate::tasks::{
     BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask, SyncFetcher,
 };
 use crate::verified_rpc_client::RpcVerifyError;
-use anyhow::{anyhow, format_err, Result};
+use anyhow::{format_err, Result};
 use anyhow::{Context, Ok};
 use futures::channel::mpsc::unbounded;
 use futures::future::BoxFuture;
@@ -25,12 +25,11 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
-use starcoin_config::{BuiltinNetworkID, ChainNetwork, ChainNetworkID, NodeConfig, temp_dir, RocksdbConfig};
+use starcoin_config::{BuiltinNetworkID, ChainNetwork, NodeConfig, RocksdbConfig};
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
 use starcoin_genesis::Genesis;
-use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_storage::db_storage::DBStorage;
@@ -44,10 +43,9 @@ use starcoin_types::{
 };
 use std::collections::HashMap;
 use std::fs;
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use stest::actix_export::System;
-use stream_task::TaskHandle;
 use stream_task::{
     DefaultCustomErrorHandle, Generator, TaskError, TaskEventCounterHandle, TaskGenerator,
 };
@@ -372,13 +370,13 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
 pub async fn test_full_sync_continue() -> Result<()> {
     // let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let test_system = SyncTestSystem::initialize_sync_system().await?;
-    let mut node1 = test_system.target_node;// SyncNodeMocker::new(net1, 10, 50)?;
+    let mut node1 = test_system.target_node; // SyncNodeMocker::new(net1, 10, 50)?;
     let dag = node1.chain().dag();
     node1.produce_block(10)?;
     let arc_node1 = Arc::new(node1);
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     //fork from genesis
-    let mut node2 = test_system.local_node;// SyncNodeMocker::new(net2.clone(), 1, 50)?;
+    let mut node2 = test_system.local_node; // SyncNodeMocker::new(net2.clone(), 1, 50)?;
     node2.produce_block(7)?;
 
     // first set target to 5.
@@ -755,23 +753,20 @@ impl BlockFetcher for MockBlockFetcher {
     ) -> BoxFuture<Result<Vec<HashValue>>> {
         let blocks = self.blocks.lock().unwrap();
         let mut result = vec![];
-        block_ids
-            .iter()
-            .map(|block_id| {
-                if let Some(block) = blocks.get(block_id).cloned() {
-                    for hashes in block.header().parents_hash() {
-                        for hash in hashes {
-                            if result.contains(&hash) {
-                                continue;
-                            }
-                            result.push(hash);
+        block_ids.iter().for_each(|block_id| {
+            if let Some(block) = blocks.get(block_id).cloned() {
+                while let Some(hashes) = block.header().parents_hash() {
+                    for hash in hashes {
+                        if result.contains(&hash) {
+                            continue;
                         }
+                        result.push(hash);
                     }
-                    Ok(())
-                } else {
-                    Err(format_err!("Can not find block by id: {:?}", block_id))
                 }
-            });
+            } else {
+                info!("Can not find block by id: {:?}", block_id)
+            }
+        });
         async {
             Delay::new(Duration::from_millis(100)).await;
             Ok(result)
@@ -1136,7 +1131,7 @@ fn sync_block_in_async_connection(
         15,
         None,
         None,
-        dag.clone(),
+        dag,
     )?;
     let branch = async_std::task::block_on(sync_task)?;
     assert_eq!(branch.current_header().id(), target.target_id.id());
@@ -1153,7 +1148,7 @@ fn sync_block_in_async_connection(
 
 #[stest::test]
 async fn test_sync_block_in_async_connection() -> Result<()> {
-    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let _net = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let test_system = SyncTestSystem::initialize_sync_system().await?;
     let mut target_node = Arc::new(test_system.target_node);
 
@@ -1168,9 +1163,20 @@ async fn test_sync_block_in_async_connection() -> Result<()> {
     // )?;
     // let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
 
-    target_node =
-        sync_block_in_async_connection(target_node, local_node.clone(), local_node.chain_mocker.get_storage(), 10, local_node.chain().dag().clone())?;
-    _ = sync_block_in_async_connection(target_node, local_node.clone(), local_node.chain_mocker.get_storage(), 20, local_node.chain().dag().clone())?;
+    target_node = sync_block_in_async_connection(
+        target_node,
+        local_node.clone(),
+        local_node.chain_mocker.get_storage(),
+        10,
+        local_node.chain().dag(),
+    )?;
+    _ = sync_block_in_async_connection(
+        target_node,
+        local_node.clone(),
+        local_node.chain_mocker.get_storage(),
+        20,
+        local_node.chain().dag(),
+    )?;
 
     Ok(())
 }
@@ -1253,28 +1259,28 @@ async fn sync_block_in_block_connection_service_mock(
 //         .produce_block_and_create_dag(21)?;
 //     Ok(())
 
-    // let flexidag_service = registry.service_ref::<FlexidagService>().await?;
-    // let local_dag_accumulator_info = flexidag_service.send(GetDagAccumulatorInfo).await??.ok_or(anyhow!("dag accumulator is none"))?;
+// let flexidag_service = registry.service_ref::<FlexidagService>().await?;
+// let local_dag_accumulator_info = flexidag_service.send(GetDagAccumulatorInfo).await??.ok_or(anyhow!("dag accumulator is none"))?;
 
-    // let result = sync_dag_full_task(
-    //     local_dag_accumulator_info,
-    //     target_accumulator_info,
-    //     target_node.clone(),
-    //     accumulator_store,
-    //     accumulator_snapshot,
-    //     local_store,
-    //     local_net.time_service(),
-    //     None,
-    //     connector_service,
-    //     network,
-    //     false,
-    //     dag,
-    //     block_chain_service,
-    //     flexidag_service,
-    //     local_net.id().clone(),
-    // )?;
+// let result = sync_dag_full_task(
+//     local_dag_accumulator_info,
+//     target_accumulator_info,
+//     target_node.clone(),
+//     accumulator_store,
+//     accumulator_snapshot,
+//     local_store,
+//     local_net.time_service(),
+//     None,
+//     connector_service,
+//     network,
+//     false,
+//     dag,
+//     block_chain_service,
+//     flexidag_service,
+//     local_net.id().clone(),
+// )?;
 
-    // Ok(result)
+// Ok(result)
 // }
 
 // #[cfg(test)]
@@ -1351,7 +1357,6 @@ async fn sync_block_in_block_connection_service_mock(
 
 //     Ok(target_node)
 // }
-
 #[cfg(test)]
 struct SyncTestSystem {
     pub target_node: SyncNodeMocker,
@@ -1367,29 +1372,28 @@ impl SyncTestSystem {
         // let (storage, chain_info, _, _) = StarcoinGenesis::init_storage_for_test(config.net())
         //     .expect("init storage by genesis fail.");
 
-        let temp_path = PathBuf::from(starcoin_config::temp_dir().as_ref()) ;
+        let temp_path = PathBuf::from(starcoin_config::temp_dir().as_ref());
         let storage_path = temp_path.join(Path::new("local/storage"));
         let dag_path = temp_path.join(Path::new("local/dag"));
         fs::create_dir_all(storage_path.clone())?;
         fs::create_dir_all(dag_path.clone())?;
-        let storage = Arc::new(Storage::new(StorageInstance::new_db_instance(
-            DBStorage::new(
-                storage_path.as_path(),
-                RocksdbConfig::default(),
-                None,
-            )
+        let storage = Arc::new(
+            Storage::new(StorageInstance::new_db_instance(
+                DBStorage::new(storage_path.as_path(), RocksdbConfig::default(), None).unwrap(),
+            ))
             .unwrap(),
-        ))
-        .unwrap());
+        );
         let genesis = Genesis::load_or_build(config.net())?;
         // init dag
         let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
             dag_path.as_path(),
             FlexiDagStorageConfig::new(),
-        ).expect("init dag storage fail.");
+        )
+        .expect("init dag storage fail.");
         let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage); // local dag
 
-        let chain_info = genesis.execute_genesis_block(config.net(), storage.clone(), dag.clone())?;
+        let chain_info =
+            genesis.execute_genesis_block(config.net(), storage.clone(), dag.clone())?;
 
         let target_node = SyncNodeMocker::new(config.net().clone(), 300, 50)?;
         let local_node = SyncNodeMocker::new_with_storage(
@@ -1422,7 +1426,10 @@ impl SyncTestSystem {
 
                 registry.put_shared(config.clone()).await.unwrap();
                 registry.put_shared(storage.clone()).await.unwrap();
-                registry.put_shared(dag).await.expect("failed to put dag in registry");
+                registry
+                    .put_shared(dag)
+                    .await
+                    .expect("failed to put dag in registry");
                 registry.put_shared(MockTxPoolService::new()).await.unwrap();
 
                 Delay::new(Duration::from_secs(2)).await;
