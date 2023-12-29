@@ -315,7 +315,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
 }
 
 #[stest::test(timeout = 120)]
-pub async fn test_full_sync_1fork_from_genesis() -> Result<()> {
+pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
     node1.produce_block(10)?;
@@ -1042,6 +1042,7 @@ async fn test_sync_target() {
     let mock_chain = MockChain::new_with_chain(
         net2,
         node1.chain().fork(high_chain_info.head().id()).unwrap(),
+        node1.get_storage(),
     )
     .unwrap();
 
@@ -1156,20 +1157,20 @@ async fn test_sync_block_in_async_connection() -> Result<()> {
     let test_system = SyncTestSystem::initialize_sync_system().await?;
     let mut target_node = Arc::new(test_system.target_node);
 
-    let (storage, chain_info, _, _) =
-        Genesis::init_storage_for_test(&net).expect("init storage by genesis fail.");
+    // let (storage, chain_info, _, _) =
+    //     Genesis::init_storage_for_test(&net).expect("init storage by genesis fail.");
 
     let local_node = Arc::new(test_system.local_node);
 
-    let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
-        Path::new("."),
-        FlexiDagStorageConfig::new(),
-    )?;
-    let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
+    // let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+    //     Path::new("."),
+    //     FlexiDagStorageConfig::new(),
+    // )?;
+    // let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
 
     target_node =
-        sync_block_in_async_connection(target_node, local_node.clone(), storage.clone(), 10, dag.clone())?;
-    _ = sync_block_in_async_connection(target_node, local_node, storage, 20, dag)?;
+        sync_block_in_async_connection(target_node, local_node.clone(), local_node.chain_mocker.get_storage(), 10, local_node.chain().dag().clone())?;
+    _ = sync_block_in_async_connection(target_node, local_node.clone(), local_node.chain_mocker.get_storage(), 20, local_node.chain().dag().clone())?;
 
     Ok(())
 }

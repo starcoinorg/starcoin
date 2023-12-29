@@ -178,7 +178,7 @@ impl SyncNodeMocker {
         random_error_percent: u32,
         dag: BlockDAG,
     ) -> Result<Self> {
-        let chain = MockChain::new_with_storage(net, storage, chain_info.head().id(), miner, dag)?;
+        let chain = MockChain::new_with_storage(net, storage.clone(), chain_info.head().id(), miner, dag)?;
         let peer_id = PeerId::random();
         let peer_info = PeerInfo::new(
             peer_id.clone(),
@@ -283,6 +283,10 @@ impl SyncNodeMocker {
 
     pub fn chain(&self) -> &BlockChain {
         self.chain_mocker.head()
+    }
+
+    pub fn get_storage(&self) -> Arc<Storage> {
+        self.chain_mocker.get_storage()
     }
 
     pub fn produce_block(&mut self, times: u64) -> Result<()> {
