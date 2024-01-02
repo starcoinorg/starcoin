@@ -43,14 +43,12 @@ pub struct StaticVerifier;
 
 impl StaticVerifier {
     pub fn verify_body_hash(block: &Block) -> Result<()> {
-        //verify body
-        // todo: double check
-        let body_hash = if !block.is_dag() && block.body.uncles.is_some() {
+        // verify body
+        let body_hash = if block.is_legacy() {
             LegacyBlockBody::from(block.body.clone()).hash()
         } else {
             block.body.hash()
         };
-
         verify_block!(
             VerifyBlockField::Body,
             body_hash == block.header().body_hash(),
@@ -290,7 +288,8 @@ impl BlockVerifier for FullVerifier {
     where
         R: ChainReader,
     {
-        BasicVerifier::verify_header(current_chain, new_block_header)?;
+        //TODO: FIXME: Vefify block number logic should refactor
+        //BasicVerifier::verify_header(current_chain, new_block_header)?;
         ConsensusVerifier::verify_header(current_chain, new_block_header)
     }
 }

@@ -306,21 +306,6 @@ where
         }
     }
 
-    #[allow(dead_code)]
-    pub fn is_dag_genesis(&self, id: HashValue) -> Result<bool> {
-        if let Some(header) = self.storage.get_block_header_by_hash(id)? {
-            if header.number()
-                == BlockDAG::dag_fork_height_with_net(self.chain.status().head().chain_id())
-            {
-                Ok(true)
-            } else {
-                Ok(false)
-            }
-        } else {
-            Ok(false)
-        }
-    }
-
     pub fn create_block_template(&self) -> Result<BlockTemplateResponse> {
         let on_chain_block_gas_limit = self.chain.epoch().block_gas_limit();
         let block_gas_limit = self
@@ -335,6 +320,8 @@ where
         let txns = self.tx_provider.get_txns(max_txns);
         let author = *self.miner_account.address();
         let previous_header = self.chain.current_header();
+        let epoch = self.chain.epoch();
+        let strategy = epoch.strategy();
 
         let mut now_millis = self.chain.time_service().now_millis();
         if now_millis <= previous_header.timestamp() {
@@ -344,9 +331,6 @@ where
             );
             now_millis = previous_header.timestamp() + 1;
         }
-
-        let epoch = self.chain.epoch();
-        let strategy = epoch.strategy();
         let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
         let tips_hash = self.chain.current_tips_hash()?;
         info!(
@@ -404,7 +388,7 @@ where
             difficulty,
             strategy,
             self.vm_metrics.clone(),
-            tips_hash,
+            Some(tips_hash.unwrap_or_default()),
             blue_blocks,
         )?;
 

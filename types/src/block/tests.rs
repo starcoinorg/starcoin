@@ -148,3 +148,12 @@ fn verify_empty_uncles_body_hash() {
     assert_eq!(body.crypto_hash(), converted_body.crypto_hash());
     assert_eq!(body.crypto_hash(), dag_body.crypto_hash());
 }
+#[test]
+fn verify_body_and_legacybody_hash() {
+    let legacy_body = crate::block::LegacyBlockBody {
+        transactions: vec![],
+        uncles: Some(vec![this_header()]),
+    };
+    let body = crate::block::BlockBody::from(legacy_body.clone());
+    assert_ne!(legacy_body.crypto_hash(), body.crypto_hash());
+}

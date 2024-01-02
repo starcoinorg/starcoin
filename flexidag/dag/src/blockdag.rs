@@ -14,16 +14,11 @@ use anyhow::{bail, Ok};
 use parking_lot::RwLock;
 use starcoin_config::{temp_dir, RocksdbConfig};
 use starcoin_crypto::{HashValue as Hash, HashValue};
-use starcoin_types::block::{
-    BlockHeader, BlockNumber, BARNARD_FLEXIDAG_FORK_HEIGHT, DEV_FLEXIDAG_FORK_HEIGHT,
-    HALLEY_FLEXIDAG_FORK_HEIGHT, MAIN_FLEXIDAG_FORK_HEIGHT, PROXIMA_FLEXIDAG_FORK_HEIGHT,
-    TEST_FLEXIDAG_FORK_HEIGHT,
-};
+use starcoin_types::block::BlockHeader;
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
 };
-use starcoin_vm_types::genesis_config::ChainId;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -72,24 +67,6 @@ impl BlockDAG {
         let db = FlexiDagStorage::create_from_path(db_path, config)?;
         let dag = Self::new(8, db);
         Ok(dag)
-    }
-
-    pub fn dag_fork_height_with_net(net: ChainId) -> BlockNumber {
-        if net.is_barnard() {
-            BARNARD_FLEXIDAG_FORK_HEIGHT
-        } else if net.is_dev() {
-            DEV_FLEXIDAG_FORK_HEIGHT
-        } else if net.is_halley() {
-            HALLEY_FLEXIDAG_FORK_HEIGHT
-        } else if net.is_main() {
-            MAIN_FLEXIDAG_FORK_HEIGHT
-        } else if net.is_test() {
-            TEST_FLEXIDAG_FORK_HEIGHT
-        } else if net.is_proxima() {
-            PROXIMA_FLEXIDAG_FORK_HEIGHT
-        } else {
-            DEV_FLEXIDAG_FORK_HEIGHT
-        }
     }
 
     pub fn has_dag_block(&self, hash: Hash) -> anyhow::Result<bool> {
@@ -158,16 +135,6 @@ impl BlockDAG {
         Ok(())
     }
 
-    pub fn get_parents(&self, hash: Hash) -> anyhow::Result<Vec<Hash>> {
-        match self.storage.relations_store.get_parents(hash) {
-            anyhow::Result::Ok(parents) => anyhow::Result::Ok((*parents).clone()),
-            Err(error) => {
-                println!("failed to get parents by hash: {}", error);
-                bail!("failed to get parents by hash: {}", error);
-            }
-        }
-    }
-
     pub fn get_children(&self, hash: Hash) -> anyhow::Result<Vec<Hash>> {
         match self.storage.relations_store.get_children(hash) {
             anyhow::Result::Ok(children) => anyhow::Result::Ok((*children).clone()),
@@ -205,7 +172,6 @@ mod tests {
 
     #[test]
     fn test_dag_0() {
-        //let dag = build_block_dag(16);
         let dag = BlockDAG::create_for_testing().unwrap();
         let genesis = BlockHeader::dag_genesis_random()
             .as_builder()

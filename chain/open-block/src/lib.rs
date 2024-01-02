@@ -85,7 +85,6 @@ impl OpenedBlock {
             previous_block_info: block_info,
             block_meta,
             gas_limit: block_gas_limit,
-
             state: chain_state,
             txn_accumulator,
             gas_used: 0,

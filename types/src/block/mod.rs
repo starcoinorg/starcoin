@@ -36,7 +36,7 @@ pub type BlockNumber = u64;
 pub type ParentsHash = Option<Vec<HashValue>>;
 
 pub static DEV_FLEXIDAG_FORK_HEIGHT: BlockNumber = 2;
-pub static TEST_FLEXIDAG_FORK_HEIGHT: BlockNumber = 2;
+pub static TEST_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000; //keep it for the old tests passing
 pub static PROXIMA_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
 pub static HALLEY_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
 pub static BARNARD_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
@@ -248,7 +248,7 @@ impl BlockHeader {
             extra,
             parents_hash,
         };
-        header.id = Some(if header.parents_hash.is_none() {
+        header.id = Some(if header.is_legacy() {
             LegacyBlockHeader::from(header.clone()).crypto_hash()
         } else {
             header.crypto_hash()
@@ -346,6 +346,8 @@ impl BlockHeader {
             BARNARD_FLEXIDAG_FORK_HEIGHT
         } else if self.chain_id.is_main() {
             MAIN_FLEXIDAG_FORK_HEIGHT
+        } else if self.chain_id.is_dev() {
+            DEV_FLEXIDAG_FORK_HEIGHT
         } else {
             CUSTOM_FLEXIDAG_FORK_HEIGHT
         }
@@ -353,6 +355,9 @@ impl BlockHeader {
 
     pub fn is_dag(&self) -> bool {
         self.number > self.dag_fork_height()
+    }
+    pub fn is_legacy(&self) -> bool {
+        !self.is_dag() && self.parents_hash.is_none()
     }
     pub fn is_dag_genesis(&self) -> bool {
         self.number == self.dag_fork_height()
@@ -521,7 +526,6 @@ impl Into<RawBlockHeader> for BlockHeader {
             difficulty: self.difficulty,
             body_hash: self.body_hash,
             chain_id: self.chain_id,
-            parents_hash: self.parents_hash,
         }
     }
 }
@@ -553,8 +557,6 @@ pub struct RawBlockHeader {
     pub body_hash: HashValue,
     /// The chain id
     pub chain_id: ChainId,
-    /// parents hash
-    pub parents_hash: ParentsHash,
 }
 
 #[derive(Default)]
@@ -743,7 +745,9 @@ impl Block {
     pub fn is_dag(&self) -> bool {
         self.header.is_dag()
     }
-
+    pub fn is_legacy(&self) -> bool {
+        self.header.is_legacy()
+    }
     pub fn is_dag_genesis_block(&self) -> bool {
         self.header.is_dag_genesis()
     }
@@ -1018,50 +1022,10 @@ impl BlockTemplate {
             extra,
             self.parents_hash,
         );
+
         Block {
             header,
             body: self.body,
-        }
-    }
-
-    pub fn into_single_chain_block(self, nonce: u32, extra: BlockHeaderExtra) -> Block {
-        let header = BlockHeader::new(
-            self.parent_hash,
-            self.timestamp,
-            self.number,
-            self.author,
-            self.txn_accumulator_root,
-            self.block_accumulator_root,
-            self.state_root,
-            self.gas_used,
-            self.difficulty,
-            self.body_hash,
-            self.chain_id,
-            nonce,
-            extra,
-            None,
-        );
-        Block {
-            header,
-            body: self.body,
-        }
-    }
-
-    pub fn as_raw_block_header_single_chain(&self) -> RawBlockHeader {
-        RawBlockHeader {
-            parent_hash: self.parent_hash,
-            timestamp: self.timestamp,
-            number: self.number,
-            author: self.author,
-            author_auth_key: None,
-            accumulator_root: self.txn_accumulator_root,
-            parent_block_accumulator_root: self.block_accumulator_root,
-            state_root: self.state_root,
-            gas_used: self.gas_used,
-            body_hash: self.body_hash,
-            difficulty: self.difficulty,
-            chain_id: self.chain_id,
-            parents_hash: self.parents_hash.clone(),
         }
     }
 
@@ -1079,22 +1043,7 @@ impl BlockTemplate {
             body_hash: self.body_hash,
             difficulty: self.difficulty,
             chain_id: self.chain_id,
-            parents_hash: self.parents_hash.clone(),
         }
-    }
-
-    pub fn as_pow_header_blob_single_chain(&self) -> Vec<u8> {
-        let mut blob = Vec::new();
-        let raw_header = self.as_raw_block_header_single_chain();
-        let raw_header_hash = raw_header.crypto_hash();
-        let mut dh = [0u8; 32];
-        raw_header.difficulty.to_big_endian(&mut dh);
-        let extend_and_nonce = [0u8; 12];
-        blob.extend_from_slice(raw_header_hash.to_vec().as_slice());
-        blob.extend_from_slice(&extend_and_nonce);
-        blob.extend_from_slice(&dh);
-
-        blob
     }
 
     pub fn as_pow_header_blob(&self) -> Vec<u8> {

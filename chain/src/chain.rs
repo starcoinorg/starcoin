@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::verifier::{BlockVerifier, FullVerifier, NoneVerifier};
+use crate::verifier::{BlockVerifier, FullVerifier};
 use anyhow::{bail, ensure, format_err, Ok, Result};
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
@@ -279,7 +279,7 @@ impl BlockChain {
                 Some(tips) => {
                     let mut blues = self.dag.ghostdata(tips).mergeset_blues.to_vec();
                     info!(
-                        "create block template with tips:{:?},ghostdata blues:{:?}",
+                        "create block template with tips:{:?}, ghostdata blues:{:?}",
                         &tips_hash, blues
                     );
                     let mut blue_blocks = vec![];
@@ -313,7 +313,7 @@ impl BlockChain {
             difficulty,
             strategy,
             None,
-            tips_hash,
+            Some(tips_hash.unwrap_or_default()),
             blue_blocks,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
@@ -1346,7 +1346,7 @@ impl ChainWriter for BlockChain {
     }
 
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock> {
-        self.apply_with_verifier::<NoneVerifier>(block)
+        self.apply_with_verifier::<FullVerifier>(block)
     }
 
     fn chain_state(&mut self) -> &ChainStateDB {

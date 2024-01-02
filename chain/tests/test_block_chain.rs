@@ -207,6 +207,7 @@ fn product_a_block(branch: &BlockChain, miner: &AccountInfo, uncles: Vec<BlockHe
     let (block_template, _) = branch
         .create_block_template(*miner.address(), None, Vec::new(), uncles, None, None)
         .unwrap();
+
     branch
         .consensus()
         .create_block(block_template, branch.time_service().as_ref())

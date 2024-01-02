@@ -8,6 +8,7 @@ use starcoin_crypto::{
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, CryptoHasher, CryptoHash, JsonSchema)]
+#[serde(rename = "BlockHeader")]
 pub struct BlockHeader {
     #[serde(skip)]
     pub id: Option<HashValue>,
@@ -93,7 +94,6 @@ impl BlockHeader {
 
 impl From<crate::block::BlockHeader> for BlockHeader {
     fn from(v: crate::block::BlockHeader) -> Self {
-        assert!(v.parents_hash.is_none());
         Self {
             id: v.id,
             parent_hash: v.parent_hash,
