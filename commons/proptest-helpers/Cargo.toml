@@ -4,7 +4,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "starcoin-proptest-helpers"
 publish = false
-version = "1.13.8"
+version = "1.13.9"
 
 [dependencies]
 crossbeam = "0.8.1"
