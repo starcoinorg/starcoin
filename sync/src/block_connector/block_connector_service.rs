@@ -203,7 +203,6 @@ impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<TxPoolSer
     ) {
         //because this block has execute at sync task, so just try connect to select head chain.
         //TODO refactor connect and execute
-
         let block = msg.block;
         let feedback = msg.feedback;
 
@@ -233,7 +232,6 @@ impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<MockTxPoo
     ) {
         //because this block has execute at sync task, so just try connect to select head chain.
         //TODO refactor connect and execute
-
         let block = msg.block;
         let feedback = msg.feedback;
 
@@ -259,13 +257,13 @@ impl<TransactionPoolServiceT> EventHandler<Self, MinedBlock>
 where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
-    fn handle_event(&mut self, msg: MinedBlock, ctx: &mut ServiceContext<Self>) {
-        let MinedBlock(new_block) = msg.clone();
+    fn handle_event(&mut self, msg: MinedBlock, _ctx: &mut ServiceContext<Self>) {
+        let MinedBlock(new_block) = msg;
         let id = new_block.header().id();
         debug!("try connect mined block: {}", id);
 
         match self.chain_service.try_connect(new_block.as_ref().clone()) {
-            std::result::Result::Ok(()) => ctx.broadcast(msg),
+            std::result::Result::Ok(()) => debug!("Process mined block {} success.", id),
             Err(e) => {
                 warn!("Process mined block {} fail, error: {:?}", id, e);
             }
