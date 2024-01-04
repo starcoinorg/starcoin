@@ -271,7 +271,6 @@ async fn test_verify_timestamp_failed() {
         error!("apply failed : {:?}", apply_err);
     }
 }
-
 async fn test_verify_future_timestamp(succ: bool) -> Result<()> {
     let (mut new_block, mut main) = new_block_and_main().await;
     if !succ {

@@ -41,7 +41,7 @@ pub static PROXIMA_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
 pub static HALLEY_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
 pub static BARNARD_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
 pub static MAIN_FLEXIDAG_FORK_HEIGHT: BlockNumber = 1000000;
-pub static CUSTOM_FLEXIDAG_FORK_HEIGHT: BlockNumber = 3;
+pub static CUSTOM_FLEXIDAG_FORK_HEIGHT: BlockNumber = 100000;
 
 /// Type for block header extra
 #[derive(Clone, Default, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, JsonSchema)]

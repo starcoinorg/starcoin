@@ -288,8 +288,7 @@ impl BlockVerifier for FullVerifier {
     where
         R: ChainReader,
     {
-        //TODO: FIXME: Vefify block number logic should refactor
-        //BasicVerifier::verify_header(current_chain, new_block_header)?;
+        BasicVerifier::verify_header(current_chain, new_block_header)?;
         ConsensusVerifier::verify_header(current_chain, new_block_header)
     }
 }
@@ -302,6 +301,35 @@ impl BlockVerifier for NoneVerifier {
         R: ChainReader,
     {
         Ok(())
+    }
+
+    fn verify_block<R>(_current_chain: &R, new_block: Block) -> Result<VerifiedBlock>
+    where
+        R: ChainReader,
+    {
+        Ok(VerifiedBlock(new_block))
+    }
+
+    fn verify_uncles<R>(
+        _current_chain: &R,
+        _uncles: &[BlockHeader],
+        _header: &BlockHeader,
+    ) -> Result<()>
+    where
+        R: ChainReader,
+    {
+        Ok(())
+    }
+}
+
+//TODO: Implement it.
+pub struct DagVerifier;
+impl BlockVerifier for DagVerifier {
+    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
+    where
+        R: ChainReader,
+    {
+        ConsensusVerifier::verify_header(current_chain, new_block_header)
     }
 
     fn verify_block<R>(_current_chain: &R, new_block: Block) -> Result<VerifiedBlock>

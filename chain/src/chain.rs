@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::verifier::{BlockVerifier, FullVerifier};
+use crate::verifier::{BlockVerifier, DagVerifier, FullVerifier};
 use anyhow::{bail, ensure, format_err, Ok, Result};
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
@@ -1308,7 +1308,7 @@ impl ChainWriter for BlockChain {
             info!(
                 "connect a dag block, {:?}, number: {:?}",
                 executed_block.block.id(),
-                executed_block.block.header().number()
+                executed_block.block.header().number(),
             );
             return self.connect_dag(executed_block);
         }
@@ -1346,7 +1346,11 @@ impl ChainWriter for BlockChain {
     }
 
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock> {
-        self.apply_with_verifier::<FullVerifier>(block)
+        if !block.is_dag() {
+            self.apply_with_verifier::<FullVerifier>(block)
+        } else {
+            self.apply_with_verifier::<DagVerifier>(block)
+        }
     }
 
     fn chain_state(&mut self) -> &ChainStateDB {
