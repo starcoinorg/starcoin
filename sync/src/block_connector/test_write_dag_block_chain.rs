@@ -3,14 +3,13 @@
 #![allow(clippy::integer_arithmetic)]
 use crate::block_connector::test_write_block_chain::create_writeable_block_chain;
 use crate::block_connector::WriteBlockChainService;
-use async_std::path::Path;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_chain_service::WriteableChainService;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_time_service::TimeService;
 use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::Block;
@@ -105,12 +104,7 @@ fn gen_fork_dag_block_chain(
     writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
 ) -> Option<HashValue> {
     let miner_account = AccountInfo::random();
-    let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
-        Path::new("dag/db/starcoindb"),
-        FlexiDagStorageConfig::new(),
-    )
-    .expect("create dag storage fail");
-    let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage);
+    let dag = BlockDAG::create_for_testing().unwrap();
     if let Some(block_header) = writeable_block_chain_service
         .get_main()
         .get_header_by_number(fork_number)
