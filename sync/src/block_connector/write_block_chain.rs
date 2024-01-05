@@ -218,7 +218,6 @@ where
         let main_total_difficulty = self.main.get_total_difficulty()?;
         let branch_total_difficulty = new_branch.get_total_difficulty()?;
         if branch_total_difficulty > main_total_difficulty {
-            // todo: handle StartupInfo.dag_main
             self.main = new_branch;
             self.update_startup_info(self.main.head_block().header())?;
             ctx.broadcast(NewHeadBlock {

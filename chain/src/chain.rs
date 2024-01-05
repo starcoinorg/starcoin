@@ -261,12 +261,15 @@ impl BlockChain {
         block_gas_limit: Option<u64>,
         tips: Option<Vec<HashValue>>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
+        let current_number = previous_header.number().saturating_add(1);
         let epoch = self.epoch();
         let on_chain_block_gas_limit = epoch.block_gas_limit();
         let final_block_gas_limit = block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
-        let tips_hash = if tips.is_some() {
+        let tips_hash = if current_number <= self.dag_fork_height() {
+            None
+        } else if tips.is_some() {
             tips
         } else {
             self.current_tips_hash()?
@@ -1295,6 +1298,10 @@ impl BlockChain {
         }
         self.storage.save_dag_state(DagState { tips })?;
         Ok(executed_block)
+    }
+
+    pub fn dag_fork_height(&self) -> BlockNumber {
+        self.status.head.header().dag_fork_height()
     }
 }
 

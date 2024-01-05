@@ -30,6 +30,7 @@ use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use std::fmt::Formatter;
 use std::hash::Hash;
 use std::sync::Mutex;
+
 /// Type for block number.
 pub type BlockNumber = u64;
 pub type ParentsHash = Option<Vec<HashValue>>;
@@ -423,11 +424,39 @@ impl BlockHeader {
         header
     }
 
+    // Create a random compatible block header whose
+    //      number <= fork_height
+    //      parents_hash == None
     pub fn random() -> Self {
+        Self::random_with_opt(0)
+    }
+
+    // header_type:
+    //      0 - legacy compatible header
+    //      1 - upgraded but non-dag header
+    //      2 - dag block header
+    pub fn random_with_opt(header_type: u8) -> Self {
+        let base = get_test_flexidag_fork_height().checked_add(1).unwrap();
+        let (number, parents_hash) = if header_type == 0 {
+            (rand::random::<u64>().checked_rem(base).unwrap(), None)
+        } else if header_type == 1 {
+            (
+                rand::random::<u64>().checked_rem(base).unwrap(),
+                Some(vec![]),
+            )
+        } else if header_type == 2 {
+            (
+                rand::random::<u64>().checked_add(base).unwrap_or(base),
+                Some(vec![HashValue::random()]),
+            )
+        } else {
+            panic!("Invalid header_type {header_type}")
+        };
+
         Self::new(
             HashValue::random(),
             rand::random(),
-            rand::random(),
+            number,
             AccountAddress::random(),
             HashValue::random(),
             HashValue::random(),
@@ -438,7 +467,7 @@ impl BlockHeader {
             ChainId::test(),
             0,
             BlockHeaderExtra([0u8; 4]),
-            None,
+            parents_hash,
         )
     }
 
@@ -995,7 +1024,7 @@ pub struct BlockTemplate {
     /// Block consensus strategy
     pub strategy: ConsensusStrategy,
     /// parents
-    pub parents_hash: ParentsHash,
+    parents_hash: ParentsHash,
 }
 
 impl BlockTemplate {
@@ -1027,7 +1056,8 @@ impl BlockTemplate {
             chain_id,
             difficulty,
             strategy,
-            parents_hash,
+            // for an upgraded binary, parents_hash should never be None.
+            parents_hash: parents_hash.or_else(|| Some(vec![])),
         }
     }
 
@@ -1055,7 +1085,7 @@ impl BlockTemplate {
         }
     }
 
-    pub fn as_raw_block_header(&self) -> RawBlockHeader {
+    fn as_raw_block_header(&self) -> RawBlockHeader {
         RawBlockHeader {
             parent_hash: self.parent_hash,
             timestamp: self.timestamp,
@@ -1084,25 +1114,6 @@ impl BlockTemplate {
         blob.extend_from_slice(&dh);
 
         blob
-    }
-
-    pub fn into_block_header(self, nonce: u32, extra: BlockHeaderExtra) -> BlockHeader {
-        BlockHeader::new(
-            self.parent_hash,
-            self.timestamp,
-            self.number,
-            self.author,
-            self.txn_accumulator_root,
-            self.block_accumulator_root,
-            self.state_root,
-            self.gas_used,
-            self.difficulty,
-            self.body_hash,
-            self.chain_id,
-            nonce,
-            extra,
-            self.parents_hash,
-        )
     }
 }
 

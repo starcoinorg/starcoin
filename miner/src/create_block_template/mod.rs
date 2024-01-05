@@ -320,6 +320,7 @@ where
         let txns = self.tx_provider.get_txns(max_txns);
         let author = *self.miner_account.address();
         let previous_header = self.chain.current_header();
+        let current_number = previous_header.number().saturating_add(1);
         let epoch = self.chain.epoch();
         let strategy = epoch.strategy();
 
@@ -332,7 +333,11 @@ where
             now_millis = previous_header.timestamp() + 1;
         }
         let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
-        let tips_hash = self.chain.current_tips_hash()?;
+        let tips_hash = if current_number > self.chain.dag_fork_height() {
+            self.chain.current_tips_hash()?
+        } else {
+            None
+        };
         info!(
             "block:{} tips:{:?}",
             self.chain.current_header().number(),

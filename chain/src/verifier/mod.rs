@@ -96,6 +96,7 @@ pub trait BlockVerifier {
         R: ChainReader,
     {
         let epoch = current_chain.epoch();
+        let is_legacy = header.is_legacy();
 
         let switch_epoch = header.number() == epoch.end_block_number();
         // epoch first block's uncles should empty.
@@ -141,6 +142,21 @@ pub trait BlockVerifier {
                 "invalid block: block {} can not be uncle.",
                 uncle_id
             );
+
+            let valid_parents_hash = if is_legacy {
+                uncle.parents_hash().is_none()
+            } else {
+                uncle.parents_hash().unwrap_or_default().is_empty()
+            };
+
+            verify_block!(
+                VerifyBlockField::Uncle,
+                valid_parents_hash,
+                "uncle {} is not valid for a single-chain block, parents_hash len {}",
+                uncle.id(),
+                uncle.parents_hash().unwrap_or_default().len()
+            );
+
             debug!(
                 "verify_uncle header number {} hash {:?} uncle number {} hash {:?}",
                 header.number(),
@@ -254,6 +270,19 @@ impl BlockVerifier for BasicVerifier {
                 .get_accumulator_root(),
             new_block_header.block_accumulator_root(),
         );
+
+        verify_block!(
+            VerifyBlockField::Header,
+            !new_block_header.is_dag()
+                && new_block_header
+                    .parents_hash()
+                    .unwrap_or_default()
+                    .is_empty(),
+            "Single chain block is invalid: number {} fork_height {} parents_hash len {}",
+            new_block_header.number(),
+            new_block_header.dag_fork_height(),
+            new_block_header.parents_hash().unwrap_or_default().len()
+        );
         Ok(())
     }
 }
@@ -329,6 +358,8 @@ impl BlockVerifier for DagVerifier {
     where
         R: ChainReader,
     {
+        // todo: check and make sure parents_hash is valid:
+        //  not-empty, no-duplication-headers
         ConsensusVerifier::verify_header(current_chain, new_block_header)
     }
 
