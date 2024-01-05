@@ -135,6 +135,16 @@ impl BlockDAG {
         Ok(())
     }
 
+    pub fn get_parents(&self, hash: Hash) -> anyhow::Result<Vec<Hash>> {
+        match self.storage.relations_store.get_parents(hash) {
+            anyhow::Result::Ok(parents) => anyhow::Result::Ok((*parents).clone()),
+            Err(error) => {
+                println!("failed to get parents by hash: {}", error);
+                bail!("failed to get parents by hash: {}", error);
+            }
+        }
+    }
+
     pub fn get_children(&self, hash: Hash) -> anyhow::Result<Vec<Hash>> {
         match self.storage.relations_store.get_children(hash) {
             anyhow::Result::Ok(children) => anyhow::Result::Ok((*children).clone()),

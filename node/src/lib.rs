@@ -8,6 +8,7 @@ use futures::executor::block_on;
 use futures_timer::Delay;
 use starcoin_chain_service::{ChainAsyncService, ChainReaderService};
 use starcoin_config::{BaseConfig, NodeConfig, StarcoinOpt};
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
@@ -173,6 +174,12 @@ impl NodeHandle {
         self.registry
             .get_shared_sync::<TxPoolService>()
             .expect("TxPoolService must exist.")
+    }
+
+    pub fn get_dag(&self) -> Result<BlockDAG> {
+        self.registry
+            .get_shared_sync::<BlockDAG>()
+            .map_err(|e| format_err!("Get BlockDAG error: {:?}", e))
     }
 
     /// Just for test

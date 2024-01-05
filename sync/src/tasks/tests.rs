@@ -56,14 +56,14 @@ use super::BlockConnectedEvent;
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_new_node() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let mut node1 = SyncNodeMocker::new(net1, 300, 50)?;
+    let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
     node1.produce_block(10)?;
 
     let mut arc_node1 = Arc::new(node1);
 
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
 
-    let node2 = SyncNodeMocker::new(net2.clone(), 300, 50)?;
+    let node2 = SyncNodeMocker::new(net2.clone(), 300, 0)?;
 
     let target = arc_node1.sync_target();
 
@@ -138,14 +138,14 @@ pub async fn test_full_sync_new_node() -> Result<()> {
 #[stest::test]
 pub async fn test_sync_invalid_target() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let mut node1 = SyncNodeMocker::new(net1, 300, 50)?;
+    let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
     node1.produce_block(10)?;
 
     let arc_node1 = Arc::new(node1);
 
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
 
-    let node2 = SyncNodeMocker::new(net2.clone(), 300, 50)?;
+    let node2 = SyncNodeMocker::new(net2.clone(), 300, 0)?;
     let dag = node2.chain().dag();
     let mut target = arc_node1.sync_target();
 
@@ -233,14 +233,14 @@ pub async fn test_failed_block() -> Result<()> {
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_fork() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let mut node1 = SyncNodeMocker::new(net1, 300, 50)?;
+    let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
     node1.produce_block(10)?;
 
     let mut arc_node1 = Arc::new(node1);
 
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
 
-    let node2 = SyncNodeMocker::new(net2.clone(), 300, 50)?;
+    let node2 = SyncNodeMocker::new(net2.clone(), 300, 0)?;
 
     let target = arc_node1.sync_target();
 
@@ -315,7 +315,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let mut node1 = SyncNodeMocker::new(net1, 300, 50)?;
+    let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
     node1.produce_block(10)?;
 
     let arc_node1 = Arc::new(node1);
@@ -323,7 +323,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
 
     //fork from genesis
-    let mut node2 = SyncNodeMocker::new(net2.clone(), 300, 50)?;
+    let mut node2 = SyncNodeMocker::new(net2.clone(), 300, 0)?;
     node2.produce_block(5)?;
 
     let target = arc_node1.sync_target();
@@ -460,7 +460,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
 #[stest::test]
 pub async fn test_full_sync_cancel() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let mut node1 = SyncNodeMocker::new(net1, 300, 50)?;
+    let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
     node1.produce_block(10)?;
 
     let arc_node1 = Arc::new(node1);
@@ -1011,7 +1011,7 @@ async fn test_err_context() -> Result<()> {
 async fn test_sync_target() {
     let mut peer_infos = vec![];
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let mut node1 = SyncNodeMocker::new(net1, 300, 50).unwrap();
+    let mut node1 = SyncNodeMocker::new(net1, 300, 0).unwrap();
     node1.produce_block(10).unwrap();
     let low_chain_info = node1.peer_info().chain_info().clone();
     peer_infos.push(PeerInfo::new(
@@ -1046,7 +1046,7 @@ async fn test_sync_target() {
         PeerId::random(),
         mock_chain,
         300,
-        50,
+        0,
         peer_selector,
     ));
     let full_target = node2
@@ -1395,14 +1395,14 @@ impl SyncTestSystem {
         let chain_info =
             genesis.execute_genesis_block(config.net(), storage.clone(), dag.clone())?;
 
-        let target_node = SyncNodeMocker::new(config.net().clone(), 300, 50)?;
+        let target_node = SyncNodeMocker::new(config.net().clone(), 300, 0)?;
         let local_node = SyncNodeMocker::new_with_storage(
             config.net().clone(),
             storage.clone(),
             chain_info.clone(),
             AccountInfo::random(),
             300,
-            50,
+            0,
             dag.clone(),
         )?;
 
