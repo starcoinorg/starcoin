@@ -12,6 +12,7 @@ use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
 use bcs_ext::Sample;
+use lazy_static::lazy_static;
 pub use legacy::{
     Block as LegacyBlock, BlockBody as LegacyBlockBody, BlockHeader as LegacyBlockHeader,
 };
@@ -28,20 +29,45 @@ use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use std::fmt::Formatter;
 use std::hash::Hash;
-
+use std::sync::Mutex;
 /// Type for block number.
 pub type BlockNumber = u64;
-
-//TODO: make sure height
 pub type ParentsHash = Option<Vec<HashValue>>;
+//TODO: make sure height
+static DEV_FLEXIDAG_FORK_HEIGHT: BlockNumber = 2;
+static PROXIMA_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
+static HALLEY_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
+static BARNARD_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
+static MAIN_FLEXIDAG_FORK_HEIGHT: BlockNumber = 1000000;
 
-pub static DEV_FLEXIDAG_FORK_HEIGHT: BlockNumber = 2;
-pub static TEST_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000; //keep it for the old tests passing
-pub static PROXIMA_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
-pub static HALLEY_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
-pub static BARNARD_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
-pub static MAIN_FLEXIDAG_FORK_HEIGHT: BlockNumber = 1000000;
-pub static CUSTOM_FLEXIDAG_FORK_HEIGHT: BlockNumber = 100000;
+lazy_static! {
+    static ref TEST_FLEXIDAG_FORK_HEIGHT: Mutex<BlockNumber> = Mutex::new(10000);
+    static ref CUSTOM_FLEXIDAG_FORK_HEIGHT: Mutex<BlockNumber> = Mutex::new(10000);
+}
+
+pub fn get_test_flexidag_fork_height() -> BlockNumber {
+    *TEST_FLEXIDAG_FORK_HEIGHT.lock().unwrap()
+}
+
+pub fn get_custom_flexidag_fork_height() -> BlockNumber {
+    *CUSTOM_FLEXIDAG_FORK_HEIGHT.lock().unwrap()
+}
+
+// TODO: support a macro such as #[cfg(test:consensus=dag)] to set fork height for testing customly and reset after executing.
+pub fn set_test_flexidag_fork_height(value: BlockNumber) {
+    let mut num = TEST_FLEXIDAG_FORK_HEIGHT.lock().unwrap();
+    *num = value;
+}
+
+pub fn set_customm_flexidag_fork_height(value: BlockNumber) {
+    let mut num = TEST_FLEXIDAG_FORK_HEIGHT.lock().unwrap();
+    *num = value;
+}
+
+pub fn reset_test_custom_fork_height() {
+    *TEST_FLEXIDAG_FORK_HEIGHT.lock().unwrap() = 10000;
+    *CUSTOM_FLEXIDAG_FORK_HEIGHT.lock().unwrap() = 10000;
+}
 
 /// Type for block header extra
 #[derive(Clone, Default, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, JsonSchema)]
@@ -337,7 +363,7 @@ impl BlockHeader {
     }
     pub fn dag_fork_height(&self) -> BlockNumber {
         if self.chain_id.is_test() {
-            TEST_FLEXIDAG_FORK_HEIGHT
+            get_test_flexidag_fork_height()
         } else if self.chain_id.is_halley() {
             HALLEY_FLEXIDAG_FORK_HEIGHT
         } else if self.chain_id.is_proxima() {
@@ -349,12 +375,11 @@ impl BlockHeader {
         } else if self.chain_id.is_dev() {
             DEV_FLEXIDAG_FORK_HEIGHT
         } else {
-            CUSTOM_FLEXIDAG_FORK_HEIGHT
+            get_custom_flexidag_fork_height()
         }
     }
 
     pub fn is_dag(&self) -> bool {
-        println!("fuck:{},{}", self.number, self.dag_fork_height());
         self.number > self.dag_fork_height()
     }
     pub fn is_legacy(&self) -> bool {
@@ -394,7 +419,7 @@ impl BlockHeader {
     pub fn dag_genesis_random() -> Self {
         let mut header = Self::random();
         header.parents_hash = Some(vec![header.parent_hash]);
-        header.number = TEST_FLEXIDAG_FORK_HEIGHT;
+        header.number = get_test_flexidag_fork_height();
         header
     }
 

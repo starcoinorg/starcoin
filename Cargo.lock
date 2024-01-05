@@ -11062,6 +11062,7 @@ dependencies = [
  "bytes 1.4.0",
  "forkable-jellyfish-merkle",
  "hex",
+ "lazy_static 1.4.0",
  "num_enum",
  "proptest",
  "proptest-derive",

@@ -42,8 +42,8 @@ pub fn gen_txns(seq_num: &mut u64) -> Result<Vec<SignedUserTransaction>> {
 }
 
 #[stest::test(timeout = 480)]
-#[ignore = "set dag block height to 2 for passing"]
 fn test_transaction_info_and_proof_1() -> Result<()> {
+    starcoin_types::block::set_test_flexidag_fork_height(2);
     // generate 5 block
     let config = Arc::new(NodeConfig::random_for_test());
     let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
@@ -105,6 +105,7 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
         block_chain.current_header().id(),
         block_chain.get_block_by_number(6).unwrap().unwrap().id()
     );
+    starcoin_types::block::reset_test_custom_fork_height();
     Ok(())
 }
 

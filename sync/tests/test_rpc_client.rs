@@ -20,6 +20,7 @@ struct DagBlockInfo {
 
 #[stest::test]
 fn test_verified_client_for_dag() {
+    starcoin_types::block::set_test_flexidag_fork_height(2);
     let (local_handle, target_handle, target_peer_id) =
         init_two_node().expect("failed to initalize the local and target node");
 
@@ -47,7 +48,7 @@ fn test_verified_client_for_dag() {
             .into_iter()
             .all(|child| { target_dag_block.children.contains(&child) }));
     });
-
+    starcoin_types::block::reset_test_custom_fork_height();
     target_handle.stop().unwrap();
     local_handle.stop().unwrap();
 }
@@ -82,12 +83,13 @@ fn generate_dag_block(handle: &NodeHandle, count: i32) -> Result<Vec<DagBlockInf
             result.push(block);
         }
     }
-    Ok(result.into_iter().map(|block| {
-        DagBlockInfo {
+    Ok(result
+        .into_iter()
+        .map(|block| DagBlockInfo {
             header: block.header().clone(),
             children: dag.get_children(block.header().id()).unwrap(),
-        }
-    }).collect::<Vec<DagBlockInfo>>())
+        })
+        .collect::<Vec<DagBlockInfo>>())
 }
 
 fn gen_chain_env(config: NodeConfig) -> Result<NodeHandle> {
