@@ -8,7 +8,9 @@ use starcoin_chain_api::{
 };
 use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_logger::prelude::debug;
-use starcoin_types::block::{Block, BlockHeader, LegacyBlockBody, ALLOWED_FUTURE_BLOCKTIME};
+use starcoin_types::block::{
+    Block, BlockHeader, LegacyBlockBody, ALLOWED_FUTURE_BLOCKTIME, ALLOWED_PAST_BLOCKTIME,
+};
 use std::{collections::HashSet, str::FromStr};
 
 #[derive(Debug)]
@@ -358,16 +360,62 @@ impl BlockVerifier for DagVerifier {
     where
         R: ChainReader,
     {
-        // todo: check and make sure parents_hash is valid:
-        //  not-empty, no-duplication-headers
-        ConsensusVerifier::verify_header(current_chain, new_block_header)
-    }
+        let parent_hash = new_block_header.parent_hash();
+        let now = current_chain.time_service().now_millis();
+        // todo: double check
+        verify_block!(
+            VerifyBlockField::Header,
+            new_block_header.timestamp() <= ALLOWED_FUTURE_BLOCKTIME.saturating_add(now)
+                && new_block_header.timestamp() >= now.saturating_sub(ALLOWED_PAST_BLOCKTIME),
+            "Invalid block: block timestamp too far, now:{}, block time:{}",
+            now,
+            new_block_header.timestamp()
+        );
 
-    fn verify_block<R>(_current_chain: &R, new_block: Block) -> Result<VerifiedBlock>
-    where
-        R: ChainReader,
-    {
-        Ok(VerifiedBlock(new_block))
+        let epoch = current_chain.epoch();
+
+        verify_block!(
+            VerifyBlockField::Header,
+            new_block_header.number() > epoch.start_block_number()
+                && new_block_header.number() <= epoch.end_block_number(),
+            "block number is {:?}, epoch start number is {:?}, epoch end number is {:?}",
+            new_block_header.number(),
+            epoch.start_block_number(),
+            epoch.end_block_number(),
+        );
+
+        let block_gas_limit = epoch.block_gas_limit();
+
+        verify_block!(
+            VerifyBlockField::Header,
+            new_block_header.gas_used() <= block_gas_limit,
+            "invalid block: gas_used should not greater than block_gas_limit"
+        );
+
+        let parents_hash = new_block_header.parents_hash().unwrap_or_default();
+        let mut parents_hash_to_check = parents_hash.clone();
+        parents_hash_to_check.sort();
+        parents_hash_to_check.dedup();
+
+        verify_block!(
+            VerifyBlockField::Header,
+            !parents_hash_to_check.is_empty() && parents_hash.len() == parents_hash_to_check.len(),
+            "Invalid parents_hash for a dag block {:?}",
+            parents_hash
+        );
+
+        verify_block!(
+            VerifyBlockField::Header,
+            parents_hash
+                .first()
+                .map(|p| *p == parent_hash)
+                .unwrap_or_default()
+                && current_chain.exist_block(parent_hash)?,
+            "Invalid block: parent {} might not exist.",
+            parent_hash
+        );
+
+        ConsensusVerifier::verify_header(current_chain, new_block_header)
     }
 
     fn verify_uncles<R>(

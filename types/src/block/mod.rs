@@ -164,6 +164,8 @@ impl From<BlockHeader> for BlockIdAndNumber {
 
 /// block timestamp allowed future times
 pub const ALLOWED_FUTURE_BLOCKTIME: u64 = 30000; // 30 second;
+/// block timestamp allowed past time
+pub const ALLOWED_PAST_BLOCKTIME: u64 = 30000; // 30 second;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, CryptoHasher, CryptoHash, JsonSchema)]
 pub struct BlockHeader {
@@ -832,13 +834,6 @@ impl Block {
         self.uncles()
             .map(|uncles| uncles.iter().map(|header| header.id()).collect())
             .unwrap_or_default()
-    }
-
-    pub fn dag_parent_and_tips(&self) -> Option<(&BlockHeader, &[BlockHeader])> {
-        self.body
-            .uncles
-            .as_ref()
-            .and_then(|uncles| uncles.split_first())
     }
 
     pub fn into_inner(self) -> (BlockHeader, BlockBody) {
