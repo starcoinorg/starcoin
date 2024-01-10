@@ -1,4 +1,3 @@
-use super::ghostdag::protocol::GhostdagManager;
 use super::reachability::{inquirer, reachability_service::MTReachabilityService};
 use super::types::ghostdata::GhostdagData;
 use crate::consensusdb::prelude::{FlexiDagStorageConfig, StoreError};
@@ -10,6 +9,7 @@ use crate::consensusdb::{
         HeaderStore, ReachabilityStoreReader, RelationsStore, RelationsStoreReader,
     },
 };
+use crate::ghostdag::protocol::GhostdagManager;
 use anyhow::{bail, Ok};
 use parking_lot::RwLock;
 use starcoin_config::{temp_dir, RocksdbConfig};
@@ -257,5 +257,45 @@ mod tests {
             assert_eq!(expect_selected_parented[count], latest_id);
             count += 1;
         }
+    }
+
+    #[tokio::test]
+    async fn test_with_spawn() {
+        use starcoin_types::block::{BlockHeader, BlockHeaderBuilder};
+        let genesis = BlockHeader::dag_genesis_random()
+            .as_builder()
+            .with_difficulty(0.into())
+            .build();
+        let block1 = BlockHeaderBuilder::random()
+            .with_difficulty(1.into())
+            .with_parents_hash(Some(vec![genesis.id()]))
+            .build();
+        let block2 = BlockHeaderBuilder::random()
+            .with_difficulty(2.into())
+            .with_parents_hash(Some(vec![genesis.id()]))
+            .build();
+        let dag = BlockDAG::create_for_testing().unwrap();
+        dag.init_with_genesis(genesis).unwrap();
+        dag.commit(block1.clone()).unwrap();
+        dag.commit(block2.clone()).unwrap();
+        let block3 = BlockHeaderBuilder::random()
+            .with_difficulty(3.into())
+            .with_parents_hash(Some(vec![block1.id(), block2.id()]))
+            .build();
+        let mut handles = vec![];
+        for _i in 1..100 {
+            let dag_clone = dag.clone();
+            let block_clone = block3.clone();
+            let handle = tokio::task::spawn_blocking(move || {
+                let _ = dag_clone.commit(block_clone);
+            });
+            handles.push(handle);
+        }
+        for handle in handles {
+            handle.await.unwrap();
+        }
+        let mut child = dag.get_children(block1.id()).unwrap();
+        assert_eq!(child.pop().unwrap(), block3.id());
+        assert_eq!(child.len(), 0);
     }
 }

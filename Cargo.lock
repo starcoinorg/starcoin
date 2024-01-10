@@ -9594,6 +9594,7 @@ dependencies = [
  "stest",
  "tempfile",
  "thiserror",
+ "tokio",
 ]
 
 [[package]]

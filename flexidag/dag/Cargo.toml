@@ -33,7 +33,7 @@ proptest = { workspace = true }
 proptest-derive = { workspace = true }
 stest = { workspace = true }
 tempfile = { workspace = true }
-
+tokio = {workspace = true }
 [features]
 default = []
 fuzzing = ["proptest", "proptest-derive", "starcoin-types/fuzzing"]
