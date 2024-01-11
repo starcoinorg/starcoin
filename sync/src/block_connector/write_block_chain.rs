@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::metrics::ChainMetrics;
-use anyhow::{bail, format_err, Ok, Result};
+use anyhow::{format_err, Ok, Result};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 use starcoin_config::NodeConfig;
@@ -226,7 +226,7 @@ where
             });
             Ok(())
         } else {
-            bail!("no need to switch");
+            Ok(())
         }
     }
 

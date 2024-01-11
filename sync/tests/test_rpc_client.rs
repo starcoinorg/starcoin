@@ -72,14 +72,12 @@ fn init_two_node() -> Result<(NodeHandle, NodeHandle, PeerId)> {
     Ok((local_handle, target_handle, target_peer_id))
 }
 
-fn generate_dag_block(handle: &NodeHandle, count: i32) -> Result<Vec<DagBlockInfo>> {
-    let mut index = 0;
+fn generate_dag_block(handle: &NodeHandle, count: usize) -> Result<Vec<DagBlockInfo>> {
     let mut result = vec![];
     let dag = handle.get_dag()?;
-    while index < count {
+    while result.len() < count {
         let block = handle.generate_block()?;
         if block.header().is_dag() {
-            index += 1;
             result.push(block);
         }
     }

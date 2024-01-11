@@ -1457,13 +1457,15 @@ impl SyncTestSystem {
 
 #[stest::test(timeout = 600)]
 async fn test_sync_single_chain_to_dag_chain() -> Result<()> {
+    starcoin_types::block::set_test_flexidag_fork_height(10);
     let test_system = SyncTestSystem::initialize_sync_system().await?;
     let _target_node = sync_block_in_block_connection_service_mock(
         Arc::new(test_system.target_node),
         Arc::new(test_system.local_node),
         &test_system.registry,
-        18,
+        40,
     )
     .await?;
+    starcoin_types::block::reset_test_custom_fork_height();
     Ok(())
 }

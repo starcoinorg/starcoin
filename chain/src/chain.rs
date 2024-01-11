@@ -1249,7 +1249,9 @@ impl BlockChain {
         for hash in parents {
             tips.retain(|x| *x != hash);
         }
-        tips.push(new_tip_block.id());
+        if !tips.contains(&new_tip_block.id()) {
+            tips.push(new_tip_block.id());
+        }
         // Caculate the ghostdata of the virutal node created by all tips.
         // And the ghostdata.selected of the tips will be the latest head.
         let block_hash = {

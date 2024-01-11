@@ -16,7 +16,7 @@ use starcoin_network_rpc_api::{
     GetBlockIds, GetTxnsWithHash, RawRpcClient,
 };
 use starcoin_state_tree::StateNode;
-use starcoin_types::block::Block;
+use starcoin_types::block::{Block, LegacyBlock};
 use starcoin_types::transaction::{SignedUserTransaction, Transaction};
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
@@ -100,6 +100,7 @@ static G_BLOCK_BODY_VERIFIER: fn(&HashValue, &BlockBody) -> bool =
 static G_BLOCK_INFO_VERIFIER: fn(&HashValue, &BlockInfo) -> bool =
     |block_id, block_info| -> bool { *block_id == block_info.block_id };
 
+static G_RPC_RETRY_COUNT: i32 = 20;
 /// Enhancement RpcClient, for verify rpc response by request and auto select peer.
 #[derive(Clone)]
 pub struct VerifiedRpcClient {
@@ -150,6 +151,45 @@ impl VerifiedRpcClient {
             .ok_or_else(|| format_err!("No peers for send request."))
     }
 
+    async fn get_txns_with_hash_from_pool_inner(
+        &self,
+        peer_id: PeerId,
+        req: GetTxnsWithHash,
+    ) -> Result<Vec<Option<SignedUserTransaction>>> {
+        let mut count = 0;
+        while count < G_RPC_RETRY_COUNT {
+            match self
+                .client
+                .get_txns_with_hash_from_pool(peer_id.clone(), req.clone())
+                .await
+            {
+                Ok(result) => return Ok(result),
+                Err(e) => {
+                    count = count.saturating_add(1);
+                    if count == G_RPC_RETRY_COUNT {
+                        return Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!(
+                                "failed to get txns with hash from pool from peer : {:?}. error: {:?}",
+                                peer_id, e
+                            ),
+                        )
+                        .into());
+                    }
+                    continue;
+                }
+            }
+        }
+        Err(RpcVerifyError::new(
+            peer_id.clone(),
+            format!(
+                "failed to get txns with hash from pool from peer : {:?}.",
+                peer_id,
+            ),
+        )
+        .into())
+    }
+
     pub async fn get_txns_with_hash_from_pool(
         &self,
         peer_id: Option<PeerId>,
@@ -161,8 +201,7 @@ impl VerifiedRpcClient {
             self.select_a_peer()?
         };
         let data = self
-            .client
-            .get_txns_with_hash_from_pool(peer_id.clone(), req.clone())
+            .get_txns_with_hash_from_pool_inner(peer_id.clone(), req.clone())
             .await?;
         if data.len() == req.len() {
             let mut none_txn_vec = Vec::new();
@@ -200,13 +239,45 @@ impl VerifiedRpcClient {
         }
     }
 
+    async fn get_txns_inner(
+        &self,
+        peer_id: PeerId,
+        req: GetTxnsWithHash,
+    ) -> Result<Vec<Option<Transaction>>> {
+        let mut count = 0;
+        while count < G_RPC_RETRY_COUNT {
+            match self.client.get_txns(peer_id.clone(), req.clone()).await {
+                Ok(result) => return Ok(result),
+                Err(e) => {
+                    count = count.saturating_add(1);
+                    if count == G_RPC_RETRY_COUNT {
+                        return Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!(
+                                "failed to get txns from peer : {:?}. error: {:?}",
+                                peer_id, e
+                            ),
+                        )
+                        .into());
+                    }
+                    continue;
+                }
+            }
+        }
+        Err(RpcVerifyError::new(
+            peer_id.clone(),
+            format!("failed to get txns from peer : {:?}.", peer_id,),
+        )
+        .into())
+    }
+
     pub async fn get_txns(
         &self,
         peer_id: Option<PeerId>,
         req: GetTxnsWithHash,
     ) -> Result<(Vec<HashValue>, Vec<Transaction>)> {
         let peer_id = peer_id.unwrap_or(self.select_a_peer()?);
-        let data = self.client.get_txns(peer_id.clone(), req.clone()).await?;
+        let data = self.get_txns_inner(peer_id.clone(), req.clone()).await?;
         if data.len() == req.len() {
             let mut none_txn_vec = Vec::new();
             let mut verified_txns: Vec<Transaction> = Vec::new();
@@ -248,10 +319,31 @@ impl VerifiedRpcClient {
         block_id: HashValue,
     ) -> Result<(PeerId, Option<Vec<TransactionInfo>>)> {
         let peer_id = self.select_a_peer()?;
-        Ok((
+        let mut count = 0;
+        while count < G_RPC_RETRY_COUNT {
+            match self.client.get_txn_infos(peer_id.clone(), block_id).await {
+                Ok(result) => return Ok((peer_id, result)),
+                Err(e) => {
+                    count = count.saturating_add(1);
+                    if count == G_RPC_RETRY_COUNT {
+                        return Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!(
+                                "failed to get txn infos from peer : {:?}. error: {:?}",
+                                peer_id, e
+                            ),
+                        )
+                        .into());
+                    }
+                    continue;
+                }
+            }
+        }
+        Err(RpcVerifyError::new(
             peer_id.clone(),
-            self.client.get_txn_infos(peer_id, block_id).await?,
-        ))
+            format!("failed to get txn infos from peer : {:?}.", peer_id,),
+        )
+        .into())
     }
 
     pub async fn get_headers_by_number(
@@ -259,12 +351,37 @@ impl VerifiedRpcClient {
         req: GetBlockHeadersByNumber,
     ) -> Result<Vec<Option<BlockHeader>>> {
         let peer_id = self.select_a_peer()?;
-        let resp: Vec<Option<BlockHeader>> = self
-            .client
-            .get_headers_by_number(peer_id.clone(), req.clone())
-            .await?;
-        let resp = G_BLOCK_NUMBER_VERIFIER.verify(peer_id, req, resp)?;
-        Ok(resp)
+        let mut count = 0;
+        while count < G_RPC_RETRY_COUNT {
+            match self
+                .client
+                .get_headers_by_number(peer_id.clone(), req.clone())
+                .await
+            {
+                Ok(result) => {
+                    return Ok(G_BLOCK_NUMBER_VERIFIER.verify(peer_id, req, result)?);
+                }
+                Err(e) => {
+                    count = count.saturating_add(1);
+                    if count == G_RPC_RETRY_COUNT {
+                        return Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!(
+                                "failed to get block headers from peer : {:?}., error: {:?}",
+                                peer_id, e
+                            ),
+                        )
+                        .into());
+                    }
+                    continue;
+                }
+            }
+        }
+        Err(RpcVerifyError::new(
+            peer_id.clone(),
+            format!("failed to get block headers from peer : {:?}.", peer_id,),
+        )
+        .into())
     }
 
     pub async fn get_headers_by_hash(
@@ -272,12 +389,37 @@ impl VerifiedRpcClient {
         req: Vec<HashValue>,
     ) -> Result<Vec<Option<BlockHeader>>> {
         let peer_id = self.select_a_peer()?;
-        let resp: Vec<Option<BlockHeader>> = self
-            .client
-            .get_headers_by_hash(peer_id.clone(), req.clone())
-            .await?;
-        let resp = G_BLOCK_ID_VERIFIER.verify(peer_id, req, resp)?;
-        Ok(resp)
+        let mut count = 0;
+        while count < G_RPC_RETRY_COUNT {
+            match self
+                .client
+                .get_headers_by_hash(peer_id.clone(), req.clone())
+                .await
+            {
+                Ok(result) => {
+                    return Ok(G_BLOCK_ID_VERIFIER.verify(peer_id, req, result)?);
+                }
+                Err(e) => {
+                    count = count.saturating_add(1);
+                    if count == G_RPC_RETRY_COUNT {
+                        return Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!(
+                                "failed to get block headers from peer : {:?}., error: {:?}",
+                                peer_id, e
+                            ),
+                        )
+                        .into());
+                    }
+                    continue;
+                }
+            }
+        }
+        Err(RpcVerifyError::new(
+            peer_id.clone(),
+            format!("failed to get block headers from peer : {:?}.", peer_id,),
+        )
+        .into())
     }
 
     pub async fn get_bodies_by_hash(
@@ -286,12 +428,40 @@ impl VerifiedRpcClient {
     ) -> Result<(Vec<Option<BlockBody>>, PeerId)> {
         let peer_id = self.select_a_peer()?;
         debug!("rpc select peer {}", &peer_id);
-        let resp: Vec<Option<BlockBody>> = self
-            .client
-            .get_bodies_by_hash(peer_id.clone(), req.clone())
-            .await?;
-        let resp = G_BLOCK_BODY_VERIFIER.verify(peer_id.clone(), req, resp)?;
-        Ok((resp, peer_id))
+        let mut count = 0;
+        while count < G_RPC_RETRY_COUNT {
+            match self
+                .client
+                .get_bodies_by_hash(peer_id.clone(), req.clone())
+                .await
+            {
+                Ok(result) => {
+                    return Ok((
+                        G_BLOCK_BODY_VERIFIER.verify(peer_id.clone(), req, result)?,
+                        peer_id,
+                    ));
+                }
+                Err(e) => {
+                    count = count.saturating_add(1);
+                    if count == G_RPC_RETRY_COUNT {
+                        return Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!(
+                                "failed to get block bodies from peer : {:?}. error: {:?}",
+                                peer_id, e
+                            ),
+                        )
+                        .into());
+                    }
+                    continue;
+                }
+            }
+        }
+        Err(RpcVerifyError::new(
+            peer_id.clone(),
+            format!("failed to get block bodies from peer : {:?}.", peer_id,),
+        )
+        .into())
     }
 
     pub async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>> {
@@ -307,12 +477,38 @@ impl VerifiedRpcClient {
             None => self.select_a_peer()?,
             Some(p) => p,
         };
-        let resp = self
-            .client
-            .get_block_infos(peer_id.clone(), req.clone())
-            .await?;
-        let resp = G_BLOCK_INFO_VERIFIER.verify(peer_id, req, resp)?;
-        Ok(resp)
+
+        let mut count = 0;
+        while count < G_RPC_RETRY_COUNT {
+            match self
+                .client
+                .get_block_infos(peer_id.clone(), req.clone())
+                .await
+            {
+                Ok(result) => {
+                    return Ok(G_BLOCK_INFO_VERIFIER.verify(peer_id, req, result)?);
+                }
+                Err(e) => {
+                    count = count.saturating_add(1);
+                    if count == G_RPC_RETRY_COUNT {
+                        return Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!(
+                                "failed to get block infos from peer : {:?}. error: {:?}",
+                                peer_id, e
+                            ),
+                        )
+                        .into());
+                    }
+                    continue;
+                }
+            }
+        }
+        Err(RpcVerifyError::new(
+            peer_id.clone(),
+            format!("failed to get block infos from peer : {:?}.", peer_id,),
+        )
+        .into())
     }
 
     pub async fn get_state_node_by_node_hash(
@@ -320,12 +516,74 @@ impl VerifiedRpcClient {
         node_key: HashValue,
     ) -> Result<(PeerId, Option<StateNode>)> {
         let peer_id = self.select_a_peer()?;
-        Ok((
+        let mut count = 0;
+        while count < G_RPC_RETRY_COUNT {
+            match self
+                .client
+                .get_state_node_by_node_hash(peer_id.clone(), node_key)
+                .await
+            {
+                Ok(result) => return Ok((peer_id, result)),
+                Err(e) => {
+                    count = count.saturating_add(1);
+                    if count == G_RPC_RETRY_COUNT {
+                        return Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!(
+                                "failed to get state node by node hash from peer : {:?}. error: {:?}",
+                                peer_id, e
+                            ),
+                        )
+                        .into());
+                    }
+                    continue;
+                }
+            }
+        }
+        Err(RpcVerifyError::new(
             peer_id.clone(),
-            self.client
-                .get_state_node_by_node_hash(peer_id, node_key)
-                .await?,
-        ))
+            format!(
+                "failed to get state node by node hash from peer : {:?}",
+                peer_id,
+            ),
+        )
+        .into())
+    }
+
+    async fn get_accumulator_node_by_node_hash_inner(
+        &self,
+        peer_id: PeerId,
+        req: GetAccumulatorNodeByNodeHash,
+    ) -> Result<Option<AccumulatorNode>> {
+        let mut count = 0;
+        while count < G_RPC_RETRY_COUNT {
+            match self
+                .client
+                .get_accumulator_node_by_node_hash(peer_id.clone(), req.clone())
+                .await
+            {
+                Ok(result) => return Ok(result),
+                Err(e) => {
+                    count = count.saturating_add(1);
+                    if count == G_RPC_RETRY_COUNT {
+                        return Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!("failed to get accumulator node by node hash inner from peer : {:?}. error: {:?}", peer_id, e),
+                        )
+                        .into());
+                    }
+                    continue;
+                }
+            }
+        }
+        Err(RpcVerifyError::new(
+            peer_id.clone(),
+            format!(
+                "failed to get accumulator node by node hash inner from peer : {:?}.",
+                peer_id
+            ),
+        )
+        .into())
     }
 
     pub async fn get_accumulator_node_by_node_hash(
@@ -335,8 +593,7 @@ impl VerifiedRpcClient {
     ) -> Result<(PeerId, AccumulatorNode)> {
         let peer_id = self.select_a_peer()?;
         if let Some(accumulator_node) = self
-            .client
-            .get_accumulator_node_by_node_hash(
+            .get_accumulator_node_by_node_hash_inner(
                 peer_id.clone(),
                 GetAccumulatorNodeByNodeHash {
                     node_hash: node_key,
@@ -379,18 +636,139 @@ impl VerifiedRpcClient {
             reverse,
             max_size,
         };
-        self.client.get_block_ids(peer_id, request).await
+        let mut count = 0;
+        while count < G_RPC_RETRY_COUNT {
+            match self
+                .client
+                .get_block_ids(peer_id.clone(), request.clone())
+                .await
+            {
+                Ok(result) => return Ok(result),
+                Err(e) => {
+                    count = count.saturating_add(1);
+                    if count == G_RPC_RETRY_COUNT {
+                        return Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!(
+                                "failed to get block ids from peer : {:?}. error: {:?}",
+                                peer_id, e
+                            ),
+                        )
+                        .into());
+                    }
+                    continue;
+                }
+            }
+        }
+        Err(RpcVerifyError::new(
+            peer_id.clone(),
+            format!("failed to get block ids from peer : {:?}.", peer_id),
+        )
+        .into())
     }
 
     pub async fn get_block_headers_by_hash(
         &self,
         ids: Vec<HashValue>,
     ) -> Result<Vec<(HashValue, Option<BlockHeader>)>> {
-        let block_headers = self
-            .client
-            .get_headers_by_hash(self.select_a_peer()?, ids.clone())
-            .await?;
-        Ok(ids.into_iter().zip(block_headers.into_iter()).collect())
+        let mut count = 0;
+        let peer_id = self.select_a_peer()?;
+        while count < G_RPC_RETRY_COUNT {
+            match self
+                .client
+                .get_headers_by_hash(peer_id.clone(), ids.clone())
+                .await
+            {
+                Ok(result) => return Ok(ids.into_iter().zip(result.into_iter()).collect()),
+                Err(e) => {
+                    count = count.saturating_add(1);
+                    if count == G_RPC_RETRY_COUNT {
+                        return Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!(
+                                "failed to get block headers from peer : {:?}., error: {:?}",
+                                peer_id, e
+                            ),
+                        )
+                        .into());
+                    }
+                    continue;
+                }
+            }
+        }
+        Err(RpcVerifyError::new(
+            peer_id.clone(),
+            format!("failed to get block headers from peer : {:?}.", peer_id),
+        )
+        .into())
+    }
+
+    async fn get_blocks_inner(
+        &self,
+        peer_id: PeerId,
+        ids: Vec<HashValue>,
+    ) -> Result<Vec<Option<LegacyBlock>>> {
+        let mut count = 0;
+        while count < G_RPC_RETRY_COUNT {
+            match self.client.get_blocks(peer_id.clone(), ids.clone()).await {
+                Ok(result) => return Ok(result),
+                Err(e) => {
+                    count = count.saturating_add(1);
+                    if count == G_RPC_RETRY_COUNT {
+                        return Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!(
+                                "failed to get legacy blocks from peer : {:?}. error: {:?}",
+                                peer_id, e
+                            ),
+                        )
+                        .into());
+                    }
+                    continue;
+                }
+            }
+        }
+        Err(RpcVerifyError::new(
+            peer_id.clone(),
+            format!("failed to get legacy blocks from peer : {:?}.", peer_id),
+        )
+        .into())
+    }
+
+    async fn get_blocks_v1_inner(
+        &self,
+        peer_id: PeerId,
+        ids: Vec<HashValue>,
+    ) -> Result<Vec<Option<Block>>> {
+        let mut count = 0;
+        while count < G_RPC_RETRY_COUNT {
+            match self
+                .client
+                .get_blocks_v1(peer_id.clone(), ids.clone())
+                .await
+            {
+                Ok(result) => return Ok(result),
+                Err(e) => {
+                    count = count.saturating_add(1);
+                    if count == G_RPC_RETRY_COUNT {
+                        return Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!(
+                                "failed to get blocks v1 from peer : {:?}. error: {:?}",
+                                peer_id, e
+                            ),
+                        )
+                        .into());
+                    }
+                    continue;
+                }
+            }
+        }
+        Err(RpcVerifyError::new(
+            peer_id.clone(),
+            format!("failed to get blocks from peer : {:?}.", peer_id),
+        )
+        .into())
     }
 
     pub async fn get_blocks(
@@ -399,16 +777,11 @@ impl VerifiedRpcClient {
     ) -> Result<Vec<Option<(Block, Option<PeerId>)>>> {
         let peer_id = self.select_a_peer()?;
         let start_time = Instant::now();
-        let blocks = match self
-            .client
-            .get_blocks_v1(peer_id.clone(), ids.clone())
-            .await
-        {
+        let blocks = match self.get_blocks_v1_inner(peer_id.clone(), ids.clone()).await {
             Ok(blocks) => blocks,
             Err(err) => {
                 warn!("get blocks failed:{}, call get blocks legacy", err);
-                self.client
-                    .get_blocks(peer_id.clone(), ids.clone())
+                self.get_blocks_inner(peer_id.clone(), ids.clone())
                     .await?
                     .into_iter()
                     .map(|opt_block| opt_block.map(Into::into))
@@ -444,8 +817,28 @@ impl VerifiedRpcClient {
     }
 
     pub async fn get_dag_block_children(&self, req: Vec<HashValue>) -> Result<Vec<HashValue>> {
-        self.client
-            .get_dag_block_children(self.select_a_peer()?, req)
-            .await
+        let mut count = 0;
+        let peer_id = self.select_a_peer()?;
+        while count < G_RPC_RETRY_COUNT {
+            match self
+                .client
+                .get_dag_block_children(peer_id.clone(), req.clone())
+                .await
+            {
+                Ok(result) => return Ok(result),
+                Err(_) => {
+                    count = count.saturating_add(1);
+                    continue;
+                }
+            }
+        }
+        Err(RpcVerifyError::new(
+            peer_id.clone(),
+            format!(
+                "failed to get dag block children from peer : {:?}.",
+                peer_id
+            ),
+        )
+        .into())
     }
 }

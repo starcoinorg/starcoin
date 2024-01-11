@@ -388,32 +388,32 @@ where
         Ok(())
     }
 
-    async fn fetch_block_headers(
-        &self,
-        absent_blocks: Vec<HashValue>,
-    ) -> Result<Vec<(HashValue, Option<BlockHeader>)>> {
-        let mut count: i32 = 20;
-        while count > 0 {
-            info!("fetch block header retry count = {}", count);
-            match self
-                .fetcher
-                .fetch_block_headers(absent_blocks.clone())
-                .await
-            {
-                Ok(result) => {
-                    return Ok(result);
-                }
-                Err(e) => {
-                    count = count.saturating_sub(1);
-                    if count == 0 {
-                        bail!("failed to fetch block headers due to: {:?}", e);
-                    }
-                    async_std::task::sleep(Duration::from_secs(1)).await;
-                }
-            }
-        }
-        bail!("failed to fetch block headers");
-    }
+    // async fn fetch_block_headers(
+    //     &self,
+    //     absent_blocks: Vec<HashValue>,
+    // ) -> Result<Vec<(HashValue, Option<BlockHeader>)>> {
+    //     let mut count: i32 = 20;
+    //     while count > 0 {
+    //         info!("fetch block header retry count = {}", count);
+    //         match self
+    //             .fetcher
+    //             .fetch_block_headers(absent_blocks.clone())
+    //             .await
+    //         {
+    //             Ok(result) => {
+    //                 return Ok(result);
+    //             }
+    //             Err(e) => {
+    //                 count = count.saturating_sub(1);
+    //                 if count == 0 {
+    //                     bail!("failed to fetch block headers due to: {:?}", e);
+    //                 }
+    //                 async_std::task::sleep(Duration::from_secs(1)).await;
+    //             }
+    //         }
+    //     }
+    //     bail!("failed to fetch block headers");
+    // }
 
     async fn find_ancestor_dag_block_header(
         &self,
@@ -430,7 +430,7 @@ where
             if absent_blocks.is_empty() {
                 return Ok(ancestors);
             }
-            let absent_block_headers = self.fetch_block_headers(absent_blocks).await?;
+            let absent_block_headers = self.fetcher.fetch_block_headers(absent_blocks).await?;
             if absent_block_headers.iter().any(|(id, header)| {
                 if header.is_none() {
                     error!(
@@ -507,7 +507,7 @@ where
                         }
                         None => {
                             for (block, _peer_id) in
-                                self.fetch_blocks(vec![*ancestor_block_header_id]).await?
+                                self.fetcher.fetch_blocks(vec![*ancestor_block_header_id]).await?
                             {
                                 if self.chain.has_dag_block(block.id())? {
                                     continue;
@@ -539,28 +539,28 @@ where
         async_std::task::block_on(fut)
     }
 
-    async fn fetch_blocks(
-        &self,
-        block_ids: Vec<HashValue>,
-    ) -> Result<Vec<(Block, Option<PeerId>)>> {
-        let mut count: i32 = 20;
-        while count > 0 {
-            info!("fetch blocks retry count = {}", count);
-            match self.fetcher.fetch_blocks(block_ids.clone()).await {
-                Ok(result) => {
-                    return Ok(result);
-                }
-                Err(e) => {
-                    count = count.saturating_sub(1);
-                    if count == 0 {
-                        bail!("failed to fetch blocks due to: {:?}", e);
-                    }
-                    async_std::task::sleep(Duration::from_secs(1)).await;
-                }
-            }
-        }
-        bail!("failed to fetch blocks");
-    }
+    // async fn fetch_blocks(
+    //     &self,
+    //     block_ids: Vec<HashValue>,
+    // ) -> Result<Vec<(Block, Option<PeerId>)>> {
+    //     let mut count: i32 = 20;
+    //     while count > 0 {
+    //         info!("fetch blocks retry count = {}", count);
+    //         match self.fetcher.fetch_blocks(block_ids.clone()).await {
+    //             Ok(result) => {
+    //                 return Ok(result);
+    //             }
+    //             Err(e) => {
+    //                 count = count.saturating_sub(1);
+    //                 if count == 0 {
+    //                     bail!("failed to fetch blocks due to: {:?}", e);
+    //                 }
+    //                 async_std::task::sleep(Duration::from_secs(1)).await;
+    //             }
+    //         }
+    //     }
+    //     bail!("failed to fetch blocks");
+    // }
 
     async fn fetch_dag_block_children(
         &self,
