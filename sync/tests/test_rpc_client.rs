@@ -33,11 +33,16 @@ fn test_verified_client_for_dag() {
     let rpc_client = VerifiedRpcClient::new(peer_selector, network);
     // testing dag rpc
     let target_dag_blocks =
-        generate_dag_block(&target_handle, 2).expect("failed to generate dag block");
+        generate_dag_block(&target_handle, 5).expect("failed to generate dag block");
     target_dag_blocks.into_iter().for_each(|target_dag_block| {
         let dag_children_from_client_rpc =
             block_on(rpc_client.get_dag_block_children(vec![target_dag_block.header.id()]))
                 .expect("failed to get dag block children");
+        info!(
+            "get dag children for:{},{:?}",
+            target_dag_block.header.id(),
+            dag_children_from_client_rpc
+        );
         assert!(target_dag_block
             .clone()
             .children

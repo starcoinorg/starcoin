@@ -1246,10 +1246,10 @@ impl BlockChain {
             .header
             .parents_hash()
             .expect("Dag parents need exist");
-        for hash in parents {
-            tips.retain(|x| *x != hash);
-        }
         if !tips.contains(&new_tip_block.id()) {
+            for hash in parents {
+                tips.retain(|x| *x != hash);
+            }
             tips.push(new_tip_block.id());
         }
         // Caculate the ghostdata of the virutal node created by all tips.
