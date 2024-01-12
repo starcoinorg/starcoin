@@ -164,8 +164,6 @@ impl From<BlockHeader> for BlockIdAndNumber {
 
 /// block timestamp allowed future times
 pub const ALLOWED_FUTURE_BLOCKTIME: u64 = 30000; // 30 second;
-/// block timestamp allowed past time
-pub const ALLOWED_PAST_BLOCKTIME: u64 = 30000; // 30 second;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, CryptoHasher, CryptoHash, JsonSchema)]
 pub struct BlockHeader {

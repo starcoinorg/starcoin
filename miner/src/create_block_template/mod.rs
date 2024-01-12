@@ -356,6 +356,7 @@ where
 
                     let __selected_parent = blues.remove(0);
                     for blue in &blues {
+                        // todo: make sure blue block has been executed successfully
                         let block = self
                             .storage
                             .get_block_by_hash(blue.to_owned())?

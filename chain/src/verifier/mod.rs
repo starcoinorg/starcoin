@@ -8,9 +8,7 @@ use starcoin_chain_api::{
 };
 use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_logger::prelude::debug;
-use starcoin_types::block::{
-    Block, BlockHeader, LegacyBlockBody, ALLOWED_FUTURE_BLOCKTIME, ALLOWED_PAST_BLOCKTIME,
-};
+use starcoin_types::block::{Block, BlockHeader, LegacyBlockBody, ALLOWED_FUTURE_BLOCKTIME};
 use std::{collections::HashSet, str::FromStr};
 
 #[derive(Debug)]
@@ -360,38 +358,6 @@ impl BlockVerifier for DagVerifier {
     where
         R: ChainReader,
     {
-        let parent_hash = new_block_header.parent_hash();
-        let now = current_chain.time_service().now_millis();
-        // todo: double check
-        verify_block!(
-            VerifyBlockField::Header,
-            new_block_header.timestamp() <= ALLOWED_FUTURE_BLOCKTIME.saturating_add(now)
-                && new_block_header.timestamp() >= now.saturating_sub(ALLOWED_PAST_BLOCKTIME),
-            "Invalid block: block timestamp too far, now:{}, block time:{}",
-            now,
-            new_block_header.timestamp()
-        );
-
-        let epoch = current_chain.epoch();
-
-        verify_block!(
-            VerifyBlockField::Header,
-            new_block_header.number() > epoch.start_block_number()
-                && new_block_header.number() <= epoch.end_block_number(),
-            "block number is {:?}, epoch start number is {:?}, epoch end number is {:?}",
-            new_block_header.number(),
-            epoch.start_block_number(),
-            epoch.end_block_number(),
-        );
-
-        let block_gas_limit = epoch.block_gas_limit();
-
-        verify_block!(
-            VerifyBlockField::Header,
-            new_block_header.gas_used() <= block_gas_limit,
-            "invalid block: gas_used should not greater than block_gas_limit"
-        );
-
         let parents_hash = new_block_header.parents_hash().unwrap_or_default();
         let mut parents_hash_to_check = parents_hash.clone();
         parents_hash_to_check.sort();
@@ -400,32 +366,67 @@ impl BlockVerifier for DagVerifier {
         verify_block!(
             VerifyBlockField::Header,
             !parents_hash_to_check.is_empty() && parents_hash.len() == parents_hash_to_check.len(),
-            "Invalid parents_hash for a dag block {:?}",
-            parents_hash
+            "Invalid parents_hash {:?} for a dag block {}, fork height {}",
+            new_block_header.parents_hash(),
+            new_block_header.number(),
+            new_block_header.dag_fork_height()
         );
 
         verify_block!(
             VerifyBlockField::Header,
-            parents_hash
-                .first()
-                .map(|p| *p == parent_hash)
-                .unwrap_or_default()
-                && current_chain.exist_block(parent_hash)?,
+            parents_hash_to_check.contains(&new_block_header.parent_hash())
+                && current_chain
+                    .get_block_info(Some(new_block_header.parent_hash()))?
+                    .is_some(),
             "Invalid block: parent {} might not exist.",
-            parent_hash
+            new_block_header.parent_hash()
         );
 
         ConsensusVerifier::verify_header(current_chain, new_block_header)
     }
 
     fn verify_uncles<R>(
-        _current_chain: &R,
-        _uncles: &[BlockHeader],
-        _header: &BlockHeader,
+        current_chain: &R,
+        uncles: &[BlockHeader],
+        header: &BlockHeader,
     ) -> Result<()>
     where
         R: ChainReader,
     {
+        let mut uncle_ids = HashSet::new();
+        for uncle in uncles {
+            let uncle_id = uncle.id();
+            verify_block!(
+                VerifyBlockField::Uncle,
+                !uncle_ids.contains(&uncle.id()),
+                "repeat uncle {:?} in current block {:?}",
+                uncle_id,
+                header.id()
+            );
+
+            verify_block!(
+                VerifyBlockField::Uncle,
+                uncle.number() < header.number() ,
+               "uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number(), header.number()
+            );
+
+            verify_block!(
+                VerifyBlockField::Uncle,
+                current_chain.get_block_info(Some(uncle_id))?.is_some(),
+                "Invalid block: uncle {} does not exist",
+                uncle_id
+            );
+
+            debug!(
+                "verify_uncle header number {} hash {:?} uncle number {} hash {:?}",
+                header.number(),
+                header.id(),
+                uncle.number(),
+                uncle.id()
+            );
+            uncle_ids.insert(uncle_id);
+        }
+
         Ok(())
     }
 }
