@@ -506,8 +506,10 @@ where
                             )?;
                         }
                         None => {
-                            for (block, _peer_id) in
-                                self.fetcher.fetch_blocks(vec![*ancestor_block_header_id]).await?
+                            for (block, _peer_id) in self
+                                .fetcher
+                                .fetch_blocks(vec![*ancestor_block_header_id])
+                                .await?
                             {
                                 if self.chain.has_dag_block(block.id())? {
                                     continue;
@@ -642,11 +644,15 @@ where
         self.ensure_dag_parent_blocks_exist(block.header().clone())?;
         let state = self.check_enough();
         if let anyhow::Result::Ok(CollectorState::Enough) = &state {
-            let header = block.header().clone();
+            let current_header = self.chain.current_header();
+            let current_block = self
+                .local_store
+                .get_block(current_header.id())?
+                .expect("failed to get the current block which should exist");
             return self.notify_connected_block(
-                block,
+                current_block,
                 self.local_store
-                    .get_block_info(header.id())?
+                    .get_block_info(current_header.id())?
                     .expect("block info should exist"),
                 BlockConnectAction::ConnectExecutedBlock,
                 state?,

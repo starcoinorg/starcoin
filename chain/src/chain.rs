@@ -242,7 +242,7 @@ impl BlockChain {
             None => self.current_header(),
         };
 
-        self.create_block_template_inner(
+        self.create_block_template_by_header(
             author,
             previous_header,
             user_txns,
@@ -252,7 +252,7 @@ impl BlockChain {
         )
     }
 
-    fn create_block_template_inner(
+    pub fn create_block_template_by_header(
         &self,
         author: AccountAddress,
         previous_header: BlockHeader,

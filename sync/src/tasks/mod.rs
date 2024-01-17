@@ -591,7 +591,11 @@ mod inner_sync_task;
 #[cfg(test)]
 pub(crate) mod mock;
 #[cfg(test)]
-mod tests;
+mod test_tools;
+#[cfg(test)]
+pub mod tests;
+#[cfg(test)]
+mod tests_dag;
 
 use crate::sync_metrics::SyncMetrics;
 pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};

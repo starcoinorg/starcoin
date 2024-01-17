@@ -16,6 +16,12 @@ mod test_write_dag_block_chain;
 mod write_block_chain;
 
 pub use block_connector_service::BlockConnectorService;
+#[cfg(test)]
+use starcoin_types::block::BlockHeader;
+#[cfg(test)]
+use starcoin_types::transaction::SignedUserTransaction;
+#[cfg(test)]
+use starcoin_vm_types::account_address::AccountAddress;
 pub use write_block_chain::WriteBlockChainService;
 
 #[cfg(test)]
@@ -41,6 +47,27 @@ pub struct ExecuteRequest {
 
 impl ServiceRequest for ExecuteRequest {
     type Response = anyhow::Result<ExecutedBlock>;
+}
+
+#[cfg(test)]
+#[derive(Clone, Debug)]
+pub struct CreateBlockRequest {
+    pub count: u64,
+    pub author: AccountAddress,
+    pub parent_hash: Option<HashValue>,
+    pub user_txns: Vec<SignedUserTransaction>,
+    pub uncles: Vec<BlockHeader>,
+    pub block_gas_limit: Option<u64>,
+    pub tips: Option<Vec<HashValue>>,
+}
+
+#[cfg(test)]
+#[derive(Clone, Debug)]
+pub struct CreateBlockResponse;
+
+#[cfg(test)]
+impl ServiceRequest for CreateBlockRequest {
+    type Response = anyhow::Result<CreateBlockResponse>;
 }
 
 #[cfg(test)]

@@ -290,6 +290,24 @@ impl SyncNodeMocker {
         self.chain_mocker.produce_and_apply_times(times)
     }
 
+    // #[warn(dead_code)]
+    // pub fn produce_block_by_header(
+    //     &mut self,
+    //     parent_header: BlockHeader,
+    //     times: u64,
+    // ) -> Result<Block> {
+    //     let mut next_header = parent_header;
+    //     for _ in 0..times {
+    //         let next_block = self.chain_mocker.produce_block_by_header(next_header)?;
+    //         next_header = next_block.header().clone();
+    //     }
+    //     Ok(self
+    //         .chain_mocker
+    //         .get_storage()
+    //         .get_block_by_hash(next_header.id())?
+    //         .expect("failed to get block by hash"))
+    // }
+
     // pub fn produce_block_and_create_dag(&mut self, times: u64) -> Result<()> {
     //     self.chain_mocker.produce_and_apply_times(times)?;
     //     Ok(())
