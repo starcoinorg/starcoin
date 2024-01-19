@@ -5,6 +5,7 @@ use crate::storage::{ColumnFamily, InnerStorage, KVStore};
 use crate::{StorageVersion, CHAIN_INFO_PREFIX_NAME};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::debug;
 use starcoin_types::startup_info::{BarnardHardFork, DagState, SnapshotRange, StartupInfo};
 use std::convert::{TryFrom, TryInto};
 
@@ -31,6 +32,7 @@ impl ChainInfoStorage {
     const DAG_STATE_KEY: &'static str = "dag_state";
 
     pub fn save_dag_state(&self, dag_state: DagState) -> Result<()> {
+        debug!("jacktest: save dag state: {:?}", dag_state);
         self.put_sync(
             Self::DAG_STATE_KEY.as_bytes().to_vec(),
             dag_state.try_into()?,

@@ -46,7 +46,7 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
     starcoin_types::block::set_test_flexidag_fork_height(2);
     // generate 5 block
     let config = Arc::new(NodeConfig::random_for_test());
-    let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
+    let mut block_chain = test_helper::gen_blockchain_for_test(config.clone())?;
     let _current_header = block_chain.current_header();
     let miner_account = AccountInfo::random();
     let mut seq_num = 0;
@@ -112,7 +112,7 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
 #[stest::test(timeout = 480)]
 fn test_transaction_info_and_proof() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
-    let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
+    let mut block_chain = test_helper::gen_blockchain_for_test(config.clone())?;
     let mut current_header = block_chain.current_header();
     let miner_account = AccountInfo::random();
 

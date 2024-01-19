@@ -381,8 +381,7 @@ pub fn modify_on_chain_config_by_dao_block(
 #[stest::test(timeout = 120)]
 fn test_modify_on_chain_config_consensus_by_dao() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
-    let net = config.net();
-    let _chain = test_helper::gen_blockchain_for_test(net)?;
+    let _chain = test_helper::gen_blockchain_for_test(config.clone())?;
 
     let _alice = Account::new();
     let _bob = Account::new();

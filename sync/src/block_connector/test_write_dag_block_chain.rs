@@ -104,7 +104,7 @@ fn gen_fork_dag_block_chain(
     writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
 ) -> Option<HashValue> {
     let miner_account = AccountInfo::random();
-    let dag = BlockDAG::create_for_testing().unwrap();
+    // let dag = BlockDAG::create_for_testing().unwrap();
     if let Some(block_header) = writeable_block_chain_service
         .get_main()
         .get_header_by_number(fork_number)
@@ -118,7 +118,7 @@ fn gen_fork_dag_block_chain(
                 parent_id,
                 writeable_block_chain_service.get_main().get_storage(),
                 None,
-                dag.clone(),
+                writeable_block_chain_service.get_dag(),
             )
             .unwrap();
             let (block_template, _) = block_chain

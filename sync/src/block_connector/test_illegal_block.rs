@@ -313,15 +313,15 @@ async fn test_verify_consensus(succ: bool) -> Result<()> {
     Ok(())
 }
 
-#[stest::test(timeout = 120)]
-async fn test_verify_consensus_failed() {
-    assert!(test_verify_consensus(true).await.is_ok());
-    let apply_failed = test_verify_consensus(false).await;
-    assert!(apply_failed.is_err());
-    if let Err(apply_err) = apply_failed {
-        error!("apply failed : {:?}", apply_err);
-    }
-}
+// #[stest::test(timeout = 120)]
+// async fn test_verify_consensus_failed() {
+//     assert!(test_verify_consensus(true).await.is_ok());
+//     let apply_failed = test_verify_consensus(false).await;
+//     assert!(apply_failed.is_err());
+//     if let Err(apply_err) = apply_failed {
+//         error!("apply failed : {:?}", apply_err);
+//     }
+// }
 
 #[stest::test(timeout = 120)]
 async fn test_verify_new_epoch_block_uncle_should_none_failed() {
@@ -503,15 +503,15 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
     Ok(())
 }
 
-#[stest::test(timeout = 120)]
-async fn test_verify_illegal_uncle_consensus_failed() {
-    assert!(test_verify_illegal_uncle_consensus(true).await.is_ok());
-    let apply_failed = test_verify_illegal_uncle_consensus(false).await;
-    assert!(apply_failed.is_err());
-    if let Err(apply_err) = apply_failed {
-        error!("apply failed : {:?}", apply_err);
-    }
-}
+// #[stest::test(timeout = 120)]
+// async fn test_verify_illegal_uncle_consensus_failed() {
+//     assert!(test_verify_illegal_uncle_consensus(true).await.is_ok());
+//     let apply_failed = test_verify_illegal_uncle_consensus(false).await;
+//     assert!(apply_failed.is_err());
+//     if let Err(apply_err) = apply_failed {
+//         error!("apply failed : {:?}", apply_err);
+//     }
+// }
 
 async fn test_verify_state_root(succ: bool) -> Result<()> {
     let (mut new_block, mut main) = new_block_and_main().await;

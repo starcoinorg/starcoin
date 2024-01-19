@@ -472,6 +472,14 @@ impl NodeConfig {
         Self::load_with_opt(&opt).expect("Auto generate test config should success.")
     }
 
+    pub fn config_for_net(net: ChainNetworkID) -> Self {
+        let opt = StarcoinOpt {
+            net: Some(net),
+            ..StarcoinOpt::default()
+        };
+        Self::load_with_opt(&opt).expect("Auto generate test config should success.")
+    }
+
     pub fn customize_for_test() -> Self {
         let opt = StarcoinOpt {
             net: Some(BuiltinNetworkID::Test.into()),

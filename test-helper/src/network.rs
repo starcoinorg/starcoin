@@ -138,7 +138,7 @@ pub async fn build_network_with_config(
     rpc_service_mocker: Option<(RpcInfo, MockRpcHandler)>,
 ) -> Result<TestNetworkService> {
     let registry = RegistryService::launch();
-    let (storage, _chain_info, genesis, _) = Genesis::init_storage_for_test(node_config.net())?;
+    let (storage, _chain_info, genesis, _) = Genesis::init_storage_for_test(node_config.clone())?;
     registry.put_shared(genesis).await?;
     registry.put_shared(node_config.clone()).await?;
     registry.put_shared(storage.clone()).await?;

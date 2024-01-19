@@ -23,7 +23,7 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
-use starcoin_config::{BuiltinNetworkID, ChainNetwork};
+use starcoin_config::{BuiltinNetworkID, ChainNetwork, NodeConfig};
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
@@ -105,7 +105,8 @@ pub async fn test_sync_invalid_target() -> Result<()> {
 #[stest::test]
 pub async fn test_failed_block() -> Result<()> {
     let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
-    let (storage, chain_info, _, dag) = Genesis::init_storage_for_test(&net)?;
+    let node_config = Arc::new(NodeConfig::config_for_net(net.id().clone()));
+    let (storage, chain_info, _, dag) = Genesis::init_storage_for_test(node_config.clone())?;
 
     let chain = BlockChain::new(
         net.time_service(),
@@ -946,8 +947,9 @@ async fn test_sync_target() {
     ));
 
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let node_config = Arc::new(NodeConfig::config_for_net(net2.id().clone()));
     let (_, genesis_chain_info, _, _) =
-        Genesis::init_storage_for_test(&net2).expect("init storage by genesis fail.");
+        Genesis::init_storage_for_test(node_config.clone()).expect("init storage by genesis fail.");
     let mock_chain = MockChain::new_with_chain(
         net2,
         node1.chain().fork(high_chain_info.head().id()).unwrap(),

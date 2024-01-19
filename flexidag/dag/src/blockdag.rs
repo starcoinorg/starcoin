@@ -12,13 +12,14 @@ use crate::consensusdb::{
 use crate::ghostdag::protocol::GhostdagManager;
 use anyhow::{bail, Ok};
 use parking_lot::RwLock;
-use starcoin_config::{temp_dir, RocksdbConfig};
+use starcoin_config::RocksdbConfig;
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
 };
+use tempfile::tempdir;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -58,7 +59,7 @@ impl BlockDAG {
     }
     pub fn create_for_testing() -> anyhow::Result<Self> {
         let dag_storage =
-            FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
+            FlexiDagStorage::create_from_path(tempdir()?.path(), FlexiDagStorageConfig::default())?;
         Ok(BlockDAG::new(8, dag_storage))
     }
 
