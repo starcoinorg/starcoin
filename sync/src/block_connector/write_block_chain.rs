@@ -181,6 +181,10 @@ where
         &self.main
     }
 
+    pub fn get_dag(&self) -> BlockDAG {
+        self.dag.clone()
+    }
+
     #[cfg(test)]
     pub fn create_block(
         &self,
