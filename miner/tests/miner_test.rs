@@ -24,7 +24,7 @@ async fn test_miner_service() {
     let node_config = Arc::new(config.clone());
     registry.put_shared(node_config.clone()).await.unwrap();
     let (storage, _chain_info, genesis, dag) =
-        Genesis::init_storage_for_test(config.clone()).unwrap();
+        Genesis::init_storage_for_test(config.net()).unwrap();
     registry.put_shared(storage.clone()).await.unwrap();
     registry.put_shared(dag).await.unwrap();
 

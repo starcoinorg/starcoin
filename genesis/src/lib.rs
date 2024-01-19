@@ -12,8 +12,6 @@ use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{BlockChain, ChainReader};
-use starcoin_config::DEFAULT_CACHE_SIZE;
-use starcoin_config::NodeConfig;
 use starcoin_config::{
     genesis_key_pair, BuiltinNetworkID, ChainNetwork, ChainNetworkID, GenesisBlockParameter,
 };
@@ -21,8 +19,6 @@ use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::cache_storage::CacheStorage;
-use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::table_info::TableInfoStore;
 use starcoin_storage::{BlockStore, Storage, Store};
@@ -40,9 +36,7 @@ use starcoin_vm_types::transaction::{
     RawUserTransaction, SignedUserTransaction, TransactionPayload,
 };
 use starcoin_vm_types::vm_status::KeptVMStatus;
-use tempfile::tempdir;
 use std::collections::BTreeMap;
-use std::env::temp_dir;
 use std::fmt::Display;
 use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
@@ -385,15 +379,13 @@ impl Genesis {
     }
 
     pub fn init_storage_for_test(
-        node_config: Arc<NodeConfig>,
+        net: &ChainNetwork,
     ) -> Result<(Arc<Storage>, ChainInfo, Genesis, BlockDAG)> {
         debug!("init storage by genesis for test.");
-        let storage = Arc::new(Storage::new(
-            StorageInstance::new_cache_and_db_instance(CacheStorage::new_with_capacity(DEFAULT_CACHE_SIZE, None), 
-            DBStorage::new(tempdir()?.path(), node_config.storage.rocksdb_config(), None)?))?);
-        let genesis = Genesis::load_or_build(node_config.net())?;
+        let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
+        let genesis = Genesis::load_or_build(net)?;
         let dag = BlockDAG::create_for_testing()?;
-        let chain_info = genesis.execute_genesis_block(node_config.net(), storage.clone(), dag.clone())?;
+        let chain_info = genesis.execute_genesis_block(net, storage.clone(), dag.clone())?;
         Ok((storage, chain_info, genesis, dag))
     }
 }

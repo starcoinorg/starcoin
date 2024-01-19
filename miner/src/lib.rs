@@ -278,7 +278,6 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
         }
         if self.config.miner.disable_miner_client() && self.client_subscribers_num == 0 {
             debug!("No miner client connected, ignore GenerateBlockEvent.");
-            panic!("jacktest: to checkout where is this panic.");
             // Once Miner client connect, we should dispatch task.
             ctx.run_later(Duration::from_secs(2), |ctx| {
                 ctx.notify(GenerateBlockEvent::default());

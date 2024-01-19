@@ -4,7 +4,7 @@
 use anyhow::Result;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
-use starcoin_config::{ChainNetwork, NodeConfig};
+use starcoin_config::ChainNetwork;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
@@ -24,9 +24,8 @@ pub struct MockChain {
 
 impl MockChain {
     pub fn new(net: ChainNetwork) -> Result<Self> {
-        let node_config = Arc::new(NodeConfig::random_for_test());
         let (storage, chain_info, _, dag) =
-            Genesis::init_storage_for_test(node_config).expect("init storage by genesis fail.");
+            Genesis::init_storage_for_test(&net).expect("init storage by genesis fail.");
 
         let chain = BlockChain::new(
             net.time_service(),

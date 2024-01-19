@@ -259,7 +259,7 @@ proptest! {
             // recursion depth
             10)) {
         let config = Arc::new(NodeConfig::random_for_test());
-        let mut block_chain = test_helper::gen_blockchain_for_test(config.clone()).unwrap();
+        let mut block_chain = test_helper::gen_blockchain_for_test(config.net()).unwrap();
         // blocks in ;
         for block in blocks {
             if !block.header().is_genesis() {

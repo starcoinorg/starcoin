@@ -359,7 +359,7 @@ fn test_uncle_in_diff_epoch() {
 ///
 fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
-    let mut block_chain = test_helper::gen_blockchain_for_test(config.clone())?;
+    let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
     let header = block_chain.current_header();
     let miner_account = AccountInfo::random();
     let (template_b1, _) = block_chain.create_block_template(

@@ -272,17 +272,7 @@ impl BlockChain {
         } else if tips.is_some() {
             tips
         } else {
-            let current_tips = self.current_tips_hash()?;
-            match &current_tips {
-                Some(cur_tips) => {
-                    debug!("jacktest: create block template with tips:{:?}", &cur_tips);
-                    if cur_tips.is_empty() {
-                        panic!("jacktest: current tips is empty");
-                    }
-                }
-                None => panic!("jacktest: current tips is none"),
-            }
-            current_tips
+            self.current_tips_hash()?
         };
         let strategy = epoch.strategy();
         let difficulty = strategy.calculate_next_difficulty(self)?;
@@ -1308,11 +1298,7 @@ impl BlockChain {
         if self.epoch.end_block_number() == block.header().number() {
             self.epoch = get_epoch_from_statedb(&self.statedb)?;
         }
-        let result = self.storage.save_dag_state(DagState { tips: tips.clone() });
-        match result {
-            std::result::Result::Ok(_) => debug!("jacktest: save dag state success, tips: {:?}", tips),
-            Err(_) => panic!("jacktest: save dag state failed, tips: {:?}", tips),
-        }
+        self.storage.save_dag_state(DagState { tips })?;
         Ok(executed_block)
     }
 

@@ -26,7 +26,7 @@ pub async fn create_writeable_block_chain() -> (
     let node_config = NodeConfig::random_for_test();
     let node_config = Arc::new(node_config);
 
-    let (storage, chain_info, _, dag) = StarcoinGenesis::init_storage_for_test(node_config.clone())
+    let (storage, chain_info, _, dag) = StarcoinGenesis::init_storage_for_test(node_config.net())
         .expect("init storage by genesis fail.");
     let registry = RegistryService::launch();
     let bus = registry.service_ref::<BusService>().await.unwrap();
