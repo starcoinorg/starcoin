@@ -50,7 +50,7 @@ use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::on_chain_config::{
-    GasSchedule, MoveLanguageVersion, G_GAS_CONSTANTS_IDENTIFIER,
+    FlexiDagConfig, GasSchedule, MoveLanguageVersion, G_GAS_CONSTANTS_IDENTIFIER,
     G_INSTRUCTION_SCHEDULE_IDENTIFIER, G_NATIVE_SCHEDULE_IDENTIFIER, G_VM_CONFIG_IDENTIFIER,
 };
 use starcoin_vm_types::state_store::state_key::StateKey;
@@ -87,6 +87,7 @@ pub struct StarcoinVM {
     native_params: NativeGasParameters,
     gas_params: Option<StarcoinGasParameters>,
     gas_schedule: Option<GasSchedule>,
+    flexi_dag_config: Option<FlexiDagConfig>,
     #[cfg(feature = "metrics")]
     metrics: Option<VMMetrics>,
 }
@@ -94,6 +95,7 @@ pub struct StarcoinVM {
 /// marking of stdlib version which includes vmconfig upgrades.
 const VMCONFIG_UPGRADE_VERSION_MARK: u64 = 10;
 const GAS_SCHEDULE_UPGRADE_VERSION_MARK: u64 = 12;
+const FLEXI_DAG_UPGRADE_VERSION_MARK: u64 = 13;
 
 impl StarcoinVM {
     #[cfg(feature = "metrics")]
@@ -110,6 +112,7 @@ impl StarcoinVM {
             native_params,
             gas_params: Some(gas_params),
             gas_schedule: None,
+            flexi_dag_config: None,
             metrics,
         }
     }
@@ -127,6 +130,7 @@ impl StarcoinVM {
             native_params,
             gas_params: Some(gas_params),
             gas_schedule: None,
+            flexi_dag_config: None,
         }
     }
 
@@ -271,6 +275,13 @@ impl StarcoinVM {
                 let gas_schedule = GasSchedule::fetch_config(&remote_storage)?;
                 (gas_schedule, "gas schedule from GasSchedule")
             };
+            if stdlib_version >= StdlibVersion::Version(FLEXI_DAG_UPGRADE_VERSION_MARK) {
+                self.flexi_dag_config = FlexiDagConfig::fetch_config(&remote_storage)?;
+                debug!(
+                    "stdlib version: {}, fetch flexi_dag_config {:?} from FlexiDagConfig module",
+                    stdlib_version, self.flexi_dag_config,
+                );
+            }
             #[cfg(feature = "print_gas_info")]
             match self.gas_schedule.as_ref() {
                 None => {
