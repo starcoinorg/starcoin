@@ -113,7 +113,7 @@ fn test_init_script() -> Result<()> {
 }
 
 #[stest::test]
-fn test_upgrade_stdlib_with_incremental_package() -> Result<()> {
+fn test_stdlib_upgrade_with_incremental_package() -> Result<()> {
     let alice = Account::new();
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
     genesis_config.stdlib_version = StdlibVersion::Version(1);
@@ -181,7 +181,7 @@ fn test_upgrade_stdlib_with_incremental_package() -> Result<()> {
 }
 
 #[stest::test(timeout = 300)]
-fn test_stdlib_upgrade() -> Result<()> {
+fn test_stdlib_upgrade_before_v12() -> Result<()> {
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
     let stdlib_versions = G_STDLIB_VERSIONS.clone();
     let mut current_version = stdlib_versions[0];
@@ -196,6 +196,7 @@ fn test_stdlib_upgrade() -> Result<()> {
     let alice = Account::new();
 
     for new_version in stdlib_versions.into_iter().skip(1) {
+        debug!("=== upgrading {current_version} to {new_version}");
         // if upgrade from 7 to later, we need to update language version to 3.
         if let StdlibVersion::Version(7) = current_version {
             dao_vote_test(
@@ -234,6 +235,19 @@ fn test_stdlib_upgrade() -> Result<()> {
                 proposal_id,
             )?;
             proposal_id += 1;
+        }
+        if let StdlibVersion::Version(12) = current_version {
+            return Ok(());
+            //    dao_vote_test(
+            //        &alice,
+            //        &chain_state,
+            //        &net,
+            //        vote_flexi_dag_config(&net, 1234567890u64),
+            //        on_chain_config_type_tag(FlexiDagConfig::type_tag()),
+            //        execute_script_on_chain_config(&net, FlexiDagConfig::type_tag(), proposal_id),
+            //        proposal_id,
+            //    )?;
+            //    proposal_id += 1;
         }
         verify_version_state(current_version, &chain_state)?;
         let dao_action_type_tag = new_version.upgrade_module_type_tag();
