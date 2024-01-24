@@ -21,7 +21,6 @@ use starcoin_types::{
 };
 use std::path::Path;
 use std::sync::Arc;
-
 pub type DbGhostdagManager = GhostdagManager<
     DbGhostdagStore,
     DbRelationsStore,
@@ -33,6 +32,7 @@ pub type DbGhostdagManager = GhostdagManager<
 pub struct BlockDAG {
     pub storage: FlexiDagStorage,
     ghostdag_manager: DbGhostdagManager,
+    genesis_height: Arc<RwLock<u64>>,
 }
 
 impl BlockDAG {
@@ -54,6 +54,7 @@ impl BlockDAG {
         Self {
             ghostdag_manager,
             storage: db,
+            genesis_height: Arc::new(RwLock::new(u64::MAX)),
         }
     }
     pub fn create_for_testing() -> anyhow::Result<Self> {
@@ -83,6 +84,7 @@ impl BlockDAG {
         self.storage
             .relations_store
             .insert(origin, BlockHashes::new(vec![]))?;
+        *self.genesis_height.write() = genesis.number();
         self.commit(genesis)?;
         Ok(())
     }
@@ -102,7 +104,7 @@ impl BlockDAG {
         // Generate ghostdag data
         let parents = header.parents();
         let ghostdata = self.ghostdata_by_hash(header.id())?.unwrap_or_else(|| {
-            Arc::new(if header.is_dag_genesis() {
+            Arc::new(if header.number() == *self.genesis_height.read() {
                 self.ghostdag_manager.genesis_ghostdag_data(&header)
             } else {
                 self.ghostdag_manager.ghostdag(&parents)

@@ -1002,7 +1002,7 @@ impl ChainReader for BlockChain {
 
     fn execute(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
         let header = verified_block.0.header().clone();
-        if !header.is_dag() {
+        if header.number() <= self.get_dag_fork_height() {
             let executed = Self::execute_block_and_save(
                 self.storage.as_ref(),
                 self.statedb.fork(),
@@ -1013,7 +1013,7 @@ impl ChainReader for BlockChain {
                 verified_block.0,
                 self.vm_metrics.clone(),
             )?;
-            if header.is_dag_genesis() {
+            if header.number() == self.get_dag_fork_height() {
                 let dag_genesis_id = header.id();
                 self.dag.init_with_genesis(header)?;
                 self.storage.save_dag_state(DagState {
@@ -1130,6 +1130,11 @@ impl ChainReader for BlockChain {
 
     fn has_dag_block(&self, hash: HashValue) -> Result<bool> {
         self.dag.has_dag_block(hash)
+    }
+
+    fn get_dag_fork_height(&self) -> BlockNumber {
+        //let state = self.chain_state();
+        todo!()
     }
 }
 
@@ -1313,7 +1318,7 @@ impl ChainWriter for BlockChain {
     }
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
-        if executed_block.block.is_dag() {
+        if executed_block.header().number() > self.get_dag_fork_height() {
             info!(
                 "connect a dag block, {:?}, number: {:?}",
                 executed_block.block.id(),
@@ -1355,7 +1360,7 @@ impl ChainWriter for BlockChain {
     }
 
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock> {
-        if !block.is_dag() {
+        if !block.header().number() > self.get_dag_fork_height() {
             self.apply_with_verifier::<FullVerifier>(block)
         } else {
             self.apply_with_verifier::<DagVerifier>(block)

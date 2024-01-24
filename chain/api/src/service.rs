@@ -73,6 +73,7 @@ pub trait ReadableChainService {
 
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
     fn get_dag_block_children(&self, ids: Vec<HashValue>) -> Result<Vec<HashValue>>;
+    fn get_dag_fork_height(&self) -> BlockNumber;
 }
 
 /// Writeable block chain service trait
@@ -141,6 +142,7 @@ pub trait ChainAsyncService:
 
     async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
     async fn get_dag_block_children(&self, hashes: Vec<HashValue>) -> Result<Vec<HashValue>>;
+    async fn get_dag_fork_height(&self) -> Result<BlockNumber>;
 }
 
 #[async_trait::async_trait]
@@ -447,6 +449,15 @@ where
             Ok(children)
         } else {
             bail!("get dag block children error")
+        }
+    }
+
+    async fn get_dag_fork_height(&self) -> Result<BlockNumber> {
+        let response = self.send(ChainRequest::GetDagForkHeight).await??;
+        if let ChainResponse::BlockNumber(number) = response {
+            Ok(number)
+        } else {
+            bail!("get block_infos error")
         }
     }
 }

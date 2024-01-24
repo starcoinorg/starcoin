@@ -4,6 +4,7 @@
 use anyhow::{Ok, Result};
 use futures::executor::block_on;
 use network_api::{PeerId, PeerProvider, PeerSelector, PeerStrategy};
+use starcoin_chain_api::ChainAsyncService;
 use starcoin_config::*;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
@@ -80,9 +81,11 @@ fn init_two_node() -> Result<(NodeHandle, NodeHandle, PeerId)> {
 fn generate_dag_block(handle: &NodeHandle, count: usize) -> Result<Vec<DagBlockInfo>> {
     let mut result = vec![];
     let dag = handle.get_dag()?;
+    let dag_fork_height = block_on(handle.chain_service()?.get_dag_fork_height())?;
     while result.len() < count {
         let block = handle.generate_block()?;
-        if block.header().is_dag() {
+
+        if block.header() > dag_fork_height {
             result.push(block);
         }
     }

@@ -243,6 +243,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetDagBlockChildren { block_ids } => Ok(ChainResponse::HashVec(
                 self.inner.get_dag_block_children(block_ids)?,
             )),
+            ChainRequest::GetDagForkHeight => {
+                Ok(ChainResponse::BlockNumber(self.inner.get_dag_fork_height()))
+            }
         }
     }
 }
@@ -305,6 +308,9 @@ impl ChainReaderServiceInner {
 }
 
 impl ReadableChainService for ChainReaderServiceInner {
+    fn get_dag_fork_height(&self) -> BlockNumber {
+        self.main.get_dag_fork_height()
+    }
     fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
         self.storage.get_block_header_by_hash(hash)
     }

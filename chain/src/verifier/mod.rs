@@ -273,7 +273,7 @@ impl BlockVerifier for BasicVerifier {
 
         verify_block!(
             VerifyBlockField::Header,
-            !new_block_header.is_dag()
+            new_block_header.number() <= current_chain.get_dag_fork_height()
                 && new_block_header
                     .parents_hash()
                     .unwrap_or_default()

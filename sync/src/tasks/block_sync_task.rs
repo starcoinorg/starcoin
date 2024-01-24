@@ -451,7 +451,7 @@ where
     }
 
     pub fn ensure_dag_parent_blocks_exist(&mut self, block_header: BlockHeader) -> Result<()> {
-        if !block_header.is_dag() {
+        if block_header.number() <= self.chain.get_dag_fork_height() {
             info!(
                 "the block is not a dag block, skipping, its id: {:?}, its number {:?}",
                 block_header.id(),
