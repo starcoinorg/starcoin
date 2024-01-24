@@ -103,6 +103,10 @@ pub trait ChainReader {
 
     fn current_tips_hash(&self) -> Result<Option<Vec<HashValue>>>;
     fn has_dag_block(&self, hash: HashValue) -> Result<bool>;
+    fn dag_fork_height(&self) -> BlockNumber;
+    fn is_dag(&self, block_header: &BlockHeader) -> bool;
+    fn is_legacy(&self, block_header: &BlockHeader) -> bool;
+    fn is_dag_genesis(&self, block_header: &BlockHeader) -> bool;
 }
 
 pub trait ChainWriter {

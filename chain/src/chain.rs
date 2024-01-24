@@ -24,7 +24,7 @@ use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter}
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
-use starcoin_types::block::BlockIdAndNumber;
+use starcoin_types::block::{BlockIdAndNumber, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH};
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus, DagState};
@@ -63,6 +63,7 @@ pub struct BlockChain {
     epoch: Epoch,
     vm_metrics: Option<VMMetrics>,
     dag: BlockDAG,
+    dag_fork_number: BlockNumber,
 }
 
 impl BlockChain {
@@ -123,6 +124,7 @@ impl BlockChain {
             epoch,
             vm_metrics,
             dag,
+            dag_fork_number: TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH,
         };
         watch(CHAIN_WATCH_NAME, "n1251");
         match uncles {
@@ -178,6 +180,10 @@ impl BlockChain {
 
     pub fn dag(&self) -> BlockDAG {
         self.dag.clone()
+    }
+
+    pub fn set_test_flexidag_fork_height(&mut self, fork_number: BlockNumber) {
+        self.dag_fork_number = fork_number;
     }
 
     //TODO lazy init uncles cache.
@@ -1002,7 +1008,7 @@ impl ChainReader for BlockChain {
 
     fn execute(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
         let header = verified_block.0.header().clone();
-        if !header.is_dag() {
+        if !self.is_dag(&header) {
             let executed = Self::execute_block_and_save(
                 self.storage.as_ref(),
                 self.statedb.fork(),
@@ -1013,7 +1019,7 @@ impl ChainReader for BlockChain {
                 verified_block.0,
                 self.vm_metrics.clone(),
             )?;
-            if header.is_dag_genesis() {
+            if self.is_dag_genesis(&header) {
                 let dag_genesis_id = header.id();
                 self.dag.init_with_genesis(header)?;
                 self.storage.save_dag_state(DagState {
@@ -1130,6 +1136,28 @@ impl ChainReader for BlockChain {
 
     fn has_dag_block(&self, hash: HashValue) -> Result<bool> {
         self.dag.has_dag_block(hash)
+    }
+
+    #[cfg(not(test))]
+    fn dag_fork_height(&self) -> BlockNumber {
+        100000
+    }
+
+    #[cfg(test)]
+    fn dag_fork_height(&self) -> BlockNumber {
+        self.dag_fork_number
+    }
+
+    fn is_dag(&self, block_header: &BlockHeader) -> bool {
+        block_header.number() > self.dag_fork_height()
+    }
+
+    fn is_legacy(&self, block_header: &BlockHeader) -> bool {
+        !self.is_dag(block_header) && block_header.parents_hash().is_none()
+    }
+
+    fn is_dag_genesis(&self, block_header: &BlockHeader) -> bool {
+        block_header.number() == self.dag_fork_height()
     }
 }
 
@@ -1301,10 +1329,6 @@ impl BlockChain {
         self.storage.save_dag_state(DagState { tips })?;
         Ok(executed_block)
     }
-
-    pub fn dag_fork_height(&self) -> BlockNumber {
-        self.status.head.header().dag_fork_height()
-    }
 }
 
 impl ChainWriter for BlockChain {
@@ -1313,7 +1337,7 @@ impl ChainWriter for BlockChain {
     }
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
-        if executed_block.block.is_dag() {
+        if self.is_dag(executed_block.block.header()) {
             info!(
                 "connect a dag block, {:?}, number: {:?}",
                 executed_block.block.id(),
@@ -1355,7 +1379,7 @@ impl ChainWriter for BlockChain {
     }
 
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock> {
-        if !block.is_dag() {
+        if !self.is_dag(block.header()) {
             self.apply_with_verifier::<FullVerifier>(block)
         } else {
             self.apply_with_verifier::<DagVerifier>(block)

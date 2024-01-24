@@ -9,7 +9,6 @@ use starcoin_chain_service::WriteableChainService;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
-use starcoin_dag::blockdag::BlockDAG;
 use starcoin_time_service::TimeService;
 use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::Block;

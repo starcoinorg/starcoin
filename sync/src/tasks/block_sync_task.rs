@@ -451,7 +451,7 @@ where
     }
 
     pub fn ensure_dag_parent_blocks_exist(&mut self, block_header: BlockHeader) -> Result<()> {
-        if !block_header.is_dag() {
+        if !self.chain.is_dag(&block_header) {
             info!(
                 "the block is not a dag block, skipping, its id: {:?}, its number {:?}",
                 block_header.id(),

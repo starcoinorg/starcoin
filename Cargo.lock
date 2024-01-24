@@ -11065,6 +11065,7 @@ dependencies = [
  "hex",
  "lazy_static 1.4.0",
  "num_enum",
+ "parking_lot 0.12.1",
  "proptest",
  "proptest-derive",
  "rand 0.8.5",

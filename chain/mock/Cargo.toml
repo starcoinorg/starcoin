@@ -27,6 +27,7 @@ starcoin-dag = { workspace = true }
 [dev-dependencies]
 proptest = { workspace = true }
 proptest-derive = { workspace = true }
+starcoin-chain = { workspace = true }
 
 [features]
 default = []

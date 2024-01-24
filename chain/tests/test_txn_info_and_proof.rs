@@ -47,6 +47,7 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
     // generate 5 block
     let config = Arc::new(NodeConfig::random_for_test());
     let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
+    block_chain.set_test_flexidag_fork_height(2);
     let _current_header = block_chain.current_header();
     let miner_account = AccountInfo::random();
     let mut seq_num = 0;

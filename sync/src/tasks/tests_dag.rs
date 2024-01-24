@@ -14,15 +14,14 @@ use starcoin_chain_service::ChainReaderService;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_txpool_mock_service::MockTxPoolService;
+use starcoin_types::block::TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG;
 use test_helper::DummyNetworkService;
 
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_new_node_dag() {
-    starcoin_types::block::set_test_flexidag_fork_height(10);
-    full_sync_new_node()
+    full_sync_new_node(true)
         .await
         .expect("dag full sync should success");
-    starcoin_types::block::reset_test_custom_fork_height();
 }
 
 async fn sync_block_process(
@@ -101,8 +100,13 @@ async fn sync_block_in_block_connection_service_mock(
 
 #[stest::test(timeout = 600)]
 async fn test_sync_single_chain_to_dag_chain() -> Result<()> {
-    starcoin_types::block::set_test_flexidag_fork_height(10);
     let test_system = super::test_tools::SyncTestSystem::initialize_sync_system().await?;
+    test_system
+        .target_node
+        .set_test_flexidag_fork_height(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG);
+    test_system
+        .local_node
+        .set_test_flexidag_fork_height(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG);
     let (_local_node, _target_node) = sync_block_in_block_connection_service_mock(
         Arc::new(test_system.target_node),
         Arc::new(test_system.local_node),
@@ -110,16 +114,20 @@ async fn test_sync_single_chain_to_dag_chain() -> Result<()> {
         40,
     )
     .await?;
-    starcoin_types::block::reset_test_custom_fork_height();
     Ok(())
 }
 
 #[stest::test(timeout = 600)]
 async fn test_sync_red_blocks_dag() -> Result<()> {
-    starcoin_types::block::set_test_flexidag_fork_height(10);
     let test_system = super::test_tools::SyncTestSystem::initialize_sync_system()
         .await
         .expect("failed to init system");
+    test_system
+        .target_node
+        .set_test_flexidag_fork_height(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG);
+    test_system
+        .local_node
+        .set_test_flexidag_fork_height(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG);
     let mut target_node = Arc::new(test_system.target_node);
     let local_node = Arc::new(test_system.local_node);
     Arc::get_mut(&mut target_node)
@@ -183,6 +191,5 @@ async fn test_sync_red_blocks_dag() -> Result<()> {
     // // genertate the red blocks
     // Arc::get_mut(&mut target_node).unwrap().produce_block_by_header(dag_genesis_header, 5).expect("failed to produce block");
 
-    starcoin_types::block::reset_test_custom_fork_height();
     Ok(())
 }

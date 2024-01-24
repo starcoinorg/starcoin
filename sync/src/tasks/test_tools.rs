@@ -129,9 +129,12 @@ impl SyncTestSystem {
 }
 
 #[cfg(test)]
-pub async fn full_sync_new_node() -> Result<()> {
+pub async fn full_sync_new_node(fork_number: BlockNumber) -> Result<()> {
+    use starcoin_types::block::BlockNumber;
+
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
+    node1.set_test_flexidag_fork_height(fork_number);
     node1.produce_block(10)?;
 
     let mut arc_node1 = Arc::new(node1);
@@ -139,6 +142,7 @@ pub async fn full_sync_new_node() -> Result<()> {
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
 
     let node2 = SyncNodeMocker::new(net2.clone(), 300, 0)?;
+    node2.set_test_flexidag_fork_height(fork_number);
 
     let target = arc_node1.sync_target();
 

@@ -83,7 +83,7 @@ impl BlockDAG {
         self.storage
             .relations_store
             .insert(origin, BlockHashes::new(vec![]))?;
-        self.commit(genesis)?;
+        self.commit_genesis(genesis)?;
         Ok(())
     }
     pub fn ghostdata(&self, parents: &[HashValue]) -> GhostdagData {
@@ -98,11 +98,19 @@ impl BlockDAG {
         }
     }
 
+    fn commit_genesis(&self, genesis: BlockHeader) -> anyhow::Result<()> {
+        self.commit_inner(genesis, true)
+    }
+
     pub fn commit(&self, header: BlockHeader) -> anyhow::Result<()> {
+        self.commit_inner(header, false)
+    }
+
+    fn commit_inner(&self, header: BlockHeader, is_dag_genesis: bool) -> anyhow::Result<()> {
         // Generate ghostdag data
         let parents = header.parents();
         let ghostdata = self.ghostdata_by_hash(header.id())?.unwrap_or_else(|| {
-            Arc::new(if header.is_dag_genesis() {
+            Arc::new(if is_dag_genesis {
                 self.ghostdag_manager.genesis_ghostdag_data(&header)
             } else {
                 self.ghostdag_manager.ghostdag(&parents)
@@ -161,7 +169,7 @@ mod tests {
     use super::*;
     use crate::consensusdb::prelude::FlexiDagStorageConfig;
     use starcoin_config::RocksdbConfig;
-    use starcoin_types::block::{BlockHeader, BlockHeaderBuilder};
+    use starcoin_types::block::{BlockHeader, BlockHeaderBuilder, TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG};
     use std::{env, fs};
 
     fn build_block_dag(k: KType) -> BlockDAG {
@@ -183,7 +191,7 @@ mod tests {
     #[test]
     fn test_dag_0() {
         let dag = BlockDAG::create_for_testing().unwrap();
-        let genesis = BlockHeader::dag_genesis_random()
+        let genesis = BlockHeader::dag_genesis_random(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)
             .as_builder()
             .with_difficulty(0.into())
             .build();
@@ -205,7 +213,7 @@ mod tests {
 
     #[test]
     fn test_dag_1() {
-        let genesis = BlockHeader::dag_genesis_random()
+        let genesis = BlockHeader::dag_genesis_random(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)
             .as_builder()
             .with_difficulty(0.into())
             .build();
@@ -262,7 +270,7 @@ mod tests {
     #[tokio::test]
     async fn test_with_spawn() {
         use starcoin_types::block::{BlockHeader, BlockHeaderBuilder};
-        let genesis = BlockHeader::dag_genesis_random()
+        let genesis = BlockHeader::dag_genesis_random(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)
             .as_builder()
             .with_difficulty(0.into())
             .build();

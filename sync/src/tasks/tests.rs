@@ -46,7 +46,7 @@ use super::BlockConnectedEvent;
 
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_new_node() -> Result<()> {
-    full_sync_new_node().await
+    full_sync_new_node(false).await
 }
 
 #[stest::test]

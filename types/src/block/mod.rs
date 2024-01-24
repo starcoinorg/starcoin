@@ -12,7 +12,6 @@ use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
 use bcs_ext::Sample;
-use lazy_static::lazy_static;
 pub use legacy::{
     Block as LegacyBlock, BlockBody as LegacyBlockBody, BlockHeader as LegacyBlockHeader,
 };
@@ -29,46 +28,47 @@ use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use std::fmt::Formatter;
 use std::hash::Hash;
-use std::sync::Mutex;
 
 /// Type for block number.
 pub type BlockNumber = u64;
 pub type ParentsHash = Option<Vec<HashValue>>;
 //TODO: make sure height
-static DEV_FLEXIDAG_FORK_HEIGHT: BlockNumber = 2;
-static PROXIMA_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
-static HALLEY_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
-static BARNARD_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
-static MAIN_FLEXIDAG_FORK_HEIGHT: BlockNumber = 1000000;
+pub static TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG: BlockNumber = 8;
+pub static TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH: BlockNumber = 100000;
+// static DEV_FLEXIDAG_FORK_HEIGHT: BlockNumber = 2;
+// static PROXIMA_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
+// static HALLEY_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
+// static BARNARD_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
+// static MAIN_FLEXIDAG_FORK_HEIGHT: BlockNumber = 1000000;
 
-lazy_static! {
-    static ref TEST_FLEXIDAG_FORK_HEIGHT: Mutex<BlockNumber> = Mutex::new(10000);
-    static ref CUSTOM_FLEXIDAG_FORK_HEIGHT: Mutex<BlockNumber> = Mutex::new(10000);
-}
+// lazy_static! {
+//     static ref TEST_FLEXIDAG_FORK_HEIGHT: Mutex<BlockNumber> = Mutex::new(10000);
+//     static ref CUSTOM_FLEXIDAG_FORK_HEIGHT: Mutex<BlockNumber> = Mutex::new(10000);
+// }
 
-pub fn get_test_flexidag_fork_height() -> BlockNumber {
-    *TEST_FLEXIDAG_FORK_HEIGHT.lock().unwrap()
-}
+// pub fn get_test_flexidag_fork_height() -> BlockNumber {
+//     *TEST_FLEXIDAG_FORK_HEIGHT.lock().unwrap()
+// }
 
-pub fn get_custom_flexidag_fork_height() -> BlockNumber {
-    *CUSTOM_FLEXIDAG_FORK_HEIGHT.lock().unwrap()
-}
+// pub fn get_custom_flexidag_fork_height() -> BlockNumber {
+//     *CUSTOM_FLEXIDAG_FORK_HEIGHT.lock().unwrap()
+// }
 
-// TODO: support a macro such as #[cfg(test:consensus=dag)] to set fork height for testing customly and reset after executing.
-pub fn set_test_flexidag_fork_height(value: BlockNumber) {
-    let mut num = TEST_FLEXIDAG_FORK_HEIGHT.lock().unwrap();
-    *num = value;
-}
+// // TODO: support a macro such as #[cfg(test:consensus=dag)] to set fork height for testing customly and reset after executing.
+// pub fn set_test_flexidag_fork_height(value: BlockNumber) {
+//     let mut num = TEST_FLEXIDAG_FORK_HEIGHT.lock().unwrap();
+//     *num = value;
+// }
 
-pub fn set_customm_flexidag_fork_height(value: BlockNumber) {
-    let mut num = TEST_FLEXIDAG_FORK_HEIGHT.lock().unwrap();
-    *num = value;
-}
+// pub fn set_customm_flexidag_fork_height(value: BlockNumber) {
+//     let mut num = TEST_FLEXIDAG_FORK_HEIGHT.lock().unwrap();
+//     *num = value;
+// }
 
-pub fn reset_test_custom_fork_height() {
-    *TEST_FLEXIDAG_FORK_HEIGHT.lock().unwrap() = 10000;
-    *CUSTOM_FLEXIDAG_FORK_HEIGHT.lock().unwrap() = 10000;
-}
+// pub fn reset_test_custom_fork_height() {
+//     *TEST_FLEXIDAG_FORK_HEIGHT.lock().unwrap() = 10000;
+//     *CUSTOM_FLEXIDAG_FORK_HEIGHT.lock().unwrap() = 10000;
+// }
 
 /// Type for block header extra
 #[derive(Clone, Default, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, JsonSchema)]
@@ -362,33 +362,33 @@ impl BlockHeader {
     pub fn is_genesis(&self) -> bool {
         self.number == 0
     }
-    pub fn dag_fork_height(&self) -> BlockNumber {
-        if self.chain_id.is_test() {
-            get_test_flexidag_fork_height()
-        } else if self.chain_id.is_halley() {
-            HALLEY_FLEXIDAG_FORK_HEIGHT
-        } else if self.chain_id.is_proxima() {
-            PROXIMA_FLEXIDAG_FORK_HEIGHT
-        } else if self.chain_id.is_barnard() {
-            BARNARD_FLEXIDAG_FORK_HEIGHT
-        } else if self.chain_id.is_main() {
-            MAIN_FLEXIDAG_FORK_HEIGHT
-        } else if self.chain_id.is_dev() {
-            DEV_FLEXIDAG_FORK_HEIGHT
-        } else {
-            get_custom_flexidag_fork_height()
-        }
-    }
+    // pub fn dag_fork_height(&self) -> BlockNumber {
+    //     if self.chain_id.is_test() {
+    //         get_test_flexidag_fork_height()
+    //     } else if self.chain_id.is_halley() {
+    //         HALLEY_FLEXIDAG_FORK_HEIGHT
+    //     } else if self.chain_id.is_proxima() {
+    //         PROXIMA_FLEXIDAG_FORK_HEIGHT
+    //     } else if self.chain_id.is_barnard() {
+    //         BARNARD_FLEXIDAG_FORK_HEIGHT
+    //     } else if self.chain_id.is_main() {
+    //         MAIN_FLEXIDAG_FORK_HEIGHT
+    //     } else if self.chain_id.is_dev() {
+    //         DEV_FLEXIDAG_FORK_HEIGHT
+    //     } else {
+    //         get_custom_flexidag_fork_height()
+    //     }
+    // }
 
-    pub fn is_dag(&self) -> bool {
-        self.number > self.dag_fork_height()
-    }
+    // pub fn is_dag(&self) -> bool {
+    //     self.number > self.dag_fork_height()
+    // }
     pub fn is_legacy(&self) -> bool {
-        !self.is_dag() && self.parents_hash.is_none()
+        self.parents_hash.is_none()
     }
-    pub fn is_dag_genesis(&self) -> bool {
-        self.number == self.dag_fork_height()
-    }
+    // pub fn is_dag_genesis(&self) -> bool {
+    //     self.number == self.dag_fork_height()
+    // }
 
     pub fn genesis_block_header(
         parent_hash: HashValue,
@@ -417,10 +417,10 @@ impl BlockHeader {
         )
     }
     //for test
-    pub fn dag_genesis_random() -> Self {
+    pub fn dag_genesis_random(dag_genesis_number: BlockNumber) -> Self {
         let mut header = Self::random();
         header.parents_hash = Some(vec![header.parent_hash]);
-        header.number = get_test_flexidag_fork_height();
+        header.number = dag_genesis_number;
         header
     }
 
@@ -436,7 +436,9 @@ impl BlockHeader {
     //      1 - upgraded but non-dag header
     //      2 - dag block header
     pub fn random_with_opt(header_type: u8) -> Self {
-        let base = get_test_flexidag_fork_height().checked_add(1).unwrap();
+        let base: u64 = TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH
+            .checked_add(1)
+            .unwrap();
         let (number, parents_hash) = if header_type == 0 {
             (rand::random::<u64>().checked_rem(base).unwrap(), None)
         } else if header_type == 1 {
@@ -797,15 +799,15 @@ impl Block {
         }
     }
 
-    pub fn is_dag(&self) -> bool {
-        self.header.is_dag()
-    }
+    // pub fn is_dag(&self) -> bool {
+    //     self.header.is_dag()
+    // }
     pub fn is_legacy(&self) -> bool {
         self.header.is_legacy()
     }
-    pub fn is_dag_genesis_block(&self) -> bool {
-        self.header.is_dag_genesis()
-    }
+    // pub fn is_dag_genesis_block(&self) -> bool {
+    //     self.header.is_dag_genesis()
+    // }
 
     pub fn parent_hash(&self) -> HashValue {
         self.header.parent_hash()
