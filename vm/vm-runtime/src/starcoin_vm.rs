@@ -884,6 +884,7 @@ impl StarcoinVM {
             chain_id,
             parent_gas_used,
         ) = block_metadata.into_inner();
+        let mut function_name = &account_config::G_BLOCK_PROLOGUE_NAME;
         let mut args_vec = vec![
             MoveValue::Signer(txn_sender),
             MoveValue::vector_u8(parent_id.to_vec()),
@@ -900,7 +901,8 @@ impl StarcoinVM {
         ];
         if let Some(version) = stdlib_version {
             if version >= StdlibVersion::Version(FLEXI_DAG_UPGRADE_VERSION_MARK) {
-                args_vec.push(MoveValue::vector_u8(Vec::new()))
+                args_vec.push(MoveValue::vector_u8(Vec::new()));
+                function_name = &account_config::G_BLOCK_PROLOGUE_V2_NAME;
             }
         }
         let args = serialize_values(&args_vec);
@@ -909,7 +911,7 @@ impl StarcoinVM {
             .as_mut()
             .execute_function_bypass_visibility(
                 &account_config::G_TRANSACTION_MANAGER_MODULE,
-                &account_config::G_BLOCK_PROLOGUE_NAME,
+                function_name,
                 vec![],
                 args,
                 &mut gas_meter,
