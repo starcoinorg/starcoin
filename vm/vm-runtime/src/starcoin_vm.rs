@@ -865,6 +865,7 @@ impl StarcoinVM {
     ) -> Result<TransactionOutput, VMStatus> {
         #[cfg(testing)]
         info!("process_block_meta begin");
+        let stdlib_version = self.version.clone().map(|v| v.into_stdlib_version());
         let txn_sender = account_config::genesis_address();
         // always use 0 gas for system.
         let max_gas_amount: Gas = 0.into();
@@ -883,7 +884,7 @@ impl StarcoinVM {
             chain_id,
             parent_gas_used,
         ) = block_metadata.into_inner();
-        let args = serialize_values(&vec![
+        let mut args_vec = vec![
             MoveValue::Signer(txn_sender),
             MoveValue::vector_u8(parent_id.to_vec()),
             MoveValue::U64(timestamp),
@@ -896,7 +897,13 @@ impl StarcoinVM {
             MoveValue::U64(number),
             MoveValue::U8(chain_id.id()),
             MoveValue::U64(parent_gas_used),
-        ]);
+        ];
+        if let Some(version) = stdlib_version {
+            if version >= StdlibVersion::Version(FLEXI_DAG_UPGRADE_VERSION_MARK) {
+                args_vec.push(MoveValue::vector_u8(Vec::new()))
+            }
+        }
+        let args = serialize_values(&args_vec);
         let mut session: SessionAdapter<_> = self.move_vm.new_session(storage, session_id).into();
         session
             .as_mut()
