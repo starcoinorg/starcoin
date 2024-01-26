@@ -10,11 +10,11 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
-use starcoin_storage::Storage;
+use starcoin_storage::{BlockStore, Storage};
+use starcoin_types::block::BlockNumber;
 use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
-use starcoin_types::block::BlockNumber;
 
 pub struct MockChain {
     net: ChainNetwork,
@@ -104,10 +104,6 @@ impl MockChain {
             None,
             self.head.dag(),
         )
-    }
-
-    pub fn set_test_flexidag_fork_height(&mut self, fork_number: BlockNumber) {
-        self.head.set_test_flexidag_fork_height(fork_number);
     }
 
     pub fn fork(&self, head_id: Option<HashValue>) -> Result<MockChain> {
@@ -201,5 +197,13 @@ impl MockChain {
 
     pub fn miner(&self) -> &AccountInfo {
         &self.miner
+    }
+
+    pub fn set_dag_fork_number(&self, number: BlockNumber) -> Result<()> {
+        self.storage.save_dag_fork_number(number)
+    }
+
+    pub fn get_dag_fork_number(&self) -> Result<Option<BlockNumber>> {
+        self.storage.get_dag_fork_number()
     }
 }

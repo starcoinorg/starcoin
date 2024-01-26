@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{format_err, Error, Result};
+use anyhow::{format_err, Error, Ok, Result};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::{
@@ -243,6 +243,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetDagBlockChildren { block_ids } => Ok(ChainResponse::HashVec(
                 self.inner.get_dag_block_children(block_ids)?,
             )),
+            ChainRequest::GetDagForkNumber => Ok(ChainResponse::DagForkNumber(self.inner.main.dag_fork_height())),
         }
     }
 }

@@ -243,10 +243,6 @@ impl SyncNodeMocker {
         }
     }
 
-    pub fn set_test_flexidag_fork_height(&mut self, fork_number: BlockNumber) {
-        self.chain_mocker.set_test_flexidag_fork_height(fork_number);
-    }
-
     pub fn peer_info(&self) -> PeerInfo {
         PeerInfo::new(
             self.peer_id.clone(),
@@ -341,6 +337,14 @@ impl SyncNodeMocker {
             .select_peer()
             .ok_or_else(|| format_err!("No peers for send request."))
     }
+
+    pub fn set_dag_fork_number(&self, fork_number: BlockNumber) -> Result<()> {
+        self.chain_mocker.set_dag_fork_number(fork_number)
+    }
+
+    // pub fn get_dag_fork_number(&self) -> Result<Option<BlockNumber>> {
+    //     self.chain_mocker.get_dag_fork_number()
+    // }
 }
 
 impl PeerOperator for SyncNodeMocker {

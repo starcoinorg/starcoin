@@ -33,8 +33,8 @@ use std::hash::Hash;
 pub type BlockNumber = u64;
 pub type ParentsHash = Option<Vec<HashValue>>;
 //TODO: make sure height
-pub static TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG: BlockNumber = 8;
-pub static TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH: BlockNumber = 100000;
+pub static TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG: BlockNumber = 4;
+pub static TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH: BlockNumber = 10000;
 // static DEV_FLEXIDAG_FORK_HEIGHT: BlockNumber = 2;
 // static PROXIMA_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
 // static HALLEY_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;

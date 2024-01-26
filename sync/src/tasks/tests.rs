@@ -8,7 +8,6 @@ use crate::tasks::{
     full_sync_task, AccumulatorCollector, AncestorCollector, BlockAccumulatorSyncTask,
     BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask, SyncFetcher,
 };
-use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{format_err, Result};
 use anyhow::{Context, Ok};
 use futures::channel::mpsc::unbounded;
@@ -30,76 +29,27 @@ use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::SyncTarget;
+use starcoin_types::block::TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH;
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeaderBuilder, BlockIdAndNumber, BlockInfo},
     U256,
 };
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use stream_task::{
-    DefaultCustomErrorHandle, Generator, TaskError, TaskEventCounterHandle, TaskGenerator,
-};
+use stream_task::{DefaultCustomErrorHandle, Generator, TaskEventCounterHandle, TaskGenerator};
 use test_helper::DummyNetworkService;
 
-use super::test_tools::{full_sync_new_node, SyncTestSystem};
+use super::test_tools::{full_sync_new_node, sync_invalid_target, SyncTestSystem};
 use super::BlockConnectedEvent;
 
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_new_node() -> Result<()> {
-    full_sync_new_node(false).await
+    full_sync_new_node(TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH).await
 }
 
 #[stest::test]
 pub async fn test_sync_invalid_target() -> Result<()> {
-    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
-    node1.produce_block(10)?;
-
-    let arc_node1 = Arc::new(node1);
-
-    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-
-    let node2 = SyncNodeMocker::new(net2.clone(), 300, 0)?;
-    let dag = node2.chain().dag();
-    let mut target = arc_node1.sync_target();
-
-    target.block_info.total_difficulty = U256::max_value();
-
-    let current_block_header = node2.chain().current_header();
-
-    let storage = node2.chain().get_storage();
-    let (sender_1, receiver_1) = unbounded();
-    let (sender_2, _receiver_2) = unbounded();
-    let (sync_task, _task_handle, _task_event_counter) = full_sync_task(
-        current_block_header.id(),
-        target.clone(),
-        false,
-        net2.time_service(),
-        storage.clone(),
-        sender_1,
-        arc_node1.clone(),
-        sender_2,
-        DummyNetworkService::default(),
-        15,
-        None,
-        None,
-        dag,
-    )?;
-    let _join_handle = node2.process_block_connect_event(receiver_1).await;
-    let sync_result = sync_task.await;
-    assert!(sync_result.is_err());
-    let err = sync_result.err().unwrap();
-    debug!("task_error: {:?}", err);
-    assert!(err.is_break_error());
-    if let TaskError::BreakError(err) = err {
-        let verify_err = err.downcast::<RpcVerifyError>().unwrap();
-        assert_eq!(verify_err.peers[0].clone(), arc_node1.peer_id);
-        debug!("{:?}", verify_err)
-    } else {
-        panic!("Expect BreakError, but got: {:?}", err)
-    }
-
-    Ok(())
+    sync_invalid_target(TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH).await
 }
 
 #[stest::test]

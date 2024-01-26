@@ -22,6 +22,7 @@ starcoin-config = { workspace = true }
 
 [features]
 mock = []
+testing = []
 
 [package]
 authors = { workspace = true }

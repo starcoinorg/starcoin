@@ -49,8 +49,15 @@ timeout-join-handler = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 num_cpus = { workspace = true }
 starcoin-dag = { workspace = true }
+starcoin-chain-api = { workspace = true, features = ["testing"] }
+
 [dev-dependencies]
 stest = { workspace = true }
+starcoin-chain-service = { workspace = true, features = ["testing"] }
+starcoin-chain-api = { workspace = true, features = ["testing"] }
+
+[features]
+testing = []
 
 [package]
 authors = { workspace = true }

@@ -169,7 +169,9 @@ mod tests {
     use super::*;
     use crate::consensusdb::prelude::FlexiDagStorageConfig;
     use starcoin_config::RocksdbConfig;
-    use starcoin_types::block::{BlockHeader, BlockHeaderBuilder, TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG};
+    use starcoin_types::block::{
+        BlockHeader, BlockHeaderBuilder, TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG,
+    };
     use std::{env, fs};
 
     fn build_block_dag(k: KType) -> BlockDAG {

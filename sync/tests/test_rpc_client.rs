@@ -9,7 +9,7 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_node::NodeHandle;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
-use starcoin_types::block::BlockHeader;
+use starcoin_types::block::{BlockHeader, TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG};
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
@@ -22,6 +22,13 @@ struct DagBlockInfo {
 fn test_verified_client_for_dag() {
     let (local_handle, target_handle, target_peer_id) =
         init_two_node().expect("failed to initalize the local and target node");
+
+    target_handle
+        .set_dag_fork_number(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)
+        .expect("set fork number error");
+    local_handle
+        .set_dag_fork_number(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)
+        .expect("set fork number error");
 
     let network = local_handle.network();
     // PeerProvider
@@ -79,8 +86,8 @@ fn generate_dag_block(handle: &NodeHandle, count: usize) -> Result<Vec<DagBlockI
     let mut result = vec![];
     let dag = handle.get_dag()?;
     while result.len() < count {
-        let block = handle.generate_block()?;
-        if block.header().is_dag() {
+        let (block, is_dag_block) = handle.generate_block()?;
+        if is_dag_block {
             result.push(block);
         }
     }

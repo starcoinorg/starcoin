@@ -18,7 +18,7 @@ use starcoin_node_api::node_service::NodeAsyncService;
 use starcoin_rpc_server::service::RpcService;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceInfo, ServiceRef};
-use starcoin_storage::Storage;
+use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync::sync::SyncService;
 use starcoin_txpool::TxPoolService;
 use starcoin_types::block::Block;
@@ -26,6 +26,7 @@ use starcoin_types::system_events::{GenerateBlockEvent, NewHeadBlock};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::runtime::Runtime;
+use starcoin_types::block::BlockNumber;
 
 pub mod crash_handler;
 mod genesis_parameter_resolve;
@@ -183,7 +184,7 @@ impl NodeHandle {
     }
 
     /// Just for test
-    pub fn generate_block(&self) -> Result<Block> {
+    pub fn generate_block(&self) -> Result<(Block, bool)> {
         let registry = &self.registry;
         block_on(async move {
             let bus = registry.service_ref::<BusService>().await?;
@@ -211,8 +212,14 @@ impl NodeHandle {
                     bail!("Wait timeout for generate_block")
                 }
             };
-            Ok(block)
+
+            let is_dag_block = chain_service.dag_fork_number().await? < block.header().number();
+            Ok((block, is_dag_block))
         })
+    }
+
+    pub fn set_dag_fork_number(&self, fork_number: BlockNumber) -> Result<()> {
+        self.storage().save_dag_fork_number(fork_number)
     }
 }
 

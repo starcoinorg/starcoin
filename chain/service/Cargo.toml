@@ -27,9 +27,12 @@ starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
 [dev-dependencies]
 stest = { workspace = true }
 test-helper = { workspace = true }
+starcoin-chain-api = { workspace = true, features = ["testing"] }
+starcoin-chain = { workspace = true, features = ["testing"] }
 
 [features]
 mock = []
+testing = []
 
 [package]
 authors = { workspace = true }

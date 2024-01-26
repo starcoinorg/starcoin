@@ -19,7 +19,7 @@ use test_helper::DummyNetworkService;
 
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_new_node_dag() {
-    full_sync_new_node(true)
+    full_sync_new_node(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)
         .await
         .expect("dag full sync should success");
 }
@@ -103,10 +103,10 @@ async fn test_sync_single_chain_to_dag_chain() -> Result<()> {
     let test_system = super::test_tools::SyncTestSystem::initialize_sync_system().await?;
     test_system
         .target_node
-        .set_test_flexidag_fork_height(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG);
+        .set_dag_fork_number(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)?;
     test_system
         .local_node
-        .set_test_flexidag_fork_height(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG);
+        .set_dag_fork_number(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)?;
     let (_local_node, _target_node) = sync_block_in_block_connection_service_mock(
         Arc::new(test_system.target_node),
         Arc::new(test_system.local_node),
@@ -117,17 +117,17 @@ async fn test_sync_single_chain_to_dag_chain() -> Result<()> {
     Ok(())
 }
 
-#[stest::test(timeout = 600)]
+#[stest::test(timeout = 120)]
 async fn test_sync_red_blocks_dag() -> Result<()> {
     let test_system = super::test_tools::SyncTestSystem::initialize_sync_system()
         .await
         .expect("failed to init system");
     test_system
         .target_node
-        .set_test_flexidag_fork_height(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG);
+        .set_dag_fork_number(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)?;
     test_system
         .local_node
-        .set_test_flexidag_fork_height(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG);
+        .set_dag_fork_number(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)?;
     let mut target_node = Arc::new(test_system.target_node);
     let local_node = Arc::new(test_system.local_node);
     Arc::get_mut(&mut target_node)
