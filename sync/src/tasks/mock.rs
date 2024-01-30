@@ -12,9 +12,11 @@ use futures::{FutureExt, StreamExt};
 use futures_timer::Delay;
 use network_api::messages::NotificationMessage;
 use network_api::{PeerId, PeerInfo, PeerSelector, PeerStrategy};
+use network_p2p_core::export::log::info;
 use network_p2p_core::{NetRpcError, RpcErrorCode};
 use rand::Rng;
 use starcoin_account_api::AccountInfo;
+use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
@@ -27,8 +29,13 @@ use starcoin_storage::Storage;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::ChainInfo;
-use std::sync::Arc;
+use starcoin_types::U256;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
+
+use super::block_sync_task::SyncBlockData;
+use super::BlockLocalStore;
 
 pub enum ErrorStrategy {
     _RateLimitErr,
@@ -131,6 +138,126 @@ impl BlockIdFetcher for MockBlockIdFetcher {
     ) -> BoxFuture<Result<Vec<HashValue>>> {
         self.fetch_block_ids_async(start_number, reverse, max_size)
             .boxed()
+    }
+}
+
+#[derive(Default)]
+pub struct MockLocalBlockStore {
+    store: Mutex<HashMap<HashValue, SyncBlockData>>,
+}
+
+impl MockLocalBlockStore {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn mock(&self, block: &Block) {
+        let block_id = block.id();
+        let block_info = BlockInfo::new(
+            block_id,
+            U256::from(1),
+            AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
+            AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
+        );
+        self.store.lock().unwrap().insert(
+            block.id(),
+            SyncBlockData::new(block.clone(), Some(block_info), Some(PeerId::random())),
+        );
+    }
+}
+
+impl BlockLocalStore for MockLocalBlockStore {
+    fn get_block_with_info(&self, block_ids: Vec<HashValue>) -> Result<Vec<Option<SyncBlockData>>> {
+        let store = self.store.lock().unwrap();
+        Ok(block_ids.iter().map(|id| store.get(id).cloned()).collect())
+    }
+}
+
+#[derive(Default)]
+pub struct MockBlockFetcher {
+    pub blocks: Mutex<HashMap<HashValue, Block>>,
+}
+
+impl MockBlockFetcher {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn put(&self, block: Block) {
+        self.blocks.lock().unwrap().insert(block.id(), block);
+    }
+}
+
+impl BlockFetcher for MockBlockFetcher {
+    fn fetch_blocks(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>> {
+        let blocks = self.blocks.lock().unwrap();
+        let result: Result<Vec<(Block, Option<PeerId>)>> = block_ids
+            .iter()
+            .map(|block_id| {
+                if let Some(block) = blocks.get(block_id).cloned() {
+                    Ok((block, Some(PeerId::random())))
+                } else {
+                    Err(format_err!("Can not find block by id: {:?}", block_id))
+                }
+            })
+            .collect();
+        async {
+            Delay::new(Duration::from_millis(100)).await;
+            result
+        }
+        .boxed()
+    }
+
+    fn fetch_block_headers(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<(HashValue, Option<starcoin_types::block::BlockHeader>)>>> {
+        let blocks = self.blocks.lock().unwrap();
+        let result = block_ids
+            .iter()
+            .map(|block_id| {
+                if let Some(block) = blocks.get(block_id).cloned() {
+                    Ok((block.id(), Some(block.header().clone())))
+                } else {
+                    Err(format_err!("Can not find block by id: {:?}", block_id))
+                }
+            })
+            .collect();
+        async {
+            Delay::new(Duration::from_millis(100)).await;
+            result
+        }
+        .boxed()
+    }
+
+    fn fetch_dag_block_children(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<HashValue>>> {
+        let blocks = self.blocks.lock().unwrap();
+        let mut result = vec![];
+        block_ids.iter().for_each(|block_id| {
+            if let Some(block) = blocks.get(block_id).cloned() {
+                while let Some(hashes) = block.header().parents_hash() {
+                    for hash in hashes {
+                        if result.contains(&hash) {
+                            continue;
+                        }
+                        result.push(hash);
+                    }
+                }
+            } else {
+                info!("Can not find block by id: {:?}", block_id)
+            }
+        });
+        async {
+            Delay::new(Duration::from_millis(100)).await;
+            Ok(result)
+        }
+        .boxed()
     }
 }
 

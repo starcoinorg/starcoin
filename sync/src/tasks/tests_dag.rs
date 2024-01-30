@@ -4,7 +4,7 @@ use crate::{
 };
 use std::sync::Arc;
 
-use super::mock::SyncNodeMocker;
+use super::{mock::SyncNodeMocker, test_tools::{block_sync_task_test, full_sync_cancel, full_sync_continue, full_sync_fork, full_sync_fork_from_genesis, sync_invalid_target}};
 use super::test_tools::full_sync_new_node;
 use anyhow::{format_err, Result};
 use futures::channel::mpsc::unbounded;
@@ -192,4 +192,35 @@ async fn test_sync_red_blocks_dag() -> Result<()> {
     // Arc::get_mut(&mut target_node).unwrap().produce_block_by_header(dag_genesis_header, 5).expect("failed to produce block");
 
     Ok(())
+}
+
+
+#[stest::test]
+pub async fn test_dag_sync_invalid_target() -> Result<()> {
+    sync_invalid_target(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG).await
+}
+
+#[stest::test(timeout = 120)]
+pub async fn test_dag_full_sync_fork() -> Result<()> {
+    full_sync_fork(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG).await
+}
+
+#[stest::test(timeout = 120)]
+pub async fn test_dag_full_sync_fork_from_genesis() -> Result<()> {
+    full_sync_fork_from_genesis(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG).await
+}
+
+#[stest::test(timeout = 120)]
+pub async fn test_dag_full_sync_continue() -> Result<()> {
+    full_sync_continue(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG).await
+}
+
+#[stest::test]
+pub async fn test_dag_full_sync_cancel() -> Result<()> {
+    full_sync_cancel(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG).await
+}
+
+#[stest::test]
+async fn test_dag_block_sync() -> Result<()> {
+    block_sync_task_test(100, 0, TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG).await
 }

@@ -2,21 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #![allow(clippy::integer_arithmetic)]
-use crate::tasks::block_sync_task::SyncBlockData;
-use crate::tasks::mock::{ErrorStrategy, MockBlockIdFetcher, SyncNodeMocker};
+use crate::tasks::mock::{ErrorStrategy, MockBlockIdFetcher, MockLocalBlockStore, SyncNodeMocker};
+use crate::tasks::test_tools::build_block_fetcher;
 use crate::tasks::{
     full_sync_task, AccumulatorCollector, AncestorCollector, BlockAccumulatorSyncTask,
-    BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask, SyncFetcher,
+    BlockCollector, BlockSyncTask, FindAncestorTask, SyncFetcher,
 };
 use anyhow::{format_err, Result};
 use anyhow::{Context, Ok};
 use futures::channel::mpsc::unbounded;
-use futures::future::BoxFuture;
-use futures::FutureExt;
 use futures_timer::Delay;
 use network_api::{PeerId, PeerInfo, PeerSelector, PeerStrategy};
 use pin_utils::core_reexport::time::Duration;
-use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::tree_store::mock::MockAccumulatorStore;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
@@ -27,19 +24,16 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
+use starcoin_network_rpc_api::BlockBody;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::SyncTarget;
-use starcoin_types::block::TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH;
-use starcoin_types::{
-    block::{Block, BlockBody, BlockHeaderBuilder, BlockIdAndNumber, BlockInfo},
-    U256,
-};
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use starcoin_types::block::{Block, BlockHeaderBuilder, BlockIdAndNumber, TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH};
+use std::sync::Arc;
 use stream_task::{DefaultCustomErrorHandle, Generator, TaskEventCounterHandle, TaskGenerator};
 use test_helper::DummyNetworkService;
 
-use super::test_tools::{full_sync_new_node, sync_invalid_target, SyncTestSystem};
+use super::mock::MockBlockFetcher;
+use super::test_tools::{block_sync_task_test, full_sync_cancel, full_sync_continue, full_sync_fork, full_sync_fork_from_genesis, full_sync_new_node, sync_invalid_target, SyncTestSystem};
 use super::BlockConnectedEvent;
 
 #[stest::test(timeout = 120)]
@@ -96,284 +90,22 @@ pub async fn test_failed_block() -> Result<()> {
 
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_fork() -> Result<()> {
-    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
-    node1.produce_block(10)?;
-
-    let mut arc_node1 = Arc::new(node1);
-
-    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-
-    let node2 = SyncNodeMocker::new(net2.clone(), 300, 0)?;
-
-    let target = arc_node1.sync_target();
-
-    let current_block_header = node2.chain().current_header();
-    let dag = node2.chain().dag();
-    let storage = node2.chain().get_storage();
-    let (sender, receiver) = unbounded();
-    let (sender_2, _receiver_2) = unbounded();
-    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
-        current_block_header.id(),
-        target.clone(),
-        false,
-        net2.time_service(),
-        storage.clone(),
-        sender,
-        arc_node1.clone(),
-        sender_2,
-        DummyNetworkService::default(),
-        15,
-        None,
-        None,
-        dag.clone(),
-    )?;
-    let join_handle = node2.process_block_connect_event(receiver).await;
-    let branch = sync_task.await?;
-    let mut node2 = join_handle.await;
-    let current_block_header = node2.chain().current_header();
-    assert_eq!(branch.current_header().id(), target.target_id.id());
-    assert_eq!(target.target_id.id(), current_block_header.id());
-    let reports = task_event_counter.get_reports();
-    reports
-        .iter()
-        .for_each(|report| debug!("reports: {}", report));
-
-    //test fork
-
-    Arc::get_mut(&mut arc_node1).unwrap().produce_block(10)?;
-    node2.produce_block(5)?;
-
-    let (sender, receiver) = unbounded();
-    let target = arc_node1.sync_target();
-    let (sender_2, _receiver_2) = unbounded();
-    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
-        current_block_header.id(),
-        target.clone(),
-        false,
-        net2.time_service(),
-        storage,
-        sender,
-        arc_node1.clone(),
-        sender_2,
-        DummyNetworkService::default(),
-        15,
-        None,
-        None,
-        dag,
-    )?;
-    let join_handle = node2.process_block_connect_event(receiver).await;
-    let branch = sync_task.await?;
-    let node2 = join_handle.await;
-    let current_block_header = node2.chain().current_header();
-    assert_eq!(branch.current_header().id(), target.target_id.id());
-    assert_eq!(target.target_id.id(), current_block_header.id());
-
-    let reports = task_event_counter.get_reports();
-    reports
-        .iter()
-        .for_each(|report| debug!("reports: {}", report));
-    Ok(())
+    full_sync_fork(TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH).await
 }
 
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
-    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
-    node1.produce_block(10)?;
-
-    let arc_node1 = Arc::new(node1);
-
-    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-
-    //fork from genesis
-    let mut node2 = SyncNodeMocker::new(net2.clone(), 300, 0)?;
-    node2.produce_block(5)?;
-
-    let target = arc_node1.sync_target();
-
-    let current_block_header = node2.chain().current_header();
-    let dag = node2.chain().dag();
-    let storage = node2.chain().get_storage();
-    let (sender, receiver) = unbounded();
-    let (sender_2, _receiver_2) = unbounded();
-    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
-        current_block_header.id(),
-        target.clone(),
-        false,
-        net2.time_service(),
-        storage.clone(),
-        sender,
-        arc_node1.clone(),
-        sender_2,
-        DummyNetworkService::default(),
-        15,
-        None,
-        None,
-        dag,
-    )?;
-    let join_handle = node2.process_block_connect_event(receiver).await;
-    let branch = sync_task.await?;
-    let node2 = join_handle.await;
-    let current_block_header = node2.chain().current_header();
-    assert_eq!(branch.current_header().id(), target.target_id.id());
-    assert_eq!(target.target_id.id(), current_block_header.id());
-    assert_eq!(
-        arc_node1.chain().current_header().id(),
-        current_block_header.id()
-    );
-    let reports = task_event_counter.get_reports();
-    reports
-        .iter()
-        .for_each(|report| debug!("reports: {}", report));
-
-    Ok(())
+    full_sync_fork_from_genesis(TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH).await
 }
 
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_continue() -> Result<()> {
-    // let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let test_system = SyncTestSystem::initialize_sync_system().await?;
-    let mut node1 = test_system.target_node; // SyncNodeMocker::new(net1, 10, 50)?;
-    let dag = node1.chain().dag();
-    node1.produce_block(10)?;
-    let arc_node1 = Arc::new(node1);
-    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    //fork from genesis
-    let mut node2 = test_system.local_node; // SyncNodeMocker::new(net2.clone(), 1, 50)?;
-    node2.produce_block(7)?;
-
-    // first set target to 5.
-    let target = arc_node1.sync_target_by_number(5).unwrap();
-
-    let current_block_header = node2.chain().current_header();
-
-    let storage = node2.chain().get_storage();
-    let (sender, receiver) = unbounded();
-    let (sender_2, _receiver_2) = unbounded();
-    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
-        current_block_header.id(),
-        target.clone(),
-        false,
-        net2.time_service(),
-        storage.clone(),
-        sender,
-        arc_node1.clone(),
-        sender_2,
-        DummyNetworkService::default(),
-        15,
-        None,
-        None,
-        dag.clone(),
-    )?;
-    let join_handle = node2.process_block_connect_event(receiver).await;
-    let branch = sync_task.await?;
-    let node2 = join_handle.await;
-
-    assert_eq!(branch.current_header().id(), target.target_id.id());
-    let current_block_header = node2.chain().current_header();
-    // node2's main chain not change.
-    assert_ne!(target.target_id.id(), current_block_header.id());
-
-    let reports = task_event_counter.get_reports();
-    reports
-        .iter()
-        .for_each(|report| debug!("task_report: {}", report));
-
-    //set target to latest.
-    let target = arc_node1.sync_target();
-
-    let (sender, receiver) = unbounded();
-    //continue sync
-    //TODO find a way to verify continue sync will reuse previous task local block.
-    let (sender_2, _receiver_2) = unbounded();
-    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
-        current_block_header.id(),
-        target.clone(),
-        false,
-        net2.time_service(),
-        storage.clone(),
-        sender,
-        arc_node1.clone(),
-        sender_2,
-        DummyNetworkService::default(),
-        15,
-        None,
-        None,
-        dag,
-    )?;
-
-    let join_handle = node2.process_block_connect_event(receiver).await;
-    let branch = sync_task.await?;
-    let node2 = join_handle.await;
-    let current_block_header = node2.chain().current_header();
-    assert_eq!(branch.current_header().id(), target.target_id.id());
-    assert_eq!(target.target_id.id(), current_block_header.id());
-    assert_eq!(
-        arc_node1.chain().current_header().id(),
-        current_block_header.id()
-    );
-    let reports = task_event_counter.get_reports();
-    reports
-        .iter()
-        .for_each(|report| debug!("reports: {}", report));
-
-    Ok(())
+    full_sync_continue(TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH).await
 }
 
 #[stest::test]
 pub async fn test_full_sync_cancel() -> Result<()> {
-    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
-    node1.produce_block(10)?;
-
-    let arc_node1 = Arc::new(node1);
-
-    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-
-    let node2 = SyncNodeMocker::new(net2.clone(), 10, 50)?;
-
-    let target = arc_node1.sync_target();
-
-    let current_block_header = node2.chain().current_header();
-    let dag = node2.chain().dag();
-    let storage = node2.chain().get_storage();
-    let (sender, receiver) = unbounded();
-    let (sender_2, _receiver_2) = unbounded();
-    let (sync_task, task_handle, task_event_counter) = full_sync_task(
-        current_block_header.id(),
-        target.clone(),
-        false,
-        net2.time_service(),
-        storage.clone(),
-        sender,
-        arc_node1.clone(),
-        sender_2,
-        DummyNetworkService::default(),
-        15,
-        None,
-        None,
-        dag,
-    )?;
-    let join_handle = node2.process_block_connect_event(receiver).await;
-    let sync_join_handle = tokio::task::spawn(sync_task);
-
-    Delay::new(Duration::from_millis(100)).await;
-
-    task_handle.cancel();
-    let sync_result = sync_join_handle.await?;
-    assert!(sync_result.is_err());
-    assert!(sync_result.err().unwrap().is_canceled());
-
-    let node2 = join_handle.await;
-    let current_block_header = node2.chain().current_header();
-    assert_ne!(target.target_id.id(), current_block_header.id());
-    let reports = task_event_counter.get_reports();
-    reports
-        .iter()
-        .for_each(|report| debug!("reports: {}", report));
-
-    Ok(())
+    full_sync_cancel(TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH).await
 }
 
 #[ignore]
@@ -551,212 +283,22 @@ pub async fn test_find_ancestor_chain_fork() -> Result<()> {
     Ok(())
 }
 
-#[derive(Default)]
-struct MockBlockFetcher {
-    blocks: Mutex<HashMap<HashValue, Block>>,
-}
 
-impl MockBlockFetcher {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn put(&self, block: Block) {
-        self.blocks.lock().unwrap().insert(block.id(), block);
-    }
-}
-
-impl BlockFetcher for MockBlockFetcher {
-    fn fetch_blocks(
-        &self,
-        block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>> {
-        let blocks = self.blocks.lock().unwrap();
-        let result: Result<Vec<(Block, Option<PeerId>)>> = block_ids
-            .iter()
-            .map(|block_id| {
-                if let Some(block) = blocks.get(block_id).cloned() {
-                    Ok((block, Some(PeerId::random())))
-                } else {
-                    Err(format_err!("Can not find block by id: {:?}", block_id))
-                }
-            })
-            .collect();
-        async {
-            Delay::new(Duration::from_millis(100)).await;
-            result
-        }
-        .boxed()
-    }
-
-    fn fetch_block_headers(
-        &self,
-        block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<(HashValue, Option<starcoin_types::block::BlockHeader>)>>> {
-        let blocks = self.blocks.lock().unwrap();
-        let result = block_ids
-            .iter()
-            .map(|block_id| {
-                if let Some(block) = blocks.get(block_id).cloned() {
-                    Ok((block.id(), Some(block.header().clone())))
-                } else {
-                    Err(format_err!("Can not find block by id: {:?}", block_id))
-                }
-            })
-            .collect();
-        async {
-            Delay::new(Duration::from_millis(100)).await;
-            result
-        }
-        .boxed()
-    }
-
-    fn fetch_dag_block_children(
-        &self,
-        block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<HashValue>>> {
-        let blocks = self.blocks.lock().unwrap();
-        let mut result = vec![];
-        block_ids.iter().for_each(|block_id| {
-            if let Some(block) = blocks.get(block_id).cloned() {
-                while let Some(hashes) = block.header().parents_hash() {
-                    for hash in hashes {
-                        if result.contains(&hash) {
-                            continue;
-                        }
-                        result.push(hash);
-                    }
-                }
-            } else {
-                info!("Can not find block by id: {:?}", block_id)
-            }
-        });
-        async {
-            Delay::new(Duration::from_millis(100)).await;
-            Ok(result)
-        }
-        .boxed()
-    }
-}
-
-fn build_block_fetcher(total_blocks: u64) -> (MockBlockFetcher, MerkleAccumulator) {
-    let fetcher = MockBlockFetcher::new();
-
-    let store = Arc::new(MockAccumulatorStore::new());
-    let accumulator = MerkleAccumulator::new_empty(store);
-    for i in 0..total_blocks {
-        let header = BlockHeaderBuilder::random().with_number(i).build();
-        let block = Block::new(header, vec![]);
-        accumulator.append(&[block.id()]).unwrap();
-        fetcher.put(block);
-    }
-    accumulator.flush().unwrap();
-    (fetcher, accumulator)
-}
-
-#[derive(Default)]
-struct MockLocalBlockStore {
-    store: Mutex<HashMap<HashValue, SyncBlockData>>,
-}
-
-impl MockLocalBlockStore {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn mock(&self, block: &Block) {
-        let block_id = block.id();
-        let block_info = BlockInfo::new(
-            block_id,
-            U256::from(1),
-            AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
-            AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
-        );
-        self.store.lock().unwrap().insert(
-            block.id(),
-            SyncBlockData::new(block.clone(), Some(block_info), Some(PeerId::random())),
-        );
-    }
-}
-
-impl BlockLocalStore for MockLocalBlockStore {
-    fn get_block_with_info(&self, block_ids: Vec<HashValue>) -> Result<Vec<Option<SyncBlockData>>> {
-        let store = self.store.lock().unwrap();
-        Ok(block_ids.iter().map(|id| store.get(id).cloned()).collect())
-    }
-}
-
-async fn block_sync_task_test(total_blocks: u64, ancestor_number: u64) -> Result<()> {
-    assert!(
-        total_blocks > ancestor_number,
-        "total blocks should > ancestor number"
-    );
-    let (fetcher, accumulator) = build_block_fetcher(total_blocks);
-    let ancestor = BlockIdAndNumber::new(
-        accumulator
-            .get_leaf(ancestor_number)?
-            .expect("ancestor should exist"),
-        ancestor_number,
-    );
-
-    let block_sync_state = BlockSyncTask::new(
-        accumulator,
-        ancestor,
-        fetcher,
-        false,
-        MockLocalBlockStore::new(),
-        3,
-    );
-    let event_handle = Arc::new(TaskEventCounterHandle::new());
-    let sync_task = TaskGenerator::new(
-        block_sync_state,
-        5,
-        3,
-        300,
-        vec![],
-        event_handle.clone(),
-        Arc::new(DefaultCustomErrorHandle),
-    )
-    .generate();
-    let result = sync_task.await?;
-    assert!(!result.is_empty(), "task result is empty.");
-    let last_block_number = result
-        .iter()
-        .map(|block_data| {
-            assert!(block_data.info.is_none());
-            block_data.block.header().number()
-        })
-        .fold(ancestor.number, |parent, current| {
-            //ensure return block is ordered
-            assert_eq!(
-                parent + 1,
-                current,
-                "block sync task not return ordered blocks"
-            );
-            current
-        });
-
-    assert_eq!(last_block_number, total_blocks - 1);
-
-    let report = event_handle.get_reports().pop().unwrap();
-    debug!("report: {}", report);
-    Ok(())
-}
 
 #[stest::test]
 async fn test_block_sync() -> Result<()> {
-    block_sync_task_test(100, 0).await
+    block_sync_task_test(100, 0, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH).await
 }
 
 #[stest::test]
 async fn test_block_sync_one_block() -> Result<()> {
-    block_sync_task_test(2, 0).await
+    block_sync_task_test(2, 0, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH).await
 }
 
 #[stest::test]
 async fn test_block_sync_with_local() -> Result<()> {
     let total_blocks = 100;
-    let (fetcher, accumulator) = build_block_fetcher(total_blocks);
+    let (fetcher, accumulator) = build_block_fetcher(total_blocks, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH);
 
     let local_store = MockLocalBlockStore::new();
     fetcher

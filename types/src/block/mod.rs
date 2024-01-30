@@ -431,6 +431,10 @@ impl BlockHeader {
         Self::random_with_opt(0)
     }
 
+    pub fn random_for_dag() -> Self {
+        Self::random_with_opt(2)
+    }
+
     // header_type:
     //      0 - legacy compatible header
     //      1 - upgraded but non-dag header
@@ -629,6 +633,12 @@ impl BlockHeaderBuilder {
     pub fn random() -> Self {
         Self {
             buffer: BlockHeader::random(),
+        }
+    }
+
+    pub fn random_for_dag() -> Self {
+        Self {
+            buffer: BlockHeader::random_for_dag(),
         }
     }
 
