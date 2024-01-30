@@ -1161,7 +1161,7 @@ impl ChainReader for BlockChain {
             None => return Ok(None),
         };
 
-        //if can get proof by leaf_index, the leaf and transaction info should exist.
+        // If we can get proof by leaf_index, the leaf and transaction info should exist.
         let txn_info_hash = self
             .txn_accumulator
             .get_leaf(transaction_global_index)?
