@@ -10,7 +10,7 @@ use crate::consensusdb::{
     },
 };
 use crate::ghostdag::protocol::GhostdagManager;
-use anyhow::{bail, Ok};
+use anyhow::{anyhow, bail, Ok};
 use parking_lot::RwLock;
 use starcoin_config::{temp_dir, RocksdbConfig};
 use starcoin_crypto::{HashValue as Hash, HashValue};
@@ -86,7 +86,7 @@ impl BlockDAG {
         self.commit_genesis(genesis)?;
         Ok(())
     }
-    pub fn ghostdata(&self, parents: &[HashValue]) -> GhostdagData {
+    pub fn ghostdata(&self, parents: &[HashValue]) -> Result<GhostdagData, StoreError> {
         self.ghostdag_manager.ghostdag(parents)
     }
 
@@ -109,13 +109,16 @@ impl BlockDAG {
     fn commit_inner(&self, header: BlockHeader, is_dag_genesis: bool) -> anyhow::Result<()> {
         // Generate ghostdag data
         let parents = header.parents();
-        let ghostdata = self.ghostdata_by_hash(header.id())?.unwrap_or_else(|| {
-            Arc::new(if is_dag_genesis {
+        let ghostdata = match self.ghostdata_by_hash(header.id())? {
+            Some(ghostdata) => ghostdata,
+            None => Arc::new(if is_dag_genesis {
                 self.ghostdag_manager.genesis_ghostdag_data(&header)
             } else {
-                self.ghostdag_manager.ghostdag(&parents)
-            })
-        });
+                self.ghostdag_manager
+                    .ghostdag(&parents)
+                    .map_err(|e| anyhow!(e))?
+            }),
+        };
         // Store ghostdata
         self.storage
             .ghost_dag_store

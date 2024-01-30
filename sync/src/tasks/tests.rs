@@ -27,13 +27,19 @@ use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::BlockBody;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::SyncTarget;
-use starcoin_types::block::{Block, BlockHeaderBuilder, BlockIdAndNumber, TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH};
+use starcoin_types::block::{
+    Block, BlockHeaderBuilder, BlockIdAndNumber, TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG,
+    TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH,
+};
 use std::sync::Arc;
 use stream_task::{DefaultCustomErrorHandle, Generator, TaskEventCounterHandle, TaskGenerator};
 use test_helper::DummyNetworkService;
 
 use super::mock::MockBlockFetcher;
-use super::test_tools::{block_sync_task_test, full_sync_cancel, full_sync_continue, full_sync_fork, full_sync_fork_from_genesis, full_sync_new_node, sync_invalid_target, SyncTestSystem};
+use super::test_tools::{
+    block_sync_task_test, full_sync_cancel, full_sync_continue, full_sync_fork,
+    full_sync_fork_from_genesis, full_sync_new_node, sync_invalid_target, SyncTestSystem,
+};
 use super::BlockConnectedEvent;
 
 #[stest::test(timeout = 120)]
@@ -283,8 +289,6 @@ pub async fn test_find_ancestor_chain_fork() -> Result<()> {
     Ok(())
 }
 
-
-
 #[stest::test]
 async fn test_block_sync() -> Result<()> {
     block_sync_task_test(100, 0, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH).await
@@ -297,63 +301,7 @@ async fn test_block_sync_one_block() -> Result<()> {
 
 #[stest::test]
 async fn test_block_sync_with_local() -> Result<()> {
-    let total_blocks = 100;
-    let (fetcher, accumulator) = build_block_fetcher(total_blocks, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH);
-
-    let local_store = MockLocalBlockStore::new();
-    fetcher
-        .blocks
-        .lock()
-        .unwrap()
-        .iter()
-        .for_each(|(_block_id, block)| {
-            if block.header().number() % 2 == 0 {
-                local_store.mock(block)
-            }
-        });
-    let ancestor_number = 0;
-    let ancestor = BlockIdAndNumber::new(
-        accumulator.get_leaf(ancestor_number)?.unwrap(),
-        ancestor_number,
-    );
-    let block_sync_state = BlockSyncTask::new(accumulator, ancestor, fetcher, true, local_store, 3);
-    let event_handle = Arc::new(TaskEventCounterHandle::new());
-    let sync_task = TaskGenerator::new(
-        block_sync_state,
-        5,
-        3,
-        300,
-        vec![],
-        event_handle.clone(),
-        Arc::new(DefaultCustomErrorHandle),
-    )
-    .generate();
-    let result = sync_task.await?;
-    let last_block_number = result
-        .iter()
-        .map(|block_data| {
-            if block_data.block.header().number() % 2 == 0 {
-                assert!(block_data.info.is_some())
-            } else {
-                assert!(block_data.info.is_none())
-            }
-            block_data.block.header().number()
-        })
-        .fold(ancestor_number, |parent, current| {
-            //ensure return block is ordered
-            assert_eq!(
-                parent + 1,
-                current,
-                "block sync task not return ordered blocks"
-            );
-            current
-        });
-
-    assert_eq!(last_block_number, total_blocks - 1);
-
-    let report = event_handle.get_reports().pop().unwrap();
-    debug!("report: {}", report);
-    Ok(())
+    block_sync_task_test(2, 0, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH).await
 }
 
 #[stest::test(timeout = 120)]

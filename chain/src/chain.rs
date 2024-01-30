@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::verifier::{BlockVerifier, DagVerifier, FullVerifier};
-use anyhow::{bail, ensure, format_err, Ok, Result};
+use anyhow::{anyhow, bail, ensure, format_err, Ok, Result};
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
 use starcoin_accumulator::{
@@ -280,7 +280,12 @@ impl BlockChain {
             match &tips_hash {
                 None => (uncles, None),
                 Some(tips) => {
-                    let mut blues = self.dag.ghostdata(tips).mergeset_blues.to_vec();
+                    let mut blues = self
+                        .dag
+                        .ghostdata(tips)
+                        .map_err(|e| anyhow!(e))?
+                        .mergeset_blues
+                        .to_vec();
                     info!(
                         "create block template with tips:{:?}, ghostdata blues:{:?}",
                         &tips_hash, blues
@@ -1138,7 +1143,11 @@ impl ChainReader for BlockChain {
     // }
 
     fn dag_fork_height(&self) -> BlockNumber {
-        let fork_number = match self.storage.get_dag_fork_number().expect("failed to read dag fork number") {
+        let fork_number = match self
+            .storage
+            .get_dag_fork_number()
+            .expect("failed to read dag fork number")
+        {
             Some(fork_number) => fork_number,
             None => TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH,
         };
@@ -1147,7 +1156,10 @@ impl ChainReader for BlockChain {
     }
 
     fn is_dag(&self, block_header: &BlockHeader) -> bool {
-        println!("jacktest: in is_dag, dag fork height: {:?}", self.dag_fork_height());
+        println!(
+            "jacktest: in is_dag, dag fork height: {:?}",
+            self.dag_fork_height()
+        );
         block_header.number() > self.dag_fork_height()
     }
 
@@ -1156,7 +1168,10 @@ impl ChainReader for BlockChain {
     }
 
     fn is_dag_genesis(&self, block_header: &BlockHeader) -> bool {
-        println!("jacktest: in is_dag_genesis, dag fork height: {:?}", self.dag_fork_height());
+        println!(
+            "jacktest: in is_dag_genesis, dag fork height: {:?}",
+            self.dag_fork_height()
+        );
         block_header.number() == self.dag_fork_height()
     }
 }
@@ -1283,7 +1298,7 @@ impl BlockChain {
         // Caculate the ghostdata of the virutal node created by all tips.
         // And the ghostdata.selected of the tips will be the latest head.
         let block_hash = {
-            let ghost_of_tips = dag.ghostdata(tips.as_slice());
+            let ghost_of_tips = dag.ghostdata(tips.as_slice())?;
             ghost_of_tips.selected_parent
         };
         debug!(

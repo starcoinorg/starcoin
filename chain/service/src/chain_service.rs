@@ -243,7 +243,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetDagBlockChildren { block_ids } => Ok(ChainResponse::HashVec(
                 self.inner.get_dag_block_children(block_ids)?,
             )),
-            ChainRequest::GetDagForkNumber => Ok(ChainResponse::DagForkNumber(self.inner.main.dag_fork_height())),
+            ChainRequest::GetDagForkNumber => Ok(ChainResponse::DagForkNumber(
+                self.inner.main.dag_fork_height(),
+            )),
         }
     }
 }

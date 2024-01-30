@@ -452,7 +452,9 @@ where
     }
 
     async fn dag_fork_number(&self) -> Result<BlockNumber> {
-        if let ChainResponse::DagForkNumber(fork_number) = self.send(ChainRequest::GetDagForkNumber).await?? {
+        if let ChainResponse::DagForkNumber(fork_number) =
+            self.send(ChainRequest::GetDagForkNumber).await??
+        {
             Ok(fork_number)
         } else {
             bail!("Get dag form number response error.")

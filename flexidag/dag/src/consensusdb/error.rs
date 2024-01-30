@@ -25,6 +25,21 @@ pub enum StoreError {
 
     #[error("ghostdag {0} duplicate blocks")]
     DAGDupBlocksError(String),
+
+    #[error("max blue work not found")]
+    MaxBlueworkNotFound,
+
+    #[error("blue score overflow {0}")]
+    BlueScoreOverflow(String),
+
+    #[error("blue anticore size overflow, the current size is {0}")]
+    BlueAnticoreSizeOverflow(String),
+
+    #[error("anticore size not found")]
+    AnticoreSizeNotFound,
+
+    #[error("k overflow, the current value is {0}")]
+    KOverflow(String),
 }
 
 pub type StoreResult<T> = std::result::Result<T, StoreError>;

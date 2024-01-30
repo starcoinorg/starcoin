@@ -22,11 +22,11 @@ use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync::sync::SyncService;
 use starcoin_txpool::TxPoolService;
 use starcoin_types::block::Block;
+use starcoin_types::block::BlockNumber;
 use starcoin_types::system_events::{GenerateBlockEvent, NewHeadBlock};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::runtime::Runtime;
-use starcoin_types::block::BlockNumber;
 
 pub mod crash_handler;
 mod genesis_parameter_resolve;
