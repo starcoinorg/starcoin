@@ -18,7 +18,9 @@ use starcoin_vm_types::account_config::{association_address, core_code_address, 
 use starcoin_vm_types::account_config::{genesis_address, stc_type_tag};
 use starcoin_vm_types::genesis_config::{ChainId, StdlibVersion};
 use starcoin_vm_types::move_resource::MoveResource;
-use starcoin_vm_types::on_chain_config::{MoveLanguageVersion, TransactionPublishOption, Version};
+use starcoin_vm_types::on_chain_config::{
+    FlexiDagConfig, MoveLanguageVersion, TransactionPublishOption, Version,
+};
 use starcoin_vm_types::on_chain_resource::LinearWithdrawCapability;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::token::stc::G_STC_TOKEN_CODE;
@@ -28,7 +30,8 @@ use std::fs::File;
 use std::io::Read;
 use stdlib::{load_upgrade_package, StdlibCompat, G_STDLIB_VERSIONS};
 use test_helper::dao::{
-    dao_vote_test, execute_script_on_chain_config, on_chain_config_type_tag, vote_language_version,
+    dao_vote_test, execute_script_on_chain_config, on_chain_config_type_tag, vote_flexi_dag_config,
+    vote_language_version,
 };
 use test_helper::executor::*;
 use test_helper::starcoin_dao;
@@ -113,7 +116,7 @@ fn test_init_script() -> Result<()> {
 }
 
 #[stest::test]
-fn test_upgrade_stdlib_with_incremental_package() -> Result<()> {
+fn test_stdlib_upgrade_with_incremental_package() -> Result<()> {
     let alice = Account::new();
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
     genesis_config.stdlib_version = StdlibVersion::Version(1);
@@ -196,6 +199,7 @@ fn test_stdlib_upgrade() -> Result<()> {
     let alice = Account::new();
 
     for new_version in stdlib_versions.into_iter().skip(1) {
+        debug!("=== upgrading {current_version} to {new_version}");
         // if upgrade from 7 to later, we need to update language version to 3.
         if let StdlibVersion::Version(7) = current_version {
             dao_vote_test(
@@ -235,6 +239,18 @@ fn test_stdlib_upgrade() -> Result<()> {
             )?;
             proposal_id += 1;
         }
+        if let StdlibVersion::Version(13) = current_version {
+            dao_vote_test(
+                &alice,
+                &chain_state,
+                &net,
+                vote_flexi_dag_config(&net, 1234567890u64),
+                on_chain_config_type_tag(FlexiDagConfig::type_tag()),
+                execute_script_on_chain_config(&net, FlexiDagConfig::type_tag(), proposal_id),
+                proposal_id,
+            )?;
+            proposal_id += 1;
+        }
         verify_version_state(current_version, &chain_state)?;
         let dao_action_type_tag = new_version.upgrade_module_type_tag();
         let package = match load_upgrade_package(current_version, new_version)? {
@@ -244,6 +260,7 @@ fn test_stdlib_upgrade() -> Result<()> {
                     "{:?} is same as {:?}, continue",
                     current_version, new_version
                 );
+                ext_execute_after_upgrade(new_version, &net, &chain_state)?;
                 continue;
             }
         };
@@ -457,6 +474,12 @@ fn ext_execute_after_upgrade(
                 genesis_nft_info.is_some(),
                 "expect 0x1::GenesisNFT::GenesisNFTInfo in global storage, but go none."
             );
+        }
+        StdlibVersion::Version(12) => {
+            let version_resource = chain_state.get_on_chain_config::<MoveLanguageVersion>()?;
+            assert!(version_resource.is_some());
+            let version = version_resource.unwrap();
+            assert_eq!(version.major, 6, "expect language version is 6");
         }
 
         // this is old daospace-v12 starcoin-framework,
@@ -693,6 +716,15 @@ where
             assert!(
                 withdraw_cap.is_some(),
                 "expect LinearWithdrawCapability exist at association_address"
+            );
+        }
+        StdlibVersion::Version(13) => {
+            let config = chain_state.get_on_chain_config::<FlexiDagConfig>()?;
+            assert!(config.is_some());
+            assert_eq!(
+                config.unwrap().effective_height,
+                1234567890,
+                "expect dag effective height is 1234567890"
             );
         }
         _ => {
