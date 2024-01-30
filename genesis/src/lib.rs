@@ -381,7 +381,7 @@ impl Genesis {
     pub fn init_storage_for_test(
         net: &ChainNetwork,
     ) -> Result<(Arc<Storage>, ChainInfo, Genesis, BlockDAG)> {
-        debug!("init storage by genesis for test.");
+        debug!("init storage by genesis for test. {net:?}");
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let genesis = Genesis::load_or_build(net)?;
         let dag = BlockDAG::create_for_testing()?;
