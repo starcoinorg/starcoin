@@ -386,7 +386,13 @@ impl BlockChain {
         V: BlockVerifier,
     {
         if block.header().is_dag() {
-            let selected_chain = Self::new(self.time_service.clone(), block.parent_hash(), self.storage.clone(), self.vm_metrics.clone(), self.dag.clone())?;
+            let selected_chain = Self::new(
+                self.time_service.clone(),
+                block.parent_hash(),
+                self.storage.clone(),
+                self.vm_metrics.clone(),
+                self.dag.clone(),
+            )?;
             V::verify_block(&selected_chain, block)
         } else {
             V::verify_block(self, block)
@@ -1155,7 +1161,7 @@ impl ChainReader for BlockChain {
             None => return Ok(None),
         };
 
-        //if can get proof by leaf_index, the leaf and transaction info should exist.
+        // If we can get proof by leaf_index, the leaf and transaction info should exist.
         let txn_info_hash = self
             .txn_accumulator
             .get_leaf(transaction_global_index)?
