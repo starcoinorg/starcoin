@@ -24,7 +24,7 @@ use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter}
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
-use starcoin_types::block::{BlockIdAndNumber, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH};
+use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus, DagState};
@@ -40,7 +40,9 @@ use starcoin_types::{
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm_types::on_chain_config::FlexiDagConfig;
 use starcoin_vm_types::on_chain_resource::Epoch;
+use starcoin_vm_types::state_view::StateReaderExt;
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
@@ -267,7 +269,7 @@ impl BlockChain {
         let final_block_gas_limit = block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
-        let tips_hash = if current_number <= self.dag_fork_height() {
+        let tips_hash = if current_number <= self.dag_fork_height()? {
             None
         } else if tips.is_some() {
             tips
@@ -1007,7 +1009,7 @@ impl ChainReader for BlockChain {
 
     fn execute(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
         let header = verified_block.0.header().clone();
-        if !self.is_dag(&header) {
+        if !self.is_dag(&header)? {
             let executed = Self::execute_block_and_save(
                 self.storage.as_ref(),
                 self.statedb.fork(),
@@ -1018,7 +1020,7 @@ impl ChainReader for BlockChain {
                 verified_block.0,
                 self.vm_metrics.clone(),
             )?;
-            if self.is_dag_genesis(&header) {
+            if self.is_dag_genesis(&header)? {
                 let dag_genesis_id = header.id();
                 self.dag.init_with_genesis(header)?;
                 self.storage.save_dag_state(DagState {
@@ -1079,7 +1081,7 @@ impl ChainReader for BlockChain {
             None => return Ok(None),
         };
 
-        //if can get proof by leaf_index, the leaf and transaction info should exist.
+        // If we can get proof by leaf_index, the leaf and transaction info should exist.
         let txn_info_hash = self
             .txn_accumulator
             .get_leaf(transaction_global_index)?
@@ -1137,42 +1139,22 @@ impl ChainReader for BlockChain {
         self.dag.has_dag_block(hash)
     }
 
-    // #[cfg(not(feature = "testing"))]
-    // fn dag_fork_height(&self) -> BlockNumber {
-    //     TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH
-    // }
-
-    fn dag_fork_height(&self) -> BlockNumber {
-        let fork_number = match self
-            .storage
-            .get_dag_fork_number()
-            .expect("failed to read dag fork number")
-        {
-            Some(fork_number) => fork_number,
-            None => TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH,
-        };
-        println!("jacktest: in is_dag, dag fork height: {:?}", fork_number);
-        fork_number
+    fn dag_fork_height(&self) -> Result<BlockNumber> {
+        // todo: change return type to Result<BlockNumber>,
+        // try to handle db io error
+        Ok(self
+            .statedb
+            .get_on_chain_config::<FlexiDagConfig>()?
+            .map(|c| c.effective_height)
+            .unwrap_or(u64::MAX))
     }
 
-    fn is_dag(&self, block_header: &BlockHeader) -> bool {
-        println!(
-            "jacktest: in is_dag, dag fork height: {:?}",
-            self.dag_fork_height()
-        );
-        block_header.number() > self.dag_fork_height()
+    fn is_dag(&self, block_header: &BlockHeader) -> Result<bool> {
+        Ok(block_header.number() > self.dag_fork_height()?)
     }
 
-    fn is_legacy(&self, block_header: &BlockHeader) -> bool {
-        !self.is_dag(block_header) && block_header.parents_hash().is_none()
-    }
-
-    fn is_dag_genesis(&self, block_header: &BlockHeader) -> bool {
-        println!(
-            "jacktest: in is_dag_genesis, dag fork height: {:?}",
-            self.dag_fork_height()
-        );
-        block_header.number() == self.dag_fork_height()
+    fn is_dag_genesis(&self, block_header: &BlockHeader) -> Result<bool> {
+        Ok(block_header.number() == self.dag_fork_height()?)
     }
 }
 
@@ -1352,7 +1334,7 @@ impl ChainWriter for BlockChain {
     }
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
-        if self.is_dag(executed_block.block.header()) {
+        if self.is_dag(executed_block.block.header())? {
             info!(
                 "connect a dag block, {:?}, number: {:?}",
                 executed_block.block.id(),
@@ -1394,7 +1376,7 @@ impl ChainWriter for BlockChain {
     }
 
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock> {
-        if !self.is_dag(block.header()) {
+        if !self.is_dag(block.header())? {
             self.apply_with_verifier::<FullVerifier>(block)
         } else {
             self.apply_with_verifier::<DagVerifier>(block)

@@ -333,7 +333,7 @@ where
             now_millis = previous_header.timestamp() + 1;
         }
         let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
-        let tips_hash = if current_number > self.chain.dag_fork_height() {
+        let tips_hash = if current_number > self.chain.dag_fork_height()? {
             self.chain.current_tips_hash()?
         } else {
             None

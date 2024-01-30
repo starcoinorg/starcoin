@@ -295,6 +295,12 @@ impl StarcoinVM {
         Ok(())
     }
 
+    pub fn get_flexidag_config(&self) -> Result<FlexiDagConfig, VMStatus> {
+        self.flexi_dag_config
+            .clone()
+            .ok_or(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE))
+    }
+
     pub fn get_gas_schedule(&self) -> Result<&CostTable, VMStatus> {
         self.vm_config
             .as_ref()
