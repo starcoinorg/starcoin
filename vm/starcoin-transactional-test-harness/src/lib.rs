@@ -816,10 +816,11 @@ impl<'a> StarcoinTestAdapter<'a> {
         number: Option<u64>,
         uncles: Option<u64>,
     ) -> Result<(Option<String>, Option<Value>)> {
+        // use BlockMetadataV2 instead of BlockMetaData since stdlib version(13)
         let last_blockmeta = self
             .context
             .storage
-            .get_resource::<on_chain_resource::BlockMetadata>(genesis_address())?;
+            .get_resource::<on_chain_resource::BlockMetadataV2>(genesis_address())?;
 
         let height = number
             .or_else(|| last_blockmeta.as_ref().map(|b| b.number + 1))

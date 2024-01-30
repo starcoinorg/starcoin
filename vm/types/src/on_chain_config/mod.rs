@@ -18,6 +18,7 @@ use std::{collections::HashMap, sync::Arc};
 
 mod consensus_config;
 mod dao_config;
+mod flexi_dag_config;
 mod gas_schedule;
 mod genesis_gas_schedule;
 mod move_lang_version;
@@ -27,6 +28,7 @@ mod vm_config;
 pub use self::{
     consensus_config::{consensus_config_type_tag, ConsensusConfig, G_CONSENSUS_CONFIG_IDENTIFIER},
     dao_config::DaoConfig,
+    flexi_dag_config::*,
     gas_schedule::{
         instruction_gas_schedule_v1, instruction_gas_schedule_v2, native_gas_schedule_v1,
         native_gas_schedule_v2, native_gas_schedule_v3, native_gas_schedule_v4,
