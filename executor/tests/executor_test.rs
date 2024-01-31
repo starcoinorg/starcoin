@@ -84,6 +84,34 @@ fn test_vm_version() {
 }
 
 #[stest::test]
+fn test_flexidag_config_get() {
+    let (chain_state, _net) = prepare_genesis();
+
+    let version_module_id = ModuleId::new(
+        genesis_address(),
+        Identifier::new("FlexiDagConfig").unwrap(),
+    );
+    let mut value = starcoin_dev::playground::call_contract(
+        &chain_state,
+        version_module_id,
+        "effective_height",
+        vec![],
+        vec![TransactionArgument::Address(genesis_address())],
+        None,
+    )
+    .unwrap();
+
+    let read_version: u64 = bcs_ext::from_bytes(&value.pop().unwrap().1).unwrap();
+    let version = {
+        let mut vm = StarcoinVM::new(None);
+        vm.load_configs(&chain_state).unwrap();
+        vm.get_flexidag_config().unwrap().effective_height
+    };
+
+    assert_eq!(read_version, version);
+}
+
+#[stest::test]
 fn test_consensus_config_get() -> Result<()> {
     let (chain_state, _net) = prepare_genesis();
 
