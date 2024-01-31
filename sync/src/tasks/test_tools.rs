@@ -144,16 +144,11 @@ impl SyncTestSystem {
 }
 
 #[cfg(test)]
-pub async fn full_sync_new_node(fork_number: BlockNumber) -> Result<()> {
-    let count_blocks = 10;
-    assert!(
-        fork_number < count_blocks,
-        "The fork number should be smaller than the count block"
-    );
+pub async fn full_sync_new_node(count_blocks: u64, fork_number: BlockNumber) -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
     node1.set_dag_fork_number(fork_number)?;
-    node1.produce_block(10)?;
+    node1.produce_block(count_blocks)?;
 
     let mut arc_node1 = Arc::new(node1);
 

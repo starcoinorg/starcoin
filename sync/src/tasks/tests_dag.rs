@@ -25,7 +25,7 @@ use test_helper::DummyNetworkService;
 
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_new_node_dag() {
-    full_sync_new_node(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)
+    full_sync_new_node(10, TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)
         .await
         .expect("dag full sync should success");
 }
