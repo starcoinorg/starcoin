@@ -12,6 +12,7 @@ use crate::errors::{
 use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
 use anyhow::{bail, format_err, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
+use move_core_types::vm_status::StatusCode::VALUE_SERIALIZATION_ERROR;
 use move_table_extension::NativeTableContext;
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
 use move_vm_runtime::session::Session;
@@ -892,6 +893,7 @@ impl StarcoinVM {
             number,
             chain_id,
             parent_gas_used,
+            parents_hash,
         ) = block_metadata.into_inner();
         let mut function_name = &account_config::G_BLOCK_PROLOGUE_NAME;
         let mut args_vec = vec![
@@ -910,7 +912,10 @@ impl StarcoinVM {
         ];
         if let Some(version) = stdlib_version {
             if version >= StdlibVersion::Version(FLEXI_DAG_UPGRADE_VERSION_MARK) {
-                args_vec.push(MoveValue::vector_u8(Vec::new()));
+                args_vec.push(MoveValue::vector_u8(
+                    bcs_ext::to_bytes(&parents_hash.unwrap_or_default())
+                        .or(Err(VMStatus::Error(VALUE_SERIALIZATION_ERROR)))?,
+                ));
                 function_name = &account_config::G_BLOCK_PROLOGUE_V2_NAME;
             }
         }
