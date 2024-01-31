@@ -31,7 +31,7 @@ fn test_chain_filter_events() {
     let event_type_tag = TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
         module: Identifier::from_str("Block").unwrap(),
-        name: Identifier::from_str("NewBlockEvent").unwrap(),
+        name: Identifier::from_str("NewBlockEventV2").unwrap(),
         type_params: vec![],
     }));
 

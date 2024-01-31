@@ -854,7 +854,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             e
         })?;
 
-        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _) =
+        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _, parents_hash) =
             new_block_meta.clone().into_inner();
         let block_body = BlockBody::new(vec![], None);
         let block_header = BlockHeader::new(
@@ -871,7 +871,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             self.context.storage.get_chain_id()?,
             0,
             BlockHeaderExtra::new([0u8; 4]),
-            None,
+            parents_hash,
         );
         let new_block = Block::new(block_header, block_body);
         let mut chain = self.context.chain.lock().unwrap();
