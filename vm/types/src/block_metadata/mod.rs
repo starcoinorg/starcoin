@@ -4,11 +4,14 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+mod legacy;
+
 use crate::account_address::AccountAddress;
 use crate::account_config::genesis_address;
 use crate::genesis_config::ChainId;
 use crate::transaction::authenticator::AuthenticationKey;
 use bcs_ext::Sample;
+pub use legacy::BlockMetadata as LegacyBlockMetadata;
 use serde::{Deserialize, Deserializer, Serialize};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::{
@@ -41,6 +44,7 @@ pub struct BlockMetadata {
     number: u64,
     chain_id: ChainId,
     parent_gas_used: u64,
+    parents_hash: Option<Vec<HashValue>>,
 }
 
 impl BlockMetadata {
@@ -54,6 +58,32 @@ impl BlockMetadata {
         chain_id: ChainId,
         parent_gas_used: u64,
     ) -> Self {
+        let mut txn = legacy::BlockMetadata {
+            id: None,
+            parent_hash,
+            timestamp,
+            author,
+            author_auth_key,
+            uncles,
+            number,
+            chain_id,
+            parent_gas_used,
+        };
+        txn.id = Some(txn.crypto_hash());
+        txn.into()
+    }
+
+    pub fn new_with_parents(
+        parent_hash: HashValue,
+        timestamp: u64,
+        author: AccountAddress,
+        author_auth_key: Option<AuthenticationKey>,
+        uncles: u64,
+        number: u64,
+        chain_id: ChainId,
+        parent_gas_used: u64,
+        parents_hash: Vec<HashValue>,
+    ) -> Self {
         let mut txn = Self {
             id: None,
             parent_hash,
@@ -64,6 +94,7 @@ impl BlockMetadata {
             number,
             chain_id,
             parent_gas_used,
+            parents_hash: Some(parents_hash),
         };
         txn.id = Some(txn.crypto_hash());
         txn
@@ -80,6 +111,7 @@ impl BlockMetadata {
         u64,
         ChainId,
         u64,
+        Option<Vec<HashValue>>,
     ) {
         (
             self.parent_hash,
@@ -90,6 +122,7 @@ impl BlockMetadata {
             self.number,
             self.chain_id,
             self.parent_gas_used,
+            self.parents_hash,
         )
     }
 
@@ -135,24 +168,39 @@ impl<'de> Deserialize<'de> for BlockMetadata {
             number: u64,
             chain_id: ChainId,
             parent_gas_used: u64,
+            parents_hash: Option<Vec<HashValue>>,
         }
         let data = BlockMetadataData::deserialize(deserializer)?;
-        Ok(Self::new(
-            data.parent_hash,
-            data.timestamp,
-            data.author,
-            data.author_auth_key,
-            data.uncles,
-            data.number,
-            data.chain_id,
-            data.parent_gas_used,
-        ))
+        Ok(if let Some(parents_hash) = data.parents_hash {
+            Self::new_with_parents(
+                data.parent_hash,
+                data.timestamp,
+                data.author,
+                data.author_auth_key,
+                data.uncles,
+                data.number,
+                data.chain_id,
+                data.parent_gas_used,
+                parents_hash,
+            )
+        } else {
+            Self::new(
+                data.parent_hash,
+                data.timestamp,
+                data.author,
+                data.author_auth_key,
+                data.uncles,
+                data.number,
+                data.chain_id,
+                data.parent_gas_used,
+            )
+        })
     }
 }
 
 impl Sample for BlockMetadata {
     fn sample() -> Self {
-        Self::new(
+        Self::new_with_parents(
             HashValue::zero(),
             0,
             genesis_address(),
@@ -161,6 +209,7 @@ impl Sample for BlockMetadata {
             0,
             ChainId::test(),
             0,
+            vec![],
         )
     }
 }

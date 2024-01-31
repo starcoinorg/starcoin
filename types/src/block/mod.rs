@@ -882,16 +882,30 @@ impl Block {
             .as_ref()
             .map(|uncles| uncles.len() as u64)
             .unwrap_or(0);
-        BlockMetadata::new(
-            self.header.parent_hash(),
-            self.header.timestamp,
-            self.header.author,
-            self.header.author_auth_key,
-            uncles,
-            self.header.number,
-            self.header.chain_id,
-            parent_gas_used,
-        )
+        if let Some(parents_hash) = self.header.parents_hash() {
+            BlockMetadata::new_with_parents(
+                self.header.parent_hash(),
+                self.header.timestamp,
+                self.header.author,
+                self.header.author_auth_key,
+                uncles,
+                self.header.number,
+                self.header.chain_id,
+                parent_gas_used,
+                parents_hash,
+            )
+        } else {
+            BlockMetadata::new(
+                self.header.parent_hash(),
+                self.header.timestamp,
+                self.header.author,
+                self.header.author_auth_key,
+                uncles,
+                self.header.number,
+                self.header.chain_id,
+                parent_gas_used,
+            )
+        }
     }
 
     pub fn random() -> Self {
@@ -1043,9 +1057,8 @@ impl BlockTemplate {
         difficulty: U256,
         strategy: ConsensusStrategy,
         block_metadata: BlockMetadata,
-        parents_hash: ParentsHash,
     ) -> Self {
-        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _) =
+        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _, parents_hash) =
             block_metadata.into_inner();
         Self {
             parent_hash,

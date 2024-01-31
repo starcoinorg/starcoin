@@ -2179,6 +2179,16 @@
                   "type": "string",
                   "format": "HashValue"
                 },
+                "parents_hash": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "string",
+                    "format": "HashValue"
+                  }
+                },
                 "timestamp": {
                   "type": "string"
                 },
