@@ -21,6 +21,12 @@ pub struct BlockMetadata {
     pub(super) parent_gas_used: u64,
 }
 
+impl BlockMetadata {
+    pub fn id(&self) -> HashValue {
+        self.id.expect("id must be initialized")
+    }
+}
+
 impl<'de> Deserialize<'de> for BlockMetadata {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
     where

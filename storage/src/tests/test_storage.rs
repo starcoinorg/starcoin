@@ -11,12 +11,12 @@ use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::{CodecKVStore, InnerStore, StorageInstance, ValueCodec};
 use crate::table_info::TableInfoStore;
+use crate::transaction::LegacyTransactionStorage;
 use crate::transaction_info::{BlockTransactionInfo, OldTransactionInfoStorage};
 use crate::{
     BlockInfoStore, BlockStore, BlockTransactionInfoStore, Storage,
     StorageVersion, /*TableInfoStore,*/
-    TransactionStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
-    TRANSACTION_INFO_PREFIX_NAME_V2,
+    DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME_V2,
 };
 use anyhow::Result;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
@@ -25,13 +25,13 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockInfo};
 use starcoin_types::startup_info::SnapshotRange;
-use starcoin_types::transaction::{
-    RichTransactionInfo, SignedUserTransaction, Transaction, TransactionInfo,
-};
+use starcoin_types::transaction::{RichTransactionInfo, SignedUserTransaction, TransactionInfo};
 use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::block_metadata::LegacyBlockMetadata;
 use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_vm_types::transaction::LegacyTransaction;
 use std::path::Path;
 
 #[test]
@@ -332,6 +332,7 @@ fn generate_old_db(path: &Path) -> Result<(Vec<HashValue>, Vec<HashValue>, Vec<H
     );
     let storage = Storage::new(instance.clone())?;
     let old_transaction_info_storage = OldTransactionInfoStorage::new(instance.clone());
+    let old_transaction_storage = LegacyTransactionStorage::new(instance.clone());
 
     let block_header = BlockHeader::random();
     let txn = SignedUserTransaction::mock();
@@ -340,7 +341,8 @@ fn generate_old_db(path: &Path) -> Result<(Vec<HashValue>, Vec<HashValue>, Vec<H
         BlockBody::new(vec![txn.clone()], None),
     );
     let mut txn_inf_ids = vec![];
-    let block_metadata = block.to_metadata(0);
+    let mut txn_ids = vec![];
+    let block_metadata: LegacyBlockMetadata = block.to_metadata(0).try_into().unwrap();
     let txn_info_0 = TransactionInfo::new(
         block_metadata.id(),
         HashValue::random(),
@@ -348,9 +350,9 @@ fn generate_old_db(path: &Path) -> Result<(Vec<HashValue>, Vec<HashValue>, Vec<H
         0,
         KeptVMStatus::Executed,
     );
-    storage
-        .transaction_storage
-        .save_transaction(Transaction::BlockMetadata(block_metadata))?;
+    let txn_0 = LegacyTransaction::BlockMetadata(block_metadata);
+    txn_ids.push(txn_0.id());
+    old_transaction_storage.save_transaction(txn_0)?;
     txn_inf_ids.push(txn_info_0.id());
     let txn_info_1 = TransactionInfo::new(
         txn.id(),
@@ -359,6 +361,9 @@ fn generate_old_db(path: &Path) -> Result<(Vec<HashValue>, Vec<HashValue>, Vec<H
         100,
         KeptVMStatus::Executed,
     );
+    let txn_1 = LegacyTransaction::UserTransaction(txn);
+    txn_ids.push(txn_1.id());
+    old_transaction_storage.save_transaction(txn_1)?;
     txn_inf_ids.push(txn_info_1.id());
     let block_info = BlockInfo::new(
         block_header.id(),
@@ -366,9 +371,6 @@ fn generate_old_db(path: &Path) -> Result<(Vec<HashValue>, Vec<HashValue>, Vec<H
         AccumulatorInfo::new(HashValue::random(), vec![], 2, 3),
         AccumulatorInfo::new(HashValue::random(), vec![], 1, 1),
     );
-    storage
-        .transaction_storage
-        .save_transaction(Transaction::UserTransaction(txn))?;
     storage.commit_block(block)?;
     storage.save_block_info(block_info)?;
 
