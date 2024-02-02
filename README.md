@@ -131,7 +131,7 @@ You could find the introduction of each code directory [here](code_layout.md) fo
 Reach out to the maintainer at one of the following places:
 
 - [GitHub discussions](https://github.com/starcoinorg/starcoin/discussions)
-- [Starcoin Discord](https://discord.gg/starcoin)
+- [Starcoin Linktree](https://linktr.ee/starcoin)
 - [Starcoin&Move Contributor Telegram Group](https://t.me/starcoin_contributor)
 
 ## License
