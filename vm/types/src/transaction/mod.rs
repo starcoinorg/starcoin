@@ -892,6 +892,15 @@ pub enum LegacyTransaction {
     BlockMetadata(#[serde(rename = "BlockMetadata")] super::block_metadata::LegacyBlockMetadata),
 }
 
+impl LegacyTransaction {
+    pub fn id(&self) -> HashValue {
+        match self {
+            Self::UserTransaction(signed) => signed.id(),
+            Self::BlockMetadata(meta) => meta.id(),
+        }
+    }
+}
+
 impl From<LegacyTransaction> for Transaction {
     fn from(value: LegacyTransaction) -> Self {
         match value {

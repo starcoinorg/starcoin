@@ -12,8 +12,8 @@ use crate::transaction::{LegacyTransactionStorage, TransactionStorage};
 use crate::transaction_info::OldTransactionInfoStorage;
 use crate::transaction_info::TransactionInfoStorage;
 use crate::{
-    CodecKVStore, RichTransactionInfo, StorageInstance, StorageVersion, TransactionStore,
-    BLOCK_BODY_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
+    CodecKVStore, RichTransactionInfo, StorageInstance, StorageVersion, BLOCK_BODY_PREFIX_NAME,
+    TRANSACTION_INFO_PREFIX_NAME,
 };
 use anyhow::{bail, ensure, format_err, Result};
 use once_cell::sync::Lazy;
@@ -21,7 +21,7 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::{debug, info, warn};
 use starcoin_types::block::BlockNumber;
 use starcoin_types::startup_info::{BarnardHardFork, StartupInfo};
-use starcoin_types::transaction::Transaction;
+use starcoin_vm_types::transaction::LegacyTransaction;
 use std::cmp::Ordering;
 
 pub struct DBUpgrade;
@@ -67,7 +67,8 @@ impl DBUpgrade {
         let block_storage = BlockStorage::new(instance.clone());
         let block_info_storage = BlockInfoStorage::new(instance.clone());
         let transaction_info_storage = TransactionInfoStorage::new(instance.clone());
-        let transaction_storage = TransactionStorage::new(instance.clone());
+        // Use old store here, TransactionStorage is using different column family now
+        let transaction_storage = LegacyTransactionStorage::new(instance.clone());
         let mut iter = old_transaction_info_storage.iter()?;
         iter.seek_to_first();
         let mut processed_count = 0;
@@ -118,12 +119,12 @@ impl DBUpgrade {
                     })?;
                 if transaction_index == 0 {
                     ensure!(
-                            matches!(transaction, Transaction::BlockMetadata(_)),
+                            matches!(transaction, LegacyTransaction::BlockMetadata(_)),
                             "transaction_index 0 must been BlockMetadata transaction, but got txn: {:?}, block:{:?}", transaction, block
                         );
                 } else {
                     ensure!(
-                            matches!(transaction, Transaction::UserTransaction(_)),
+                            matches!(transaction, LegacyTransaction::UserTransaction(_)),
                             "transaction_index > 0 must been UserTransaction transaction, but got txn: {:?}, block:{:?}", transaction, block
                         );
                 }
