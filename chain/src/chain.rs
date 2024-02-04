@@ -15,6 +15,7 @@ use starcoin_chain_api::{
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
+use starcoin_dag::block_dag_config::BlockDAGType;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::consensusdb::prelude::StoreError;
 use starcoin_executor::VMMetrics;
@@ -1142,11 +1143,14 @@ impl ChainReader for BlockChain {
     fn dag_fork_height(&self) -> Result<BlockNumber> {
         // todo: change return type to Result<BlockNumber>,
         // try to handle db io error
-        Ok(self
-            .statedb
-            .get_on_chain_config::<FlexiDagConfig>()?
-            .map(|c| c.effective_height)
-            .unwrap_or(u64::MAX))
+        match self.dag.block_dag_config() {
+            BlockDAGType::BlockDAGFormal => Ok(self
+                .statedb
+                .get_on_chain_config::<FlexiDagConfig>()?
+                .map(|c| c.effective_height)
+                .unwrap_or(u64::MAX)),
+            BlockDAGType::BlockDAGTestMock(dag_mock_config) => Ok(dag_mock_config.fork_number),
+        }
     }
 
     fn is_dag(&self, block_header: &BlockHeader) -> Result<bool> {

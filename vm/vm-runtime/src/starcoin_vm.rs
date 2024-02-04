@@ -298,7 +298,6 @@ impl StarcoinVM {
 
     pub fn get_flexidag_config(&self) -> Result<FlexiDagConfig, VMStatus> {
         self.flexi_dag_config
-            .clone()
             .ok_or(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE))
     }
 

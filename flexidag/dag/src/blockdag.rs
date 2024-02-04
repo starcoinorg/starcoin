@@ -1,5 +1,6 @@
 use super::reachability::{inquirer, reachability_service::MTReachabilityService};
 use super::types::ghostdata::GhostdagData;
+use crate::block_dag_config::{BlockDAGConfigMock, BlockDAGType};
 use crate::consensusdb::prelude::{FlexiDagStorageConfig, StoreError};
 use crate::consensusdb::schemadb::GhostdagStoreReader;
 use crate::consensusdb::{
@@ -14,7 +15,7 @@ use anyhow::{anyhow, bail, Ok};
 use parking_lot::RwLock;
 use starcoin_config::{temp_dir, RocksdbConfig};
 use starcoin_crypto::{HashValue as Hash, HashValue};
-use starcoin_types::block::BlockHeader;
+use starcoin_types::block::{BlockHeader, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH};
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
@@ -33,10 +34,11 @@ pub type DbGhostdagManager = GhostdagManager<
 pub struct BlockDAG {
     pub storage: FlexiDagStorage,
     ghostdag_manager: DbGhostdagManager,
+    dag_config: BlockDAGType,
 }
 
 impl BlockDAG {
-    pub fn new(k: KType, db: FlexiDagStorage) -> Self {
+    pub fn new_with_type(k: KType, db: FlexiDagStorage, dag_config: BlockDAGType) -> Self {
         let ghostdag_store = db.ghost_dag_store.clone();
         let header_store = db.header_store.clone();
         let relations_store = db.relations_store.clone();
@@ -54,12 +56,33 @@ impl BlockDAG {
         Self {
             ghostdag_manager,
             storage: db,
+            dag_config,
         }
+    }
+
+    pub fn new(k: KType, db: FlexiDagStorage) -> Self {
+        Self::new_with_type(k, db, BlockDAGType::BlockDAGFormal)
     }
     pub fn create_for_testing() -> anyhow::Result<Self> {
         let dag_storage =
             FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
-        Ok(BlockDAG::new(8, dag_storage))
+        Ok(BlockDAG::new_with_type(
+            8,
+            dag_storage,
+            BlockDAGType::BlockDAGTestMock(BlockDAGConfigMock {
+                fork_number: TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH,
+            }),
+        ))
+    }
+
+    pub fn create_for_testing_mock(config: BlockDAGConfigMock) -> anyhow::Result<Self> {
+        let dag_storage =
+            FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
+        Ok(BlockDAG::new_with_type(
+            8,
+            dag_storage,
+            BlockDAGType::BlockDAGTestMock(config),
+        ))
     }
 
     pub fn new_by_config(db_path: &Path) -> anyhow::Result<BlockDAG> {
@@ -67,6 +90,10 @@ impl BlockDAG {
         let db = FlexiDagStorage::create_from_path(db_path, config)?;
         let dag = Self::new(8, db);
         Ok(dag)
+    }
+
+    pub fn block_dag_config(&self) -> BlockDAGType {
+        self.dag_config.clone()
     }
 
     pub fn has_dag_block(&self, hash: Hash) -> anyhow::Result<bool> {

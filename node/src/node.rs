@@ -17,6 +17,7 @@ use starcoin_block_relayer::BlockRelayer;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
+use starcoin_dag::block_dag_config::{BlockDAGConfigMock, BlockDAGType};
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
 use starcoin_logger::structured_log::init_slog_logger;
@@ -52,6 +53,7 @@ use starcoin_sync::sync::SyncService;
 use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
+use starcoin_types::block::TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG;
 use starcoin_types::system_events::{SystemShutdown, SystemStarted};
 use starcoin_vm_runtime::metrics::VMMetrics;
 use std::sync::Arc;
@@ -319,7 +321,18 @@ impl NodeService {
             config.storage.dag_dir(),
             config.storage.clone().into(),
         )?;
-        let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage.clone());
+        let dag = match config.base().net().id() {
+            starcoin_config::ChainNetworkID::Builtin(starcoin_config::BuiltinNetworkID::Test) => {
+                starcoin_dag::blockdag::BlockDAG::new_with_type(
+                    8,
+                    dag_storage.clone(),
+                    BlockDAGType::BlockDAGTestMock(BlockDAGConfigMock {
+                        fork_number: TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG,
+                    }),
+                )
+            },
+            _ => starcoin_dag::blockdag::BlockDAG::new(8, dag_storage.clone()),
+        };
         registry.put_shared(dag.clone()).await?;
         let (chain_info, genesis) =
             Genesis::init_and_check_storage(config.net(), storage.clone(), dag, config.data_dir())?;

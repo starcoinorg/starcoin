@@ -463,7 +463,8 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
     genesis_config.consensus_config.strategy = ConsensusStrategy::CryptoNight.value();
     let net =
         ChainNetwork::new_custom("block_test".to_string(), ChainId::new(100), genesis_config)?;
-    let mut mock_chain = MockChain::new(net.clone()).unwrap();
+    let mut mock_chain =
+        MockChain::new(net.clone()).unwrap();
     let mut times = 3;
     mock_chain.produce_and_apply_times(times).unwrap();
 

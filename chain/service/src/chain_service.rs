@@ -456,12 +456,13 @@ mod tests {
     use starcoin_chain_api::ChainAsyncService;
     use starcoin_config::NodeConfig;
     use starcoin_service_registry::{RegistryAsyncService, RegistryService};
+    use starcoin_types::block::TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH;
 
     #[stest::test]
     async fn test_actor_launch() -> Result<()> {
         let config = Arc::new(NodeConfig::random_for_test());
         let (storage, chain_info, _, dag) =
-            test_helper::Genesis::init_storage_for_test(config.net())?;
+            test_helper::Genesis::init_storage_for_test(config.net(), TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH)?;
         let registry = RegistryService::launch();
         registry.put_shared(dag).await?;
         registry.put_shared(config).await?;

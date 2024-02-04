@@ -17,6 +17,7 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage};
+use starcoin_types::block::TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use std::any::Any;
 use std::borrow::Cow;
@@ -138,7 +139,8 @@ pub async fn build_network_with_config(
     rpc_service_mocker: Option<(RpcInfo, MockRpcHandler)>,
 ) -> Result<TestNetworkService> {
     let registry = RegistryService::launch();
-    let (storage, _chain_info, genesis, _) = Genesis::init_storage_for_test(node_config.net())?;
+    let (storage, _chain_info, genesis, _) =
+        Genesis::init_storage_for_test(node_config.net(), TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH)?;
     registry.put_shared(genesis).await?;
     registry.put_shared(node_config.clone()).await?;
     registry.put_shared(storage.clone()).await?;

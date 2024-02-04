@@ -83,7 +83,7 @@ impl<
             .collect::<Result<Vec<_>, StoreError>>()?
             .into_iter()
             .max()
-            .ok_or_else(|| StoreError::MaxBlueworkNotFound)?
+            .ok_or(StoreError::MaxBlueworkNotFound)?
             .hash)
     }
 
@@ -216,7 +216,7 @@ impl<
 
             if *candidate_blues_anticone_sizes
                 .get(&block)
-                .ok_or_else(|| StoreError::AnticoreSizeNotFound)?
+                .ok_or(StoreError::AnticoreSizeNotFound)?
                 == self.k
             {
                 // k-cluster violation: A block in candidate's blue anticone already
@@ -229,7 +229,7 @@ impl<
             assert!(
                 *candidate_blues_anticone_sizes
                     .get(&block)
-                    .ok_or_else(|| StoreError::AnticoreSizeNotFound)?
+                    .ok_or(StoreError::AnticoreSizeNotFound)?
                     <= self.k,
                 "found blue anticone larger than K"
             );

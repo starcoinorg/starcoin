@@ -11,6 +11,7 @@ use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_storage::Storage;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
+use starcoin_types::block::TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH;
 use std::sync::Arc;
 use std::time::Duration;
 pub async fn start_txpool_with_size(
@@ -44,7 +45,8 @@ pub async fn start_txpool_with_miner(
     let node_config = Arc::new(config);
 
     let (storage, _chain_info, _, dag) =
-        Genesis::init_storage_for_test(node_config.net()).expect("init storage by genesis fail.");
+        Genesis::init_storage_for_test(node_config.net(), TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH)
+            .expect("init storage by genesis fail.");
     let registry = RegistryService::launch();
     registry.put_shared(node_config.clone()).await.unwrap();
     registry.put_shared(storage.clone()).await.unwrap();

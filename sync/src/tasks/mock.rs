@@ -151,6 +151,7 @@ impl MockLocalBlockStore {
         Self::default()
     }
 
+    #[allow(dead_code)]
     pub fn mock(&self, block: &Block) {
         let block_id = block.id();
         let block_info = BlockInfo::new(
@@ -273,8 +274,9 @@ impl SyncNodeMocker {
         net: ChainNetwork,
         delay_milliseconds: u64,
         random_error_percent: u32,
+        fork_number: BlockNumber,
     ) -> Result<Self> {
-        let chain = MockChain::new(net)?;
+        let chain = MockChain::new_with_fork(net, fork_number)?;
         let peer_id = PeerId::random();
         let peer_info = PeerInfo::new(
             peer_id.clone(),
@@ -325,8 +327,9 @@ impl SyncNodeMocker {
         net: ChainNetwork,
         error_strategy: ErrorStrategy,
         random_error_percent: u32,
+        fork_number: BlockNumber,
     ) -> Result<Self> {
-        let chain = MockChain::new(net)?;
+        let chain = MockChain::new_with_fork(net, fork_number)?;
         let peer_id = PeerId::random();
         let peer_info = PeerInfo::new(peer_id.clone(), chain.chain_info(), vec![], vec![], None);
         let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default(), None);

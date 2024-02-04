@@ -4,7 +4,7 @@ use crate::{
 };
 use std::sync::Arc;
 
-use super::test_tools::full_sync_new_node;
+use super::test_tools::{block_sync_with_local, full_sync_new_node, net_rpc_err, sync_block_in_async_connection, sync_target};
 use super::{
     mock::SyncNodeMocker,
     test_tools::{
@@ -106,7 +106,10 @@ async fn sync_block_in_block_connection_service_mock(
 
 #[stest::test(timeout = 600)]
 async fn test_sync_single_chain_to_dag_chain() -> Result<()> {
-    let test_system = super::test_tools::SyncTestSystem::initialize_sync_system().await?;
+    let test_system = super::test_tools::SyncTestSystem::initialize_sync_system(
+        TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG,
+    )
+    .await?;
     test_system
         .target_node
         .set_dag_fork_number(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)?;
@@ -125,9 +128,11 @@ async fn test_sync_single_chain_to_dag_chain() -> Result<()> {
 
 #[stest::test(timeout = 120)]
 async fn test_sync_red_blocks_dag() -> Result<()> {
-    let test_system = super::test_tools::SyncTestSystem::initialize_sync_system()
-        .await
-        .expect("failed to init system");
+    let test_system = super::test_tools::SyncTestSystem::initialize_sync_system(
+        TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG,
+    )
+    .await
+    .expect("failed to init system");
     test_system
         .target_node
         .set_dag_fork_number(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)?;
@@ -233,4 +238,24 @@ async fn test_dag_block_sync() -> Result<()> {
 #[stest::test]
 async fn test_dag_block_sync_one_block() -> Result<()> {
     block_sync_task_test(2, 0, TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG).await
+}
+
+#[stest::test]
+async fn test_dag_block_sync_with_local() -> Result<()> {
+    block_sync_with_local(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG).await
+}
+
+#[stest::test(timeout = 120)]
+async fn test_dag_net_rpc_err() -> Result<()> {
+    net_rpc_err(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG).await
+}
+
+#[stest::test]
+async fn test_dag_sync_target() {
+    sync_target(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG).await;
+}
+
+#[stest::test]
+async fn test_dag_sync_block_in_async_connection() -> Result<()> {
+    sync_block_in_async_connection(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG).await
 }

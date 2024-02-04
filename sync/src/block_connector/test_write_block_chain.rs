@@ -14,7 +14,7 @@ use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
 use starcoin_txpool_mock_service::MockTxPoolService;
-use starcoin_types::block::Block;
+use starcoin_types::block::{Block, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH};
 use starcoin_types::startup_info::StartupInfo;
 use std::sync::Arc;
 
@@ -26,8 +26,11 @@ pub async fn create_writeable_block_chain() -> (
     let node_config = NodeConfig::random_for_test();
     let node_config = Arc::new(node_config);
 
-    let (storage, chain_info, _, dag) = StarcoinGenesis::init_storage_for_test(node_config.net())
-        .expect("init storage by genesis fail.");
+    let (storage, chain_info, _, dag) = StarcoinGenesis::init_storage_for_test(
+        node_config.net(),
+        TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH,
+    )
+    .expect("init storage by genesis fail.");
     let registry = RegistryService::launch();
     let bus = registry.service_ref::<BusService>().await.unwrap();
     let txpool_service = MockTxPoolService::new();
