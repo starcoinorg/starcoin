@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Ok, Result};
+use rand::{thread_rng, Rng};
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
@@ -19,8 +20,11 @@ use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::TypeTag;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::language_storage::StructTag;
+use starcoin_vm_types::on_chain_config::FlexiDagConfig;
+use starcoin_vm_types::state_view::StateReaderExt;
 use std::str::FromStr;
 use std::sync::Arc;
+use test_helper::gen_blockchain_for_dag_test;
 
 #[stest::test(timeout = 120)]
 fn test_chain_filter_events() {
@@ -147,6 +151,19 @@ fn test_halley_consensus() {
     let times = 20;
     mock_chain.produce_and_apply_times(times).unwrap();
     assert_eq!(mock_chain.head().current_header().number(), times);
+}
+
+#[stest::test]
+fn test_block_chain_dag() -> Result<()> {
+    let mut mock_chain =
+        MockChain::new_with_fork(ChainNetwork::new_test(), TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)?;
+    (0..10).into_iter().try_for_each(|index| {
+        let block = mock_chain.produce()?;
+        assert_eq!(block.header().number(), index + 1);
+        mock_chain.apply(block)?;
+        assert_eq!(mock_chain.head().current_header().number(), index + 1);
+        Ok(())
+    })
 }
 
 #[stest::test(timeout = 240)]

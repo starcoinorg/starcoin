@@ -1,13 +1,19 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::block::create_new_block;
 use crate::executor::{
     account_execute_should_success, association_execute_should_success, blockmeta_execute,
-    current_block_number, get_balance,
+    current_block_number, get_balance, get_sequence_number,
+};
+use crate::txn::{
+    build_cast_vote_txn, build_create_vote_txn, build_execute_txn, build_queue_txn, create_user_txn,
 };
 use crate::Account;
 use anyhow::Result;
+use starcoin_chain::{BlockChain, ChainWriter};
 use starcoin_config::ChainNetwork;
+use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_executor::execute_readonly_function;
 use starcoin_logger::prelude::*;
@@ -53,12 +59,12 @@ pub fn proposal_state<S: StateView>(
         ]),
         None,
     )
-    .unwrap_or_else(|e| {
-        panic!(
-            "read proposal_state failed, action_ty: {:?}, proposer_address:{}, proposal_id:{}, vm_status: {:?}", action_ty,
-            proposer_address, proposal_id, e
-        )
-    });
+        .unwrap_or_else(|e| {
+            panic!(
+                "read proposal_state failed, action_ty: {:?}, proposer_address:{}, proposal_id:{}, vm_status: {:?}", action_ty,
+                proposer_address, proposal_id, e
+            )
+        });
     assert_eq!(ret.len(), 1);
     bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
@@ -94,6 +100,7 @@ pub fn on_chain_config_type_tag(params_type_tag: TypeTag) -> TypeTag {
         type_params: vec![params_type_tag],
     }))
 }
+
 pub fn reward_config_type_tag() -> TypeTag {
     TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
@@ -102,6 +109,7 @@ pub fn reward_config_type_tag() -> TypeTag {
         type_params: vec![],
     }))
 }
+
 pub fn transaction_timeout_type_tag() -> TypeTag {
     TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
@@ -110,6 +118,7 @@ pub fn transaction_timeout_type_tag() -> TypeTag {
         type_params: vec![],
     }))
 }
+
 pub fn txn_publish_config_type_tag() -> TypeTag {
     TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
@@ -165,6 +174,7 @@ fn execute_create_account(
         Ok(())
     }
 }
+
 pub fn quorum_vote<S: StateView>(state_view: &S, token: TypeTag) -> u128 {
     let mut ret = execute_readonly_function(
         state_view,
@@ -192,6 +202,7 @@ pub fn voting_delay<S: StateView>(state_view: &S, token: TypeTag) -> u64 {
     assert_eq!(ret.len(), 1);
     bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
+
 pub fn voting_period<S: StateView>(state_view: &S, token: TypeTag) -> u64 {
     let mut ret = execute_readonly_function(
         state_view,
@@ -344,6 +355,7 @@ pub fn vote_txn_timeout_script(_net: &ChainNetwork, duration_seconds: u64) -> Sc
         ],
     )
 }
+
 /// vote txn publish option scripts
 pub fn vote_txn_publish_option_script(
     _net: &ChainNetwork,
@@ -689,4 +701,217 @@ pub fn dao_vote_test(
         )?;
     }
     Ok(())
+}
+
+pub fn modify_on_chain_config_by_dao_block(
+    alice: Account,
+    mut chain: BlockChain,
+    net: &ChainNetwork,
+    vote_script: ScriptFunction,
+    action_type_tag: TypeTag,
+    execute_script: ScriptFunction,
+) -> Result<BlockChain> {
+    let pre_mint_amount = net.genesis_config().pre_mine_amount;
+    let one_day: u64 = 60 * 60 * 24 * 1000;
+    let address = association_address();
+
+    // Block 1
+    let block_number = 1;
+    let block_timestamp = net.time_service().now_millis() + one_day * block_number;
+    let chain_state = chain.chain_state();
+    let seq = get_sequence_number(address, chain_state);
+    {
+        chain.time_service().adjust(block_timestamp);
+
+        let (template, _) = chain.create_block_template(
+            address,
+            None,
+            create_user_txn(
+                address,
+                seq,
+                net,
+                &alice,
+                pre_mint_amount,
+                block_timestamp / 1000,
+            )?,
+            vec![],
+            None,
+            None,
+        )?;
+        let block1 = chain
+            .consensus()
+            .create_block(template, chain.time_service().as_ref())?;
+
+        chain.apply(block1)?;
+    }
+
+    // block 2
+    let block_number = 2;
+    let block_timestamp = net.time_service().now_millis() + one_day * block_number;
+    let chain_state = chain.chain_state();
+    let alice_seq = get_sequence_number(*alice.address(), chain_state);
+    {
+        chain.time_service().adjust(block_timestamp);
+        let block2 = create_new_block(
+            &chain,
+            &alice,
+            vec![build_create_vote_txn(
+                &alice,
+                alice_seq,
+                vote_script,
+                block_timestamp / 1000,
+            )],
+        )?;
+        chain.apply(block2)?;
+
+        let chain_state = chain.chain_state();
+        let state = proposal_state(
+            chain_state,
+            stc_type_tag(),
+            action_type_tag.clone(),
+            *alice.address(),
+            0,
+        );
+        assert_eq!(state, PENDING);
+    }
+
+    // block 3
+    //voting delay
+    let chain_state = chain.chain_state();
+    let voting_power = get_balance(*alice.address(), chain_state);
+    let alice_seq = get_sequence_number(*alice.address(), chain_state);
+    let block_timestamp = block_timestamp + voting_delay(chain_state, stc_type_tag()) + 10000;
+    {
+        chain.time_service().adjust(block_timestamp);
+        let block3 = create_new_block(
+            &chain,
+            &alice,
+            vec![build_cast_vote_txn(
+                alice_seq,
+                &alice,
+                action_type_tag.clone(),
+                voting_power,
+                block_timestamp / 1000,
+            )],
+        )?;
+        chain.apply(block3)?;
+    }
+    // block 4
+    let chain_state = chain.chain_state();
+    let block_timestamp = block_timestamp + voting_period(chain_state, stc_type_tag()) - 10000;
+    {
+        chain.time_service().adjust(block_timestamp);
+        let block4 = create_new_block(&chain, &alice, vec![])?;
+        chain.apply(block4)?;
+        let chain_state = chain.chain_state();
+        let quorum = quorum_vote(chain_state, stc_type_tag());
+        println!("quorum: {}", quorum);
+
+        let state = proposal_state(
+            chain_state,
+            stc_type_tag(),
+            action_type_tag.clone(),
+            *alice.address(),
+            0,
+        );
+        assert_eq!(state, ACTIVE);
+    }
+
+    // block 5
+    let block_timestamp = block_timestamp + 20 * 1000;
+    {
+        chain.time_service().adjust(block_timestamp);
+        chain.apply(create_new_block(&chain, &alice, vec![])?)?;
+        let chain_state = chain.chain_state();
+        let state = proposal_state(
+            chain_state,
+            stc_type_tag(),
+            action_type_tag.clone(),
+            *alice.address(),
+            0,
+        );
+        assert_eq!(state, AGREED, "expect AGREED state, but got {}", state);
+    }
+
+    // block 6
+    let chain_state = chain.chain_state();
+    let alice_seq = get_sequence_number(*alice.address(), chain_state);
+    let block_timestamp = block_timestamp + 20 * 1000;
+    {
+        chain.time_service().adjust(block_timestamp);
+        let block6 = create_new_block(
+            &chain,
+            &alice,
+            vec![build_queue_txn(
+                alice_seq,
+                &alice,
+                net,
+                action_type_tag.clone(),
+                block_timestamp / 1000,
+            )],
+        )?;
+        chain.apply(block6)?;
+        let chain_state = chain.chain_state();
+        let state = proposal_state(
+            chain_state,
+            stc_type_tag(),
+            action_type_tag.clone(),
+            *alice.address(),
+            0,
+        );
+        assert_eq!(state, QUEUED);
+    }
+
+    // block 7
+    let chain_state = chain.chain_state();
+    let block_timestamp = block_timestamp + min_action_delay(chain_state, stc_type_tag());
+    {
+        chain.time_service().adjust(block_timestamp);
+        chain.apply(create_new_block(&chain, &alice, vec![])?)?;
+        let chain_state = chain.chain_state();
+        let state = proposal_state(
+            chain_state,
+            stc_type_tag(),
+            action_type_tag.clone(),
+            *alice.address(),
+            0,
+        );
+        assert_eq!(state, EXECUTABLE);
+    }
+
+    let chain_state = chain.chain_state();
+    let alice_seq = get_sequence_number(*alice.address(), chain_state);
+    {
+        let block8 = create_new_block(
+            &chain,
+            &alice,
+            vec![build_execute_txn(
+                alice_seq,
+                &alice,
+                execute_script,
+                block_timestamp / 1000,
+            )],
+        )?;
+        chain.apply(block8)?;
+    }
+
+    // block 9
+    let block_timestamp = block_timestamp + 1000;
+    let _chain_state = chain.chain_state();
+    {
+        chain.time_service().adjust(block_timestamp);
+        chain.apply(create_new_block(&chain, &alice, vec![])?)?;
+        let chain_state = chain.chain_state();
+        let state = proposal_state(
+            chain_state,
+            stc_type_tag(),
+            action_type_tag,
+            *alice.address(),
+            0,
+        );
+        assert_eq!(state, EXTRACTED);
+    }
+
+    // return chain state for verify
+    Ok(chain)
 }

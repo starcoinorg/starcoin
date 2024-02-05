@@ -4,17 +4,21 @@
 use crate::Account;
 use starcoin_config::ChainNetwork;
 use starcoin_transaction_builder::{
-    create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT,
+    create_signed_txn_with_association_account, encode_create_account_script_function,
+    DEFAULT_MAX_GAS_AMOUNT,
 };
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account::peer_to_peer_txn;
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::language_storage::TypeTag;
 use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::account_config::stc_type_tag;
+use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::transaction::{ScriptFunction, TransactionPayload};
+use starcoin_vm_types::transaction::{RawUserTransaction, ScriptFunction, TransactionPayload};
 
 const NEW_ACCOUNT_AMOUNT: u128 = 1_000_000_000;
 const TRANSFER_AMOUNT: u128 = 1_000;
@@ -132,4 +136,130 @@ pub fn create_account_txn_sent_as_association(
         expiration_timstamp_secs,
         net,
     )
+}
+
+fn build_transaction(
+    user_address: AccountAddress,
+    seq_number: u64,
+    payload: TransactionPayload,
+    expire_time: u64,
+) -> RawUserTransaction {
+    RawUserTransaction::new_with_default_gas_token(
+        user_address,
+        seq_number,
+        payload,
+        DEFAULT_MAX_GAS_AMOUNT,
+        1,
+        expire_time + 60 * 60,
+        ChainId::test(),
+    )
+}
+
+pub fn create_user_txn(
+    address: AccountAddress,
+    seq_number: u64,
+    net: &ChainNetwork,
+    alice: &Account,
+    pre_mint_amount: u128,
+    expire_time: u64,
+) -> anyhow::Result<Vec<SignedUserTransaction>> {
+    let script_function = encode_create_account_script_function(
+        net.stdlib_version(),
+        stc_type_tag(),
+        alice.address(),
+        alice.auth_key(),
+        pre_mint_amount / 4,
+    );
+    let txn = net
+        .genesis_config()
+        .sign_with_association(build_transaction(
+            address,
+            seq_number,
+            TransactionPayload::ScriptFunction(script_function),
+            expire_time + 60 * 60,
+        ))?;
+    Ok(vec![txn])
+}
+
+pub fn build_create_vote_txn(
+    alice: &Account,
+    seq_number: u64,
+    vote_script_function: ScriptFunction,
+    expire_time: u64,
+) -> SignedUserTransaction {
+    alice.sign_txn(build_transaction(
+        *alice.address(),
+        seq_number,
+        TransactionPayload::ScriptFunction(vote_script_function),
+        expire_time,
+    ))
+}
+
+pub fn build_cast_vote_txn(
+    seq_number: u64,
+    alice: &Account,
+    action_type_tag: TypeTag,
+    voting_power: u128,
+    expire_time: u64,
+) -> SignedUserTransaction {
+    let proposer_id: u64 = 0;
+    println!("alice voting power: {}", voting_power);
+    let vote_script_function = ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("DaoVoteScripts").unwrap(),
+        ),
+        Identifier::new("cast_vote").unwrap(),
+        vec![stc_type_tag(), action_type_tag],
+        vec![
+            bcs_ext::to_bytes(alice.address()).unwrap(),
+            bcs_ext::to_bytes(&proposer_id).unwrap(),
+            bcs_ext::to_bytes(&true).unwrap(),
+            bcs_ext::to_bytes(&(voting_power / 2)).unwrap(),
+        ],
+    );
+    alice.sign_txn(build_transaction(
+        *alice.address(),
+        seq_number,
+        TransactionPayload::ScriptFunction(vote_script_function),
+        expire_time,
+    ))
+}
+
+pub fn build_queue_txn(
+    seq_number: u64,
+    alice: &Account,
+    _net: &ChainNetwork,
+    action_type_tag: TypeTag,
+    expire_time: u64,
+) -> SignedUserTransaction {
+    let script_function = ScriptFunction::new(
+        ModuleId::new(core_code_address(), Identifier::new("Dao").unwrap()),
+        Identifier::new("queue_proposal_action").unwrap(),
+        vec![stc_type_tag(), action_type_tag],
+        vec![
+            bcs_ext::to_bytes(alice.address()).unwrap(),
+            bcs_ext::to_bytes(&0u64).unwrap(),
+        ],
+    );
+    alice.sign_txn(build_transaction(
+        *alice.address(),
+        seq_number,
+        TransactionPayload::ScriptFunction(script_function),
+        expire_time,
+    ))
+}
+
+pub fn build_execute_txn(
+    seq_number: u64,
+    alice: &Account,
+    execute_script_function: ScriptFunction,
+    expire_time: u64,
+) -> SignedUserTransaction {
+    alice.sign_txn(build_transaction(
+        *alice.address(),
+        seq_number,
+        TransactionPayload::ScriptFunction(execute_script_function),
+        expire_time,
+    ))
 }
