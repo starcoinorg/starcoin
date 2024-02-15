@@ -2,11 +2,11 @@ use super::util::Refs;
 use crate::consensusdb::schemadb::{GhostdagStoreReader, HeaderStoreReader, RelationsStoreReader};
 use crate::reachability::reachability_service::ReachabilityService;
 use crate::types::{ghostdata::GhostdagData, ordering::*};
+use anyhow::{Context, Result};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::blockhash::{BlockHashMap, BlockHashes, BlueWorkType, HashKTypeMap, KType};
 use std::sync::Arc;
-
 #[derive(Clone)]
 pub struct GhostdagManager<
     T: GhostdagStoreReader,
@@ -66,16 +66,27 @@ impl<
         ))
     }
 
-    pub fn find_selected_parent(&self, parents: impl IntoIterator<Item = Hash>) -> Hash {
+    pub fn find_selected_parent(
+        &self,
+        parents: impl IntoIterator<Item = Hash>,
+    ) -> anyhow::Result<Hash> {
         parents
             .into_iter()
-            .map(|parent| SortableBlock {
-                hash: parent,
-                blue_work: self.ghostdag_store.get_blue_work(parent).unwrap(),
+            .map(|parent| {
+                let blue_work = self
+                    .ghostdag_store
+                    .get_blue_work(parent)
+                    .with_context(|| format!("Failed to get blue work for parent {:?}", parent))?;
+                Ok(SortableBlock {
+                    hash: parent,
+                    blue_work,
+                })
             })
+            .collect::<Result<Vec<_>>>()?
+            .into_iter()
             .max()
-            .unwrap()
-            .hash
+            .map(|sortable_block| sortable_block.hash)
+            .ok_or_else(|| anyhow::Error::msg("No parent found"))
     }
 
     /// Runs the GHOSTDAG protocol and calculates the block GhostdagData by the given parents.
@@ -96,13 +107,13 @@ impl<
     ///    blues_anticone_sizes.
     ///
     /// For further details see the article https://eprint.iacr.org/2018/104.pdf
-    pub fn ghostdag(&self, parents: &[Hash]) -> GhostdagData {
+    pub fn ghostdag(&self, parents: &[Hash]) -> Result<GhostdagData> {
         assert!(
             !parents.is_empty(),
             "genesis must be added via a call to init"
         );
         // Run the GHOSTDAG parent selection algorithm
-        let selected_parent = self.find_selected_parent(parents.iter().copied());
+        let selected_parent = self.find_selected_parent(parents.iter().copied())?;
         // Initialize new GHOSTDAG block data with the selected parent
         let mut new_block_data = GhostdagData::new_with_selected_parent(selected_parent, self.k);
         // Get the mergeset in consensus-agreed topological order (topological here means forward in time from blocks to children)
@@ -147,7 +158,7 @@ impl<
 
         new_block_data.finalize_score_and_work(blue_score, blue_work);
 
-        new_block_data
+        Ok(new_block_data)
     }
 
     fn check_blue_candidate_with_chain_block(

@@ -11,7 +11,7 @@ spec:
     matchLabels:
       app: starcoin
   serviceName: starcoin-svc
-  replicas: 1
+  replicas: 2
   template:
     metadata:
       name: starcoin
@@ -23,13 +23,13 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: ghcr.io/starcoin/starcoin:v1.13.8
+        image: ghcr.io/starcoinorg/starcoin:v2.0.3-alpha
         imagePullPolicy: Always
         command:
           - bash
           - -c
         args:
-          - rm -rf /sc-data/proxima/starcoin.ipc /sc-data/proxima/starcoindb/db/starcoindb/LOCK;
+          - rm -rf /sc-data/proxima/ /sc-data/proxima/starcoindb/db/starcoindb/LOCK;
             id=$(echo -e $POD_NAME|awk -F'-' '{print $2}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
             node_key=${node_keys[$id]};
             if [ ! -z $node_key ]; then

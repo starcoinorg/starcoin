@@ -280,7 +280,7 @@ impl BlockChain {
             match &tips_hash {
                 None => (uncles, None),
                 Some(tips) => {
-                    let mut blues = self.dag.ghostdata(tips).mergeset_blues.to_vec();
+                    let mut blues = self.dag.ghostdata(tips)?.mergeset_blues.to_vec();
                     info!(
                         "create block template with tips:{:?}, ghostdata blues:{:?}",
                         &tips_hash, blues
@@ -1255,7 +1255,7 @@ impl BlockChain {
         // Caculate the ghostdata of the virutal node created by all tips.
         // And the ghostdata.selected of the tips will be the latest head.
         let block_hash = {
-            let ghost_of_tips = dag.ghostdata(tips.as_slice());
+            let ghost_of_tips = dag.ghostdata(tips.as_slice())?;
             ghost_of_tips.selected_parent
         };
         debug!(

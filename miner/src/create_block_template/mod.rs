@@ -347,7 +347,7 @@ where
             match &tips_hash {
                 None => (self.find_uncles(), None),
                 Some(tips) => {
-                    let mut blues = self.dag.ghostdata(tips).mergeset_blues.to_vec();
+                    let mut blues = self.dag.ghostdata(tips)?.mergeset_blues.to_vec();
                     info!(
                         "create block template with tips:{:?},ghostdata blues:{:?}",
                         &tips_hash, blues

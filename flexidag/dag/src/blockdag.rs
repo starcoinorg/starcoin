@@ -86,7 +86,7 @@ impl BlockDAG {
         self.commit(genesis)?;
         Ok(())
     }
-    pub fn ghostdata(&self, parents: &[HashValue]) -> GhostdagData {
+    pub fn ghostdata(&self, parents: &[HashValue]) -> anyhow::Result<GhostdagData> {
         self.ghostdag_manager.ghostdag(parents)
     }
 
@@ -101,13 +101,18 @@ impl BlockDAG {
     pub fn commit(&self, header: BlockHeader) -> anyhow::Result<()> {
         // Generate ghostdag data
         let parents = header.parents();
-        let ghostdata = self.ghostdata_by_hash(header.id())?.unwrap_or_else(|| {
-            Arc::new(if header.is_dag_genesis() {
-                self.ghostdag_manager.genesis_ghostdag_data(&header)
-            } else {
-                self.ghostdag_manager.ghostdag(&parents)
-            })
-        });
+        let ghostdata = match self.ghostdata_by_hash(header.id())? {
+            None => {
+                if header.is_dag_genesis() {
+                    Arc::new(self.ghostdag_manager.genesis_ghostdag_data(&header))
+                } else {
+                    let ghostdata = self.ghostdag_manager.ghostdag(&parents)?;
+                    Arc::new(ghostdata)
+                }
+            }
+            Some(ghostdata) => ghostdata,
+        };
+
         // Store ghostdata
         self.storage
             .ghost_dag_store
