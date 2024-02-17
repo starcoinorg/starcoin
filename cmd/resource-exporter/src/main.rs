@@ -160,17 +160,6 @@ impl serde::Serialize for MoveValue {
     }
 }
 
-#[derive(Parser)]
-struct Opt {
-    #[clap(subcommand)]
-    cmd: Option<Cmd>,
-}
-
-#[derive(Parser)]
-enum Cmd {
-    Exporter(ExporterOptions),
-}
-
 #[derive(Debug, Clone, Parser)]
 #[clap(name = "resource-exporter", about = "onchain resource exporter")]
 pub struct ExporterOptions {

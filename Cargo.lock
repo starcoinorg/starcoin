@@ -2139,6 +2139,7 @@ dependencies = [
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-resource-viewer",
+ "starcoin-rpc-api",
  "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
