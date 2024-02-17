@@ -1,22 +1,24 @@
+use anyhow::format_err;
 use clap::Parser;
 use serde::{ser::SerializeMap, Serialize, Serializer};
-use starcoin_crypto::HashValue;
+use starcoin_chain::{BlockChain, ChainReader};
+use starcoin_config::{BuiltinNetworkID, ChainNetwork};
+use starcoin_genesis::Genesis;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
 use starcoin_state_tree::StateTree;
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::{
-    db_storage::DBStorage, storage::StorageInstance, BlockStore, Storage, StorageVersion,
-};
+use starcoin_storage::cache_storage::CacheStorage;
+use starcoin_storage::{db_storage::DBStorage, storage::StorageInstance, Storage, StorageVersion};
+use starcoin_types::block::BlockNumber;
 use starcoin_types::{
     access_path::DataType, account_state::AccountState, language_storage::StructTag,
 };
-use starcoin_vm_types::{account_address::AccountAddress, parser::parse_struct_tag};
-use std::{
-    convert::TryInto,
-    fmt::Debug,
-    path::{Path, PathBuf},
-    sync::Arc,
-};
+use starcoin_vm_types::account_address::AccountAddress;
+use std::fs::File;
+use std::io::Write;
+use std::{convert::TryInto, fmt::Debug, path::PathBuf, sync::Arc};
+
+use starcoin_rpc_api::types::StrView;
 
 #[derive(Serialize, Debug)]
 pub struct AccountData<R: Serialize> {
@@ -26,14 +28,15 @@ pub struct AccountData<R: Serialize> {
 }
 
 pub fn export(
-    db: &str,
-    output: &Path,
-    block_id: HashValue,
+    from_dir: PathBuf,
+    output: PathBuf,
+    network: BuiltinNetworkID,
+    block_number: Option<BlockNumber>,
     resource_struct_tag: StructTag,
-    fields: &[String],
 ) -> anyhow::Result<()> {
+    let net = ChainNetwork::new_builtin(network);
     let db_storage = DBStorage::open_with_cfs(
-        db,
+        from_dir.join("starcoindb/db/starcoindb"),
         StorageVersion::current_version()
             .get_column_family_names()
             .to_vec(),
@@ -41,11 +44,23 @@ pub fn export(
         Default::default(),
         None,
     )?;
-    let storage = Storage::new(StorageInstance::new_db_instance(db_storage))?;
-    let storage = Arc::new(storage);
-    let block = storage
-        .get_block(block_id)?
-        .ok_or_else(|| anyhow::anyhow!("block {} not exist", block_id))?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_storage,
+    ))?);
+    let (chain_info, _) =
+        Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
+    let chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+    let cur_num = block_number.unwrap_or(chain_info.head().number());
+    let block = chain
+        .get_block_by_number(cur_num)?
+        .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
 
     let root = block.header.state_root();
     let statedb = ChainStateDB::new(storage.clone(), Some(root));
@@ -53,16 +68,7 @@ pub fn export(
 
     let state_tree = StateTree::<AccountAddress>::new(storage.clone(), Some(root));
 
-    let mut csv_writer = csv::WriterBuilder::new().from_path(output)?;
-
-    // write csv header.
-    {
-        csv_writer.write_field("address")?;
-        for f in fields {
-            csv_writer.write_field(f)?;
-        }
-        csv_writer.write_record(None::<&[u8]>)?;
-    }
+    let mut file = File::create(output)?;
 
     let global_states = state_tree.dump()?;
 
@@ -89,20 +95,14 @@ pub fn export(
                 }
             }
         };
-
-        // write csv record.
-        let record: Option<Vec<_>> = resource
-            .as_ref()
-            .map(|v| fields.iter().map(|f| v.pointer(f.as_str())).collect());
-        if let Some(mut record) = record {
-            let account_value = serde_json::to_value(account).unwrap();
-            record.insert(0, Some(&account_value));
-            csv_writer.serialize(record)?;
+        if let Some(res) = resource {
+            let balance = res.get("token").unwrap().get("value").unwrap();
+            writeln!(file, "{} {}", account, balance)?;
         }
     }
     println!("t2: {}", now.elapsed().as_millis());
     // flush csv writer
-    csv_writer.flush()?;
+    file.flush()?;
     Ok(())
 }
 
@@ -149,47 +149,50 @@ impl serde::Serialize for MoveValue {
     }
 }
 
+#[derive(Parser)]
+struct Opt {
+    #[clap(subcommand)]
+    cmd: Option<Cmd>,
+}
+
+#[derive(Parser)]
+enum Cmd {
+    Exporter(ExporterOptions),
+}
+
 #[derive(Debug, Clone, Parser)]
 #[clap(name = "resource-exporter", about = "onchain resource exporter")]
 pub struct ExporterOptions {
+    #[clap(long, short = 'n')]
+    /// Chain Network, like main, proxima
+    pub net: BuiltinNetworkID,
     #[clap(long, short = 'o', parse(from_os_str))]
     /// output file, like accounts.csv
     pub output: PathBuf,
     #[clap(long, short = 'i', parse(from_os_str))]
-    /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db/starcoindb
+    /// starcoin node db path. like ~/.starcoin/barnard
     pub db_path: PathBuf,
 
-    #[clap(long)]
-    /// block id which snapshot at.
-    pub block_id: HashValue,
+    #[clap(long, short = 'b')]
+    pub block_number: Option<BlockNumber>,
 
     #[clap(
-        short='r',
-        default_value = "0x1::Account::Balance<0x1::STC::STC>",
-        parse(try_from_str=parse_struct_tag)
+        help = "resource struct tag,",
+        default_value = "0x1::Account::Balance<0x1::STC::STC>"
     )]
-    /// resource struct tag.
-    resource_type: StructTag,
-
-    #[clap(min_values = 1, required = true)]
-    /// fields of the struct to output. it use pointer syntax of serde_json.
-    /// like: /authentication_key /sequence_number /deposit_events/counter
-    pub fields: Vec<String>,
+    resource_type: StrView<StructTag>,
 }
 
 fn main() -> anyhow::Result<()> {
     #[cfg(target_os = "linux")]
     let guard = pprof::ProfilerGuard::new(100).unwrap();
-    let option: ExporterOptions = ExporterOptions::parse();
-    let output = option.output.as_path();
-    let block_id = option.block_id;
-    let resource = option.resource_type.clone();
+    let option = ExporterOptions::parse();
     export(
-        option.db_path.display().to_string().as_str(),
-        output,
-        block_id,
-        resource,
-        option.fields.as_slice(),
+        option.db_path,
+        option.output,
+        option.net,
+        option.block_number,
+        option.resource_type.0.clone(),
     )?;
     #[cfg(target_os = "linux")]
     if let Ok(report) = guard.report().build() {

@@ -13,6 +13,10 @@ starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
+starcoin-genesis = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-chain = { workspace = true }
+starcoin-rpc-api = { workspace = true }
 
 [package]
 authors = { workspace = true }
