@@ -1897,6 +1897,7 @@ pub fn export_resource(
     }
     println!("t2: {}", now.elapsed().as_millis());
     writeln!(file, "total {}", sum)?;
+    writeln!(file, "cur height {}", cur_num)?;
     file.flush()?;
     Ok(())
 }
