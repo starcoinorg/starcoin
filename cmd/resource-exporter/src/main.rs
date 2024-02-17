@@ -74,6 +74,7 @@ pub fn export(
 
     use std::time::Instant;
     let now = Instant::now();
+    let mut sum: u128 = 0;
     for (address_bytes, account_state_bytes) in global_states.iter() {
         let account: AccountAddress = bcs_ext::from_bytes(address_bytes)?;
         let account_state: AccountState = account_state_bytes.as_slice().try_into()?;
@@ -96,12 +97,22 @@ pub fn export(
             }
         };
         if let Some(res) = resource {
-            let balance = res.get("token").unwrap().get("value").unwrap();
-            writeln!(file, "{} {}", account, balance)?;
+            let balance = (res
+                .get("token")
+                .unwrap()
+                .get("value")
+                .unwrap()
+                .as_f64()
+                .unwrap()
+                / 1000000000.0) as u128;
+            if balance > 0 {
+                writeln!(file, "{} {}", account, balance)?;
+                sum += balance;
+            }
         }
     }
     println!("t2: {}", now.elapsed().as_millis());
-    // flush csv writer
+    writeln!(file, "total {}", sum)?;
     file.flush()?;
     Ok(())
 }
