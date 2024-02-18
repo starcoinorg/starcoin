@@ -383,3 +383,69 @@ fn test_struct_republish_backward_incompatible() -> Result<()> {
 
     Ok(())
 }
+
+#[stest::test]
+fn test_transaction_arg_verify() -> Result<()> {
+    let (chain_state, net) = prepare_genesis();
+    let account1 = Account::new();
+    let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+        &account1,
+        0,
+        5000_000_000,
+        1,
+        &net,
+    ));
+    let output1 = execute_and_apply(&chain_state, txn1);
+    assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
+    let module_source = r#"
+    module {{sender}}::test {
+    use StarcoinFramework::STC::{STC};
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Signer;
+
+    public entry fun deposit_token(account: signer, num: u128) {
+        let coin = Account::withdraw_with_metadata<STC>(&account, num, x"");
+        Account::deposit_with_metadata<STC>(Signer::address_of(&account), coin, x"");
+        }
+    } "#;
+    let module = compile_modules_with_address(*account1.address(), module_source)
+        .pop()
+        .unwrap();
+
+    let package = Package::new_with_module(module)?;
+
+    let txn1 = Transaction::UserTransaction(account1.create_signed_txn_impl(
+        *account1.address(),
+        TransactionPayload::Package(package),
+        0,
+        1000_000,
+        1,
+        1,
+        net.chain_id(),
+    ));
+    let output1 = execute_and_apply(&chain_state, txn1);
+    assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
+
+    let money = 100_000;
+    let num: u128 = 2;
+    let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
+        ModuleId::new(*account1.address(), Identifier::new("test").unwrap()),
+        Identifier::new("deposit_token").unwrap(),
+        vec![],
+        vec![bcs_ext::to_bytes(&num).unwrap()],
+    ));
+    let txn = Transaction::UserTransaction(account1.create_signed_txn_impl(
+        *account1.address(),
+        payload,
+        1,
+        money,
+        1,
+        1,
+        net.chain_id(),
+    ));
+
+    let output = execute_and_apply(&chain_state, txn);
+    assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());
+    println!("{:#?}", output);
+    Ok(())
+}
