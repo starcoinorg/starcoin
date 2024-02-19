@@ -5,7 +5,7 @@ use clap::Parser;
 use starcoin_consensus::{Consensus, G_CRYPTONIGHT};
 use std::path::PathBuf;
 
-use crate::cmd_batch_execution::{BatchCmdExec, CmdBatchExecution};
+use crate::command_progress::{ParallelCommand, ParallelCommandFilter, ParallelCommandProgress};
 use starcoin_types::block::Block;
 
 #[derive(Debug, Parser)]
@@ -28,12 +28,18 @@ pub struct VerifyHeaderError {
 pub struct VerifyHeaderCmdType;
 
 pub fn verify_header_via_export_file(path: PathBuf, batch_size: usize) -> anyhow::Result<()> {
-    let batch_cmd = CmdBatchExecution::new(String::from("verify_block_header"), path, batch_size);
-    batch_cmd.progress::<VerifyHeaderCmdType, Block, VerifyHeaderError>()
+    let batch_cmd = ParallelCommandProgress::new(
+        String::from("verify_block_header"),
+        path,
+        batch_size,
+        None,
+        None,
+    );
+    batch_cmd.progress::<VerifyHeaderCmdType, Block, VerifyHeaderError>(&VerifyHeaderCmdType {})
 }
 
-impl BatchCmdExec<VerifyHeaderCmdType, Block, VerifyHeaderError> for Block {
-    fn execute(&self) -> (usize, Vec<VerifyHeaderError>) {
+impl ParallelCommand<VerifyHeaderCmdType, Block, VerifyHeaderError> for Block {
+    fn execute(&self, _cmd: &VerifyHeaderCmdType) -> (usize, Vec<VerifyHeaderError>) {
         let ret = G_CRYPTONIGHT.verify_header_difficulty(self.header.difficulty(), &self.header);
         match ret {
             Ok(_) => (1, vec![]),
@@ -47,5 +53,17 @@ impl BatchCmdExec<VerifyHeaderCmdType, Block, VerifyHeaderError> for Block {
                 )
             }
         }
+    }
+
+    fn before_command(&self, _cmd: &VerifyHeaderCmdType) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    fn after_command(&self, _cmd: &VerifyHeaderCmdType) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    fn matched(&self, _filter: Option<ParallelCommandFilter>) -> bool {
+        true
     }
 }

@@ -5,7 +5,7 @@ use starcoin_types::{block::Block, transaction::TransactionPayload};
 use starcoin_vm_types::{errors::VMError, file_format::CompiledModule};
 use std::{fmt::Debug, path::PathBuf};
 //use starcoin_accumulator::node::AccumulatorStoreType::Block;
-use crate::cmd_batch_execution::{BatchCmdExec, CmdBatchExecution};
+use crate::command_progress::{ParallelCommand, ParallelCommandFilter, ParallelCommandProgress};
 
 #[derive(Debug, Parser)]
 #[clap(
@@ -27,8 +27,8 @@ pub struct VerifyModuleError {
 
 pub struct VerifyModulesType;
 
-impl BatchCmdExec<VerifyModulesType, Block, VerifyModuleError> for Block {
-    fn execute(&self) -> (usize, Vec<VerifyModuleError>) {
+impl ParallelCommand<VerifyModulesType, Block, VerifyModuleError> for Block {
+    fn execute(&self, _cmd: &VerifyModulesType) -> (usize, Vec<VerifyModuleError>) {
         let mut errors = vec![];
         let mut success_modules = 0;
         let block = self;
@@ -71,6 +71,18 @@ impl BatchCmdExec<VerifyModulesType, Block, VerifyModuleError> for Block {
             }
         }
         (success_modules, errors)
+    }
+
+    fn before_command(&self, _cmd: &VerifyModulesType) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    fn after_command(&self, _cmd: &VerifyModulesType) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    fn matched(&self, _filter: Option<ParallelCommandFilter>) -> bool {
+        true
     }
 }
 
@@ -119,8 +131,9 @@ impl BatchCmdExec<VerifyModulesType, Block, VerifyModuleError> for Block {
 // }
 
 pub fn verify_modules_via_export_file(input_path: PathBuf) -> anyhow::Result<()> {
-    let batch_cmd = CmdBatchExecution::new(String::from("verify_module"), input_path, 10);
-    batch_cmd.progress::<VerifyModulesType, Block, VerifyModuleError>()
+    let batch_cmd =
+        ParallelCommandProgress::new(String::from("verify_module"), input_path, 10, None, None);
+    batch_cmd.progress::<VerifyModulesType, Block, VerifyModuleError>(&VerifyModulesType {})
     // let start_time = SystemTime::now();
     // let file_name = input_path.display().to_string();
     // let reader = BufReader::new(File::open(input_path)?);
