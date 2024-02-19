@@ -295,7 +295,6 @@ impl OpenedBlock {
         Ok(block_template)
     }
 }
-
 pub struct AddressFilter;
 impl AddressFilter {
     const BLACKLIST: Vec<AccountAddress> = vec![]; //TODO: Fill in
