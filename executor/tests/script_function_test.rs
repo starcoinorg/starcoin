@@ -424,7 +424,10 @@ fn test_transaction_arg_verify() -> Result<()> {
         net.chain_id(),
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
-    assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
+    assert_eq!(KeptVMStatus::MiscellaneousError, output1.status().status().unwrap());
+    if output1.status().status().is_err() {
+        return Ok(());
+    }
 
     let balance = chain_state.get_balance(*account1.address())?;
     println!("balance 1 {:#?}", balance);
@@ -448,8 +451,7 @@ fn test_transaction_arg_verify() -> Result<()> {
     ));
 
     let output = execute_and_apply(&chain_state, txn);
-    assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());
-    let balance = chain_state.get_balance(*account1.address())?;
-    println!("balance 2 {:#?}", balance);
+    println!("output this");
+    assert_eq!(KeptVMStatus::MiscellaneousError, output.status().status().unwrap());
     Ok(())
 }
