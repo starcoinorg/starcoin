@@ -2159,6 +2159,7 @@ fn verify_block_range(
         ProgressStyle::default_bar()
             .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
     );
+    let mut cnt = 0;
     for block_number in start_num..=end_num {
         let block = chain
             .get_block_by_number(block_number)?
@@ -2175,6 +2176,10 @@ fn verify_block_range(
         }
         bar.set_message(format!("verify block {}", block_number));
         bar.inc(1);
+        cnt += 1;
+        if cnt % 1000 == 0 {
+            writeln!(file, "block {} verify", start_num + cnt)?;
+        }
     }
     bar.finish();
     file.flush()?;
