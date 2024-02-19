@@ -11,8 +11,10 @@ use starcoin_transaction_builder::{
 use starcoin_types::account::Account;
 use starcoin_types::account_config::association_address;
 use starcoin_types::transaction::Transaction;
+use starcoin_vm_types::account_config::stc_type_tag;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
+use starcoin_vm_types::state_view::StateReaderExt;
 use starcoin_vm_types::transaction::{
     Package, Script, ScriptFunction, TransactionPayload, TransactionStatus,
 };
@@ -391,7 +393,7 @@ fn test_transaction_arg_verify() -> Result<()> {
     let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
         &account1,
         0,
-        5000_000_000,
+        5_000_000,
         1,
         &net,
     ));
@@ -399,13 +401,11 @@ fn test_transaction_arg_verify() -> Result<()> {
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
     let module_source = r#"
     module {{sender}}::test {
-    use StarcoinFramework::STC::{STC};
+    use StarcoinFramework::Token::{Token};
     use StarcoinFramework::Account;
-    use StarcoinFramework::Signer;
 
-    public entry fun deposit_token(account: signer, num: u128) {
-        let coin = Account::withdraw_with_metadata<STC>(&account, num, x"");
-        Account::deposit_with_metadata<STC>(Signer::address_of(&account), coin, x"");
+    public entry fun deposit_token<T: store>(account: signer, coin: Token<T>) {
+        Account::deposit_to_self<T>(&account, coin);
         }
     } "#;
     let module = compile_modules_with_address(*account1.address(), module_source)
@@ -426,12 +426,15 @@ fn test_transaction_arg_verify() -> Result<()> {
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
 
+    let balance = chain_state.get_balance(*account1.address())?;
+    println!("balance 1 {:#?}", balance);
+
     let money = 100_000;
-    let num: u128 = 2;
+    let num: u128 = 50_000_000;
     let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(*account1.address(), Identifier::new("test").unwrap()),
         Identifier::new("deposit_token").unwrap(),
-        vec![],
+        vec![stc_type_tag()],
         vec![bcs_ext::to_bytes(&num).unwrap()],
     ));
     let txn = Transaction::UserTransaction(account1.create_signed_txn_impl(
@@ -446,6 +449,7 @@ fn test_transaction_arg_verify() -> Result<()> {
 
     let output = execute_and_apply(&chain_state, txn);
     assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());
-    println!("{:#?}", output);
+    let balance = chain_state.get_balance(*account1.address())?;
+    println!("balance 2 {:#?}", balance);
     Ok(())
 }
