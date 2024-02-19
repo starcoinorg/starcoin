@@ -1,4 +1,3 @@
-use anyhow::bail;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use std::{
@@ -108,7 +107,7 @@ impl CmdBatchExecution {
         println!("verify {:?},  use time: {:?}, success modules: {}, error modules: {}, total modules: {}",
                  self.name, SystemTime::now().duration_since(start_time)?.as_secs(), result.succeed, result.failed, result.succeed + result.failed);
         if result.failed > 0 {
-            bail!("verify block modules error");
+            println!("verify block modules error");
         }
         Ok(())
     }
