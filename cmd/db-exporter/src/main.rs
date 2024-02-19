@@ -455,6 +455,10 @@ pub struct VerifyBlockOptions {
     #[clap(possible_values = Verifier::variants(), ignore_case = true)]
     /// Verify type:  Basic, Consensus, Full, None, eg.
     pub verifier: Option<Verifier>,
+    #[clap(long, short = 's')]
+    pub start: BlockNumber,
+    #[clap(long, short = 'e')]
+    pub end: Option<BlockNumber>,
 }
 
 #[tokio::main(flavor = "multi_thread")]
@@ -618,7 +622,7 @@ async fn main() -> anyhow::Result<()> {
         }
         Cmd::VerifyBlock(option) => {
             let verifier = option.verifier.unwrap_or(Verifier::Basic);
-            let result = verify_block(option.from_path, option.net, verifier);
+            let result = verify_block(option.from_path, option.net, option.start, option.end, verifier);
             return result;
         }
     }
@@ -2086,6 +2090,8 @@ pub fn apply_turbo_stm_block(
 pub fn verify_block(
     from_dir: PathBuf,
     network: BuiltinNetworkID,
+    start: BlockNumber,
+    end: Option<BlockNumber>,
     verifier: Verifier,
 ) -> anyhow::Result<()> {
     ::starcoin_logger::init();
@@ -2112,8 +2118,8 @@ pub fn verify_block(
         None,
     )
     .expect("create block chain should success.");
-    let start_num = 1;
-    let end_num = chain.status().head().number() as u64;
+    let start_num = start as u64;
+    let end_num = end.unwrap_or(chain.status().head().number()) as u64;
     let start_time = SystemTime::now();
     let avg = (end_num - start_num + 1) / (num_cpus::get() as u64);
     let mut handles = vec![];
