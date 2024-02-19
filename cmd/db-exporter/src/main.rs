@@ -622,7 +622,13 @@ async fn main() -> anyhow::Result<()> {
         }
         Cmd::VerifyBlock(option) => {
             let verifier = option.verifier.unwrap_or(Verifier::Basic);
-            let result = verify_block(option.from_path, option.net, option.start, option.end, verifier);
+            let result = verify_block(
+                option.from_path,
+                option.net,
+                option.start,
+                option.end,
+                verifier,
+            );
             return result;
         }
     }
