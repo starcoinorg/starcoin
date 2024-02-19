@@ -338,6 +338,15 @@ impl BlockChain {
         self.connect(executed_block)
     }
 
+    pub fn verify_without_save<V>(&mut self, block: Block) -> Result<ExecutedBlock>
+    where
+        V: BlockVerifier,
+    {
+        let verified_block = self.verify_with_verifier::<V>(block)?;
+        watch(CHAIN_WATCH_NAME, "n1");
+        self.execute_without_save(verified_block)
+    }
+
     //TODO remove this function.
     pub fn update_chain_head(&mut self, block: Block) -> Result<ExecutedBlock> {
         let block_info = self
@@ -512,6 +521,107 @@ impl BlockChain {
         storage.save_table_infos(txn_table_infos)?;
 
         watch(CHAIN_WATCH_NAME, "n26");
+        Ok(ExecutedBlock { block, block_info })
+    }
+
+    fn execute_block_without_save(
+        statedb: ChainStateDB,
+        txn_accumulator: MerkleAccumulator,
+        block_accumulator: MerkleAccumulator,
+        epoch: &Epoch,
+        parent_status: Option<ChainStatus>,
+        block: Block,
+        vm_metrics: Option<VMMetrics>,
+    ) -> Result<ExecutedBlock> {
+        let header = block.header();
+        debug_assert!(header.is_genesis() || parent_status.is_some());
+        debug_assert!(!header.is_genesis() || parent_status.is_none());
+        let block_id = header.id();
+        let transactions = {
+            // genesis block do not generate BlockMetadata transaction.
+            let mut t = match &parent_status {
+                None => vec![],
+                Some(parent) => {
+                    let block_metadata = block.to_metadata(parent.head().gas_used());
+                    vec![Transaction::BlockMetadata(block_metadata)]
+                }
+            };
+            t.extend(
+                block
+                    .transactions()
+                    .iter()
+                    .cloned()
+                    .map(Transaction::UserTransaction),
+            );
+            t
+        };
+
+        watch(CHAIN_WATCH_NAME, "n21");
+        let executed_data = starcoin_executor::block_execute(
+            &statedb,
+            transactions.clone(),
+            epoch.block_gas_limit(),
+            vm_metrics,
+        )?;
+        watch(CHAIN_WATCH_NAME, "n22");
+        let state_root = executed_data.state_root;
+        let vec_transaction_info = &executed_data.txn_infos;
+        verify_block!(
+            VerifyBlockField::State,
+            state_root == header.state_root(),
+            "verify block:{:?} state_root fail",
+            block_id,
+        );
+        let block_gas_used = vec_transaction_info
+            .iter()
+            .fold(0u64, |acc, i| acc.saturating_add(i.gas_used()));
+        verify_block!(
+            VerifyBlockField::State,
+            block_gas_used == header.gas_used(),
+            "invalid block: gas_used is not match"
+        );
+
+        verify_block!(
+            VerifyBlockField::State,
+            vec_transaction_info.len() == transactions.len(),
+            "invalid txn num in the block"
+        );
+
+        // txn accumulator verify.
+        let executed_accumulator_root = {
+            let included_txn_info_hashes: Vec<_> =
+                vec_transaction_info.iter().map(|info| info.id()).collect();
+            txn_accumulator.append(&included_txn_info_hashes)?
+        };
+
+        verify_block!(
+            VerifyBlockField::State,
+            executed_accumulator_root == header.txn_accumulator_root(),
+            "verify block: txn accumulator root mismatch"
+        );
+
+        let pre_total_difficulty = parent_status
+            .map(|status| status.total_difficulty())
+            .unwrap_or_default();
+        let total_difficulty = pre_total_difficulty + header.difficulty();
+        let txn_accumulator_info: AccumulatorInfo = txn_accumulator.get_info();
+        let block_accumulator_info: AccumulatorInfo = block_accumulator.get_info();
+        let block_info = BlockInfo::new(
+            block_id,
+            total_difficulty,
+            txn_accumulator_info,
+            block_accumulator_info,
+        );
+
+        watch(CHAIN_WATCH_NAME, "n25");
+
+        let txn_infos = executed_data.txn_infos;
+        let txn_events = executed_data.txn_events;
+
+        debug_assert!(
+            txn_events.len() == txn_infos.len(),
+            "events' length should be equal to txn infos' length"
+        );
         Ok(ExecutedBlock { block, block_info })
     }
 
@@ -758,6 +868,18 @@ impl ChainReader for BlockChain {
     fn execute(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
         Self::execute_block_and_save(
             self.storage.as_ref(),
+            self.statedb.fork(),
+            self.txn_accumulator.fork(None),
+            self.block_accumulator.fork(None),
+            &self.epoch,
+            Some(self.status.status.clone()),
+            verified_block.0,
+            self.vm_metrics.clone(),
+        )
+    }
+
+    fn execute_without_save(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
+        Self::execute_block_without_save(
             self.statedb.fork(),
             self.txn_accumulator.fork(None),
             self.block_accumulator.fork(None),
