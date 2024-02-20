@@ -73,15 +73,7 @@ impl ParallelCommand<VerifyModulesType, Block, VerifyModuleError> for Block {
         (success_modules, errors)
     }
 
-    fn before_command(&self, _cmd: &VerifyModulesType) -> anyhow::Result<()> {
-        Ok(())
-    }
-
-    fn after_command(&self, _cmd: &VerifyModulesType) -> anyhow::Result<()> {
-        Ok(())
-    }
-
-    fn matched(&self, _filter: Option<ParallelCommandFilter>) -> bool {
+    fn matched(&self, _filter: &Option<ParallelCommandFilter>) -> bool {
         true
     }
 }

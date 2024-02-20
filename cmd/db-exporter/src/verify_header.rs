@@ -55,15 +55,7 @@ impl ParallelCommand<VerifyHeaderCmdType, Block, VerifyHeaderError> for Block {
         }
     }
 
-    fn before_command(&self, _cmd: &VerifyHeaderCmdType) -> anyhow::Result<()> {
-        Ok(())
-    }
-
-    fn after_command(&self, _cmd: &VerifyHeaderCmdType) -> anyhow::Result<()> {
-        Ok(())
-    }
-
-    fn matched(&self, _filter: Option<ParallelCommandFilter>) -> bool {
+    fn matched(&self, _filter: &Option<ParallelCommandFilter>) -> bool {
         true
     }
 }

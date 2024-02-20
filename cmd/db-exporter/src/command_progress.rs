@@ -23,11 +23,9 @@ impl CommandResult {
 
 pub struct ParallelCommandFilter {
     signer: Option<String>,
-    func_name: Option<String>,
-    // function name for filter, none for all
-    ty_args: Option<Vec<String>>,
-    // template parameter for filter, none for all
-    args: Option<Vec<String>>, // arguments type for filter, none for all
+    func_name: Option<String>,    // function name for filter, none for all
+    ty_args: Option<Vec<String>>, // template parameter for filter, none for all
+    args: Option<Vec<String>>,    // arguments type for filter, none for all
 }
 
 impl ParallelCommandFilter {
@@ -98,7 +96,7 @@ impl ParallelCommandProgress {
         }
     }
 
-    pub fn progress<CommandT, BodyT, ErrorT>(self, command: &CommandT) -> Result<()>
+    pub fn progress<CommandT: Sync + Send, BodyT, ErrorT>(self, command: &CommandT) -> Result<()>
     where
         BodyT: ParallelCommand<CommandT, BodyT, ErrorT>
             + Send
@@ -128,7 +126,16 @@ impl ParallelCommandProgress {
         let all_items = lines
             .par_iter()
             .map(|line| Ok(serde_json::from_str::<BodyT>(line.as_str()))?)
-            .filter(|item| item.unwrap().matched(self.filters))
+            .filter(|item| match item {
+                Ok(i) => {
+                    if i.matched(&self.filter) {
+                        true
+                    } else {
+                        false
+                    }
+                }
+                Err(_e) => false,
+            })
             .collect::<Result<Vec<BodyT>, _>>()?;
 
         let progress_bar = ProgressBar::new(all_items.len() as u64).with_style(
@@ -190,9 +197,5 @@ impl ParallelCommandProgress {
 pub trait ParallelCommand<CommandT, BodyT, ErrorT> {
     fn execute(&self, cmd: &CommandT) -> (usize, Vec<ErrorT>);
 
-    fn before_command(&self, cmd: &CommandT) -> Result<()>;
-
-    fn after_command(&self, cmd: &CommandT) -> Result<()>;
-
-    fn matched(&self, filter: Option<ParallelCommandFilter>) -> bool;
+    fn matched(&self, filter: &Option<ParallelCommandFilter>) -> bool;
 }
