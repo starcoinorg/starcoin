@@ -11,7 +11,7 @@ use starcoin_logger::prelude::debug;
 use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
 use std::{collections::HashSet, str::FromStr};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Verifier {
     Basic,
     Consensus,
