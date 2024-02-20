@@ -43,14 +43,17 @@ use starcoin_vm_types::on_chain_resource::Epoch;
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::{collections::HashMap, sync::Arc};
 
-pub static MAIN_DIRECT_SAVE_BLOCK_HASH: Lazy<HashValue> = Lazy::new(|| {
+static MAIN_DIRECT_SAVE_BLOCK_HASH: Lazy<HashValue> = Lazy::new(|| {
     HashValue::from_hex_literal(
         "0x6f36ea7df4bedb8e8aefebd822d493fb95c9434ae1d5095c0f5f2d7c33e7b866",
     )
     .expect("")
 });
+
+static OUTPUT_BLOCK: AtomicBool = AtomicBool::new(false);
 
 pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
@@ -676,6 +679,10 @@ impl BlockChain {
         Ok(ExecutedBlock { block, block_info })
     }
 
+    pub fn set_output_block() {
+        OUTPUT_BLOCK.store(true, Ordering::Relaxed);
+    }
+
     fn execute_block_without_save(
         statedb: ChainStateDB,
         txn_accumulator: MerkleAccumulator,
@@ -685,7 +692,6 @@ impl BlockChain {
         block: Block,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
-        let debug_info = block.id() == *MAIN_DIRECT_SAVE_BLOCK_HASH;
         let header = block.header();
         debug_assert!(header.is_genesis() || parent_status.is_some());
         debug_assert!(!header.is_genesis() || parent_status.is_none());
@@ -772,7 +778,7 @@ impl BlockChain {
             executed_data.txn_events.len() == executed_data.txn_infos.len(),
             "events' length should be equal to txn infos' length"
         );
-        if debug_info {
+        if OUTPUT_BLOCK.load(Ordering::Relaxed) {
             println!(
                 "block {} executed_data {:?} ",
                 block.header().number(),
