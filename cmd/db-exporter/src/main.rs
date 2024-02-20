@@ -5,7 +5,9 @@ use anyhow::{bail, format_err, Result};
 use bcs_ext::{BCSCodec, Sample};
 use clap::{IntoApp, Parser};
 use csv::Writer;
+use db_exporter::command_decode_payload::do_decode_payload_command;
 use db_exporter::{
+    command_decode_payload::{do_decode_payload, DecodePayloadCommandOptions},
     verify_header::{verify_header_via_export_file, VerifyHeaderOptions},
     verify_module::{verify_modules_via_export_file, VerifyModuleOptions},
 };
@@ -235,6 +237,7 @@ enum Cmd {
     VerifyHeader(VerifyHeaderOptions),
     GenTurboSTMTransactions(GenTurboSTMTransactionsOptions),
     ApplyTurboSTMBlock(ApplyTurboSTMBlockOptions),
+    DecodePayload(DecodePayloadCommandOptions),
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -259,7 +262,7 @@ pub struct CheckKeyOptions {
     /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db/starcoindb
     pub db_path: PathBuf,
     #[clap(long, short = 'n',
-    possible_values=&["block", "block_header"],)]
+    possible_values = & ["block", "block_header"],)]
     pub cf_name: String,
     #[clap(long, short = 'b')]
     pub block_hash: HashValue,
@@ -350,7 +353,7 @@ pub struct GenBlockTransactionsOptions {
     pub block_num: Option<u64>,
     #[clap(long, short = 't')]
     pub trans_num: Option<u64>,
-    #[clap(long, short = 'p', possible_values=&["CreateAccount", "FixAccount", "EmptyTxn"],)]
+    #[clap(long, short = 'p', possible_values = & ["CreateAccount", "FixAccount", "EmptyTxn"],)]
     /// txn type
     pub txn_type: Txntype,
 }
@@ -404,9 +407,9 @@ pub struct ExportResourceOptions {
     pub block_hash: HashValue,
 
     #[clap(
-        short='r',
-        default_value = "0x1::Account::Balance<0x1::STC::STC>",
-        parse(try_from_str=parse_struct_tag)
+    short = 'r',
+    default_value = "0x1::Account::Balance<0x1::STC::STC>",
+    parse(try_from_str = parse_struct_tag)
     )]
     /// resource struct tag.
     resource_type: StructTag,
@@ -606,6 +609,9 @@ async fn main() -> anyhow::Result<()> {
             let result =
                 apply_turbo_stm_block(option.to_path, option.turbo_stm_to_path, option.input_path);
             return result;
+        }
+        Cmd::DecodePayload(option) => {
+            return do_decode_payload_command(&option);
         }
     }
     Ok(())
@@ -856,6 +862,7 @@ pub fn gen_block_transactions(
         }
     }
 }
+
 /// Returns a transaction to create a new account with the given arguments.
 pub fn create_account_txn_sent_as_association(
     new_account: &Account,

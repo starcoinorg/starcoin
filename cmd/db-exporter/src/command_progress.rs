@@ -40,18 +40,18 @@ pub struct ParallelCommandFilter {
 }
 
 impl ParallelCommandFilter {
-    fn new(
-        signer: Option<String>,
-        func_name: Option<String>,
-        ty_args: Option<Vec<String>>,
-        args: Option<Vec<String>>,
+    pub fn new(
+        signer: &Option<String>,
+        func_name: &Option<String>,
+        ty_args: &Option<Vec<String>>,
+        args: &Option<Vec<String>>,
     ) -> Option<Self> {
         if func_name.is_some() || ty_args.is_some() || args.is_some() {
             Some(ParallelCommandFilter {
-                signer,
-                func_name,
-                ty_args,
-                args,
+                signer: signer.clone(),
+                func_name: func_name.clone(),
+                ty_args: ty_args.clone(),
+                args: args.clone(),
             })
         } else {
             None
@@ -117,6 +117,7 @@ pub struct ParallelCommandReadBlockFromDB {
     start_num: u64,
     end_num: u64,
     chain: Arc<BlockChain>,
+    skip_empty_block: bool,
 }
 
 const BLOCK_GAP: u64 = 1000;
@@ -127,6 +128,7 @@ impl ParallelCommandReadBlockFromDB {
         net: ChainNetwork,
         start: u64,
         end: u64,
+        skip_empty_block: bool,
     ) -> Result<(Self, Arc<Storage>)> {
         let storage = Self::init_db_obj(input_path.clone()).expect("Failed to initialize db");
         let (chain_info, _) =
@@ -169,6 +171,7 @@ impl ParallelCommandReadBlockFromDB {
                 start_num,
                 end_num,
                 chain: Arc::new(chain),
+                skip_empty_block,
             },
             storage,
         ))
@@ -195,18 +198,26 @@ impl ParallelCommandBlockReader for ParallelCommandReadBlockFromDB {
     }
 
     fn read(&self) -> Result<Vec<Block>> {
-        let ret = (self.start_num..=self.end_num)
+        println!(
+            "ParallelCommandBlockReader::read | read range: {}, {}, skip empty block: {}",
+            self.start_num, self.end_num, self.skip_empty_block
+        );
+
+        Ok((self.start_num..=self.end_num)
             .collect::<Vec<BlockNumber>>()
             .into_iter()
-            .map(|num| {
-                // progress_bar.set_message(format!("load block {}", num));
-                // progress_bar.inc(1);
-                self.chain.get_block_by_number(num).ok()?
+            .filter_map(|num| {
+                if self.skip_empty_block {
+                    self.chain
+                        .get_block_by_number(num)
+                        .ok()
+                        .flatten()
+                        .filter(|block| !block.transactions().is_empty())
+                } else {
+                    self.chain.get_block_by_number(num).ok().flatten()
+                }
             })
-            .filter(|block| block.is_some())
-            .map(|block| block.unwrap())
-            .collect();
-        Ok(ret)
+            .collect::<Vec<Block>>())
     }
 }
 
@@ -264,20 +275,24 @@ impl ParallelCommandProgress {
             observer.before_progress()?;
         }
 
+        let progress_interval = self.block_reader.get_progress_interval();
         let progress_bar = ProgressBar::new(self.block_reader.get_progress_interval()).with_style(
             ProgressStyle::default_bar()
                 .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
         );
 
-        let all_items = self.block_reader.read()?;
-        // .iter()
-        // .filter(|b| (*b).matched(&self.filter))
-        // .map(|b| *b)
-        // .collect();
+        let mut all_items = self.block_reader.read()?;
+        let all_item_size = all_items.len();
+
+        all_items.retain(|b| (*b).matched(&self.filter));
+        let filtered_item_size = all_items.len();
 
         println!(
-            "Reading lines from file expire time: {:?}",
-            SystemTime::now().duration_since(start_time)?.as_secs()
+            "Reading lines from file expire time: {:?}, get interval: {:?},  actual return item size: {:?}, filtered item size:{:?}",
+            SystemTime::now().duration_since(start_time)?.as_secs(),
+            progress_interval,
+            all_item_size,
+            filtered_item_size,
         );
 
         // It is necessary to divide all rows into subsets
@@ -309,30 +324,9 @@ impl ParallelCommandProgress {
                 failed: acc.failed + result.failed,
             },
         );
-        //
-        // let excution_result = all_items
-        //     .iter()
-        //     .map(|item| {
-        //         let (succeed, failed) = item.execute(command);
-        //         progress_bar.inc(1);
-        //         CommandResult::new(succeed, failed.len())
-        //     })
-        //     .collect::<Vec<CommandResult>>();
-        //
-        // let result = excution_result.into_iter().fold(
-        //     CommandResult {
-        //         succeed: 0,
-        //         failed: 0,
-        //     },
-        //     |acc, result| CommandResult {
-        //         succeed: acc.succeed + result.succeed,
-        //         failed: acc.failed + result.failed,
-        //     },
-        // );
-
         progress_bar.finish();
 
-        println!("verify {:?},  use time: {:?}, success modules: {}, error modules: {}, total modules: {}",
+        println!("Running ParallelCommand {:?},  use time: {:?}, success modules: {}, error modules: {}, total modules: {}",
                  self.name, SystemTime::now().duration_since(start_time)?.as_secs(), result.succeed, result.failed, result.succeed + result.failed);
         if result.failed > 0 {
             bail!("verify block modules error");
