@@ -237,6 +237,7 @@ enum Cmd {
     GenTurboSTMTransactions(GenTurboSTMTransactionsOptions),
     ApplyTurboSTMBlock(ApplyTurboSTMBlockOptions),
     DecodePayload(DecodePayloadCommandOptions),
+    VerifyBlock(VerifyBlockOptions),
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -446,6 +447,24 @@ pub struct ApplyTurboSTMBlockOptions {
     pub input_path: PathBuf,
 }
 
+#[derive(Debug, Parser)]
+#[clap(name = "verify-block-range", about = "verify block range")]
+pub struct VerifyBlockOptions {
+    #[clap(long, short = 'n')]
+    /// Chain Network
+    pub net: BuiltinNetworkID,
+    #[clap(long, short = 'i', parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/main
+    pub from_path: PathBuf,
+    #[clap(possible_values = Verifier::variants(), ignore_case = true)]
+    /// Verify type:  Basic, Consensus, Full, None, eg.
+    pub verifier: Option<Verifier>,
+    #[clap(long, short = 's')]
+    pub start: BlockNumber,
+    #[clap(long, short = 'e')]
+    pub end: Option<BlockNumber>,
+}
+
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     let opt = Opt::parse();
@@ -611,6 +630,17 @@ async fn main() -> anyhow::Result<()> {
         }
         Cmd::DecodePayload(option) => {
             return do_decode_payload_command(&option);
+        }
+        Cmd::VerifyBlock(option) => {
+            let verifier = option.verifier.unwrap_or(Verifier::Basic);
+            let result = verify_block(
+                option.from_path,
+                option.net,
+                option.start,
+                option.end,
+                verifier,
+            );
+            return result;
         }
     }
     Ok(())
@@ -2079,5 +2109,110 @@ pub fn apply_turbo_stm_block(
     storage_stm.save_startup_info(startup_info)?;
     let use_time = SystemTime::now().duration_since(start_time)?;
     println!("stm apply block use time: {:?}", use_time.as_secs());
+    Ok(())
+}
+
+pub fn verify_block(
+    from_dir: PathBuf,
+    network: BuiltinNetworkID,
+    start: BlockNumber,
+    end: Option<BlockNumber>,
+    verifier: Verifier,
+) -> anyhow::Result<()> {
+    ::starcoin_logger::init();
+    let net = ChainNetwork::new_builtin(network);
+    let db_storage = DBStorage::open_with_cfs(
+        from_dir.join("starcoindb/db/starcoindb"),
+        StorageVersion::current_version()
+            .get_column_family_names()
+            .to_vec(),
+        true,
+        Default::default(),
+        None,
+    )?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_storage,
+    ))?);
+    let (chain_info, _) =
+        Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
+    let chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+    let start_num = start;
+    let end_num = end.unwrap_or_else(|| chain.status().head().number());
+    let start_time = SystemTime::now();
+    let avg = (end_num - start_num + 1) / (num_cpus::get() as u64);
+    let mut handles = vec![];
+    for i in 0..num_cpus::get() {
+        let st = start_num + i as u64 * avg;
+        let mut end = start_num + (i as u64 + 1) * avg - 1;
+        if end > end_num {
+            end = end_num;
+        }
+        let chain = BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage.clone(),
+            None,
+        )
+        .expect("create block chain should success.");
+        let verifier2 = verifier.clone();
+        let handle = thread::spawn(move || {
+            verify_block_range(chain, st, end, verifier2).expect("verify_block_range panic")
+        });
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+    let use_time = SystemTime::now().duration_since(start_time)?;
+    println!("verify block use time: {:?}", use_time.as_secs());
+    Ok(())
+}
+
+fn verify_block_range(
+    chain: BlockChain,
+    start_num: u64,
+    end_num: u64,
+    verifier: Verifier,
+) -> Result<()> {
+    let name = format!("file-{}-{}", start_num, end_num);
+    let mut file = File::create(name)?;
+    writeln!(file, "block [{}..{}]", start_num, end_num)?;
+    let bar = ProgressBar::new(end_num - start_num + 1);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
+    let mut cnt = 0;
+    for block_number in start_num..=end_num {
+        let block = chain
+            .get_block_by_number(block_number)?
+            .ok_or_else(|| format_err!("{} get block error", block_number))?;
+        let mut cur_chain = chain.fork(block.header().parent_hash())?;
+        let res = match verifier {
+            Verifier::Basic => cur_chain.verify_without_save::<BasicVerifier>(block),
+            Verifier::Consensus => cur_chain.verify_without_save::<ConsensusVerifier>(block),
+            Verifier::Full => cur_chain.verify_without_save::<FullVerifier>(block),
+            Verifier::None => cur_chain.verify_without_save::<NoneVerifier>(block),
+        };
+        if res.is_err() {
+            writeln!(file, "block {} verify error", block_number)?;
+        }
+        bar.set_message(format!("verify block {}", block_number));
+        bar.inc(1);
+        cnt += 1;
+        if cnt % 1000 == 0 {
+            writeln!(file, "block {} verify", start_num + cnt)?;
+        }
+    }
+    bar.finish();
+    file.flush()?;
     Ok(())
 }
