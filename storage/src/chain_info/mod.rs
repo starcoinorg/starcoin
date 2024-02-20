@@ -5,7 +5,7 @@ use crate::storage::{ColumnFamily, InnerStorage, KVStore};
 use crate::{StorageVersion, CHAIN_INFO_PREFIX_NAME};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
-use starcoin_types::startup_info::{BarnardHardFork, SnapshotRange, StartupInfo};
+use starcoin_types::startup_info::{BarnardHardFork, DragonHardFork, SnapshotRange, StartupInfo};
 use std::convert::{TryFrom, TryInto};
 
 #[derive(Clone)]
@@ -28,6 +28,7 @@ impl ChainInfoStorage {
     const STORAGE_VERSION_KEY: &'static str = "storage_version";
     const SNAPSHOT_RANGE_KEY: &'static str = "snapshot_height";
     const BARNARD_HARD_FORK: &'static str = "barnard_hard_fork";
+    const DRAGON_HARD_FORK: &'static str = "dragon_hard_fork";
 
     pub fn get_startup_info(&self) -> Result<Option<StartupInfo>> {
         self.get(Self::STARTUP_INFO_KEY.as_bytes())
@@ -109,6 +110,21 @@ impl ChainInfoStorage {
         self.put_sync(
             Self::BARNARD_HARD_FORK.as_bytes().to_vec(),
             barnard_hard_fork.try_into()?,
+        )
+    }
+
+    pub fn get_dragon_hard_fork(&self) -> Result<Option<DragonHardFork>> {
+        self.get(Self::DRAGON_HARD_FORK.as_bytes())
+            .and_then(|bytes| match bytes {
+                Some(bytes) => Ok(Some(bytes.try_into()?)),
+                None => Ok(None),
+            })
+    }
+
+    pub fn save_dragon_hard_fork(&self, dragon_hard_fork: DragonHardFork) -> Result<()> {
+        self.put_sync(
+            Self::DRAGON_HARD_FORK.as_bytes().to_vec(),
+            dragon_hard_fork.try_into()?,
         )
     }
 }
