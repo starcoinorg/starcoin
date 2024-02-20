@@ -222,15 +222,19 @@ impl ParallelCommand<CommandDecodePayload, DecodePayloadCommandError> for Block 
 
         match filters {
             Some(filter) => {
-                println!("has key");
-                self.transactions().iter().any(|txn| match txn.payload() {
-                    TransactionPayload::ScriptFunction(payload) => {
-                        filter.match_signer(&txn.sender().to_string())
-                            || filter.match_func_name(payload.function().as_str())
-                            || filter.match_ty_args(&payload.ty_args().to_vec())
-                            || filter.match_args(&payload.args().to_vec())
+                self.transactions().iter().any(|txn| {
+                    match txn.payload() {
+                        TransactionPayload::ScriptFunction(payload) => {
+                            filter.match_signer(&txn.sender().to_string())
+                                && filter.match_func_name(payload.function().as_str())
+                                && filter.match_ty_args(&payload.ty_args().to_vec())
+                                && filter.match_args(&payload.args().to_vec())
+                        },
+                        TransactionPayload::Script(_) | TransactionPayload::Package(_) => {
+                            filter.match_signer(&txn.sender().to_string())
+                        },
+                        _ => true,
                     }
-                    _ => true,
                 })
             },
             None => true,

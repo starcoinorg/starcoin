@@ -46,7 +46,7 @@ impl ParallelCommandFilter {
         ty_args: &Option<Vec<String>>,
         args: &Option<Vec<String>>,
     ) -> Option<Self> {
-        if func_name.is_some() || ty_args.is_some() || args.is_some() {
+        if signer.is_some() || func_name.is_some() || ty_args.is_some() || args.is_some() {
             Some(ParallelCommandFilter {
                 signer: signer.clone(),
                 func_name: func_name.clone(),
@@ -59,11 +59,17 @@ impl ParallelCommandFilter {
     }
 
     pub fn match_signer(&self, signer: &str) -> bool {
-        self.signer.as_ref().map_or(false, |n| n == signer)
+        if self.signer.is_none() {
+            return true;
+        }
+        (self.signer.clone().unwrap() == signer)
     }
 
     pub fn match_func_name(&self, func_name: &str) -> bool {
-        self.func_name.as_ref().map_or(false, |n| n == func_name)
+        if self.func_name.is_none() {
+            return true;
+        }
+        (self.func_name.clone().unwrap() == func_name)
     }
 
     pub fn match_ty_args(&self, _ty_args: &Vec<TypeTag>) -> bool {
