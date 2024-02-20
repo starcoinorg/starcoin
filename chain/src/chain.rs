@@ -16,7 +16,7 @@ use starcoin_chain_api::{
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
-use starcoin_executor::VMMetrics;
+use starcoin_executor::{BlockExecutedData, VMMetrics};
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
@@ -532,6 +532,150 @@ impl BlockChain {
         Ok(ExecutedBlock { block, block_info })
     }
 
+    fn execute_save_directly(
+        storage: &dyn Store,
+        statedb: ChainStateDB,
+        txn_accumulator: MerkleAccumulator,
+        block_accumulator: MerkleAccumulator,
+        parent_status: Option<ChainStatus>,
+        block: Block,
+        block_info: BlockInfo,
+        executed_data: BlockExecutedData,
+    ) -> Result<ExecutedBlock> {
+        let header = block.header();
+        let block_id = header.id();
+
+        let transactions = {
+            // genesis block do not generate BlockMetadata transaction.
+            let mut t = match &parent_status {
+                None => vec![],
+                Some(parent) => {
+                    let block_metadata = block.to_metadata(parent.head().gas_used());
+                    vec![Transaction::BlockMetadata(block_metadata)]
+                }
+            };
+            t.extend(
+                block
+                    .transactions()
+                    .iter()
+                    .cloned()
+                    .map(Transaction::UserTransaction),
+            );
+            t
+        };
+        for write_set in executed_data.write_sets {
+            statedb
+                .apply_write_set(write_set)
+                .map_err(BlockExecutorError::BlockChainStateErr)?;
+            statedb
+                .commit()
+                .map_err(BlockExecutorError::BlockChainStateErr)?;
+        }
+        let vec_transaction_info = &executed_data.txn_infos;
+        verify_block!(
+            VerifyBlockField::State,
+            statedb.state_root() == header.state_root(),
+            "verify block:{:?} state_root fail",
+            block_id,
+        );
+
+        verify_block!(
+            VerifyBlockField::State,
+            vec_transaction_info.len() == transactions.len(),
+            "invalid txn num in the block"
+        );
+
+        let transaction_global_index = txn_accumulator.num_leaves();
+
+        // txn accumulator verify.
+        let executed_accumulator_root = {
+            let included_txn_info_hashes: Vec<_> =
+                vec_transaction_info.iter().map(|info| info.id()).collect();
+            txn_accumulator.append(&included_txn_info_hashes)?
+        };
+
+        verify_block!(
+            VerifyBlockField::State,
+            executed_accumulator_root == header.txn_accumulator_root(),
+            "verify block: txn accumulator root mismatch"
+        );
+
+        statedb
+            .flush()
+            .map_err(BlockExecutorError::BlockChainStateErr)?;
+        // If chain state is matched, and accumulator is matched,
+        // then, we save flush states, and save block data.
+        txn_accumulator
+            .flush()
+            .map_err(|_err| BlockExecutorError::BlockAccumulatorFlushErr)?;
+
+        block_accumulator.append(&[block_id])?;
+        block_accumulator.flush()?;
+
+        let txn_accumulator_info: AccumulatorInfo = txn_accumulator.get_info();
+        let block_accumulator_info: AccumulatorInfo = block_accumulator.get_info();
+        verify_block!(
+            VerifyBlockField::State,
+            txn_accumulator_info == block_info.txn_accumulator_info,
+            "verify block: txn accumulator info mismatch"
+        );
+
+        verify_block!(
+            VerifyBlockField::State,
+            block_accumulator_info == block_info.block_accumulator_info,
+            "verify block: block accumulator info mismatch"
+        );
+
+        let txn_infos = executed_data.txn_infos;
+        let txn_events = executed_data.txn_events;
+        let txn_table_infos = executed_data
+            .txn_table_infos
+            .into_iter()
+            .collect::<Vec<_>>();
+
+        // save block's transaction relationship and save transaction
+        let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.id()).collect();
+        for (info_id, events) in txn_info_ids.iter().zip(txn_events.into_iter()) {
+            storage.save_contract_events(*info_id, events)?;
+        }
+
+        storage.save_transaction_infos(
+            txn_infos
+                .into_iter()
+                .enumerate()
+                .map(|(transaction_index, info)| {
+                    RichTransactionInfo::new(
+                        block_id,
+                        block.header().number(),
+                        info,
+                        transaction_index as u32,
+                        transaction_global_index
+                            .checked_add(transaction_index as u64)
+                            .expect("transaction_global_index overflow."),
+                    )
+                })
+                .collect(),
+        )?;
+
+        let txn_id_vec = transactions
+            .iter()
+            .map(|user_txn| user_txn.id())
+            .collect::<Vec<HashValue>>();
+        // save transactions
+        storage.save_transaction_batch(transactions)?;
+
+        // save block's transactions
+        storage.save_block_transaction_ids(block_id, txn_id_vec)?;
+        storage.save_block_txn_info_ids(block_id, txn_info_ids)?;
+        storage.commit_block(block.clone())?;
+
+        storage.save_block_info(block_info.clone())?;
+
+        storage.save_table_infos(txn_table_infos)?;
+
+        Ok(ExecutedBlock { block, block_info })
+    }
+
     fn execute_block_without_save(
         statedb: ChainStateDB,
         txn_accumulator: MerkleAccumulator,
@@ -885,16 +1029,33 @@ impl ChainReader for BlockChain {
     }
 
     fn execute(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
-        Self::execute_block_and_save(
-            self.storage.as_ref(),
-            self.statedb.fork(),
-            self.txn_accumulator.fork(None),
-            self.block_accumulator.fork(None),
-            &self.epoch,
-            Some(self.status.status.clone()),
-            verified_block.0,
-            self.vm_metrics.clone(),
-        )
+        // 16450410 16450487
+        if verified_block.0.header().id() == *MAIN_DIRECT_SAVE_BLOCK_HASH {
+            // XXX FIXME YSG
+            let block_info = bcs_ext::from_bytes::<BlockInfo>(&hex::decode("01")?)?;
+            let executed_data = bcs_ext::from_bytes::<BlockExecutedData>(&hex::decode("01")?)?;
+            Self::execute_save_directly(
+                self.storage.as_ref(),
+                self.statedb.fork(),
+                self.txn_accumulator.fork(None),
+                self.block_accumulator.fork(None),
+                Some(self.status.status.clone()),
+                verified_block.0,
+                block_info,
+                executed_data,
+            )
+        } else {
+            Self::execute_block_and_save(
+                self.storage.as_ref(),
+                self.statedb.fork(),
+                self.txn_accumulator.fork(None),
+                self.block_accumulator.fork(None),
+                &self.epoch,
+                Some(self.status.status.clone()),
+                verified_block.0,
+                self.vm_metrics.clone(),
+            )
+        }
     }
 
     fn execute_without_save(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
