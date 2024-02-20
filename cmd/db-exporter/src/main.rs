@@ -237,6 +237,7 @@ enum Cmd {
     ApplyTurboSTMBlock(ApplyTurboSTMBlockOptions),
     DecodePayload(DecodePayloadCommandOptions),
     VerifyBlock(VerifyBlockOptions),
+    BlockOutput(BlockOutputOptions),
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -464,6 +465,19 @@ pub struct VerifyBlockOptions {
     pub end: Option<BlockNumber>,
 }
 
+#[derive(Debug, Parser)]
+#[clap(name = "block-output", about = "block output options")]
+pub struct BlockOutputOptions {
+    #[clap(long, short = 'n')]
+    /// Chain Network
+    pub net: BuiltinNetworkID,
+    #[clap(long, short = 'i', parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/main
+    pub from_path: PathBuf,
+    #[clap(long, short = 's')]
+    pub num: BlockNumber,
+}
+
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     let opt = Opt::parse();
@@ -639,6 +653,10 @@ async fn main() -> anyhow::Result<()> {
                 option.end,
                 verifier,
             );
+            return result;
+        }
+        Cmd::BlockOutput(option) => {
+            let result = block_output(option.from_path, option.net, option.num);
             return result;
         }
     }
@@ -2212,5 +2230,49 @@ fn verify_block_range(
     }
     bar.finish();
     file.flush()?;
+    Ok(())
+}
+
+pub fn block_output(
+    from_dir: PathBuf,
+    network: BuiltinNetworkID,
+    block_number: BlockNumber,
+) -> anyhow::Result<()> {
+    ::starcoin_logger::init();
+    let net = ChainNetwork::new_builtin(network);
+    let db_storage = DBStorage::open_with_cfs(
+        from_dir.join("starcoindb/db/starcoindb"),
+        StorageVersion::current_version()
+            .get_column_family_names()
+            .to_vec(),
+        true,
+        Default::default(),
+        None,
+    )?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_storage,
+    ))?);
+    let (chain_info, _) =
+        Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
+    let chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+    let block = chain
+        .get_block_by_number(block_number)?
+        .ok_or_else(|| format_err!("{} get block error", block_number))?;
+    BlockChain::set_output_block();
+    let mut chain = BlockChain::new(
+        net.time_service(),
+        block.header.parent_hash(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+    chain.verify_without_save::<BasicVerifier>(block)?;
     Ok(())
 }
