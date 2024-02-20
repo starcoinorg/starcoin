@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{Ok, Result};
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
@@ -11,9 +11,10 @@ use starcoin_config::NodeConfig;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
+use starcoin_logger::prelude::debug;
 use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::account_address;
-use starcoin_types::block::{Block, BlockHeader};
+use starcoin_types::block::{Block, BlockHeader, TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG};
 use starcoin_types::filter::Filter;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::TypeTag;
@@ -140,10 +141,22 @@ fn test_block_chain() -> Result<()> {
     Ok(())
 }
 
+#[stest::test]
+fn test_block_chain_dag() -> Result<()> {
+    let mut mock_chain = MockChain::new_with_fork(ChainNetwork::new_test(), TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)?;
+    (0..10).into_iter().try_for_each(|index| {
+        let block = mock_chain.produce()?;
+        assert_eq!(block.header().number(), index + 1);
+        mock_chain.apply(block)?;
+        assert_eq!(mock_chain.head().current_header().number(), index + 1);
+        Ok(())
+    })
+}
+
 #[stest::test(timeout = 480)]
 fn test_halley_consensus() {
     let mut mock_chain =
-        MockChain::new(ChainNetwork::new_builtin(BuiltinNetworkID::Halley)).unwrap();
+        MockChain::new_with_fork(ChainNetwork::new_builtin(BuiltinNetworkID::Halley), TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG).unwrap();
     let times = 20;
     mock_chain.produce_and_apply_times(times).unwrap();
     assert_eq!(mock_chain.head().current_header().number(), times);
@@ -151,7 +164,7 @@ fn test_halley_consensus() {
 
 #[stest::test(timeout = 240)]
 fn test_dev_consensus() {
-    let mut mock_chain = MockChain::new(ChainNetwork::new_builtin(BuiltinNetworkID::Dev)).unwrap();
+    let mut mock_chain = MockChain::new_with_fork(ChainNetwork::new_builtin(BuiltinNetworkID::Dev), TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG).unwrap();
     let times = 20;
     mock_chain.produce_and_apply_times(times).unwrap();
     assert_eq!(mock_chain.head().current_header().number(), times);
@@ -171,13 +184,26 @@ fn test_find_ancestor_genesis() -> Result<()> {
 }
 
 #[stest::test]
+fn test_find_ancestor_genesis_dag() -> Result<()> {
+    let mut mock_chain = MockChain::new_with_fork(ChainNetwork::new_test(), TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)?;
+    mock_chain.produce_and_apply_times(10)?;
+
+    let mut mock_chain2 = MockChain::new(ChainNetwork::new_test())?;
+    mock_chain2.produce_and_apply_times(20)?;
+    let ancestor = mock_chain.head().find_ancestor(mock_chain2.head())?;
+    assert!(ancestor.is_some());
+    assert_eq!(ancestor.unwrap().number, 0);
+    Ok(())
+}
+
+#[stest::test]
 fn test_find_ancestor_fork() -> Result<()> {
     let mut mock_chain = MockChain::new(ChainNetwork::new_test())?;
     mock_chain.produce_and_apply_times(3)?;
     let header = mock_chain.head().current_header();
     let mut mock_chain2 = mock_chain.fork(None)?;
     mock_chain.produce_and_apply_times(2)?;
-    mock_chain2.produce_and_apply_times(3)?;
+    mock_chain2.produce_and_apply_times(6)?;
     let ancestor = mock_chain.head().find_ancestor(mock_chain2.head())?;
     assert!(ancestor.is_some());
     assert_eq!(ancestor.unwrap().id, header.id());

@@ -3,7 +3,7 @@
 
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
-use anyhow::{bail, format_err, Result};
+use anyhow::{anyhow, bail, format_err, Result};
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use network_api::PeerId;
@@ -450,6 +450,12 @@ where
         }
     }
 
+
+    fn check_dag_block_valid(&self, block_header: &BlockHeader) -> Result<()> {
+        assert!(block_header.parents_hash().ok_or(anyhow!("parents is none"))?.len() > 0, "Invalid dag block header since its len of the parents is zero");
+        Ok(())
+    }
+
     pub fn ensure_dag_parent_blocks_exist(&mut self, block_header: BlockHeader) -> Result<()> {
         if !self.chain.is_dag(&block_header)? {
             info!(
@@ -473,6 +479,7 @@ where
             block_header.number(),
             block_header.parents_hash()
         );
+        assert!(self.check_dag_block_valid(&block_header).is_ok(), "Invalid dag block header");
         let fut = async {
             let mut dag_ancestors = self
                 .find_ancestor_dag_block_header(vec![block_header.clone()])

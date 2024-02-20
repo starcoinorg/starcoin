@@ -261,9 +261,6 @@ pub trait BlockStore {
     fn get_dag_state(&self) -> Result<Option<DagState>>;
 
     fn save_dag_state(&self, dag_state: DagState) -> Result<()>;
-
-    fn save_dag_fork_number(&self, fork_number: BlockNumber) -> Result<()>;
-    fn get_dag_fork_number(&self) -> Result<Option<BlockNumber>>;
 }
 
 pub trait BlockTransactionInfoStore {
@@ -517,14 +514,6 @@ impl BlockStore for Storage {
 
     fn save_dag_state(&self, dag_state: DagState) -> Result<()> {
         self.chain_info_storage.save_dag_state(dag_state)
-    }
-
-    fn save_dag_fork_number(&self, fork_number: BlockNumber) -> Result<()> {
-        self.chain_info_storage.save_dag_fork_number(fork_number)
-    }
-
-    fn get_dag_fork_number(&self) -> Result<Option<BlockNumber>> {
-        self.chain_info_storage.get_dag_fork_number()
     }
 }
 

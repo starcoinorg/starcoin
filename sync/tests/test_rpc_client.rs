@@ -23,13 +23,6 @@ fn test_verified_client_for_dag() {
     let (local_handle, target_handle, target_peer_id) =
         init_two_node().expect("failed to initalize the local and target node");
 
-    target_handle
-        .set_dag_fork_number(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)
-        .expect("set fork number error");
-    local_handle
-        .set_dag_fork_number(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)
-        .expect("set fork number error");
-
     let network = local_handle.network();
     // PeerProvider
     let peer_info = block_on(network.get_peer(target_peer_id))

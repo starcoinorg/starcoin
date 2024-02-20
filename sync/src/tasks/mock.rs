@@ -468,10 +468,6 @@ impl SyncNodeMocker {
             .ok_or_else(|| format_err!("No peers for send request."))
     }
 
-    pub fn set_dag_fork_number(&self, fork_number: BlockNumber) -> Result<()> {
-        self.chain_mocker.set_dag_fork_number(fork_number)
-    }
-
     // pub fn get_dag_fork_number(&self) -> Result<Option<BlockNumber>> {
     //     self.chain_mocker.get_dag_fork_number()
     // }

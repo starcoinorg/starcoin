@@ -144,7 +144,6 @@ impl SyncTestSystem {
 pub async fn full_sync_new_node(count_blocks: u64, fork_number: BlockNumber) -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let mut node1 = SyncNodeMocker::new(net1, 300, 0, fork_number)?;
-    node1.set_dag_fork_number(fork_number)?;
     node1.produce_block(count_blocks)?;
 
     let mut arc_node1 = Arc::new(node1);
@@ -152,7 +151,6 @@ pub async fn full_sync_new_node(count_blocks: u64, fork_number: BlockNumber) -> 
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
 
     let node2 = SyncNodeMocker::new(net2.clone(), 300, 0, fork_number)?;
-    node2.set_dag_fork_number(fork_number)?;
 
     let target = arc_node1.sync_target();
 
@@ -232,7 +230,6 @@ pub async fn sync_invalid_target(fork_number: BlockNumber) -> Result<()> {
 
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let mut node1 = SyncNodeMocker::new(net1, 300, 0, fork_number)?;
-    node1.set_dag_fork_number(fork_number)?;
     node1.produce_block(10)?;
 
     let arc_node1 = Arc::new(node1);
@@ -240,7 +237,6 @@ pub async fn sync_invalid_target(fork_number: BlockNumber) -> Result<()> {
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
 
     let node2 = SyncNodeMocker::new(net2.clone(), 300, 0, fork_number)?;
-    node2.set_dag_fork_number(fork_number)?;
     let dag = node2.chain().dag();
     let mut target = arc_node1.sync_target();
 
@@ -287,7 +283,6 @@ pub async fn sync_invalid_target(fork_number: BlockNumber) -> Result<()> {
 pub async fn full_sync_fork(fork_number: BlockNumber) -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let mut node1 = SyncNodeMocker::new(net1, 300, 0, fork_number)?;
-    node1.set_dag_fork_number(fork_number)?;
     node1.produce_block(10)?;
 
     let mut arc_node1 = Arc::new(node1);
@@ -295,7 +290,6 @@ pub async fn full_sync_fork(fork_number: BlockNumber) -> Result<()> {
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
 
     let node2 = SyncNodeMocker::new(net2.clone(), 300, 0, fork_number)?;
-    node2.set_dag_fork_number(fork_number)?;
 
     let target = arc_node1.sync_target();
 
@@ -379,7 +373,6 @@ pub async fn full_sync_fork(fork_number: BlockNumber) -> Result<()> {
 pub async fn full_sync_fork_from_genesis(fork_number: BlockNumber) -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let mut node1 = SyncNodeMocker::new(net1, 300, 0, fork_number)?;
-    node1.set_dag_fork_number(fork_number)?;
     node1.produce_block(10)?;
 
     let arc_node1 = Arc::new(node1);
@@ -388,7 +381,6 @@ pub async fn full_sync_fork_from_genesis(fork_number: BlockNumber) -> Result<()>
 
     //fork from genesis
     let mut node2 = SyncNodeMocker::new(net2.clone(), 300, 0, fork_number)?;
-    node2.set_dag_fork_number(fork_number)?;
     node2.produce_block(5)?;
 
     let target = arc_node1.sync_target();
@@ -435,14 +427,12 @@ pub async fn full_sync_continue(fork_number: BlockNumber) -> Result<()> {
     // let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let test_system = SyncTestSystem::initialize_sync_system(fork_number).await?;
     let mut node1 = test_system.target_node; // SyncNodeMocker::new(net1, 10, 50)?;
-    node1.set_dag_fork_number(fork_number)?;
     let dag = node1.chain().dag();
     node1.produce_block(10)?;
     let arc_node1 = Arc::new(node1);
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     //fork from genesis
     let mut node2 = test_system.local_node; // SyncNodeMocker::new(net2.clone(), 1, 50)?;
-    node2.set_dag_fork_number(fork_number)?;
     node2.produce_block(7)?;
 
     // first set target to 5.
@@ -526,7 +516,6 @@ pub async fn full_sync_continue(fork_number: BlockNumber) -> Result<()> {
 pub async fn full_sync_cancel(fork_number: BlockNumber) -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let mut node1 = SyncNodeMocker::new(net1, 300, 0, fork_number)?;
-    node1.set_dag_fork_number(fork_number)?;
     node1.produce_block(10)?;
 
     let arc_node1 = Arc::new(node1);
@@ -534,7 +523,6 @@ pub async fn full_sync_cancel(fork_number: BlockNumber) -> Result<()> {
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
 
     let node2 = SyncNodeMocker::new(net2.clone(), 10, 50, fork_number)?;
-    node2.set_dag_fork_number(fork_number)?;
 
     let target = arc_node1.sync_target();
 

@@ -363,6 +363,8 @@ impl BlockVerifier for DagVerifier {
         parents_hash_to_check.sort();
         parents_hash_to_check.dedup();
 
+        debug!("jacktest: verify_header parents_hash_to_check: {:?}", parents_hash_to_check);
+
         verify_block!(
             VerifyBlockField::Header,
             !parents_hash_to_check.is_empty() && parents_hash.len() == parents_hash_to_check.len(),

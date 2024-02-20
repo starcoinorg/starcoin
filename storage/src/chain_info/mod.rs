@@ -31,22 +31,6 @@ impl ChainInfoStorage {
     const SNAPSHOT_RANGE_KEY: &'static str = "snapshot_height";
     const BARNARD_HARD_FORK: &'static str = "barnard_hard_fork";
     const DAG_STATE_KEY: &'static str = "dag_state";
-    const DAG_FORK_NUMBER: &'static str = "dag_fork_number";
-
-    pub fn save_dag_fork_number(&self, fork_number: BlockNumber) -> Result<()> {
-        self.put_sync(
-            Self::DAG_FORK_NUMBER.as_bytes().to_vec(),
-            fork_number.encode()?,
-        )
-    }
-
-    pub fn get_dag_fork_number(&self) -> Result<Option<BlockNumber>> {
-        self.get(Self::DAG_FORK_NUMBER.as_bytes())
-            .and_then(|bytes| match bytes {
-                Some(bytes) => Ok(Some(BlockNumber::decode(bytes.as_slice())?)),
-                None => Ok(None),
-            })
-    }
 
     pub fn save_dag_state(&self, dag_state: DagState) -> Result<()> {
         self.put_sync(

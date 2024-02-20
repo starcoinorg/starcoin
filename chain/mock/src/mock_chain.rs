@@ -121,6 +121,16 @@ impl MockChain {
         })
     }
 
+    pub fn fork_dag(&self, head_id: Option<HashValue>) -> Result<MockChain> {
+        let chain = self.fork_new_branch(head_id)?;
+        Ok(Self {
+            head: chain,
+            net: self.net.clone(),
+            miner: AccountInfo::random(),
+            storage: self.storage.clone(),
+        })
+    }
+
     pub fn get_storage(&self) -> Arc<Storage> {
         self.storage.clone()
     }
@@ -188,6 +198,7 @@ impl MockChain {
 
     pub fn produce_and_apply(&mut self) -> Result<BlockHeader> {
         let block = self.produce()?;
+        debug!("jacktest: block parent hash: {:?}, number: {:?}", block.header().id(), block.header().number());
         let header = block.header().clone();
         self.apply(block)?;
         Ok(header)
@@ -202,13 +213,5 @@ impl MockChain {
 
     pub fn miner(&self) -> &AccountInfo {
         &self.miner
-    }
-
-    pub fn set_dag_fork_number(&self, number: BlockNumber) -> Result<()> {
-        self.storage.save_dag_fork_number(number)
-    }
-
-    pub fn get_dag_fork_number(&self) -> Result<Option<BlockNumber>> {
-        self.storage.get_dag_fork_number()
     }
 }

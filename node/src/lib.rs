@@ -217,10 +217,6 @@ impl NodeHandle {
             Ok((block, is_dag_block))
         })
     }
-
-    pub fn set_dag_fork_number(&self, fork_number: BlockNumber) -> Result<()> {
-        self.storage().save_dag_fork_number(fork_number)
-    }
 }
 
 pub fn run_node_by_opt(

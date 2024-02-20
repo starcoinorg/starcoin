@@ -245,6 +245,8 @@ impl BlockChain {
             None => self.current_header(),
         };
 
+        debug!("jacktest: creating block template, previous header: {:?}", previous_header.number());
+
         self.create_block_template_by_header(
             author,
             previous_header,
@@ -264,6 +266,7 @@ impl BlockChain {
         block_gas_limit: Option<u64>,
         tips: Option<Vec<HashValue>>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
+        debug!("jacktest: parent hash: {:?}, number: {:?}", previous_header.id(), previous_header.number());
         let current_number = previous_header.number().saturating_add(1);
         let epoch = self.epoch();
         let on_chain_block_gas_limit = epoch.block_gas_limit();
@@ -984,11 +987,14 @@ impl ChainReader for BlockChain {
     fn find_ancestor(&self, another: &dyn ChainReader) -> Result<Option<BlockIdAndNumber>> {
         let other_header_number = another.current_header().number();
         let self_header_number = self.current_header().number();
+        debug!("jacktest: self_header_number: {}, other_header_number: {}", self_header_number, other_header_number);
         let min_number = std::cmp::min(other_header_number, self_header_number);
+        debug!("jacktest: min_number: {}", min_number);
         let mut ancestor = None;
-        for block_number in (0..min_number).rev() {
+        for block_number in (0..=min_number).rev() {
             let block_id_1 = another.get_hash_by_number(block_number)?;
             let block_id_2 = self.get_hash_by_number(block_number)?;
+            debug!("jacktest: block number: {}, block_id_1: {:?}, block_id_2: {:?}", block_number, block_id_1, block_id_2);
             match (block_id_1, block_id_2) {
                 (Some(block_id_1), Some(block_id_2)) => {
                     if block_id_1 == block_id_2 {
