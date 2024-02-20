@@ -23,6 +23,7 @@ use starcoin_types::{
     },
     U256,
 };
+use std::str::FromStr;
 use std::{convert::TryInto, sync::Arc};
 
 pub struct OpenedBlock {
@@ -296,10 +297,15 @@ impl OpenedBlock {
     }
 }
 pub struct AddressFilter;
+static BLACKLIST: [&str; 2] = ["0x5d3729704311db3ac10ee04d08054543","0xda507619aedef9755faf2111cd63d3c5"];
 impl AddressFilter {
-    const BLACKLIST: Vec<AccountAddress> = vec![]; //TODO: Fill in
-    const ACTIVATION_BLOCK_NUMBER: BlockNumber = 16801958;
+    const ACTIVATION_BLOCK_NUMBER: BlockNumber = 10;
     pub fn is_blacklisted(raw_txn: &SignedUserTransaction, block_number: BlockNumber) -> bool {
-        block_number > Self::ACTIVATION_BLOCK_NUMBER && Self::BLACKLIST.contains(&raw_txn.sender())
+        let blacklist: Vec<AccountAddress> = BLACKLIST
+            .iter()
+            .map(|&s| AccountAddress::from_str(s).expect("account address decode must success"))
+            .collect();
+
+        block_number > Self::ACTIVATION_BLOCK_NUMBER && blacklist.contains(&raw_txn.sender())
     }
 }
