@@ -6,14 +6,14 @@ use crate::command_progress::{
     ParallelCommandReadBlockFromDB,
 };
 use anyhow::Result;
-use chrono::{TimeZone, Utc};
+use chrono::{DateTime, TimeZone, Utc};
 use clap::Parser;
 use csv::{Writer, WriterBuilder};
 use move_binary_format::errors::{Location, PartialVMError};
 use serde::Serialize;
 use starcoin_abi_decoder;
 use starcoin_abi_decoder::DecodedTransactionPayload;
-use starcoin_config::BuiltinNetworkID::Barnard;
+use starcoin_config::BuiltinNetworkID::{Barnard, Main};
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_statedb::ChainStateDB;
@@ -22,6 +22,7 @@ use starcoin_types::{block::Block, transaction::TransactionPayload};
 use starcoin_vm_types::errors::VMError;
 use std::fs::File;
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, UNIX_EPOCH};
 use std::{fmt::Debug, path::PathBuf};
 
 const DECODE_PAYLOAD_COMMAND_NAME: &str = "decode_payload_command";
@@ -96,6 +97,7 @@ impl DecodePayloadCommandError {
 pub struct CSVHeaders {
     txn_hash: String,
     signer: String,
+    txn_type: String,
     func_name: String,
     ty_args: String,
     args: String,
@@ -119,13 +121,21 @@ impl ParallelCommandObserver for CommandDecodePayload {
     }
 }
 
+fn timestamp_to_datetime(timestamp: u64) -> String {
+    // Creates a new SystemTime from the specified number of whole seconds
+    let d = UNIX_EPOCH + Duration::from_secs(timestamp);
+    // Create DateTime from SystemTime
+    let datetime = DateTime::<Utc>::from(d);
+    // Formats the combined date and time with the specified format string.
+    datetime.format("%Y-%m-%d %H:%M:%S.%f").to_string()
+}
+
 impl ParallelCommand<CommandDecodePayload, DecodePayloadCommandError> for Block {
     fn execute(&self, command: &CommandDecodePayload) -> (usize, Vec<DecodePayloadCommandError>) {
         // let errors = vec![];
         // let mut success_module_size = 0;
 
-        let datetime = Utc.timestamp_opt(self.header.timestamp() as i64, 0);
-        let formatted_date = datetime.unwrap().format("%Y-%m-%d %H:%M:%s").to_string();
+        let formatted_date = timestamp_to_datetime(self.header.timestamp() / 1000);
 
         let root = self.header.state_root();
         let statedb = ChainStateDB::new(command.storage.clone(), Some(root));
@@ -136,31 +146,51 @@ impl ParallelCommand<CommandDecodePayload, DecodePayloadCommandError> for Block 
                 starcoin_abi_decoder::decode_txn_payload(&statedb, txn.payload())
                     .expect("Decode transaction payload failed!");
 
+            let mut writer = command.writer_mutex.lock().unwrap();
             match decoded_txn_payload {
-                DecodedTransactionPayload::ScriptFunction(payload) => {
-                    let mut writer = command.writer_mutex.lock().unwrap();
-                    writer
-                        .serialize(CSVHeaders {
-                            txn_hash: txn.hash().to_string(),
-                            signer,
-                            func_name: format!("{}::{}", payload.module, payload.function),
-                            ty_args: payload
-                                .ty_args
-                                .iter()
-                                .map(|a| a.to_string())
-                                .collect::<Vec<_>>()
-                                .join(","),
-                            args: payload
-                                .args
-                                .iter()
-                                .map(|a| a.0.to_string())
-                                .collect::<Vec<_>>()
-                                .join(","),
-                            timestamp: formatted_date.clone(),
-                        })
-                        .expect("Write into CSV failed!")
-                }
-                DecodedTransactionPayload::Script(_) | DecodedTransactionPayload::Package(_) => (),
+                DecodedTransactionPayload::ScriptFunction(payload) => writer
+                    .serialize(CSVHeaders {
+                        txn_hash: txn.hash().to_string(),
+                        txn_type: String::from("ScriptFunction"),
+                        signer,
+                        func_name: format!("{}::{}", payload.module, payload.function),
+                        ty_args: payload
+                            .ty_args
+                            .iter()
+                            .map(|a| a.to_string())
+                            .collect::<Vec<_>>()
+                            .join("|"),
+                        args: payload
+                            .args
+                            .iter()
+                            .map(|a| a.0.to_string())
+                            .collect::<Vec<_>>()
+                            .join("|"),
+                        timestamp: formatted_date.clone(),
+                    })
+                    .expect("Write into CSV failed!"),
+                DecodedTransactionPayload::Script(script) => writer
+                    .serialize(CSVHeaders {
+                        txn_hash: txn.hash().to_string(),
+                        txn_type: String::from("Script"),
+                        signer,
+                        func_name: "".to_string(),
+                        ty_args: "".to_string(),
+                        args: "".to_string(),
+                        timestamp: formatted_date.clone(),
+                    })
+                    .expect("Write into CSV failed!"),
+                DecodedTransactionPayload::Package(package) => writer
+                    .serialize(CSVHeaders {
+                        txn_hash: txn.hash().to_string(),
+                        txn_type: String::from("Package"),
+                        signer,
+                        func_name: "".to_string(),
+                        ty_args: "".to_string(),
+                        args: "".to_string(),
+                        timestamp: formatted_date.clone(),
+                    })
+                    .expect("Write into CSV failed!"),
             }
         }
         //(success_module_size, errors)
@@ -201,7 +231,7 @@ pub fn decode_payload(
 
     let (dbreader, storage) = ParallelCommandReadBlockFromDB::new(
         input_path,
-        ChainNetwork::from(Barnard),
+        ChainNetwork::from(Main),
         start_height.unwrap_or(0),
         end_height.unwrap_or(0),
     )?;
@@ -223,7 +253,7 @@ pub fn decode_payload(
 #[test]
 pub fn test_decode_payload() -> Result<()> {
     decode_payload(
-        PathBuf::from("~/.starcoin/barnard"),
+        PathBuf::from("/Users/bobong/.starcoin/main"),
         PathBuf::from("/Users/bobong/Downloads/STC-DB-mainnet/output.csv"),
         None,
         None,

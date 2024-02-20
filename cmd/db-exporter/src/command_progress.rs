@@ -10,9 +10,14 @@ use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{Storage, StorageVersion};
 use starcoin_types::block::{Block, BlockNumber};
 use starcoin_vm_types::language_storage::TypeTag;
-use std::sync::Arc;
-use std::{fs::File, io::{BufRead, BufReader}, path::PathBuf, time::SystemTime};
 use std::io::{Seek, SeekFrom};
+use std::sync::Arc;
+use std::{
+    fs::File,
+    io::{BufRead, BufReader},
+    path::PathBuf,
+    time::SystemTime,
+};
 
 struct CommandResult {
     succeed: usize,
@@ -78,7 +83,6 @@ pub struct ParallelCommandReadBodyFromExportLine {
 }
 
 impl ParallelCommandReadBodyFromExportLine {
-
     fn count_lines(reader: &mut BufReader<File>) -> Result<u64> {
         let line_count = reader.lines().count();
         reader.seek(SeekFrom::Start(0))?;
@@ -87,11 +91,10 @@ impl ParallelCommandReadBodyFromExportLine {
 
     pub fn new(input_path: PathBuf) -> Result<Self> {
         let file = File::open(input_path.display().to_string())?;
-        let line_count = ParallelCommandReadBodyFromExportLine::count_lines(&mut BufReader::new(file.try_clone()?))?;
-        Ok(Self {
-            file,
-            line_count,
-        })
+        let line_count = ParallelCommandReadBodyFromExportLine::count_lines(&mut BufReader::new(
+            file.try_clone()?,
+        ))?;
+        Ok(Self { file, line_count })
     }
 }
 
@@ -129,22 +132,27 @@ impl ParallelCommandReadBlockFromDB {
         let (chain_info, _) =
             Genesis::init_and_check_storage(&net, storage.clone(), input_path.as_ref())
                 .expect("Failed init_and_check_storage");
-        let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage.clone(), None)
-            .expect("Failed to initialize block chain");
+        let chain = BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage.clone(),
+            None,
+        )
+        .expect("Failed to initialize block chain");
 
         let cur_num = chain.status().head().number();
 
-        let (start_num, end_num) = if start != 0 && end == 0 {
+        let (start_num, end_num) = if start == 0 && end == 0 {
             (0, cur_num)
         } else {
-            let end = if cur_num > end + BLOCK_GAP {
+            let final_end = if cur_num > end + BLOCK_GAP {
                 end
             } else if cur_num > BLOCK_GAP {
                 cur_num - BLOCK_GAP
             } else {
                 end
             };
-            (start, end)
+            (start, final_end)
         };
 
         if start > cur_num || start > end {
@@ -291,7 +299,6 @@ impl ParallelCommandProgress {
                     .collect::<Vec<CommandResult>>()
             })
             .collect::<Vec<Vec<CommandResult>>>();
-
         let result = excution_result.into_iter().flatten().fold(
             CommandResult {
                 succeed: 0,
@@ -302,6 +309,26 @@ impl ParallelCommandProgress {
                 failed: acc.failed + result.failed,
             },
         );
+        //
+        // let excution_result = all_items
+        //     .iter()
+        //     .map(|item| {
+        //         let (succeed, failed) = item.execute(command);
+        //         progress_bar.inc(1);
+        //         CommandResult::new(succeed, failed.len())
+        //     })
+        //     .collect::<Vec<CommandResult>>();
+        //
+        // let result = excution_result.into_iter().fold(
+        //     CommandResult {
+        //         succeed: 0,
+        //         failed: 0,
+        //     },
+        //     |acc, result| CommandResult {
+        //         succeed: acc.succeed + result.succeed,
+        //         failed: acc.failed + result.failed,
+        //     },
+        // );
 
         progress_bar.finish();
 
