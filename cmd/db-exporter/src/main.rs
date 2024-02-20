@@ -5,9 +5,8 @@ use anyhow::{bail, format_err, Result};
 use bcs_ext::{BCSCodec, Sample};
 use clap::{IntoApp, Parser};
 use csv::Writer;
-use db_exporter::command_decode_payload::do_decode_payload_command;
 use db_exporter::{
-    command_decode_payload::{do_decode_payload, DecodePayloadCommandOptions},
+    command_decode_payload::{do_decode_payload_command, DecodePayloadCommandOptions},
     verify_header::{verify_header_via_export_file, VerifyHeaderOptions},
     verify_module::{verify_modules_via_export_file, VerifyModuleOptions},
 };
