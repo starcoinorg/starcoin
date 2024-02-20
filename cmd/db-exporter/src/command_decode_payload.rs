@@ -3,8 +3,8 @@
 
 use crate::command_progress::{
     ParallelCommand, ParallelCommandFilter, ParallelCommandObserver, ParallelCommandProgress,
+    ParallelCommandReadBlockFromDB,
 };
-use crate::init_db_obj;
 use anyhow::Result;
 use chrono::{TimeZone, Utc};
 use clap::Parser;
@@ -13,6 +13,8 @@ use move_binary_format::errors::{Location, PartialVMError};
 use serde::Serialize;
 use starcoin_abi_decoder;
 use starcoin_abi_decoder::DecodedTransactionPayload;
+use starcoin_config::BuiltinNetworkID::Barnard;
+use starcoin_config::ChainNetwork;
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Storage;
@@ -31,12 +33,18 @@ const DECODE_PAYLOAD_COMMAND_NAME: &str = "decode_payload_command";
 )]
 pub struct DecodePayloadCommandOptions {
     #[clap(long, short = 'i', parse(from_os_str))]
-    /// input file, like accounts.csv
+    /// Db path
     pub input_path: PathBuf,
 
     #[clap(long, short = 'o', parse(from_os_str))]
     /// output file, like accounts.csv
     pub output_path: PathBuf,
+
+    #[clap(long)]
+    pub start_height: Option<u64>,
+
+    #[clap(long)]
+    pub end_height: Option<u64>,
 
     #[clap(long, short = 's')]
     /// Signer filter
@@ -111,7 +119,7 @@ impl ParallelCommandObserver for CommandDecodePayload {
     }
 }
 
-impl ParallelCommand<CommandDecodePayload, Block, DecodePayloadCommandError> for Block {
+impl ParallelCommand<CommandDecodePayload, DecodePayloadCommandError> for Block {
     fn execute(&self, command: &CommandDecodePayload) -> (usize, Vec<DecodePayloadCommandError>) {
         // let errors = vec![];
         // let mut success_module_size = 0;
@@ -184,35 +192,41 @@ impl ParallelCommand<CommandDecodePayload, Block, DecodePayloadCommandError> for
 pub fn decode_payload(
     input_path: PathBuf,
     out_path: PathBuf,
-    db_path: PathBuf,
+    start_height: Option<u64>,
+    end_height: Option<u64>,
     filter: Option<ParallelCommandFilter>,
 ) -> Result<()> {
     let file = WriterBuilder::new().from_path(out_path.clone())?;
     let writer_mutex = Mutex::new(file);
 
+    let (dbreader, storage) = ParallelCommandReadBlockFromDB::new(
+        input_path,
+        ChainNetwork::from(Barnard),
+        start_height.unwrap_or(0),
+        end_height.unwrap_or(0),
+    )?;
     let command = Arc::new(CommandDecodePayload {
         writer_mutex,
-        storage: init_db_obj(db_path)?,
+        storage,
     });
 
     ParallelCommandProgress::new(
         String::from(DECODE_PAYLOAD_COMMAND_NAME),
-        input_path,
         num_cpus::get(),
+        Arc::new(dbreader),
         filter,
         Some(command.clone() as Arc<dyn ParallelCommandObserver>),
     )
-    .progress::<CommandDecodePayload, Block, DecodePayloadCommandError>(&command)
+    .progress::<CommandDecodePayload, DecodePayloadCommandError>(&command)
 }
 
 #[test]
-pub fn test_decode_payload() {
-    let mut workspace = PathBuf::from("/Users/bobong/Downloads/STC-DB-mainnet");
-    let mut input = workspace.clone();
-    input.push("grep-'LocalPool'.json");
-
-    let mut output = workspace.clone();
-    output.push("output.csv");
-
-    decode_payload(input, output, PathBuf::from(""), None)?;
+pub fn test_decode_payload() -> Result<()> {
+    decode_payload(
+        PathBuf::from("~/.starcoin/barnard"),
+        PathBuf::from("/Users/bobong/Downloads/STC-DB-mainnet/output.csv"),
+        None,
+        None,
+        None,
+    )
 }

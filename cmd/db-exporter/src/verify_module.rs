@@ -3,9 +3,13 @@ use move_binary_format::errors::Location;
 use starcoin_crypto::HashValue;
 use starcoin_types::{block::Block, transaction::TransactionPayload};
 use starcoin_vm_types::{errors::VMError, file_format::CompiledModule};
+use std::sync::Arc;
 use std::{fmt::Debug, path::PathBuf};
 //use starcoin_accumulator::node::AccumulatorStoreType::Block;
-use crate::command_progress::{ParallelCommand, ParallelCommandFilter, ParallelCommandProgress};
+use crate::command_progress::{
+    ParallelCommand, ParallelCommandFilter, ParallelCommandProgress,
+    ParallelCommandReadBodyFromExportLine,
+};
 
 #[derive(Debug, Parser)]
 #[clap(
@@ -27,7 +31,7 @@ pub struct VerifyModuleError {
 
 pub struct VerifyModulesType;
 
-impl ParallelCommand<VerifyModulesType, Block, VerifyModuleError> for Block {
+impl ParallelCommand<VerifyModulesType, VerifyModuleError> for Block {
     fn execute(&self, _cmd: &VerifyModulesType) -> (usize, Vec<VerifyModuleError>) {
         let mut errors = vec![];
         let mut success_modules = 0;
@@ -123,9 +127,14 @@ impl ParallelCommand<VerifyModulesType, Block, VerifyModuleError> for Block {
 // }
 
 pub fn verify_modules_via_export_file(input_path: PathBuf) -> anyhow::Result<()> {
-    let batch_cmd =
-        ParallelCommandProgress::new(String::from("verify_module"), input_path, 10, None, None);
-    batch_cmd.progress::<VerifyModulesType, Block, VerifyModuleError>(&VerifyModulesType {})
+    let batch_cmd = ParallelCommandProgress::new(
+        String::from("verify_module"),
+        num_cpus::get(),
+        Arc::new(ParallelCommandReadBodyFromExportLine::new(input_path)?),
+        None,
+        None,
+    );
+    batch_cmd.progress::<VerifyModulesType, VerifyModuleError>(&VerifyModulesType {})
     // let start_time = SystemTime::now();
     // let file_name = input_path.display().to_string();
     // let reader = BufReader::new(File::open(input_path)?);

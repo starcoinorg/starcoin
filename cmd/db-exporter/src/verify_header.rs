@@ -4,8 +4,12 @@
 use clap::Parser;
 use starcoin_consensus::{Consensus, G_CRYPTONIGHT};
 use std::path::PathBuf;
+use std::sync::Arc;
 
-use crate::command_progress::{ParallelCommand, ParallelCommandFilter, ParallelCommandProgress};
+use crate::command_progress::{
+    ParallelCommand, ParallelCommandFilter, ParallelCommandProgress,
+    ParallelCommandReadBodyFromExportLine,
+};
 use starcoin_types::block::Block;
 
 #[derive(Debug, Parser)]
@@ -30,15 +34,15 @@ pub struct VerifyHeaderCmdType;
 pub fn verify_header_via_export_file(path: PathBuf, batch_size: usize) -> anyhow::Result<()> {
     let batch_cmd = ParallelCommandProgress::new(
         String::from("verify_block_header"),
-        path,
         batch_size,
+        Arc::new(ParallelCommandReadBodyFromExportLine::new(path)?),
         None,
         None,
     );
-    batch_cmd.progress::<VerifyHeaderCmdType, Block, VerifyHeaderError>(&VerifyHeaderCmdType {})
+    batch_cmd.progress::<VerifyHeaderCmdType, VerifyHeaderError>(&VerifyHeaderCmdType {})
 }
 
-impl ParallelCommand<VerifyHeaderCmdType, Block, VerifyHeaderError> for Block {
+impl ParallelCommand<VerifyHeaderCmdType, VerifyHeaderError> for Block {
     fn execute(&self, _cmd: &VerifyHeaderCmdType) -> (usize, Vec<VerifyHeaderError>) {
         let ret = G_CRYPTONIGHT.verify_header_difficulty(self.header.difficulty(), &self.header);
         match ret {
