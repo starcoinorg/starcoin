@@ -109,12 +109,16 @@ impl ParallelCommandBlockReader for ParallelCommandReadBodyFromExportLine {
         self.line_count
     }
 
-    fn read(&self) -> Result<Vec<Block>> {
+    fn read(&self, load_bar: &ProgressBar) -> Result<Vec<Block>> {
         let reader = BufReader::new(self.file.try_clone()?);
         let lines = reader.lines().collect::<Result<Vec<_>, _>>()?;
         Ok(lines
             .par_iter()
-            .map(|line| Ok(serde_json::from_str::<Block>(line.as_str()))?)
+            .map(|line| {
+                let ret = serde_json::from_str::<Block>(line.as_str());
+                load_bar.inc(1);
+                Ok(ret)?
+            })
             .collect::<Result<Vec<Block>, _>>()?)
     }
 }
@@ -203,7 +207,7 @@ impl ParallelCommandBlockReader for ParallelCommandReadBlockFromDB {
         self.end_num - self.start_num
     }
 
-    fn read(&self) -> Result<Vec<Block>> {
+    fn read(&self, load_bar: &ProgressBar) -> Result<Vec<Block>> {
         println!(
             "ParallelCommandBlockReader::read | read range: {}, {}, skip empty block: {}",
             self.start_num, self.end_num, self.skip_empty_block
@@ -213,7 +217,7 @@ impl ParallelCommandBlockReader for ParallelCommandReadBlockFromDB {
             .collect::<Vec<BlockNumber>>()
             .par_iter()
             .filter_map(|num| {
-                println!("Read block number: {}", num);
+                load_bar.inc(1);
                 if self.skip_empty_block {
                     self.chain
                         .get_block_by_number(*num)
@@ -224,7 +228,8 @@ impl ParallelCommandBlockReader for ParallelCommandReadBlockFromDB {
                     self.chain.get_block_by_number(*num).ok().flatten()
                 }
             })
-            .collect::<Vec<Block>>())
+            .collect::<Vec<Block>>()
+        )
     }
 }
 
@@ -268,36 +273,28 @@ impl ParallelCommandProgress {
         );
 
         start_time = SystemTime::now();
-        // let lines = reader.lines().collect::<Result<Vec<_>, _>>()?;
 
-        // let all_items = lines
-        //     .par_iter()
-        //     .map(|line| Ok(serde_json::from_str::<BodyT>(line.as_str()))?)
-        //     .filter(|item| match item {
-        //         Ok(i) => i.matched(&self.filter),
-        //         Err(_e) => false,
-        //     })
-        //     .collect::<Result<Vec<BodyT>, _>>()?;
         if let Some(observer) = &self.obs {
             observer.before_progress()?;
         }
 
-        let progress_interval = self.block_reader.get_progress_interval();
-        let progress_bar = ProgressBar::new(self.block_reader.get_progress_interval()).with_style(
+        let load_interval_count = self.block_reader.get_progress_interval();
+        let load_bar = ProgressBar::new(load_interval_count).with_style(
             ProgressStyle::default_bar()
-                .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+                .template("loading [{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
         );
 
-        let mut all_items = self.block_reader.read()?;
-        let all_item_size = all_items.len();
+        let mut all_items = self.block_reader.read(&load_bar)?;
+        load_bar.finish();
 
+        let all_item_size = all_items.len();
         all_items.retain(|b| (*b).matched(&self.filter));
         let filtered_item_size = all_items.len();
 
         println!(
             "Reading lines from file expire time: {:?}, get interval: {:?},  actual return item size: {:?}, filtered item size:{:?}",
             SystemTime::now().duration_since(start_time)?.as_secs(),
-            progress_interval,
+            load_interval_count,
             all_item_size,
             filtered_item_size,
         );
@@ -307,6 +304,10 @@ impl ParallelCommandProgress {
         // so that they can be divided into several threads for the following operations
         start_time = SystemTime::now();
 
+        let progress_bar = ProgressBar::new(all_items.len() as u64).with_style(
+            ProgressStyle::default_bar()
+                .template("processing [{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+        );
         let excution_result = all_items
             .into_par_iter()
             .chunks(self.parallel_level)
@@ -321,6 +322,7 @@ impl ParallelCommandProgress {
                     .collect::<Vec<CommandResult>>()
             })
             .collect::<Vec<Vec<CommandResult>>>();
+
         let result = excution_result.into_iter().flatten().fold(
             CommandResult {
                 succeed: 0,
@@ -359,5 +361,5 @@ pub trait ParallelCommandObserver {
 
 pub trait ParallelCommandBlockReader {
     fn get_progress_interval(&self) -> u64;
-    fn read(&self) -> Result<Vec<Block>>;
+    fn read(&self, load_bar: &ProgressBar) -> Result<Vec<Block>>;
 }
