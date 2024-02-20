@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_types::error::BlockExecutorError;
@@ -12,7 +13,7 @@ use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::collections::BTreeMap;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BlockExecutedData {
     pub state_root: HashValue,
     pub txn_infos: Vec<TransactionInfo>,
