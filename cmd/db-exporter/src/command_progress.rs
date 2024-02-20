@@ -211,16 +211,17 @@ impl ParallelCommandBlockReader for ParallelCommandReadBlockFromDB {
 
         Ok((self.start_num..=self.end_num)
             .collect::<Vec<BlockNumber>>()
-            .into_iter()
+            .par_iter()
             .filter_map(|num| {
+                println!("Read block number: {}", num);
                 if self.skip_empty_block {
                     self.chain
-                        .get_block_by_number(num)
+                        .get_block_by_number(*num)
                         .ok()
                         .flatten()
                         .filter(|block| !block.transactions().is_empty())
                 } else {
-                    self.chain.get_block_by_number(num).ok().flatten()
+                    self.chain.get_block_by_number(*num).ok().flatten()
                 }
             })
             .collect::<Vec<Block>>())
