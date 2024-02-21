@@ -2164,7 +2164,7 @@ pub fn verify_block(
     let start_time = SystemTime::now();
     let avg = (end_num - start_num + 1) / (num_cpus::get() as u64);
     let mut handles = vec![];
-    for i in 0..num_cpus::get() {
+    for i in 0..num_cpus::get() / 2 {
         let st = start_num + i as u64 * avg;
         let mut end = start_num + (i as u64 + 1) * avg - 1;
         if end > end_num {
