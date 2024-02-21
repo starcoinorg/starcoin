@@ -2272,7 +2272,7 @@ pub fn block_output(
     let mut chain = BlockChain::new(
         net.time_service(),
         block.header.parent_hash(),
-        storage.clone(),
+        storage,
         None,
     )
     .expect("create block chain should success.");
