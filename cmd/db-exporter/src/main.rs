@@ -2162,9 +2162,10 @@ pub fn verify_block(
     let start_num = start;
     let end_num = end.unwrap_or_else(|| chain.status().head().number());
     let start_time = SystemTime::now();
-    let avg = (end_num - start_num + 1) / (num_cpus::get() as u64);
+    let thread_cnt = num_cpus::get() / 2;
+    let avg = (end_num - start_num + 1) / (thread_cnt as u64);
     let mut handles = vec![];
-    for i in 0..num_cpus::get() / 2 {
+    for i in 0..thread_cnt {
         let st = start_num + i as u64 * avg;
         let mut end = start_num + (i as u64 + 1) * avg - 1;
         if end > end_num {
