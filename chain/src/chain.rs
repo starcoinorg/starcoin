@@ -805,9 +805,15 @@ impl BlockChain {
         if OUTPUT_BLOCK.load(Ordering::Relaxed) {
             println!("// {}", block.header().number());
             println!("maps.insert(");
-            println!("HashValue::from_hex_literal(\"{}\").unwrap(),",block.id());
-            println!("(\nserde_json::from_str(\"{}\").unwrap(),",serde_json::to_string(&executed_data)?);
-            println!("serde_json::from_str(\"{}\").unwrap()\n)\n);",serde_json::to_string(&block_info)?);
+            println!("HashValue::from_hex_literal(\"{}\").unwrap(),", block.id());
+            println!(
+                "(\nserde_json::from_str(\"{:?}\").unwrap(),",
+                serde_json::to_string(&executed_data)?
+            );
+            println!(
+                "serde_json::from_str(\"{:?}\").unwrap()\n)\n);",
+                serde_json::to_string(&block_info)?
+            );
         }
 
         Ok(ExecutedBlock { block, block_info })
