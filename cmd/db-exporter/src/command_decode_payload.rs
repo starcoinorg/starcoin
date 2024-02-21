@@ -6,14 +6,12 @@ use crate::command_progress::{
     ParallelCommandReadBlockFromDB,
 };
 use anyhow::Result;
-use chrono::{DateTime, TimeZone, Utc};
+use chrono::{DateTime, Utc};
 use clap::Parser;
 use csv::{Writer, WriterBuilder};
-use move_binary_format::errors::{Location, PartialVMError};
 use serde::Serialize;
 use starcoin_abi_decoder;
 use starcoin_abi_decoder::DecodedTransactionPayload;
-use starcoin_config::BuiltinNetworkID::Main;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::{hash::CryptoHash, HashValue};
 use starcoin_statedb::ChainStateDB;
@@ -75,27 +73,27 @@ pub struct DecodePayloadCommandError {
     pub error: VMError,
 }
 
-impl DecodePayloadCommandError {
-    fn new_from_vm_error(error: VMError, block_number: u64, txn_hash: &HashValue) -> Self {
-        DecodePayloadCommandError {
-            block_number,
-            txn_hash: txn_hash.clone(),
-            error,
-        }
-    }
-
-    fn new_from_partial_vm_error(
-        error: PartialVMError,
-        block_number: u64,
-        txn_hash: &HashValue,
-    ) -> Self {
-        DecodePayloadCommandError {
-            block_number,
-            txn_hash: txn_hash.clone(),
-            error: error.finish(Location::Undefined),
-        }
-    }
-}
+// impl DecodePayloadCommandError {
+//     fn new_from_vm_error(error: VMError, block_number: u64, txn_hash: &HashValue) -> Self {
+//         DecodePayloadCommandError {
+//             block_number,
+//             txn_hash: txn_hash.clone(),
+//             error,
+//         }
+//     }
+//
+//     fn new_from_partial_vm_error(
+//         error: PartialVMError,
+//         block_number: u64,
+//         txn_hash: &HashValue,
+//     ) -> Self {
+//         DecodePayloadCommandError {
+//             block_number,
+//             txn_hash: txn_hash.clone(),
+//             error: error.finish(Location::Undefined),
+//         }
+//     }
+// }
 
 #[derive(Serialize)]
 pub struct CSVHeaders {
@@ -179,7 +177,7 @@ impl ParallelCommand<CommandDecodePayload, DecodePayloadCommandError> for Block 
                         date_time: formatted_date.clone(),
                     })
                     .expect("Write into CSV failed!"),
-                DecodedTransactionPayload::Script(script) => writer
+                DecodedTransactionPayload::Script(_) => writer
                     .serialize(CSVHeaders {
                         block_num: block_num.clone(),
                         txn_hash: txn.hash().to_string(),
@@ -192,7 +190,7 @@ impl ParallelCommand<CommandDecodePayload, DecodePayloadCommandError> for Block 
                         date_time: formatted_date.clone(),
                     })
                     .expect("Write into CSV failed!"),
-                DecodedTransactionPayload::Package(package) => writer
+                DecodedTransactionPayload::Package(_) => writer
                     .serialize(CSVHeaders {
                         block_num: block_num.clone(),
                         txn_hash: txn.hash().to_string(),
@@ -227,13 +225,12 @@ impl ParallelCommand<CommandDecodePayload, DecodePayloadCommandError> for Block 
                         TransactionPayload::ScriptFunction(payload) => {
                             filter.match_signer(&txn.sender().to_string())
                                 && filter.match_func_name(payload.function().as_str())
-                                && filter.match_ty_args(&payload.ty_args().to_vec())
-                                && filter.match_args(&payload.args().to_vec())
+                                && filter.match_ty_args(payload.ty_args())
+                                && filter.match_args(payload.args())
                         },
                         TransactionPayload::Script(_) | TransactionPayload::Package(_) => {
                             filter.match_signer(&txn.sender().to_string())
                         },
-                        _ => true,
                     }
                 })
             },
@@ -266,7 +263,7 @@ pub fn do_decode_payload(
     end_height: Option<u64>,
     filter: Option<ParallelCommandFilter>,
 ) -> Result<()> {
-    let file = WriterBuilder::new().from_path(out_path.clone())?;
+    let file = WriterBuilder::new().from_path(out_path)?;
     let writer_mutex = Mutex::new(file);
 
     let (dbreader, storage) = ParallelCommandReadBlockFromDB::new(
@@ -308,9 +305,9 @@ pub fn test_decode_payload() -> Result<()> {
     // )?;
     //
     do_decode_payload(
-        Main,
-        input.clone(),
-        output.clone(),
+        BuiltinNetworkID::Main,
+        input,
+        output,
         None,
         None,
         ParallelCommandFilter::new(

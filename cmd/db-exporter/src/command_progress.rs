@@ -62,23 +62,29 @@ impl ParallelCommandFilter {
         if self.signer.is_none() {
             return true;
         }
-        (self.signer.clone().unwrap() == signer)
+        self.signer.clone().unwrap() == signer
     }
 
     pub fn match_func_name(&self, func_name: &str) -> bool {
         if self.func_name.is_none() {
             return true;
         }
-        (self.func_name.clone().unwrap() == func_name)
+        self.func_name.clone().unwrap() == func_name
     }
 
-    pub fn match_ty_args(&self, _ty_args: &Vec<TypeTag>) -> bool {
-        // TODO(Bob): To Compare
+    pub fn match_ty_args(&self, _ty_args: &[TypeTag]) -> bool {
+        if self.ty_args.is_some() {
+            print!("match_ty_args |  {:?}", self.ty_args);
+            // TODO(Bob): To Compare
+        }
         true
     }
 
-    pub fn match_args(&self, _args: &Vec<Vec<u8>>) -> bool {
-        // TODO(Bob): To Compare
+    pub fn match_args(&self, _args: &[Vec<u8>]) -> bool {
+        if self.args.is_some() {
+            print!("match_args |  {:?}", self.args);
+            // TODO(Bob): To Compare
+        }
         true
     }
 }
