@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::command_progress::{
-    ParallelCommand, ParallelCommandFilter, ParallelCommandProgress,
+    ParallelCommand, ParallelCommandBlockReader, ParallelCommandFilter, ParallelCommandProgress,
     ParallelCommandReadBodyFromExportLine,
 };
 use starcoin_types::block::Block;
@@ -43,7 +43,11 @@ pub fn verify_header_via_export_file(path: PathBuf, batch_size: usize) -> anyhow
 }
 
 impl ParallelCommand<VerifyHeaderCmdType, VerifyHeaderError> for Block {
-    fn execute(&self, _cmd: &VerifyHeaderCmdType) -> (usize, Vec<VerifyHeaderError>) {
+    fn execute(
+        &self,
+        _reader: &dyn ParallelCommandBlockReader,
+        _cmd: &VerifyHeaderCmdType,
+    ) -> (usize, Vec<VerifyHeaderError>) {
         let ret = G_CRYPTONIGHT.verify_header_difficulty(self.header.difficulty(), &self.header);
         match ret {
             Ok(_) => (1, vec![]),

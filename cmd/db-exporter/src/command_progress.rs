@@ -3,6 +3,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_config::ChainNetwork;
+use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
@@ -10,6 +11,7 @@ use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{Storage, StorageVersion};
 use starcoin_types::block::{Block, BlockNumber};
 use starcoin_vm_types::language_storage::TypeTag;
+use starcoin_vm_types::vm_status::KeptVMStatus;
 use std::io::{Seek, SeekFrom};
 use std::sync::Arc;
 use std::{
@@ -127,6 +129,10 @@ impl ParallelCommandBlockReader for ParallelCommandReadBodyFromExportLine {
             })
             .collect::<Result<Vec<Block>, _>>()?)
     }
+
+    fn query_txn_exec_state(&self, _txn_hash: HashValue) -> String {
+        "OK".to_string()
+    }
 }
 
 pub struct ParallelCommandReadBlockFromDB {
@@ -234,8 +240,21 @@ impl ParallelCommandBlockReader for ParallelCommandReadBlockFromDB {
                     self.chain.get_block_by_number(*num).ok().flatten()
                 }
             })
-            .collect::<Vec<Block>>()
-        )
+            .collect::<Vec<Block>>())
+    }
+
+    fn query_txn_exec_state(&self, txn_hash: HashValue) -> String {
+        let txn = self
+            .chain
+            .get_transaction_info(txn_hash)
+            .expect("Query failed!");
+        match txn {
+            Some(info) => match info.status {
+                KeptVMStatus::Executed => "OK".to_string(),
+                _ => "FALIED".to_string(),
+            },
+            None => "CANT_FOUND_TXN".to_string(),
+        }
     }
 }
 
@@ -321,7 +340,7 @@ impl ParallelCommandProgress {
                 item_vec
                     .into_iter()
                     .map(|item| {
-                        let (succeed, failed) = item.execute(command);
+                        let (succeed, failed) = item.execute(self.block_reader.as_ref(), command);
                         progress_bar.inc(1);
                         CommandResult::new(succeed, failed.len())
                     })
@@ -355,7 +374,11 @@ impl ParallelCommandProgress {
 }
 
 pub trait ParallelCommand<CommandT, ErrorT> {
-    fn execute(&self, cmd: &CommandT) -> (usize, Vec<ErrorT>);
+    fn execute(
+        &self,
+        block_reader: &dyn ParallelCommandBlockReader,
+        cmd: &CommandT,
+    ) -> (usize, Vec<ErrorT>);
 
     fn matched(&self, filter: &Option<ParallelCommandFilter>) -> bool;
 }
@@ -365,7 +388,8 @@ pub trait ParallelCommandObserver {
     fn after_progress(&self) -> Result<()>;
 }
 
-pub trait ParallelCommandBlockReader {
+pub trait ParallelCommandBlockReader: Sync + Send {
     fn get_progress_interval(&self) -> u64;
     fn read(&self, load_bar: &ProgressBar) -> Result<Vec<Block>>;
+    fn query_txn_exec_state(&self, txn_hash: HashValue) -> String;
 }

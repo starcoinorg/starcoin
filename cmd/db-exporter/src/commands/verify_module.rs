@@ -1,3 +1,7 @@
+use crate::command_progress::{
+    ParallelCommand, ParallelCommandBlockReader, ParallelCommandFilter, ParallelCommandProgress,
+    ParallelCommandReadBodyFromExportLine,
+};
 use clap::Parser;
 use move_binary_format::errors::Location;
 use starcoin_crypto::HashValue;
@@ -5,11 +9,6 @@ use starcoin_types::{block::Block, transaction::TransactionPayload};
 use starcoin_vm_types::{errors::VMError, file_format::CompiledModule};
 use std::sync::Arc;
 use std::{fmt::Debug, path::PathBuf};
-//use starcoin_accumulator::node::AccumulatorStoreType::Block;
-use crate::command_progress::{
-    ParallelCommand, ParallelCommandFilter, ParallelCommandProgress,
-    ParallelCommandReadBodyFromExportLine,
-};
 
 #[derive(Debug, Parser)]
 #[clap(
@@ -32,7 +31,11 @@ pub struct VerifyModuleError {
 pub struct VerifyModulesType;
 
 impl ParallelCommand<VerifyModulesType, VerifyModuleError> for Block {
-    fn execute(&self, _cmd: &VerifyModulesType) -> (usize, Vec<VerifyModuleError>) {
+    fn execute(
+        &self,
+        _reader: &dyn ParallelCommandBlockReader,
+        _cmd: &VerifyModulesType,
+    ) -> (usize, Vec<VerifyModuleError>) {
         let mut errors = vec![];
         let mut success_modules = 0;
         let block = self;

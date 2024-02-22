@@ -5,11 +5,11 @@ use anyhow::{bail, format_err, Result};
 use bcs_ext::{BCSCodec, Sample};
 use clap::{IntoApp, Parser};
 use csv::Writer;
-use db_exporter::{
-    command_decode_payload::{do_decode_payload_command, DecodePayloadCommandOptions},
-    verify_header::{verify_header_via_export_file, VerifyHeaderOptions},
-    verify_module::{verify_modules_via_export_file, VerifyModuleOptions},
-};
+// use db_exporter::{
+//     decode_payload::{do_decode_payload_command, DecodePayloadCommandOptions},
+//     verify_header::{verify_header_via_export_file, VerifyHeaderOptions},
+//     verify_module::{verify_modules_via_export_file, VerifyModuleOptions},
+// };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use serde::{ser::SerializeMap, Serialize, Serializer};
 use starcoin_account_api::AccountInfo;
@@ -68,6 +68,12 @@ use std::{
     thread,
     thread::JoinHandle,
     time::SystemTime,
+};
+
+use db_exporter::commands::{
+    decode_payload::{do_decode_payload_command, DecodePayloadCommandOptions},
+    verify_header::{verify_header_via_export_file, VerifyHeaderOptions},
+    verify_module::{verify_modules_via_export_file, VerifyModuleOptions},
 };
 
 const BLOCK_GAP: u64 = 1000;
@@ -1887,6 +1893,7 @@ pub fn export_resource(
         let now2 = Instant::now();
         for (k, v) in resource_set.iter() {
             let struct_tag = StructTag::decode(k.as_slice())?;
+            println!("struct_tag: {:?}", struct_tag.to_string());
             if struct_tag == resource_struct_tag {
                 let annotated_struct =
                     value_annotator.view_struct(resource_struct_tag.clone(), v.as_slice())?;

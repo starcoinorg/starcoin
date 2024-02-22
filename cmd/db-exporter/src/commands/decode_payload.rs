@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::command_progress::{
-    ParallelCommand, ParallelCommandFilter, ParallelCommandObserver, ParallelCommandProgress,
-    ParallelCommandReadBlockFromDB,
+    ParallelCommand, ParallelCommandBlockReader, ParallelCommandFilter, ParallelCommandObserver,
+    ParallelCommandProgress, ParallelCommandReadBlockFromDB,
 };
 use anyhow::Result;
 use chrono::{DateTime, Utc};
@@ -104,6 +104,7 @@ pub struct CSVHeaders {
     func_name: String,
     ty_args: String,
     args: String,
+    execute_result: String,
     timestamp: u64,
     date_time: String,
 }
@@ -135,7 +136,11 @@ fn timestamp_to_datetime(timestamp: u64) -> String {
 }
 
 impl ParallelCommand<CommandDecodePayload, DecodePayloadCommandError> for Block {
-    fn execute(&self, command: &CommandDecodePayload) -> (usize, Vec<DecodePayloadCommandError>) {
+    fn execute(
+        &self,
+        block_reader: &dyn ParallelCommandBlockReader,
+        command: &CommandDecodePayload,
+    ) -> (usize, Vec<DecodePayloadCommandError>) {
         // let errors = vec![];
         // let mut success_module_size = 0;
 
@@ -152,6 +157,8 @@ impl ParallelCommand<CommandDecodePayload, DecodePayloadCommandError> for Block 
                 starcoin_abi_decoder::decode_txn_payload(&statedb, txn.payload())
                     .expect("Decode transaction payload failed!");
 
+            let execute_result = block_reader.query_txn_exec_state(txn.hash());
+
             let mut writer = command.writer_mutex.lock().unwrap();
             match decoded_txn_payload {
                 DecodedTransactionPayload::ScriptFunction(payload) => writer
@@ -164,29 +171,41 @@ impl ParallelCommand<CommandDecodePayload, DecodePayloadCommandError> for Block 
                         ty_args: payload
                             .ty_args
                             .iter()
-                            .map(|a| a.to_string())
+                            .map(|a| a.to_string().trim_matches('"').to_string())
                             .collect::<Vec<_>>()
                             .join("|"),
                         args: payload
                             .args
                             .iter()
-                            .map(|a| a.0.to_string())
+                            .map(|a| a.0.to_string().trim_matches('"').to_string())
                             .collect::<Vec<_>>()
                             .join("|"),
                         timestamp,
+                        execute_result,
                         date_time: formatted_date.clone(),
                     })
                     .expect("Write into CSV failed!"),
-                DecodedTransactionPayload::Script(_) => writer
+                DecodedTransactionPayload::Script(script) => writer
                     .serialize(CSVHeaders {
                         block_num: block_num.clone(),
                         txn_hash: txn.hash().to_string(),
                         txn_type: String::from("Script"),
                         signer,
-                        func_name: "".to_string(),
-                        ty_args: "".to_string(),
-                        args: "".to_string(),
+                        func_name: String::from(""),
+                        ty_args: script
+                            .ty_args
+                            .iter()
+                            .map(|a| a.to_string())
+                            .collect::<Vec<_>>()
+                            .join("|"),
+                        args: script
+                            .args
+                            .iter()
+                            .map(|a| a.0.to_string().trim_matches('"').to_string())
+                            .collect::<Vec<_>>()
+                            .join("|"),
                         timestamp,
+                        execute_result,
                         date_time: formatted_date.clone(),
                     })
                     .expect("Write into CSV failed!"),
@@ -200,6 +219,7 @@ impl ParallelCommand<CommandDecodePayload, DecodePayloadCommandError> for Block 
                         ty_args: "".to_string(),
                         args: "".to_string(),
                         timestamp,
+                        execute_result,
                         date_time: formatted_date.clone(),
                     })
                     .expect("Write into CSV failed!"),
@@ -219,21 +239,17 @@ impl ParallelCommand<CommandDecodePayload, DecodePayloadCommandError> for Block 
         };
 
         match filters {
-            Some(filter) => {
-                self.transactions().iter().any(|txn| {
-                    match txn.payload() {
-                        TransactionPayload::ScriptFunction(payload) => {
-                            filter.match_signer(&txn.sender().to_string())
-                                && filter.match_func_name(payload.function().as_str())
-                                && filter.match_ty_args(payload.ty_args())
-                                && filter.match_args(payload.args())
-                        },
-                        TransactionPayload::Script(_) | TransactionPayload::Package(_) => {
-                            filter.match_signer(&txn.sender().to_string())
-                        },
-                    }
-                })
-            },
+            Some(filter) => self.transactions().iter().any(|txn| match txn.payload() {
+                TransactionPayload::ScriptFunction(payload) => {
+                    filter.match_signer(&txn.sender().to_string())
+                        && filter.match_func_name(payload.function().as_str())
+                        && filter.match_ty_args(payload.ty_args())
+                        && filter.match_args(payload.args())
+                }
+                TransactionPayload::Script(_) | TransactionPayload::Package(_) => {
+                    filter.match_signer(&txn.sender().to_string())
+                }
+            }),
             None => true,
         }
     }
@@ -291,7 +307,7 @@ pub fn do_decode_payload(
 #[test]
 pub fn test_decode_payload() -> Result<()> {
     let input = PathBuf::from("/Users/bobong/.starcoin/main");
-    let output = PathBuf::from("/Users/bobong/Downloads/STC-DB-mainnet/output.csv");
+    let output = PathBuf::from("/Users/bobong/Downloads/unit-output.csv");
 
     // do_decode_payload(Main, input.clone(), output.clone(), None, None, None)?;
 
