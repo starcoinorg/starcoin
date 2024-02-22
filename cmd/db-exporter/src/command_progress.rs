@@ -1,4 +1,4 @@
-use anyhow::{bail, format_err, Result};
+use anyhow::{bail, Result};
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use starcoin_chain::{BlockChain, ChainReader};
@@ -135,14 +135,51 @@ impl ParallelCommandBlockReader for ParallelCommandReadBodyFromExportLine {
     }
 }
 
+fn start_end_check(start: u64, end: u64, cur_num: u64) -> (u64, u64) {
+    if start == 0 && end == 0 {
+        (0, cur_num)
+    } else {
+        assert!(start < end, "End must bigger than Start");
+        assert!(end <= cur_num, "End number should less than Head num");
+        (start, end)
+    }
+}
+
+#[test]
+fn test_start_end_check() {
+    let (start, end) = start_end_check(0, 100, 100);
+    assert_eq!(start, 0);
+    assert_eq!(end, 100);
+
+    let (start, end) = start_end_check(0, 0, 100);
+    assert_eq!(start, 0);
+    assert_eq!(end, 100);
+}
+
+#[test]
+#[should_panic = "End must bigger than Start"]
+fn test_start_end_check_panic_invalid() {
+    start_end_check(100, 1, 100);
+}
+
+#[test]
+#[should_panic = "End must bigger than Start"]
+fn test_start_end_check_panic_invalid2() {
+    start_end_check(100, 100, 100);
+}
+
+#[test]
+#[should_panic = "End number should less than Head num"]
+fn test_start_end_check_panic_overflow() {
+    start_end_check(100, 500, 100);
+}
+
 pub struct ParallelCommandReadBlockFromDB {
     start_num: u64,
     end_num: u64,
     chain: Arc<BlockChain>,
     skip_empty_block: bool,
 }
-
-const BLOCK_GAP: u64 = 1000;
 
 impl ParallelCommandReadBlockFromDB {
     pub fn new(
@@ -164,30 +201,7 @@ impl ParallelCommandReadBlockFromDB {
         )
         .expect("Failed to initialize block chain");
 
-        let cur_num = chain.status().head().number();
-
-        let (start_num, end_num) = if start == 0 && end == 0 {
-            (0, cur_num)
-        } else {
-            let final_end = if cur_num > end + BLOCK_GAP {
-                end
-            } else if cur_num > BLOCK_GAP {
-                cur_num - BLOCK_GAP
-            } else {
-                end
-            };
-            (start, final_end)
-        };
-
-        if start > cur_num || start > end {
-            return Err(format_err!(
-                "cur_num {} start {} end {} illegal",
-                cur_num,
-                start,
-                end
-            ));
-        };
-
+        let (start_num, end_num) = start_end_check(start, end, chain.status().head().number());
         Ok((
             Self {
                 start_num,
