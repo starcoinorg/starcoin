@@ -138,7 +138,7 @@ pub fn create_account_txn_sent_as_association(
     )
 }
 
-pub fn build_transaction(
+fn build_transaction(
     user_address: AccountAddress,
     seq_number: u64,
     payload: TransactionPayload,
