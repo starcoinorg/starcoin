@@ -15,7 +15,7 @@ use anyhow::{anyhow, bail, Ok};
 use parking_lot::RwLock;
 use starcoin_config::{temp_dir, RocksdbConfig};
 use starcoin_crypto::{HashValue as Hash, HashValue};
-use starcoin_types::block::{BlockHeader, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH};
+use starcoin_types::block::BlockHeader;
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
@@ -69,9 +69,7 @@ impl BlockDAG {
         Ok(BlockDAG::new_with_type(
             8,
             dag_storage,
-            BlockDAGType::BlockDAGTestMock(BlockDAGConfigMock {
-                fork_number: TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH,
-            }),
+            BlockDAGType::BlockDAGFormal,
         ))
     }
 

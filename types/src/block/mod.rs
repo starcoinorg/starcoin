@@ -32,8 +32,9 @@ use std::hash::Hash;
 /// Type for block number.
 pub type BlockNumber = u64;
 pub type ParentsHash = Option<Vec<HashValue>>;
+
 //TODO: make sure height
-pub static TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG: BlockNumber = 4;
+pub static TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG: BlockNumber = 13;
 pub static TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH: BlockNumber = 10000;
 // static DEV_FLEXIDAG_FORK_HEIGHT: BlockNumber = 2;
 // static PROXIMA_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
@@ -94,8 +95,8 @@ impl std::fmt::Display for BlockHeaderExtra {
 
 impl<'de> Deserialize<'de> for BlockHeaderExtra {
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         if deserializer.is_human_readable() {
             let s = <String>::deserialize(deserializer)?;
@@ -122,8 +123,8 @@ impl<'de> Deserialize<'de> for BlockHeaderExtra {
 
 impl Serialize for BlockHeaderExtra {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
+        where
+            S: Serializer,
     {
         if serializer.is_human_readable() {
             format!("0x{}", hex::encode(self.0)).serialize(serializer)
@@ -134,7 +135,7 @@ impl Serialize for BlockHeaderExtra {
 }
 
 #[derive(
-    Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Deserialize, Serialize, JsonSchema,
+Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Deserialize, Serialize, JsonSchema,
 )]
 pub struct BlockIdAndNumber {
     pub id: HashValue,
@@ -484,8 +485,8 @@ impl BlockHeader {
 
 impl<'de> Deserialize<'de> for BlockHeader {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         #[derive(Deserialize)]
         #[serde(rename = "BlockHeader")]
@@ -730,7 +731,7 @@ impl BlockHeaderBuilder {
 }
 
 #[derive(
-    Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash,
+Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash,
 )]
 pub struct BlockBody {
     /// The transactions in this block.
@@ -800,8 +801,8 @@ pub struct Block {
 
 impl Block {
     pub fn new<B>(header: BlockHeader, body: B) -> Self
-    where
-        B: Into<BlockBody>,
+        where
+            B: Into<BlockBody>,
     {
         Block {
             header,
@@ -953,7 +954,7 @@ impl Sample for Block {
 /// `BlockInfo` is the object we store in the storage. It consists of the
 /// block as well as the execution result of this block.
 #[derive(
-    Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
+Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
 )]
 pub struct BlockInfo {
     /// Block id
