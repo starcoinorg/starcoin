@@ -1,7 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+mod errors;
+
 use anyhow::{bail, ensure, format_err, Result};
+pub use errors::GenesisError;
 use include_dir::include_dir;
 use include_dir::Dir;
 use serde::{Deserialize, Serialize};
@@ -12,18 +15,24 @@ use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_config::{
     genesis_key_pair, BuiltinNetworkID, ChainNetwork, ChainNetworkID, GenesisBlockParameter,
 };
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::storage::StorageInstance;
+use starcoin_storage::table_info::TableInfoStore;
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_transaction_builder::build_stdlib_package_with_modules;
 use starcoin_transaction_builder::{build_stdlib_package, StdLibOptions};
+use starcoin_types::block::BlockNumber;
+use starcoin_types::block::LegacyBlock;
 use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::transaction::Package;
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::{block::Block, transaction::Transaction};
 use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
+use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::transaction::{
     RawUserTransaction, SignedUserTransaction, TransactionPayload,
 };
@@ -35,18 +44,34 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-mod errors;
-pub use errors::GenesisError;
-use starcoin_storage::table_info::TableInfoStore;
-use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-use starcoin_vm_types::state_view::StateView;
-
 pub static G_GENESIS_GENERATED_DIR: &str = "generated";
 pub const GENESIS_DIR: Dir = include_dir!("generated");
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Genesis {
     block: Block,
+}
+
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename(deserialize = "Genesis"))]
+pub struct LegacyGenesis {
+    pub block: LegacyBlock,
+}
+
+impl From<LegacyGenesis> for Genesis {
+    fn from(value: LegacyGenesis) -> Self {
+        Self {
+            block: value.block.into(),
+        }
+    }
+}
+
+impl From<Genesis> for LegacyGenesis {
+    fn from(value: Genesis) -> Self {
+        Self {
+            block: value.block.into(),
+        }
+    }
 }
 
 impl Display for Genesis {
@@ -97,6 +122,7 @@ impl Genesis {
     pub fn build(net: &ChainNetwork) -> Result<Self> {
         debug!("Init genesis for {}", net);
         let block = Self::build_genesis_block(net)?;
+
         assert_eq!(block.header().number(), 0);
         debug!("Genesis block id : {:?}", block.header().id());
         let genesis = Self { block };
@@ -232,7 +258,7 @@ impl Genesis {
         let mut genesis_file = File::open(genesis_file_path)?;
         let mut content = vec![];
         genesis_file.read_to_end(&mut content)?;
-        let genesis = bcs_ext::from_bytes(&content)?;
+        let genesis = bcs_ext::from_bytes::<LegacyGenesis>(&content)?.into();
         Ok(Some(genesis))
     }
 
@@ -245,7 +271,7 @@ impl Genesis {
 
     pub fn load_generated(net: BuiltinNetworkID) -> Result<Option<Self>> {
         match Self::genesis_bytes(net) {
-            Some(bytes) => Ok(Some(bcs_ext::from_bytes::<Genesis>(bytes)?)),
+            Some(bytes) => Ok(Some(bcs_ext::from_bytes::<LegacyGenesis>(bytes)?.into())),
             None => Ok(None),
         }
     }
@@ -254,6 +280,7 @@ impl Genesis {
         &self,
         net: &ChainNetwork,
         storage: Arc<dyn Store>,
+        dag: BlockDAG,
     ) -> Result<ChainInfo> {
         storage.save_genesis(self.block.id())?;
         let genesis_chain = BlockChain::new_with_genesis(
@@ -261,6 +288,7 @@ impl Genesis {
             storage.clone(),
             net.genesis_epoch(),
             self.block.clone(),
+            dag,
         )?;
         let startup_info = StartupInfo::new(genesis_chain.current_header().id());
         storage.save_startup_info(startup_info)?;
@@ -279,7 +307,7 @@ impl Genesis {
         }
         let genesis_file = data_dir.join(Self::GENESIS_FILE_NAME);
         let mut file = File::create(genesis_file)?;
-        let contents = bcs_ext::to_bytes(self)?;
+        let contents = bcs_ext::to_bytes::<LegacyGenesis>(&LegacyGenesis::from(self.to_owned()))?;
         file.write_all(&contents)?;
         Ok(())
     }
@@ -315,6 +343,7 @@ impl Genesis {
     pub fn init_and_check_storage(
         net: &ChainNetwork,
         storage: Arc<Storage>,
+        dag: BlockDAG,
         data_dir: &Path,
     ) -> Result<(ChainInfo, Genesis)> {
         debug!("load startup_info.");
@@ -344,7 +373,7 @@ impl Genesis {
             }
             Ok(None) => {
                 let genesis = Self::load_and_check_genesis(net, data_dir, true)?;
-                let chain_info = genesis.execute_genesis_block(net, storage.clone())?;
+                let chain_info = genesis.execute_genesis_block(net, storage.clone(), dag)?;
                 (chain_info, genesis)
             }
             Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
@@ -353,12 +382,16 @@ impl Genesis {
         Ok((chain_info, genesis))
     }
 
-    pub fn init_storage_for_test(net: &ChainNetwork) -> Result<(Arc<Storage>, ChainInfo, Genesis)> {
-        debug!("init storage by genesis for test.");
+    pub fn init_storage_for_test(
+        net: &ChainNetwork,
+        _fork_number: BlockNumber,
+    ) -> Result<(Arc<Storage>, ChainInfo, Genesis, BlockDAG)> {
+        debug!("init storage by genesis for test. {net:?}");
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let genesis = Genesis::load_or_build(net)?;
-        let chain_info = genesis.execute_genesis_block(net, storage.clone())?;
-        Ok((storage, chain_info, genesis))
+        let dag = BlockDAG::create_for_testing()?;
+        let chain_info = genesis.execute_genesis_block(net, storage.clone(), dag.clone())?;
+        Ok((storage, chain_info, genesis, dag))
     }
 }
 
@@ -428,12 +461,20 @@ mod tests {
 
     pub fn do_test_genesis(net: &ChainNetwork, data_dir: &Path) -> Result<()> {
         let storage1 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
-        let (chain_info1, genesis1) =
-            Genesis::init_and_check_storage(net, storage1.clone(), data_dir)?;
+        let (chain_info1, genesis1) = Genesis::init_and_check_storage(
+            net,
+            storage1.clone(),
+            BlockDAG::create_for_testing()?,
+            data_dir,
+        )?;
 
         let storage2 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
-        let (chain_info2, genesis2) =
-            Genesis::init_and_check_storage(net, storage2.clone(), data_dir)?;
+        let (chain_info2, genesis2) = Genesis::init_and_check_storage(
+            net,
+            storage2.clone(),
+            BlockDAG::create_for_testing()?,
+            data_dir,
+        )?;
 
         assert_eq!(genesis1, genesis2, "genesis execute chain info different.");
 

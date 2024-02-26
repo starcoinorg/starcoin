@@ -47,6 +47,10 @@ BlockMetadata:
     - chain_id:
         TYPENAME: ChainId
     - parent_gas_used: U64
+    - parents_hash:
+        OPTION:
+          SEQ:
+            TYPENAME: HashValue
 ChainId:
   STRUCT:
     - id: U8

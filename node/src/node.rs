@@ -17,6 +17,7 @@ use starcoin_block_relayer::BlockRelayer;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
+use starcoin_dag::block_dag_config::{BlockDAGConfigMock, BlockDAGType};
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
 use starcoin_logger::structured_log::init_slog_logger;
@@ -51,7 +52,8 @@ use starcoin_sync::block_connector::{BlockConnectorService, ExecuteRequest, Rese
 use starcoin_sync::sync::SyncService;
 use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
-use starcoin_txpool::TxPoolActorService;
+use starcoin_txpool::{TxPoolActorService, TxPoolService};
+use starcoin_types::block::TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG;
 use starcoin_types::system_events::{SystemShutdown, SystemStarted};
 use starcoin_vm_runtime::metrics::VMMetrics;
 use std::sync::Arc;
@@ -133,7 +135,9 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                     .start_service_sync(GenerateBlockEventPacemaker::service_name()),
             ),
             NodeRequest::ResetNode(block_hash) => {
-                let connect_service = ctx.service_ref::<BlockConnectorService>()?.clone();
+                let connect_service = ctx
+                    .service_ref::<BlockConnectorService<TxPoolService>>()?
+                    .clone();
                 let fut = async move {
                     info!("Prepare to reset node startup info to {}", block_hash);
                     connect_service.send(ResetRequest { block_hash }).await?
@@ -147,7 +151,9 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                     .get_shared_sync::<Arc<Storage>>()
                     .expect("Storage must exist.");
 
-                let connect_service = ctx.service_ref::<BlockConnectorService>()?.clone();
+                let connect_service = ctx
+                    .service_ref::<BlockConnectorService<TxPoolService>>()?
+                    .clone();
                 let network = ctx.get_shared::<NetworkServiceRef>()?;
                 let fut = async move {
                     info!("Prepare to re execute block {}", block_hash);
@@ -311,9 +317,25 @@ impl NodeService {
         let upgrade_time = SystemTime::now().duration_since(start_time)?;
         let storage = Arc::new(Storage::new(storage_instance)?);
         registry.put_shared(storage.clone()).await?;
+        let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+            config.storage.dag_dir(),
+            config.storage.clone().into(),
+        )?;
+        let dag = match config.base().net().id() {
+            starcoin_config::ChainNetworkID::Builtin(starcoin_config::BuiltinNetworkID::Test) => {
+                starcoin_dag::blockdag::BlockDAG::new_with_type(
+                    8,
+                    dag_storage.clone(),
+                    BlockDAGType::BlockDAGTestMock(BlockDAGConfigMock {
+                        fork_number: TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG,
+                    }),
+                )
+            },
+            _ => starcoin_dag::blockdag::BlockDAG::new(8, dag_storage.clone()),
+        };
+        registry.put_shared(dag.clone()).await?;
         let (chain_info, genesis) =
-            Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;
-
+            Genesis::init_and_check_storage(config.net(), storage.clone(), dag, config.data_dir())?;
         info!(
             "Start node with chain info: {}, number {} upgrade_time cost {} secs, ",
             chain_info,
@@ -347,7 +369,9 @@ impl NodeService {
 
         registry.register::<ChainNotifyHandlerService>().await?;
 
-        registry.register::<BlockConnectorService>().await?;
+        registry
+            .register::<BlockConnectorService<TxPoolService>>()
+            .await?;
         registry.register::<SyncService>().await?;
 
         let block_relayer = registry.register::<BlockRelayer>().await?;

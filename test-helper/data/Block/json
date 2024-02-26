@@ -15,7 +15,8 @@
       "id": 255
     },
     "nonce": 0,
-    "extra": "0x00000000"
+    "extra": "0x00000000",
+    "parents_hash": null
   },
   "body": {
     "transactions": [],

@@ -60,6 +60,10 @@ pub enum ChainRequest {
         access_path: Option<AccessPath>,
     },
     GetBlockInfos(Vec<HashValue>),
+    GetDagBlockChildren {
+        block_ids: Vec<HashValue>,
+    },
+    GetDagForkNumber,
 }
 
 impl ServiceRequest for ChainRequest {
@@ -88,4 +92,5 @@ pub enum ChainResponse {
     HashVec(Vec<HashValue>),
     TransactionProof(Box<Option<TransactionInfoWithProof>>),
     BlockInfoVec(Box<Vec<Option<BlockInfo>>>),
+    DagForkNumber(BlockNumber),
 }

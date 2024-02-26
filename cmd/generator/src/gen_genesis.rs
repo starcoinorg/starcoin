@@ -48,7 +48,7 @@ impl CommandAction for GenGenesisCommand {
         if global_opt.base_data_dir.is_none() {
             warn!("data_dir option is none, use default data_dir.")
         }
-        let (config, .., chain_info, account) =
+        let (config, .., chain_info, account, _) =
             init_or_load_data_dir(global_opt, opt.password.clone())?;
         Ok(GenGenesisResult {
             net: config.net().id().clone(),

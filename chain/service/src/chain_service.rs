@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{format_err, Error, Result};
+use anyhow::{format_err, Error, Ok, Result};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::{
@@ -9,6 +9,7 @@ use starcoin_chain_api::{
 };
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
@@ -39,10 +40,11 @@ impl ChainReaderService {
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
+        dag: BlockDAG,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         Ok(Self {
-            inner: ChainReaderServiceInner::new(config, startup_info, storage, vm_metrics)?,
+            inner: ChainReaderServiceInner::new(config, startup_info, storage, dag, vm_metrics)?,
         })
     }
 }
@@ -54,8 +56,9 @@ impl ServiceFactory<Self> for ChainReaderService {
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("StartupInfo should exist at service init."))?;
+        let dag = ctx.get_shared::<BlockDAG>()?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        Self::new(config, startup_info, storage, vm_metrics)
+        Self::new(config, startup_info, storage, dag, vm_metrics)
     }
 }
 
@@ -73,9 +76,14 @@ impl ActorService for ChainReaderService {
 
 impl EventHandler<Self, NewHeadBlock> for ChainReaderService {
     fn handle_event(&mut self, event: NewHeadBlock, _ctx: &mut ServiceContext<ChainReaderService>) {
-        let new_head = event.0.block().header();
-        if let Err(e) = if self.inner.get_main().can_connect(event.0.as_ref()) {
-            self.inner.update_chain_head(event.0.as_ref().clone())
+        let new_head = event.executed_block.block().header().clone();
+        if let Err(e) = if self
+            .inner
+            .get_main()
+            .can_connect(event.executed_block.as_ref())
+        {
+            self.inner
+                .update_chain_head(event.executed_block.as_ref().clone())
         } else {
             self.inner.switch_main(new_head.id())
         } {
@@ -232,6 +240,12 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetBlockInfos(ids) => Ok(ChainResponse::BlockInfoVec(Box::new(
                 self.inner.get_block_infos(ids)?,
             ))),
+            ChainRequest::GetDagBlockChildren { block_ids } => Ok(ChainResponse::HashVec(
+                self.inner.get_dag_block_children(block_ids)?,
+            )),
+            ChainRequest::GetDagForkNumber => Ok(ChainResponse::DagForkNumber(
+                self.inner.main.dag_fork_height()?,
+            )),
         }
     }
 }
@@ -241,6 +255,7 @@ pub struct ChainReaderServiceInner {
     startup_info: StartupInfo,
     main: BlockChain,
     storage: Arc<dyn Store>,
+    dag: BlockDAG,
     vm_metrics: Option<VMMetrics>,
 }
 
@@ -249,6 +264,7 @@ impl ChainReaderServiceInner {
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
+        dag: BlockDAG,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let net = config.net();
@@ -257,12 +273,14 @@ impl ChainReaderServiceInner {
             startup_info.main,
             storage.clone(),
             vm_metrics.clone(),
+            dag.clone(),
         )?;
         Ok(Self {
             config,
             startup_info,
             main,
             storage,
+            dag,
             vm_metrics,
         })
     }
@@ -283,6 +301,7 @@ impl ChainReaderServiceInner {
             new_head_id,
             self.storage.clone(),
             self.vm_metrics.clone(),
+            self.dag.clone(),
         )?;
         Ok(())
     }
@@ -366,6 +385,7 @@ impl ReadableChainService for ChainReaderServiceInner {
     fn main_startup_info(&self) -> StartupInfo {
         self.startup_info.clone()
     }
+
     fn main_blocks_by_number(
         &self,
         number: Option<BlockNumber>,
@@ -416,6 +436,18 @@ impl ReadableChainService for ChainReaderServiceInner {
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>> {
         self.storage.get_block_infos(ids)
     }
+
+    fn get_dag_block_children(&self, ids: Vec<HashValue>) -> Result<Vec<HashValue>> {
+        ids.into_iter().fold(Ok(vec![]), |mut result, id| {
+            match self.dag.get_children(id) {
+                anyhow::Result::Ok(children) => {
+                    let _ = result.as_mut().map(|r| r.extend(children));
+                    Ok(result?)
+                }
+                Err(e) => Err(e),
+            }
+        })
+    }
 }
 
 #[cfg(test)]
@@ -424,12 +456,15 @@ mod tests {
     use starcoin_chain_api::ChainAsyncService;
     use starcoin_config::NodeConfig;
     use starcoin_service_registry::{RegistryAsyncService, RegistryService};
+    use starcoin_types::block::TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH;
 
     #[stest::test]
     async fn test_actor_launch() -> Result<()> {
         let config = Arc::new(NodeConfig::random_for_test());
-        let (storage, chain_info, _) = test_helper::Genesis::init_storage_for_test(config.net())?;
+        let (storage, chain_info, _, dag) =
+            test_helper::Genesis::init_storage_for_test(config.net(), TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH)?;
         let registry = RegistryService::launch();
+        registry.put_shared(dag).await?;
         registry.put_shared(config).await?;
         registry.put_shared(storage).await?;
         let service_ref = registry.register::<ChainReaderService>().await?;

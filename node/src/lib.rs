@@ -8,6 +8,7 @@ use futures::executor::block_on;
 use futures_timer::Delay;
 use starcoin_chain_service::{ChainAsyncService, ChainReaderService};
 use starcoin_config::{BaseConfig, NodeConfig, StarcoinOpt};
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
@@ -175,8 +176,14 @@ impl NodeHandle {
             .expect("TxPoolService must exist.")
     }
 
+    pub fn get_dag(&self) -> Result<BlockDAG> {
+        self.registry
+            .get_shared_sync::<BlockDAG>()
+            .map_err(|e| format_err!("Get BlockDAG error: {:?}", e))
+    }
+
     /// Just for test
-    pub fn generate_block(&self) -> Result<Block> {
+    pub fn generate_block(&self) -> Result<(Block, bool)> {
         let registry = &self.registry;
         block_on(async move {
             let bus = registry.service_ref::<BusService>().await?;
@@ -186,11 +193,11 @@ impl NodeHandle {
             let receiver = bus.oneshot::<NewHeadBlock>().await?;
             bus.broadcast(GenerateBlockEvent::new_break(true))?;
             let block = if let Ok(Ok(event)) =
-                async_std::future::timeout(Duration::from_secs(5), receiver).await
+                async_std::future::timeout(Duration::from_secs(20), receiver).await
             {
                 //wait for new block event to been processed.
                 Delay::new(Duration::from_millis(100)).await;
-                event.0.block().clone()
+                event.executed_block.block().clone()
             } else {
                 let latest_head = chain_service.main_head_block().await?;
                 debug!(
@@ -204,7 +211,9 @@ impl NodeHandle {
                     bail!("Wait timeout for generate_block")
                 }
             };
-            Ok(block)
+
+            let is_dag_block = chain_service.dag_fork_number().await? < block.header().number();
+            Ok((block, is_dag_block))
         })
     }
 }

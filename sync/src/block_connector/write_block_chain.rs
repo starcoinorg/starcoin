@@ -2,15 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::metrics::ChainMetrics;
-use anyhow::{format_err, Result};
+use anyhow::{format_err, Ok, Result};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 use starcoin_config::NodeConfig;
+#[cfg(test)]
+use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
-use starcoin_service_registry::ServiceRef;
+use starcoin_service_registry::{ServiceContext, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
@@ -19,8 +22,11 @@ use starcoin_types::{
     startup_info::StartupInfo,
     system_events::{NewBranch, NewHeadBlock},
 };
-use std::fmt::Formatter;
-use std::sync::Arc;
+#[cfg(test)]
+use starcoin_vm_types::{account_address::AccountAddress, transaction::SignedUserTransaction};
+use std::{fmt::Formatter, sync::Arc};
+
+use super::BlockConnectorService;
 
 const MAX_ROLL_BACK_BLOCK: usize = 10;
 
@@ -36,6 +42,7 @@ where
     bus: ServiceRef<BusService>,
     metrics: Option<ChainMetrics>,
     vm_metrics: Option<VMMetrics>,
+    dag: BlockDAG,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -75,7 +82,7 @@ where
 
         if let Some(metrics) = self.metrics.as_ref() {
             let result = match result.as_ref() {
-                Ok(connect) => format!("Ok_{}", connect),
+                std::result::Result::Ok(connect) => format!("Ok_{}", connect),
                 Err(err) => {
                     if let Some(connect_err) = err.downcast_ref::<ConnectBlockError>() {
                         format!("Err_{}", connect_err.reason())
@@ -93,17 +100,18 @@ where
     }
 }
 
-impl<P> WriteBlockChainService<P>
+impl<TransactionPoolServiceT> WriteBlockChainService<TransactionPoolServiceT>
 where
-    P: TxPoolSyncService + 'static,
+    TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
     pub fn new(
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
-        txpool: P,
+        txpool: TransactionPoolServiceT,
         bus: ServiceRef<BusService>,
         vm_metrics: Option<VMMetrics>,
+        dag: BlockDAG,
     ) -> Result<Self> {
         let net = config.net();
         let main = BlockChain::new(
@@ -111,6 +119,7 @@ where
             startup_info.main,
             storage.clone(),
             vm_metrics.clone(),
+            dag.clone(),
         )?;
         let metrics = config
             .metrics
@@ -126,6 +135,7 @@ where
             bus,
             metrics,
             vm_metrics,
+            dag,
         })
     }
 
@@ -145,6 +155,7 @@ where
                     block_id,
                     self.storage.clone(),
                     self.vm_metrics.clone(),
+                    self.dag.clone(),
                 )?)
             }
         } else if self.block_exist(header.parent_hash())? {
@@ -154,6 +165,7 @@ where
                 header.parent_hash(),
                 self.storage.clone(),
                 self.vm_metrics.clone(),
+                self.dag.clone(),
             )?)
         } else {
             None
@@ -167,6 +179,88 @@ where
 
     pub fn get_main(&self) -> &BlockChain {
         &self.main
+    }
+
+    pub fn get_dag(&self) -> BlockDAG {
+        self.dag.clone()
+    }
+
+    #[cfg(test)]
+    pub fn create_block(
+        &self,
+        author: AccountAddress,
+        parent_hash: Option<HashValue>,
+        user_txns: Vec<SignedUserTransaction>,
+        uncles: Vec<BlockHeader>,
+        block_gas_limit: Option<u64>,
+        tips: Option<Vec<HashValue>>,
+    ) -> Result<Block> {
+        let (block_template, _transactions) = self.main.create_block_template(
+            author,
+            parent_hash,
+            user_txns,
+            uncles,
+            block_gas_limit,
+            tips,
+        )?;
+        Ok(self
+            .main
+            .consensus()
+            .create_block(block_template, self.main.time_service().as_ref())
+            .unwrap())
+    }
+
+    #[cfg(test)]
+    pub fn time_sleep(&self, millis: u64) {
+        self.config.net().time_service().sleep(millis);
+    }
+
+    #[cfg(test)]
+    pub fn apply_failed(&mut self, block: Block) -> Result<()> {
+        use starcoin_chain::verifier::FullVerifier;
+
+        // apply but no connection
+        let verified_block = self.main.verify_with_verifier::<FullVerifier>(block)?;
+        let executed_block = self.main.execute(verified_block)?;
+        let enacted_blocks = vec![executed_block.block().clone()];
+        self.do_new_head(executed_block, 1, enacted_blocks, 0, vec![])?;
+        // bail!("failed to apply for tesing the connection later!");
+        Ok(())
+    }
+
+    // for sync task to connect to its chain, if chain's total difficulties is larger than the main
+    // switch by:
+    // 1, update the startup info
+    // 2, broadcast the new header
+    pub fn switch_new_main(
+        &mut self,
+        new_head_block: HashValue,
+        ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
+    ) -> Result<()>
+    where
+        TransactionPoolServiceT: TxPoolSyncService,
+    {
+        let new_branch = BlockChain::new(
+            self.config.net().time_service(),
+            new_head_block,
+            self.storage.clone(),
+            self.vm_metrics.clone(),
+            self.main.dag(),
+        )?;
+
+        let main_total_difficulty = self.main.get_total_difficulty()?;
+        let branch_total_difficulty = new_branch.get_total_difficulty()?;
+        if branch_total_difficulty > main_total_difficulty {
+            self.main = new_branch;
+            self.update_startup_info(self.main.head_block().header())?;
+            ctx.broadcast(NewHeadBlock {
+                executed_block: Arc::new(self.main.head_block()),
+                // tips: self.main.status().tips_hash.clone(),
+            });
+            Ok(())
+        } else {
+            Ok(())
+        }
     }
 
     pub fn select_head(&mut self, new_branch: BlockChain) -> Result<()> {
@@ -247,6 +341,7 @@ where
             block_id,
             self.storage.clone(),
             self.vm_metrics.clone(),
+            self.dag.clone(),
         )?;
 
         // delete block since from block.number + 1 to latest.
@@ -284,6 +379,7 @@ where
             block.header().parent_hash(),
             self.storage.clone(),
             self.vm_metrics.clone(),
+            self.dag.clone(),
         )?;
         let verify_block = chain.verify(block)?;
         chain.execute(verify_block)
@@ -381,7 +477,10 @@ where
                 .inc()
         }
 
-        if let Err(e) = self.bus.broadcast(NewHeadBlock(Arc::new(block))) {
+        if let Err(e) = self.bus.broadcast(NewHeadBlock {
+            executed_block: Arc::new(block),
+            // tips: self.main.status().tips_hash.clone(),
+        }) {
             error!("Broadcast NewHeadBlock error: {:?}", e);
         }
     }

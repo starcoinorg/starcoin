@@ -7,10 +7,12 @@ use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_config::ChainNetwork;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_storage::Storage;
 use starcoin_types::block::{Block, BlockHeader};
+use starcoin_types::block::{BlockNumber, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH};
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
 
@@ -18,16 +20,27 @@ pub struct MockChain {
     net: ChainNetwork,
     head: BlockChain,
     miner: AccountInfo,
+    storage: Arc<Storage>,
 }
 
 impl MockChain {
     pub fn new(net: ChainNetwork) -> Result<Self> {
-        let (storage, chain_info, _) =
-            Genesis::init_storage_for_test(&net).expect("init storage by genesis fail.");
+        Self::new_with_fork(net, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH)
+    }
 
-        let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)?;
+    pub fn new_with_fork(net: ChainNetwork, fork_number: BlockNumber) -> Result<Self> {
+        let (storage, chain_info, _, dag) = Genesis::init_storage_for_test(&net, fork_number)
+            .expect("init storage by genesis fail.");
+
+        let chain = BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage.clone(),
+            None,
+            dag,
+        )?;
         let miner = AccountInfo::random();
-        Ok(Self::new_inner(net, chain, miner))
+        Ok(Self::new_inner(net, chain, miner, storage))
     }
 
     pub fn new_with_storage(
@@ -35,18 +48,39 @@ impl MockChain {
         storage: Arc<Storage>,
         head_block_hash: HashValue,
         miner: AccountInfo,
+        dag: BlockDAG,
     ) -> Result<Self> {
-        let chain = BlockChain::new(net.time_service(), head_block_hash, storage, None)?;
-        Ok(Self::new_inner(net, chain, miner))
+        let chain = BlockChain::new(
+            net.time_service(),
+            head_block_hash,
+            storage.clone(),
+            None,
+            dag,
+        )?;
+        Ok(Self::new_inner(net, chain, miner, storage))
     }
 
-    pub fn new_with_chain(net: ChainNetwork, chain: BlockChain) -> Result<Self> {
+    pub fn new_with_chain(
+        net: ChainNetwork,
+        chain: BlockChain,
+        storage: Arc<Storage>,
+    ) -> Result<Self> {
         let miner = AccountInfo::random();
-        Ok(Self::new_inner(net, chain, miner))
+        Ok(Self::new_inner(net, chain, miner, storage))
     }
 
-    fn new_inner(net: ChainNetwork, head: BlockChain, miner: AccountInfo) -> Self {
-        Self { net, head, miner }
+    fn new_inner(
+        net: ChainNetwork,
+        head: BlockChain,
+        miner: AccountInfo,
+        storage: Arc<Storage>,
+    ) -> Self {
+        Self {
+            net,
+            head,
+            miner,
+            storage,
+        }
     }
 
     pub fn net(&self) -> &ChainNetwork {
@@ -72,6 +106,7 @@ impl MockChain {
             block_id,
             self.head.get_storage(),
             None,
+            self.head.dag(),
         )
     }
 
@@ -81,7 +116,22 @@ impl MockChain {
             head: chain,
             net: self.net.clone(),
             miner: AccountInfo::random(),
+            storage: self.storage.clone(),
         })
+    }
+
+    pub fn fork_dag(&self, head_id: Option<HashValue>) -> Result<MockChain> {
+        let chain = self.fork_new_branch(head_id)?;
+        Ok(Self {
+            head: chain,
+            net: self.net.clone(),
+            miner: AccountInfo::random(),
+            storage: self.storage.clone(),
+        })
+    }
+
+    pub fn get_storage(&self) -> Arc<Storage> {
+        self.storage.clone()
     }
 
     pub fn select_head(&mut self, new_block: Block) -> Result<()> {
@@ -93,6 +143,7 @@ impl MockChain {
             new_block_id,
             self.head.get_storage(),
             None,
+            self.head.dag(),
         )?;
         let branch_total_difficulty = branch.get_total_difficulty()?;
         let head_total_difficulty = self.head.get_total_difficulty()?;
@@ -112,9 +163,28 @@ impl MockChain {
     }
 
     pub fn produce(&self) -> Result<Block> {
-        let (template, _) =
-            self.head
-                .create_block_template(*self.miner.address(), None, vec![], vec![], None)?;
+        let (template, _) = self.head.create_block_template(
+            *self.miner.address(),
+            None,
+            vec![],
+            vec![],
+            None,
+            None,
+        )?;
+        self.head
+            .consensus()
+            .create_block(template, self.net.time_service().as_ref())
+    }
+
+    pub fn produce_block_by_header(&mut self, parent_header: BlockHeader) -> Result<Block> {
+        let (template, _) = self.head.create_block_template_by_header(
+            *self.miner.address(),
+            parent_header,
+            vec![],
+            vec![],
+            None,
+            None,
+        )?;
         self.head
             .consensus()
             .create_block(template, self.net.time_service().as_ref())
@@ -127,6 +197,11 @@ impl MockChain {
 
     pub fn produce_and_apply(&mut self) -> Result<BlockHeader> {
         let block = self.produce()?;
+        debug!(
+            "jacktest: block parent hash: {:?}, number: {:?}",
+            block.header().id(),
+            block.header().number()
+        );
         let header = block.header().clone();
         self.apply(block)?;
         Ok(header)

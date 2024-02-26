@@ -23,6 +23,10 @@ starcoin-types = { package = "starcoin-types", workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-storage = { workspace = true }
 thiserror = { workspace = true }
+starcoin-network-rpc-api = { workspace = true }
+async-std = { workspace = true }
+starcoin-flexidag ={ workspace = true }
+starcoin-dag ={ workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
@@ -39,10 +43,12 @@ stdlib = { workspace = true }
 stest = { workspace = true }
 test-helper = { workspace = true }
 tokio = { features = ["full"], workspace = true }
+starcoin-network-rpc-api = { workspace = true }
 
 [features]
 default = []
 fuzzing = ["proptest", "proptest-derive", "starcoin-types/fuzzing"]
+testing = []
 
 [package]
 authors = { workspace = true }

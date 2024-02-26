@@ -1,11 +1,8 @@
-use crate::tasks::{
-    AccumulatorCollector, BlockAccumulatorSyncTask, BlockCollector, BlockConnectedEventHandle,
-    BlockFetcher, BlockIdFetcher, BlockSyncTask, PeerOperator,
-};
 use anyhow::format_err;
 use network_api::PeerProvider;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
@@ -15,6 +12,11 @@ use std::cmp::min;
 use std::sync::Arc;
 use stream_task::{
     CustomErrorHandle, Generator, TaskError, TaskEventHandle, TaskGenerator, TaskHandle, TaskState,
+};
+
+use super::{
+    AccumulatorCollector, BlockAccumulatorSyncTask, BlockCollector, BlockConnectedEventHandle,
+    BlockFetcher, BlockIdFetcher, BlockSyncTask, PeerOperator,
 };
 
 pub struct InnerSyncTask<H, F, N>
@@ -32,6 +34,7 @@ where
     time_service: Arc<dyn TimeService>,
     peer_provider: N,
     custom_error_handle: Arc<dyn CustomErrorHandle>,
+    dag: BlockDAG,
 }
 
 impl<H, F, N> InnerSyncTask<H, F, N>
@@ -50,6 +53,7 @@ where
         time_service: Arc<dyn TimeService>,
         peer_provider: N,
         custom_error_handle: Arc<dyn CustomErrorHandle>,
+        dag: BlockDAG,
     ) -> Self {
         Self {
             ancestor,
@@ -61,6 +65,7 @@ where
             time_service,
             peer_provider,
             custom_error_handle,
+            dag,
         }
     }
 
@@ -117,7 +122,7 @@ where
         )
         .and_then(move |(ancestor, accumulator), event_handle| {
             let check_local_store =
-                ancestor_block_info.total_difficulty < current_block_info.total_difficulty;
+                ancestor_block_info.total_difficulty <= current_block_info.total_difficulty;
 
             let block_sync_task = BlockSyncTask::new(
                 accumulator,
@@ -132,6 +137,7 @@ where
                 ancestor.id,
                 self.storage.clone(),
                 vm_metrics,
+                self.dag.clone(),
             )?;
             let block_collector = BlockCollector::new_with_handle(
                 current_block_info.clone(),
@@ -140,6 +146,8 @@ where
                 self.block_event_handle.clone(),
                 self.peer_provider.clone(),
                 skip_pow_verify_when_sync,
+                self.storage.clone(),
+                self.fetcher.clone(),
             );
             Ok(TaskGenerator::new(
                 block_sync_task,

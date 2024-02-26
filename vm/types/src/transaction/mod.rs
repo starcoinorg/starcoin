@@ -884,6 +884,32 @@ pub enum Transaction {
     BlockMetadata(BlockMetadata),
 }
 
+#[allow(clippy::large_enum_variant)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename = "Transaction")]
+pub enum LegacyTransaction {
+    UserTransaction(SignedUserTransaction),
+    BlockMetadata(#[serde(rename = "BlockMetadata")] super::block_metadata::LegacyBlockMetadata),
+}
+
+impl LegacyTransaction {
+    pub fn id(&self) -> HashValue {
+        match self {
+            Self::UserTransaction(signed) => signed.id(),
+            Self::BlockMetadata(meta) => meta.id(),
+        }
+    }
+}
+
+impl From<LegacyTransaction> for Transaction {
+    fn from(value: LegacyTransaction) -> Self {
+        match value {
+            LegacyTransaction::UserTransaction(txn) => Self::UserTransaction(txn),
+            LegacyTransaction::BlockMetadata(meta) => Self::BlockMetadata(meta.into()),
+        }
+    }
+}
+
 impl Transaction {
     pub fn as_signed_user_txn(&self) -> Result<&SignedUserTransaction> {
         match self {

@@ -10,6 +10,7 @@ use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
+use starcoin_types::block::Block;
 use starcoin_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_types::{
@@ -39,6 +40,7 @@ pub struct OpenedBlock {
     difficulty: U256,
     strategy: ConsensusStrategy,
     vm_metrics: Option<VMMetrics>,
+    blue_blocks: Option<Vec<Block>>,
 }
 
 impl OpenedBlock {
@@ -52,6 +54,8 @@ impl OpenedBlock {
         difficulty: U256,
         strategy: ConsensusStrategy,
         vm_metrics: Option<VMMetrics>,
+        tips_hash: Option<Vec<HashValue>>,
+        blue_blocks: Option<Vec<Block>>,
     ) -> Result<Self> {
         let previous_block_id = previous_header.id();
         let block_info = storage
@@ -66,7 +70,7 @@ impl OpenedBlock {
         let chain_state =
             ChainStateDB::new(storage.into_super_arc(), Some(previous_header.state_root()));
         let chain_id = previous_header.chain_id();
-        let block_meta = BlockMetadata::new(
+        let block_meta = BlockMetadata::new_with_parents(
             previous_block_id,
             block_timestamp,
             author,
@@ -75,12 +79,12 @@ impl OpenedBlock {
             previous_header.number() + 1,
             chain_id,
             previous_header.gas_used(),
+            tips_hash.unwrap_or_default(),
         );
         let mut opened_block = Self {
             previous_block_info: block_info,
             block_meta,
             gas_limit: block_gas_limit,
-
             state: chain_state,
             txn_accumulator,
             gas_used: 0,
@@ -90,6 +94,7 @@ impl OpenedBlock {
             difficulty,
             strategy,
             vm_metrics,
+            blue_blocks,
         };
         opened_block.initialize()?;
         Ok(opened_block)
@@ -136,11 +141,19 @@ impl OpenedBlock {
     /// as the internal state may be corrupted.
     /// TODO: make the function can be called again even last call returns error.  
     pub fn push_txns(&mut self, user_txns: Vec<SignedUserTransaction>) -> Result<ExcludedTxns> {
-        let mut txns: Vec<_> = user_txns
-            .iter()
-            .cloned()
-            .map(Transaction::UserTransaction)
-            .collect();
+        let mut txns = vec![];
+        for block in self.blue_blocks.as_ref().unwrap_or(&vec![]) {
+            txns.extend(
+                block
+                    .transactions()
+                    .iter()
+                    .skip(1)
+                    .cloned()
+                    .map(Transaction::UserTransaction),
+            );
+        }
+
+        txns.extend(user_txns.iter().cloned().map(Transaction::UserTransaction));
 
         let txn_outputs = {
             let gas_left = self.gas_limit.checked_sub(self.gas_used).ok_or_else(|| {
@@ -157,7 +170,6 @@ impl OpenedBlock {
                 self.vm_metrics.clone(),
             )?
         };
-
         let untouched_user_txns: Vec<SignedUserTransaction> = if txn_outputs.len() >= txns.len() {
             vec![]
         } else {
@@ -168,6 +180,7 @@ impl OpenedBlock {
 
         let mut discard_txns: Vec<SignedUserTransaction> = Vec::new();
         debug_assert_eq!(txns.len(), txn_outputs.len());
+
         for (txn, output) in txns.into_iter().zip(txn_outputs.into_iter()) {
             let txn_hash = txn.id();
             match output.status() {
@@ -264,8 +277,9 @@ impl OpenedBlock {
 
     /// Construct a block template for mining.
     pub fn finalize(self) -> Result<BlockTemplate> {
-        let accumulator_root = self.txn_accumulator.root_hash();
         let state_root = self.state.state_root();
+        let accumulator_root = self.txn_accumulator.root_hash();
+
         let uncles = if !self.uncles.is_empty() {
             Some(self.uncles)
         } else {

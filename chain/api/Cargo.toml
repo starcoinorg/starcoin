@@ -15,12 +15,14 @@ starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
-
+starcoin-network-rpc-api = { workspace = true }
+starcoin-config = { workspace = true }
 
 [dev-dependencies]
 
 [features]
 mock = []
+testing = []
 
 [package]
 authors = { workspace = true }

@@ -12,6 +12,7 @@ use crate::errors::{
 use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
 use anyhow::{bail, format_err, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
+use move_core_types::vm_status::StatusCode::VALUE_SERIALIZATION_ERROR;
 use move_table_extension::NativeTableContext;
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
 use move_vm_runtime::session::Session;
@@ -50,7 +51,7 @@ use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::on_chain_config::{
-    GasSchedule, MoveLanguageVersion, G_GAS_CONSTANTS_IDENTIFIER,
+    FlexiDagConfig, GasSchedule, MoveLanguageVersion, G_GAS_CONSTANTS_IDENTIFIER,
     G_INSTRUCTION_SCHEDULE_IDENTIFIER, G_NATIVE_SCHEDULE_IDENTIFIER, G_VM_CONFIG_IDENTIFIER,
 };
 use starcoin_vm_types::state_store::state_key::StateKey;
@@ -87,6 +88,7 @@ pub struct StarcoinVM {
     native_params: NativeGasParameters,
     gas_params: Option<StarcoinGasParameters>,
     gas_schedule: Option<GasSchedule>,
+    flexi_dag_config: Option<FlexiDagConfig>,
     #[cfg(feature = "metrics")]
     metrics: Option<VMMetrics>,
 }
@@ -94,6 +96,7 @@ pub struct StarcoinVM {
 /// marking of stdlib version which includes vmconfig upgrades.
 const VMCONFIG_UPGRADE_VERSION_MARK: u64 = 10;
 const GAS_SCHEDULE_UPGRADE_VERSION_MARK: u64 = 12;
+const FLEXI_DAG_UPGRADE_VERSION_MARK: u64 = 13;
 
 impl StarcoinVM {
     #[cfg(feature = "metrics")]
@@ -110,6 +113,7 @@ impl StarcoinVM {
             native_params,
             gas_params: Some(gas_params),
             gas_schedule: None,
+            flexi_dag_config: None,
             metrics,
         }
     }
@@ -127,6 +131,7 @@ impl StarcoinVM {
             native_params,
             gas_params: Some(gas_params),
             gas_schedule: None,
+            flexi_dag_config: None,
         }
     }
 
@@ -271,6 +276,13 @@ impl StarcoinVM {
                 let gas_schedule = GasSchedule::fetch_config(&remote_storage)?;
                 (gas_schedule, "gas schedule from GasSchedule")
             };
+            if stdlib_version >= StdlibVersion::Version(FLEXI_DAG_UPGRADE_VERSION_MARK) {
+                self.flexi_dag_config = FlexiDagConfig::fetch_config(&remote_storage)?;
+                debug!(
+                    "stdlib version: {}, fetch flexi_dag_config {:?} from FlexiDagConfig module",
+                    stdlib_version, self.flexi_dag_config,
+                );
+            }
             #[cfg(feature = "print_gas_info")]
             match self.gas_schedule.as_ref() {
                 None => {
@@ -282,6 +294,11 @@ impl StarcoinVM {
             }
         }
         Ok(())
+    }
+
+    pub fn get_flexidag_config(&self) -> Result<FlexiDagConfig, VMStatus> {
+        self.flexi_dag_config
+            .ok_or(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE))
     }
 
     pub fn get_gas_schedule(&self) -> Result<&CostTable, VMStatus> {
@@ -516,11 +533,15 @@ impl StarcoinVM {
         package_address: AccountAddress,
     ) -> Result<bool> {
         let chain_id = remote_cache.get_chain_id()?;
-        let block_meta = remote_cache.get_block_metadata()?;
+        let block_number = if let Some(v2) = remote_cache.get_block_metadata_v2()? {
+            v2.number
+        } else {
+            remote_cache.get_block_metadata()?.number
+        };
         // from mainnet after 8015088 and barnard after 8311392, we disable enforce upgrade
         if package_address == genesis_address()
-            || (chain_id.is_main() && block_meta.number < 8015088)
-            || (chain_id.is_barnard() && block_meta.number < 8311392)
+            || (chain_id.is_main() && block_number < 8015088)
+            || (chain_id.is_barnard() && block_number < 8311392)
         {
             let two_phase_upgrade_v2_path = access_path_for_two_phase_upgrade_v2(package_address);
             if let Some(data) =
@@ -854,6 +875,7 @@ impl StarcoinVM {
     ) -> Result<TransactionOutput, VMStatus> {
         #[cfg(testing)]
         info!("process_block_meta begin");
+        let stdlib_version = self.version.clone().map(|v| v.into_stdlib_version());
         let txn_sender = account_config::genesis_address();
         // always use 0 gas for system.
         let max_gas_amount: Gas = 0.into();
@@ -871,8 +893,10 @@ impl StarcoinVM {
             number,
             chain_id,
             parent_gas_used,
+            parents_hash,
         ) = block_metadata.into_inner();
-        let args = serialize_values(&vec![
+        let mut function_name = &account_config::G_BLOCK_PROLOGUE_NAME;
+        let mut args_vec = vec![
             MoveValue::Signer(txn_sender),
             MoveValue::vector_u8(parent_id.to_vec()),
             MoveValue::U64(timestamp),
@@ -885,13 +909,23 @@ impl StarcoinVM {
             MoveValue::U64(number),
             MoveValue::U8(chain_id.id()),
             MoveValue::U64(parent_gas_used),
-        ]);
+        ];
+        if let Some(version) = stdlib_version {
+            if version >= StdlibVersion::Version(FLEXI_DAG_UPGRADE_VERSION_MARK) {
+                args_vec.push(MoveValue::vector_u8(
+                    bcs_ext::to_bytes(&parents_hash.unwrap_or_default())
+                        .or(Err(VMStatus::Error(VALUE_SERIALIZATION_ERROR)))?,
+                ));
+                function_name = &account_config::G_BLOCK_PROLOGUE_V2_NAME;
+            }
+        }
+        let args = serialize_values(&args_vec);
         let mut session: SessionAdapter<_> = self.move_vm.new_session(storage, session_id).into();
         session
             .as_mut()
             .execute_function_bypass_visibility(
                 &account_config::G_TRANSACTION_MANAGER_MODULE,
-                &account_config::G_BLOCK_PROLOGUE_NAME,
+                function_name,
                 vec![],
                 args,
                 &mut gas_meter,

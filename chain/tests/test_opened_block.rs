@@ -31,6 +31,8 @@ pub fn test_open_block() -> Result<()> {
             U256::from(0),
             chain.consensus(),
             None,
+            None,
+            None,
         )?
     };
 

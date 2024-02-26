@@ -8,13 +8,137 @@ use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::debug;
 use starcoin_transaction_builder::{peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME};
+use starcoin_types::account_config;
+use starcoin_types::block::{
+    BlockNumber, TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH,
+};
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::AccountResource;
 use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::state_view::StateReaderExt;
 use starcoin_vm_types::transaction::{SignedUserTransaction, Transaction};
 use std::collections::HashMap;
 use std::sync::Arc;
+
+pub fn gen_txns(seq_num: &mut u64) -> Result<Vec<SignedUserTransaction>> {
+    let mut rng = rand::thread_rng();
+    let txn_count: u64 = rng.gen_range(1..10);
+    let config = Arc::new(NodeConfig::random_for_test());
+    debug!("input seq:{}", *seq_num);
+    let txns: Vec<SignedUserTransaction> = (0..txn_count)
+        .map(|_txn_idx| {
+            let account_address = AccountAddress::random();
+
+            let txn = peer_to_peer_txn_sent_as_association(
+                account_address,
+                *seq_num,
+                10000,
+                config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                config.net(),
+            );
+            *seq_num += 1;
+            txn
+        })
+        .collect();
+    Ok(txns)
+}
+
+fn transaction_info_and_proof_1(fork_number: BlockNumber) -> Result<()> {
+    let config = Arc::new(NodeConfig::random_for_test());
+    let mut block_chain = test_helper::gen_blockchain_for_dag_test(config.net(), fork_number)?;
+    let block_0 = block_chain.current_header().number();
+    let fork_number = block_chain.dag_fork_height().unwrap();
+    let miner_account = AccountInfo::random();
+    let mut seq_num = 0;
+    (0..10).for_each(|_| {
+        let txns = gen_txns(&mut seq_num).unwrap();
+        let (template, _) = block_chain
+            .create_block_template(*miner_account.address(), None, txns, vec![], None, None)
+            .unwrap();
+        let block = block_chain
+            .consensus()
+            .create_block(template, config.net().time_service().as_ref())
+            .unwrap();
+        debug!("apply block:{:?}", &block);
+        if block.header().number() > fork_number {
+            assert!(block
+                .header()
+                .parents_hash()
+                .map_or(false, |parents| parents.len() > 0));
+        }
+        block_chain.apply(block).unwrap();
+    });
+    // fork from 6 block
+    let block_6 = block_0 + 6;
+    let fork_point = block_chain.get_block_by_number(block_6).unwrap().unwrap();
+    let fork_chain = block_chain.fork(fork_point.id()).unwrap();
+    let account_reader = fork_chain.chain_state_reader();
+    seq_num = account_reader.get_sequence_number(account_config::association_address())?;
+    let _txns = gen_txns(&mut seq_num).unwrap();
+    let (template, _) = fork_chain
+        .create_block_template(
+            *miner_account.address(),
+            Some(fork_point.header.id()),
+            vec![],
+            vec![],
+            None,
+            Some(vec![fork_point.id()]),
+        )
+        .unwrap();
+    let block = fork_chain
+        .consensus()
+        .create_block(template, config.net().time_service().as_ref())
+        .unwrap();
+    debug!("Apply block:{:?}", &block);
+    if block.header().number() > fork_number {
+        assert!(block_chain.apply(block).is_ok()); // a dag block will be executed even though it is not in the main
+    } else {
+        assert!(block_chain.apply(block).is_err()); // block is 7, but block chain head is 10, it is expected to be failed
+    }
+    let block_10 = block_0 + 10;
+    assert_eq!(
+        block_chain.current_header().id(),
+        block_chain
+            .get_block_by_number(block_10)
+            .unwrap()
+            .unwrap()
+            .id()
+    );
+    // create latest block
+    let account_reader = block_chain.chain_state_reader();
+    seq_num = account_reader.get_sequence_number(account_config::association_address())?;
+    let _txns = gen_txns(&mut seq_num).unwrap();
+    let (template, _) = block_chain
+        .create_block_template(*miner_account.address(), None, vec![], vec![], None, None)
+        .unwrap();
+    let block = block_chain
+        .consensus()
+        .create_block(template, config.net().time_service().as_ref())
+        .unwrap();
+    debug!("Apply latest block:{:?}", &block);
+    block_chain.apply(block).unwrap();
+    let block_11 = block_0 + 11;
+    assert_eq!(
+        block_chain.current_header().id(),
+        block_chain
+            .get_block_by_number(block_11)
+            .unwrap()
+            .unwrap()
+            .id()
+    );
+    Ok(())
+}
+
+#[stest::test(timeout = 480)]
+fn test_transaction_info_and_proof_1() -> Result<()> {
+    transaction_info_and_proof_1(TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH)
+}
+
+#[stest::test(timeout = 480)]
+fn test_dag_transaction_info_and_proof_1() -> Result<()> {
+    transaction_info_and_proof_1(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)
+}
 
 #[stest::test(timeout = 480)]
 fn test_transaction_info_and_proof() -> Result<()> {
@@ -63,6 +187,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
                 txns.clone(),
                 vec![],
                 None,
+                None,
             )
             .unwrap();
 
@@ -70,6 +195,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
             .consensus()
             .create_block(template, config.net().time_service().as_ref())
             .unwrap();
+        debug!("apply block:{:?}", &block);
         block_chain.apply(block.clone()).unwrap();
         all_txns.push(Transaction::BlockMetadata(
             block.to_metadata(current_header.gas_used()),
@@ -149,6 +275,5 @@ fn test_transaction_info_and_proof() -> Result<()> {
             );
         }
     }
-
     Ok(())
 }

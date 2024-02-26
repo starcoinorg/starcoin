@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::block_connector::BlockConnectorService;
 use crate::tasks::block_sync_task::SyncBlockData;
 use crate::tasks::inner_sync_task::InnerSyncTask;
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
@@ -14,12 +15,16 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::MerkleAccumulator;
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
 use starcoin_time_service::TimeService;
-use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
+use starcoin_txpool::TxPoolService;
+#[cfg(test)]
+use starcoin_txpool_mock_service::MockTxPoolService;
+use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::U256;
 use std::str::FromStr;
@@ -280,6 +285,16 @@ pub trait BlockFetcher: Send + Sync {
         &self,
         block_ids: Vec<HashValue>,
     ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>>;
+
+    fn fetch_block_headers(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<(HashValue, Option<BlockHeader>)>>>;
+
+    fn fetch_dag_block_children(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<HashValue>>>;
 }
 
 impl<T> BlockFetcher for Arc<T>
@@ -292,6 +307,20 @@ where
     ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
         BlockFetcher::fetch_blocks(self.as_ref(), block_ids)
     }
+
+    fn fetch_block_headers(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<(HashValue, Option<BlockHeader>)>>> {
+        BlockFetcher::fetch_block_headers(self.as_ref(), block_ids)
+    }
+
+    fn fetch_dag_block_children(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<HashValue>>> {
+        BlockFetcher::fetch_dag_block_children(self.as_ref(), block_ids)
+    }
 }
 
 impl BlockFetcher for VerifiedRpcClient {
@@ -301,7 +330,7 @@ impl BlockFetcher for VerifiedRpcClient {
     ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
         self.get_blocks(block_ids.clone())
             .and_then(|blocks| async move {
-                let results: Result<Vec<(Block, Option<PeerId>)>> = block_ids
+                let results = block_ids
                     .iter()
                     .zip(blocks)
                     .map(|(id, block)| {
@@ -309,9 +338,27 @@ impl BlockFetcher for VerifiedRpcClient {
                             format_err!("Get block by id: {} failed, remote node return None", id)
                         })
                     })
-                    .collect();
+                    .collect::<Result<Vec<_>>>();
                 results.map_err(fetcher_err_map)
             })
+            .boxed()
+    }
+
+    fn fetch_block_headers(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<(HashValue, Option<BlockHeader>)>>> {
+        self.get_block_headers_by_hash(block_ids)
+            .map_err(fetcher_err_map)
+            .boxed()
+    }
+
+    fn fetch_dag_block_children(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<HashValue>>> {
+        self.get_dag_block_children(block_ids)
+            .map_err(fetcher_err_map)
             .boxed()
     }
 }
@@ -372,6 +419,7 @@ impl BlockLocalStore for Arc<dyn Store> {
                 Some(block) => {
                     let id = block.id();
                     let block_info = self.get_block_info(id)?;
+
                     Ok(Some(SyncBlockData::new(block, block_info, None)))
                 }
                 None => Ok(None),
@@ -381,9 +429,20 @@ impl BlockLocalStore for Arc<dyn Store> {
 }
 
 #[derive(Clone, Debug)]
+pub enum BlockConnectAction {
+    ConnectNewBlock,
+    ConnectExecutedBlock,
+}
+
+#[derive(Clone, Debug)]
 pub struct BlockConnectedEvent {
     pub block: Block,
+    pub feedback: Option<futures::channel::mpsc::UnboundedSender<BlockConnectedFinishEvent>>,
+    pub action: BlockConnectAction,
 }
+
+#[derive(Clone, Debug)]
+pub struct BlockConnectedFinishEvent;
 
 #[derive(Clone, Debug)]
 pub struct BlockDiskCheckEvent {}
@@ -392,10 +451,15 @@ pub trait BlockConnectedEventHandle: Send + Clone + std::marker::Unpin {
     fn handle(&mut self, event: BlockConnectedEvent) -> Result<()>;
 }
 
-impl<S> BlockConnectedEventHandle for ServiceRef<S>
-where
-    S: ActorService + EventHandler<S, BlockConnectedEvent>,
-{
+impl BlockConnectedEventHandle for ServiceRef<BlockConnectorService<TxPoolService>> {
+    fn handle(&mut self, event: BlockConnectedEvent) -> Result<()> {
+        self.notify(event)?;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+impl BlockConnectedEventHandle for ServiceRef<BlockConnectorService<MockTxPoolService>> {
     fn handle(&mut self, event: BlockConnectedEvent) -> Result<()> {
         self.notify(event)?;
         Ok(())
@@ -459,6 +523,24 @@ impl BlockConnectedEventHandle for UnboundedSender<BlockConnectedEvent> {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct BlockConnectEventHandleMock {
+    sender: UnboundedSender<BlockConnectedEvent>,
+}
+
+impl BlockConnectEventHandleMock {
+    pub fn new(sender: UnboundedSender<BlockConnectedEvent>) -> Result<Self> {
+        Ok(Self { sender })
+    }
+}
+
+impl BlockConnectedEventHandle for BlockConnectEventHandleMock {
+    fn handle(&mut self, event: BlockConnectedEvent) -> Result<()> {
+        self.sender.start_send(event)?;
+        Ok(())
+    }
+}
+
 pub struct ExtSyncTaskErrorHandle<F>
 where
     F: SyncFetcher + 'static,
@@ -509,7 +591,11 @@ mod inner_sync_task;
 #[cfg(test)]
 pub(crate) mod mock;
 #[cfg(test)]
-mod tests;
+mod test_tools;
+#[cfg(test)]
+pub mod tests;
+#[cfg(test)]
+mod tests_dag;
 
 use crate::sync_metrics::SyncMetrics;
 pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
@@ -530,6 +616,7 @@ pub fn full_sync_task<H, A, F, N>(
     max_retry_times: u64,
     sync_metrics: Option<SyncMetrics>,
     vm_metrics: Option<VMMetrics>,
+    dag: BlockDAG,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
@@ -635,6 +722,7 @@ where
                 time_service.clone(),
                 peer_provider.clone(),
                 ext_error_handle.clone(),
+                dag.clone(),
             );
             let start_now = Instant::now();
             let (block_chain, _) = inner

@@ -18,7 +18,7 @@ starcoin-network = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
 bcs-ext = { package = "bcs-ext", workspace = true }
-
+starcoin-dag = {workspace = true}
 [package]
 authors = { workspace = true }
 edition = { workspace = true }

@@ -42,12 +42,19 @@ impl ChainBencher {
             ))
             .unwrap(),
         );
+        let dag = starcoin_dag::blockdag::BlockDAG::create_for_testing().unwrap();
         let (chain_info, _) =
-            Genesis::init_and_check_storage(&net, storage.clone(), temp_path.path())
+            Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), temp_path.path())
                 .expect("init storage by genesis fail.");
 
-        let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)
-            .expect("create block chain should success.");
+        let chain = BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage,
+            None,
+            dag,
+        )
+        .expect("create block chain should success.");
         let miner_account = AccountInfo::random();
 
         ChainBencher {
@@ -66,7 +73,7 @@ impl ChainBencher {
             let (block_template, _) = self
                 .chain
                 .read()
-                .create_block_template(*self.account.address(), None, vec![], vec![], None)
+                .create_block_template(*self.account.address(), None, vec![], vec![], None, None)
                 .unwrap();
             let block = ConsensusStrategy::Dummy
                 .create_block(block_template, self.net.time_service().as_ref())

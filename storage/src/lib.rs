@@ -22,7 +22,7 @@ use starcoin_accumulator::AccumulatorTreeStore;
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::contract_event::ContractEvent;
-use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
+use starcoin_types::startup_info::{ChainInfo, ChainStatus, DagState, SnapshotRange};
 use starcoin_types::transaction::{RichTransactionInfo, Transaction};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
@@ -72,12 +72,16 @@ pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
 pub const STATE_NODE_PREFIX_NAME_PREV: ColumnFamilyName = "state_node_prev";
 pub const CHAIN_INFO_PREFIX_NAME: ColumnFamilyName = "chain_info";
 pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
+pub const TRANSACTION_PREFIX_NAME_V2: ColumnFamilyName = "transaction_v2";
 pub const TRANSACTION_INFO_PREFIX_NAME: ColumnFamilyName = "transaction_info";
 pub const TRANSACTION_INFO_PREFIX_NAME_V2: ColumnFamilyName = "transaction_info_v2";
 pub const TRANSACTION_INFO_HASH_PREFIX_NAME: ColumnFamilyName = "transaction_info_hash";
 pub const CONTRACT_EVENT_PREFIX_NAME: ColumnFamilyName = "contract_event";
 pub const FAILED_BLOCK_PREFIX_NAME: ColumnFamilyName = "failed_block";
 pub const TABLE_INFO_PREFIX_NAME: ColumnFamilyName = "table_info";
+pub const BLOCK_PREFIX_NAME_V2: ColumnFamilyName = "block_v2";
+pub const BLOCK_HEADER_PREFIX_NAME_V2: ColumnFamilyName = "block_header_v2";
+pub const FAILED_BLOCK_PREFIX_NAME_V2: ColumnFamilyName = "failed_block_v2";
 
 ///db storage use prefix_name vec to init
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
@@ -143,17 +147,44 @@ static VEC_PREFIX_NAME_V3: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         TABLE_INFO_PREFIX_NAME,
     ]
 });
+static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
+    vec![
+        BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
+        TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
+        BLOCK_PREFIX_NAME,
+        BLOCK_HEADER_PREFIX_NAME,
+        BLOCK_PREFIX_NAME_V2,
+        BLOCK_HEADER_PREFIX_NAME_V2,
+        BLOCK_BODY_PREFIX_NAME, // unused column
+        BLOCK_INFO_PREFIX_NAME,
+        BLOCK_TRANSACTIONS_PREFIX_NAME,
+        BLOCK_TRANSACTION_INFOS_PREFIX_NAME,
+        STATE_NODE_PREFIX_NAME,
+        CHAIN_INFO_PREFIX_NAME,
+        TRANSACTION_PREFIX_NAME,
+        TRANSACTION_INFO_PREFIX_NAME, // unused column
+        TRANSACTION_INFO_PREFIX_NAME_V2,
+        TRANSACTION_INFO_HASH_PREFIX_NAME,
+        CONTRACT_EVENT_PREFIX_NAME,
+        FAILED_BLOCK_PREFIX_NAME,
+        FAILED_BLOCK_PREFIX_NAME_V2,
+        TRANSACTION_PREFIX_NAME_V2,
+        TABLE_INFO_PREFIX_NAME,
+    ]
+});
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, IntoPrimitive, TryFromPrimitive)]
 #[repr(u8)]
 pub enum StorageVersion {
     V1 = 1,
     V2 = 2,
     V3 = 3,
+    V4 = 4,
 }
 
 impl StorageVersion {
     pub fn current_version() -> StorageVersion {
-        StorageVersion::V3
+        StorageVersion::V4
     }
 
     pub fn get_column_family_names(&self) -> &'static [ColumnFamilyName] {
@@ -161,6 +192,7 @@ impl StorageVersion {
             StorageVersion::V1 => &VEC_PREFIX_NAME_V1,
             StorageVersion::V2 => &VEC_PREFIX_NAME_V2,
             StorageVersion::V3 => &VEC_PREFIX_NAME_V3,
+            StorageVersion::V4 => &VEC_PREFIX_NAME_V4,
         }
     }
 }
@@ -224,6 +256,10 @@ pub trait BlockStore {
 
     fn get_snapshot_range(&self) -> Result<Option<SnapshotRange>>;
     fn save_snapshot_range(&self, snapshot_height: SnapshotRange) -> Result<()>;
+
+    fn get_dag_state(&self) -> Result<Option<DagState>>;
+
+    fn save_dag_state(&self, dag_state: DagState) -> Result<()>;
 }
 
 pub trait BlockTransactionInfoStore {
@@ -241,6 +277,7 @@ pub trait BlockTransactionInfoStore {
         ids: Vec<HashValue>,
     ) -> Result<Vec<Option<RichTransactionInfo>>>;
 }
+
 pub trait ContractEventStore {
     /// Save events by key `txn_info_id`.
     /// As txn_info has accumulator root of events, so there is a one-to-one mapping.
@@ -292,7 +329,7 @@ impl Storage {
                 instance.clone(),
             ),
             transaction_accumulator_storage:
-                AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
+            AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
             block_info_storage: BlockInfoStorage::new(instance.clone()),
             event_storage: ContractEventStorage::new(instance.clone()),
             chain_info_storage: ChainInfoStorage::new(instance.clone()),
@@ -338,6 +375,7 @@ impl Display for Storage {
         write!(f, "{}", self.clone())
     }
 }
+
 impl Debug for Storage {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{}", self)
@@ -468,6 +506,14 @@ impl BlockStore for Storage {
     fn save_snapshot_range(&self, snapshot_range: SnapshotRange) -> Result<()> {
         self.chain_info_storage.save_snapshot_range(snapshot_range)
     }
+
+    fn get_dag_state(&self) -> Result<Option<DagState>> {
+        self.chain_info_storage.get_dag_state()
+    }
+
+    fn save_dag_state(&self, dag_state: DagState) -> Result<()> {
+        self.chain_info_storage.save_dag_state(dag_state)
+    }
 }
 
 impl BlockInfoStore for Storage {
@@ -573,14 +619,14 @@ impl TransactionStore for Storage {
 
 /// Chain storage define
 pub trait Store:
-    StateNodeStore
-    + BlockStore
-    + BlockInfoStore
-    + TransactionStore
-    + BlockTransactionInfoStore
-    + ContractEventStore
-    + IntoSuper<dyn StateNodeStore>
-    + TableInfoStore
+StateNodeStore
++ BlockStore
++ BlockInfoStore
++ TransactionStore
++ BlockTransactionInfoStore
++ ContractEventStore
++ IntoSuper<dyn StateNodeStore>
++ TableInfoStore
 {
     fn get_transaction_info_by_block_and_index(
         &self,

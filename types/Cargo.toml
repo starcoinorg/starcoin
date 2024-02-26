@@ -18,6 +18,8 @@ starcoin-crypto = { workspace = true }
 starcoin-uint = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
+lazy_static= { workspace = true }
+parking_lot = { workspace = true }
 
 [features]
 default = []

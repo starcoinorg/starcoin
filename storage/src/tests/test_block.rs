@@ -43,6 +43,7 @@ fn test_block() {
         ChainId::test(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
+        None,
     );
     storage
         .block_storage
@@ -102,6 +103,7 @@ fn test_block_number() {
         ChainId::test(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
+        None,
     );
     storage
         .block_storage
@@ -149,6 +151,7 @@ fn test_old_failed_block_decode() {
         ChainId::test(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
+        None,
     );
     let block_body = BlockBody::new(vec![SignedUserTransaction::mock()], None);
 
@@ -185,6 +188,7 @@ fn test_save_failed_block() {
         ChainId::test(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
+        None,
     );
 
     let block_body = BlockBody::new(vec![SignedUserTransaction::mock()], None);

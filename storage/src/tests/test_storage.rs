@@ -3,30 +3,35 @@
 
 extern crate chrono;
 
+use crate::block::{
+    FailedBlock, OldBlockHeaderStorage, OldBlockInnerStorage, OldFailedBlockStorage,
+    OldFailedBlockV2,
+};
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::{CodecKVStore, InnerStore, StorageInstance, ValueCodec};
 use crate::table_info::TableInfoStore;
+use crate::transaction::LegacyTransactionStorage;
 use crate::transaction_info::{BlockTransactionInfo, OldTransactionInfoStorage};
 use crate::{
     BlockInfoStore, BlockStore, BlockTransactionInfoStore, Storage,
     StorageVersion, /*TableInfoStore,*/
-    TransactionStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
-    TRANSACTION_INFO_PREFIX_NAME_V2,
+    DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME_V2,
 };
 use anyhow::Result;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_config::RocksdbConfig;
 use starcoin_crypto::HashValue;
-use starcoin_types::{
-    account_address::AccountAddress,
-    block::{Block, BlockBody, BlockHeader, BlockInfo},
-    language_storage::TypeTag,
-    startup_info::SnapshotRange,
-    transaction::{RichTransactionInfo, SignedUserTransaction, Transaction, TransactionInfo},
-    vm_error::KeptVMStatus,
-};
+use starcoin_logger::prelude::info;
+use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockInfo};
+use starcoin_types::startup_info::SnapshotRange;
+use starcoin_types::transaction::{RichTransactionInfo, SignedUserTransaction, TransactionInfo};
+use starcoin_types::vm_error::KeptVMStatus;
+use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::block_metadata::LegacyBlockMetadata;
+use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_vm_types::transaction::LegacyTransaction;
 use std::path::Path;
 
 #[test]
@@ -281,13 +286,53 @@ fn test_missing_key_handle() -> Result<()> {
     Ok(())
 }
 
-fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
+fn generate_old_block_data(instance: StorageInstance) -> Result<(Vec<HashValue>, Vec<HashValue>)> {
+    const BLOCK_COUNT: u64 = 1001;
+    let old_block_header_storage = OldBlockHeaderStorage::new(instance.clone());
+    let old_block_storage = OldBlockInnerStorage::new(instance.clone());
+    let old_failed_block_storage = OldFailedBlockStorage::new(instance);
+
+    let failed_block_ids = (0..BLOCK_COUNT)
+        .map(|_| {
+            let failed_block = FailedBlock::random();
+            let failed_block_id = {
+                let (block, _, _, _) = failed_block.clone().into();
+                block.id()
+            };
+            let old_failed_block: OldFailedBlockV2 = failed_block.into();
+            old_failed_block_storage
+                .put(failed_block_id, old_failed_block)
+                .unwrap();
+            failed_block_id
+        })
+        .collect::<Vec<_>>();
+
+    let block_ids = (0..BLOCK_COUNT)
+        .map(|_| {
+            let block = Block::random();
+            let block_id = block.id();
+            let old_block = block.clone().into();
+            let old_block_header = block.header.into();
+
+            old_block_storage.put(block_id, old_block).unwrap();
+            old_block_header_storage
+                .put(block_id, old_block_header)
+                .unwrap();
+            block_id
+        })
+        .collect::<Vec<_>>();
+
+    Ok((block_ids, failed_block_ids))
+}
+
+fn generate_old_db(path: &Path) -> Result<(Vec<HashValue>, Vec<HashValue>, Vec<HashValue>)> {
     let instance = StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
         DBStorage::new(path, RocksdbConfig::default(), None)?,
     );
     let storage = Storage::new(instance.clone())?;
-    let old_transaction_info_storage = OldTransactionInfoStorage::new(instance);
+    let old_transaction_info_storage = OldTransactionInfoStorage::new(instance.clone());
+    let old_transaction_storage = LegacyTransactionStorage::new(instance.clone());
 
     let block_header = BlockHeader::random();
     let txn = SignedUserTransaction::mock();
@@ -296,7 +341,8 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
         BlockBody::new(vec![txn.clone()], None),
     );
     let mut txn_inf_ids = vec![];
-    let block_metadata = block.to_metadata(0);
+    let mut txn_ids = vec![];
+    let block_metadata: LegacyBlockMetadata = block.to_metadata(0).try_into().unwrap();
     let txn_info_0 = TransactionInfo::new(
         block_metadata.id(),
         HashValue::random(),
@@ -304,9 +350,9 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
         0,
         KeptVMStatus::Executed,
     );
-    storage
-        .transaction_storage
-        .save_transaction(Transaction::BlockMetadata(block_metadata))?;
+    let txn_0 = LegacyTransaction::BlockMetadata(block_metadata);
+    txn_ids.push(txn_0.id());
+    old_transaction_storage.save_transaction(txn_0)?;
     txn_inf_ids.push(txn_info_0.id());
     let txn_info_1 = TransactionInfo::new(
         txn.id(),
@@ -315,6 +361,9 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
         100,
         KeptVMStatus::Executed,
     );
+    let txn_1 = LegacyTransaction::UserTransaction(txn);
+    txn_ids.push(txn_1.id());
+    old_transaction_storage.save_transaction(txn_1)?;
     txn_inf_ids.push(txn_info_1.id());
     let block_info = BlockInfo::new(
         block_header.id(),
@@ -322,9 +371,6 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
         AccumulatorInfo::new(HashValue::random(), vec![], 2, 3),
         AccumulatorInfo::new(HashValue::random(), vec![], 1, 1),
     );
-    storage
-        .transaction_storage
-        .save_transaction(Transaction::UserTransaction(txn))?;
     storage.commit_block(block)?;
     storage.save_block_info(block_info)?;
 
@@ -343,13 +389,16 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
         },
     )?;
 
-    Ok(txn_inf_ids)
+    let (block_ids, failed_block_ids) = generate_old_block_data(instance)?;
+
+    Ok((txn_inf_ids, block_ids, failed_block_ids))
 }
 
 #[stest::test]
 pub fn test_db_upgrade() -> Result<()> {
     let tmpdir = starcoin_config::temp_dir();
-    let txn_info_ids = generate_old_db(tmpdir.path())?;
+    let (txn_info_ids, block_ids, failed_block_ids) = generate_old_db(tmpdir.path())?;
+    info!("Upgrade blocks:{},{:?}", block_ids.len(), block_ids);
     let mut instance = StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None)?,
@@ -357,6 +406,9 @@ pub fn test_db_upgrade() -> Result<()> {
 
     instance.check_upgrade()?;
     let storage = Storage::new(instance.clone())?;
+    let old_block_header_storage = OldBlockHeaderStorage::new(instance.clone());
+    let old_block_storage = OldBlockInnerStorage::new(instance.clone());
+    let old_failed_block_storage = OldFailedBlockStorage::new(instance.clone());
     let old_transaction_info_storage = OldTransactionInfoStorage::new(instance);
 
     for txn_info_id in txn_info_ids {
@@ -369,6 +421,38 @@ pub fn test_db_upgrade() -> Result<()> {
             "expect RichTransactionInfo is some"
         );
     }
+
+    for block_id in block_ids {
+        assert!(
+            old_block_header_storage.get(block_id)?.is_none(),
+            "expect OldBlockHeader is none"
+        );
+        assert!(
+            storage.get_block_header_by_hash(block_id)?.is_some(),
+            "expect BlockHeader is some"
+        );
+
+        assert!(
+            old_block_storage.get(block_id)?.is_none(),
+            "expect OldBlock is none"
+        );
+        assert!(
+            storage.get_block_by_hash(block_id)?.is_some(),
+            "expect Block is some"
+        );
+    }
+
+    for failed_block_id in failed_block_ids {
+        assert!(
+            old_failed_block_storage.get(failed_block_id)?.is_none(),
+            "expect OldBlock is none"
+        );
+        assert!(
+            storage.get_failed_block_by_id(failed_block_id)?.is_some(),
+            "expect Block is some"
+        );
+    }
+
     Ok(())
 }
 

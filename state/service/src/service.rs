@@ -131,9 +131,7 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
 
 impl EventHandler<Self, NewHeadBlock> for ChainStateService {
     fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<ChainStateService>) {
-        let NewHeadBlock(block) = msg;
-
-        let state_root = block.header().state_root();
+        let state_root = msg.executed_block.header().state_root();
         debug!("ChainStateActor change StateRoot to : {:?}", state_root);
         self.service.change_root(state_root);
     }
@@ -269,13 +267,13 @@ mod tests {
     use starcoin_config::NodeConfig;
     use starcoin_service_registry::{RegistryAsyncService, RegistryService};
     use starcoin_state_api::ChainStateAsyncService;
-    use starcoin_types::account_config::genesis_address;
+    use starcoin_types::{account_config::genesis_address, block::TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH};
 
     #[stest::test]
     async fn test_actor_launch() -> Result<()> {
         let config = Arc::new(NodeConfig::random_for_test());
-        let (storage, _startup_info, _) =
-            test_helper::Genesis::init_storage_for_test(config.net())?;
+        let (storage, _startup_info, _, _) =
+            test_helper::Genesis::init_storage_for_test(config.net(), TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH)?;
         let registry = RegistryService::launch();
         registry.put_shared(config).await?;
         registry.put_shared(storage).await?;

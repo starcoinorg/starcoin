@@ -8,7 +8,7 @@ use starcoin_chain_api::{
 };
 use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_logger::prelude::debug;
-use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
+use starcoin_types::block::{Block, BlockHeader, LegacyBlockBody, ALLOWED_FUTURE_BLOCKTIME};
 use std::{collections::HashSet, str::FromStr};
 
 #[derive(Debug)]
@@ -40,10 +40,15 @@ impl FromStr for Verifier {
 }
 
 pub struct StaticVerifier;
+
 impl StaticVerifier {
     pub fn verify_body_hash(block: &Block) -> Result<()> {
-        //verify body
-        let body_hash = block.body.hash();
+        // verify body
+        let body_hash = if block.is_legacy() {
+            LegacyBlockBody::from(block.body.clone()).hash()
+        } else {
+            block.body.hash()
+        };
         verify_block!(
             VerifyBlockField::Body,
             body_hash == block.header().body_hash(),
@@ -91,6 +96,7 @@ pub trait BlockVerifier {
         R: ChainReader,
     {
         let epoch = current_chain.epoch();
+        let is_legacy = header.is_legacy();
 
         let switch_epoch = header.number() == epoch.end_block_number();
         // epoch first block's uncles should empty.
@@ -136,6 +142,21 @@ pub trait BlockVerifier {
                 "invalid block: block {} can not be uncle.",
                 uncle_id
             );
+
+            let valid_parents_hash = if is_legacy {
+                uncle.parents_hash().is_none()
+            } else {
+                uncle.parents_hash().unwrap_or_default().is_empty()
+            };
+
+            verify_block!(
+                VerifyBlockField::Uncle,
+                valid_parents_hash,
+                "uncle {} is not valid for a single-chain block, parents_hash len {}",
+                uncle.id(),
+                uncle.parents_hash().unwrap_or_default().len()
+            );
+
             debug!(
                 "verify_uncle header number {} hash {:?} uncle number {} hash {:?}",
                 header.number(),
@@ -249,6 +270,19 @@ impl BlockVerifier for BasicVerifier {
                 .get_accumulator_root(),
             new_block_header.block_accumulator_root(),
         );
+
+        verify_block!(
+            VerifyBlockField::Header,
+            !current_chain.is_dag(new_block_header)?
+                && new_block_header
+                    .parents_hash()
+                    .unwrap_or_default()
+                    .is_empty(),
+            "Single chain block is invalid: number {} fork_height {} parents_hash len {}",
+            new_block_header.number(),
+            current_chain.dag_fork_height()?,
+            new_block_header.parents_hash().unwrap_or_default().len()
+        );
         Ok(())
     }
 }
@@ -313,6 +347,88 @@ impl BlockVerifier for NoneVerifier {
     where
         R: ChainReader,
     {
+        Ok(())
+    }
+}
+
+//TODO: Implement it.
+pub struct DagVerifier;
+impl BlockVerifier for DagVerifier {
+    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
+    where
+        R: ChainReader,
+    {
+        let parents_hash = new_block_header.parents_hash().unwrap_or_default();
+        let mut parents_hash_to_check = parents_hash.clone();
+        parents_hash_to_check.sort();
+        parents_hash_to_check.dedup();
+
+        debug!("jacktest: verify_header parents_hash_to_check: {:?}", parents_hash_to_check);
+
+        verify_block!(
+            VerifyBlockField::Header,
+            !parents_hash_to_check.is_empty() && parents_hash.len() == parents_hash_to_check.len(),
+            "Invalid parents_hash {:?} for a dag block {}, fork height {}",
+            new_block_header.parents_hash(),
+            new_block_header.number(),
+            current_chain.dag_fork_height()?,
+        );
+
+        verify_block!(
+            VerifyBlockField::Header,
+            parents_hash_to_check.contains(&new_block_header.parent_hash())
+                && current_chain
+                    .get_block_info(Some(new_block_header.parent_hash()))?
+                    .is_some(),
+            "Invalid block: parent {} might not exist.",
+            new_block_header.parent_hash()
+        );
+
+        ConsensusVerifier::verify_header(current_chain, new_block_header)
+    }
+
+    fn verify_uncles<R>(
+        current_chain: &R,
+        uncles: &[BlockHeader],
+        header: &BlockHeader,
+    ) -> Result<()>
+    where
+        R: ChainReader,
+    {
+        let mut uncle_ids = HashSet::new();
+        for uncle in uncles {
+            let uncle_id = uncle.id();
+            verify_block!(
+                VerifyBlockField::Uncle,
+                !uncle_ids.contains(&uncle.id()),
+                "repeat uncle {:?} in current block {:?}",
+                uncle_id,
+                header.id()
+            );
+
+            verify_block!(
+                VerifyBlockField::Uncle,
+                uncle.number() < header.number() ,
+               "uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number(), header.number()
+            );
+
+            verify_block!(
+                VerifyBlockField::Uncle,
+                current_chain.get_block_info(Some(uncle_id))?.is_some(),
+                "Invalid block: uncle {} does not exist",
+                uncle_id
+            );
+
+            debug!(
+                "verify_uncle header number {} hash {:?} uncle number {} hash {:?}",
+                header.number(),
+                header.id(),
+                uncle.number(),
+                uncle.id()
+            );
+            uncle_ids.insert(uncle_id);
+        }
+
         Ok(())
     }
 }

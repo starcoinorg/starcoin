@@ -378,6 +378,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e22d1f4b888c298a027c99dc9048015fac177587de20fc30232a057dfbe24a21"
 
 [[package]]
+name = "async-attributes"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3203e79f4dd9bdda415ed03cf14dae5a2bf775c683a00f94e9cd1faf0f596e5"
+dependencies = [
+ "quote 1.0.28",
+ "syn 1.0.107",
+]
+
+[[package]]
 name = "async-channel"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -428,6 +438,7 @@ dependencies = [
  "blocking",
  "futures-lite",
  "once_cell",
+ "tokio",
 ]
 
 [[package]]
@@ -466,6 +477,7 @@ version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "62565bb4402e926b29953c785397c6dc0391b7b446e45008b0049eb43cec6f5d"
 dependencies = [
+ "async-attributes",
  "async-channel",
  "async-global-executor",
  "async-io",
@@ -689,6 +701,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
+ "starcoin-dag",
  "starcoin-executor",
  "starcoin-executor-benchmark",
  "starcoin-genesis",
@@ -2135,6 +2148,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
+ "starcoin-dag",
  "starcoin-executor",
  "starcoin-genesis",
  "starcoin-logger",
@@ -2303,7 +2317,7 @@ checksum = "850878694b7933ca4c9569d30a34b55031b9b139ee1fc7b94a527c4ef960d690"
 [[package]]
 name = "diem-crypto"
 version = "0.0.3"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00#a742ddc0674022800341182cbb4c3681807b2f00"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=8d41c280a227594ca0a2b6ecba580643518274ea#8d41c280a227594ca0a2b6ecba580643518274ea"
 dependencies = [
  "aes-gcm 0.8.0",
  "anyhow",
@@ -2338,7 +2352,7 @@ dependencies = [
 [[package]]
 name = "diem-crypto-derive"
 version = "0.0.3"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00#a742ddc0674022800341182cbb4c3681807b2f00"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=8d41c280a227594ca0a2b6ecba580643518274ea#8d41c280a227594ca0a2b6ecba580643518274ea"
 dependencies = [
  "proc-macro2 1.0.59",
  "quote 1.0.28",
@@ -9253,6 +9267,7 @@ name = "starcoin-chain"
 version = "1.13.9"
 dependencies = [
  "anyhow",
+ "async-std",
  "bcs-ext",
  "clap 3.2.23",
  "proptest",
@@ -9267,9 +9282,12 @@ dependencies = [
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
+ "starcoin-dag",
  "starcoin-executor",
+ "starcoin-flexidag",
  "starcoin-genesis",
  "starcoin-logger",
+ "starcoin-network-rpc-api",
  "starcoin-open-block",
  "starcoin-resource-viewer",
  "starcoin-service-registry",
@@ -9299,7 +9317,9 @@ dependencies = [
  "rand_core 0.6.4",
  "serde 1.0.152",
  "starcoin-accumulator",
+ "starcoin-config",
  "starcoin-crypto",
+ "starcoin-network-rpc-api",
  "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-statedb",
@@ -9327,6 +9347,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
+ "starcoin-dag",
  "starcoin-executor",
  "starcoin-genesis",
  "starcoin-logger",
@@ -9356,16 +9377,21 @@ name = "starcoin-chain-service"
 version = "1.13.9"
 dependencies = [
  "anyhow",
+ "async-std",
  "async-trait",
  "futures 0.3.26",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "serde 1.0.152",
+ "starcoin-accumulator",
  "starcoin-chain",
  "starcoin-chain-api",
  "starcoin-config",
+ "starcoin-consensus",
  "starcoin-crypto",
+ "starcoin-dag",
  "starcoin-logger",
+ "starcoin-network-rpc-api",
  "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-storage",
@@ -9508,7 +9534,7 @@ dependencies = [
 [[package]]
 name = "starcoin-crypto"
 version = "1.10.0-rc.2"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00#a742ddc0674022800341182cbb4c3681807b2f00"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=8d41c280a227594ca0a2b6ecba580643518274ea#8d41c280a227594ca0a2b6ecba580643518274ea"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9527,11 +9553,48 @@ dependencies = [
 [[package]]
 name = "starcoin-crypto-macro"
 version = "1.10.0-rc.2"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00#a742ddc0674022800341182cbb4c3681807b2f00"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=8d41c280a227594ca0a2b6ecba580643518274ea#8d41c280a227594ca0a2b6ecba580643518274ea"
 dependencies = [
  "proc-macro2 1.0.59",
  "quote 1.0.28",
  "syn 1.0.107",
+]
+
+[[package]]
+name = "starcoin-dag"
+version = "1.13.8"
+dependencies = [
+ "anyhow",
+ "bcs-ext",
+ "bincode",
+ "byteorder",
+ "cryptonight-rs",
+ "futures 0.3.26",
+ "hex",
+ "itertools",
+ "once_cell",
+ "parking_lot 0.12.1",
+ "proptest",
+ "proptest-derive",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "rocksdb",
+ "rust-argon2",
+ "serde 1.0.152",
+ "sha3",
+ "starcoin-chain-api",
+ "starcoin-config",
+ "starcoin-crypto",
+ "starcoin-logger",
+ "starcoin-state-api",
+ "starcoin-storage",
+ "starcoin-time-service",
+ "starcoin-types",
+ "starcoin-vm-types",
+ "stest",
+ "tempfile",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -9669,9 +9732,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-flexidag"
+version = "1.13.8"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bcs-ext",
+ "futures 0.3.26",
+ "starcoin-accumulator",
+ "starcoin-config",
+ "starcoin-consensus",
+ "starcoin-crypto",
+ "starcoin-dag",
+ "starcoin-logger",
+ "starcoin-service-registry",
+ "starcoin-storage",
+ "starcoin-types",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
 name = "starcoin-framework"
-version = "11.0.0"
-source = "git+https://github.com/starcoinorg/starcoin-framework?rev=345a3900a0064dc57a9560235bc72c12f03448b1#345a3900a0064dc57a9560235bc72c12f03448b1"
+version = "13.0.0"
+source = "git+https://github.com/starcoinorg/starcoin-framework?rev=975539d8bcad6210b443a5f26685bd2e0d14263f#975539d8bcad6210b443a5f26685bd2e0d14263f"
 dependencies = [
  "anyhow",
  "include_dir",
@@ -9728,6 +9812,7 @@ dependencies = [
  "starcoin-chain-mock",
  "starcoin-config",
  "starcoin-crypto",
+ "starcoin-dag",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-storage",
@@ -9749,6 +9834,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
+ "starcoin-dag",
  "starcoin-executor",
  "starcoin-logger",
  "starcoin-state-api",
@@ -9760,6 +9846,7 @@ dependencies = [
  "starcoin-vm-types",
  "stdlib",
  "stest",
+ "tempfile",
  "thiserror",
 ]
 
@@ -9872,6 +9959,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
+ "starcoin-dag",
  "starcoin-executor",
  "starcoin-genesis",
  "starcoin-logger",
@@ -10181,11 +10269,13 @@ dependencies = [
  "starcoin-account-api",
  "starcoin-account-service",
  "starcoin-block-relayer",
+ "starcoin-chain-api",
  "starcoin-chain-notify",
  "starcoin-chain-service",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
+ "starcoin-dag",
  "starcoin-dev",
  "starcoin-executor",
  "starcoin-genesis",
@@ -10293,6 +10383,7 @@ dependencies = [
  "network-types",
  "starcoin-config",
  "starcoin-crypto",
+ "starcoin-dag",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-network",
@@ -10318,6 +10409,7 @@ dependencies = [
  "sp-utils",
  "starcoin-chain",
  "starcoin-config",
+ "starcoin-dag",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-storage",
@@ -10718,7 +10810,9 @@ dependencies = [
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
+ "starcoin-dag",
  "starcoin-executor",
+ "starcoin-flexidag",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-metrics",
@@ -10746,6 +10840,7 @@ dependencies = [
  "sysinfo",
  "test-helper",
  "thiserror",
+ "timeout-join-handler",
  "tokio",
 ]
 
@@ -10969,7 +11064,9 @@ dependencies = [
  "bytes 1.4.0",
  "forkable-jellyfish-merkle",
  "hex",
+ "lazy_static 1.4.0",
  "num_enum",
+ "parking_lot 0.12.1",
  "proptest",
  "proptest-derive",
  "rand 0.8.5",
@@ -11511,6 +11608,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
+ "starcoin-dag",
  "starcoin-dev",
  "starcoin-executor",
  "starcoin-genesis",

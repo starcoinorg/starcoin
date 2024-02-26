@@ -7,6 +7,7 @@
 use serde::{de, ser, Deserialize, Serialize, Serializer};
 use starcoin_crypto::HashValue;
 use std::convert::TryFrom;
+use std::iter::Sum;
 use uint::*;
 construct_uint! {
     pub struct U256(4);
@@ -145,7 +146,15 @@ impl Into<HashValue> for U256 {
         HashValue::new(bytes)
     }
 }
-
+impl Sum for U256 {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        let mut sum = U256::zero();
+        for value in iter {
+            sum += value;
+        }
+        sum
+    }
+}
 fn to_hex(bytes: &[u8], skip_leading_zero: bool) -> String {
     let bytes = if skip_leading_zero {
         let non_zero = bytes.iter().take_while(|b| **b == 0).count();

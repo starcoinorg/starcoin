@@ -1,10 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-use crate::define_storage;
-use crate::storage::{CodecKVStore, StorageInstance, ValueCodec};
 use crate::{
-    BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME,
-    BLOCK_TRANSACTIONS_PREFIX_NAME, BLOCK_TRANSACTION_INFOS_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
+    define_storage,
+    storage::{CodecKVStore, StorageInstance, ValueCodec},
+    BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME_V2,
+    BLOCK_PREFIX_NAME, BLOCK_PREFIX_NAME_V2, BLOCK_TRANSACTIONS_PREFIX_NAME,
+    BLOCK_TRANSACTION_INFOS_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME_V2,
 };
 use anyhow::{bail, Result};
 use bcs_ext::{BCSCodec, Sample};
@@ -12,7 +13,7 @@ use network_p2p_types::peer_id::PeerId;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_types::block::{Block, BlockBody, BlockHeader};
+use starcoin_types::block::{Block, BlockBody, BlockHeader, LegacyBlock, LegacyBlockHeader};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct OldFailedBlock {
@@ -46,6 +47,37 @@ pub struct FailedBlock {
     version: String,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename(deserialize = "FailedBlock"))]
+pub struct OldFailedBlockV2 {
+    block: LegacyBlock,
+    peer_id: Option<PeerId>,
+    failed: String,
+    version: String,
+}
+
+impl From<OldFailedBlockV2> for FailedBlock {
+    fn from(value: OldFailedBlockV2) -> Self {
+        Self {
+            block: value.block.into(),
+            peer_id: value.peer_id,
+            failed: value.failed,
+            version: value.version,
+        }
+    }
+}
+
+impl From<FailedBlock> for OldFailedBlockV2 {
+    fn from(value: FailedBlock) -> Self {
+        Self {
+            block: value.block.into(),
+            peer_id: value.peer_id,
+            failed: value.failed,
+            version: value.version,
+        }
+    }
+}
+
 #[allow(clippy::from_over_into)]
 impl Into<(Block, Option<PeerId>, String, String)> for FailedBlock {
     fn into(self) -> (Block, Option<PeerId>, String, String) {
@@ -75,19 +107,44 @@ impl Sample for FailedBlock {
     }
 }
 
-define_storage!(BlockInnerStorage, HashValue, Block, BLOCK_PREFIX_NAME);
+impl FailedBlock {
+    pub fn random() -> Self {
+        Self {
+            block: Block::random(),
+            peer_id: Some(PeerId::random()),
+            failed: "Unknown reason".to_string(),
+            version: "Unknown version".to_string(),
+        }
+    }
+}
+
+define_storage!(BlockInnerStorage, HashValue, Block, BLOCK_PREFIX_NAME_V2);
 define_storage!(
     BlockHeaderStorage,
     HashValue,
     BlockHeader,
+    BLOCK_HEADER_PREFIX_NAME_V2
+);
+define_storage!(
+    OldBlockInnerStorage,
+    HashValue,
+    LegacyBlock,
+    BLOCK_PREFIX_NAME
+);
+define_storage!(
+    OldBlockHeaderStorage,
+    HashValue,
+    LegacyBlockHeader,
     BLOCK_HEADER_PREFIX_NAME
 );
+
 define_storage!(
     BlockBodyStorage,
     HashValue,
     BlockBody,
     BLOCK_BODY_PREFIX_NAME
 );
+
 define_storage!(
     BlockTransactionsStorage,
     HashValue,
@@ -100,10 +157,18 @@ define_storage!(
     Vec<HashValue>,
     BLOCK_TRANSACTION_INFOS_PREFIX_NAME
 );
+
 define_storage!(
     FailedBlockStorage,
     HashValue,
     FailedBlock,
+    FAILED_BLOCK_PREFIX_NAME_V2
+);
+
+define_storage!(
+    OldFailedBlockStorage,
+    HashValue,
+    OldFailedBlockV2,
     FAILED_BLOCK_PREFIX_NAME
 );
 
@@ -137,6 +202,36 @@ impl ValueCodec for BlockHeader {
     }
 }
 
+impl ValueCodec for LegacyBlock {
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        Self::decode(data)
+    }
+}
+
+impl ValueCodec for LegacyBlockHeader {
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        Self::decode(data)
+    }
+}
+
+impl ValueCodec for Vec<BlockHeader> {
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        Self::decode(data)
+    }
+}
+
 impl ValueCodec for BlockBody {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
@@ -157,6 +252,16 @@ impl ValueCodec for OldFailedBlock {
     }
 }
 impl ValueCodec for FailedBlock {
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        Self::decode(data)
+    }
+}
+
+impl ValueCodec for OldFailedBlockV2 {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
     }

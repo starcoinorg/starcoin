@@ -1,18 +1,20 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::batch::WriteBatch;
-use crate::errors::StorageInitError;
-use crate::metrics::{record_metrics, StorageMetrics};
-use crate::storage::{ColumnFamilyName, InnerStore, KeyCodec, ValueCodec, WriteOp};
-use crate::{StorageVersion, DEFAULT_PREFIX_NAME};
+use crate::{
+    batch::WriteBatch,
+    errors::StorageInitError,
+    metrics::{record_metrics, StorageMetrics},
+    storage::{ColumnFamilyName, InnerStore, KeyCodec, RawDBStorage, ValueCodec, WriteOp},
+    StorageVersion, DEFAULT_PREFIX_NAME,
+};
 use anyhow::{ensure, format_err, Error, Result};
-use rocksdb::{Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB};
+use rocksdb::{
+    DBIterator, DBPinnableSlice, IteratorMode, Options, ReadOptions, WriteBatch as DBWriteBatch,
+    WriteOptions, DB,
+};
 use starcoin_config::{check_open_fds_limit, RocksdbConfig};
-use std::collections::HashSet;
-use std::iter;
-use std::marker::PhantomData;
-use std::path::Path;
+use std::{collections::HashSet, iter, marker::PhantomData, path::Path};
 
 const RES_FDS: u64 = 4096;
 
@@ -213,6 +215,9 @@ impl DBStorage {
         // write buffer size
         db_opts.set_max_write_buffer_number(5);
         db_opts.set_max_background_jobs(5);
+        if config.parallelism > 1 {
+            db_opts.increase_parallelism(config.parallelism as i32);
+        }
         // cache
         // let cache = Cache::new_lru_cache(2 * 1024 * 1024 * 1024);
         // db_opts.set_row_cache(&cache.unwrap());
@@ -233,6 +238,16 @@ impl DBStorage {
                 .raw_iterator_cf_opt(cf_handle, ReadOptions::default()),
             direction,
         ))
+    }
+
+    pub fn raw_iterator_cf_opt(
+        &self,
+        prefix_name: &str,
+        mode: IteratorMode,
+        readopts: ReadOptions,
+    ) -> Result<DBIterator> {
+        let cf_handle = self.get_cf_handle(prefix_name)?;
+        Ok(self.db.iterator_cf_opt(cf_handle, readopts, mode))
     }
 
     /// Returns a forward [`SchemaIterator`] on a certain schema.
@@ -458,5 +473,24 @@ impl InnerStore for DBStorage {
             }
             Ok(res)
         })
+    }
+}
+
+impl RawDBStorage for DBStorage {
+    fn raw_get_pinned_cf<K: AsRef<[u8]>>(
+        &self,
+        prefix: &str,
+        key: K,
+    ) -> Result<Option<DBPinnableSlice>> {
+        let cf = self.get_cf_handle(prefix)?;
+        let res = self
+            .db
+            .get_pinned_cf_opt(cf, key, &ReadOptions::default())?;
+        Ok(res)
+    }
+
+    fn raw_write_batch(&self, batch: DBWriteBatch) -> Result<()> {
+        self.db.write(batch)?;
+        Ok(())
     }
 }

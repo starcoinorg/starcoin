@@ -4,7 +4,7 @@
 use crate::tasks::{
     BlockConnectedEvent, BlockFetcher, BlockIdFetcher, BlockInfoFetcher, PeerOperator, SyncFetcher,
 };
-use anyhow::{format_err, Context, Result};
+use anyhow::{format_err, Context, Ok, Result};
 use async_std::task::JoinHandle;
 use futures::channel::mpsc::UnboundedReceiver;
 use futures::future::BoxFuture;
@@ -12,19 +12,30 @@ use futures::{FutureExt, StreamExt};
 use futures_timer::Delay;
 use network_api::messages::NotificationMessage;
 use network_api::{PeerId, PeerInfo, PeerSelector, PeerStrategy};
+use network_p2p_core::export::log::info;
 use network_p2p_core::{NetRpcError, RpcErrorCode};
 use rand::Rng;
+use starcoin_account_api::AccountInfo;
+use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_network_rpc_api::G_RPC_INFO;
+use starcoin_storage::Storage;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
-use std::sync::Arc;
+use starcoin_types::startup_info::ChainInfo;
+use starcoin_types::U256;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
+
+use super::block_sync_task::SyncBlockData;
+use super::BlockLocalStore;
 
 pub enum ErrorStrategy {
     _RateLimitErr,
@@ -130,6 +141,127 @@ impl BlockIdFetcher for MockBlockIdFetcher {
     }
 }
 
+#[derive(Default)]
+pub struct MockLocalBlockStore {
+    store: Mutex<HashMap<HashValue, SyncBlockData>>,
+}
+
+impl MockLocalBlockStore {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    #[allow(dead_code)]
+    pub fn mock(&self, block: &Block) {
+        let block_id = block.id();
+        let block_info = BlockInfo::new(
+            block_id,
+            U256::from(1),
+            AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
+            AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
+        );
+        self.store.lock().unwrap().insert(
+            block.id(),
+            SyncBlockData::new(block.clone(), Some(block_info), Some(PeerId::random())),
+        );
+    }
+}
+
+impl BlockLocalStore for MockLocalBlockStore {
+    fn get_block_with_info(&self, block_ids: Vec<HashValue>) -> Result<Vec<Option<SyncBlockData>>> {
+        let store = self.store.lock().unwrap();
+        Ok(block_ids.iter().map(|id| store.get(id).cloned()).collect())
+    }
+}
+
+#[derive(Default)]
+pub struct MockBlockFetcher {
+    pub blocks: Mutex<HashMap<HashValue, Block>>,
+}
+
+impl MockBlockFetcher {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn put(&self, block: Block) {
+        self.blocks.lock().unwrap().insert(block.id(), block);
+    }
+}
+
+impl BlockFetcher for MockBlockFetcher {
+    fn fetch_blocks(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>> {
+        let blocks = self.blocks.lock().unwrap();
+        let result: Result<Vec<(Block, Option<PeerId>)>> = block_ids
+            .iter()
+            .map(|block_id| {
+                if let Some(block) = blocks.get(block_id).cloned() {
+                    Ok((block, Some(PeerId::random())))
+                } else {
+                    Err(format_err!("Can not find block by id: {:?}", block_id))
+                }
+            })
+            .collect();
+        async {
+            Delay::new(Duration::from_millis(100)).await;
+            result
+        }
+        .boxed()
+    }
+
+    fn fetch_block_headers(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<(HashValue, Option<starcoin_types::block::BlockHeader>)>>> {
+        let blocks = self.blocks.lock().unwrap();
+        let result = block_ids
+            .iter()
+            .map(|block_id| {
+                if let Some(block) = blocks.get(block_id).cloned() {
+                    Ok((block.id(), Some(block.header().clone())))
+                } else {
+                    Err(format_err!("Can not find block by id: {:?}", block_id))
+                }
+            })
+            .collect();
+        async {
+            Delay::new(Duration::from_millis(100)).await;
+            result
+        }
+        .boxed()
+    }
+
+    fn fetch_dag_block_children(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<HashValue>>> {
+        let blocks = self.blocks.lock().unwrap();
+        let mut result = vec![];
+        block_ids.iter().for_each(|block_id| {
+            if let Some(block) = blocks.get(block_id).cloned() {
+                while let Some(hashes) = block.header().parents_hash() {
+                    for hash in hashes {
+                        if result.contains(&hash) {
+                            continue;
+                        }
+                        result.push(hash);
+                    }
+                }
+            } else {
+                info!("Can not find block by id: {:?}", block_id)
+            }
+        });
+        async {
+            Delay::new(Duration::from_millis(100)).await;
+            Ok(result)
+        }
+        .boxed()
+    }
+}
+
 pub struct SyncNodeMocker {
     pub peer_id: PeerId,
     pub chain_mocker: MockChain,
@@ -142,8 +274,37 @@ impl SyncNodeMocker {
         net: ChainNetwork,
         delay_milliseconds: u64,
         random_error_percent: u32,
+        fork_number: BlockNumber,
     ) -> Result<Self> {
-        let chain = MockChain::new(net)?;
+        let chain = MockChain::new_with_fork(net, fork_number)?;
+        let peer_id = PeerId::random();
+        let peer_info = PeerInfo::new(
+            peer_id.clone(),
+            chain.chain_info(),
+            NotificationMessage::protocols(),
+            G_RPC_INFO.clone().into_protocols(),
+            None,
+        );
+        let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default(), None);
+        Ok(Self::new_inner(
+            peer_id,
+            chain,
+            ErrorStrategy::Timeout(delay_milliseconds),
+            random_error_percent,
+            peer_selector,
+        ))
+    }
+
+    pub fn new_with_storage(
+        net: ChainNetwork,
+        storage: Arc<Storage>,
+        chain_info: ChainInfo,
+        miner: AccountInfo,
+        delay_milliseconds: u64,
+        random_error_percent: u32,
+        dag: BlockDAG,
+    ) -> Result<Self> {
+        let chain = MockChain::new_with_storage(net, storage, chain_info.head().id(), miner, dag)?;
         let peer_id = PeerId::random();
         let peer_info = PeerInfo::new(
             peer_id.clone(),
@@ -166,8 +327,9 @@ impl SyncNodeMocker {
         net: ChainNetwork,
         error_strategy: ErrorStrategy,
         random_error_percent: u32,
+        fork_number: BlockNumber,
     ) -> Result<Self> {
-        let chain = MockChain::new(net)?;
+        let chain = MockChain::new_with_fork(net, fork_number)?;
         let peer_id = PeerId::random();
         let peer_info = PeerInfo::new(peer_id.clone(), chain.chain_info(), vec![], vec![], None);
         let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default(), None);
@@ -250,9 +412,36 @@ impl SyncNodeMocker {
         self.chain_mocker.head()
     }
 
+    pub fn get_storage(&self) -> Arc<Storage> {
+        self.chain_mocker.get_storage()
+    }
+
     pub fn produce_block(&mut self, times: u64) -> Result<()> {
         self.chain_mocker.produce_and_apply_times(times)
     }
+
+    // #[warn(dead_code)]
+    // pub fn produce_block_by_header(
+    //     &mut self,
+    //     parent_header: BlockHeader,
+    //     times: u64,
+    // ) -> Result<Block> {
+    //     let mut next_header = parent_header;
+    //     for _ in 0..times {
+    //         let next_block = self.chain_mocker.produce_block_by_header(next_header)?;
+    //         next_header = next_block.header().clone();
+    //     }
+    //     Ok(self
+    //         .chain_mocker
+    //         .get_storage()
+    //         .get_block_by_hash(next_header.id())?
+    //         .expect("failed to get block by hash"))
+    // }
+
+    // pub fn produce_block_and_create_dag(&mut self, times: u64) -> Result<()> {
+    //     self.chain_mocker.produce_and_apply_times(times)?;
+    //     Ok(())
+    // }
 
     pub fn select_head(&mut self, block: Block) -> Result<()> {
         self.chain_mocker.select_head(block)
@@ -278,6 +467,10 @@ impl SyncNodeMocker {
             .select_peer()
             .ok_or_else(|| format_err!("No peers for send request."))
     }
+
+    // pub fn get_dag_fork_number(&self) -> Result<Option<BlockNumber>> {
+    //     self.chain_mocker.get_dag_fork_number()
+    // }
 }
 
 impl PeerOperator for SyncNodeMocker {
@@ -313,7 +506,7 @@ impl BlockFetcher for SyncNodeMocker {
             .into_iter()
             .map(|block_id| {
                 if let Some(block) = self.chain().get_block(block_id)? {
-                    Ok((block, None))
+                    Ok((block, Some(PeerId::random())))
                 } else {
                     Err(format_err!("Can not find block by id: {}", block_id))
                 }
@@ -323,6 +516,35 @@ impl BlockFetcher for SyncNodeMocker {
             let _ = self.select_a_peer()?;
             self.err_mocker.random_err().await?;
             result
+        }
+        .boxed()
+    }
+
+    fn fetch_block_headers(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<(HashValue, Option<starcoin_types::block::BlockHeader>)>>> {
+        async move {
+            let blocks = self.fetch_blocks(block_ids).await?;
+            blocks
+                .into_iter()
+                .map(|(block, _)| Ok((block.id(), Some(block.header().clone()))))
+                .collect()
+        }
+        .boxed()
+    }
+
+    fn fetch_dag_block_children(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<HashValue>>> {
+        async move {
+            let blocks = self.fetch_blocks(block_ids).await?;
+            let mut result = vec![];
+            for block in blocks {
+                result.extend(self.chain().dag().get_children(block.0.id())?);
+            }
+            Ok(result)
         }
         .boxed()
     }
@@ -339,8 +561,8 @@ impl BlockInfoFetcher for SyncNodeMocker {
             result.push(self.chain().get_block_info(Some(hash)).unwrap());
         });
         async move {
-            let _ = self.select_a_peer()?;
-            self.err_mocker.random_err().await?;
+            // let _ = self.select_a_peer()?;
+            // self.err_mocker.random_err().await?;
             Ok(result)
         }
         .boxed()

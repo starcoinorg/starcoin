@@ -1,7 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{Ok, Result};
+use rand::{thread_rng, Rng};
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
@@ -13,14 +14,17 @@ use starcoin_consensus::Consensus;
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
 use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::account_address;
-use starcoin_types::block::{Block, BlockHeader};
+use starcoin_types::block::{Block, BlockHeader, TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG};
 use starcoin_types::filter::Filter;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::TypeTag;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::language_storage::StructTag;
+use starcoin_vm_types::on_chain_config::FlexiDagConfig;
+use starcoin_vm_types::state_view::StateReaderExt;
 use std::str::FromStr;
 use std::sync::Arc;
+use test_helper::gen_blockchain_for_dag_test;
 
 #[stest::test(timeout = 120)]
 fn test_chain_filter_events() {
@@ -31,7 +35,7 @@ fn test_chain_filter_events() {
     let event_type_tag = TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
         module: Identifier::from_str("Block").unwrap(),
-        name: Identifier::from_str("NewBlockEvent").unwrap(),
+        name: Identifier::from_str("NewBlockEventV2").unwrap(),
         type_params: vec![],
     }));
 
@@ -140,10 +144,26 @@ fn test_block_chain() -> Result<()> {
     Ok(())
 }
 
+#[stest::test]
+fn test_block_chain_dag() -> Result<()> {
+    let mut mock_chain =
+        MockChain::new_with_fork(ChainNetwork::new_test(), TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)?;
+    (0..10).into_iter().try_for_each(|index| {
+        let block = mock_chain.produce()?;
+        assert_eq!(block.header().number(), index + 1);
+        mock_chain.apply(block)?;
+        assert_eq!(mock_chain.head().current_header().number(), index + 1);
+        Ok(())
+    })
+}
+
 #[stest::test(timeout = 480)]
 fn test_halley_consensus() {
-    let mut mock_chain =
-        MockChain::new(ChainNetwork::new_builtin(BuiltinNetworkID::Halley)).unwrap();
+    let mut mock_chain = MockChain::new_with_fork(
+        ChainNetwork::new_builtin(BuiltinNetworkID::Halley),
+        TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG,
+    )
+        .unwrap();
     let times = 20;
     mock_chain.produce_and_apply_times(times).unwrap();
     assert_eq!(mock_chain.head().current_header().number(), times);
@@ -151,7 +171,11 @@ fn test_halley_consensus() {
 
 #[stest::test(timeout = 240)]
 fn test_dev_consensus() {
-    let mut mock_chain = MockChain::new(ChainNetwork::new_builtin(BuiltinNetworkID::Dev)).unwrap();
+    let mut mock_chain = MockChain::new_with_fork(
+        ChainNetwork::new_builtin(BuiltinNetworkID::Dev),
+        TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG,
+    )
+        .unwrap();
     let times = 20;
     mock_chain.produce_and_apply_times(times).unwrap();
     assert_eq!(mock_chain.head().current_header().number(), times);
@@ -171,14 +195,27 @@ fn test_find_ancestor_genesis() -> Result<()> {
 }
 
 #[stest::test]
+fn test_find_ancestor_genesis_dag() -> Result<()> {
+    let mut mock_chain =
+        MockChain::new_with_fork(ChainNetwork::new_test(), TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)?;
+    mock_chain.produce_and_apply_times(10)?;
+
+    let mut mock_chain2 = MockChain::new(ChainNetwork::new_test())?;
+    mock_chain2.produce_and_apply_times(20)?;
+    let ancestor = mock_chain.head().find_ancestor(mock_chain2.head())?;
+    assert!(ancestor.is_some());
+    assert_eq!(ancestor.unwrap().number, 0);
+    Ok(())
+}
+
+#[stest::test]
 fn test_find_ancestor_fork() -> Result<()> {
     let mut mock_chain = MockChain::new(ChainNetwork::new_test())?;
     mock_chain.produce_and_apply_times(3)?;
     let header = mock_chain.head().current_header();
     let mut mock_chain2 = mock_chain.fork(None)?;
     mock_chain.produce_and_apply_times(2)?;
-    mock_chain2.produce_and_apply_times(3)?;
-
+    mock_chain2.produce_and_apply_times(6)?;
     let ancestor = mock_chain.head().find_ancestor(mock_chain2.head())?;
     assert!(ancestor.is_some());
     assert_eq!(ancestor.unwrap().id, header.id());
@@ -206,8 +243,9 @@ fn gen_uncle() -> (MockChain, BlockChain, BlockHeader) {
 
 fn product_a_block(branch: &BlockChain, miner: &AccountInfo, uncles: Vec<BlockHeader>) -> Block {
     let (block_template, _) = branch
-        .create_block_template(*miner.address(), None, Vec::new(), uncles, None)
+        .create_block_template(*miner.address(), None, Vec::new(), uncles, None, None)
         .unwrap();
+
     branch
         .consensus()
         .create_block(block_template, branch.time_service().as_ref())
@@ -368,6 +406,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![],
         vec![],
         None,
+        None,
     )?;
 
     let block_b1 = block_chain
@@ -398,6 +437,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![signed_txn_t2.clone()],
         vec![],
         None,
+        None,
     )?;
     assert!(excluded.discarded_txns.is_empty(), "txn is discarded.");
     let block_b2 = block_chain
@@ -410,6 +450,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         Some(block_b1.id()),
         vec![signed_txn_t2],
         vec![],
+        None,
         None,
     )?;
     assert!(excluded.discarded_txns.is_empty(), "txn is discarded.");
@@ -511,6 +552,25 @@ fn test_get_blocks_by_number() -> Result<()> {
 
     let blocks = mock_chain.head().get_blocks_by_number(Some(6), false, 3)?;
     assert_eq!(blocks.len(), 3);
+
+    Ok(())
+}
+
+#[stest::test]
+fn test_gen_dag_chain() -> Result<()> {
+    let fork_number = 11u64;
+    let mut chain = gen_blockchain_for_dag_test(&ChainNetwork::new_test(), fork_number).unwrap();
+
+    let effective_height = chain
+        .chain_state()
+        .get_on_chain_config::<FlexiDagConfig>()?
+        .map(|c| c.effective_height);
+
+    assert_eq!(effective_height, Some(fork_number));
+    assert_eq!(chain.current_header().number(), 9);
+
+    let fork_number = thread_rng().gen_range(0..=9);
+    assert!(gen_blockchain_for_dag_test(&ChainNetwork::new_test(), fork_number).is_err());
 
     Ok(())
 }

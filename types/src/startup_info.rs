@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::{BlockHeader, BlockInfo, BlockNumber};
+use crate::block::{BlockHeader, BlockInfo, BlockNumber, LegacyBlockHeader};
 use anyhow::Result;
 use bcs_ext::{BCSCodec, Sample};
 use schemars::JsonSchema;
@@ -13,6 +13,8 @@ use starcoin_vm_types::genesis_config::ChainId;
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
 use std::fmt::Formatter;
+use std::hash::Hash;
+
 /// The info of a chain.
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct ChainInfo {
@@ -43,15 +45,15 @@ impl ChainInfo {
     }
 
     pub fn update_status(&mut self, status: ChainStatus) {
-        self.status = status
+        self.status = status;
     }
 
     pub fn head(&self) -> &BlockHeader {
-        self.status.head()
+        &self.status.head
     }
 
     pub fn total_difficulty(&self) -> U256 {
-        self.status.total_difficulty()
+        self.status.info.get_total_difficulty()
     }
 
     pub fn into_inner(self) -> (ChainId, HashValue, ChainStatus) {
@@ -94,6 +96,47 @@ pub struct ChainStatus {
     pub head: BlockHeader,
     /// Chain block info
     pub info: BlockInfo,
+}
+#[derive(Deserialize, Serialize)]
+#[serde(rename = "ChainInfo")]
+pub struct OldChainInfo {
+    chain_id: ChainId,
+    genesis_hash: HashValue,
+    status: OldChainStatus,
+}
+
+impl From<OldChainInfo> for ChainInfo {
+    fn from(value: OldChainInfo) -> Self {
+        Self {
+            chain_id: value.chain_id,
+            genesis_hash: value.genesis_hash,
+            status: value.status.into(),
+        }
+    }
+}
+#[derive(Deserialize, Serialize)]
+#[serde(rename = "ChainStatus")]
+pub struct OldChainStatus {
+    pub head: LegacyBlockHeader,
+    pub info: BlockInfo,
+}
+
+impl From<ChainStatus> for OldChainStatus {
+    fn from(value: ChainStatus) -> Self {
+        Self {
+            head: value.head.into(),
+            info: value.info,
+        }
+    }
+}
+
+impl From<OldChainStatus> for ChainStatus {
+    fn from(value: OldChainStatus) -> Self {
+        Self {
+            head: value.head.into(),
+            info: value.info,
+        }
+    }
 }
 
 impl ChainStatus {
@@ -148,6 +191,27 @@ impl Sample for ChainStatus {
             head: BlockHeader::sample(),
             info: BlockInfo::sample(),
         }
+    }
+}
+
+#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
+pub struct DagState {
+    pub tips: Vec<HashValue>,
+}
+
+impl TryFrom<Vec<u8>> for DagState {
+    type Error = anyhow::Error;
+
+    fn try_from(value: Vec<u8>) -> Result<Self> {
+        DagState::decode(value.as_slice())
+    }
+}
+
+impl TryInto<Vec<u8>> for DagState {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<Vec<u8>> {
+        self.encode()
     }
 }
 

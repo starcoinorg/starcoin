@@ -203,7 +203,9 @@ impl BlockRelayer {
         ctx: &mut ServiceContext<BlockRelayer>,
     ) -> Result<()> {
         let network = ctx.get_shared::<NetworkServiceRef>()?;
-        let block_connector_service = ctx.service_ref::<BlockConnectorService>()?.clone();
+        let block_connector_service = ctx
+            .service_ref::<BlockConnectorService<TxPoolService>>()?
+            .clone();
         let txpool = self.txpool.clone();
         let metrics = self.metrics.clone();
         let fut = async move {
@@ -277,7 +279,7 @@ impl EventHandler<Self, NewHeadBlock> for BlockRelayer {
     fn handle_event(&mut self, event: NewHeadBlock, ctx: &mut ServiceContext<BlockRelayer>) {
         debug!(
             "[block-relay] Handle new head block event, block_id: {:?}",
-            event.0.block().id()
+            event.executed_block.block().id()
         );
         let network = match ctx.get_shared::<NetworkServiceRef>() {
             Ok(network) => network,
@@ -286,7 +288,7 @@ impl EventHandler<Self, NewHeadBlock> for BlockRelayer {
                 return;
             }
         };
-        self.broadcast_compact_block(network, event.0);
+        self.broadcast_compact_block(network, event.executed_block);
     }
 }
 

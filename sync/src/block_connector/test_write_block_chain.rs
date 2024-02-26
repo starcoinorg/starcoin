@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 #![allow(clippy::integer_arithmetic)]
+
 use crate::block_connector::WriteBlockChainService;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader};
@@ -13,7 +14,7 @@ use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
 use starcoin_txpool_mock_service::MockTxPoolService;
-use starcoin_types::block::Block;
+use starcoin_types::block::{Block, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH};
 use starcoin_types::startup_info::StartupInfo;
 use std::sync::Arc;
 
@@ -25,8 +26,11 @@ pub async fn create_writeable_block_chain() -> (
     let node_config = NodeConfig::random_for_test();
     let node_config = Arc::new(node_config);
 
-    let (storage, chain_info, _) = StarcoinGenesis::init_storage_for_test(node_config.net())
-        .expect("init storage by genesis fail.");
+    let (storage, chain_info, _, dag) = StarcoinGenesis::init_storage_for_test(
+        node_config.net(),
+        TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH,
+    )
+    .expect("init storage by genesis fail.");
     let registry = RegistryService::launch();
     let bus = registry.service_ref::<BusService>().await.unwrap();
     let txpool_service = MockTxPoolService::new();
@@ -38,6 +42,7 @@ pub async fn create_writeable_block_chain() -> (
             txpool_service,
             bus,
             None,
+            dag,
         )
         .unwrap(),
         node_config,
@@ -75,7 +80,7 @@ pub fn new_block(
     let miner_address = *miner.address();
     let block_chain = writeable_block_chain_service.get_main();
     let (block_template, _) = block_chain
-        .create_block_template(miner_address, None, Vec::new(), vec![], None)
+        .create_block_template(miner_address, None, Vec::new(), vec![], None, None)
         .unwrap();
     block_chain
         .consensus()
@@ -108,6 +113,7 @@ fn gen_fork_block_chain(
     times: u64,
     writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
 ) {
+    let dag = writeable_block_chain_service.get_main().dag();
     let miner_account = AccountInfo::random();
     if let Some(block_header) = writeable_block_chain_service
         .get_main()
@@ -122,10 +128,18 @@ fn gen_fork_block_chain(
                 parent_id,
                 writeable_block_chain_service.get_main().get_storage(),
                 None,
+                dag.clone(),
             )
             .unwrap();
             let (block_template, _) = block_chain
-                .create_block_template(*miner_account.address(), None, Vec::new(), vec![], None)
+                .create_block_template(
+                    *miner_account.address(),
+                    None,
+                    Vec::new(),
+                    vec![],
+                    None,
+                    None,
+                )
                 .unwrap();
             let block = block_chain
                 .consensus()
