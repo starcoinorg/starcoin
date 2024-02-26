@@ -4,8 +4,12 @@
 use clap::Parser;
 use starcoin_consensus::{Consensus, G_CRYPTONIGHT};
 use std::path::PathBuf;
+use std::sync::Arc;
 
-use crate::cmd_batch_execution::{BatchCmdExec, CmdBatchExecution};
+use crate::command_progress::{
+    ParallelCommand, ParallelCommandBlockReader, ParallelCommandFilter, ParallelCommandProgress,
+    ParallelCommandReadBodyFromExportLine,
+};
 use starcoin_types::block::Block;
 
 #[derive(Debug, Parser)]
@@ -28,12 +32,22 @@ pub struct VerifyHeaderError {
 pub struct VerifyHeaderCmdType;
 
 pub fn verify_header_via_export_file(path: PathBuf, batch_size: usize) -> anyhow::Result<()> {
-    let batch_cmd = CmdBatchExecution::new(String::from("verify_block_header"), path, batch_size);
-    batch_cmd.progress::<VerifyHeaderCmdType, Block, VerifyHeaderError>()
+    let batch_cmd = ParallelCommandProgress::new(
+        String::from("verify_block_header"),
+        batch_size,
+        Arc::new(ParallelCommandReadBodyFromExportLine::new(path)?),
+        None,
+        None,
+    );
+    batch_cmd.progress::<VerifyHeaderCmdType, VerifyHeaderError>(&VerifyHeaderCmdType {})
 }
 
-impl BatchCmdExec<VerifyHeaderCmdType, Block, VerifyHeaderError> for Block {
-    fn execute(&self) -> (usize, Vec<VerifyHeaderError>) {
+impl ParallelCommand<VerifyHeaderCmdType, VerifyHeaderError> for Block {
+    fn execute(
+        &self,
+        _reader: &dyn ParallelCommandBlockReader,
+        _cmd: &VerifyHeaderCmdType,
+    ) -> (usize, Vec<VerifyHeaderError>) {
         let ret = G_CRYPTONIGHT.verify_header_difficulty(self.header.difficulty(), &self.header);
         match ret {
             Ok(_) => (1, vec![]),
@@ -47,5 +61,9 @@ impl BatchCmdExec<VerifyHeaderCmdType, Block, VerifyHeaderError> for Block {
                 )
             }
         }
+    }
+
+    fn matched(&self, _filter: &Option<ParallelCommandFilter>) -> bool {
+        true
     }
 }

@@ -32,9 +32,11 @@ starcoin-transaction-builder = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
+starcoin-abi-decoder = { workspace = true }
 futures = { workspace = true }
 rayon = { workspace = true }
 num_cpus = { workspace = true }
+chrono = { workspace =  true }
 
 [package]
 authors = { workspace = true }
