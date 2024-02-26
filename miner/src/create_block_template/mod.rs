@@ -293,9 +293,10 @@ where
     fn uncles_prune(&mut self) {
         if !self.uncles.is_empty() {
             let epoch = self.chain.epoch();
-            // epoch的end_number是开区间，当前块已经生成但还没有apply，所以应该在epoch（最终状态）
-            // 的倒数第二块处理时清理uncles
             if epoch.end_block_number() == (self.chain.current_header().number() + 2) {
+                // 1. The last block of current epoch is `end_block_number`-1,
+                // 2. If current block number is `end_block_number`-2, then last block has been mined but un-applied to db,
+                // 3. So current uncles should be cleared now.
                 self.uncles.clear();
             }
         }
