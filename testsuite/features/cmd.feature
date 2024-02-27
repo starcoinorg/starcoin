@@ -231,10 +231,13 @@ Feature: cmd integration test
     Then assert: "{{$.dev[-1].ok[0]}} == 6"
     # 9. execute proposal with proposer account
     Then cmd: "account execute-function -s {{$.account[0].ok.address}} --function 0x1::OnChainConfigScripts::execute_on_chain_config_proposal -t 0x1::FlexiDagConfig::FlexiDagConfig --arg 0 -b"
-    # clean up proposal
-    # Then cmd: "account show"
-    # Then cmd: "account execute-function --function 0x1::Dao::destroy_terminated_proposal -t 0x1::STC::STC -t 0x1::OnChainConfigDao::OnChainConfigUpdate<0x1::FlexiDagConfig::FlexiDagConfig> --arg {{$.account[0].ok.address}} --arg 0u64"
-    # 10. check latest flexidagconfig
+    # 10. make sure the proposal is EXTRACTED
+    Then cmd: "dev gen-block"
+    Then cmd: "dev call --function 0x1::Dao::proposal_state -t 0x1::STC::STC -t 0x1::OnChainConfigDao::OnChainConfigUpdate<0x1::FlexiDagConfig::FlexiDagConfig> --arg {{$.account[0].ok.address}} --arg 0"
+    Then assert: "{{$.dev[-1].ok[0]}} == 7"
+    # 11. clean up proposal
+    Then cmd: "account execute-function --function 0x1::Dao::destroy_terminated_proposal -t 0x1::STC::STC -t 0x1::OnChainConfigDao::OnChainConfigUpdate<0x1::FlexiDagConfig::FlexiDagConfig> --arg {{$.account[0].ok.address}} --arg 0u64"
+    # 12. check the latest flexidagconfig
     Then cmd: "state get resource 0x1 0x1::Config::Config<0x01::FlexiDagConfig::FlexiDagConfig>"
     Then assert: "{{$.state[0].ok.json.payload.effective_height}} == 10000"
 
