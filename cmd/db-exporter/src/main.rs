@@ -235,7 +235,6 @@ enum Cmd {
     VerifyHeader(VerifyHeaderOptions),
     GenTurboSTMTransactions(GenTurboSTMTransactionsOptions),
     ApplyTurboSTMBlock(ApplyTurboSTMBlockOptions),
-    DecodePayload(DecodePayloadCommandOptions),
     VerifyBlock(VerifyBlockOptions),
     BlockOutput(BlockOutputOptions),
 }
@@ -640,9 +639,6 @@ async fn main() -> anyhow::Result<()> {
             let result =
                 apply_turbo_stm_block(option.to_path, option.turbo_stm_to_path, option.input_path);
             return result;
-        }
-        Cmd::DecodePayload(option) => {
-            return do_decode_payload_command(&option);
         }
         Cmd::VerifyBlock(option) => {
             let verifier = option.verifier.unwrap_or(Verifier::Basic);
