@@ -297,15 +297,14 @@ impl OpenedBlock {
     }
 }
 pub struct AddressFilter;
-static BLACKLIST: [&str; 2] = ["0x5d3729704311db3ac10ee04d08054543","0xda507619aedef9755faf2111cd63d3c5"];
+static BLACKLIST: [&str; 0] = [];
 impl AddressFilter {
-    const ACTIVATION_BLOCK_NUMBER: BlockNumber = 10;
+    const ACTIVATION_BLOCK_NUMBER: BlockNumber = 16801958;
     pub fn is_blacklisted(raw_txn: &SignedUserTransaction, block_number: BlockNumber) -> bool {
-        let blacklist: Vec<AccountAddress> = BLACKLIST
-            .iter()
-            .map(|&s| AccountAddress::from_str(s).expect("account address decode must success"))
-            .collect();
-
-        block_number > Self::ACTIVATION_BLOCK_NUMBER && blacklist.contains(&raw_txn.sender())
+        block_number > Self::ACTIVATION_BLOCK_NUMBER
+            && BLACKLIST
+                .iter()
+                .map(|&s| AccountAddress::from_str(s).expect("account address decode must success"))
+                .any(|x| x == raw_txn.sender())
     }
 }
