@@ -281,12 +281,16 @@ impl BlockChain {
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
         let tips_hash = if current_number <= self.dag_fork_height()? {
+            info!("jacktest: current_number: {:?} is smaller than the fork height:{:?}", current_number, self.dag_fork_height()?);
             None
         } else if tips.is_some() {
+            info!("jacktest: current_number: {:?} is larger than the fork height:{:?}, return tips", current_number, self.dag_fork_height()?);
             tips
         } else {
+            info!("jacktest: current_number: {:?} is larger than the fork height:{:?}, get tips from db", current_number, self.dag_fork_height()?);
             self.current_tips_hash()?
         };
+        info!("jacktest: tips hash: {:?}", tips_hash);
         let strategy = epoch.strategy();
         let difficulty = strategy.calculate_next_difficulty(self)?;
         let (uncles, blue_blocks) = {

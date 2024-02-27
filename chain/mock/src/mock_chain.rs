@@ -29,7 +29,7 @@ impl MockChain {
     }
 
     pub fn new_with_fork(net: ChainNetwork, fork_number: BlockNumber) -> Result<Self> {
-        let (storage, chain_info, _, dag) = Genesis::init_storage_for_test(&net, fork_number)
+        let (storage, chain_info, _, dag) = Genesis::init_storage_for_mock_test(&net, fork_number)
             .expect("init storage by genesis fail.");
 
         let chain = BlockChain::new(

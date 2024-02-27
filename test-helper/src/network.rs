@@ -140,7 +140,7 @@ pub async fn build_network_with_config(
 ) -> Result<TestNetworkService> {
     let registry = RegistryService::launch();
     let (storage, _chain_info, genesis, _) =
-        Genesis::init_storage_for_test(node_config.net(), TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH)?;
+        Genesis::init_storage_for_test(node_config.net())?;
     registry.put_shared(genesis).await?;
     registry.put_shared(node_config.clone()).await?;
     registry.put_shared(storage.clone()).await?;

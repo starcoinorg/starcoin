@@ -18,7 +18,7 @@ use starcoin_vm_types::on_chain_config::FlexiDagConfig;
 
 pub fn gen_blockchain_for_test(net: &ChainNetwork) -> Result<BlockChain> {
     let (storage, chain_info, _, dag) =
-        Genesis::init_storage_for_test(net, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH)
+        Genesis::init_storage_for_test(net)
             .expect("init storage by genesis fail.");
 
     let block_chain = BlockChain::new(
@@ -36,7 +36,7 @@ pub fn gen_blockchain_for_dag_test(
     fork_number: BlockNumber,
 ) -> Result<BlockChain> {
     let (storage, chain_info, _, dag) =
-        Genesis::init_storage_for_test(net, fork_number).expect("init storage by genesis fail.");
+        Genesis::init_storage_for_test(net).expect("init storage by genesis fail.");
 
     let block_chain = BlockChain::new(
         net.time_service(),
