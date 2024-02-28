@@ -245,12 +245,11 @@ Feature: cmd integration test
       |  |  |
 
   #easy gas testing
-  Scenario Outline: [ignore] starcoin easy gas test
+  Scenario Outline: starcoin easy gas test
     Then cmd: "dev get-coin -v 1000000"
     Then cmd: "account show"
     Then cmd: "account unlock"
     # stake to sbt
-    Then cmd: "account execute-function --function 0x1::StakeToSBTPlugin::stake_entry -t 0x1::StarcoinDAO::StarcoinDAO -t 0x1::STC::STC  --arg 1000000000000u128 --arg 60000u64 -b"
     Then cmd: "account execute-function --function 0x1::DummyTokenScripts::mint --arg 9000u128 -b"
     Then cmd: "dev call-api chain.info"
     # check point and update state root
@@ -259,35 +258,11 @@ Feature: cmd integration test
     Then cmd: "account execute-function --function 0x1::Block::update_state_root_entry --arg {{$.dev[2].ok.raw.header}} -b"
     Then cmd: "dev call --function 0x1::Block::latest_state_root"
     Then assert: "{{$.dev[3].ok[1]}} == {{$.dev[2].ok.header.state_root}}"
-    # create gas oracle proposal
-    Then cmd: "account execute-function --function 0x1::GasOracleProposalPlugin::create_oracle_add_proposal -t 0x1::StarcoinDAO::StarcoinDAO -t 0x1::DummyToken::DummyToken  --arg b"title" --arg b"intro" --arg b"desc" --arg 0 --arg {{$.account[0].ok.account.address}} -b"
-    Then cmd: "dev sleep -t 60000"
-    # make 0x1::Timestamp::now_seconds updated directly
-    Then cmd: "dev gen-block"
-    Then cmd: "dev call --function 0x1::DAOSpace::proposal_state -t 0x1::StarcoinDAO::StarcoinDAO --arg 1u64"
-    Then assert: "{{$.dev[6].ok[0]}} == 2"
-    # cast vote
-    # result of this call can't use
-    Then cmd: "dev call --function 0x1::SnapshotUtil::get_access_path -t 0x1::StarcoinDAO::StarcoinDAO  --arg {{$.account[0].ok.account.address}}"
-    Then cmd: "dev call-api state.get_with_proof_by_root_raw [\"{{$.account[0].ok.account.address}}/1/0x00000000000000000000000000000001::IdentifierNFT::IdentifierNFT<0x00000000000000000000000000000001::DAOSpace::DAOMember<0x00000000000000000000000000000001::StarcoinDAO::StarcoinDAO>,0x00000000000000000000000000000001::DAOSpace::DAOMemberBody<0x00000000000000000000000000000001::StarcoinDAO::StarcoinDAO>>\",\"{{$.dev[2].ok.header.state_root}}\"]"
-    Then cmd: "account execute-function --function 0x1::DAOSpace::cast_vote_entry -t 0x1::StarcoinDAO::StarcoinDAO --arg 1u64 --arg {{$.dev[8].ok}} --arg 1u8 -b"
-    Then cmd: "dev sleep -t 3600000"
-    Then cmd: "dev gen-block"
-    Then cmd: "dev call --function 0x1::DAOSpace::proposal_state -t 0x1::StarcoinDAO::StarcoinDAO --arg 1u64"
-    Then assert: "{{$.dev[11].ok[0]}} == 5"
-    # queue proposal
-    Then cmd: "account execute-function --function 0x1::DAOSpace::queue_proposal_action_entry -t 0x1::StarcoinDAO::StarcoinDAO --arg 1 -b"
-    Then cmd: "dev sleep -t 3600000"
-    Then cmd: "dev gen-block"
-    Then cmd: "dev call --function 0x1::DAOSpace::proposal_state -t 0x1::StarcoinDAO::StarcoinDAO --arg 1u64"
-    Then assert: "{{$.dev[14].ok[0]}} == 7"
-    # execute proposal
-    Then cmd: "account execute-function --function 0x1::GasOracleProposalPlugin::execute_oracle_add_proposal -t 0x1::StarcoinDAO::StarcoinDAO -t 0x1::DummyToken::DummyToken  --arg 1 -b"
     # register oracle
-    Then cmd: "account execute-function --function 0x1::PriceOracleScripts::register_oracle -t 0x1::GasOracle::STCToken<0x1::DummyToken::DummyToken> --arg 15u8 -b"
-    Then cmd: "account execute-function --function 0x1::PriceOracleScripts::init_data_source -t 0x1::GasOracle::STCToken<0x1::DummyToken::DummyToken> --arg 43793u128 -b"
-    Then cmd: "account execute-function --function 0x1::PriceOracleScripts::update -t 0x1::GasOracle::STCToken<0x1::DummyToken::DummyToken> --arg 43794u128 -b"
-    Then cmd: "dev call --function 0x1::GasOracleProposalPlugin::gas_oracle_read -t 0x1::StarcoinDAO::StarcoinDAO -t 0x1::DummyToken::DummyToken"
+    Then cmd: "account execute-function --function 0x1::EasyGas::register_oracle -t 0x1::DummyToken::DummyToken --arg 15u8 -b"
+    Then cmd: "account execute-function --function 0x1::EasyGas::init_data_source -t 0x1::DummyToken::DummyToken --arg 43793u128 -b"
+    Then cmd: "account execute-function --function 0x1::EasyGas::update -t 0x1::DummyToken::DummyToken --arg 43794u128 -b"
+    Then cmd: "dev call --function 0x1::EasyGas::gas_oracle_read -t 0x1::DummyToken::DummyToken"
     Then assert: "{{$.dev[15].ok[0]}} == 43794"
     # transfer stc to 0x1
     Then cmd: "account transfer --blocking -r 0x1 -v 10000000000"
