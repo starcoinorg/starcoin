@@ -481,20 +481,29 @@ where
             while !dag_ancestors.is_empty() {
                 for ancestor_block_header_id in &dag_ancestors {
                     if self.chain.has_dag_block(*ancestor_block_header_id)? {
-                        let block_info = self.local_store.get_block_info(*ancestor_block_header_id)?.expect(&format!("failed to get the block info but the block was executed: {:?}", *ancestor_block_header_id));
+                        let block_info = self
+                            .local_store
+                            .get_block_info(*ancestor_block_header_id)?
+                            .unwrap_or_else(|| {
+                                panic!(
+                                    "failed to get the block info but the block was executed: {:?}",
+                                    *ancestor_block_header_id
+                                )
+                            });
                         let block = self
                             .local_store
                             .get_block_by_hash(*ancestor_block_header_id)?
                             .expect("failed to get block by hash");
                         info!(
-                            "connect a dag block: {:?}, number: {:?}",
+                            "connect a block: {:?}, number: {:?}, is_dag {}",
                             block.id(),
-                            block.header().number()
+                            block.header().number(),
+                            block.is_dag()
                         );
                         let executed_block =
                             self.chain.connect(ExecutedBlock { block, block_info })?;
                         info!(
-                            "succeed to connect a dag block: {:?}, number: {:?}",
+                            "succeed to connect a block: {:?}, number: {:?}",
                             executed_block.block.id(),
                             executed_block.block.header().number()
                         );
@@ -504,8 +513,7 @@ where
                             BlockConnectAction::ConnectExecutedBlock,
                             self.check_enough_by_info(executed_block.block_info)?,
                         )?;
-                    }
-                    else {
+                    } else {
                         for (block, _peer_id) in self
                             .fetcher
                             .fetch_blocks(vec![*ancestor_block_header_id])
@@ -514,7 +522,11 @@ where
                             if self.chain.has_dag_block(block.id())? {
                                 continue;
                             }
-                            info!("now apply for sync after fetching a dag block: {:?}, number: {:?}", block.id(), block.header().number());
+                            info!(
+                                "now apply for sync after fetching a dag block: {:?}, number: {:?}",
+                                block.id(),
+                                block.header().number()
+                            );
                             let executed_block = self.chain.apply(block)?;
                             info!(
                                 "succeed to apply a dag block: {:?}, number: {:?}",
@@ -661,8 +673,9 @@ where
         let timestamp = block.header().timestamp();
         let (block_info, action) = match block_info {
             Some(block_info) => {
-                //If block_info exists, it means that this block was already executed and try connect in the previous sync, but the sync task was interrupted.
-                //So, we just need to update chain and continue
+                //If block_info exists, it means that this block was already executed and try to connect in the previous sync, but the sync task was interrupted.
+                //So, we need make sure the dag genesis is initialized properly, then update chain and continue
+                self.chain.init_dag_with_genesis(block.header().clone())?;
                 self.chain.connect(ExecutedBlock {
                     block: block.clone(),
                     block_info: block_info.clone(),

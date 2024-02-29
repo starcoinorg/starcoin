@@ -766,6 +766,17 @@ impl BlockChain {
     pub fn get_block_accumulator(&self) -> &MerkleAccumulator {
         &self.block_accumulator
     }
+
+    pub fn init_dag_with_genesis(&self, genesis: BlockHeader) -> Result<()> {
+        if genesis.is_dag_genesis() {
+            let dag_genesis_id = genesis.id();
+            self.dag.init_with_genesis(genesis)?;
+            self.storage.save_dag_state(DagState {
+                tips: vec![dag_genesis_id],
+            })?;
+        }
+        Ok(())
+    }
 }
 
 impl ChainReader for BlockChain {
@@ -1013,13 +1024,7 @@ impl ChainReader for BlockChain {
                 verified_block.0,
                 self.vm_metrics.clone(),
             )?;
-            if header.is_dag_genesis() {
-                let dag_genesis_id = header.id();
-                self.dag.init_with_genesis(header)?;
-                self.storage.save_dag_state(DagState {
-                    tips: vec![dag_genesis_id],
-                })?;
-            }
+            self.init_dag_with_genesis(header)?;
             Ok(executed)
         } else {
             self.execute_dag_block(verified_block)
@@ -1241,7 +1246,6 @@ impl BlockChain {
         let mut tips = self
             .current_tips_hash()?
             .expect("tips should exists in dag");
-        info!("jacktest: when connecting to a dag block, the current tips are {:?}", tips);
         let parents = executed_block
             .block
             .header
@@ -1255,12 +1259,10 @@ impl BlockChain {
         }
         // Caculate the ghostdata of the virutal node created by all tips.
         // And the ghostdata.selected of the tips will be the latest head.
-        
-        info!("jacktest: when connecting to a dag block, now the tips in ghost are {:?}", tips);
         let block_hash = {
             let ghost_of_tips = dag.ghostdata(tips.as_slice())?;
             ghost_of_tips.selected_parent
-        }; 
+        };
         debug!(
             "connect dag info block hash: {},tips: {:?}",
             block_hash, tips
