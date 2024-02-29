@@ -1241,6 +1241,7 @@ impl BlockChain {
         let mut tips = self
             .current_tips_hash()?
             .expect("tips should exists in dag");
+        info!("jacktest: when connecting to a dag block, the current tips are {:?}", tips);
         let parents = executed_block
             .block
             .header
@@ -1254,10 +1255,12 @@ impl BlockChain {
         }
         // Caculate the ghostdata of the virutal node created by all tips.
         // And the ghostdata.selected of the tips will be the latest head.
+        
+        info!("jacktest: when connecting to a dag block, now the tips in ghost are {:?}", tips);
         let block_hash = {
             let ghost_of_tips = dag.ghostdata(tips.as_slice())?;
             ghost_of_tips.selected_parent
-        };
+        }; 
         debug!(
             "connect dag info block hash: {},tips: {:?}",
             block_hash, tips

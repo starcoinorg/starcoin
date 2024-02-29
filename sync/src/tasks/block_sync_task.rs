@@ -480,54 +480,53 @@ where
 
             while !dag_ancestors.is_empty() {
                 for ancestor_block_header_id in &dag_ancestors {
-                    match self.local_store.get_block_info(*ancestor_block_header_id)? {
-                        Some(block_info) => {
-                            let block = self
-                                .local_store
-                                .get_block_by_hash(*ancestor_block_header_id)?
-                                .expect("failed to get block by hash");
+                    if self.chain.has_dag_block(*ancestor_block_header_id)? {
+                        let block_info = self.local_store.get_block_info(*ancestor_block_header_id)?.expect(&format!("failed to get the block info but the block was executed: {:?}", *ancestor_block_header_id));
+                        let block = self
+                            .local_store
+                            .get_block_by_hash(*ancestor_block_header_id)?
+                            .expect("failed to get block by hash");
+                        info!(
+                            "connect a dag block: {:?}, number: {:?}",
+                            block.id(),
+                            block.header().number()
+                        );
+                        let executed_block =
+                            self.chain.connect(ExecutedBlock { block, block_info })?;
+                        info!(
+                            "succeed to connect a dag block: {:?}, number: {:?}",
+                            executed_block.block.id(),
+                            executed_block.block.header().number()
+                        );
+                        self.notify_connected_block(
+                            executed_block.block,
+                            executed_block.block_info.clone(),
+                            BlockConnectAction::ConnectExecutedBlock,
+                            self.check_enough_by_info(executed_block.block_info)?,
+                        )?;
+                    }
+                    else {
+                        for (block, _peer_id) in self
+                            .fetcher
+                            .fetch_blocks(vec![*ancestor_block_header_id])
+                            .await?
+                        {
+                            if self.chain.has_dag_block(block.id())? {
+                                continue;
+                            }
+                            info!("now apply for sync after fetching a dag block: {:?}, number: {:?}", block.id(), block.header().number());
+                            let executed_block = self.chain.apply(block)?;
                             info!(
-                                "connect a dag block: {:?}, number: {:?}",
-                                block.id(),
-                                block.header().number()
-                            );
-                            let executed_block =
-                                self.chain.connect(ExecutedBlock { block, block_info })?;
-                            info!(
-                                "succeed to connect a dag block: {:?}, number: {:?}",
+                                "succeed to apply a dag block: {:?}, number: {:?}",
                                 executed_block.block.id(),
                                 executed_block.block.header().number()
                             );
                             self.notify_connected_block(
                                 executed_block.block,
                                 executed_block.block_info.clone(),
-                                BlockConnectAction::ConnectExecutedBlock,
+                                BlockConnectAction::ConnectNewBlock,
                                 self.check_enough_by_info(executed_block.block_info)?,
                             )?;
-                        }
-                        None => {
-                            for (block, _peer_id) in self
-                                .fetcher
-                                .fetch_blocks(vec![*ancestor_block_header_id])
-                                .await?
-                            {
-                                if self.chain.has_dag_block(block.id())? {
-                                    continue;
-                                }
-                                info!("now apply for sync after fetching a dag block: {:?}, number: {:?}", block.id(), block.header().number());
-                                let executed_block = self.chain.apply(block)?;
-                                info!(
-                                    "succeed to apply a dag block: {:?}, number: {:?}",
-                                    executed_block.block.id(),
-                                    executed_block.block.header().number()
-                                );
-                                self.notify_connected_block(
-                                    executed_block.block,
-                                    executed_block.block_info.clone(),
-                                    BlockConnectAction::ConnectNewBlock,
-                                    self.check_enough_by_info(executed_block.block_info)?,
-                                )?;
-                            }
                         }
                     }
                 }
