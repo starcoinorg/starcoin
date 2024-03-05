@@ -238,6 +238,7 @@ enum Cmd {
     VerifyBlock(VerifyBlockOptions),
     BlockOutput(BlockOutputOptions),
     ApplyBlockOutput(ApplyBlockOutputOptions),
+    SaveStartupInfo(SaveStartupInfoOptions),
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -492,6 +493,20 @@ pub struct ApplyBlockOutputOptions {
     pub input_path: PathBuf,
 }
 
+#[derive(Debug, Parser)]
+#[clap(name = "save_startup_info", about = "save startup info")]
+pub struct SaveStartupInfoOptions {
+    #[clap(long, short = 'n')]
+    /// Chain Network
+    pub net: BuiltinNetworkID,
+    #[clap(long, short = 'o', parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/main
+    pub to_path: PathBuf,
+    /// startupinfo BlockNumber back off size
+    #[clap(long, short = 'b')]
+    pub hash_value: HashValue,
+}
+
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     let opt = Opt::parse();
@@ -672,6 +687,10 @@ async fn main() -> anyhow::Result<()> {
         }
         Cmd::ApplyBlockOutput(option) => {
             let result = apply_block_output(option.to_path, option.input_path, option.net);
+            return result;
+        }
+        Cmd::SaveStartupInfo(option) => {
+            let result = save_startup_info(option.to_path, option.net, option.hash_value);
             return result;
         }
     }
@@ -2342,5 +2361,23 @@ pub fn apply_block_output(
         bar.inc(1);
     }
     bar.finish();
+    Ok(())
+}
+
+fn save_startup_info(
+    to_dir: PathBuf,
+    network: BuiltinNetworkID,
+    hash_value: HashValue,
+) -> anyhow::Result<()> {
+    ::starcoin_logger::init();
+    let net = ChainNetwork::new_builtin(network);
+    let db_storage = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_storage,
+    ))?);
+    let (_chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
+    let startup_info = StartupInfo::new(hash_value);
+    storage.save_startup_info(startup_info)?;
     Ok(())
 }
