@@ -166,6 +166,7 @@ mod tests {
     use super::*;
     use crate::consensusdb::prelude::FlexiDagStorageConfig;
     use starcoin_config::RocksdbConfig;
+    use starcoin_logger::prelude::{debug, info};
     use starcoin_types::block::{BlockHeader, BlockHeaderBuilder};
     use std::{env, fs};
 
@@ -302,5 +303,74 @@ mod tests {
         let mut child = dag.get_children(block1.id()).unwrap();
         assert_eq!(child.pop().unwrap(), block3.id());
         assert_eq!(child.len(), 0);
+    }
+
+    #[cfg(test)]
+    fn test_dag_genesis_fork() {
+        // initialzie the dag firstly
+        let dag = build_block_dag(3);
+
+        let genesis = BlockHeader::dag_genesis_random()
+            .as_builder()
+            .with_difficulty(0.into())
+            .build();
+        dag.init_with_genesis(genesis.clone()).unwrap();
+
+        // normally add the dag blocks
+        let mut parents_hash = vec![genesis.id()];
+        for _ in 0..10 {
+            let header_builder = BlockHeaderBuilder::random();
+            let header = header_builder
+                .with_parents_hash(Some(parents_hash.clone()))
+                .build();
+            parents_hash = vec![header.id()];
+            dag.commit(header.to_owned()).unwrap();
+            let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
+            println!("add a header: {:?}, tips: {:?}", header, ghostdata);
+        }
+
+        // fork, produce a new dag gensis
+        let new_genesis = BlockHeader::dag_genesis_random()
+            .as_builder()
+            .with_difficulty(0.into())
+            .build();
+        dag.init_with_genesis(new_genesis.clone()).unwrap();
+
+        // record the old dag chain
+        let mut old_parents_hash = parents_hash.clone();
+        // the new dag chain
+        parents_hash = vec![new_genesis.id()];
+
+        // add dag blocks in the old dag chain
+        for _ in 0..10 {
+            let header_builder = BlockHeaderBuilder::random();
+            let header = header_builder
+                .with_parents_hash(Some(old_parents_hash.clone()))
+                .build();
+            old_parents_hash = vec![header.id()];
+            dag.commit(header.to_owned()).unwrap();
+            let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
+            println!("add a old header: {:?}, tips: {:?}", header, ghostdata);
+        }
+
+        // add dag blocks in the new dag chain
+        for _ in 0..10 {
+            let header_builder = BlockHeaderBuilder::random();
+            let header = header_builder
+                .with_parents_hash(Some(parents_hash.clone()))
+                .build();
+            parents_hash = vec![header.id()];
+            dag.commit(header.to_owned()).unwrap();
+            let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
+            println!("add a forked header: {:?}, tips: {:?}", header, ghostdata);
+        }
+
+        let header_builder = BlockHeaderBuilder::random();
+        parents_hash.append(&mut old_parents_hash);
+        let header = header_builder.with_parents_hash(Some(parents_hash)).build();
+        parents_hash = vec![header.id()];
+        dag.commit(header.to_owned()).unwrap();
+        let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
+        println!("add a forked header: {:?}, tips: {:?}", header, ghostdata);
     }
 }

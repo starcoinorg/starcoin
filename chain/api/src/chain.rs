@@ -102,7 +102,7 @@ pub trait ChainReader {
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     fn current_tips_hash(&self) -> Result<Option<Vec<HashValue>>>;
-    fn has_dag_block(&self, hash: HashValue) -> Result<bool>;
+    fn has_dag_block(&self, header_id: HashValue) -> Result<bool>;
 }
 
 pub trait ChainWriter {

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::verifier::{BlockVerifier, DagVerifier, FullVerifier};
-use anyhow::{bail, ensure, format_err, Ok, Result};
+use anyhow::{anyhow, bail, ensure, format_err, Ok, Result};
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
 use starcoin_accumulator::{
@@ -42,6 +42,7 @@ use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::Epoch;
 use std::cmp::min;
+use std::collections::HashSet;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::{collections::HashMap, sync::Arc};
@@ -400,7 +401,35 @@ impl BlockChain {
         self.connect(ExecutedBlock { block, block_info })
     }
 
+    fn check_parents_coherent(&self, header: &BlockHeader) -> Result<()> {
+        if !header.is_dag() {
+            bail!("Block is not a dag block.");
+        }
+
+        let results = header.parents_hash().ok_or(anyhow!("dag block has no parents."))?.into_iter().map(|parent_hash| {
+            let block_info = self.storage.get_block_info(parent_hash)?.ok_or(anyhow!("failed to find the block info in the block storage when checking the dag block exists, block hash: {:?}, number: {:?}", header.id(), header.number()))?;
+            let header = self.storage.get_block_header_by_hash(block_info.block_id)?.ok_or(anyhow!("failed to find the block header in the block storage when checking the dag block exists, block hash: {:?}, number: {:?}", header.id(), header.number()))?;
+            let block_accumulator = MerkleAccumulator::new_with_info(
+                block_info.get_block_accumulator_info().clone(),
+                self.storage
+                    .get_accumulator_store(AccumulatorStoreType::Block),
+            );
+            let dag_genesis = block_accumulator
+                .get_leaf(header.dag_fork_height())?
+                .ok_or(anyhow!("failed to get the dag genesis"))?;
+
+            Ok(dag_genesis)
+        }).collect::<Result<HashSet<_>>>()?;
+
+        if results.len() == 1 {
+            Ok(())
+        } else {
+            bail!("dag block: {:?}, number: {:?} has multiple parents whose dags are not the same one! Their dag genesis are: {:?}", header.id(), header.number(), results);
+        }
+    }
+
     fn execute_dag_block(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
+        self.check_parents_coherent(verified_block.0.header())?;
         info!("execute dag block:{:?}", verified_block.0);
         let block = verified_block.0;
         let selected_parent = block.parent_hash();
@@ -1133,8 +1162,38 @@ impl ChainReader for BlockChain {
         Ok(self.storage.get_dag_state()?.map(|state| state.tips))
     }
 
-    fn has_dag_block(&self, hash: HashValue) -> Result<bool> {
-        self.dag.has_dag_block(hash)
+    fn has_dag_block(&self, header_id: HashValue) -> Result<bool> {
+        let header = self
+            .storage
+            .get_block_header_by_hash(header_id)?
+            .ok_or(anyhow!(
+                "failed to get the block header by hash: {:?}",
+                header_id
+            ))?;
+        let block_info = self.storage.get_block_info(header.id())?.ok_or(anyhow!("failed to find the block info in the block storage when checking the dag block exists, block hash: {:?}, number: {:?}", header.id(), header.number()))?;
+        let block_accumulator = MerkleAccumulator::new_with_info(
+            block_info.get_block_accumulator_info().clone(),
+            self.storage
+                .get_accumulator_store(AccumulatorStoreType::Block),
+        );
+        let dag_genesis = block_accumulator
+            .get_leaf(header.dag_fork_height())?
+            .ok_or(anyhow!("failed to get the dag genesis"))?;
+
+        let current_chain_block_accumulator = MerkleAccumulator::new_with_info(
+            self.status.status.info.get_block_accumulator_info().clone(),
+            self.storage
+                .get_accumulator_store(AccumulatorStoreType::Block),
+        );
+        let current_chain_dag_genesis = current_chain_block_accumulator
+            .get_leaf(self.status.status.head.dag_fork_height())?
+            .ok_or(anyhow!("failed to get the dag genesis"))?;
+
+        if current_chain_dag_genesis != dag_genesis {
+            return Ok(false);
+        }
+
+        self.dag.has_dag_block(header.id())
     }
 }
 

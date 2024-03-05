@@ -9582,6 +9582,7 @@ dependencies = [
  "rust-argon2",
  "serde 1.0.152",
  "sha3",
+ "starcoin-accumulator",
  "starcoin-chain-api",
  "starcoin-config",
  "starcoin-crypto",
