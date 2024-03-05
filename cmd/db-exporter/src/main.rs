@@ -237,6 +237,7 @@ enum Cmd {
     ApplyTurboSTMBlock(ApplyTurboSTMBlockOptions),
     VerifyBlock(VerifyBlockOptions),
     BlockOutput(BlockOutputOptions),
+    ApplyBlockOutput(ApplyBlockOutputOptions),
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -477,6 +478,20 @@ pub struct BlockOutputOptions {
     pub num: BlockNumber,
 }
 
+#[derive(Debug, Parser)]
+#[clap(name = "apply-block-output", about = "apply block output")]
+pub struct ApplyBlockOutputOptions {
+    #[clap(long, short = 'n')]
+    /// Chain Network
+    pub net: BuiltinNetworkID,
+    #[clap(long, short = 'o', parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/main
+    pub to_path: PathBuf,
+    #[clap(long, short = 'i', parse(from_os_str))]
+    /// input file, like accounts.csv
+    pub input_path: PathBuf,
+}
+
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     let opt = Opt::parse();
@@ -653,6 +668,10 @@ async fn main() -> anyhow::Result<()> {
         }
         Cmd::BlockOutput(option) => {
             let result = block_output(option.from_path, option.net, option.num);
+            return result;
+        }
+        Cmd::ApplyBlockOutput(option) => {
+            let result = apply_block_output(option.to_path, option.input_path, option.net);
             return result;
         }
     }
@@ -2271,5 +2290,57 @@ pub fn block_output(
     )
     .expect("create block chain should success.");
     chain.verify_without_save::<BasicVerifier>(block)?;
+    Ok(())
+}
+
+pub fn apply_block_output(
+    to_dir: PathBuf,
+    input_path: PathBuf,
+    network: BuiltinNetworkID,
+) -> anyhow::Result<()> {
+    ::starcoin_logger::init();
+    let net = ChainNetwork::new_builtin(network);
+    let db_storage = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_storage,
+    ))?);
+    let (_chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
+    let start_time = SystemTime::now();
+    let file_name = input_path.display().to_string();
+    let reader = BufReader::new(File::open(input_path)?);
+    let mut blocks = vec![];
+    for record in reader.lines() {
+        let record = record?;
+        let block: Block = serde_json::from_str(record.as_str())?;
+        blocks.push(block);
+    }
+    if blocks.is_empty() {
+        println!("file {} has apply", file_name);
+        return Ok(());
+    }
+
+    let use_time = SystemTime::now().duration_since(start_time)?;
+    println!("load blocks from file use time: {:?}", use_time.as_millis());
+    let bar = ProgressBar::new(blocks.len() as u64);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
+    BlockChain::set_output_block();
+    for block in blocks {
+        let block_number = block.header().number();
+        let mut chain = BlockChain::new(
+            net.time_service(),
+            block.header().parent_hash(),
+            storage.clone(),
+            None,
+        )
+        .expect("create block chain should success.");
+        chain.verify_without_save::<BasicVerifier>(block)?;
+        bar.set_message(format!("apply block {}", block_number));
+        bar.inc(1);
+    }
+    bar.finish();
     Ok(())
 }
