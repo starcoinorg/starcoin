@@ -41,6 +41,10 @@ impl BatchCmdExec<VerifyModulesType, Block, VerifyModuleError> for Block {
                             Ok(compiled_module) => {
                                 match move_bytecode_verifier::verify_module(&compiled_module) {
                                     Err(e) => {
+                                        println!(
+                                            "verify module block height {}",
+                                            block.header().number()
+                                        );
                                         errors.push(VerifyModuleError {
                                             block_number: block.header().number(),
                                             transaction_hash: txn.id(),

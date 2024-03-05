@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_types::error::BlockExecutorError;
@@ -10,14 +11,16 @@ use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_vm_types::write_set::WriteSet;
 use std::collections::BTreeMap;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BlockExecutedData {
     pub state_root: HashValue,
     pub txn_infos: Vec<TransactionInfo>,
     pub txn_events: Vec<Vec<ContractEvent>>,
     pub txn_table_infos: BTreeMap<TableHandle, TableInfo>,
+    pub write_sets: Vec<WriteSet>,
 }
 
 impl Default for BlockExecutedData {
@@ -27,6 +30,7 @@ impl Default for BlockExecutedData {
             txn_events: vec![],
             txn_infos: vec![],
             txn_table_infos: BTreeMap::new(),
+            write_sets: vec![],
         }
     }
 }
@@ -57,7 +61,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
             }
             TransactionStatus::Keep(status) => {
                 chain_state
-                    .apply_write_set(write_set)
+                    .apply_write_set(write_set.clone())
                     .map_err(BlockExecutorError::BlockChainStateErr)?;
 
                 let txn_state_root = chain_state
@@ -75,6 +79,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
                 executed_data.txn_events.push(events);
                 // Merge more table_infos, and keep the latest TableInfo for a same TableHandle
                 executed_data.txn_table_infos.append(&mut table_infos);
+                executed_data.write_sets.push(write_set);
             }
             TransactionStatus::Retry => return Err(BlockExecutorError::BlockExecuteRetryErr),
         };
