@@ -9,6 +9,7 @@ mod error;
 mod item;
 pub mod schema;
 mod writer;
+pub mod consenses_state;
 
 pub mod prelude {
     use super::{db, error};

@@ -164,10 +164,10 @@ impl BlockDAG {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::consensusdb::prelude::FlexiDagStorageConfig;
+    use crate::consensusdb::{consenses_state::{DagState, DagStateReader, DagStateStore}, prelude::FlexiDagStorageConfig};
     use starcoin_config::RocksdbConfig;
     use starcoin_logger::prelude::{debug, info};
-    use starcoin_types::block::{BlockHeader, BlockHeaderBuilder};
+    use starcoin_types::{block::{BlockHeader, BlockHeaderBuilder}};
     use std::{env, fs};
 
     fn build_block_dag(k: KType) -> BlockDAG {
@@ -305,7 +305,7 @@ mod tests {
         assert_eq!(child.len(), 0);
     }
 
-    #[cfg(test)]
+    #[test]
     fn test_dag_genesis_fork() {
         // initialzie the dag firstly
         let dag = build_block_dag(3);
@@ -372,5 +372,25 @@ mod tests {
         dag.commit(header.to_owned()).unwrap();
         let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
         println!("add a forked header: {:?}, tips: {:?}", header, ghostdata);
+    }
+
+    #[test]
+    fn test_dag_tips_store() {
+        let dag = BlockDAG::create_for_testing().unwrap();
+
+        let state1 = DagState {
+            tips: vec![Hash::random()],
+        };
+        let dag_gensis1 = Hash::random();
+        dag.storage.state_store.insert(dag_gensis1, state1.clone()).expect("failed to store the dag state");
+
+        let state2 = DagState {
+            tips: vec![Hash::random()],
+        };
+        let dag_gensis2 = Hash::random();
+        dag.storage.state_store.insert(dag_gensis2, state2.clone()).expect("failed to store the dag state");
+
+        assert_eq!(dag.storage.state_store.get_state(dag_gensis1).expect("failed to get the dag state"), state1);
+        assert_eq!(dag.storage.state_store.get_state(dag_gensis2).expect("failed to get the dag state"), state2);
     }
 }

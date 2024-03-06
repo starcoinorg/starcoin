@@ -422,6 +422,7 @@ impl BlockChain {
         }).collect::<Result<HashSet<_>>>()?;
 
         if results.len() == 1 {
+            info!("jacktest: result = 1!");
             Ok(())
         } else {
             bail!("dag block: {:?}, number: {:?} has multiple parents whose dags are not the same one! Their dag genesis are: {:?}", header.id(), header.number(), results);
@@ -1316,6 +1317,7 @@ impl BlockChain {
             }
             tips.push(new_tip_block.id());
         }
+        info!("jacktest: tips: {:?}", tips);
         // Caculate the ghostdata of the virutal node created by all tips.
         // And the ghostdata.selected of the tips will be the latest head.
         let block_hash = {

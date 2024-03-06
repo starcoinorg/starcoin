@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{Ok, Result};
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
@@ -514,6 +514,28 @@ fn test_get_blocks_by_number() -> Result<()> {
 
     let blocks = mock_chain.head().get_blocks_by_number(Some(6), false, 3)?;
     assert_eq!(blocks.len(), 3);
+
+    Ok(())
+}
+
+
+#[stest::test]
+fn test_block_chain_for_dag_fork() -> Result<()> {
+    let mut mock_chain = MockChain::new(ChainNetwork::new_test())?;
+
+    // generate the fork chain
+    mock_chain.produce_and_apply_times(3).unwrap();
+    let fork_id = mock_chain.head().current_header().id();
+
+    // create the dag chain
+    mock_chain.produce_and_apply_times(10).unwrap();
+
+    // create the dag chain at the fork chain
+    let mut fork_block_chain = mock_chain.fork_new_branch(Some(fork_id)).unwrap();
+    for _ in 0..15 {
+        let block = product_a_block(&fork_block_chain, mock_chain.miner(), Vec::new());
+        fork_block_chain.apply(block)?;
+    }
 
     Ok(())
 }

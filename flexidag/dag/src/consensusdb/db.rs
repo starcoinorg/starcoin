@@ -1,10 +1,9 @@
 use super::{
-    error::StoreError,
-    schemadb::{
+    consenses_state::{DbDagStateStore, DAG_STATE_STORE_CF}, error::StoreError, schemadb::{
         DbGhostdagStore, DbHeadersStore, DbReachabilityStore, DbRelationsStore, CHILDREN_CF,
         COMPACT_GHOST_DAG_STORE_CF, COMPACT_HEADER_DATA_STORE_CF, GHOST_DAG_STORE_CF,
         HEADERS_STORE_CF, PARENTS_CF, REACHABILITY_DATA_CF,
-    },
+    }
 };
 use starcoin_config::{RocksdbConfig, StorageConfig};
 pub(crate) use starcoin_storage::db_storage::DBStorage;
@@ -16,6 +15,7 @@ pub struct FlexiDagStorage {
     pub header_store: DbHeadersStore,
     pub reachability_store: DbReachabilityStore,
     pub relations_store: DbRelationsStore,
+    pub state_store: DbDagStateStore,
 }
 
 #[derive(Clone)]
@@ -74,6 +74,7 @@ impl FlexiDagStorage {
                     // consensus ghostdag
                     GHOST_DAG_STORE_CF,
                     COMPACT_GHOST_DAG_STORE_CF,
+                    DAG_STATE_STORE_CF,
                 ],
                 false,
                 config.rocksdb_config,
@@ -87,7 +88,8 @@ impl FlexiDagStorage {
 
             header_store: DbHeadersStore::new(db.clone(), config.cache_size),
             reachability_store: DbReachabilityStore::new(db.clone(), config.cache_size),
-            relations_store: DbRelationsStore::new(db, 1, config.cache_size),
+            relations_store: DbRelationsStore::new(db.clone(), 1, config.cache_size),
+            state_store: DbDagStateStore::new(db, config.cache_size),
         })
     }
 }
