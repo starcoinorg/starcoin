@@ -1,5 +1,6 @@
 use super::reachability::{inquirer, reachability_service::MTReachabilityService};
 use super::types::ghostdata::GhostdagData;
+use crate::consensusdb::consenses_state::{DagState, DagStateReader, DagStateStore};
 use crate::consensusdb::prelude::{FlexiDagStorageConfig, StoreError};
 use crate::consensusdb::schemadb::GhostdagStoreReader;
 use crate::consensusdb::{
@@ -74,6 +75,7 @@ impl BlockDAG {
     }
 
     pub fn init_with_genesis(&self, genesis: BlockHeader) -> anyhow::Result<()> {
+        let genesis_id = genesis.id();
         let origin = genesis.parent_hash();
 
         if self.storage.relations_store.has(origin)? {
@@ -84,6 +86,9 @@ impl BlockDAG {
             .relations_store
             .insert(origin, BlockHashes::new(vec![]))?;
         self.commit(genesis)?;
+        self.save_dag_state(genesis_id, DagState {
+            tips: vec![genesis_id],
+        })?;
         Ok(())
     }
     pub fn ghostdata(&self, parents: &[HashValue]) -> anyhow::Result<GhostdagData> {
@@ -158,6 +163,15 @@ impl BlockDAG {
                 bail!("failed to get parents by hash: {}", error);
             }
         }
+    }
+
+    pub fn get_dag_state(&self, hash: Hash) -> anyhow::Result<DagState> {
+        Ok(self.storage.state_store.get_state(hash)?)
+    }
+
+    pub fn save_dag_state(&self, hash: Hash, state: DagState) -> anyhow::Result<()> {
+        self.storage.state_store.insert(hash, state)?;
+        Ok(())
     }
 }
 

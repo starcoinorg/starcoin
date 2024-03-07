@@ -5,7 +5,7 @@ use crate::storage::{ColumnFamily, InnerStorage, KVStore};
 use crate::{StorageVersion, CHAIN_INFO_PREFIX_NAME};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
-use starcoin_types::startup_info::{BarnardHardFork, DagState, SnapshotRange, StartupInfo};
+use starcoin_types::startup_info::{BarnardHardFork, SnapshotRange, StartupInfo};
 use std::convert::{TryFrom, TryInto};
 
 #[derive(Clone)]
@@ -28,22 +28,6 @@ impl ChainInfoStorage {
     const STORAGE_VERSION_KEY: &'static str = "storage_version";
     const SNAPSHOT_RANGE_KEY: &'static str = "snapshot_height";
     const BARNARD_HARD_FORK: &'static str = "barnard_hard_fork";
-    const DAG_STATE_KEY: &'static str = "dag_state";
-
-    pub fn save_dag_state(&self, dag_state: DagState) -> Result<()> {
-        self.put_sync(
-            Self::DAG_STATE_KEY.as_bytes().to_vec(),
-            dag_state.try_into()?,
-        )
-    }
-
-    pub fn get_dag_state(&self) -> Result<Option<DagState>> {
-        self.get(Self::DAG_STATE_KEY.as_bytes())
-            .and_then(|bytes| match bytes {
-                Some(bytes) => Ok(Some(bytes.try_into()?)),
-                None => Ok(None),
-            })
-    }
 
     pub fn get_startup_info(&self) -> Result<Option<StartupInfo>> {
         self.get(Self::STARTUP_INFO_KEY.as_bytes())

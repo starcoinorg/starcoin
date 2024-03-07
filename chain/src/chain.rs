@@ -16,6 +16,7 @@ use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::consensusdb::consenses_state::DagState;
 use starcoin_dag::consensusdb::prelude::StoreError;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
@@ -27,7 +28,7 @@ use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
-use starcoin_types::startup_info::{ChainInfo, ChainStatus, DagState};
+use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
     account_address::AccountAddress,
@@ -268,12 +269,13 @@ impl BlockChain {
         let final_block_gas_limit = block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
-        let tips_hash = if current_number <= self.dag_fork_height() {
-            None
+        let (_, tips_hash) = if current_number <= self.dag_fork_height() {
+            (None, None)
         } else if tips.is_some() {
-            tips
+            (Some(self.get_block_dag_genesis(&previous_header)?), tips)
         } else {
-            self.current_tips_hash()?
+            let result = self.current_tips_hash(&previous_header)?.expect("the block number is larger than the dag fork number but the state data doese not exis");
+            (Some(result.0), Some(result.1))
         };
         let strategy = epoch.strategy();
         let difficulty = strategy.calculate_next_difficulty(self)?;
@@ -407,18 +409,8 @@ impl BlockChain {
         }
 
         let results = header.parents_hash().ok_or(anyhow!("dag block has no parents."))?.into_iter().map(|parent_hash| {
-            let block_info = self.storage.get_block_info(parent_hash)?.ok_or(anyhow!("failed to find the block info in the block storage when checking the dag block exists, block hash: {:?}, number: {:?}", header.id(), header.number()))?;
-            let header = self.storage.get_block_header_by_hash(block_info.block_id)?.ok_or(anyhow!("failed to find the block header in the block storage when checking the dag block exists, block hash: {:?}, number: {:?}", header.id(), header.number()))?;
-            let block_accumulator = MerkleAccumulator::new_with_info(
-                block_info.get_block_accumulator_info().clone(),
-                self.storage
-                    .get_accumulator_store(AccumulatorStoreType::Block),
-            );
-            let dag_genesis = block_accumulator
-                .get_leaf(header.dag_fork_height())?
-                .ok_or(anyhow!("failed to get the dag genesis"))?;
-
-            Ok(dag_genesis)
+            let header = self.storage.get_block_header_by_hash(parent_hash)?.ok_or(anyhow!("failed to find the block header in the block storage when checking the dag block exists, block hash: {:?}, number: {:?}", header.id(), header.number()))?;
+            Ok(self.get_block_dag_genesis(&header)?)
         }).collect::<Result<HashSet<_>>>()?;
 
         if results.len() == 1 {
@@ -801,11 +793,27 @@ impl BlockChain {
         if genesis.is_dag_genesis() {
             let dag_genesis_id = genesis.id();
             self.dag.init_with_genesis(genesis)?;
-            self.storage.save_dag_state(DagState {
-                tips: vec![dag_genesis_id],
-            })?;
         }
         Ok(())
+    }
+
+    pub fn get_block_dag_genesis(&self, header: &BlockHeader) -> Result<HashValue> {
+        let block_info = self.storage.get_block_info(header.id())?.ok_or(anyhow!("Cannot find block info by hash {:?}", header.id()))?;
+        let block_accumulator = MerkleAccumulator::new_with_info(
+            block_info.get_block_accumulator_info().clone(),
+            self.storage
+                .get_accumulator_store(AccumulatorStoreType::Block),
+        );
+        let dag_genesis = block_accumulator
+            .get_leaf(header.dag_fork_height())?
+            .ok_or(anyhow!("failed to get the dag genesis"))?;
+
+        Ok(dag_genesis)
+    }
+
+    pub fn get_dag_state_by_block(&self, header: &BlockHeader) -> Result<(HashValue, DagState)> {
+        let dag_genesis = self.get_block_dag_genesis(header)?;
+        Ok((dag_genesis, self.dag.get_dag_state(dag_genesis)?))
     }
 }
 
@@ -1159,8 +1167,9 @@ impl ChainReader for BlockChain {
         }))
     }
 
-    fn current_tips_hash(&self) -> Result<Option<Vec<HashValue>>> {
-        Ok(self.storage.get_dag_state()?.map(|state| state.tips))
+    fn current_tips_hash(&self, header: &BlockHeader) -> Result<Option<(HashValue, Vec<HashValue>)>> {
+        let (dag_genesis, dag_state) = self.get_dag_state_by_block(header)?;
+        Ok(Some((dag_genesis, dag_state.tips))) 
     }
 
     fn has_dag_block(&self, header_id: HashValue) -> Result<bool> {
@@ -1303,8 +1312,8 @@ impl BlockChain {
     fn connect_dag(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
         let dag = self.dag.clone();
         let (new_tip_block, _) = (executed_block.block(), executed_block.block_info());
-        let mut tips = self
-            .current_tips_hash()?
+        let (dag_genesis, mut tips) = self
+            .current_tips_hash(new_tip_block.header())?
             .expect("tips should exists in dag");
         let parents = executed_block
             .block
@@ -1364,7 +1373,7 @@ impl BlockChain {
         if self.epoch.end_block_number() == block.header().number() {
             self.epoch = get_epoch_from_statedb(&self.statedb)?;
         }
-        self.storage.save_dag_state(DagState { tips })?;
+        self.dag.save_dag_state(dag_genesis, DagState { tips })?;
         Ok(executed_block)
     }
 
