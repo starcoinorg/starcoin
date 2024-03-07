@@ -635,7 +635,7 @@ impl Inner {
             .entry(peer_id.clone())
             .and_modify(|peer| {
                 // avoid update chain status to old
-                // this many happend when multi protocol send repeat handhake.
+                // this many happened when multi protocol send repeat handshake.
                 //FIXME after PeerEvent refactor.
                 if chain_info.total_difficulty()
                     > peer.peer_info.chain_info.status().info.total_difficulty

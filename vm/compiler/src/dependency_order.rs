@@ -27,7 +27,7 @@ struct ModuleIndex(usize);
 
 impl<'a> DependencyGraph<'a> {
     /// Construct a dependency graph from a set of `modules`.
-    /// Panics if `modules` contains duplicates or is not closed under the depedency relation
+    /// Panics if `modules` contains duplicates or is not closed under the dependency relation
     pub fn new(module_iter: impl IntoIterator<Item = &'a CompiledModule>) -> Result<Self> {
         let mut modules = vec![];
         let mut reverse_modules = BTreeMap::new();
