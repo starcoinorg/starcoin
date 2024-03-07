@@ -1173,31 +1173,38 @@ impl ChainReader for BlockChain {
     }
 
     fn has_dag_block(&self, header_id: HashValue) -> Result<bool> {
-        let header = self
+        let header = match self
             .storage
-            .get_block_header_by_hash(header_id)?
-            .ok_or(anyhow!(
-                "failed to get the block header by hash: {:?}",
-                header_id
-            ))?;
-        let block_info = self.storage.get_block_info(header.id())?.ok_or(anyhow!("failed to find the block info in the block storage when checking the dag block exists, block hash: {:?}, number: {:?}", header.id(), header.number()))?;
+            .get_block_header_by_hash(header_id)? {
+                Some(header) => header,
+                None => return Ok(false),
+            };
+
+        let block_info = match self.storage.get_block_info(header.id())? {
+            Some(block_info) => block_info,
+            None => return Ok(false),
+        };
         let block_accumulator = MerkleAccumulator::new_with_info(
             block_info.get_block_accumulator_info().clone(),
             self.storage
                 .get_accumulator_store(AccumulatorStoreType::Block),
         );
-        let dag_genesis = block_accumulator
-            .get_leaf(header.dag_fork_height())?
-            .ok_or(anyhow!("failed to get the dag genesis"))?;
+        let dag_genesis = match block_accumulator
+            .get_leaf(header.dag_fork_height())? {
+                Some(dag_genesis) => dag_genesis,
+                None => return Ok(false),
+            };
 
         let current_chain_block_accumulator = MerkleAccumulator::new_with_info(
             self.status.status.info.get_block_accumulator_info().clone(),
             self.storage
                 .get_accumulator_store(AccumulatorStoreType::Block),
         );
-        let current_chain_dag_genesis = current_chain_block_accumulator
-            .get_leaf(self.status.status.head.dag_fork_height())?
-            .ok_or(anyhow!("failed to get the dag genesis"))?;
+        let current_chain_dag_genesis = match current_chain_block_accumulator
+            .get_leaf(self.status.status.head.dag_fork_height())? {
+                Some(dag_genesis) => dag_genesis,
+                None => return Ok(false),
+            };
 
         if current_chain_dag_genesis != dag_genesis {
             return Ok(false);
