@@ -351,6 +351,7 @@ move-package = { git = "https://github.com/starcoinorg/move", rev = "823912c39b4
 move-prover = { git = "https://github.com/starcoinorg/move", rev = "823912c39b4b58fe1ee3f24af81dbf56849ff82a" }
 move-prover-test-utils = { git = "https://github.com/starcoinorg/move", rev = "823912c39b4b58fe1ee3f24af81dbf56849ff82a" }
 move-resource-viewer = { git = "https://github.com/starcoinorg/move", rev = "823912c39b4b58fe1ee3f24af81dbf56849ff82a" }
+move-stackless-bytecode = { git = "https://github.com/starcoinorg/move", rev = "823912c39b4b58fe1ee3f24af81dbf56849ff82a" }
 move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "823912c39b4b58fe1ee3f24af81dbf56849ff82a" }
 move-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "823912c39b4b58fe1ee3f24af81dbf56849ff82a" }
 move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "823912c39b4b58fe1ee3f24af81dbf56849ff82a", features = ["table-extension"] }

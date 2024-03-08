@@ -23,6 +23,7 @@ use std::sync::Mutex;
 
 pub mod compatibility_check_cmd;
 pub mod deployment;
+mod extended_checks;
 pub mod package;
 pub mod release;
 
