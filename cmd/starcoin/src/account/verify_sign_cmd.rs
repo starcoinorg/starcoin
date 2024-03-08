@@ -9,7 +9,7 @@ use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
 use starcoin_types::sign_message::SignedMessage;
 
-/// Verify the the message signed by the sign command.
+/// Verify the message signed by the sign command.
 #[derive(Debug, Parser)]
 #[clap(name = "verify-sign-message")]
 pub struct VerifySignMessageOpt {

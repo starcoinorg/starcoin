@@ -233,7 +233,7 @@ pub fn native_gas_schedule_v1() -> Vec<(String, u64)> {
             "starcoin_natives.signature.ed25519_verify.per_byte".to_string(),
             gas_total(61, 1),
         ),
-        // ED25519_THRESHOLD_VERIFY 3 this native funciton is deprecated
+        // ED25519_THRESHOLD_VERIFY 3 this native function is deprecated
         (
             "move_stdlib.bcs.to_bytes.per_byte_serialized".to_string(),
             gas_total(181, 1),
@@ -604,7 +604,7 @@ static G_NATIVE_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
         "move_stdlib.hash.sha2_256.per_byte",
         "move_stdlib.hash.sha3_256.per_byte",
         "starcoin_natives.signature.ed25519_verify.per_byte",
-        // ED25519_THRESHOLD_VERIFY 3 this native funciton is deprecated, ignore, use ""
+        // ED25519_THRESHOLD_VERIFY 3 this native function is deprecated, ignore, use ""
         "",
         "move_stdlib.bcs.to_bytes.per_byte_serialized",
         "move_stdlib.vector.length.base",

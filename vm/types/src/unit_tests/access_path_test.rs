@@ -67,7 +67,7 @@ fn test_bad_case_from_protest() {
     let access_path = AccessPath::from_str(raw_path);
     assert!(access_path.is_ok());
 
-    //The module name start with '_' will will encounter parse error
+    //The module name start with '_' will encounter parse error
     //This may be the parser error, or the identity's arbitrary error
     let raw_path = "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::_a::A";
     let access_path = AccessPath::from_str(raw_path);
