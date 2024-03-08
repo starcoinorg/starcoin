@@ -88,14 +88,12 @@ mod tests {
 
     #[test]
     fn optional_should_be_honored() {
-        assert!(
-            matches!(
-                GasParameters::from_on_chain_gas_schedule(
-                    &[("test.foo".to_string(), 0)].into_iter().collect(),
-                ),
-                Some(_)
-            )
-        );
+        assert!(matches!(
+            GasParameters::from_on_chain_gas_schedule(
+                &[("test.foo".to_string(), 0)].into_iter().collect(),
+            ),
+            Some(_)
+        ));
 
         assert!(matches!(
             GasParameters::from_on_chain_gas_schedule(&[].into_iter().collect()),

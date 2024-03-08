@@ -1,12 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#![deny(clippy::integer_arithmetic)]
+#![deny(clippy::arithmetic_side_effects)]
 use crate::argon::ArgonConsensus;
 use crate::cn::CryptoNightConsensus;
 use crate::dummy::DummyConsensus;
 use crate::keccak::KeccakConsensus;
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use byteorder::{LittleEndian, WriteBytesExt};
 use once_cell::sync::Lazy;
 use rand::Rng;
@@ -30,12 +30,16 @@ pub mod keccak;
 pub use consensus::{Consensus, ConsensusVerifyError};
 pub use starcoin_time_service::duration_since_epoch;
 
-pub fn target_to_difficulty(target: U256) -> U256 {
-    U256::max_value() / target
+pub fn target_to_difficulty(target: U256) -> Result<U256> {
+    U256::max_value()
+        .checked_div(target)
+        .ok_or(format_err!("zero-divisor"))
 }
 
-pub fn difficult_to_target(difficulty: U256) -> U256 {
-    U256::max_value() / difficulty
+pub fn difficult_to_target(difficulty: U256) -> Result<U256> {
+    U256::max_value()
+        .checked_div(difficulty)
+        .ok_or(format_err!("zero-divisor"))
 }
 
 pub fn set_header_nonce(header: &[u8], nonce: u32, extra: &BlockHeaderExtra) -> Vec<u8> {

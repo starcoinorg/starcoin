@@ -11,8 +11,8 @@ rust-version = { workspace = true }
 
 [dependencies]
 anyhow = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
-starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+bcs-ext = { workspace = true }
+starcoin-crypto = { workspace = true }
 starcoin-config = { workspace = true }
 move-core-types = { workspace = true }
 once_cell = { workspace = true }
@@ -36,7 +36,7 @@ rayon = { workspace = true }
 num_cpus = { workspace = true }
 
 [dev-dependencies]
-stdlib = { package = "stdlib", workspace = true }
+stdlib = { workspace = true }
 
 [features]
 default = ["metrics"]

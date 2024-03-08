@@ -11,7 +11,7 @@ starcoin-config = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-txpool-api = { workspace = true }
 starcoin-types = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 starcoin-crypto = { workspace = true }
 bitflags = { workspace = true }
 fnv = { workspace = true }

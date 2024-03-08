@@ -8,12 +8,12 @@ serde = { features = ["derive"], workspace = true }
 serde_json = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 api-limiter = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
-starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+bcs-ext = { workspace = true }
+starcoin-crypto = { workspace = true }
 network-api = { workspace = true }
 network-p2p-types = { workspace = true }
 network-p2p-core = { workspace = true }
-network-p2p-derive = { package = "network-p2p-derive", workspace = true }
+network-p2p-derive = { workspace = true }
 prometheus = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-chain-service = { workspace = true }
@@ -25,24 +25,24 @@ starcoin-state-api = { workspace = true }
 starcoin-state-service = { workspace = true }
 starcoin-txpool = { workspace = true }
 starcoin-txpool-api = { workspace = true }
-starcoin-storage = { package = "starcoin-storage", workspace = true }
-starcoin-types = { package = "starcoin-types", workspace = true }
+starcoin-storage = { workspace = true }
+starcoin-types = { workspace = true }
 starcoin-state-tree = { workspace = true }
 starcoin-vm-types = { workspace = true }
 
 [dev-dependencies]
-starcoin-account-api = { package = "starcoin-account-api", workspace = true }
-starcoin-block-relayer = { package = "starcoin-block-relayer", workspace = true }
-starcoin-consensus = { package = "starcoin-consensus", workspace = true }
+starcoin-account-api = { workspace = true }
+starcoin-block-relayer = { workspace = true }
+starcoin-consensus = { workspace = true }
 futures-timer = { workspace = true }
-starcoin-miner = { package = "starcoin-miner", workspace = true }
-starcoin-network = { package = "starcoin-network", workspace = true }
+starcoin-miner = { workspace = true }
+starcoin-network = { workspace = true }
 starcoin-node = { workspace = true }
-starcoin-statedb = { package = "starcoin-statedb", workspace = true }
+starcoin-statedb = { workspace = true }
 starcoin-txpool = { workspace = true }
 starcoin-txpool-api = { workspace = true }
 starcoin-vm-types = { workspace = true }
-starcoin-storage = { package = "starcoin-storage", workspace = true }
+starcoin-storage = { workspace = true }
 stest = { workspace = true }
 test-helper = { workspace = true }
 

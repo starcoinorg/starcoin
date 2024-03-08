@@ -3,12 +3,10 @@ anyhow = { workspace = true }
 byteorder = { workspace = true }
 cryptonight-rs = { workspace = true }
 futures = { workspace = true }
-hex = { default-features = false, workspace = true }
+hex = { features = ["serde"], workspace = true }
 once_cell = { workspace = true }
-proptest = { default-features = false, optional = true, workspace = true }
-proptest-derive = { default-features = false, optional = true, workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
+rand_core = { features = ["serde"], workspace = true }
 rust-argon2 = { workspace = true }
 sha3 = { workspace = true }
 starcoin-chain-api = { workspace = true }
@@ -21,15 +19,13 @@ starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
-proptest = { workspace = true }
-proptest-derive = { workspace = true }
 stest = { workspace = true }
 serde = { features = ["derive"], workspace = true }
 serde_json = { features = ["arbitrary_precision"], workspace = true }
 
 [features]
 default = []
-fuzzing = ["proptest", "proptest-derive", "starcoin-types/fuzzing"]
+fuzzing = ["starcoin-types/fuzzing"]
 
 [package]
 authors = { workspace = true }

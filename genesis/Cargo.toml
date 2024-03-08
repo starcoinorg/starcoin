@@ -1,6 +1,6 @@
 [dependencies]
 anyhow = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 clap = { features = ["derive"], workspace = true }
 include_dir = { workspace = true }
 once_cell = { workspace = true }

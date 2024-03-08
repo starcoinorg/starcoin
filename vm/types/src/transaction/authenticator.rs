@@ -520,7 +520,6 @@ mod tests {
         let mut key_gen = KeyGen::from_os_rng();
         let threshold = 2;
         let pubkeys = (0..2)
-            .into_iter()
             .map(|_| key_gen.generate_keypair().1)
             .collect::<Vec<_>>();
         let account_public_key = AccountPublicKey::multi(pubkeys.clone(), threshold).unwrap();

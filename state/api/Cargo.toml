@@ -1,7 +1,7 @@
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 serde = { features = ["derive"], workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-service-registry = { workspace = true }

@@ -25,7 +25,6 @@ fn state_keys_to_write_set(state_keys: Vec<StateKey>, values: Vec<Vec<u8>>) -> W
         state_keys
             .into_iter()
             .zip(values)
-            .into_iter()
             .map(|(key, val)| (key, WriteOp::Value(val)))
             .collect::<Vec<_>>(),
     )

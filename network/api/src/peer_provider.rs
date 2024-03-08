@@ -85,18 +85,13 @@ impl From<(PeerInfo, u64)> for PeerDetail {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize, JsonSchema)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize, JsonSchema, Default)]
 pub enum PeerStrategy {
     Random,
+    #[default]
     WeightedRandom,
     Best,
     Avg,
-}
-
-impl Default for PeerStrategy {
-    fn default() -> Self {
-        PeerStrategy::WeightedRandom
-    }
 }
 
 impl std::fmt::Display for PeerStrategy {

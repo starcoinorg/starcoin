@@ -1,12 +1,12 @@
 [dependencies]
 anyhow = { workspace = true }
 clap = { features = ["derive"], workspace = true }
-itertools = { default-features = false, workspace = true }
+itertools = { features = ["use_alloc"], workspace = true }
 rand = { workspace = true }
 rayon = { workspace = true }
-starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
-starcoin-crypto = { package = "starcoin-crypto", workspace = true }
-starcoin-logger = { package = "starcoin-logger", workspace = true }
+starcoin-accumulator = {  workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-logger = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-consensus = { workspace = true }
 starcoin-genesis = { workspace = true }

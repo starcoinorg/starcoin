@@ -39,7 +39,7 @@ starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-stratum = { workspace = true }
 starcoin-sync = { workspace = true }
-starcoin-sync-api = { package = "starcoin-sync-api", workspace = true }
+starcoin-sync-api = { workspace = true }
 starcoin-txpool = { workspace = true }
 starcoin-txpool-api = { workspace = true }
 starcoin-types = { workspace = true }

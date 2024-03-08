@@ -1,13 +1,13 @@
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 futures = { workspace = true }
 hex = { workspace = true }
 rand = { workspace = true }
 rand_core = { default-features = false, workspace = true }
 schemars = { workspace = true }
-serde = { default-features = false, workspace = true }
+serde = { features = ["derive"], workspace = true }
 serde_bytes = { workspace = true }
 serde_json = { workspace = true }
 starcoin-crypto = { workspace = true }

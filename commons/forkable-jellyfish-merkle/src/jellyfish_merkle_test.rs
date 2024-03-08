@@ -764,8 +764,8 @@ proptest! {
     }
 }
 
-fn test_existent_keys_impl<'a>(
-    tree: &JellyfishMerkleTree<'a, HashValueKey, MockTreeStore>,
+fn test_existent_keys_impl(
+    tree: &JellyfishMerkleTree<'_, HashValueKey, MockTreeStore>,
     root_hash: HashValue,
     existent_kvs: &HashMap<HashValueKey, Blob>,
 ) {
@@ -778,8 +778,8 @@ fn test_existent_keys_impl<'a>(
     }
 }
 
-fn test_nonexistent_keys_impl<'a>(
-    tree: &JellyfishMerkleTree<'a, HashValueKey, MockTreeStore>,
+fn test_nonexistent_keys_impl(
+    tree: &JellyfishMerkleTree<'_, HashValueKey, MockTreeStore>,
     root_hash: HashValue,
     nonexistent_keys: &[HashValueKey],
 ) {
@@ -792,8 +792,8 @@ fn test_nonexistent_keys_impl<'a>(
     }
 }
 
-fn test_nonexistent_key_value_update_impl<'a>(
-    tree: &JellyfishMerkleTree<'a, HashValueKey, MockTreeStore>,
+fn test_nonexistent_key_value_update_impl(
+    tree: &JellyfishMerkleTree<'_, HashValueKey, MockTreeStore>,
     db: &MockTreeStore,
     root_hash: HashValue,
     noneexistent_kv: (HashValue, Blob),

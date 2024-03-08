@@ -499,7 +499,7 @@ impl ConnectionHandler for NotifsHandler {
 			<Self::InboundProtocol as InboundUpgrade<NegotiatedSubstream>>::Output,
         (): (),
     ) {
-        let mut protocol_info = &mut self.protocols[protocol_index];
+        let protocol_info = &mut self.protocols[protocol_index];
         match protocol_info.state {
             State::Closed { pending_opening } => {
                 self.events_queue.push_back(ConnectionHandlerEvent::Custom(

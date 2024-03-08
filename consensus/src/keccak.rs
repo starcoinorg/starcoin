@@ -22,7 +22,7 @@ impl KeccakConsensus {
 impl Consensus for KeccakConsensus {
     fn calculate_next_difficulty(&self, reader: &dyn ChainReader) -> Result<U256> {
         let target = difficulty::get_next_work_required(reader)?;
-        Ok(target_to_difficulty(target))
+        target_to_difficulty(target)
     }
 
     /// Double keccak256 for pow hash
