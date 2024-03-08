@@ -1,27 +1,32 @@
-name: Build and Test
+name: Build and Test With Blocks
 on:
   workflow_dispatch:
-  pull_request:
-    branches:
-      - master
+  # pull_request:
+  #   branches:
+  #     - master
 
 jobs:
   build-and-test:
     name: build and test
     runs-on: self-hosted
-    timeout-minutes: 370
+    timeout-minutes: 300
     steps:
       - name: checkout
         uses: actions/checkout@v1
         with:
           submodules: recursive
+      - name: setup rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          components: rustfmt,clippy
       - name: run fmt check
         uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: -- --check
       - name: setup environment
-        run: bash ./scripts/dev_setup.sh  -b -t -y -m
+        run: bash ./scripts/dev_setup.sh  -b -t -y
       - name: run cargo clean
         uses: actions-rs/cargo@v1
         with:
@@ -43,17 +48,11 @@ jobs:
           cp ./target/debug/starcoin_db_exporter .
           cp ./target/debug/starcoin .
           bash ./scripts/import_block.sh proxima /home/runner/.starcoin/proxima
-      - name: run proxima node
-        run: nohup ./starcoin -n proxima &
-      - name: test
-        run: ./scripts/nextest.sh
-#       - name: check changed files
-#         run: bash ./scripts/changed_files.sh
-      - name: Doc Tests
+      - name: move-prover-test
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --doc
+          args: -p starcoin-move-prover
       - name: integration test dev environment
         env:
           RUST_LOG: info
