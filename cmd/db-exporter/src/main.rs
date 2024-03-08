@@ -22,6 +22,8 @@ use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
+use starcoin_rpc_api::types::StrView;
+use starcoin_state_tree::StateTree;
 use starcoin_statedb::{ChainStateDB, ChainStateReader, ChainStateWriter};
 use starcoin_storage::{
     block::FailedBlock,
@@ -39,6 +41,7 @@ use starcoin_transaction_builder::{
 use starcoin_types::{
     account::{peer_to_peer_txn, Account, DEFAULT_EXPIRATION_TIME},
     account_address::AccountAddress,
+    account_state::AccountState,
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     startup_info::{SnapshotRange, StartupInfo},
     state_set::{AccountStateSet, ChainStateSet},
@@ -46,6 +49,7 @@ use starcoin_types::{
 };
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::{
+    access_path::DataType,
     account_config::stc_type_tag,
     genesis_config::ConsensusStrategy,
     identifier::Identifier,
@@ -239,6 +243,7 @@ enum Cmd {
     BlockOutput(BlockOutputOptions),
     ApplyBlockOutput(ApplyBlockOutputOptions),
     SaveStartupInfo(SaveStartupInfoOptions),
+    TokenSupply(TokenSupplyOptions),
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -507,6 +512,29 @@ pub struct SaveStartupInfoOptions {
     pub hash_value: HashValue,
 }
 
+#[derive(Debug, Clone, Parser)]
+#[clap(name = "token-supply", about = "token supply")]
+pub struct TokenSupplyOptions {
+    #[clap(long, short = 'n')]
+    /// Chain Network, like main, barnard
+    pub net: BuiltinNetworkID,
+    #[clap(long, short = 'o', parse(from_os_str))]
+    /// output file, like balance.csv
+    pub output: PathBuf,
+    #[clap(long, short = 'i', parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/main
+    pub db_path: PathBuf,
+
+    #[clap(long, short = 'b')]
+    pub block_number: Option<BlockNumber>,
+
+    #[clap(
+        help = "resource struct tag,",
+        default_value = "0x1::Account::Balance<0x1::STC::STC>"
+    )]
+    resource_type: StrView<StructTag>,
+}
+
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     let opt = Opt::parse();
@@ -691,6 +719,16 @@ async fn main() -> anyhow::Result<()> {
         }
         Cmd::SaveStartupInfo(option) => {
             let result = save_startup_info(option.to_path, option.net, option.hash_value);
+            return result;
+        }
+        Cmd::TokenSupply(option) => {
+            let result = token_supply(
+                option.db_path,
+                option.output,
+                option.net,
+                option.block_number,
+                option.resource_type.0,
+            );
             return result;
         }
     }
@@ -2379,5 +2417,96 @@ fn save_startup_info(
     let (_chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
     let startup_info = StartupInfo::new(hash_value);
     storage.save_startup_info(startup_info)?;
+    Ok(())
+}
+
+fn token_supply(
+    from_dir: PathBuf,
+    output: PathBuf,
+    network: BuiltinNetworkID,
+    block_number: Option<BlockNumber>,
+    resource_struct_tag: StructTag,
+) -> anyhow::Result<()> {
+    let net = ChainNetwork::new_builtin(network);
+    let db_storage = DBStorage::open_with_cfs(
+        from_dir.join("starcoindb/db/starcoindb"),
+        StorageVersion::current_version()
+            .get_column_family_names()
+            .to_vec(),
+        true,
+        Default::default(),
+        None,
+    )?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_storage,
+    ))?);
+    let (chain_info, _) =
+        Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
+    let chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+    let cur_num = block_number.unwrap_or_else(|| chain_info.head().number());
+    let block = chain
+        .get_block_by_number(cur_num)?
+        .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
+
+    let root = block.header.state_root();
+    let statedb = ChainStateDB::new(storage.clone(), Some(root));
+    let value_annotator = MoveValueAnnotator::new(&statedb);
+
+    let state_tree = StateTree::<AccountAddress>::new(storage.clone(), Some(root));
+
+    let mut file = File::create(output)?;
+
+    let global_states = state_tree.dump()?;
+
+    use std::time::Instant;
+    let now = Instant::now();
+    let mut sum: u128 = 0;
+    for (address_bytes, account_state_bytes) in global_states.iter() {
+        let account: AccountAddress = bcs_ext::from_bytes(address_bytes)?;
+        let account_state: AccountState = account_state_bytes.as_slice().try_into()?;
+        let resource_root = account_state.storage_roots()[DataType::RESOURCE.storage_index()];
+        let resource = match resource_root {
+            None => None,
+            Some(root) => {
+                let account_tree = StateTree::<StructTag>::new(storage.clone(), Some(root));
+                let data = account_tree.get(&resource_struct_tag)?;
+
+                if let Some(d) = data {
+                    let annotated_struct =
+                        value_annotator.view_struct(resource_struct_tag.clone(), d.as_slice())?;
+                    let resource = annotated_struct;
+                    let resource_json_value = serde_json::to_value(MoveStruct(resource))?;
+                    Some(resource_json_value)
+                } else {
+                    None
+                }
+            }
+        };
+        if let Some(res) = resource {
+            let balance = (res
+                .get("token")
+                .unwrap()
+                .get("value")
+                .unwrap()
+                .as_f64()
+                .unwrap()
+                / 1000000000.0) as u128;
+            if balance > 0 {
+                writeln!(file, "{} {}", account, balance)?;
+                sum += balance;
+            }
+        }
+    }
+    println!("t2: {}", now.elapsed().as_millis());
+    writeln!(file, "total {}", sum)?;
+    writeln!(file, "cur height {}", cur_num)?;
+    file.flush()?;
     Ok(())
 }
