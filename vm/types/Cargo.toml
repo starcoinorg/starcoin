@@ -1,6 +1,7 @@
 [dependencies]
 anyhow = { workspace = true }
 bech32 = { workspace = true }
+bytes = { workspace = true }
 chrono = { default-features = false, features = ["clock"], workspace = true }
 hex = { workspace = true }
 log = { workspace = true }

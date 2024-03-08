@@ -610,7 +610,7 @@ impl AccountData {
             .unwrap();
         write_set.push((
             StateKey::AccessPath(self.make_account_access_path()),
-            WriteOp::Value(account),
+            WriteOp::Creation(account),
         ));
 
         let balance = coinstore_blob
@@ -620,7 +620,7 @@ impl AccountData {
             .unwrap();
         write_set.push((
             StateKey::AccessPath(self.make_coin_store_access_path()),
-            WriteOp::Value(balance),
+            WriteOp::Creation(balance),
         ));
 
         WriteSetMut::new(write_set).freeze().unwrap()

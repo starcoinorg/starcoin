@@ -54,7 +54,15 @@ impl<'a, S: StateView> StateViewCache<'a, S> {
     pub(crate) fn push_write_set(&mut self, write_set: &WriteSet) {
         for (ref ap, ref write_op) in write_set.iter() {
             match write_op {
-                WriteOp::Value(blob) => {
+                WriteOp::Creation(blob) => {
+                    self.data_map.insert(ap.clone(), Some(blob.clone()));
+                }
+                WriteOp::Modification(blob) => {
+                    // Fixme: 1. make sure the key has already existed;
+                    // 2. keep a minimal impact on block execution performance
+                    #[cfg(feature = "testing")]
+                    let _ = self.get_state_value(ap).expect("{ap} didn't exist");
+
                     self.data_map.insert(ap.clone(), Some(blob.clone()));
                 }
                 WriteOp::Deletion => {
