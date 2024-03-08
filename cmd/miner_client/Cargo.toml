@@ -48,7 +48,7 @@ starcoin-miner = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 name = "starcoin-miner-client"
-version = "1.13.9"
+version = "1.13.10"
 homepage = { workspace = true }
 license = { workspace = true }
 publish = { workspace = true }
