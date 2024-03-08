@@ -9138,6 +9138,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-decrypt",
  "starcoin-logger",
+ "starcoin-schemadb",
  "starcoin-storage",
  "starcoin-types",
  "tempfile",
@@ -10527,6 +10528,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-schemadb"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "byteorder",
+ "coarsetime",
+ "num_enum",
+ "once_cell",
+ "parking_lot 0.12.1",
+ "rocksdb",
+ "starcoin-config",
+ "starcoin-metrics",
+ "starcoin-temppath",
+ "thiserror",
+]
+
+[[package]]
 name = "starcoin-service-registry"
 version = "1.13.10"
 dependencies = [
@@ -10659,6 +10677,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-metrics",
+ "starcoin-schemadb",
  "starcoin-state-store-api",
  "starcoin-types",
  "starcoin-uint",
@@ -10775,6 +10794,14 @@ version = "1.13.10"
 dependencies = [
  "anyhow",
  "systemstat",
+]
+
+[[package]]
+name = "starcoin-temppath"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "rand 0.8.5",
 ]
 
 [[package]]

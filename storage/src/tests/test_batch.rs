@@ -56,7 +56,7 @@ fn test_db_batch() {
     assert_eq!(
         RichTransactionInfo::decode_value(
             &db_storage
-                .get(DEFAULT_PREFIX_NAME, id.to_vec())
+                .get_raw(DEFAULT_PREFIX_NAME, id.to_vec())
                 .unwrap()
                 .unwrap()
         )
@@ -66,7 +66,7 @@ fn test_db_batch() {
     assert_eq!(
         RichTransactionInfo::decode_value(
             &db_storage
-                .get(DEFAULT_PREFIX_NAME, id2.to_vec())
+                .get_raw(DEFAULT_PREFIX_NAME, id2.to_vec())
                 .unwrap()
                 .unwrap()
         )
@@ -115,7 +115,7 @@ fn test_cache_batch() {
     assert_eq!(
         RichTransactionInfo::decode_value(
             &cache_storage
-                .get(DEFAULT_PREFIX_NAME, id.to_vec())
+                .get_raw(DEFAULT_PREFIX_NAME, id.to_vec())
                 .unwrap()
                 .unwrap()
         )
@@ -125,7 +125,7 @@ fn test_cache_batch() {
     assert_eq!(
         RichTransactionInfo::decode_value(
             &cache_storage
-                .get(DEFAULT_PREFIX_NAME, id2.to_vec())
+                .get_raw(DEFAULT_PREFIX_NAME, id2.to_vec())
                 .unwrap()
                 .unwrap()
         )
@@ -145,7 +145,7 @@ fn test_batch_comm() {
     write_batch.delete(key.to_vec()).unwrap();
     let result = db.write_batch(DEFAULT_PREFIX_NAME, write_batch.clone());
     assert!(result.is_ok());
-    let result = db.get(DEFAULT_PREFIX_NAME, key.to_vec()).unwrap();
+    let result = db.get_raw(DEFAULT_PREFIX_NAME, key.to_vec()).unwrap();
     assert_eq!(result, None);
     let mut key_vec = vec![];
     write_batch.clone().clear().unwrap();
