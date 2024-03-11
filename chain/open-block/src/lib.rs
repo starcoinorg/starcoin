@@ -10,7 +10,6 @@ use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
-use starcoin_types::block::BlockNumber;
 use starcoin_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_types::{
@@ -137,17 +136,9 @@ impl OpenedBlock {
     /// as the internal state may be corrupted.
     /// TODO: make the function can be called again even last call returns error.  
     pub fn push_txns(&mut self, user_txns: Vec<SignedUserTransaction>) -> Result<ExcludedTxns> {
-        let mut discard_txns: Vec<SignedUserTransaction> = Vec::new();
         let mut txns: Vec<_> = user_txns
-            .into_iter()
-            .filter(|txn| {
-                let is_blacklisted = AddressFilter::is_blacklisted(txn, self.block_number());
-                // Discard the txns send by the account in black list after a block number.
-                if is_blacklisted {
-                    discard_txns.push(txn.clone());
-                }
-                !is_blacklisted
-            })
+            .iter()
+            .cloned()
             .map(Transaction::UserTransaction)
             .collect();
 
@@ -174,6 +165,8 @@ impl OpenedBlock {
                 .map(|t| t.try_into().expect("user txn"))
                 .collect()
         };
+
+        let mut discard_txns: Vec<SignedUserTransaction> = Vec::new();
         debug_assert_eq!(txns.len(), txn_outputs.len());
         for (txn, output) in txns.into_iter().zip(txn_outputs.into_iter()) {
             let txn_hash = txn.id();
@@ -293,18 +286,5 @@ impl OpenedBlock {
             self.block_meta,
         );
         Ok(block_template)
-    }
-}
-pub struct AddressFilter;
-//static BLACKLIST: [&str; 0] = [];
-impl AddressFilter {
-    const ACTIVATION_BLOCK_NUMBER: BlockNumber = 16801958;
-    pub fn is_blacklisted(_raw_txn: &SignedUserTransaction, block_number: BlockNumber) -> bool {
-        block_number > Self::ACTIVATION_BLOCK_NUMBER
-        /*&& BLACKLIST
-            .iter()
-            .map(|&s| AccountAddress::from_str(s).expect("account address decode must success"))
-            .any(|x| x == raw_txn.sender())
-        */
     }
 }
