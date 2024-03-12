@@ -79,10 +79,7 @@ impl DagStateStore for DbDagStateStore {
         dag_gensis: Hash,
         state: DagState,
     ) -> Result<(), StoreError> {
-        // if self.dag_state_access.has(dag_gensis)? {
-        //     // return Err(StoreError::KeyAlreadyExists(dag_gensis.to_string()));
-        //     return Ok(());
-        // }
+        println!("jacktest: insert a dag genesis: {:?}, dag state: {:?}", dag_gensis, state);
         self.dag_state_access.write(
             DirectDbWriter::new(&self.db),
             dag_gensis,

@@ -12,6 +12,7 @@ use crate::consensusdb::{
 };
 use crate::ghostdag::protocol::GhostdagManager;
 use anyhow::{bail, Ok};
+use bcs_ext::BCSCodec;
 use parking_lot::RwLock;
 use starcoin_config::{temp_dir, RocksdbConfig};
 use starcoin_crypto::{HashValue as Hash, HashValue};
@@ -78,13 +79,20 @@ impl BlockDAG {
         let genesis_id = genesis.id();
         let origin = genesis.parent_hash();
 
-        if self.storage.relations_store.has(origin)? {
+        let real_origin = Hash::sha3_256_of(&[origin, genesis_id].encode()?);
+        println!("jacktest: real_origin: {:?}", real_origin);
+
+        if self.storage.relations_store.has(real_origin)? {
             return Ok(());
-        };
-        inquirer::init(&mut self.storage.reachability_store.clone(), origin)?;
+        }
+        inquirer::init(&mut self.storage.reachability_store.clone(), real_origin)?;
+
         self.storage
             .relations_store
-            .insert(origin, BlockHashes::new(vec![]))?;
+            .insert(real_origin, BlockHashes::new(vec![]))?;
+        // self.storage
+        //     .relations_store
+        //     .insert(origin, BlockHashes::new(vec![]))?;
         self.commit(genesis)?;
         self.save_dag_state(genesis_id, DagState {
             tips: vec![genesis_id],
@@ -103,9 +111,19 @@ impl BlockDAG {
         }
     }
 
+    fn process_key_already_error(&self, result: Result<(), StoreError>) -> Result<(), StoreError> {
+        if let Err(StoreError::KeyAlreadyExists(_)) = result {
+            Result::Ok(())
+        } else {
+            result
+        }
+    }
+
     pub fn commit(&self, header: BlockHeader) -> anyhow::Result<()> {
         // Generate ghostdag data
+        println!("jacktest 1");
         let parents = header.parents();
+        println!("jacktest 1.1: {:?}", parents);
         let ghostdata = match self.ghostdata_by_hash(header.id())? {
             None => {
                 if header.is_dag_genesis() {
@@ -117,31 +135,46 @@ impl BlockDAG {
             }
             Some(ghostdata) => ghostdata,
         };
+        println!("jacktest 2.4: selected parent: {:?}", ghostdata.selected_parent);
 
+        println!("jacktest 2");
         // Store ghostdata
-        self.storage
+        self.process_key_already_error(self.storage
             .ghost_dag_store
-            .insert(header.id(), ghostdata.clone())?;
+            .insert(header.id(), ghostdata.clone()))?;
+        println!("jacktest 2.1");
 
         // Update reachability store
         let mut reachability_store = self.storage.reachability_store.clone();
+        println!("jacktest 2.2: selected parent: {:?}", ghostdata.selected_parent);
         let mut merge_set = ghostdata
             .unordered_mergeset_without_selected_parent()
             .filter(|hash| self.storage.reachability_store.has(*hash).unwrap());
+        println!("jacktest 2.3: selected parent: {:?}", ghostdata.selected_parent);
         inquirer::add_block(
             &mut reachability_store,
             header.id(),
             ghostdata.selected_parent,
             &mut merge_set,
         )?;
+        println!("jacktest 3");
         // store relations
-        self.storage
-            .relations_store
-            .insert(header.id(), BlockHashes::new(parents))?;
+        if header.is_dag_genesis() {
+            let origin = header.parent_hash();
+            let real_origin = Hash::sha3_256_of(&[origin, header.id()].encode()?);
+            self.storage
+                .relations_store
+                .insert(header.id(), BlockHashes::new(vec![real_origin]))?;
+        } else {
+            self.process_key_already_error(self.storage
+                .relations_store
+                .insert(header.id(), BlockHashes::new(parents)))?;
+        }
         // Store header store
-        self.storage
+        self.process_key_already_error(self.storage
             .header_store
-            .insert(header.id(), Arc::new(header), 0)?;
+            .insert(header.id(), Arc::new(header), 0))?;
+        println!("jacktest 4");
         Ok(())
     }
 
@@ -178,10 +211,11 @@ impl BlockDAG {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::consensusdb::{consenses_state::{DagState, DagStateReader, DagStateStore}, prelude::FlexiDagStorageConfig};
+    use crate::consensusdb::{consenses_state::{DagState, DagStateReader, DagStateStore}, prelude::FlexiDagStorageConfig, schemadb::REACHABILITY_DATA_CF};
     use starcoin_config::RocksdbConfig;
     use starcoin_logger::prelude::{debug, info};
-    use starcoin_types::{block::{BlockHeader, BlockHeaderBuilder}};
+    use starcoin_storage::db_storage::DBStorage;
+    use starcoin_types::block::{set_test_flexidag_fork_height, BlockHeader, BlockHeaderBuilder};
     use std::{env, fs};
 
     fn build_block_dag(k: KType) -> BlockDAG {
@@ -340,7 +374,6 @@ mod tests {
             parents_hash = vec![header.id()];
             dag.commit(header.to_owned()).unwrap();
             let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
-            println!("add a header: {:?}, tips: {:?}", header, ghostdata);
         }
 
         // fork, produce a new dag gensis
@@ -406,5 +439,91 @@ mod tests {
 
         assert_eq!(dag.storage.state_store.get_state(dag_gensis1).expect("failed to get the dag state"), state1);
         assert_eq!(dag.storage.state_store.get_state(dag_gensis2).expect("failed to get the dag state"), state2);
+    }
+
+    #[test]
+    fn test_dag_multiple_commits() {
+        // initialzie the dag firstly
+        let dag = BlockDAG::create_for_testing().unwrap();
+
+        let genesis = BlockHeader::dag_genesis_random()
+            .as_builder()
+            .with_difficulty(0.into())
+            .build();
+        dag.init_with_genesis(genesis.clone()).unwrap();
+
+        // normally add the dag blocks
+        let mut headers = vec![];
+        let mut parents_hash = vec![genesis.id()];
+        let mut parent_hash = genesis.id();
+        for _ in 0..100 {
+            let header_builder = BlockHeaderBuilder::random();
+            let header = header_builder
+            .with_parent_hash(parent_hash)
+                .with_parents_hash(Some(parents_hash.clone()))
+                .build();
+            parents_hash = vec![header.id()];
+            parent_hash = header.id();
+            headers.push(header.clone());
+            dag.commit(header.to_owned()).unwrap();
+            let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
+        }
+
+        for _ in 0..10 {
+            for header in &headers {
+                let _ = dag.commit(header.clone());
+                let _ = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
+            }
+        }
+    }
+
+    #[test]
+    fn test_reachability_store() -> anyhow::Result<()> {
+        set_test_flexidag_fork_height(1);
+        // initialzie the dag firstly
+        let dag = BlockDAG::create_for_testing().unwrap();
+
+        let origin = BlockHeaderBuilder::random().with_number(0).build();
+        let genesis = BlockHeader::dag_genesis_random_with_parent(origin.clone());
+
+        // let genesis = BlockHeader::dag_genesis_random()
+        //     .as_builder()
+        //     .with_difficulty(0.into())
+        //     .build();
+        dag.init_with_genesis(genesis.clone()).unwrap();
+
+        // normally add the dag blocks
+        let mut parents_hash = vec![genesis.id()];
+        let mut parent_hash = genesis.id();
+        // let genesis_other = BlockHeader::dag_genesis_random_with_parent(origin.clone());
+        for i in 2..100 {
+            // if i == 20 {
+            //     dag.init_with_genesis(genesis_other.clone()).unwrap();
+            // }
+            // if i == 25 {
+            //     parents_hash.append(&mut vec![genesis_other.id()]);
+            // }
+            let header_builder = BlockHeaderBuilder::random();
+            let header = header_builder
+            .with_parent_hash(parent_hash)
+                .with_parents_hash(Some(parents_hash.clone()))
+                .with_number(i)
+                .build();
+            // if i < 25 {
+                parents_hash = vec![header.id()];
+            // } else {
+            //     parents_hash = vec![header.id(), genesis_other.id()];
+            // }
+            parent_hash = header.id();
+            // headers.push(header.clone());
+            println!("jacktest: before add a header: {:?}", header);
+            let result = dag.commit(header.to_owned());
+            println!("jacktest: again, result: {:?}", result);
+            result?;
+            let ghostdata = dag.ghostdata(&parents_hash).unwrap();
+            println!("add a header: {:?}, tips: {:?}", header, ghostdata);
+        }
+
+        Ok(())
     }
 }

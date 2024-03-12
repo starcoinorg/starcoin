@@ -24,6 +24,7 @@ impl<S: Schema> CachedDbItem<S> {
 
     pub fn read(&self) -> Result<S::Value, StoreError> {
         if let Some(item) = self.cached_item.read().clone() {
+            println!("jacktest: cached_item.read().clone()");
             return Ok(item);
         }
         if let Some(slice) = self
