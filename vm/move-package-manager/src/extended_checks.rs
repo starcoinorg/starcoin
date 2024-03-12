@@ -102,15 +102,10 @@ impl<'a> ExtendedChecker<'a> {
                 continue;
             }
 
-            self.check_transaction_args(
-                &fun.get_loc(), /*get_id_loc*/
-                &fun.get_parameter_types(),
-            );
+            self.check_transaction_args(&fun.get_id_loc(), &fun.get_parameter_types());
             if fun.get_return_count() > 0 {
-                self.env.error(
-                    &fun.get_loc(), /*get_id_loc*/
-                    "entry function cannot return values",
-                )
+                self.env
+                    .error(&fun.get_id_loc(), "entry function cannot return values")
             }
         }
     }
@@ -127,7 +122,7 @@ impl<'a> ExtendedChecker<'a> {
             Primitive(_) | TypeParameter(_) => {
                 // Any primitive type allowed, any parameter expected to instantiate with primitive
             }
-            //Reference(ReferenceKind::Immutable, bt)
+            //todo(simon): give it a try to change me to Reference(ReferenceKind::Immutable, bt)
             Reference(false, bt) if matches!(bt.as_ref(), Primitive(PrimitiveType::Signer)) => {
                 // Reference to signer allowed
             }
