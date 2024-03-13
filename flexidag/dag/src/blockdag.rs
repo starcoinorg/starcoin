@@ -80,7 +80,6 @@ impl BlockDAG {
         let origin = genesis.parent_hash();
 
         let real_origin = Hash::sha3_256_of(&[origin, genesis_id].encode()?);
-        println!("jacktest: real_origin: {:?}", real_origin);
 
         if self.storage.relations_store.has(real_origin)? {
             return Ok(());
@@ -121,9 +120,7 @@ impl BlockDAG {
 
     pub fn commit(&self, header: BlockHeader) -> anyhow::Result<()> {
         // Generate ghostdag data
-        println!("jacktest 1");
         let parents = header.parents();
-        println!("jacktest 1.1: {:?}", parents);
         let ghostdata = match self.ghostdata_by_hash(header.id())? {
             None => {
                 if header.is_dag_genesis() {
@@ -135,29 +132,22 @@ impl BlockDAG {
             }
             Some(ghostdata) => ghostdata,
         };
-        println!("jacktest 2.4: selected parent: {:?}", ghostdata.selected_parent);
-
-        println!("jacktest 2");
         // Store ghostdata
         self.process_key_already_error(self.storage
             .ghost_dag_store
             .insert(header.id(), ghostdata.clone()))?;
-        println!("jacktest 2.1");
 
         // Update reachability store
         let mut reachability_store = self.storage.reachability_store.clone();
-        println!("jacktest 2.2: selected parent: {:?}", ghostdata.selected_parent);
         let mut merge_set = ghostdata
             .unordered_mergeset_without_selected_parent()
             .filter(|hash| self.storage.reachability_store.has(*hash).unwrap());
-        println!("jacktest 2.3: selected parent: {:?}", ghostdata.selected_parent);
         inquirer::add_block(
             &mut reachability_store,
             header.id(),
             ghostdata.selected_parent,
             &mut merge_set,
         )?;
-        println!("jacktest 3");
         // store relations
         if header.is_dag_genesis() {
             let origin = header.parent_hash();
@@ -174,7 +164,6 @@ impl BlockDAG {
         self.process_key_already_error(self.storage
             .header_store
             .insert(header.id(), Arc::new(header), 0))?;
-        println!("jacktest 4");
         Ok(())
     }
 
@@ -516,10 +505,7 @@ mod tests {
             // }
             parent_hash = header.id();
             // headers.push(header.clone());
-            println!("jacktest: before add a header: {:?}", header);
-            let result = dag.commit(header.to_owned());
-            println!("jacktest: again, result: {:?}", result);
-            result?;
+            dag.commit(header.to_owned())?;
             let ghostdata = dag.ghostdata(&parents_hash).unwrap();
             println!("add a header: {:?}, tips: {:?}", header, ghostdata);
         }

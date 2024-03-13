@@ -207,7 +207,6 @@ impl ReachabilityStore for DbReachabilityStore {
     }
 
     fn get_reindex_root(&self) -> Result<Hash, StoreError> {
-        println!("jacktest: get reindex root");
         self.reindex_root.read()
     }
 }
@@ -353,7 +352,6 @@ impl ReachabilityStore for StagingReachabilityStore<'_> {
     }
 
     fn get_reindex_root(&self) -> Result<Hash, StoreError> {
-        println!("jacktest: get reindex root");
         if let Some(root) = self.staging_reindex_root {
             Ok(root)
         } else {

@@ -115,14 +115,11 @@ impl<
         );
         // Run the GHOSTDAG parent selection algorithm
         let selected_parent = self.find_selected_parent(parents.iter().copied())?;
-        println!("jacktest: in ghostdag, found {}", selected_parent);
         // Initialize new GHOSTDAG block data with the selected parent
         let mut new_block_data = GhostdagData::new_with_selected_parent(selected_parent, self.k);
-        println!("jacktest: in ghostdag, new_block_data {:?}", new_block_data);
         // Get the mergeset in consensus-agreed topological order (topological here means forward in time from blocks to children)
         let ordered_mergeset =
             self.ordered_mergeset_without_selected_parent(selected_parent, parents);
-        println!("jacktest: in ghostdag, ordered_mergeset {:?}", ordered_mergeset);
 
         for blue_candidate in ordered_mergeset.iter().cloned() {
             let coloring = self.check_blue_candidate(&new_block_data, blue_candidate);
@@ -162,7 +159,6 @@ impl<
 
         new_block_data.finalize_score_and_work(blue_score, blue_work);
 
-        println!("jacktest: in ghostdag, after finalize_score_and_work, new_block_data {:?}", new_block_data);
         Ok(new_block_data)
     }
 

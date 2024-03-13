@@ -34,12 +34,10 @@ pub fn add_tree_block(
         )?;
 
         // Start a reindex operation (TODO: add timing)
-        println!("jacktest: add_tree_block: start a reindex operation");
         let reindex_root = store.get_reindex_root()?;
         let mut ctx = ReindexOperationContext::new(store, reindex_depth, reindex_slack);
         ctx.reindex_intervals(new_block, reindex_root)?;
     } else {
-        println!("jacktest: add_tree_block: start a reindex operation, allocated!");
         let allocated = remaining.split_half().0;
         store.insert(
             new_block,

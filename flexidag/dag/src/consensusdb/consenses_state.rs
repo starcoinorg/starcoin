@@ -79,7 +79,6 @@ impl DagStateStore for DbDagStateStore {
         dag_gensis: Hash,
         state: DagState,
     ) -> Result<(), StoreError> {
-        println!("jacktest: insert a dag genesis: {:?}, dag state: {:?}", dag_gensis, state);
         self.dag_state_access.write(
             DirectDbWriter::new(&self.db),
             dag_gensis,
