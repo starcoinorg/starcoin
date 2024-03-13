@@ -36,7 +36,7 @@ pub type BlockNumber = u64;
 pub type ParentsHash = Option<Vec<HashValue>>;
 //TODO: make sure height
 static DEV_FLEXIDAG_FORK_HEIGHT: BlockNumber = 2;
-static PROXIMA_FLEXIDAG_FORK_HEIGHT: BlockNumber = 100000;
+static PROXIMA_FLEXIDAG_FORK_HEIGHT: BlockNumber = 1000;
 static HALLEY_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
 static BARNARD_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
 static MAIN_FLEXIDAG_FORK_HEIGHT: BlockNumber = 1000000;
