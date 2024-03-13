@@ -6,7 +6,12 @@
 mod resolver;
 mod session;
 mod vm;
+mod vm_adapter;
 
 pub use crate::move_vm_ext::{
-    resolver::MoveResolverExt, session::SessionId, session::SessionOutput, vm::MoveVmExt,
+    resolver::MoveResolverExt,
+    session::SessionId,
+    session::SessionOutput,
+    vm::MoveVmExt,
+    vm_adapter::{PublishModuleBundleOption, SessionAdapter},
 };
