@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use starcoin_logger::prelude::info;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
@@ -76,6 +77,7 @@ impl Interval {
     }
 
     pub fn decrease_end(&self, offset: u64) -> Self {
+        info!("jacktest: self.start: {}, self.end: {}, offset: {}", self.start, self.end, offset);
         Self::new(self.start, self.end.checked_sub(offset).unwrap())
     }
 

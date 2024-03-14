@@ -1,5 +1,6 @@
 use super::{tree::*, *};
 use crate::consensusdb::schemadb::{ReachabilityStore, ReachabilityStoreReader};
+use crate::process_key_already_error;
 use crate::types::{interval::Interval, perf};
 use starcoin_crypto::{HashValue as Hash, HashValue};
 
@@ -87,7 +88,7 @@ fn insert_to_future_covering_set(
         // which `new_block` is a chain ancestor of, contradicts processing order.
         SearchOutput::Found(_, _) => Err(ReachabilityError::DataInconsistency),
         SearchOutput::NotFound(i) => {
-            store.insert_future_covering_item(merged_block, new_block, i)?;
+            process_key_already_error(store.insert_future_covering_item(merged_block, new_block, i))?;
             Ok(())
         }
     }

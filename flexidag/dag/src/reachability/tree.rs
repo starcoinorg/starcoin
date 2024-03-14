@@ -5,7 +5,7 @@ use super::{
     extensions::ReachabilityStoreIntervalExtensions, inquirer::*, reindex::ReindexOperationContext,
     *,
 };
-use crate::consensusdb::schemadb::ReachabilityStore;
+use crate::{consensusdb::schemadb::ReachabilityStore, process_key_already_error};
 use starcoin_crypto::HashValue as Hash;
 
 /// Adds `new_block` as a child of `parent` in the tree structure. If this block
@@ -22,16 +22,17 @@ pub fn add_tree_block(
     let remaining = store.interval_remaining_after(parent)?;
     // Append the new child to `parent.children`
     let parent_height = store.append_child(parent, new_block)?;
+
     if remaining.is_empty() {
         // Init with the empty interval.
         // Note: internal logic relies on interval being this specific interval
         //       which comes exactly at the end of current capacity
-        store.insert(
+        process_key_already_error(store.insert(
             new_block,
             parent,
             remaining,
             parent_height.checked_add(1).unwrap(),
-        )?;
+        ))?;
 
         // Start a reindex operation (TODO: add timing)
         let reindex_root = store.get_reindex_root()?;
@@ -39,12 +40,12 @@ pub fn add_tree_block(
         ctx.reindex_intervals(new_block, reindex_root)?;
     } else {
         let allocated = remaining.split_half().0;
-        store.insert(
+        process_key_already_error(store.insert(
             new_block,
             parent,
             allocated,
             parent_height.checked_add(1).unwrap(),
-        )?;
+        ))?;
     };
     Ok(())
 }

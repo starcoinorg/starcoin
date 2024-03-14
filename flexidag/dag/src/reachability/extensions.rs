@@ -1,6 +1,8 @@
 use crate::consensusdb::{prelude::StoreResult, schemadb::ReachabilityStoreReader};
 use crate::types::interval::Interval;
+use rand_core::block;
 use starcoin_crypto::hash::HashValue as Hash;
+use starcoin_logger::prelude::info;
 
 pub(super) trait ReachabilityStoreIntervalExtensions {
     fn interval_children_capacity(&self, block: Hash) -> StoreResult<Interval>;
@@ -35,6 +37,7 @@ impl<T: ReachabilityStoreReader + ?Sized> ReachabilityStoreIntervalExtensions fo
     /// Returns the available interval to allocate for tree children, taken from the
     /// end of children allocation capacity
     fn interval_remaining_after(&self, block: Hash) -> StoreResult<Interval> {
+        info!("jacktest: interval_remaining_after, block id = {:?}", block);
         let alloc_capacity = self.interval_children_capacity(block)?;
         match self.get_children(block)?.last() {
             Some(last_child) => {
