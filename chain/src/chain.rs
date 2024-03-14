@@ -403,7 +403,7 @@ impl BlockChain {
         self.connect(ExecutedBlock { block, block_info })
     }
 
-    fn check_parents_coherent(&self, header: &BlockHeader) -> Result<()> {
+    fn check_parents_coherent(&self, header: &BlockHeader) -> Result<HashValue> {
         if !header.is_dag() {
             bail!("Block is not a dag block.");
         }
@@ -414,14 +414,14 @@ impl BlockChain {
         }).collect::<Result<HashSet<_>>>()?;
 
         if results.len() == 1 {
-            Ok(())
+            Ok(results.into_iter().next().expect("the len of the results is larger than 1 but no the first elemen!").clone())
         } else {
             bail!("dag block: {:?}, number: {:?} has multiple parents whose dags are not the same one! Their dag genesis are: {:?}", header.id(), header.number(), results);
         }
     }
 
-    fn execute_dag_block(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
-        self.check_parents_coherent(verified_block.0.header())?;
+    fn execute_dag_block(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
+        let origin = self.check_parents_coherent(verified_block.0.header())?;
         info!("execute dag block:{:?}", verified_block.0);
         let block = verified_block.0;
         let selected_parent = block.parent_hash();
@@ -600,7 +600,7 @@ impl BlockChain {
         self.storage.save_block_info(block_info.clone())?;
 
         self.storage.save_table_infos(txn_table_infos)?;
-        let result = self.dag.commit(header.to_owned());
+        let result = self.dag.commit(header.to_owned(), origin);
         match result {
             anyhow::Result::Ok(_) => (),
             Err(e) => {
@@ -788,7 +788,7 @@ impl BlockChain {
         &self.block_accumulator
     }
 
-    pub fn init_dag_with_genesis(&self, genesis: BlockHeader) -> Result<()> {
+    pub fn init_dag_with_genesis(&mut self, genesis: BlockHeader) -> Result<()> {
         if genesis.is_dag_genesis() {
             let dag_genesis_id = genesis.id();
             self.dag.init_with_genesis(genesis)?;
@@ -1048,7 +1048,7 @@ impl ChainReader for BlockChain {
         FullVerifier::verify_block(self, block)
     }
 
-    fn execute(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
+    fn execute(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
         let header = verified_block.0.header().clone();
         if !header.is_dag() {
             let executed = Self::execute_block_and_save(

@@ -2,7 +2,7 @@ use super::reachability::{inquirer, reachability_service::MTReachabilityService}
 use super::types::ghostdata::GhostdagData;
 use crate::consensusdb::consenses_state::{DagState, DagStateReader, DagStateStore};
 use crate::consensusdb::prelude::{FlexiDagStorageConfig, StoreError};
-use crate::consensusdb::schemadb::GhostdagStoreReader;
+use crate::consensusdb::schemadb::{GhostdagStoreReader, ReachabilityStore, REINDEX_ROOT_KEY};
 use crate::consensusdb::{
     prelude::FlexiDagStorage,
     schemadb::{
@@ -77,7 +77,7 @@ impl BlockDAG {
         Ok(self.storage.header_store.has(hash)?)
     }
 
-    pub fn init_with_genesis(&self, genesis: BlockHeader) -> anyhow::Result<()> {
+    pub fn init_with_genesis(&mut self, genesis: BlockHeader) -> anyhow::Result<()> {
         let genesis_id = genesis.id();
         let origin = genesis.parent_hash();
 
@@ -94,7 +94,7 @@ impl BlockDAG {
         // self.storage
         //     .relations_store
         //     .insert(origin, BlockHashes::new(vec![]))?;
-        self.commit(genesis)?;
+        self.commit(genesis, origin)?;
         self.save_dag_state(genesis_id, DagState {
             tips: vec![genesis_id],
         })?;
@@ -112,7 +112,7 @@ impl BlockDAG {
         }
     }
 
-    pub fn commit(&self, header: BlockHeader) -> anyhow::Result<()> {
+    pub fn commit(&mut self, header: BlockHeader, origin: HashValue) -> anyhow::Result<()> {
         // Generate ghostdag data
         let parents = header.parents();
         let ghostdata = match self.ghostdata_by_hash(header.id())? {
@@ -146,6 +146,17 @@ impl BlockDAG {
             Err(reachability::ReachabilityError::DataInconsistency) => {
                 let _future_covering_set = reachability_store.get_future_covering_set(header.id())?;
                 info!("the key {:?} was already processed, original error message: {:?}", header.id(), reachability::ReachabilityError::DataInconsistency);
+            }
+            Err(reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(msg))) => {
+                if msg == REINDEX_ROOT_KEY.to_string() {
+                    info!("the key {:?} was already processed, original error message: {:?}", header.id(), reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(REINDEX_ROOT_KEY.to_string())));
+                    info!("now set the reindex key to origin: {:?}", origin);
+                    self.storage.reachability_store.set_reindex_root(origin)?;
+                    bail!("failed to add a block when committing, e: {:?}", reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(msg)));
+
+                } else {
+                    bail!("failed to add a block when committing, e: {:?}", reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(msg)));
+                }
             }
             Err(e) => {
                 bail!("failed to add a block when committing, e: {:?}", e);

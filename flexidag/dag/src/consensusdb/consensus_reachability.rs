@@ -49,7 +49,7 @@ pub trait ReachabilityStore: ReachabilityStoreReader {
     fn get_reindex_root(&self) -> Result<Hash, StoreError>;
 }
 
-const REINDEX_ROOT_KEY: &str = "reachability-reindex-root";
+pub const REINDEX_ROOT_KEY: &str = "reachability-reindex-root";
 pub(crate) const REACHABILITY_DATA_CF: &str = "reachability-data";
 // TODO: explore perf to see if using fixed-length constants for store prefixes is preferable
 

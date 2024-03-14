@@ -10,7 +10,7 @@ pub fn try_init_with_storage(
     storage: Arc<dyn Store>,
     config: Arc<NodeConfig>,
 ) -> anyhow::Result<BlockDAG> {
-    let dag = new_by_config(
+    let mut dag = new_by_config(
         config.data_dir().join("flexidag").as_path(),
         config.net().id().clone(),
     )?;
