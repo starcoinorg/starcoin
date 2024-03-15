@@ -1,6 +1,5 @@
 use crate::consensusdb::{prelude::StoreResult, schemadb::ReachabilityStoreReader};
 use crate::types::interval::Interval;
-use rand_core::block;
 use starcoin_crypto::hash::HashValue as Hash;
 use starcoin_logger::prelude::info;
 

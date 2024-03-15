@@ -790,7 +790,7 @@ impl BlockChain {
 
     pub fn init_dag_with_genesis(&mut self, genesis: BlockHeader) -> Result<()> {
         if genesis.is_dag_genesis() {
-            let dag_genesis_id = genesis.id();
+            let _dag_genesis_id = genesis.id();
             self.dag.init_with_genesis(genesis)?;
         }
         Ok(())
