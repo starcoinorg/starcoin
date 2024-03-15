@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    adapter_common::{PreprocessedTransaction, VMAdapter},
     parallel_executor::{storage_wrapper::VersionedView, StarcoinTransactionOutput},
     starcoin_vm::StarcoinVM,
+    vm_adapter::{PreprocessedTransaction, VMAdapter},
 };
 
 use starcoin_parallel_executor::{

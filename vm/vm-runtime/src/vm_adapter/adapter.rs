@@ -42,6 +42,7 @@ impl<'r, 'l, R> From<Session<'r, 'l, R>> for SessionAdapter<'r, 'l, R> {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl<'r, 'l, R> Into<Session<'r, 'l, R>> for SessionAdapter<'r, 'l, R> {
     fn into(self) -> Session<'r, 'l, R> {
         self.session
@@ -61,10 +62,6 @@ impl<'r, 'l, R> AsMut<Session<'r, 'l, R>> for SessionAdapter<'r, 'l, R> {
 }
 
 impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
-    pub fn new(session: Session<'r, 'l, R>) -> Self {
-        Self { session }
-    }
-
     /// wrapper of Session, push signer as the first argument of function.
     pub fn execute_entry_function(
         &mut self,
@@ -85,33 +82,6 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
         )?;
         self.session
             .execute_entry_function(module, function_name, ty_args, final_args, gas_meter)
-    }
-
-    /// wrapper of Session, push signer as the first argument of function.
-    pub fn execute_function_bypass_visibility(
-        &mut self,
-        module: &ModuleId,
-        function_name: &IdentStr,
-        ty_args: Vec<TypeTag>,
-        args: Vec<impl Borrow<[u8]>>,
-        gas_meter: &mut impl GasMeter,
-        sender: AccountAddress,
-    ) -> VMResult<SerializedReturnValues> {
-        let (_, func, _) = self
-            .session
-            .load_function(module, function_name, &ty_args)?;
-        let final_args = Self::check_and_rearrange_args_by_signer_position(
-            func,
-            args.into_iter().map(|b| b.borrow().to_vec()).collect(),
-            sender,
-        )?;
-        self.session.execute_function_bypass_visibility(
-            module,
-            function_name,
-            ty_args,
-            final_args,
-            gas_meter,
-        )
     }
 
     /// wrapper of Session, push signer as the first argument of function.
