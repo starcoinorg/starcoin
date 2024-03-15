@@ -42,8 +42,9 @@ impl Stratum {
     fn send_to_all(&mut self, event: MintBlockEvent) {
         let mut remove_outdated = vec![];
         for (id, (ch, login)) in self.mint_block_subscribers.iter() {
-            let worker_id = login.get_worker_id(*id);
+            let worker_id = login.generate_worker_id(*id);
             let job = StratumJobResponse::from(&event, None, worker_id);
+            info!(target: "stratum", "dispatch startum job:{:?}", job);
             if let Err(err) = ch.unbounded_send(job) {
                 if err.is_disconnected() {
                     remove_outdated.push(*id);
@@ -129,8 +130,9 @@ impl ServiceHandler<Self, SubscribeJobEvent> for Stratum {
         });
         if let Ok(Some(event)) = self.sync_current_job() {
             ctx.spawn(async move {
-                let worker_id = login.get_worker_id(sub_id);
+                let worker_id = login.generate_worker_id(sub_id);
                 let stratum_result = StratumJobResponse::from(&event, Some(login), worker_id);
+                info!(target:"stratum", "Respond to stratum subscribe:{:?}", stratum_result);
                 if let Err(err) = sender.unbounded_send(stratum_result) {
                     error!(target: "stratum", "Failed to send MintBlockEvent: {}", err);
                 }

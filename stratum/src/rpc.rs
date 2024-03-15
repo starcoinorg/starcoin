@@ -160,7 +160,7 @@ impl ServiceRequest for LoginRequest {
 }
 
 impl LoginRequest {
-    pub fn get_worker_id(&self, sub_id: u32) -> [u8; 4] {
+    pub fn generate_worker_id(&self, sub_id: u32) -> [u8; 4] {
         let mut hash = DefaultHasher::new(b"");
         hash.update(self.login.as_bytes());
         let mut output: [u8; 4] = hash.finish().to_vec()[0..4]
