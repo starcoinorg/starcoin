@@ -6,9 +6,9 @@ mod vm_wrapper;
 
 use crate::metrics::VMMetrics;
 use crate::{
-    adapter_common::{preprocess_transaction, PreprocessedTransaction},
     parallel_executor::vm_wrapper::StarcoinVMWrapper,
     starcoin_vm::StarcoinVM,
+    vm_adapter::{preprocess_transaction, PreprocessedTransaction},
 };
 use move_core_types::vm_status::{StatusCode, VMStatus};
 use rayon::prelude::*;

@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::access_path_cache::AccessPathCache;
-use crate::adapter_common::{
-    discard_error_output, discard_error_vm_status, PreprocessedTransaction, VMAdapter,
-};
 use crate::data_cache::{AsMoveResolver, RemoteStorage, StateViewCache};
 use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
 use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
-use crate::move_vm_ext::{PublishModuleBundleOption, SessionAdapter};
+use crate::vm_adapter::{
+    discard_error_output, discard_error_vm_status, PreprocessedTransaction,
+    PublishModuleBundleOption, SessionAdapter, VMAdapter,
+};
 use anyhow::{bail, format_err, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
 use move_table_extension::NativeTableContext;

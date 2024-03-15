@@ -1,7 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::move_vm_ext::{MoveResolverExt, SessionAdapter, SessionId};
+use super::SessionAdapter;
+use crate::move_vm_ext::{MoveResolverExt, SessionId};
 use anyhow::Result;
 use move_core_types::vm_status::{StatusCode, VMStatus};
 use starcoin_vm_types::state_view::StateView;
@@ -49,7 +50,7 @@ pub enum PreprocessedTransaction {
 }
 
 #[inline]
-pub(crate) fn preprocess_transaction(txn: Transaction) -> PreprocessedTransaction {
+pub fn preprocess_transaction(txn: Transaction) -> PreprocessedTransaction {
     match txn {
         Transaction::BlockMetadata(b) => PreprocessedTransaction::BlockMetadata(b),
         Transaction::UserTransaction(txn) => {
