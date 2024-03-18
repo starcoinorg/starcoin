@@ -33,31 +33,31 @@ pub struct PublishModuleBundleOption {
 
 /// An adapter for wrap MoveVM Session
 pub struct SessionAdapter<'r, 'l, R> {
-    pub(crate) session: Session<'r, 'l, R>,
+    pub(crate) inner: Session<'r, 'l, R>,
 }
 
 impl<'r, 'l, R> From<Session<'r, 'l, R>> for SessionAdapter<'r, 'l, R> {
     fn from(s: Session<'r, 'l, R>) -> Self {
-        Self { session: s }
+        Self { inner: s }
     }
 }
 
 #[allow(clippy::from_over_into)]
 impl<'r, 'l, R> Into<Session<'r, 'l, R>> for SessionAdapter<'r, 'l, R> {
     fn into(self) -> Session<'r, 'l, R> {
-        self.session
+        self.inner
     }
 }
 
 impl<'r, 'l, R> AsRef<Session<'r, 'l, R>> for SessionAdapter<'r, 'l, R> {
     fn as_ref(&self) -> &Session<'r, 'l, R> {
-        &self.session
+        &self.inner
     }
 }
 
 impl<'r, 'l, R> AsMut<Session<'r, 'l, R>> for SessionAdapter<'r, 'l, R> {
     fn as_mut(&mut self) -> &mut Session<'r, 'l, R> {
-        &mut self.session
+        &mut self.inner
     }
 }
 
@@ -72,15 +72,13 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
         gas_meter: &mut impl GasMeter,
         sender: AccountAddress,
     ) -> VMResult<SerializedReturnValues> {
-        let (_, func, _) = self
-            .session
-            .load_function(module, function_name, &ty_args)?;
+        let (_, func, _) = self.inner.load_function(module, function_name, &ty_args)?;
         let final_args = Self::check_and_rearrange_args_by_signer_position(
             func,
             args.into_iter().map(|b| b.borrow().to_vec()).collect(),
             sender,
         )?;
-        self.session
+        self.inner
             .execute_entry_function(module, function_name, ty_args, final_args, gas_meter)
     }
 
@@ -93,13 +91,13 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
         gas_meter: &mut impl GasMeter,
         sender: AccountAddress,
     ) -> VMResult<SerializedReturnValues> {
-        let (main, _) = self.session.load_script(script.borrow(), ty_args.clone())?;
+        let (main, _) = self.inner.load_script(script.borrow(), ty_args.clone())?;
         let final_args = Self::check_and_rearrange_args_by_signer_position(
             main,
             args.into_iter().map(|b| b.borrow().to_vec()).collect(),
             sender,
         )?;
-        self.session
+        self.inner
             .execute_script(script, ty_args, final_args, gas_meter)
     }
 
@@ -155,13 +153,13 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
         let mut clean_cache = false;
         // All modules verified, publish them to data cache
         for (module, blob) in compiled_modules.into_iter().zip(modules.into_iter()) {
-            let republish = if self.session.exists_module(&module.self_id())? {
+            let republish = if self.inner.exists_module(&module.self_id())? {
                 clean_cache = true;
                 true
             } else {
                 false
             };
-            self.session
+            self.inner
                 .publish_module_to_data_cache(&module.self_id(), blob, republish)?;
         }
 
@@ -219,7 +217,7 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
         // changing the bytecode format to include an `is_upgradable` flag in the CompiledModule.
         for module in &compiled_modules {
             let module_id = module.self_id();
-            if self.session.exists_module(&module_id)? {
+            if self.inner.exists_module(&module_id)? {
                 if option.only_new_module {
                     warn!(
                         "[VM] module {:?} already exists. Only allow publish new modules",
@@ -230,7 +228,7 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
                         .finish(Location::Undefined));
                 }
 
-                let old_module_ref = self.session.load_module(&module_id)?;
+                let old_module_ref = self.inner.load_module(&module_id)?;
                 let old_module = old_module_ref.module();
                 let old_m = normalized::Module::new(old_module);
                 let new_m = normalized::Module::new(&module);
@@ -252,7 +250,7 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
         }
 
         // Perform bytecode and loading verification. Modules must be sorted in topological order.
-        self.session
+        self.inner
             .verify_module_bundle_for_publication(&compiled_modules)?;
         Ok(compiled_modules)
     }
@@ -272,7 +270,7 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
                 parameters,
                 return_,
             },
-        ) = self.session.load_script(script.borrow(), ty_args)?;
+        ) = self.inner.load_script(script.borrow(), ty_args)?;
 
         Self::check_script_return(return_)?;
 
@@ -297,9 +295,7 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
                 parameters,
                 return_,
             },
-        ) = self
-            .session
-            .load_function(module, function_name, &ty_args)?;
+        ) = self.inner.load_function(module, function_name, &ty_args)?;
 
         Self::check_script_return(return_)?;
 
@@ -330,15 +326,15 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
         sender: AccountAddress,
     ) -> VMResult<()> {
         let final_args = Self::check_and_rearrange_args_by_signer_position(func, args, sender)?;
-        let (_, _) = self.session.deserialize_args(arg_tys, final_args)?;
+        let (_, _) = self.inner.deserialize_args(arg_tys, final_args)?;
 
         Ok(())
     }
 
     /// Clear vm runtimer loader's cache to reload new modules from state cache
     fn empty_loader_cache(&self) -> VMResult<()> {
-        self.session.mark_loader_cache_as_invaliddated();
-        self.session.flush_loader_cache_if_invalidated();
+        self.inner.mark_loader_cache_as_invaliddated();
+        self.inner.flush_loader_cache_if_invalidated();
         Ok(())
     }
 }
