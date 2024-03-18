@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: ghcr.io/starcoinorg/starcoin:v2.0.3-alpha
+        image: ghcr.io/starcoinorg/starcoin:dag-mining-net
         imagePullPolicy: Always
         command:
           - bash
@@ -35,7 +35,7 @@ spec:
             if [ ! -z $node_key ]; then
             node_key_flag="--node-key ${node_key}";
             fi;
-            /starcoin/starcoin -n proxima -d /sc-data --discover-local=true $node_key_flag;
+            /starcoin/starcoin -n proxima -d /sc-data --p2prpc-default-global-api-quota 9000/s --jsonrpc-default-global-api-quota 9000/s --discover-local=true $node_key_flag;
             ret=$?;
             echo "Now ret is - $ret";
             if [ $ret -eq 120 ] || [ $ret -eq 139 ]; then
