@@ -1156,8 +1156,8 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                 }
 
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::BannedRequest(
-                    peer_id,
-                    duration,
+                    _peer_id,
+                    _duration,
                 ))) => {
                     // info!(
                     //     "network banned peer {} for {} secs",
