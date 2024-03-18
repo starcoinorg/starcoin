@@ -1,4 +1,3 @@
-use dashmap::mapref::entry::Entry;
 use dashmap::DashMap;
 use governor::clock::{Clock, DefaultClock};
 use governor::state::keyed::DefaultKeyedStateStore;
@@ -44,6 +43,7 @@ where
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct ApiLimiters<ApiName, User>
 where
@@ -82,19 +82,20 @@ where
         }
     }
 
-    pub fn check(&self, api: &ApiName, user: Option<&User>) -> Result<(), anyhow::Error> {
-        let elem = match self.limiters.entry(api.clone()) {
-            Entry::Occupied(o) => o.into_ref(),
-            Entry::Vacant(v) => {
-                let api_limiter = self.new_limiter(api);
-                v.insert(api_limiter)
-            }
-        };
+    pub fn check(&self, _api: &ApiName, _user: Option<&User>) -> Result<(), anyhow::Error> {
+        // let elem = match self.limiters.entry(api.clone()) {
+        //     Entry::Occupied(o) => o.into_ref(),
+        //     Entry::Vacant(v) => {
+        //         let api_limiter = self.new_limiter(api);
+        //         v.insert(api_limiter)
+        //     }
+        // };
 
-        elem.check(user).map_err(|e| anyhow::anyhow!("{}", &e))
+        // elem.check(user).map_err(|e| anyhow::anyhow!("{}", &e))
+        Ok(())
     }
 
-    fn new_limiter(&self, api: &ApiName) -> ApiLimiter<User> {
+    fn _new_limiter(&self, api: &ApiName) -> ApiLimiter<User> {
         let global_quota = self
             .custom_global_api_quotas
             .get(api)
