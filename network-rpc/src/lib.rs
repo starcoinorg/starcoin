@@ -6,7 +6,7 @@ use anyhow::Result;
 use api_limiter::{ApiLimiters, Quota};
 use network_api::{PeerId, RpcInfo};
 use network_p2p_core::server::NetworkRpcServer;
-use network_p2p_core::{NetRpcError, RawRpcServer, RpcErrorCode};
+use network_p2p_core::RawRpcServer;
 use network_p2p_types::{OutgoingResponse, ProtocolRequest};
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::ApiQuotaConfig;
@@ -101,20 +101,20 @@ impl ActorService for NetworkRpcService {}
 impl EventHandler<Self, ProtocolRequest> for NetworkRpcService {
     fn handle_event(&mut self, msg: ProtocolRequest, ctx: &mut ServiceContext<Self>) {
         let rpc_server = self.rpc_server.clone();
-        let api_limiters = self.rpc_limiters.clone();
+        let _api_limiters = self.rpc_limiters.clone();
         ctx.spawn(async move {
             let protocol = msg.protocol;
             let rpc_path =
                 RpcInfo::rpc_path(protocol).expect("get rpc path from protocol must success.");
             let peer = msg.request.peer.into();
-            let result = match api_limiters.check(&rpc_path, Some(&peer)) {
-                Err(e) => Err(NetRpcError::new(RpcErrorCode::RateLimited, e.to_string())),
-                Ok(_) => {
-                    rpc_server
+            // let result = match api_limiters.check(&rpc_path, Some(&peer)) {
+                // Err(e) => Err(NetRpcError::new(RpcErrorCode::RateLimited, e.to_string())),
+                // Ok(_) => {
+                    let result = rpc_server
                         .handle_raw_request(peer, rpc_path.into(), msg.request.payload)
-                        .await
-                }
-            };
+                        .await;
+                // }
+            // };
 
             let resp = bcs_ext::to_bytes(&result).expect("NetRpc Result must encode success.");
             //TODO: update reputation_changes
