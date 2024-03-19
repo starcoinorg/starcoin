@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::verifier::{BlockVerifier, DagVerifier, FullVerifier};
+use crate::verifier::{BlockVerifier, DagBasicVerifier, DagVerifier, FullVerifier};
 use anyhow::{anyhow, bail, ensure, format_err, Ok, Result};
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
@@ -1045,7 +1045,12 @@ impl ChainReader for BlockChain {
     }
 
     fn verify(&self, block: Block) -> Result<VerifiedBlock> {
-        FullVerifier::verify_block(self, block)
+        if block.header().is_dag() {
+            DagBasicVerifier::verify_header(self, block.header())?;
+            Ok(VerifiedBlock(block))
+        } else {
+            FullVerifier::verify_block(self, block)
+        }
     }
 
     fn execute(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
