@@ -479,6 +479,7 @@ where
                 .find_ancestor_dag_block_header(vec![block_header.clone()])
                 .await?;
 
+            dag_ancestors.reverse();
             while !dag_ancestors.is_empty() {
                 for ancestor_block_header_id in &dag_ancestors {
                     if self.chain.has_dag_block(*ancestor_block_header_id)? {
