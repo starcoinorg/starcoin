@@ -528,12 +528,12 @@ where
                                 block.id(),
                                 block.header().number()
                             );
-                            let executed_block = if self.skip_pow_verify {
-                                self.chain
-                                    .apply_with_verifier::<DagBasicVerifier>(block.clone())?
-                            } else {
-                                self.chain.apply(block.clone())?
-                            };
+                            // let executed_block = if self.skip_pow_verify {
+                                let executed_block = self.chain
+                                    .apply_with_verifier::<DagBasicVerifier>(block.clone())?;
+                            // } else {
+                            //     self.chain.apply(block.clone())?
+                            // };
                             // let executed_block = self.chain.apply(block)?;
                             info!(
                                 "succeed to apply a dag block: {:?}, number: {:?}",
