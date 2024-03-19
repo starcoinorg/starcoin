@@ -430,3 +430,39 @@ impl BlockVerifier for DagVerifier {
         Ok(())
     }
 }
+
+//TODO: Implement it.
+pub struct DagBasicVerifier;
+impl BlockVerifier for DagBasicVerifier {
+    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
+    where
+        R: ChainReader,
+    {
+        let parents_hash = new_block_header.parents_hash().unwrap_or_default();
+        let mut parents_hash_to_check = parents_hash.clone();
+        parents_hash_to_check.sort();
+        parents_hash_to_check.dedup();
+
+        verify_block!(
+            VerifyBlockField::Header,
+            !parents_hash_to_check.is_empty() && parents_hash.len() == parents_hash_to_check.len(),
+            "Invalid parents_hash {:?} for a dag block {}, fork height {}",
+            new_block_header.parents_hash(),
+            new_block_header.number(),
+            new_block_header.dag_fork_height()
+        );
+
+        verify_block!(
+            VerifyBlockField::Header,
+            parents_hash_to_check.contains(&new_block_header.parent_hash())
+                && current_chain
+                    .get_block_info(Some(new_block_header.parent_hash()))?
+                    .is_some(),
+            "Invalid block: parent {} might not exist.",
+            new_block_header.parent_hash()
+        );
+
+        Ok(())
+        // ConsensusVerifier::verify_header(current_chain, new_block_header)
+    }
+}

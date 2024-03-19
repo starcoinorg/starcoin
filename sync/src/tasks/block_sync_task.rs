@@ -9,6 +9,7 @@ use futures::FutureExt;
 use network_api::PeerId;
 use network_api::PeerProvider;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
+use starcoin_chain::verifier::DagBasicVerifier;
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
 use starcoin_config::G_CRATE_VERSION;
@@ -527,7 +528,13 @@ where
                                 block.id(),
                                 block.header().number()
                             );
-                            let executed_block = self.chain.apply(block)?;
+                            let executed_block = if self.skip_pow_verify {
+                                self.chain
+                                    .apply_with_verifier::<DagBasicVerifier>(block.clone())?
+                            } else {
+                                self.chain.apply(block.clone())?
+                            };
+                            // let executed_block = self.chain.apply(block)?;
                             info!(
                                 "succeed to apply a dag block: {:?}, number: {:?}",
                                 executed_block.block.id(),
