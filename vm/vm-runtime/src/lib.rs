@@ -15,6 +15,7 @@ mod errors;
 pub mod force_upgrade_management;
 pub mod move_vm_ext;
 pub mod parallel_executor;
+mod verifier;
 mod vm_adapter;
 
 use crate::metrics::VMMetrics;
