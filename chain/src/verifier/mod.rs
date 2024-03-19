@@ -95,6 +95,9 @@ pub trait BlockVerifier {
     where
         R: ChainReader,
     {
+        if header.is_dag() {
+            return Ok(());
+        }
         let epoch = current_chain.epoch();
         let is_legacy = header.is_legacy();
 
