@@ -14,7 +14,7 @@ use move_core_types::{
     resolver::*,
 };
 use move_vm_runtime::loader::Function;
-use move_vm_runtime::session::{LoadedFunctionInstantiation, SerializedReturnValues, Session};
+use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
 use move_vm_types::gas::GasMeter;
 use move_vm_types::loaded_data::runtime_types::Type;
 use std::borrow::Borrow;
@@ -62,46 +62,46 @@ impl<'r, 'l, R> AsMut<Session<'r, 'l, R>> for SessionAdapter<'r, 'l, R> {
 }
 
 impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
-    /// wrapper of Session, push signer as the first argument of function.
-    pub fn execute_entry_function(
-        &mut self,
-        module: &ModuleId,
-        function_name: &IdentStr,
-        ty_args: Vec<TypeTag>,
-        args: Vec<impl Borrow<[u8]>>,
-        gas_meter: &mut impl GasMeter,
-        sender: AccountAddress,
-    ) -> VMResult<SerializedReturnValues> {
-        let (_, func, _) = self.inner.load_function(module, function_name, &ty_args)?;
-        let final_args = Self::check_and_rearrange_args_by_signer_position(
-            func,
-            args.into_iter().map(|b| b.borrow().to_vec()).collect(),
-            sender,
-        )?;
-        self.inner
-            .execute_entry_function(module, function_name, ty_args, final_args, gas_meter)
-    }
+    ///// wrapper of Session, push signer as the first argument of function.
+    //pub fn execute_entry_function(
+    //    &mut self,
+    //    module: &ModuleId,
+    //    function_name: &IdentStr,
+    //    ty_args: Vec<TypeTag>,
+    //    args: Vec<impl Borrow<[u8]>>,
+    //    gas_meter: &mut impl GasMeter,
+    //    sender: AccountAddress,
+    //) -> VMResult<SerializedReturnValues> {
+    //    let (_, func, _) = self.inner.load_function(module, function_name, &ty_args)?;
+    //    let final_args = Self::check_and_rearrange_args_by_signer_position(
+    //        func,
+    //        args.into_iter().map(|b| b.borrow().to_vec()).collect(),
+    //        sender,
+    //    )?;
+    //    self.inner
+    //        .execute_entry_function(module, function_name, ty_args, final_args, gas_meter)
+    //}
 
-    /// wrapper of Session, push signer as the first argument of function.
-    pub fn execute_script(
-        &mut self,
-        script: impl Borrow<[u8]>,
-        ty_args: Vec<TypeTag>,
-        args: Vec<impl Borrow<[u8]>>,
-        gas_meter: &mut impl GasMeter,
-        sender: AccountAddress,
-    ) -> VMResult<SerializedReturnValues> {
-        let (main, _) = self.inner.load_script(script.borrow(), ty_args.clone())?;
-        let final_args = Self::check_and_rearrange_args_by_signer_position(
-            main,
-            args.into_iter().map(|b| b.borrow().to_vec()).collect(),
-            sender,
-        )?;
-        self.inner
-            .execute_script(script, ty_args, final_args, gas_meter)
-    }
+    ///// wrapper of Session, push signer as the first argument of function.
+    //pub fn execute_script(
+    //    &mut self,
+    //    script: impl Borrow<[u8]>,
+    //    ty_args: Vec<TypeTag>,
+    //    args: Vec<impl Borrow<[u8]>>,
+    //    gas_meter: &mut impl GasMeter,
+    //    sender: AccountAddress,
+    //) -> VMResult<SerializedReturnValues> {
+    //    let (main, _) = self.inner.load_script(script.borrow(), ty_args.clone())?;
+    //    let final_args = Self::check_and_rearrange_args_by_signer_position(
+    //        main,
+    //        args.into_iter().map(|b| b.borrow().to_vec()).collect(),
+    //        sender,
+    //    )?;
+    //    self.inner
+    //        .execute_script(script, ty_args, final_args, gas_meter)
+    //}
 
-    fn check_and_rearrange_args_by_signer_position(
+    pub(crate) fn check_and_rearrange_args_by_signer_position(
         func: Arc<Function>,
         args: Vec<Vec<u8>>,
         sender: AccountAddress,

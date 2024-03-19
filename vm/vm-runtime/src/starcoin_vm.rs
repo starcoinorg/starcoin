@@ -14,7 +14,8 @@ use crate::vm_adapter::{
 use anyhow::{bail, format_err, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
 use move_table_extension::NativeTableContext;
-use move_vm_runtime::session::Session;
+use move_vm_runtime::session::{SerializedReturnValues, Session};
+use move_vm_types::gas::GasMeter;
 use num_cpus;
 use once_cell::sync::OnceCell;
 use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
@@ -67,6 +68,7 @@ use starcoin_vm_types::{
     transaction_metadata::TransactionMetadata,
     vm_status::{StatusCode, VMStatus},
 };
+use std::borrow::Borrow;
 use std::cmp::min;
 use std::sync::Arc;
 
@@ -74,7 +76,7 @@ static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
 
 #[cfg(feature = "metrics")]
 use crate::metrics::VMMetrics;
-use crate::VMExecutor;
+use crate::{verifier, VMExecutor};
 
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
@@ -626,16 +628,16 @@ impl StarcoinVM {
                     init_script.function(),
                     sender
                 );
-                session
-                    .execute_entry_function(
-                        init_script.module(),
-                        init_script.function(),
-                        init_script.ty_args().to_vec(),
-                        init_script.args().to_vec(),
-                        gas_meter,
-                        sender,
-                    )
-                    .map_err(|e| e.into_vm_status())?;
+                Self::validate_execute_entry_function(
+                    &mut session,
+                    init_script.module(),
+                    init_script.function(),
+                    init_script.ty_args().to_vec(),
+                    init_script.args().to_vec(),
+                    gas_meter,
+                    sender,
+                )
+                .map_err(|e| e.into_vm_status())?;
             }
             charge_global_write_gas_usage(gas_meter, &session, &txn_data.sender())?;
 
@@ -672,7 +674,8 @@ impl StarcoinVM {
                         self.check_move_version(s.version() as u64)?;
                     };
                     debug!("TransactionPayload::{:?}", script);
-                    session.execute_script(
+                    Self::validate_execute_script(
+                        &mut session,
                         script.code().to_vec(),
                         script.ty_args().to_vec(),
                         script.args().to_vec(),
@@ -682,7 +685,8 @@ impl StarcoinVM {
                 }
                 TransactionPayload::ScriptFunction(script_function) => {
                     debug!("TransactionPayload::{:?}", script_function);
-                    session.execute_entry_function(
+                    Self::validate_execute_entry_function(
+                        &mut session,
                         script_function.module(),
                         script_function.function(),
                         script_function.ty_args().to_vec(),
@@ -704,6 +708,66 @@ impl StarcoinVM {
 
             self.success_transaction_cleanup(session, gas_meter, txn_data)
         }
+    }
+
+    fn validate_execute_entry_function<S: MoveResolverExt>(
+        session: &mut SessionAdapter<S>,
+        module: &ModuleId,
+        function_name: &IdentStr,
+        ty_args: Vec<TypeTag>,
+        args: Vec<impl Borrow<[u8]>>,
+        gas_meter: &mut impl GasMeter,
+        sender: AccountAddress,
+    ) -> VMResult<SerializedReturnValues> {
+        let (_, func, loaded_func) =
+            session
+                .inner
+                .load_function(module, function_name, &ty_args)?;
+
+        verifier::transaction_arg_validation::validate_combine_singer_and_args(
+            session,
+            vec![sender],
+            &args,
+            &loaded_func,
+        )?;
+
+        let final_args = SessionAdapter::<S>::check_and_rearrange_args_by_signer_position(
+            func,
+            args.into_iter().map(|b| b.borrow().to_vec()).collect(),
+            sender,
+        )?;
+        session
+            .inner
+            .execute_entry_function(module, function_name, ty_args, final_args, gas_meter)
+    }
+
+    fn validate_execute_script<S: MoveResolverExt>(
+        session: &mut SessionAdapter<S>,
+        script: impl Borrow<[u8]>,
+        ty_args: Vec<TypeTag>,
+        args: Vec<impl Borrow<[u8]>>,
+        gas_meter: &mut impl GasMeter,
+        sender: AccountAddress,
+    ) -> VMResult<SerializedReturnValues> {
+        let (main, loaded_func) = session
+            .inner
+            .load_script(script.borrow(), ty_args.clone())?;
+
+        verifier::transaction_arg_validation::validate_combine_singer_and_args(
+            session,
+            vec![sender],
+            &args,
+            &loaded_func,
+        )?;
+
+        let final_args = SessionAdapter::<S>::check_and_rearrange_args_by_signer_position(
+            main,
+            args.into_iter().map(|b| b.borrow().to_vec()).collect(),
+            sender,
+        )?;
+        session
+            .inner
+            .execute_script(script, ty_args, final_args, gas_meter)
     }
 
     /// Run the prologue of a transaction by calling into `PROLOGUE_NAME` function stored
