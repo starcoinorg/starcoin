@@ -356,6 +356,7 @@ mod tests {
       inquirer::add_block(&mut reachability_store, child, parent, &mut vec![parent].into_iter())?;
 
       let mut target = child;
+      let mut target_parent = parent;
       for i in 0..70 {
         parent = child;
         child = Hash::random();
@@ -364,18 +365,25 @@ mod tests {
             inquirer::add_block(&mut reachability_store, child, parent, &mut vec![parent].into_iter())?;
 
             target = child;
+            target_parent = parent;
         } else {
             inquirer::add_block(&mut reachability_store, child, parent, &mut vec![parent].into_iter())?;
         }
       }
 
+      // the relationship
+      // origin.....target_parent-target.....parent-child
       // ancestor
       assert!(dag.check_ancestor_of(target, vec![parent, child])?, "failed to check target is the ancestor of its descendant");
       assert!(dag.check_ancestor_of(origin, vec![target, parent, child])?, "failed to check origin is the parent of its child");
+      assert!(dag.check_ancestor_of(parent, vec![child])?, "failed to check target, parent is the parent of its child");
+      assert!(dag.check_ancestor_of(target_parent, vec![target])?, "failed to check target parent, parent is the parent of its child");
 
       // not ancestor
       assert!(!dag.check_ancestor_of(child, vec![target])?, "failed to check child is not the ancestor of its descendant");
       assert!(!dag.check_ancestor_of(parent, vec![target])?, "failed to check child is not the ancestor of its descendant");
+      assert!(!dag.check_ancestor_of(child, vec![parent])?, "failed to check target, child is the child of its parent");
+      assert!(!dag.check_ancestor_of(target, vec![target_parent])?, "failed to check target is the child of its parent");
 
       assert!(dag.check_ancestor_of(target, vec![Hash::random(), Hash::random(),]).is_err(), "failed to check not the ancestor of descendants");
       assert!(dag.check_ancestor_of(Hash::random(), vec![target, parent, child]).is_err(), "failed to check not the descendant of parents");
