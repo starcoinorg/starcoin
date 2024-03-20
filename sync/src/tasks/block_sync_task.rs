@@ -369,8 +369,14 @@ where
         }
         for parent in parents {
             if !self.chain.has_dag_block(parent)? {
+                if absent_blocks.contains(&parent) {
+                    continue;
+                }
                 absent_blocks.push(parent)
             } else {
+                if ancestors.contains(&parent) {
+                    continue;
+                }
                 ancestors.push(parent);
             }
         }

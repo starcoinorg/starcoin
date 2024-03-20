@@ -4,10 +4,10 @@
 mod tests {
     use anyhow::{bail, Ok};
     use starcoin_config::RocksdbConfig;
-    use starcoin_dag::{blockdag::BlockDAG, consensusdb::{consenses_state::{DagState, DagStateReader, DagStateStore}, prelude::{FlexiDagStorage, FlexiDagStorageConfig}, schemadb::ReachabilityStoreReader}, reachability::{inquirer, ReachabilityError}};
+    use starcoin_dag::{blockdag::BlockDAG, consensusdb::{consenses_state::{DagState, DagStateReader, DagStateStore}, prelude::{FlexiDagStorage, FlexiDagStorageConfig}, schemadb::ReachabilityStoreReader}, reachability::{inquirer, reachability_service::ReachabilityService, ReachabilityError}};
     use starcoin_types::{block::{set_test_flexidag_fork_height, BlockHeader, BlockHeaderBuilder}, blockhash::KType};
     use std::{env, fs};
-    use starcoin_crypto::HashValue as Hash;
+    use starcoin_crypto::{hash, HashValue as Hash};
 
     fn build_block_dag(k: KType) -> BlockDAG {
         let db_path = env::temp_dir().join("smolstc");
@@ -340,6 +340,45 @@ mod tests {
           }
         }
       }
+
+      Ok(())
+    }
+
+    #[test]
+    fn test_reachability_check_ancestor() -> anyhow::Result<()> {
+      let dag = BlockDAG::create_for_testing().unwrap();
+      let mut reachability_store = dag.storage.reachability_store.clone();
+
+      let mut parent = Hash::random();
+      let origin = parent;
+      let mut child = Hash::random();
+      inquirer::init(&mut reachability_store, parent)?;
+      inquirer::add_block(&mut reachability_store, child, parent, &mut vec![parent].into_iter())?;
+
+      let mut target = child;
+      for i in 0..70 {
+        parent = child;
+        child = Hash::random();
+
+        if i == 47 {
+            inquirer::add_block(&mut reachability_store, child, parent, &mut vec![parent].into_iter())?;
+
+            target = child;
+        } else {
+            inquirer::add_block(&mut reachability_store, child, parent, &mut vec![parent].into_iter())?;
+        }
+      }
+
+      // ancestor
+      assert!(dag.check_ancestor_of(target, vec![parent, child])?, "failed to check target is the ancestor of its descendant");
+      assert!(dag.check_ancestor_of(origin, vec![target, parent, child])?, "failed to check origin is the parent of its child");
+
+      // not ancestor
+      assert!(!dag.check_ancestor_of(child, vec![target])?, "failed to check child is not the ancestor of its descendant");
+      assert!(!dag.check_ancestor_of(parent, vec![target])?, "failed to check child is not the ancestor of its descendant");
+
+      assert!(dag.check_ancestor_of(target, vec![Hash::random(), Hash::random(),]).is_err(), "failed to check not the ancestor of descendants");
+      assert!(dag.check_ancestor_of(Hash::random(), vec![target, parent, child]).is_err(), "failed to check not the descendant of parents");
 
       Ok(())
     }

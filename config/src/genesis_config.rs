@@ -693,7 +693,7 @@ static G_DEFAULT_BASE_BLOCK_DIFF_WINDOW: u64 = 24;
 static G_BASE_REWARD_PER_UNCLE_PERCENT: u64 = 10;
 static G_MIN_BLOCK_TIME_TARGET: u64 = 5000;
 static G_MAX_BLOCK_TIME_TARGET: u64 = 60000;
-static G_BASE_MAX_UNCLES_PER_BLOCK: u64 = 2;
+pub static G_BASE_MAX_UNCLES_PER_BLOCK: u64 = 2;
 
 pub static G_TOTAL_STC_AMOUNT: Lazy<TokenValue<STCUnit>> =
     Lazy::new(|| STCUnit::STC.value_of(3185136000));

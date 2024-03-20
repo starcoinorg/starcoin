@@ -77,6 +77,10 @@ impl BlockDAG {
         Ok(self.storage.header_store.has(hash)?)
     }
 
+    pub fn check_ancestor_of(&self, ancestor: Hash, descendant: Vec<Hash>) -> anyhow::Result<bool> {
+        self.ghostdag_manager.check_ancestor_of(ancestor, descendant)
+    } 
+
     pub fn init_with_genesis(&mut self, genesis: BlockHeader) -> anyhow::Result<()> {
         let genesis_id = genesis.id();
         let origin = genesis.parent_hash();

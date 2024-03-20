@@ -16,6 +16,7 @@ use starcoin_account_service::{AccountEventService, AccountService, AccountStora
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
+use starcoin_config::genesis_config::G_BASE_MAX_UNCLES_PER_BLOCK;
 use starcoin_config::NodeConfig;
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
@@ -52,6 +53,7 @@ use starcoin_sync::sync::SyncService;
 use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
+use starcoin_types::blockhash::KType;
 use starcoin_types::system_events::{SystemShutdown, SystemStarted};
 use starcoin_vm_runtime::metrics::VMMetrics;
 use std::sync::Arc;
@@ -319,7 +321,7 @@ impl NodeService {
             config.storage.dag_dir(),
             config.storage.clone().into(),
         )?;
-        let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage.clone());
+        let dag = starcoin_dag::blockdag::BlockDAG::new(KType::try_from(G_BASE_MAX_UNCLES_PER_BLOCK)?, dag_storage.clone());
         registry.put_shared(dag.clone()).await?;
         let (chain_info, genesis) =
             Genesis::init_and_check_storage(config.net(), storage.clone(), dag, config.data_dir())?;

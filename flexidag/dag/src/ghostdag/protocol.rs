@@ -67,6 +67,10 @@ impl<
         ))
     }
 
+    pub fn check_ancestor_of(&self, ancestor: Hash, descendant: Vec<Hash>) -> anyhow::Result<bool> {
+        self.reachability_service.is_dag_ancestor_of_any_result(ancestor, &mut descendant.into_iter()).map_err(|e| e.into())
+    }
+
     pub fn find_selected_parent(
         &self,
         parents: impl IntoIterator<Item = Hash>,

@@ -1335,7 +1335,9 @@ impl BlockChain {
             for hash in parents {
                 tips.retain(|x| *x != hash);
             }
-            tips.push(new_tip_block.id());
+            if !dag.check_ancestor_of(new_tip_block.id(), tips.clone())? {
+                tips.push(new_tip_block.id());
+            }
         }
         // Caculate the ghostdata of the virutal node created by all tips.
         // And the ghostdata.selected of the tips will be the latest head.
