@@ -1,4 +1,5 @@
-use crate::rpc::*;
+use crate::diff_manager::DifficultyManager;
+use crate::{difficulty_to_target_hex, rpc::*};
 use anyhow::Result;
 use futures::channel::mpsc;
 use futures::StreamExt;
@@ -29,21 +30,48 @@ impl Stratum {
             mint_block_subscribers: Default::default(),
         }
     }
+
     fn next_id(&self) -> u32 {
         self.uid.fetch_add(1, atomic::Ordering::SeqCst)
     }
-    fn sync_current_job(&mut self) -> Result<Option<MintBlockEvent>> {
+
+    fn sync_upstream_job(&mut self) -> Result<Option<MintBlockEvent>> {
         let service = self.miner_service.clone();
         let subscribers_num = self.mint_block_subscribers.len() as u32;
         futures::executor::block_on(service.send(UpdateSubscriberNumRequest {
             number: Some(subscribers_num),
         }))
     }
-    fn send_to_all(&mut self, event: MintBlockEvent) {
+
+    fn get_downstream_job(
+        subscribe_id: u32,
+        login: LoginRequest,
+        set_login: bool,
+        upstreaum_event: &MintBlockEvent,
+        diff_manager: &DifficultyManager,
+    ) -> StratumJobResponse {
+        let worker_id = login.generate_worker_id(subscribe_id);
+        let target = diff_manager.get_target();
+        let job = StratumJobResponse::from(
+            upstreaum_event,
+            if set_login { Some(login) } else { None },
+            worker_id,
+            difficulty_to_target_hex(upstreaum_event.difficulty), //target,
+        );
+
+        return job;
+    }
+
+    fn dispatch_job_to_clients(&mut self, event: MintBlockEvent) {
         let mut remove_outdated = vec![];
         for (id, (ch, login)) in self.mint_block_subscribers.iter() {
-            let worker_id = login.generate_worker_id(*id);
-            let job = StratumJobResponse::from(&event, None, worker_id);
+            let job = Self::get_downstream_job(
+                *id,
+                login.clone(),
+                false,
+                &event,
+                &DifficultyManager::new(),
+            );
             info!(target: "stratum", "dispatch startum job:{:?}", job);
             if let Err(err) = ch.unbounded_send(job) {
                 if err.is_disconnected() {
@@ -74,7 +102,7 @@ impl ActorService for Stratum {
 
 impl EventHandler<Self, MintBlockEvent> for Stratum {
     fn handle_event(&mut self, event: MintBlockEvent, _ctx: &mut ServiceContext<Stratum>) {
-        self.send_to_all(event);
+        self.dispatch_job_to_clients(event);
     }
 }
 
@@ -128,12 +156,12 @@ impl ServiceHandler<Self, SubscribeJobEvent> for Stratum {
                 error!(target: "stratum", "Subscriber assign is failed");
             }
         });
-        if let Ok(Some(event)) = self.sync_current_job() {
+        if let Ok(Some(event)) = self.sync_upstream_job() {
+            let downstream_job =
+                Self::get_downstream_job(sub_id, login, true, &event, &DifficultyManager::new());
             ctx.spawn(async move {
-                let worker_id = login.generate_worker_id(sub_id);
-                let stratum_result = StratumJobResponse::from(&event, Some(login), worker_id);
-                info!(target:"stratum", "Respond to stratum subscribe:{:?}", stratum_result);
-                if let Err(err) = sender.unbounded_send(stratum_result) {
+                info!(target:"stratum", "Respond to stratum subscribe:{:?}", downstream_job);
+                if let Err(err) = sender.unbounded_send(downstream_job) {
                     error!(target: "stratum", "Failed to send MintBlockEvent: {}", err);
                 }
             });
@@ -146,11 +174,11 @@ impl ServiceHandler<Self, SubscribeJobEvent> for Stratum {
 impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
     fn handle(&mut self, msg: SubmitShareEvent, _ctx: &mut ServiceContext<Self>) -> Result<()> {
         info!(target: "stratum", "received submit share event:{:?}", &msg.0);
-        if let Some(current_mint_event) = self.sync_current_job()? {
-            let job_id = hex::encode(&current_mint_event.minting_blob[0..8]);
-            let submit_job_id = msg.0.job_id.clone();
-            if submit_job_id != job_id {
-                warn!(target: "stratum", "received job mismatch with current job,{},{}", submit_job_id, job_id);
+        if let Some(current_mint_event) = self.sync_upstream_job()? {
+            let job_id = JobId::new(&msg.0.job_id)?;
+            let submit_job_id = JobId::from_bob(&current_mint_event.minting_blob);
+            if job_id != submit_job_id {
+                info!(target: "stratum", "received job mismatch with current job,{:?},{:?}",job_id,submit_job_id);
                 return Ok(());
             };
             let mut seal: MinerSubmitSealRequest = msg.0.try_into()?;
