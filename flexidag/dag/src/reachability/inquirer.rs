@@ -10,6 +10,10 @@ pub fn init(store: &mut (impl ReachabilityStore + ?Sized), origin: HashValue) ->
     init_with_params(store, origin, Interval::maximal())
 }
 
+pub fn init_for_test(store: &mut (impl ReachabilityStore + ?Sized), origin: HashValue, capacity: Interval) -> Result<()> {
+    init_with_params(store, origin, capacity)
+}
+
 pub(super) fn init_with_params(
     store: &mut (impl ReachabilityStore + ?Sized),
     origin: Hash,

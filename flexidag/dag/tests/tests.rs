@@ -4,9 +4,9 @@
 mod tests {
     use anyhow::{bail, Ok};
     use starcoin_config::RocksdbConfig;
-    use starcoin_dag::{blockdag::BlockDAG, consensusdb::{consenses_state::{DagState, DagStateReader, DagStateStore}, prelude::{FlexiDagStorage, FlexiDagStorageConfig}, schemadb::ReachabilityStoreReader}, reachability::{inquirer, reachability_service::ReachabilityService, ReachabilityError}};
+    use starcoin_dag::{blockdag::BlockDAG, consensusdb::{consenses_state::{DagState, DagStateReader, DagStateStore}, prelude::{FlexiDagStorage, FlexiDagStorageConfig}, schemadb::{DbReachabilityStore, ReachabilityStore, ReachabilityStoreReader}}, reachability::{inquirer, reachability_service::ReachabilityService, ReachabilityError}, types::interval::{self, Interval}};
     use starcoin_types::{block::{set_test_flexidag_fork_height, BlockHeader, BlockHeaderBuilder}, blockhash::KType};
-    use std::{env, fs};
+    use std::{env, fs, process::ChildStdin};
     use starcoin_crypto::{hash, HashValue as Hash};
 
     fn build_block_dag(k: KType) -> BlockDAG {
@@ -389,5 +389,68 @@ mod tests {
       assert!(dag.check_ancestor_of(Hash::random(), vec![target, parent, child]).is_err(), "failed to check not the descendant of parents");
 
       Ok(())
+    }
+
+    fn print_reachability_data(reachability: &DbReachabilityStore, key: &[Hash]) {
+        println!("**********************");
+        for k in key {
+            let height = reachability.get_height(*k).unwrap();
+            let parent = reachability.get_parent(*k).unwrap();
+            let children = reachability.get_children(*k).unwrap();
+            let interval = reachability.get_interval(*k).unwrap();
+
+            println!("key: {:?}, height: {:?}, parent: {:?}, children: {:?}, interval: {:?}", k, height, parent, children, interval);
+        }
+        println!("**********************");
+    }
+
+    #[test]
+    fn test_reachability_algorighm() -> anyhow::Result<()> {
+        let dag = BlockDAG::create_for_testing().unwrap();
+        let mut reachability_store = dag.storage.reachability_store.clone();
+
+        let origin = Hash::random();
+
+        inquirer::init_for_test(&mut reachability_store, origin, Interval::new(1, 16))?;
+
+        let mut hashes = vec![origin];
+        print_reachability_data(&reachability_store, &hashes);
+
+        let child1 = Hash::random();
+        inquirer::add_block(&mut reachability_store, child1, origin, &mut vec![origin].into_iter())?;
+        hashes.push(child1);
+        print_reachability_data(&reachability_store, &hashes);
+
+        let child2 = Hash::random();
+        hashes.push(child2);
+        inquirer::add_block(&mut reachability_store, child2, origin, &mut vec![origin].into_iter())?;
+        print_reachability_data(&reachability_store, &hashes);
+
+        let child3 = Hash::random();
+        inquirer::add_block(&mut reachability_store, child3, origin, &mut vec![origin].into_iter())?;
+        hashes.push(child3);
+        print_reachability_data(&reachability_store, &hashes);
+
+        let child4 = Hash::random();
+        inquirer::add_block(&mut reachability_store, child4, origin, &mut vec![origin].into_iter())?;
+        hashes.push(child4);
+        print_reachability_data(&reachability_store, &hashes);
+
+        let child5 = Hash::random();
+        inquirer::add_block(&mut reachability_store, child5, origin, &mut vec![origin].into_iter())?;
+        hashes.push(child5);
+        print_reachability_data(&reachability_store, &hashes);
+
+        // let mut count = 6;
+        // loop {
+        //     let child = Hash::random();
+        //     inquirer::add_block(&mut reachability_store, child, origin, &mut vec![origin].into_iter())?;
+        //     hashes.push(child);
+        //     print!("{count:?}");
+        //     print_reachability_data(&reachability_store, &hashes);
+        //     count += 1;
+        // }
+
+        Ok(())
     }
 }

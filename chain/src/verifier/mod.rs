@@ -407,11 +407,13 @@ impl BlockVerifier for DagVerifier {
                 header.id()
             );
 
-            verify_block!(
-                VerifyBlockField::Uncle,
-                uncle.number() < header.number() ,
-               "uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number(), header.number()
-            );
+            if !header.is_dag() {
+                verify_block!(
+                    VerifyBlockField::Uncle,
+                    uncle.number() < header.number() ,
+                "uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number(), header.number()
+                );
+            }
 
             verify_block!(
                 VerifyBlockField::Uncle,
