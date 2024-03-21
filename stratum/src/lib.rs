@@ -1,5 +1,6 @@
 use starcoin_types::U256;
 
+pub mod diff_manager;
 pub mod rpc;
 pub mod service;
 pub mod stratum;
