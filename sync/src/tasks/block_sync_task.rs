@@ -487,8 +487,8 @@ where
 
             // remove the key in the source path to avoid indefinite recursive!
             dag_ancestors.retain(|key| !source_path.contains(key));
-
             dag_ancestors.reverse();
+
             while !dag_ancestors.is_empty() {
                 for ancestor_block_header_id in &dag_ancestors {
                     if self.chain.has_dag_block(*ancestor_block_header_id)? {
@@ -570,13 +570,15 @@ where
                     need_recursive_checking.push(new_dag_ancestor.clone());
                 }
 
-                for (id, op_header) in self.fetcher.fetch_block_headers(need_recursive_checking).await? {
+                for (id, op_header) in self.fetcher.fetch_block_headers(need_recursive_checking.clone()).await? {
                     if let Some(header) = op_header {
                         self.ensure_dag_parent_blocks_exist(header, source_path)?;
                     } else {
                         bail!("when finding the ancestor's children's parents, fetching block header failed, block id: {:?}", id);
                     }
                 }
+                need_recursive_checking.extend(dag_ancestors);
+                dag_ancestors = need_recursive_checking;
 
                 info!("next dag children blocks: {:?}", dag_ancestors);
             }
