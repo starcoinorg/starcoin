@@ -18,7 +18,7 @@ use starcoin_logger::prelude::*;
 use starcoin_storage::{Store, BARNARD_HARD_FORK_HASH};
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
 use stream_task::{CollectorState, TaskError, TaskResultCollector, TaskState};
@@ -457,7 +457,7 @@ where
         }
     }
 
-    pub fn ensure_dag_parent_blocks_exist(&mut self, block_header: BlockHeader) -> Result<()> {
+    pub fn ensure_dag_parent_blocks_exist(&mut self, block_header: BlockHeader, source_path: HashSet<HashValue>) -> Result<()> {
         if !block_header.is_dag() {
             info!(
                 "the block is not a dag block, skipping, its id: {:?}, its number {:?}",
@@ -484,6 +484,9 @@ where
             let mut dag_ancestors = self
                 .find_ancestor_dag_block_header(vec![block_header.clone()])
                 .await?;
+
+            // remove the key in the source path to avoid indefinite recursive!
+            dag_ancestors.retain(|key| !source_path.contains(key));
 
             dag_ancestors.reverse();
             while !dag_ancestors.is_empty() {
@@ -568,7 +571,10 @@ where
 
                 for (id, op_header) in self.fetcher.fetch_block_headers(need_recursive_checking).await? {
                     if let Some(header) = op_header {
-                        self.ensure_dag_parent_blocks_exist(header)?;
+                        if dag_ancestors.contains(&header.id()) {
+                            continue;
+                        }
+                        self.ensure_dag_parent_blocks_exist(header, dag_ancestors.iter().cloned().collect())?;
                     } else {
                         bail!("when finding the ancestor's children's parents, fetching block header failed, block id: {:?}", id);
                     }
@@ -682,7 +688,7 @@ where
         // if it is a dag block, we must ensure that its dag parent blocks exist.
         // if it is not, we must pull the dag parent blocks from the peer.
         info!("now sync dag block -- ensure_dag_parent_blocks_exist");
-        self.ensure_dag_parent_blocks_exist(block.header().clone())?;
+        self.ensure_dag_parent_blocks_exist(block.header().clone(), [].into_iter().collect())?;
         let state = self.check_enough();
         if let anyhow::Result::Ok(CollectorState::Enough) = &state {
             let current_header = self.chain.current_header();
