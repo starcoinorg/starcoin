@@ -1,3 +1,4 @@
+use crate::diff_manager::DifficultyManager;
 use crate::stratum::Stratum;
 use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
 use futures::FutureExt;
@@ -15,10 +16,9 @@ use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::system_events::MintBlockEvent;
 use std::borrow::BorrowMut;
 use std::convert::TryInto;
-
 use std::io::Write;
-use std::sync::mpsc::TrySendError;
 use std::sync::Arc;
+use std::sync::RwLock;
 
 #[derive(Clone, Default, Debug)]
 pub struct Metadata {
@@ -159,19 +159,63 @@ impl ServiceRequest for LoginRequest {
         futures::channel::oneshot::Receiver<futures::channel::mpsc::UnboundedReceiver<StratumJob>>;
 }
 
-impl LoginRequest {
-    pub fn generate_worker_id(&self, sub_id: u32) -> [u8; 4] {
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+pub struct WorkerId {
+    buff: [u8; 4],
+}
+impl WorkerId {
+    pub fn from_hex(input: String) -> anyhow::Result<Self> {
+        let worker_id: [u8; 4] = hex::decode(&input)
+            .map_err(|_| anyhow::anyhow!("Decode worker id failed"))?
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("Invalid length of worker id"))?;
+        Ok(WorkerId { buff: worker_id })
+    }
+    pub fn to_hex(&self,)->String{
+        hex::encode(self.buff)
+    }
+}
+pub struct MinerWorker {
+    pub base_info: LoginRequest,
+    pub sub_id: u32,
+    pub worker_id: WorkerId,
+    pub diff_manager: Arc<RwLock<DifficultyManager>>,
+}
+impl MinerWorker {
+    fn generate_worker_id(login_name: String, sub_id: u32) -> WorkerId {
         let mut hash = DefaultHasher::new(b"");
-        hash.update(self.login.as_bytes());
+        hash.update(login_name.as_bytes());
         let mut output: [u8; 4] = hash.finish().to_vec()[0..4]
             .try_into()
-            .expect("Hash len should have 32 bytes");
+            .expect("Hash len should have 8 bytes");
         output
             .iter_mut()
             .zip(u32::to_le_bytes(sub_id).iter())
             .for_each(|(x1, x2)| *x1 ^= *x2);
-        output
+        WorkerId { buff: output }
     }
+
+    pub fn new(sub_id: u32, base_info: LoginRequest) -> Self {
+        let worker_id = Self::generate_worker_id(base_info.login.clone(), sub_id);
+        let diff_manager = Arc::new(RwLock::new(DifficultyManager::new()));
+        Self {
+            base_info,
+            sub_id,
+            worker_id,
+            diff_manager,
+        }
+    }
+    pub fn diff_manager(&self) -> Arc<RwLock<DifficultyManager>> {
+        self.diff_manager.clone()
+    }
+    pub fn process_seal(&self,share: &ShareRequest, mint_event:&MintBlockEvent){
+        //Verify target
+        let verified = true;
+        if verified{
+            self.diff_manager.write().unwrap().try_update();
+        }
+    }
+
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
@@ -232,20 +276,20 @@ impl StratumJobResponse {
     pub fn from(
         e: &MintBlockEvent,
         login: Option<LoginRequest>,
-        worker_id: [u8; 4],
+        worker_id: WorkerId,
         target: String,
     ) -> Self {
         let mut minting_blob = e.minting_blob.clone();
-        let _ = minting_blob[35..39].borrow_mut().write_all(&worker_id);
-        let worker_id_hex = hex::encode(worker_id);
+        let _ = minting_blob[35..39].borrow_mut().write_all(&worker_id.buff);
+        
         let job_id = JobId::from_bob(&e.minting_blob).encode();
         Self {
             login,
-            id: worker_id_hex.clone(),
+            id: worker_id.to_hex(),
             status: "OK".into(),
             job: StratumJob {
                 height: 0,
-                id: worker_id_hex,
+                id: worker_id.to_hex(),
                 target,
                 job_id,
                 blob: hex::encode(&minting_blob),
@@ -305,20 +349,9 @@ impl StratumRpc for StratumRpcImpl {
     fn unsubscribe(
         &self,
         _meta: Option<Self::Metadata>,
-        id: SubscriptionId,
+        _id: SubscriptionId,
     ) -> jsonrpc_core::Result<bool> {
-        match self.service.try_send(Unsubscribe(id)) {
-            Ok(()) => Ok(true),
-            Err(TrySendError::Full(_)) => Err(jsonrpc_core::Error {
-                code: jsonrpc_core::ErrorCode::InternalError,
-                message: "stratum service is overloaded".to_string(),
-                data: None,
-            }),
-            Err(TrySendError::Disconnected(_)) => Err(jsonrpc_core::Error {
-                code: jsonrpc_core::ErrorCode::InternalError,
-                message: "stratum service is down".to_string(),
-                data: None,
-            }),
-        }
+        // Not need to implement it
+        return Ok(false);
     }
 }
