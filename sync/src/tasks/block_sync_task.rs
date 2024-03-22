@@ -559,6 +559,7 @@ where
                         }
                     }
                 }
+                let source = dag_ancestors.clone();
                 dag_ancestors = self.fetch_dag_block_children(dag_ancestors).await?;
 
                 let mut need_recursive_checking = vec![];
@@ -571,10 +572,7 @@ where
 
                 for (id, op_header) in self.fetcher.fetch_block_headers(need_recursive_checking).await? {
                     if let Some(header) = op_header {
-                        if dag_ancestors.contains(&header.id()) {
-                            continue;
-                        }
-                        self.ensure_dag_parent_blocks_exist(header, dag_ancestors.iter().cloned().collect())?;
+                        self.ensure_dag_parent_blocks_exist(header, source.iter().cloned().collect())?;
                     } else {
                         bail!("when finding the ancestor's children's parents, fetching block header failed, block id: {:?}", id);
                     }
