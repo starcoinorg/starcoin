@@ -560,7 +560,7 @@ where
                     }
                 }
                 source_path.extend(&dag_ancestors);
-                dag_ancestors = self.fetch_dag_block_children(dag_ancestors).await?;
+                dag_ancestors = Self::remove_repeated(&self.fetch_dag_block_children(dag_ancestors).await?);
 
                 let mut need_recursive_checking = vec![];
                 for new_dag_ancestor in &dag_ancestors {
@@ -578,7 +578,7 @@ where
                     }
                 }
                 need_recursive_checking.extend(dag_ancestors);
-                dag_ancestors = need_recursive_checking;
+                dag_ancestors = Self::remove_repeated(&need_recursive_checking);
 
                 info!("next dag children blocks: {:?}", dag_ancestors);
             }
@@ -586,6 +586,17 @@ where
             Ok(())
         };
         async_std::task::block_on(fut)
+    }
+
+    fn remove_repeated(repeated: &[HashValue]) -> Vec<HashValue> {
+        let mut uniqued = vec![];
+        let mut remove_repeated = HashSet::new();
+        for d in repeated {
+            if remove_repeated.insert(d.clone()) {
+                uniqued.push(d.clone());
+            }
+        }
+        uniqued
     }
 
     // async fn fetch_blocks(
