@@ -457,7 +457,7 @@ where
         }
     }
 
-    pub fn ensure_dag_parent_blocks_exist(&mut self, block_header: BlockHeader, source_path: HashSet<HashValue>) -> Result<()> {
+    pub fn ensure_dag_parent_blocks_exist(&mut self, block_header: BlockHeader, source_path: &mut HashSet<HashValue>) -> Result<()> {
         if !block_header.is_dag() {
             info!(
                 "the block is not a dag block, skipping, its id: {:?}, its number {:?}",
@@ -559,7 +559,7 @@ where
                         }
                     }
                 }
-                let source = dag_ancestors.clone();
+                source_path.extend(&dag_ancestors);
                 dag_ancestors = self.fetch_dag_block_children(dag_ancestors).await?;
 
                 let mut need_recursive_checking = vec![];
@@ -572,7 +572,7 @@ where
 
                 for (id, op_header) in self.fetcher.fetch_block_headers(need_recursive_checking).await? {
                     if let Some(header) = op_header {
-                        self.ensure_dag_parent_blocks_exist(header, source.iter().cloned().collect())?;
+                        self.ensure_dag_parent_blocks_exist(header, source_path)?;
                     } else {
                         bail!("when finding the ancestor's children's parents, fetching block header failed, block id: {:?}", id);
                     }
@@ -686,7 +686,7 @@ where
         // if it is a dag block, we must ensure that its dag parent blocks exist.
         // if it is not, we must pull the dag parent blocks from the peer.
         info!("now sync dag block -- ensure_dag_parent_blocks_exist");
-        self.ensure_dag_parent_blocks_exist(block.header().clone(), [].into_iter().collect())?;
+        self.ensure_dag_parent_blocks_exist(block.header().clone(), &mut [].into_iter().collect())?;
         let state = self.check_enough();
         if let anyhow::Result::Ok(CollectorState::Enough) = &state {
             let current_header = self.chain.current_header();
