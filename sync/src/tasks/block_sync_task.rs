@@ -480,9 +480,9 @@ where
             block_header.parents_hash()
         );
         let fut = async {
-            let mut dag_ancestors = self
+            let mut dag_ancestors = Self::remove_repeated(&self
                 .find_ancestor_dag_block_header(vec![block_header.clone()])
-                .await?;
+                .await?);
 
             // remove the key in the source path to avoid indefinite recursive!
             dag_ancestors.retain(|key| !source_path.contains(key));
