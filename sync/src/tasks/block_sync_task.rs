@@ -373,11 +373,12 @@ where
                     continue;
                 }
                 absent_blocks.push(parent)
+            } else {
+                if ancestors.contains(&parent) {
+                    continue;
+                }
+                ancestors.push(parent);
             } 
-            if ancestors.contains(&parent) {
-                continue;
-            }
-            ancestors.push(parent);
         }
         Ok(())
     }
@@ -433,7 +434,10 @@ where
                 &mut ancestors,
                 &mut absent_blocks,
             )?;
+            info!("jacktest: ancestor blocks: {:?}", ancestors);
+            info!("jacktest: absent_blocks: {:?}", absent_blocks);
             if absent_blocks.is_empty() {
+                info!("jacktest: finish to find the acestor block");
                 return Ok(ancestors);
             }
             let absent_block_headers = self.fetcher.fetch_block_headers(absent_blocks).await?;
@@ -485,8 +489,10 @@ where
                 .await?);
 
             // remove the key in the source path to avoid indefinite recursive!
+            info!("jacktest: before removing the source path from the dag ancestors: dag ancetsor: {:?}", dag_ancestors);
             dag_ancestors.retain(|key| !source_path.contains(key));
             dag_ancestors.reverse();
+            info!("jacktest: after removing the source path from the dag ancestors: dag ancetsor: {:?}", dag_ancestors);
 
             while !dag_ancestors.is_empty() {
                 for ancestor_block_header_id in &dag_ancestors {
@@ -559,24 +565,30 @@ where
                     }
                 }
                 source_path.extend(&dag_ancestors);
-                dag_ancestors = Self::remove_repeated(&self.fetch_dag_block_children(dag_ancestors).await?);
 
+                info!("jacktest: find {:?} 's children", dag_ancestors);
+                let next_children = Self::remove_repeated(&self.fetch_dag_block_children(dag_ancestors).await?);
+                info!("jacktest: its next children is {:?}", next_children);
+
+                info!("jacktest: now find the absent children");
                 let mut need_recursive_checking = vec![];
-                for new_dag_ancestor in &dag_ancestors {
-                    if self.chain.has_dag_block(new_dag_ancestor.clone())? {
+                for child in &next_children {
+                    if self.chain.has_dag_block(child.clone())? {
                         continue;
                     }
-                    need_recursive_checking.push(new_dag_ancestor.clone());
+                    need_recursive_checking.push(child.clone());
                 }
+                info!("jacktest: found {:?} children", need_recursive_checking);
 
                 for (id, op_header) in self.fetcher.fetch_block_headers(need_recursive_checking.clone()).await? {
                     if let Some(header) = op_header {
+                        source_path.insert(header.id());
                         self.ensure_dag_parent_blocks_exist(header, source_path)?;
                     } else {
                         bail!("when finding the ancestor's children's parents, fetching block header failed, block id: {:?}", id);
                     }
                 }
-                need_recursive_checking.extend(dag_ancestors);
+                need_recursive_checking.extend(next_children);
                 dag_ancestors = Self::remove_repeated(&need_recursive_checking);
 
                 info!("next dag children blocks: {:?}", dag_ancestors);
