@@ -373,12 +373,11 @@ where
                     continue;
                 }
                 absent_blocks.push(parent)
-            } else {
-                if ancestors.contains(&parent) {
-                    continue;
-                }
-                ancestors.push(parent);
             } 
+            if ancestors.contains(&parent) {
+                continue;
+            }
+            ancestors.push(parent);
         }
         Ok(())
     }
