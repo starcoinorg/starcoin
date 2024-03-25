@@ -330,8 +330,9 @@ pub(crate) fn recursively_construct_arg<S: MoveResolverExt>(
         U16 => read_n_bytes(2, cursor, arg)?,
         U32 => read_n_bytes(4, cursor, arg)?,
         U64 => read_n_bytes(8, cursor, arg)?,
-        U128 => read_n_bytes(16, cursor, arg)?,
-        U256 | Address => read_n_bytes(32, cursor, arg)?,
+        // Check the length of Address(aka. AccountAddress), for starcoin case, it's 16-Bytes
+        U128 | Address => read_n_bytes(16, cursor, arg)?,
+        U256 => read_n_bytes(32, cursor, arg)?,
         Signer | Reference(_) | MutableReference(_) | TyParam(_) => return Err(invalid_signature()),
     };
     Ok(())
