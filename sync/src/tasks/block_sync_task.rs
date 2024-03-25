@@ -545,11 +545,9 @@ where
                                 block.id(),
                                 block.header().number()
                             );
-                            for parent in block.header().parents_hash().ok_or_else(|| anyhow!("the dag block's parents should exist, block id: {:?}, number: {:?}", block.id(), block.header().number()))? {
-                                if !self.chain.has_dag_block(parent)? {
-                                    info!("block: {:?}, number: {:?}, its parent({:?}) still dose not exist, waiting for next round", block.id(), block.header().number(), parent);
-                                    continue;
-                                }
+                            
+                            if !self.check_parents_exist(block.header())? {
+                                continue;
                             }
                             // let executed_block = if self.skip_pow_verify {
                                 let executed_block = self.chain
@@ -608,6 +606,16 @@ where
             Ok(())
         };
         async_std::task::block_on(fut)
+    }
+
+    fn check_parents_exist(&self, block_header: &BlockHeader) -> Result<bool> {
+        for parent in block_header.parents_hash().ok_or_else(|| anyhow!("the dag block's parents should exist, block id: {:?}, number: {:?}", block_header.id(), block_header.number()))? {
+            if !self.chain.has_dag_block(parent)? {
+                info!("block: {:?}, number: {:?}, its parent({:?}) still dose not exist, waiting for next round", block_header.id(), block_header.number(), parent);
+                return Ok(false);
+            }
+        }
+        Ok(true)
     }
 
     fn remove_repeated(repeated: &[HashValue]) -> Vec<HashValue> {
