@@ -433,7 +433,7 @@ where
                 &mut ancestors,
                 &mut absent_blocks,
             )?;
-            info!("jacktest: ancestor blocks: {:?}", ancestors);
+            // info!("jacktest: ancestor blocks: {:?}", ancestors);
             info!("jacktest: absent_blocks: {:?}", absent_blocks);
             if absent_blocks.is_empty() {
                 info!("jacktest: finish to find the acestor block");
