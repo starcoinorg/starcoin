@@ -15,6 +15,7 @@ use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBl
 use starcoin_config::G_CRATE_VERSION;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
+use starcoin_network_rpc_api::MAX_BLOCK_IDS_REQUEST_SIZE;
 use starcoin_storage::{Store, BARNARD_HARD_FORK_HASH};
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
@@ -590,7 +591,7 @@ where
                 // }
                 // info!("jacktest: found {:?} children", need_recursive_checking);
                 if !dag_ancestors.is_empty() {
-                    for (id, op_header) in self.fetcher.fetch_block_headers(dag_ancestors.clone()).await? {
+                    for (id, op_header) in self.fetch_block_headers(dag_ancestors.clone()).await? {
                         if let Some(header) = op_header {
                             self.ensure_dag_parent_blocks_exist(header, source_path)?;
                         } else {
@@ -608,6 +609,14 @@ where
             Ok(())
         };
         async_std::task::block_on(fut)
+    }
+
+    async fn fetch_block_headers(&self, block_ids: Vec<HashValue>) -> Result<Vec<(HashValue, Option<BlockHeader>)>> {
+        let mut result = vec![];
+        for chunk in block_ids.chunks(usize::try_from(MAX_BLOCK_IDS_REQUEST_SIZE)?) {
+            result.extend(self.fetcher.fetch_block_headers(chunk.to_vec()).await?);
+        }
+        Ok(result)
     }
 
     fn check_parents_exist(&self, block_header: &BlockHeader) -> Result<bool> {
@@ -661,9 +670,13 @@ where
             let children = self.fetch_dag_block_children(std::mem::take(&mut dag_ancestors)).await?;
             for child in children {
                 if self.chain.has_dag_block(child)? {
-                    dag_ancestors.push(child);
+                    if !dag_ancestors.contains(&child) {
+                        dag_ancestors.push(child);
+                    }
                 } else {
-                    absent_children.push(child);
+                    if !absent_children.contains(&child) {
+                        absent_children.push(child);
+                    }
                 }
             }
         }
@@ -671,6 +684,17 @@ where
     }
 
     async fn fetch_dag_block_children(
+        &self,
+        dag_ancestors: Vec<HashValue>,
+    ) -> Result<Vec<HashValue>> {
+        let mut result = vec![];
+        for chunk in dag_ancestors.chunks(usize::try_from(MAX_BLOCK_IDS_REQUEST_SIZE)?) {
+            result.extend(self.fetch_dag_block_children_inner(chunk.to_vec()).await?);
+        }
+        Ok(result)
+    }
+
+    async fn fetch_dag_block_children_inner(
         &self,
         dag_ancestors: Vec<HashValue>,
     ) -> Result<Vec<HashValue>> {
