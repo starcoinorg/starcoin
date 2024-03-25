@@ -11,12 +11,15 @@ use starcoin_transaction_builder::{
 use starcoin_types::account::Account;
 use starcoin_types::account_config::association_address;
 use starcoin_types::transaction::Transaction;
+use starcoin_vm_types::account_config::stc_type_tag;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
+use starcoin_vm_types::state_view::StateReaderExt;
 use starcoin_vm_types::transaction::{
     Package, Script, ScriptFunction, TransactionPayload, TransactionStatus,
 };
 use starcoin_vm_types::vm_status::KeptVMStatus;
+use std::ops::Sub;
 use test_helper::executor::{
     compile_ir_script, compile_modules_with_address, compile_script, execute_and_apply,
     prepare_genesis,
@@ -36,10 +39,10 @@ fn prepare_module(chain_state: &ChainStateDB, net: &ChainNetwork) -> ModuleId {
             public fun fn_public() {
             }
 
-            public(script) fun fn_script() {
+            public entry fun fn_script() {
             }
 
-            public(script) fun fn_script_with_args(account: signer, i: u64) {
+            public entry fun fn_script_with_args(account: signer, i: u64) {
                 let r = Self::R { i };
                 move_to(&account, r);
             }
@@ -201,7 +204,7 @@ fn test_signer_cap_internal_type_error() -> Result<()> {
                 burn_cap:BurnCapability<Meta>,
                 update_cap:UpdateCapability<Meta>
             }
-            public(script) fun init(sender: signer){
+            public entry fun init(sender: signer){
                 let meta_data = NFT::empty_meta();
                 NFT::register_v2<Meta>(&sender, meta_data);
                 let mint_cap = NFT::remove_mint_capability<Meta>(&sender);
@@ -381,5 +384,78 @@ fn test_struct_republish_backward_incompatible() -> Result<()> {
         output2.status().clone()
     );
 
+    Ok(())
+}
+
+#[stest::test]
+fn test_transaction_arg_verify() -> Result<()> {
+    let (initial_amount, gas_amount) = (5_000_000u128, 600u64);
+    let (chain_state, net) = prepare_genesis();
+    let account1 = Account::new();
+    let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+        &account1,
+        0,
+        initial_amount,
+        1,
+        &net,
+    ));
+    let output1 = execute_and_apply(&chain_state, txn1);
+    assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
+    let module_source = r#"
+    module {{sender}}::test {
+    use StarcoinFramework::Token::{Token};
+    use StarcoinFramework::Account;
+
+    public entry fun deposit_token<T: store>(account: signer, coin: Token<T>) {
+        Account::deposit_to_self<T>(&account, coin);
+        }
+    } "#;
+    let module = compile_modules_with_address(*account1.address(), module_source)
+        .pop()
+        .unwrap();
+
+    let package = Package::new_with_module(module)?;
+
+    let txn1 = Transaction::UserTransaction(account1.create_signed_txn_impl(
+        *account1.address(),
+        TransactionPayload::Package(package),
+        0,
+        gas_amount,
+        1,
+        1,
+        net.chain_id(),
+    ));
+    let output = execute_and_apply(&chain_state, txn1);
+    assert_eq!(
+        KeptVMStatus::MiscellaneousError,
+        output.status().status().unwrap()
+    );
+
+    let balance = chain_state.get_balance(*account1.address())?;
+    assert_eq!(balance, Some(initial_amount.sub(u128::from(gas_amount))));
+
+    let money = 100_000;
+    let num: u128 = 50_000_000;
+    let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
+        ModuleId::new(*account1.address(), Identifier::new("test").unwrap()),
+        Identifier::new("deposit_token").unwrap(),
+        vec![stc_type_tag()],
+        vec![bcs_ext::to_bytes(&num).unwrap()],
+    ));
+    let txn = Transaction::UserTransaction(account1.create_signed_txn_impl(
+        *account1.address(),
+        payload,
+        1,
+        money,
+        1,
+        1,
+        net.chain_id(),
+    ));
+
+    let output = execute_and_apply(&chain_state, txn);
+    assert_eq!(
+        KeptVMStatus::MiscellaneousError,
+        output.status().status().unwrap()
+    );
     Ok(())
 }
