@@ -305,7 +305,7 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
     }
 
     //ensure the script function not return value
-    fn check_script_return(return_: Vec<Type>) -> VMResult<()> {
+    pub(crate) fn check_script_return(return_: Vec<Type>) -> VMResult<()> {
         return if !return_.is_empty() {
             Err(PartialVMError::new(StatusCode::RET_TYPE_MISMATCH_ERROR)
                 .with_message(format!(

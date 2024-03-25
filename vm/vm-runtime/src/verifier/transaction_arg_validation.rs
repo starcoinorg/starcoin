@@ -88,7 +88,7 @@ pub(crate) fn validate_combine_singer_and_args<S: MoveResolverExt>(
     args: &[impl Borrow<[u8]>],
     func: &LoadedFunctionInstantiation,
 ) -> VMResult<()> {
-    //Self::check_script_return(func.return_.clone())?;
+    SessionAdapter::<S>::check_script_return(func.return_.clone())?;
 
     let mut signer_param_cnt = 0;
     // find all signer params at the beginning
@@ -115,7 +115,10 @@ pub(crate) fn validate_combine_singer_and_args<S: MoveResolverExt>(
         if !valid {
             return Err(
                 PartialVMError::new(StatusCode::INVALID_MAIN_FUNCTION_SIGNATURE)
-                    .finish(Location::Undefined),
+                    .with_message(
+                        "Found un-allowed parameter which is not signer-params".to_string(),
+                    )
+                    .finish(Location::Script),
             );
         }
     }
@@ -123,7 +126,12 @@ pub(crate) fn validate_combine_singer_and_args<S: MoveResolverExt>(
     if (signer_param_cnt + args.len()) != func.parameters.len() {
         return Err(
             PartialVMError::new(StatusCode::NUMBER_OF_ARGUMENTS_MISMATCH)
-                .finish(Location::Undefined),
+                .with_message(format!(
+                    "signer params {signer_param_cnt}, args {}, func parameters {}",
+                    args.len(),
+                    func.parameters.len()
+                ))
+                .finish(Location::Script),
         );
     }
 
@@ -134,7 +142,7 @@ pub(crate) fn validate_combine_singer_and_args<S: MoveResolverExt>(
     if signer_param_cnt > 0 && senders.len() != signer_param_cnt {
         return Err(
             PartialVMError::new(StatusCode::NUMBER_OF_SIGNER_ARGUMENTS_MISMATCH)
-                .finish(Location::Undefined),
+                .finish(Location::Script),
         );
     }
 
@@ -245,7 +253,7 @@ fn construct_arg<S: MoveResolverExt>(
                         .with_message(String::from(
                             "The serialized arguments to constructor contained extra data",
                         ))
-                        .finish(Location::Undefined),
+                        .finish(Location::Script),
                 );
             }
             Ok(new_arg)
