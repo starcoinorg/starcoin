@@ -3,7 +3,7 @@
 
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
-use anyhow::{bail, format_err, Result};
+use anyhow::{bail, format_err, Result, anyhow};
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use network_api::PeerId;
@@ -493,6 +493,7 @@ where
             dag_ancestors.reverse();
             info!("jacktest: after removing the source path from the dag ancestors: dag ancetsor: {:?}", dag_ancestors);
 
+            let mut process_dag_ancestors = vec![];
             while !dag_ancestors.is_empty() {
                 for ancestor_block_header_id in &dag_ancestors {
                     if self.chain.has_dag_block(*ancestor_block_header_id)? {
@@ -522,6 +523,7 @@ where
                             executed_block.block.id(),
                             executed_block.block.header().number()
                         );
+                        process_dag_ancestors.push(ancestor_block_header_id.clone());
                         self.notify_connected_block(
                             executed_block.block,
                             executed_block.block_info.clone(),
@@ -537,11 +539,18 @@ where
                             if self.chain.has_dag_block(block.id())? {
                                 continue;
                             }
+                            
                             info!(
                                 "now apply for sync after fetching a dag block: {:?}, number: {:?}",
                                 block.id(),
                                 block.header().number()
                             );
+                            for parent in block.header().parents_hash().ok_or_else(|| anyhow!("the dag block's parents should exist, block id: {:?}, number: {:?}", block.id(), block.header().number()))? {
+                                if !self.chain.has_dag_block(parent)? {
+                                    info!("block: {:?}, number: {:?}, its parent({:?}) still dose not exist, waiting for next round", block.id(), block.header().number(), parent);
+                                    continue;
+                                }
+                            }
                             // let executed_block = if self.skip_pow_verify {
                                 let executed_block = self.chain
                                     .apply_with_verifier::<DagBasicVerifier>(block.clone())?;
@@ -554,6 +563,7 @@ where
                                 executed_block.block.id(),
                                 executed_block.block.header().number()
                             );
+                            process_dag_ancestors.push(executed_block.block.id());
                             self.notify_connected_block(
                                 executed_block.block,
                                 executed_block.block_info.clone(),
@@ -563,6 +573,8 @@ where
                         }
                     }
                 }
+                dag_ancestors = process_dag_ancestors;
+                process_dag_ancestors = vec![];
                 source_path.extend(&dag_ancestors);
 
                 info!("jacktest: find {:?} 's children", dag_ancestors);
