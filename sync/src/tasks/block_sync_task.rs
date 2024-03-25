@@ -497,7 +497,7 @@ where
             while !dag_ancestors.is_empty() {
                 for ancestor_block_header_id in &dag_ancestors {
                     if self.chain.has_dag_block(*ancestor_block_header_id)? {
-                        // process_dag_ancestors.push(ancestor_block_header_id.clone());
+                        process_dag_ancestors.push(ancestor_block_header_id.clone());
                         continue;
                         // let block_info = self
                         //     .local_store
@@ -563,7 +563,7 @@ where
                                 executed_block.block.id(),
                                 executed_block.block.header().number()
                             );
-                            // process_dag_ancestors.push(executed_block.block.id());
+                            process_dag_ancestors.push(executed_block.block.id());
                             self.notify_connected_block(
                                 executed_block.block,
                                 executed_block.block_info.clone(),
