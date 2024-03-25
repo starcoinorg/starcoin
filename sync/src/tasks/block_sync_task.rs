@@ -497,7 +497,6 @@ where
             while !dag_ancestors.is_empty() {
                 for ancestor_block_header_id in &dag_ancestors {
                     if self.chain.has_dag_block(*ancestor_block_header_id)? {
-                        process_dag_ancestors.push(ancestor_block_header_id.clone());
                         continue;
                         // let block_info = self
                         //     .local_store
