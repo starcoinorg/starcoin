@@ -20,6 +20,7 @@ pub(crate) fn run_extended_checks(env: &GlobalEnv) {
 struct ExtendedChecker<'a> {
     env: &'a GlobalEnv,
     /// The id of the module defining error categories
+    #[allow(unused)]
     error_category_module: ModuleId,
 }
 
@@ -67,6 +68,7 @@ impl<'a> ExtendedChecker<'a> {
         })
     }
 
+    #[allow(unused)]
     fn get_runtime_module_id(&self, module: &ModuleEnv<'_>) -> ModuleId {
         let name = module.get_name();
         let addr = AccountAddress::from_hex_literal(&format!("0x{:x}", name.addr())).unwrap();
@@ -74,6 +76,7 @@ impl<'a> ExtendedChecker<'a> {
         ModuleId::new(addr, name)
     }
 
+    #[allow(unused)]
     fn name_string(&self, symbol: Symbol) -> Rc<String> {
         self.env.symbol_pool().string(symbol)
     }
