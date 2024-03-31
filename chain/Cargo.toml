@@ -41,6 +41,7 @@ stdlib = { workspace = true }
 stest = { workspace = true }
 test-helper = { workspace = true }
 tokio = { features = ["full"], workspace = true }
+starcoin-force-upgrade = { workspace = true }
 
 [features]
 default = []

@@ -18,7 +18,7 @@ use starcoin_storage::{
     StorageVersion,
 };
 use starcoin_transaction_builder::DEFAULT_MAX_GAS_AMOUNT;
-use starcoin_types::{account::Account, account_address::AccountAddress, block::BlockNumber};
+use starcoin_types::{account::Account, block::BlockNumber};
 use starcoin_vm_types::{
     access_path::AccessPath,
     account_config::{genesis_address, ModuleUpgradeStrategy, STC_TOKEN_CODE_STR},

@@ -6,6 +6,7 @@ use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumu
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_crypto::HashValue;
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
+use starcoin_force_upgrade::ForceUpgrade;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
@@ -40,6 +41,7 @@ pub struct OpenedBlock {
     difficulty: U256,
     strategy: ConsensusStrategy,
     vm_metrics: Option<VMMetrics>,
+    force_upgrade: ForceUpgrade,
 }
 
 impl OpenedBlock {
@@ -77,6 +79,8 @@ impl OpenedBlock {
             chain_id,
             previous_header.gas_used(),
         );
+
+        let block_num = block_meta.number();
         let mut opened_block = Self {
             previous_block_info: block_info,
             block_meta,
@@ -91,6 +95,7 @@ impl OpenedBlock {
             difficulty,
             strategy,
             vm_metrics,
+            force_upgrade: ForceUpgrade::new(chain_id, block_num),
         };
         opened_block.initialize()?;
         Ok(opened_block)
@@ -151,7 +156,7 @@ impl OpenedBlock {
             .map(Transaction::UserTransaction)
             .collect();
 
-        let txn_outputs = {
+        let mut txn_outputs = {
             let gas_left = self.gas_limit.checked_sub(self.gas_used).ok_or_else(|| {
                 format_err!(
                     "block gas_used {} exceed block gas_limit:{}",
@@ -166,6 +171,16 @@ impl OpenedBlock {
                 self.vm_metrics.clone(),
             )?
         };
+
+        let (upgrade_txns, mut upgrade_outputs) = self.force_upgrade.do_execute(&self.state)?;
+        if !upgrade_txns.is_empty() && !upgrade_outputs.is_empty() {
+            let mut converted_txns = upgrade_txns
+                .into_iter()
+                .map(|t| Transaction::UserTransaction(t))
+                .collect::<Vec<_>>();
+            txns.append(&mut converted_txns);
+            txn_outputs.append(&mut upgrade_outputs);
+        }
 
         let untouched_user_txns: Vec<SignedUserTransaction> = if txn_outputs.len() >= txns.len() {
             vec![]
@@ -198,6 +213,7 @@ impl OpenedBlock {
                 }
             };
         }
+
         Ok(ExcludedTxns {
             discarded_txns: discard_txns,
             untouched_txns: untouched_user_txns,
