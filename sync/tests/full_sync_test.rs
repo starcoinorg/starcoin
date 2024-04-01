@@ -129,3 +129,4 @@ fn wait_two_node_synced(first_node: &NodeHandle, second_node: &NodeHandle) {
         }
     }
 }
+
