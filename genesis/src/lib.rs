@@ -58,6 +58,7 @@ pub struct Genesis {
 pub struct LegacyGenesis {
     pub block: LegacyBlock,
 }
+
 impl From<LegacyGenesis> for Genesis {
     fn from(value: LegacyGenesis) -> Self {
         Self {
@@ -65,6 +66,7 @@ impl From<LegacyGenesis> for Genesis {
         }
     }
 }
+
 impl From<Genesis> for LegacyGenesis {
     fn from(value: Genesis) -> Self {
         Self {
@@ -72,6 +74,7 @@ impl From<Genesis> for LegacyGenesis {
         }
     }
 }
+
 impl Display for Genesis {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Genesis {{")?;
@@ -380,14 +383,27 @@ impl Genesis {
         Ok((chain_info, genesis))
     }
 
-    pub fn init_storage_for_test(
+    pub fn init_storage_for_mock_test(
         net: &ChainNetwork,
         fork_number: BlockNumber,
     ) -> Result<(Arc<Storage>, ChainInfo, Genesis, BlockDAG)> {
         debug!("init storage by genesis for test. {net:?}");
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let genesis = Genesis::load_or_build(net)?;
-        let dag = BlockDAG::create_for_testing_mock(BlockDAGConfigMock { fork_number })?;
+        let dag = BlockDAG::create_for_testing_mock(BlockDAGConfigMock {
+            fork_number,
+        })?;
+        let chain_info = genesis.execute_genesis_block(net, storage.clone(), dag.clone())?;
+        Ok((storage, chain_info, genesis, dag))
+    }
+
+    pub fn init_storage_for_test(
+        net: &ChainNetwork,
+    ) -> Result<(Arc<Storage>, ChainInfo, Genesis, BlockDAG)> {
+        debug!("init storage by genesis for test. {net:?}");
+        let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
+        let genesis = Genesis::load_or_build(net)?;
+        let dag = BlockDAG::create_for_testing()?;
         let chain_info = genesis.execute_genesis_block(net, storage.clone(), dag.clone())?;
         Ok((storage, chain_info, genesis, dag))
     }

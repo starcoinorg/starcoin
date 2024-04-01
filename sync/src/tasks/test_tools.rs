@@ -789,7 +789,7 @@ pub async fn sync_target(fork_number: BlockNumber) {
 
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let (_, genesis_chain_info, _, _) =
-        Genesis::init_storage_for_test(&net2, fork_number)
+        Genesis::init_storage_for_mock_test(&net2, fork_number)
             .expect("init storage by genesis fail.");
     let mock_chain = MockChain::new_with_chain(
         net2,

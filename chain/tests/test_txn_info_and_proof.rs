@@ -9,7 +9,9 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::debug;
 use starcoin_transaction_builder::{peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::account_config;
-use starcoin_types::block::{BlockNumber, TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH};
+use starcoin_types::block::{
+    BlockNumber, TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH,
+};
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::AccountResource;
@@ -45,7 +47,8 @@ pub fn gen_txns(seq_num: &mut u64) -> Result<Vec<SignedUserTransaction>> {
 fn transaction_info_and_proof_1(fork_number: BlockNumber) -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
     let mut block_chain = test_helper::gen_blockchain_for_dag_test(config.net(), fork_number)?;
-    let _current_header = block_chain.current_header();
+    let block_0 = block_chain.current_header().number();
+    let fork_number = block_chain.dag_fork_height().unwrap();
     let miner_account = AccountInfo::random();
     let mut seq_num = 0;
     (0..10).for_each(|_| {
@@ -59,12 +62,16 @@ fn transaction_info_and_proof_1(fork_number: BlockNumber) -> Result<()> {
             .unwrap();
         debug!("apply block:{:?}", &block);
         if block.header().number() > fork_number {
-            assert!(block.header().parents_hash().map_or(false, |parents| parents.len() > 0));
-        }         
+            assert!(block
+                .header()
+                .parents_hash()
+                .map_or(false, |parents| parents.len() > 0));
+        }
         block_chain.apply(block).unwrap();
     });
     // fork from 6 block
-    let fork_point = block_chain.get_block_by_number(6).unwrap().unwrap();
+    let block_6 = block_0 + 6;
+    let fork_point = block_chain.get_block_by_number(block_6).unwrap().unwrap();
     let fork_chain = block_chain.fork(fork_point.id()).unwrap();
     let account_reader = fork_chain.chain_state_reader();
     seq_num = account_reader.get_sequence_number(account_config::association_address())?;
@@ -89,9 +96,14 @@ fn transaction_info_and_proof_1(fork_number: BlockNumber) -> Result<()> {
     } else {
         assert!(block_chain.apply(block).is_err()); // block is 7, but block chain head is 10, it is expected to be failed
     }
+    let block_10 = block_0 + 10;
     assert_eq!(
         block_chain.current_header().id(),
-        block_chain.get_block_by_number(10).unwrap().unwrap().id()
+        block_chain
+            .get_block_by_number(block_10)
+            .unwrap()
+            .unwrap()
+            .id()
     );
     // create latest block
     let account_reader = block_chain.chain_state_reader();
@@ -106,9 +118,14 @@ fn transaction_info_and_proof_1(fork_number: BlockNumber) -> Result<()> {
         .unwrap();
     debug!("Apply latest block:{:?}", &block);
     block_chain.apply(block).unwrap();
+    let block_11 = block_0 + 11;
     assert_eq!(
         block_chain.current_header().id(),
-        block_chain.get_block_by_number(11).unwrap().unwrap().id()
+        block_chain
+            .get_block_by_number(block_11)
+            .unwrap()
+            .unwrap()
+            .id()
     );
     Ok(())
 }

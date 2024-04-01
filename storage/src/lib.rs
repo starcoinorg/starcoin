@@ -21,7 +21,6 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorTreeStore;
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
-use starcoin_types::block::BlockNumber;
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus, DagState, SnapshotRange};
 use starcoin_types::transaction::{RichTransactionInfo, Transaction};
@@ -330,7 +329,7 @@ impl Storage {
                 instance.clone(),
             ),
             transaction_accumulator_storage:
-                AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
+            AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
             block_info_storage: BlockInfoStorage::new(instance.clone()),
             event_storage: ContractEventStorage::new(instance.clone()),
             chain_info_storage: ChainInfoStorage::new(instance.clone()),
@@ -620,14 +619,14 @@ impl TransactionStore for Storage {
 
 /// Chain storage define
 pub trait Store:
-    StateNodeStore
-    + BlockStore
-    + BlockInfoStore
-    + TransactionStore
-    + BlockTransactionInfoStore
-    + ContractEventStore
-    + IntoSuper<dyn StateNodeStore>
-    + TableInfoStore
+StateNodeStore
++ BlockStore
++ BlockInfoStore
++ TransactionStore
++ BlockTransactionInfoStore
++ ContractEventStore
++ IntoSuper<dyn StateNodeStore>
++ TableInfoStore
 {
     fn get_transaction_info_by_block_and_index(
         &self,

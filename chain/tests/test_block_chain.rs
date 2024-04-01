@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Ok, Result};
+use rand::{thread_rng, Rng};
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
@@ -11,7 +12,6 @@ use starcoin_config::NodeConfig;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
-use starcoin_logger::prelude::debug;
 use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::account_address;
 use starcoin_types::block::{Block, BlockHeader, TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG};
@@ -20,8 +20,11 @@ use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::TypeTag;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::language_storage::StructTag;
+use starcoin_vm_types::on_chain_config::FlexiDagConfig;
+use starcoin_vm_types::state_view::StateReaderExt;
 use std::str::FromStr;
 use std::sync::Arc;
+use test_helper::gen_blockchain_for_dag_test;
 
 #[stest::test(timeout = 120)]
 fn test_chain_filter_events() {
@@ -143,7 +146,8 @@ fn test_block_chain() -> Result<()> {
 
 #[stest::test]
 fn test_block_chain_dag() -> Result<()> {
-    let mut mock_chain = MockChain::new_with_fork(ChainNetwork::new_test(), TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)?;
+    let mut mock_chain =
+        MockChain::new_with_fork(ChainNetwork::new_test(), TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)?;
     (0..10).into_iter().try_for_each(|index| {
         let block = mock_chain.produce()?;
         assert_eq!(block.header().number(), index + 1);
@@ -155,8 +159,11 @@ fn test_block_chain_dag() -> Result<()> {
 
 #[stest::test(timeout = 480)]
 fn test_halley_consensus() {
-    let mut mock_chain =
-        MockChain::new_with_fork(ChainNetwork::new_builtin(BuiltinNetworkID::Halley), TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG).unwrap();
+    let mut mock_chain = MockChain::new_with_fork(
+        ChainNetwork::new_builtin(BuiltinNetworkID::Halley),
+        TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG,
+    )
+        .unwrap();
     let times = 20;
     mock_chain.produce_and_apply_times(times).unwrap();
     assert_eq!(mock_chain.head().current_header().number(), times);
@@ -164,7 +171,11 @@ fn test_halley_consensus() {
 
 #[stest::test(timeout = 240)]
 fn test_dev_consensus() {
-    let mut mock_chain = MockChain::new_with_fork(ChainNetwork::new_builtin(BuiltinNetworkID::Dev), TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG).unwrap();
+    let mut mock_chain = MockChain::new_with_fork(
+        ChainNetwork::new_builtin(BuiltinNetworkID::Dev),
+        TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG,
+    )
+        .unwrap();
     let times = 20;
     mock_chain.produce_and_apply_times(times).unwrap();
     assert_eq!(mock_chain.head().current_header().number(), times);
@@ -185,7 +196,8 @@ fn test_find_ancestor_genesis() -> Result<()> {
 
 #[stest::test]
 fn test_find_ancestor_genesis_dag() -> Result<()> {
-    let mut mock_chain = MockChain::new_with_fork(ChainNetwork::new_test(), TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)?;
+    let mut mock_chain =
+        MockChain::new_with_fork(ChainNetwork::new_test(), TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)?;
     mock_chain.produce_and_apply_times(10)?;
 
     let mut mock_chain2 = MockChain::new(ChainNetwork::new_test())?;
@@ -540,6 +552,25 @@ fn test_get_blocks_by_number() -> Result<()> {
 
     let blocks = mock_chain.head().get_blocks_by_number(Some(6), false, 3)?;
     assert_eq!(blocks.len(), 3);
+
+    Ok(())
+}
+
+#[stest::test]
+fn test_gen_dag_chain() -> Result<()> {
+    let fork_number = 11u64;
+    let mut chain = gen_blockchain_for_dag_test(&ChainNetwork::new_test(), fork_number).unwrap();
+
+    let effective_height = chain
+        .chain_state()
+        .get_on_chain_config::<FlexiDagConfig>()?
+        .map(|c| c.effective_height);
+
+    assert_eq!(effective_height, Some(fork_number));
+    assert_eq!(chain.current_header().number(), 9);
+
+    let fork_number = thread_rng().gen_range(0..=9);
+    assert!(gen_blockchain_for_dag_test(&ChainNetwork::new_test(), fork_number).is_err());
 
     Ok(())
 }

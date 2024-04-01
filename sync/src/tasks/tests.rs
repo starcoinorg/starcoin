@@ -48,7 +48,7 @@ pub async fn test_sync_invalid_target() -> Result<()> {
 pub async fn test_failed_block() -> Result<()> {
     let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
     let (storage, chain_info, _, dag) =
-        Genesis::init_storage_for_test(&net, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH)?;
+        Genesis::init_storage_for_test(&net)?;
 
     let chain = BlockChain::new(
         net.time_service(),

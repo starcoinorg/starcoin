@@ -245,7 +245,10 @@ impl BlockChain {
             None => self.current_header(),
         };
 
-        debug!("jacktest: creating block template, previous header: {:?}", previous_header.number());
+        debug!(
+            "jacktest: creating block template, previous header: {:?}",
+            previous_header.number()
+        );
 
         self.create_block_template_by_header(
             author,
@@ -266,7 +269,11 @@ impl BlockChain {
         block_gas_limit: Option<u64>,
         tips: Option<Vec<HashValue>>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
-        debug!("jacktest: parent hash: {:?}, number: {:?}", previous_header.id(), previous_header.number());
+        debug!(
+            "jacktest: parent hash: {:?}, number: {:?}",
+            previous_header.id(),
+            previous_header.number()
+        );
         let current_number = previous_header.number().saturating_add(1);
         let epoch = self.epoch();
         let on_chain_block_gas_limit = epoch.block_gas_limit();
@@ -274,12 +281,16 @@ impl BlockChain {
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
         let tips_hash = if current_number <= self.dag_fork_height()? {
+            info!("jacktest: current_number: {:?} is smaller than the fork height:{:?}", current_number, self.dag_fork_height()?);
             None
         } else if tips.is_some() {
+            info!("jacktest: current_number: {:?} is larger than the fork height:{:?}, return tips", current_number, self.dag_fork_height()?);
             tips
         } else {
+            info!("jacktest: current_number: {:?} is larger than the fork height:{:?}, get tips from db", current_number, self.dag_fork_height()?);
             self.current_tips_hash()?
         };
+        info!("jacktest: tips hash: {:?}", tips_hash);
         let strategy = epoch.strategy();
         let difficulty = strategy.calculate_next_difficulty(self)?;
         let (uncles, blue_blocks) = {
@@ -987,14 +998,20 @@ impl ChainReader for BlockChain {
     fn find_ancestor(&self, another: &dyn ChainReader) -> Result<Option<BlockIdAndNumber>> {
         let other_header_number = another.current_header().number();
         let self_header_number = self.current_header().number();
-        debug!("jacktest: self_header_number: {}, other_header_number: {}", self_header_number, other_header_number);
+        debug!(
+            "jacktest: self_header_number: {}, other_header_number: {}",
+            self_header_number, other_header_number
+        );
         let min_number = std::cmp::min(other_header_number, self_header_number);
         debug!("jacktest: min_number: {}", min_number);
         let mut ancestor = None;
         for block_number in (0..=min_number).rev() {
             let block_id_1 = another.get_hash_by_number(block_number)?;
             let block_id_2 = self.get_hash_by_number(block_number)?;
-            debug!("jacktest: block number: {}, block_id_1: {:?}, block_id_2: {:?}", block_number, block_id_1, block_id_2);
+            debug!(
+                "jacktest: block number: {}, block_id_1: {:?}, block_id_2: {:?}",
+                block_number, block_id_1, block_id_2
+            );
             match (block_id_1, block_id_2) {
                 (Some(block_id_1), Some(block_id_2)) => {
                     if block_id_1 == block_id_2 {
@@ -1147,8 +1164,6 @@ impl ChainReader for BlockChain {
     }
 
     fn dag_fork_height(&self) -> Result<BlockNumber> {
-        // todo: change return type to Result<BlockNumber>,
-        // try to handle db io error
         match self.dag.block_dag_config() {
             BlockDAGType::BlockDAGFormal => Ok(self
                 .statedb
