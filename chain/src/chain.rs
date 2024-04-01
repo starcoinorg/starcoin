@@ -87,7 +87,7 @@ impl BlockChain {
         uncles: Option<HashMap<HashValue, MintedUncleNumber>>,
         storage: Arc<dyn Store>,
         vm_metrics: Option<VMMetrics>,
-        dag: BlockDAG,
+        mut dag: BlockDAG,
     ) -> Result<Self> {
         let block_info = storage
             .get_block_info(head_block.id())?
@@ -124,8 +124,9 @@ impl BlockChain {
             uncles: HashMap::new(),
             epoch,
             vm_metrics,
-            dag,
+            dag: dag.clone(),
         };
+        dag.set_reindex_root(chain.current_header().id())?;
         watch(CHAIN_WATCH_NAME, "n1251");
         match uncles {
             Some(data) => chain.uncles = data,
@@ -813,6 +814,10 @@ impl BlockChain {
     pub fn get_dag_state_by_block(&self, header: &BlockHeader) -> Result<(HashValue, DagState)> {
         let dag_genesis = self.get_block_dag_genesis(header)?;
         Ok((dag_genesis, self.dag.get_dag_state(dag_genesis)?))
+    }
+
+    pub fn get_dag_genesis(&self) -> Result<HashValue> {
+        self.get_block_dag_genesis(&self.current_header())
     }
 }
 

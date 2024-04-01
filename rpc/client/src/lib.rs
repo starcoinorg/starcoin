@@ -21,6 +21,7 @@ use serde_json::Value;
 use starcoin_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
+use starcoin_dag::consensusdb::consenses_state::DagStateView;
 use starcoin_logger::{prelude::*, LogPattern};
 use starcoin_rpc_api::chain::{
     GetBlockOption, GetBlocksOption, GetEventOption, GetTransactionOption,
@@ -782,6 +783,11 @@ impl RpcClient {
         number: BlockNumber,
     ) -> anyhow::Result<Option<BlockInfoView>> {
         self.call_rpc_blocking(|inner| inner.chain_client.get_block_info_by_number(number))
+            .map_err(map_err)
+    }
+
+    pub fn get_dag_state(&self) -> anyhow::Result<DagStateView> {
+        self.call_rpc_blocking(|inner| inner.chain_client.get_dag_state())
             .map_err(map_err)
     }
 

@@ -395,33 +395,6 @@ where
         Ok(())
     }
 
-    // async fn fetch_block_headers(
-    //     &self,
-    //     absent_blocks: Vec<HashValue>,
-    // ) -> Result<Vec<(HashValue, Option<BlockHeader>)>> {
-    //     let mut count: i32 = 20;
-    //     while count > 0 {
-    //         info!("fetch block header retry count = {}", count);
-    //         match self
-    //             .fetcher
-    //             .fetch_block_headers(absent_blocks.clone())
-    //             .await
-    //         {
-    //             Ok(result) => {
-    //                 return Ok(result);
-    //             }
-    //             Err(e) => {
-    //                 count = count.saturating_sub(1);
-    //                 if count == 0 {
-    //                     bail!("failed to fetch block headers due to: {:?}", e);
-    //                 }
-    //                 async_std::task::sleep(Duration::from_secs(1)).await;
-    //             }
-    //         }
-    //     }
-    //     bail!("failed to fetch block headers");
-    // }
-
     async fn find_ancestor_dag_block_header(
         &self,
         mut block_headers: Vec<BlockHeader>,
@@ -434,10 +407,7 @@ where
                 &mut ancestors,
                 &mut absent_blocks,
             )?;
-            // info!("jacktest: ancestor blocks: {:?}", ancestors);
-            info!("jacktest: absent_blocks: {:?}", absent_blocks);
             if absent_blocks.is_empty() {
-                info!("jacktest: finish to find the acestor block");
                 return Ok(ancestors);
             }
             let absent_block_headers = self.fetcher.fetch_block_headers(absent_blocks).await?;
@@ -489,49 +459,14 @@ where
                 .await?);
 
             // remove the key in the source path to avoid indefinite recursive!
-            info!("jacktest: before removing the source path from the dag ancestors: dag ancetsor: {:?}", dag_ancestors);
             dag_ancestors.retain(|key| !source_path.contains(key));
             dag_ancestors.reverse();
-            info!("jacktest: after removing the source path from the dag ancestors: dag ancetsor: {:?}", dag_ancestors);
 
             let mut process_dag_ancestors = vec![];
             while !dag_ancestors.is_empty() {
                 for ancestor_block_header_id in &dag_ancestors {
                     if self.chain.has_dag_block(*ancestor_block_header_id)? {
                         continue;
-                        // let block_info = self
-                        //     .local_store
-                        //     .get_block_info(*ancestor_block_header_id)?
-                        //     .unwrap_or_else(|| {
-                        //         panic!(
-                        //             "failed to get the block info but the block was executed: {:?}",
-                        //             *ancestor_block_header_id
-                        //         )
-                        //     });
-                        // let block = self
-                        //     .local_store
-                        //     .get_block_by_hash(*ancestor_block_header_id)?
-                        //     .expect("failed to get block by hash");
-                        // info!(
-                        //     "connect a block: {:?}, number: {:?}, is_dag {}",
-                        //     block.id(),
-                        //     block.header().number(),
-                        //     block.is_dag()
-                        // );
-                        // let executed_block =
-                        //     self.chain.connect(ExecutedBlock { block, block_info })?;
-                        // info!(
-                        //     "succeed to connect a block: {:?}, number: {:?}",
-                        //     executed_block.block.id(),
-                        //     executed_block.block.header().number()
-                        // );
-                        // process_dag_ancestors.push(ancestor_block_header_id.clone());
-                        // self.notify_connected_block(
-                        //     executed_block.block,
-                        //     executed_block.block_info.clone(),
-                        //     BlockConnectAction::ConnectExecutedBlock,
-                        //     self.check_enough_by_info(executed_block.block_info)?,
-                        // )?;
                     } else {
                         for (block, _peer_id) in self
                             .fetcher
@@ -576,20 +511,9 @@ where
                 dag_ancestors = std::mem::take(&mut process_dag_ancestors);
                 // process_dag_ancestors = vec![];
 
-                // info!("jacktest: find {:?} 's children", dag_ancestors);
                 dag_ancestors = Self::remove_repeated(&self.fetch_dag_block_absent_children(dag_ancestors).await?);
                 source_path.extend(&dag_ancestors);
-                // info!("jacktest: its next children is {:?}", next_children);
 
-                // info!("jacktest: now find the absent children");
-                // let mut need_recursive_checking = vec![];
-                // for child in &next_children {
-                //     if self.chain.has_dag_block(child.clone())? {
-                //         continue;
-                //     }
-                //     need_recursive_checking.push(child.clone());
-                // }
-                // info!("jacktest: found {:?} children", need_recursive_checking);
                 if !dag_ancestors.is_empty() {
                     for (id, op_header) in self.fetch_block_headers(dag_ancestors.clone()).await? {
                         if let Some(header) = op_header {
@@ -599,9 +523,6 @@ where
                         }
                     }
                 }
-
-               // need_recursive_checking.extend(next_children);
-                // dag_ancestors = Self::remove_repeated(&need_recursive_checking);
 
                 info!("next dag children blocks: {:?}", dag_ancestors);
             }
@@ -639,29 +560,6 @@ where
         }
         uniqued
     }
-
-    // async fn fetch_blocks(
-    //     &self,
-    //     block_ids: Vec<HashValue>,
-    // ) -> Result<Vec<(Block, Option<PeerId>)>> {
-    //     let mut count: i32 = 20;
-    //     while count > 0 {
-    //         info!("fetch blocks retry count = {}", count);
-    //         match self.fetcher.fetch_blocks(block_ids.clone()).await {
-    //             Ok(result) => {
-    //                 return Ok(result);
-    //             }
-    //             Err(e) => {
-    //                 count = count.saturating_sub(1);
-    //                 if count == 0 {
-    //                     bail!("failed to fetch blocks due to: {:?}", e);
-    //                 }
-    //                 async_std::task::sleep(Duration::from_secs(1)).await;
-    //             }
-    //         }
-    //     }
-    //     bail!("failed to fetch blocks");
-    // }
 
     async fn fetch_dag_block_absent_children(&self,
         mut dag_ancestors: Vec<HashValue>) -> Result<Vec<HashValue>> {

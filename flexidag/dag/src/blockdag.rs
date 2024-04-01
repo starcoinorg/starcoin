@@ -116,6 +116,11 @@ impl BlockDAG {
         }
     }
 
+    pub fn set_reindex_root(&mut self, hash: HashValue) -> anyhow::Result<()> {
+        self.storage.reachability_store.set_reindex_root(hash)?;
+        Ok(())
+    }
+
     pub fn commit(&mut self, header: BlockHeader, origin: HashValue) -> anyhow::Result<()> {
         // Generate ghostdag data
         let parents = header.parents();
@@ -155,7 +160,8 @@ impl BlockDAG {
                 if msg == REINDEX_ROOT_KEY.to_string() {
                     info!("the key {:?} was already processed, original error message: {:?}", header.id(), reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(REINDEX_ROOT_KEY.to_string())));
                     info!("now set the reindex key to origin: {:?}", origin);
-                    self.storage.reachability_store.set_reindex_root(origin)?;
+                    // self.storage.reachability_store.set_reindex_root(origin)?;
+                    self.set_reindex_root(origin)?;
                     bail!("failed to add a block when committing, e: {:?}", reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(msg)));
 
                 } else {

@@ -11,6 +11,7 @@ use starcoin_abi_decoder::decode_txn_payload;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_config::{BuiltinNetworkID, ChainNetworkID};
 use starcoin_crypto::HashValue;
+use starcoin_dag::consensusdb::consenses_state::DagStateView;
 use starcoin_rpc_api::chain::{ChainApi, GetBlockOption};
 use starcoin_rpc_api::chain::{ChainApiClient, GetBlocksOption};
 use starcoin_rpc_api::types::{
@@ -497,6 +498,11 @@ impl ChainApi for MockChainApi {
             bail!("not implemented.");
         };
         Box::pin(fut.boxed().map_err(map_err))
+    }
+    
+    #[doc = r" Get the state of a dag."]
+    fn get_dag_state(&self,) -> FutureResult<DagStateView>  {
+        todo!("not implement yet")
     }
 }
 

@@ -5,6 +5,7 @@ use crate::message::{ChainRequest, ChainResponse};
 use crate::TransactionInfoWithProof;
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
+use starcoin_dag::consensusdb::consenses_state::DagStateView;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
@@ -73,6 +74,7 @@ pub trait ReadableChainService {
 
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
     fn get_dag_block_children(&self, ids: Vec<HashValue>) -> Result<Vec<HashValue>>;
+    fn get_dag_state(&self,) -> Result<DagStateView>;
 }
 
 /// Writeable block chain service trait
@@ -141,6 +143,7 @@ pub trait ChainAsyncService:
 
     async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
     async fn get_dag_block_children(&self, hashes: Vec<HashValue>) -> Result<Vec<HashValue>>;
+    async fn get_dag_state(&self,) -> Result<DagStateView>;
 }
 
 #[async_trait::async_trait]
@@ -447,6 +450,16 @@ where
             Ok(children)
         } else {
             bail!("get dag block children error")
+        }
+    }
+
+
+    async fn get_dag_state(&self,) -> Result<DagStateView> {
+        let response = self.send(ChainRequest::GetDagStateView).await??;
+        if let ChainResponse::DagStateView(dag_state) = response {
+            Ok(*dag_state)
+        } else {
+            bail!("get dag state error")
         }
     }
 }

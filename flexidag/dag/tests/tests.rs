@@ -455,7 +455,6 @@ mod tests {
         }
 
         assert!(dag.check_ancestor_of(origin, vec![child5])?, "child 5 must be origin's child");
-        dag.
 
         // let mut count = 6;
         // loop {

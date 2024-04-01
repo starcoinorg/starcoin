@@ -11,7 +11,6 @@ rand = { workspace = true }
 rand_core = { default-features = false, workspace = true }
 rust-argon2 = { workspace = true }
 sha3 = { workspace = true }
-starcoin-chain-api = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-state-api = { workspace = true }
@@ -28,6 +27,7 @@ itertools = { workspace = true }
 starcoin-config = { workspace = true }
 bcs-ext = { workspace = true }
 starcoin-accumulator = { workspace = true }
+schemars = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

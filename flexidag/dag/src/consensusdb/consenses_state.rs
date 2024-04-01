@@ -9,6 +9,7 @@ use crate::define_schema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue as Hash;
 use std::sync::Arc;
+use schemars::{self, JsonSchema};
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug, Default)]
 pub struct DagState {
@@ -88,4 +89,16 @@ impl DagStateStore for DbDagStateStore {
     }
 }
 
+#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct DagStateView {
+    pub dag_genesis: Hash,
+    pub tips: Vec<Hash>,
+}
 
+impl DagStateView {
+    pub fn into_state(self) -> DagState {
+        DagState {
+            tips: self.tips,
+        }
+    }
+}

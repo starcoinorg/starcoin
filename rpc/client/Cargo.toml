@@ -45,6 +45,7 @@ starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
+starcoin-dag = { workspace = true }
 
 [dev-dependencies]
 starcoin-config = { workspace = true }

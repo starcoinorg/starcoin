@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{format_err, Error, Result};
+use anyhow::{bail, format_err, Error, Result};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::{
@@ -10,6 +10,7 @@ use starcoin_chain_api::{
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::consensusdb::consenses_state::DagStateView;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
@@ -243,6 +244,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetDagBlockChildren { block_ids } => Ok(ChainResponse::HashVec(
                 self.inner.get_dag_block_children(block_ids)?,
             )),
+            ChainRequest::GetDagStateView => Ok(ChainResponse::DagStateView(
+                Box::new(self.inner.get_dag_state()?),
+            )),
         }
     }
 }
@@ -443,6 +447,18 @@ impl ReadableChainService for ChainReaderServiceInner {
                 }
                 Err(e) => Err(e),
             }
+        })
+    }
+    
+    fn get_dag_state(&self,) -> Result<DagStateView> {
+        let head = self.main.current_header();
+        if !head.is_dag() {
+            bail!("The chain is still not a dag and its dag fork number is {} and the current is {}.", head.dag_fork_height(), head.number());
+        }
+        let (dag_genesis, state) = self.main.get_dag_state_by_block(&head)?;
+        Ok(DagStateView {
+            dag_genesis,
+            tips: state.tips.clone(),
         })
     }
 }
