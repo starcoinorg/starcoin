@@ -1,9 +1,9 @@
-use starcoin_types::U256;
 use crate::difficulty_to_target_hex;
 use starcoin_logger::prelude::*;
+use starcoin_types::U256;
 pub const SHARE_SUBMIT_PERIOD: u64 = 2;
 pub const INIT_HASH_RATE: u64 = 10000;
-pub const MINI_UPDATE_PERIOD: u64 = 5;
+pub const MINI_UPDATE_PERIOD: u64 = 1;
 
 pub struct DifficultyManager {
     pub timestamp_since_last_update: u64,
@@ -30,13 +30,13 @@ impl DifficultyManager {
         self.submits_since_last_update += 1;
     }
 
-    pub fn try_update(&mut self) {
+    pub fn try_update(&mut self) -> bool {
         self.find_seal();
         let current_timestamp = Self::current_timestamp();
 
         let pass_time = current_timestamp - self.timestamp_since_last_update;
         if pass_time < MINI_UPDATE_PERIOD {
-            return;
+            return false;
         }
 
         if self.submits_since_last_update == 0 {
@@ -50,6 +50,7 @@ impl DifficultyManager {
         self.timestamp_since_last_update = current_timestamp;
         self.difficulty = Self::get_difficulty_from_hashrate(self.hash_rate, SHARE_SUBMIT_PERIOD);
         self.submits_since_last_update = 0;
+        return true;
     }
 
     fn get_difficulty_from_hashrate(hash_rate: u64, share_submit_period: u64) -> U256 {

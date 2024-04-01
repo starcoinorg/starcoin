@@ -26,7 +26,8 @@ pub fn target_hex_to_difficulty(target: &str) -> Result<U256> {
 
 #[test]
 fn test() {
-    let target = difficulty_to_target_hex(1024.into());
+    let target = difficulty_to_target_hex(U256::from(35652289346123 as u64));
+    println!("{}", target);
     let diff = target_hex_to_difficulty(&target).unwrap();
     println!("{}", diff);
 }

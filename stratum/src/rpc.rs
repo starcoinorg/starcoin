@@ -171,7 +171,7 @@ impl WorkerId {
             .map_err(|_| anyhow::anyhow!("Invalid length of worker id"))?;
         Ok(WorkerId { buff: worker_id })
     }
-    pub fn to_hex(&self,)->String{
+    pub fn to_hex(&self) -> String {
         hex::encode(self.buff)
     }
 }
@@ -208,14 +208,14 @@ impl MinerWorker {
     pub fn diff_manager(&self) -> Arc<RwLock<DifficultyManager>> {
         self.diff_manager.clone()
     }
-    pub fn process_seal(&self,share: &ShareRequest, mint_event:&MintBlockEvent){
+    pub fn process_seal(&self, share: &ShareRequest, mint_event: &MintBlockEvent) {
         //Verify target
+
         let verified = true;
-        if verified{
+        if verified {
             self.diff_manager.write().unwrap().try_update();
         }
     }
-
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
@@ -281,7 +281,7 @@ impl StratumJobResponse {
     ) -> Self {
         let mut minting_blob = e.minting_blob.clone();
         let _ = minting_blob[35..39].borrow_mut().write_all(&worker_id.buff);
-        
+
         let job_id = JobId::from_bob(&e.minting_blob).encode();
         Self {
             login,
