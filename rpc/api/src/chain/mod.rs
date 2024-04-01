@@ -13,9 +13,9 @@ use openrpc_derive::openrpc;
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
+use starcoin_dag::consensusdb::consenses_state::DagStateView;
 use starcoin_types::block::BlockNumber;
 use starcoin_vm_types::access_path::AccessPath;
-use starcoin_dag::consensusdb::consenses_state::DagStateView;
 
 #[openrpc]
 pub trait ChainApi {
@@ -126,9 +126,7 @@ pub trait ChainApi {
 
     /// Get the state of a dag.
     #[rpc(name = "chain.get_dag_state")]
-    fn get_dag_state(
-        &self,
-    ) -> FutureResult<DagStateView>;
+    fn get_dag_state(&self) -> FutureResult<DagStateView>;
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]

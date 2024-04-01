@@ -109,10 +109,10 @@ impl EventHandler<Self, ProtocolRequest> for NetworkRpcService {
             let peer = msg.request.peer.into();
             // let result = match api_limiters.check(&rpc_path, Some(&peer)) {
             //     Err(e) => Err(NetRpcError::new(RpcErrorCode::RateLimited, e.to_string())),
-                // Ok(_) => {
-                    let result = rpc_server
-                        .handle_raw_request(peer, rpc_path.into(), msg.request.payload)
-                        .await;
+            // Ok(_) => {
+            let result = rpc_server
+                .handle_raw_request(peer, rpc_path.into(), msg.request.payload)
+                .await;
             //     }
             // };
 

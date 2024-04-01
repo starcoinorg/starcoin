@@ -49,7 +49,11 @@ impl<
         GhostdagData::new(
             0,
             genesis.difficulty(),
-            Hash::sha3_256_of(&[genesis.parent_hash(), genesis.id()].encode().expect("failed to encode hash for dag gensis and its parent")),
+            Hash::sha3_256_of(
+                &[genesis.parent_hash(), genesis.id()]
+                    .encode()
+                    .expect("failed to encode hash for dag gensis and its parent"),
+            ),
             BlockHashes::new(vec![]),
             BlockHashes::new(Vec::new()),
             HashKTypeMap::new(BlockHashMap::new()),
@@ -68,7 +72,9 @@ impl<
     }
 
     pub fn check_ancestor_of(&self, ancestor: Hash, descendant: Vec<Hash>) -> anyhow::Result<bool> {
-        self.reachability_service.is_dag_ancestor_of_any_result(ancestor, &mut descendant.into_iter()).map_err(|e| e.into())
+        self.reachability_service
+            .is_dag_ancestor_of_any_result(ancestor, &mut descendant.into_iter())
+            .map_err(|e| e.into())
     }
 
     pub fn find_selected_parent(

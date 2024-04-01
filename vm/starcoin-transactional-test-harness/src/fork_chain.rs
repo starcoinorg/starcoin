@@ -499,9 +499,9 @@ impl ChainApi for MockChainApi {
         };
         Box::pin(fut.boxed().map_err(map_err))
     }
-    
+
     #[doc = r" Get the state of a dag."]
-    fn get_dag_state(&self,) -> FutureResult<DagStateView>  {
+    fn get_dag_state(&self) -> FutureResult<DagStateView> {
         todo!("not implement yet")
     }
 }

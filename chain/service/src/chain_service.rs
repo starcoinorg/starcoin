@@ -244,9 +244,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetDagBlockChildren { block_ids } => Ok(ChainResponse::HashVec(
                 self.inner.get_dag_block_children(block_ids)?,
             )),
-            ChainRequest::GetDagStateView => Ok(ChainResponse::DagStateView(
-                Box::new(self.inner.get_dag_state()?),
-            )),
+            ChainRequest::GetDagStateView => Ok(ChainResponse::DagStateView(Box::new(
+                self.inner.get_dag_state()?,
+            ))),
         }
     }
 }
@@ -449,16 +449,20 @@ impl ReadableChainService for ChainReaderServiceInner {
             }
         })
     }
-    
-    fn get_dag_state(&self,) -> Result<DagStateView> {
+
+    fn get_dag_state(&self) -> Result<DagStateView> {
         let head = self.main.current_header();
         if !head.is_dag() {
-            bail!("The chain is still not a dag and its dag fork number is {} and the current is {}.", head.dag_fork_height(), head.number());
+            bail!(
+                "The chain is still not a dag and its dag fork number is {} and the current is {}.",
+                head.dag_fork_height(),
+                head.number()
+            );
         }
         let (dag_genesis, state) = self.main.get_dag_state_by_block(&head)?;
         Ok(DagStateView {
             dag_genesis,
-            tips: state.tips.clone(),
+            tips: state.tips,
         })
     }
 }

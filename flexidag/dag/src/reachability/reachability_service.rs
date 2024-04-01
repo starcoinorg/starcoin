@@ -16,7 +16,11 @@ pub trait ReachabilityService {
         list: &mut impl Iterator<Item = Hash>,
         queried: Hash,
     ) -> Result<bool>;
-    fn is_dag_ancestor_of_any_result(&self, this: Hash, queried: &mut impl Iterator<Item = Hash>) -> Result<bool>;
+    fn is_dag_ancestor_of_any_result(
+        &self,
+        this: Hash,
+        queried: &mut impl Iterator<Item = Hash>,
+    ) -> Result<bool>;
     fn get_next_chain_ancestor(&self, descendant: Hash, ancestor: Hash) -> Hash;
 }
 
@@ -72,13 +76,18 @@ impl<T: ReachabilityStoreReader + ?Sized> ReachabilityService for MTReachability
         queried.any(|hash| inquirer::is_dag_ancestor_of(read_guard.deref(), this, hash).unwrap())
     }
 
-    fn is_dag_ancestor_of_any_result(&self, this: Hash, queried: &mut impl Iterator<Item = Hash>) -> Result<bool> {
+    fn is_dag_ancestor_of_any_result(
+        &self,
+        this: Hash,
+        queried: &mut impl Iterator<Item = Hash>,
+    ) -> Result<bool> {
         let read_guard = self.store.read();
         queried.try_fold(false, |acc, descendant| {
             if acc {
                 Ok(true)
             } else {
-                inquirer::is_dag_ancestor_of(read_guard.deref(), this, descendant).map(|is_ancestor| acc || is_ancestor)
+                inquirer::is_dag_ancestor_of(read_guard.deref(), this, descendant)
+                    .map(|is_ancestor| acc || is_ancestor)
             }
         })
     }

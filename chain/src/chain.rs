@@ -409,13 +409,16 @@ impl BlockChain {
             bail!("Block is not a dag block.");
         }
 
-        let results = header.parents_hash().ok_or(anyhow!("dag block has no parents."))?.into_iter().map(|parent_hash| {
-            let header = self.storage.get_block_header_by_hash(parent_hash)?.ok_or(anyhow!("failed to find the block header in the block storage when checking the dag block exists, block hash: {:?}, number: {:?}", header.id(), header.number()))?;
+        let results = header.parents_hash().ok_or_else(|| anyhow!("dag block has no parents."))?.into_iter().map(|parent_hash| {
+            let header = self.storage.get_block_header_by_hash(parent_hash)?.ok_or_else(|| anyhow!("failed to find the block header in the block storage when checking the dag block exists, block hash: {:?}, number: {:?}", header.id(), header.number()))?;
             Ok(self.get_block_dag_genesis(&header)?)
         }).collect::<Result<HashSet<_>>>()?;
 
         if results.len() == 1 {
-            Ok(results.into_iter().next().expect("the len of the results is larger than 1 but no the first elemen!").clone())
+            Ok(results
+                .into_iter()
+                .next()
+                .expect("the len of the results is larger than 1 but no the first elemen!"))
         } else {
             bail!("dag block: {:?}, number: {:?} has multiple parents whose dags are not the same one! Their dag genesis are: {:?}", header.id(), header.number(), results);
         }
@@ -798,7 +801,10 @@ impl BlockChain {
     }
 
     pub fn get_block_dag_genesis(&self, header: &BlockHeader) -> Result<HashValue> {
-        let block_info = self.storage.get_block_info(header.id())?.ok_or(anyhow!("Cannot find block info by hash {:?}", header.id()))?;
+        let block_info = self
+            .storage
+            .get_block_info(header.id())?
+            .ok_or_else(|| anyhow!("Cannot find block info by hash {:?}", header.id()))?;
         let block_accumulator = MerkleAccumulator::new_with_info(
             block_info.get_block_accumulator_info().clone(),
             self.storage
@@ -806,7 +812,7 @@ impl BlockChain {
         );
         let dag_genesis = block_accumulator
             .get_leaf(header.dag_fork_height())?
-            .ok_or(anyhow!("failed to get the dag genesis"))?;
+            .ok_or_else(|| anyhow!("failed to get the dag genesis"))?;
 
         Ok(dag_genesis)
     }
@@ -1176,18 +1182,19 @@ impl ChainReader for BlockChain {
         }))
     }
 
-    fn current_tips_hash(&self, header: &BlockHeader) -> Result<Option<(HashValue, Vec<HashValue>)>> {
+    fn current_tips_hash(
+        &self,
+        header: &BlockHeader,
+    ) -> Result<Option<(HashValue, Vec<HashValue>)>> {
         let (dag_genesis, dag_state) = self.get_dag_state_by_block(header)?;
-        Ok(Some((dag_genesis, dag_state.tips))) 
+        Ok(Some((dag_genesis, dag_state.tips)))
     }
 
     fn has_dag_block(&self, header_id: HashValue) -> Result<bool> {
-        let header = match self
-            .storage
-            .get_block_header_by_hash(header_id)? {
-                Some(header) => header,
-                None => return Ok(false),
-            };
+        let header = match self.storage.get_block_header_by_hash(header_id)? {
+            Some(header) => header,
+            None => return Ok(false),
+        };
 
         let block_info = match self.storage.get_block_info(header.id())? {
             Some(block_info) => block_info,
@@ -1198,11 +1205,10 @@ impl ChainReader for BlockChain {
             self.storage
                 .get_accumulator_store(AccumulatorStoreType::Block),
         );
-        let dag_genesis = match block_accumulator
-            .get_leaf(header.dag_fork_height())? {
-                Some(dag_genesis) => dag_genesis,
-                None => return Ok(false),
-            };
+        let dag_genesis = match block_accumulator.get_leaf(header.dag_fork_height())? {
+            Some(dag_genesis) => dag_genesis,
+            None => return Ok(false),
+        };
 
         let current_chain_block_accumulator = MerkleAccumulator::new_with_info(
             self.status.status.info.get_block_accumulator_info().clone(),
@@ -1210,10 +1216,11 @@ impl ChainReader for BlockChain {
                 .get_accumulator_store(AccumulatorStoreType::Block),
         );
         let current_chain_dag_genesis = match current_chain_block_accumulator
-            .get_leaf(self.status.status.head.dag_fork_height())? {
-                Some(dag_genesis) => dag_genesis,
-                None => return Ok(false),
-            };
+            .get_leaf(self.status.status.head.dag_fork_height())?
+        {
+            Some(dag_genesis) => dag_genesis,
+            None => return Ok(false),
+        };
 
         if current_chain_dag_genesis != dag_genesis {
             return Ok(false);

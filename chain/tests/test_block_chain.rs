@@ -518,7 +518,6 @@ fn test_get_blocks_by_number() -> Result<()> {
     Ok(())
 }
 
-
 #[stest::test]
 fn test_block_chain_for_dag_fork() -> Result<()> {
     let mut mock_chain = MockChain::new(ChainNetwork::new_test())?;

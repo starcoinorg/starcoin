@@ -10,7 +10,11 @@ pub fn init(store: &mut (impl ReachabilityStore + ?Sized), origin: HashValue) ->
     init_with_params(store, origin, Interval::maximal())
 }
 
-pub fn init_for_test(store: &mut (impl ReachabilityStore + ?Sized), origin: HashValue, capacity: Interval) -> Result<()> {
+pub fn init_for_test(
+    store: &mut (impl ReachabilityStore + ?Sized),
+    origin: HashValue,
+    capacity: Interval,
+) -> Result<()> {
     init_with_params(store, origin, capacity)
 }
 
@@ -92,7 +96,11 @@ fn insert_to_future_covering_set(
         // which `new_block` is a chain ancestor of, contradicts processing order.
         SearchOutput::Found(_, _) => Err(ReachabilityError::DataInconsistency),
         SearchOutput::NotFound(i) => {
-            process_key_already_error(store.insert_future_covering_item(merged_block, new_block, i))?;
+            process_key_already_error(store.insert_future_covering_item(
+                merged_block,
+                new_block,
+                i,
+            ))?;
             Ok(())
         }
     }

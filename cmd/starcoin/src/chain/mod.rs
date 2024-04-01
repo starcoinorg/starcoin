@@ -4,6 +4,7 @@
 mod epoch_info;
 mod get_block_cmd;
 mod get_block_info_cmd;
+mod get_dag_state_cmd;
 mod get_events_cmd;
 mod get_txn_cmd;
 mod get_txn_info_cmd;
@@ -12,7 +13,6 @@ mod get_txn_infos_cmd;
 pub mod get_txn_proof_cmd;
 mod info_cmd;
 mod list_block_cmd;
-mod get_dag_state_cmd;
 
 pub use epoch_info::*;
 pub use get_block_cmd::*;

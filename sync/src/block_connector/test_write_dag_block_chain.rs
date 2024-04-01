@@ -9,7 +9,6 @@ use starcoin_chain_service::WriteableChainService;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
-use starcoin_dag::blockdag::BlockDAG;
 use starcoin_time_service::TimeService;
 use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::Block;
@@ -68,9 +67,19 @@ pub fn new_dag_block(
     let miner_address = *miner.address();
     let block_chain = writeable_block_chain_service.get_main();
     let current_header = block_chain.current_header();
-    let (_dag_genesis, tips) = block_chain.current_tips_hash(&current_header).expect("failed to get tips").expect("failed to get the tip and dag genesis");
+    let (_dag_genesis, tips) = block_chain
+        .current_tips_hash(&current_header)
+        .expect("failed to get tips")
+        .expect("failed to get the tip and dag genesis");
     let (block_template, _) = block_chain
-        .create_block_template(miner_address, Some(current_header.id()), Vec::new(), vec![], None, Some(tips))
+        .create_block_template(
+            miner_address,
+            Some(current_header.id()),
+            Vec::new(),
+            vec![],
+            None,
+            Some(tips),
+        )
         .unwrap();
     block_chain
         .consensus()

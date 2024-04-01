@@ -78,8 +78,9 @@ impl BlockDAG {
     }
 
     pub fn check_ancestor_of(&self, ancestor: Hash, descendant: Vec<Hash>) -> anyhow::Result<bool> {
-        self.ghostdag_manager.check_ancestor_of(ancestor, descendant)
-    } 
+        self.ghostdag_manager
+            .check_ancestor_of(ancestor, descendant)
+    }
 
     pub fn init_with_genesis(&mut self, genesis: BlockHeader) -> anyhow::Result<()> {
         let genesis_id = genesis.id();
@@ -99,9 +100,12 @@ impl BlockDAG {
         //     .relations_store
         //     .insert(origin, BlockHashes::new(vec![]))?;
         self.commit(genesis, origin)?;
-        self.save_dag_state(genesis_id, DagState {
-            tips: vec![genesis_id],
-        })?;
+        self.save_dag_state(
+            genesis_id,
+            DagState {
+                tips: vec![genesis_id],
+            },
+        )?;
         Ok(())
     }
     pub fn ghostdata(&self, parents: &[HashValue]) -> anyhow::Result<GhostdagData> {
@@ -136,9 +140,11 @@ impl BlockDAG {
             Some(ghostdata) => ghostdata,
         };
         // Store ghostdata
-        process_key_already_error(self.storage
-            .ghost_dag_store
-            .insert(header.id(), ghostdata.clone()))?;
+        process_key_already_error(
+            self.storage
+                .ghost_dag_store
+                .insert(header.id(), ghostdata.clone()),
+        )?;
 
         // Update reachability store
         let mut reachability_store = self.storage.reachability_store.clone();
@@ -153,19 +159,35 @@ impl BlockDAG {
         ) {
             Result::Ok(_) => (),
             Err(reachability::ReachabilityError::DataInconsistency) => {
-                let _future_covering_set = reachability_store.get_future_covering_set(header.id())?;
-                info!("the key {:?} was already processed, original error message: {:?}", header.id(), reachability::ReachabilityError::DataInconsistency);
+                let _future_covering_set =
+                    reachability_store.get_future_covering_set(header.id())?;
+                info!(
+                    "the key {:?} was already processed, original error message: {:?}",
+                    header.id(),
+                    reachability::ReachabilityError::DataInconsistency
+                );
             }
             Err(reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(msg))) => {
-                if msg == REINDEX_ROOT_KEY.to_string() {
-                    info!("the key {:?} was already processed, original error message: {:?}", header.id(), reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(REINDEX_ROOT_KEY.to_string())));
+                if msg == *REINDEX_ROOT_KEY.to_string() {
+                    info!(
+                        "the key {:?} was already processed, original error message: {:?}",
+                        header.id(),
+                        reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(
+                            REINDEX_ROOT_KEY.to_string()
+                        ))
+                    );
                     info!("now set the reindex key to origin: {:?}", origin);
                     // self.storage.reachability_store.set_reindex_root(origin)?;
                     self.set_reindex_root(origin)?;
-                    bail!("failed to add a block when committing, e: {:?}", reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(msg)));
-
+                    bail!(
+                        "failed to add a block when committing, e: {:?}",
+                        reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(msg))
+                    );
                 } else {
-                    bail!("failed to add a block when committing, e: {:?}", reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(msg)));
+                    bail!(
+                        "failed to add a block when committing, e: {:?}",
+                        reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(msg))
+                    );
                 }
             }
             Err(e) => {
@@ -177,18 +199,24 @@ impl BlockDAG {
         if header.is_dag_genesis() {
             let origin = header.parent_hash();
             let real_origin = Hash::sha3_256_of(&[origin, header.id()].encode()?);
-            process_key_already_error(self.storage
-                .relations_store
-                .insert(header.id(), BlockHashes::new(vec![real_origin])))?;
+            process_key_already_error(
+                self.storage
+                    .relations_store
+                    .insert(header.id(), BlockHashes::new(vec![real_origin])),
+            )?;
         } else {
-            process_key_already_error(self.storage
-                .relations_store
-                .insert(header.id(), BlockHashes::new(parents)))?;
+            process_key_already_error(
+                self.storage
+                    .relations_store
+                    .insert(header.id(), BlockHashes::new(parents)),
+            )?;
         }
         // Store header store
-        process_key_already_error(self.storage
-            .header_store
-            .insert(header.id(), Arc::new(header), 0))?;
+        process_key_already_error(self.storage.header_store.insert(
+            header.id(),
+            Arc::new(header),
+            0,
+        ))?;
         Ok(())
     }
 
@@ -219,4 +247,3 @@ impl BlockDAG {
         Ok(())
     }
 }
-

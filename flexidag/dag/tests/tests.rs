@@ -1,13 +1,23 @@
-
-
 #[cfg(test)]
 mod tests {
     use anyhow::{bail, Ok};
     use starcoin_config::RocksdbConfig;
-    use starcoin_dag::{blockdag::BlockDAG, consensusdb::{consenses_state::{DagState, DagStateReader, DagStateStore}, prelude::{FlexiDagStorage, FlexiDagStorageConfig}, schemadb::{DbReachabilityStore, ReachabilityStore, ReachabilityStoreReader}}, reachability::{inquirer, reachability_service::ReachabilityService, ReachabilityError}, types::interval::{self, Interval}};
-    use starcoin_types::{block::{set_test_flexidag_fork_height, BlockHeader, BlockHeaderBuilder}, blockhash::KType};
-    use std::{env, fs, process::ChildStdin};
-    use starcoin_crypto::{hash, HashValue as Hash};
+    use starcoin_crypto::HashValue as Hash;
+    use starcoin_dag::{
+        blockdag::BlockDAG,
+        consensusdb::{
+            consenses_state::{DagState, DagStateReader, DagStateStore},
+            prelude::{FlexiDagStorage, FlexiDagStorageConfig},
+            schemadb::{DbReachabilityStore, ReachabilityStore, ReachabilityStoreReader},
+        },
+        reachability::{inquirer, ReachabilityError},
+        types::interval::Interval,
+    };
+    use starcoin_types::{
+        block::{set_test_flexidag_fork_height, BlockHeader, BlockHeaderBuilder},
+        blockhash::KType,
+    };
+    use std::{env, fs};
 
     fn build_block_dag(k: KType) -> BlockDAG {
         let db_path = env::temp_dir().join("smolstc");
@@ -41,7 +51,8 @@ mod tests {
                 .with_parents_hash(Some(parents_hash.clone()))
                 .build();
             parents_hash = vec![header.id()];
-            dag.commit(header.to_owned(), genesis.parent_hash()).unwrap();
+            dag.commit(header.to_owned(), genesis.parent_hash())
+                .unwrap();
             let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
             println!("{:?},{:?}", header, ghostdata);
         }
@@ -163,7 +174,8 @@ mod tests {
                 .with_parents_hash(Some(parents_hash.clone()))
                 .build();
             parents_hash = vec![header.id()];
-            dag.commit(header.to_owned(), genesis.parent_hash()).unwrap();
+            dag.commit(header.to_owned(), genesis.parent_hash())
+                .unwrap();
             let _ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
         }
 
@@ -186,7 +198,8 @@ mod tests {
                 .with_parents_hash(Some(old_parents_hash.clone()))
                 .build();
             old_parents_hash = vec![header.id()];
-            dag.commit(header.to_owned(), genesis.parent_hash()).unwrap();
+            dag.commit(header.to_owned(), genesis.parent_hash())
+                .unwrap();
             let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
             println!("add a old header: {:?}, tips: {:?}", header, ghostdata);
         }
@@ -198,7 +211,8 @@ mod tests {
                 .with_parents_hash(Some(parents_hash.clone()))
                 .build();
             parents_hash = vec![header.id()];
-            dag.commit(header.to_owned(), genesis.parent_hash()).unwrap();
+            dag.commit(header.to_owned(), genesis.parent_hash())
+                .unwrap();
             let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
             println!("add a forked header: {:?}, tips: {:?}", header, ghostdata);
         }
@@ -207,7 +221,8 @@ mod tests {
         parents_hash.append(&mut old_parents_hash);
         let header = header_builder.with_parents_hash(Some(parents_hash)).build();
         // parents_hash = vec![header.id()];
-        dag.commit(header.to_owned(), genesis.parent_hash()).unwrap();
+        dag.commit(header.to_owned(), genesis.parent_hash())
+            .unwrap();
         let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
         println!("add a forked header: {:?}, tips: {:?}", header, ghostdata);
     }
@@ -220,16 +235,34 @@ mod tests {
             tips: vec![Hash::random()],
         };
         let dag_gensis1 = Hash::random();
-        dag.storage.state_store.insert(dag_gensis1, state1.clone()).expect("failed to store the dag state");
+        dag.storage
+            .state_store
+            .insert(dag_gensis1, state1.clone())
+            .expect("failed to store the dag state");
 
         let state2 = DagState {
             tips: vec![Hash::random()],
         };
         let dag_gensis2 = Hash::random();
-        dag.storage.state_store.insert(dag_gensis2, state2.clone()).expect("failed to store the dag state");
+        dag.storage
+            .state_store
+            .insert(dag_gensis2, state2.clone())
+            .expect("failed to store the dag state");
 
-        assert_eq!(dag.storage.state_store.get_state(dag_gensis1).expect("failed to get the dag state"), state1);
-        assert_eq!(dag.storage.state_store.get_state(dag_gensis2).expect("failed to get the dag state"), state2);
+        assert_eq!(
+            dag.storage
+                .state_store
+                .get_state(dag_gensis1)
+                .expect("failed to get the dag state"),
+            state1
+        );
+        assert_eq!(
+            dag.storage
+                .state_store
+                .get_state(dag_gensis2)
+                .expect("failed to get the dag state"),
+            state2
+        );
     }
 
     // #[test]
@@ -275,7 +308,7 @@ mod tests {
         let mut dag = BlockDAG::create_for_testing().unwrap();
 
         let origin = BlockHeaderBuilder::random().with_number(0).build();
-        let genesis = BlockHeader::dag_genesis_random_with_parent(origin.clone());
+        let genesis = BlockHeader::dag_genesis_random_with_parent(origin);
 
         dag.init_with_genesis(genesis.clone()).unwrap();
 
@@ -285,11 +318,11 @@ mod tests {
         for i in 2..100 {
             let header_builder = BlockHeaderBuilder::random();
             let header = header_builder
-            .with_parent_hash(parent_hash)
+                .with_parent_hash(parent_hash)
                 .with_parents_hash(Some(parents_hash.clone()))
                 .with_number(i)
                 .build();
-                parents_hash = vec![header.id()];
+            parents_hash = vec![header.id()];
             parent_hash = header.id();
             dag.commit(header.to_owned(), genesis.parent_hash())?;
             if header.number() == 6 {
@@ -307,88 +340,153 @@ mod tests {
 
     #[test]
     fn test_reachability_abort_add_block() -> anyhow::Result<()> {
-      let dag = BlockDAG::create_for_testing().unwrap();
-      let mut reachability_store = dag.storage.reachability_store.clone();
+        let dag = BlockDAG::create_for_testing().unwrap();
+        let mut reachability_store = dag.storage.reachability_store;
 
-      let mut parent = Hash::random();
-      let origin = parent;
-      let mut child = Hash::random();
-      inquirer::init(&mut reachability_store, parent)?;
-      inquirer::add_block(&mut reachability_store, child, parent, &mut vec![parent].into_iter())?;
+        let mut parent = Hash::random();
+        let origin = parent;
+        let mut child = Hash::random();
+        inquirer::init(&mut reachability_store, parent)?;
+        inquirer::add_block(
+            &mut reachability_store,
+            child,
+            parent,
+            &mut vec![parent].into_iter(),
+        )?;
 
-      for i in 0..70 {
-        parent = child;
-        child = Hash::random();
+        for i in 0..70 {
+            parent = child;
+            child = Hash::random();
 
-        inquirer::add_block(&mut reachability_store, child, parent, &mut vec![parent].into_iter())?;
-        if i >= 61 && i <= 69 {
-          for _ in 0..10 {
-                inquirer::init(&mut reachability_store, origin)?;
-              let result = inquirer::add_block(&mut reachability_store, child, parent, &mut vec![parent].into_iter());
-            match result {
-                Result::Ok(_) => (),
-                Err(ReachabilityError::DataInconsistency) => {
-                    let future_covering_set = reachability_store.get_future_covering_set(child)?;
-                    println!("future_covering_set = {:?}", future_covering_set);
-                    ()
-                }
-                Err(e) => {
-                    println!("failed to add a block in reachability store, error = {:?}", e);
-                    bail!("{:?}", e);
+            inquirer::add_block(
+                &mut reachability_store,
+                child,
+                parent,
+                &mut vec![parent].into_iter(),
+            )?;
+            if (61..=69).contains(&i) {
+                for _ in 0..10 {
+                    inquirer::init(&mut reachability_store, origin)?;
+                    let result = inquirer::add_block(
+                        &mut reachability_store,
+                        child,
+                        parent,
+                        &mut vec![parent].into_iter(),
+                    );
+                    match result {
+                        Result::Ok(_) => (),
+                        Err(ReachabilityError::DataInconsistency) => {
+                            let future_covering_set =
+                                reachability_store.get_future_covering_set(child)?;
+                            println!("future_covering_set = {:?}", future_covering_set);
+                        }
+                        Err(e) => {
+                            println!(
+                                "failed to add a block in reachability store, error = {:?}",
+                                e
+                            );
+                            bail!("{:?}", e);
+                        }
+                    }
                 }
             }
-          }
         }
-      }
 
-      Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_reachability_check_ancestor() -> anyhow::Result<()> {
-      let dag = BlockDAG::create_for_testing().unwrap();
-      let mut reachability_store = dag.storage.reachability_store.clone();
+        let dag = BlockDAG::create_for_testing().unwrap();
+        let mut reachability_store = dag.storage.reachability_store.clone();
 
-      let mut parent = Hash::random();
-      let origin = parent;
-      let mut child = Hash::random();
-      inquirer::init(&mut reachability_store, parent)?;
-      inquirer::add_block(&mut reachability_store, child, parent, &mut vec![parent].into_iter())?;
+        let mut parent = Hash::random();
+        let origin = parent;
+        let mut child = Hash::random();
+        inquirer::init(&mut reachability_store, parent)?;
+        inquirer::add_block(
+            &mut reachability_store,
+            child,
+            parent,
+            &mut vec![parent].into_iter(),
+        )?;
 
-      let mut target = child;
-      let mut target_parent = parent;
-      for i in 0..70 {
-        parent = child;
-        child = Hash::random();
+        let mut target = child;
+        let mut target_parent = parent;
+        for i in 0..70 {
+            parent = child;
+            child = Hash::random();
 
-        if i == 47 {
-            inquirer::add_block(&mut reachability_store, child, parent, &mut vec![parent].into_iter())?;
+            if i == 47 {
+                inquirer::add_block(
+                    &mut reachability_store,
+                    child,
+                    parent,
+                    &mut vec![parent].into_iter(),
+                )?;
 
-            target = child;
-            target_parent = parent;
-        } else {
-            inquirer::add_block(&mut reachability_store, child, parent, &mut vec![parent].into_iter())?;
+                target = child;
+                target_parent = parent;
+            } else {
+                inquirer::add_block(
+                    &mut reachability_store,
+                    child,
+                    parent,
+                    &mut vec![parent].into_iter(),
+                )?;
+            }
         }
-      }
 
-      // the relationship
-      // origin.....target_parent-target.....parent-child
-      // ancestor
-      assert!(dag.check_ancestor_of(target, vec![parent, child])?, "failed to check target is the ancestor of its descendant");
-      assert!(dag.check_ancestor_of(origin, vec![target, parent, child])?, "failed to check origin is the parent of its child");
-      assert!(dag.check_ancestor_of(parent, vec![child])?, "failed to check target, parent is the parent of its child");
-      assert!(dag.check_ancestor_of(target_parent, vec![target])?, "failed to check target parent, parent is the parent of its child");
+        // the relationship
+        // origin.....target_parent-target.....parent-child
+        // ancestor
+        assert!(
+            dag.check_ancestor_of(target, vec![parent, child])?,
+            "failed to check target is the ancestor of its descendant"
+        );
+        assert!(
+            dag.check_ancestor_of(origin, vec![target, parent, child])?,
+            "failed to check origin is the parent of its child"
+        );
+        assert!(
+            dag.check_ancestor_of(parent, vec![child])?,
+            "failed to check target, parent is the parent of its child"
+        );
+        assert!(
+            dag.check_ancestor_of(target_parent, vec![target])?,
+            "failed to check target parent, parent is the parent of its child"
+        );
 
-      // not ancestor
-      assert!(!dag.check_ancestor_of(child, vec![target])?, "failed to check child is not the ancestor of its descendant");
-      assert!(!dag.check_ancestor_of(parent, vec![target])?, "failed to check child is not the ancestor of its descendant");
-      assert!(!dag.check_ancestor_of(child, vec![parent])?, "failed to check target, child is the child of its parent");
-      assert!(!dag.check_ancestor_of(target, vec![target_parent])?, "failed to check target is the child of its parent");
+        // not ancestor
+        assert!(
+            !dag.check_ancestor_of(child, vec![target])?,
+            "failed to check child is not the ancestor of its descendant"
+        );
+        assert!(
+            !dag.check_ancestor_of(parent, vec![target])?,
+            "failed to check child is not the ancestor of its descendant"
+        );
+        assert!(
+            !dag.check_ancestor_of(child, vec![parent])?,
+            "failed to check target, child is the child of its parent"
+        );
+        assert!(
+            !dag.check_ancestor_of(target, vec![target_parent])?,
+            "failed to check target is the child of its parent"
+        );
 
-      assert!(dag.check_ancestor_of(target, vec![Hash::random(), Hash::random(),]).is_err(), "failed to check not the ancestor of descendants");
-      assert!(dag.check_ancestor_of(Hash::random(), vec![target, parent, child]).is_err(), "failed to check not the descendant of parents");
+        assert!(
+            dag.check_ancestor_of(target, vec![Hash::random(), Hash::random(),])
+                .is_err(),
+            "failed to check not the ancestor of descendants"
+        );
+        assert!(
+            dag.check_ancestor_of(Hash::random(), vec![target, parent, child])
+                .is_err(),
+            "failed to check not the descendant of parents"
+        );
 
-      Ok(())
+        Ok(())
     }
 
     fn print_reachability_data(reachability: &DbReachabilityStore, key: &[Hash]) {
@@ -418,43 +516,81 @@ mod tests {
         print_reachability_data(&reachability_store, &hashes);
 
         let child1 = Hash::random();
-        inquirer::add_block(&mut reachability_store, child1, origin, &mut vec![origin].into_iter())?;
+        inquirer::add_block(
+            &mut reachability_store,
+            child1,
+            origin,
+            &mut vec![origin].into_iter(),
+        )?;
         hashes.push(child1);
         print_reachability_data(&reachability_store, &hashes);
 
         let child2 = Hash::random();
         hashes.push(child2);
-        inquirer::add_block(&mut reachability_store, child2, origin, &mut vec![origin].into_iter())?;
+        inquirer::add_block(
+            &mut reachability_store,
+            child2,
+            origin,
+            &mut vec![origin].into_iter(),
+        )?;
         print_reachability_data(&reachability_store, &hashes);
 
         let child3 = Hash::random();
-        inquirer::add_block(&mut reachability_store, child3, origin, &mut vec![origin].into_iter())?;
+        inquirer::add_block(
+            &mut reachability_store,
+            child3,
+            origin,
+            &mut vec![origin].into_iter(),
+        )?;
         hashes.push(child3);
         print_reachability_data(&reachability_store, &hashes);
 
         let child4 = Hash::random();
-        inquirer::add_block(&mut reachability_store, child4, origin, &mut vec![origin].into_iter())?;
+        inquirer::add_block(
+            &mut reachability_store,
+            child4,
+            origin,
+            &mut vec![origin].into_iter(),
+        )?;
         hashes.push(child4);
         print_reachability_data(&reachability_store, &hashes);
 
         let child5 = Hash::random();
-        inquirer::add_block(&mut reachability_store, child5, origin, &mut vec![origin].into_iter())?;
+        inquirer::add_block(
+            &mut reachability_store,
+            child5,
+            origin,
+            &mut vec![origin].into_iter(),
+        )?;
         hashes.push(child5);
         print_reachability_data(&reachability_store, &hashes);
 
         let child6 = Hash::random();
-        inquirer::add_block(&mut reachability_store, child6, child1, &mut vec![child1].into_iter())?;
+        inquirer::add_block(
+            &mut reachability_store,
+            child6,
+            child1,
+            &mut vec![child1].into_iter(),
+        )?;
         hashes.push(child6);
         print_reachability_data(&reachability_store, &hashes);
 
         for _i in 7..=31 {
             let s = Hash::random();
-            inquirer::add_block(&mut reachability_store, s, child1, &mut vec![child1].into_iter())?;
+            inquirer::add_block(
+                &mut reachability_store,
+                s,
+                child1,
+                &mut vec![child1].into_iter(),
+            )?;
             hashes.push(s);
             print_reachability_data(&reachability_store, &hashes);
         }
 
-        assert!(dag.check_ancestor_of(origin, vec![child5])?, "child 5 must be origin's child");
+        assert!(
+            dag.check_ancestor_of(origin, vec![child5])?,
+            "child 5 must be origin's child"
+        );
 
         // let mut count = 6;
         // loop {

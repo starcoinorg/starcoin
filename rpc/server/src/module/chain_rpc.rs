@@ -470,14 +470,11 @@ where
 
         Box::pin(fut.boxed())
     }
-    
+
     #[doc = r" Get the state of a dag."]
-    fn get_dag_state(&self,) -> FutureResult<DagStateView> {
+    fn get_dag_state(&self) -> FutureResult<DagStateView> {
         let service = self.service.clone();
-        let fut = async move {
-            Ok(service.get_dag_state().await?)
-        }
-        .map_err(map_err);
+        let fut = async move { service.get_dag_state().await }.map_err(map_err);
 
         Box::pin(fut.boxed())
     }

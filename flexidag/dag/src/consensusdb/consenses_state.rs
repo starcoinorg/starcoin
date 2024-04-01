@@ -1,15 +1,10 @@
 use super::schema::{KeyCodec, ValueCodec};
-use super::{
-    db::DBStorage,
-    error::StoreError,
-    prelude::CachedDbAccess,
-    writer::DirectDbWriter,
-};
+use super::{db::DBStorage, error::StoreError, prelude::CachedDbAccess, writer::DirectDbWriter};
 use crate::define_schema;
+use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue as Hash;
 use std::sync::Arc;
-use schemars::{self, JsonSchema};
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug, Default)]
 pub struct DagState {
@@ -44,11 +39,7 @@ pub trait DagStateReader {
 
 pub trait DagStateStore: DagStateReader {
     // This is append only
-    fn insert(
-        &self,
-        dag_gensis: Hash,
-        state: DagState,
-    ) -> Result<(), StoreError>;
+    fn insert(&self, dag_gensis: Hash, state: DagState) -> Result<(), StoreError>;
 }
 
 /// A DB + cache implementation of `HeaderStore` trait, with concurrency support.
@@ -75,16 +66,9 @@ impl DagStateReader for DbDagStateStore {
 }
 
 impl DagStateStore for DbDagStateStore {
-    fn insert(
-        &self,
-        dag_gensis: Hash,
-        state: DagState,
-    ) -> Result<(), StoreError> {
-        self.dag_state_access.write(
-            DirectDbWriter::new(&self.db),
-            dag_gensis,
-            state,
-        )?;
+    fn insert(&self, dag_gensis: Hash, state: DagState) -> Result<(), StoreError> {
+        self.dag_state_access
+            .write(DirectDbWriter::new(&self.db), dag_gensis, state)?;
         Ok(())
     }
 }
@@ -97,8 +81,6 @@ pub struct DagStateView {
 
 impl DagStateView {
     pub fn into_state(self) -> DagState {
-        DagState {
-            tips: self.tips,
-        }
+        DagState { tips: self.tips }
     }
 }

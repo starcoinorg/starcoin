@@ -1,5 +1,6 @@
 mod access;
 mod cache;
+pub mod consenses_state;
 mod consensus_ghostdag;
 mod consensus_header;
 mod consensus_reachability;
@@ -9,7 +10,6 @@ mod error;
 mod item;
 pub mod schema;
 mod writer;
-pub mod consenses_state;
 
 pub mod prelude {
     use super::{db, error};

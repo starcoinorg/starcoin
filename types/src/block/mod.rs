@@ -428,15 +428,12 @@ impl BlockHeader {
     //for test
     pub fn dag_genesis_random_with_parent(parent: BlockHeader) -> Self {
         let header_builder = BlockHeaderBuilder::random();
-        let header = header_builder
-        .with_parent_hash(parent.id())
+        header_builder
+            .with_parent_hash(parent.id())
             .with_parents_hash(Some(vec![parent.id()]))
             .with_number(get_test_flexidag_fork_height())
-            .build();
-        header
+            .build()
     }
-
-
 
     // Create a random compatible block header whose
     //      number <= fork_height
