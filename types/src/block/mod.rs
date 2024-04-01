@@ -42,7 +42,7 @@ static BARNARD_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
 static MAIN_FLEXIDAG_FORK_HEIGHT: BlockNumber = 1000000;
 
 lazy_static! {
-    static ref TEST_FLEXIDAG_FORK_HEIGHT: Mutex<BlockNumber> = Mutex::new(8);
+    static ref TEST_FLEXIDAG_FORK_HEIGHT: Mutex<BlockNumber> = Mutex::new(10000);
     static ref CUSTOM_FLEXIDAG_FORK_HEIGHT: Mutex<BlockNumber> = Mutex::new(10000);
 }
 
