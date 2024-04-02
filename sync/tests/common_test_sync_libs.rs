@@ -57,8 +57,7 @@ fn gen_node(seeds: Vec<NetworkConfig>) -> Result<(NodeHandle, NetworkConfig)> {
 // fixme: remove unused
 #[allow(unused)]
 pub fn init_multiple_node(count: usize) -> Result<Vec<NodeHandle>> {
-    let mut result = vec![];
-    result.reserve(count);
+    let mut result = Vec::with_capacity(count);
     let (main_node, network_config) = gen_node(vec![])?;
     result.push(main_node);
     for _ in 1..count {

@@ -1,6 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-#![allow(clippy::integer_arithmetic)]
+#![allow(clippy::arithmetic_side_effects)]
 use crate::block_connector::test_write_block_chain::create_writeable_dag_block_chain;
 use crate::block_connector::WriteBlockChainService;
 use anyhow::{bail, Ok};

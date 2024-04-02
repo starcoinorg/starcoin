@@ -108,7 +108,7 @@ impl TransactionGenerator {
 
     /// Generates transactions that allocate `init_account_balance` to every account.
     fn gen_create_account_transactions(&mut self, init_account_balance: u64, block_size: usize) {
-        for (_i, block) in self.accounts.chunks(block_size).enumerate() {
+        for block in self.accounts.chunks(block_size) {
             self.net.time_service().sleep(1000);
 
             let mut transactions = Vec::with_capacity(block_size + 1);

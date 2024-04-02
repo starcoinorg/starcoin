@@ -80,7 +80,7 @@ fn test_dag_1() {
     let mut latest_id = block6.id();
     let genesis_id = genesis.id();
     let mut dag = BlockDAG::create_for_testing().unwrap();
-    let expect_selected_parented = vec![block5.id(), block3.id(), block3_1.id(), genesis_id];
+    let expect_selected_parented = [block5.id(), block3.id(), block3_1.id(), genesis_id];
     dag.init_with_genesis(genesis.clone()).unwrap();
 
     dag.commit(block1, genesis.parent_hash()).unwrap();

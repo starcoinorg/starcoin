@@ -127,7 +127,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
     //put the genesis txn, the genesis block metadata txn do not generate txn info
 
     all_txns.push(Transaction::UserTransaction(
-        genesis_block.body.transactions.get(0).cloned().unwrap(),
+        genesis_block.body.transactions.first().cloned().unwrap(),
     ));
 
     (0..block_count).for_each(|_block_idx| {

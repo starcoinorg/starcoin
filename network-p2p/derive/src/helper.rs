@@ -78,7 +78,6 @@ pub fn compute_args(method: &syn::TraitItemMethod) -> Punctuated<syn::FnArg, syn
             _ => continue,
         };
         let syn::PathSegment { ident, .. } = &segments[0];
-        let ident = ident;
         if *ident == "Self" {
             continue;
         }

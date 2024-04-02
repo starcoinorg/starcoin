@@ -586,7 +586,7 @@ mod tests {
             storage2.get_accumulator_store(AccumulatorStoreType::Transaction),
         );
 
-        let genesis_txn = genesis_block.body.transactions.get(0).cloned().unwrap();
+        let genesis_txn = genesis_block.body.transactions.first().cloned().unwrap();
         assert_eq!(
             txn_accumulator.get_leaf(0).unwrap().unwrap(),
             storage1

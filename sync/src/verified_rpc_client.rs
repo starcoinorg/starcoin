@@ -65,7 +65,7 @@ where
         resp: Vec<Option<RespItem>>,
     ) -> Result<Vec<Option<RespItem>>, RpcVerifyError> {
         req.into_iter()
-            .zip(resp.into_iter())
+            .zip(resp)
             .map(|(req_item, resp_item)| {
                 if let Some(resp_item) = resp_item {
                     if (self)(&req_item, &resp_item) {

@@ -119,7 +119,7 @@ pub fn convert_normal_success_epilogue_error(error: VMError) -> Result<(), VMSta
             let (category, reason) = error_split(code);
             match (category, reason) {
                 (LIMIT_EXCEEDED, EINSUFFICIENT_BALANCE) => {
-                    if location != account_module_abort() {}
+                    let _ = location != account_module_abort();
                     VMStatus::MoveAbort(location, code)
                 }
                 (category, reason) => {

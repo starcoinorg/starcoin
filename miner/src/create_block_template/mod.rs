@@ -238,7 +238,7 @@ where
     pub fn insert_uncle(&mut self, uncle: BlockHeader) {
         self.parent_uncle
             .entry(uncle.parent_hash())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(uncle.id());
         self.uncles.insert(uncle.id(), uncle);
         if let Some(metrics) = self.metrics.as_ref() {

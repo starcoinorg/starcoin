@@ -146,11 +146,8 @@ impl CommandAction for GenerateMultisigTxnCommand {
                 unreachable!()
             };
         let mut raw_txn_view: RawUserTransactionView = raw_txn.clone().try_into()?;
-        raw_txn_view.decoded_payload = Some(
-            ctx.state()
-                .decode_txn_payload(raw_txn.payload())?
-                .try_into()?,
-        );
+        raw_txn_view.decoded_payload =
+            Some(ctx.state().decode_txn_payload(raw_txn.payload())?.into());
         // Use `eprintln` instead of `println`, for keep the cli stdout's format(such as json) is not broken by print.
         eprintln!(
             "Prepare to sign the transaction: \n {}",

@@ -4,7 +4,7 @@ async-std = { workspace = true }
 async-trait = { workspace = true }
 futures = { workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
+rand_core = { workspace = true }
 serde = { features = ["derive"], workspace = true }
 starcoin-chain = { workspace = true }
 starcoin-chain-api = { workspace = true }
@@ -22,7 +22,7 @@ tokio = { workspace = true }
 starcoin-network-rpc-api = { workspace = true }
 starcoin-consensus = { workspace = true }
 starcoin-dag = { workspace = true }
-starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
+starcoin-accumulator = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }

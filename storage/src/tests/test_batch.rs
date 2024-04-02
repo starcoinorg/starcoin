@@ -208,7 +208,7 @@ fn test_write_batch_multi_get() -> Result<()> {
         vec![id1.to_vec(), id2.to_vec()],
     )?;
     assert_eq!(
-        RichTransactionInfo::decode_value(&infos.get(0).unwrap().clone().unwrap())?,
+        RichTransactionInfo::decode_value(&infos.first().unwrap().clone().unwrap())?,
         transaction_info1
     );
     assert_eq!(
@@ -260,7 +260,7 @@ fn test_cache_multi_get_no_evict() -> Result<()> {
     )?;
 
     assert_eq!(
-        RichTransactionInfo::decode_value(&infos.get(0).unwrap().clone().unwrap())?,
+        RichTransactionInfo::decode_value(&infos.first().unwrap().clone().unwrap())?,
         transaction_info1
     );
     assert_eq!(
@@ -326,7 +326,7 @@ fn test_cache_multi_get_with_evict() -> Result<()> {
         vec![id1.to_vec(), id2.to_vec(), id3.to_vec()],
     )?;
 
-    assert!(&infos.get(0).unwrap().is_none(), "id1 has evicted");
+    assert!(&infos.first().unwrap().is_none(), "id1 has evicted");
     assert_eq!(
         RichTransactionInfo::decode_value(&infos.get(1).unwrap().clone().unwrap())?,
         transaction_info2

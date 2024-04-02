@@ -326,10 +326,7 @@ impl ChainApi for MockChainApi {
             } else if number <= current_number {
                 let hash = number_hash_map.get(&number).map(|h| *h);
                 let block_view = match hash {
-                    Some(hash) => match storage.get_block_info(hash)? {
-                        Some(b) => Some(BlockInfoView::try_from(b)?),
-                        None => None,
-                    },
+                    Some(hash) => storage.get_block_info(hash)?.map(BlockInfoView::from),
                     None => None,
                 };
                 Ok(block_view)

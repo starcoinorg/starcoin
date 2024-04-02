@@ -1583,7 +1583,9 @@ impl BlockChain {
         let pre_total_difficulty = parent_status
             .map(|status| status.total_difficulty())
             .unwrap_or_default();
-        let total_difficulty = pre_total_difficulty + header.difficulty();
+        let total_difficulty = pre_total_difficulty
+            .checked_add(header.difficulty())
+            .ok_or(format_err!("failed to calculate total difficulty"))?;
         block_accumulator.append(&[block_id])?;
 
         let txn_accumulator_info: AccumulatorInfo = txn_accumulator.get_info();
@@ -1684,7 +1686,7 @@ impl BlockChain {
         }
         let no_parents = header.parents_hash().unwrap_or_default().is_empty();
 
-        let result = match (no_parents, header.number().cmp(&dag_height)) {
+        match (no_parents, header.number().cmp(&dag_height)) {
             (true, Ordering::Greater) => {
                 Err(anyhow!("block header with suitable height but no parents"))
             }
@@ -1699,8 +1701,7 @@ impl BlockChain {
             (false, Ordering::Less) => Err(anyhow!(
                 "block header with smaller height but having parents"
             )),
-        };
-        result
+        }
     }
 }
 

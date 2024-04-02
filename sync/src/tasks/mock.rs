@@ -30,17 +30,13 @@ use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
 use std::time::Duration;
 
+#[derive(Default)]
 pub enum ErrorStrategy {
     _RateLimitErr,
     Timeout(u64),
+    #[default]
     RandomErr,
     MethodNotFound,
-}
-
-impl Default for ErrorStrategy {
-    fn default() -> Self {
-        ErrorStrategy::RandomErr
-    }
 }
 
 pub struct ErrorMocker {

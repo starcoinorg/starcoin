@@ -342,7 +342,7 @@ fn generate_old_db(path: &Path) -> Result<(Vec<HashValue>, Vec<HashValue>, Vec<H
     );
     let mut txn_inf_ids = vec![];
     let mut txn_ids = vec![];
-    let block_metadata: LegacyBlockMetadata = block.to_metadata(0).try_into().unwrap();
+    let block_metadata: LegacyBlockMetadata = block.to_metadata(0).into();
     let txn_info_0 = TransactionInfo::new(
         block_metadata.id(),
         HashValue::random(),
@@ -542,7 +542,7 @@ pub fn test_cache_evict_multi_get() -> Result<()> {
         TRANSACTION_INFO_PREFIX_NAME_V2,
         vec![id1.to_vec(), id2.to_vec(), id3.to_vec()],
     )?;
-    assert!(&cache_infos.get(0).unwrap().is_none(), "id1 has evicted");
+    assert!(&cache_infos.first().unwrap().is_none(), "id1 has evicted");
     assert_eq!(
         RichTransactionInfo::decode_value(&cache_infos.get(1).unwrap().clone().unwrap())?,
         transaction_info2
@@ -554,7 +554,7 @@ pub fn test_cache_evict_multi_get() -> Result<()> {
     let infos = storage
         .transaction_info_storage
         .multiple_get(vec![id1, id2, id3])?;
-    assert_eq!(infos.get(0).unwrap().clone().unwrap(), transaction_info1);
+    assert_eq!(infos.first().unwrap().clone().unwrap(), transaction_info1);
     assert_eq!(infos.get(1).unwrap().clone().unwrap(), transaction_info2);
     assert_eq!(infos.get(2).unwrap().clone().unwrap(), transaction_info3);
     Ok(())

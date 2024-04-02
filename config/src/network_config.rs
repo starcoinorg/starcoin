@@ -127,8 +127,8 @@ impl Seeds {
     }
     pub fn merge(&mut self, other: &Seeds) {
         let mut seeds = HashSet::new();
-        seeds.extend(self.0.clone().into_iter());
-        seeds.extend(other.0.clone().into_iter());
+        seeds.extend(self.0.clone());
+        seeds.extend(other.0.clone());
         let mut seeds: Vec<MultiaddrWithPeerId> = seeds.into_iter().collect();
         //keep order in config
         seeds.sort();
