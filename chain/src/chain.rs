@@ -3,6 +3,7 @@
 
 use crate::verifier::{BlockVerifier, DagBasicVerifier, DagVerifier, FullVerifier};
 use anyhow::{anyhow, bail, ensure, format_err, Ok, Result};
+use bcs_ext::BCSCodec;
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
 use starcoin_accumulator::{
@@ -126,7 +127,10 @@ impl BlockChain {
             vm_metrics,
             dag: dag.clone(),
         };
-        dag.set_reindex_root(chain.current_header().id())?;
+        let current_header = chain.current_header();
+        if current_header.is_dag() || current_header.is_dag_genesis() {
+            dag.set_reindex_root(chain.get_block_dag_origin()?)?;
+        }
         watch(CHAIN_WATCH_NAME, "n1251");
         match uncles {
             Some(data) => chain.uncles = data,
@@ -411,7 +415,9 @@ impl BlockChain {
 
         let results = header.parents_hash().ok_or_else(|| anyhow!("dag block has no parents."))?.into_iter().map(|parent_hash| {
             let header = self.storage.get_block_header_by_hash(parent_hash)?.ok_or_else(|| anyhow!("failed to find the block header in the block storage when checking the dag block exists, block hash: {:?}, number: {:?}", header.id(), header.number()))?;
-            Ok(self.get_block_dag_genesis(&header)?)
+            let dag_genesis_hash = self.get_block_dag_genesis(&header)?;
+            let dag_genesis = self.storage.get_block_header_by_hash(dag_genesis_hash)?.ok_or_else(|| anyhow!("failed to find the block header in the block storage when checking the dag block exists, block hash: {:?}, number: {:?}", header.id(), header.number()))?;
+            Ok(dag_genesis.parent_hash())
         }).collect::<Result<HashSet<_>>>()?;
 
         if results.len() == 1 {
@@ -815,6 +821,18 @@ impl BlockChain {
             .ok_or_else(|| anyhow!("failed to get the dag genesis"))?;
 
         Ok(dag_genesis)
+    }
+
+    pub fn get_block_dag_origin(&self) -> Result<HashValue> {
+        let dag_genesis = self.get_block_dag_genesis(&self.current_header())?;
+        let block_header = self
+            .storage
+            .get_block_header_by_hash(dag_genesis)?
+            .ok_or_else(|| anyhow!("Cannot find block by hash {:?}", dag_genesis))?;
+
+        Ok(HashValue::sha3_256_of(
+            &[block_header.parent_hash(), block_header.id()].encode()?,
+        ))
     }
 
     pub fn get_dag_state_by_block(&self, header: &BlockHeader) -> Result<(HashValue, DagState)> {
