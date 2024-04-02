@@ -11,14 +11,14 @@ use starcoin_types::{
     access_path::AccessPath,
     account::{Account, DEFAULT_MAX_GAS_AMOUNT},
     account_config::{genesis_address, ModuleUpgradeStrategy},
-    transaction::{SignedUserTransaction, TransactionOutput},
+    transaction::SignedUserTransaction,
 };
 use starcoin_vm_types::{
     account_config::STC_TOKEN_CODE_STR,
     genesis_config::ChainId,
     move_resource::MoveResource,
     state_store::state_key::StateKey,
-    transaction::{Module, Package, RawUserTransaction, Transaction, TransactionPayload},
+    transaction::{Module, Package, RawUserTransaction, TransactionPayload},
 };
 
 pub const FORCE_UPGRADE_BLOCK_NUM: u64 = 16000000;
@@ -48,65 +48,53 @@ fn load_package_from_file(mv_or_package_file: &Path) -> anyhow::Result<Package> 
     anyhow::Ok(package)
 }
 
-pub struct ForceUpgrade {
+pub struct ForceUpgrade<'a> {
     net: ChainId,
     block_number: u64,
+    state_db: &'a ChainStateDB,
+    strategy_path: AccessPath,
 }
 
-fn is_force_upgrade_block(block_num: u64) -> bool {
-    block_num == FORCE_UPGRADE_BLOCK_NUM
-}
-
-impl ForceUpgrade {
-    pub fn new(net: ChainId, block_number: u64) -> Self {
-        ForceUpgrade { net, block_number }
+impl<'a> ForceUpgrade<'a> {
+    pub fn new(net: ChainId, block_number: u64, state_db: &'a ChainStateDB) -> Self {
+        // Write upgrade strategy resource to 0
+        ForceUpgrade {
+            net,
+            block_number,
+            state_db,
+            strategy_path: AccessPath::resource_access_path(
+                genesis_address(),
+                ModuleUpgradeStrategy::struct_tag(),
+            ),
+        }
     }
 
-    pub fn do_execute(
-        &self,
-        state_db: &ChainStateDB,
-    ) -> anyhow::Result<(Vec<SignedUserTransaction>, Vec<TransactionOutput>)> {
-        if !is_force_upgrade_block(self.block_number) {
-            return Ok((vec![], vec![]));
-        };
+    pub fn is_force_upgrade_block(&self) -> bool {
+        self.block_number == FORCE_UPGRADE_BLOCK_NUM
+    }
 
-        // Write upgrade strategy resource to 0
-        let upgrade_strategy_path = AccessPath::resource_access_path(
-            genesis_address(),
-            ModuleUpgradeStrategy::struct_tag(),
-        );
-
+    pub fn begin(&self) -> anyhow::Result<()> {
         let upgraded_strategy = 100;
 
-        let before_strategy = state_db
-            .get_state_value(&StateKey::AccessPath(upgrade_strategy_path.clone()))?
+        let before_strategy = self
+            .state_db
+            .get_state_value(&StateKey::AccessPath(self.strategy_path.clone()))?
             .unwrap();
         assert_eq!(before_strategy[0], 1, "Checking the strategy not 1");
 
-        state_db.set(&upgrade_strategy_path, vec![100])?;
+        self.state_db
+            .set(&self.strategy_path, vec![upgraded_strategy])?;
 
-        // Check state is OK
-        let after_ret = state_db
-            .get_state_value(&StateKey::AccessPath(upgrade_strategy_path.clone()))?
-            .unwrap();
-        assert_eq!(
-            after_ret[0], upgraded_strategy,
-            "Set to upgrade strategy failed!"
-        );
-
-        let ret = self.deploy_package(state_db, &Account::new_association());
-
-        // Revert to origin value
-        state_db.set(&upgrade_strategy_path, before_strategy)?;
-
-        ret
+        Ok(())
     }
 
-    fn deploy_package(
-        &self,
-        state_view: &ChainStateDB,
-        account: &Account,
-    ) -> anyhow::Result<(Vec<SignedUserTransaction>, Vec<TransactionOutput>)> {
+    pub fn finish(&self) -> anyhow::Result<()> {
+        // Revert to origin value
+        self.state_db.set(&self.strategy_path, vec![1])
+    }
+
+    pub fn deploy_package_txn(&self) -> anyhow::Result<Vec<SignedUserTransaction>> {
+        let account = Account::new_association();
         let package = load_package_from_file(&PathBuf::from(DEFAULT_PACKAGE_PATH))?;
         let signed_transaction = account.sign_txn(RawUserTransaction::new(
             account.address().clone(),
@@ -118,13 +106,6 @@ impl ForceUpgrade {
             self.net,
             STC_TOKEN_CODE_STR.to_string(),
         ));
-        let ret = starcoin_executor::execute_transactions(
-            state_view,
-            vec![Transaction::UserTransaction(signed_transaction.clone())],
-            None,
-        )?;
-        assert_eq!(ret.len(), 1, "There is incorrect execution result");
-
-        Ok((vec![signed_transaction], ret))
+        Ok(vec![signed_transaction])
     }
 }

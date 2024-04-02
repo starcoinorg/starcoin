@@ -45,7 +45,7 @@ use starcoin_vm_types::account_config::{
 };
 use starcoin_vm_types::errors::VMResult;
 use starcoin_vm_types::file_format::{CompiledModule, CompiledScript};
-use starcoin_vm_types::gas_schedule::{G_LATEST_GAS_SCHEDULE};
+use starcoin_vm_types::gas_schedule::G_LATEST_GAS_SCHEDULE;
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;

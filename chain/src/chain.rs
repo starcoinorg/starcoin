@@ -17,6 +17,7 @@ use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_executor::{BlockExecutedData, VMMetrics};
+use starcoin_force_upgrade::ForceUpgrade;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
@@ -798,6 +799,9 @@ impl BlockChain {
             None,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
+
+        self.maybe_force_upgrade(&mut opened_block)?;
+
         let template = opened_block.finalize()?;
         Ok((template, excluded_txns))
     }
@@ -1800,6 +1804,25 @@ impl BlockChain {
             event_with_infos.truncate(limit);
         }
         Ok(event_with_infos)
+    }
+
+    fn maybe_force_upgrade(&self, opened_block: &mut OpenedBlock) -> Result<()> {
+        let force_upgrade = ForceUpgrade::new(
+            opened_block.chain_id(),
+            opened_block.block_number(),
+            &self.statedb,
+        );
+        if !force_upgrade.is_force_upgrade_block() {
+            return Ok(());
+        };
+
+        force_upgrade.begin()?;
+        let deploy_txn = force_upgrade.deploy_package_txn()?;
+        if !deploy_txn.is_empty() {
+            opened_block.push_txns(deploy_txn)?;
+        }
+        force_upgrade.finish()?;
+        Ok(())
     }
 }
 

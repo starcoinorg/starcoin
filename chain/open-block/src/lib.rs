@@ -41,7 +41,6 @@ pub struct OpenedBlock {
     difficulty: U256,
     strategy: ConsensusStrategy,
     vm_metrics: Option<VMMetrics>,
-    force_upgrade: ForceUpgrade,
 }
 
 impl OpenedBlock {
@@ -95,7 +94,6 @@ impl OpenedBlock {
             difficulty,
             strategy,
             vm_metrics,
-            force_upgrade: ForceUpgrade::new(chain_id, block_num),
         };
         opened_block.initialize()?;
         Ok(opened_block)
@@ -136,6 +134,10 @@ impl OpenedBlock {
         &self.state
     }
 
+    pub fn chain_id(&self) -> ChainId {
+        self.chain_id
+    }
+
     /// Try to add `user_txns` into this block.
     /// Return any txns  not included, either txn is discarded, or block gas limit is reached.
     /// If error occurs during the processing, the `open_block` should be dropped,
@@ -156,7 +158,7 @@ impl OpenedBlock {
             .map(Transaction::UserTransaction)
             .collect();
 
-        let mut txn_outputs = {
+        let txn_outputs = {
             let gas_left = self.gas_limit.checked_sub(self.gas_used).ok_or_else(|| {
                 format_err!(
                     "block gas_used {} exceed block gas_limit:{}",
@@ -171,16 +173,6 @@ impl OpenedBlock {
                 self.vm_metrics.clone(),
             )?
         };
-
-        let (upgrade_txns, mut upgrade_outputs) = self.force_upgrade.do_execute(&self.state)?;
-        if !upgrade_txns.is_empty() && !upgrade_outputs.is_empty() {
-            let mut converted_txns = upgrade_txns
-                .into_iter()
-                .map(|t| Transaction::UserTransaction(t))
-                .collect::<Vec<_>>();
-            txns.append(&mut converted_txns);
-            txn_outputs.append(&mut upgrade_outputs);
-        }
 
         let untouched_user_txns: Vec<SignedUserTransaction> = if txn_outputs.len() >= txns.len() {
             vec![]

@@ -378,15 +378,11 @@ mod tests {
     use starcoin_types::language_storage::ModuleId;
     use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
     use starcoin_vm_types::account_config::association_address;
-    use starcoin_vm_types::gas_schedule::{
-        latest_cost_table, G_TEST_GAS_CONSTANTS,
-    };
+    use starcoin_vm_types::gas_schedule::{latest_cost_table, G_TEST_GAS_CONSTANTS};
     use starcoin_vm_types::genesis_config::ChainId;
     use starcoin_vm_types::on_chain_config::GasSchedule;
+    use starcoin_vm_types::on_chain_config::TransactionPublishOption;
     use starcoin_vm_types::on_chain_config::{ConsensusConfig, Version};
-    use starcoin_vm_types::on_chain_config::{
-        TransactionPublishOption,
-    };
     use starcoin_vm_types::on_chain_resource::Epoch;
 
     #[stest::test]
