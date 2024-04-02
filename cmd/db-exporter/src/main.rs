@@ -872,7 +872,7 @@ pub fn apply_block(
     }
 
     if let Some(last_block) = blocks.last() {
-        let start = blocks.get(0).unwrap().header().number();
+        let start = blocks.first().unwrap().header().number();
         let end = last_block.header().number();
         println!(
             "current number {}, import [{},{}] block number",
@@ -2148,7 +2148,7 @@ pub fn apply_turbo_stm_block(
     }
 
     if let Some(last_block) = blocks.last() {
-        let start = blocks.get(0).unwrap().header().number();
+        let start = blocks.first().unwrap().header().number();
         let end = last_block.header().number();
         println!(
             "current number {}, import [{},{}] block number",

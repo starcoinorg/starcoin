@@ -60,8 +60,7 @@ pub struct TestOpts {
     format: Format,
 }
 
-#[derive(Debug, Eq, PartialEq)]
-#[derive(Default)]
+#[derive(Debug, Eq, PartialEq, Default)]
 enum Format {
     #[default]
     Pretty,
@@ -97,8 +96,6 @@ impl FromStr for Format {
         }
     }
 }
-
-
 
 #[derive(Args, Debug)]
 pub struct IntegrationTestCommand {

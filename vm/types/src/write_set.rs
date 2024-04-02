@@ -7,6 +7,7 @@
 use crate::state_store::state_key::StateKey;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use std::ops::Add;
 
 #[derive(Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum WriteOp {
@@ -30,10 +31,8 @@ impl std::fmt::Debug for WriteOp {
             WriteOp::Value(value) => write!(
                 f,
                 "Value({})",
-                value
-                    .iter()
-                    .map(|byte| format!("{:02x}", byte))
-                    .collect::<String>()
+                value.iter().fold(String::new(), |acc, byte| acc
+                    .add(format!("{:02x}", byte).as_str()))
             ),
             WriteOp::Deletion => write!(f, "Deletion"),
         }

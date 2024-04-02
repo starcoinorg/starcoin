@@ -81,10 +81,7 @@ fn test_once() {
         for _ in 0..2500 {
             // Each of these weights corresponds to an action that we may perform.
             let action_weights = [150, 90, 90, 30, 30, 1, 1, 4, 4];
-            match WeightedIndex::new(&action_weights)
-                .unwrap()
-                .sample(&mut rng)
-            {
+            match WeightedIndex::new(action_weights).unwrap().sample(&mut rng) {
                 // If we generate 0, poll the peerset.
                 0 => match Stream::poll_next(Pin::new(&mut peerset), cx) {
                     Poll::Ready(Some(Message::Connect { peer_id, .. })) => {

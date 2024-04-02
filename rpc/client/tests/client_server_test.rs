@@ -133,8 +133,8 @@ fn test_client_reconnect_subscribe() -> Result<()> {
     std::thread::sleep(Duration::from_millis(300));
     let _e = node_handle.stop();
 
-    let events1 = futures::executor::block_on(async move { handle1.await });
-    let events2 = futures::executor::block_on(async move { handle2.await });
+    let events1 = futures::executor::block_on(handle1);
+    let events2 = futures::executor::block_on(handle2);
     assert_ne!(events1.len(), 0);
     assert_ne!(events2.len(), 0);
     Ok(())

@@ -488,10 +488,10 @@ return TransactionPayloadScriptFunctionItem(ScriptFunction(module,function,ty_ar
         )?;
         self.out.indent();
 
-        for (_, ty_arg) in abi.ty_args().iter().enumerate() {
+        for ty_arg in abi.ty_args().iter() {
             writeln!(self.out, "{},", ty_arg.name(),)?;
         }
-        for (_, arg) in abi.args().iter().enumerate() {
+        for arg in abi.args().iter() {
             writeln!(self.out, "{},", arg.name(),)?;
         }
         self.out.unindent();

@@ -20,6 +20,7 @@ impl MockChainStateService {
     }
 }
 
+#[allow(clippy::diverging_sub_expression)]
 #[async_trait::async_trait]
 impl ChainStateAsyncService for MockChainStateService {
     async fn get(self, _access_path: AccessPath) -> Result<Option<Vec<u8>>> {

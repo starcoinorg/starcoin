@@ -998,7 +998,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             )
         })?;
 
-        let signer = match signers.get(0) {
+        let signer = match signers.first() {
             Some(addr) => self.compiled_state.resolve_address(addr),
             None => package.package_address(),
         };
@@ -1254,7 +1254,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                     }
                     match is_vec_u8 {
                         true => {
-                            assert_eq!(vals.get(0), Some(&MoveValue::U8(48)));
+                            assert_eq!(vals.first(), Some(&MoveValue::U8(48)));
                             assert_eq!(vals.get(1), Some(&MoveValue::U8(120)));
                             let mut vals_compress = vec![];
                             for i in (2..vals.len()).step_by(2) {

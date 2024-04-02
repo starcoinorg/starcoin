@@ -287,8 +287,7 @@ impl CliState {
             raw_txn: raw_txn.clone(),
         })?;
         let mut raw_txn_view: RawUserTransactionView = raw_txn.clone().try_into()?;
-        raw_txn_view.decoded_payload =
-            Some(self.decode_txn_payload(raw_txn.payload())?.try_into()?);
+        raw_txn_view.decoded_payload = Some(self.decode_txn_payload(raw_txn.payload())?.into());
 
         let mut execute_result = ExecuteResultView::new(raw_txn_view, raw_txn.to_hex(), dry_output);
         if only_dry_run

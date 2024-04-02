@@ -507,6 +507,7 @@ const PROTOCOL_NAME: &str = "/starcoin/notify/1";
 // }
 //
 
+#[allow(clippy::let_underscore_future)]
 #[stest::test]
 async fn test_handshake_fail() {
     let protocol = ProtocolId::from("starcoin");
@@ -592,6 +593,7 @@ fn test_handshake_message() {
     assert_eq!(status, status2);
 }
 
+#[allow(clippy::let_underscore_future)]
 #[stest::test]
 async fn test_support_protocol() {
     let protocol = ProtocolId::from("starcoin");

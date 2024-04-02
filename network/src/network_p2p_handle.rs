@@ -113,12 +113,10 @@ impl BusinessLayerHandle for Networkp2pHandle {
                 self.status.info = other_chain_info;
                 Ok(())
             }
-            Err(error) => {
-                Err(anyhow!(
-                    "failed to decode the generic data for the reason: {}",
-                    error
-                ))
-            }
+            Err(error) => Err(anyhow!(
+                "failed to decode the generic data for the reason: {}",
+                error
+            )),
         }
     }
 
@@ -128,12 +126,10 @@ impl BusinessLayerHandle for Networkp2pHandle {
                 self.status.info.update_status(status);
                 Ok(())
             }
-            Err(error) => {
-                Err(anyhow!(
-                    "failed to decode the generic data for the reason: {}",
-                    error
-                ))
-            }
+            Err(error) => Err(anyhow!(
+                "failed to decode the generic data for the reason: {}",
+                error
+            )),
         }
     }
 
