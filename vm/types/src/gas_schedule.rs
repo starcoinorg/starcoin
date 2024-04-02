@@ -1,4 +1,3 @@
-use crate::on_chain_config::GasSchedule;
 use once_cell::sync::Lazy;
 use starcoin_gas_algebra_ext::{CostTable, GasConstants};
 
@@ -50,14 +49,11 @@ pub enum NativeCostIndex {
     STRING_SUB_STR = 41,
     SRING_CHAR_BOUNDARY = 42,
     STRING_INDEX_OF = 43,
-    FROMBCS_FROM_BYTES = 44,
-    SECP256K1_ECDSA_RECOVER_INTERNAL = 45,
-    VECTOR_SPAWN_FROM = 46,
 }
 
 impl NativeCostIndex {
     //note: should change this value when add new native function.
-    pub const NUMBER_OF_NATIVE_FUNCTIONS: usize = 47;
+    pub const NUMBER_OF_NATIVE_FUNCTIONS: usize = 44;
 }
 
 pub static G_MAX_TRANSACTION_SIZE_IN_BYTES_V1: u64 = 4096 * 10;
@@ -144,19 +140,5 @@ pub fn latest_cost_table(gas_constants: GasConstants) -> CostTable {
 }
 
 /// only used in starcoin vm when init genesis
-pub static G_LATEST_GAS_COST_TABLE: Lazy<CostTable> =
+pub static G_LATEST_GAS_SCHEDULE: Lazy<CostTable> =
     Lazy::new(|| latest_cost_table(G_LATEST_GAS_CONSTANTS.clone()));
-
-pub fn latest_gas_schedule(gas_constants: GasConstants) -> GasSchedule {
-    let cost_table = CostTable {
-        instruction_table: crate::on_chain_config::G_LATEST_INSTRUCTION_TABLE.clone(),
-        native_table: crate::on_chain_config::G_LATEST_NATIVE_TABLE.clone(),
-        gas_constants,
-    };
-
-    GasSchedule::from(&cost_table)
-}
-
-/// only used in starcoin vm when init genesis
-pub static G_LATEST_GAS_SCHEDULE: Lazy<GasSchedule> =
-    Lazy::new(|| latest_gas_schedule(G_LATEST_GAS_CONSTANTS.clone()));

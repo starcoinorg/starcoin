@@ -23,7 +23,8 @@ use starcoin_vm_types::{
 
 pub const FORCE_UPGRADE_BLOCK_NUM: u64 = 16000000;
 
-const DEFAULT_PACKAGE_PATH: &str = "/Users/bobong/Codes/westar_labs/starcoin/StarcoinFramework.v0.1.0.blob";
+const DEFAULT_PACKAGE_PATH: &str =
+    "/Users/bobong/Codes/westar_labs/starcoin/StarcoinFramework.v0.1.0.blob";
 
 fn load_package_from_file(mv_or_package_file: &Path) -> anyhow::Result<Package> {
     ensure!(
@@ -52,6 +53,10 @@ pub struct ForceUpgrade {
     block_number: u64,
 }
 
+fn is_force_upgrade_block(block_num: u64) -> bool {
+    block_num == FORCE_UPGRADE_BLOCK_NUM
+}
+
 impl ForceUpgrade {
     pub fn new(net: ChainId, block_number: u64) -> Self {
         ForceUpgrade { net, block_number }
@@ -61,7 +66,7 @@ impl ForceUpgrade {
         &self,
         state_db: &ChainStateDB,
     ) -> anyhow::Result<(Vec<SignedUserTransaction>, Vec<TransactionOutput>)> {
-        if self.block_number != FORCE_UPGRADE_BLOCK_NUM {
+        if !is_force_upgrade_block(self.block_number) {
             return Ok((vec![], vec![]));
         };
 
@@ -84,7 +89,10 @@ impl ForceUpgrade {
         let after_ret = state_db
             .get_state_value(&StateKey::AccessPath(upgrade_strategy_path.clone()))?
             .unwrap();
-        assert_eq!(after_ret[0], upgraded_strategy, "Set to upgrade strategy failed!");
+        assert_eq!(
+            after_ret[0], upgraded_strategy,
+            "Set to upgrade strategy failed!"
+        );
 
         let ret = self.deploy_package(state_db, &Account::new_association());
 
