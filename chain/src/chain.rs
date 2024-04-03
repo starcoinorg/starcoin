@@ -24,6 +24,7 @@ use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter}
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
+use starcoin_types::account::Account;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
@@ -41,6 +42,7 @@ use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::Epoch;
+use starcoin_vm_types::state_view::StateReaderExt;
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
@@ -1807,21 +1809,26 @@ impl BlockChain {
     }
 
     fn maybe_force_upgrade(&self, opened_block: &mut OpenedBlock) -> Result<()> {
-        let force_upgrade = ForceUpgrade::new(
-            opened_block.chain_id(),
-            opened_block.block_number(),
-            &self.statedb,
-        );
-        if !force_upgrade.is_force_upgrade_block() {
-            return Ok(());
+        let account = Account::new_association();
+        let sequence_number = opened_block.state_reader().get_sequence_number(account.address().clone())?;
+        let deploy_txn = {
+            ForceUpgrade::begin(
+                account,
+                sequence_number + 1,
+                opened_block.chain_id(),
+                opened_block.block_number(),
+                opened_block.state_writer(),
+                opened_block.state_reader(),
+            )?
         };
 
-        force_upgrade.begin()?;
-        let deploy_txn = force_upgrade.deploy_package_txn()?;
         if !deploy_txn.is_empty() {
             opened_block.push_txns(deploy_txn)?;
-        }
-        force_upgrade.finish()?;
+        };
+
+        {
+            ForceUpgrade::finish(opened_block.state_writer())?
+        };
         Ok(())
     }
 }

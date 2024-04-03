@@ -6,7 +6,6 @@ use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumu
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_crypto::HashValue;
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
-use starcoin_force_upgrade::ForceUpgrade;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
@@ -79,12 +78,10 @@ impl OpenedBlock {
             previous_header.gas_used(),
         );
 
-        let block_num = block_meta.number();
         let mut opened_block = Self {
             previous_block_info: block_info,
             block_meta,
             gas_limit: block_gas_limit,
-
             state: chain_state,
             txn_accumulator,
             gas_used: 0,
@@ -131,6 +128,10 @@ impl OpenedBlock {
     }
 
     pub fn state_reader(&self) -> &impl ChainStateReader {
+        &self.state
+    }
+
+    pub fn state_writer(&self) -> &impl ChainStateWriter {
         &self.state
     }
 

@@ -5,8 +5,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{ensure, format_err};
 
 use starcoin_move_compiler::move_command_line_common::files::MOVE_COMPILED_EXTENSION;
-use starcoin_state_api::{ChainStateWriter, StateView};
-use starcoin_statedb::ChainStateDB;
+use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_types::{
     access_path::AccessPath,
     account::{Account, DEFAULT_MAX_GAS_AMOUNT},
@@ -48,64 +47,59 @@ fn load_package_from_file(mv_or_package_file: &Path) -> anyhow::Result<Package> 
     anyhow::Ok(package)
 }
 
-pub struct ForceUpgrade<'a> {
-    net: ChainId,
-    block_number: u64,
-    state_db: &'a ChainStateDB,
-    strategy_path: AccessPath,
-}
+pub struct ForceUpgrade;
 
-impl<'a> ForceUpgrade<'a> {
-    pub fn new(net: ChainId, block_number: u64, state_db: &'a ChainStateDB) -> Self {
-        // Write upgrade strategy resource to 0
-        ForceUpgrade {
-            net,
-            block_number,
-            state_db,
-            strategy_path: AccessPath::resource_access_path(
-                genesis_address(),
-                ModuleUpgradeStrategy::struct_tag(),
-            ),
-        }
-    }
+impl ForceUpgrade {
+    pub fn begin(
+        account: Account,
+        sequence_number: u64,
+        net: ChainId,
+        block_number: u64,
+        state_writter: &dyn ChainStateWriter,
+        state_reader: &dyn ChainStateReader,
+    ) -> anyhow::Result<Vec<SignedUserTransaction>> {
+        if block_number != FORCE_UPGRADE_BLOCK_NUM {
+            return Ok(vec![]);
+        };
 
-    pub fn is_force_upgrade_block(&self) -> bool {
-        self.block_number == FORCE_UPGRADE_BLOCK_NUM
-    }
+        let strategy_path = AccessPath::resource_access_path(
+            genesis_address(),
+            ModuleUpgradeStrategy::struct_tag(),
+        );
 
-    pub fn begin(&self) -> anyhow::Result<()> {
-        let upgraded_strategy = 100;
-
-        let before_strategy = self
-            .state_db
-            .get_state_value(&StateKey::AccessPath(self.strategy_path.clone()))?
+        let before_strategy = state_reader
+            .get_state_value(&StateKey::AccessPath(strategy_path.clone()))?
             .unwrap();
         assert_eq!(before_strategy[0], 1, "Checking the strategy not 1");
 
-        self.state_db
-            .set(&self.strategy_path, vec![upgraded_strategy])?;
+        state_writter.set(&strategy_path, vec![100])?;
 
-        Ok(())
-    }
+        let after_strateygy = state_reader
+            .get_state_value(&StateKey::AccessPath(strategy_path.clone()))?
+            .unwrap();
+        assert_eq!(after_strateygy[0], 100, "Checking the strategy not 100");
 
-    pub fn finish(&self) -> anyhow::Result<()> {
-        // Revert to origin value
-        self.state_db.set(&self.strategy_path, vec![1])
-    }
-
-    pub fn deploy_package_txn(&self) -> anyhow::Result<Vec<SignedUserTransaction>> {
-        let account = Account::new_association();
         let package = load_package_from_file(&PathBuf::from(DEFAULT_PACKAGE_PATH))?;
+        //let sequence_number = state_reader.get_sequence_number(account.address().clone())?;
         let signed_transaction = account.sign_txn(RawUserTransaction::new(
             account.address().clone(),
-            0,
+            sequence_number,
             TransactionPayload::Package(package),
             DEFAULT_MAX_GAS_AMOUNT,
             1,
             3600,
-            self.net,
+            net,
             STC_TOKEN_CODE_STR.to_string(),
         ));
+
         Ok(vec![signed_transaction])
+    }
+
+    pub fn finish(state_writter: &dyn ChainStateWriter) -> anyhow::Result<()> {
+        let strategy_path = AccessPath::resource_access_path(
+            genesis_address(),
+            ModuleUpgradeStrategy::struct_tag(),
+        );
+        state_writter.set(&strategy_path, vec![1])
     }
 }
