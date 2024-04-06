@@ -26,6 +26,7 @@ starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
+starcoin-vm-runtime = { workspace = true }
 starcoin-move-compiler = { workspace = true }
 
 [dev-dependencies]

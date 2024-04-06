@@ -38,6 +38,7 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction},
     U256,
 };
+use starcoin_vm_runtime::force_upgrade_data_cache::FORCE_UPGRADE_BLOCK_NUMBER;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
@@ -1809,26 +1810,20 @@ impl BlockChain {
     }
 
     fn maybe_force_upgrade(&self, opened_block: &mut OpenedBlock) -> Result<()> {
+        if FORCE_UPGRADE_BLOCK_NUMBER != opened_block.block_number() {
+            return Ok(());
+        };
+
         let account = Account::new_association();
-        let sequence_number = opened_block.state_reader().get_sequence_number(account.address().clone())?;
-        let deploy_txn = {
-            ForceUpgrade::begin(
-                account,
-                sequence_number + 1,
-                opened_block.chain_id(),
-                opened_block.block_number(),
-                opened_block.state_writer(),
-                opened_block.state_reader(),
-            )?
-        };
+        let sequence_number = opened_block
+            .state_reader()
+            .get_sequence_number(account.address().clone())?;
 
-        if !deploy_txn.is_empty() {
-            opened_block.push_txns(deploy_txn)?;
-        };
-
-        {
-            ForceUpgrade::finish(opened_block.state_writer())?
-        };
+        opened_block.push_txns(ForceUpgrade::force_deploy_txn(
+            account,
+            sequence_number,
+            opened_block.chain_id(),
+        )?)?;
         Ok(())
     }
 }

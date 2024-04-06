@@ -9286,6 +9286,7 @@ dependencies = [
  "starcoin-time-service",
  "starcoin-transaction-builder",
  "starcoin-types",
+ "starcoin-vm-runtime",
  "starcoin-vm-types",
  "stdlib",
  "stest",
@@ -9695,6 +9696,7 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-types",
+ "starcoin-vm-runtime",
  "starcoin-vm-types",
  "stest",
 ]

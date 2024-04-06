@@ -12,15 +12,15 @@ use starcoin_types::{
     account_config::{genesis_address, ModuleUpgradeStrategy},
     transaction::SignedUserTransaction,
 };
+use starcoin_vm_runtime::force_upgrade_data_cache::FORCE_UPGRADE_BLOCK_NUMBER;
 use starcoin_vm_types::{
     account_config::STC_TOKEN_CODE_STR,
     genesis_config::ChainId,
     move_resource::MoveResource,
     state_store::state_key::StateKey,
+    state_view::StateView,
     transaction::{Module, Package, RawUserTransaction, TransactionPayload},
 };
-
-pub const FORCE_UPGRADE_BLOCK_NUM: u64 = 16000000;
 
 const DEFAULT_PACKAGE_PATH: &str =
     "/Users/bobong/Codes/westar_labs/starcoin/StarcoinFramework.v0.1.0.blob";
@@ -50,6 +50,28 @@ fn load_package_from_file(mv_or_package_file: &Path) -> anyhow::Result<Package> 
 pub struct ForceUpgrade;
 
 impl ForceUpgrade {
+    pub fn force_deploy_txn(
+        account: Account,
+        sequence_number: u64,
+        net: ChainId,
+    ) -> anyhow::Result<Vec<SignedUserTransaction>> {
+        let package = load_package_from_file(&PathBuf::from(DEFAULT_PACKAGE_PATH))?;
+
+        let signed_transaction = account.sign_txn(RawUserTransaction::new(
+            account.address().clone(),
+            sequence_number,
+            TransactionPayload::Package(package),
+            DEFAULT_MAX_GAS_AMOUNT,
+            1,
+            3600,
+            net,
+            STC_TOKEN_CODE_STR.to_string(),
+        ));
+
+        // TODO(BobOng): call set upgrade transaction
+        Ok(vec![signed_transaction])
+    }
+
     pub fn begin(
         account: Account,
         sequence_number: u64,
@@ -58,7 +80,7 @@ impl ForceUpgrade {
         state_writter: &dyn ChainStateWriter,
         state_reader: &dyn ChainStateReader,
     ) -> anyhow::Result<Vec<SignedUserTransaction>> {
-        if block_number != FORCE_UPGRADE_BLOCK_NUM {
+        if block_number != FORCE_UPGRADE_BLOCK_NUMBER {
             return Ok(vec![]);
         };
 

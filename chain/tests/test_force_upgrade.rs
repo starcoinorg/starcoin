@@ -2,11 +2,12 @@ use starcoin_account_api::AccountInfo;
 use starcoin_chain_api::ChainReader;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::keygen::KeyGen;
-use starcoin_force_upgrade::{ForceUpgrade, FORCE_UPGRADE_BLOCK_NUM};
+use starcoin_force_upgrade::ForceUpgrade;
 use starcoin_open_block::OpenedBlock;
 use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::account::Account;
 use starcoin_types::{account_address, vm_error::KeptVMStatus, U256};
+use starcoin_vm_runtime::force_upgrade_data_cache::FORCE_UPGRADE_BLOCK_NUMBER;
 use starcoin_vm_types::{
     account_config,
     state_view::StateReaderExt,
@@ -27,10 +28,11 @@ pub fn test_force_upgrade() -> anyhow::Result<()> {
         account,
         sequence_number,
         chain.info().chain_id(),
-        FORCE_UPGRADE_BLOCK_NUM,
+        FORCE_UPGRADE_BLOCK_NUMBER,
         statedb,
         statedb,
     )?;
+
     let txns: Vec<Transaction> = signed_txns
         .iter()
         .cloned()
@@ -104,7 +106,7 @@ pub fn test_force_upgrade_in_openblock() -> anyhow::Result<()> {
             account,
             association_sequence_num + 1,
             opened_block.chain_id(),
-            FORCE_UPGRADE_BLOCK_NUM,// opened_block.block_number(),
+            FORCE_UPGRADE_BLOCK_NUM,
             opened_block.state_writer(),
             opened_block.state_reader(),
         )?
