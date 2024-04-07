@@ -40,6 +40,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
     txns: Vec<Transaction>,
     block_gas_limit: u64,
     vm_metrics: Option<VMMetrics>,
+    extra_set: WriteSet,
 ) -> ExecutorResult<BlockExecutedData> {
     let txn_outputs =
         crate::execute_block_transactions(chain_state, txns.clone(), block_gas_limit, vm_metrics)
@@ -85,6 +86,14 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
         };
     }
 
+    if !extra_set.is_empty() {
+        chain_state
+            .apply_write_set(extra_set)
+            .map_err(BlockExecutorError::BlockChainStateErr)?;
+        chain_state
+            .commit()
+            .map_err(BlockExecutorError::BlockChainStateErr)?;
+    }
     executed_data.state_root = chain_state.state_root();
     Ok(executed_data)
 }

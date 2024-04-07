@@ -24,10 +24,10 @@ use starcoin_types::{
     block_metadata::BlockMetadata,
     transaction::{Transaction, TransactionPayload},
 };
-use starcoin_vm_types::genesis_config::StdlibVersion;
-use starcoin_vm_types::token::stc;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
-use starcoin_vm_types::transaction::ScriptFunction;
+use starcoin_vm_types::{
+    genesis_config::StdlibVersion, token::stc, transaction::authenticator::AuthenticationKey,
+    transaction::ScriptFunction, write_set::WriteSet,
+};
 use std::sync::mpsc;
 use std::sync::Arc;
 
@@ -222,9 +222,14 @@ impl<'test, S: ChainStateReader + ChainStateWriter> TxnExecutor<'test, S> {
             let num_txns = transactions.len();
             version += num_txns as u64;
 
-            let _ =
-                starcoin_executor::block_execute(self.chain_state, transactions, u64::MAX, None)
-                    .expect("Execute transactions fail.");
+            let _ = starcoin_executor::block_execute(
+                self.chain_state,
+                transactions,
+                u64::MAX,
+                None,
+                WriteSet::default(),
+            )
+            .expect("Execute transactions fail.");
             self.chain_state.flush().expect("flush state should be ok");
 
             let execute_time = std::time::Instant::now().duration_since(execute_start);

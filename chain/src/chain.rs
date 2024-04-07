@@ -36,10 +36,13 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction},
     U256,
 };
-use starcoin_vm_types::access_path::AccessPath;
-use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use starcoin_vm_types::on_chain_resource::Epoch;
+use starcoin_vm_types::{
+    access_path::AccessPath,
+    account_config::genesis_address,
+    genesis_config::{ChainId, ConsensusStrategy},
+    on_chain_resource::Epoch,
+    write_set::WriteSet,
+};
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
@@ -48,6 +51,8 @@ use std::{
     collections::{BTreeMap, HashMap},
     sync::Arc,
 };
+
+pub const MAIN_FORCE_UPGRADE_BLOCK_NUMBER: BlockNumber = 17000000;
 
 static MAIN_DIRECT_SAVE_BLOCK_HASH_MAP: Lazy<BTreeMap<HashValue, (BlockExecutedData, BlockInfo)>> =
     Lazy::new(|| {
@@ -573,6 +578,13 @@ static MAIN_DIRECT_SAVE_BLOCK_HASH_MAP: Lazy<BTreeMap<HashValue, (BlockExecutedD
         maps
     });
 
+/// XXX FIXME YSG FORCE_UPGRADE
+static MAIN_FORCE_UPGRADE_BLOCK_MAP: Lazy<BTreeMap<BlockNumber, WriteSet>> = Lazy::new(|| {
+    let mut maps = BTreeMap::new();
+    maps.insert(MAIN_FORCE_UPGRADE_BLOCK_NUMBER, WriteSet::default());
+    maps
+});
+
 static OUTPUT_BLOCK: AtomicBool = AtomicBool::new(false);
 
 pub struct ChainStatusWithBlock {
@@ -672,6 +684,7 @@ impl BlockChain {
             storage.get_accumulator_store(AccumulatorStoreType::Block),
         );
         let statedb = ChainStateDB::new(storage.clone().into_super_arc(), None);
+        let chain_id = genesis_block.header().chain_id();
         let executed_block = Self::execute_block_and_save(
             storage.as_ref(),
             statedb,
@@ -681,6 +694,7 @@ impl BlockChain {
             None,
             genesis_block,
             None,
+            chain_id,
         )?;
         Self::new(time_service, executed_block.block.id(), storage, None)
     }
@@ -897,6 +911,7 @@ impl BlockChain {
         parent_status: Option<ChainStatus>,
         block: Block,
         vm_metrics: Option<VMMetrics>,
+        chain_id: ChainId,
     ) -> Result<ExecutedBlock> {
         let header = block.header();
         debug_assert!(header.is_genesis() || parent_status.is_some());
@@ -920,13 +935,19 @@ impl BlockChain {
             );
             t
         };
-
         watch(CHAIN_WATCH_NAME, "n21");
+        let mut extra_set = WriteSet::default();
+        if chain_id.is_main() {
+            if let Some(write_set) = MAIN_FORCE_UPGRADE_BLOCK_MAP.get(&block.header().number()) {
+                extra_set = write_set.clone();
+            }
+        }
         let executed_data = starcoin_executor::block_execute(
             &statedb,
             transactions.clone(),
             epoch.block_gas_limit(),
             vm_metrics,
+            extra_set,
         )?;
         watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;
@@ -1203,6 +1224,7 @@ impl BlockChain {
         OUTPUT_BLOCK.store(true, Ordering::Relaxed);
     }
 
+    // XXX FIXME YSG REFACTOR
     fn execute_block_without_save(
         statedb: ChainStateDB,
         txn_accumulator: MerkleAccumulator,
@@ -1211,6 +1233,7 @@ impl BlockChain {
         parent_status: Option<ChainStatus>,
         block: Block,
         vm_metrics: Option<VMMetrics>,
+        chain_id: ChainId,
     ) -> Result<ExecutedBlock> {
         let header = block.header();
         debug_assert!(header.is_genesis() || parent_status.is_some());
@@ -1236,11 +1259,21 @@ impl BlockChain {
         };
 
         watch(CHAIN_WATCH_NAME, "n21");
+
+        // XXX FIXME YSG REFACTOR
+        let mut extra_set = WriteSet::default();
+        if chain_id.is_main() {
+            if let Some(write_set) = MAIN_FORCE_UPGRADE_BLOCK_MAP.get(&block.header().number()) {
+                extra_set = write_set.clone();
+            }
+        }
+
         let executed_data = starcoin_executor::block_execute(
             &statedb,
             transactions.clone(),
             epoch.block_gas_limit(),
             vm_metrics,
+            extra_set,
         )?;
         watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;
@@ -1581,6 +1614,7 @@ impl ChainReader for BlockChain {
                 Some(self.status.status.clone()),
                 verified_block.0,
                 self.vm_metrics.clone(),
+                self.info().chain_id(),
             )
         }
     }
@@ -1594,6 +1628,7 @@ impl ChainReader for BlockChain {
             Some(self.status.status.clone()),
             verified_block.0,
             self.vm_metrics.clone(),
+            self.info().chain_id(),
         )
     }
 

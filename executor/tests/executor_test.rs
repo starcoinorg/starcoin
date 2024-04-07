@@ -43,6 +43,7 @@ use starcoin_types::account_config::G_STC_TOKEN_CODE;
 use starcoin_vm_runtime::starcoin_vm::{chunk_block_transactions, StarcoinVM};
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::write_set::WriteSet;
 use test_helper::txn::create_account_txn_sent_as_association;
 
 #[derive(Default)]
@@ -403,8 +404,13 @@ fn test_block_execute_gas_limit() -> Result<()> {
         assert_eq!(max_include_txn_num, txns.len() as u64);
 
         txns.insert(0, Transaction::BlockMetadata(block_meta));
-        let executed_data =
-            starcoin_executor::block_execute(&chain_state, txns, block_gas_limit, None)?;
+        let executed_data = starcoin_executor::block_execute(
+            &chain_state,
+            txns,
+            block_gas_limit,
+            None,
+            WriteSet::default(),
+        )?;
         let txn_infos = executed_data.txn_infos;
 
         // all user txns can be included
@@ -450,9 +456,14 @@ fn test_block_execute_gas_limit() -> Result<()> {
             })
             .collect();
         txns.insert(0, Transaction::BlockMetadata(block_meta2));
-        let txn_infos =
-            starcoin_executor::block_execute(&chain_state, txns, max_block_gas_limit, None)?
-                .txn_infos;
+        let txn_infos = starcoin_executor::block_execute(
+            &chain_state,
+            txns,
+            max_block_gas_limit,
+            None,
+            WriteSet::default(),
+        )?
+        .txn_infos;
 
         // not all user txns can be included
         assert_eq!(txn_infos.len() as u64, max_txn_num + 1);

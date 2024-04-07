@@ -21,6 +21,7 @@ use starcoin_types::{
     block_metadata::BlockMetadata,
     U256,
 };
+use starcoin_vm_types::write_set::WriteSet;
 use std::convert::TryFrom;
 use std::sync::Arc;
 
@@ -222,7 +223,13 @@ fn gen_root_hashes(
     //state_db
     let chain_state = ChainStateDB::new(storage.clone(), Some(pre_state_root));
 
-    match block_execute(&chain_state, block_txns, block_gat_limit, None) {
+    match block_execute(
+        &chain_state,
+        block_txns,
+        block_gat_limit,
+        None,
+        WriteSet::default(),
+    ) {
         Ok(executed_data) => {
             let txn_accumulator = MerkleAccumulator::new(
                 pre_accumulator_root,
@@ -276,7 +283,7 @@ proptest! {
         let chain_state = ChainStateDB::new(Arc::new(storage), None);
         let mut account = AccountInfoUniverse::default();
         let txns = txn_transfer(&mut account, gens);
-        let result = block_execute(&chain_state, txns, 0, None);
+        let result = block_execute(&chain_state, txns, 0, None,WriteSet::default());
         info!("execute result: {:?}", result);
     }
 }
