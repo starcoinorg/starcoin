@@ -498,7 +498,7 @@ mod tests {
             let interval = reachability.get_interval(*k).unwrap();
             let future_cover_hashes = reachability.get_future_covering_set(*k).unwrap();
 
-            println!("key: {:?}, height: {:?}, parent: {:?}, children: {:?}, interval: {:?}, future_cover_hashes: {:?}", k, height, parent, children, interval, future_cover_hashes);
+            println!("key: {:?}, height: {:?}, interval: {:?}, parent: {:?}, children: {:?}, future_cover_hashes: {:?}", k, height, interval, parent, children, future_cover_hashes);
         }
         println!("**********************");
     }
@@ -569,23 +569,44 @@ mod tests {
         inquirer::add_block(
             &mut reachability_store,
             child6,
-            child1,
-            &mut vec![child1].into_iter(),
+            origin,
+            &mut vec![origin].into_iter(),
         )?;
         hashes.push(child6);
         print_reachability_data(&reachability_store, &hashes);
 
-        for _i in 7..=31 {
-            let s = Hash::random();
-            inquirer::add_block(
-                &mut reachability_store,
-                s,
-                child1,
-                &mut vec![child1].into_iter(),
-            )?;
-            hashes.push(s);
-            print_reachability_data(&reachability_store, &hashes);
-        }
+        let child7 = Hash::random();
+        inquirer::add_block(
+            &mut reachability_store,
+            child7,
+            origin,
+            &mut vec![origin].into_iter(),
+        )?;
+        hashes.push(child7);
+        print_reachability_data(&reachability_store, &hashes);
+
+
+        let child8 = Hash::random();
+        inquirer::add_block(
+            &mut reachability_store,
+            child8,
+            child1,
+            &mut vec![child1].into_iter(),
+        )?;
+        hashes.push(child8);
+        print_reachability_data(&reachability_store, &hashes);
+
+        // for _i in 7..=31 {
+        //     let s = Hash::random();
+        //     inquirer::add_block(
+        //         &mut reachability_store,
+        //         s,
+        //         child1,
+        //         &mut vec![child1].into_iter(),
+        //     )?;
+        //     hashes.push(s);
+        //     print_reachability_data(&reachability_store, &hashes);
+        // }
 
         assert!(
             dag.check_ancestor_of(origin, vec![child5])?,

@@ -24,6 +24,9 @@ pub enum ReachabilityError {
 
     #[error("query is inconsistent")]
     BadQuery,
+
+    #[error("key not found: {0}")]
+    KeyNotFound(String),
 }
 
 impl ReachabilityError {

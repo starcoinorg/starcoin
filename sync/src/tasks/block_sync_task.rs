@@ -410,7 +410,7 @@ where
             if absent_blocks.is_empty() {
                 return Ok(ancestors);
             }
-            let absent_block_headers = self.fetcher.fetch_block_headers(absent_blocks).await?;
+            let absent_block_headers = self.fetch_block_headers(absent_blocks).await?;
             if absent_block_headers.iter().any(|(id, header)| {
                 if header.is_none() {
                     error!(
