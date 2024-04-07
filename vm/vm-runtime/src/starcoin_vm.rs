@@ -93,7 +93,7 @@ pub struct StarcoinVM {
 
 /// marking of stdlib version which includes vmconfig upgrades.
 const VMCONFIG_UPGRADE_VERSION_MARK: u64 = 10;
-const GAS_SCHEDULE_UPGRADE_VERSION_MARK: u64 = 12;
+//const GAS_SCHEDULE_UPGRADE_VERSION_MARK: u64 = 12;
 
 impl StarcoinVM {
     #[cfg(feature = "metrics")]
@@ -197,9 +197,7 @@ impl StarcoinVM {
                     Some(GasSchedule::from(&gas_cost_table)),
                     "gas schedule from VMConfig",
                 )
-            } else if stdlib_version >= StdlibVersion::Version(VMCONFIG_UPGRADE_VERSION_MARK)
-                && stdlib_version < StdlibVersion::Version(GAS_SCHEDULE_UPGRADE_VERSION_MARK)
-            {
+            } else {
                 debug!(
                     "stdlib version: {}, fetch VMConfig from onchain module",
                     stdlib_version
@@ -263,13 +261,6 @@ impl StarcoinVM {
                     Some(GasSchedule::from(&cost_table)),
                     "gas schedule from VMConfig",
                 )
-            } else {
-                debug!(
-                    "stdlib version: {}, fetch schedule from onchain  module GasSchedule",
-                    stdlib_version
-                );
-                let gas_schedule = GasSchedule::fetch_config(&remote_storage)?;
-                (gas_schedule, "gas schedule from GasSchedule")
             };
             #[cfg(feature = "print_gas_info")]
             match self.gas_schedule.as_ref() {
