@@ -12,6 +12,7 @@ use starcoin_accumulator::{
 use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
     ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
+    MAIN_FORCE_UPGRADE_BLOCK_MAP,
 };
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
@@ -51,8 +52,6 @@ use std::{
     collections::{BTreeMap, HashMap},
     sync::Arc,
 };
-
-pub const MAIN_FORCE_UPGRADE_BLOCK_NUMBER: BlockNumber = 17000000;
 
 static MAIN_DIRECT_SAVE_BLOCK_HASH_MAP: Lazy<BTreeMap<HashValue, (BlockExecutedData, BlockInfo)>> =
     Lazy::new(|| {
@@ -577,13 +576,6 @@ static MAIN_DIRECT_SAVE_BLOCK_HASH_MAP: Lazy<BTreeMap<HashValue, (BlockExecutedD
 
         maps
     });
-
-/// XXX FIXME YSG FORCE_UPGRADE
-static MAIN_FORCE_UPGRADE_BLOCK_MAP: Lazy<BTreeMap<BlockNumber, WriteSet>> = Lazy::new(|| {
-    let mut maps = BTreeMap::new();
-    maps.insert(MAIN_FORCE_UPGRADE_BLOCK_NUMBER, WriteSet::default());
-    maps
-});
 
 static OUTPUT_BLOCK: AtomicBool = AtomicBool::new(false);
 

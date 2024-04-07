@@ -3,24 +3,25 @@
 
 use anyhow::{bail, format_err, Result};
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
-use starcoin_chain_api::ExcludedTxns;
+use starcoin_chain_api::{ExcludedTxns, MAIN_FORCE_UPGRADE_BLOCK_MAP};
 use starcoin_crypto::HashValue;
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
-use starcoin_types::block::BlockNumber;
-use starcoin_types::genesis_config::{ChainId, ConsensusStrategy};
-use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_types::{
     account_address::AccountAddress,
+    block::BlockNumber,
     block::{BlockBody, BlockHeader, BlockInfo, BlockTemplate},
     block_metadata::BlockMetadata,
     error::BlockExecutorError,
+    genesis_config::{ChainId, ConsensusStrategy},
     transaction::{
         SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput, TransactionStatus,
     },
+    vm_error::KeptVMStatus,
+    write_set::WriteSet,
     U256,
 };
 use std::{convert::TryInto, sync::Arc};
@@ -40,6 +41,7 @@ pub struct OpenedBlock {
     difficulty: U256,
     strategy: ConsensusStrategy,
     vm_metrics: Option<VMMetrics>,
+    extra_set: WriteSet,
 }
 
 impl OpenedBlock {
@@ -91,7 +93,14 @@ impl OpenedBlock {
             difficulty,
             strategy,
             vm_metrics,
+            extra_set: WriteSet::default(),
         };
+        if opened_block.chain_id.is_main() {
+            if let Some(write_set) = MAIN_FORCE_UPGRADE_BLOCK_MAP.get(&opened_block.block_number())
+            {
+                opened_block.extra_set = write_set.clone();
+            }
+        }
         opened_block.initialize()?;
         Ok(opened_block)
     }
@@ -272,6 +281,14 @@ impl OpenedBlock {
     /// Construct a block template for mining.
     pub fn finalize(self) -> Result<BlockTemplate> {
         let accumulator_root = self.txn_accumulator.root_hash();
+        if !self.extra_set.is_empty() {
+            self.state
+                .apply_write_set(self.extra_set)
+                .map_err(BlockExecutorError::BlockChainStateErr)?;
+            self.state
+                .commit()
+                .map_err(BlockExecutorError::BlockChainStateErr)?;
+        }
         let state_root = self.state.state_root();
         let uncles = if !self.uncles.is_empty() {
             Some(self.uncles)

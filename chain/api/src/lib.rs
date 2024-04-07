@@ -5,13 +5,23 @@
 use anyhow::{bail, format_err, Result};
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::proof::AccumulatorProof;
+use starcoin_crypto::_once_cell::sync::Lazy;
 use starcoin_state_api::StateWithProof;
 use starcoin_vm_types::transaction::{RichTransactionInfo, SignedUserTransaction};
+use std::collections::BTreeMap;
 
 mod chain;
 mod errors;
 pub mod message;
 mod service;
+
+pub const MAIN_FORCE_UPGRADE_BLOCK_NUMBER: BlockNumber = 17000000;
+/// XXX FIXME YSG FORCE_UPGRADE
+pub static MAIN_FORCE_UPGRADE_BLOCK_MAP: Lazy<BTreeMap<BlockNumber, WriteSet>> = Lazy::new(|| {
+    let mut maps = BTreeMap::new();
+    maps.insert(MAIN_FORCE_UPGRADE_BLOCK_NUMBER, WriteSet::default());
+    maps
+});
 
 #[derive(Clone, Debug)]
 pub struct ExcludedTxns {
@@ -24,8 +34,10 @@ pub use errors::*;
 pub use service::{ChainAsyncService, ReadableChainService, WriteableChainService};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
+use starcoin_types::block::BlockNumber;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::contract_event::ContractEvent;
+use starcoin_vm_types::write_set::WriteSet;
 
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct EventWithProof {
