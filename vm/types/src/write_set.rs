@@ -108,3 +108,14 @@ impl ::std::iter::IntoIterator for WriteSet {
         self.0.write_set.into_iter()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::write_set::WriteSet;
+
+    #[test]
+    fn test_write_set_default_empty() {
+        let write_set = WriteSet::default();
+        assert!(write_set.is_empty());
+    }
+}
