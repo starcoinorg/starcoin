@@ -29,7 +29,7 @@ use std::sync::Arc;
 use tokio::time::timeout;
 use tokio::time::Duration;
 
-#[actix_rt::test]
+#[stest::test]
 pub async fn test_subscribe_to_events() -> Result<()> {
     starcoin_logger::init_for_test();
     // prepare

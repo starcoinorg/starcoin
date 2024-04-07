@@ -1,17 +1,16 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use futures_timer::Delay;
 use starcoin_account_service::{AccountService, AccountStorage};
 use starcoin_config::NodeConfig;
+use starcoin_executor::VMMetrics;
 use starcoin_genesis::Genesis;
 use starcoin_miner::{BlockBuilderService, MinerService};
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
-use starcoin_storage::Storage;
+use starcoin_storage::{BlockStore, Storage};
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
 use std::sync::Arc;
-use std::time::Duration;
 
 pub async fn start_txpool_with_size(
     pool_size: u64,
@@ -59,14 +58,29 @@ pub async fn start_txpool_with_miner(
         .unwrap();
     registry.register::<AccountService>().await.unwrap();
 
+    let txpool_service = {
+        let startup_info = storage.get_startup_info().unwrap().unwrap();
+        let best_block = storage
+            .get_block_by_hash(startup_info.main)
+            .unwrap()
+            .unwrap();
+        let best_block_header = best_block.into_inner().0;
+        let vm_metric = registry.get_shared::<VMMetrics>().await.ok();
+        TxPoolService::new(
+            node_config.clone(),
+            storage.clone(),
+            best_block_header,
+            vm_metric,
+        )
+    };
+    registry.put_shared(txpool_service.clone()).await.unwrap();
+    //registry.register::<MinerService>().await.unwrap();
+    let pool_actor = registry.register::<TxPoolActorService>().await.unwrap();
+
     if enable_miner {
         registry.register::<BlockBuilderService>().await.unwrap();
         registry.register::<MinerService>().await.unwrap();
     }
-    //registry.register::<MinerService>().await.unwrap();
-    let pool_actor = registry.register::<TxPoolActorService>().await.unwrap();
-    Delay::new(Duration::from_millis(200)).await;
-    let txpool_service = registry.get_shared::<TxPoolService>().await.unwrap();
 
     (txpool_service, storage, node_config, pool_actor, registry)
 }
