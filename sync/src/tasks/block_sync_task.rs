@@ -15,7 +15,7 @@ use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBl
 use starcoin_config::G_CRATE_VERSION;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_network_rpc_api::MAX_BLOCK_IDS_REQUEST_SIZE;
+use starcoin_network_rpc_api::{MAX_BLOCK_HEADER_REQUEST_SIZE, MAX_BLOCK_REQUEST_SIZE};
 use starcoin_storage::{Store, BARNARD_HARD_FORK_HASH};
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
@@ -546,7 +546,7 @@ where
         block_ids: Vec<HashValue>,
     ) -> Result<Vec<(HashValue, Option<BlockHeader>)>> {
         let mut result = vec![];
-        for chunk in block_ids.chunks(usize::try_from(MAX_BLOCK_IDS_REQUEST_SIZE)?) {
+        for chunk in block_ids.chunks(usize::try_from(MAX_BLOCK_HEADER_REQUEST_SIZE)?) {
             result.extend(self.fetcher.fetch_block_headers(chunk.to_vec()).await?);
         }
         Ok(result)
@@ -606,7 +606,7 @@ where
         dag_ancestors: Vec<HashValue>,
     ) -> Result<Vec<HashValue>> {
         let mut result = vec![];
-        for chunk in dag_ancestors.chunks(usize::try_from(MAX_BLOCK_IDS_REQUEST_SIZE)?) {
+        for chunk in dag_ancestors.chunks(usize::try_from(MAX_BLOCK_REQUEST_SIZE)?) {
             result.extend(self.fetch_dag_block_children_inner(chunk.to_vec()).await?);
         }
         Ok(result)
