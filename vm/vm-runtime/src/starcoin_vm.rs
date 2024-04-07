@@ -1030,8 +1030,9 @@ impl StarcoinVM {
 
         let mut gas_left = block_gas_limit.unwrap_or(u64::MAX);
 
-        let blocks = chunk_block_transactions(transactions);
         let mut current_block_number: u64 = 0;
+        let blocks = chunk_block_transactions(transactions);
+
         'outer: for block in blocks {
             #[cfg(feature = "metrics")]
             let txn_type_name = block.type_name().to_string();
@@ -1048,12 +1049,29 @@ impl StarcoinVM {
 
                         let gas_unit_price = transaction.gas_unit_price();
 
-                        let (status, output) = if current_block_number == FORCE_UPGRADE_BLOCK_NUMBER
-                        {
-                            self.execute_user_transaction(
-                                &data_cache.as_force_upgrade_resolver(),
-                                transaction,
-                            )
+                        let (status, output) = if !data_cache.is_genesis() {
+                            let chain_id =
+                                data_cache.get_chain_id().expect("failed to load chain id");
+                            let force_upgrade_block_number =
+                                if chain_id.is_dev() || chain_id.is_test() {
+                                    0
+                                } else if chain_id.is_halley() || chain_id.is_proxima() {
+                                    100
+                                } else {
+                                    FORCE_UPGRADE_BLOCK_NUMBER
+                                };
+
+                            if current_block_number == force_upgrade_block_number {
+                                self.execute_user_transaction(
+                                    &data_cache.as_force_upgrade_resolver(),
+                                    transaction,
+                                )
+                            } else {
+                                self.execute_user_transaction(
+                                    &data_cache.as_move_resolver(),
+                                    transaction,
+                                )
+                            }
                         } else {
                             self.execute_user_transaction(
                                 &data_cache.as_move_resolver(),

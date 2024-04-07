@@ -19,7 +19,7 @@ use starcoin_vm_types::{
     state_view::StateView,
 };
 
-pub const FORCE_UPGRADE_BLOCK_NUMBER: u64 = 17000000;
+pub const FORCE_UPGRADE_BLOCK_NUMBER: u64 = 17500000;
 
 // Adapter to convert a `StateView` into a `RemoteCache`.
 pub struct RemoteStorageForceUpgrade<'a, S>(&'a S);

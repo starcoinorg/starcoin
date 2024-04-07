@@ -58,7 +58,8 @@ use std::sync::Arc;
 pub fn test_force_upgrade_in_openblock() -> anyhow::Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
     let chain = test_helper::gen_blockchain_for_test(config.net())?;
-    let header = chain.current_header();
+    let header = chain.current_header().clone();
+
     let block_gas_limit = 10000000;
 
     let mut opened_block = {
