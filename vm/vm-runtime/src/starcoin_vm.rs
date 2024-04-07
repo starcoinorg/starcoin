@@ -72,13 +72,10 @@ use std::sync::Arc;
 
 static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
 
+use crate::force_upgrade_data_cache::AsForceUpgradeResolver;
 #[cfg(feature = "metrics")]
 use crate::metrics::VMMetrics;
-use crate::{
-    force_upgrade_data_cache::{FORCE_UPGRADE_BLOCK_NUMBER},
-    VMExecutor,
-};
-use crate::force_upgrade_data_cache::AsForceUpgradeResolver;
+use crate::{force_upgrade_data_cache::FORCE_UPGRADE_BLOCK_NUMBER, VMExecutor};
 
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]

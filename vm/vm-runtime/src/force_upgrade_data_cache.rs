@@ -1,13 +1,15 @@
-use std::ops::Deref;
 use anyhow::Error;
+use move_core_types::vm_status::StatusCode;
 use move_core_types::{
     account_address::AccountAddress,
     language_storage::{ModuleId, StructTag},
     resolver::{ModuleResolver, ResourceResolver},
 };
-use move_core_types::vm_status::StatusCode;
 use move_table_extension::{TableHandle, TableResolver};
+use std::ops::Deref;
 
+use crate::create_access_path;
+use starcoin_vm_types::errors::{Location, PartialVMError, PartialVMResult};
 use starcoin_vm_types::{
     access_path::AccessPath,
     account_config::{genesis_address, ModuleUpgradeStrategy},
@@ -16,12 +18,8 @@ use starcoin_vm_types::{
     state_store::state_key::StateKey,
     state_view::StateView,
 };
-use starcoin_vm_types::errors::{Location, PartialVMError, PartialVMResult};
-use crate::create_access_path;
-
 
 pub const FORCE_UPGRADE_BLOCK_NUMBER: u64 = 17000000;
-
 
 // Adapter to convert a `StateView` into a `RemoteCache`.
 pub struct RemoteStorageForceUpgrade<'a, S>(&'a S);
@@ -67,7 +65,6 @@ impl<'a, S: StateView> ResourceResolver for RemoteStorageForceUpgrade<'a, S> {
     }
 }
 
-
 impl<'a, S> Deref for RemoteStorageForceUpgrade<'a, S> {
     type Target = S;
 
@@ -96,4 +93,3 @@ impl<S: StateView> AsForceUpgradeResolver<S> for S {
         RemoteStorageForceUpgrade::new(self)
     }
 }
-
