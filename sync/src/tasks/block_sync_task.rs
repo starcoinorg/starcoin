@@ -472,6 +472,7 @@ where
             while !dag_ancestors.is_empty() {
                 for ancestor_block_header_id in &dag_ancestors {
                     if self.chain.has_dag_block(*ancestor_block_header_id)? {
+                        info!("{:?} was already applied", ancestor_block_header_id);
                         continue;
                     } else {
                         for (block, _peer_id) in self
@@ -480,6 +481,7 @@ where
                             .await?
                         {
                             if self.chain.has_dag_block(block.id())? {
+                                info!("{:?} was already applied", ancestor_block_header_id);
                                 continue;
                             }
 
