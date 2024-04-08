@@ -11038,6 +11038,7 @@ version = "1.13.10"
 dependencies = [
  "anyhow",
  "bcs-ext",
+ "hex",
  "move-core-types",
  "move-stdlib",
  "move-table-extension",

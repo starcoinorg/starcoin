@@ -38,7 +38,9 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction},
     U256,
 };
-use starcoin_vm_runtime::force_upgrade_data_cache::FORCE_UPGRADE_BLOCK_NUMBER;
+use starcoin_vm_runtime::force_upgrade_data_cache::{
+    get_force_upgrade_account, get_force_upgrade_block_number, FORCE_UPGRADE_BLOCK_NUMBER,
+};
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
@@ -1810,11 +1812,12 @@ impl BlockChain {
     }
 
     fn maybe_force_upgrade(&self, opened_block: &mut OpenedBlock) -> Result<()> {
-        if FORCE_UPGRADE_BLOCK_NUMBER != opened_block.block_number() {
+        let chain_id = opened_block.chain_id();
+        if get_force_upgrade_block_number(&chain_id) != opened_block.block_number() {
             return Ok(());
         };
 
-        let account = Account::new_association();
+        let account = get_force_upgrade_account(&chain_id);
         let sequence_number = opened_block
             .state_reader()
             .get_sequence_number(account.address().clone())?;

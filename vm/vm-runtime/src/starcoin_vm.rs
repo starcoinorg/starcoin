@@ -10,7 +10,7 @@ use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
 use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
-use anyhow::{bail, format_err, Error, Result};
+use anyhow::{format_err, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
 use move_table_extension::NativeTableContext;
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
@@ -72,10 +72,10 @@ use std::sync::Arc;
 
 static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
 
-use crate::force_upgrade_data_cache::AsForceUpgradeResolver;
+use crate::force_upgrade_data_cache::{get_force_upgrade_block_number, AsForceUpgradeResolver};
 #[cfg(feature = "metrics")]
 use crate::metrics::VMMetrics;
-use crate::{force_upgrade_data_cache::FORCE_UPGRADE_BLOCK_NUMBER, VMExecutor};
+use crate::{VMExecutor};
 
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
@@ -1052,15 +1052,9 @@ impl StarcoinVM {
                         let (status, output) = if !data_cache.is_genesis() {
                             let chain_id =
                                 data_cache.get_chain_id().expect("failed to load chain id");
-                            let force_upgrade_block_number =
-                                if chain_id.is_dev() || chain_id.is_test() {
-                                    0
-                                } else if chain_id.is_halley() || chain_id.is_proxima() {
-                                    100
-                                } else {
-                                    FORCE_UPGRADE_BLOCK_NUMBER
-                                };
 
+                            let force_upgrade_block_number =
+                                get_force_upgrade_block_number(&chain_id);
                             if current_block_number == force_upgrade_block_number {
                                 self.execute_user_transaction(
                                     &data_cache.as_force_upgrade_resolver(),
