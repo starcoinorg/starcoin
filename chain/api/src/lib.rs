@@ -1,8 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 #![deny(clippy::integer_arithmetic)]
-
 use anyhow::{bail, format_err, Result};
+use include_dir::{include_dir, Dir};
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::proof::AccumulatorProof;
 use starcoin_crypto::_once_cell::sync::Lazy;
@@ -14,6 +14,8 @@ mod chain;
 mod errors;
 pub mod message;
 mod service;
+
+pub const FORCE_UPGRADE_PACKAGE: Dir = include_dir!("package");
 
 pub const MAIN_FORCE_UPGRADE_BLOCK_NUMBER: BlockNumber = 17000000;
 /// XXX FIXME YSG FORCE_UPGRADE

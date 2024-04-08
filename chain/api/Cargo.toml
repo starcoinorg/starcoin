@@ -1,4 +1,5 @@
 [dependencies]
+include_dir = { workspace = true }
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 futures = { workspace = true }
