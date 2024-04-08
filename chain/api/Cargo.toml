@@ -16,7 +16,7 @@ starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
-
+serde_json = { features = ["arbitrary_precision"], workspace = true }
 
 [dev-dependencies]
 

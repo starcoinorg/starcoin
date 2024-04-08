@@ -16,7 +16,7 @@ use starcoin_statedb::{ChainStateDB, ChainStateWriter};
 use starcoin_storage::{
     cache_storage::CacheStorage, db_storage::DBStorage, storage::StorageInstance, Storage,
 };
-use starcoin_types::account::{Account, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
+use starcoin_types::account::{Account, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::BlockNumber;
 use starcoin_vm_types::access_path::AccessPath;
