@@ -16,7 +16,7 @@ use starcoin_statedb::{ChainStateDB, ChainStateWriter};
 use starcoin_storage::{
     cache_storage::CacheStorage, db_storage::DBStorage, storage::StorageInstance, Storage,
 };
-use starcoin_types::account::{Account, DEFAULT_MAX_GAS_AMOUNT};
+use starcoin_types::account::{Account, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::BlockNumber;
 use starcoin_vm_types::access_path::AccessPath;
@@ -93,7 +93,7 @@ pub fn force_deploy_output(
         TransactionPayload::Package(package),
         DEFAULT_MAX_GAS_AMOUNT,
         1,
-        3600,
+        net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
         net.chain_id(),
         STC_TOKEN_CODE_STR.to_string(),
     ));
