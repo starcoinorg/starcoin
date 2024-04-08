@@ -24,7 +24,6 @@ use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter}
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
-use starcoin_types::account::Account;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
@@ -39,7 +38,7 @@ use starcoin_types::{
     U256,
 };
 use starcoin_vm_runtime::force_upgrade_data_cache::{
-    get_force_upgrade_account, get_force_upgrade_block_number, FORCE_UPGRADE_BLOCK_NUMBER,
+    get_force_upgrade_account, get_force_upgrade_block_number,
 };
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
@@ -1817,7 +1816,7 @@ impl BlockChain {
             return Ok(());
         };
 
-        let account = get_force_upgrade_account(&chain_id);
+        let account = get_force_upgrade_account(&chain_id)?;
         let sequence_number = opened_block
             .state_reader()
             .get_sequence_number(account.address().clone())?;

@@ -1,5 +1,4 @@
 use std::env;
-use std::fmt::Debug;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
