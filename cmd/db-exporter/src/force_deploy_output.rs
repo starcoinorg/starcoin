@@ -117,9 +117,9 @@ pub fn force_deploy_output(
     )?;
     if !ret.is_empty() {
         println!("execute OK");
-        println!("{:?}", ret[0].write_set());
+        println!("{:?}", serde_json::to_string(&ret[0].write_set())?);
         if ret.len() > 1 {
-            println!("{:?}", ret[0].write_set());
+            println!("{:?}", serde_json::to_string(&ret[1].write_set())?);
         }
     }
     Ok(())
