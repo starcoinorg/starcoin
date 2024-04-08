@@ -87,7 +87,8 @@ pub fn force_deploy_output(
         create_account("7a2042a26e9c36061d6da365657c4a6a832fd25332de7fda5a39456d6023e478")?;
     let addr = AccountAddress::from_hex_literal("0xbe361d5237428276e86a9f5d50726e6c")?;
     let seq_num = statedb.get_sequence_number(addr)?;
-    let time = net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME;
+    // let time = net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME;
+    let time = 1709899433;
     println!("time {}", time);
     let txn = account.sign_txn(RawUserTransaction::new(
         addr,
@@ -95,7 +96,8 @@ pub fn force_deploy_output(
         TransactionPayload::Package(package),
         DEFAULT_MAX_GAS_AMOUNT,
         1,
-        net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+        //  net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+        time,
         net.chain_id(),
         STC_TOKEN_CODE_STR.to_string(),
     ));
