@@ -5,7 +5,7 @@ import os
 import sys
         
 PER_UPLOADING = 104857600 ## up to 100 MB per uploading action
-GB = 1024 ** 5
+GB = 1024 ** 3
 
 def upload_file(file_name, bucket, key):
     object_name = os.path.basename(file_name)
