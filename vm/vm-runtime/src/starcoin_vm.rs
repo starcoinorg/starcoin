@@ -75,7 +75,7 @@ static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
 use crate::force_upgrade_data_cache::{get_force_upgrade_block_number, AsForceUpgradeResolver};
 #[cfg(feature = "metrics")]
 use crate::metrics::VMMetrics;
-use crate::{VMExecutor};
+use crate::VMExecutor;
 
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
@@ -1029,8 +1029,6 @@ impl StarcoinVM {
             .map_err(|_err| VMStatus::Error(StatusCode::STORAGE_ERROR))?;
 
         let mut gas_left = block_gas_limit.unwrap_or(u64::MAX);
-
-        let mut current_block_number: u64 = 0;
         let blocks = chunk_block_transactions(transactions);
 
         'outer: for block in blocks {
@@ -1053,6 +1051,10 @@ impl StarcoinVM {
                             let chain_id =
                                 data_cache.get_chain_id().expect("failed to load chain id");
 
+                            let current_block_number: u64 = data_cache
+                                .get_block_metadata()
+                                .expect("failed to load block number")
+                                .number;
                             let force_upgrade_block_number =
                                 get_force_upgrade_block_number(&chain_id);
                             if current_block_number == force_upgrade_block_number {
@@ -1123,8 +1125,6 @@ impl StarcoinVM {
                             .with_label_values(&[txn_type_name.as_str()])
                             .start_timer()
                     });
-
-                    current_block_number = block_metadata.number();
 
                     let (status, output) = match self
                         .process_block_metadata(&data_cache.as_move_resolver(), block_metadata)

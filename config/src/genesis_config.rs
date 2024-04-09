@@ -771,6 +771,7 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_multi_key_pair();
     let (genesis_private_key, genesis_public_key) = genesis_key_pair();
 
+    let stdlib_version = StdlibVersion::Version(11);
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
             parent_hash: HashValue::sha3_256_of(b"starcoin_dev"),
@@ -805,7 +806,7 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         ),
         genesis_key_pair: Some((Arc::new(genesis_private_key), genesis_public_key)),
         time_service_type: TimeServiceType::MockTimeService,
-        stdlib_version: StdlibVersion::Latest,
+        stdlib_version,
         dao_config: DaoConfig {
             voting_delay: 60_000,          // 1min
             voting_period: 60 * 60 * 1000, // 1h

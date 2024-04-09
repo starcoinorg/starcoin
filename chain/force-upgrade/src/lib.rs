@@ -50,7 +50,8 @@ impl ForceUpgrade {
         net: ChainId,
     ) -> anyhow::Result<Vec<SignedUserTransaction>> {
         let package_path = if net.is_test() || net.is_dev() {
-            env::current_dir()?.join(format!("../scripts/{}", DEFAULT_PACKAGE_PATH))
+            let cur_dir = env::current_dir()?;
+            cur_dir.join(format!("scripts/{}", DEFAULT_PACKAGE_PATH))
         } else {
             PathBuf::from(DEFAULT_PACKAGE_PATH)
         };

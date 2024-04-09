@@ -1,16 +1,17 @@
 use std::ops::Deref;
 
 use anyhow::Error;
+use move_core_types::vm_status::StatusCode;
 use move_core_types::{
     account_address::AccountAddress,
     language_storage::{ModuleId, StructTag},
     resolver::{ModuleResolver, ResourceResolver},
 };
-use move_core_types::vm_status::StatusCode;
 use move_table_extension::{TableHandle, TableResolver};
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 
 use starcoin_types::account::Account;
+use starcoin_vm_types::errors::{Location, PartialVMError, PartialVMResult};
 use starcoin_vm_types::{
     access_path::AccessPath,
     account_config::{genesis_address, ModuleUpgradeStrategy},
@@ -20,7 +21,6 @@ use starcoin_vm_types::{
     state_store::state_key::StateKey,
     state_view::StateView,
 };
-use starcoin_vm_types::errors::{Location, PartialVMError, PartialVMResult};
 
 use crate::create_access_path;
 
@@ -28,7 +28,7 @@ pub const FORCE_UPGRADE_BLOCK_NUMBER: u64 = 17500000;
 
 pub fn get_force_upgrade_block_number(chain_id: &ChainId) -> u64 {
     if chain_id.is_dev() || chain_id.is_test() {
-        0
+        5
     } else if chain_id.is_halley() || chain_id.is_proxima() {
         100
     } else if chain_id.is_barnard() {
@@ -53,15 +53,9 @@ pub fn get_force_upgrade_account(chain_id: &ChainId) -> anyhow::Result<Account> 
     if chain_id.is_main() {
         // 0x2dd7136c13ed8051fb20147f373f6120 TODO(BobOng): to fill private key
         create_account("")
-    } else if chain_id.is_barnard() {
-        // 0xdef846fd8d929ef11f4754a7fa0eafd8
-        create_account("c418d9583fa7e7696a7f615876c31965d4aefec648f9c55901f01a76a49b9226")
-    } else if chain_id.is_proxima() {
-        // 0x6a00f5ba18c0a324025033714ff5dd76
-        create_account("f3c4b58c56116deb4263bcc00cdd477160fa2ad85b3c8292d249dfbc3aa4b748")
-    }  else if chain_id.is_halley() {
-        // 0xcf221b8290c04e8f3521ac204a3b0b75
-        create_account("61ddfff53093c041d20197602557a1c7624eb51dca9759eb084e318ab72c4c50")
+    } else if chain_id.is_barnard() || chain_id.is_proxima() || chain_id.is_halley() {
+        // 0x0b1d07ae560c26af9bbb8264f4c7ee73
+        create_account("6105e78821ace0676faf437fb40dd6892e72f01c09351298106bad2964edb007")
     } else {
         Ok(Account::new_association())
     }
@@ -140,21 +134,35 @@ impl<S: StateView> AsForceUpgradeResolver<S> for S {
     }
 }
 
-
 #[test]
 fn test_get_force_upgrade_account() -> anyhow::Result<()> {
     // Main TODO(BobOng): To fixed
     // assert_eq!(get_force_upgrade_account(&ChainId::new(1))?.address(), AccountAddress::from_hex_literal("0x2dd7136c13ed8051fb20147f373f6120"));
     // Barnard 251
-    assert_eq!(*get_force_upgrade_account(&ChainId::new(251))?.address(), AccountAddress::from_hex_literal("0xdef846fd8d929ef11f4754a7fa0eafd8")?);
+    assert_eq!(
+        *get_force_upgrade_account(&ChainId::new(251))?.address(),
+        AccountAddress::from_hex_literal("0x0b1d07ae560c26af9bbb8264f4c7ee73")?
+    );
     // Proxima 252
-    assert_eq!(get_force_upgrade_account(&ChainId::new(252))?.address(), &AccountAddress::from_hex_literal("0x6a00f5ba18c0a324025033714ff5dd76")?);
+    assert_eq!(
+        get_force_upgrade_account(&ChainId::new(252))?.address(),
+        &AccountAddress::from_hex_literal("0x0b1d07ae560c26af9bbb8264f4c7ee73")?
+    );
     // Halley 253
-    assert_eq!(get_force_upgrade_account(&ChainId::new(253))?.address(), &AccountAddress::from_hex_literal("0xcf221b8290c04e8f3521ac204a3b0b75")?);
+    assert_eq!(
+        get_force_upgrade_account(&ChainId::new(253))?.address(),
+        &AccountAddress::from_hex_literal("0x0b1d07ae560c26af9bbb8264f4c7ee73")?
+    );
     // Dev 254
-    assert_eq!(get_force_upgrade_account(&ChainId::new(254))?.address(), &AccountAddress::from_hex_literal("0xA550C18")?);
+    assert_eq!(
+        get_force_upgrade_account(&ChainId::new(254))?.address(),
+        &AccountAddress::from_hex_literal("0xA550C18")?
+    );
     // Test 255
-    assert_eq!(get_force_upgrade_account(&ChainId::new(254))?.address(), &AccountAddress::from_hex_literal("0xA550C18")?);
+    assert_eq!(
+        get_force_upgrade_account(&ChainId::new(254))?.address(),
+        &AccountAddress::from_hex_literal("0xA550C18")?
+    );
 
     Ok(())
 }

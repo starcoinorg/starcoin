@@ -17,7 +17,6 @@ use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_executor::{BlockExecutedData, VMMetrics};
-use starcoin_force_upgrade::ForceUpgrade;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
@@ -37,14 +36,10 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction},
     U256,
 };
-use starcoin_vm_runtime::force_upgrade_data_cache::{
-    get_force_upgrade_account, get_force_upgrade_block_number,
-};
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::Epoch;
-use starcoin_vm_types::state_view::StateReaderExt;
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
@@ -803,9 +798,7 @@ impl BlockChain {
             None,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
-
-        self.maybe_force_upgrade(&mut opened_block)?;
-
+        opened_block.maybe_force_upgrade()?;
         let template = opened_block.finalize()?;
         Ok((template, excluded_txns))
     }
@@ -1808,25 +1801,6 @@ impl BlockChain {
             event_with_infos.truncate(limit);
         }
         Ok(event_with_infos)
-    }
-
-    fn maybe_force_upgrade(&self, opened_block: &mut OpenedBlock) -> Result<()> {
-        let chain_id = opened_block.chain_id();
-        if get_force_upgrade_block_number(&chain_id) != opened_block.block_number() {
-            return Ok(());
-        };
-
-        let account = get_force_upgrade_account(&chain_id)?;
-        let sequence_number = opened_block
-            .state_reader()
-            .get_sequence_number(account.address().clone())?;
-
-        opened_block.push_txns(ForceUpgrade::force_deploy_txn(
-            account,
-            sequence_number,
-            opened_block.chain_id(),
-        )?)?;
-        Ok(())
     }
 }
 

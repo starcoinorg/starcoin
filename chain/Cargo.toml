@@ -14,7 +14,6 @@ starcoin-consensus = { workspace = true }
 starcoin-chain-api = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-executor = { package = "starcoin-executor", workspace = true }
-starcoin-force-upgrade = { workspace = true}
 starcoin-open-block = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-state-api = { workspace = true }

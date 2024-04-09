@@ -9704,7 +9704,7 @@ dependencies = [
 [[package]]
 name = "starcoin-framework"
 version = "11.0.0"
-source = "git+https://github.com/starcoinorg/starcoin-framework?rev=1a8971479ee50ffa98a02bf09b567aafc1049087#1a8971479ee50ffa98a02bf09b567aafc1049087"
+source = "git+https://github.com/starcoinorg/starcoin-framework?rev=a8f2425c4655996ee88179acb1253ab90bbc2de5#a8f2425c4655996ee88179acb1253ab90bbc2de5"
 dependencies = [
  "anyhow",
  "include_dir",
@@ -10291,6 +10291,7 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-types",
+ "starcoin-vm-runtime",
  "starcoin-vm-types",
  "stest",
 ]

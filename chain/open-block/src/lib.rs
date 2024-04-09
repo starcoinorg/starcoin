@@ -6,6 +6,7 @@ use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumu
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_crypto::HashValue;
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
+use starcoin_force_upgrade::ForceUpgrade;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
@@ -23,6 +24,10 @@ use starcoin_types::{
     },
     U256,
 };
+use starcoin_vm_runtime::force_upgrade_data_cache::{
+    get_force_upgrade_account, get_force_upgrade_block_number,
+};
+use starcoin_vm_types::state_view::StateReaderExt;
 use std::{convert::TryInto, sync::Arc};
 
 pub struct OpenedBlock {
@@ -276,6 +281,23 @@ impl OpenedBlock {
         );
         let accumulator_root = self.txn_accumulator.append(&[txn_info.id()])?;
         Ok((txn_state_root, accumulator_root))
+    }
+
+    pub fn maybe_force_upgrade(&mut self) -> Result<()> {
+        if get_force_upgrade_block_number(&self.chain_id) != self.block_meta.number() {
+            return Ok(());
+        };
+        let account = get_force_upgrade_account(&self.chain_id)?;
+        let sequence_number = self
+            .state_reader()
+            .get_sequence_number(account.address().clone())?;
+
+        self.push_txns(ForceUpgrade::force_deploy_txn(
+            account,
+            sequence_number,
+            self.chain_id,
+        )?)?;
+        Ok(())
     }
 
     /// Construct a block template for mining.

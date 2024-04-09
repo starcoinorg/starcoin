@@ -347,6 +347,7 @@ where
             self.vm_metrics.clone(),
         )?;
         let excluded_txns = opened_block.push_txns(txns)?;
+        opened_block.maybe_force_upgrade()?;
         let template = opened_block.finalize()?;
         for invalid_txn in excluded_txns.discarded_txns {
             self.tx_provider.remove_invalid_txn(invalid_txn.id());
