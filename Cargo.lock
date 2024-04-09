@@ -9684,6 +9684,7 @@ dependencies = [
  "async-trait",
  "bcs-ext",
  "futures 0.3.26",
+ "include_dir",
  "parking_lot 0.12.1",
  "starcoin-accumulator",
  "starcoin-chain-api",

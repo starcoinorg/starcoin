@@ -27,7 +27,9 @@ use crate::create_access_path;
 pub const FORCE_UPGRADE_BLOCK_NUMBER: u64 = 17500000;
 
 pub fn get_force_upgrade_block_number(chain_id: &ChainId) -> u64 {
-    if chain_id.is_dev() || chain_id.is_test() {
+    if chain_id.is_test() {
+        1
+    } else if chain_id.is_dev() {
         5
     } else if chain_id.is_halley() || chain_id.is_proxima() {
         100

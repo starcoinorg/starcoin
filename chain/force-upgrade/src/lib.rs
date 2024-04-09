@@ -1,45 +1,18 @@
-use std::env;
-use std::fs::File;
-use std::io::Read;
-use std::path::{Path, PathBuf};
+use anyhow::format_err;
 
-use anyhow::{ensure, format_err};
-
-use starcoin_move_compiler::move_command_line_common::files::MOVE_COMPILED_EXTENSION;
 use starcoin_types::{
     account::{Account, DEFAULT_MAX_GAS_AMOUNT},
     transaction::SignedUserTransaction,
 };
 
+use include_dir::{include_dir, Dir};
 use starcoin_vm_types::{
     account_config::STC_TOKEN_CODE_STR,
     genesis_config::ChainId,
-    transaction::{Module, Package, RawUserTransaction, TransactionPayload},
+    transaction::{Package, RawUserTransaction, TransactionPayload},
 };
 
-const DEFAULT_PACKAGE_PATH: &str = "stdlib-v12.blob";
-
-fn load_package_from_file(mv_or_package_file: &Path) -> anyhow::Result<Package> {
-    ensure!(
-        mv_or_package_file.exists(),
-        "file {:?} not exist",
-        mv_or_package_file
-    );
-    let mut bytes = vec![];
-    File::open(mv_or_package_file)?.read_to_end(&mut bytes)?;
-
-    let package = if mv_or_package_file.extension().unwrap_or_default() == MOVE_COMPILED_EXTENSION {
-        Package::new_with_module(Module::new(bytes))?
-    } else {
-        bcs_ext::from_bytes(&bytes).map_err(|e| {
-            format_err!(
-                "Decode Package failed {:?}, please ensure the file is a Package binary file.",
-                e
-            )
-        })?
-    };
-    anyhow::Ok(package)
-}
+pub const FORCE_UPGRADE_PACKAGE: Dir = include_dir!("package");
 
 pub struct ForceUpgrade;
 
@@ -49,13 +22,14 @@ impl ForceUpgrade {
         sequence_number: u64,
         net: ChainId,
     ) -> anyhow::Result<Vec<SignedUserTransaction>> {
-        let package_path = if net.is_test() || net.is_dev() {
-            let cur_dir = env::current_dir()?;
-            cur_dir.join(format!("scripts/{}", DEFAULT_PACKAGE_PATH))
-        } else {
-            PathBuf::from(DEFAULT_PACKAGE_PATH)
-        };
-        let package = load_package_from_file(&package_path)?;
+        let package_file = "stdlib.blob".to_string();
+        let package = FORCE_UPGRADE_PACKAGE
+            .get_file(package_file.clone())
+            .map(|file| {
+                bcs_ext::from_bytes::<Package>(file.contents())
+                    .expect("Decode package should success")
+            })
+            .ok_or_else(|| format_err!("Can not find upgrade package {}", package_file))?;
 
         let signed_transaction = account.sign_txn(RawUserTransaction::new(
             account.address().clone(),

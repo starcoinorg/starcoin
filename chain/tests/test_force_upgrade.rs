@@ -80,7 +80,7 @@ pub fn test_force_upgrade_in_openblock() -> anyhow::Result<()> {
     let account_reader = chain.chain_state_reader();
     let association_sequence_num =
         account_reader.get_sequence_number(account_config::association_address())?;
-    let (receive_prikey, receive_public_key) = KeyGen::from_os_rng().generate_keypair();
+    let (_receive_prikey, receive_public_key) = KeyGen::from_os_rng().generate_keypair();
     let receiver = account_address::from_public_key(&receive_public_key);
     let txn1 = build_transfer_from_association(
         receiver,
