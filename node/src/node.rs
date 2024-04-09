@@ -308,7 +308,7 @@ impl NodeService {
         let start_time = SystemTime::now();
         storage_instance.check_upgrade()?;
         storage_instance.barnard_hard_fork(config.clone())?;
-        // turn off dragon hard fork
+        // disable dragon hard fork
         //storage_instance.dragon_hard_fork(config.clone())?;
         let upgrade_time = SystemTime::now().duration_since(start_time)?;
         let storage = Arc::new(Storage::new(storage_instance)?);
@@ -317,7 +317,7 @@ impl NodeService {
             Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;
 
         info!(
-            "Start node with chain info: {}, number {} upgrade_time cost {} secs, ",
+            "Start node with chain info: {}, number {}, dragon fork disabled, upgrade_time cost {} secs, ",
             chain_info,
             chain_info.status().head().number(),
             upgrade_time.as_secs()
