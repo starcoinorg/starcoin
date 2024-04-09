@@ -100,6 +100,7 @@ impl AccumulatorCollector {
         start: AccumulatorInfo,
         target: AccumulatorInfo,
     ) -> Self {
+        info!("now start to collect the hash value for building the accumulator ahead, ancestor: {:?}", ancestor);
         let accumulator = MerkleAccumulator::new_with_info(start, store);
         Self {
             accumulator,

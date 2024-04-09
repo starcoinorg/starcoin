@@ -673,6 +673,7 @@ where
 
     let all_fut = async move {
         let ancestor = fut.await?;
+        info!("got ancestor for sync: {:?}", ancestor);
         let mut ancestor_block_info = storage
             .get_block_info(ancestor.id)
             .map_err(TaskError::BreakError)?

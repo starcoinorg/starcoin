@@ -625,4 +625,37 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn test_dag_mergeset() -> anyhow::Result<()> {
+        set_test_flexidag_fork_height(1);
+        // initialzie the dag firstly
+        let mut dag = BlockDAG::create_for_testing().unwrap();
+
+        let origin = BlockHeaderBuilder::random().with_number(0).build();
+        let genesis = BlockHeader::dag_genesis_random_with_parent(origin);
+
+        dag.init_with_genesis(genesis.clone()).unwrap();
+
+        println!("add a genesis: {:?}", genesis.id());
+
+        // normally add the dag blocks
+        let mut parents_hash = vec![genesis.id()];
+        let mut parent_hash = genesis.id();
+        for i in 2..8 {
+            let header_builder = BlockHeaderBuilder::random();
+            let header = header_builder
+                .with_parent_hash(parent_hash)
+                .with_parents_hash(Some(parents_hash.clone()))
+                .with_number(i)
+                .build();
+            parents_hash = vec![header.id()];
+            parent_hash = header.id();
+            dag.commit(header.to_owned(), genesis.parent_hash())?;
+            let ghostdata = dag.ghostdata(&parents_hash).unwrap();
+            println!("add a header: {:?}, blue set: {:?}, red set: {:?}", header, ghostdata.mergeset_blues, ghostdata.mergeset_reds);
+        }
+
+        Ok(())
+    }
 }
