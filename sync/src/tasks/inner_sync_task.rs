@@ -7,7 +7,7 @@ use starcoin_executor::VMMetrics;
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
 use starcoin_time_service::TimeService;
-use starcoin_types::block::{BlockIdAndNumber, BlockInfo};
+use starcoin_types::block::{BlockIdAndNumber, BlockInfo, BlockNumber};
 use std::cmp::min;
 use std::sync::Arc;
 use stream_task::{
@@ -35,6 +35,7 @@ where
     peer_provider: N,
     custom_error_handle: Arc<dyn CustomErrorHandle>,
     dag: BlockDAG,
+    dag_fork_heigh: BlockNumber,
 }
 
 impl<H, F, N> InnerSyncTask<H, F, N>
@@ -53,6 +54,7 @@ where
         time_service: Arc<dyn TimeService>,
         peer_provider: N,
         custom_error_handle: Arc<dyn CustomErrorHandle>,
+        dag_fork_heigh: BlockNumber,
         dag: BlockDAG,
     ) -> Self {
         Self {
@@ -66,6 +68,7 @@ where
             peer_provider,
             custom_error_handle,
             dag,
+            dag_fork_heigh,
         }
     }
 
@@ -116,6 +119,7 @@ where
                 self.ancestor,
                 ancestor_block_info.clone().block_accumulator_info,
                 self.target.block_info.block_accumulator_info.clone(),
+                self.dag_fork_heigh,
             ),
             self.event_handle.clone(),
             self.custom_error_handle.clone(),

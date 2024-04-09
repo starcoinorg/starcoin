@@ -631,6 +631,8 @@ where
     let current_block_header = storage
         .get_block_header_by_hash(current_block_id)?
         .ok_or_else(|| format_err!("Can not find block header by id: {}", current_block_id))?;
+    let dag_fork_number = current_block_header.dag_fork_height();
+    info!("start full sync task, current block number: {}, dag fork number: {:?}", current_block_header.number(), dag_fork_number);
     let current_block_number = current_block_header.number();
     let current_block_id = current_block_header.id();
     let current_block_info = storage
@@ -723,6 +725,7 @@ where
                 time_service.clone(),
                 peer_provider.clone(),
                 ext_error_handle.clone(),
+                dag_fork_number,
                 dag.clone(),
             );
             let start_now = Instant::now();
