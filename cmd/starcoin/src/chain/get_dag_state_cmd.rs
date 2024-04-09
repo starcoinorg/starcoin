@@ -13,9 +13,9 @@ use starcoin_dag::consensusdb::consenses_state::DagStateView;
 #[clap(name = "get-dag-state", alias = "get_dag_state")]
 pub struct GetDagStateOpt {}
 
-pub struct GetTipsStateCommand;
+pub struct GetDagStateCommand;
 
-impl CommandAction for GetTipsStateCommand {
+impl CommandAction for GetDagStateCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetDagStateOpt;

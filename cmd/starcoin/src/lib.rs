@@ -102,7 +102,8 @@ pub fn add_command(
                 .subcommand(chain::EpochInfoCommand)
                 .subcommand(chain::GetTransactionInfoListCommand)
                 .subcommand(chain::get_txn_proof_cmd::GetTransactionProofCommand)
-                .subcommand(chain::GetBlockInfoCommand),
+                .subcommand(chain::GetBlockInfoCommand)
+                .subcommand(chain::GetDagStateCommand),
         )
         .command(
             CustomCommand::with_name("txpool")
