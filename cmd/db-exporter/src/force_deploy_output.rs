@@ -88,7 +88,8 @@ pub fn force_deploy_output(
     let addr = AccountAddress::from_hex_literal("0xbe361d5237428276e86a9f5d50726e6c")?;
     let seq_num = statedb.get_sequence_number(addr)?;
     // let time = net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME;
-    let time = 1709899433;
+    // main block num 16912223
+    let time = 1710453679;
     println!("time {}", time);
     let txn = account.sign_txn(RawUserTransaction::new(
         addr,
