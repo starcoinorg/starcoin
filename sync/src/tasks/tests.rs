@@ -30,6 +30,7 @@ use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::SyncTarget;
+use starcoin_types::block::BlockNumber;
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeaderBuilder, BlockIdAndNumber, BlockInfo},
     U256,
@@ -454,7 +455,7 @@ async fn test_accumulator_sync_by_stream_task() -> Result<()> {
     let task_state =
         BlockAccumulatorSyncTask::new(info0.num_leaves, info1.clone(), fetcher, 7).unwrap();
     let ancestor = BlockIdAndNumber::new(HashValue::random(), info0.num_leaves - 1);
-    let collector = AccumulatorCollector::new(Arc::new(store2), ancestor, info0, info1.clone());
+    let collector = AccumulatorCollector::new(Arc::new(store2), ancestor, info0, info1.clone(), BlockNumber::MAX);
     let event_handle = Arc::new(TaskEventCounterHandle::new());
     let sync_task = TaskGenerator::new(
         task_state,
