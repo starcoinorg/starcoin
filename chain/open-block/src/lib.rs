@@ -27,6 +27,9 @@ use starcoin_types::{
 use starcoin_vm_runtime::force_upgrade_data_cache::{
     get_force_upgrade_account, get_force_upgrade_block_number,
 };
+use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::account_config::{genesis_address, ModuleUpgradeStrategy};
+use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_view::StateReaderExt;
 use std::{convert::TryInto, sync::Arc};
 
@@ -45,6 +48,7 @@ pub struct OpenedBlock {
     difficulty: U256,
     strategy: ConsensusStrategy,
     vm_metrics: Option<VMMetrics>,
+    extra_txn: Option<SignedUserTransaction>,
 }
 
 impl OpenedBlock {
@@ -83,6 +87,18 @@ impl OpenedBlock {
             previous_header.gas_used(),
         );
 
+        let extra_txn = if block_meta.number() == get_force_upgrade_block_number(&chain_id) {
+            let account = get_force_upgrade_account(&chain_id)?;
+            let seqence_number = chain_state.get_sequence_number(account.address().clone())?;
+            Some(ForceUpgrade::force_deploy_txn(
+                account,
+                seqence_number,
+                &chain_id,
+            )?)
+        } else {
+            None
+        };
+
         let mut opened_block = Self {
             previous_block_info: block_info,
             block_meta,
@@ -96,7 +112,9 @@ impl OpenedBlock {
             difficulty,
             strategy,
             vm_metrics,
+            extra_txn,
         };
+
         opened_block.initialize()?;
         Ok(opened_block)
     }
@@ -283,25 +301,10 @@ impl OpenedBlock {
         Ok((txn_state_root, accumulator_root))
     }
 
-    pub fn maybe_force_upgrade(&mut self) -> Result<()> {
-        if get_force_upgrade_block_number(&self.chain_id) != self.block_meta.number() {
-            return Ok(());
-        };
-        let account = get_force_upgrade_account(&self.chain_id)?;
-        let sequence_number = self
-            .state_reader()
-            .get_sequence_number(account.address().clone())?;
-
-        self.push_txns(ForceUpgrade::force_deploy_txn(
-            account,
-            sequence_number,
-            self.chain_id,
-        )?)?;
-        Ok(())
-    }
-
     /// Construct a block template for mining.
     pub fn finalize(self) -> Result<BlockTemplate> {
+        self.execute_extra_txn()?;
+
         let accumulator_root = self.txn_accumulator.root_hash();
         let state_root = self.state.state_root();
         let uncles = if !self.uncles.is_empty() {
@@ -325,7 +328,47 @@ impl OpenedBlock {
         );
         Ok(block_template)
     }
+
+    /// The logic for handling the forced upgrade will be processed.
+    /// First, set the account policy in `0x1::PackageTxnManager` to 100,
+    /// Second, after the contract deployment is successful, revert it back.
+    fn execute_extra_txn(&self) -> Result<()> {
+        if self.extra_txn.is_none() {
+            return Ok(());
+        }
+
+        let gas_left = self.gas_limit.checked_sub(self.gas_used).ok_or_else(|| {
+            format_err!(
+                "block gas_used {} exceed block gas_limit:{}",
+                self.gas_used,
+                self.gas_limit
+            )
+        })?;
+
+        let strategy_path = AccessPath::resource_access_path(
+            genesis_address(),
+            ModuleUpgradeStrategy::struct_tag(),
+        );
+
+        // Set strategy to 100
+        self.state.set(&strategy_path, vec![100])?;
+
+        execute_block_transactions(
+            &self.state,
+            vec![Transaction::UserTransaction(
+                self.extra_txn.as_ref().unwrap().clone(),
+            )],
+            gas_left,
+            self.vm_metrics.clone(),
+        )?;
+
+        // Set strategy to 1
+        self.state.set(&strategy_path, vec![1])?;
+
+        Ok(())
+    }
 }
+
 pub struct AddressFilter;
 //static BLACKLIST: [&str; 0] = [];
 impl AddressFilter {

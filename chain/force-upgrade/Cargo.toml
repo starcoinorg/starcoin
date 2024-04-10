@@ -20,7 +20,6 @@ starcoin-logger = { workspace = true }
 parking_lot = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-chain-api = { workspace = true }
-starcoin-executor = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }

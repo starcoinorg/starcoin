@@ -222,9 +222,14 @@ impl<'test, S: ChainStateReader + ChainStateWriter> TxnExecutor<'test, S> {
             let num_txns = transactions.len();
             version += num_txns as u64;
 
-            let _ =
-                starcoin_executor::block_execute(self.chain_state, transactions, u64::MAX, None)
-                    .expect("Execute transactions fail.");
+            let _ = starcoin_executor::block_execute(
+                self.chain_state,
+                transactions,
+                u64::MAX,
+                None,
+                None,
+            )
+            .expect("Execute transactions fail.");
             self.chain_state.flush().expect("flush state should be ok");
 
             let execute_time = std::time::Instant::now().duration_since(execute_start);

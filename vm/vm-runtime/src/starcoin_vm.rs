@@ -72,7 +72,6 @@ use std::sync::Arc;
 
 static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
 
-use crate::force_upgrade_data_cache::{get_force_upgrade_block_number, AsForceUpgradeResolver};
 #[cfg(feature = "metrics")]
 use crate::metrics::VMMetrics;
 use crate::VMExecutor;
@@ -1047,36 +1046,8 @@ impl StarcoinVM {
 
                         let gas_unit_price = transaction.gas_unit_price();
 
-                        let (status, output) = if !data_cache.is_genesis() {
-                            let chain_id =
-                                data_cache.get_chain_id().expect("failed to load chain id");
-
-                            let current_block_number: u64 = data_cache
-                                .get_block_metadata()
-                                .expect("failed to load block number")
-                                .number;
-                            let force_upgrade_block_number =
-                                get_force_upgrade_block_number(&chain_id);
-                            if current_block_number == force_upgrade_block_number {
-                                self.execute_user_transaction(
-                                    &data_cache.as_force_upgrade_resolver(),
-                                    transaction,
-                                )
-                            } else {
-                                self.execute_user_transaction(
-                                    &data_cache.as_move_resolver(),
-                                    transaction,
-                                )
-                            }
-                        } else {
-                            self.execute_user_transaction(
-                                &data_cache.as_move_resolver(),
-                                transaction,
-                            )
-                        };
-
-                        // let (status, output) = self
-                        //     .execute_user_transaction(&data_cache.as_move_resolver(), transaction);
+                        let (status, output) = self
+                            .execute_user_transaction(&data_cache.as_move_resolver(), transaction);
 
                         // only need to check for user transactions.
                         match gas_left.checked_sub(output.gas_used()) {

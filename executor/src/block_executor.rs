@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::execute_block_transactions;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
@@ -9,7 +10,10 @@ use starcoin_types::error::ExecutorResult;
 use starcoin_types::transaction::TransactionStatus;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_vm_runtime::metrics::VMMetrics;
+use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::account_config::{genesis_address, ModuleUpgradeStrategy};
 use starcoin_vm_types::contract_event::ContractEvent;
+use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::write_set::WriteSet;
 use std::collections::BTreeMap;
@@ -40,10 +44,15 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
     txns: Vec<Transaction>,
     block_gas_limit: u64,
     vm_metrics: Option<VMMetrics>,
+    extra_txn: Option<Transaction>,
 ) -> ExecutorResult<BlockExecutedData> {
-    let txn_outputs =
-        crate::execute_block_transactions(chain_state, txns.clone(), block_gas_limit, vm_metrics)
-            .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
+    let txn_outputs = execute_block_transactions(
+        chain_state,
+        txns.clone(),
+        block_gas_limit,
+        vm_metrics.clone(),
+    )
+    .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
 
     let mut executed_data = BlockExecutedData::default();
     for (txn, output) in txns
@@ -85,6 +94,30 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
         };
     }
 
+    if extra_txn.is_some() {
+        execute_extra_txn(chain_state, extra_txn.unwrap(), block_gas_limit, vm_metrics)
+            .map_err(BlockExecutorError::BlockChainStateErr)?;
+    }
+
     executed_data.state_root = chain_state.state_root();
     Ok(executed_data)
+}
+
+fn execute_extra_txn<S: ChainStateReader + ChainStateWriter>(
+    chain_state: &S,
+    txn: Transaction,
+    block_gas_limit: u64,
+    vm_metrics: Option<VMMetrics>,
+) -> anyhow::Result<()> {
+    let strategy_path =
+        AccessPath::resource_access_path(genesis_address(), ModuleUpgradeStrategy::struct_tag());
+    // Set strategy to 100
+    chain_state.set(&strategy_path, vec![100])?;
+
+    execute_block_transactions(&chain_state, vec![txn], block_gas_limit, vm_metrics)?;
+
+    // Set strategy to 1
+    chain_state.set(&strategy_path, vec![1])?;
+
+    Ok(())
 }

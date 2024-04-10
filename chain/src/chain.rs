@@ -17,6 +17,7 @@ use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_executor::{BlockExecutedData, VMMetrics};
+use starcoin_force_upgrade::ForceUpgrade;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
@@ -36,10 +37,14 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction},
     U256,
 };
+use starcoin_vm_runtime::force_upgrade_data_cache::{
+    get_force_upgrade_account, get_force_upgrade_block_number,
+};
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_vm_types::on_chain_resource::Epoch;
+use starcoin_vm_types::state_view::StateReaderExt;
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
@@ -671,6 +676,7 @@ impl BlockChain {
         let block_accumulator = MerkleAccumulator::new_empty(
             storage.get_accumulator_store(AccumulatorStoreType::Block),
         );
+        let chain_id = genesis_block.header().chain_id();
         let statedb = ChainStateDB::new(storage.clone().into_super_arc(), None);
         let executed_block = Self::execute_block_and_save(
             storage.as_ref(),
@@ -680,6 +686,7 @@ impl BlockChain {
             &genesis_epoch,
             None,
             genesis_block,
+            &chain_id,
             None,
         )?;
         Self::new(time_service, executed_block.block.id(), storage, None)
@@ -798,7 +805,6 @@ impl BlockChain {
             None,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
-        opened_block.maybe_force_upgrade()?;
         let template = opened_block.finalize()?;
         Ok((template, excluded_txns))
     }
@@ -901,6 +907,7 @@ impl BlockChain {
         epoch: &Epoch,
         parent_status: Option<ChainStatus>,
         block: Block,
+        chain_id: &ChainId,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
         let header = block.header();
@@ -932,6 +939,7 @@ impl BlockChain {
             transactions.clone(),
             epoch.block_gas_limit(),
             vm_metrics,
+            Self::create_force_upgrade_extra_txn(block.header.number(), &chain_id, &statedb)?,
         )?;
         watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;
@@ -1215,6 +1223,7 @@ impl BlockChain {
         epoch: &Epoch,
         parent_status: Option<ChainStatus>,
         block: Block,
+        chain_id: &ChainId,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
         let header = block.header();
@@ -1246,6 +1255,7 @@ impl BlockChain {
             transactions.clone(),
             epoch.block_gas_limit(),
             vm_metrics,
+            Self::create_force_upgrade_extra_txn(block.header.number(), &chain_id, &statedb)?,
         )?;
         watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;
@@ -1328,6 +1338,24 @@ impl BlockChain {
 
     pub fn get_block_accumulator(&self) -> &MerkleAccumulator {
         &self.block_accumulator
+    }
+
+    fn create_force_upgrade_extra_txn(
+        block_number: BlockNumber,
+        chain_id: &ChainId,
+        statedb: &ChainStateDB,
+    ) -> Result<Option<Transaction>> {
+        Ok(
+            if block_number == get_force_upgrade_block_number(&chain_id) {
+                let account = get_force_upgrade_account(&chain_id)?;
+                let sequence_number = statedb.get_sequence_number(account.address().clone())?;
+                Some(Transaction::UserTransaction(
+                    ForceUpgrade::force_deploy_txn(account, sequence_number, chain_id)?,
+                ))
+            } else {
+                None
+            },
+        )
     }
 }
 
@@ -1585,6 +1613,7 @@ impl ChainReader for BlockChain {
                 &self.epoch,
                 Some(self.status.status.clone()),
                 verified_block.0,
+                &self.info().chain_id(),
                 self.vm_metrics.clone(),
             )
         }
@@ -1598,6 +1627,7 @@ impl ChainReader for BlockChain {
             &self.epoch,
             Some(self.status.status.clone()),
             verified_block.0,
+            &self.info().chain_id(),
             self.vm_metrics.clone(),
         )
     }

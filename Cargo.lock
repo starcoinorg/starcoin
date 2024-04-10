@@ -9689,7 +9689,6 @@ dependencies = [
  "starcoin-accumulator",
  "starcoin-chain-api",
  "starcoin-crypto",
- "starcoin-executor",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-move-compiler",

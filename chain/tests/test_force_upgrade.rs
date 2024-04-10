@@ -100,7 +100,7 @@ pub fn test_force_upgrade_in_openblock() -> anyhow::Result<()> {
         ForceUpgrade::force_deploy_txn(
             account,
             association_sequence_num + 1,
-            opened_block.chain_id(),
+            &opened_block.chain_id(),
         )?
     };
     if !txns.is_empty() {
