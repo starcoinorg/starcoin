@@ -11,6 +11,7 @@ use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
+use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_types::vm_error::KeptVMStatus;
@@ -32,7 +33,6 @@ use starcoin_vm_types::account_config::{genesis_address, ModuleUpgradeStrategy};
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_view::StateReaderExt;
 use std::{convert::TryInto, sync::Arc};
-use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 
 pub struct OpenedBlock {
     previous_block_info: BlockInfo,

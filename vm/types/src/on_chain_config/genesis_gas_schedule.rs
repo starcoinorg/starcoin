@@ -472,6 +472,9 @@ pub fn v5_native_table() -> Vec<GasCost> {
         (N::STRING_SUB_STR, GasCost::new(4, 1)),
         (N::SRING_CHAR_BOUNDARY, GasCost::new(4, 1)),
         (N::STRING_INDEX_OF, GasCost::new(4, 1)),
+        (N::FROMBCS_FROM_BYTES, GasCost::new(4, 1)),
+        (N::SECP256K1_ECDSA_RECOVER_INTERNAL, GasCost::new(4, 1)),
+        (N::VECTOR_SPAWN_FROM, GasCost::new(4, 1)),
     ];
     raw_native_table.sort_by_key(|cost| cost.0 as u64);
     raw_native_table

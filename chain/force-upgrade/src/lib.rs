@@ -18,7 +18,6 @@ pub const FORCE_UPGRADE_PACKAGE: Dir = include_dir!("package");
 pub struct ForceUpgrade;
 
 impl ForceUpgrade {
-
     ///
     /// block_timestamp: *NOTE* by seconds,
     pub fn force_deploy_txn(

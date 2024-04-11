@@ -378,11 +378,15 @@ mod tests {
     use starcoin_types::language_storage::ModuleId;
     use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
     use starcoin_vm_types::account_config::association_address;
-    use starcoin_vm_types::gas_schedule::{latest_cost_table, G_TEST_GAS_CONSTANTS};
+    use starcoin_vm_types::gas_schedule::{
+        latest_cost_table, G_LATEST_GAS_COST_TABLE, G_TEST_GAS_CONSTANTS,
+    };
     use starcoin_vm_types::genesis_config::ChainId;
     use starcoin_vm_types::on_chain_config::GasSchedule;
-    use starcoin_vm_types::on_chain_config::TransactionPublishOption;
     use starcoin_vm_types::on_chain_config::{ConsensusConfig, Version};
+    use starcoin_vm_types::on_chain_config::{
+        TransactionPublishOption, G_GAS_SCHEDULE_GAS_SCHEDULE, G_GAS_SCHEDULE_IDENTIFIER,
+    };
     use starcoin_vm_types::on_chain_resource::Epoch;
 
     #[stest::test]
@@ -571,6 +575,75 @@ mod tests {
 
         let epoch = account_state_reader.get_resource::<Epoch>(genesis_address())?;
         assert!(epoch.is_some(), "Epoch resource should exist.");
+
+        test_gas_schedule_in_genesis(net, &state_db)?;
+
+        Ok(())
+    }
+
+    fn test_gas_schedule_in_genesis(net: &ChainNetwork, state_db: &ChainStateDB) -> Result<()> {
+        if net.is_custom() {
+            return Ok(());
+        }
+        match net.stdlib_version() {
+            // test whether it is successful that the function initialize_v2 initializes genesis block for the gas schedules
+            // if it is, the gas schedule in genesis block will be the same as the one from the latest cost table
+            StdlibVersion::Version(12) | StdlibVersion::Latest => {
+                info!(
+                    "test if the genesis config is the same as network config({:?})",
+                    net.id()
+                );
+                let account_state_reader = AccountStateReader::new(state_db);
+                let genesis_gas_schedule =
+                    account_state_reader.get_on_chain_config::<GasSchedule>()?;
+                assert!(
+                    genesis_gas_schedule.is_some(),
+                    "GasSchedule config should exist."
+                );
+                let network_gas_schedule = match net.id() {
+                    &ChainNetworkID::TEST => {
+                        let cost_table = latest_cost_table(G_TEST_GAS_CONSTANTS.clone());
+                        GasSchedule::from(&cost_table)
+                    }
+                    &ChainNetworkID::DEV | &ChainNetworkID::HALLEY => {
+                        let mut gas_constant = G_TEST_GAS_CONSTANTS.clone();
+                        gas_constant.min_price_per_gas_unit = 1;
+                        let cost_table = latest_cost_table(gas_constant);
+                        GasSchedule::from(&cost_table)
+                    }
+                    _ => GasSchedule::from(&G_LATEST_GAS_COST_TABLE.clone()),
+                };
+                assert!(
+                    !network_gas_schedule.is_different(genesis_gas_schedule.as_ref().unwrap()),
+                    "the gas schedule in genesis must be the same as the one in config"
+                );
+
+                info!(
+                    "test if the genesis config is the same as framework config({:?})",
+                    net.id()
+                );
+                let mut vm = StarcoinVM::new(None);
+                let data = vm
+                    .execute_readonly_function(
+                        state_db,
+                        &ModuleId::new(core_code_address(), G_GAS_SCHEDULE_IDENTIFIER.to_owned()),
+                        G_GAS_SCHEDULE_GAS_SCHEDULE.as_ident_str(),
+                        vec![],
+                        vec![],
+                    )?
+                    .pop()
+                    .ok_or_else(|| {
+                        anyhow::anyhow!("Expect 0x1::GasSchedule::gas_schedule() return value")
+                    })?;
+                let framework_gas_shedule = bcs_ext::from_bytes::<GasSchedule>(&data)?;
+
+                assert!(
+                    !framework_gas_shedule.is_different(genesis_gas_schedule.as_ref().unwrap()),
+                    "the gas schedule in genesis must be the same as the one in framework"
+                );
+            }
+            _ => (),
+        }
 
         Ok(())
     }
