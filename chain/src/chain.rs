@@ -939,7 +939,7 @@ impl BlockChain {
             transactions.clone(),
             epoch.block_gas_limit(),
             vm_metrics,
-            Self::create_force_upgrade_extra_txn(block.header.number(), &chain_id, &statedb)?,
+            Self::maybe_create_force_upgrade_extra_txn(block.header.number(), header.timestamp(), &chain_id, &statedb)?,
         )?;
         watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;
@@ -1255,7 +1255,7 @@ impl BlockChain {
             transactions.clone(),
             epoch.block_gas_limit(),
             vm_metrics,
-            Self::create_force_upgrade_extra_txn(block.header.number(), &chain_id, &statedb)?,
+            Self::maybe_create_force_upgrade_extra_txn(block.header.number(), header.timestamp(), &chain_id, &statedb)?,
         )?;
         watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;
@@ -1340,8 +1340,9 @@ impl BlockChain {
         &self.block_accumulator
     }
 
-    fn create_force_upgrade_extra_txn(
+    fn maybe_create_force_upgrade_extra_txn(
         block_number: BlockNumber,
+        block_timestamp: u64,
         chain_id: &ChainId,
         statedb: &ChainStateDB,
     ) -> Result<Option<Transaction>> {
@@ -1350,7 +1351,7 @@ impl BlockChain {
                 let account = get_force_upgrade_account(&chain_id)?;
                 let sequence_number = statedb.get_sequence_number(account.address().clone())?;
                 Some(Transaction::UserTransaction(
-                    ForceUpgrade::force_deploy_txn(account, sequence_number, chain_id)?,
+                    ForceUpgrade::force_deploy_txn(account, sequence_number, block_timestamp, chain_id)?,
                 ))
             } else {
                 None

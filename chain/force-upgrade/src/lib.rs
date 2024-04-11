@@ -17,9 +17,13 @@ pub const FORCE_UPGRADE_PACKAGE: Dir = include_dir!("package");
 pub struct ForceUpgrade;
 
 impl ForceUpgrade {
+
+    ///
+    /// block_timestamp: by seconds
     pub fn force_deploy_txn(
         account: Account,
         sequence_number: u64,
+        block_timestamp: u64,
         chain_id: &ChainId,
     ) -> anyhow::Result<SignedUserTransaction> {
         let package_file = "stdlib.blob".to_string();
@@ -37,7 +41,7 @@ impl ForceUpgrade {
             TransactionPayload::Package(package),
             DEFAULT_MAX_GAS_AMOUNT,
             1,
-            3600,
+            block_timestamp,
             chain_id.clone(),
             STC_TOKEN_CODE_STR.to_string(),
         )))

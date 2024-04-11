@@ -32,6 +32,7 @@ use starcoin_vm_types::account_config::{genesis_address, ModuleUpgradeStrategy};
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_view::StateReaderExt;
 use std::{convert::TryInto, sync::Arc};
+use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 
 pub struct OpenedBlock {
     previous_block_info: BlockInfo,
@@ -93,6 +94,7 @@ impl OpenedBlock {
             Some(ForceUpgrade::force_deploy_txn(
                 account,
                 seqence_number,
+                block_timestamp / 1000 + DEFAULT_EXPIRATION_TIME,
                 &chain_id,
             )?)
         } else {
