@@ -6,6 +6,7 @@ use starcoin_types::{
 };
 
 use include_dir::{include_dir, Dir};
+use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_vm_types::{
     account_config::STC_TOKEN_CODE_STR,
     genesis_config::ChainId,
@@ -19,7 +20,7 @@ pub struct ForceUpgrade;
 impl ForceUpgrade {
 
     ///
-    /// block_timestamp: by seconds
+    /// block_timestamp: *NOTE* by seconds,
     pub fn force_deploy_txn(
         account: Account,
         sequence_number: u64,
@@ -41,7 +42,7 @@ impl ForceUpgrade {
             TransactionPayload::Package(package),
             DEFAULT_MAX_GAS_AMOUNT,
             1,
-            block_timestamp,
+            block_timestamp + DEFAULT_EXPIRATION_TIME,
             chain_id.clone(),
             STC_TOKEN_CODE_STR.to_string(),
         )))
