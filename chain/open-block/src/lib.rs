@@ -156,10 +156,6 @@ impl OpenedBlock {
         &self.state
     }
 
-    pub fn state_writer(&self) -> &impl ChainStateWriter {
-        &self.state
-    }
-
     pub fn chain_id(&self) -> ChainId {
         self.chain_id
     }
