@@ -93,7 +93,7 @@ impl OpenedBlock {
             let seqence_number = chain_state.get_sequence_number(account.address().clone())?;
             Some(ForceUpgrade::force_deploy_txn(
                 account,
-                seqence_number,
+                seqence_number + 1,
                 block_timestamp / 1000 + DEFAULT_EXPIRATION_TIME,
                 &chain_id,
             )?)

@@ -62,6 +62,10 @@ pub fn test_force_upgrade_in_openblock() -> anyhow::Result<()> {
 
     let block_gas_limit = 10000000;
 
+    let account_reader = chain.chain_state_reader();
+    let association_sequence_num =
+        account_reader.get_sequence_number(account_config::association_address())?;
+
     let mut opened_block = {
         let miner_account = AccountInfo::random();
         OpenedBlock::new(
@@ -77,9 +81,6 @@ pub fn test_force_upgrade_in_openblock() -> anyhow::Result<()> {
         )?
     };
 
-    let account_reader = chain.chain_state_reader();
-    let association_sequence_num =
-        account_reader.get_sequence_number(account_config::association_address())?;
     let (_receive_prikey, receive_public_key) = KeyGen::from_os_rng().generate_keypair();
     let receiver = account_address::from_public_key(&receive_public_key);
     let txn1 = build_transfer_from_association(
@@ -95,19 +96,6 @@ pub fn test_force_upgrade_in_openblock() -> anyhow::Result<()> {
     assert_eq!(excluded.discarded_txns.len(), 0);
     assert_eq!(excluded.untouched_txns.len(), 0);
 
-    let txns = {
-        let account = Account::new_association();
-        ForceUpgrade::force_deploy_txn(
-            account,
-            association_sequence_num + 1,
-            &opened_block.chain_id(),
-        )?
-    };
-    if !txns.is_empty() {
-        let exclude_txns = opened_block.push_txns(txns)?;
-        assert_eq!(exclude_txns.discarded_txns.len(), 0);
-        assert_eq!(exclude_txns.untouched_txns.len(), 0);
-    }
     opened_block.finalize()?;
 
     Ok(())
