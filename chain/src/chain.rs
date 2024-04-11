@@ -854,7 +854,7 @@ impl BlockChain {
         self.storage.clone()
     }
 
-    pub fn get_state_view(&self) -> &ChainStateDB {
+    pub fn get_chain_state_db(&self) -> &ChainStateDB {
         &self.statedb
     }
 

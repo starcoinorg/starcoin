@@ -2,57 +2,11 @@ use starcoin_account_api::AccountInfo;
 use starcoin_chain_api::ChainReader;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::keygen::KeyGen;
-use starcoin_force_upgrade::ForceUpgrade;
 use starcoin_open_block::OpenedBlock;
 use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::{account::Account, account_address, U256};
 use starcoin_vm_types::{account_config, state_view::StateReaderExt};
 use std::sync::Arc;
-
-// #[stest::test]
-// pub fn test_force_upgrade() -> anyhow::Result<()> {
-//     let config = Arc::new(NodeConfig::random_for_test());
-//     let chain = test_helper::gen_blockchain_for_test(config.net())?;
-//
-//     let statedb = chain.get_state_view();
-//     let account = Account::new_association();
-//     let sequence_number = statedb.get_sequence_number(account.address().clone())?;
-//
-//     let signed_txns = ForceUpgrade::begin(
-//         account,
-//         sequence_number,
-//         chain.info().chain_id(),
-//         FORCE_UPGRADE_BLOCK_NUMBER,
-//         statedb,
-//         statedb,
-//     )?;
-//
-//     let txns: Vec<Transaction> = signed_txns
-//         .iter()
-//         .cloned()
-//         .map(Transaction::UserTransaction)
-//         .collect();
-//
-//     let txn_outupts = starcoin_executor::execute_transactions(&statedb, txns.clone(), None)?;
-//     assert!(
-//         !txns.is_empty() || !txn_outupts.is_empty(),
-//         "Failed to execution"
-//     );
-//     let txn_output = txn_outupts.get(0).unwrap();
-//     assert_eq!(
-//         txn_output.status(),
-//         &TransactionStatus::Keep(KeptVMStatus::Executed),
-//         "Execute the deploy failed"
-//     );
-//     assert!(
-//         !txn_output.write_set().is_empty(),
-//         "Execute the deploy failed"
-//     );
-//
-//     ForceUpgrade::finish(statedb)?;
-//
-//     Ok(())
-// }
 
 #[stest::test]
 pub fn test_force_upgrade_in_openblock() -> anyhow::Result<()> {

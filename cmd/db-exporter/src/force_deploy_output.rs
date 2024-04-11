@@ -19,6 +19,7 @@ use starcoin_storage::{
 };
 use starcoin_transaction_builder::DEFAULT_MAX_GAS_AMOUNT;
 use starcoin_types::{account::Account, block::BlockNumber};
+use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_vm_types::{
     access_path::AccessPath,
     account_config::{genesis_address, ModuleUpgradeStrategy, STC_TOKEN_CODE_STR},
@@ -99,19 +100,19 @@ pub fn force_deploy_output(
     let upgrade_strategy_path =
         AccessPath::resource_access_path(genesis_address(), ModuleUpgradeStrategy::struct_tag());
 
-    let state_view = chain.get_state_view();
+    let statedb = chain.get_chain_state_db();
 
-    let before_ret = state_view
+    let before_ret = statedb
         .get_state_value(&StateKey::AccessPath(upgrade_strategy_path.clone()))?
         .unwrap();
     assert_eq!(before_ret[0], 1, "Checking the strategy not 1");
 
-    state_view
+    statedb
         .set(&upgrade_strategy_path, vec![0])
         .expect("Add resource failed");
 
     // Check state is OK
-    let after_ret = state_view
+    let after_ret = statedb
         .get_state_value(&StateKey::AccessPath(upgrade_strategy_path.clone()))?
         .unwrap();
     assert_eq!(after_ret[0], 0, "Set to upgrade strategy failed!");
@@ -120,8 +121,9 @@ pub fn force_deploy_output(
     deploy_package(
         network.chain_id(),
         package_path,
-        chain.get_state_view(),
+        chain.get_chain_state_db(),
         &account,
+        net.time_service().now_secs(),
     )?;
 
     Ok(())
@@ -130,8 +132,9 @@ pub fn force_deploy_output(
 fn deploy_package(
     chain_id: ChainId,
     package_path: PathBuf,
-    state_view: &ChainStateDB,
+    statedb: &ChainStateDB,
     account: &Account,
+    now_time_by_sec: u64,
 ) -> anyhow::Result<()> {
     let package = dev_helper::load_package_from_file(&package_path)?;
     let signed_transaction = account.sign_txn(RawUserTransaction::new(
@@ -140,12 +143,12 @@ fn deploy_package(
         TransactionPayload::Package(package),
         DEFAULT_MAX_GAS_AMOUNT,
         1,
-        3600,
+        now_time_by_sec + DEFAULT_EXPIRATION_TIME,
         chain_id,
         STC_TOKEN_CODE_STR.to_string(),
     ));
     let ret = starcoin_executor::execute_transactions(
-        state_view,
+        statedb,
         vec![Transaction::UserTransaction(signed_transaction)],
         None,
     )
