@@ -37,7 +37,7 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction},
     U256,
 };
-use starcoin_vm_runtime::force_upgrade_data_cache::{
+use starcoin_vm_runtime::force_upgrade_management::{
     get_force_upgrade_account, get_force_upgrade_block_number,
 };
 use starcoin_vm_types::access_path::AccessPath;

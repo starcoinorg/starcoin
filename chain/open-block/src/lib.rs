@@ -25,7 +25,7 @@ use starcoin_types::{
     },
     U256,
 };
-use starcoin_vm_runtime::force_upgrade_data_cache::{
+use starcoin_vm_runtime::force_upgrade_management::{
     get_force_upgrade_account, get_force_upgrade_block_number,
 };
 use starcoin_vm_types::access_path::AccessPath;
@@ -351,7 +351,7 @@ impl OpenedBlock {
         // Set strategy to 100
         self.state.set(&strategy_path, vec![100])?;
 
-        execute_block_transactions(
+        = execute_block_transactions(
             &self.state,
             vec![Transaction::UserTransaction(
                 self.extra_txn.as_ref().unwrap().clone(),
