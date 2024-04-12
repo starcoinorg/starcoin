@@ -5,15 +5,6 @@ use starcoin_vm_types::genesis_config::ChainId;
 
 pub const FORCE_UPGRADE_BLOCK_NUMBER: u64 = 17500000;
 
-pub fn is_force_upgrade_txn(
-    chain_id: &ChainId,
-    block_number: BlockNumber,
-    txn: &SignedUserTransaction,
-) -> anyhow::Result<bool> {
-    Ok(get_force_upgrade_block_number(chain_id) == block_number
-        && txn.sender() == *get_force_upgrade_account(chain_id)?.address())
-}
-
 pub fn get_force_upgrade_block_number(chain_id: &ChainId) -> u64 {
     if chain_id.is_test() {
         1
