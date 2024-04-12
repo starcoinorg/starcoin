@@ -42,40 +42,41 @@ pub fn get_force_upgrade_account(chain_id: &ChainId) -> anyhow::Result<Account> 
     }
 }
 
-#[test]
-use move_core_types::account_address::AccountAddress;
-use starcoin_types::block::BlockNumber;
-use starcoin_vm_types::transaction::SignedUserTransaction;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use move_core_types::account_address::AccountAddress;
 
-#[test]
-fn test_get_force_upgrade_account() -> anyhow::Result<()> {
-    // Main TODO(BobOng): To fixed
-    // assert_eq!(get_force_upgrade_account(&ChainId::new(1))?.address(), AccountAddress::from_hex_literal("0x2dd7136c13ed8051fb20147f373f6120"));
-    // Barnard 251
-    assert_eq!(
-        *get_force_upgrade_account(&ChainId::new(251))?.address(),
-        AccountAddress::from_hex_literal("0x0b1d07ae560c26af9bbb8264f4c7ee73")?
-    );
-    // Proxima 252
-    assert_eq!(
-        get_force_upgrade_account(&ChainId::new(252))?.address(),
-        &AccountAddress::from_hex_literal("0x0b1d07ae560c26af9bbb8264f4c7ee73")?
-    );
-    // Halley 253
-    assert_eq!(
-        get_force_upgrade_account(&ChainId::new(253))?.address(),
-        &AccountAddress::from_hex_literal("0x0b1d07ae560c26af9bbb8264f4c7ee73")?
-    );
-    // Dev 254
-    assert_eq!(
-        get_force_upgrade_account(&ChainId::new(254))?.address(),
-        &AccountAddress::from_hex_literal("0xA550C18")?
-    );
-    // Test 255
-    assert_eq!(
-        get_force_upgrade_account(&ChainId::new(254))?.address(),
-        &AccountAddress::from_hex_literal("0xA550C18")?
-    );
+    #[test]
+    fn test_get_force_upgrade_account() -> anyhow::Result<()> {
+        // Main TODO(BobOng): To fixed
+        // assert_eq!(get_force_upgrade_account(&ChainId::new(1))?.address(), AccountAddress::from_hex_literal("0x2dd7136c13ed8051fb20147f373f6120"));
+        // Barnard 251
+        assert_eq!(
+            *get_force_upgrade_account(&ChainId::new(251))?.address(),
+            AccountAddress::from_hex_literal("0x0b1d07ae560c26af9bbb8264f4c7ee73")?
+        );
+        // Proxima 252
+        assert_eq!(
+            get_force_upgrade_account(&ChainId::new(252))?.address(),
+            &AccountAddress::from_hex_literal("0x0b1d07ae560c26af9bbb8264f4c7ee73")?
+        );
+        // Halley 253
+        assert_eq!(
+            get_force_upgrade_account(&ChainId::new(253))?.address(),
+            &AccountAddress::from_hex_literal("0x0b1d07ae560c26af9bbb8264f4c7ee73")?
+        );
+        // Dev 254
+        assert_eq!(
+            get_force_upgrade_account(&ChainId::new(254))?.address(),
+            &AccountAddress::from_hex_literal("0xA550C18")?
+        );
+        // Test 255
+        assert_eq!(
+            get_force_upgrade_account(&ChainId::new(254))?.address(),
+            &AccountAddress::from_hex_literal("0xA550C18")?
+        );
 
-    Ok(())
+        Ok(())
+    }
 }

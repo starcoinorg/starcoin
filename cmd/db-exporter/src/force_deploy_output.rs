@@ -113,7 +113,7 @@ pub fn force_deploy_output(
 
     // Check state is OK
     let after_ret = statedb
-        .get_state_value(&StateKey::AccessPath(upgrade_strategy_path.clone()))?
+        .get_state_value(&StateKey::AccessPath(upgrade_strategy_path))?
         .unwrap();
     assert_eq!(after_ret[0], 0, "Set to upgrade strategy failed!");
 
@@ -138,7 +138,7 @@ fn deploy_package(
 ) -> anyhow::Result<()> {
     let package = dev_helper::load_package_from_file(&package_path)?;
     let signed_transaction = account.sign_txn(RawUserTransaction::new(
-        account.address().clone(),
+        *account.address(),
         0,
         TransactionPayload::Package(package),
         DEFAULT_MAX_GAS_AMOUNT,

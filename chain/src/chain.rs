@@ -942,7 +942,7 @@ impl BlockChain {
             Self::maybe_create_force_upgrade_extra_txn(
                 block.header.number(),
                 header.timestamp(),
-                &chain_id,
+                chain_id,
                 &statedb,
             )?,
         )?;
@@ -1263,7 +1263,7 @@ impl BlockChain {
             Self::maybe_create_force_upgrade_extra_txn(
                 block.header.number(),
                 header.timestamp(),
-                &chain_id,
+                chain_id,
                 &statedb,
             )?,
         )?;
@@ -1357,9 +1357,9 @@ impl BlockChain {
         statedb: &ChainStateDB,
     ) -> Result<Option<Transaction>> {
         Ok(
-            if block_number == get_force_upgrade_block_number(&chain_id) {
-                let account = get_force_upgrade_account(&chain_id)?;
-                let sequence_number = statedb.get_sequence_number(account.address().clone())?;
+            if block_number == get_force_upgrade_block_number(chain_id) {
+                let account = get_force_upgrade_account(chain_id)?;
+                let sequence_number = statedb.get_sequence_number(*account.address())?;
                 Some(Transaction::UserTransaction(
                     ForceUpgrade::force_deploy_txn(
                         account,

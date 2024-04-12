@@ -7,13 +7,17 @@ use starcoin_types::{
 
 use include_dir::{include_dir, Dir};
 use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
+use starcoin_types::identifier::Identifier;
+use starcoin_types::language_storage::ModuleId;
+use starcoin_vm_types::account_config::core_code_address;
+use starcoin_vm_types::transaction::ScriptFunction;
 use starcoin_vm_types::{
     account_config::STC_TOKEN_CODE_STR,
     genesis_config::ChainId,
     transaction::{Package, RawUserTransaction, TransactionPayload},
 };
 
-pub const FORCE_UPGRADE_PACKAGE: Dir = include_dir!("package");
+pub const FORCE_UPGRADE_PACKAGE: Dir = include_dir!("../../vm/stdlib/compiled/12/11-12");
 
 pub struct ForceUpgrade;
 
@@ -35,14 +39,26 @@ impl ForceUpgrade {
             })
             .ok_or_else(|| format_err!("Can not find upgrade package {}", package_file))?;
 
+        let init_script = ScriptFunction::new(
+            ModuleId::new(
+                core_code_address(),
+                Identifier::new("StdlibUpgradeScripts").unwrap(),
+            ),
+            Identifier::new("upgrade_from_v11_to_v12").unwrap(),
+            vec![],
+            vec![],
+        );
+
+        assert_eq!(package.init_script().unwrap(), &init_script);
+
         Ok(account.sign_txn(RawUserTransaction::new(
-            account.address().clone(),
+            *account.address(),
             sequence_number,
             TransactionPayload::Package(package),
             DEFAULT_MAX_GAS_AMOUNT,
             1,
             block_timestamp + DEFAULT_EXPIRATION_TIME,
-            chain_id.clone(),
+            *chain_id,
             STC_TOKEN_CODE_STR.to_string(),
         )))
     }

@@ -1,7 +1,7 @@
 use anyhow::format_err;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::verifier::BasicVerifier;
-use starcoin_chain_api::{ChainReader, ChainWriter};
+use starcoin_chain_api::ChainReader;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::keygen::KeyGen;
@@ -21,7 +21,7 @@ use std::sync::Arc;
 pub fn test_force_upgrade_in_openblock() -> anyhow::Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
     let mut chain = test_helper::gen_blockchain_for_test(config.net())?;
-    let header = chain.current_header().clone();
+    let header = chain.current_header();
 
     let block_gas_limit = 10000000;
 
@@ -44,12 +44,11 @@ pub fn test_force_upgrade_in_openblock() -> anyhow::Result<()> {
         )?
     };
 
+    let statedb = chain.get_chain_state_db();
     {
-        let statedb = chain.get_chain_state_db();
-
         let inited_balance = 1000000000000;
 
-        /// Add stc to black accounts from black list v1
+        // Add stc to black accounts from black list v1
         let black_user_1 = AccountData::with_account(
             force_upgrade_management::create_account(
                 "7e8a25de99416dd5a96fb2a804da7f2f93ff0ece42bfe91572bd2312be812ce5",
@@ -70,8 +69,8 @@ pub fn test_force_upgrade_in_openblock() -> anyhow::Result<()> {
         statedb.apply_write_set(black_user_2.to_writeset())?;
     }
 
-    // let before_version = get_stdlib_version(statedb)?;
-    // assert_eq!(before_version, 11, "Upgrade failed, got wrong number!");
+    let before_version = get_stdlib_version(statedb)?;
+    assert_eq!(before_version, 11, "Upgrade failed, got wrong number!");
 
     let (_receive_prikey, receive_public_key) = KeyGen::from_os_rng().generate_keypair();
     let receiver = account_address::from_public_key(&receive_public_key);

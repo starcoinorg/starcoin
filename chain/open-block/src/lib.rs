@@ -90,7 +90,7 @@ impl OpenedBlock {
 
         let extra_txn = if block_meta.number() == get_force_upgrade_block_number(&chain_id) {
             let account = get_force_upgrade_account(&chain_id)?;
-            let seqence_number = chain_state.get_sequence_number(account.address().clone())?;
+            let seqence_number = chain_state.get_sequence_number(*account.address())?;
             Some(ForceUpgrade::force_deploy_txn(
                 account,
                 seqence_number + 1,
@@ -352,6 +352,10 @@ impl OpenedBlock {
         // Set strategy to 1
         self.state.set(&strategy_path, vec![1])?;
         Ok(())
+    }
+
+    pub fn extra_txn(&self) -> Option<&SignedUserTransaction> {
+        self.extra_txn.as_ref()
     }
 }
 
