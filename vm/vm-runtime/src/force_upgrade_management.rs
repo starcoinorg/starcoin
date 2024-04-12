@@ -19,7 +19,7 @@ pub fn get_force_upgrade_block_number(chain_id: &ChainId) -> u64 {
     }
 }
 
-fn create_account(private_hex: &str) -> anyhow::Result<Account> {
+pub fn create_account(private_hex: &str) -> anyhow::Result<Account> {
     let bytes = hex::decode(private_hex)?;
     let private_key = Ed25519PrivateKey::try_from(&bytes[..])?;
     let public_key = Ed25519PublicKey::from(&private_key);
