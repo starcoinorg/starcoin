@@ -215,7 +215,7 @@ fn test_stdlib_upgrade() -> Result<()> {
                 &alice,
                 &chain_state,
                 &net,
-                vote_language_version(&net, 4),
+                vote_language_version(&net, 6),
                 on_chain_config_type_tag(MoveLanguageVersion::type_tag()),
                 execute_script_on_chain_config(&net, MoveLanguageVersion::type_tag(), proposal_id),
                 proposal_id,
