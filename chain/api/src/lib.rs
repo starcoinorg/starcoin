@@ -114,3 +114,31 @@ impl TransactionInfoWithProof {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::FORCE_UPGRADE_PACKAGE;
+    use anyhow::{format_err, Result};
+    use starcoin_vm_types::transaction::Package;
+
+    #[test]
+    fn test_force_upgrade_package_init_function() -> Result<()> {
+        let package_file = "stdlib.blob".to_string();
+        let package = FORCE_UPGRADE_PACKAGE
+            .get_file(package_file.clone())
+            .map(|file| {
+                bcs_ext::from_bytes::<Package>(file.contents())
+                    .expect("Decode package should success")
+            })
+            .ok_or_else(|| format_err!("Can not find upgrade package {}", package_file))?;
+        let init_fun = if let Some(init_script) = package.init_script() {
+            format!("{}::{}", init_script.module(), init_script.function())
+        } else {
+            "".to_owned()
+        };
+        let init_str =
+            "0x00000000000000000000000000000001::StdlibUpgradeScripts::upgrade_from_v11_to_v12";
+        assert_eq!(init_fun, init_str);
+        Ok(())
+    }
+}

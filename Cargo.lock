@@ -9297,6 +9297,7 @@ version = "1.13.10"
 dependencies = [
  "anyhow",
  "async-trait",
+ "bcs-ext",
  "futures 0.3.26",
  "include_dir",
  "network-api",
