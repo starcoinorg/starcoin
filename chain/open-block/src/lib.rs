@@ -300,17 +300,17 @@ impl OpenedBlock {
     }
 
     /// Construct a block template for mining.
-    pub fn finalize(self) -> Result<BlockTemplate> {
+    pub fn finalize(&mut self) -> Result<BlockTemplate> {
         self.execute_extra_txn()?;
 
         let accumulator_root = self.txn_accumulator.root_hash();
         let state_root = self.state.state_root();
         let uncles = if !self.uncles.is_empty() {
-            Some(self.uncles)
+            Some(self.uncles.clone())
         } else {
             None
         };
-        let body = BlockBody::new(self.included_user_txns, uncles);
+        let body = BlockBody::new(self.included_user_txns.clone(), uncles);
         let block_template = BlockTemplate::new(
             self.previous_block_info
                 .block_accumulator_info
@@ -322,7 +322,7 @@ impl OpenedBlock {
             self.chain_id,
             self.difficulty,
             self.strategy,
-            self.block_meta,
+            self.block_meta.clone(),
         );
         Ok(block_template)
     }
@@ -330,18 +330,10 @@ impl OpenedBlock {
     /// The logic for handling the forced upgrade will be processed.
     /// First, set the account policy in `0x1::PackageTxnManager` to 100,
     /// Second, after the contract deployment is successful, revert it back.
-    fn execute_extra_txn(&self) -> Result<()> {
+    fn execute_extra_txn(&mut self) -> Result<()> {
         if self.extra_txn.is_none() {
             return Ok(());
         }
-
-        let gas_left = self.gas_limit.checked_sub(self.gas_used).ok_or_else(|| {
-            format_err!(
-                "block gas_used {} exceed block gas_limit:{}",
-                self.gas_used,
-                self.gas_limit
-            )
-        })?;
 
         let strategy_path = AccessPath::resource_access_path(
             genesis_address(),
@@ -350,19 +342,15 @@ impl OpenedBlock {
 
         // Set strategy to 100
         self.state.set(&strategy_path, vec![100])?;
-
-        = execute_block_transactions(
-            &self.state,
-            vec![Transaction::UserTransaction(
-                self.extra_txn.as_ref().unwrap().clone(),
-            )],
-            gas_left,
-            self.vm_metrics.clone(),
-        )?;
+        let txns = vec![self.extra_txn.as_ref().unwrap().clone()];
+        let exclued_txn = self.push_txns(txns)?;
+        assert!(
+            exclued_txn.discarded_txns.is_empty() || exclued_txn.untouched_txns.is_empty(),
+            "Failed to execute extra txn"
+        );
 
         // Set strategy to 1
         self.state.set(&strategy_path, vec![1])?;
-
         Ok(())
     }
 }
