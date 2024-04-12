@@ -3,7 +3,7 @@
 
 use anyhow::{bail, format_err, Result};
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
-use starcoin_chain_api::{ExcludedTxns, MAIN_FORCE_UPGRADE_BLOCK_MAP};
+use starcoin_chain_api::{ExcludedTxns, FORCE_UPGRADE_BLOCK_MAP};
 use starcoin_crypto::HashValue;
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
 use starcoin_logger::prelude::*;
@@ -95,9 +95,9 @@ impl OpenedBlock {
             vm_metrics,
             extra_set: WriteSet::default(),
         };
-        if opened_block.chain_id.is_main() {
-            if let Some(write_set) = MAIN_FORCE_UPGRADE_BLOCK_MAP.get(&opened_block.block_number())
-            {
+        // XXX FIXME YSG REFACTOR
+        if opened_block.chain_id.is_main() || opened_block.chain_id.is_halley() {
+            if let Some(write_set) = FORCE_UPGRADE_BLOCK_MAP.get(&opened_block.block_number()) {
                 opened_block.extra_set = write_set.clone();
             }
         }

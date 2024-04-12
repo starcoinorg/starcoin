@@ -12,7 +12,7 @@ use starcoin_accumulator::{
 use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
     ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
-    MAIN_FORCE_UPGRADE_BLOCK_MAP,
+    FORCE_UPGRADE_BLOCK_MAP,
 };
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
@@ -928,9 +928,15 @@ impl BlockChain {
             t
         };
         watch(CHAIN_WATCH_NAME, "n21");
+        // XXX FIXME YSG REFACTOR
         let mut extra_set = WriteSet::default();
-        if chain_id.is_main() {
-            if let Some(write_set) = MAIN_FORCE_UPGRADE_BLOCK_MAP.get(&block.header().number()) {
+        if chain_id.is_main() || chain_id.is_halley() {
+            if let Some(write_set) = FORCE_UPGRADE_BLOCK_MAP.get(&block.header().number()) {
+                info!(
+                    "force upgrade {} block number {}",
+                    chain_id,
+                    block.header().number()
+                );
                 extra_set = write_set.clone();
             }
         }
@@ -1254,8 +1260,8 @@ impl BlockChain {
 
         // XXX FIXME YSG REFACTOR
         let mut extra_set = WriteSet::default();
-        if chain_id.is_main() {
-            if let Some(write_set) = MAIN_FORCE_UPGRADE_BLOCK_MAP.get(&block.header().number()) {
+        if chain_id.is_main() || chain_id.is_halley() {
+            if let Some(write_set) = FORCE_UPGRADE_BLOCK_MAP.get(&block.header().number()) {
                 extra_set = write_set.clone();
             }
         }

@@ -54,8 +54,11 @@ pub fn force_deploy_output(
     _block_number: Option<BlockNumber>,
 ) -> anyhow::Result<()> {
     ::starcoin_logger::init();
-    if net != BuiltinNetworkID::Main && net != BuiltinNetworkID::Barnard {
-        eprintln!("network only support main or barnard");
+    if net != BuiltinNetworkID::Main
+        && net != BuiltinNetworkID::Barnard
+        && net != BuiltinNetworkID::Halley
+    {
+        eprintln!("network only support main, barnard, halley");
         return Ok(());
     }
     let net = ChainNetwork::new_builtin(net);
@@ -88,8 +91,17 @@ pub fn force_deploy_output(
     let addr = AccountAddress::from_hex_literal("0xbe361d5237428276e86a9f5d50726e6c")?;
     let seq_num = statedb.get_sequence_number(addr)?;
     // let time = net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME;
-    // main block num 16912223
-    let time = 1710453679;
+
+    let time = if net == ChainNetwork::from(BuiltinNetworkID::Main) {
+        // main block num 16912223
+        1710453679
+    } else if net == ChainNetwork::from(BuiltinNetworkID::Barnard) {
+        // main block num 16912223
+        1710453679
+    } else {
+        // halley block num 177
+        1712936669
+    };
     println!("time {}", time);
     let txn = account.sign_txn(RawUserTransaction::new(
         addr,
