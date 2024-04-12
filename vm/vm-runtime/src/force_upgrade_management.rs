@@ -5,6 +5,15 @@ use starcoin_vm_types::genesis_config::ChainId;
 
 pub const FORCE_UPGRADE_BLOCK_NUMBER: u64 = 17500000;
 
+pub fn is_force_upgrade_txn(
+    chain_id: &ChainId,
+    block_number: BlockNumber,
+    txn: &SignedUserTransaction,
+) -> anyhow::Result<bool> {
+    Ok(get_force_upgrade_block_number(chain_id) == block_number
+        && txn.sender() == *get_force_upgrade_account(chain_id)?.address())
+}
+
 pub fn get_force_upgrade_block_number(chain_id: &ChainId) -> u64 {
     if chain_id.is_test() {
         1
@@ -44,6 +53,8 @@ pub fn get_force_upgrade_account(chain_id: &ChainId) -> anyhow::Result<Account> 
 
 #[test]
 use move_core_types::account_address::AccountAddress;
+use starcoin_types::block::BlockNumber;
+use starcoin_vm_types::transaction::SignedUserTransaction;
 
 #[test]
 fn test_get_force_upgrade_account() -> anyhow::Result<()> {
