@@ -9,7 +9,11 @@ use starcoin_types::error::ExecutorResult;
 use starcoin_types::transaction::TransactionStatus;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_vm_runtime::metrics::VMMetrics;
+use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::contract_event::ContractEvent;
+use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::on_chain_config::Version;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::write_set::WriteSet;
 use std::collections::BTreeMap;
@@ -89,6 +93,12 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
     if !extra_set.is_empty() {
         chain_state
             .apply_write_set(extra_set)
+            .map_err(BlockExecutorError::BlockChainStateErr)?;
+        let version_path =
+            AccessPath::resource_access_path(genesis_address(), Version::struct_tag());
+        let version = Version { major: 12 };
+        chain_state
+            .set(&version_path, bcs_ext::to_bytes(&version).unwrap())
             .map_err(BlockExecutorError::BlockChainStateErr)?;
         chain_state
             .commit()
