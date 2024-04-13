@@ -14,6 +14,7 @@ use starcoin_storage::Store;
 use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::genesis_config::{ChainId, ConsensusStrategy};
+use starcoin_types::identifier::Identifier;
 use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_types::{
     account_address::AccountAddress,
@@ -31,6 +32,7 @@ use starcoin_vm_runtime::force_upgrade_management::{
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::{genesis_address, ModuleUpgradeStrategy};
 use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::on_chain_config;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::{StateReaderExt, StateView};
 use std::{convert::TryInto, sync::Arc};
@@ -281,6 +283,18 @@ impl OpenedBlock {
         self.state
             .apply_write_set(write_set)
             .map_err(BlockExecutorError::BlockChainStateErr)?;
+        if is_extra_txn {
+            // update stdlib version to 12 directly
+            let version_path = on_chain_config::access_path_for_config(
+                genesis_address(),
+                Identifier::new("Version").unwrap(),
+                Identifier::new("Version").unwrap(),
+                vec![],
+            );
+            let version = on_chain_config::Version { major: 12 };
+            self.state
+                .set(&version_path, bcs_ext::to_bytes(&version)?)?;
+        }
         let txn_state_root = self
             .state
             .commit()

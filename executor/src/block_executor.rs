@@ -10,6 +10,7 @@ use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::error::BlockExecutorError;
 use starcoin_types::error::ExecutorResult;
+use starcoin_types::identifier::Identifier;
 use starcoin_types::transaction::TransactionStatus;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_vm_runtime::force_upgrade_management::{
@@ -20,6 +21,7 @@ use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::{genesis_address, ModuleUpgradeStrategy};
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::on_chain_config;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateReaderExt;
 use starcoin_vm_types::write_set::WriteSet;
@@ -174,6 +176,17 @@ fn execute_extra_txn<S: ChainStateReader + ChainStateWriter>(
             chain_state
                 .apply_write_set(write_set.clone())
                 .map_err(BlockExecutorError::BlockChainStateErr)?;
+            {
+                // update stdlib version to 12 directly
+                let version_path = on_chain_config::access_path_for_config(
+                    genesis_address(),
+                    Identifier::new("Version").unwrap(),
+                    Identifier::new("Version").unwrap(),
+                    vec![],
+                );
+                let version = on_chain_config::Version { major: 12 };
+                chain_state.set(&version_path, bcs_ext::to_bytes(&version)?)?;
+            }
 
             let txn_state_root = chain_state
                 .commit()

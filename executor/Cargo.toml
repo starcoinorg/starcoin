@@ -10,6 +10,7 @@ starcoin-vm-runtime = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-force-upgrade = { workspace = true }
 serde = { default-features = false, workspace = true }
+bcs-ext = { workspace = true }
 
 [dev-dependencies]
 bcs-ext = { package = "bcs-ext", workspace = true }
