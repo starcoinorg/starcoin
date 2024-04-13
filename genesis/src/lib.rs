@@ -385,7 +385,7 @@ mod tests {
     use starcoin_vm_types::on_chain_config::GasSchedule;
     use starcoin_vm_types::on_chain_config::{ConsensusConfig, Version};
     use starcoin_vm_types::on_chain_config::{
-        TransactionPublishOption, G_GAS_SCHEDULE_GAS_SCHEDULE, G_GAS_SCHEDULE_IDENTIFIER
+        TransactionPublishOption, G_GAS_SCHEDULE_GAS_SCHEDULE, G_GAS_SCHEDULE_IDENTIFIER,
     };
     use starcoin_vm_types::on_chain_resource::Epoch;
 
