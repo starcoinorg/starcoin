@@ -404,7 +404,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
 
         txns.insert(0, Transaction::BlockMetadata(block_meta));
         let executed_data =
-            starcoin_executor::block_execute(&chain_state, txns, block_gas_limit, None, None)?;
+            starcoin_executor::block_execute(&chain_state, txns, block_gas_limit, None)?;
         let txn_infos = executed_data.txn_infos;
 
         // all user txns can be included
@@ -451,7 +451,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
             .collect();
         txns.insert(0, Transaction::BlockMetadata(block_meta2));
         let txn_infos =
-            starcoin_executor::block_execute(&chain_state, txns, max_block_gas_limit, None, None)?
+            starcoin_executor::block_execute(&chain_state, txns, max_block_gas_limit, None)?
                 .txn_infos;
 
         // not all user txns can be included

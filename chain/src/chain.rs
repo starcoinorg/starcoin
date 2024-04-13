@@ -931,7 +931,6 @@ impl BlockChain {
             transactions.clone(),
             epoch.block_gas_limit(),
             vm_metrics,
-            None,
         )?;
         watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;
@@ -1252,7 +1251,6 @@ impl BlockChain {
             transactions.clone(),
             epoch.block_gas_limit(),
             vm_metrics,
-            None,
         )?;
         watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;

@@ -51,8 +51,6 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
     txns: Vec<Transaction>,
     block_gas_limit: u64,
     vm_metrics: Option<VMMetrics>,
-    // fixme: remove me
-    extra_txn: Option<Transaction>,
 ) -> ExecutorResult<BlockExecutedData> {
     let txn_outputs = execute_block_transactions(
         chain_state,
@@ -102,10 +100,14 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
         };
     }
 
-    assert_eq!(extra_txn, None);
     if let Some(extra_txn) = create_force_upgrade_extra_txn(chain_state)
         .map_err(BlockExecutorError::BlockChainStateErr)?
     {
+        // !!! commit suicide if any error or exception happens !!!
+        if chain_state.get_chain_id().unwrap().is_main() {
+            // currently the main network has been suspended, no txns should be here.
+            assert_eq!(executed_data, BlockExecutedData::default())
+        }
         execute_extra_txn(chain_state, extra_txn, vm_metrics, &mut executed_data)
             .expect("extra txn must be executed successfully");
     }
@@ -142,7 +144,7 @@ fn create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
     )
 }
 
-// fixme:  OpenedBlock
+// todo: check the execute_extra_txn in OpenedBlock, and merge with it
 fn execute_extra_txn<S: ChainStateReader + ChainStateWriter>(
     chain_state: &S,
     txn: Transaction,
