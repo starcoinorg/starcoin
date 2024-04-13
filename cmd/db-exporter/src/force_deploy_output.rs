@@ -61,15 +61,16 @@ pub fn force_deploy_output(
         eprintln!("network only support main, barnard, halley");
         return Ok(());
     }
-    let net = ChainNetwork::new_builtin(net);
+    let network = ChainNetwork::new_builtin(net);
     let db_storage = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
         db_storage,
     ))?);
-    let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
+    let (chain_info, _) =
+        Genesis::init_and_check_storage(&network, storage.clone(), to_dir.as_ref())?;
     let _chain = BlockChain::new(
-        net.time_service(),
+        network.time_service(),
         chain_info.head().id(),
         storage.clone(),
         None,
@@ -92,15 +93,19 @@ pub fn force_deploy_output(
     let seq_num = statedb.get_sequence_number(addr)?;
     // let time = net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME;
 
-    let time = if net == ChainNetwork::from(BuiltinNetworkID::Main) {
-        // main block num 16912223
-        1710453679
-    } else if net == ChainNetwork::from(BuiltinNetworkID::Barnard) {
-        // main block num 16912223
-        1710453679
-    } else {
-        // halley block num 177
-        1712936669
+    let time = match net {
+        BuiltinNetworkID::Main => {
+            // main block num 16912223
+            1710453679
+        }
+        BuiltinNetworkID::Barnard => {
+            // main block num 16912223
+            1710453679
+        }
+        _ => {
+            // halley block num 177
+            1712936669
+        }
     };
     println!("time {}", time);
     let txn = account.sign_txn(RawUserTransaction::new(
