@@ -31,7 +31,7 @@ pub use self::{
         instruction_gas_schedule_v1, instruction_gas_schedule_v2, native_gas_schedule_v1,
         native_gas_schedule_v2, native_gas_schedule_v3, native_gas_schedule_v4,
         txn_gas_schedule_test, txn_gas_schedule_v1, txn_gas_schedule_v2, txn_gas_schedule_v3,
-        GasSchedule, G_GAS_SCHEDULE_GAS_SCHEDULE, G_GAS_SCHEDULE_IDENTIFIER,
+        GasSchedule,G_GAS_SCHEDULE_GAS_SCHEDULE, G_GAS_SCHEDULE_IDENTIFIER,
     },
     genesis_gas_schedule::{
         instruction_table_v1, instruction_table_v2, native_table_v1, native_table_v2,
