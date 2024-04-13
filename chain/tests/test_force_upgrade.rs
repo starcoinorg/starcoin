@@ -1,18 +1,11 @@
 use anyhow::format_err;
-use starcoin_account_api::AccountInfo;
-use starcoin_chain::verifier::BasicVerifier;
-use starcoin_chain_api::ChainReader;
+use starcoin_chain_api::{ChainReader, ChainWriter};
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::keygen::KeyGen;
-use starcoin_open_block::OpenedBlock;
-use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
 use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
-use starcoin_types::account::AccountData;
-use starcoin_types::{account_address, U256};
-use starcoin_vm_runtime::force_upgrade_management;
-use starcoin_vm_types::account_config::STC_TOKEN_CODE_STR;
+use starcoin_types::account_address;
 use starcoin_vm_types::on_chain_config::Version;
 use starcoin_vm_types::{account_config, state_view::StateReaderExt};
 use std::sync::Arc;
@@ -20,8 +13,9 @@ use std::sync::Arc;
 #[stest::test]
 pub fn test_force_upgrade_in_openblock() -> anyhow::Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
-    let mut chain = test_helper::gen_blockchain_for_test(config.net())?;
+    let chain = test_helper::gen_blockchain_for_test(config.net())?;
     let header = chain.current_header();
+    let mut chain_to_apply = chain.fork(header.id()).unwrap();
 
     let block_gas_limit = 10000000;
 
@@ -29,45 +23,45 @@ pub fn test_force_upgrade_in_openblock() -> anyhow::Result<()> {
     let association_sequence_num =
         account_reader.get_sequence_number(account_config::association_address())?;
 
-    let mut opened_block = {
-        let miner_account = AccountInfo::random();
-        OpenedBlock::new(
-            chain.get_storage(),
-            header,
-            block_gas_limit,
-            miner_account.address,
-            config.net().time_service().now_millis(),
-            vec![],
-            U256::from(1024u64),
-            chain.consensus(),
-            None,
-        )?
-    };
+    //let mut opened_block = {
+    //    let miner_account = AccountInfo::random();
+    //    OpenedBlock::new(
+    //        chain.get_storage(),
+    //        header,
+    //        block_gas_limit,
+    //        miner_account.address,
+    //        config.net().time_service().now_millis(),
+    //        vec![],
+    //        U256::from(1024u64),
+    //        chain.consensus(),
+    //        None,
+    //    )?
+    //};
 
     let statedb = chain.get_chain_state_db();
-    {
-        let inited_balance = 1000000000000;
+    //{
+    //    let inited_balance = 1000000000000;
 
-        // Add stc to black accounts from black list v1
-        let black_user_1 = AccountData::with_account(
-            force_upgrade_management::create_account(
-                "7e8a25de99416dd5a96fb2a804da7f2f93ff0ece42bfe91572bd2312be812ce5",
-            )?,
-            inited_balance,
-            STC_TOKEN_CODE_STR,
-            0,
-        );
-        let black_user_2 = AccountData::with_account(
-            force_upgrade_management::create_account(
-                "005520f06177cd358bd2de4c6783eeb9608216d1fda9e91e50020a4ac261afed",
-            )?,
-            inited_balance,
-            STC_TOKEN_CODE_STR,
-            0,
-        );
-        statedb.apply_write_set(black_user_1.to_writeset())?;
-        statedb.apply_write_set(black_user_2.to_writeset())?;
-    }
+    //    // Add stc to black accounts from black list v1
+    //    let black_user_1 = AccountData::with_account(
+    //        force_upgrade_management::create_account(
+    //            "7e8a25de99416dd5a96fb2a804da7f2f93ff0ece42bfe91572bd2312be812ce5",
+    //        )?,
+    //        inited_balance,
+    //        STC_TOKEN_CODE_STR,
+    //        0,
+    //    );
+    //    let black_user_2 = AccountData::with_account(
+    //        force_upgrade_management::create_account(
+    //            "005520f06177cd358bd2de4c6783eeb9608216d1fda9e91e50020a4ac261afed",
+    //        )?,
+    //        inited_balance,
+    //        STC_TOKEN_CODE_STR,
+    //        0,
+    //    );
+    //    statedb.apply_write_set(black_user_1.to_writeset())?;
+    //    statedb.apply_write_set(black_user_2.to_writeset())?;
+    //}
 
     let before_version = get_stdlib_version(statedb)?;
     assert_eq!(before_version, 11, "Upgrade failed, got wrong number!");
@@ -83,27 +77,45 @@ pub fn test_force_upgrade_in_openblock() -> anyhow::Result<()> {
     )
     .try_into()?;
 
-    let excluded = opened_block.push_txns(vec![txn1])?;
+    let (block_template, excluded) = chain
+        .create_block_template(
+            account_config::association_address(),
+            Some(header.id()),
+            vec![txn1],
+            vec![],
+            Some(block_gas_limit),
+        )
+        .unwrap();
+
     assert_eq!(excluded.discarded_txns.len(), 0);
     assert_eq!(excluded.untouched_txns.len(), 0);
 
-    let block_template = opened_block.finalize()?;
     let block = chain
         .consensus()
         .create_block(block_template, chain.time_service().as_ref())?;
 
-    chain.apply_with_verifier::<BasicVerifier>(block)?;
+    chain_to_apply.apply(block)?;
 
     // // Check on chain config for v12
     // let after_version = get_stdlib_version(statedb)?;
     // assert_eq!(after_version, 12, "Upgrade failed, got wrong number!");
     //
-    // // Check black list balance
-    // let balance_1 = statedb.get_balance(black_user_1.address().clone())?.unwrap();
-    // assert_eq!(balance_1, 0, "Upgrade Faild, Balance of black list account not 0");
-    //
-    // let balance_2 = statedb.get_balance(black_user_1.address().clone())?.unwrap();
-    // assert_eq!(balance_2, 0, "Upgrade Faild, Balance of black list account not 0");
+    // Check black list balance
+    //let balance_1 = statedb
+    //    .get_balance(black_user_1.address().clone())?
+    //    .unwrap();
+    //assert_eq!(
+    //    balance_1, 0,
+    //    "Upgrade Faild, Balance of black list account not 0"
+    //);
+
+    //let balance_2 = statedb
+    //    .get_balance(black_user_1.address().clone())?
+    //    .unwrap();
+    //assert_eq!(
+    //    balance_2, 0,
+    //    "Upgrade Faild, Balance of black list account not 0"
+    //);
 
     Ok(())
 }

@@ -1,5 +1,7 @@
-use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2
 
+use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_types::account::Account;
 use starcoin_vm_types::genesis_config::ChainId;
 

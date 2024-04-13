@@ -17,7 +17,6 @@ use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_executor::{BlockExecutedData, VMMetrics};
-use starcoin_force_upgrade::ForceUpgrade;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
@@ -37,14 +36,11 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction},
     U256,
 };
-use starcoin_vm_runtime::force_upgrade_management::{
-    get_force_upgrade_account, get_force_upgrade_block_number,
-};
+use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_vm_types::on_chain_resource::Epoch;
-use starcoin_vm_types::state_view::StateReaderExt;
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
@@ -939,12 +935,7 @@ impl BlockChain {
             transactions.clone(),
             epoch.block_gas_limit(),
             vm_metrics,
-            Self::maybe_create_force_upgrade_extra_txn(
-                block.header.number(),
-                header.timestamp(),
-                chain_id,
-                &statedb,
-            )?,
+            None,
         )?;
         watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;
@@ -966,7 +957,13 @@ impl BlockChain {
 
         verify_block!(
             VerifyBlockField::State,
-            vec_transaction_info.len() == transactions.len(),
+            {
+                if header.number() == get_force_upgrade_block_number(chain_id) {
+                    vec_transaction_info.len() == transactions.len().checked_add(1).unwrap()
+                } else {
+                    vec_transaction_info.len() == transactions.len()
+                }
+            },
             "invalid txn num in the block"
         );
 
@@ -1228,7 +1225,6 @@ impl BlockChain {
         epoch: &Epoch,
         parent_status: Option<ChainStatus>,
         block: Block,
-        chain_id: &ChainId,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
         let header = block.header();
@@ -1260,12 +1256,7 @@ impl BlockChain {
             transactions.clone(),
             epoch.block_gas_limit(),
             vm_metrics,
-            Self::maybe_create_force_upgrade_extra_txn(
-                block.header.number(),
-                header.timestamp(),
-                chain_id,
-                &statedb,
-            )?,
+            None,
         )?;
         watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;
@@ -1348,30 +1339,6 @@ impl BlockChain {
 
     pub fn get_block_accumulator(&self) -> &MerkleAccumulator {
         &self.block_accumulator
-    }
-
-    fn maybe_create_force_upgrade_extra_txn(
-        block_number: BlockNumber,
-        block_timestamp: u64,
-        chain_id: &ChainId,
-        statedb: &ChainStateDB,
-    ) -> Result<Option<Transaction>> {
-        Ok(
-            if block_number == get_force_upgrade_block_number(chain_id) {
-                let account = get_force_upgrade_account(chain_id)?;
-                let sequence_number = statedb.get_sequence_number(*account.address())?;
-                Some(Transaction::UserTransaction(
-                    ForceUpgrade::force_deploy_txn(
-                        account,
-                        sequence_number,
-                        block_timestamp / 1000,
-                        chain_id,
-                    )?,
-                ))
-            } else {
-                None
-            },
-        )
     }
 }
 
@@ -1643,7 +1610,6 @@ impl ChainReader for BlockChain {
             &self.epoch,
             Some(self.status.status.clone()),
             verified_block.0,
-            &self.info().chain_id(),
             self.vm_metrics.clone(),
         )
     }

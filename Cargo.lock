@@ -9609,6 +9609,7 @@ dependencies = [
  "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-dev",
+ "starcoin-force-upgrade",
  "starcoin-logger",
  "starcoin-resource-viewer",
  "starcoin-state-api",
