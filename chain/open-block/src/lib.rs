@@ -10,8 +10,8 @@ use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
+use starcoin_types::identifier::Identifier;
 use starcoin_types::{
-    access_path::AccessPath,
     account_address::AccountAddress,
     account_config::genesis_address,
     block::BlockNumber,
@@ -26,7 +26,8 @@ use starcoin_types::{
     write_set::WriteSet,
     U256,
 };
-use starcoin_vm_types::{move_resource::MoveResource, on_chain_config::Version};
+use starcoin_vm_types::on_chain_config::access_path_for_config;
+use starcoin_vm_types::on_chain_config::Version;
 use std::{convert::TryInto, sync::Arc};
 
 pub struct OpenedBlock {
@@ -288,8 +289,12 @@ impl OpenedBlock {
             self.state
                 .apply_write_set(self.extra_set)
                 .map_err(BlockExecutorError::BlockChainStateErr)?;
-            let version_path =
-                AccessPath::resource_access_path(genesis_address(), Version::struct_tag());
+            let version_path = access_path_for_config(
+                genesis_address(),
+                Identifier::new("Version").unwrap(),
+                Identifier::new("Version").unwrap(),
+                vec![],
+            );
             let version = Version { major: 12 };
             self.state
                 .set(&version_path, bcs_ext::to_bytes(&version)?)?;

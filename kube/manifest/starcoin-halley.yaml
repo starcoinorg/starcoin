@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: starcoin/starcoin:master
+        image: ghcr.io/starcoinorg/starcoin:halley7_force_upgrade_v11
         imagePullPolicy: Always
         command:
           - bash
