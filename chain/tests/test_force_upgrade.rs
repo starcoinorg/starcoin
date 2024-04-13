@@ -2,120 +2,152 @@ use anyhow::format_err;
 use starcoin_chain_api::{ChainReader, ChainWriter};
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
-use starcoin_crypto::keygen::KeyGen;
 use starcoin_statedb::ChainStateDB;
 use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
-use starcoin_types::account_address;
+use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::on_chain_config::Version;
 use starcoin_vm_types::{account_config, state_view::StateReaderExt};
+use std::str::FromStr;
 use std::sync::Arc;
+use test_helper::executor::get_balance;
 
 #[stest::test]
-pub fn test_force_upgrade_in_openblock() -> anyhow::Result<()> {
+pub fn test_force_upgrade_1() -> anyhow::Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
-    let chain = test_helper::gen_blockchain_for_test(config.net())?;
-    let header = chain.current_header();
-    let mut chain_to_apply = chain.fork(header.id()).unwrap();
-
+    let mut miner = test_helper::gen_blockchain_for_test(config.net())?;
     let block_gas_limit = 10000000;
-
-    let account_reader = chain.chain_state_reader();
+    let initial_balance = 1000000000000;
+    let account_reader = miner.chain_state_reader();
     let association_sequence_num =
         account_reader.get_sequence_number(account_config::association_address())?;
+    let miner_db = miner.chain_state();
 
-    //let mut opened_block = {
-    //    let miner_account = AccountInfo::random();
-    //    OpenedBlock::new(
-    //        chain.get_storage(),
-    //        header,
-    //        block_gas_limit,
-    //        miner_account.address,
-    //        config.net().time_service().now_millis(),
-    //        vec![],
-    //        U256::from(1024u64),
-    //        chain.consensus(),
-    //        None,
-    //    )?
-    //};
+    let current_version = get_stdlib_version(miner_db)?;
+    assert_eq!(current_version, 11);
 
-    let statedb = chain.get_chain_state_db();
-    //{
-    //    let inited_balance = 1000000000000;
-
-    //    // Add stc to black accounts from black list v1
-    //    let black_user_1 = AccountData::with_account(
-    //        force_upgrade_management::create_account(
-    //            "7e8a25de99416dd5a96fb2a804da7f2f93ff0ece42bfe91572bd2312be812ce5",
-    //        )?,
-    //        inited_balance,
-    //        STC_TOKEN_CODE_STR,
-    //        0,
-    //    );
-    //    let black_user_2 = AccountData::with_account(
-    //        force_upgrade_management::create_account(
-    //            "005520f06177cd358bd2de4c6783eeb9608216d1fda9e91e50020a4ac261afed",
-    //        )?,
-    //        inited_balance,
-    //        STC_TOKEN_CODE_STR,
-    //        0,
-    //    );
-    //    statedb.apply_write_set(black_user_1.to_writeset())?;
-    //    statedb.apply_write_set(black_user_2.to_writeset())?;
-    //}
-
-    let before_version = get_stdlib_version(statedb)?;
-    assert_eq!(before_version, 11, "Upgrade failed, got wrong number!");
-
-    let (_receive_prikey, receive_public_key) = KeyGen::from_os_rng().generate_keypair();
-    let receiver = account_address::from_public_key(&receive_public_key);
-    let txn1 = build_transfer_from_association(
-        receiver,
-        association_sequence_num,
-        50_000_000,
-        config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-        config.net(),
-    )
-    .try_into()?;
-
-    let (block_template, excluded) = chain
-        .create_block_template(
-            account_config::association_address(),
-            Some(header.id()),
-            vec![txn1],
-            vec![],
-            Some(block_gas_limit),
+    // create two txns to deposit some tokens to two black addresses
+    // and a third random address which should not in black address list.
+    let (black1, txn1, black2, txn2, rand3, txn3) = {
+        let receiver1 = AccountAddress::from_str("0xd0c5a06ae6100ce115cad1600fe59e96").unwrap();
+        let txn1 = build_transfer_from_association(
+            receiver1,
+            association_sequence_num,
+            initial_balance + 1,
+            config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            config.net(),
         )
-        .unwrap();
+        .try_into()?;
 
-    assert_eq!(excluded.discarded_txns.len(), 0);
-    assert_eq!(excluded.untouched_txns.len(), 0);
+        let receiver2 = AccountAddress::from_str("0x1af80d10cb642adcd9f7fee1420104ec").unwrap();
+        let txn2 = build_transfer_from_association(
+            receiver2,
+            association_sequence_num + 1,
+            initial_balance + 2,
+            config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            config.net(),
+        )
+        .try_into()?;
 
-    let block = chain
-        .consensus()
-        .create_block(block_template, chain.time_service().as_ref())?;
+        let rand3 = AccountAddress::random();
+        let txn3 = build_transfer_from_association(
+            rand3,
+            association_sequence_num + 2,
+            initial_balance + 3,
+            config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            config.net(),
+        )
+        .try_into()?;
 
-    chain_to_apply.apply(block)?;
+        (receiver1, txn1, receiver2, txn2, rand3, txn3)
+    };
 
-    // // Check on chain config for v12
-    // let after_version = get_stdlib_version(statedb)?;
-    // assert_eq!(after_version, 12, "Upgrade failed, got wrong number!");
-    //
-    // Check black list balance
-    //let balance_1 = statedb
-    //    .get_balance(black_user_1.address().clone())?
-    //    .unwrap();
-    //assert_eq!(
-    //    balance_1, 0,
-    //    "Upgrade Faild, Balance of black list account not 0"
-    //);
+    // block number 1: deposit some stc tokens to two black addresses
+    {
+        let (block_template, _excluded) = miner
+            .create_block_template(
+                account_config::association_address(),
+                None,
+                vec![txn1, txn2, txn3],
+                vec![],
+                Some(block_gas_limit),
+            )
+            .unwrap();
 
-    //let balance_2 = statedb
-    //    .get_balance(black_user_1.address().clone())?
-    //    .unwrap();
-    //assert_eq!(
-    //    balance_2, 0,
-    //    "Upgrade Faild, Balance of black list account not 0"
-    //);
+        let block = miner
+            .consensus()
+            .create_block(block_template, miner.time_service().as_ref())?;
+
+        miner.apply(block)?;
+
+        assert_eq!(
+            get_balance(black1, miner.chain_state()),
+            initial_balance + 1
+        );
+        assert_eq!(
+            get_balance(black2, miner.chain_state()),
+            initial_balance + 2
+        );
+        assert_eq!(get_balance(rand3, miner.chain_state()), initial_balance + 3);
+    }
+
+    // fork a new chain, to apply block number 2
+    let mut chain_to_apply = miner.fork(miner.current_header().id()).unwrap();
+
+    // create block number 2, then apply it to miner
+    let block_num_2 = {
+        let (block_template, _excluded) = miner
+            .create_block_template(
+                account_config::association_address(),
+                None,
+                vec![],
+                vec![],
+                Some(block_gas_limit),
+            )
+            .unwrap();
+
+        let block2 = miner
+            .consensus()
+            .create_block(block_template, miner.time_service().as_ref())?;
+
+        miner.apply(block2.clone())?;
+
+        assert_eq!(
+            get_balance(black1, miner.chain_state()),
+            0,
+            "Upgrade Faild, Balance of black list account not 0"
+        );
+
+        assert_eq!(
+            get_balance(black2, miner.chain_state()),
+            0,
+            "Upgrade Faild, Balance of black list account not 0"
+        );
+
+        assert_eq!(get_balance(rand3, miner.chain_state()), initial_balance + 3);
+
+        block2
+    };
+
+    // apply block number 2 to another chain
+    {
+        // !!!non-zero balance
+        assert_ne!(get_balance(black1, chain_to_apply.chain_state()), 0);
+        assert_ne!(get_balance(black2, chain_to_apply.chain_state()), 0);
+        assert_ne!(get_balance(rand3, chain_to_apply.chain_state()), 0);
+
+        chain_to_apply.apply(block_num_2)?;
+
+        assert_eq!(get_balance(black1, chain_to_apply.chain_state()), 0);
+        assert_eq!(get_balance(black2, chain_to_apply.chain_state()), 0);
+        assert_eq!(
+            get_balance(rand3, chain_to_apply.chain_state()),
+            initial_balance + 3
+        );
+    }
+
+    // Check on chain config for v12
+    let upgraded_version = get_stdlib_version(chain_to_apply.chain_state())?;
+    assert_eq!(upgraded_version, 12);
 
     Ok(())
 }

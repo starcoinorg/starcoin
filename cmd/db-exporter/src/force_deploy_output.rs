@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use anyhow::format_err;
 use clap::Parser;
-use starcoin_chain::{BlockChain, ChainReader};
+use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_cmd::dev::dev_helper;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_genesis::Genesis;
@@ -88,7 +88,7 @@ pub fn force_deploy_output(
         .ok_or_else(|| format_err!("{} get block error", block_number))?;
 
     // BlockChain::set_output_block();
-    let chain = BlockChain::new(
+    let mut chain = BlockChain::new(
         net.time_service(),
         block.header.parent_hash(),
         storage,
@@ -100,7 +100,7 @@ pub fn force_deploy_output(
     let upgrade_strategy_path =
         AccessPath::resource_access_path(genesis_address(), ModuleUpgradeStrategy::struct_tag());
 
-    let statedb = chain.get_chain_state_db();
+    let statedb = chain.chain_state();
 
     let before_ret = statedb
         .get_state_value(&StateKey::AccessPath(upgrade_strategy_path.clone()))?
@@ -121,7 +121,7 @@ pub fn force_deploy_output(
     deploy_package(
         network.chain_id(),
         package_path,
-        chain.get_chain_state_db(),
+        chain.chain_state(),
         &account,
         net.time_service().now_secs(),
     )?;

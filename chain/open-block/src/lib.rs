@@ -330,14 +330,18 @@ impl OpenedBlock {
         let extra_txn =
             if self.block_meta.number() == get_force_upgrade_block_number(&self.chain_id) {
                 let account = get_force_upgrade_account(&self.chain_id)?;
-                let seqence_number = self.state.get_sequence_number(*account.address())?;
+                let sequence_number = self.state.get_sequence_number(*account.address())?;
                 let extra_txn = ForceUpgrade::force_deploy_txn(
                     account,
-                    seqence_number,
+                    sequence_number,
                     self.block_meta.timestamp() / 1000 + DEFAULT_EXPIRATION_TIME,
                     &self.chain_id,
                 )?;
-                debug!("extra txn in opened block: {:?}", extra_txn);
+                info!(
+                    "extra txn in opened block ({:?}): {:?}",
+                    extra_txn.id(),
+                    extra_txn
+                );
                 Transaction::UserTransaction(extra_txn)
             } else {
                 return Ok(());

@@ -119,7 +119,7 @@ pub fn txn_publish_config_type_tag() -> TypeTag {
     }))
 }
 
-fn execute_create_account(
+pub fn execute_create_account(
     chain_state: &ChainStateDB,
     net: &ChainNetwork,
     alice: &Account,

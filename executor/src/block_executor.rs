@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{execute_block_transactions, execute_transactions};
-use log::debug;
+use log::info;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_force_upgrade::ForceUpgrade;
@@ -103,7 +103,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
     }
 
     assert_eq!(extra_txn, None);
-    if let Some(extra_txn) = maybe_create_force_upgrade_extra_txn(chain_state)
+    if let Some(extra_txn) = create_force_upgrade_extra_txn(chain_state)
         .map_err(BlockExecutorError::BlockChainStateErr)?
     {
         execute_extra_txn(chain_state, extra_txn, vm_metrics, &mut executed_data)
@@ -114,7 +114,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
     Ok(executed_data)
 }
 
-fn maybe_create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
+fn create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
     statedb: &S,
 ) -> anyhow::Result<Option<Transaction>> {
     let chain_id = statedb.get_chain_id()?;
@@ -130,7 +130,11 @@ fn maybe_create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
                 block_timestamp + DEFAULT_EXPIRATION_TIME,
                 &chain_id,
             )?;
-            debug!("extra txn to execute: {:?}", extra_txn);
+            info!(
+                "extra txn to execute ({:?}): {:?}",
+                extra_txn.id(),
+                extra_txn
+            );
             Some(Transaction::UserTransaction(extra_txn))
         } else {
             None
@@ -138,7 +142,7 @@ fn maybe_create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
     )
 }
 
-// fixme: use same function with OpenedBlock
+// fixme:  OpenedBlock
 fn execute_extra_txn<S: ChainStateReader + ChainStateWriter>(
     chain_state: &S,
     txn: Transaction,
@@ -153,7 +157,7 @@ fn execute_extra_txn<S: ChainStateReader + ChainStateWriter>(
 
     let output = execute_transactions(&chain_state, vec![txn], vm_metrics)?
         .pop()
-        .unwrap();
+        .expect("extra txn must have exact ONE output");
 
     // Set strategy to 1
     chain_state.set(&strategy_path, vec![1])?;
@@ -172,8 +176,6 @@ fn execute_extra_txn<S: ChainStateReader + ChainStateWriter>(
             let txn_state_root = chain_state
                 .commit()
                 .map_err(BlockExecutorError::BlockChainStateErr)?;
-            #[cfg(testing)]
-            info!("txn_hash {} gas_used {}", txn_hash, gas_used);
             executed_data.txn_infos.push(TransactionInfo::new(
                 txn_hash,
                 txn_state_root,

@@ -850,10 +850,6 @@ impl BlockChain {
         self.storage.clone()
     }
 
-    pub fn get_chain_state_db(&self) -> &ChainStateDB {
-        &self.statedb
-    }
-
     pub fn can_be_uncle(&self, block_header: &BlockHeader) -> Result<bool> {
         FullVerifier::can_be_uncle(self, block_header)
     }
