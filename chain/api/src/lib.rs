@@ -18,7 +18,7 @@ mod service;
 pub const FORCE_UPGRADE_PACKAGE: Dir = include_dir!("package");
 
 pub const MAIN_FORCE_UPGRADE_BLOCK_NUMBER: BlockNumber = 17000000;
-pub const HALLEY_FORCE_UPGRADE_BLOCK_NUMBER: BlockNumber = 520;
+pub const HALLEY_FORCE_UPGRADE_BLOCK_NUMBER: BlockNumber = 700;
 /// XXX FIXME YSG FORCE_UPGRADE
 pub static FORCE_UPGRADE_BLOCK_MAP: Lazy<BTreeMap<BlockNumber, WriteSet>> = Lazy::new(|| {
     let mut maps = BTreeMap::new();
