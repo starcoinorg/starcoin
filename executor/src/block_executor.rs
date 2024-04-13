@@ -106,10 +106,6 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
         .map_err(BlockExecutorError::BlockChainStateErr)?
     {
         // !!! commit suicide if any error or exception happens !!!
-        if chain_state.get_chain_id().unwrap().is_main() {
-            // currently the main network has been suspended, no txns should be here.
-            assert_eq!(executed_data, BlockExecutedData::default())
-        }
         execute_extra_txn(chain_state, extra_txn, vm_metrics, &mut executed_data)
             .expect("extra txn must be executed successfully");
     }
