@@ -130,11 +130,7 @@ fn create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
                 block_timestamp + DEFAULT_EXPIRATION_TIME,
                 &chain_id,
             )?;
-            info!(
-                "extra txn to execute ({:?}): {:?}",
-                extra_txn.id(),
-                extra_txn
-            );
+            info!("extra txn to execute ({:?})", extra_txn.id());
             Some(Transaction::UserTransaction(extra_txn))
         } else {
             None

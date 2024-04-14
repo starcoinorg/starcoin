@@ -351,11 +351,7 @@ impl OpenedBlock {
                     self.block_meta.timestamp() / 1000 + DEFAULT_EXPIRATION_TIME,
                     &self.chain_id,
                 )?;
-                info!(
-                    "extra txn in opened block ({:?}): {:?}",
-                    extra_txn.id(),
-                    extra_txn
-                );
+                info!("extra txn in opened block ({:?})", extra_txn.id());
                 Transaction::UserTransaction(extra_txn)
             } else {
                 return Ok(());
