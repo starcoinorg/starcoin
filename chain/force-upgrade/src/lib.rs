@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2
 
 use anyhow::format_err;
-use include_dir::{include_dir, Dir};
 use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
@@ -17,8 +16,7 @@ use starcoin_vm_types::{
     genesis_config::ChainId,
     transaction::{Package, RawUserTransaction, TransactionPayload},
 };
-
-pub const FORCE_UPGRADE_PACKAGE: Dir = include_dir!("../../vm/stdlib/compiled/12/11-12");
+use stdlib::COMPILED_MOVE_CODE_DIR;
 
 pub struct ForceUpgrade;
 
@@ -31,8 +29,8 @@ impl ForceUpgrade {
         block_timestamp: u64,
         chain_id: &ChainId,
     ) -> anyhow::Result<SignedUserTransaction> {
-        let package_file = "stdlib.blob".to_string();
-        let package = FORCE_UPGRADE_PACKAGE
+        let package_file = "12/11-12/stdlib.blob".to_string();
+        let package = COMPILED_MOVE_CODE_DIR
             .get_file(package_file.clone())
             .map(|file| {
                 bcs_ext::from_bytes::<Package>(file.contents())

@@ -27,6 +27,7 @@ starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
 starcoin-move-compiler = { workspace = true }
+stdlib = { workspace = true }
 include_dir = { workspace = true }
 
 [dev-dependencies]
