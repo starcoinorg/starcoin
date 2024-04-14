@@ -835,7 +835,7 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
             parent_hash: HashValue::sha3_256_of(b"starcoin_halley"),
-            timestamp: 1713079502000,
+            timestamp: 1713101398000,
             difficulty: 100.into(),
         }),
         version: Version { major: 1 },
