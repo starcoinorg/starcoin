@@ -40,6 +40,7 @@ use test_helper::executor::{
 use starcoin_state_api::StateReaderExt;
 use starcoin_types::account::Account;
 use starcoin_types::account_config::G_STC_TOKEN_CODE;
+use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_vm_runtime::starcoin_vm::{chunk_block_transactions, StarcoinVM};
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::state_store::state_key::StateKey;
@@ -402,13 +403,19 @@ fn test_block_execute_gas_limit() -> Result<()> {
 
         assert_eq!(max_include_txn_num, txns.len() as u64);
 
-        txns.insert(0, Transaction::BlockMetadata(block_meta));
+        txns.insert(0, Transaction::BlockMetadata(block_meta.clone()));
         let executed_data =
             starcoin_executor::block_execute(&chain_state, txns, block_gas_limit, None)?;
         let txn_infos = executed_data.txn_infos;
 
         // all user txns can be included
-        assert_eq!(txn_infos.len() as u64, max_include_txn_num + 1);
+        if block_meta.number() == get_force_upgrade_block_number(&block_meta.chain_id()) {
+            // for this sepcial block, an extra package txn has been executed
+            assert_eq!(txn_infos.len() as u64, max_include_txn_num + 1 + 1);
+        } else {
+            assert_eq!(txn_infos.len() as u64, max_include_txn_num + 1);
+        }
+
         let block_gas_used = txn_infos.iter().fold(0u64, |acc, i| acc + i.gas_used());
         assert!(
             block_gas_used <= block_gas_limit,

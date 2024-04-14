@@ -21,12 +21,11 @@ use stdlib::COMPILED_MOVE_CODE_DIR;
 pub struct ForceUpgrade;
 
 impl ForceUpgrade {
-    ///
-    /// block_timestamp: *NOTE* by seconds,
+    // block_timestamp: *NOTE* by seconds,
     pub fn force_deploy_txn(
         account: Account,
         sequence_number: u64,
-        block_timestamp: u64,
+        block_timestamp_in_secs: u64,
         chain_id: &ChainId,
     ) -> anyhow::Result<SignedUserTransaction> {
         let package_file = "12/11-12/stdlib.blob".to_string();
@@ -56,7 +55,7 @@ impl ForceUpgrade {
             TransactionPayload::Package(package),
             DEFAULT_MAX_GAS_AMOUNT,
             1,
-            block_timestamp + DEFAULT_EXPIRATION_TIME,
+            block_timestamp_in_secs + DEFAULT_EXPIRATION_TIME,
             *chain_id,
             STC_TOKEN_CODE_STR.to_string(),
         )))

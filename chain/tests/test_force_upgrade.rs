@@ -1,4 +1,5 @@
 use anyhow::format_err;
+use starcoin_accumulator::Accumulator;
 use starcoin_chain_api::{ChainReader, ChainWriter};
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
@@ -24,6 +25,9 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
 
     let current_version = get_stdlib_version(miner_db)?;
     assert_eq!(current_version, 11);
+
+    // 1 genesis meta
+    assert_eq!(miner.get_txn_accumulator().num_leaves(), 1);
 
     // create two txns to deposit some tokens to two black addresses
     // and a third random address which should not in black address list.
@@ -79,6 +83,9 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
 
         miner.apply(block)?;
 
+        // 1 meta + 3 user = 4 txns
+        assert_eq!(miner.get_txn_accumulator().num_leaves(), 5);
+
         assert_eq!(
             get_balance(black1, miner.chain_state()),
             initial_balance + 1
@@ -111,6 +118,9 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
 
         miner.apply(block2.clone())?;
 
+        // 1 meta + 1 extra = 2 txns
+        assert_eq!(miner.get_txn_accumulator().num_leaves(), 7);
+
         assert_eq!(
             get_balance(black1, miner.chain_state()),
             0,
@@ -137,6 +147,9 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
 
         chain_to_apply.apply(block_num_2)?;
 
+        // 1 meta + 1 extra = 2 txns
+        assert_eq!(chain_to_apply.get_txn_accumulator().num_leaves(), 7);
+
         assert_eq!(get_balance(black1, chain_to_apply.chain_state()), 0);
         assert_eq!(get_balance(black2, chain_to_apply.chain_state()), 0);
         assert_eq!(
@@ -148,6 +161,21 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
     // Check on chain config for v12
     let upgraded_version = get_stdlib_version(chain_to_apply.chain_state())?;
     assert_eq!(upgraded_version, 12);
+
+    Ok(())
+}
+
+#[stest::test]
+fn test_force_upgrade_2() -> anyhow::Result<()> {
+    let config = Arc::new(NodeConfig::random_for_test());
+    let chain = test_helper::gen_blockchain_with_blocks_for_test(2, config.net())?;
+
+    // genesis 1 + block1 1 + block2 1meta+1extra.txn
+    assert_eq!(chain.get_txn_accumulator().num_leaves(), 4);
+
+    let chain = test_helper::gen_blockchain_with_blocks_for_test(3, config.net())?;
+    // genesis 1 + block1 1 + special block2 2 + block3 1
+    assert_eq!(chain.get_txn_accumulator().num_leaves(), 5);
 
     Ok(())
 }
