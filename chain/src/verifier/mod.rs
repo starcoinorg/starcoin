@@ -390,48 +390,48 @@ impl BlockVerifier for DagVerifier {
     }
 
     fn verify_uncles<R>(
-        current_chain: &R,
-        uncles: &[BlockHeader],
-        header: &BlockHeader,
+        _current_chain: &R,
+        _uncles: &[BlockHeader],
+        _header: &BlockHeader,
     ) -> Result<()>
     where
         R: ChainReader,
     {
-        let mut uncle_ids = HashSet::new();
-        for uncle in uncles {
-            let uncle_id = uncle.id();
-            verify_block!(
-                VerifyBlockField::Uncle,
-                !uncle_ids.contains(&uncle.id()),
-                "repeat uncle {:?} in current block {:?}",
-                uncle_id,
-                header.id()
-            );
+        // let mut uncle_ids = HashSet::new();
+        // for uncle in uncles {
+        //     let uncle_id = uncle.id();
+        //     verify_block!(
+        //         VerifyBlockField::Uncle,
+        //         !uncle_ids.contains(&uncle.id()),
+        //         "repeat uncle {:?} in current block {:?}",
+        //         uncle_id,
+        //         header.id()
+        //     );
 
-            if !header.is_dag() {
-                verify_block!(
-                    VerifyBlockField::Uncle,
-                    uncle.number() < header.number() ,
-                "uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number(), header.number()
-                );
-            }
+        //     if !header.is_dag() {
+        //         verify_block!(
+        //             VerifyBlockField::Uncle,
+        //             uncle.number() < header.number() ,
+        //         "uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number(), header.number()
+        //         );
+        //     }
 
-            verify_block!(
-                VerifyBlockField::Uncle,
-                current_chain.get_block_info(Some(uncle_id))?.is_some(),
-                "Invalid block: uncle {} does not exist",
-                uncle_id
-            );
+        //     verify_block!(
+        //         VerifyBlockField::Uncle,
+        //         current_chain.get_block_info(Some(uncle_id))?.is_some(),
+        //         "Invalid block: uncle {} does not exist",
+        //         uncle_id
+        //     );
 
-            debug!(
-                "verify_uncle header number {} hash {:?} uncle number {} hash {:?}",
-                header.number(),
-                header.id(),
-                uncle.number(),
-                uncle.id()
-            );
-            uncle_ids.insert(uncle_id);
-        }
+        //     debug!(
+        //         "verify_uncle header number {} hash {:?} uncle number {} hash {:?}",
+        //         header.number(),
+        //         header.id(),
+        //         uncle.number(),
+        //         uncle.id()
+        //     );
+        //     uncle_ids.insert(uncle_id);
+        // }
 
         Ok(())
     }

@@ -11,13 +11,13 @@ mod tests {
             schemadb::{DbReachabilityStore, ReachabilityStore, ReachabilityStoreReader},
         },
         reachability::{inquirer, ReachabilityError},
-        types::interval::Interval,
+        types::{ghostdata, interval::Interval},
     };
     use starcoin_types::{
-        block::{set_test_flexidag_fork_height, BlockHeader, BlockHeaderBuilder},
+        block::{set_test_flexidag_fork_height, BlockHeader, BlockHeaderBuilder, BlockNumber},
         blockhash::KType,
     };
-    use std::{env, fs};
+    use std::{env, fs, vec};
 
     fn build_block_dag(k: KType) -> BlockDAG {
         let db_path = env::temp_dir().join("smolstc");
@@ -626,6 +626,19 @@ mod tests {
         Ok(())
     }
 
+    fn add_and_print(number: BlockNumber, parent: Hash, parents: Vec<Hash>, origin: Hash, dag: &mut BlockDAG) -> anyhow::Result<Hash> {
+        let header_builder = BlockHeaderBuilder::random();
+        let header = header_builder
+            .with_parent_hash(parent)
+            .with_parents_hash(Some(parents))
+            .with_number(number)
+            .build();
+        dag.commit(header.to_owned(), origin)?;
+        let ghostdata = dag.ghostdata(&[header.id()])?;
+        println!("add a header: {:?}, blue set: {:?}, red set: {:?}, blue anticone size: {:?}", header, ghostdata.mergeset_blues, ghostdata.mergeset_reds, ghostdata.blues_anticone_sizes);
+        Ok(header.id())
+    }
+
     #[test]
     fn test_dag_mergeset() -> anyhow::Result<()> {
         set_test_flexidag_fork_height(1);
@@ -642,19 +655,23 @@ mod tests {
         // normally add the dag blocks
         let mut parents_hash = vec![genesis.id()];
         let mut parent_hash = genesis.id();
-        for i in 2..8 {
-            let header_builder = BlockHeaderBuilder::random();
-            let header = header_builder
-                .with_parent_hash(parent_hash)
-                .with_parents_hash(Some(parents_hash.clone()))
-                .with_number(i)
-                .build();
-            parents_hash = vec![header.id()];
-            parent_hash = header.id();
-            dag.commit(header.to_owned(), genesis.parent_hash())?;
-            let ghostdata = dag.ghostdata(&parents_hash).unwrap();
-            println!("add a header: {:?}, blue set: {:?}, red set: {:?}", header, ghostdata.mergeset_blues, ghostdata.mergeset_reds);
-        }
+
+        let mut header = add_and_print(2, parent_hash, parents_hash, genesis.parent_hash(), &mut dag)?;
+        let red = add_and_print(3, header, vec![header], genesis.parent_hash(), &mut dag)?;
+
+        parents_hash = vec![genesis.id()];
+        parent_hash = genesis.id();
+
+        header = add_and_print(2, parent_hash, parents_hash, genesis.parent_hash(), &mut dag)?;
+        header = add_and_print(3, header, vec![header], genesis.parent_hash(), &mut dag)?;
+        header = add_and_print(4, header, vec![header], genesis.parent_hash(), &mut dag)?;
+        let blue = header;
+
+
+        header = add_and_print(5, blue, vec![blue, red], genesis.parent_hash(), &mut dag)?;
+
+        let ghostdata = dag.ghostdata(&[header, red])?;
+        println!("add a header: {:?}, blue set: {:?}, red set: {:?}, blue anticone size: {:?}", header, ghostdata.mergeset_blues, ghostdata.mergeset_reds, ghostdata.blues_anticone_sizes);
 
         Ok(())
     }

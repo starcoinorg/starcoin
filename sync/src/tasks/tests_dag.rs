@@ -14,6 +14,7 @@ use starcoin_chain_service::ChainReaderService;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_txpool_mock_service::MockTxPoolService;
+use starcoin_types::block::BlockHeader;
 use test_helper::DummyNetworkService;
 
 #[stest::test(timeout = 120)]
@@ -112,6 +113,10 @@ async fn test_sync_single_chain_to_dag_chain() -> Result<()> {
     .await?;
     starcoin_types::block::reset_test_custom_fork_height();
     Ok(())
+}
+
+fn create_red_blocks(header: BlockHeader) -> Result<BlockHeader> {
+    
 }
 
 #[stest::test(timeout = 600)]

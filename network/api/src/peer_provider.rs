@@ -14,6 +14,7 @@ use rand::prelude::SliceRandom;
 use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use starcoin_logger::prelude::info;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
 use std::borrow::Cow;
@@ -280,8 +281,10 @@ impl PeerSelector {
                 peers
             });
         if best_peers.is_empty() || best_peers[0].total_difficulty() <= min_difficulty {
+            info!("best peer difficulty {:?} is smaller than min difficulty {:?}, return None",  best_peers[0].total_difficulty(), min_difficulty);
             None
         } else {
+            info!("best peer difficulty {:?}, info: {:?} picked",  best_peers[0].total_difficulty(), best_peers);
             Some(best_peers)
         }
     }
@@ -300,8 +303,10 @@ impl PeerSelector {
             .map(|peer| peer.peer_info().clone())
             .collect();
         if betters.is_empty() {
+            info!("no betters found for syn");
             None
         } else {
+            info!("betters found: {:?}", betters);
             Some(betters)
         }
     }

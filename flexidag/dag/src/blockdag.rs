@@ -63,7 +63,7 @@ impl BlockDAG {
     pub fn create_for_testing() -> anyhow::Result<Self> {
         let dag_storage =
             FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
-        Ok(BlockDAG::new(2, dag_storage))
+        Ok(BlockDAG::new(3, dag_storage))
     }
 
     pub fn new_by_config(db_path: &Path) -> anyhow::Result<BlockDAG> {
@@ -82,14 +82,14 @@ impl BlockDAG {
             .check_ancestor_of(ancestor, descendant)
     }
 
-    pub fn init_with_genesis(&mut self, genesis: BlockHeader) -> anyhow::Result<()> {
+    pub fn init_with_genesis(&mut self, genesis: BlockHeader) -> anyhow::Result<HashValue> {
         let genesis_id = genesis.id();
         let origin = genesis.parent_hash();
 
         let real_origin = Hash::sha3_256_of(&[origin, genesis_id].encode()?);
 
         if self.storage.relations_store.has(real_origin)? {
-            return Ok(());
+            return Ok(real_origin);
         }
         inquirer::init(&mut self.storage.reachability_store.clone(), real_origin)?;
 
@@ -99,14 +99,14 @@ impl BlockDAG {
         // self.storage
         //     .relations_store
         //     .insert(origin, BlockHashes::new(vec![]))?;
-        self.commit(genesis, origin)?;
+        self.commit(genesis, real_origin)?;
         self.save_dag_state(
             genesis_id,
             DagState {
                 tips: vec![genesis_id],
             },
         )?;
-        Ok(())
+        Ok(real_origin)
     }
     pub fn ghostdata(&self, parents: &[HashValue]) -> anyhow::Result<GhostdagData> {
         self.ghostdag_manager.ghostdag(parents)
