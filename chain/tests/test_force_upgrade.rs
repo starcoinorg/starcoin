@@ -121,7 +121,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         miner.apply(block2.clone())?;
 
         // 1 meta + 1 extra = 2 txns
-        txns_num += 2;
+        let txns_num = txns_num + 2;
         assert_eq!(miner.get_txn_accumulator().num_leaves(), txns_num);
 
         assert_eq!(
@@ -151,6 +151,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         chain_to_apply.apply(block_num_2)?;
 
         // 1 meta + 1 extra = 2 txns
+        let txns_num = txns_num + 2;
         assert_eq!(chain_to_apply.get_txn_accumulator().num_leaves(), txns_num);
 
         assert_eq!(get_balance(black1, chain_to_apply.chain_state()), 0);

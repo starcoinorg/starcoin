@@ -367,11 +367,10 @@ impl OpenedBlock {
         let old_val = self
             .state
             .get_state_value(&StateKey::AccessPath(strategy_path.clone()))?
-            .unwrap();
-        assert_eq!(old_val, vec![1]);
-
+            .expect("module upgrade strategy should exist");
         // Set strategy to 100 to execute force-deploy-txn directly
         self.state.set(&strategy_path, vec![100])?;
+
         // execute this special txn without gas limit
         let mut results = execute_transactions(
             &self.state,
@@ -379,10 +378,10 @@ impl OpenedBlock {
             self.vm_metrics.clone(),
         )
         .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
+
         // Restore the old value
         self.state.set(&strategy_path, old_val)?;
 
-        assert_eq!(results.len(), 1);
         let output = results.pop().expect("executed txn should has output");
         match output.status() {
             TransactionStatus::Discard(status) => {
@@ -394,11 +393,11 @@ impl OpenedBlock {
             }
             TransactionStatus::Keep(_) => {
                 // Do not add extra_txn to included_user_txns
-                // try it like BlockMeta txn
+                // treat it like BlockMeta txn
                 let _ = self.push_txn_and_state_opt(extra_txn_hash, output, true)?;
             }
             TransactionStatus::Retry => {
-                bail!("extra txn {:?} is retry impossible", extra_txn);
+                bail!("extra txn {:?} is impossible to retry", extra_txn);
             }
         };
 

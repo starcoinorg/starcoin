@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{execute_block_transactions, execute_transactions};
+use anyhow::bail;
 use log::info;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
@@ -22,6 +23,7 @@ use starcoin_vm_types::account_config::{genesis_address, ModuleUpgradeStrategy};
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::on_chain_config;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateReaderExt;
 use starcoin_vm_types::write_set::WriteSet;
@@ -148,21 +150,25 @@ fn execute_extra_txn<S: ChainStateReader + ChainStateWriter>(
     let txn_hash = txn.id();
     let strategy_path =
         AccessPath::resource_access_path(genesis_address(), ModuleUpgradeStrategy::struct_tag());
-    // Set strategy to 100
+
+    // retrieve the original strategy value
+    let old_val = chain_state
+        .get_state_value(&StateKey::AccessPath(strategy_path.clone()))?
+        .expect("module upgrade strategy should exist");
+    // Set strategy to 100 upgrade package directly
     chain_state.set(&strategy_path, vec![100])?;
 
     let output = execute_transactions(&chain_state, vec![txn], vm_metrics)?
         .pop()
-        .expect("extra txn must have exact ONE output");
+        .expect("extra txn must have output");
 
-    // Set strategy to 1
-    chain_state.set(&strategy_path, vec![1])?;
+    // restore strategy to old value
+    chain_state.set(&strategy_path, old_val)?;
 
     let (mut table_infos, write_set, events, _gas_used, status) = output.into_inner();
     match status {
         TransactionStatus::Discard(status) => {
-            // fixme:
-            panic!("{status:?}, {txn_hash:?}");
+            bail!("extra txn {txn_hash:?} is discarded: {status:?}");
         }
         TransactionStatus::Keep(status) => {
             chain_state
@@ -197,8 +203,7 @@ fn execute_extra_txn<S: ChainStateReader + ChainStateWriter>(
             executed_data.write_sets.push(write_set);
         }
         TransactionStatus::Retry => {
-            // fixme:
-            panic!("");
+            bail!("extra txn {txn_hash:?} must not to retry");
         }
     }
 
