@@ -15,7 +15,7 @@ use test_helper::executor::get_balance;
 #[stest::test]
 pub fn test_force_upgrade_1() -> anyhow::Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
-    let mut miner = test_helper::gen_blockchain_for_test(config.net())?;
+    let mut miner = test_helper::gen_blockchain_with_blocks_for_test(13, config.net())?;
     let block_gas_limit = 10000000;
     let initial_balance = 1000000000000;
     let account_reader = miner.chain_state_reader();
@@ -26,8 +26,9 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
     let current_version = get_stdlib_version(miner_db)?;
     assert_eq!(current_version, 11);
 
-    // 1 genesis meta
-    assert_eq!(miner.get_txn_accumulator().num_leaves(), 1);
+    // 1 genesis meta + 13 block meta
+    let mut txns_num = 14;
+    assert_eq!(miner.get_txn_accumulator().num_leaves(), txns_num);
 
     // create two txns to deposit some tokens to two black addresses
     // and a third random address which should not in black address list.
@@ -84,7 +85,8 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         miner.apply(block)?;
 
         // 1 meta + 3 user = 4 txns
-        assert_eq!(miner.get_txn_accumulator().num_leaves(), 5);
+        txns_num += 4;
+        assert_eq!(miner.get_txn_accumulator().num_leaves(), txns_num);
 
         assert_eq!(
             get_balance(black1, miner.chain_state()),
@@ -119,7 +121,8 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         miner.apply(block2.clone())?;
 
         // 1 meta + 1 extra = 2 txns
-        assert_eq!(miner.get_txn_accumulator().num_leaves(), 7);
+        txns_num += 2;
+        assert_eq!(miner.get_txn_accumulator().num_leaves(), txns_num);
 
         assert_eq!(
             get_balance(black1, miner.chain_state()),
@@ -148,7 +151,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         chain_to_apply.apply(block_num_2)?;
 
         // 1 meta + 1 extra = 2 txns
-        assert_eq!(chain_to_apply.get_txn_accumulator().num_leaves(), 7);
+        assert_eq!(chain_to_apply.get_txn_accumulator().num_leaves(), txns_num);
 
         assert_eq!(get_balance(black1, chain_to_apply.chain_state()), 0);
         assert_eq!(get_balance(black2, chain_to_apply.chain_state()), 0);
@@ -168,14 +171,14 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
 #[stest::test]
 fn test_force_upgrade_2() -> anyhow::Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
-    let chain = test_helper::gen_blockchain_with_blocks_for_test(2, config.net())?;
+    let chain = test_helper::gen_blockchain_with_blocks_for_test(15, config.net())?;
 
-    // genesis 1 + block1 1 + block2 1meta+1extra.txn
-    assert_eq!(chain.get_txn_accumulator().num_leaves(), 4);
+    // genesis 1 + block 1 * 14 + block15 1meta+1extra.txn
+    assert_eq!(chain.get_txn_accumulator().num_leaves(), 17);
 
-    let chain = test_helper::gen_blockchain_with_blocks_for_test(3, config.net())?;
-    // genesis 1 + block1 1 + special block2 2 + block3 1
-    assert_eq!(chain.get_txn_accumulator().num_leaves(), 5);
+    let chain = test_helper::gen_blockchain_with_blocks_for_test(16, config.net())?;
+    // genesis 1 + block 1 * 14 + special block2 2 + block16 1
+    assert_eq!(chain.get_txn_accumulator().num_leaves(), 18);
 
     Ok(())
 }

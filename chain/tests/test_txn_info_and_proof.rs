@@ -22,7 +22,6 @@ fn test_transaction_info_and_proof() -> Result<()> {
     let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
     let mut current_header = block_chain.current_header();
     let miner_account = AccountInfo::random();
-    let mut force_upgrade_txn_idx_for_test = 0;
 
     let mut rng = rand::thread_rng();
 
@@ -76,22 +75,11 @@ fn test_transaction_info_and_proof() -> Result<()> {
             block.to_metadata(current_header.gas_used()),
         ));
         all_txns.extend(txns.into_iter().map(Transaction::UserTransaction));
-        if block.header().number() == 2 {
-            seq_number += 1;
-            force_upgrade_txn_idx_for_test = all_txns.len();
-        }
         current_header = block.header().clone();
     });
 
-    assert_ne!(force_upgrade_txn_idx_for_test, 0);
-
     let txn_index = rng.gen_range(0..all_txns.len());
-    debug!(
-        "all txns len: {}, txn index:{}, total num of txns in chain {}",
-        all_txns.len(),
-        txn_index,
-        block_chain.get_txn_accumulator().num_leaves()
-    );
+    debug!("all txns len: {}, txn index:{}", all_txns.len(), txn_index);
 
     for txn_global_index in 0..all_txns.len() {
         let txn = all_txns.get(txn_global_index).cloned().unwrap();
@@ -104,27 +92,21 @@ fn test_transaction_info_and_proof() -> Result<()> {
             )
         })?;
 
-        let real_txn_global_index = if txn_global_index >= force_upgrade_txn_idx_for_test {
-            txn_global_index + 1
-        } else {
-            txn_global_index
-        };
-
         let txn_info_leaf = block_chain
             .get_txn_accumulator()
-            .get_leaf(real_txn_global_index as u64)?
+            .get_leaf(txn_global_index as u64)?
             .unwrap();
         assert_eq!(
             txn_info.transaction_info.id(),
             txn_info_leaf,
             "txn_info hash do not match txn info leaf in accumulator, index: {}",
-            real_txn_global_index
+            txn_global_index
         );
 
         assert_eq!(
-            txn_info.transaction_global_index, real_txn_global_index as u64,
+            txn_info.transaction_global_index, txn_global_index as u64,
             "txn_global_index:{}",
-            real_txn_global_index
+            txn_global_index
         );
 
         let account_address = match &txn {
@@ -144,7 +126,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
             let txn_proof = block_chain
                 .get_transaction_proof(
                     current_header.id(),
-                    real_txn_global_index as u64,
+                    txn_global_index as u64,
                     Some(event_index as u64),
                     access_path.clone(),
                 )?
@@ -153,7 +135,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
 
             let result = txn_proof.verify(
                 current_header.txn_accumulator_root(),
-                real_txn_global_index as u64,
+                txn_global_index as u64,
                 Some(event_index as u64),
                 access_path.clone(),
             );
@@ -161,7 +143,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
             assert!(
                 result.is_ok(),
                 "txn index: {}, {:?} verify failed, reason: {:?}",
-                real_txn_global_index,
+                txn_global_index,
                 txn_proof,
                 result.err().unwrap()
             );

@@ -123,9 +123,6 @@ impl TransactionGenerator {
                 self.net.chain_id(),
                 0,
             );
-            if self.block_number == 3 {
-                self.sequence += 1;
-            }
             self.block_number += 1;
             transactions.push(Transaction::BlockMetadata(block_meta));
 
