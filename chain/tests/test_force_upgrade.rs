@@ -6,6 +6,7 @@ use starcoin_consensus::Consensus;
 use starcoin_statedb::ChainStateDB;
 use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::account_address::AccountAddress;
+use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_vm_types::on_chain_config::Version;
 use starcoin_vm_types::{account_config, state_view::StateReaderExt};
 use std::str::FromStr;
@@ -15,7 +16,12 @@ use test_helper::executor::get_balance;
 #[stest::test]
 pub fn test_force_upgrade_1() -> anyhow::Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
-    let mut miner = test_helper::gen_blockchain_with_blocks_for_test(13, config.net())?;
+
+    let force_upgrade_height = get_force_upgrade_block_number(&config.net().chain_id());
+    assert!(force_upgrade_height >= 2);
+    let initial_blocks = force_upgrade_height - 2;
+
+    let mut miner = test_helper::gen_blockchain_with_blocks_for_test(initial_blocks, config.net())?;
     let block_gas_limit = 10000000;
     let initial_balance = 1000000000000;
     let account_reader = miner.chain_state_reader();
@@ -26,8 +32,8 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
     let current_version = get_stdlib_version(miner_db)?;
     assert_eq!(current_version, 11);
 
-    // 1 genesis meta + 13 block meta
-    let mut txns_num = 14;
+    // 1 genesis meta + INITIAL_BLOCKS block meta
+    let mut txns_num = initial_blocks + 1;
     assert_eq!(miner.get_txn_accumulator().num_leaves(), txns_num);
 
     // create two txns to deposit some tokens to two black addresses
@@ -127,13 +133,13 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         assert_eq!(
             get_balance(black1, miner.chain_state()),
             0,
-            "Upgrade Faild, Balance of black list account not 0"
+            "Upgrade Failed, Balance of black list account not 0"
         );
 
         assert_eq!(
             get_balance(black2, miner.chain_state()),
             0,
-            "Upgrade Faild, Balance of black list account not 0"
+            "Upgrade Failed, Balance of black list account not 0"
         );
 
         assert_eq!(get_balance(rand3, miner.chain_state()), initial_balance + 3);
@@ -172,14 +178,26 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
 #[stest::test]
 fn test_force_upgrade_2() -> anyhow::Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
-    let chain = test_helper::gen_blockchain_with_blocks_for_test(15, config.net())?;
 
-    // genesis 1 + block 1 * 14 + block15 1meta+1extra.txn
-    assert_eq!(chain.get_txn_accumulator().num_leaves(), 17);
+    let force_upgrade_height = get_force_upgrade_block_number(&config.net().chain_id());
+    assert!(force_upgrade_height >= 2);
 
-    let chain = test_helper::gen_blockchain_with_blocks_for_test(16, config.net())?;
-    // genesis 1 + block 1 * 14 + special block2 2 + block16 1
-    assert_eq!(chain.get_txn_accumulator().num_leaves(), 18);
+    let chain =
+        test_helper::gen_blockchain_with_blocks_for_test(force_upgrade_height, config.net())?;
+
+    // genesis 1 + 1meta in each blocks  + special block 1meta+1extra.txn
+    assert_eq!(
+        chain.get_txn_accumulator().num_leaves(),
+        force_upgrade_height + 2
+    );
+
+    let chain =
+        test_helper::gen_blockchain_with_blocks_for_test(force_upgrade_height + 1, config.net())?;
+    // genesis 1 + 1meta in each blocks + special block 2 + 1 meta in last block
+    assert_eq!(
+        chain.get_txn_accumulator().num_leaves(),
+        force_upgrade_height + 3
+    );
 
     Ok(())
 }
