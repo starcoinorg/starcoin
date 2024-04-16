@@ -40,7 +40,7 @@ use std::ops::RangeInclusive;
 use std::sync::Arc;
 
 const BARNARD_HARD_FORK_PEER_VERSION_STRING_PREFIX: &str = "barnard_rollback_block_fix";
-const BARNARD_HARD_FORK_VERSION: [i32; 3] = [1, 13, 7];
+const BARNARD_HARD_FORK_VERSION: [i32; 3] = [1, 13, 11];
 
 pub struct NetworkActorService {
     /// Worker and inner have ChainInfo instances separately. There might be some way to solve the problem.
