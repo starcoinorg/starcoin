@@ -1156,23 +1156,23 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                 }
 
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::BannedRequest(
-                    _peer_id,
-                    _duration,
+                    peer_id,
+                    duration,
                 ))) => {
-                    // info!(
-                    //     "network banned peer {} for {} secs",
-                    //     peer_id,
-                    //     duration.as_secs()
-                    // );
-                    // this.network_service.ban_peer_id(peer_id);
-                    // this.unbans.push(
-                    //     async move {
-                    //         let delay = futures_timer::Delay::new(duration);
-                    //         delay.await;
-                    //         peer_id
-                    //     }
-                    //     .boxed(),
-                    // );
+                    info!(
+                        "network banned peer {} for {} secs",
+                        peer_id,
+                        duration.as_secs()
+                    );
+                    this.network_service.ban_peer_id(peer_id);
+                    this.unbans.push(
+                        async move {
+                            let delay = futures_timer::Delay::new(duration);
+                            delay.await;
+                            peer_id
+                        }
+                        .boxed(),
+                    );
                 }
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::InboundRequest {
                     protocol,

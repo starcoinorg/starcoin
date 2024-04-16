@@ -44,7 +44,6 @@ where
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub struct ApiLimiters<ApiName, User>
 where

@@ -1,3 +1,4 @@
+use starcoin_crypto::HashValue;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -25,6 +26,9 @@ pub enum StoreError {
 
     #[error("ghostdag {0} duplicate blocks")]
     DAGDupBlocksError(String),
+
+    #[error("the block hash value {0} not found")]
+    HashValueNotFound(HashValue),
 }
 
 pub type StoreResult<T> = std::result::Result<T, StoreError>;

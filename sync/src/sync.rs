@@ -272,7 +272,7 @@ impl SyncService {
                 }
                 Ok(Some(fut.await?))
             } else {
-                debug!("[sync]No best peer to request, current is best.");
+                info!("[sync]No best peer to request, current is best.");
                 Ok(None)
             }
         };
