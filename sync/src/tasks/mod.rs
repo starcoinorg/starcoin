@@ -766,8 +766,14 @@ where
                     .set(fetcher.peer_selector().len() as u64);
             }
 
-            if target.target_id.number() <= latest_block_chain.status().head.number() {
+            let latest_status = &latest_block_chain.status();
+            if target.target_id.number() <= latest_status.head.number() {
                 break;
+            }
+            if latest_status.head.is_dag() {
+                if latest_status.info().get_total_difficulty() >= target.block_info.get_total_difficulty() {
+                    break;
+                }
             }
             let chain_status = latest_block_chain.status();
             max_peers = max_better_peers(
