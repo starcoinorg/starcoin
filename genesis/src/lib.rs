@@ -15,6 +15,7 @@ use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_config::{
     genesis_key_pair, BuiltinNetworkID, ChainNetwork, ChainNetworkID, GenesisBlockParameter,
 };
+use starcoin_dag::block_dag_config::BlockDAGConfigMock;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainStateWriter;
@@ -24,6 +25,7 @@ use starcoin_storage::table_info::TableInfoStore;
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_transaction_builder::build_stdlib_package_with_modules;
 use starcoin_transaction_builder::{build_stdlib_package, StdLibOptions};
+use starcoin_types::block::BlockNumber;
 use starcoin_types::block::LegacyBlock;
 use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::transaction::Package;
@@ -380,11 +382,12 @@ impl Genesis {
 
     pub fn init_storage_for_test(
         net: &ChainNetwork,
+        fork_number: BlockNumber,
     ) -> Result<(Arc<Storage>, ChainInfo, Genesis, BlockDAG)> {
-        debug!("init storage by genesis for test.");
+        debug!("init storage by genesis for test. {net:?}");
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let genesis = Genesis::load_or_build(net)?;
-        let dag = BlockDAG::create_for_testing()?;
+        let dag = BlockDAG::create_for_testing_mock(BlockDAGConfigMock { fork_number })?;
         let chain_info = genesis.execute_genesis_block(net, storage.clone(), dag.clone())?;
         Ok((storage, chain_info, genesis, dag))
     }

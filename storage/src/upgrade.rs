@@ -1,15 +1,19 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::BlockStorage;
+use crate::block::{
+    BlockHeaderStorage, BlockInnerStorage, BlockStorage, FailedBlockStorage, OldBlockHeaderStorage,
+    OldBlockInnerStorage, OldFailedBlockStorage,
+};
 use crate::block_info::BlockInfoStorage;
 use crate::chain_info::ChainInfoStorage;
-use crate::transaction::TransactionStorage;
+use crate::storage::{CodecWriteBatch, ColumnFamily, KeyCodec, SchemaStorage, ValueCodec};
+use crate::transaction::{LegacyTransactionStorage, TransactionStorage};
 use crate::transaction_info::OldTransactionInfoStorage;
 use crate::transaction_info::TransactionInfoStorage;
 use crate::{
-    CodecKVStore, RichTransactionInfo, StorageInstance, StorageVersion, TransactionStore,
-    BLOCK_BODY_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
+    CodecKVStore, RichTransactionInfo, StorageInstance, StorageVersion, BLOCK_BODY_PREFIX_NAME,
+    TRANSACTION_INFO_PREFIX_NAME,
 };
 use anyhow::{bail, ensure, format_err, Result};
 use once_cell::sync::Lazy;
@@ -17,7 +21,7 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::{debug, info, warn};
 use starcoin_types::block::BlockNumber;
 use starcoin_types::startup_info::{BarnardHardFork, StartupInfo};
-use starcoin_types::transaction::Transaction;
+use starcoin_vm_types::transaction::LegacyTransaction;
 use std::cmp::Ordering;
 
 pub struct DBUpgrade;
@@ -63,7 +67,8 @@ impl DBUpgrade {
         let block_storage = BlockStorage::new(instance.clone());
         let block_info_storage = BlockInfoStorage::new(instance.clone());
         let transaction_info_storage = TransactionInfoStorage::new(instance.clone());
-        let transaction_storage = TransactionStorage::new(instance.clone());
+        // Use old store here, TransactionStorage is using different column family now
+        let transaction_storage = LegacyTransactionStorage::new(instance.clone());
         let mut iter = old_transaction_info_storage.iter()?;
         iter.seek_to_first();
         let mut processed_count = 0;
@@ -114,12 +119,12 @@ impl DBUpgrade {
                     })?;
                 if transaction_index == 0 {
                     ensure!(
-                            matches!(transaction, Transaction::BlockMetadata(_)),
+                            matches!(transaction, LegacyTransaction::BlockMetadata(_)),
                             "transaction_index 0 must been BlockMetadata transaction, but got txn: {:?}, block:{:?}", transaction, block
                         );
                 } else {
                     ensure!(
-                            matches!(transaction, Transaction::UserTransaction(_)),
+                            matches!(transaction, LegacyTransaction::UserTransaction(_)),
                             "transaction_index > 0 must been UserTransaction transaction, but got txn: {:?}, block:{:?}", transaction, block
                         );
                 }
@@ -164,7 +169,8 @@ impl DBUpgrade {
     }
 
     fn db_upgrade_v3_v4(instance: &mut StorageInstance) -> Result<()> {
-        BlockStorage::upgrade_block_header(instance.clone())?;
+        upgrade_block_header(instance.clone())?;
+        upgrade_transaction(instance.clone())?;
 
         Ok(())
     }
@@ -251,4 +257,95 @@ impl DBUpgrade {
         }
         Ok(())
     }
+}
+
+fn upgrade_store<K, V1, V2, T1, T2>(old_store: T1, store: T2, batch_size: usize) -> Result<usize>
+where
+    K: KeyCodec + Copy,
+    V1: ValueCodec + Into<V2>,
+    V2: ValueCodec,
+    T1: SchemaStorage + ColumnFamily<Key = K, Value = V1>,
+    T2: SchemaStorage + ColumnFamily<Key = K, Value = V2>,
+{
+    let mut total_size: usize = 0;
+    let mut old_iter = old_store.iter()?;
+    old_iter.seek_to_first();
+
+    let mut to_delete = Some(CodecWriteBatch::new());
+    let mut to_put = Some(CodecWriteBatch::new());
+    let mut item_count = 0;
+
+    for item in old_iter {
+        let (id, old_block) = item?;
+        let block: V2 = old_block.into();
+        to_delete
+            .as_mut()
+            .unwrap()
+            .delete(id)
+            .expect("should never fail");
+        to_put
+            .as_mut()
+            .unwrap()
+            .put(id, block)
+            .expect("should never fail");
+
+        item_count += 1;
+        if item_count == batch_size {
+            total_size = total_size.saturating_add(item_count);
+            item_count = 0;
+            old_store
+                .write_batch(to_delete.take().unwrap())
+                .expect("should never fail");
+            store
+                .write_batch(to_put.take().unwrap())
+                .expect("should never fail");
+
+            to_delete = Some(CodecWriteBatch::new());
+            to_put = Some(CodecWriteBatch::new());
+        }
+    }
+    if item_count != 0 {
+        total_size = total_size.saturating_add(item_count);
+        old_store
+            .write_batch(to_delete.take().unwrap())
+            .expect("should never fail");
+        store
+            .write_batch(to_put.take().unwrap())
+            .expect("should never fail");
+    }
+
+    Ok(total_size)
+}
+
+fn upgrade_block_header(instance: StorageInstance) -> Result<()> {
+    const BATCH_SIZE: usize = 1000usize;
+
+    let old_header_store = OldBlockHeaderStorage::new(instance.clone());
+    let header_store = BlockHeaderStorage::new(instance.clone());
+    let total_size = upgrade_store(old_header_store, header_store, BATCH_SIZE)?;
+    info!("upgraded {total_size} block headers");
+
+    let old_block_store = OldBlockInnerStorage::new(instance.clone());
+    let block_store = BlockInnerStorage::new(instance.clone());
+    let total_blocks = upgrade_store(old_block_store, block_store, BATCH_SIZE)?;
+    info!("upgraded {total_blocks} blocks");
+
+    let old_failed_block_store = OldFailedBlockStorage::new(instance.clone());
+    let failed_block_store = FailedBlockStorage::new(instance);
+    let total_failed_blocks =
+        upgrade_store(old_failed_block_store, failed_block_store, BATCH_SIZE)?;
+    info!("upgraded {total_failed_blocks} failed_blocks");
+
+    Ok(())
+}
+
+fn upgrade_transaction(instance: StorageInstance) -> Result<()> {
+    const BATCH_SIZE: usize = 1000usize;
+
+    let old_txn_store = LegacyTransactionStorage::new(instance.clone());
+    let txn_store = TransactionStorage::new(instance);
+    let total_size = upgrade_store(old_txn_store, txn_store, BATCH_SIZE)?;
+    info!("upgraded {total_size} Transactions");
+
+    Ok(())
 }

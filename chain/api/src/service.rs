@@ -143,6 +143,7 @@ pub trait ChainAsyncService:
 
     async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
     async fn get_dag_block_children(&self, hashes: Vec<HashValue>) -> Result<Vec<HashValue>>;
+    async fn dag_fork_number(&self) -> Result<BlockNumber>;
     async fn get_dag_state(&self) -> Result<DagStateView>;
 }
 
@@ -450,6 +451,16 @@ where
             Ok(children)
         } else {
             bail!("get dag block children error")
+        }
+    }
+    
+    async fn dag_fork_number(&self) -> Result<BlockNumber> {
+        if let ChainResponse::DagForkNumber(fork_number) =
+            self.send(ChainRequest::GetDagForkNumber).await??
+        {
+            Ok(fork_number)
+        } else {
+            bail!("Get dag form number response error.")
         }
     }
 

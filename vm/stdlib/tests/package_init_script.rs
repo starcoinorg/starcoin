@@ -16,6 +16,7 @@ fn test_package_init_function() -> Result<()> {
         "./compiled/10/9-10/stdlib.blob",
         "./compiled/11/10-11/stdlib.blob",
         "./compiled/12/11-12/stdlib.blob",
+        "./compiled/13/12-13/stdlib.blob",
     ];
 
     let init_strs = [
@@ -30,8 +31,9 @@ fn test_package_init_function() -> Result<()> {
         "",
         "",
         "0x00000000000000000000000000000001::StdlibUpgradeScripts::upgrade_from_v11_to_v12",
+        "0x00000000000000000000000000000001::StdlibUpgradeScripts::upgrade_from_v12_to_v13",
     ];
-    for (i, version) in (2..=12).collect::<Vec<usize>>().into_iter().enumerate() {
+    for (i, version) in (2..=13).collect::<Vec<usize>>().into_iter().enumerate() {
         let package_file = format!("{}/{}-{}/stdlib.blob", version, version - 1, version);
         let package = COMPILED_MOVE_CODE_DIR
             .get_file(package_file)

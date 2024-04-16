@@ -21,6 +21,7 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorTreeStore;
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
+use starcoin_types::block::BlockNumber;
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
 use starcoin_types::transaction::{RichTransactionInfo, Transaction};
@@ -72,6 +73,7 @@ pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
 pub const STATE_NODE_PREFIX_NAME_PREV: ColumnFamilyName = "state_node_prev";
 pub const CHAIN_INFO_PREFIX_NAME: ColumnFamilyName = "chain_info";
 pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
+pub const TRANSACTION_PREFIX_NAME_V2: ColumnFamilyName = "transaction_v2";
 pub const TRANSACTION_INFO_PREFIX_NAME: ColumnFamilyName = "transaction_info";
 pub const TRANSACTION_INFO_PREFIX_NAME_V2: ColumnFamilyName = "transaction_info_v2";
 pub const TRANSACTION_INFO_HASH_PREFIX_NAME: ColumnFamilyName = "transaction_info_hash";
@@ -167,6 +169,7 @@ static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         CONTRACT_EVENT_PREFIX_NAME,
         FAILED_BLOCK_PREFIX_NAME,
         FAILED_BLOCK_PREFIX_NAME_V2,
+        TRANSACTION_PREFIX_NAME_V2,
         TABLE_INFO_PREFIX_NAME,
     ]
 });

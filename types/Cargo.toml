@@ -19,6 +19,8 @@ starcoin-uint = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
 lazy_static= { workspace = true }
+parking_lot = { workspace = true }
+
 [features]
 default = []
 fuzzing = ["proptest", "proptest-derive", "starcoin-vm-types/fuzzing"]

@@ -11,6 +11,7 @@ use starcoin_miner::{
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::BlockStore;
 use starcoin_txpool::TxPoolService;
+use starcoin_types::block::TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH;
 use starcoin_types::{system_events::GenerateBlockEvent, U256};
 use std::sync::Arc;
 use std::time::Duration;
@@ -24,7 +25,8 @@ async fn test_miner_service() {
     let node_config = Arc::new(config.clone());
     registry.put_shared(node_config.clone()).await.unwrap();
     let (storage, _chain_info, genesis, dag) =
-        Genesis::init_storage_for_test(config.net()).unwrap();
+        Genesis::init_storage_for_test(config.net(), TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH)
+            .unwrap();
     registry.put_shared(storage.clone()).await.unwrap();
     registry.put_shared(dag).await.unwrap();
 

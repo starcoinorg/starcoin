@@ -244,6 +244,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetDagBlockChildren { block_ids } => Ok(ChainResponse::HashVec(
                 self.inner.get_dag_block_children(block_ids)?,
             )),
+	    ChainRequest::GetDagForkNumber => Ok(ChainResponse::DagForkNumber(
+                self.inner.main.dag_fork_height()?,
+            )),
             ChainRequest::GetDagStateView => Ok(ChainResponse::DagStateView(Box::new(
                 self.inner.get_dag_state()?,
             ))),
@@ -455,7 +458,7 @@ impl ReadableChainService for ChainReaderServiceInner {
         if !head.is_dag() {
             bail!(
                 "The chain is still not a dag and its dag fork number is {} and the current is {}.",
-                head.dag_fork_height(),
+                self.main.dag_fork_height(),
                 head.number()
             );
         }
@@ -473,12 +476,13 @@ mod tests {
     use starcoin_chain_api::ChainAsyncService;
     use starcoin_config::NodeConfig;
     use starcoin_service_registry::{RegistryAsyncService, RegistryService};
+    use starcoin_types::block::TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH;
 
     #[stest::test]
     async fn test_actor_launch() -> Result<()> {
         let config = Arc::new(NodeConfig::random_for_test());
         let (storage, chain_info, _, dag) =
-            test_helper::Genesis::init_storage_for_test(config.net())?;
+            test_helper::Genesis::init_storage_for_test(config.net(), TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH)?;
         let registry = RegistryService::launch();
         registry.put_shared(dag).await?;
         registry.put_shared(config).await?;

@@ -4,6 +4,7 @@
 use crate::storage::{ColumnFamily, InnerStorage, KVStore};
 use crate::{StorageVersion, CHAIN_INFO_PREFIX_NAME};
 use anyhow::Result;
+use bcs_ext::BCSCodec;
 use starcoin_crypto::HashValue;
 use starcoin_types::startup_info::{BarnardHardFork, SnapshotRange, StartupInfo};
 use std::convert::{TryFrom, TryInto};

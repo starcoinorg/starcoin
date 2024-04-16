@@ -1,4 +1,5 @@
 use super::util::Refs;
+use crate::consensusdb::prelude::StoreError;
 use crate::consensusdb::schemadb::{GhostdagStoreReader, HeaderStoreReader, RelationsStoreReader};
 use crate::reachability::reachability_service::ReachabilityService;
 use crate::types::{ghostdata::GhostdagData, ordering::*};
@@ -80,24 +81,21 @@ impl<
     pub fn find_selected_parent(
         &self,
         parents: impl IntoIterator<Item = Hash>,
-    ) -> anyhow::Result<Hash> {
-        parents
+    ) -> Result<Hash, StoreError> {
+        Ok(parents
             .into_iter()
-            .map(|parent| {
-                let blue_work = self
-                    .ghostdag_store
-                    .get_blue_work(parent)
-                    .with_context(|| format!("Failed to get blue work for parent {:?}", parent))?;
-                Ok(SortableBlock {
+            .map(|parent| match self.ghostdag_store.get_blue_work(parent) {
+                Ok(blue_work) => Ok(SortableBlock {
                     hash: parent,
                     blue_work,
-                })
+                }),
+                Err(e) => Err(e),
             })
-            .collect::<Result<Vec<_>>>()?
+            .collect::<Result<Vec<_>, StoreError>>()?
             .into_iter()
             .max()
-            .map(|sortable_block| sortable_block.hash)
-            .ok_or_else(|| anyhow::Error::msg("No parent found"))
+            .ok_or(StoreError::MaxBlueworkNotFound)?
+            .hash)
     }
 
     /// Runs the GHOSTDAG protocol and calculates the block GhostdagData by the given parents.
@@ -118,7 +116,7 @@ impl<
     ///    blues_anticone_sizes.
     ///
     /// For further details see the article https://eprint.iacr.org/2018/104.pdf
-    pub fn ghostdag(&self, parents: &[Hash]) -> Result<GhostdagData> {
+    pub fn ghostdag(&self, parents: &[Hash]) -> Result<GhostdagData, StoreError> {
         assert!(
             !parents.is_empty(),
             "genesis must be added via a call to init"
@@ -129,10 +127,10 @@ impl<
         let mut new_block_data = GhostdagData::new_with_selected_parent(selected_parent, self.k);
         // Get the mergeset in consensus-agreed topological order (topological here means forward in time from blocks to children)
         let ordered_mergeset =
-            self.ordered_mergeset_without_selected_parent(selected_parent, parents);
+            self.ordered_mergeset_without_selected_parent(selected_parent, parents)?;
 
         for blue_candidate in ordered_mergeset.iter().cloned() {
-            let coloring = self.check_blue_candidate(&new_block_data, blue_candidate);
+            let coloring = self.check_blue_candidate(&new_block_data, blue_candidate)?;
 
             if let ColoringOutput::Blue(blue_anticone_size, blues_anticone_sizes) = coloring {
                 // No k-cluster violation found, we can now set the candidate block as blue
@@ -144,10 +142,14 @@ impl<
 
         let blue_score = self
             .ghostdag_store
-            .get_blue_score(selected_parent)
-            .unwrap()
+            .get_blue_score(selected_parent)?
             .checked_add(new_block_data.mergeset_blues.len() as u64)
-            .unwrap();
+            .ok_or_else(|| {
+                StoreError::BlueScoreOverflow(format!(
+                    "{:?}",
+                    new_block_data.mergeset_blues.len() as u64
+                ))
+            })?;
 
         let added_blue_work: BlueWorkType = new_block_data
             .mergeset_blues
@@ -162,10 +164,9 @@ impl<
 
         let blue_work = self
             .ghostdag_store
-            .get_blue_work(selected_parent)
-            .unwrap()
+            .get_blue_work(selected_parent)?
             .checked_add(added_blue_work)
-            .unwrap();
+            .ok_or_else(|| StoreError::BlueScoreOverflow(format!("{added_blue_work:?}")))?; // TODO: handle overflow
 
         new_block_data.finalize_score_and_work(blue_score, blue_work);
 
@@ -179,7 +180,7 @@ impl<
         blue_candidate: Hash,
         candidate_blues_anticone_sizes: &mut BlockHashMap<KType>,
         candidate_blue_anticone_size: &mut KType,
-    ) -> ColoringState {
+    ) -> Result<ColoringState, StoreError> {
         // If blue_candidate is in the future of chain_block, it means
         // that all remaining blues are in the past of chain_block and thus
         // in the past of blue_candidate. In this case we know for sure that
@@ -195,7 +196,7 @@ impl<
                 .reachability_service
                 .is_dag_ancestor_of(hash, blue_candidate)
             {
-                return ColoringState::Blue;
+                return Ok(ColoringState::Blue);
             }
         }
 
@@ -209,39 +210,53 @@ impl<
             }
 
             candidate_blues_anticone_sizes
-                .insert(block, self.blue_anticone_size(block, new_block_data));
+                .insert(block, self.blue_anticone_size(block, new_block_data)?);
 
-            *candidate_blue_anticone_size = (*candidate_blue_anticone_size).checked_add(1).unwrap();
+            *candidate_blue_anticone_size = (*candidate_blue_anticone_size)
+                .checked_add(1)
+                .ok_or_else(|| {
+                    StoreError::BlueAnticoreSizeOverflow(format!(
+                        "{:?}",
+                        *candidate_blue_anticone_size
+                    ))
+                })?;
             if *candidate_blue_anticone_size > self.k {
                 // k-cluster violation: The candidate's blue anticone exceeded k
-                return ColoringState::Red;
+                return Ok(ColoringState::Red);
             }
 
-            if *candidate_blues_anticone_sizes.get(&block).unwrap() == self.k {
+            if *candidate_blues_anticone_sizes
+                .get(&block)
+                .ok_or(StoreError::AnticoreSizeNotFound)?
+                == self.k
+            {
                 // k-cluster violation: A block in candidate's blue anticone already
                 // has k blue blocks in its own anticone
-                return ColoringState::Red;
+                return Ok(ColoringState::Red);
             }
 
             // This is a sanity check that validates that a blue
             // block's blue anticone is not already larger than K.
             assert!(
-                *candidate_blues_anticone_sizes.get(&block).unwrap() <= self.k,
+                *candidate_blues_anticone_sizes
+                    .get(&block)
+                    .ok_or(StoreError::AnticoreSizeNotFound)?
+                    <= self.k,
                 "found blue anticone larger than K"
             );
         }
 
-        ColoringState::Pending
+        Ok(ColoringState::Pending)
     }
 
     /// Returns the blue anticone size of `block` from the worldview of `context`.
     /// Expects `block` to be in the blue set of `context`
-    fn blue_anticone_size(&self, block: Hash, context: &GhostdagData) -> KType {
+    fn blue_anticone_size(&self, block: Hash, context: &GhostdagData) -> Result<KType, StoreError> {
         let mut current_blues_anticone_sizes = HashKTypeMap::clone(&context.blues_anticone_sizes);
         let mut current_selected_parent = context.selected_parent;
         loop {
             if let Some(size) = current_blues_anticone_sizes.get(&block) {
-                return *size;
+                return Ok(*size);
             }
             /* TODO: consider refactor it
             if current_selected_parent == self.genesis_hash
@@ -252,12 +267,10 @@ impl<
             */
             current_blues_anticone_sizes = self
                 .ghostdag_store
-                .get_blues_anticone_sizes(current_selected_parent)
-                .unwrap();
+                .get_blues_anticone_sizes(current_selected_parent)?;
             current_selected_parent = self
                 .ghostdag_store
-                .get_selected_parent(current_selected_parent)
-                .unwrap();
+                .get_selected_parent(current_selected_parent)?;
         }
     }
 
@@ -265,11 +278,16 @@ impl<
         &self,
         new_block_data: &GhostdagData,
         blue_candidate: Hash,
-    ) -> ColoringOutput {
+    ) -> Result<ColoringOutput, StoreError> {
         // The maximum length of new_block_data.mergeset_blues can be K+1 because
         // it contains the selected parent.
-        if new_block_data.mergeset_blues.len() as KType == self.k.checked_add(1).unwrap() {
-            return ColoringOutput::Red;
+        if new_block_data.mergeset_blues.len() as KType
+            == self
+                .k
+                .checked_add(1)
+                .ok_or_else(|| StoreError::KOverflow(format!("{:?}", self.k)))?
+        {
+            return Ok(ColoringOutput::Red);
         }
 
         let mut candidate_blues_anticone_sizes: BlockHashMap<KType> =
@@ -291,16 +309,16 @@ impl<
                 blue_candidate,
                 &mut candidate_blues_anticone_sizes,
                 &mut candidate_blue_anticone_size,
-            );
+            )?;
 
             match state {
                 ColoringState::Blue => {
-                    return ColoringOutput::Blue(
+                    return Ok(ColoringOutput::Blue(
                         candidate_blue_anticone_size,
                         candidate_blues_anticone_sizes,
-                    );
+                    ));
                 }
-                ColoringState::Red => return ColoringOutput::Red,
+                ColoringState::Red => return Ok(ColoringOutput::Red),
                 ColoringState::Pending => (), // continue looping
             }
 
@@ -308,20 +326,27 @@ impl<
                 hash: Some(chain_block.data.selected_parent),
                 data: self
                     .ghostdag_store
-                    .get_data(chain_block.data.selected_parent)
-                    .unwrap()
+                    .get_data(chain_block.data.selected_parent)?
                     .into(),
             }
         }
     }
 
-    pub fn sort_blocks(&self, blocks: impl IntoIterator<Item = Hash>) -> Vec<Hash> {
-        let mut sorted_blocks: Vec<Hash> = blocks.into_iter().collect();
-        sorted_blocks.sort_by_cached_key(|block| SortableBlock {
-            hash: *block,
-            blue_work: self.ghostdag_store.get_blue_work(*block).unwrap(),
-        });
-        sorted_blocks
+    pub fn sort_blocks(
+        &self,
+        blocks: impl IntoIterator<Item = Hash>,
+    ) -> Result<Vec<Hash>, StoreError> {
+        let mut sorted_blocks = blocks
+            .into_iter()
+            .map(|block| {
+                Ok(SortableBlock {
+                    hash: block,
+                    blue_work: self.ghostdag_store.get_blue_work(block)?,
+                })
+            })
+            .collect::<Result<Vec<_>, StoreError>>()?;
+        sorted_blocks.sort();
+        Ok(sorted_blocks.into_iter().map(|block| block.hash).collect())
     }
 }
 

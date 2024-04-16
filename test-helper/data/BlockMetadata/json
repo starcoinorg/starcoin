@@ -8,5 +8,6 @@
   "chain_id": {
     "id": 255
   },
-  "parent_gas_used": 0
+  "parent_gas_used": 0,
+  "parents_hash": []
 }

@@ -415,7 +415,7 @@ fn stake_to_be_member_function(
 }
 
 fn block_from_metadata(block_meta: BlockMetadata, chain_state: &ChainStateDB) -> Result<Block> {
-    let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _) =
+    let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _, parents_hash) =
         block_meta.into_inner();
     let block_body = BlockBody::new(vec![], None);
     let block_header = BlockHeader::new(
@@ -432,7 +432,7 @@ fn block_from_metadata(block_meta: BlockMetadata, chain_state: &ChainStateDB) ->
         chain_state.get_chain_id()?,
         0,
         BlockHeaderExtra::new([0u8; 4]),
-        None,
+        parents_hash,
     );
     Ok(Block::new(block_header, block_body))
 }

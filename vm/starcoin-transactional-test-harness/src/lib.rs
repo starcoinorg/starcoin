@@ -819,7 +819,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         let last_blockmeta = self
             .context
             .storage
-            .get_resource::<on_chain_resource::BlockMetadata>(genesis_address())?;
+            .get_resource::<on_chain_resource::BlockMetadataV2>(genesis_address())?;
 
         let height = number
             .or_else(|| last_blockmeta.as_ref().map(|b| b.number + 1))
@@ -853,7 +853,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             e
         })?;
 
-        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _) =
+        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _, parents_hash) =
             new_block_meta.clone().into_inner();
         let block_body = BlockBody::new(vec![], None);
         let block_header = BlockHeader::new(
@@ -870,7 +870,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             self.context.storage.get_chain_id()?,
             0,
             BlockHeaderExtra::new([0u8; 4]),
-            None,
+            parents_hash,
         );
         let new_block = Block::new(block_header, block_body);
         let mut chain = self.context.chain.lock().unwrap();

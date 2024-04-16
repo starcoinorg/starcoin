@@ -276,14 +276,14 @@ impl BlockVerifier for BasicVerifier {
 
         verify_block!(
             VerifyBlockField::Header,
-            !new_block_header.is_dag()
+            !current_chain.is_dag(new_block_header)?
                 && new_block_header
                     .parents_hash()
                     .unwrap_or_default()
                     .is_empty(),
             "Single chain block is invalid: number {} fork_height {} parents_hash len {}",
             new_block_header.number(),
-            new_block_header.dag_fork_height(),
+            current_chain.dag_fork_height()?,
             new_block_header.parents_hash().unwrap_or_default().len()
         );
         Ok(())
@@ -372,7 +372,7 @@ impl BlockVerifier for DagVerifier {
             "Invalid parents_hash {:?} for a dag block {}, fork height {}",
             new_block_header.parents_hash(),
             new_block_header.number(),
-            new_block_header.dag_fork_height()
+            current_chain.dag_fork_height()?,
         );
 
         verify_block!(
