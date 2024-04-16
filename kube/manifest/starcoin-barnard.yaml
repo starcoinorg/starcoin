@@ -67,9 +67,9 @@ spec:
         livenessProbe:
           tcpSocket:
             port: 9840
-          initialDelaySeconds: 60
-          periodSeconds: 10
-          timeoutSeconds: 10
+          initialDelaySeconds: 60000
+          periodSeconds: 5
+          timeoutSeconds: 2
           failureThreshold: 3
           successThreshold: 1
         readinessProbe:
@@ -79,9 +79,9 @@ spec:
               - -c
               - >-
                  /starcoin/starcoin -n barnard -d /sc-data node sync status|grep Synchronized
-          initialDelaySeconds: 60
-          periodSeconds: 10
-          timeoutSeconds: 10
+          initialDelaySeconds: 60000
+          periodSeconds: 5
+          timeoutSeconds: 2
           failureThreshold: 3
           successThreshold: 1
   volumeClaimTemplates:
