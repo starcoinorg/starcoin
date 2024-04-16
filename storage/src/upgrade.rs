@@ -26,7 +26,7 @@ pub struct DBUpgrade;
 pub static BARNARD_HARD_FORK_HEIGHT: BlockNumber = 16113030;
 pub static BARNARD_HARD_FORK_HASH: Lazy<HashValue> = Lazy::new(|| {
     HashValue::from_hex_literal(
-        "0x367e3151a9f056dd9993df8d5c25634ccf419a08e14ceb36582760f6c26d5d21",
+        "0x266800f9dcb1f0900fbcd874078593b6e9e6b0b646ae3771298def7b1b8f1b0b",
     )
     .expect("")
 });
