@@ -14,7 +14,7 @@ starcoin-vm-types = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 name = "starcoin-dataformat-generator"
-version = "1.13.11"
+version = "1.13.12-alpha"
 build = "build.rs"
 homepage = { workspace = true }
 license = { workspace = true }

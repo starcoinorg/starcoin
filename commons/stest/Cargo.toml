@@ -15,7 +15,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "stest"
 publish = { workspace = true }
-version = "1.13.11"
+version = "1.13.12-alpha"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

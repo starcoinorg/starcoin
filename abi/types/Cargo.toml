@@ -13,7 +13,7 @@ authors = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-abi-types"
-version = "1.13.11"
+version = "1.13.12-alpha"
 homepage = { workspace = true }
 publish = { workspace = true }
 repository = { workspace = true }
