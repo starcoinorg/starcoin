@@ -34,6 +34,7 @@ serde = { features = ["derive"], workspace = true }
 starcoin-parallel-executor = { workspace = true }
 rayon = { workspace = true }
 num_cpus = { workspace = true }
+hex = "0.4.3"
 
 [dev-dependencies]
 stdlib = { package = "stdlib", workspace = true }

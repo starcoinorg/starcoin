@@ -13,6 +13,9 @@ starcoin-state-api = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
+starcoin-vm-types = { workspace = true }
+starcoin-vm-runtime = { workspace = true }
+starcoin-force-upgrade = { workspace = true }
 
 [dev-dependencies]
 starcoin-genesis = { workspace = true }

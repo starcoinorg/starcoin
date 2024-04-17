@@ -93,7 +93,7 @@ pub struct StarcoinVM {
 
 /// marking of stdlib version which includes vmconfig upgrades.
 const VMCONFIG_UPGRADE_VERSION_MARK: u64 = 10;
-const GAS_SCHEDULE_UPGRADE_VERSION_MARK: u64 = 12;
+// const GAS_SCHEDULE_UPGRADE_VERSION_MARK: u64 = 12;
 
 impl StarcoinVM {
     #[cfg(feature = "metrics")]
@@ -143,6 +143,7 @@ impl StarcoinVM {
         } else {
             self.load_configs_impl(state)?;
         }
+
         match self.gas_schedule.as_ref() {
             None => {
                 bail!("failed to load gas schedule!");
@@ -197,9 +198,7 @@ impl StarcoinVM {
                     Some(GasSchedule::from(&gas_cost_table)),
                     "gas schedule from VMConfig",
                 )
-            } else if stdlib_version >= StdlibVersion::Version(VMCONFIG_UPGRADE_VERSION_MARK)
-                && stdlib_version < StdlibVersion::Version(GAS_SCHEDULE_UPGRADE_VERSION_MARK)
-            {
+            } else {
                 debug!(
                     "stdlib version: {}, fetch VMConfig from onchain module",
                     stdlib_version
@@ -263,13 +262,6 @@ impl StarcoinVM {
                     Some(GasSchedule::from(&cost_table)),
                     "gas schedule from VMConfig",
                 )
-            } else {
-                debug!(
-                    "stdlib version: {}, fetch schedule from onchain  module GasSchedule",
-                    stdlib_version
-                );
-                let gas_schedule = GasSchedule::fetch_config(&remote_storage)?;
-                (gas_schedule, "gas schedule from GasSchedule")
             };
             #[cfg(feature = "print_gas_info")]
             match self.gas_schedule.as_ref() {
@@ -1068,8 +1060,8 @@ impl StarcoinVM {
             .map_err(|_err| VMStatus::Error(StatusCode::STORAGE_ERROR))?;
 
         let mut gas_left = block_gas_limit.unwrap_or(u64::MAX);
-
         let blocks = chunk_block_transactions(transactions);
+
         'outer: for block in blocks {
             #[cfg(feature = "metrics")]
             let txn_type_name = block.type_name().to_string();
@@ -1083,9 +1075,12 @@ impl StarcoinVM {
                                 .with_label_values(&[txn_type_name.as_str()])
                                 .start_timer()
                         });
+
                         let gas_unit_price = transaction.gas_unit_price();
+
                         let (status, output) = self
                             .execute_user_transaction(&data_cache.as_move_resolver(), transaction);
+
                         // only need to check for user transactions.
                         match gas_left.checked_sub(output.gas_used()) {
                             Some(l) => gas_left = l,
@@ -1133,12 +1128,14 @@ impl StarcoinVM {
                             .with_label_values(&[txn_type_name.as_str()])
                             .start_timer()
                     });
+
                     let (status, output) = match self
                         .process_block_metadata(&data_cache.as_move_resolver(), block_metadata)
                     {
                         Ok(output) => (VMStatus::Executed, output),
                         Err(vm_status) => discard_error_vm_status(vm_status),
                     };
+
                     debug_assert_eq!(
                         output.gas_used(),
                         0,

@@ -5,6 +5,7 @@ use anyhow::{bail, format_err, Result};
 use bcs_ext::{BCSCodec, Sample};
 use clap::{IntoApp, Parser};
 use csv::Writer;
+use db_exporter::force_deploy_output::{force_deploy_output, ForceDeployOutput};
 use db_exporter::{
     verify_header::{verify_header_via_export_file, VerifyHeaderOptions},
     verify_module::{verify_modules_via_export_file, VerifyModuleOptions},
@@ -244,6 +245,7 @@ enum Cmd {
     ApplyBlockOutput(ApplyBlockOutputOptions),
     SaveStartupInfo(SaveStartupInfoOptions),
     TokenSupply(TokenSupplyOptions),
+    ForceDeploy(ForceDeployOutput),
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -716,6 +718,14 @@ async fn main() -> anyhow::Result<()> {
         Cmd::ApplyBlockOutput(option) => {
             let result = apply_block_output(option.to_path, option.input_path, option.net);
             return result;
+        }
+        Cmd::ForceDeploy(option) => {
+            return force_deploy_output(
+                option.input_path,
+                option.package_path,
+                option.net,
+                option.block_num,
+            )
         }
         Cmd::SaveStartupInfo(option) => {
             let result = save_startup_info(option.to_path, option.net, option.hash_value);

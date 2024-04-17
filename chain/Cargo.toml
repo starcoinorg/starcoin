@@ -21,6 +21,8 @@ starcoin-statedb = { workspace = true }
 starcoin-time-service = { workspace = true }
 starcoin-types = { package = "starcoin-types", workspace = true }
 starcoin-vm-types = { workspace = true }
+starcoin-vm-runtime = { workspace = true }
+starcoin-force-upgrade = { workspace = true }
 starcoin-storage = { workspace = true }
 thiserror = { workspace = true }
 once_cell = { workspace = true }
@@ -41,6 +43,7 @@ stdlib = { workspace = true }
 stest = { workspace = true }
 test-helper = { workspace = true }
 tokio = { features = ["full"], workspace = true }
+starcoin-force-upgrade = { workspace = true }
 
 [features]
 default = []

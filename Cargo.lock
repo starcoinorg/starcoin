@@ -2129,9 +2129,11 @@ dependencies = [
  "rayon",
  "serde 1.0.152",
  "serde_json",
+ "starcoin-account",
  "starcoin-account-api",
  "starcoin-accumulator",
  "starcoin-chain",
+ "starcoin-cmd",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
@@ -2140,6 +2142,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-resource-viewer",
  "starcoin-rpc-api",
+ "starcoin-state-api",
  "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
@@ -9271,6 +9274,7 @@ dependencies = [
  "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-executor",
+ "starcoin-force-upgrade",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-open-block",
@@ -9282,6 +9286,7 @@ dependencies = [
  "starcoin-time-service",
  "starcoin-transaction-builder",
  "starcoin-types",
+ "starcoin-vm-runtime",
  "starcoin-vm-types",
  "stdlib",
  "stest",
@@ -9604,6 +9609,7 @@ dependencies = [
  "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-dev",
+ "starcoin-force-upgrade",
  "starcoin-logger",
  "starcoin-resource-viewer",
  "starcoin-state-api",
@@ -9672,9 +9678,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-force-upgrade"
+version = "1.13.10"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bcs-ext",
+ "futures 0.3.26",
+ "include_dir",
+ "parking_lot 0.12.1",
+ "starcoin-accumulator",
+ "starcoin-chain-api",
+ "starcoin-crypto",
+ "starcoin-genesis",
+ "starcoin-logger",
+ "starcoin-move-compiler",
+ "starcoin-state-api",
+ "starcoin-statedb",
+ "starcoin-storage",
+ "starcoin-types",
+ "starcoin-vm-runtime",
+ "starcoin-vm-types",
+ "stdlib",
+ "stest",
+]
+
+[[package]]
 name = "starcoin-framework"
 version = "11.0.0"
-source = "git+https://github.com/starcoinorg/starcoin-framework?rev=345a3900a0064dc57a9560235bc72c12f03448b1#345a3900a0064dc57a9560235bc72c12f03448b1"
+source = "git+https://github.com/starcoinorg/starcoin-framework?rev=1df759371941ab59cb2295542f7eafa85c4ef6fe#1df759371941ab59cb2295542f7eafa85c4ef6fe"
 dependencies = [
  "anyhow",
  "include_dir",
@@ -10254,12 +10286,15 @@ dependencies = [
  "starcoin-chain-api",
  "starcoin-crypto",
  "starcoin-executor",
+ "starcoin-force-upgrade",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-state-api",
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-types",
+ "starcoin-vm-runtime",
+ "starcoin-vm-types",
  "stest",
 ]
 
@@ -11006,6 +11041,7 @@ version = "1.13.11"
 dependencies = [
  "anyhow",
  "bcs-ext",
+ "hex",
  "move-core-types",
  "move-stdlib",
  "move-table-extension",

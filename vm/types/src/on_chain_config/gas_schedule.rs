@@ -2,6 +2,7 @@ use crate::gas_schedule::{
     G_MAX_TRANSACTION_SIZE_IN_BYTES_V1, G_MAX_TRANSACTION_SIZE_IN_BYTES_V2,
     G_MAX_TRANSACTION_SIZE_IN_BYTES_V3,
 };
+
 use crate::on_chain_config::OnChainConfig;
 use anyhow::{format_err, Result};
 #[cfg(feature = "print_gas_info")]
