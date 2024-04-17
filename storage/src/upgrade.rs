@@ -22,10 +22,10 @@ use std::cmp::Ordering;
 
 pub struct DBUpgrade;
 
-pub static BARNARD_HARD_FORK_HEIGHT: BlockNumber = 16057420;
+pub static BARNARD_HARD_FORK_HEIGHT: BlockNumber = 16057000;
 pub static BARNARD_HARD_FORK_HASH: Lazy<HashValue> = Lazy::new(|| {
     HashValue::from_hex_literal(
-        "0x602bb269e3a221510f82b0b812304e767457f73ac3203663bd401ef3d29bcc97",
+        "0x1dd5987fa3b8bffad60f7a7756e73acd7b6808fed5a174200bf49e9f5de2d073",
     )
     .expect("")
 });
