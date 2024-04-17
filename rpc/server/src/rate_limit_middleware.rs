@@ -31,7 +31,6 @@ pub struct JsonApiRateLimitMiddleware {
 
 impl JsonApiRateLimitMiddleware {
     pub fn from_config(quotas: ApiQuotaConfiguration) -> Self {
-        info!("jacktest: JsonApiRateLimitMiddleware new, quotas: {:?}", quotas); 
         let limiters = ApiLimiters::new(
             Into::<QuotaWrapper>::into(quotas.default_global_api_quota()).0,
             quotas
