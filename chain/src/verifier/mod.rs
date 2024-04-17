@@ -95,7 +95,7 @@ pub trait BlockVerifier {
     where
         R: ChainReader,
     {
-        if header.is_dag() {
+        if current_chain.is_dag(header)? {
             return Ok(());
         }
         let epoch = current_chain.epoch();
@@ -455,7 +455,7 @@ impl BlockVerifier for DagBasicVerifier {
             "Invalid parents_hash {:?} for a dag block {}, fork height {}",
             new_block_header.parents_hash(),
             new_block_header.number(),
-            new_block_header.dag_fork_height()
+            current_chain.dag_fork_height()?,
         );
 
         verify_block!(

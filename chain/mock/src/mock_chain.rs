@@ -10,7 +10,7 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
-use starcoin_storage::{BlockStore, Storage};
+use starcoin_storage::Storage;
 use starcoin_types::block::{BlockNumber, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH};
 use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::startup_info::ChainInfo;

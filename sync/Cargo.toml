@@ -46,7 +46,7 @@ starcoin-consensus = { workspace = true }
 timeout-join-handler = { workspace = true }
 starcoin-flexidag = { workspace = true }
 starcoin-dag = { workspace = true }
-starcoin-chain-mock = { workspace = true, features = ["testing"] }
+starcoin-chain-mock = { workspace = true }
 
 [dev-dependencies]
 hex = { workspace = true }

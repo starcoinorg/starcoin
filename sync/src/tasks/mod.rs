@@ -617,6 +617,7 @@ pub fn full_sync_task<H, A, F, N>(
     sync_metrics: Option<SyncMetrics>,
     vm_metrics: Option<VMMetrics>,
     dag: BlockDAG,
+    dag_fork_number: BlockNumber,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
@@ -631,8 +632,6 @@ where
     let current_block_header = storage
         .get_block_header_by_hash(current_block_id)?
         .ok_or_else(|| format_err!("Can not find block header by id: {}", current_block_id))?;
-    let dag_fork_number = current_block_header.dag_fork_height();
-    info!("start full sync task, current block number: {}, dag fork number: {:?}", current_block_header.number(), dag_fork_number);
     let current_block_number = current_block_header.number();
     let current_block_id = current_block_header.id();
     let current_block_info = storage
@@ -765,11 +764,20 @@ where
                     .sync_peer_count
                     .set(fetcher.peer_selector().len() as u64);
             }
-
             if target.target_id.number() <= latest_block_chain.status().head.number() {
                 break;
             }
+            // chain read the fork number from remote peers, break and start again
+            if latest_block_chain.dag_fork_height().map_err(TaskError::BreakError)? < BlockNumber::MAX &&
+                dag_fork_number != BlockNumber::MAX {
+                break;
+            }
             let chain_status = latest_block_chain.status();
+            if latest_block_chain.is_dag(&latest_block_chain.status().head).map_err(TaskError::BreakError)? {
+                if chain_status.info().get_total_difficulty() >= target.block_info.get_total_difficulty() {
+                    break;
+                }
+            }
             max_peers = max_better_peers(
                 target_block_number,
                 latest_block_chain.current_header().number(),

@@ -40,7 +40,6 @@ pub struct OpenedBlock {
     difficulty: U256,
     strategy: ConsensusStrategy,
     vm_metrics: Option<VMMetrics>,
-    tips_hash: Option<Vec<HashValue>>,
     blue_blocks: Option<Vec<Block>>,
 }
 
@@ -94,7 +93,6 @@ impl OpenedBlock {
             difficulty,
             strategy,
             vm_metrics,
-            tips_hash,
             blue_blocks,
         };
         opened_block.initialize()?;
@@ -299,7 +297,6 @@ impl OpenedBlock {
             self.difficulty,
             self.strategy,
             self.block_meta,
-            self.tips_hash,
         );
         Ok(block_template)
     }

@@ -455,10 +455,10 @@ impl ReadableChainService for ChainReaderServiceInner {
 
     fn get_dag_state(&self) -> Result<DagStateView> {
         let head = self.main.current_header();
-        if !head.is_dag() {
+        if !self.main.is_dag(&head)? || !self.main.is_dag_genesis(&head)? {
             bail!(
                 "The chain is still not a dag and its dag fork number is {} and the current is {}.",
-                self.main.dag_fork_height(),
+                self.main.dag_fork_height()?,
                 head.number()
             );
         }

@@ -131,7 +131,7 @@ impl BlockChain {
             dag: dag.clone(),
         };
         let current_header = chain.current_header();
-        if current_header.is_dag() || current_header.is_dag_genesis() {
+        if chain.is_dag(&current_header)? || chain.is_dag_genesis(&current_header)? {
             dag.set_reindex_root(chain.get_block_dag_origin()?)?;
         }
         watch(CHAIN_WATCH_NAME, "n1251");
@@ -277,7 +277,7 @@ impl BlockChain {
         let final_block_gas_limit = block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
-        let (_, tips_hash) = if current_number <= self.dag_fork_height() {
+        let (_, tips_hash) = if current_number <= self.dag_fork_height()? {
             (None, None)
         } else if tips.is_some() {
             (Some(self.get_block_dag_genesis(&previous_header)?), tips)
@@ -412,7 +412,7 @@ impl BlockChain {
     }
 
     fn check_parents_coherent(&self, header: &BlockHeader) -> Result<HashValue> {
-        if !header.is_dag() {
+        if !self.is_dag(header)? {
             bail!("Block is not a dag block.");
         }
 
@@ -820,7 +820,7 @@ impl BlockChain {
                 .get_accumulator_store(AccumulatorStoreType::Block),
         );
         let dag_genesis = block_accumulator
-            .get_leaf(self.dag_fork_height())?
+            .get_leaf(self.dag_fork_height()?)?
             .ok_or_else(|| anyhow!("failed to get the dag genesis"))?;
 
         Ok(dag_genesis)
@@ -1077,7 +1077,7 @@ impl ChainReader for BlockChain {
     }
 
     fn verify(&self, block: Block) -> Result<VerifiedBlock> {
-        if block.header().is_dag() {
+        if self.is_dag(block.header())? {
             DagBasicVerifier::verify_header(self, block.header())?;
             Ok(VerifiedBlock(block))
         } else {
@@ -1226,7 +1226,7 @@ impl ChainReader for BlockChain {
             self.storage
                 .get_accumulator_store(AccumulatorStoreType::Block),
         );
-        let dag_genesis = match block_accumulator.get_leaf(self.dag_fork_height())? {
+        let dag_genesis = match block_accumulator.get_leaf(self.dag_fork_height()?)? {
             Some(dag_genesis) => dag_genesis,
             None => return Ok(false),
         };
@@ -1237,7 +1237,7 @@ impl ChainReader for BlockChain {
                 .get_accumulator_store(AccumulatorStoreType::Block),
         );
         let current_chain_dag_genesis = match current_chain_block_accumulator
-            .get_leaf(self.dag_fork_height())?
+            .get_leaf(self.dag_fork_height()?)?
         {
             Some(dag_genesis) => dag_genesis,
             None => return Ok(false),

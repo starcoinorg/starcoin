@@ -126,7 +126,7 @@ impl BlockDAG {
         // self.storage
         //     .relations_store
         //     .insert(origin, BlockHashes::new(vec![]))?;
-        self.commit(genesis, real_origin)?;
+        self.commit_genesis(genesis, real_origin)?;
         self.save_dag_state(
             genesis_id,
             DagState {
@@ -152,12 +152,12 @@ impl BlockDAG {
         Ok(())
     }
 
-    fn commit_genesis(&self, genesis: BlockHeader) -> anyhow::Result<()> {
-        self.commit_inner(genesis, true)
+    fn commit_genesis(&mut self, genesis: BlockHeader, origin: HashValue) -> anyhow::Result<()> {
+        self.commit_inner(genesis, origin, true)
     }
 
-    pub fn commit(&self, header: BlockHeader) -> anyhow::Result<()> {
-        self.commit_inner(header, false)
+    pub fn commit(&mut self, header: BlockHeader, origin: HashValue) -> anyhow::Result<()> {
+        self.commit_inner(header, origin, false)
     }
     
     pub fn commit_inner(&mut self, header: BlockHeader, origin: HashValue, is_dag_genesis: bool) -> anyhow::Result<()> {
@@ -231,7 +231,7 @@ impl BlockDAG {
         }
 
         // store relations
-        if header.is_dag_genesis() {
+        if is_dag_genesis {
             let origin = header.parent_hash();
             let real_origin = Hash::sha3_256_of(&[origin, header.id()].encode()?);
             process_key_already_error(
@@ -311,14 +311,14 @@ mod tests {
 
     #[test]
     fn test_dag_0() {
-        let dag = BlockDAG::create_for_testing().unwrap();
+        let mut dag = BlockDAG::create_for_testing().unwrap();
         let genesis = BlockHeader::dag_genesis_random(TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)
             .as_builder()
             .with_difficulty(0.into())
             .build();
 
         let mut parents_hash = vec![genesis.id()];
-        dag.init_with_genesis(genesis).unwrap();
+        let origin = dag.init_with_genesis(genesis).unwrap();
 
         for _ in 0..10 {
             let header_builder = BlockHeaderBuilder::random();
@@ -326,7 +326,7 @@ mod tests {
                 .with_parents_hash(Some(parents_hash.clone()))
                 .build();
             parents_hash = vec![header.id()];
-            dag.commit(header.to_owned()).unwrap();
+            dag.commit(header.to_owned(), origin).unwrap();
             let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
             println!("{:?},{:?}", header, ghostdata);
         }
@@ -368,17 +368,17 @@ mod tests {
             .build();
         let mut latest_id = block6.id();
         let genesis_id = genesis.id();
-        let dag = build_block_dag(3);
+        let mut dag = build_block_dag(3);
         let expect_selected_parented = vec![block5.id(), block3.id(), block3_1.id(), genesis_id];
-        dag.init_with_genesis(genesis).unwrap();
+        let origin = dag.init_with_genesis(genesis).unwrap();
 
-        dag.commit(block1).unwrap();
-        dag.commit(block2).unwrap();
-        dag.commit(block3_1).unwrap();
-        dag.commit(block3).unwrap();
-        dag.commit(block4).unwrap();
-        dag.commit(block5).unwrap();
-        dag.commit(block6).unwrap();
+        dag.commit(block1, origin).unwrap();
+        dag.commit(block2, origin).unwrap();
+        dag.commit(block3_1, origin).unwrap();
+        dag.commit(block3, origin).unwrap();
+        dag.commit(block4, origin).unwrap();
+        dag.commit(block5, origin).unwrap();
+        dag.commit(block6, origin).unwrap();
         let mut count = 0;
         while latest_id != genesis_id && count < 4 {
             let ghostdata = dag.ghostdata_by_hash(latest_id).unwrap().unwrap();
@@ -403,20 +403,20 @@ mod tests {
             .with_difficulty(2.into())
             .with_parents_hash(Some(vec![genesis.id()]))
             .build();
-        let dag = BlockDAG::create_for_testing().unwrap();
-        dag.init_with_genesis(genesis).unwrap();
-        dag.commit(block1.clone()).unwrap();
-        dag.commit(block2.clone()).unwrap();
+        let mut dag = BlockDAG::create_for_testing().unwrap();
+        let real_origin = dag.init_with_genesis(genesis).unwrap();
+        dag.commit(block1.clone(), real_origin).unwrap();
+        dag.commit(block2.clone(), real_origin).unwrap();
         let block3 = BlockHeaderBuilder::random()
             .with_difficulty(3.into())
             .with_parents_hash(Some(vec![block1.id(), block2.id()]))
             .build();
         let mut handles = vec![];
         for _i in 1..100 {
-            let dag_clone = dag.clone();
+            let mut dag_clone = dag.clone();
             let block_clone = block3.clone();
             let handle = tokio::task::spawn_blocking(move || {
-                let _ = dag_clone.commit(block_clone);
+                let _ = dag_clone.commit(block_clone, real_origin);
             });
             handles.push(handle);
         }
