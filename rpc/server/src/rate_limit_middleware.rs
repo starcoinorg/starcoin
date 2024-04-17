@@ -1,6 +1,7 @@
 use jsonrpc_core::futures::future::Either;
 use jsonrpc_core::futures::Future;
 use jsonrpc_core::{Call, Error, ErrorCode, Failure, FutureResponse, Id, Middleware, Output};
+use starcoin_logger::prelude::*;
 
 type MethodName = String;
 
@@ -30,6 +31,7 @@ pub struct JsonApiRateLimitMiddleware {
 
 impl JsonApiRateLimitMiddleware {
     pub fn from_config(quotas: ApiQuotaConfiguration) -> Self {
+        info!("jacktest: JsonApiRateLimitMiddleware new, quotas: {:?}", quotas); 
         let limiters = ApiLimiters::new(
             Into::<QuotaWrapper>::into(quotas.default_global_api_quota()).0,
             quotas

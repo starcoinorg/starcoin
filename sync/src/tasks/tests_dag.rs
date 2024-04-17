@@ -115,10 +115,6 @@ async fn test_sync_single_chain_to_dag_chain() -> Result<()> {
     Ok(())
 }
 
-fn create_red_blocks(header: BlockHeader) -> Result<BlockHeader> {
-    
-}
-
 #[stest::test(timeout = 600)]
 async fn test_sync_red_blocks_dag() -> Result<()> {
     starcoin_types::block::set_test_flexidag_fork_height(10);

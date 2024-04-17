@@ -58,7 +58,7 @@ impl NetworkRpcService {
     ) -> Self {
         let rpc_impl = NetworkRpcImpl::new(storage, chain_service, txpool_service, state_service);
         let rpc_server = NetworkRpcServer::new(rpc_impl.to_delegate());
-
+        info!("jacktest: NetworkRpcService new, quotas: {:?}", quotas); 
         let limiters = ApiLimiters::new(
             Into::<QuotaWrapper>::into(quotas.default_global_api_quota()).0,
             quotas
@@ -106,8 +106,10 @@ impl EventHandler<Self, ProtocolRequest> for NetworkRpcService {
         let api_limiters = self.rpc_limiters.clone();
         ctx.spawn(async move {
             let protocol = msg.protocol;
+            info!("jacktest: protocol: {:?}", protocol);
             let rpc_path =
                 RpcInfo::rpc_path(protocol).expect("get rpc path from protocol must success.");
+            info!("jacktest: rpc path: {:?}", rpc_path);
             let peer = msg.request.peer.into();
             let result = match api_limiters.check(&rpc_path, Some(&peer)) {
                 Err(e) => Err(NetRpcError::new(RpcErrorCode::RateLimited, e.to_string())),

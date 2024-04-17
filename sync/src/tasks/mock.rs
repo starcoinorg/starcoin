@@ -29,6 +29,7 @@ use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, Blo
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
 use std::time::Duration;
+use starcoin_storage::BlockStore;
 
 pub enum ErrorStrategy {
     _RateLimitErr,
@@ -298,8 +299,8 @@ impl SyncNodeMocker {
         Ok(self
             .chain_mocker
             .get_storage()
-            .get_block_by_hash(next_header.id())?
-            .expect("failed to get block by hash"))
+            .get_block(next_block.id())?
+            .expect("failed to get block by hash").header().clone())
     }
 
     // pub fn produce_block_and_create_dag(&mut self, times: u64) -> Result<()> {
