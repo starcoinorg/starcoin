@@ -504,6 +504,70 @@ mod tests {
     }
 
     #[test]
+    fn test_reachability_not_ancestor() -> anyhow::Result<()> {
+        let dag = BlockDAG::create_for_testing().unwrap();
+        let mut reachability_store = dag.storage.reachability_store.clone();
+
+        let origin = Hash::random();
+
+        inquirer::init_for_test(&mut reachability_store, origin, Interval::new(1, 1024))?;
+
+        let mut hashes = vec![origin];
+        print_reachability_data(&reachability_store, &hashes);
+
+        let child1 = Hash::random();
+        // inquirer::add_block(
+        //     &mut reachability_store,
+        //     child1,
+        //     origin,
+        //     &mut vec![origin].into_iter(),
+        // )?;
+        // hashes.push(child1);
+        // print_reachability_data(&reachability_store, &hashes);
+
+        let child2 = Hash::random();
+        inquirer::add_block(
+            &mut reachability_store,
+            child2,
+            origin,
+            &mut vec![origin].into_iter(),
+        )?;
+        hashes.push(child2);
+        print_reachability_data(&reachability_store, &hashes);
+
+        let mut parent = child2;
+        for _i in (1..=1000) {
+            let child = Hash::random();
+            inquirer::add_block(
+                &mut reachability_store,
+                child,
+                parent,
+                &mut vec![parent].into_iter(),
+            )?;
+            // hashes.push(child);
+            // print_reachability_data(&reachability_store, &hashes);
+            parent = child;
+        }
+
+        let child3 = Hash::random();
+        inquirer::add_block(
+            &mut reachability_store,
+            child3,
+            parent,
+            &mut vec![parent].into_iter(),
+        )?;
+        // hashes.push(child3);
+        // print_reachability_data(&reachability_store, &hashes);
+
+        let result = dag.check_ancestor_of(child1, vec![child3]);
+        println!("dag.check_ancestor_of() result = {:?}", result);
+
+        Ok(())
+    }
+
+ 
+
+    #[test]
     fn test_reachability_algorighm() -> anyhow::Result<()> {
         let dag = BlockDAG::create_for_testing().unwrap();
         let mut reachability_store = dag.storage.reachability_store.clone();

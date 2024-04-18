@@ -385,7 +385,12 @@ impl BlockChain {
     where
         V: BlockVerifier,
     {
-        V::verify_block(self, block)
+        if block.header().is_dag() {
+            let selected_chain = Self::new(self.time_service.clone(), block.parent_hash(), self.storage.clone(), self.vm_metrics.clone(), self.dag.clone())?;
+            V::verify_block(&selected_chain, block)
+        } else {
+            V::verify_block(self, block)
+        }
     }
 
     pub fn apply_with_verifier<V>(&mut self, block: Block) -> Result<ExecutedBlock>
@@ -1375,8 +1380,7 @@ impl BlockChain {
             let ghost_of_tips = dag.ghostdata(tips.as_slice())?;
             ghost_of_tips.selected_parent
         };
-        debug!(
-            "connect dag info block hash: {},tips: {:?}",
+        info!(
             block_hash, tips
         );
         let (block, block_info) = {

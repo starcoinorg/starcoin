@@ -1,7 +1,6 @@
 use jsonrpc_core::futures::future::Either;
 use jsonrpc_core::futures::Future;
 use jsonrpc_core::{Call, Error, ErrorCode, Failure, FutureResponse, Id, Middleware, Output};
-use starcoin_logger::prelude::*;
 
 type MethodName = String;
 

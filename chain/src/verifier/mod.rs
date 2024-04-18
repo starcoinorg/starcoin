@@ -385,8 +385,7 @@ impl BlockVerifier for DagVerifier {
             new_block_header.parent_hash()
         );
 
-        Ok(())
-        // ConsensusVerifier::verify_header(current_chain, new_block_header)
+        ConsensusVerifier::verify_header(current_chain, new_block_header)
     }
 
     fn verify_uncles<R>(

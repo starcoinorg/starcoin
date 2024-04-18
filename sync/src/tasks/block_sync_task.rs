@@ -736,8 +736,20 @@ where
                 state?,
             );
         }
+        info!("successfully ensure block's parents exist");
 
         let timestamp = block.header().timestamp();
+
+        let block_info = if block.header().is_dag() {
+            if self.chain.has_dag_block(block.header().id())? {
+                block_info
+            } else {
+                None
+            }
+        } else {
+            block_info
+        };
+
         let (block_info, action) = match block_info {
             Some(block_info) => {
                 //If block_info exists, it means that this block was already executed and try to connect in the previous sync, but the sync task was interrupted.
