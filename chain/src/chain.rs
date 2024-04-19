@@ -1380,9 +1380,6 @@ impl BlockChain {
             let ghost_of_tips = dag.ghostdata(tips.as_slice())?;
             ghost_of_tips.selected_parent
         };
-        info!(
-            block_hash, tips
-        );
         let (block, block_info) = {
             let block = self
                 .storage

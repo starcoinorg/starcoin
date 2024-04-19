@@ -29,6 +29,9 @@ pub enum StoreError {
 
     #[error("the block hash value {0} not found")]
     HashValueNotFound(HashValue),
+
+    #[error("invalid start({0}) and end({1}) interval")]
+    InvalidInterval(u64, u64),
 }
 
 pub type StoreResult<T> = std::result::Result<T, StoreError>;
