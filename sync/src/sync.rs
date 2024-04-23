@@ -11,7 +11,8 @@ use futures_timer::Delay;
 use network_api::peer_score::PeerScoreMetrics;
 use network_api::{PeerId, PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
 use starcoin_chain::BlockChain;
-use starcoin_chain_api::ChainReader;
+use starcoin_chain_api::{ChainAsyncService, ChainReader};
+use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
@@ -217,12 +218,14 @@ impl SyncService {
         let connector_service = ctx
             .service_ref::<BlockConnectorService<TxPoolService>>()?
             .clone();
+        let chain_service = ctx.service_ref::<ChainReaderService>()?.clone();
         let config = self.config.clone();
         let peer_score_metrics = self.peer_score_metrics.clone();
         let sync_metrics = self.metrics.clone();
         let vm_metrics = self.vm_metrics.clone();
         let dag = ctx.get_shared::<BlockDAG>()?;
         let fut = async move {
+            let dag_fork_number = chain_service.dag_fork_number().await?;
             let startup_info = storage
                 .get_startup_info()?
                 .ok_or_else(|| format_err!("Startup info should exist."))?;
@@ -259,6 +262,7 @@ impl SyncService {
                     sync_metrics.clone(),
                     vm_metrics.clone(),
                     dag,
+                    dag_fork_number,
                 )?;
 
                 self_ref.notify(SyncBeginEvent {
@@ -272,7 +276,7 @@ impl SyncService {
                 }
                 Ok(Some(fut.await?))
             } else {
-                debug!("[sync]No best peer to request, current is best.");
+                info!("[sync]No best peer to request, current is best.");
                 Ok(None)
             }
         };

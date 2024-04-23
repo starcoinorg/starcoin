@@ -273,7 +273,7 @@ mod tests {
     async fn test_actor_launch() -> Result<()> {
         let config = Arc::new(NodeConfig::random_for_test());
         let (storage, _startup_info, _, _) =
-            test_helper::Genesis::init_storage_for_test(config.net())?;
+            test_helper::Genesis::init_storage_for_test(config.net(), TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH)?;
         let registry = RegistryService::launch();
         registry.put_shared(config).await?;
         registry.put_shared(storage).await?;

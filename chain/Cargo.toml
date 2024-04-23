@@ -48,7 +48,6 @@ starcoin-network-rpc-api = { workspace = true }
 [features]
 default = []
 fuzzing = ["proptest", "proptest-derive", "starcoin-types/fuzzing"]
-testing = []
 
 [package]
 authors = { workspace = true }

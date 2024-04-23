@@ -16,7 +16,8 @@ use crate::transaction_info::{BlockTransactionInfo, OldTransactionInfoStorage};
 use crate::{
     BlockInfoStore, BlockStore, BlockTransactionInfoStore, Storage,
     StorageVersion, /*TableInfoStore,*/
-    DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME_V2,
+    TransactionStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
+    TRANSACTION_INFO_PREFIX_NAME_V2,
 };
 use anyhow::Result;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
@@ -25,7 +26,9 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockInfo};
 use starcoin_types::startup_info::SnapshotRange;
-use starcoin_types::transaction::{RichTransactionInfo, SignedUserTransaction, TransactionInfo};
+use starcoin_types::transaction::{
+    RichTransactionInfo, SignedUserTransaction, Transaction, TransactionInfo,
+};
 use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::block_metadata::LegacyBlockMetadata;

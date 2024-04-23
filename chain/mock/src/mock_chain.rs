@@ -11,8 +11,8 @@ use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_storage::Storage;
-use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::block::{BlockNumber, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH};
+use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
 
@@ -28,8 +28,9 @@ impl MockChain {
         Self::new_with_fork(net, TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH)
     }
 
+
     pub fn new_with_fork(net: ChainNetwork, fork_number: BlockNumber) -> Result<Self> {
-        let (storage, chain_info, _, dag) = Genesis::init_storage_for_mock_test(&net, fork_number)
+        let (storage, chain_info, _, dag) = Genesis::init_storage_for_test(&net, fork_number)
             .expect("init storage by genesis fail.");
 
         let chain = BlockChain::new(
@@ -197,11 +198,6 @@ impl MockChain {
 
     pub fn produce_and_apply(&mut self) -> Result<BlockHeader> {
         let block = self.produce()?;
-        debug!(
-            "jacktest: block parent hash: {:?}, number: {:?}",
-            block.header().id(),
-            block.header().number()
-        );
         let header = block.header().clone();
         self.apply(block)?;
         Ok(header)

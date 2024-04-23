@@ -53,6 +53,8 @@ stdlib = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 vm-status-translator = { workspace = true }
 num_cpus = { workspace = true }
+starcoin-flexidag = { workspace = true }
+starcoin-dag = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }

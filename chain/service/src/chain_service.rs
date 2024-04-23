@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{format_err, Error, Ok, Result};
+use anyhow::{bail, format_err, Error, Result};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::{
@@ -10,6 +10,7 @@ use starcoin_chain_api::{
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::consensusdb::consenses_state::DagStateView;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
@@ -243,9 +244,12 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetDagBlockChildren { block_ids } => Ok(ChainResponse::HashVec(
                 self.inner.get_dag_block_children(block_ids)?,
             )),
-            ChainRequest::GetDagForkNumber => Ok(ChainResponse::DagForkNumber(
+	    ChainRequest::GetDagForkNumber => Ok(ChainResponse::DagForkNumber(
                 self.inner.main.dag_fork_height()?,
             )),
+            ChainRequest::GetDagStateView => Ok(ChainResponse::DagStateView(Box::new(
+                self.inner.get_dag_state()?,
+            ))),
         }
     }
 }
@@ -448,6 +452,22 @@ impl ReadableChainService for ChainReaderServiceInner {
             }
         })
     }
+
+    fn get_dag_state(&self) -> Result<DagStateView> {
+        let head = self.main.current_header();
+        if !self.main.is_dag(&head)? || !self.main.is_dag_genesis(&head)? {
+            bail!(
+                "The chain is still not a dag and its dag fork number is {} and the current is {}.",
+                self.main.dag_fork_height()?,
+                head.number()
+            );
+        }
+        let (dag_genesis, state) = self.main.get_dag_state_by_block(&head)?;
+        Ok(DagStateView {
+            dag_genesis,
+            tips: state.tips,
+        })
+    }
 }
 
 #[cfg(test)]
@@ -462,7 +482,7 @@ mod tests {
     async fn test_actor_launch() -> Result<()> {
         let config = Arc::new(NodeConfig::random_for_test());
         let (storage, chain_info, _, dag) =
-            test_helper::Genesis::init_storage_for_test(config.net())?;
+            test_helper::Genesis::init_storage_for_test(config.net(), TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH)?;
         let registry = RegistryService::launch();
         registry.put_shared(dag).await?;
         registry.put_shared(config).await?;

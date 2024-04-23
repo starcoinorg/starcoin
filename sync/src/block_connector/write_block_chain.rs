@@ -374,7 +374,7 @@ where
 
     ///Directly execute the block and save result, do not try to connect.
     pub fn execute(&mut self, block: Block) -> Result<ExecutedBlock> {
-        let chain = BlockChain::new(
+        let mut chain = BlockChain::new(
             self.config.net().time_service(),
             block.header().parent_hash(),
             self.storage.clone(),

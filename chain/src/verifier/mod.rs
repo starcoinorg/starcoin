@@ -95,6 +95,9 @@ pub trait BlockVerifier {
     where
         R: ChainReader,
     {
+        if current_chain.is_dag(header)? {
+            return Ok(());
+        }
         let epoch = current_chain.epoch();
         let is_legacy = header.is_legacy();
 
@@ -363,8 +366,6 @@ impl BlockVerifier for DagVerifier {
         parents_hash_to_check.sort();
         parents_hash_to_check.dedup();
 
-        debug!("jacktest: verify_header parents_hash_to_check: {:?}", parents_hash_to_check);
-
         verify_block!(
             VerifyBlockField::Header,
             !parents_hash_to_check.is_empty() && parents_hash.len() == parents_hash_to_check.len(),
@@ -388,47 +389,85 @@ impl BlockVerifier for DagVerifier {
     }
 
     fn verify_uncles<R>(
-        current_chain: &R,
-        uncles: &[BlockHeader],
-        header: &BlockHeader,
+        _current_chain: &R,
+        _uncles: &[BlockHeader],
+        _header: &BlockHeader,
     ) -> Result<()>
     where
         R: ChainReader,
     {
-        let mut uncle_ids = HashSet::new();
-        for uncle in uncles {
-            let uncle_id = uncle.id();
-            verify_block!(
-                VerifyBlockField::Uncle,
-                !uncle_ids.contains(&uncle.id()),
-                "repeat uncle {:?} in current block {:?}",
-                uncle_id,
-                header.id()
-            );
+        // let mut uncle_ids = HashSet::new();
+        // for uncle in uncles {
+        //     let uncle_id = uncle.id();
+        //     verify_block!(
+        //         VerifyBlockField::Uncle,
+        //         !uncle_ids.contains(&uncle.id()),
+        //         "repeat uncle {:?} in current block {:?}",
+        //         uncle_id,
+        //         header.id()
+        //     );
 
-            verify_block!(
-                VerifyBlockField::Uncle,
-                uncle.number() < header.number() ,
-               "uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number(), header.number()
-            );
+        //     if !header.is_dag() {
+        //         verify_block!(
+        //             VerifyBlockField::Uncle,
+        //             uncle.number() < header.number() ,
+        //         "uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number(), header.number()
+        //         );
+        //     }
 
-            verify_block!(
-                VerifyBlockField::Uncle,
-                current_chain.get_block_info(Some(uncle_id))?.is_some(),
-                "Invalid block: uncle {} does not exist",
-                uncle_id
-            );
+        //     verify_block!(
+        //         VerifyBlockField::Uncle,
+        //         current_chain.get_block_info(Some(uncle_id))?.is_some(),
+        //         "Invalid block: uncle {} does not exist",
+        //         uncle_id
+        //     );
 
-            debug!(
-                "verify_uncle header number {} hash {:?} uncle number {} hash {:?}",
-                header.number(),
-                header.id(),
-                uncle.number(),
-                uncle.id()
-            );
-            uncle_ids.insert(uncle_id);
-        }
+        //     debug!(
+        //         "verify_uncle header number {} hash {:?} uncle number {} hash {:?}",
+        //         header.number(),
+        //         header.id(),
+        //         uncle.number(),
+        //         uncle.id()
+        //     );
+        //     uncle_ids.insert(uncle_id);
+        // }
 
         Ok(())
+    }
+}
+
+//TODO: Implement it.
+pub struct DagBasicVerifier;
+impl BlockVerifier for DagBasicVerifier {
+    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
+    where
+        R: ChainReader,
+    {
+        let parents_hash = new_block_header.parents_hash().unwrap_or_default();
+        let mut parents_hash_to_check = parents_hash.clone();
+        parents_hash_to_check.sort();
+        parents_hash_to_check.dedup();
+
+        verify_block!(
+            VerifyBlockField::Header,
+            !parents_hash_to_check.is_empty() && parents_hash.len() == parents_hash_to_check.len(),
+            "Invalid parents_hash {:?} for a dag block {}, fork height {}",
+            new_block_header.parents_hash(),
+            new_block_header.number(),
+            current_chain.dag_fork_height()?,
+        );
+
+        verify_block!(
+            VerifyBlockField::Header,
+            parents_hash_to_check.contains(&new_block_header.parent_hash())
+                && current_chain
+                    .get_block_info(Some(new_block_header.parent_hash()))?
+                    .is_some(),
+            "Invalid block: parent {} might not exist.",
+            new_block_header.parent_hash()
+        );
+
+        Ok(())
+        // ConsensusVerifier::verify_header(current_chain, new_block_header)
     }
 }

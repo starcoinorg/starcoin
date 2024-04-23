@@ -21,8 +21,9 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorTreeStore;
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
+use starcoin_types::block::BlockNumber;
 use starcoin_types::contract_event::ContractEvent;
-use starcoin_types::startup_info::{ChainInfo, ChainStatus, DagState, SnapshotRange};
+use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
 use starcoin_types::transaction::{RichTransactionInfo, Transaction};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
@@ -256,10 +257,6 @@ pub trait BlockStore {
 
     fn get_snapshot_range(&self) -> Result<Option<SnapshotRange>>;
     fn save_snapshot_range(&self, snapshot_height: SnapshotRange) -> Result<()>;
-
-    fn get_dag_state(&self) -> Result<Option<DagState>>;
-
-    fn save_dag_state(&self, dag_state: DagState) -> Result<()>;
 }
 
 pub trait BlockTransactionInfoStore {
@@ -329,7 +326,7 @@ impl Storage {
                 instance.clone(),
             ),
             transaction_accumulator_storage:
-            AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
+                AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
             block_info_storage: BlockInfoStorage::new(instance.clone()),
             event_storage: ContractEventStorage::new(instance.clone()),
             chain_info_storage: ChainInfoStorage::new(instance.clone()),
@@ -506,14 +503,6 @@ impl BlockStore for Storage {
     fn save_snapshot_range(&self, snapshot_range: SnapshotRange) -> Result<()> {
         self.chain_info_storage.save_snapshot_range(snapshot_range)
     }
-
-    fn get_dag_state(&self) -> Result<Option<DagState>> {
-        self.chain_info_storage.get_dag_state()
-    }
-
-    fn save_dag_state(&self, dag_state: DagState) -> Result<()> {
-        self.chain_info_storage.save_dag_state(dag_state)
-    }
 }
 
 impl BlockInfoStore for Storage {
@@ -619,14 +608,14 @@ impl TransactionStore for Storage {
 
 /// Chain storage define
 pub trait Store:
-StateNodeStore
-+ BlockStore
-+ BlockInfoStore
-+ TransactionStore
-+ BlockTransactionInfoStore
-+ ContractEventStore
-+ IntoSuper<dyn StateNodeStore>
-+ TableInfoStore
+    StateNodeStore
+    + BlockStore
+    + BlockInfoStore
+    + TransactionStore
+    + BlockTransactionInfoStore
+    + ContractEventStore
+    + IntoSuper<dyn StateNodeStore>
+    + TableInfoStore
 {
     fn get_transaction_info_by_block_and_index(
         &self,

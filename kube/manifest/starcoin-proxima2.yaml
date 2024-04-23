@@ -39,8 +39,7 @@ spec:
             ret=$?;
             echo "Now ret is - $ret";
             if [ $ret -eq 120 ] || [ $ret -eq 139 ]; then
-            echo "Start failed with gensis mismatch code 120, clean data...";
-            rm -rf /sc-data/proxima/ &>/dev/null;
+            echo "Start failed with gensis mismatch code 120, please check or remove proxima data...";
             elif [ $ret -ne 0 ]; then
             echo "Node start fail, try to remove config.";
             rm /sc-data/proxima/config.toml;
@@ -62,26 +61,6 @@ spec:
               secretKeyRef:
                 name: node-keys
                 key: node-keys
-        livenessProbe:
-          tcpSocket:
-            port: 9840
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 2
-          failureThreshold: 3
-          successThreshold: 1
-        readinessProbe:
-          exec:
-            command:
-              - sh
-              - -c
-              - >-
-                 /starcoin/starcoin -n proxima -d /sc-data node sync status|grep Synchronized
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 2
-          failureThreshold: 3
-          successThreshold: 1
   volumeClaimTemplates:
   - metadata:
       name: starcoin-volume

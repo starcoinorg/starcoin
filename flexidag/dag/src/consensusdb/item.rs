@@ -69,7 +69,7 @@ where {
         {
             S::Value::decode_value(&slice)?
         } else {
-            return Err(StoreError::KeyNotFound("".to_string()));
+            return Err(StoreError::KeyNotFound(format!("{:?}", self.key)));
         };
 
         item = op(item); // Apply the update op

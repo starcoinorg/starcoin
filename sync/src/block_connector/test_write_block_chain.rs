@@ -28,6 +28,7 @@ pub async fn create_writeable_block_chain() -> (
 
     let (storage, chain_info, _, dag) = StarcoinGenesis::init_storage_for_test(
         node_config.net(),
+        TEST_FLEXIDAG_FORK_HEIGHT_NEVER_REACH,
     )
     .expect("init storage by genesis fail.");
     let registry = RegistryService::launch();

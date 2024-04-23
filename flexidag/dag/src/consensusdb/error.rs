@@ -1,3 +1,4 @@
+use starcoin_crypto::HashValue;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -40,6 +41,12 @@ pub enum StoreError {
 
     #[error("k overflow, the current value is {0}")]
     KOverflow(String),
+    
+    #[error("the block hash value {0} not found")]
+    HashValueNotFound(HashValue),
+
+    #[error("invalid start({0}) and end({1}) interval")]
+    InvalidInterval(u64, u64),
 }
 
 pub type StoreResult<T> = std::result::Result<T, StoreError>;

@@ -3,11 +3,12 @@ use crate::consensusdb::prelude::StoreError;
 use crate::consensusdb::schemadb::{GhostdagStoreReader, HeaderStoreReader, RelationsStoreReader};
 use crate::reachability::reachability_service::ReachabilityService;
 use crate::types::{ghostdata::GhostdagData, ordering::*};
+use anyhow::{Context, Result};
+use bcs_ext::BCSCodec;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::blockhash::{BlockHashMap, BlockHashes, BlueWorkType, HashKTypeMap, KType};
 use std::sync::Arc;
-
 #[derive(Clone)]
 pub struct GhostdagManager<
     T: GhostdagStoreReader,
@@ -49,7 +50,11 @@ impl<
         GhostdagData::new(
             0,
             genesis.difficulty(),
-            genesis.parent_hash(),
+            Hash::sha3_256_of(
+                &[genesis.parent_hash(), genesis.id()]
+                    .encode()
+                    .expect("failed to encode hash for dag gensis and its parent"),
+            ),
             BlockHashes::new(vec![]),
             BlockHashes::new(Vec::new()),
             HashKTypeMap::new(BlockHashMap::new()),
@@ -65,6 +70,12 @@ impl<
             BlockHashes::new(Vec::new()),
             HashKTypeMap::new(BlockHashMap::new()),
         ))
+    }
+
+    pub fn check_ancestor_of(&self, ancestor: Hash, descendant: Vec<Hash>) -> anyhow::Result<bool> {
+        self.reachability_service
+            .is_dag_ancestor_of_any_result(ancestor, &mut descendant.into_iter())
+            .map_err(|e| e.into())
     }
 
     pub fn find_selected_parent(

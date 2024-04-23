@@ -46,16 +46,16 @@ starcoin-consensus = { workspace = true }
 timeout-join-handler = { workspace = true }
 starcoin-flexidag = { workspace = true }
 starcoin-dag = { workspace = true }
-starcoin-chain-mock = { workspace = true, features = ["testing"] }
+starcoin-chain-mock = { workspace = true }
 
 [dev-dependencies]
 hex = { workspace = true }
 starcoin-miner = { workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-block-relayer = { workspace = true }
-starcoin-chain-mock = { workspace = true, features = ["testing"] }
+starcoin-chain-mock = { workspace = true }
 starcoin-consensus = { workspace = true }
-starcoin-node = { workspace = true, features = ["testing"] }
+starcoin-node = { workspace = true }
 starcoin-state-service = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-txpool-mock-service = { workspace = true }
@@ -63,9 +63,6 @@ starcoin-executor = { workspace = true }
 test-helper = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 starcoin-genesis = { workspace = true }
-
-[features]
-testing = []
 
 [package]
 authors = { workspace = true }

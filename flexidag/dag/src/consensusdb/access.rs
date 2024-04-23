@@ -59,7 +59,7 @@ where
             self.cache.insert(key, data.clone());
             Ok(data)
         } else {
-            Err(StoreError::KeyNotFound("".to_string()))
+            Err(StoreError::KeyNotFound(format!("{:?}", key)))
         }
     }
 

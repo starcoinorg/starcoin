@@ -70,7 +70,7 @@ impl OpenedBlock {
         let chain_state =
             ChainStateDB::new(storage.into_super_arc(), Some(previous_header.state_root()));
         let chain_id = previous_header.chain_id();
-        let block_meta = BlockMetadata::new_with_parents(
+        let block_meta = BlockMetadata::new(
             previous_block_id,
             block_timestamp,
             author,
@@ -79,7 +79,6 @@ impl OpenedBlock {
             previous_header.number() + 1,
             chain_id,
             previous_header.gas_used(),
-            tips_hash.unwrap_or_default(),
         );
         let mut opened_block = Self {
             previous_block_info: block_info,

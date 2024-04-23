@@ -1,5 +1,6 @@
 use super::{tree::*, *};
 use crate::consensusdb::schemadb::{ReachabilityStore, ReachabilityStoreReader};
+use crate::process_key_already_error;
 use crate::types::{interval::Interval, perf};
 use starcoin_crypto::{HashValue as Hash, HashValue};
 
@@ -7,6 +8,14 @@ use starcoin_crypto::{HashValue as Hash, HashValue};
 /// The function first checks the store for possibly being initialized already.
 pub fn init(store: &mut (impl ReachabilityStore + ?Sized), origin: HashValue) -> Result<()> {
     init_with_params(store, origin, Interval::maximal())
+}
+
+pub fn init_for_test(
+    store: &mut (impl ReachabilityStore + ?Sized),
+    origin: HashValue,
+    capacity: Interval,
+) -> Result<()> {
+    init_with_params(store, origin, capacity)
 }
 
 pub(super) fn init_with_params(
@@ -87,7 +96,11 @@ fn insert_to_future_covering_set(
         // which `new_block` is a chain ancestor of, contradicts processing order.
         SearchOutput::Found(_, _) => Err(ReachabilityError::DataInconsistency),
         SearchOutput::NotFound(i) => {
-            store.insert_future_covering_item(merged_block, new_block, i)?;
+            process_key_already_error(store.insert_future_covering_item(
+                merged_block,
+                new_block,
+                i,
+            ))?;
             Ok(())
         }
     }

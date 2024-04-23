@@ -91,6 +91,7 @@ pub struct AccumulatorCollector {
     accumulator: MerkleAccumulator,
     ancestor: BlockIdAndNumber,
     target: AccumulatorInfo,
+    dag_fork_heigh: BlockNumber,
 }
 
 impl AccumulatorCollector {
@@ -99,12 +100,15 @@ impl AccumulatorCollector {
         ancestor: BlockIdAndNumber,
         start: AccumulatorInfo,
         target: AccumulatorInfo,
+        dag_fork_heigh: BlockNumber,
     ) -> Self {
+        info!("now start to collect the hash value for building the accumulator ahead, ancestor: {:?}", ancestor);
         let accumulator = MerkleAccumulator::new_with_info(start, store);
         Self {
             accumulator,
             ancestor,
             target,
+            dag_fork_heigh,
         }
     }
 }
@@ -124,12 +128,15 @@ impl TaskResultCollector<HashValue> for AccumulatorCollector {
 
     fn finish(self) -> Result<Self::Output> {
         let info = self.accumulator.get_info();
-        ensure!(
-            info == self.target,
-            "Target accumulator: {:?}, but got: {:?}",
-            self.target,
-            info
-        );
+        let block_number = info.num_leaves.saturating_sub(1);
+        if block_number < self.dag_fork_heigh {
+            ensure!(
+                info == self.target,
+                "Target accumulator: {:?}, but got: {:?}",
+                self.target,
+                info
+            );
+        }
         Ok((self.ancestor, self.accumulator))
     }
 }

@@ -60,6 +60,7 @@ starcoin-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
 stdlib = { workspace = true }
+starcoin-dag = { workspace = true }
 
 [dev-dependencies]
 datatest-stable = { workspace = true }

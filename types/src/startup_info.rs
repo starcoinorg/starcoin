@@ -195,27 +195,6 @@ impl Sample for ChainStatus {
 }
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
-pub struct DagState {
-    pub tips: Vec<HashValue>,
-}
-
-impl TryFrom<Vec<u8>> for DagState {
-    type Error = anyhow::Error;
-
-    fn try_from(value: Vec<u8>) -> Result<Self> {
-        DagState::decode(value.as_slice())
-    }
-}
-
-impl TryInto<Vec<u8>> for DagState {
-    type Error = anyhow::Error;
-
-    fn try_into(self) -> Result<Vec<u8>> {
-        self.encode()
-    }
-}
-
-#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct StartupInfo {
     /// main chain head block hash
     pub main: HashValue,

@@ -617,6 +617,7 @@ pub fn full_sync_task<H, A, F, N>(
     sync_metrics: Option<SyncMetrics>,
     vm_metrics: Option<VMMetrics>,
     dag: BlockDAG,
+    dag_fork_number: BlockNumber,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
@@ -673,6 +674,7 @@ where
 
     let all_fut = async move {
         let ancestor = fut.await?;
+        info!("got ancestor for sync: {:?}", ancestor);
         let mut ancestor_block_info = storage
             .get_block_info(ancestor.id)
             .map_err(TaskError::BreakError)?
@@ -722,6 +724,7 @@ where
                 time_service.clone(),
                 peer_provider.clone(),
                 ext_error_handle.clone(),
+                dag_fork_number,
                 dag.clone(),
             );
             let start_now = Instant::now();
@@ -761,11 +764,20 @@ where
                     .sync_peer_count
                     .set(fetcher.peer_selector().len() as u64);
             }
-
             if target.target_id.number() <= latest_block_chain.status().head.number() {
                 break;
             }
+            // chain read the fork number from remote peers, break and start again
+            if latest_block_chain.dag_fork_height().map_err(TaskError::BreakError)? < BlockNumber::MAX &&
+                dag_fork_number != BlockNumber::MAX {
+                break;
+            }
             let chain_status = latest_block_chain.status();
+            if latest_block_chain.is_dag(&latest_block_chain.status().head).map_err(TaskError::BreakError)? {
+                if chain_status.info().get_total_difficulty() >= target.block_info.get_total_difficulty() {
+                    break;
+                }
+            }
             max_peers = max_better_peers(
                 target_block_number,
                 latest_block_chain.current_header().number(),

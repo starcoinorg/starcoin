@@ -80,7 +80,7 @@ pub trait ChainReader {
     /// Verify block header and body, base current chain, but do not verify it execute state.
     fn verify(&self, block: Block) -> Result<VerifiedBlock>;
     /// Execute block and verify it execute state, and save result base current chain, but do not change current chain.
-    fn execute(&self, block: VerifiedBlock) -> Result<ExecutedBlock>;
+    fn execute(&mut self, block: VerifiedBlock) -> Result<ExecutedBlock>;
     /// Get chain transaction infos
     fn get_transaction_infos(
         &self,
@@ -101,8 +101,11 @@ pub trait ChainReader {
         access_path: Option<AccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>>;
 
-    fn current_tips_hash(&self) -> Result<Option<Vec<HashValue>>>;
-    fn has_dag_block(&self, hash: HashValue) -> Result<bool>;
+    fn current_tips_hash(
+        &self,
+        header: &BlockHeader,
+    ) -> Result<Option<(HashValue, Vec<HashValue>)>>;
+    fn has_dag_block(&self, header_id: HashValue) -> Result<bool>;
     fn dag_fork_height(&self) -> Result<BlockNumber>;
     fn is_dag(&self, block_header: &BlockHeader) -> Result<bool>;
     fn is_dag_genesis(&self, block_header: &BlockHeader) -> Result<bool>;

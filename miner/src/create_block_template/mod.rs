@@ -293,10 +293,9 @@ where
     fn uncles_prune(&mut self) {
         if !self.uncles.is_empty() {
             let epoch = self.chain.epoch();
+            // epoch的end_number是开区间，当前块已经生成但还没有apply，所以应该在epoch（最终状态）
+            // 的倒数第二块处理时清理uncles
             if epoch.end_block_number() == (self.chain.current_header().number() + 2) {
-                // 1. The last block of current epoch is `end_block_number`-1,
-                // 2. If current block number is `end_block_number`-2, then last block has been mined but un-applied to db,
-                // 3. So current uncles should be cleared now.
                 self.uncles.clear();
             }
         }
@@ -335,25 +334,28 @@ where
         }
         let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
         let tips_hash = if current_number > self.chain.dag_fork_height()? {
-            self.chain.current_tips_hash()?
+            let (_dag_genesis, tips_hash) = self
+                .chain
+                .current_tips_hash(&previous_header)?
+                .ok_or_else(|| {
+                    anyhow!(
+                    "the number of the block is larger than the dag fork number but no dag state!"
+                )
+                })?;
+            Some(tips_hash)
         } else {
             None
         };
         info!(
-            "block:{} tips:{:?}",
+            "block:{} tips(dag state):{:?}",
             self.chain.current_header().number(),
-            &tips_hash
+            &tips_hash,
         );
         let (uncles, blue_blocks) = {
             match &tips_hash {
                 None => (self.find_uncles(), None),
                 Some(tips) => {
-                    let mut blues = self
-                        .dag
-                        .ghostdata(tips)
-                        .map_err(|e| anyhow!(e))?
-                        .mergeset_blues
-                        .to_vec();
+                    let mut blues = self.dag.ghostdata(tips)?.mergeset_blues.to_vec();
                     info!(
                         "create block template with tips:{:?},ghostdata blues:{:?}",
                         &tips_hash, blues

@@ -6,7 +6,9 @@ use anyhow::Result;
 use api_limiter::{ApiLimiters, Quota};
 use network_api::{PeerId, RpcInfo};
 use network_p2p_core::server::NetworkRpcServer;
-use network_p2p_core::{NetRpcError, RawRpcServer, RpcErrorCode};
+use network_p2p_core::NetRpcError;
+use network_p2p_core::RawRpcServer;
+use network_p2p_core::RpcErrorCode;
 use network_p2p_types::{OutgoingResponse, ProtocolRequest};
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::ApiQuotaConfig;
@@ -56,7 +58,6 @@ impl NetworkRpcService {
     ) -> Self {
         let rpc_impl = NetworkRpcImpl::new(storage, chain_service, txpool_service, state_service);
         let rpc_server = NetworkRpcServer::new(rpc_impl.to_delegate());
-
         let limiters = ApiLimiters::new(
             Into::<QuotaWrapper>::into(quotas.default_global_api_quota()).0,
             quotas

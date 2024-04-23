@@ -49,7 +49,7 @@ pub trait ReachabilityStore: ReachabilityStoreReader {
     fn get_reindex_root(&self) -> Result<Hash, StoreError>;
 }
 
-const REINDEX_ROOT_KEY: &str = "reachability-reindex-root";
+pub const REINDEX_ROOT_KEY: &str = "reachability-reindex-root";
 pub(crate) const REACHABILITY_DATA_CF: &str = "reachability-data";
 // TODO: explore perf to see if using fixed-length constants for store prefixes is preferable
 
@@ -176,6 +176,9 @@ impl ReachabilityStore for DbReachabilityStore {
     fn append_child(&mut self, hash: Hash, child: Hash) -> Result<u64, StoreError> {
         let mut data = self.access.read(hash)?;
         let height = data.height;
+        if data.children.contains(&child) {
+            return Ok(height);
+        }
         let mut_data = Arc::make_mut(&mut data);
         Arc::make_mut(&mut mut_data.children).push(child);
         self.access
@@ -308,11 +311,17 @@ impl ReachabilityStore for StagingReachabilityStore<'_> {
 
     fn append_child(&mut self, hash: Hash, child: Hash) -> Result<u64, StoreError> {
         if let Some(data) = self.staging_writes.get_mut(&hash) {
+            if data.children.contains(&child) {
+                return Ok(data.height);
+            }
             Arc::make_mut(&mut data.children).push(child);
             return Ok(data.height);
         }
 
         let mut data = (*self.store_read.access.read(hash)?).clone();
+        if data.children.contains(&child) {
+            return Ok(data.height);
+        }
         let height = data.height;
         Arc::make_mut(&mut data.children).push(child);
         self.staging_writes.insert(hash, data);

@@ -9,11 +9,13 @@ use futures::FutureExt;
 use network_api::PeerId;
 use network_api::PeerProvider;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
+use starcoin_chain::verifier::DagBasicVerifier;
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
 use starcoin_config::G_CRATE_VERSION;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
+use starcoin_network_rpc_api::MAX_BLOCK_HEADER_REQUEST_SIZE;
 use starcoin_storage::{Store, BARNARD_HARD_FORK_HASH};
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
@@ -359,7 +361,7 @@ where
     fn find_absent_parent_dag_blocks(
         &self,
         block_header: BlockHeader,
-        ancestors: &mut Vec<HashValue>,
+        // ancestors: &mut Vec<HashValue>,
         absent_blocks: &mut Vec<HashValue>,
     ) -> Result<()> {
         let parents = block_header.parents_hash().unwrap_or_default();
@@ -368,10 +370,15 @@ where
         }
         for parent in parents {
             if !self.chain.has_dag_block(parent)? {
+                if absent_blocks.contains(&parent) {
+                    continue;
+                }
                 absent_blocks.push(parent)
-            } else {
-                ancestors.push(parent);
             }
+            // if ancestors.contains(&parent) {
+            //     continue;
+            // }
+            // ancestors.push(parent);
         }
         Ok(())
     }
@@ -379,59 +386,33 @@ where
     fn find_absent_parent_dag_blocks_for_blocks(
         &self,
         block_headers: Vec<BlockHeader>,
-        ancestors: &mut Vec<HashValue>,
+        // ancestors: &mut Vec<HashValue>,
         absent_blocks: &mut Vec<HashValue>,
     ) -> Result<()> {
         for block_header in block_headers {
-            self.find_absent_parent_dag_blocks(block_header, ancestors, absent_blocks)?;
+            self.find_absent_parent_dag_blocks(block_header, absent_blocks)?;
         }
         Ok(())
     }
 
-    // async fn fetch_block_headers(
-    //     &self,
-    //     absent_blocks: Vec<HashValue>,
-    // ) -> Result<Vec<(HashValue, Option<BlockHeader>)>> {
-    //     let mut count: i32 = 20;
-    //     while count > 0 {
-    //         info!("fetch block header retry count = {}", count);
-    //         match self
-    //             .fetcher
-    //             .fetch_block_headers(absent_blocks.clone())
-    //             .await
-    //         {
-    //             Ok(result) => {
-    //                 return Ok(result);
-    //             }
-    //             Err(e) => {
-    //                 count = count.saturating_sub(1);
-    //                 if count == 0 {
-    //                     bail!("failed to fetch block headers due to: {:?}", e);
-    //                 }
-    //                 async_std::task::sleep(Duration::from_secs(1)).await;
-    //             }
-    //         }
-    //     }
-    //     bail!("failed to fetch block headers");
-    // }
-
-    async fn find_ancestor_dag_block_header(
+    async fn find_absent_ancestor(
         &self,
         mut block_headers: Vec<BlockHeader>,
-    ) -> Result<Vec<HashValue>> {
-        let mut ancestors = vec![];
+    ) -> Result<Vec<BlockHeader>> {
+        // let mut ancestors = vec![];
+        let mut absent_block_headers = vec![];
         loop {
             let mut absent_blocks = vec![];
             self.find_absent_parent_dag_blocks_for_blocks(
                 block_headers,
-                &mut ancestors,
+                // &mut ancestors,
                 &mut absent_blocks,
             )?;
             if absent_blocks.is_empty() {
-                return Ok(ancestors);
+                return Ok(absent_block_headers);
             }
-            let absent_block_headers = self.fetcher.fetch_block_headers(absent_blocks).await?;
-            if absent_block_headers.iter().any(|(id, header)| {
+            let remote_absent_block_headers = self.fetch_block_headers(absent_blocks).await?;
+            if remote_absent_block_headers.iter().any(|(id, header)| {
                 if header.is_none() {
                     error!(
                         "fetch absent block header failed, block id: {:?}, it should not be absent!",
@@ -443,20 +424,18 @@ where
             }) {
                 bail!("fetch absent block header failed, it should not be absent!");
             }
-            block_headers = absent_block_headers
-                .into_iter()
-                .map(|(_, header)| header.expect("block header should not be none!"))
+            block_headers = remote_absent_block_headers
+                .iter()
+                .map(|(_, header)| header.clone().expect("block header should not be none!").clone())
                 .collect();
+            absent_block_headers.append(&mut remote_absent_block_headers.into_iter().map(|(_, header)| header.expect("block header should not be none!")).collect());
         }
     }
 
-
-    fn check_dag_block_valid(&self, block_header: &BlockHeader) -> Result<()> {
-        assert!(block_header.parents_hash().ok_or(anyhow!("parents is none"))?.len() > 0, "Invalid dag block header since its len of the parents is zero");
-        Ok(())
-    }
-
-    pub fn ensure_dag_parent_blocks_exist(&mut self, block_header: BlockHeader) -> Result<()> {
+    pub fn ensure_dag_parent_blocks_exist(
+        &mut self,
+        block_header: BlockHeader,
+    ) -> Result<()> {
         if !self.chain.is_dag(&block_header)? {
             info!(
                 "the block is not a dag block, skipping, its id: {:?}, its number {:?}",
@@ -479,124 +458,216 @@ where
             block_header.number(),
             block_header.parents_hash()
         );
-        assert!(self.check_dag_block_valid(&block_header).is_ok(), "Invalid dag block header");
         let fut = async {
-            let mut dag_ancestors = self
-                .find_ancestor_dag_block_header(vec![block_header.clone()])
-                .await?;
+            let mut absent_ancestor = 
+                self
+                    .find_absent_ancestor(vec![block_header.clone()])
+                    .await?;
 
-            while !dag_ancestors.is_empty() {
-                for ancestor_block_header_id in &dag_ancestors {
-                    match self.local_store.get_block_info(*ancestor_block_header_id)? {
-                        Some(block_info) => {
-                            let block = self
-                                .local_store
-                                .get_block_by_hash(*ancestor_block_header_id)?
-                                .expect("failed to get block by hash");
+            if absent_ancestor.is_empty() {
+                return Ok(());
+            }
+
+            absent_ancestor.sort_by(|a, b| a.number().cmp(&b.number()));
+            info!("now apply absent ancestors: {:?}", absent_ancestor);
+
+            let mut process_dag_ancestors = HashMap::new();
+            loop {
+                for ancestor_block_header in absent_ancestor.iter() {
+                    if self.chain.has_dag_block(ancestor_block_header.id())? {
+                        info!("{:?} was already applied", ancestor_block_header.id());
+                        process_dag_ancestors.insert(ancestor_block_header.id(), ancestor_block_header.clone());
+                    } else {
+                        for (block, _peer_id) in self
+                            .fetcher
+                            .fetch_blocks(vec![ancestor_block_header.id()])
+                            .await?
+                        {
+                            if self.chain.has_dag_block(ancestor_block_header.id())? {
+                                info!("{:?} was already applied", ancestor_block_header.id());
+                                process_dag_ancestors.insert(ancestor_block_header.id(), ancestor_block_header.clone());
+                                continue;
+                            }
+
+                            if block.id() != ancestor_block_header.id() {   
+                                bail!(
+                                    "fetch block failed, expect block id: {:?}, but got block id: {:?}",
+                                    ancestor_block_header.id(),
+                                    block.id()
+                                );
+                            }
+
                             info!(
-                                "connect a dag block: {:?}, number: {:?}",
+                                "now apply for sync after fetching a dag block: {:?}, number: {:?}",
                                 block.id(),
                                 block.header().number()
                             );
-                            let executed_block =
-                                self.chain.connect(ExecutedBlock { block, block_info })?;
+
+                            if !self.check_parents_exist(block.header())? {
+                                info!(
+                                    "block: {:?}, number: {:?}, its parent still dose not exist, waiting for next round",
+                                    ancestor_block_header.id(),
+                                    ancestor_block_header.number()
+                                );
+                                continue;
+                            }
+                            // let executed_block = if self.skip_pow_verify {
+                            let executed_block = self
+                                .chain
+                                .apply_with_verifier::<DagBasicVerifier>(block.clone())?;
+                            // } else {
+                            //     self.chain.apply(block.clone())?
+                            // };
+                            // let executed_block = self.chain.apply(block)?;
                             info!(
-                                "succeed to connect a dag block: {:?}, number: {:?}",
+                                "succeed to apply a dag block: {:?}, number: {:?}",
                                 executed_block.block.id(),
                                 executed_block.block.header().number()
                             );
+                            process_dag_ancestors.insert(ancestor_block_header.id(), ancestor_block_header.clone());
                             self.notify_connected_block(
                                 executed_block.block,
                                 executed_block.block_info.clone(),
-                                BlockConnectAction::ConnectExecutedBlock,
+                                BlockConnectAction::ConnectNewBlock,
                                 self.check_enough_by_info(executed_block.block_info)?,
                             )?;
                         }
-                        None => {
-                            for (block, _peer_id) in self
-                                .fetcher
-                                .fetch_blocks(vec![*ancestor_block_header_id])
-                                .await?
-                            {
-                                if self.chain.has_dag_block(block.id())? {
-                                    continue;
-                                }
-                                info!("now apply for sync after fetching a dag block: {:?}, number: {:?}", block.id(), block.header().number());
-                                let executed_block = self.chain.apply(block)?;
-                                info!(
-                                    "succeed to apply a dag block: {:?}, number: {:?}",
-                                    executed_block.block.id(),
-                                    executed_block.block.header().number()
-                                );
-                                self.notify_connected_block(
-                                    executed_block.block,
-                                    executed_block.block_info.clone(),
-                                    BlockConnectAction::ConnectNewBlock,
-                                    self.check_enough_by_info(executed_block.block_info)?,
-                                )?;
-                            }
-                        }
                     }
                 }
-                dag_ancestors = self.fetch_dag_block_children(dag_ancestors).await?;
 
-                info!("next dag children blocks: {:?}", dag_ancestors);
+                if process_dag_ancestors.is_empty() {
+                    bail!("no absent ancestor block is executed!, absent ancestor block: {:?}, their child block id: {:?}, number: {:?}", absent_ancestor, block_header.id(), block_header.number());
+                } else {
+                    absent_ancestor.retain(|header| !process_dag_ancestors.contains_key(&header.id()));
+                }
+
+                if absent_ancestor.is_empty() {
+                    break;
+                }
             }
+
+                // dag_ancestors = std::mem::take(&mut process_dag_ancestors);
+                // // process_dag_ancestors = vec![];
+
+                // dag_ancestors = Self::remove_repeated(
+                //     &self.fetch_dag_block_absent_children(dag_ancestors).await?,
+                // );
+                // source_path.extend(&dag_ancestors);
+
+                // if !dag_ancestors.is_empty() {
+                //     for (id, op_header) in self.fetch_block_headers(dag_ancestors.clone()).await? {
+                //         if let Some(header) = op_header {
+                //             self.ensure_dag_parent_blocks_exist(header, source_path)?;
+                //         } else {
+                //             bail!("when finding the ancestor's children's parents, fetching block header failed, block id: {:?}", id);
+                //         }
+                //     }
+                // }
+
+                // info!("next dag children blocks: {:?}", dag_ancestors);
 
             Ok(())
         };
         async_std::task::block_on(fut)
     }
 
-    // async fn fetch_blocks(
+    async fn fetch_block_headers(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> Result<Vec<(HashValue, Option<BlockHeader>)>> {
+        let mut result = vec![];
+        for chunk in block_ids.chunks(usize::try_from(MAX_BLOCK_HEADER_REQUEST_SIZE)?) {
+            result.extend(self.fetcher.fetch_block_headers(chunk.to_vec()).await?);
+        }
+        Ok(result)
+    }
+
+    fn check_parents_exist(&self, block_header: &BlockHeader) -> Result<bool> {
+        for parent in block_header.parents_hash().ok_or_else(|| {
+            anyhow!(
+                "the dag block's parents should exist, block id: {:?}, number: {:?}",
+                block_header.id(),
+                block_header.number()
+            )
+        })? {
+            if !self.chain.has_dag_block(parent)? {
+                info!("block: {:?}, number: {:?}, its parent({:?}) still dose not exist, waiting for next round", block_header.id(), block_header.number(), parent);
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    }
+
+    // fn remove_repeated(repeated: &[HashValue]) -> Vec<HashValue> {
+    //     let mut uniqued = vec![];
+    //     let mut remove_repeated = HashSet::new();
+    //     for d in repeated {
+    //         if remove_repeated.insert(*d) {
+    //             uniqued.push(*d);
+    //         }
+    //     }
+    //     uniqued
+    // }
+
+    // async fn fetch_dag_block_absent_children(
     //     &self,
-    //     block_ids: Vec<HashValue>,
-    // ) -> Result<Vec<(Block, Option<PeerId>)>> {
+    //     mut dag_ancestors: Vec<HashValue>,
+    // ) -> Result<Vec<HashValue>> {
+    //     let mut absent_children = Vec::new();
+    //     while !dag_ancestors.is_empty() {
+    //         let children = self
+    //             .fetch_dag_block_children(std::mem::take(&mut dag_ancestors))
+    //             .await?;
+    //         for child in children {
+    //             if self.chain.has_dag_block(child)? {
+    //                 if !dag_ancestors.contains(&child) {
+    //                     dag_ancestors.push(child);
+    //                 }
+    //             } else if !absent_children.contains(&child) {
+    //                 absent_children.push(child);
+    //             }
+    //         }
+    //     }
+    //     Ok(absent_children)
+    // }
+
+    // async fn fetch_dag_block_children(
+    //     &self,
+    //     dag_ancestors: Vec<HashValue>,
+    // ) -> Result<Vec<HashValue>> {
+    //     let mut result = vec![];
+    //     for chunk in dag_ancestors.chunks(usize::try_from(MAX_BLOCK_REQUEST_SIZE)?) {
+    //         result.extend(self.fetch_dag_block_children_inner(chunk.to_vec()).await?);
+    //     }
+    //     Ok(result)
+    // }
+
+    // async fn fetch_dag_block_children_inner(
+    //     &self,
+    //     dag_ancestors: Vec<HashValue>,
+    // ) -> Result<Vec<HashValue>> {
     //     let mut count: i32 = 20;
     //     while count > 0 {
-    //         info!("fetch blocks retry count = {}", count);
-    //         match self.fetcher.fetch_blocks(block_ids.clone()).await {
+    //         info!("fetch block chidlren retry count = {}", count);
+    //         match self
+    //             .fetcher
+    //             .fetch_dag_block_children(dag_ancestors.clone())
+    //             .await
+    //         {
     //             Ok(result) => {
     //                 return Ok(result);
     //             }
     //             Err(e) => {
     //                 count = count.saturating_sub(1);
     //                 if count == 0 {
-    //                     bail!("failed to fetch blocks due to: {:?}", e);
+    //                     bail!("failed to fetch dag block children due to: {:?}", e);
     //                 }
     //                 async_std::task::sleep(Duration::from_secs(1)).await;
     //             }
     //         }
     //     }
-    //     bail!("failed to fetch blocks");
+    //     bail!("failed to fetch dag block children");
     // }
-
-    async fn fetch_dag_block_children(
-        &self,
-        dag_ancestors: Vec<HashValue>,
-    ) -> Result<Vec<HashValue>> {
-        let mut count: i32 = 20;
-        while count > 0 {
-            info!("fetch block chidlren retry count = {}", count);
-            match self
-                .fetcher
-                .fetch_dag_block_children(dag_ancestors.clone())
-                .await
-            {
-                Ok(result) => {
-                    return Ok(result);
-                }
-                Err(e) => {
-                    count = count.saturating_sub(1);
-                    if count == 0 {
-                        bail!("failed to fetch dag block children due to: {:?}", e);
-                    }
-                    async_std::task::sleep(Duration::from_secs(1)).await;
-                }
-            }
-        }
-        bail!("failed to fetch dag block children");
-    }
 
     pub fn check_enough_by_info(&self, block_info: BlockInfo) -> Result<CollectorState> {
         if block_info.block_accumulator_info.num_leaves
@@ -665,12 +736,25 @@ where
                 state?,
             );
         }
+        info!("successfully ensure block's parents exist");
 
         let timestamp = block.header().timestamp();
+
+        let block_info = if self.chain.is_dag(block.header())? {
+            if self.chain.has_dag_block(block.header().id())? {
+                block_info
+            } else {
+                None
+            }
+        } else {
+            block_info
+        };
+
         let (block_info, action) = match block_info {
             Some(block_info) => {
-                //If block_info exists, it means that this block was already executed and try connect in the previous sync, but the sync task was interrupted.
-                //So, we just need to update chain and continue
+                //If block_info exists, it means that this block was already executed and try to connect in the previous sync, but the sync task was interrupted.
+                //So, we need make sure the dag genesis is initialized properly, then update chain and continue
+                self.chain.init_dag_with_genesis(block.header().clone())?;
                 self.chain.connect(ExecutedBlock {
                     block: block.clone(),
                     block_info: block_info.clone(),

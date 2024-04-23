@@ -18,10 +18,11 @@ use starcoin_node_api::node_service::NodeAsyncService;
 use starcoin_rpc_server::service::RpcService;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceInfo, ServiceRef};
-use starcoin_storage::Storage;
-use starcoin_sync::sync::SyncService;
+use starcoin_storage::{BlockStore, Storage};
+use starcoin_sync::sync::{CheckSyncEvent, SyncService};
 use starcoin_txpool::TxPoolService;
 use starcoin_types::block::Block;
+use starcoin_types::block::BlockNumber;
 use starcoin_types::system_events::{GenerateBlockEvent, NewHeadBlock};
 use std::sync::Arc;
 use std::time::Duration;
@@ -215,6 +216,13 @@ impl NodeHandle {
             let is_dag_block = chain_service.dag_fork_number().await? < block.header().number();
             Ok((block, is_dag_block))
         })
+    }
+
+    pub async fn start_to_sync(&self) -> Result<()> {
+        let registry = &self.registry;
+        let sync_service = registry.service_ref::<SyncService>().await?;
+        sync_service.notify(CheckSyncEvent::default()).expect("failed to start to sync");
+        Ok(())
     }
 }
 

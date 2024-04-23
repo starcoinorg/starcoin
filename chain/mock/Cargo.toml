@@ -11,7 +11,7 @@ proptest = { default-features = false, optional = true, workspace = true }
 proptest-derive = { default-features = false, optional = true, workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
-starcoin-chain = { workspace = true, features = ["testing"] }
+starcoin-chain = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-consensus = { workspace = true }
 starcoin-executor = { package = "starcoin-executor", workspace = true }
@@ -27,12 +27,10 @@ starcoin-dag = { workspace = true }
 [dev-dependencies]
 proptest = { workspace = true }
 proptest-derive = { workspace = true }
-starcoin-chain = { workspace = true, features = ["testing"] }
 
 [features]
 default = []
 fuzzing = ["proptest", "proptest-derive", "starcoin-types/fuzzing"]
-testing = []
 
 [package]
 authors = { workspace = true }

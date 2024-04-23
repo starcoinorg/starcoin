@@ -1,3 +1,4 @@
+use crate::consensusdb::prelude::StoreError;
 use crate::consensusdb::{prelude::StoreResult, schemadb::ReachabilityStoreReader};
 use crate::types::interval::Interval;
 use starcoin_crypto::hash::HashValue as Hash;
@@ -39,6 +40,12 @@ impl<T: ReachabilityStoreReader + ?Sized> ReachabilityStoreIntervalExtensions fo
         match self.get_children(block)?.last() {
             Some(last_child) => {
                 let last_alloc = self.get_interval(*last_child)?;
+                let start = last_alloc.end.checked_add(1).unwrap();
+                let end = alloc_capacity.end;
+                let check = start > 0 && end < u64::MAX && end >= start.checked_sub(1).unwrap(); // TODO: make sure this is actually debug-only
+                if !check {
+                    return Err(StoreError::InvalidInterval(start, end));
+                }
                 Ok(Interval::new(
                     last_alloc.end.checked_add(1).unwrap(),
                     alloc_capacity.end,
