@@ -175,9 +175,10 @@ impl MinerService {
             //if block time gap > 3600, force create a empty block for fix https://github.com/starcoinorg/starcoin/issues/3036
             && block_time_gap < MAX_BLOCK_TIME_GAP)
         {
-            debug!("The flag disable_mint_empty_block is true and no txn in pool, so skip mint empty block.");
+            info!("The flag disable_mint_empty_block is true and no txn in pool, so skip mint empty block.");
             Ok(())
         } else {
+            info!("jacktest mint block event dispatching");
             self.dispatch_mint_block_event(ctx, block_template)
         }
     }
