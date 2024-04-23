@@ -27,7 +27,10 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
     }
 
     fn get_subtree_size(&self, block: Hash) -> Result<u64> {
-        Ok(*self.subtree_sizes.get(&block).ok_or_else(|| ReachabilityError::KeyNotFound(block.to_string()))?)
+        Ok(*self
+            .subtree_sizes
+            .get(&block)
+            .ok_or_else(|| ReachabilityError::KeyNotFound(block.to_string()))?)
     }
 
     /// Traverses the reachability subtree that's defined by the new child
@@ -160,7 +163,12 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
                 // All children of `current` have calculated their subtree size.
                 // Sum them all together and add 1 to get the sub tree size of
                 // `current`.
-                let subtree_sum: u64 = children.iter().map(|c| self.get_subtree_size(*c)).collect::<Result<Vec<u64>>>()?.into_iter().sum();
+                let subtree_sum: u64 = children
+                    .iter()
+                    .map(|c| self.get_subtree_size(*c))
+                    .collect::<Result<Vec<u64>>>()?
+                    .into_iter()
+                    .sum();
                 // let subtree_sum: u64 = children.iter().map(|c| self.get_subtree_size(*c)).collect()?.sum();
                 self.subtree_sizes
                     .insert(current, subtree_sum.checked_add(1).unwrap());
@@ -181,7 +189,10 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
         while let Some(current) = queue.pop_front() {
             let children = self.store.get_children(current)?;
             if !children.is_empty() {
-                let sizes = children.iter().map(|c| Ok(self.get_subtree_size(*c)?)).collect::<Result<Vec<u64>>>()?;
+                let sizes = children
+                    .iter()
+                    .map(|c| self.get_subtree_size(*c))
+                    .collect::<Result<Vec<u64>>>()?;
                 let interval = self.store.interval_children_capacity(current)?;
                 let intervals = interval.split_exponential(&sizes);
                 for (c, ci) in children.iter().copied().zip(intervals) {
@@ -483,7 +494,7 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
             .cloned()
             .map(|block| {
                 self.count_subtrees(block)?;
-                Ok(self.get_subtree_size(block)?)
+                self.get_subtree_size(block)
             })
             .collect::<Result<Vec<u64>>>()?;
         let sum = sizes.iter().sum();
@@ -523,7 +534,7 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
             .cloned()
             .map(|block| {
                 self.count_subtrees(block)?;
-                Ok(self.get_subtree_size(block)?)
+                self.get_subtree_size(block)
             })
             .collect::<Result<Vec<u64>>>()?;
         let sum = sizes.iter().sum();

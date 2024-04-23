@@ -1,29 +1,51 @@
+[dependencies]
+anyhow = { workspace = true }
+byteorder = { workspace = true }
+cryptonight-rs = { workspace = true }
+futures = { workspace = true }
+hex = { default-features = false, workspace = true }
+once_cell = { workspace = true }
+proptest = { default-features = false, optional = true, workspace = true }
+proptest-derive = { default-features = false, optional = true, workspace = true }
+rand = { workspace = true }
+rand_core = { default-features = false, workspace = true }
+rust-argon2 = { workspace = true }
+sha3 = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-state-api = { workspace = true }
+starcoin-time-service = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-vm-types = { workspace = true }
+thiserror = { workspace = true }
+rocksdb = { workspace = true }
+bincode = { version = "1", default-features = false }
+serde = { workspace = true }
+starcoin-storage = { workspace = true }
+parking_lot = { workspace = true }
+itertools = { workspace = true }
+starcoin-config = { workspace = true }
+bcs-ext = { workspace = true }
+starcoin-accumulator = { workspace = true }
+schemars = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+proptest-derive = { workspace = true }
+stest = { workspace = true }
+tempfile = { workspace = true }
+tokio = {workspace = true }
+[features]
+default = []
+fuzzing = ["proptest", "proptest-derive", "starcoin-types/fuzzing"]
+
 [package]
-name = "starcoin-flexidag"
 authors = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
+name = "starcoin-dag"
 publish = { workspace = true }
 version = "1.13.8"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-anyhow = { workspace = true }
-async-trait = { workspace = true }
-futures = { workspace = true }
-starcoin-config = { workspace = true }
-starcoin-crypto = { workspace = true }
-starcoin-logger = { workspace = true }
-starcoin-service-registry = { workspace = true }
-starcoin-storage = { workspace = true }
-starcoin-types = { workspace = true }
-tokio = { workspace = true }
-starcoin-consensus = { workspace = true }
-starcoin-accumulator = { workspace = true }
-thiserror = { workspace = true }
-starcoin-dag = { workspace = true }
-bcs-ext = { workspace = true }
