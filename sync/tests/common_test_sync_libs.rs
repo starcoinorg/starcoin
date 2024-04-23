@@ -14,10 +14,14 @@ pub struct DagBlockInfo {
     pub children: Vec<HashValue>,
 }
 
+// fixme: remove unused
+#[allow(unused)]
 pub fn gen_chain_env(config: NodeConfig) -> Result<NodeHandle> {
     test_helper::run_node_by_config(Arc::new(config))
 }
 
+// fixme: remove unused
+#[allow(unused)]
 fn gen_node(seeds: Vec<NetworkConfig>) -> Result<(NodeHandle, NetworkConfig)> {
     let dir = match temp_dir() {
         starcoin_config::DataDirPath::PathBuf(path) => path,
@@ -38,6 +42,8 @@ fn gen_node(seeds: Vec<NetworkConfig>) -> Result<(NodeHandle, NetworkConfig)> {
     Ok((handle, network_config))
 }
 
+// fixme: remove unused
+#[allow(unused)]
 pub fn init_multiple_node(count: usize) -> Result<Vec<NodeHandle>> {
     let mut result = vec![];
     result.reserve(count);
@@ -67,6 +73,8 @@ pub fn generate_dag_block(handle: &NodeHandle, count: usize) -> Result<Vec<DagBl
         .collect::<Vec<DagBlockInfo>>())
 }
 
+// fixme: remove unused
+#[allow(unused)]
 pub fn init_two_node() -> Result<(NodeHandle, NodeHandle, PeerId)> {
     // network1 initialization
     let (local_handle, local_net_addr) = {

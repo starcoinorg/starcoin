@@ -474,7 +474,7 @@ where
                 return Ok(());
             }
 
-            absent_ancestor.sort_by(|a, b| a.number().cmp(&b.number()));
+            absent_ancestor.sort_by_key(|a| a.number());
             info!("now apply absent ancestors: {:?}", absent_ancestor);
 
             let mut process_dag_ancestors = HashMap::new();

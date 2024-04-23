@@ -494,7 +494,7 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
             .cloned()
             .map(|block| {
                 self.count_subtrees(block)?;
-                Ok(self.get_subtree_size(block)?)
+                self.get_subtree_size(block)
             })
             .collect::<Result<Vec<u64>>>()?;
         let sum = sizes.iter().sum();
@@ -534,7 +534,7 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
             .cloned()
             .map(|block| {
                 self.count_subtrees(block)?;
-                Ok(self.get_subtree_size(block)?)
+                self.get_subtree_size(block)
             })
             .collect::<Result<Vec<u64>>>()?;
         let sum = sizes.iter().sum();

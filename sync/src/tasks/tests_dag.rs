@@ -14,7 +14,6 @@ use starcoin_chain_service::ChainReaderService;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_txpool_mock_service::MockTxPoolService;
-use starcoin_types::block::BlockHeader;
 use test_helper::DummyNetworkService;
 
 #[stest::test(timeout = 120)]
