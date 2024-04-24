@@ -13,9 +13,27 @@ use starcoin_config::ChainNetwork;
 use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
 use starcoin_types::account::Account;
+use starcoin_types::block::BlockNumber;
 use starcoin_vm_types::on_chain_config::FlexiDagConfig;
 
 pub fn gen_blockchain_for_test(net: &ChainNetwork) -> Result<BlockChain> {
+    let (storage, chain_info, _, dag) =
+        Genesis::init_storage_for_test(net).expect("init storage by genesis fail.");
+
+    let block_chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage,
+        None,
+        dag,
+    )?;
+    Ok(block_chain)
+}
+
+pub fn gen_blockchain_for_dag_test(
+    net: &ChainNetwork,
+    fork_number: BlockNumber,
+) -> Result<BlockChain> {
     let (storage, chain_info, _, dag) =
         Genesis::init_storage_for_test(net).expect("init storage by genesis fail.");
 
