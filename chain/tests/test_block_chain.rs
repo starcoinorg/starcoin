@@ -153,19 +153,6 @@ fn test_halley_consensus() {
     assert_eq!(mock_chain.head().current_header().number(), times);
 }
 
-#[stest::test]
-fn test_block_chain_dag() -> Result<()> {
-    let mut mock_chain =
-        MockChain::new_with_fork(ChainNetwork::new_test(), TEST_FLEXIDAG_FORK_HEIGHT_FOR_DAG)?;
-    (0..10).into_iter().try_for_each(|index| {
-        let block = mock_chain.produce()?;
-        assert_eq!(block.header().number(), index + 1);
-        mock_chain.apply(block)?;
-        assert_eq!(mock_chain.head().current_header().number(), index + 1);
-        Ok(())
-    })
-}
-
 #[stest::test(timeout = 240)]
 fn test_dev_consensus() {
     let mut mock_chain = MockChain::new(ChainNetwork::new_builtin(BuiltinNetworkID::Dev)).unwrap();
@@ -552,6 +539,25 @@ fn test_block_chain_for_dag_fork() -> Result<()> {
         let block = product_a_block(&fork_block_chain, mock_chain.miner(), Vec::new());
         fork_block_chain.apply(block)?;
     }
+
+    Ok(())
+}
+
+#[stest::test]
+fn test_gen_dag_chain() -> Result<()> {
+    let fork_number = 11u64;
+    let mut chain = gen_blockchain_for_dag_test(&ChainNetwork::new_test(), fork_number).unwrap();
+
+    let effective_height = chain
+        .chain_state()
+        .get_on_chain_config::<FlexiDagConfig>()?
+        .map(|c| c.effective_height);
+
+    assert_eq!(effective_height, Some(fork_number));
+    assert_eq!(chain.current_header().number(), 9);
+
+    let fork_number = thread_rng().gen_range(0..=9);
+    assert!(gen_blockchain_for_dag_test(&ChainNetwork::new_test(), fork_number).is_err());
 
     Ok(())
 }
