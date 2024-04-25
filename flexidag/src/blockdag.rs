@@ -130,7 +130,8 @@ impl BlockDAG {
         let parents = header.parents();
         let ghostdata = match self.ghostdata_by_hash(header.id())? {
             None => {
-                if header.is_dag_genesis() {
+                // fixme: header.parents_hash is none and height equals to dag_fork_height
+                if header.is_legacy() {
                     Arc::new(self.ghostdag_manager.genesis_ghostdag_data(&header))
                 } else {
                     let ghostdata = self.ghostdag_manager.ghostdag(&parents)?;
@@ -192,9 +193,7 @@ impl BlockDAG {
             }
             Err(reachability::ReachabilityError::StoreError(StoreError::InvalidInterval(_, _))) => {
                 self.set_reindex_root(origin)?;
-                bail!(
-                    "failed to add a block when committing for invalid interval",
-                );
+                bail!("failed to add a block when committing for invalid interval",);
             }
             Err(e) => {
                 bail!("failed to add a block when committing, e: {:?}", e);
@@ -202,7 +201,8 @@ impl BlockDAG {
         }
 
         // store relations
-        if header.is_dag_genesis() {
+        // fixme: header.parents_hash is none and height equals to dag_fork_height
+        if header.is_legacy() {
             let origin = header.parent_hash();
             let real_origin = Hash::sha3_256_of(&[origin, header.id()].encode()?);
             process_key_already_error(
