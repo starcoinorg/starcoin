@@ -45,6 +45,7 @@ async fn sync_block_process(
         let block_chain_service = async_std::task::block_on(
             registry.service_ref::<BlockConnectorService<MockTxPoolService>>(),
         )?;
+        let dag_fork_height = local_node.chain().dag_fork_height()?.unwrap_or(u64::MAX);
 
         let (sync_task, _task_handle, task_event_counter) = full_sync_task(
             current_block_id,
@@ -59,6 +60,7 @@ async fn sync_block_process(
             15,
             None,
             None,
+            dag_fork_height,
             local_node.chain().dag().clone(),
         )?;
         let branch = sync_task.await?;

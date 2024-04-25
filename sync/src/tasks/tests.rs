@@ -67,6 +67,7 @@ pub async fn test_sync_invalid_target() -> Result<()> {
     target.block_info.total_difficulty = U256::max_value();
 
     let current_block_header = node2.chain().current_header();
+    let dag_fork_height = node2.chain().dag_fork_height()?.unwrap_or(u64::MAX);
 
     let storage = node2.chain().get_storage();
     let (sender_1, receiver_1) = unbounded();
@@ -84,6 +85,7 @@ pub async fn test_sync_invalid_target() -> Result<()> {
         15,
         None,
         None,
+        dag_fork_height,
         dag,
     )?;
     let _join_handle = node2.process_block_connect_event(receiver_1).await;
@@ -160,6 +162,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
     let target = arc_node1.sync_target();
 
     let current_block_header = node2.chain().current_header();
+    let dag_fork_height = node2.chain().dag_fork_height()?.unwrap_or(u64::MAX);
     let dag = node2.chain().dag();
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
@@ -177,12 +180,14 @@ pub async fn test_full_sync_fork() -> Result<()> {
         15,
         None,
         None,
+        dag_fork_height,
         dag.clone(),
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
     let mut node2 = join_handle.await;
     let current_block_header = node2.chain().current_header();
+    let dag_fork_height = node2.chain().dag_fork_height()?.unwrap_or(u64::MAX);
     assert_eq!(branch.current_header().id(), target.target_id.id());
     assert_eq!(target.target_id.id(), current_block_header.id());
     let reports = task_event_counter.get_reports();
@@ -211,6 +216,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         15,
         None,
         None,
+        dag_fork_height,
         dag,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
@@ -244,6 +250,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
     let target = arc_node1.sync_target();
 
     let current_block_header = node2.chain().current_header();
+    let dag_fork_height = node2.chain().dag_fork_height()?.unwrap_or(u64::MAX);
     let dag = node2.chain().dag();
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
@@ -261,6 +268,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
         15,
         None,
         None,
+        dag_fork_height,
         dag,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
@@ -298,7 +306,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
     let target = arc_node1.sync_target_by_number(5).unwrap();
 
     let current_block_header = node2.chain().current_header();
-
+    let dag_fork_height = node2.chain().dag_fork_height()?.unwrap_or(u64::MAX);
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
@@ -315,6 +323,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         15,
         None,
         None,
+        dag_fork_height,
         dag.clone(),
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
@@ -323,6 +332,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
 
     assert_eq!(branch.current_header().id(), target.target_id.id());
     let current_block_header = node2.chain().current_header();
+    let dag_fork_height = node2.chain().dag_fork_height()?.unwrap_or(u64::MAX);
     // node2's main chain not change.
     assert_ne!(target.target_id.id(), current_block_header.id());
 
@@ -351,6 +361,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         15,
         None,
         None,
+        dag_fork_height,
         dag,
     )?;
 
@@ -387,6 +398,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
     let target = arc_node1.sync_target();
 
     let current_block_header = node2.chain().current_header();
+    let dag_fork_height = node2.chain().dag_fork_height()?.unwrap_or(u64::MAX);
     let dag = node2.chain().dag();
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
@@ -404,6 +416,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
         15,
         None,
         None,
+        dag_fork_height,
         dag,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
@@ -886,6 +899,7 @@ async fn test_net_rpc_err() -> Result<()> {
     let target = arc_node1.sync_target();
 
     let current_block_header = node2.chain().current_header();
+    let dag_fork_height = node2.chain().dag_fork_height()?.unwrap_or(u64::MAX);
     let dag = node2.chain().dag();
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
@@ -903,6 +917,7 @@ async fn test_net_rpc_err() -> Result<()> {
         15,
         None,
         None,
+        dag_fork_height,
         dag,
     )?;
     let _join_handle = node2.process_block_connect_event(receiver).await;
@@ -1035,6 +1050,7 @@ fn sync_block_in_async_connection(
 
     let current_block_header = local_node.chain().current_header();
     let storage = local_node.chain().get_storage();
+    let dag_fork_height = local_node.chain().dag_fork_height()?.unwrap_or(u64::MAX);
 
     let local_net = local_node.chain_mocker.net();
     let (local_ancestor_sender, _local_ancestor_receiver) = unbounded();
@@ -1052,6 +1068,7 @@ fn sync_block_in_async_connection(
         15,
         None,
         None,
+        dag_fork_height,
         dag,
     )?;
     let branch = async_std::task::block_on(sync_task)?;

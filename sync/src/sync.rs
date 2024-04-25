@@ -231,6 +231,28 @@ impl SyncService {
                 storage.get_block_info(current_block_id)?.ok_or_else(|| {
                     format_err!("Can not find block info by id: {}", current_block_id)
                 })?;
+            let dag_fork_height = {
+                // fixme: how to get dag_fork_height properly?
+                //use starcoin_statedb::ChainStateDB;
+                //use starcoin_vm_types::on_chain_config::FlexiDagConfig;
+                //use starcoin_vm_types::state_view::StateReaderExt;
+                //let header = storage
+                //    .get_block_header_by_hash(current_block_id)?
+                //    .expect("current block header must exist");
+                //let statedb = ChainStateDB::new(
+                //    storage.clone(),
+                //    if header.is_genesis() {
+                //        None
+                //    } else {
+                //        Some(header.parent_hash())
+                //    },
+                //);
+                //statedb
+                //    .get_on_chain_config::<FlexiDagConfig>()?
+                //    .map(|c| c.effective_height)
+                //    .unwrap_or(u64::MAX)
+                u64::MAX
+            };
 
             let rpc_client = Self::create_verified_client(
                 network.clone(),
@@ -258,6 +280,7 @@ impl SyncService {
                     config.sync.max_retry_times(),
                     sync_metrics.clone(),
                     vm_metrics.clone(),
+                    dag_fork_height,
                     dag,
                 )?;
 

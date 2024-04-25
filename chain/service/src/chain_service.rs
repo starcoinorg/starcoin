@@ -16,7 +16,7 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::{BlockStore, Storage, Store};
-use starcoin_types::block::ExecutedBlock;
+use starcoin_types::block::{DagHeaderType, ExecutedBlock};
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::system_events::NewHeadBlock;
@@ -247,6 +247,13 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetDagStateView => Ok(ChainResponse::DagStateView(Box::new(
                 self.inner.get_dag_state()?,
             ))),
+            ChainRequest::CheckDagType(id) => Ok(ChainResponse::CheckDagType({
+                let header = self
+                    .inner
+                    .get_header_by_hash(id)?
+                    .ok_or_else(|| format_err!("non-existent block header"))?;
+                self.inner.check_dag_type(&header)?
+            })),
         }
     }
 }
@@ -452,11 +459,11 @@ impl ReadableChainService for ChainReaderServiceInner {
 
     fn get_dag_state(&self) -> Result<DagStateView> {
         let head = self.main.current_header();
-        if !head.is_dag() {
+        if self.main.check_dag_type(&head)? != DagHeaderType::Normal {
             bail!(
-                "The chain is still not a dag and its dag fork number is {} and the current is {}.",
-                head.dag_fork_height(),
-                head.number()
+                "The chain is still not a dag and its dag fork number is {} and the current is {:?}.",
+                head.number(),
+                self.main.dag_fork_height()?
             );
         }
         let (dag_genesis, state) = self.main.get_dag_state_by_block(&head)?;
@@ -464,6 +471,10 @@ impl ReadableChainService for ChainReaderServiceInner {
             dag_genesis,
             tips: state.tips,
         })
+    }
+
+    fn check_dag_type(&self, header: &BlockHeader) -> Result<DagHeaderType> {
+        self.main.check_dag_type(header)
     }
 }
 

@@ -21,7 +21,7 @@ use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceIn
 use starcoin_storage::Storage;
 use starcoin_sync::sync::{CheckSyncEvent, SyncService};
 use starcoin_txpool::TxPoolService;
-use starcoin_types::block::Block;
+use starcoin_types::block::{Block, DagHeaderType};
 use starcoin_types::system_events::{GenerateBlockEvent, NewHeadBlock};
 use std::sync::Arc;
 use std::time::Duration;
@@ -183,7 +183,7 @@ impl NodeHandle {
     }
 
     /// Just for test
-    pub fn generate_block(&self) -> Result<Block> {
+    pub fn generate_block(&self) -> Result<(Block, bool)> {
         let registry = &self.registry;
         block_on(async move {
             let bus = registry.service_ref::<BusService>().await?;
@@ -211,7 +211,8 @@ impl NodeHandle {
                     bail!("Wait timeout for generate_block")
                 }
             };
-            Ok(block)
+            let dag_type = chain_service.check_dag_type(block.id()).await?;
+            Ok((block, dag_type == DagHeaderType::Normal))
         })
     }
 

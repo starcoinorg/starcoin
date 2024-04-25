@@ -18,7 +18,9 @@ use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::MAX_BLOCK_HEADER_REQUEST_SIZE;
 use starcoin_storage::{Store, BARNARD_HARD_FORK_HASH};
 use starcoin_sync_api::SyncTarget;
-use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
+use starcoin_types::block::{
+    Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber, DagHeaderType,
+};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -443,7 +445,7 @@ where
     }
 
     pub fn ensure_dag_parent_blocks_exist(&mut self, block_header: BlockHeader) -> Result<()> {
-        if !block_header.is_dag() {
+        if self.chain.check_dag_type(&block_header)? != DagHeaderType::Normal {
             info!(
                 "the block is not a dag block, skipping, its id: {:?}, its number {:?}",
                 block_header.id(),
@@ -752,7 +754,7 @@ where
 
         let timestamp = block.header().timestamp();
 
-        let block_info = if block.header().is_dag() {
+        let block_info = if self.chain.check_dag_type(block.header())? == DagHeaderType::Normal {
             if self.chain.has_dag_block(block.header().id())? {
                 block_info
             } else {

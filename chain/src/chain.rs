@@ -26,7 +26,7 @@ use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter}
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
-use starcoin_types::block::BlockIdAndNumber;
+use starcoin_types::block::{BlockIdAndNumber, DagHeaderType};
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
@@ -42,8 +42,10 @@ use starcoin_types::{
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm_types::on_chain_config::FlexiDagConfig;
 use starcoin_vm_types::on_chain_resource::Epoch;
-use std::cmp::min;
+use starcoin_vm_types::state_view::StateReaderExt;
+use std::cmp::{min, Ordering};
 use std::collections::HashSet;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
@@ -128,7 +130,7 @@ impl BlockChain {
             dag: dag.clone(),
         };
         let current_header = chain.current_header();
-        if current_header.is_dag() || current_header.is_dag_genesis() {
+        if chain.check_dag_type(&current_header)? != DagHeaderType::Single {
             dag.set_reindex_root(chain.get_block_dag_origin()?)?;
         }
         watch(CHAIN_WATCH_NAME, "n1251");
@@ -274,7 +276,7 @@ impl BlockChain {
         let final_block_gas_limit = block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
-        let (_, tips_hash) = if current_number <= self.dag_fork_height() {
+        let (_, tips_hash) = if current_number <= self.dag_fork_height()?.unwrap_or(u64::MAX) {
             (None, None)
         } else if tips.is_some() {
             (Some(self.get_block_dag_genesis(&previous_header)?), tips)
@@ -385,7 +387,7 @@ impl BlockChain {
     where
         V: BlockVerifier,
     {
-        if block.header().is_dag() {
+        if self.check_dag_type(block.header())? == DagHeaderType::Normal {
             let selected_chain = Self::new(
                 self.time_service.clone(),
                 block.parent_hash(),
@@ -420,7 +422,7 @@ impl BlockChain {
     }
 
     fn check_parents_coherent(&self, header: &BlockHeader) -> Result<HashValue> {
-        if !header.is_dag() {
+        if self.check_dag_type(header)? != DagHeaderType::Normal {
             bail!("Block is not a dag block.");
         }
 
@@ -810,7 +812,7 @@ impl BlockChain {
     }
 
     pub fn init_dag_with_genesis(&mut self, genesis: BlockHeader) -> Result<()> {
-        if genesis.is_dag_genesis() {
+        if self.check_dag_type(&genesis)? == DagHeaderType::Genesis {
             let _dag_genesis_id = genesis.id();
             self.dag.init_with_genesis(genesis)?;
         }
@@ -818,6 +820,9 @@ impl BlockChain {
     }
 
     pub fn get_block_dag_genesis(&self, header: &BlockHeader) -> Result<HashValue> {
+        let dag_fork_height = self
+            .dag_fork_height()?
+            .ok_or_else(|| anyhow!("unset dag fork height"))?;
         let block_info = self
             .storage
             .get_block_info(header.id())?
@@ -828,7 +833,7 @@ impl BlockChain {
                 .get_accumulator_store(AccumulatorStoreType::Block),
         );
         let dag_genesis = block_accumulator
-            .get_leaf(header.dag_fork_height())?
+            .get_leaf(dag_fork_height)?
             .ok_or_else(|| anyhow!("failed to get the dag genesis"))?;
 
         Ok(dag_genesis)
@@ -851,8 +856,29 @@ impl BlockChain {
         Ok((dag_genesis, self.dag.get_dag_state(dag_genesis)?))
     }
 
-    pub fn get_dag_genesis(&self) -> Result<HashValue> {
-        self.get_block_dag_genesis(&self.current_header())
+    pub fn check_dag_type(&self, header: &BlockHeader) -> Result<DagHeaderType> {
+        let dag_height = self.dag_fork_height()?.unwrap_or(u64::MAX);
+        if header.is_genesis() {
+            return Ok(DagHeaderType::Single);
+        }
+        let no_parents = header.parents_hash().unwrap_or_default().is_empty();
+
+        match (no_parents, header.number().cmp(&dag_height)) {
+            (true, Ordering::Greater) => {
+                Err(anyhow!("block header with suitable height but no parents"))
+            }
+            (false, Ordering::Greater) => Ok(DagHeaderType::Normal),
+
+            (true, Ordering::Equal) => Ok(DagHeaderType::Genesis),
+            (false, Ordering::Equal) => Err(anyhow!(
+                "block header with dag genesis height but having parents"
+            )),
+
+            (true, Ordering::Less) => Ok(DagHeaderType::Single),
+            (false, Ordering::Less) => Err(anyhow!(
+                "block header with smaller height but having parents"
+            )),
+        }
     }
 }
 
@@ -1085,7 +1111,7 @@ impl ChainReader for BlockChain {
     }
 
     fn verify(&self, block: Block) -> Result<VerifiedBlock> {
-        if block.header().is_dag() {
+        if self.check_dag_type(block.header())? == DagHeaderType::Normal {
             DagBasicVerifier::verify_header(self, block.header())?;
             Ok(VerifiedBlock(block))
         } else {
@@ -1095,7 +1121,7 @@ impl ChainReader for BlockChain {
 
     fn execute(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
         let header = verified_block.0.header().clone();
-        if !header.is_dag() {
+        if self.check_dag_type(&header)? != DagHeaderType::Normal {
             let executed = Self::execute_block_and_save(
                 self.storage.as_ref(),
                 self.statedb.fork(),
@@ -1220,6 +1246,12 @@ impl ChainReader for BlockChain {
     }
 
     fn has_dag_block(&self, header_id: HashValue) -> Result<bool> {
+        let dag_fork_height = if let Some(height) = self.dag_fork_height()? {
+            height
+        } else {
+            return Ok(false);
+        };
+
         let header = match self.storage.get_block_header_by_hash(header_id)? {
             Some(header) => header,
             None => return Ok(false),
@@ -1234,7 +1266,7 @@ impl ChainReader for BlockChain {
             self.storage
                 .get_accumulator_store(AccumulatorStoreType::Block),
         );
-        let dag_genesis = match block_accumulator.get_leaf(header.dag_fork_height())? {
+        let dag_genesis = match block_accumulator.get_leaf(dag_fork_height)? {
             Some(dag_genesis) => dag_genesis,
             None => return Ok(false),
         };
@@ -1244,18 +1276,21 @@ impl ChainReader for BlockChain {
             self.storage
                 .get_accumulator_store(AccumulatorStoreType::Block),
         );
-        let current_chain_dag_genesis = match current_chain_block_accumulator
-            .get_leaf(self.status.status.head.dag_fork_height())?
-        {
-            Some(dag_genesis) => dag_genesis,
-            None => return Ok(false),
-        };
+        let current_chain_dag_genesis =
+            match current_chain_block_accumulator.get_leaf(dag_fork_height)? {
+                Some(dag_genesis) => dag_genesis,
+                None => return Ok(false),
+            };
 
         if current_chain_dag_genesis != dag_genesis {
             return Ok(false);
         }
 
         self.dag.has_dag_block(header.id())
+    }
+
+    fn check_dag_type(&self, header: &BlockHeader) -> Result<DagHeaderType> {
+        self.check_dag_type(header)
     }
 }
 
@@ -1426,8 +1461,11 @@ impl BlockChain {
         Ok(executed_block)
     }
 
-    pub fn dag_fork_height(&self) -> BlockNumber {
-        self.status.head.header().dag_fork_height()
+    pub fn dag_fork_height(&self) -> Result<Option<BlockNumber>> {
+        Ok(self
+            .statedb
+            .get_on_chain_config::<FlexiDagConfig>()?
+            .map(|c| c.effective_height))
     }
 }
 
@@ -1437,7 +1475,7 @@ impl ChainWriter for BlockChain {
     }
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
-        if executed_block.block.is_dag() {
+        if self.check_dag_type(executed_block.block.header())? == DagHeaderType::Normal {
             info!(
                 "connect a dag block, {:?}, number: {:?}",
                 executed_block.block.id(),
@@ -1479,7 +1517,7 @@ impl ChainWriter for BlockChain {
     }
 
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock> {
-        if !block.is_dag() {
+        if self.check_dag_type(block.header())? != DagHeaderType::Normal {
             self.apply_with_verifier::<FullVerifier>(block)
         } else {
             self.apply_with_verifier::<DagVerifier>(block)
