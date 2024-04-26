@@ -367,6 +367,13 @@ impl BlockHeader {
         self.parents_hash.is_none()
     }
 
+    pub fn is_single(&self) -> bool {
+        self.parents_hash
+            .as_ref()
+            .map(|h| h.is_empty())
+            .unwrap_or(true)
+    }
+
     pub fn genesis_block_header(
         parent_hash: HashValue,
         timestamp: u64,
