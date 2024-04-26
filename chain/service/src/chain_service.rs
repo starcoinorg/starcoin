@@ -254,6 +254,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                     .ok_or_else(|| format_err!("non-existent block header"))?;
                 self.inner.check_dag_type(&header)?
             })),
+            ChainRequest::DagForkHeigh => Ok(ChainResponse::DagForkHeigh(
+                self.inner.dag_fork_heigh()?,
+            )),
         }
     }
 }
@@ -475,6 +478,10 @@ impl ReadableChainService for ChainReaderServiceInner {
 
     fn check_dag_type(&self, header: &BlockHeader) -> Result<DagHeaderType> {
         self.main.check_dag_type(header)
+    }
+    
+    fn dag_fork_heigh(&self) -> Result<Option<BlockNumber>> {
+        self.main.dag_fork_height()
     }
 }
 

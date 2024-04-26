@@ -77,6 +77,7 @@ pub trait ReadableChainService {
     fn get_dag_block_children(&self, ids: Vec<HashValue>) -> Result<Vec<HashValue>>;
     fn get_dag_state(&self) -> Result<DagStateView>;
     fn check_dag_type(&self, header: &BlockHeader) -> Result<DagHeaderType>;
+    fn dag_fork_heigh(&self) -> Result<Option<BlockNumber>>;
 }
 
 /// Writeable block chain service trait
@@ -147,6 +148,7 @@ pub trait ChainAsyncService:
     async fn get_dag_block_children(&self, hashes: Vec<HashValue>) -> Result<Vec<HashValue>>;
     async fn get_dag_state(&self) -> Result<DagStateView>;
     async fn check_dag_type(&self, id: HashValue) -> Result<DagHeaderType>;
+    async fn dag_fork_heigh(&self) -> Result<Option<BlockNumber>>;
 }
 
 #[async_trait::async_trait]
@@ -471,6 +473,14 @@ where
             Ok(dag_type)
         } else {
             bail!("check dag type error")
+        }
+    }
+    async fn dag_fork_heigh(&self) -> Result<Option<BlockNumber>> {
+        let response = self.send(ChainRequest::DagForkHeigh).await??;
+        if let ChainResponse::DagForkHeigh(dag_fork_heigh) = response {
+            Ok(dag_fork_heigh)
+        } else {
+            bail!("failed to get dag fork heigh")
         }
     }
 }
