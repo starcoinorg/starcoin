@@ -161,7 +161,7 @@ pub async fn full_sync_new_node() -> Result<()> {
         15,
         None,
         None,
-        dag_fork_height,
+        Some(dag_fork_height),
         dag.clone(),
     )?;
     let join_handle = node2.process_block_connect_event(receiver_1).await;
@@ -194,7 +194,7 @@ pub async fn full_sync_new_node() -> Result<()> {
         15,
         None,
         None,
-        dag_fork_height,
+        Some(dag_fork_height),
         dag,
     )?;
     let join_handle = node2.process_block_connect_event(receiver_1).await;

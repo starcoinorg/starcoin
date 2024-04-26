@@ -131,11 +131,7 @@ impl TaskResultCollector<HashValue> for AccumulatorCollector {
         let block_number = info.num_leaves.saturating_sub(1);
 
         let check = if let Some(dag_fork_number) = self.dag_fork_heigh {
-            if block_number < dag_fork_number {
-                true
-            } else {
-                false
-            }            
+            block_number < dag_fork_number
         } else {
             true
         };
