@@ -593,8 +593,8 @@ fn ext_execute_after_upgrade(
 }
 
 fn verify_version_state<R>(version: StdlibVersion, chain_state: &R) -> Result<()>
-    where
-        R: ChainStateReader,
+where
+    R: ChainStateReader,
 {
     match version {
         StdlibVersion::Version(1) => {
@@ -661,8 +661,8 @@ fn test_upgrade_stdlib_with_disallowed_publish_option() -> Result<()> {
 }
 
 fn read_two_phase_upgrade_v2_resource<R>(state_reader: &R) -> Result<bool>
-    where
-        R: ChainStateReader,
+where
+    R: ChainStateReader,
 {
     Ok(state_reader
         .get_resource::<TwoPhaseUpgradeV2Resource>(genesis_address())?

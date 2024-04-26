@@ -778,7 +778,10 @@ where
                 break;
             }
             // chain read the fork number from remote peers, break and start again
-            if let Some(_fork_number) =  latest_block_chain.dag_fork_height().map_err(TaskError::BreakError)? {
+            if let Some(_fork_number) = latest_block_chain
+                .dag_fork_height()
+                .map_err(TaskError::BreakError)?
+            {
                 if dag_fork_number.is_none() {
                     break;
                 }

@@ -813,7 +813,11 @@ impl BlockChain {
 
     pub fn init_dag_with_genesis(&mut self, genesis: BlockHeader) -> Result<()> {
         if self.check_dag_type(&genesis)? == DagHeaderType::Genesis {
-            let _dag_genesis_id = genesis.id();
+            let dag_genesis_id = genesis.id();
+            info!(
+                "Init dag genesis {dag_genesis_id} height {}",
+                genesis.number()
+            );
             self.dag.init_with_genesis(genesis)?;
         }
         Ok(())
