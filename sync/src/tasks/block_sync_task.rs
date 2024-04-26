@@ -426,16 +426,23 @@ where
             }
             block_headers = remote_absent_block_headers
                 .iter()
-                .map(|(_, header)| header.clone().expect("block header should not be none!").clone())
+                .map(|(_, header)| {
+                    header
+                        .clone()
+                        .expect("block header should not be none!")
+                        .clone()
+                })
                 .collect();
-            absent_block_headers.append(&mut remote_absent_block_headers.into_iter().map(|(_, header)| header.expect("block header should not be none!")).collect());
+            absent_block_headers.append(
+                &mut remote_absent_block_headers
+                    .into_iter()
+                    .map(|(_, header)| header.expect("block header should not be none!"))
+                    .collect(),
+            );
         }
     }
 
-    pub fn ensure_dag_parent_blocks_exist(
-        &mut self,
-        block_header: BlockHeader,
-    ) -> Result<()> {
+    pub fn ensure_dag_parent_blocks_exist(&mut self, block_header: BlockHeader) -> Result<()> {
         if !block_header.is_dag() {
             info!(
                 "the block is not a dag block, skipping, its id: {:?}, its number {:?}",
@@ -459,10 +466,9 @@ where
             block_header.parents_hash()
         );
         let fut = async {
-            let mut absent_ancestor = 
-                self
-                    .find_absent_ancestor(vec![block_header.clone()])
-                    .await?;
+            let mut absent_ancestor = self
+                .find_absent_ancestor(vec![block_header.clone()])
+                .await?;
 
             if absent_ancestor.is_empty() {
                 return Ok(());
@@ -476,7 +482,8 @@ where
                 for ancestor_block_header in absent_ancestor.iter() {
                     if self.chain.has_dag_block(ancestor_block_header.id())? {
                         info!("{:?} was already applied", ancestor_block_header.id());
-                        process_dag_ancestors.insert(ancestor_block_header.id(), ancestor_block_header.clone());
+                        process_dag_ancestors
+                            .insert(ancestor_block_header.id(), ancestor_block_header.clone());
                     } else {
                         for (block, _peer_id) in self
                             .fetcher
@@ -485,11 +492,14 @@ where
                         {
                             if self.chain.has_dag_block(ancestor_block_header.id())? {
                                 info!("{:?} was already applied", ancestor_block_header.id());
-                                process_dag_ancestors.insert(ancestor_block_header.id(), ancestor_block_header.clone());
+                                process_dag_ancestors.insert(
+                                    ancestor_block_header.id(),
+                                    ancestor_block_header.clone(),
+                                );
                                 continue;
                             }
 
-                            if block.id() != ancestor_block_header.id() {   
+                            if block.id() != ancestor_block_header.id() {
                                 bail!(
                                     "fetch block failed, expect block id: {:?}, but got block id: {:?}",
                                     ancestor_block_header.id(),
@@ -524,7 +534,8 @@ where
                                 executed_block.block.id(),
                                 executed_block.block.header().number()
                             );
-                            process_dag_ancestors.insert(ancestor_block_header.id(), ancestor_block_header.clone());
+                            process_dag_ancestors
+                                .insert(ancestor_block_header.id(), ancestor_block_header.clone());
                             self.notify_connected_block(
                                 executed_block.block,
                                 executed_block.block_info.clone(),
@@ -538,7 +549,8 @@ where
                 if process_dag_ancestors.is_empty() {
                     bail!("no absent ancestor block is executed!, absent ancestor block: {:?}, their child block id: {:?}, number: {:?}", absent_ancestor, block_header.id(), block_header.number());
                 } else {
-                    absent_ancestor.retain(|header| !process_dag_ancestors.contains_key(&header.id()));
+                    absent_ancestor
+                        .retain(|header| !process_dag_ancestors.contains_key(&header.id()));
                 }
 
                 if absent_ancestor.is_empty() {
@@ -546,25 +558,25 @@ where
                 }
             }
 
-                // dag_ancestors = std::mem::take(&mut process_dag_ancestors);
-                // // process_dag_ancestors = vec![];
+            // dag_ancestors = std::mem::take(&mut process_dag_ancestors);
+            // // process_dag_ancestors = vec![];
 
-                // dag_ancestors = Self::remove_repeated(
-                //     &self.fetch_dag_block_absent_children(dag_ancestors).await?,
-                // );
-                // source_path.extend(&dag_ancestors);
+            // dag_ancestors = Self::remove_repeated(
+            //     &self.fetch_dag_block_absent_children(dag_ancestors).await?,
+            // );
+            // source_path.extend(&dag_ancestors);
 
-                // if !dag_ancestors.is_empty() {
-                //     for (id, op_header) in self.fetch_block_headers(dag_ancestors.clone()).await? {
-                //         if let Some(header) = op_header {
-                //             self.ensure_dag_parent_blocks_exist(header, source_path)?;
-                //         } else {
-                //             bail!("when finding the ancestor's children's parents, fetching block header failed, block id: {:?}", id);
-                //         }
-                //     }
-                // }
+            // if !dag_ancestors.is_empty() {
+            //     for (id, op_header) in self.fetch_block_headers(dag_ancestors.clone()).await? {
+            //         if let Some(header) = op_header {
+            //             self.ensure_dag_parent_blocks_exist(header, source_path)?;
+            //         } else {
+            //             bail!("when finding the ancestor's children's parents, fetching block header failed, block id: {:?}", id);
+            //         }
+            //     }
+            // }
 
-                // info!("next dag children blocks: {:?}", dag_ancestors);
+            // info!("next dag children blocks: {:?}", dag_ancestors);
 
             Ok(())
         };

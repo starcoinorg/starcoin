@@ -386,7 +386,13 @@ impl BlockChain {
         V: BlockVerifier,
     {
         if block.header().is_dag() {
-            let selected_chain = Self::new(self.time_service.clone(), block.parent_hash(), self.storage.clone(), self.vm_metrics.clone(), self.dag.clone())?;
+            let selected_chain = Self::new(
+                self.time_service.clone(),
+                block.parent_hash(),
+                self.storage.clone(),
+                self.vm_metrics.clone(),
+                self.dag.clone(),
+            )?;
             V::verify_block(&selected_chain, block)
         } else {
             V::verify_block(self, block)

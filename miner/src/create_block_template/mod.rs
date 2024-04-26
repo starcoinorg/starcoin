@@ -415,7 +415,10 @@ where
             self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
 
-        info!("jacktest: create template: previous header: {:?}, template: {:?}", previous_header, template);
+        info!(
+            "jacktest: create template: previous header: {:?}, template: {:?}",
+            previous_header, template
+        );
         Ok(BlockTemplateResponse {
             parent: previous_header,
             template,

@@ -218,7 +218,9 @@ impl NodeHandle {
     pub async fn start_to_sync(&self) -> Result<()> {
         let registry = &self.registry;
         let sync_service = registry.service_ref::<SyncService>().await?;
-        sync_service.notify(CheckSyncEvent::default()).expect("failed to start to sync");
+        sync_service
+            .notify(CheckSyncEvent::default())
+            .expect("failed to start to sync");
         Ok(())
     }
 }

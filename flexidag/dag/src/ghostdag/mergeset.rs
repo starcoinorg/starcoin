@@ -1,10 +1,10 @@
 use super::protocol::GhostdagManager;
 use crate::consensusdb::schemadb::{GhostdagStoreReader, HeaderStoreReader, RelationsStoreReader};
 use crate::reachability::reachability_service::ReachabilityService;
+use anyhow::Result;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::blockhash::BlockHashSet;
 use std::collections::VecDeque;
-
 impl<
         T: GhostdagStoreReader,
         S: RelationsStoreReader,
@@ -16,7 +16,7 @@ impl<
         &self,
         selected_parent: Hash,
         parents: &[Hash],
-    ) -> Vec<Hash> {
+    ) -> Result<Vec<Hash>> {
         self.sort_blocks(self.unordered_mergeset_without_selected_parent(selected_parent, parents))
     }
 

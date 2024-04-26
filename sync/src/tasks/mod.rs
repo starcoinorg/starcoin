@@ -632,7 +632,11 @@ where
         .get_block_header_by_hash(current_block_id)?
         .ok_or_else(|| format_err!("Can not find block header by id: {}", current_block_id))?;
     let dag_fork_number = current_block_header.dag_fork_height();
-    info!("start full sync task, current block number: {}, dag fork number: {:?}", current_block_header.number(), dag_fork_number);
+    info!(
+        "start full sync task, current block number: {}, dag fork number: {:?}",
+        current_block_header.number(),
+        dag_fork_number
+    );
     let current_block_number = current_block_header.number();
     let current_block_id = current_block_header.id();
     let current_block_info = storage
@@ -771,7 +775,9 @@ where
                 break;
             }
             if latest_status.head.is_dag() {
-                if latest_status.info().get_total_difficulty() >= target.block_info.get_total_difficulty() {
+                if latest_status.info().get_total_difficulty()
+                    >= target.block_info.get_total_difficulty()
+                {
                     break;
                 }
             }

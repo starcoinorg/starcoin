@@ -1,6 +1,7 @@
-mod test_sync;
 mod common_test_sync_libs;
+mod test_sync;
 
+use anyhow::{Ok, Result};
 use futures::executor::block_on;
 use network_api::PeerId;
 use rand::random;
@@ -8,6 +9,7 @@ use starcoin_chain_api::ChainAsyncService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::{temp_dir, NodeConfig};
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::*;
 use starcoin_logger::prelude::*;
 use starcoin_node::NodeHandle;
 use starcoin_service_registry::{ActorService, ServiceRef};
@@ -17,8 +19,6 @@ use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
 use test_helper::run_node_by_config;
-use anyhow::{Ok, Result};
-use starcoin_logger::prelude::*;
 
 #[stest::test(timeout = 120)]
 fn test_full_sync() {
@@ -137,48 +137,94 @@ fn wait_two_node_synced(first_node: &NodeHandle, second_node: &NodeHandle) {
     }
 }
 
-async fn check_synced(target_hash: HashValue, chain_service: ServiceRef<ChainReaderService>) -> Result<bool> {
+async fn check_synced(
+    target_hash: HashValue,
+    chain_service: ServiceRef<ChainReaderService>,
+) -> Result<bool> {
     loop {
-        if target_hash == chain_service.main_head_block().await.expect("failed to get main head block").id() {
+        if target_hash
+            == chain_service
+                .main_head_block()
+                .await
+                .expect("failed to get main head block")
+                .id()
+        {
             debug!("succeed to sync main block id: {:?}", target_hash);
             break;
         } else {
             debug!("waiting for sync, now sleep 60 second");
             async_std::task::sleep(Duration::from_secs(60)).await;
-        }       
+        }
     }
     Ok(true)
 }
 
 #[stest::test(timeout = 120)]
 fn test_multiple_node_sync() {
-    let nodes = common_test_sync_libs::init_multiple_node(5).expect("failed to initialize multiple nodes");
+    let nodes =
+        common_test_sync_libs::init_multiple_node(5).expect("failed to initialize multiple nodes");
 
     let main_node = &nodes.first().expect("failed to get main node");
 
-    let _ = common_test_sync_libs::generate_dag_block(main_node, 20).expect("failed to generate dag block");
-    let main_node_chain_service = main_node.chain_service().expect("failed to get main node chain service");
-    let chain_service_1 = nodes[1].chain_service().expect("failed to get the chain service");
-    let chain_service_2 = nodes[2].chain_service().expect("failed to get the chain service");
-    let chain_service_3 = nodes[3].chain_service().expect("failed to get the chain service");
-    let chain_service_4 = nodes[4].chain_service().expect("failed to get the chain service");
+    let _ = common_test_sync_libs::generate_dag_block(main_node, 20)
+        .expect("failed to generate dag block");
+    let main_node_chain_service = main_node
+        .chain_service()
+        .expect("failed to get main node chain service");
+    let chain_service_1 = nodes[1]
+        .chain_service()
+        .expect("failed to get the chain service");
+    let chain_service_2 = nodes[2]
+        .chain_service()
+        .expect("failed to get the chain service");
+    let chain_service_3 = nodes[3]
+        .chain_service()
+        .expect("failed to get the chain service");
+    let chain_service_4 = nodes[4]
+        .chain_service()
+        .expect("failed to get the chain service");
 
     block_on(async move {
-        let main_block = main_node_chain_service.main_head_block().await.expect("failed to get main head block");
+        let main_block = main_node_chain_service
+            .main_head_block()
+            .await
+            .expect("failed to get main head block");
 
-        nodes[1].start_to_sync().await.expect("failed to start to sync");
-        nodes[2].start_to_sync().await.expect("failed to start to sync");
-        nodes[3].start_to_sync().await.expect("failed to start to sync");
-        nodes[4].start_to_sync().await.expect("failed to start to sync");
+        nodes[1]
+            .start_to_sync()
+            .await
+            .expect("failed to start to sync");
+        nodes[2]
+            .start_to_sync()
+            .await
+            .expect("failed to start to sync");
+        nodes[3]
+            .start_to_sync()
+            .await
+            .expect("failed to start to sync");
+        nodes[4]
+            .start_to_sync()
+            .await
+            .expect("failed to start to sync");
 
-        check_synced(main_block.id(), chain_service_1).await.expect("failed to check sync");
-        check_synced(main_block.id(), chain_service_2).await.expect("failed to check sync");
-        check_synced(main_block.id(), chain_service_3).await.expect("failed to check sync");
-        check_synced(main_block.id(), chain_service_4).await.expect("failed to check sync");
+        check_synced(main_block.id(), chain_service_1)
+            .await
+            .expect("failed to check sync");
+        check_synced(main_block.id(), chain_service_2)
+            .await
+            .expect("failed to check sync");
+        check_synced(main_block.id(), chain_service_3)
+            .await
+            .expect("failed to check sync");
+        check_synced(main_block.id(), chain_service_4)
+            .await
+            .expect("failed to check sync");
 
-        // close 
+        // close
         nodes.into_iter().for_each(|handle| {
-            handle.stop().expect("failed to shutdown the node normally!");
+            handle
+                .stop()
+                .expect("failed to shutdown the node normally!");
         });
     });
 }

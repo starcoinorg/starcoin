@@ -192,9 +192,7 @@ impl BlockDAG {
             }
             Err(reachability::ReachabilityError::StoreError(StoreError::InvalidInterval(_, _))) => {
                 self.set_reindex_root(origin)?;
-                bail!(
-                    "failed to add a block when committing for invalid interval",
-                );
+                bail!("failed to add a block when committing for invalid interval",);
             }
             Err(e) => {
                 bail!("failed to add a block when committing, e: {:?}", e);
