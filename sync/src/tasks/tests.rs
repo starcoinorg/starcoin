@@ -85,7 +85,7 @@ pub async fn test_sync_invalid_target() -> Result<()> {
         15,
         None,
         None,
-        dag_fork_height,
+        Some(dag_fork_height),
         dag,
     )?;
     let _join_handle = node2.process_block_connect_event(receiver_1).await;
@@ -180,7 +180,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         15,
         None,
         None,
-        dag_fork_height,
+        Some(dag_fork_height),
         dag.clone(),
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
@@ -216,7 +216,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         15,
         None,
         None,
-        dag_fork_height,
+        Some(dag_fork_height),
         dag,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
@@ -268,7 +268,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
         15,
         None,
         None,
-        dag_fork_height,
+        Some(dag_fork_height),
         dag,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
@@ -323,7 +323,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         15,
         None,
         None,
-        dag_fork_height,
+        Some(dag_fork_height),
         dag.clone(),
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
@@ -361,7 +361,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         15,
         None,
         None,
-        dag_fork_height,
+        Some(dag_fork_height),
         dag,
     )?;
 
@@ -416,7 +416,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
         15,
         None,
         None,
-        dag_fork_height,
+        Some(dag_fork_height),
         dag,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
@@ -473,7 +473,7 @@ async fn test_accumulator_sync_by_stream_task() -> Result<()> {
         ancestor,
         info0,
         info1.clone(),
-        BlockNumber::MAX,
+        Some(BlockNumber::MAX),
     );
     let event_handle = Arc::new(TaskEventCounterHandle::new());
     let sync_task = TaskGenerator::new(
@@ -917,7 +917,7 @@ async fn test_net_rpc_err() -> Result<()> {
         15,
         None,
         None,
-        dag_fork_height,
+        Some(dag_fork_height),
         dag,
     )?;
     let _join_handle = node2.process_block_connect_event(receiver).await;
@@ -1068,7 +1068,7 @@ fn sync_block_in_async_connection(
         15,
         None,
         None,
-        dag_fork_height,
+        Some(dag_fork_height),
         dag,
     )?;
     let branch = async_std::task::block_on(sync_task)?;

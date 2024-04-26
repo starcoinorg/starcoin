@@ -60,7 +60,7 @@ async fn sync_block_process(
             15,
             None,
             None,
-            dag_fork_height,
+            Some(dag_fork_height),
             local_node.chain().dag().clone(),
         )?;
         let branch = sync_task.await?;

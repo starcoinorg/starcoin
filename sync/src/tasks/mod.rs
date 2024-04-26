@@ -619,7 +619,7 @@ pub fn full_sync_task<H, A, F, N>(
     max_retry_times: u64,
     sync_metrics: Option<SyncMetrics>,
     vm_metrics: Option<VMMetrics>,
-    dag_fork_number: BlockNumber,
+    dag_fork_number: Option<BlockNumber>,
     dag: BlockDAG,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
@@ -776,6 +776,12 @@ where
             let latest_status = &latest_block_chain.status();
             if target.target_id.number() <= latest_status.head.number() {
                 break;
+            }
+            // chain read the fork number from remote peers, break and start again
+            if let Some(_fork_number) =  latest_block_chain.dag_fork_height().map_err(TaskError::BreakError)? {
+                if dag_fork_number.is_none() {
+                    break;
+                }
             }
             if latest_block_chain
                 .check_dag_type(&latest_status.head)
