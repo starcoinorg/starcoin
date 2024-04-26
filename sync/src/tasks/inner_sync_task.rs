@@ -35,7 +35,7 @@ where
     peer_provider: N,
     custom_error_handle: Arc<dyn CustomErrorHandle>,
     dag: BlockDAG,
-    dag_fork_heigh: BlockNumber,
+    dag_fork_heigh: Option<BlockNumber>,
 }
 
 impl<H, F, N> InnerSyncTask<H, F, N>
@@ -54,7 +54,7 @@ where
         time_service: Arc<dyn TimeService>,
         peer_provider: N,
         custom_error_handle: Arc<dyn CustomErrorHandle>,
-        dag_fork_heigh: BlockNumber,
+        dag_fork_heigh: Option<BlockNumber>,
         dag: BlockDAG,
     ) -> Self {
         Self {
