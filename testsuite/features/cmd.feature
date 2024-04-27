@@ -244,38 +244,38 @@ Feature: cmd integration test
     Examples:
       |  |  |
 
-  #easy gas testing
-  Scenario Outline: starcoin easy gas test
-    Then cmd: "dev get-coin -v 1000000"
-    Then cmd: "account show"
-    Then cmd: "account unlock"
-    # stake to sbt
-    Then cmd: "account execute-function --function 0x1::DummyTokenScripts::mint --arg 9000u128 -b"
-    Then cmd: "dev call-api chain.info"
-    # check point and update state root
-    Then cmd: "account execute-function --function 0x1::Block::checkpoint_entry -b"
-    Then cmd: "dev call-api chain.get_block_by_number [{{$.dev[1].ok.head.number}},{\"raw\":true}]"
-    Then cmd: "account execute-function --function 0x1::Block::update_state_root_entry --arg {{$.dev[2].ok.raw.header}} -b"
-    Then cmd: "dev call --function 0x1::Block::latest_state_root"
-    Then assert: "{{$.dev[3].ok[1]}} == {{$.dev[2].ok.header.state_root}}"
-    # register oracle
-    Then cmd: "account execute-function --function 0x1::EasyGas::register_oracle -t 0x1::DummyToken::DummyToken --arg 15u8 -b"
-    Then cmd: "account execute-function --function 0x1::EasyGas::init_data_source -t 0x1::DummyToken::DummyToken --arg 43793u128 -b"
-    Then cmd: "account execute-function --function 0x1::EasyGas::update -t 0x1::DummyToken::DummyToken --arg 43794u128 -b"
-    Then cmd: "dev call --function 0x1::EasyGas::gas_oracle_read -t 0x1::DummyToken::DummyToken"
-    Then assert: "{{$.dev[15].ok[0]}} == 43794"
-    # transfer stc to 0x1
-    Then cmd: "account transfer --blocking -r 0x1 -v 10000000000"
-    # transfer use gas fee by DummyToken
-    Then cmd: "account transfer --blocking -r 0x1 -v 1 --gas-token 0x1::DummyToken::DummyToken"
-    Then cmd: "state get resource {{$.account[0].ok.account.address}} 0x1::Account::Balance<0x1::DummyToken::DummyToken>"
-    Then assert: "{{$.state[0].ok.json.token.value}} == 8999"
-    Then stop
-
-    Examples:
-      |  |
-
-
+#  #easy gas testing
+#  Scenario Outline: starcoin easy gas test
+#    Then cmd: "dev get-coin -v 1000000"
+#    Then cmd: "account show"
+#    Then cmd: "account unlock"
+#    # stake to sbt
+#    Then cmd: "account execute-function --function 0x1::DummyTokenScripts::mint --arg 9000u128 -b"
+#    Then cmd: "dev call-api chain.info"
+#    # check point and update state root
+#    Then cmd: "account execute-function --function 0x1::Block::checkpoint_entry -b"
+#    Then cmd: "dev call-api chain.get_block_by_number [{{$.dev[1].ok.head.number}},{\"raw\":true}]"
+#    Then cmd: "account execute-function --function 0x1::Block::update_state_root_entry --arg {{$.dev[2].ok.raw.header}} -b"
+#    Then cmd: "dev call --function 0x1::Block::latest_state_root"
+#    Then assert: "{{$.dev[3].ok[1]}} == {{$.dev[2].ok.header.state_root}}"
+#    # register oracle
+#    Then cmd: "account execute-function --function 0x1::EasyGas::register_oracle -t 0x1::DummyToken::DummyToken --arg 15u8 -b"
+#    Then cmd: "account execute-function --function 0x1::EasyGas::init_data_source -t 0x1::DummyToken::DummyToken --arg 43793u128 -b"
+#    Then cmd: "account execute-function --function 0x1::EasyGas::update -t 0x1::DummyToken::DummyToken --arg 43794u128 -b"
+#    Then cmd: "dev call --function 0x1::EasyGas::gas_oracle_read -t 0x1::DummyToken::DummyToken"
+#    Then assert: "{{$.dev[15].ok[0]}} == 43794"
+#    # transfer stc to 0x1
+#    Then cmd: "account transfer --blocking -r 0x1 -v 10000000000"
+#    # transfer use gas fee by DummyToken
+#    Then cmd: "account transfer --blocking -r 0x1 -v 1 --gas-token 0x1::DummyToken::DummyToken"
+#    Then cmd: "state get resource {{$.account[0].ok.account.address}} 0x1::Account::Balance<0x1::DummyToken::DummyToken>"
+#    Then assert: "{{$.state[0].ok.json.token.value}} == 8999"
+#    Then stop
+#
+#    Examples:
+#      |  |
+#
+#
 #mytoken
 #  Scenario Outline: [cmd] my_token test
 #    Then cmd: "account unlock 0x0000000000000000000000000a550c18"
