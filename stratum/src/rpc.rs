@@ -165,7 +165,7 @@ pub struct WorkerId {
 }
 impl WorkerId {
     pub fn from_hex(input: String) -> anyhow::Result<Self> {
-        let worker_id: [u8; 4] = hex::decode(&input)
+        let worker_id: [u8; 4] = hex::decode(input)
             .map_err(|_| anyhow::anyhow!("Decode worker id failed"))?
             .try_into()
             .map_err(|_| anyhow::anyhow!("Invalid length of worker id"))?;
@@ -207,14 +207,6 @@ impl MinerWorker {
     }
     pub fn diff_manager(&self) -> Arc<RwLock<DifficultyManager>> {
         self.diff_manager.clone()
-    }
-    pub fn process_seal(&self, share: &ShareRequest, mint_event: &MintBlockEvent) {
-        //Verify target
-
-        let verified = true;
-        if verified {
-            self.diff_manager.write().unwrap().try_update();
-        }
     }
 }
 
@@ -258,10 +250,10 @@ impl JobId {
         Self { job_id }
     }
     pub fn encode(&self) -> String {
-        hex::encode(&self.job_id)
+        hex::encode(self.job_id)
     }
     pub fn equal_with(&self, minting_bob: &[u8]) -> bool {
-        &self.job_id[..] == &minting_bob[0..8]
+        self.job_id[..] == minting_bob[0..8]
     }
     pub fn new(job_id: &String) -> anyhow::Result<Self> {
         let job_id: [u8; 8] = hex::decode(job_id)
@@ -352,6 +344,6 @@ impl StratumRpc for StratumRpcImpl {
         _id: SubscriptionId,
     ) -> jsonrpc_core::Result<bool> {
         // Not need to implement it
-        return Ok(false);
+        Ok(false)
     }
 }
