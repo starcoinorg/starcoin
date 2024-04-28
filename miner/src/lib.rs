@@ -276,7 +276,6 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
             debug!("Miner has mint job so just ignore this event.");
             return;
         }
-        /*
         if self.config.miner.disable_miner_client() && self.client_subscribers_num == 0 {
             debug!("No miner client connected, ignore GenerateBlockEvent.");
             // Once Miner client connect, we should dispatch task.
@@ -284,7 +283,7 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
                 ctx.notify(GenerateBlockEvent::default());
             });
             return;
-        }*/
+        }
         if let Err(err) = self.dispatch_task(ctx, event) {
             warn!(
                 "Failed to process generate block event:{}, delay to trigger a new event.",
