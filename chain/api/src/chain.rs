@@ -10,7 +10,7 @@ use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
-    block::{Block, BlockHeader, BlockInfo, BlockNumber},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, DagHeaderType},
     transaction::Transaction,
     U256,
 };
@@ -106,6 +106,7 @@ pub trait ChainReader {
         header: &BlockHeader,
     ) -> Result<Option<(HashValue, Vec<HashValue>)>>;
     fn has_dag_block(&self, header_id: HashValue) -> Result<bool>;
+    fn check_dag_type(&self, header: &BlockHeader) -> Result<DagHeaderType>;
 }
 
 pub trait ChainWriter {

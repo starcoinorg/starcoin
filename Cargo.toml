@@ -112,7 +112,6 @@ members = [
     "cmd/db-exporter",
     "cmd/genesis-nft-miner",
     "flexidag",
-    "flexidag/dag",
 ]
 
 default-members = [
@@ -220,7 +219,6 @@ default-members = [
     "cmd/miner_client/api",
     "cmd/db-exporter",
     "flexidag",
-    "flexidag/dag",
 ]
 
 [profile.dev]
@@ -451,7 +449,7 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 starcoin-decrypt = { path = "commons/decrypt" }
 starcoin-dev = { path = "vm/dev" }
 starcoin-executor = { path = "executor" }
-starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "4dab7b10849d862459fb35c8539640a9b7b3ac2a" }
+starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "d1f0b2db44f2a36a3fb747e002cd57299f7d9dc1" }
 starcoin-genesis = { path = "genesis" }
 starcoin-logger = { path = "commons/logger" }
 starcoin-metrics = { path = "commons/metrics" }
@@ -505,8 +503,7 @@ starcoin-parallel-executor = { path = "vm/parallel-executor" }
 starcoin-transaction-benchmarks = { path = "vm/transaction-benchmarks" }
 starcoin-language-e2e-tests = { path = "vm/e2e-tests" }
 starcoin-proptest-helpers = { path = "vm/proptest-helpers" }
-starcoin-flexidag = { path = "flexidag" }
-starcoin-dag = {path = "flexidag/dag"}
+starcoin-dag = { path = "flexidag" }
 syn = { version = "1.0.107", features = [
     "full",
     "extra-traits",

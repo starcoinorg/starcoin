@@ -24,7 +24,9 @@ use starcoin_time_service::TimeService;
 use starcoin_txpool::TxPoolService;
 #[cfg(test)]
 use starcoin_txpool_mock_service::MockTxPoolService;
-use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
+use starcoin_types::block::{
+    Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber, DagHeaderType,
+};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::U256;
 use std::str::FromStr;
@@ -603,6 +605,7 @@ pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
 use starcoin_executor::VMMetrics;
 
+#[allow(clippy::too_many_arguments)]
 pub fn full_sync_task<H, A, F, N>(
     current_block_id: HashValue,
     target: SyncTarget,
@@ -616,6 +619,7 @@ pub fn full_sync_task<H, A, F, N>(
     max_retry_times: u64,
     sync_metrics: Option<SyncMetrics>,
     vm_metrics: Option<VMMetrics>,
+    dag_fork_number: Option<BlockNumber>,
     dag: BlockDAG,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
@@ -631,7 +635,6 @@ where
     let current_block_header = storage
         .get_block_header_by_hash(current_block_id)?
         .ok_or_else(|| format_err!("Can not find block header by id: {}", current_block_id))?;
-    let dag_fork_number = current_block_header.dag_fork_height();
     info!(
         "start full sync task, current block number: {}, dag fork number: {:?}",
         current_block_header.number(),
@@ -774,12 +777,14 @@ where
             if target.target_id.number() <= latest_status.head.number() {
                 break;
             }
-            if latest_status.head.is_dag() {
-                if latest_status.info().get_total_difficulty()
+            if latest_block_chain
+                .check_dag_type(&latest_status.head)
+                .map_err(TaskError::BreakError)?
+                == DagHeaderType::Normal
+                && latest_status.info().get_total_difficulty()
                     >= target.block_info.get_total_difficulty()
-                {
-                    break;
-                }
+            {
+                break;
             }
             let chain_status = latest_block_chain.status();
             max_peers = max_better_peers(

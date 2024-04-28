@@ -11,7 +11,8 @@ use futures_timer::Delay;
 use network_api::peer_score::PeerScoreMetrics;
 use network_api::{PeerId, PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
 use starcoin_chain::BlockChain;
-use starcoin_chain_api::ChainReader;
+use starcoin_chain_api::{ChainAsyncService, ChainReader};
+use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
@@ -217,6 +218,7 @@ impl SyncService {
         let connector_service = ctx
             .service_ref::<BlockConnectorService<TxPoolService>>()?
             .clone();
+        let chain_service = ctx.service_ref::<ChainReaderService>()?.clone();
         let config = self.config.clone();
         let peer_score_metrics = self.peer_score_metrics.clone();
         let sync_metrics = self.metrics.clone();
@@ -231,7 +233,7 @@ impl SyncService {
                 storage.get_block_info(current_block_id)?.ok_or_else(|| {
                     format_err!("Can not find block info by id: {}", current_block_id)
                 })?;
-
+            let dag_fork_height = chain_service.dag_fork_heigh().await?;
             let rpc_client = Self::create_verified_client(
                 network.clone(),
                 config.clone(),
@@ -258,6 +260,7 @@ impl SyncService {
                     config.sync.max_retry_times(),
                     sync_metrics.clone(),
                     vm_metrics.clone(),
+                    dag_fork_height,
                     dag,
                 )?;
 

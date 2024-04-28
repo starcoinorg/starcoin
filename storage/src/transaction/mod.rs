@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::storage::{CodecKVStore, CodecWriteBatch, ValueCodec};
-use crate::TRANSACTION_PREFIX_NAME;
-use crate::{define_storage, TransactionStore};
+use crate::{define_storage, TransactionStore, TRANSACTION_PREFIX_NAME_V2};
 use anyhow::Result;
 use bcs_ext::BCSCodec;
+pub use legacy::LegacyTransactionStorage;
 use starcoin_crypto::HashValue;
 use starcoin_types::transaction::Transaction;
 
@@ -13,7 +13,7 @@ define_storage!(
     TransactionStorage,
     HashValue,
     Transaction,
-    TRANSACTION_PREFIX_NAME
+    TRANSACTION_PREFIX_NAME_V2
 );
 
 impl ValueCodec for Transaction {
@@ -46,5 +46,6 @@ impl TransactionStore for TransactionStorage {
     }
 }
 
+mod legacy;
 #[cfg(test)]
 mod test;

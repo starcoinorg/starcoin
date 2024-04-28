@@ -23,10 +23,9 @@ use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_network_rpc_api::G_RPC_INFO;
-use starcoin_storage::BlockStore;
 use starcoin_storage::Storage;
 use starcoin_sync_api::SyncTarget;
-use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
+use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
 use std::time::Duration;
@@ -290,22 +289,6 @@ impl SyncNodeMocker {
     pub fn produce_block(&mut self, times: u64) -> Result<()> {
         self.chain_mocker.produce_and_apply_times(times)
     }
-
-    pub fn produce_block_by_header(&mut self, parent_header: BlockHeader) -> Result<BlockHeader> {
-        let next_block = self.chain_mocker.produce_block_by_header(parent_header)?;
-        Ok(self
-            .chain_mocker
-            .get_storage()
-            .get_block(next_block.id())?
-            .expect("failed to get block by hash")
-            .header()
-            .clone())
-    }
-
-    // pub fn produce_block_and_create_dag(&mut self, times: u64) -> Result<()> {
-    //     self.chain_mocker.produce_and_apply_times(times)?;
-    //     Ok(())
-    // }
 
     pub fn select_head(&mut self, block: Block) -> Result<()> {
         self.chain_mocker.select_head(block)

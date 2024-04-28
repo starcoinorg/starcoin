@@ -14,7 +14,6 @@ use starcoin_chain_service::ChainReaderService;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_txpool_mock_service::MockTxPoolService;
-use starcoin_types::block::BlockHeader;
 use test_helper::DummyNetworkService;
 
 #[stest::test(timeout = 120)]
@@ -46,6 +45,7 @@ async fn sync_block_process(
         let block_chain_service = async_std::task::block_on(
             registry.service_ref::<BlockConnectorService<MockTxPoolService>>(),
         )?;
+        let dag_fork_height = local_node.chain().dag_fork_height()?.unwrap_or(u64::MAX);
 
         let (sync_task, _task_handle, task_event_counter) = full_sync_task(
             current_block_id,
@@ -60,6 +60,7 @@ async fn sync_block_process(
             15,
             None,
             None,
+            Some(dag_fork_height),
             local_node.chain().dag().clone(),
         )?;
         let branch = sync_task.await?;

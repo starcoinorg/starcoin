@@ -3,16 +3,10 @@
 
 mod common_test_sync_libs;
 
-use anyhow::{Ok, Result};
 use futures::executor::block_on;
-use network_api::{PeerId, PeerProvider, PeerSelector, PeerStrategy};
-use starcoin_config::*;
-use starcoin_crypto::HashValue;
+use network_api::{PeerProvider, PeerSelector, PeerStrategy};
 use starcoin_logger::prelude::*;
-use starcoin_node::NodeHandle;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
-use starcoin_types::block::BlockHeader;
-use std::sync::Arc;
 
 #[stest::test]
 fn test_verified_client_for_dag() {

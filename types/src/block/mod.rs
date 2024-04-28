@@ -33,13 +33,13 @@ use std::sync::Mutex;
 
 /// Type for block number.
 pub type BlockNumber = u64;
+#[derive(PartialEq, Eq, Debug)]
+pub enum DagHeaderType {
+    Single,
+    Genesis,
+    Normal,
+}
 pub type ParentsHash = Option<Vec<HashValue>>;
-//TODO: make sure height
-static DEV_FLEXIDAG_FORK_HEIGHT: BlockNumber = 2;
-static PROXIMA_FLEXIDAG_FORK_HEIGHT: BlockNumber = 1000;
-static HALLEY_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
-static BARNARD_FLEXIDAG_FORK_HEIGHT: BlockNumber = 10000;
-static MAIN_FLEXIDAG_FORK_HEIGHT: BlockNumber = 1000000;
 
 lazy_static! {
     static ref TEST_FLEXIDAG_FORK_HEIGHT: Mutex<BlockNumber> = Mutex::new(10000);
@@ -275,7 +275,7 @@ impl BlockHeader {
             extra,
             parents_hash,
         };
-        header.id = Some(if header.is_legacy() {
+        header.id = Some(if header.parents_hash.is_none() {
             LegacyBlockHeader::from(header.clone()).crypto_hash()
         } else {
             header.crypto_hash()
@@ -362,32 +362,16 @@ impl BlockHeader {
     pub fn is_genesis(&self) -> bool {
         self.number == 0
     }
-    pub fn dag_fork_height(&self) -> BlockNumber {
-        if self.chain_id.is_test() {
-            get_test_flexidag_fork_height()
-        } else if self.chain_id.is_halley() {
-            HALLEY_FLEXIDAG_FORK_HEIGHT
-        } else if self.chain_id.is_proxima() {
-            PROXIMA_FLEXIDAG_FORK_HEIGHT
-        } else if self.chain_id.is_barnard() {
-            BARNARD_FLEXIDAG_FORK_HEIGHT
-        } else if self.chain_id.is_main() {
-            MAIN_FLEXIDAG_FORK_HEIGHT
-        } else if self.chain_id.is_dev() {
-            DEV_FLEXIDAG_FORK_HEIGHT
-        } else {
-            get_custom_flexidag_fork_height()
-        }
+
+    pub fn is_legacy(&self) -> bool {
+        self.parents_hash.is_none()
     }
 
-    pub fn is_dag(&self) -> bool {
-        self.number > self.dag_fork_height()
-    }
-    pub fn is_legacy(&self) -> bool {
-        !self.is_dag() && self.parents_hash.is_none()
-    }
-    pub fn is_dag_genesis(&self) -> bool {
-        self.number == self.dag_fork_height()
+    pub fn is_single(&self) -> bool {
+        self.parents_hash
+            .as_ref()
+            .map(|h| h.is_empty())
+            .unwrap_or(true)
     }
 
     pub fn genesis_block_header(
@@ -808,16 +792,6 @@ impl Block {
         }
     }
 
-    pub fn is_dag(&self) -> bool {
-        self.header.is_dag()
-    }
-    pub fn is_legacy(&self) -> bool {
-        self.header.is_legacy()
-    }
-    pub fn is_dag_genesis_block(&self) -> bool {
-        self.header.is_dag_genesis()
-    }
-
     pub fn parent_hash(&self) -> HashValue {
         self.header.parent_hash()
     }
@@ -881,16 +855,30 @@ impl Block {
             .as_ref()
             .map(|uncles| uncles.len() as u64)
             .unwrap_or(0);
-        BlockMetadata::new(
-            self.header.parent_hash(),
-            self.header.timestamp,
-            self.header.author,
-            self.header.author_auth_key,
-            uncles,
-            self.header.number,
-            self.header.chain_id,
-            parent_gas_used,
-        )
+        if let Some(parents_hash) = self.header.parents_hash() {
+            BlockMetadata::new_with_parents(
+                self.header.parent_hash(),
+                self.header.timestamp,
+                self.header.author,
+                self.header.author_auth_key,
+                uncles,
+                self.header.number,
+                self.header.chain_id,
+                parent_gas_used,
+                parents_hash,
+            )
+        } else {
+            BlockMetadata::new(
+                self.header.parent_hash(),
+                self.header.timestamp,
+                self.header.author,
+                self.header.author_auth_key,
+                uncles,
+                self.header.number,
+                self.header.chain_id,
+                parent_gas_used,
+            )
+        }
     }
 
     pub fn random() -> Self {
@@ -1042,9 +1030,8 @@ impl BlockTemplate {
         difficulty: U256,
         strategy: ConsensusStrategy,
         block_metadata: BlockMetadata,
-        parents_hash: ParentsHash,
     ) -> Self {
-        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _) =
+        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _, parents_hash) =
             block_metadata.into_inner();
         Self {
             parent_hash,

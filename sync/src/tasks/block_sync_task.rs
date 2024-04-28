@@ -18,7 +18,9 @@ use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::MAX_BLOCK_HEADER_REQUEST_SIZE;
 use starcoin_storage::{Store, BARNARD_HARD_FORK_HASH};
 use starcoin_sync_api::SyncTarget;
-use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
+use starcoin_types::block::{
+    Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber, DagHeaderType,
+};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -426,12 +428,7 @@ where
             }
             block_headers = remote_absent_block_headers
                 .iter()
-                .map(|(_, header)| {
-                    header
-                        .clone()
-                        .expect("block header should not be none!")
-                        .clone()
-                })
+                .map(|(_, header)| header.clone().expect("block header should not be none!"))
                 .collect();
             absent_block_headers.append(
                 &mut remote_absent_block_headers
@@ -443,7 +440,7 @@ where
     }
 
     pub fn ensure_dag_parent_blocks_exist(&mut self, block_header: BlockHeader) -> Result<()> {
-        if !block_header.is_dag() {
+        if self.chain.check_dag_type(&block_header)? != DagHeaderType::Normal {
             info!(
                 "the block is not a dag block, skipping, its id: {:?}, its number {:?}",
                 block_header.id(),
@@ -474,7 +471,7 @@ where
                 return Ok(());
             }
 
-            absent_ancestor.sort_by(|a, b| a.number().cmp(&b.number()));
+            absent_ancestor.sort_by_key(|a| a.number());
             info!("now apply absent ancestors: {:?}", absent_ancestor);
 
             let mut process_dag_ancestors = HashMap::new();
@@ -752,7 +749,7 @@ where
 
         let timestamp = block.header().timestamp();
 
-        let block_info = if block.header().is_dag() {
+        let block_info = if self.chain.check_dag_type(block.header())? == DagHeaderType::Normal {
             if self.chain.has_dag_block(block.header().id())? {
                 block_info
             } else {

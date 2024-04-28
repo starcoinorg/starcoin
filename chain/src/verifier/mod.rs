@@ -8,7 +8,9 @@ use starcoin_chain_api::{
 };
 use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_logger::prelude::debug;
-use starcoin_types::block::{Block, BlockHeader, LegacyBlockBody, ALLOWED_FUTURE_BLOCKTIME};
+use starcoin_types::block::{
+    Block, BlockHeader, DagHeaderType, LegacyBlockBody, ALLOWED_FUTURE_BLOCKTIME,
+};
 use std::{collections::HashSet, str::FromStr};
 
 #[derive(Debug)]
@@ -44,7 +46,7 @@ pub struct StaticVerifier;
 impl StaticVerifier {
     pub fn verify_body_hash(block: &Block) -> Result<()> {
         // verify body
-        let body_hash = if block.is_legacy() {
+        let body_hash = if block.header().is_legacy() {
             LegacyBlockBody::from(block.body.clone()).hash()
         } else {
             block.body.hash()
@@ -95,7 +97,7 @@ pub trait BlockVerifier {
     where
         R: ChainReader,
     {
-        if header.is_dag() {
+        if header.is_legacy() {
             return Ok(());
         }
         let epoch = current_chain.epoch();
@@ -276,15 +278,14 @@ impl BlockVerifier for BasicVerifier {
 
         verify_block!(
             VerifyBlockField::Header,
-            !new_block_header.is_dag()
+            current_chain.check_dag_type(new_block_header)? != DagHeaderType::Normal
                 && new_block_header
                     .parents_hash()
                     .unwrap_or_default()
                     .is_empty(),
-            "Single chain block is invalid: number {} fork_height {} parents_hash len {}",
+            "Single chain block is invalid: number {} parents_hash len {:?}",
             new_block_header.number(),
-            new_block_header.dag_fork_height(),
-            new_block_header.parents_hash().unwrap_or_default().len()
+            new_block_header.parents_hash().map(|p| p.len())
         );
         Ok(())
     }
@@ -369,10 +370,9 @@ impl BlockVerifier for DagVerifier {
         verify_block!(
             VerifyBlockField::Header,
             !parents_hash_to_check.is_empty() && parents_hash.len() == parents_hash_to_check.len(),
-            "Invalid parents_hash {:?} for a dag block {}, fork height {}",
+            "Invalid parents_hash {:?} for a dag block {}",
             new_block_header.parents_hash(),
             new_block_header.number(),
-            new_block_header.dag_fork_height()
         );
 
         verify_block!(
@@ -451,10 +451,9 @@ impl BlockVerifier for DagBasicVerifier {
         verify_block!(
             VerifyBlockField::Header,
             !parents_hash_to_check.is_empty() && parents_hash.len() == parents_hash_to_check.len(),
-            "Invalid parents_hash {:?} for a dag block {}, fork height {}",
+            "Invalid parents_hash {:?} for a dag block {}",
             new_block_header.parents_hash(),
             new_block_header.number(),
-            new_block_header.dag_fork_height()
         );
 
         verify_block!(

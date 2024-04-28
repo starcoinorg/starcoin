@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Ok, Result};
+use rand::{thread_rng, Rng};
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
@@ -19,8 +20,11 @@ use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::TypeTag;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::language_storage::StructTag;
+use starcoin_vm_types::on_chain_config::FlexiDagConfig;
+use starcoin_vm_types::state_view::StateReaderExt;
 use std::str::FromStr;
 use std::sync::Arc;
+use test_helper::gen_blockchain_for_dag_test;
 
 #[stest::test(timeout = 120)]
 fn test_chain_filter_events() {
@@ -31,7 +35,7 @@ fn test_chain_filter_events() {
     let event_type_tag = TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
         module: Identifier::from_str("Block").unwrap(),
-        name: Identifier::from_str("NewBlockEvent").unwrap(),
+        name: Identifier::from_str("NewBlockEventV2").unwrap(),
         type_params: vec![],
     }));
 
@@ -535,6 +539,25 @@ fn test_block_chain_for_dag_fork() -> Result<()> {
         let block = product_a_block(&fork_block_chain, mock_chain.miner(), Vec::new());
         fork_block_chain.apply(block)?;
     }
+
+    Ok(())
+}
+
+#[stest::test]
+fn test_gen_dag_chain() -> Result<()> {
+    let fork_number = 11u64;
+    let mut chain = gen_blockchain_for_dag_test(&ChainNetwork::new_test(), fork_number).unwrap();
+
+    let effective_height = chain
+        .chain_state()
+        .get_on_chain_config::<FlexiDagConfig>()?
+        .map(|c| c.effective_height);
+
+    assert_eq!(effective_height, Some(fork_number));
+    assert_eq!(chain.current_header().number(), 9);
+
+    let fork_number = thread_rng().gen_range(0..=9);
+    assert!(gen_blockchain_for_dag_test(&ChainNetwork::new_test(), fork_number).is_err());
 
     Ok(())
 }

@@ -143,7 +143,7 @@ pub async fn full_sync_new_node() -> Result<()> {
     let target = arc_node1.sync_target();
 
     let current_block_header = node2.chain().current_header();
-
+    let dag_fork_height = node2.chain().dag_fork_height()?.unwrap_or(u64::MAX);
     let storage = node2.chain().get_storage();
     let dag = node2.chain().dag();
     let (sender_1, receiver_1) = unbounded();
@@ -161,6 +161,7 @@ pub async fn full_sync_new_node() -> Result<()> {
         15,
         None,
         None,
+        Some(dag_fork_height),
         dag.clone(),
     )?;
     let join_handle = node2.process_block_connect_event(receiver_1).await;
@@ -175,7 +176,7 @@ pub async fn full_sync_new_node() -> Result<()> {
         .for_each(|report| debug!("reports: {}", report));
 
     Arc::get_mut(&mut arc_node1).unwrap().produce_block(20)?;
-
+    let dag_fork_height = node2.chain().dag_fork_height()?.unwrap_or(u64::MAX);
     let (sender_1, receiver_1) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
     //sync again
@@ -193,6 +194,7 @@ pub async fn full_sync_new_node() -> Result<()> {
         15,
         None,
         None,
+        Some(dag_fork_height),
         dag,
     )?;
     let join_handle = node2.process_block_connect_event(receiver_1).await;

@@ -2179,6 +2179,16 @@
                   "type": "string",
                   "format": "HashValue"
                 },
+                "parents_hash": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "string",
+                    "format": "HashValue"
+                  }
+                },
                 "timestamp": {
                   "type": "string"
                 },
@@ -3977,6 +3987,35 @@
             "string",
             "null"
           ]
+        }
+      }
+    },
+    {
+      "name": "chain.get_dag_state",
+      "params": [],
+      "result": {
+        "name": "DagStateView",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "DagStateView",
+          "type": "object",
+          "required": [
+            "dag_genesis",
+            "tips"
+          ],
+          "properties": {
+            "dag_genesis": {
+              "type": "string",
+              "format": "HashValue"
+            },
+            "tips": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "HashValue"
+              }
+            }
+          }
         }
       }
     }
