@@ -9,7 +9,6 @@ use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_logger::prelude::*;
 use starcoin_node::NodeHandle;
 use starcoin_service_registry::{ActorService, ServiceRef};
 use starcoin_sync::sync::SyncService;

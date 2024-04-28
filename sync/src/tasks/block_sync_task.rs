@@ -428,12 +428,7 @@ where
             }
             block_headers = remote_absent_block_headers
                 .iter()
-                .map(|(_, header)| {
-                    header
-                        .clone()
-                        .expect("block header should not be none!")
-                        .clone()
-                })
+                .map(|(_, header)| header.clone().expect("block header should not be none!"))
                 .collect();
             absent_block_headers.append(
                 &mut remote_absent_block_headers

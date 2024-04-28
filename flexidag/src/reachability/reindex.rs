@@ -191,7 +191,7 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
             if !children.is_empty() {
                 let sizes = children
                     .iter()
-                    .map(|c| Ok(self.get_subtree_size(*c)?))
+                    .map(|c| self.get_subtree_size(*c))
                     .collect::<Result<Vec<u64>>>()?;
                 let interval = self.store.interval_children_capacity(current)?;
                 let intervals = interval.split_exponential(&sizes);

@@ -777,24 +777,14 @@ where
             if target.target_id.number() <= latest_status.head.number() {
                 break;
             }
-            // chain read the fork number from remote peers, break and start again
-            if let Some(_fork_number) = latest_block_chain
-                .dag_fork_height()
-                .map_err(TaskError::BreakError)?
-            {
-                if dag_fork_number.is_none() {
-                    break;
-                }
-            }
             if latest_block_chain
                 .check_dag_type(&latest_status.head)
                 .map_err(TaskError::BreakError)?
                 == DagHeaderType::Normal
                 && latest_status.info().get_total_difficulty()
                     >= target.block_info.get_total_difficulty()
-                {
-                    break;
-                }
+            {
+                break;
             }
             let chain_status = latest_block_chain.status();
             max_peers = max_better_peers(

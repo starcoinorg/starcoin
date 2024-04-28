@@ -7,8 +7,6 @@ use futures::executor::block_on;
 use network_api::{PeerProvider, PeerSelector, PeerStrategy};
 use starcoin_logger::prelude::*;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
-use starcoin_types::block::BlockHeader;
-use std::sync::Arc;
 
 #[stest::test]
 fn test_verified_client_for_dag() {

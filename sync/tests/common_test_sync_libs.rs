@@ -1,5 +1,4 @@
 use anyhow::{Ok, Result};
-use forkable_jellyfish_merkle::node_type::Node;
 use network_api::PeerId;
 use starcoin_config::*;
 use starcoin_crypto::HashValue;

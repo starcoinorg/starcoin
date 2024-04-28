@@ -310,7 +310,7 @@ impl<
                 data: self
                     .ghostdag_store
                     .get_data(chain_block.data.selected_parent)
-                    .map_err(|e| anyhow::Error::from(e))?
+                    .map_err(anyhow::Error::from)?
                     .into(),
             }
         }

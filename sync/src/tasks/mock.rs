@@ -23,7 +23,6 @@ use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_network_rpc_api::G_RPC_INFO;
-use starcoin_storage::BlockStore;
 use starcoin_storage::Storage;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
