@@ -26,6 +26,8 @@ use starcoin_types::{
 use std::path::Path;
 use std::sync::Arc;
 
+pub const DEFAULT_GHOSTDAG_K: KType = 8u16;
+
 pub type DbGhostdagManager = GhostdagManager<
     DbGhostdagStore,
     DbRelationsStore,
@@ -63,13 +65,13 @@ impl BlockDAG {
     pub fn create_for_testing() -> anyhow::Result<Self> {
         let dag_storage =
             FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
-        Ok(BlockDAG::new(8, dag_storage))
+        Ok(BlockDAG::new(DEFAULT_GHOSTDAG_K, dag_storage))
     }
 
     pub fn new_by_config(db_path: &Path) -> anyhow::Result<BlockDAG> {
         let config = FlexiDagStorageConfig::create_with_params(1, RocksdbConfig::default());
         let db = FlexiDagStorage::create_from_path(db_path, config)?;
-        let dag = Self::new(8, db);
+        let dag = Self::new(DEFAULT_GHOSTDAG_K, db);
         Ok(dag)
     }
 
