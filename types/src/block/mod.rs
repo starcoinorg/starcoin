@@ -404,7 +404,7 @@ impl BlockHeader {
     //for test
     pub fn dag_genesis_random() -> Self {
         let mut header = Self::random();
-        header.parents_hash = Some(vec![header.parent_hash]);
+        header.parents_hash = None;
         header.number = get_test_flexidag_fork_height();
         header
     }
@@ -414,7 +414,7 @@ impl BlockHeader {
         let header_builder = BlockHeaderBuilder::random();
         header_builder
             .with_parent_hash(parent.id())
-            .with_parents_hash(Some(vec![parent.id()]))
+            .with_parents_hash(None)
             .with_number(get_test_flexidag_fork_height())
             .build()
     }
