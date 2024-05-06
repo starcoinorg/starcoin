@@ -192,7 +192,7 @@ impl DBStorage {
 
     fn get_cf_handle(&self, cf_name: &str) -> Result<&rocksdb::ColumnFamily> {
         self.db.cf_handle(cf_name).ok_or_else(|| {
-            format_err!(
+            panic!(
                 "DB::cf_handle not found for column family name: {}",
                 cf_name
             )
