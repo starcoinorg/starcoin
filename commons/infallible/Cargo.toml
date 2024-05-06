@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-infallible"
-version = "1.13.11"
+version = "1.13.12-alpha"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

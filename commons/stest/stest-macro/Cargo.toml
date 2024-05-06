@@ -4,7 +4,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "stest-macro"
 publish = { workspace = true }
-version = "1.13.11"
+version = "1.13.12-alpha"
 
 [lib]
 proc-macro = true
