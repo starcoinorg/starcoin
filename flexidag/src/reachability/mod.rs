@@ -27,6 +27,9 @@ pub enum ReachabilityError {
 
     #[error("key not found: {0}")]
     KeyNotFound(String),
+
+    #[error("hashes not in order")]
+    HashesNotOrdered,
 }
 
 impl ReachabilityError {

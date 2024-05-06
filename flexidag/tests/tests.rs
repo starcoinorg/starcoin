@@ -14,6 +14,7 @@ use starcoin_dag::{
     reachability::{inquirer, ReachabilityError},
     types::interval::Interval,
 };
+use starcoin_logger::prelude::debug;
 use starcoin_types::{
     block::{set_test_flexidag_fork_height, BlockHeader, BlockHeaderBuilder, BlockNumber},
     blockhash::KType,
@@ -131,20 +132,27 @@ async fn test_with_spawn() {
         .with_parents_hash(Some(vec![genesis.id()]))
         .build();
     let mut dag = BlockDAG::create_for_testing().unwrap();
-    dag.init_with_genesis(genesis.clone()).unwrap();
-    dag.commit(block1.clone(), genesis.parent_hash()).unwrap();
-    dag.commit(block2.clone(), genesis.parent_hash()).unwrap();
+    let real_origin = dag.init_with_genesis(genesis.clone()).unwrap();
+    dag.commit(block1.clone(), real_origin).unwrap();
+    dag.commit(block2.clone(), real_origin).unwrap();
     let block3 = BlockHeaderBuilder::random()
         .with_difficulty(3.into())
         .with_parents_hash(Some(vec![block1.id(), block2.id()]))
         .build();
     let mut handles = vec![];
-    for _i in 1..100 {
+    for i in 1..100 {
         let mut dag_clone = dag.clone();
         let block_clone = block3.clone();
-        let origin = genesis.parent_hash();
         let handle = tokio::task::spawn_blocking(move || {
-            let _ = dag_clone.commit(block_clone, origin);
+            match dag_clone.commit(block_clone.clone(), real_origin) {
+                std::result::Result::Ok(_) => (),
+                Err(e) => {
+                    debug!("failed to commit error: {:?}, i: {:?}", e, i);
+                    if !dag_clone.has_dag_block(block_clone.id()).unwrap() {
+                        dag_clone.commit(block_clone, real_origin).unwrap();
+                    }
+                }
+            }
         });
         handles.push(handle);
     }

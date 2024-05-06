@@ -85,24 +85,38 @@ fn insert_to_future_covering_set(
     merged_block: Hash,
     new_block: Hash,
 ) -> Result<()> {
-    match binary_search_descendant(
+    let result = binary_search_descendant(
         store,
         store.get_future_covering_set(merged_block)?.as_slice(),
         new_block,
-    )? {
-        // We expect the query to not succeed, and to only return the correct insertion index.
-        // The existences of a `future covering item` (`FCI`) which is a chain ancestor of `new_block`
-        // contradicts `merged_block ∈ mergeset(new_block)`. Similarly, the existence of an FCI
-        // which `new_block` is a chain ancestor of, contradicts processing order.
-        SearchOutput::Found(_, _) => Err(ReachabilityError::DataInconsistency),
-        SearchOutput::NotFound(i) => {
-            process_key_already_error(store.insert_future_covering_item(
-                merged_block,
-                new_block,
-                i,
-            ))?;
-            Ok(())
+    );
+    match result {
+        Ok(search_output) => {
+            match search_output {
+                // We expect the query to not succeed, and to only return the correct insertion index.
+                // The existences of a `future covering item` (`FCI`) which is a chain ancestor of `new_block`
+                // contradicts `merged_block ∈ mergeset(new_block)`. Similarly, the existence of an FCI
+                // which `new_block` is a chain ancestor of, contradicts processing order.
+                SearchOutput::Found(_, _) => Err(ReachabilityError::DataInconsistency),
+                SearchOutput::NotFound(i) => {
+                    process_key_already_error(store.insert_future_covering_item(
+                        merged_block,
+                        new_block,
+                        i,
+                    ))?;
+                    Ok(())
+                }
+            }
         }
+        Err(ReachabilityError::HashesNotOrdered) => {
+            let future_covering_set = store.get_future_covering_set(merged_block)?;
+            if future_covering_set.contains(&new_block) {
+                Ok(())
+            } else {
+                Err(ReachabilityError::HashesNotOrdered)
+            }
+        }
+        Err(e) => Err(e),
     }
 }
 
@@ -215,7 +229,7 @@ fn binary_search_descendant(
 ) -> Result<SearchOutput> {
     if cfg!(debug_assertions) {
         // This is a linearly expensive assertion, keep it debug only
-        assert_hashes_ordered(store, ordered_hashes);
+        assert_hashes_ordered(store, ordered_hashes)?;
     }
 
     // `Interval::end` represents the unique number allocated to this block
@@ -247,16 +261,27 @@ fn binary_search_descendant(
     }
 }
 
-fn assert_hashes_ordered(store: &(impl ReachabilityStoreReader + ?Sized), ordered_hashes: &[Hash]) {
+fn assert_hashes_ordered(
+    store: &(impl ReachabilityStoreReader + ?Sized),
+    ordered_hashes: &[Hash],
+) -> Result<()> {
     let intervals: Vec<Interval> = ordered_hashes
         .iter()
         .cloned()
         .map(|c| store.get_interval(c).unwrap())
         .collect();
-    debug_assert!(intervals
+    if intervals
         .as_slice()
         .windows(2)
-        .all(|w| w[0].end < w[1].start))
+        .all(|w| w[0].end < w[1].start)
+    {
+        return Ok(());
+    }
+    Err(ReachabilityError::HashesNotOrdered)
+    // debug_assert!(intervals
+    //     .as_slice()
+    //     .windows(2)
+    //     .all(|w| w[0].end < w[1].start))
 }
 
 #[cfg(test)]

@@ -5,7 +5,8 @@ use crate::{
     storage::{CodecKVStore, StorageInstance, ValueCodec},
     BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME_V2,
     BLOCK_PREFIX_NAME, BLOCK_PREFIX_NAME_V2, BLOCK_TRANSACTIONS_PREFIX_NAME,
-    BLOCK_TRANSACTION_INFOS_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME_V2,
+    BLOCK_TRANSACTION_INFOS_PREFIX_NAME, DAG_SYNC_BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
+    FAILED_BLOCK_PREFIX_NAME_V2,
 };
 use anyhow::{bail, Result};
 use bcs_ext::{BCSCodec, Sample};
@@ -37,6 +38,12 @@ impl Into<(Block, Option<PeerId>, String, String)> for OldFailedBlock {
     fn into(self) -> (Block, Option<PeerId>, String, String) {
         (self.block, self.peer_id, self.failed, "".to_string())
     }
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+pub struct DagSyncBlock {
+    pub block: Block,
+    pub children: Vec<HashValue>,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -159,6 +166,13 @@ define_storage!(
 );
 
 define_storage!(
+    DagSyncBlockStorage,
+    HashValue,
+    DagSyncBlock,
+    DAG_SYNC_BLOCK_PREFIX_NAME
+);
+
+define_storage!(
     FailedBlockStorage,
     HashValue,
     FailedBlock,
@@ -180,6 +194,7 @@ pub struct BlockStorage {
     block_txns_store: BlockTransactionsStorage,
     block_txn_infos_store: BlockTransactionInfosStorage,
     failed_block_storage: FailedBlockStorage,
+    dag_sync_block_storage: DagSyncBlockStorage,
 }
 
 impl ValueCodec for Block {
@@ -242,6 +257,16 @@ impl ValueCodec for BlockBody {
     }
 }
 
+impl ValueCodec for DagSyncBlock {
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        Self::decode(data)
+    }
+}
+
 impl ValueCodec for OldFailedBlock {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
@@ -279,7 +304,8 @@ impl BlockStorage {
             body_store: BlockBodyStorage::new(instance.clone()),
             block_txns_store: BlockTransactionsStorage::new(instance.clone()),
             block_txn_infos_store: BlockTransactionInfosStorage::new(instance.clone()),
-            failed_block_storage: FailedBlockStorage::new(instance),
+            failed_block_storage: FailedBlockStorage::new(instance.clone()),
+            dag_sync_block_storage: DagSyncBlockStorage::new(instance),
         }
     }
     pub fn save(&self, block: Block) -> Result<()> {
@@ -372,6 +398,18 @@ impl BlockStorage {
         txn_info_ids: Vec<HashValue>,
     ) -> Result<()> {
         self.block_txn_infos_store.put(block_id, txn_info_ids)
+    }
+
+    pub fn save_dag_sync_block(&self, block: DagSyncBlock) -> Result<()> {
+        self.dag_sync_block_storage.put(block.block.id(), block)
+    }
+
+    pub fn delete_dag_sync_block(&self, block_id: HashValue) -> Result<()> {
+        self.dag_sync_block_storage.remove(block_id)
+    }
+
+    pub fn get_dag_sync_block(&self, block_id: HashValue) -> Result<Option<DagSyncBlock>> {
+        self.dag_sync_block_storage.get(block_id)
     }
 
     pub fn save_failed_block(
