@@ -196,7 +196,7 @@ fn gen_fork_dag_block_chain(
 }
 
 #[stest::test(timeout = 120)]
-async fn test_block_chain_switch_main() -> anyhow::Result<()> {
+async fn test_block_dag_chain_switch_main() -> anyhow::Result<()> {
     let times = 12;
     let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
     let net = node_config.net();
