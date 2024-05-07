@@ -2,13 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, Ok};
-use starcoin_config::RocksdbConfig;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_dag::{
     blockdag::BlockDAG,
     consensusdb::{
         consenses_state::{DagState, DagStateReader, DagStateStore},
-        prelude::{FlexiDagStorage, FlexiDagStorageConfig},
         schemadb::{DbReachabilityStore, ReachabilityStore, ReachabilityStoreReader},
     },
     reachability::{inquirer, ReachabilityError},
@@ -19,22 +17,8 @@ use starcoin_types::{
     block::{set_test_flexidag_fork_height, BlockHeader, BlockHeaderBuilder, BlockNumber},
     blockhash::KType,
 };
-use std::{env, fs, vec};
 
-fn build_block_dag(k: KType) -> BlockDAG {
-    let db_path = env::temp_dir().join("smolstc");
-    if db_path
-        .as_path()
-        .try_exists()
-        .unwrap_or_else(|_| panic!("Failed to check {db_path:?}"))
-    {
-        fs::remove_dir_all(db_path.as_path()).expect("Failed to delete temporary directory");
-    }
-    let config = FlexiDagStorageConfig::create_with_params(1, RocksdbConfig::default());
-    let db = FlexiDagStorage::create_from_path(db_path, config)
-        .expect("Failed to create flexidag storage");
-    BlockDAG::new(k, db)
-}
+use std::vec;
 
 #[test]
 fn test_dag_0() {
@@ -96,7 +80,7 @@ fn test_dag_1() {
         .build();
     let mut latest_id = block6.id();
     let genesis_id = genesis.id();
-    let mut dag = build_block_dag(3);
+    let mut dag = BlockDAG::create_for_testing().unwrap();
     let expect_selected_parented = vec![block5.id(), block3.id(), block3_1.id(), genesis_id];
     dag.init_with_genesis(genesis.clone()).unwrap();
 
@@ -167,7 +151,7 @@ async fn test_with_spawn() {
 #[test]
 fn test_dag_genesis_fork() {
     // initialzie the dag firstly
-    let mut dag = build_block_dag(3);
+    let mut dag = BlockDAG::create_for_testing().unwrap();
 
     let genesis = BlockHeader::dag_genesis_random()
         .as_builder()
