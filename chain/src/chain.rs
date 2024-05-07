@@ -867,7 +867,7 @@ impl BlockChain {
         }
         let no_parents = header.parents_hash().unwrap_or_default().is_empty();
 
-        match (no_parents, header.number().cmp(&dag_height)) {
+        let result = match (no_parents, header.number().cmp(&dag_height)) {
             (true, Ordering::Greater) => {
                 Err(anyhow!("block header with suitable height but no parents"))
             }
@@ -882,7 +882,8 @@ impl BlockChain {
             (false, Ordering::Less) => Err(anyhow!(
                 "block header with smaller height but having parents"
             )),
-        }
+        };
+        result
     }
 }
 
@@ -1466,10 +1467,14 @@ impl BlockChain {
     }
 
     pub fn dag_fork_height(&self) -> Result<Option<BlockNumber>> {
-        Ok(self
-            .statedb
-            .get_on_chain_config::<FlexiDagConfig>()?
-            .map(|c| c.effective_height))
+        if self.status().head().chain_id().is_test() {
+            Ok(Some(20))
+        } else {
+            Ok(self
+                .statedb
+                .get_on_chain_config::<FlexiDagConfig>()?
+                .map(|c| c.effective_height))
+        }
     }
 }
 

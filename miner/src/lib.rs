@@ -178,7 +178,6 @@ impl MinerService {
             info!("The flag disable_mint_empty_block is true and no txn in pool, so skip mint empty block.");
             Ok(())
         } else {
-            info!("jacktest mint block event dispatching");
             self.dispatch_mint_block_event(ctx, block_template)
         }
     }

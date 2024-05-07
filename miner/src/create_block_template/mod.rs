@@ -144,7 +144,6 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
         _msg: BlockTemplateRequest,
         _ctx: &mut ServiceContext<BlockBuilderService>,
     ) -> Result<BlockTemplateResponse> {
-        info!("jacktest: call create block template");
         let template = self.inner.create_block_template();
         self.inner.uncles_prune();
         template
@@ -308,7 +307,6 @@ where
     }
 
     pub fn create_block_template(&self) -> Result<BlockTemplateResponse> {
-        info!("jacktest: call create block template1");
         let on_chain_block_gas_limit = self.chain.epoch().block_gas_limit();
         let block_gas_limit = self
             .local_block_gas_limit
@@ -415,10 +413,6 @@ where
             self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
 
-        info!(
-            "jacktest: create template: previous header: {:?}, template: {:?}",
-            previous_header, template
-        );
         Ok(BlockTemplateResponse {
             parent: previous_header,
             template,
