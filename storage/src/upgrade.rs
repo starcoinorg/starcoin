@@ -207,12 +207,27 @@ impl DBUpgrade {
                 Self::db_upgrade_v2_v3(instance)?;
                 Self::db_upgrade_v3_v4(instance)?;
             }
+            (StorageVersion::V1, StorageVersion::V5) => {
+                Self::db_upgrade_v1_v2(instance)?;
+                Self::db_upgrade_v2_v3(instance)?;
+                Self::db_upgrade_v3_v4(instance)?;
+                Self::db_upgrade_v4_v5(instance)?;
+            }
             (StorageVersion::V2, StorageVersion::V4) => {
                 Self::db_upgrade_v2_v3(instance)?;
                 Self::db_upgrade_v3_v4(instance)?;
             }
+            (StorageVersion::V2, StorageVersion::V5) => {
+                Self::db_upgrade_v2_v3(instance)?;
+                Self::db_upgrade_v3_v4(instance)?;
+                Self::db_upgrade_v4_v5(instance)?;
+            }
             (StorageVersion::V3, StorageVersion::V4) => {
                 Self::db_upgrade_v3_v4(instance)?;
+            }
+            (StorageVersion::V3, StorageVersion::V5) => {
+                Self::db_upgrade_v3_v4(instance)?;
+                Self::db_upgrade_v4_v5(instance)?;
             }
             (StorageVersion::V4, StorageVersion::V5) => {
                 Self::db_upgrade_v4_v5(instance)?;

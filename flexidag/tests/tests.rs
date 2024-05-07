@@ -13,8 +13,9 @@ use starcoin_dag::{
     types::interval::Interval,
 };
 use starcoin_logger::prelude::debug;
-use starcoin_types::block::{
-    set_test_flexidag_fork_height, BlockHeader, BlockHeaderBuilder, BlockNumber,
+use starcoin_types::{
+    block::{set_test_flexidag_fork_height, BlockHeader, BlockHeaderBuilder, BlockNumber},
+    blockhash::KType,
 };
 
 use std::vec;
