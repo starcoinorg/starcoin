@@ -856,6 +856,19 @@ impl Block {
             .map(|uncles| uncles.len() as u64)
             .unwrap_or(0);
 
+        if self.header.chain_id().is_proxima() {
+            return BlockMetadata::new(
+                self.header.parent_hash(),
+                self.header.timestamp,
+                self.header.author,
+                self.header.author_auth_key,
+                uncles,
+                self.header.number,
+                self.header.chain_id,
+                parent_gas_used,
+            );
+        }
+
         if !self.header.is_legacy() && !self.header.is_single() {
             BlockMetadata::new_with_parents(
                 self.header.parent_hash(),
