@@ -22,11 +22,11 @@ pub fn gen_chain_env(config: NodeConfig) -> Result<NodeHandle> {
 // fixme: remove unused
 #[allow(unused)]
 fn gen_node(seeds: Vec<NetworkConfig>) -> Result<(NodeHandle, NetworkConfig)> {
-    let dir = match temp_dir() {
-        starcoin_config::DataDirPath::PathBuf(path) => path,
-        starcoin_config::DataDirPath::TempPath(path) => path.path().to_path_buf(),
-    };
-    let mut config = NodeConfig::proxima_for_test(dir);
+    // let dir = match temp_dir() {
+    //     starcoin_config::DataDirPath::PathBuf(path) => path,
+    //     starcoin_config::DataDirPath::TempPath(path) => path.path().to_path_buf(),
+    // };
+    let mut config = NodeConfig::random_for_test();
     let net_addr = config.network.self_address();
     debug!("Local node address: {:?}", net_addr);
 

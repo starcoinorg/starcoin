@@ -163,7 +163,7 @@ fn test_multiple_node_sync() {
 
     let main_node = &nodes.first().expect("failed to get main node");
 
-    let _ = common_test_sync_libs::generate_dag_block(main_node, 20)
+    let _ = common_test_sync_libs::generate_dag_block(main_node, 40)
         .expect("failed to generate dag block");
     let main_node_chain_service = main_node
         .chain_service()

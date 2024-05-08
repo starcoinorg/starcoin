@@ -11,7 +11,7 @@ use starcoin_config::{ChainNetwork, NodeConfig};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_txpool_mock_service::MockTxPoolService;
-use starcoin_types::block::Block;
+use starcoin_types::{account::Account, block::{Block, BlockNumber}};
 use std::sync::Arc;
 
 pub fn gen_dag_blocks(
@@ -216,7 +216,7 @@ async fn test_block_dag_chain_switch_main() -> anyhow::Result<()> {
     last_block = gen_fork_dag_block_chain(
         0,
         node_config,
-        2 * times,
+        10 * times,
         &mut writeable_block_chain_service,
     ).ok_or_else(|| anyhow::anyhow!("faile to gen fork dag block chain"))?;
 
