@@ -1,9 +1,11 @@
 import boto3
+from boto3.s3.transfer import TransferConfig
 from botocore.exceptions import ClientError
 import os
 import sys
         
 PER_UPLOADING = 104857600 ## up to 100 MB per uploading action
+GB = 1024 ** 3
 
 def upload_file(file_name, bucket, key):
     object_name = os.path.basename(file_name)
@@ -16,22 +18,12 @@ def upload_file(file_name, bucket, key):
         return False
     return True
 
+# https://boto3.amazonaws.com/v1/documentation/api/latest/guide/s3.html
 def upload_file_big_file(file_name, bucket, key):
-    client = boto3.client('s3')
+    s3_client = boto3.client('s3')
+    config = TransferConfig(multipart_threshold=5*GB, multipart_chunksize=PER_UPLOADING)
     try:
-        response = client.create_multipart_upload(Bucket = bucket, Key = key)
-        upload_id = response["UploadId"]
-        file_obj = open(file_name, "rb")
-        content = file_obj.read(PER_UPLOADING) 
-        count = 1
-        parts = []
-        while content:
-            response = client.upload_part(Body = content, Bucket = bucket, Key = key, PartNumber = count, UploadId = upload_id)
-            parts.append({'ETag': response["ETag"], 'PartNumber': count})
-            count += 1
-            content = file_obj.read(PER_UPLOADING)
-        response = client.complete_multipart_upload(Bucket = bucket, Key = key, MultipartUpload = {'Parts': parts,}, UploadId = upload_id)
-        print(str(response))
+        response = s3_client.upload_file(file_name, bucket, key, Config=config)
     except ClientError as e:
         print(str(e))
         return False
@@ -39,7 +31,7 @@ def upload_file_big_file(file_name, bucket, key):
 
 def upload_file_any_size(file_name, bucket, key):
     file_size = os.path.getsize(file_name)
-    if file_size > PER_UPLOADING:
+    if file_size > 5*GB:
         upload_file_big_file(file_name, bucket, key)
     else:
         upload_file(file_name, bucket, key)

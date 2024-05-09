@@ -12,6 +12,7 @@ use move_core_types::vm_status::VMStatus;
 pub use move_vm_runtime::{move_vm, session};
 mod access_path_cache;
 mod errors;
+pub mod force_upgrade_management;
 pub mod move_vm_ext;
 pub mod parallel_executor;
 use crate::metrics::VMMetrics;
@@ -38,7 +39,6 @@ pub trait VMExecutor: Send + Sync {
         metrics: Option<VMMetrics>,
     ) -> Result<Vec<TransactionOutput>, VMStatus>;
 }
-
 /// Get the AccessPath to a resource stored under `address` with type name `tag`
 fn create_access_path(address: AccountAddress, tag: StructTag) -> AccessPath {
     AccessPath::resource_access_path(address, tag)

@@ -20,7 +20,7 @@ def get_height(method, url, post_data, headers):
 
     print("get_height response status is %s" % response.status)
     if response.status != 200:
-        print("reponse is not ok, res is", j_res)
+        print("response is not ok, res is", j_res)
         return 0
     conn.close()
     return j_res["result"]["head"]["number"]

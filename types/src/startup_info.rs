@@ -324,3 +324,40 @@ impl TryInto<Vec<u8>> for BarnardHardFork {
         self.encode()
     }
 }
+
+#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
+pub struct DragonHardFork {
+    // block whose number is greater than `number` will be purged
+    number: BlockNumber,
+    hash: HashValue,
+}
+
+impl DragonHardFork {
+    pub fn new(number: BlockNumber, hash: HashValue) -> Self {
+        Self { number, hash }
+    }
+
+    pub fn get_number(&self) -> BlockNumber {
+        self.number
+    }
+
+    pub fn get_hash(&self) -> HashValue {
+        self.hash
+    }
+}
+
+impl TryFrom<Vec<u8>> for DragonHardFork {
+    type Error = anyhow::Error;
+
+    fn try_from(value: Vec<u8>) -> Result<Self> {
+        DragonHardFork::decode(value.as_slice())
+    }
+}
+
+impl TryInto<Vec<u8>> for DragonHardFork {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+}

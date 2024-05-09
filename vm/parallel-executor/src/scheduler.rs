@@ -121,7 +121,7 @@ pub struct Scheduler {
     /// in particular, after aborts and executions that write outside of the write set of the
     /// same transaction's previous incarnation.
     validation_idx: AtomicUsize,
-    /// The the number of times execution_idx and validation_idx are decreased.
+    /// The number of times execution_idx and validation_idx are decreased.
     decrease_cnt: AtomicUsize,
 
     /// Number of tasks used to track when transactions can be committed, incremented / decremented
@@ -385,7 +385,7 @@ impl Scheduler {
     }
 
     /// Grab an index to try and validate next (by fetch-and-incrementing validation_idx).
-    /// - If the index is out of bounds, return None (and invoke a check of whethre
+    /// - If the index is out of bounds, return None (and invoke a check of whether
     /// all txns can be committed).
     /// - If the transaction is ready for validation (EXECUTED state), return the version
     /// to the caller together with a guard to be used for the corresponding ValidationTask.

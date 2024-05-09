@@ -309,7 +309,7 @@ impl TransactionBuilder {
 }
 
 //---------------------------------------------------------------------------
-// CoinStore resource represenation
+// CoinStore resource representation
 //---------------------------------------------------------------------------
 
 /// Struct that represents an account CoinStore resource for tests.
@@ -367,7 +367,7 @@ impl CoinStore {
 }
 
 //---------------------------------------------------------------------------
-// Account type represenation
+// Account type representation
 //---------------------------------------------------------------------------
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -426,7 +426,7 @@ impl Default for AccountRoleSpecifier {
 }
 
 //---------------------------------------------------------------------------
-// Account type resource represenation
+// Account type resource representation
 //---------------------------------------------------------------------------
 
 /// Struct that represents an account type for testing.

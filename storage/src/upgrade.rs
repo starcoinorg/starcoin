@@ -20,16 +20,24 @@ use once_cell::sync::Lazy;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::{debug, info, warn};
 use starcoin_types::block::BlockNumber;
-use starcoin_types::startup_info::{BarnardHardFork, StartupInfo};
+use starcoin_types::startup_info::{BarnardHardFork, DragonHardFork, StartupInfo};
 use starcoin_vm_types::transaction::LegacyTransaction;
 use std::cmp::Ordering;
 
 pub struct DBUpgrade;
 
-pub static BARNARD_HARD_FORK_HEIGHT: BlockNumber = 16057420;
+pub static BARNARD_HARD_FORK_HEIGHT: BlockNumber = 16057000;
 pub static BARNARD_HARD_FORK_HASH: Lazy<HashValue> = Lazy::new(|| {
     HashValue::from_hex_literal(
-        "0x602bb269e3a221510f82b0b812304e767457f73ac3203663bd401ef3d29bcc97",
+        "0x1dd5987fa3b8bffad60f7a7756e73acd7b6808fed5a174200bf49e9f5de2d073",
+    )
+    .expect("")
+});
+
+pub static DRAGON_HARD_FORK_HEIGHT: BlockNumber = 16801958;
+pub static DRAGON_HARD_FORK_HASH: Lazy<HashValue> = Lazy::new(|| {
+    HashValue::from_hex_literal(
+        "0xbef8d0af3b358af9fe25f7383fd2580679c54fe2ce7ff7a7434785ba6d11b943",
     )
     .expect("")
 });
@@ -276,6 +284,56 @@ impl DBUpgrade {
                 let main_hash = block.header().parent_hash();
                 chain_info_storage.save_barnard_hard_fork(barnard_info)?;
                 chain_info_storage.save_startup_info(StartupInfo::new(main_hash))?;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn dragon_hard_fork(instance: &mut StorageInstance) -> Result<()> {
+        let block_storage = BlockStorage::new(instance.clone());
+        let chain_info_storage = ChainInfoStorage::new(instance.clone());
+        let hard_fork = chain_info_storage.get_dragon_hard_fork()?;
+
+        let fork_info = DragonHardFork::new(DRAGON_HARD_FORK_HEIGHT, *DRAGON_HARD_FORK_HASH);
+        if hard_fork == Some(fork_info.clone()) {
+            info!("dragon hard forked");
+            return Ok(());
+        }
+
+        let block = block_storage.get_block_by_hash(*DRAGON_HARD_FORK_HASH)?;
+        if let Some(block) = block {
+            if block.header().number() == DRAGON_HARD_FORK_HEIGHT {
+                info!("dragon hard fork rollback height");
+                let mut to_deleted = vec![];
+                let mut iter = block_storage.header_store.iter()?;
+                iter.seek_to_first();
+                for item in iter {
+                    let (id, block_header) = item?;
+                    if block_header.number() > DRAGON_HARD_FORK_HEIGHT {
+                        to_deleted.push(id);
+                    }
+                }
+                let block_info_storage = BlockInfoStorage::new(instance.clone());
+                let mut processed_count = 0;
+                for id in to_deleted {
+                    block_info_storage.remove(id)?;
+                    block_storage.delete_block(id)?;
+                    processed_count += 1;
+                    if processed_count % 10000 == 0 {
+                        info!(
+                            "dragon hard fork rollback height processed items: {}",
+                            processed_count
+                        );
+                    }
+                }
+                if processed_count % 10000 != 0 {
+                    info!(
+                        "dragon hard fork rollback height processed items: {}",
+                        processed_count
+                    );
+                }
+                chain_info_storage.save_dragon_hard_fork(fork_info)?;
+                chain_info_storage.save_startup_info(StartupInfo::new(*DRAGON_HARD_FORK_HASH))?;
             }
         }
         Ok(())

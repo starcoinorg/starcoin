@@ -13,6 +13,9 @@ starcoin-state-api = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
+starcoin-vm-types = { workspace = true }
+starcoin-vm-runtime = { workspace = true }
+starcoin-force-upgrade = { workspace = true }
 
 [dev-dependencies]
 starcoin-genesis = { workspace = true }
@@ -24,7 +27,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-open-block"
 publish = { workspace = true }
-version = "1.13.9"
+version = "1.13.11"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

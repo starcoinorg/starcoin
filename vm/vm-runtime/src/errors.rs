@@ -17,6 +17,8 @@ const PROLOGUE_BAD_CHAIN_ID: u64 = 6;
 const PROLOGUE_MODULE_NOT_ALLOWED: u64 = 7;
 const PROLOGUE_SCRIPT_NOT_ALLOWED: u64 = 8;
 const PROLOGUE_SEQUENCE_NUMBER_TOO_BIG: u64 = 9;
+const EPROLOGUE_SENDING_ACCOUNT_FROZEN: u64 = 10;
+const EPROLOGUE_SENDING_TXN_GLOBAL_FROZEN: u64 = 11;
 const EPROLOGUE_SIGNER_ALREADY_DELEGATED: u64 = 200;
 
 const EINSUFFICIENT_BALANCE: u64 = 10;
@@ -86,6 +88,13 @@ pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
                 (INVALID_ARGUMENT, EBAD_TRANSACTION_FEE_TOKEN) => {
                     StatusCode::BAD_TRANSACTION_FEE_CURRENCY
                 }
+                (INVALID_ARGUMENT, EPROLOGUE_SENDING_ACCOUNT_FROZEN) => {
+                    StatusCode::SENDING_ACCOUNT_FROZEN
+                }
+                (INVALID_ARGUMENT, EPROLOGUE_SENDING_TXN_GLOBAL_FROZEN) => {
+                    StatusCode::SEND_TXN_GLOBAL_FROZEN
+                }
+
                 (category, reason) => {
                     warn!(
                         "prologue runtime unknown: category({}), reason:({}), location:({})",

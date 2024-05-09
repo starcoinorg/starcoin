@@ -16,7 +16,7 @@ type TxnOutput<T, E> = ExecutionStatus<T, Error<E>>;
 // If an entry was read from the multi-version data-structure, then kind is
 // MVHashMap(txn_idx, incarnation), with transaction index and incarnation number
 // of the execution associated with the write of the entry. Otherwise, if the read
-// occured from storage, and kind is set to Storage.
+// occurred from storage, and kind is set to Storage.
 #[derive(Clone, PartialEq)]
 enum ReadKind {
     MVHashMap(TxnIndex, Incarnation),

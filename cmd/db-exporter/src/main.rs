@@ -5,6 +5,7 @@ use anyhow::{bail, format_err, Result};
 use bcs_ext::{BCSCodec, Sample};
 use clap::{IntoApp, Parser};
 use csv::Writer;
+use db_exporter::force_deploy_output::{force_deploy_output, ForceDeployOutput};
 use db_exporter::{
     verify_header::{verify_header_via_export_file, VerifyHeaderOptions},
     verify_module::{verify_modules_via_export_file, VerifyModuleOptions},
@@ -24,6 +25,8 @@ use starcoin_dag::blockdag::DEFAULT_GHOSTDAG_K;
 use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
 use starcoin_genesis::Genesis;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
+use starcoin_rpc_api::types::StrView;
+use starcoin_state_tree::StateTree;
 use starcoin_statedb::{ChainStateDB, ChainStateReader, ChainStateWriter};
 use starcoin_storage::{
     block::FailedBlock,
@@ -41,6 +44,7 @@ use starcoin_transaction_builder::{
 use starcoin_types::{
     account::{peer_to_peer_txn, Account, DEFAULT_EXPIRATION_TIME},
     account_address::AccountAddress,
+    account_state::AccountState,
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     startup_info::{SnapshotRange, StartupInfo},
     state_set::{AccountStateSet, ChainStateSet},
@@ -48,6 +52,7 @@ use starcoin_types::{
 };
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::{
+    access_path::DataType,
     account_config::stc_type_tag,
     genesis_config::ConsensusStrategy,
     identifier::Identifier,
@@ -237,6 +242,12 @@ enum Cmd {
     VerifyHeader(VerifyHeaderOptions),
     GenTurboSTMTransactions(GenTurboSTMTransactionsOptions),
     ApplyTurboSTMBlock(ApplyTurboSTMBlockOptions),
+    VerifyBlock(VerifyBlockOptions),
+    BlockOutput(BlockOutputOptions),
+    ApplyBlockOutput(ApplyBlockOutputOptions),
+    SaveStartupInfo(SaveStartupInfoOptions),
+    TokenSupply(TokenSupplyOptions),
+    ForceDeploy(ForceDeployOutput),
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -446,6 +457,88 @@ pub struct ApplyTurboSTMBlockOptions {
     pub input_path: PathBuf,
 }
 
+#[derive(Debug, Parser)]
+#[clap(name = "verify-block-range", about = "verify block range")]
+pub struct VerifyBlockOptions {
+    #[clap(long, short = 'n')]
+    /// Chain Network
+    pub net: BuiltinNetworkID,
+    #[clap(long, short = 'i', parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/main
+    pub from_path: PathBuf,
+    #[clap(possible_values = Verifier::variants(), ignore_case = true)]
+    /// Verify type:  Basic, Consensus, Full, None, eg.
+    pub verifier: Option<Verifier>,
+    #[clap(long, short = 's')]
+    pub start: BlockNumber,
+    #[clap(long, short = 'e')]
+    pub end: Option<BlockNumber>,
+}
+
+#[derive(Debug, Parser)]
+#[clap(name = "block-output", about = "block output options")]
+pub struct BlockOutputOptions {
+    #[clap(long, short = 'n')]
+    /// Chain Network
+    pub net: BuiltinNetworkID,
+    #[clap(long, short = 'i', parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/main
+    pub from_path: PathBuf,
+    #[clap(long, short = 's')]
+    pub num: BlockNumber,
+}
+
+#[derive(Debug, Parser)]
+#[clap(name = "apply-block-output", about = "apply block output")]
+pub struct ApplyBlockOutputOptions {
+    #[clap(long, short = 'n')]
+    /// Chain Network
+    pub net: BuiltinNetworkID,
+    #[clap(long, short = 'o', parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/main
+    pub to_path: PathBuf,
+    #[clap(long, short = 'i', parse(from_os_str))]
+    /// input file, like accounts.csv
+    pub input_path: PathBuf,
+}
+
+#[derive(Debug, Parser)]
+#[clap(name = "save_startup_info", about = "save startup info")]
+pub struct SaveStartupInfoOptions {
+    #[clap(long, short = 'n')]
+    /// Chain Network
+    pub net: BuiltinNetworkID,
+    #[clap(long, short = 'o', parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/main
+    pub to_path: PathBuf,
+    /// startupinfo BlockNumber back off size
+    #[clap(long, short = 'b')]
+    pub hash_value: HashValue,
+}
+
+#[derive(Debug, Clone, Parser)]
+#[clap(name = "token-supply", about = "token supply")]
+pub struct TokenSupplyOptions {
+    #[clap(long, short = 'n')]
+    /// Chain Network, like main, barnard
+    pub net: BuiltinNetworkID,
+    #[clap(long, short = 'o', parse(from_os_str))]
+    /// output file, like balance.csv
+    pub output: PathBuf,
+    #[clap(long, short = 'i', parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/main
+    pub db_path: PathBuf,
+
+    #[clap(long, short = 'b')]
+    pub block_number: Option<BlockNumber>,
+
+    #[clap(
+        help = "resource struct tag,",
+        default_value = "0x1::Account::Balance<0x1::STC::STC>"
+    )]
+    resource_type: StrView<StructTag>,
+}
+
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     let opt = Opt::parse();
@@ -607,6 +700,47 @@ async fn main() -> anyhow::Result<()> {
         Cmd::ApplyTurboSTMBlock(option) => {
             let result =
                 apply_turbo_stm_block(option.to_path, option.turbo_stm_to_path, option.input_path);
+            return result;
+        }
+        Cmd::VerifyBlock(option) => {
+            let verifier = option.verifier.unwrap_or(Verifier::Basic);
+            let result = verify_block(
+                option.from_path,
+                option.net,
+                option.start,
+                option.end,
+                verifier,
+            );
+            return result;
+        }
+        Cmd::BlockOutput(option) => {
+            let result = block_output(option.from_path, option.net, option.num);
+            return result;
+        }
+        Cmd::ApplyBlockOutput(option) => {
+            let result = apply_block_output(option.to_path, option.input_path, option.net);
+            return result;
+        }
+        Cmd::ForceDeploy(option) => {
+            return force_deploy_output(
+                option.input_path,
+                option.package_path,
+                option.net,
+                option.block_num,
+            )
+        }
+        Cmd::SaveStartupInfo(option) => {
+            let result = save_startup_info(option.to_path, option.net, option.hash_value);
+            return result;
+        }
+        Cmd::TokenSupply(option) => {
+            let result = token_supply(
+                option.db_path,
+                option.output,
+                option.net,
+                option.block_number,
+                option.resource_type.0,
+            );
             return result;
         }
     }
@@ -2151,5 +2285,316 @@ pub fn apply_turbo_stm_block(
     storage_stm.save_startup_info(startup_info)?;
     let use_time = SystemTime::now().duration_since(start_time)?;
     println!("stm apply block use time: {:?}", use_time.as_secs());
+    Ok(())
+}
+
+pub fn verify_block(
+    from_dir: PathBuf,
+    network: BuiltinNetworkID,
+    start: BlockNumber,
+    end: Option<BlockNumber>,
+    verifier: Verifier,
+) -> anyhow::Result<()> {
+    ::starcoin_logger::init();
+    let net = ChainNetwork::new_builtin(network);
+    let db_storage = DBStorage::open_with_cfs(
+        from_dir.join("starcoindb/db/starcoindb"),
+        StorageVersion::current_version()
+            .get_column_family_names()
+            .to_vec(),
+        true,
+        Default::default(),
+        None,
+    )?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_storage,
+    ))?);
+    let (chain_info, _) =
+        Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
+    let chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+    let start_num = start;
+    let end_num = end.unwrap_or_else(|| chain.status().head().number());
+    let start_time = SystemTime::now();
+    let thread_cnt = num_cpus::get() / 2;
+    let avg = (end_num - start_num + 1) / (thread_cnt as u64);
+    let mut handles = vec![];
+    for i in 0..thread_cnt {
+        let st = start_num + i as u64 * avg;
+        let mut end = start_num + (i as u64 + 1) * avg - 1;
+        if end > end_num {
+            end = end_num;
+        }
+        let chain = BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage.clone(),
+            None,
+        )
+        .expect("create block chain should success.");
+        let verifier2 = verifier.clone();
+        let handle = thread::spawn(move || {
+            verify_block_range(chain, st, end, verifier2).expect("verify_block_range panic")
+        });
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+    let use_time = SystemTime::now().duration_since(start_time)?;
+    println!("verify block use time: {:?}", use_time.as_secs());
+    Ok(())
+}
+
+fn verify_block_range(
+    chain: BlockChain,
+    start_num: u64,
+    end_num: u64,
+    verifier: Verifier,
+) -> Result<()> {
+    let name = format!("file-{}-{}", start_num, end_num);
+    let mut file = File::create(name)?;
+    writeln!(file, "block [{}..{}]", start_num, end_num)?;
+    let bar = ProgressBar::new(end_num - start_num + 1);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
+    let mut cnt = 0;
+    for block_number in start_num..=end_num {
+        let block = chain
+            .get_block_by_number(block_number)?
+            .ok_or_else(|| format_err!("{} get block error", block_number))?;
+        let mut cur_chain = chain.fork(block.header().parent_hash())?;
+        let res = match verifier {
+            Verifier::Basic => cur_chain.verify_without_save::<BasicVerifier>(block),
+            Verifier::Consensus => cur_chain.verify_without_save::<ConsensusVerifier>(block),
+            Verifier::Full => cur_chain.verify_without_save::<FullVerifier>(block),
+            Verifier::None => cur_chain.verify_without_save::<NoneVerifier>(block),
+        };
+        if res.is_err() {
+            writeln!(file, "block {} verify error", block_number)?;
+        }
+        bar.set_message(format!("verify block {}", block_number));
+        bar.inc(1);
+        cnt += 1;
+        if cnt % 1000 == 0 {
+            writeln!(file, "block {} verify", start_num + cnt)?;
+        }
+    }
+    bar.finish();
+    file.flush()?;
+    Ok(())
+}
+
+pub fn block_output(
+    from_dir: PathBuf,
+    network: BuiltinNetworkID,
+    block_number: BlockNumber,
+) -> anyhow::Result<()> {
+    ::starcoin_logger::init();
+    let net = ChainNetwork::new_builtin(network);
+    let db_storage = DBStorage::open_with_cfs(
+        from_dir.join("starcoindb/db/starcoindb"),
+        StorageVersion::current_version()
+            .get_column_family_names()
+            .to_vec(),
+        true,
+        Default::default(),
+        None,
+    )?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_storage,
+    ))?);
+    let (chain_info, _) =
+        Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
+    let chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+    let block = chain
+        .get_block_by_number(block_number)?
+        .ok_or_else(|| format_err!("{} get block error", block_number))?;
+    BlockChain::set_output_block();
+    let mut chain = BlockChain::new(
+        net.time_service(),
+        block.header.parent_hash(),
+        storage,
+        None,
+    )
+    .expect("create block chain should success.");
+    chain.verify_without_save::<BasicVerifier>(block)?;
+    Ok(())
+}
+
+pub fn apply_block_output(
+    to_dir: PathBuf,
+    input_path: PathBuf,
+    network: BuiltinNetworkID,
+) -> anyhow::Result<()> {
+    ::starcoin_logger::init();
+    let net = ChainNetwork::new_builtin(network);
+    let db_storage = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_storage,
+    ))?);
+    let (_chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
+    let start_time = SystemTime::now();
+    let file_name = input_path.display().to_string();
+    let reader = BufReader::new(File::open(input_path)?);
+    let mut blocks = vec![];
+    for record in reader.lines() {
+        let record = record?;
+        let block: Block = serde_json::from_str(record.as_str())?;
+        blocks.push(block);
+    }
+    if blocks.is_empty() {
+        println!("file {} has apply", file_name);
+        return Ok(());
+    }
+
+    let use_time = SystemTime::now().duration_since(start_time)?;
+    println!("load blocks from file use time: {:?}", use_time.as_millis());
+    let bar = ProgressBar::new(blocks.len() as u64);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
+    BlockChain::set_output_block();
+    for block in blocks {
+        let block_number = block.header().number();
+        let mut chain = BlockChain::new(
+            net.time_service(),
+            block.header().parent_hash(),
+            storage.clone(),
+            None,
+        )
+        .expect("create block chain should success.");
+        chain.verify_without_save::<BasicVerifier>(block)?;
+        bar.set_message(format!("apply block {}", block_number));
+        bar.inc(1);
+    }
+    bar.finish();
+    Ok(())
+}
+
+fn save_startup_info(
+    to_dir: PathBuf,
+    network: BuiltinNetworkID,
+    hash_value: HashValue,
+) -> anyhow::Result<()> {
+    ::starcoin_logger::init();
+    let net = ChainNetwork::new_builtin(network);
+    let db_storage = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_storage,
+    ))?);
+    let (_chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
+    let startup_info = StartupInfo::new(hash_value);
+    storage.save_startup_info(startup_info)?;
+    Ok(())
+}
+
+fn token_supply(
+    from_dir: PathBuf,
+    output: PathBuf,
+    network: BuiltinNetworkID,
+    block_number: Option<BlockNumber>,
+    resource_struct_tag: StructTag,
+) -> anyhow::Result<()> {
+    let net = ChainNetwork::new_builtin(network);
+    let db_storage = DBStorage::open_with_cfs(
+        from_dir.join("starcoindb/db/starcoindb"),
+        StorageVersion::current_version()
+            .get_column_family_names()
+            .to_vec(),
+        true,
+        Default::default(),
+        None,
+    )?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_storage,
+    ))?);
+    let (chain_info, _) =
+        Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
+    let chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+    let cur_num = block_number.unwrap_or_else(|| chain_info.head().number());
+    let block = chain
+        .get_block_by_number(cur_num)?
+        .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
+
+    let root = block.header.state_root();
+    let statedb = ChainStateDB::new(storage.clone(), Some(root));
+    let value_annotator = MoveValueAnnotator::new(&statedb);
+
+    let state_tree = StateTree::<AccountAddress>::new(storage.clone(), Some(root));
+
+    let mut file = File::create(output)?;
+
+    let global_states = state_tree.dump()?;
+
+    use std::time::Instant;
+    let now = Instant::now();
+    let mut sum: u128 = 0;
+    for (address_bytes, account_state_bytes) in global_states.iter() {
+        let account: AccountAddress = bcs_ext::from_bytes(address_bytes)?;
+        let account_state: AccountState = account_state_bytes.as_slice().try_into()?;
+        let resource_root = account_state.storage_roots()[DataType::RESOURCE.storage_index()];
+        let resource = match resource_root {
+            None => None,
+            Some(root) => {
+                let account_tree = StateTree::<StructTag>::new(storage.clone(), Some(root));
+                let data = account_tree.get(&resource_struct_tag)?;
+
+                if let Some(d) = data {
+                    let annotated_struct =
+                        value_annotator.view_struct(resource_struct_tag.clone(), d.as_slice())?;
+                    let resource = annotated_struct;
+                    let resource_json_value = serde_json::to_value(MoveStruct(resource))?;
+                    Some(resource_json_value)
+                } else {
+                    None
+                }
+            }
+        };
+        if let Some(res) = resource {
+            let balance = (res
+                .get("token")
+                .unwrap()
+                .get("value")
+                .unwrap()
+                .as_f64()
+                .unwrap()
+                / 1000000000.0) as u128;
+            if balance > 0 {
+                writeln!(file, "{} {}", account, balance)?;
+                sum += balance;
+            }
+        }
+    }
+    println!("t2: {}", now.elapsed().as_millis());
+    writeln!(file, "total {}", sum)?;
+    writeln!(file, "cur height {}", cur_num)?;
+    file.flush()?;
     Ok(())
 }

@@ -11,7 +11,7 @@ spec:
     matchLabels:
       app: starcoin
   serviceName: starcoin-svc
-  replicas: 3
+  replicas: 2
   template:
     metadata:
       name: starcoin
@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: ghcr.io/starcoinorg/starcoin:v1.13.8
+        image: ghcr.io/starcoinorg/starcoin:barnard_rollback_block_fix_force_upgrade_02
         imagePullPolicy: Always
         command:
           - bash
@@ -67,7 +67,7 @@ spec:
         livenessProbe:
           tcpSocket:
             port: 9840
-          initialDelaySeconds: 10
+          initialDelaySeconds: 600
           periodSeconds: 5
           timeoutSeconds: 2
           failureThreshold: 3
@@ -79,7 +79,7 @@ spec:
               - -c
               - >-
                  /starcoin/starcoin -n barnard -d /sc-data node sync status|grep Synchronized
-          initialDelaySeconds: 10
+          initialDelaySeconds: 600
           periodSeconds: 5
           timeoutSeconds: 2
           failureThreshold: 3

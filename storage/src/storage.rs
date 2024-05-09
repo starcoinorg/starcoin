@@ -128,6 +128,14 @@ impl StorageInstance {
         }
         Ok(())
     }
+
+    pub fn dragon_hard_fork(&mut self, config: Arc<NodeConfig>) -> Result<()> {
+        if config.net().id().chain_id().is_main() {
+            info!("dragon_hard_fork in");
+            return DBUpgrade::dragon_hard_fork(self);
+        }
+        Ok(())
+    }
 }
 
 impl InnerStore for StorageInstance {

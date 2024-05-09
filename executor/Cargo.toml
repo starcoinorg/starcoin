@@ -8,6 +8,9 @@ starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
 starcoin-statedb = { workspace = true }
+starcoin-force-upgrade = { workspace = true }
+serde = { default-features = false, workspace = true }
+bcs-ext = { workspace = true }
 
 [dev-dependencies]
 bcs-ext = { package = "bcs-ext", workspace = true }
@@ -25,6 +28,7 @@ starcoin-transaction-builder = { workspace = true }
 starcoin-state-tree = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
+starcoin-force-upgrade = { workspace = true }
 stdlib = { package = "stdlib", workspace = true }
 stest = { workspace = true }
 tempfile = { workspace = true }
@@ -41,7 +45,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-executor"
 publish = { workspace = true }
-version = "1.13.9"
+version = "1.13.11"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

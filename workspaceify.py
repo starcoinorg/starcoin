@@ -89,35 +89,35 @@ class TomlObj:
         :return:
         """
         decoder = toml.TomlDecoder()
-        pacakge = self.toml_dict['package']
+        package = self.toml_dict['package']
 
         authors = decoder.get_empty_inline_table()
         authors['workspace'] = True
-        pacakge['authors'] = authors
+        package['authors'] = authors
 
         edition = decoder.get_empty_inline_table()
         edition['workspace'] = True
-        pacakge['edition'] = edition
+        package['edition'] = edition
 
         homepage = decoder.get_empty_inline_table()
         homepage['workspace'] = True
-        pacakge['homepage'] = homepage
+        package['homepage'] = homepage
 
         license = decoder.get_empty_inline_table()
         license['workspace'] = True
-        pacakge['license'] = license
+        package['license'] = license
 
         publish = decoder.get_empty_inline_table()
         publish['workspace'] = True
-        pacakge['publish'] = publish
+        package['publish'] = publish
 
         repository = decoder.get_empty_inline_table()
         repository['workspace'] = True
-        pacakge['repository'] = repository
+        package['repository'] = repository
 
         rustversion = decoder.get_empty_inline_table()
         rustversion['workspace'] = True
-        pacakge['rust-version'] = rustversion
+        package['rust-version'] = rustversion
 
     def replace_dependencies(self, is_dev=False):
         depends = self.get_dependencies(is_dev)
