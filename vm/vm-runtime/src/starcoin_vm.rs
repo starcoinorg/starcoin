@@ -95,7 +95,7 @@ pub struct StarcoinVM {
 
 /// marking of stdlib version which includes vmconfig upgrades.
 const VMCONFIG_UPGRADE_VERSION_MARK: u64 = 10;
-const FLEXI_DAG_UPGRADE_VERSION_MARK: u64 = 13;
+const FLEXI_DAG_UPGRADE_VERSION_MARK: u64 = 12;
 // const GAS_SCHEDULE_UPGRADE_VERSION_MARK: u64 = 12;
 
 impl StarcoinVM {

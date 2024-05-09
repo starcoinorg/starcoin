@@ -238,7 +238,7 @@ fn test_stdlib_upgrade() -> Result<()> {
             )?;
             proposal_id += 1;
         }
-        if let StdlibVersion::Version(13) = current_version {
+        if let StdlibVersion::Version(12) = current_version {
             dao_vote_test(
                 &alice,
                 &chain_state,
@@ -628,7 +628,7 @@ where
                 "expect LinearWithdrawCapability exist at association_address"
             );
         }
-        StdlibVersion::Version(13) => {
+        StdlibVersion::Version(12) => {
             let config = chain_state.get_on_chain_config::<FlexiDagConfig>()?;
             assert!(config.is_some());
             assert_eq!(
