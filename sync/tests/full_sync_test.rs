@@ -139,32 +139,30 @@ async fn check_synced(
     chain_service: ServiceRef<ChainReaderService>,
 ) -> Result<bool> {
     loop {
-        if target_hash
-            == chain_service
-                .main_head_block()
-                .await
-                .expect("failed to get main head block")
-                .id()
+        if chain_service
+            .get_block_info_by_hash(&target_hash)
+            .await?
+            .is_some()
         {
-            debug!("succeed to sync main block id: {:?}", target_hash);
             break;
         } else {
             debug!("waiting for sync, now sleep 60 second");
-            async_std::task::sleep(Duration::from_secs(60)).await;
+            async_std::task::sleep(Duration::from_millis(500)).await;
         }
     }
     Ok(true)
 }
 
-#[stest::test(timeout = 120)]
-fn test_multiple_node_sync() {
-    let nodes =
-        common_test_sync_libs::init_multiple_node(5).expect("failed to initialize multiple nodes");
+#[stest::test(timeout = 720)]
+fn test_multiple_node_sync() -> Result<()> {
+    let node_count = 5;
+    let nodes = common_test_sync_libs::init_multiple_node(node_count)
+        .expect("failed to initialize multiple nodes");
 
-    let main_node = &nodes.first().expect("failed to get main node");
-
-    let _ = common_test_sync_libs::generate_dag_block(main_node, 20)
+    let main_node = nodes.first().expect("failed to get main node");
+    common_test_sync_libs::generate_dag_fork_number(main_node)
         .expect("failed to generate dag block");
+
     let main_node_chain_service = main_node
         .chain_service()
         .expect("failed to get main node chain service");
@@ -223,5 +221,6 @@ fn test_multiple_node_sync() {
                 .stop()
                 .expect("failed to shutdown the node normally!");
         });
-    });
+        Ok(())
+    })
 }

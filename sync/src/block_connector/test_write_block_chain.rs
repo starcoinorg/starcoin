@@ -14,9 +14,41 @@ use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
 use starcoin_txpool_mock_service::MockTxPoolService;
-use starcoin_types::block::Block;
+use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::startup_info::StartupInfo;
 use std::sync::Arc;
+
+pub async fn create_writeable_dag_block_chain(
+    dag_fork_number: BlockNumber,
+) -> (
+    WriteBlockChainService<MockTxPoolService>,
+    Arc<NodeConfig>,
+    Arc<dyn Store>,
+) {
+    let node_config = NodeConfig::random_for_test();
+    let node_config = Arc::new(node_config);
+
+    let (storage, chain_info, _, dag) = StarcoinGenesis::init_storage_for_test(node_config.net())
+        .expect("init storage by genesis fail.");
+    let registry = RegistryService::launch();
+    let bus = registry.service_ref::<BusService>().await.unwrap();
+    let txpool_service = MockTxPoolService::new();
+    (
+        WriteBlockChainService::new_with_dag_fork_number(
+            node_config.clone(),
+            StartupInfo::new(chain_info.head().id()),
+            storage.clone(),
+            txpool_service,
+            bus,
+            None,
+            dag,
+            dag_fork_number,
+        )
+        .unwrap(),
+        node_config,
+        storage,
+    )
+}
 
 pub async fn create_writeable_block_chain() -> (
     WriteBlockChainService<MockTxPoolService>,
