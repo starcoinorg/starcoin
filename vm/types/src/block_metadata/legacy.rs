@@ -1,6 +1,5 @@
 use crate::genesis_config::ChainId;
 use crate::transaction::authenticator::AuthenticationKey;
-use anyhow::anyhow;
 use move_core_types::account_address::AccountAddress;
 use serde::{Deserialize, Deserializer, Serialize};
 use starcoin_crypto::hash::{CryptoHash, CryptoHasher, PlainCryptoHash};
@@ -78,17 +77,10 @@ impl From<BlockMetadata> for super::BlockMetadata {
     }
 }
 
-impl TryFrom<super::BlockMetadata> for BlockMetadata {
-    type Error = anyhow::Error;
-
-    fn try_from(value: super::BlockMetadata) -> Result<Self, Self::Error> {
-        if value.parents_hash.is_some() {
-            return Err(anyhow!(
-                "Can't convert a new BlockMetaData txn with parents_hash to an old one"
-            ));
-        }
-        Ok(Self {
-            id: value.id,
+impl From<super::BlockMetadata> for BlockMetadata {
+    fn from(value: super::BlockMetadata) -> Self {
+        let mut meta = Self {
+            id: None,
             parent_hash: value.parent_hash,
             timestamp: value.timestamp,
             author: value.author,
@@ -97,6 +89,8 @@ impl TryFrom<super::BlockMetadata> for BlockMetadata {
             number: value.number,
             chain_id: value.chain_id,
             parent_gas_used: value.parent_gas_used,
-        })
+        };
+        meta.id = Some(meta.crypto_hash());
+        meta
     }
 }
