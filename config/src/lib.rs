@@ -472,6 +472,18 @@ impl NodeConfig {
         Self::load_with_opt(&opt).expect("Auto generate test config should success.")
     }
 
+    pub fn random_for_test_disable_miner(disable_mint: bool) -> Self {
+        let mut miner_config = MinerConfig::default();
+        miner_config.disable_miner_client = Some(disable_mint);
+        miner_config.disable_mint_empty_block = Some(disable_mint);
+        let opt = StarcoinOpt {
+            net: Some(BuiltinNetworkID::Test.into()),
+            miner: miner_config, 
+            ..StarcoinOpt::default()
+        };
+        Self::load_with_opt(&opt).expect("Auto generate test config should success.")
+    }
+
     pub fn proxima_for_test(dir: PathBuf) -> Self {
         let opt = StarcoinOpt {
             net: Some(BuiltinNetworkID::Proxima.into()),

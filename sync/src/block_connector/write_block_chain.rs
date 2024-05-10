@@ -24,6 +24,12 @@ use starcoin_types::{
 };
 #[cfg(test)]
 use starcoin_vm_types::{account_address::AccountAddress, transaction::SignedUserTransaction};
+#[cfg(test)]
+use starcoin_types::block::BlockNumber;
+#[cfg(test)]
+use starcoin_types::account::Account;
+#[cfg(test)]
+use starcoin_vm_types::on_chain_config::FlexiDagConfig;
 use std::{fmt::Formatter, sync::Arc};
 
 use super::BlockConnectorService;
@@ -137,6 +143,30 @@ where
             vm_metrics,
             dag,
         })
+    }
+
+    #[cfg(test)]
+    pub fn new_with_dag_fork(
+        config: Arc<NodeConfig>,
+        startup_info: StartupInfo,
+        storage: Arc<dyn Store>,
+        txpool: TransactionPoolServiceT,
+        bus: ServiceRef<BusService>,
+        vm_metrics: Option<VMMetrics>,
+        dag: BlockDAG,
+        fork_number: BlockNumber,
+    ) -> Result<Self> {
+        let mut this = Self::new(config.clone(), startup_info, storage, txpool, bus, vm_metrics, dag)?;
+        let net = config.net();
+        this.main = test_helper::dao::modify_on_chain_config_by_dao_block(
+            Account::new(),
+            this.main,
+            net,
+            test_helper::dao::vote_flexi_dag_config(net, fork_number),
+            test_helper::dao::on_chain_config_type_tag(FlexiDagConfig::type_tag()),
+            test_helper::dao::execute_script_on_chain_config(net, FlexiDagConfig::type_tag(), 0u64),
+        )?;
+        Ok(this)
     }
 
     fn find_or_fork(
