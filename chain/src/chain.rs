@@ -1468,12 +1468,12 @@ impl BlockChain {
 
     pub fn dag_fork_height(&self) -> Result<Option<BlockNumber>> {
         if self.status().head().chain_id().is_test() {
-            Ok(Some(20))
+            Ok(Some((20)))
         } else {
-            Ok(self
-                .statedb
-                .get_on_chain_config::<FlexiDagConfig>()?
-                .map(|c| c.effective_height))
+         Ok(self
+            .statedb
+            .get_on_chain_config::<FlexiDagConfig>()?
+            .map(|c| c.effective_height))
         }
     }
 }

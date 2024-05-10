@@ -14,11 +14,11 @@ use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
 use starcoin_txpool_mock_service::MockTxPoolService;
-use starcoin_types::block::Block;
+use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::startup_info::StartupInfo;
 use std::sync::Arc;
 
-pub async fn create_writeable_block_chain() -> (
+pub async fn create_writeable_block_chain(fork_number: BlockNumber) -> (
     WriteBlockChainService<MockTxPoolService>,
     Arc<NodeConfig>,
     Arc<dyn Store>,
@@ -32,16 +32,30 @@ pub async fn create_writeable_block_chain() -> (
     let bus = registry.service_ref::<BusService>().await.unwrap();
     let txpool_service = MockTxPoolService::new();
     (
-        WriteBlockChainService::new(
-            node_config.clone(),
-            StartupInfo::new(chain_info.head().id()),
-            storage.clone(),
-            txpool_service,
-            bus,
-            None,
-            dag,
-        )
-        .unwrap(),
+        if fork_number == BlockNumber::MAX {
+            WriteBlockChainService::new(
+                node_config.clone(),
+                StartupInfo::new(chain_info.head().id()),
+                storage.clone(),
+                txpool_service,
+                bus,
+                None,
+                dag,
+            )
+            .unwrap()
+        } else {
+            WriteBlockChainService::new_with_dag_fork(
+                node_config.clone(),
+                StartupInfo::new(chain_info.head().id()),
+                storage.clone(),
+                txpool_service,
+                bus,
+                None,
+                dag,
+                fork_number,
+            )
+            .unwrap()
+        },
         node_config,
         storage,
     )
@@ -88,7 +102,8 @@ pub fn new_block(
 #[stest::test]
 async fn test_block_chain_apply() {
     let times = 10;
-    let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
+    let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain(BlockNumber::MAX).await;
+    let origin_block_number = writeable_block_chain_service.get_main().current_header().number();
     let net = node_config.net();
     gen_blocks(
         times,
@@ -100,7 +115,7 @@ async fn test_block_chain_apply() {
             .get_main()
             .current_header()
             .number(),
-        times
+        times + origin_block_number
     );
 }
 
@@ -152,7 +167,8 @@ fn gen_fork_block_chain(
 #[stest::test]
 async fn test_block_chain_forks() {
     let times = 10;
-    let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
+    let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain(BlockNumber::MAX).await;
+    let origin_block_number = writeable_block_chain_service.get_main().current_header().number();
     let net = node_config.net();
     gen_blocks(
         times,
@@ -164,11 +180,11 @@ async fn test_block_chain_forks() {
             .get_main()
             .current_header()
             .number(),
-        times
+        times + origin_block_number
     );
 
     gen_fork_block_chain(
-        0,
+        origin_block_number,
         node_config,
         times / 2,
         &mut writeable_block_chain_service,
@@ -179,48 +195,55 @@ async fn test_block_chain_forks() {
             .get_main()
             .current_header()
             .number(),
-        times
+        times + origin_block_number
     );
 }
 
 #[stest::test(timeout = 120)]
 async fn test_block_chain_switch_main() {
     let times = 10;
-    let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
+    let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain(BlockNumber::MAX).await;
+    let origin_block_number = writeable_block_chain_service.get_main().current_header().number();
+    println!("jacktest: create_writeable_block_chain done1");
     let net = node_config.net();
     gen_blocks(
         times,
         &mut writeable_block_chain_service,
         net.time_service().as_ref(),
     );
+    println!("jacktest: create_writeable_block_chain done2");
     assert_eq!(
         writeable_block_chain_service
             .get_main()
             .current_header()
             .number(),
-        times
+        times + origin_block_number
     );
 
+    println!("jacktest: create_writeable_block_chain done3");
     gen_fork_block_chain(
-        0,
+        origin_block_number,
         node_config,
         2 * times,
         &mut writeable_block_chain_service,
     );
+    println!("jacktest: create_writeable_block_chain done4");
 
     assert_eq!(
         writeable_block_chain_service
             .get_main()
             .current_header()
             .number(),
-        2 * times
+        2 * times + origin_block_number
     );
+    println!("jacktest: create_writeable_block_chain done5");
 }
 
 #[stest::test]
 async fn test_block_chain_reset() -> anyhow::Result<()> {
     let times = 10;
-    let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
+    let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain(BlockNumber::MAX).await;
+    let origin_block_number = writeable_block_chain_service.get_main().current_header().number();
     let net = node_config.net();
     gen_blocks(
         times,
@@ -232,7 +255,7 @@ async fn test_block_chain_reset() -> anyhow::Result<()> {
             .get_main()
             .current_header()
             .number(),
-        times
+        times + origin_block_number
     );
     let block = writeable_block_chain_service
         .get_main()

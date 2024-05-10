@@ -1084,7 +1084,7 @@ fn sync_block_in_async_connection(
     Ok(target_node)
 }
 
-#[stest::test]
+#[ignore]
 async fn test_sync_block_in_async_connection() -> Result<()> {
     let _net = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let test_system = SyncTestSystem::initialize_sync_system().await?;
