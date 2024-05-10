@@ -209,10 +209,13 @@ impl OpenedBlock {
             untouched_txns: untouched_user_txns,
         })
     }
-
     /// Run blockmeta first
     fn initialize(&mut self) -> Result<()> {
-        let block_metadata_txn = Transaction::BlockMetadata(self.block_meta.clone());
+        let block_metadata_txn = if self.chain_id.is_proxima() {
+            Transaction::BlockMetadata(self.block_meta.to_legacy())
+        } else {
+            Transaction::BlockMetadata(self.block_meta.clone())
+        };
         let block_meta_txn_hash = block_metadata_txn.id();
         let mut results = execute_transactions(
             &self.state,

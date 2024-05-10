@@ -21,6 +21,7 @@ use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 // use starcoin_txpool_mock_service::MockTxPoolService;
+use starcoin_dag::blockdag::DEFAULT_GHOSTDAG_K;
 #[cfg(test)]
 use starcoin_txpool_mock_service::MockTxPoolService;
 use std::fs;
@@ -62,7 +63,7 @@ impl SyncTestSystem {
             FlexiDagStorageConfig::new(),
         )
         .expect("init dag storage fail.");
-        let dag = starcoin_dag::blockdag::BlockDAG::new(8, dag_storage); // local dag
+        let dag = starcoin_dag::blockdag::BlockDAG::new(DEFAULT_GHOSTDAG_K, dag_storage); // local dag
 
         let chain_info =
             genesis.execute_genesis_block(config.net(), storage.clone(), dag.clone())?;

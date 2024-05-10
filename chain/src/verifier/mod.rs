@@ -97,11 +97,7 @@ pub trait BlockVerifier {
     where
         R: ChainReader,
     {
-        if header.is_legacy() {
-            return Ok(());
-        }
         let epoch = current_chain.epoch();
-        let is_legacy = header.is_legacy();
 
         let switch_epoch = header.number() == epoch.end_block_number();
         // epoch first block's uncles should empty.
@@ -147,21 +143,6 @@ pub trait BlockVerifier {
                 "invalid block: block {} can not be uncle.",
                 uncle_id
             );
-
-            let valid_parents_hash = if is_legacy {
-                uncle.parents_hash().is_none()
-            } else {
-                uncle.parents_hash().unwrap_or_default().is_empty()
-            };
-
-            verify_block!(
-                VerifyBlockField::Uncle,
-                valid_parents_hash,
-                "uncle {} is not valid for a single-chain block, parents_hash len {}",
-                uncle.id(),
-                uncle.parents_hash().unwrap_or_default().len()
-            );
-
             debug!(
                 "verify_uncle header number {} hash {:?} uncle number {} hash {:?}",
                 header.number(),
@@ -439,6 +420,16 @@ impl BlockVerifier for DagVerifier {
 //TODO: Implement it.
 pub struct DagBasicVerifier;
 impl BlockVerifier for DagBasicVerifier {
+    fn verify_uncles<R>(
+        _current_chain: &R,
+        _uncles: &[BlockHeader],
+        _header: &BlockHeader,
+    ) -> Result<()>
+    where
+        R: ChainReader,
+    {
+        Ok(())
+    }
     fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
     where
         R: ChainReader,

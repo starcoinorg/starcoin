@@ -128,12 +128,20 @@ async fn test_with_spawn() {
         let mut dag_clone = dag.clone();
         let block_clone = block3.clone();
         let handle = tokio::task::spawn_blocking(move || {
-            match dag_clone.commit(block_clone.clone(), real_origin) {
-                std::result::Result::Ok(_) => (),
-                Err(e) => {
-                    debug!("failed to commit error: {:?}, i: {:?}", e, i);
-                    if !dag_clone.has_dag_block(block_clone.id()).unwrap() {
-                        dag_clone.commit(block_clone, real_origin).unwrap();
+            let mut count = 10;
+            loop {
+                match dag_clone.commit(block_clone.clone(), real_origin) {
+                    std::result::Result::Ok(_) => break,
+                    Err(e) => {
+                        debug!("failed to commit error: {:?}, i: {:?}", e, i);
+                        if dag_clone.has_dag_block(block_clone.id()).unwrap() {
+                            break;
+                        }
+                        count -= 1;
+                        if count < 0 {
+                            panic!("failed to commit block because: {:?}", e);
+                        }
+                        std::thread::sleep(std::time::Duration::from_millis(500));
                     }
                 }
             }

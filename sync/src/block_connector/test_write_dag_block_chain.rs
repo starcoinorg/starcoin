@@ -197,18 +197,17 @@ fn gen_fork_dag_block_chain(
     }
 }
 
+
 #[stest::test(timeout = 720)]
 async fn test_block_dag_chain_switch_main() -> anyhow::Result<()> {
     let times = 12;
     let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain(10).await;
-    println!("jacktest: 1");
     let net = node_config.net();
     let mut last_block = gen_dag_blocks(
         times,
         &mut writeable_block_chain_service,
         net,
     )?;
-    println!("jacktest: 2");
     assert_eq!(
         writeable_block_chain_service
             .get_main()
@@ -216,7 +215,6 @@ async fn test_block_dag_chain_switch_main() -> anyhow::Result<()> {
             .id(),
         last_block
     );
-    println!("jacktest: 3");
 
     last_block = gen_fork_dag_block_chain(
         0,
@@ -225,7 +223,6 @@ async fn test_block_dag_chain_switch_main() -> anyhow::Result<()> {
         &mut writeable_block_chain_service,
     ).ok_or_else(|| anyhow::anyhow!("faile to gen fork dag block chain"))?;
 
-    println!("jacktest: 4");
     assert_eq!(
         writeable_block_chain_service
             .get_main()
@@ -233,7 +230,6 @@ async fn test_block_dag_chain_switch_main() -> anyhow::Result<()> {
             .id(),
         last_block
     );
-    println!("jacktest: 5");
 
     Ok(())
 }
