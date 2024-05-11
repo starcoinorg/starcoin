@@ -774,7 +774,7 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let mut gas_constant = G_TEST_GAS_CONSTANTS.clone();
     gas_constant.min_price_per_gas_unit = 1;
 
-    let stdlib_version = StdlibVersion::Version(11);
+    let stdlib_version = StdlibVersion::Latest;
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
             parent_hash: HashValue::sha3_256_of(b"starcoin_dev"),
