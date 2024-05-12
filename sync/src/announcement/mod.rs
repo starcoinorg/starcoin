@@ -111,7 +111,7 @@ mod tests {
     use starcoin_txpool_api::TxPoolSyncService;
     use std::time::Duration;
 
-    #[ignore]
+    #[stest::test]
     fn test_get_txns_with_hash_from_pool() {
         let mut config_1 = NodeConfig::random_for_test();
         config_1.miner.disable_miner_client = Some(true);

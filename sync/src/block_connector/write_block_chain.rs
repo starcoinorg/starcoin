@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::metrics::ChainMetrics;
+#[cfg(test)]
+use ::test_helper::dao::{
+    execute_script_on_chain_config, modify_on_chain_config_by_dao_block, on_chain_config_type_tag,
+    vote_flexi_dag_config,
+};
 use anyhow::{format_err, Ok, Result};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
@@ -17,19 +22,17 @@ use starcoin_service_registry::{ServiceContext, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
+#[cfg(test)]
+use starcoin_types::{account::Account, block::BlockNumber};
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
     system_events::{NewBranch, NewHeadBlock},
 };
 #[cfg(test)]
-use starcoin_vm_types::{account_address::AccountAddress, transaction::SignedUserTransaction};
-#[cfg(test)]
-use starcoin_types::block::BlockNumber;
-#[cfg(test)]
-use starcoin_types::account::Account;
-#[cfg(test)]
 use starcoin_vm_types::on_chain_config::FlexiDagConfig;
+#[cfg(test)]
+use starcoin_vm_types::{account_address::AccountAddress, transaction::SignedUserTransaction};
 use std::{fmt::Formatter, sync::Arc};
 
 use super::BlockConnectorService;
@@ -127,6 +130,7 @@ where
             vm_metrics.clone(),
             dag.clone(),
         )?;
+
         let metrics = config
             .metrics
             .registry()
@@ -146,7 +150,7 @@ where
     }
 
     #[cfg(test)]
-    pub fn new_with_dag_fork(
+    pub fn new_with_dag_fork_number(
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
@@ -156,15 +160,22 @@ where
         dag: BlockDAG,
         fork_number: BlockNumber,
     ) -> Result<Self> {
-        let mut this = Self::new(config.clone(), startup_info, storage, txpool, bus, vm_metrics, dag)?;
-        let net = config.net();
-        this.main = test_helper::dao::modify_on_chain_config_by_dao_block(
+        let mut this: WriteBlockChainService<TransactionPoolServiceT> = Self::new(
+            config.clone(),
+            startup_info,
+            storage,
+            txpool,
+            bus,
+            vm_metrics,
+            dag,
+        )?;
+        this.main = modify_on_chain_config_by_dao_block(
             Account::new(),
             this.main,
-            net,
-            test_helper::dao::vote_flexi_dag_config(net, fork_number),
-            test_helper::dao::on_chain_config_type_tag(FlexiDagConfig::type_tag()),
-            test_helper::dao::execute_script_on_chain_config(net, FlexiDagConfig::type_tag(), 0u64),
+            config.net(),
+            vote_flexi_dag_config(config.net(), fork_number),
+            on_chain_config_type_tag(FlexiDagConfig::type_tag()),
+            execute_script_on_chain_config(config.net(), FlexiDagConfig::type_tag(), 0u64),
         )?;
         Ok(this)
     }

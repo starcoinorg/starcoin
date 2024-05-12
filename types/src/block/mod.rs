@@ -35,9 +35,9 @@ use std::sync::Mutex;
 pub type BlockNumber = u64;
 #[derive(PartialEq, Eq, Debug)]
 pub enum DagHeaderType {
-    Single, // Legacy block
+    Single,  // Legacy block
     Genesis, // GhostDag genesis block
-    Normal, // GhostDag Normal block
+    Normal,  // GhostDag Normal block
 }
 pub type ParentsHash = Option<Vec<HashValue>>;
 

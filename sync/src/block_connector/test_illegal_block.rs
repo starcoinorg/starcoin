@@ -20,7 +20,7 @@ use starcoin_logger::prelude::*;
 use starcoin_storage::Store;
 use starcoin_time_service::{duration_since_epoch, TimeServiceType};
 use starcoin_txpool_mock_service::MockTxPoolService;
-use starcoin_types::block::{BlockHeader, BlockNumber};
+use starcoin_types::block::BlockHeader;
 use starcoin_types::{block::Block, U256};
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_vm_types::transaction::SignedUserTransaction;
@@ -39,7 +39,7 @@ async fn new_block_and_main_with_halley() -> (Block, MockChain) {
 async fn new_block_and_main() -> (Block, BlockChain) {
     let times = 5;
     let (mut writeable_block_chain_service, node_config, storage) =
-        create_writeable_block_chain(BlockNumber::MAX).await;
+        create_writeable_block_chain().await;
     let net = node_config.net();
     gen_blocks(
         times,
@@ -71,8 +71,7 @@ async fn uncle_block_and_writeable_block_chain(
 ) {
     // 1. chain
     let (mut writeable_block_chain_service, node_config, storage) =
-        create_writeable_block_chain(BlockNumber::MAX).await;
-    
+        create_writeable_block_chain().await;
     let net = node_config.net();
     gen_blocks(
         count,
@@ -324,7 +323,6 @@ async fn test_verify_consensus_failed() {
     }
 }
 
-#[ignore]
 #[stest::test(timeout = 120)]
 async fn test_verify_new_epoch_block_uncle_should_none_failed() {
     let apply_failed = test_verify_uncles_in_old_epoch(true).await;
@@ -338,7 +336,7 @@ async fn test_verify_new_epoch_block_uncle_should_none_failed() {
 async fn test_verify_can_not_be_uncle_is_member_failed() {
     let times = 5;
     let (mut writeable_block_chain_service, node_config, storage) =
-        create_writeable_block_chain(BlockNumber::MAX).await;
+        create_writeable_block_chain().await;
     let net = node_config.net();
     gen_blocks(
         times,
@@ -369,7 +367,7 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
     // 1. chain
     let times = 7;
     let (mut writeable_block_chain_service, node_config, storage) =
-        create_writeable_block_chain(BlockNumber::MAX).await;
+        create_writeable_block_chain().await;
     let net = node_config.net();
     gen_blocks(
         times,
@@ -505,8 +503,7 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
     Ok(())
 }
 
-// #[stest::test(timeout = 120)]
-#[ignore]
+#[stest::test(timeout = 120)]
 async fn test_verify_illegal_uncle_consensus_failed() {
     assert!(test_verify_illegal_uncle_consensus(true).await.is_ok());
     let apply_failed = test_verify_illegal_uncle_consensus(false).await;
@@ -720,34 +717,27 @@ async fn test_verify_uncles_number_failed() {
 
 async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
     let count = 5;
-    println!("jacktest: 1");
     let (uncle_header, mut writeable_block_chain_service, node_config, storage) =
         uncle_block_and_writeable_block_chain(count, count - 2).await;
 
-    println!("jacktest: 2");
     let end_number = if begin_epoch {
         G_TEST_CONFIG.consensus_config.epoch_block_count - 1
     } else {
         G_TEST_CONFIG.consensus_config.epoch_block_count + 1
     };
-    println!("jacktest: 3");
     let old_epoch_num = writeable_block_chain_service.get_main().epoch().number();
     // create block loop
     loop {
-    println!("jacktest: 4");
         apply_legal_block(
             writeable_block_chain_service.get_main().consensus(),
             Vec::new(),
             &mut writeable_block_chain_service,
         );
-    println!("jacktest: 5");
         let block_number = writeable_block_chain_service
             .get_main()
             .current_header()
             .number();
-    println!("jacktest: 6");
         if block_number == end_number {
-    println!("jacktest: 7");
             let epoch = writeable_block_chain_service.get_main().epoch();
             if begin_epoch {
                 assert_eq!(old_epoch_num, epoch.number());
@@ -757,10 +747,8 @@ async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
             }
             break;
         }
-    println!("jacktest: 8");
     }
 
-    println!("jacktest: 9");
     let uncles = vec![uncle_header];
     apply_with_illegal_uncle(
         node_config.net(),
@@ -770,8 +758,7 @@ async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
     )
 }
 
-// #[stest::test(timeout = 120)]
-#[ignore]
+#[stest::test(timeout = 120)]
 async fn test_verify_uncles_in_old_epoch_failed() {
     let apply_failed = test_verify_uncles_in_old_epoch(false).await;
     assert!(apply_failed.is_err());
@@ -917,11 +904,8 @@ async fn test_verify_uncle_which_parent_is_end_block_in_last_epoch() {
     let count = G_TEST_CONFIG.consensus_config.epoch_block_count;
     let (uncle_header, mut writeable_block_chain_service, node_config, storage) =
         uncle_block_and_writeable_block_chain(count, count - 1).await;
+
     let epoch = writeable_block_chain_service.get_main().epoch();
-    println!("jacktest: epoch start block number: {:?}, current header {:?} ", epoch.start_block_number(), writeable_block_chain_service
-            .get_main()
-            .current_header()
-            .number());
     assert_eq!(
         epoch.start_block_number(),
         writeable_block_chain_service
@@ -930,14 +914,12 @@ async fn test_verify_uncle_which_parent_is_end_block_in_last_epoch() {
             .number()
     );
 
-    println!("jacktest: epoch end block number: {:?}, uncle header {:?} ", epoch.end_block_number(), uncle_header.number());
     assert_eq!(epoch.start_block_number(), uncle_header.number());
     let uncle_parent_header = writeable_block_chain_service
         .get_main()
         .get_header(uncle_header.parent_hash())
         .unwrap()
         .unwrap();
-    println!("jacktest: epoch end block number: {:?}, uncle parent header + 1 {:?} ", epoch.end_block_number(), uncle_parent_header.number() + 1);
     assert_eq!(
         epoch.start_block_number(),
         (uncle_parent_header.number() + 1)
@@ -950,6 +932,5 @@ async fn test_verify_uncle_which_parent_is_end_block_in_last_epoch() {
         &mut writeable_block_chain_service,
         storage,
     );
-    println!("jacktest: apply_failed {:?}", apply_failed);
     assert!(apply_failed.is_ok());
 }

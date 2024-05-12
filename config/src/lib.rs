@@ -478,7 +478,7 @@ impl NodeConfig {
         miner_config.disable_mint_empty_block = Some(disable_mint);
         let opt = StarcoinOpt {
             net: Some(BuiltinNetworkID::Test.into()),
-            miner: miner_config, 
+            miner: miner_config,
             ..StarcoinOpt::default()
         };
         Self::load_with_opt(&opt).expect("Auto generate test config should success.")

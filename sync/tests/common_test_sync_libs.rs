@@ -21,12 +21,12 @@ pub fn gen_chain_env(config: NodeConfig) -> Result<NodeHandle> {
 
 // fixme: remove unused
 #[allow(unused)]
-fn gen_node(seeds: Vec<NetworkConfig>, disable_mint: bool) -> Result<(NodeHandle, NetworkConfig)> {
-    // let dir = match temp_dir() {
-    //     starcoin_config::DataDirPath::PathBuf(path) => path,
-    //     starcoin_config::DataDirPath::TempPath(path) => path.path().to_path_buf(),
-    // };
-    let mut config = NodeConfig::random_for_test_disable_miner(disable_mint);
+fn gen_node(seeds: Vec<NetworkConfig>) -> Result<(NodeHandle, NetworkConfig)> {
+    let dir = match temp_dir() {
+        starcoin_config::DataDirPath::PathBuf(path) => path,
+        starcoin_config::DataDirPath::TempPath(path) => path.path().to_path_buf(),
+    };
+    let mut config = NodeConfig::random_for_test();
     let net_addr = config.network.self_address();
     debug!("Local node address: {:?}", net_addr);
 
@@ -46,26 +46,23 @@ fn gen_node(seeds: Vec<NetworkConfig>, disable_mint: bool) -> Result<(NodeHandle
 pub fn init_multiple_node(count: usize) -> Result<Vec<NodeHandle>> {
     let mut result = vec![];
     result.reserve(count);
-    let (main_node, network_config) = gen_node(vec![], false)?;
+    let (main_node, network_config) = gen_node(vec![])?;
     result.push(main_node);
     for _ in 1..count {
-        result.push(gen_node(vec![network_config.clone()], false)?.0);
+        result.push(gen_node(vec![network_config.clone()])?.0);
     }
     Ok(result)
 }
 
+#[allow(unused)]
 pub fn generate_block(handle: &NodeHandle, count: usize) -> Result<()> {
-    let mut result = vec![];
-    let dag = handle.get_dag()?;
-    while result.len() < count {
-        let (block, is_dag) = handle.generate_block()?;
-        // if is_dag {
-            result.push(block);
-        // }
+    for _i in 0..count {
+        let _ = handle.generate_block()?;
     }
     Ok(())
 }
 
+#[allow(unused)]
 pub fn generate_dag_block(handle: &NodeHandle, count: usize) -> Result<Vec<DagBlockInfo>> {
     let mut result = vec![];
     let dag = handle.get_dag()?;
