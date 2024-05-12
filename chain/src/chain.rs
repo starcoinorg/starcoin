@@ -1467,10 +1467,15 @@ impl BlockChain {
     }
 
     pub fn dag_fork_height(&self) -> Result<Option<BlockNumber>> {
-        Ok(self
-            .statedb
-            .get_on_chain_config::<FlexiDagConfig>()?
-            .map(|c| c.effective_height))
+        let chain_id = self.status().head().chain_id();
+        if chain_id.is_proxima() {
+            Ok(Some(1000))
+        } else {
+            Ok(self
+                .statedb
+                .get_on_chain_config::<FlexiDagConfig>()?
+                .map(|c| c.effective_height))
+        }
     }
 }
 
