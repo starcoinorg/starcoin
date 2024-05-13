@@ -4,25 +4,18 @@ mod test_sync;
 use anyhow::{Ok, Result};
 use futures::executor::block_on;
 use rand::random;
-use starcoin_chain::BlockChain;
-use starcoin_chain_api::{ChainAsyncService, ChainReader, ExecutedBlock};
+use starcoin_chain_api::ChainAsyncService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
-use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
 use starcoin_node::NodeHandle;
-use starcoin_service_registry::bus::{Bus, BusService};
-use starcoin_service_registry::{ActorService, RegistryAsyncService, ServiceRef};
-use starcoin_storage::Storage;
+use starcoin_service_registry::{ActorService, ServiceRef};
 use starcoin_sync::sync::SyncService;
-use starcoin_types::block::BlockNumber;
-use starcoin_types::system_events::NewHeadBlock;
-use starcoin_vm_types::on_chain_config::FlexiDagConfig;
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
-use test_helper::{run_node_by_config, Account};
+use test_helper::run_node_by_config;
 
 #[stest::test(timeout = 120)]
 fn test_full_sync() {
@@ -146,14 +139,11 @@ async fn check_synced(
     chain_service: ServiceRef<ChainReaderService>,
 ) -> Result<bool> {
     loop {
-        if target_hash
-            == chain_service
-                .main_head_block()
-                .await
-                .expect("failed to get main head block")
-                .id()
+        if chain_service
+            .get_block_info_by_hash(&target_hash)
+            .await?
+            .is_some()
         {
-            debug!("succeed to sync main block id: {:?}", target_hash);
             break;
         } else {
             debug!("waiting for sync, now sleep 60 second");
@@ -163,97 +153,15 @@ async fn check_synced(
     Ok(true)
 }
 
-/// Just for test
-pub fn execute_dag_poll_block(node_handle: &NodeHandle, fork_number: BlockNumber) -> Result<u64> {
-    let timestamp = block_on(async move {
-        let registry = node_handle.registry();
-        let node_config = registry
-            .get_shared::<Arc<NodeConfig>>()
-            .await
-            .expect("Failed to get node config");
-        let time_service = node_config.net().time_service();
-        let chain_service = registry
-            .service_ref::<ChainReaderService>()
-            .await
-            .expect("failed to get chain reader service");
-        let header_hash = chain_service
-            .main_head_header()
-            .await
-            .expect("failed to get header hash")
-            .id();
-        let storage = registry
-            .get_shared::<Arc<Storage>>()
-            .await
-            .expect("failed to get storage");
-        let dag = registry
-            .get_shared::<BlockDAG>()
-            .await
-            .expect("failed to get dag");
-        let mut chain = BlockChain::new(time_service, header_hash, storage, None, dag)
-            .expect("failed to get new the chain");
-        let net = node_config.net();
-        let current_number = chain.status().head().number();
-        chain = test_helper::dao::modify_on_chain_config_by_dao_block(
-            Account::new(),
-            chain,
-            net,
-            test_helper::dao::vote_flexi_dag_config(net, fork_number),
-            test_helper::dao::on_chain_config_type_tag(FlexiDagConfig::type_tag()),
-            test_helper::dao::execute_script_on_chain_config(net, FlexiDagConfig::type_tag(), 0u64),
-        )
-        .expect("failed to execute script for poll");
-
-        let bus = registry
-            .service_ref::<BusService>()
-            .await
-            .expect("failed to get bus service");
-        // broadcast poll blocks
-        for block_number in current_number + 1..=chain.status().head().number() {
-            let block = chain
-                .get_block_by_number(block_number)
-                .expect("failed to get block by number")
-                .unwrap();
-            let block_info = chain
-                .get_block_info(Some(block.id()))
-                .expect("failed to get block info")
-                .unwrap();
-            bus.broadcast(NewHeadBlock {
-                executed_block: Arc::new(ExecutedBlock::new(block, block_info)),
-            })
-            .expect("failed to broadcast new head block");
-        }
-
-        loop {
-            if chain_service
-                .main_head_block()
-                .await
-                .expect("failed to get main head block")
-                .header()
-                .number()
-                == chain.status().head().number()
-            {
-                break;
-            } else {
-                async_std::task::sleep(Duration::from_millis(500)).await;
-            }
-        }
-        chain.time_service().now_millis()
-    });
-    Ok(timestamp)
-}
-
 #[stest::test(timeout = 720)]
-fn test_multiple_node_sync() {
-    let nodes =
-        common_test_sync_libs::init_multiple_node(5).expect("failed to initialize multiple nodes");
+fn test_multiple_node_sync() -> Result<()> {
+    let node_count = 5;
+    let nodes = common_test_sync_libs::init_multiple_node(node_count)
+        .expect("failed to initialize multiple nodes");
 
-    // for node in &nodes {
-    //     execute_dag_poll_block(node, 20).expect("execute poll block failed");
-    // }
-
-    let main_node = &nodes.first().expect("failed to get main node");
-
-    common_test_sync_libs::generate_block(main_node, 20).expect("failed to generate dag block");
+    let main_node = nodes.first().expect("failed to get main node");
+    common_test_sync_libs::generate_dag_fork_number(main_node)
+        .expect("failed to generate dag block");
 
     let main_node_chain_service = main_node
         .chain_service()
@@ -313,5 +221,6 @@ fn test_multiple_node_sync() {
                 .stop()
                 .expect("failed to shutdown the node normally!");
         });
-    });
+        Ok(())
+    })
 }

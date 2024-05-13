@@ -10,9 +10,12 @@ use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 
 #[stest::test]
 fn test_verified_client_for_dag() {
-    starcoin_types::block::set_test_flexidag_fork_height(10);
     let (local_handle, target_handle, target_peer_id) = common_test_sync_libs::init_two_node()
         .expect("failed to initalize the local and target node");
+
+    // common_test_sync_libs::execute_dag_poll_block(target_handle.registry().clone(), 20).expect("failed to execute the dag poll block");
+    common_test_sync_libs::generate_dag_fork_number(&target_handle)
+        .expect("failed to execute the dag fork number");
 
     let network = local_handle.network();
     // PeerProvider
@@ -43,7 +46,6 @@ fn test_verified_client_for_dag() {
             .into_iter()
             .all(|child| { target_dag_block.children.contains(&child) }));
     });
-    starcoin_types::block::reset_test_custom_fork_height();
     target_handle.stop().unwrap();
     local_handle.stop().unwrap();
 }
