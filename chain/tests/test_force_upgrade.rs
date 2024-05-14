@@ -81,6 +81,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
                 vec![txn1, txn2, txn3],
                 vec![],
                 Some(block_gas_limit),
+                None,
             )
             .unwrap();
 
@@ -117,6 +118,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
                 vec![],
                 vec![],
                 Some(block_gas_limit),
+                None,
             )
             .unwrap();
 
