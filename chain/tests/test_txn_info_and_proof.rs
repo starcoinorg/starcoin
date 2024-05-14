@@ -64,7 +64,7 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
     });
     // fork from 3 block
     let fork_point = block_chain.get_block_by_number(3).unwrap().unwrap();
-    let fork_chain = block_chain.fork(fork_point.id()).unwrap();
+    let mut fork_chain = block_chain.fork(fork_point.id()).unwrap();
     let account_reader = fork_chain.chain_state_reader();
     seq_num = account_reader.get_sequence_number(account_config::association_address())?;
     let _txns = gen_txns(&mut seq_num).unwrap();
@@ -83,7 +83,7 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
         .create_block(template, config.net().time_service().as_ref())
         .unwrap();
     debug!("Apply block:{:?}", &block);
-    block_chain.apply(block).unwrap();
+    fork_chain.apply(block).unwrap();
     assert_eq!(
         block_chain.current_header().id(),
         block_chain.get_block_by_number(5).unwrap().unwrap().id()

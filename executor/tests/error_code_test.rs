@@ -95,25 +95,26 @@ fn test_block_metadata_error_code() -> Result<()> {
         *output2.status()
     );
 
-    net.time_service().sleep(1000);
-    let txn3 = Transaction::BlockMetadata(BlockMetadata::new(
-        starcoin_crypto::HashValue::random(),
-        net.time_service().now_millis(),
-        *account1.address(),
-        Some(account1.auth_key()),
-        net.genesis_config()
-            .consensus_config
-            .base_max_uncles_per_block
-            + 1, //MAX_UNCLES_PER_BLOCK_IS_WRONG
-        2,
-        net.chain_id(),
-        0,
-    ));
-    let output3 = execute_and_apply(&chain_state, txn3);
-    assert_eq!(
-        TransactionStatus::Discard(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION),
-        *output3.status()
-    );
+    // the logic of verification of the uncle count is commented
+    // net.time_service().sleep(1000);
+    // let txn3 = Transaction::BlockMetadata(BlockMetadata::new(
+    //     starcoin_crypto::HashValue::random(),
+    //     net.time_service().now_millis(),
+    //     *account1.address(),
+    //     Some(account1.auth_key()),
+    //     net.genesis_config()
+    //         .consensus_config
+    //         .base_max_uncles_per_block
+    //         + 1, //MAX_UNCLES_PER_BLOCK_IS_WRONG
+    //     2,
+    //     net.chain_id(),
+    //     0,
+    // ));
+    // let output3 = execute_and_apply(&chain_state, txn3);
+    // assert_eq!(
+    //     TransactionStatus::Discard(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION),
+    //     *output3.status()
+    // );
 
     Ok(())
 }

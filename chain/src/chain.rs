@@ -13,6 +13,7 @@ use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
     ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
+use starcoin_config::genesis_config::{G_TEST_DAG_FORK_HEIGHT, G_TEST_DAG_FORK_STATE_KEY};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
@@ -1470,6 +1471,21 @@ impl BlockChain {
         let chain_id = self.status().head().chain_id();
         if chain_id.is_proxima() {
             Ok(Some(1000))
+        } else if chain_id.is_test() {
+            let result = self.dag.get_dag_state(*G_TEST_DAG_FORK_STATE_KEY);
+            if result.is_ok() {
+                Ok(Some(G_TEST_DAG_FORK_HEIGHT))
+            } else {
+                let result = self.dag.get_dag_state(self.current_header().id());
+                if result.is_ok() {
+                    Ok(Some(G_TEST_DAG_FORK_HEIGHT))
+                } else {
+                    Ok(self
+                        .statedb
+                        .get_on_chain_config::<FlexiDagConfig>()?
+                        .map(|c| c.effective_height))
+                }
+            }
         } else {
             Ok(self
                 .statedb
