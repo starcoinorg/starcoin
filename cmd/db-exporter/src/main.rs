@@ -21,7 +21,7 @@ use starcoin_chain::{
 use starcoin_config::{BuiltinNetworkID, ChainNetwork, RocksdbConfig};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
-use starcoin_dag::blockdag::DEFAULT_GHOSTDAG_K;
+use starcoin_dag::blockdag::{BlockDAG, DEFAULT_GHOSTDAG_K};
 use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
 use starcoin_genesis::Genesis;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
@@ -2310,13 +2310,22 @@ pub fn verify_block(
         CacheStorage::new(None),
         db_storage,
     ))?);
+
+    let dag = BlockDAG::new(
+        DEFAULT_GHOSTDAG_K,
+        starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+            from_dir.join("dag/db/starcoindb"),
+            FlexiDagStorageConfig::new(),
+        )?,
+    );
     let (chain_info, _) =
-        Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
+        Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), from_dir.as_ref())?;
     let chain = BlockChain::new(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
         None,
+        dag.clone(),
     )
     .expect("create block chain should success.");
     let start_num = start;
@@ -2336,6 +2345,7 @@ pub fn verify_block(
             chain_info.head().id(),
             storage.clone(),
             None,
+            dag.clone(),
         )
         .expect("create block chain should success.");
         let verifier2 = verifier.clone();
@@ -2414,13 +2424,22 @@ pub fn block_output(
         CacheStorage::new(None),
         db_storage,
     ))?);
+
+    let dag = BlockDAG::new(
+        DEFAULT_GHOSTDAG_K,
+        starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+            from_dir.join("dag/db/starcoindb"),
+            FlexiDagStorageConfig::new(),
+        )?,
+    );
     let (chain_info, _) =
-        Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
+        Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), from_dir.as_ref())?;
     let chain = BlockChain::new(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
         None,
+        dag.clone(),
     )
     .expect("create block chain should success.");
     let block = chain
@@ -2432,6 +2451,7 @@ pub fn block_output(
         block.header.parent_hash(),
         storage,
         None,
+        dag,
     )
     .expect("create block chain should success.");
     chain.verify_without_save::<BasicVerifier>(block)?;
@@ -2450,7 +2470,15 @@ pub fn apply_block_output(
         CacheStorage::new(None),
         db_storage,
     ))?);
-    let (_chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
+    let dag = BlockDAG::new(
+        DEFAULT_GHOSTDAG_K,
+        starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+            to_dir.join("dag/db/starcoindb"),
+            FlexiDagStorageConfig::new(),
+        )?,
+    );
+    let (_chain_info, _) =
+        Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), to_dir.as_ref())?;
     let start_time = SystemTime::now();
     let file_name = input_path.display().to_string();
     let reader = BufReader::new(File::open(input_path)?);
@@ -2480,6 +2508,7 @@ pub fn apply_block_output(
             block.header().parent_hash(),
             storage.clone(),
             None,
+            dag.clone(),
         )
         .expect("create block chain should success.");
         chain.verify_without_save::<BasicVerifier>(block)?;
@@ -2502,7 +2531,15 @@ fn save_startup_info(
         CacheStorage::new(None),
         db_storage,
     ))?);
-    let (_chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
+    let dag = BlockDAG::new(
+        DEFAULT_GHOSTDAG_K,
+        starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+            to_dir.join("dag/db/starcoindb"),
+            FlexiDagStorageConfig::new(),
+        )?,
+    );
+    let (_chain_info, _) =
+        Genesis::init_and_check_storage(&net, storage.clone(), dag, to_dir.as_ref())?;
     let startup_info = StartupInfo::new(hash_value);
     storage.save_startup_info(startup_info)?;
     Ok(())
@@ -2516,6 +2553,7 @@ fn token_supply(
     resource_struct_tag: StructTag,
 ) -> anyhow::Result<()> {
     let net = ChainNetwork::new_builtin(network);
+
     let db_storage = DBStorage::open_with_cfs(
         from_dir.join("starcoindb/db/starcoindb"),
         StorageVersion::current_version()
@@ -2529,13 +2567,21 @@ fn token_supply(
         CacheStorage::new(None),
         db_storage,
     ))?);
+    let dag = BlockDAG::new(
+        DEFAULT_GHOSTDAG_K,
+        starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+            from_dir.join("dag/db/starcoindb"),
+            FlexiDagStorageConfig::new(),
+        )?,
+    );
     let (chain_info, _) =
-        Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
+        Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), from_dir.as_ref())?;
     let chain = BlockChain::new(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
         None,
+        dag,
     )
     .expect("create block chain should success.");
     let cur_num = block_number.unwrap_or_else(|| chain_info.head().number());

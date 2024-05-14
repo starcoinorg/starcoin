@@ -110,7 +110,7 @@ members = [
     "cmd/replay",
     "stratum",
     "cmd/miner_client/api",
-    #"cmd/db-exporter",
+    "cmd/db-exporter",
     "cmd/genesis-nft-miner",
     "flexidag",
 ]
@@ -219,7 +219,7 @@ default-members = [
     "cmd/genesis-nft-miner",
     "stratum",
     "cmd/miner_client/api",
-    #"cmd/db-exporter",
+    "cmd/db-exporter",
     "flexidag",
 ]
 

@@ -10,6 +10,8 @@ use clap::Parser;
 use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_cmd::dev::dev_helper;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
+use starcoin_dag::blockdag::{BlockDAG, DEFAULT_GHOSTDAG_K};
+use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
 use starcoin_genesis::Genesis;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
@@ -60,6 +62,7 @@ pub fn force_deploy_output(
 ) -> anyhow::Result<()> {
     ::starcoin_logger::init();
     let net = ChainNetwork::new_builtin(network);
+
     let db_storage = DBStorage::open_with_cfs(
         network_path.join("starcoindb/db/starcoindb"),
         StorageVersion::current_version()
@@ -73,13 +76,22 @@ pub fn force_deploy_output(
         CacheStorage::new(None),
         db_storage,
     ))?);
+
+    let dag = BlockDAG::new(
+        DEFAULT_GHOSTDAG_K,
+        starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+            network_path.join("dag/db/starcoindb"),
+            FlexiDagStorageConfig::new(),
+        )?,
+    );
     let (chain_info, _) =
-        Genesis::init_and_check_storage(&net, storage.clone(), network_path.as_ref())?;
+        Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), network_path.as_ref())?;
     let chain = BlockChain::new(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
         None,
+        dag.clone(),
     )
     .expect("create block chain should success.");
 
@@ -93,6 +105,7 @@ pub fn force_deploy_output(
         block.header.parent_hash(),
         storage,
         None,
+        dag,
     )
     .expect("create block chain should success.");
 

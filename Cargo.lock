@@ -542,6 +542,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "atomic-counter"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62f447d68cfa5a9ab0c1c862a703da2a65b5ed1b7ce1153c9eb0169506d56019"
+
+[[package]]
 name = "atomic-waker"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2115,6 +2121,50 @@ dependencies = [
  "libtest-mimic",
  "regex",
  "walkdir",
+]
+
+[[package]]
+name = "db-exporter"
+version = "1.13.11"
+dependencies = [
+ "anyhow",
+ "atomic-counter",
+ "bcs-ext",
+ "clap 3.2.23",
+ "csv",
+ "futures 0.3.26",
+ "hex",
+ "indicatif",
+ "move-binary-format",
+ "move-bytecode-verifier",
+ "num_cpus",
+ "pprof",
+ "rayon",
+ "serde 1.0.152",
+ "serde_json",
+ "starcoin-account",
+ "starcoin-account-api",
+ "starcoin-accumulator",
+ "starcoin-chain",
+ "starcoin-cmd",
+ "starcoin-config",
+ "starcoin-consensus",
+ "starcoin-crypto",
+ "starcoin-dag",
+ "starcoin-executor",
+ "starcoin-genesis",
+ "starcoin-logger",
+ "starcoin-resource-viewer",
+ "starcoin-rpc-api",
+ "starcoin-state-api",
+ "starcoin-state-tree",
+ "starcoin-statedb",
+ "starcoin-storage",
+ "starcoin-transaction-builder",
+ "starcoin-types",
+ "starcoin-vm-runtime",
+ "starcoin-vm-types",
+ "tokio",
 ]
 
 [[package]]
@@ -3700,6 +3750,18 @@ checksum = "1885e79c1fc4b10f0e172c475f458b7f7b93061064d98c3293e98c5ba0c8b399"
 dependencies = [
  "autocfg 1.1.0",
  "hashbrown",
+]
+
+[[package]]
+name = "indicatif"
+version = "0.16.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d207dc617c7a380ab07ff572a6e52fa202a2a8f355860ac9c38e23f8196be1b"
+dependencies = [
+ "console",
+ "lazy_static 1.4.0",
+ "number_prefix",
+ "regex",
 ]
 
 [[package]]
@@ -6410,6 +6472,12 @@ checksum = "2819ce041d2ee131036f4fc9d6ae7ae125a3a40e97ba64d04fe799ad9dabbb44"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "number_prefix"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
 
 [[package]]
 name = "object"
