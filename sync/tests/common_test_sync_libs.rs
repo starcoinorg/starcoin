@@ -4,10 +4,7 @@ use network_api::PeerId;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainAsyncService, ChainReader};
 use starcoin_chain_service::ChainReaderService;
-use starcoin_config::{
-    genesis_config::G_TEST_DAG_FORK_STATE_KEY,
-    *,
-};
+use starcoin_config::{genesis_config::G_TEST_DAG_FORK_STATE_KEY, *};
 use starcoin_crypto::HashValue;
 use starcoin_dag::{blockdag::BlockDAG, consensusdb::consenses_state::DagState};
 use starcoin_logger::prelude::*;
