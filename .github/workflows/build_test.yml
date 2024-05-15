@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   pull_request:
     branches:
-      - master
+      - dag-mining-net-master
 
 jobs:
   build-and-test:
@@ -40,8 +40,8 @@ jobs:
           args: --all
       - name: test
         run: ./scripts/nextest.sh
-#       - name: check changed files
-#         run: bash ./scripts/changed_files.sh
+      #       - name: check changed files
+      #         run: bash ./scripts/changed_files.sh
       - name: Doc Tests
         uses: actions-rs/cargo@v1
         with:
