@@ -1,27 +1,29 @@
 use anyhow::format_err;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain_api::{ChainReader, ChainWriter};
-use starcoin_config::NodeConfig;
+use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_consensus::Consensus;
 use starcoin_statedb::ChainStateDB;
 use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
+use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::on_chain_config::Version;
 use starcoin_vm_types::{account_config, state_view::StateReaderExt};
 use std::str::FromStr;
-use std::sync::Arc;
 use test_helper::executor::get_balance;
 
 #[stest::test]
 pub fn test_force_upgrade_1() -> anyhow::Result<()> {
-    let config = Arc::new(NodeConfig::random_for_test());
+    let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
+    genesis_config.stdlib_version = StdlibVersion::Version(11);
+    let net = ChainNetwork::new(BuiltinNetworkID::Test.into(), genesis_config);
 
-    let force_upgrade_height = get_force_upgrade_block_number(&config.net().chain_id());
+    let force_upgrade_height = get_force_upgrade_block_number(&net.chain_id());
     assert!(force_upgrade_height >= 2);
     let initial_blocks = force_upgrade_height - 2;
 
-    let mut miner = test_helper::gen_blockchain_with_blocks_for_test(initial_blocks, config.net())?;
+    let mut miner = test_helper::gen_blockchain_with_blocks_for_test(initial_blocks, &net)?;
     let block_gas_limit = 10000000;
     let initial_balance = 1000000000000;
     let account_reader = miner.chain_state_reader();
@@ -44,8 +46,8 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             receiver1,
             association_sequence_num,
             initial_balance + 1,
-            config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-            config.net(),
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            &net,
         )
         .try_into()?;
 
@@ -54,8 +56,8 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             receiver2,
             association_sequence_num + 1,
             initial_balance + 2,
-            config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-            config.net(),
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            &net,
         )
         .try_into()?;
 
@@ -64,8 +66,8 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             rand3,
             association_sequence_num + 2,
             initial_balance + 3,
-            config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-            config.net(),
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            &net,
         )
         .try_into()?;
 
@@ -179,13 +181,14 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
 
 #[stest::test]
 fn test_force_upgrade_2() -> anyhow::Result<()> {
-    let config = Arc::new(NodeConfig::random_for_test());
+    let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
+    genesis_config.stdlib_version = StdlibVersion::Version(11);
+    let net = ChainNetwork::new(BuiltinNetworkID::Test.into(), genesis_config);
 
-    let force_upgrade_height = get_force_upgrade_block_number(&config.net().chain_id());
+    let force_upgrade_height = get_force_upgrade_block_number(&net.chain_id());
     assert!(force_upgrade_height >= 2);
 
-    let chain =
-        test_helper::gen_blockchain_with_blocks_for_test(force_upgrade_height, config.net())?;
+    let chain = test_helper::gen_blockchain_with_blocks_for_test(force_upgrade_height, &net)?;
 
     // genesis 1 + 1meta in each blocks  + special block 1meta+1extra.txn
     assert_eq!(
@@ -193,8 +196,7 @@ fn test_force_upgrade_2() -> anyhow::Result<()> {
         force_upgrade_height + 2
     );
 
-    let chain =
-        test_helper::gen_blockchain_with_blocks_for_test(force_upgrade_height + 1, config.net())?;
+    let chain = test_helper::gen_blockchain_with_blocks_for_test(force_upgrade_height + 1, &net)?;
     // genesis 1 + 1meta in each blocks + special block 2 + 1 meta in last block
     assert_eq!(
         chain.get_txn_accumulator().num_leaves(),

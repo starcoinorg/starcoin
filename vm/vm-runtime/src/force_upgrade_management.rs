@@ -11,7 +11,7 @@ pub fn get_force_upgrade_block_number(chain_id: &ChainId) -> u64 {
     if chain_id.is_test() {
         50
     } else if chain_id.is_dev() {
-        5
+        60
     } else if chain_id.is_halley() || chain_id.is_proxima() {
         300
     } else if chain_id.is_barnard() {

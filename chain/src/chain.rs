@@ -2331,9 +2331,7 @@ impl BlockChain {
 
     pub fn dag_fork_height(&self) -> Result<Option<BlockNumber>> {
         let chain_id = self.status().head().chain_id();
-        if chain_id.is_proxima() {
-            Ok(Some(1000))
-        } else if chain_id.is_test() {
+        if chain_id.is_test() {
             let result = self.dag.get_dag_state(*G_TEST_DAG_FORK_STATE_KEY);
             if result.is_ok() {
                 Ok(Some(G_TEST_DAG_FORK_HEIGHT))
