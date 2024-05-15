@@ -1008,7 +1008,16 @@ impl BlockChain {
             })?;
         let block_metadata = block.to_metadata(selected_head.header().gas_used());
         let mut transactions = vec![Transaction::BlockMetadata(block_metadata)];
-        let mut total_difficulty = header.difficulty() + block_info_past.total_difficulty;
+        let mut total_difficulty = header
+            .difficulty()
+            .checked_add(block_info_past.total_difficulty)
+            .unwrap_or_else(|| {
+                panic!(
+                    "header difficulty overflowed: current {} previous total_difficulty {}",
+                    header.difficulty(),
+                    block_info_past.total_difficulty
+                )
+            });
 
         for blue in blues {
             let blue_block = self
@@ -1023,7 +1032,15 @@ impl BlockChain {
                     .cloned()
                     .map(Transaction::UserTransaction),
             );
-            total_difficulty += blue_block.header.difficulty();
+            total_difficulty = total_difficulty
+                .checked_add(blue_block.header.difficulty())
+                .unwrap_or_else(|| {
+                    panic!(
+                        "total difficulty overflowed total_difficulty {} blue block difficulty {}",
+                        total_difficulty,
+                        blue_block.header.difficulty(),
+                    )
+                });
         }
         transactions.extend(
             block
