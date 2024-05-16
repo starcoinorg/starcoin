@@ -6,7 +6,7 @@ use super::{
 use crate::define_schema;
 use rocksdb::WriteBatch;
 use starcoin_crypto::HashValue as Hash;
-use starcoin_logger::prelude::debug;
+//use starcoin_logger::prelude::debug;
 use starcoin_types::blockhash::{BlockHashes, BlockLevel};
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -149,7 +149,7 @@ impl RelationsStore for DbRelationsStore {
     /// See `insert_batch` as well
     /// TODO: use one function with DbWriter for both this function and insert_batch
     fn insert(&self, hash: Hash, parents: BlockHashes) -> Result<(), StoreError> {
-        debug!("insert relationstore {:?} {:?}", hash, parents);
+        //debug!("insert relationstore {:?} {:?}", hash, parents);
         // Insert a new entry for `hash`
         self.parents_access
             .write(DirectDbWriter::new(&self.db), hash, parents.clone())?;
@@ -168,7 +168,7 @@ impl RelationsStore for DbRelationsStore {
             if !set.contains(&hash) {
                 children.push(hash);
             }
-            debug!("children insert parent {:?} {:?}", parent, children);
+            // debug!("children insert parent {:?} {:?}", parent, children);
             self.children_access.write(
                 DirectDbWriter::new(&self.db),
                 parent,

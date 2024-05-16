@@ -19,9 +19,8 @@ use itertools::{
     Itertools,
 };
 use rocksdb::WriteBatch;
-use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue as Hash;
-use starcoin_logger::prelude::debug;
+//use starcoin_logger::prelude::debug;
 use std::{cell::RefCell, cmp, iter::once, sync::Arc};
 
 pub trait GhostdagStoreReader {
@@ -288,7 +287,7 @@ impl GhostdagStoreReader for DbGhostdagStore {
 
 impl GhostdagStore for DbGhostdagStore {
     fn insert(&self, hash: Hash, data: Arc<GhostdagData>) -> Result<(), StoreError> {
-        debug!("ghostdag {:?} {:?}", hash, data.crypto_hash());
+        // debug!("ghostdag {:?} {:?}", hash, data.crypto_hash());
         self.access
             .write(DirectDbWriter::new(&self.db), hash, data.clone())?;
         self.compact_access.write(
