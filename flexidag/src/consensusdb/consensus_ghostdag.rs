@@ -289,6 +289,7 @@ impl GhostdagStoreReader for DbGhostdagStore {
 
 impl GhostdagStore for DbGhostdagStore {
     fn insert(&self, hash: Hash, data: Arc<GhostdagData>) -> Result<(), StoreError> {
+        // XXX FIXME YSG think ACID
         if self.access.has(hash)? {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }

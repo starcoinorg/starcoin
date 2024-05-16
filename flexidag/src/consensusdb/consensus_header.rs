@@ -193,6 +193,7 @@ impl HeaderStore for DbHeadersStore {
         header: Arc<BlockHeader>,
         block_level: u8,
     ) -> Result<(), StoreError> {
+        // XXX FIXME YSG not ACID
         if self.headers_access.has(hash)? {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }

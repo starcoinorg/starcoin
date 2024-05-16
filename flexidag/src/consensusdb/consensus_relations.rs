@@ -138,6 +138,7 @@ impl RelationsStoreReader for DbRelationsStore {
 
     fn has(&self, hash: Hash) -> Result<bool, StoreError> {
         if self.parents_access.has(hash)? {
+            // XXX FIXME YSG not ACID, it's not always true
             debug_assert!(self.children_access.has(hash)?);
             Ok(true)
         } else {
@@ -150,6 +151,7 @@ impl RelationsStore for DbRelationsStore {
     /// See `insert_batch` as well
     /// TODO: use one function with DbWriter for both this function and insert_batch
     fn insert(&self, hash: Hash, parents: BlockHashes) -> Result<(), StoreError> {
+        // XXX FIXME YSG not ACID
         if self.has(hash)? {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }
