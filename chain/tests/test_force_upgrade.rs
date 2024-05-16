@@ -15,9 +15,12 @@ use test_helper::executor::get_balance;
 
 #[stest::test]
 pub fn test_force_upgrade_1() -> anyhow::Result<()> {
-    let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
-    genesis_config.stdlib_version = StdlibVersion::Version(11);
-    let net = ChainNetwork::new(BuiltinNetworkID::Test.into(), genesis_config);
+    //let mut genesis_config = BuiltinNetworkID::Proxima.genesis_config().clone();
+    //genesis_config.stdlib_version = StdlibVersion::Version(11);
+    let net = ChainNetwork::new(
+        BuiltinNetworkID::Proxima.into(),
+        BuiltinNetworkID::Proxima.genesis_config().clone(),
+    );
 
     let force_upgrade_height = get_force_upgrade_block_number(&net.chain_id());
     assert!(force_upgrade_height >= 2);

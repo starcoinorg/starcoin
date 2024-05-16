@@ -1283,7 +1283,8 @@ impl BlockChain {
         verify_block!(
             VerifyBlockField::State,
             executed_accumulator_root == header.txn_accumulator_root(),
-            "verify block: txn accumulator root mismatch"
+            "verify block: txn accumulator root mismatch! executed_accumulator_root: {:?}, header.txn_accumulator_root(): {:?} ",
+            executed_accumulator_root, header.txn_accumulator_root()
         );
 
         watch(CHAIN_WATCH_NAME, "n23");
