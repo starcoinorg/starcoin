@@ -816,7 +816,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         number: Option<u64>,
         uncles: Option<u64>,
     ) -> Result<(Option<String>, Option<Value>)> {
-        // use BlockMetadataV2 instead of BlockMetaData since stdlib version(13)
+        // use BlockMetadataV2 instead of BlockMetaData since stdlib version(12)
         let last_blockmeta = self
             .context
             .storage
