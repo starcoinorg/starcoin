@@ -6,7 +6,9 @@ use super::{
 use crate::define_schema;
 use rocksdb::WriteBatch;
 use starcoin_crypto::HashValue as Hash;
+use starcoin_logger::prelude::debug;
 use starcoin_types::blockhash::{BlockHashes, BlockLevel};
+use std::collections::HashSet;
 use std::sync::Arc;
 
 /// Reader API for `RelationsStore`.
@@ -97,10 +99,6 @@ impl DbRelationsStore {
         hash: Hash,
         parents: BlockHashes,
     ) -> Result<(), StoreError> {
-        if self.has(hash)? {
-            return Err(StoreError::KeyAlreadyExists(hash.to_string()));
-        }
-
         // Insert a new entry for `hash`
         self.parents_access
             .write(BatchDbWriter::new(batch), hash, parents.clone())?;
@@ -138,6 +136,7 @@ impl RelationsStoreReader for DbRelationsStore {
 
     fn has(&self, hash: Hash) -> Result<bool, StoreError> {
         if self.parents_access.has(hash)? {
+            // XXX FIXME YSG
             debug_assert!(self.children_access.has(hash)?);
             Ok(true)
         } else {
@@ -150,10 +149,7 @@ impl RelationsStore for DbRelationsStore {
     /// See `insert_batch` as well
     /// TODO: use one function with DbWriter for both this function and insert_batch
     fn insert(&self, hash: Hash, parents: BlockHashes) -> Result<(), StoreError> {
-        if self.has(hash)? {
-            return Err(StoreError::KeyAlreadyExists(hash.to_string()));
-        }
-
+        debug!("insert relationstore {:?} {:?}", hash, parents);
         // Insert a new entry for `hash`
         self.parents_access
             .write(DirectDbWriter::new(&self.db), hash, parents.clone())?;
@@ -168,7 +164,11 @@ impl RelationsStore for DbRelationsStore {
         // Update `children` for each parent
         for parent in parents.iter().cloned() {
             let mut children = (*self.get_children(parent)?).clone();
-            children.push(hash);
+            let set: HashSet<Hash> = HashSet::from_iter(children.iter().cloned());
+            if !set.contains(&hash) {
+                children.push(hash);
+            }
+            debug!("children insert parent {:?} {:?}", parent, children);
             self.children_access.write(
                 DirectDbWriter::new(&self.db),
                 parent,

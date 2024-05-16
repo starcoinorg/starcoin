@@ -121,9 +121,6 @@ impl DbHeadersStore {
         header: Arc<BlockHeader>,
         block_level: BlockLevel,
     ) -> Result<(), StoreError> {
-        if self.headers_access.has(hash)? {
-            return Err(StoreError::KeyAlreadyExists(hash.to_string()));
-        }
         self.headers_access.write(
             BatchDbWriter::new(batch),
             hash,
@@ -193,9 +190,6 @@ impl HeaderStore for DbHeadersStore {
         header: Arc<BlockHeader>,
         block_level: u8,
     ) -> Result<(), StoreError> {
-        if self.headers_access.has(hash)? {
-            return Err(StoreError::KeyAlreadyExists(hash.to_string()));
-        }
         self.compact_headers_access.write(
             DirectDbWriter::new(&self.db),
             hash,

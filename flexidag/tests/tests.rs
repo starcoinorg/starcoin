@@ -110,10 +110,12 @@ async fn test_with_spawn() {
         .with_difficulty(1.into())
         .with_parents_hash(Some(vec![genesis.id()]))
         .build();
+    debug!("block1_id {:?}", block1.id());
     let block2 = BlockHeaderBuilder::random()
         .with_difficulty(2.into())
         .with_parents_hash(Some(vec![genesis.id()]))
         .build();
+    debug!("block2_id {:?}", block2.id());
     let mut dag = BlockDAG::create_for_testing().unwrap();
     let real_origin = dag.init_with_genesis(genesis.clone()).unwrap();
     dag.commit(block1.clone(), real_origin).unwrap();
@@ -122,6 +124,7 @@ async fn test_with_spawn() {
         .with_difficulty(3.into())
         .with_parents_hash(Some(vec![block1.id(), block2.id()]))
         .build();
+    debug!("block3_id {:?}", block3.id());
     let mut handles = vec![];
     for i in 1..100 {
         let mut dag_clone = dag.clone();

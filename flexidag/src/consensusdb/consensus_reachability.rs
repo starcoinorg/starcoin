@@ -156,9 +156,6 @@ impl ReachabilityStore for DbReachabilityStore {
         interval: Interval,
         height: u64,
     ) -> Result<(), StoreError> {
-        if self.access.has(hash)? {
-            return Err(StoreError::KeyAlreadyExists(hash.to_string()));
-        }
         let data = Arc::new(ReachabilityData::new(parent, interval, height));
         self.access
             .write(DirectDbWriter::new(&self.db), hash, data)?;
