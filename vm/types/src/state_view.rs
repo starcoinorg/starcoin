@@ -161,7 +161,7 @@ pub trait StateReaderExt: StateView {
             .ok_or_else(|| format_err!("ChainId resource should exist at genesis address. "))
     }
 
-    // Get latest BlockMetadata on chain
+    // Get BlockMetadata on chain (stdlib version <= 11)
     fn get_block_metadata(&self) -> Result<BlockMetadata> {
         self.get_resource::<BlockMetadata>(genesis_address())?
             .ok_or_else(|| format_err!("BlockMetadata resource should exist at genesis address. "))
