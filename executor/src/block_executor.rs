@@ -104,14 +104,6 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
         };
     }
 
-    info!(
-        "block_execute | chain_state.get_block_metadata()?.number: {:?}, ",
-        chain_state
-            .get_block_metadata()
-            .expect("get block meta data failed")
-            .number
-    );
-
     if let Some(extra_txn) = create_force_upgrade_extra_txn(chain_state)
         .map_err(BlockExecutorError::BlockChainStateErr)?
     {
