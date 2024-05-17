@@ -34,6 +34,3 @@ for arg in "${args[@]}"; do
 done
 
 eval $cmd
-
-# build genesises
-cargo run --bin starcoin-genesis
