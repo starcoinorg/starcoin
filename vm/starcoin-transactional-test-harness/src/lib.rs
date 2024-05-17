@@ -824,11 +824,11 @@ impl<'a> StarcoinTestAdapter<'a> {
             .get_resource::<on_chain_resource::BlockMetadataV2>(genesis_address())?
         {
             Some(v2) => Some(BlockMetadataWrapper::V2(v2)),
-            None =>
-                self
-                    .context
-                    .storage
-                    .get_resource::<on_chain_resource::BlockMetadata>(genesis_address())?.map(BlockMetadataWrapper::V1)
+            None => self
+                .context
+                .storage
+                .get_resource::<on_chain_resource::BlockMetadata>(genesis_address())?
+                .map(BlockMetadataWrapper::V1),
         };
 
         let height = number
