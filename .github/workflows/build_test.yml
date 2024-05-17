@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   pull_request:
     branches:
-      - dag-mining-net-master
+      - dag-master
 
 jobs:
   build-and-test:
