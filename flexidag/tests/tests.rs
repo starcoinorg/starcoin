@@ -7,7 +7,7 @@ use starcoin_dag::{
     blockdag::BlockDAG,
     consensusdb::{
         consenses_state::{DagState, DagStateReader, DagStateStore},
-        schemadb::{DbReachabilityStore, ReachabilityStore, ReachabilityStoreReader},
+        schemadb::{DbReachabilityStore, ReachabilityStore, ReachabilityStoreReader, RelationsStore, RelationsStoreReader},
     },
     reachability::{inquirer, ReachabilityError},
     types::interval::Interval,
@@ -17,7 +17,7 @@ use starcoin_types::block::{
     set_test_flexidag_fork_height, BlockHeader, BlockHeaderBuilder, BlockNumber,
 };
 
-use std::vec;
+use std::{sync::Arc, vec};
 
 #[test]
 fn test_dag_0() {
@@ -153,6 +153,56 @@ async fn test_with_spawn() {
     let mut child = dag.get_children(block1.id()).unwrap();
     assert_eq!(child.pop().unwrap(), block3.id());
     assert_eq!(child.len(), 0);
+}
+
+#[test]
+fn test_write_asynchronization() -> anyhow::Result<()> {
+    let mut dag = BlockDAG::create_for_testing()?;
+    let genesis = BlockHeader::dag_genesis_random()
+        .as_builder()
+        .with_difficulty(0.into())
+        .build();
+    let _real_origin = dag.init_with_genesis(genesis.clone())?;
+
+    let parent = BlockHeaderBuilder::random()
+        .with_difficulty(0.into())
+        .build();
+
+    let one = BlockHeaderBuilder::random()
+        .with_difficulty(0.into())
+        .with_parent_hash(parent.id())
+        .with_parents_hash(Some(vec![parent.id()]))
+        .build();
+
+    let two = BlockHeaderBuilder::random()
+        .with_difficulty(0.into())
+        .with_parent_hash(parent.id())
+        .with_parents_hash(Some(vec![parent.id()]))
+        .build();
+
+    dag.storage.relations_store.insert(parent.id(), Arc::new(vec![genesis.id()]))?;
+
+
+    let dag_one = dag.clone();
+    let one_clone = one.clone();
+    let parent_clone = parent.clone();
+    let handle1 = std::thread::spawn(move || {
+        dag_one.clone().storage.relations_store.insert(one_clone.id(), Arc::new(vec![parent_clone.id()])).expect("failed to insert one");
+    });
+    let dag_two = dag.clone();
+    let two_clone = two.clone();
+    let parent_clone = parent.clone();
+    let handle2 = std::thread::spawn(move || {
+        dag_two.clone().storage.relations_store.insert(two_clone.id(), Arc::new(vec![parent_clone.id()])).expect("failed to insert two");
+    });
+
+    handle1.join().expect("failed to join handle1");
+    handle2.join().expect("failed to join handle2");
+
+    assert!(dag.storage.relations_store.get_children(parent.id())?.contains(&one.id()));
+    assert!(dag.storage.relations_store.get_children(parent.id())?.contains(&two.id()));
+
+    Ok(())
 }
 
 #[test]
