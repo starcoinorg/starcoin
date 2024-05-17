@@ -824,14 +824,11 @@ impl<'a> StarcoinTestAdapter<'a> {
             .get_resource::<on_chain_resource::BlockMetadataV2>(genesis_address())?
         {
             Some(v2) => Some(BlockMetadataWrapper::V2(v2)),
-            None => match self
-                .context
-                .storage
-                .get_resource::<on_chain_resource::BlockMetadata>(genesis_address())?
-            {
-                Some(v1) => Some(BlockMetadataWrapper::V1(v1)),
-                None => None,
-            },
+            None =>
+                self
+                    .context
+                    .storage
+                    .get_resource::<on_chain_resource::BlockMetadata>(genesis_address())?.map(BlockMetadataWrapper::V1)
         };
 
         let height = number
@@ -840,7 +837,7 @@ impl<'a> StarcoinTestAdapter<'a> {
 
         let author = author
             .map(|v| self.compiled_state.resolve_address(&v))
-            .or_else(|| last_blockmeta.as_ref().map(|b| b.author().clone()))
+            .or_else(|| last_blockmeta.as_ref().map(|b| *b.author()))
             .unwrap_or_else(AccountAddress::random);
 
         let uncles = uncles
