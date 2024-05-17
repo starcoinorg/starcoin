@@ -104,6 +104,14 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
         };
     }
 
+    info!(
+        "block_execute | chain_state.get_block_metadata()?.number: {:?}, ",
+        chain_state
+            .get_block_metadata()
+            .expect("get block meta data failed")
+            .number
+    );
+
     if let Some(extra_txn) = create_force_upgrade_extra_txn(chain_state)
         .map_err(BlockExecutorError::BlockChainStateErr)?
     {
@@ -121,7 +129,11 @@ fn create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
 ) -> anyhow::Result<Option<Transaction>> {
     let chain_id = statedb.get_chain_id()?;
     let block_timestamp = statedb.get_timestamp()?.seconds();
-    let block_number = statedb.get_block_metadata()?.number;
+    let block_number = match statedb.get_block_metadata_v2()? {
+        Some(metadata) => metadata.number,
+        None => statedb.get_block_metadata()?.number,
+    };
+
     Ok(
         if block_number == get_force_upgrade_block_number(&chain_id) {
             let account = get_force_upgrade_account(&chain_id)?;
@@ -132,7 +144,11 @@ fn create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
                 block_timestamp + DEFAULT_EXPIRATION_TIME,
                 &chain_id,
             )?;
-            info!("extra txn to execute ({:?})", extra_txn.id());
+            info!(
+                "create_force_upgrade_extra_txn | block_number: ({:?}) extra txn to execute ({:?})",
+                block_number,
+                extra_txn.id()
+            );
             Some(Transaction::UserTransaction(extra_txn))
         } else {
             None
