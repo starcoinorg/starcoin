@@ -31,8 +31,10 @@ use starcoin_vm_runtime::force_upgrade_management::{
 };
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::{genesis_address, ModuleUpgradeStrategy};
+use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::on_chain_config;
+use starcoin_vm_types::on_chain_config::Version;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::{StateReaderExt, StateView};
 use std::{convert::TryInto, sync::Arc};
@@ -362,6 +364,17 @@ impl OpenedBlock {
     /// First, set the account policy in `0x1::PackageTxnManager` to 100,
     /// Second, after the contract deployment is successful, revert it back.
     fn execute_extra_txn(&mut self) -> Result<()> {
+        // Only execute extra_txn when stdlib version is 11
+        if self
+            .state
+            .get_on_chain_config::<Version>()?
+            .map(|v| v.into_stdlib_version())
+            .map(|v| v != StdlibVersion::Version(11))
+            .unwrap_or(true)
+        {
+            return Ok(());
+        }
+
         let extra_txn =
             if self.block_meta.number() == get_force_upgrade_block_number(&self.chain_id) {
                 let account = get_force_upgrade_account(&self.chain_id)?;
@@ -372,7 +385,11 @@ impl OpenedBlock {
                     self.block_meta.timestamp() / 1000 + DEFAULT_EXPIRATION_TIME,
                     &self.chain_id,
                 )?;
-                info!("extra txn in opened block ({:?})", extra_txn.id());
+                info!(
+                    "execute_extra_txn | extra txn in opened block ({:?}), block_num: {:?}",
+                    extra_txn.id(),
+                    self.block_meta.number()
+                );
                 Transaction::UserTransaction(extra_txn)
             } else {
                 return Ok(());

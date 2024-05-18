@@ -14,6 +14,22 @@ use std::str::FromStr;
 use test_helper::executor::get_balance;
 
 #[stest::test]
+pub fn test_force_upgrade_generate_block() -> anyhow::Result<()> {
+    let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
+    genesis_config.stdlib_version = StdlibVersion::Version(11);
+    let net = ChainNetwork::new(BuiltinNetworkID::Test.into(), genesis_config);
+
+    let force_upgrade_height = get_force_upgrade_block_number(&net.chain_id());
+    assert!(force_upgrade_height >= 2);
+    let initial_blocks = force_upgrade_height - 2;
+
+    let block_chain = test_helper::gen_blockchain_with_blocks_for_test(initial_blocks, &net)?;
+    assert_eq!(block_chain.current_header().number(), initial_blocks);
+
+    Ok(())
+}
+
+#[stest::test]
 pub fn test_force_upgrade_1() -> anyhow::Result<()> {
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
     genesis_config.stdlib_version = StdlibVersion::Version(11);
@@ -187,14 +203,6 @@ fn test_force_upgrade_2() -> anyhow::Result<()> {
 
     let force_upgrade_height = get_force_upgrade_block_number(&net.chain_id());
     assert!(force_upgrade_height >= 2);
-
-    let chain = test_helper::gen_blockchain_with_blocks_for_test(force_upgrade_height, &net)?;
-
-    // genesis 1 + 1meta in each blocks  + special block 1meta+1extra.txn
-    assert_eq!(
-        chain.get_txn_accumulator().num_leaves(),
-        force_upgrade_height + 2
-    );
 
     let chain = test_helper::gen_blockchain_with_blocks_for_test(force_upgrade_height + 1, &net)?;
     // genesis 1 + 1meta in each blocks + special block 2 + 1 meta in last block

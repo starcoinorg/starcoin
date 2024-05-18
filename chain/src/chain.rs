@@ -1247,8 +1247,9 @@ impl BlockChain {
         verify_block!(
             VerifyBlockField::State,
             state_root == header.state_root(),
-            "verify legacy block:{:?} state_root fail",
+            "verify legacy block:{:?} state_root fail, executed_accumulator_root:{:?}, header.txn_accumulator_root(): {:?}",
             block_id,
+            state_root, header.txn_accumulator_root()
         );
         let block_gas_used = vec_transaction_info
             .iter()
@@ -1283,7 +1284,8 @@ impl BlockChain {
         verify_block!(
             VerifyBlockField::State,
             executed_accumulator_root == header.txn_accumulator_root(),
-            "verify block: txn accumulator root mismatch"
+            "verify block: txn accumulator root mismatch! executed_accumulator_root: {:?}, header.txn_accumulator_root(): {:?} ",
+            executed_accumulator_root, header.txn_accumulator_root()
         );
 
         watch(CHAIN_WATCH_NAME, "n23");
