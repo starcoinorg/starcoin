@@ -44,7 +44,7 @@ impl ForceUpgrade {
             ),
             Identifier::new("upgrade_from_v11_to_v12").unwrap(),
             vec![],
-            vec![],
+            vec![bcs_ext::to_bytes(&u64::MAX).unwrap()],
         );
 
         assert_eq!(package.init_script().unwrap(), &init_script);

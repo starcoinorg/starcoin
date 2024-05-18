@@ -477,7 +477,7 @@
         {
           "instruction_gas": 4,
           "memory_gas": 1
-        }      
+        }
       ],
       "gas_constants": {
         "global_memory_per_byte_cost": 4,
@@ -517,7 +517,7 @@
   ],
   "genesis_key_pair": null,
   "stdlib_version": {
-    "Version": 11
+    "Version": 12
   },
   "dao_config": {
     "voting_delay": 60000,
@@ -526,5 +526,6 @@
     "min_action_delay": 60000
   },
   "time_service_type": "RealTimeService",
-  "transaction_timeout": 86400
+  "transaction_timeout": 86400,
+  "dag_effective_height": 0
 }
