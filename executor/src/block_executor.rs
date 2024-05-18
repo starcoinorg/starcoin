@@ -21,8 +21,10 @@ use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::{genesis_address, ModuleUpgradeStrategy};
 use starcoin_vm_types::contract_event::ContractEvent;
+use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::on_chain_config;
+use starcoin_vm_types::on_chain_config::Version;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateReaderExt;
@@ -119,12 +121,19 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
 fn create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
     statedb: &S,
 ) -> anyhow::Result<Option<Transaction>> {
+    // Only execute extra_txn when stdlib version is 11
+    if statedb
+        .get_on_chain_config::<Version>()?
+        .map(|v| v.into_stdlib_version())
+        .map(|v| v != StdlibVersion::Version(11))
+        .unwrap_or(true)
+    {
+        return Ok(None);
+    }
+
     let chain_id = statedb.get_chain_id()?;
     let block_timestamp = statedb.get_timestamp()?.seconds();
-    let block_number = match statedb.get_block_metadata_v2()? {
-        Some(metadata) => metadata.number,
-        None => statedb.get_block_metadata()?.number,
-    };
+    let block_number = statedb.get_block_metadata()?.number;
 
     Ok(
         if block_number == get_force_upgrade_block_number(&chain_id) {
