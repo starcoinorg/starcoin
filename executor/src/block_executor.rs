@@ -121,7 +121,10 @@ fn create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
 ) -> anyhow::Result<Option<Transaction>> {
     let chain_id = statedb.get_chain_id()?;
     let block_timestamp = statedb.get_timestamp()?.seconds();
-    let block_number = statedb.get_block_metadata()?.number();
+    let block_number = match statedb.get_block_metadata_v2()? {
+        Some(metadata) => metadata.number,
+        None => statedb.get_block_metadata()?.number,
+    };
 
     Ok(
         if block_number == get_force_upgrade_block_number(&chain_id) {

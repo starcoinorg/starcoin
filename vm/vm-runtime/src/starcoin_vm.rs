@@ -525,7 +525,10 @@ impl StarcoinVM {
         package_address: AccountAddress,
     ) -> Result<bool> {
         let chain_id = remote_cache.get_chain_id()?;
-        let block_number = remote_cache.get_block_metadata()?.number();
+        let block_number = match remote_cache.get_block_metadata_v2()? {
+            Some(metadata_v2) => metadata_v2.number,
+            None => remote_cache.get_block_metadata()?.number,
+        };
 
         // from mainnet after 8015088 and barnard after 8311392, we disable enforce upgrade
         if package_address == genesis_address()

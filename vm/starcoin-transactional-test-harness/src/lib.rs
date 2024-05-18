@@ -55,7 +55,6 @@ use starcoin_vm_runtime::{data_cache::RemoteStorage, starcoin_vm::StarcoinVM};
 use starcoin_vm_types::account_config::{
     association_address, core_code_address, STC_TOKEN_CODE_STR,
 };
-use starcoin_vm_types::on_chain_resource::BlockMetadataWrapper;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::transaction::authenticator::AccountPrivateKey;
@@ -818,30 +817,22 @@ impl<'a> StarcoinTestAdapter<'a> {
         uncles: Option<u64>,
     ) -> Result<(Option<String>, Option<Value>)> {
         // use BlockMetadataV2 instead of BlockMetaData since stdlib version(12)
-        let last_blockmeta = match self
+        let last_blockmeta = self
             .context
             .storage
-            .get_resource::<on_chain_resource::BlockMetadataV2>(genesis_address())?
-        {
-            Some(v2) => Some(BlockMetadataWrapper::V2(v2)),
-            None => self
-                .context
-                .storage
-                .get_resource::<on_chain_resource::BlockMetadata>(genesis_address())?
-                .map(BlockMetadataWrapper::V1),
-        };
+            .get_resource::<on_chain_resource::BlockMetadataV2>(genesis_address())?;
 
         let height = number
-            .or_else(|| last_blockmeta.as_ref().map(|b| b.number() + 1))
+            .or_else(|| last_blockmeta.as_ref().map(|b| b.number + 1))
             .unwrap_or(0);
 
         let author = author
             .map(|v| self.compiled_state.resolve_address(&v))
-            .or_else(|| last_blockmeta.as_ref().map(|b| *b.author()))
+            .or_else(|| last_blockmeta.as_ref().map(|b| b.author))
             .unwrap_or_else(AccountAddress::random);
 
         let uncles = uncles
-            .or_else(|| last_blockmeta.as_ref().map(|b| b.uncles()))
+            .or_else(|| last_blockmeta.as_ref().map(|b| b.uncles))
             .unwrap_or(0);
         let timestamp =
             timestamp.unwrap_or(self.context.storage.get_timestamp()?.milliseconds + 10 * 1000);
