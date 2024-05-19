@@ -303,7 +303,7 @@ futures-timer = "3.0"
 futures-util = "~0.3"
 git-version = "0.3.5"
 governor = { version = "0.4.2", features = ["dashmap"] }
-heck = "0.3.3"
+heck = "0.4.1"
 hex = "0.4"
 hmac = "0.12.1"
 hyper = { version = "0.14.12", features = ["full"] }

@@ -12251,7 +12251,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "clap 3.2.23",
- "heck 0.3.3",
+ "heck 0.4.1",
  "move-core-types",
  "regex",
  "serde-generate",
