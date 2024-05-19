@@ -273,7 +273,7 @@ cli-table = "0.3.2"
 coarsetime = "0.1.22"
 codespan = { version = "0.8.0", features = ["serialization"] }
 codespan-reporting = "0.11"
-colored = "2.0.0"
+colored = "2.1.0"
 criterion = "0.3"
 crossbeam = "0.8.1"
 crossbeam-channel = "0.5.6"
