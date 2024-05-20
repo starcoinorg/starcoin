@@ -50,8 +50,12 @@ tokio = { features = ["full"], workspace = true }
 num_cpus = { workspace = true }
 starcoin-dag = { workspace = true }
 starcoin-chain = { workspace = true }
+
 [dev-dependencies]
 stest = { workspace = true }
+
+[features]
+force-deploy = ["starcoin-chain/force-deploy"]
 
 [package]
 authors = { workspace = true }

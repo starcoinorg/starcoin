@@ -1,35 +1,42 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{execute_block_transactions, execute_transactions};
-use anyhow::bail;
-use log::info;
+use crate::execute_block_transactions;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
-use starcoin_force_upgrade::ForceUpgrade;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
-use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::error::BlockExecutorError;
 use starcoin_types::error::ExecutorResult;
-use starcoin_types::identifier::Identifier;
 use starcoin_types::transaction::TransactionStatus;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
-use starcoin_vm_runtime::force_upgrade_management::{
-    get_force_upgrade_account, get_force_upgrade_block_number,
-};
 use starcoin_vm_runtime::metrics::VMMetrics;
-use starcoin_vm_types::access_path::AccessPath;
-use starcoin_vm_types::account_config::{genesis_address, ModuleUpgradeStrategy};
 use starcoin_vm_types::contract_event::ContractEvent;
-use starcoin_vm_types::genesis_config::StdlibVersion;
-use starcoin_vm_types::move_resource::MoveResource;
-use starcoin_vm_types::on_chain_config;
-use starcoin_vm_types::on_chain_config::Version;
-use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-use starcoin_vm_types::state_view::StateReaderExt;
 use starcoin_vm_types::write_set::WriteSet;
 use std::collections::BTreeMap;
+
+#[cfg(feature = "force-deploy")]
+use {
+    crate::execute_transactions,
+    anyhow::bail,
+    log::info,
+    starcoin_force_upgrade::ForceUpgrade,
+    starcoin_types::account::DEFAULT_EXPIRATION_TIME,
+    starcoin_types::identifier::Identifier,
+    starcoin_vm_runtime::force_upgrade_management::{
+        get_force_upgrade_account, get_force_upgrade_block_number,
+    },
+    starcoin_vm_types::{
+        access_path::AccessPath,
+        account_config::{genesis_address, ModuleUpgradeStrategy},
+        genesis_config::StdlibVersion,
+        move_resource::MoveResource,
+        on_chain_config,
+        on_chain_config::Version,
+        state_store::state_key::StateKey,
+        state_view::StateReaderExt,
+    },
+};
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BlockExecutedData {
@@ -106,6 +113,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
         };
     }
 
+    #[cfg(feature = "force-deploy")]
     if let Some(extra_txn) = create_force_upgrade_extra_txn(chain_state)
         .map_err(BlockExecutorError::BlockChainStateErr)?
     {
@@ -118,6 +126,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
     Ok(executed_data)
 }
 
+#[cfg(feature = "force-deploy")]
 fn create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
     statedb: &S,
 ) -> anyhow::Result<Option<Transaction>> {
@@ -158,6 +167,7 @@ fn create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
 }
 
 // todo: check the execute_extra_txn in OpenedBlock, and merge with it
+#[cfg(feature = "force-deploy")]
 fn execute_extra_txn<S: ChainStateReader + ChainStateWriter>(
     chain_state: &S,
     txn: Transaction,

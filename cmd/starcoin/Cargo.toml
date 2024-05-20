@@ -61,6 +61,7 @@ test-helper = { workspace = true }
 
 [features]
 default = []
+force-deploy = ["starcoin-node/force-deploy"]
 
 [package]
 authors = { workspace = true }
