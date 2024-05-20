@@ -14,7 +14,6 @@ use crate::ghostdag::protocol::GhostdagManager;
 use crate::{process_key_already_error, reachability};
 use anyhow::{bail, Ok};
 use bcs_ext::BCSCodec;
-use parking_lot::RwLock;
 use starcoin_config::{temp_dir, RocksdbConfig};
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::info;
@@ -23,6 +22,7 @@ use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
 };
+use std::ops::DerefMut;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -47,8 +47,7 @@ impl BlockDAG {
         let header_store = db.header_store.clone();
         let relations_store = db.relations_store.clone();
         let reachability_store = db.reachability_store.clone();
-        let reachability_service =
-            MTReachabilityService::new(Arc::new(RwLock::new(reachability_store)));
+        let reachability_service = MTReachabilityService::new(reachability_store);
         let ghostdag_manager = DbGhostdagManager::new(
             k,
             ghostdag_store,
@@ -90,13 +89,17 @@ impl BlockDAG {
 
         let real_origin = Hash::sha3_256_of(&[origin, genesis_id].encode()?);
 
-        if self.storage.relations_store.has(real_origin)? {
+        if self.storage.relations_store.read().has(real_origin)? {
             return Ok(real_origin);
         }
-        inquirer::init(&mut self.storage.reachability_store.clone(), real_origin)?;
+        inquirer::init(
+            self.storage.reachability_store.write().deref_mut(),
+            real_origin,
+        )?;
 
         self.storage
             .relations_store
+            .write()
             .insert(real_origin, BlockHashes::new(vec![]))?;
         // self.storage
         //     .relations_store
@@ -123,11 +126,15 @@ impl BlockDAG {
     }
 
     pub fn set_reindex_root(&mut self, hash: HashValue) -> anyhow::Result<()> {
-        self.storage.reachability_store.set_reindex_root(hash)?;
+        self.storage
+            .reachability_store
+            .write()
+            .set_reindex_root(hash)?;
         Ok(())
     }
 
     pub fn commit(&mut self, header: BlockHeader, origin: HashValue) -> anyhow::Result<()> {
+        println!("jacktest: committing header1");
         // Generate ghostdag data
         let parents = header.parents();
         let ghostdata = match self.ghostdata_by_hash(header.id())? {
@@ -150,27 +157,37 @@ impl BlockDAG {
         )?;
 
         // Update reachability store
-        let mut reachability_store = self.storage.reachability_store.clone();
+        let reachability_store = self.storage.reachability_store.clone();
         let mut merge_set = ghostdata
             .unordered_mergeset_without_selected_parent()
-            .filter(|hash| self.storage.reachability_store.has(*hash).unwrap());
-        match inquirer::add_block(
-            &mut reachability_store,
+            .filter(|hash| self.storage.reachability_store.read().has(*hash).unwrap())
+            .collect::<Vec<_>>()
+            .into_iter();
+        println!("jacktest: committing header2");
+        let mut reachability_writer = reachability_store.write();
+        let add_block_result = inquirer::add_block(
+            reachability_writer.deref_mut(),
             header.id(),
             ghostdata.selected_parent,
             &mut merge_set,
-        ) {
+        );
+        drop(reachability_writer);
+        match add_block_result {
             Result::Ok(_) => (),
             Err(reachability::ReachabilityError::DataInconsistency) => {
-                let _future_covering_set =
-                    reachability_store.get_future_covering_set(header.id())?;
+                println!("jacktest: committing header2.1");
+                let _future_covering_set = reachability_store
+                    .read()
+                    .get_future_covering_set(header.id())?;
                 info!(
                     "the key {:?} was already processed, original error message: {:?}",
                     header.id(),
                     reachability::ReachabilityError::DataInconsistency
                 );
+                println!("jacktest: committing header2.1.1");
             }
             Err(reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(msg))) => {
+                println!("jacktest: committing header2.2");
                 if msg == *REINDEX_ROOT_KEY.to_string() {
                     info!(
                         "the key {:?} was already processed, original error message: {:?}",
@@ -194,6 +211,7 @@ impl BlockDAG {
                 }
             }
             Err(reachability::ReachabilityError::StoreError(StoreError::InvalidInterval(_, _))) => {
+                println!("jacktest: committing header2.3");
                 self.set_reindex_root(origin)?;
                 bail!("failed to add a block when committing for invalid interval",);
             }
@@ -202,6 +220,7 @@ impl BlockDAG {
             }
         }
 
+        println!("jacktest: committing header3");
         // store relations
         // It must be the dag genesis if header is a format for a single chain
         if header.is_single() {
@@ -210,12 +229,14 @@ impl BlockDAG {
             process_key_already_error(
                 self.storage
                     .relations_store
+                    .write()
                     .insert(header.id(), BlockHashes::new(vec![real_origin])),
             )?;
         } else {
             process_key_already_error(
                 self.storage
                     .relations_store
+                    .write()
                     .insert(header.id(), BlockHashes::new(parents)),
             )?;
         }
@@ -225,11 +246,12 @@ impl BlockDAG {
             Arc::new(header),
             0,
         ))?;
+        println!("jacktest: committing header4");
         Ok(())
     }
 
     pub fn get_parents(&self, hash: Hash) -> anyhow::Result<Vec<Hash>> {
-        match self.storage.relations_store.get_parents(hash) {
+        match self.storage.relations_store.write().get_parents(hash) {
             anyhow::Result::Ok(parents) => anyhow::Result::Ok((*parents).clone()),
             Err(error) => {
                 bail!("failed to get parents by hash: {}", error);
@@ -238,7 +260,7 @@ impl BlockDAG {
     }
 
     pub fn get_children(&self, hash: Hash) -> anyhow::Result<Vec<Hash>> {
-        match self.storage.relations_store.get_children(hash) {
+        match self.storage.relations_store.read().get_children(hash) {
             anyhow::Result::Ok(children) => anyhow::Result::Ok((*children).clone()),
             Err(error) => {
                 bail!("failed to get parents by hash: {}", error);
@@ -247,11 +269,11 @@ impl BlockDAG {
     }
 
     pub fn get_dag_state(&self, hash: Hash) -> anyhow::Result<DagState> {
-        Ok(self.storage.state_store.get_state(hash)?)
+        Ok(self.storage.state_store.read().get_state(hash)?)
     }
 
     pub fn save_dag_state(&self, hash: Hash, state: DagState) -> anyhow::Result<()> {
-        self.storage.state_store.insert(hash, state)?;
+        self.storage.state_store.write().insert(hash, state)?;
         Ok(())
     }
 }

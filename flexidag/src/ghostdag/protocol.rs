@@ -4,6 +4,7 @@ use crate::reachability::reachability_service::ReachabilityService;
 use crate::types::{ghostdata::GhostdagData, ordering::*};
 use anyhow::{Context, Result};
 use bcs_ext::BCSCodec;
+use parking_lot::RwLock;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_logger::prelude::*;
 use starcoin_types::block::BlockHeader;
@@ -19,7 +20,7 @@ pub struct GhostdagManager<
 > {
     pub(super) k: KType,
     pub(super) ghostdag_store: T,
-    pub(super) relations_store: S,
+    pub(super) relations_store: Arc<RwLock<S>>,
     pub(super) headers_store: V,
     pub(super) reachability_service: U,
 }
@@ -34,7 +35,7 @@ impl<
     pub fn new(
         k: KType,
         ghostdag_store: T,
-        relations_store: S,
+        relations_store: Arc<RwLock<S>>,
         headers_store: V,
         reachability_service: U,
     ) -> Self {
