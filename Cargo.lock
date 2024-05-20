@@ -4314,7 +4314,7 @@ dependencies = [
  "libp2p-yamux",
  "multiaddr",
  "parking_lot 0.12.1",
- "pin-project 1.0.12",
+ "pin-project",
  "smallvec 1.10.0",
 ]
 
@@ -4339,7 +4339,7 @@ dependencies = [
  "multistream-select",
  "once_cell",
  "parking_lot 0.12.1",
- "pin-project 1.0.12",
+ "pin-project",
  "prost",
  "prost-build",
  "rand 0.8.5",
@@ -4560,7 +4560,7 @@ dependencies = [
  "libp2p-core",
  "libp2p-swarm-derive",
  "log 0.4.17",
- "pin-project 1.0.12",
+ "pin-project",
  "rand 0.8.5",
  "smallvec 1.10.0",
  "thiserror",
@@ -5973,7 +5973,7 @@ dependencies = [
  "bytes 1.4.0",
  "futures 0.3.26",
  "log 0.4.17",
- "pin-project 1.0.12",
+ "pin-project",
  "smallvec 1.10.0",
  "unsigned-varint 0.7.1",
 ]
@@ -6146,7 +6146,7 @@ dependencies = [
  "network-p2p-types",
  "once_cell",
  "parking_lot 0.12.1",
- "pin-project 0.4.30",
+ "pin-project",
  "prometheus",
  "rand 0.8.5",
  "sc-peerset",
@@ -7030,31 +7030,11 @@ dependencies = [
 
 [[package]]
 name = "pin-project"
-version = "0.4.30"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ef0f924a5ee7ea9cbcea77529dba45f8a9ba9f622419fe3386ca581a3ae9d5a"
-dependencies = [
- "pin-project-internal 0.4.30",
-]
-
-[[package]]
-name = "pin-project"
 version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ad29a609b6bcd67fee905812e544992d216af9d755757c05ed2d0e15a74c6ecc"
 dependencies = [
- "pin-project-internal 1.0.12",
-]
-
-[[package]]
-name = "pin-project-internal"
-version = "0.4.30"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "851c8d0ce9bebe43790dedfc86614c23494ac9f423dd618d3a61fc693eafe61e"
-dependencies = [
- "proc-macro2 1.0.59",
- "quote 1.0.28",
- "syn 1.0.107",
+ "pin-project-internal",
 ]
 
 [[package]]
@@ -8444,7 +8424,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26338f5e09bb721b85b135ea05af7767c90b52f6de4f087d4f4a3a9d64e7dc04"
 dependencies = [
  "futures 0.3.26",
- "pin-project 1.0.12",
+ "pin-project",
  "static_assertions",
 ]
 
@@ -10910,7 +10890,7 @@ dependencies = [
  "network-api",
  "network-p2p-core",
  "parking_lot 0.12.1",
- "pin-project 0.4.30",
+ "pin-project",
  "pin-utils",
  "rand 0.8.5",
  "starcoin-account-api",
@@ -11354,7 +11334,7 @@ dependencies = [
  "futures-timer",
  "log 0.4.17",
  "parking_lot 0.12.1",
- "pin-project 0.4.30",
+ "pin-project",
  "pin-utils",
  "schemars",
  "serde 1.0.152",
