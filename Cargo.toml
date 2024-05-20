@@ -373,7 +373,7 @@ network-p2p-types = { path = "network-p2p/types" }
 network-p2p-core = { path = "network-p2p/core" }
 network-p2p-derive = { path = "network-p2p/derive" }
 network-types = { path = "network/types" }
-num = "0.4.0"
+num = "0.4.3"
 num-derive = "0.3.3"
 num-traits = "0.2"
 num_cpus = "1.13"
