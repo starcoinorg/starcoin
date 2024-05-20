@@ -243,7 +243,7 @@ rust-version = "1.64"
 
 [workspace.dependencies]
 actix = "0.13"
-actix-rt = "2.6"
+actix-rt = "2.9"
 aes-gcm = "0.9"
 anyhow = "~1"
 api-limiter = { path = "commons/api-limiter" }
