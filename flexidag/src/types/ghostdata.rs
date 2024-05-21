@@ -1,8 +1,6 @@
-use super::trusted::ExternalGhostdagData;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::blockhash::{BlockHashMap, BlockHashes, BlueWorkType, HashKTypeMap, KType};
-use std::sync::Arc;
 
 #[derive(Clone, Serialize, Deserialize, Default, Debug)]
 pub struct GhostdagData {
@@ -19,32 +17,6 @@ pub struct CompactGhostdagData {
     pub blue_score: u64,
     pub blue_work: BlueWorkType,
     pub selected_parent: Hash,
-}
-
-impl From<ExternalGhostdagData> for GhostdagData {
-    fn from(value: ExternalGhostdagData) -> Self {
-        Self {
-            blue_score: value.blue_score,
-            blue_work: value.blue_work,
-            selected_parent: value.selected_parent,
-            mergeset_blues: Arc::new(value.mergeset_blues),
-            mergeset_reds: Arc::new(value.mergeset_reds),
-            blues_anticone_sizes: Arc::new(value.blues_anticone_sizes),
-        }
-    }
-}
-
-impl From<&GhostdagData> for ExternalGhostdagData {
-    fn from(value: &GhostdagData) -> Self {
-        Self {
-            blue_score: value.blue_score,
-            blue_work: value.blue_work,
-            selected_parent: value.selected_parent,
-            mergeset_blues: (*value.mergeset_blues).clone(),
-            mergeset_reds: (*value.mergeset_reds).clone(),
-            blues_anticone_sizes: (*value.blues_anticone_sizes).clone(),
-        }
-    }
 }
 
 impl GhostdagData {
