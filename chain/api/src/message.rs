@@ -98,5 +98,5 @@ pub enum ChainResponse {
     BlockInfoVec(Box<Vec<Option<BlockInfo>>>),
     DagStateView(Box<DagStateView>),
     CheckDagType(DagHeaderType),
-    DagForkHeigh(Option<BlockNumber>),
+    DagForkHeight(Option<BlockNumber>),
 }
