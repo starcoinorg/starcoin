@@ -134,7 +134,6 @@ impl BlockDAG {
     }
 
     pub fn commit(&mut self, header: BlockHeader, origin: HashValue) -> anyhow::Result<()> {
-        println!("jacktest: committing header1");
         // Generate ghostdag data
         let parents = header.parents();
         let ghostdata = match self.ghostdata_by_hash(header.id())? {
@@ -163,7 +162,6 @@ impl BlockDAG {
             .filter(|hash| self.storage.reachability_store.read().has(*hash).unwrap())
             .collect::<Vec<_>>()
             .into_iter();
-        println!("jacktest: committing header2");
         let mut reachability_writer = reachability_store.write();
         let add_block_result = inquirer::add_block(
             reachability_writer.deref_mut(),
@@ -175,7 +173,6 @@ impl BlockDAG {
         match add_block_result {
             Result::Ok(_) => (),
             Err(reachability::ReachabilityError::DataInconsistency) => {
-                println!("jacktest: committing header2.1");
                 let _future_covering_set = reachability_store
                     .read()
                     .get_future_covering_set(header.id())?;
@@ -184,10 +181,8 @@ impl BlockDAG {
                     header.id(),
                     reachability::ReachabilityError::DataInconsistency
                 );
-                println!("jacktest: committing header2.1.1");
             }
             Err(reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(msg))) => {
-                println!("jacktest: committing header2.2");
                 if msg == *REINDEX_ROOT_KEY.to_string() {
                     info!(
                         "the key {:?} was already processed, original error message: {:?}",
@@ -211,7 +206,6 @@ impl BlockDAG {
                 }
             }
             Err(reachability::ReachabilityError::StoreError(StoreError::InvalidInterval(_, _))) => {
-                println!("jacktest: committing header2.3");
                 self.set_reindex_root(origin)?;
                 bail!("failed to add a block when committing for invalid interval",);
             }
@@ -220,7 +214,6 @@ impl BlockDAG {
             }
         }
 
-        println!("jacktest: committing header3");
         // store relations
         // It must be the dag genesis if header is a format for a single chain
         if header.is_single() {
@@ -246,7 +239,6 @@ impl BlockDAG {
             Arc::new(header),
             0,
         ))?;
-        println!("jacktest: committing header4");
         Ok(())
     }
 
