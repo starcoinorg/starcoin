@@ -424,7 +424,7 @@ shell-words = "1.0.0"
 simple-stopwatch = "0.1.4"
 simplelog = "0.9.0"
 slog = "2.7.0"
-slog-async = "2.7.0"
+slog-async = "2.8.0"
 slog-term = "2.9.0"
 smallvec = "1.10.0"
 sp-utils = { path = "commons/utils" }
