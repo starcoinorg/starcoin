@@ -11,7 +11,7 @@ spec:
     matchLabels:
       app: starcoin
   serviceName: starcoin-svc
-  replicas: 1
+  replicas: 3
   template:
     metadata:
       name: starcoin
@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: starcoin/starcoin:halley24_force_upgrade_v11
+        image: starcoin/starcoin:dag-master
         imagePullPolicy: Always
         command:
           - bash
