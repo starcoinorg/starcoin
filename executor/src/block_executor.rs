@@ -45,6 +45,9 @@ pub struct BlockExecutedData {
     pub txn_events: Vec<Vec<ContractEvent>>,
     pub txn_table_infos: BTreeMap<TableHandle, TableInfo>,
     pub write_sets: Vec<WriteSet>,
+    #[cfg(feature = "force-deploy")]
+    #[serde(skip)]
+    pub with_extra_txn: bool,
 }
 
 impl Default for BlockExecutedData {
@@ -55,6 +58,8 @@ impl Default for BlockExecutedData {
             txn_infos: vec![],
             txn_table_infos: BTreeMap::new(),
             write_sets: vec![],
+            #[cfg(feature = "force-deploy")]
+            with_extra_txn: false,
         }
     }
 }
@@ -120,6 +125,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
         // !!! commit suicide if any error or exception happens !!!
         execute_extra_txn(chain_state, extra_txn, vm_metrics, &mut executed_data)
             .expect("extra txn must be executed successfully");
+        executed_data.with_extra_txn = true;
     }
 
     executed_data.state_root = chain_state.state_root();

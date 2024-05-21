@@ -1265,7 +1265,9 @@ impl BlockChain {
         );
 
         #[cfg(feature = "force-deploy")]
-        let valid_txn_num = if header.number() == get_force_upgrade_block_number(chain_id) {
+        let valid_txn_num = if header.number() == get_force_upgrade_block_number(chain_id)
+            && executed_data.with_extra_txn
+        {
             vec_transaction_info.len() == transactions.len().checked_add(1).unwrap()
         } else {
             vec_transaction_info.len() == transactions.len()
