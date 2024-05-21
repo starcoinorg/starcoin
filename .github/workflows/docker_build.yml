@@ -2,7 +2,7 @@ name: Build Docker and deploy
 on:
   push:
     branches:
-      - master
+      - dag-master
   workflow_dispatch:
   release:
     types: [ published ]
@@ -50,7 +50,7 @@ jobs:
           labels: ${{ steps.docker_meta.outputs.labels }}
       - name: deploy cluster
         # Only deploy on master.
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/dag-master'
         shell: bash
         env:
           IMAGE_VERSION: ${{steps.docker_meta.outputs.version}}
@@ -58,4 +58,4 @@ jobs:
           # use sha tag for force update
           SHA=$(git rev-parse --short=7 HEAD);
           echo "sha: ${SHA}";
-          # kubectl patch --namespace starcoin-halley statefulset starcoin --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"starcoin/starcoin:sha-'${SHA}'"}]'
+          kubectl patch --namespace starcoin-halley statefulset starcoin --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"starcoin/starcoin:sha-'${SHA}'"}]'
