@@ -24,7 +24,7 @@ rand = { workspace = true }
 rand_core = { default-features = false, workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-accumulator = { workspace = true }
-starcoin-chain = { workspace = true }
+starcoin-chain = { workspace = true, features = ["max-dag-height"] }
 starcoin-config = { workspace = true }
 starcoin-consensus = { workspace = true }
 starcoin-executor = { workspace = true }

@@ -52,6 +52,7 @@ starcoin-force-upgrade = { workspace = true }
 default = []
 fuzzing = ["proptest", "proptest-derive", "starcoin-types/fuzzing"]
 force-deploy = ["starcoin-vm-runtime/force-deploy", "starcoin-vm-runtime", "starcoin-executor/force-deploy"]
+max-dag-height = []
 
 [package]
 authors = { workspace = true }
