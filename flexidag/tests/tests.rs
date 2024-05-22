@@ -7,7 +7,10 @@ use starcoin_dag::{
     blockdag::BlockDAG,
     consensusdb::{
         consenses_state::{DagState, DagStateReader, DagStateStore},
-        schemadb::{DbReachabilityStore, ReachabilityStore, ReachabilityStoreReader},
+        schemadb::{
+            DbReachabilityStore, ReachabilityStore, ReachabilityStoreReader, RelationsStore,
+            RelationsStoreReader,
+        },
     },
     reachability::{inquirer, ReachabilityError},
     types::interval::Interval,
@@ -17,7 +20,11 @@ use starcoin_types::block::{
     set_test_flexidag_fork_height, BlockHeader, BlockHeaderBuilder, BlockNumber,
 };
 
-use std::vec;
+use std::{
+    ops::{Deref, DerefMut},
+    sync::Arc,
+    vec,
+};
 
 #[test]
 fn test_dag_0() {
@@ -156,6 +163,78 @@ async fn test_with_spawn() {
 }
 
 #[test]
+fn test_write_asynchronization() -> anyhow::Result<()> {
+    let mut dag = BlockDAG::create_for_testing()?;
+    let genesis = BlockHeader::dag_genesis_random()
+        .as_builder()
+        .with_difficulty(0.into())
+        .build();
+    let _real_origin = dag.init_with_genesis(genesis.clone())?;
+
+    let parent = BlockHeaderBuilder::random()
+        .with_difficulty(0.into())
+        .build();
+
+    let one = BlockHeaderBuilder::random()
+        .with_difficulty(0.into())
+        .with_parent_hash(parent.id())
+        .with_parents_hash(Some(vec![parent.id()]))
+        .build();
+
+    let two = BlockHeaderBuilder::random()
+        .with_difficulty(0.into())
+        .with_parent_hash(parent.id())
+        .with_parents_hash(Some(vec![parent.id()]))
+        .build();
+
+    dag.storage
+        .relations_store
+        .write()
+        .insert(parent.id(), Arc::new(vec![genesis.id()]))?;
+
+    let dag_one = dag.clone();
+    let one_clone = one.clone();
+    let parent_clone = parent.clone();
+    let handle1 = std::thread::spawn(move || {
+        dag_one
+            .storage
+            .relations_store
+            .write()
+            .insert(one_clone.id(), Arc::new(vec![parent_clone.id()]))
+            .expect("failed to insert one");
+    });
+    let dag_two = dag.clone();
+    let two_clone = two.clone();
+    let parent_clone = parent.clone();
+    let handle2 = std::thread::spawn(move || {
+        dag_two
+            .storage
+            .relations_store
+            .write()
+            .insert(two_clone.id(), Arc::new(vec![parent_clone.id()]))
+            .expect("failed to insert two");
+    });
+
+    handle1.join().expect("failed to join handle1");
+    handle2.join().expect("failed to join handle2");
+
+    assert!(dag
+        .storage
+        .relations_store
+        .read()
+        .get_children(parent.id())?
+        .contains(&one.id()));
+    assert!(dag
+        .storage
+        .relations_store
+        .read()
+        .get_children(parent.id())?
+        .contains(&two.id()));
+
+    Ok(())
+}
+
+#[test]
 fn test_dag_genesis_fork() {
     // initialzie the dag firstly
     let mut dag = BlockDAG::create_for_testing().unwrap();
@@ -237,6 +316,7 @@ fn test_dag_tips_store() {
     let dag_gensis1 = Hash::random();
     dag.storage
         .state_store
+        .write()
         .insert(dag_gensis1, state1.clone())
         .expect("failed to store the dag state");
 
@@ -246,12 +326,14 @@ fn test_dag_tips_store() {
     let dag_gensis2 = Hash::random();
     dag.storage
         .state_store
+        .write()
         .insert(dag_gensis2, state2.clone())
         .expect("failed to store the dag state");
 
     assert_eq!(
         dag.storage
             .state_store
+            .read()
             .get_state(dag_gensis1)
             .expect("failed to get the dag state"),
         state1
@@ -259,6 +341,7 @@ fn test_dag_tips_store() {
     assert_eq!(
         dag.storage
             .state_store
+            .read()
             .get_state(dag_gensis2)
             .expect("failed to get the dag state"),
         state2
@@ -326,9 +409,7 @@ fn test_dag_multiple_commits() -> anyhow::Result<()> {
         parent_hash = header.id();
         dag.commit(header.to_owned(), genesis.parent_hash())?;
         if header.number() == 6 {
-            println!("commit again: {:?}", header);
             dag.commit(header.to_owned(), genesis.parent_hash())?;
-            println!("and again: {:?}", header);
             dag.commit(header.to_owned(), genesis.parent_hash())?;
         }
         let ghostdata = dag.ghostdata(&parents_hash).unwrap();
@@ -341,14 +422,14 @@ fn test_dag_multiple_commits() -> anyhow::Result<()> {
 #[test]
 fn test_reachability_abort_add_block() -> anyhow::Result<()> {
     let dag = BlockDAG::create_for_testing().unwrap();
-    let mut reachability_store = dag.storage.reachability_store;
+    let reachability_store = dag.storage.reachability_store.clone();
 
     let mut parent = Hash::random();
     let origin = parent;
     let mut child = Hash::random();
-    inquirer::init(&mut reachability_store, parent)?;
+    inquirer::init(reachability_store.write().deref_mut(), parent)?;
     inquirer::add_block(
-        &mut reachability_store,
+        reachability_store.write().deref_mut(),
         child,
         parent,
         &mut vec![parent].into_iter(),
@@ -359,16 +440,16 @@ fn test_reachability_abort_add_block() -> anyhow::Result<()> {
         child = Hash::random();
 
         inquirer::add_block(
-            &mut reachability_store,
+            reachability_store.write().deref_mut(),
             child,
             parent,
             &mut vec![parent].into_iter(),
         )?;
         if (61..=69).contains(&i) {
             for _ in 0..10 {
-                inquirer::init(&mut reachability_store, origin)?;
+                inquirer::init(reachability_store.write().deref_mut(), origin)?;
                 let result = inquirer::add_block(
-                    &mut reachability_store,
+                    reachability_store.write().deref_mut(),
                     child,
                     parent,
                     &mut vec![parent].into_iter(),
@@ -377,7 +458,7 @@ fn test_reachability_abort_add_block() -> anyhow::Result<()> {
                     Result::Ok(_) => (),
                     Err(ReachabilityError::DataInconsistency) => {
                         let future_covering_set =
-                            reachability_store.get_future_covering_set(child)?;
+                            reachability_store.read().get_future_covering_set(child)?;
                         println!("future_covering_set = {:?}", future_covering_set);
                     }
                     Err(e) => {
@@ -398,14 +479,14 @@ fn test_reachability_abort_add_block() -> anyhow::Result<()> {
 #[test]
 fn test_reachability_check_ancestor() -> anyhow::Result<()> {
     let dag = BlockDAG::create_for_testing().unwrap();
-    let mut reachability_store = dag.storage.reachability_store.clone();
+    let reachability_store = dag.storage.reachability_store.clone();
 
     let mut parent = Hash::random();
     let origin = parent;
     let mut child = Hash::random();
-    inquirer::init(&mut reachability_store, parent)?;
+    inquirer::init(reachability_store.write().deref_mut(), parent)?;
     inquirer::add_block(
-        &mut reachability_store,
+        reachability_store.write().deref_mut(),
         child,
         parent,
         &mut vec![parent].into_iter(),
@@ -419,7 +500,7 @@ fn test_reachability_check_ancestor() -> anyhow::Result<()> {
 
         if i == 47 {
             inquirer::add_block(
-                &mut reachability_store,
+                reachability_store.write().deref_mut(),
                 child,
                 parent,
                 &mut vec![parent].into_iter(),
@@ -429,7 +510,7 @@ fn test_reachability_check_ancestor() -> anyhow::Result<()> {
             target_parent = parent;
         } else {
             inquirer::add_block(
-                &mut reachability_store,
+                reachability_store.write().deref_mut(),
                 child,
                 parent,
                 &mut vec![parent].into_iter(),
@@ -506,58 +587,62 @@ fn print_reachability_data(reachability: &DbReachabilityStore, key: &[Hash]) {
 #[test]
 fn test_reachability_not_ancestor() -> anyhow::Result<()> {
     let dag = BlockDAG::create_for_testing().unwrap();
-    let mut reachability_store = dag.storage.reachability_store.clone();
+    let reachability_store = dag.storage.reachability_store.clone();
 
     let origin = Hash::random();
 
-    inquirer::init_for_test(&mut reachability_store, origin, Interval::new(1, 1024))?;
+    inquirer::init_for_test(
+        reachability_store.write().deref_mut(),
+        origin,
+        Interval::new(1, 1024),
+    )?;
 
     let mut hashes = vec![origin];
-    print_reachability_data(&reachability_store, &hashes);
+    print_reachability_data(reachability_store.read().deref(), &hashes);
 
     let child1 = Hash::random();
-    // inquirer::add_block(
-    //     &mut reachability_store,
-    //     child1,
-    //     origin,
-    //     &mut vec![origin].into_iter(),
-    // )?;
-    // hashes.push(child1);
-    // print_reachability_data(&reachability_store, &hashes);
+    inquirer::add_block(
+        reachability_store.write().deref_mut(),
+        child1,
+        origin,
+        &mut vec![origin].into_iter(),
+    )?;
+    hashes.push(child1);
+    print_reachability_data(reachability_store.read().deref(), &hashes);
 
     let child2 = Hash::random();
     inquirer::add_block(
-        &mut reachability_store,
+        reachability_store.write().deref_mut(),
         child2,
         origin,
         &mut vec![origin].into_iter(),
     )?;
     hashes.push(child2);
-    print_reachability_data(&reachability_store, &hashes);
+    print_reachability_data(reachability_store.read().deref(), &hashes);
 
     let mut parent = child2;
     for _i in 1..=1000 {
         let child = Hash::random();
         inquirer::add_block(
-            &mut reachability_store,
+            reachability_store.write().deref_mut(),
             child,
             parent,
             &mut vec![parent].into_iter(),
         )?;
-        // hashes.push(child);
-        // print_reachability_data(&reachability_store, &hashes);
+        hashes.push(child);
+        print_reachability_data(reachability_store.read().deref(), &hashes);
         parent = child;
     }
 
     let child3 = Hash::random();
     inquirer::add_block(
-        &mut reachability_store,
+        reachability_store.write().deref_mut(),
         child3,
         parent,
         &mut vec![parent].into_iter(),
     )?;
-    // hashes.push(child3);
-    // print_reachability_data(&reachability_store, &hashes);
+    hashes.push(child3);
+    print_reachability_data(reachability_store.read().deref(), &hashes);
 
     let result = dag.check_ancestor_of(child1, vec![child3]);
     println!("dag.check_ancestor_of() result = {:?}", result);
@@ -568,94 +653,98 @@ fn test_reachability_not_ancestor() -> anyhow::Result<()> {
 #[test]
 fn test_reachability_algorighm() -> anyhow::Result<()> {
     let dag = BlockDAG::create_for_testing().unwrap();
-    let mut reachability_store = dag.storage.reachability_store.clone();
+    let reachability_store = dag.storage.reachability_store.clone();
 
     let origin = Hash::random();
 
-    inquirer::init_for_test(&mut reachability_store, origin, Interval::new(1, 32))?;
+    inquirer::init_for_test(
+        reachability_store.write().deref_mut(),
+        origin,
+        Interval::new(1, 32),
+    )?;
 
     let mut hashes = vec![origin];
-    print_reachability_data(&reachability_store, &hashes);
+    print_reachability_data(reachability_store.read().deref(), &hashes);
 
     let child1 = Hash::random();
     inquirer::add_block(
-        &mut reachability_store,
+        reachability_store.write().deref_mut(),
         child1,
         origin,
         &mut vec![origin].into_iter(),
     )?;
     hashes.push(child1);
-    print_reachability_data(&reachability_store, &hashes);
+    print_reachability_data(reachability_store.read().deref(), &hashes);
 
     let child2 = Hash::random();
     hashes.push(child2);
     inquirer::add_block(
-        &mut reachability_store,
+        reachability_store.write().deref_mut(),
         child2,
         origin,
         &mut vec![origin].into_iter(),
     )?;
-    print_reachability_data(&reachability_store, &hashes);
+    print_reachability_data(reachability_store.read().deref(), &hashes);
 
     let child3 = Hash::random();
     inquirer::add_block(
-        &mut reachability_store,
+        reachability_store.write().deref_mut(),
         child3,
         origin,
         &mut vec![origin].into_iter(),
     )?;
     hashes.push(child3);
-    print_reachability_data(&reachability_store, &hashes);
+    print_reachability_data(reachability_store.read().deref(), &hashes);
 
     let child4 = Hash::random();
     inquirer::add_block(
-        &mut reachability_store,
+        reachability_store.write().deref_mut(),
         child4,
         origin,
         &mut vec![origin].into_iter(),
     )?;
     hashes.push(child4);
-    print_reachability_data(&reachability_store, &hashes);
+    print_reachability_data(reachability_store.read().deref(), &hashes);
 
     let child5 = Hash::random();
     inquirer::add_block(
-        &mut reachability_store,
+        reachability_store.write().deref_mut(),
         child5,
         origin,
         &mut vec![origin].into_iter(),
     )?;
     hashes.push(child5);
-    print_reachability_data(&reachability_store, &hashes);
+    print_reachability_data(reachability_store.read().deref(), &hashes);
 
     let child6 = Hash::random();
     inquirer::add_block(
-        &mut reachability_store,
+        reachability_store.write().deref_mut(),
         child6,
         origin,
         &mut vec![origin].into_iter(),
     )?;
     hashes.push(child6);
-    print_reachability_data(&reachability_store, &hashes);
+    print_reachability_data(reachability_store.read().deref(), &hashes);
 
     let child7 = Hash::random();
     inquirer::add_block(
-        &mut reachability_store,
+        reachability_store.write().deref_mut(),
         child7,
         origin,
         &mut vec![origin].into_iter(),
     )?;
     hashes.push(child7);
-    print_reachability_data(&reachability_store, &hashes);
+    print_reachability_data(reachability_store.read().deref(), &hashes);
 
     let child8 = Hash::random();
     inquirer::add_block(
-        &mut reachability_store,
+        reachability_store.write().deref_mut(),
         child8,
         child1,
         &mut vec![child1].into_iter(),
     )?;
     hashes.push(child8);
-    print_reachability_data(&reachability_store, &hashes);
+    print_reachability_data(reachability_store.read().deref(), &hashes);
 
     // for _i in 7..=31 {
     //     let s = Hash::random();

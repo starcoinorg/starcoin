@@ -7,6 +7,7 @@ use super::{
         HEADERS_STORE_CF, PARENTS_CF, REACHABILITY_DATA_CF,
     },
 };
+use parking_lot::RwLock;
 use starcoin_config::{RocksdbConfig, StorageConfig};
 pub(crate) use starcoin_storage::db_storage::DBStorage;
 use std::{path::Path, sync::Arc};
@@ -15,9 +16,9 @@ use std::{path::Path, sync::Arc};
 pub struct FlexiDagStorage {
     pub ghost_dag_store: DbGhostdagStore,
     pub header_store: DbHeadersStore,
-    pub reachability_store: DbReachabilityStore,
-    pub relations_store: DbRelationsStore,
-    pub state_store: DbDagStateStore,
+    pub reachability_store: Arc<RwLock<DbReachabilityStore>>,
+    pub relations_store: Arc<RwLock<DbRelationsStore>>,
+    pub state_store: Arc<RwLock<DbDagStateStore>>,
 }
 
 #[derive(Clone)]
@@ -89,9 +90,16 @@ impl FlexiDagStorage {
             ghost_dag_store: DbGhostdagStore::new(db.clone(), 1, config.cache_size),
 
             header_store: DbHeadersStore::new(db.clone(), config.cache_size),
-            reachability_store: DbReachabilityStore::new(db.clone(), config.cache_size),
-            relations_store: DbRelationsStore::new(db.clone(), 1, config.cache_size),
-            state_store: DbDagStateStore::new(db, config.cache_size),
+            reachability_store: Arc::new(RwLock::new(DbReachabilityStore::new(
+                db.clone(),
+                config.cache_size,
+            ))),
+            relations_store: Arc::new(RwLock::new(DbRelationsStore::new(
+                db.clone(),
+                1,
+                config.cache_size,
+            ))),
+            state_store: Arc::new(RwLock::new(DbDagStateStore::new(db, config.cache_size))),
         })
     }
 }

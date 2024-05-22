@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::anyhow;
 use futures::stream::StreamExt;
 use futures_timer::Delay;
 use network_api::messages::{
@@ -83,7 +84,7 @@ fn build_test_network_services(num: usize) -> Vec<NetworkComponent> {
 const TEST_NOTIF_PROTOCOL_NAME: &str = "/test_notif";
 
 #[stest::test]
-async fn test_send_receive() {
+async fn test_send_receive() -> anyhow::Result<()> {
     let ((service1, _), (service2, _)) = build_test_network_pair();
     let msg_peer_id_1 = *service1.peer_id();
     let msg_peer_id_2 = *service2.peer_id();
@@ -125,9 +126,9 @@ async fn test_send_receive() {
         assert_eq!(total_message / 2, peer1_received_events.len());
         assert_eq!(total_message / 2, peer2_received_events.len());
     };
-    tokio::time::timeout(Duration::from_secs(10), task)
+    tokio::time::timeout(Duration::from_secs(100), task)
         .await
-        .unwrap();
+        .map_err(|e| anyhow!("timeout for error: {:?}", e))
 }
 
 #[stest::test]

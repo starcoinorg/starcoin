@@ -36,6 +36,7 @@ impl<
         while let Some(current) = queue.pop_front() {
             let current_parents = self
                 .relations_store
+                .read()
                 .get_parents(current)
                 .unwrap_or_else(|err| {
                     println!("WUT");
