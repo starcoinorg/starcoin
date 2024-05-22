@@ -63,10 +63,6 @@ pub enum ConnectBlockError {
     VerifyBlockFailed(VerifyBlockField, Error),
     #[error("Barnard hard fork block: {:?} ", .0.header())]
     BarnardHardFork(Box<Block>),
-    #[error("dag block before time window: {:?} ", .0.header())]
-    DagBlockBeforeTimeWindow(Box<Block>),
-    #[error("dag block after time window: {:?} ", .0.header())]
-    DagBlockAfterTimeWindow(Box<Block>),
 }
 
 impl ConnectBlockError {
@@ -78,10 +74,6 @@ impl ConnectBlockError {
         ReputationChange::new_fatal("VerifyBlockFailed");
     pub const REP_BARNARD_HARD_FORK: ReputationChange =
         ReputationChange::new_fatal("BarnardHardFork");
-    pub const REP_BLOCK_BEFORE_TIME_WINDOW: ReputationChange =
-        ReputationChange::new_fatal("DagBlockBeforeTimeWindow");
-    pub const REP_BLOCK_AFTER_TIME_WINDOW: ReputationChange =
-        ReputationChange::new_fatal("DagBlockAfterTimeWindow");
 
     pub fn reason(&self) -> &str {
         match self {
@@ -89,8 +81,6 @@ impl ConnectBlockError {
             ConnectBlockError::ParentNotExist(_) => "ParentNotExist",
             ConnectBlockError::VerifyBlockFailed(_, _) => "VerifyBlockFailed",
             ConnectBlockError::BarnardHardFork(_) => "BarnardHardFork",
-            ConnectBlockError::DagBlockBeforeTimeWindow(_) => "DagBlockBeforeTimeWindow",
-            ConnectBlockError::DagBlockAfterTimeWindow(_) => "DagBlockAfterTimeWindow",
         }
     }
 
@@ -102,12 +92,6 @@ impl ConnectBlockError {
                 ConnectBlockError::REP_VERIFY_BLOCK_FAILED
             }
             ConnectBlockError::BarnardHardFork(_) => ConnectBlockError::REP_BARNARD_HARD_FORK,
-            ConnectBlockError::DagBlockBeforeTimeWindow(_) => {
-                ConnectBlockError::REP_BLOCK_BEFORE_TIME_WINDOW
-            }
-            ConnectBlockError::DagBlockAfterTimeWindow(_) => {
-                ConnectBlockError::REP_BLOCK_AFTER_TIME_WINDOW
-            }
         }
     }
 }
