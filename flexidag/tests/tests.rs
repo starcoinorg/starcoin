@@ -258,7 +258,7 @@ fn test_dag_genesis_fork() {
         let _ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
     }
 
-    // // fork, produce a new dag gensis
+    // fork, produce a new dag gensis
     let new_genesis = BlockHeader::dag_genesis_random()
         .as_builder()
         .with_difficulty(0.into())

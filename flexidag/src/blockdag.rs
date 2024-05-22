@@ -101,9 +101,7 @@ impl BlockDAG {
             .relations_store
             .write()
             .insert(real_origin, BlockHashes::new(vec![]))?;
-        // self.storage
-        //     .relations_store
-        //     .insert(origin, BlockHashes::new(vec![]))?;
+
         self.commit(genesis, real_origin)?;
         self.save_dag_state(
             genesis_id,
@@ -162,14 +160,15 @@ impl BlockDAG {
             .filter(|hash| self.storage.reachability_store.read().has(*hash).unwrap())
             .collect::<Vec<_>>()
             .into_iter();
-        let mut reachability_writer = reachability_store.write();
-        let add_block_result = inquirer::add_block(
-            reachability_writer.deref_mut(),
-            header.id(),
-            ghostdata.selected_parent,
-            &mut merge_set,
-        );
-        drop(reachability_writer);
+        let add_block_result = {
+            let mut reachability_writer = reachability_store.write();
+            inquirer::add_block(
+                reachability_writer.deref_mut(),
+                header.id(),
+                ghostdata.selected_parent,
+                &mut merge_set,
+            )
+        };
         match add_block_result {
             Result::Ok(_) => (),
             Err(reachability::ReachabilityError::DataInconsistency) => {
