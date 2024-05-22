@@ -21,7 +21,7 @@ starcoin-statedb = { workspace = true }
 starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
-starcoin-vm-runtime = { workspace = true }
+starcoin-vm-runtime = { workspace = true, optional = true }
 starcoin-force-upgrade = { workspace = true }
 starcoin-storage = { workspace = true }
 thiserror = { workspace = true }
@@ -39,7 +39,8 @@ starcoin-chain-mock = { workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-resource-viewer = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
-starcoin-types = { features = [ "fuzzing" ], workspace = true }
+starcoin-types = { features = ["fuzzing"], workspace = true }
+starcoin-vm-runtime = { workspace = true }
 stdlib = { workspace = true }
 stest = { workspace = true }
 test-helper = { workspace = true }
@@ -50,6 +51,7 @@ starcoin-force-upgrade = { workspace = true }
 [features]
 default = []
 fuzzing = ["proptest", "proptest-derive", "starcoin-types/fuzzing"]
+force-deploy = ["starcoin-vm-runtime/force-deploy", "starcoin-vm-runtime", "starcoin-executor/force-deploy"]
 
 [package]
 authors = { workspace = true }

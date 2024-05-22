@@ -361,7 +361,8 @@ pub fn build_stdlib_package_with_modules(
 ) -> Result<Package> {
     let init_script = match net.genesis_config().stdlib_version {
         StdlibVersion::Version(1) => build_init_script_v1(net),
-        _ => build_init_script_v2(net),
+        version if version < StdlibVersion::Version(12) => build_init_script_v2(net),
+        _ => build_init_script_v3(net),
     };
     module_to_package(modules, Some(init_script))
 }
@@ -690,6 +691,173 @@ pub fn build_init_script_v2(net: &ChainNetwork) -> ScriptFunction {
             bcs_ext::to_bytes(&genesis_config.dao_config.min_action_delay).unwrap(),
             //transaction timeout config
             bcs_ext::to_bytes(&genesis_config.transaction_timeout).unwrap(),
+        ],
+    )
+}
+
+pub fn build_init_script_v3(net: &ChainNetwork) -> ScriptFunction {
+    let genesis_config = net.genesis_config();
+    let chain_id = net.chain_id().id();
+    let genesis_timestamp = net.genesis_block_parameter().timestamp;
+    let genesis_parent_hash = net.genesis_block_parameter().parent_hash;
+
+    let genesis_auth_key = genesis_config
+        .genesis_key_pair
+        .as_ref()
+        .map(|(_, public_key)| AuthenticationKey::ed25519(public_key).to_vec())
+        .unwrap_or_default();
+
+    let association_auth_key =
+        AuthenticationKey::multi_ed25519(&genesis_config.association_key_pair.1).to_vec();
+
+    let instruction_schedule =
+        bcs_ext::to_bytes(&genesis_config.vm_config.gas_schedule.instruction_table)
+            .expect("Cannot serialize gas schedule");
+    let native_schedule = bcs_ext::to_bytes(&genesis_config.vm_config.gas_schedule.native_table)
+        .expect("Cannot serialize gas schedule");
+
+    ScriptFunction::new(
+        ModuleId::new(core_code_address(), Identifier::new("Genesis").unwrap()),
+        Identifier::new("initialize_v3").unwrap(),
+        vec![],
+        vec![
+            bcs_ext::to_bytes(&net.genesis_config().stdlib_version.version()).unwrap(),
+            bcs_ext::to_bytes(&genesis_config.reward_delay).unwrap(),
+            bcs_ext::to_bytes(&G_TOTAL_STC_AMOUNT.scaling()).unwrap(),
+            bcs_ext::to_bytes(&genesis_config.pre_mine_amount).unwrap(),
+            bcs_ext::to_bytes(&genesis_config.time_mint_amount).unwrap(),
+            bcs_ext::to_bytes(&genesis_config.time_mint_period).unwrap(),
+            bcs_ext::to_bytes(&genesis_parent_hash.to_vec()).unwrap(),
+            bcs_ext::to_bytes(&association_auth_key).unwrap(),
+            bcs_ext::to_bytes(&genesis_auth_key).unwrap(),
+            bcs_ext::to_bytes(&chain_id).unwrap(),
+            bcs_ext::to_bytes(&genesis_timestamp).unwrap(),
+            //consensus config
+            bcs_ext::to_bytes(&genesis_config.consensus_config.uncle_rate_target).unwrap(),
+            bcs_ext::to_bytes(&genesis_config.consensus_config.epoch_block_count).unwrap(),
+            bcs_ext::to_bytes(&genesis_config.consensus_config.base_block_time_target).unwrap(),
+            bcs_ext::to_bytes(&genesis_config.consensus_config.base_block_difficulty_window)
+                .unwrap(),
+            bcs_ext::to_bytes(&genesis_config.consensus_config.base_reward_per_block).unwrap(),
+            bcs_ext::to_bytes(
+                &genesis_config
+                    .consensus_config
+                    .base_reward_per_uncle_percent,
+            )
+            .unwrap(),
+            bcs_ext::to_bytes(&genesis_config.consensus_config.min_block_time_target).unwrap(),
+            bcs_ext::to_bytes(&genesis_config.consensus_config.max_block_time_target).unwrap(),
+            bcs_ext::to_bytes(&genesis_config.consensus_config.base_max_uncles_per_block).unwrap(),
+            bcs_ext::to_bytes(&genesis_config.consensus_config.base_block_gas_limit).unwrap(),
+            bcs_ext::to_bytes(&genesis_config.consensus_config.strategy).unwrap(),
+            //vm config
+            bcs_ext::to_bytes(&genesis_config.publishing_option.is_script_allowed()).unwrap(),
+            bcs_ext::to_bytes(
+                &genesis_config
+                    .publishing_option
+                    .is_module_publishing_allowed(),
+            )
+            .unwrap(),
+            bcs_ext::to_bytes(&instruction_schedule).unwrap(),
+            bcs_ext::to_bytes(&native_schedule).unwrap(),
+            //gas constants
+            bcs_ext::to_bytes(
+                &genesis_config
+                    .vm_config
+                    .gas_schedule
+                    .gas_constants
+                    .global_memory_per_byte_cost,
+            )
+            .unwrap(),
+            bcs_ext::to_bytes(
+                &genesis_config
+                    .vm_config
+                    .gas_schedule
+                    .gas_constants
+                    .global_memory_per_byte_write_cost,
+            )
+            .unwrap(),
+            bcs_ext::to_bytes(
+                &genesis_config
+                    .vm_config
+                    .gas_schedule
+                    .gas_constants
+                    .min_transaction_gas_units,
+            )
+            .unwrap(),
+            bcs_ext::to_bytes(
+                &genesis_config
+                    .vm_config
+                    .gas_schedule
+                    .gas_constants
+                    .large_transaction_cutoff,
+            )
+            .unwrap(),
+            bcs_ext::to_bytes(
+                &genesis_config
+                    .vm_config
+                    .gas_schedule
+                    .gas_constants
+                    .intrinsic_gas_per_byte,
+            )
+            .unwrap(),
+            bcs_ext::to_bytes(
+                &genesis_config
+                    .vm_config
+                    .gas_schedule
+                    .gas_constants
+                    .maximum_number_of_gas_units,
+            )
+            .unwrap(),
+            bcs_ext::to_bytes(
+                &genesis_config
+                    .vm_config
+                    .gas_schedule
+                    .gas_constants
+                    .min_price_per_gas_unit,
+            )
+            .unwrap(),
+            bcs_ext::to_bytes(
+                &genesis_config
+                    .vm_config
+                    .gas_schedule
+                    .gas_constants
+                    .max_price_per_gas_unit,
+            )
+            .unwrap(),
+            bcs_ext::to_bytes(
+                &genesis_config
+                    .vm_config
+                    .gas_schedule
+                    .gas_constants
+                    .max_transaction_size_in_bytes,
+            )
+            .unwrap(),
+            bcs_ext::to_bytes(
+                &genesis_config
+                    .vm_config
+                    .gas_schedule
+                    .gas_constants
+                    .gas_unit_scaling_factor,
+            )
+            .unwrap(),
+            bcs_ext::to_bytes(
+                &genesis_config
+                    .vm_config
+                    .gas_schedule
+                    .gas_constants
+                    .default_account_size,
+            )
+            .unwrap(),
+            // dao config params
+            bcs_ext::to_bytes(&genesis_config.dao_config.voting_delay).unwrap(),
+            bcs_ext::to_bytes(&genesis_config.dao_config.voting_period).unwrap(),
+            bcs_ext::to_bytes(&genesis_config.dao_config.voting_quorum_rate).unwrap(),
+            bcs_ext::to_bytes(&genesis_config.dao_config.min_action_delay).unwrap(),
+            //transaction timeout config
+            bcs_ext::to_bytes(&genesis_config.transaction_timeout).unwrap(),
+            // flexidag effective height
+            bcs_ext::to_bytes(&genesis_config.dag_effective_height).unwrap(),
         ],
     )
 }
