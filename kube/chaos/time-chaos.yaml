@@ -7,7 +7,7 @@ spec:
   mode: one
   selector:
     namespaces:
-    - default
+    - starcoin-halley
     labelSelectors:
       "app": "starcoin"
   timeOffset: "-10m"
