@@ -517,6 +517,8 @@ where
     fn get_raw(&self, key: K) -> Result<Option<Vec<u8>>>;
 
     fn iter(&self) -> Result<SchemaIterator<K, V>>;
+
+    fn remove_all(&self) -> Result<()>;
 }
 
 impl KeyCodec for u64 {
@@ -659,5 +661,24 @@ where
             .db()
             .ok_or_else(|| format_err!("Only support scan on db storage instance"))?;
         db.iter::<K, V>(self.get_store().prefix_name)
+    }
+
+    fn remove_all(&self) -> Result<()>  {
+        match self.get_store().storage().db() {
+            Some(db) => {
+                let mut iter = db.iter::<K, V>(&self.get_store().prefix_name)?;
+                while let Some(item) = iter.next() {
+                    let (key, _) = item?;
+                    self.remove(key)?;
+                }
+            }
+            None => ()
+        }
+
+        match self.get_store().storage().cache() {
+            Some(cache) => cache.remove_all(),
+            None => (),
+        }
+        Ok(())
     }
 }
