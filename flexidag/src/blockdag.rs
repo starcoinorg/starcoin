@@ -236,7 +236,7 @@ impl BlockDAG {
         process_key_already_error(self.storage.header_store.insert(
             header.id(),
             Arc::new(header),
-            0,
+            1,
         ))?;
         Ok(())
     }

@@ -55,7 +55,7 @@ impl<
             Hash::sha3_256_of(
                 &[genesis.parent_hash(), genesis.id()]
                     .encode()
-                    .expect("failed to encode hash for dag gensis and its parent"),
+                    .expect("failed to encode hash for dag genesis and its parent"),
             ),
             BlockHashes::new(vec![]),
             BlockHashes::new(Vec::new()),
