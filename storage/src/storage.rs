@@ -12,7 +12,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 use rocksdb::{DBPinnableSlice, WriteBatch as DBWriteBatch};
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::info;
+use starcoin_logger::prelude::{debug, info};
 use starcoin_vm_types::state_store::table::TableHandle;
 use std::{convert::TryInto, fmt::Debug, marker::PhantomData, sync::Arc};
 
@@ -667,9 +667,17 @@ where
         match self.get_store().storage().db() {
             Some(db) => {
                 let mut iter = db.iter::<K, V>(&self.get_store().prefix_name)?;
-                while let Some(item) = iter.next() {
-                    let (key, _) = item?;
-                    self.remove(key)?;
+                iter.seek_to_first();
+                while let Some(result_item) = iter.next() {
+                    match result_item {
+                        Ok(item) => {
+                            let (key, _) = item;
+                            self.remove(key)?;
+                        }
+                        Err(e) => {
+                            debug!("finish to remove all keys in db with an error: {:?}", e);
+                        }
+                    }
                 }
             }
             None => ()

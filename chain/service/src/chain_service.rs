@@ -461,9 +461,9 @@ impl ReadableChainService for ChainReaderServiceInner {
         let head = self.main.current_header();
         if self.main.check_dag_type(&head)? != DagHeaderType::Normal {
             bail!(
-                "The chain is still not a dag and its dag fork number is {} and the current is {:?}.",
+                "The chain is still not a dag and its dag fork number is {:?} and the current block's header number is {:?}.",
+                self.main.dag_fork_height()?,
                 head.number(),
-                self.main.dag_fork_height()?
             );
         }
         let (dag_genesis, state) = self.main.get_dag_state_by_block(&head)?;

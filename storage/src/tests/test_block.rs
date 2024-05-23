@@ -3,15 +3,18 @@
 
 extern crate chrono;
 
+use std::hash::Hash;
+
+use anyhow::{format_err, Ok};
 use bcs_ext::BCSCodec;
 use chrono::prelude::*;
 use starcoin_crypto::HashValue;
 
-use crate::block::{FailedBlock, OldFailedBlock};
+use crate::block::{DagSyncBlock, FailedBlock, OldFailedBlock};
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::StorageInstance;
-use crate::Storage;
+use crate::{BlockStore, Storage};
 use starcoin_config::RocksdbConfig;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockHeaderExtra};
@@ -231,4 +234,91 @@ fn test_save_failed_block() {
         .unwrap();
     assert_eq!(result.0, block);
     assert_eq!(result.3, "1".to_string());
+}
+
+fn new_dag_sync_block(children: Vec<HashValue>) -> anyhow::Result<DagSyncBlock> {
+    let dt = Local::now();
+    let block_header = BlockHeader::new(
+        HashValue::random(),
+        dt.timestamp_nanos() as u64,
+        3,
+        AccountAddress::random(),
+        HashValue::zero(),
+        HashValue::random(),
+        HashValue::zero(),
+        0,
+        U256::zero(),
+        HashValue::random(),
+        ChainId::test(),
+        0,
+        BlockHeaderExtra::new([0u8; 4]),
+        None,
+    );
+
+    let block_body = BlockBody::new(vec![SignedUserTransaction::mock()], None);
+
+    let block = Block::new(block_header, block_body);
+
+    anyhow::Ok(DagSyncBlock {
+        block,
+        children,
+    })
+}
+
+
+fn delete_disc_storage() -> anyhow::Result<()> {
+    let tmpdir = starcoin_config::temp_dir();
+    let storage = Storage::new(StorageInstance::new_db_instance(
+        DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
+    ))?;
+
+    let mut last_block_id = vec![];
+    for _i in 0..10 {
+        let block = new_dag_sync_block(last_block_id)?;
+        storage.save_dag_sync_block(block.clone())?;
+        let s = storage.get_dag_sync_block(block.block.id())?.ok_or_else(|| format_err!("block not found"))?;
+        last_block_id = vec![block.block.id()];
+    }
+
+    storage.delete_all_dag_sync_blocks()    
+}
+
+fn delete_cache_storage() -> anyhow::Result<()> {
+    let tmpdir = starcoin_config::temp_dir();
+    let storage = Storage::new(StorageInstance::new_cache_instance())?;
+
+    let mut last_block_id = vec![];
+    for _i in 0..10 {
+        let block = new_dag_sync_block(last_block_id)?;
+        storage.save_dag_sync_block(block.clone())?;
+        last_block_id = vec![block.block.id()];
+    }
+
+    storage.delete_all_dag_sync_blocks()    
+}
+    
+fn delete_disc_and_cache_storage() -> anyhow::Result<()> {
+    let tmpdir = starcoin_config::temp_dir();
+    let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
+    ))?;
+
+    let mut last_block_id = vec![];
+    for _i in 0..10 {
+        let block = new_dag_sync_block(last_block_id)?;
+        storage.save_dag_sync_block(block.clone())?;
+        last_block_id = vec![block.block.id()];
+    }
+
+    storage.delete_all_dag_sync_blocks()    
+} 
+
+#[test]
+fn test_delete_sync_blocks() -> anyhow::Result<()> {
+    delete_disc_storage()?;
+    delete_cache_storage()?;
+    delete_disc_and_cache_storage()?;
+
+    Ok(())
 }
