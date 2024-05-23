@@ -350,7 +350,8 @@ pub fn create_signed_txn_with_association_account(
 pub fn build_stdlib_package(net: &ChainNetwork, stdlib_option: StdLibOptions) -> Result<Package> {
     let init_script = match net.genesis_config().stdlib_version {
         StdlibVersion::Version(1) => build_init_script_v1(net),
-        _ => build_init_script_v2(net),
+        version if version < StdlibVersion::Version(12) => build_init_script_v2(net),
+        _ => build_init_script_v3(net),
     };
     stdlib_package(stdlib_option, Some(init_script))
 }

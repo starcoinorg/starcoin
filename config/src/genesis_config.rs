@@ -881,7 +881,8 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
-        dag_effective_height: 0,
+        // todo: rollback it to zero and initialize BlockDag properly
+        dag_effective_height: 1u64,
     }
 });
 
@@ -940,7 +941,8 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 1000, // 1 minute
         },
         transaction_timeout: ONE_DAY,
-        dag_effective_height: 0,
+        // todo: rollback it to zero and initialize BlockDag properly
+        dag_effective_height: 1u64,
     }
 });
 
