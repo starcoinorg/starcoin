@@ -680,9 +680,6 @@ where
             }
         }
 
-        if let Some(cache) = self.get_store().storage().cache() {
-            cache.remove_all();
-        }
         Ok(())
     }
 }
