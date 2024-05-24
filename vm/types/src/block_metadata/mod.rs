@@ -150,10 +150,6 @@ impl BlockMetadata {
     pub fn author(&self) -> AccountAddress {
         self.author
     }
-    pub fn to_legacy(&self) -> Self {
-        let meta: legacy::BlockMetadata = self.clone().into();
-        meta.into()
-    }
 }
 
 impl<'de> Deserialize<'de> for BlockMetadata {

@@ -347,12 +347,16 @@ pub fn create_signed_txn_with_association_account(
         .expect("Sign txn should work.")
 }
 
-pub fn build_stdlib_package(net: &ChainNetwork, stdlib_option: StdLibOptions) -> Result<Package> {
-    let init_script = match net.genesis_config().stdlib_version {
+fn build_init_script(net: &ChainNetwork) -> ScriptFunction {
+    match net.genesis_config().stdlib_version {
         StdlibVersion::Version(1) => build_init_script_v1(net),
         version if version < StdlibVersion::Version(12) => build_init_script_v2(net),
         _ => build_init_script_v3(net),
-    };
+    }
+}
+
+pub fn build_stdlib_package(net: &ChainNetwork, stdlib_option: StdLibOptions) -> Result<Package> {
+    let init_script = build_init_script(net);
     stdlib_package(stdlib_option, Some(init_script))
 }
 
@@ -360,11 +364,7 @@ pub fn build_stdlib_package_with_modules(
     net: &ChainNetwork,
     modules: Vec<Vec<u8>>,
 ) -> Result<Package> {
-    let init_script = match net.genesis_config().stdlib_version {
-        StdlibVersion::Version(1) => build_init_script_v1(net),
-        version if version < StdlibVersion::Version(12) => build_init_script_v2(net),
-        _ => build_init_script_v3(net),
-    };
+    let init_script = build_init_script(net);
     module_to_package(modules, Some(init_script))
 }
 
