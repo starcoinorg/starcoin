@@ -17,12 +17,12 @@ use starcoin_txpool_mock_service::MockTxPoolService;
 use test_helper::DummyNetworkService;
 
 #[stest::test(timeout = 120)]
-pub async fn test_full_sync_new_node_dag() {
+pub async fn test_full_sync_new_node_dag() -> Result<()> {
     starcoin_types::block::set_test_flexidag_fork_height(10);
     full_sync_new_node()
-        .await
-        .expect("dag full sync should success");
+        .await?;
     starcoin_types::block::reset_test_custom_fork_height();
+    Ok(())
 }
 
 async fn sync_block_process(

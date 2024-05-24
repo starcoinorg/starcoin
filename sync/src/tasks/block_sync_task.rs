@@ -758,7 +758,6 @@ where
     }
 
     fn finish(self) -> Result<Self::Output> {
-        self.local_store.delete_all_dag_sync_blocks()?;
         Ok(self.chain)
     }
 }
