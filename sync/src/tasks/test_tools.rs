@@ -13,6 +13,7 @@ use starcoin_account_api::AccountInfo;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork, NodeConfig, RocksdbConfig};
+use starcoin_dag::blockdag::DEFAULT_GHOSTDAG_K;
 use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
@@ -20,7 +21,6 @@ use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRe
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
-use starcoin_dag::blockdag::DEFAULT_GHOSTDAG_K;
 #[cfg(test)]
 use starcoin_txpool_mock_service::MockTxPoolService;
 use std::fs;

@@ -400,10 +400,7 @@ where
         let mut absent_blocks_map = HashMap::new();
         loop {
             let mut absent_blocks = vec![];
-            self.find_absent_parent_dag_blocks_for_blocks(
-                block_headers,
-                &mut absent_blocks,
-            )?;
+            self.find_absent_parent_dag_blocks_for_blocks(block_headers, &mut absent_blocks)?;
             if absent_blocks.is_empty() {
                 return Ok(absent_blocks_map.into_values().collect());
             }
