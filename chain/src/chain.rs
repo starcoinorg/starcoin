@@ -14,7 +14,6 @@ use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
     ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
-use starcoin_config::genesis_config::{G_TEST_DAG_FORK_HEIGHT, G_TEST_DAG_FORK_STATE_KEY};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
@@ -812,13 +811,16 @@ impl BlockChain {
         let final_block_gas_limit = block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
-        let (_, tips_hash) = if current_number <= self.dag_fork_height()?.unwrap_or(u64::MAX) {
-            (None, None)
+        let tips_hash = if current_number <= self.dag_fork_height()?.unwrap_or(u64::MAX) {
+            None
         } else if tips.is_some() {
-            (Some(self.get_block_dag_genesis(&previous_header)?), tips)
+            tips
         } else {
-            let result = self.current_tips_hash(&previous_header)?.expect("the block number is larger than the dag fork number but the state data doese not exis");
-            (Some(result.0), Some(result.1))
+            Some(
+                self.current_tips_hash(&previous_header)?
+                    .map(|r| r.1)
+                    .expect("Creating a Dag block but tips don't exist"),
+            )
         };
         let strategy = epoch.strategy();
         let difficulty = strategy.calculate_next_difficulty(self)?;
@@ -852,8 +854,8 @@ impl BlockChain {
             }
         };
         debug!(
-            "Blue blocks:{:?} in chain/create_block_template_by_header",
-            blue_blocks
+            "current_number: {}, Blue blocks:{:?} tips_hash {:?} in chain/create_block_template_by_header",
+            current_number, blue_blocks, tips_hash
         );
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),
@@ -1713,25 +1715,27 @@ impl BlockChain {
         use std::cmp::Ordering;
 
         let dag_height = self.dag_fork_height()?.unwrap_or(u64::MAX);
-        if header.is_genesis() {
-            return Ok(DagHeaderType::Single);
-        }
         let no_parents = header.parents_hash().unwrap_or_default().is_empty();
 
         match (no_parents, header.number().cmp(&dag_height)) {
-            (true, Ordering::Greater) => {
-                Err(anyhow!("block header with suitable height but no parents"))
-            }
+            (true, Ordering::Greater) => Err(anyhow!(
+                "block header with suitable height {}/{} but no parents",
+                header.number(),
+                dag_height
+            )),
             (false, Ordering::Greater) => Ok(DagHeaderType::Normal),
 
             (true, Ordering::Equal) => Ok(DagHeaderType::Genesis),
             (false, Ordering::Equal) => Err(anyhow!(
-                "block header with dag genesis height but having parents"
+                "block header with dag genesis height {} but having parents",
+                dag_height
             )),
 
             (true, Ordering::Less) => Ok(DagHeaderType::Single),
             (false, Ordering::Less) => Err(anyhow!(
-                "block header with smaller height but having parents"
+                "block header with smaller height {}/{} but having parents",
+                header.number(),
+                dag_height
             )),
         }
     }
@@ -2344,7 +2348,12 @@ impl BlockChain {
         Ok(executed_block)
     }
 
+    // todo: please remove me.
+    // Try to set custom dag_effective_height for `test` network for different test cases,
+    // or using different features to set the height.
+    #[cfg(feature = "sync-dag-test")]
     pub fn dag_fork_height(&self) -> Result<Option<BlockNumber>> {
+        use starcoin_config::genesis_config::{G_TEST_DAG_FORK_HEIGHT, G_TEST_DAG_FORK_STATE_KEY};
         let chain_id = self.status().head().chain_id();
         if chain_id.is_test() {
             let result = self.dag.get_dag_state(*G_TEST_DAG_FORK_STATE_KEY);
@@ -2367,6 +2376,14 @@ impl BlockChain {
                 .get_on_chain_config::<FlexiDagConfig>()?
                 .map(|c| c.effective_height))
         }
+    }
+
+    #[cfg(not(feature = "sync-dag-test"))]
+    pub fn dag_fork_height(&self) -> Result<Option<BlockNumber>> {
+        Ok(self
+            .statedb
+            .get_on_chain_config::<FlexiDagConfig>()?
+            .map(|c| c.effective_height))
     }
 }
 

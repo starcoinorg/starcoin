@@ -279,13 +279,16 @@ impl Genesis {
         dag: BlockDAG,
     ) -> Result<ChainInfo> {
         storage.save_genesis(self.block.id())?;
-        let genesis_chain = BlockChain::new_with_genesis(
+        let mut genesis_chain = BlockChain::new_with_genesis(
             net.time_service(),
             storage.clone(),
             net.genesis_epoch(),
             self.block.clone(),
             dag,
         )?;
+
+        genesis_chain.init_dag_with_genesis(self.block.header().clone())?;
+
         let startup_info = StartupInfo::new(genesis_chain.current_header().id());
         storage.save_startup_info(startup_info)?;
         storage

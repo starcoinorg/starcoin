@@ -779,6 +779,11 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let mut gas_constant = G_TEST_GAS_CONSTANTS.clone();
     gas_constant.min_price_per_gas_unit = 1;
 
+    #[cfg(feature = "dag-dev-network")]
+    let dag_effective_height = 0u64;
+    #[cfg(not(feature = "dag-dev-network"))]
+    let dag_effective_height = u64::MAX;
+
     let stdlib_version = StdlibVersion::Latest;
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
@@ -822,7 +827,7 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
-        dag_effective_height: u64::MAX,
+        dag_effective_height,
     }
 });
 
@@ -881,8 +886,7 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
-        // todo: rollback it to zero and initialize BlockDag properly
-        dag_effective_height: 1u64,
+        dag_effective_height: 0u64,
     }
 });
 
@@ -941,8 +945,7 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 1000, // 1 minute
         },
         transaction_timeout: ONE_DAY,
-        // todo: rollback it to zero and initialize BlockDag properly
-        dag_effective_height: 1u64,
+        dag_effective_height: 0u64,
     }
 });
 
