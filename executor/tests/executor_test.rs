@@ -3,6 +3,7 @@
 
 use anyhow::anyhow;
 use anyhow::Result;
+use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_executor::validate_transaction;
 use starcoin_logger::prelude::*;
 use starcoin_transaction_builder::{
@@ -28,8 +29,8 @@ use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::{transaction::Package, vm_status::StatusCode};
 use test_helper::executor::{
     account_execute, account_execute_should_success, association_execute_should_success,
-    blockmeta_execute, build_raw_txn, current_block_number, TEST_MODULE, TEST_MODULE_1,
-    TEST_MODULE_2,
+    blockmeta_execute, build_raw_txn, current_block_number, prepare_customized_genesis,
+    TEST_MODULE, TEST_MODULE_1, TEST_MODULE_2,
 };
 
 use test_helper::executor::{
@@ -109,6 +110,34 @@ fn test_flexidag_config_get() {
     };
 
     assert_eq!(read_version, version);
+}
+
+#[stest::test]
+fn test_flexidag_config_get_for_halley() {
+    let chain_state =
+        prepare_customized_genesis(&ChainNetwork::new_builtin(BuiltinNetworkID::Halley));
+
+    let version = {
+        let mut vm = StarcoinVM::new(None);
+        vm.load_configs(&chain_state).unwrap();
+        vm.get_flexidag_config().unwrap().effective_height
+    };
+
+    assert_eq!(version, 1);
+}
+
+#[stest::test]
+fn test_flexidag_config_get_for_proxima() {
+    let chain_state =
+        prepare_customized_genesis(&ChainNetwork::new_builtin(BuiltinNetworkID::Proxima));
+
+    let version = {
+        let mut vm = StarcoinVM::new(None);
+        vm.load_configs(&chain_state).unwrap();
+        vm.get_flexidag_config().unwrap().effective_height
+    };
+
+    assert_eq!(version, 1);
 }
 
 #[stest::test]
