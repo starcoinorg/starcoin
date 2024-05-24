@@ -663,29 +663,25 @@ where
         db.iter::<K, V>(self.get_store().prefix_name)
     }
 
-    fn remove_all(&self) -> Result<()>  {
-        match self.get_store().storage().db() {
-            Some(db) => {
-                let mut iter = db.iter::<K, V>(&self.get_store().prefix_name)?;
-                iter.seek_to_first();
-                while let Some(result_item) = iter.next() {
-                    match result_item {
-                        Ok(item) => {
-                            let (key, _) = item;
-                            self.remove(key)?;
-                        }
-                        Err(e) => {
-                            debug!("finish to remove all keys in db with an error: {:?}", e);
-                        }
+    fn remove_all(&self) -> Result<()> {
+        if let Some(db) = self.get_store().storage().db() {
+            let mut iter = db.iter::<K, V>(self.get_store().prefix_name)?;
+            iter.seek_to_first();
+            for result_item in iter {
+                match result_item {
+                    Ok(item) => {
+                        let (key, _) = item;
+                        self.remove(key)?;
+                    }
+                    Err(e) => {
+                        debug!("finish to remove all keys in db with an error: {:?}", e);
                     }
                 }
             }
-            None => ()
         }
 
-        match self.get_store().storage().cache() {
-            Some(cache) => cache.remove_all(),
-            None => (),
+        if let Some(cache) = self.get_store().storage().cache() {
+            cache.remove_all();
         }
         Ok(())
     }
