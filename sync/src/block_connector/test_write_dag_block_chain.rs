@@ -36,19 +36,6 @@ pub fn gen_dag_blocks(
     } else {
         bail!("times must > 0")
     }
-
-    // match result {
-    //     super::write_block_chain::ConnectOk::Duplicate(block)
-    //     | super::write_block_chain::ConnectOk::ExeConnectMain(block)
-    //     | super::write_block_chain::ConnectOk::ExeConnectBranch(block)
-    //     | super::write_block_chain::ConnectOk::Connect(block) => Some(block.header().id()),
-    //     super::write_block_chain::ConnectOk::DagConnected
-    //     | super::write_block_chain::ConnectOk::MainDuplicate
-    //     | super::write_block_chain::ConnectOk::DagPending
-    //     | super::write_block_chain::ConnectOk::DagConnectMissingBlock => {
-    //         unreachable!("should not reach here, result: {:?}", result);
-    //     }
-    // }
 }
 
 pub fn new_dag_block(
@@ -61,17 +48,6 @@ pub fn new_dag_block(
         None => AccountInfo::random(),
     };
     let miner_address = *miner.address();
-    // let parent_id = writeable_block_chain_service.get_main().current_header().id();
-    // let mut block_chain = BlockChain::new(
-    //     net.time_service().clone(),
-    //     parent_id,
-    //     writeable_block_chain_service.get_main().get_storage(),
-    //     None,
-    //     writeable_block_chain_service.get_dag().clone(),
-    // )
-    // .unwrap();
-    // let current_header = block_chain.current_header
-
     let dag_fork_height = writeable_block_chain_service
         .get_main()
         .dag_fork_height()?

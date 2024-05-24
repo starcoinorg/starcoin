@@ -12,7 +12,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 use rocksdb::{DBPinnableSlice, WriteBatch as DBWriteBatch};
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::info;
+use starcoin_logger::prelude::{debug, info};
 use starcoin_vm_types::state_store::table::TableHandle;
 use std::{convert::TryInto, fmt::Debug, marker::PhantomData, sync::Arc};
 
@@ -517,6 +517,8 @@ where
     fn get_raw(&self, key: K) -> Result<Option<Vec<u8>>>;
 
     fn iter(&self) -> Result<SchemaIterator<K, V>>;
+
+    fn remove_all(&self) -> Result<()>;
 }
 
 impl KeyCodec for u64 {
@@ -659,5 +661,28 @@ where
             .db()
             .ok_or_else(|| format_err!("Only support scan on db storage instance"))?;
         db.iter::<K, V>(self.get_store().prefix_name)
+    }
+
+    fn remove_all(&self) -> Result<()> {
+        if let Some(db) = self.get_store().storage().db() {
+            let mut iter = db.iter::<K, V>(self.get_store().prefix_name)?;
+            iter.seek_to_first();
+            for result_item in iter {
+                match result_item {
+                    Ok(item) => {
+                        let (key, _) = item;
+                        self.remove(key)?;
+                    }
+                    Err(e) => {
+                        debug!("finish to remove all keys in db with an error: {:?}", e);
+                    }
+                }
+            }
+        }
+
+        if let Some(cache) = self.get_store().storage().cache() {
+            cache.remove_all();
+        }
+        Ok(())
     }
 }

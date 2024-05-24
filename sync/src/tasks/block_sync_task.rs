@@ -378,10 +378,6 @@ where
                 }
                 absent_blocks.push(parent)
             }
-            // if ancestors.contains(&parent) {
-            //     continue;
-            // }
-            // ancestors.push(parent);
         }
         Ok(())
     }
@@ -389,7 +385,6 @@ where
     fn find_absent_parent_dag_blocks_for_blocks(
         &self,
         block_headers: Vec<BlockHeader>,
-        // ancestors: &mut Vec<HashValue>,
         absent_blocks: &mut Vec<HashValue>,
     ) -> Result<()> {
         for block_header in block_headers {
@@ -402,16 +397,10 @@ where
         &self,
         mut block_headers: Vec<BlockHeader>,
     ) -> Result<Vec<Block>> {
-        // let mut ancestors = vec![];
-        // let mut absent_block_headers = vec![];
         let mut absent_blocks_map = HashMap::new();
         loop {
             let mut absent_blocks = vec![];
-            self.find_absent_parent_dag_blocks_for_blocks(
-                block_headers,
-                // &mut ancestors,
-                &mut absent_blocks,
-            )?;
+            self.find_absent_parent_dag_blocks_for_blocks(block_headers, &mut absent_blocks)?;
             if absent_blocks.is_empty() {
                 return Ok(absent_blocks_map.into_values().collect());
             }
@@ -424,7 +413,6 @@ where
             remote_absent_blocks.into_iter().for_each(|(_id, block)| {
                 absent_blocks_map.insert(block.id(), block);
             });
-            // absent_block_headers.append(&mut remote_absent_block_headers.into_iter().map(|(_, header)| header.expect("block header should not be none!")).collect());
         }
     }
 
@@ -513,12 +501,7 @@ where
                             process_dag_ancestors
                                 .insert(block.header().id(), block.header().clone());
 
-                            // execute the children if their parents are ready
-                            // if all children are executed, delete it.
                             self.execute_if_parent_ready(executed_block.block.id())?;
-
-                            // todo: how to delete the block?
-                            // self.local_store.delete_dag_sync_block(executed_block.block.id())?;
 
                             self.notify_connected_block(
                                 executed_block.block,
@@ -541,26 +524,6 @@ where
                     break;
                 }
             }
-
-            // dag_ancestors = std::mem::take(&mut process_dag_ancestors);
-            // // process_dag_ancestors = vec![];
-
-            // dag_ancestors = Self::remove_repeated(
-            //     &self.fetch_dag_block_absent_children(dag_ancestors).await?,
-            // );
-            // source_path.extend(&dag_ancestors);
-
-            // if !dag_ancestors.is_empty() {
-            //     for (id, op_header) in self.fetch_block_headers(dag_ancestors.clone()).await? {
-            //         if let Some(header) = op_header {
-            //             self.ensure_dag_parent_blocks_exist(header, source_path)?;
-            //         } else {
-            //             bail!("when finding the ancestor's children's parents, fetching block header failed, block id: {:?}", id);
-            //         }
-            //     }
-            // }
-
-            // info!("next dag children blocks: {:?}", dag_ancestors);
 
             Ok(())
         };
@@ -591,9 +554,6 @@ where
                 })?;
                 result.push((block.id(), block));
             }
-            // result.extend(self.fetcher.fetch_blocks(chunk.to_vec()).await?.into_iter().map(|(block, _)| {
-            //     (block.id(), block)
-            // }));
         }
         Ok(result)
     }
@@ -682,84 +642,11 @@ where
                 })?;
                 parent_block.children.push(block_header.id());
                 self.local_store.save_dag_sync_block(parent_block)?;
-                // return Ok(false);
                 result = Ok(false);
             }
         }
-        // Ok(true)
         result
     }
-
-    // fn remove_repeated(repeated: &[HashValue]) -> Vec<HashValue> {
-    //     let mut uniqued = vec![];
-    //     let mut remove_repeated = HashSet::new();
-    //     for d in repeated {
-    //         if remove_repeated.insert(*d) {
-    //             uniqued.push(*d);
-    //         }
-    //     }
-    //     uniqued
-    // }
-
-    // async fn fetch_dag_block_absent_children(
-    //     &self,
-    //     mut dag_ancestors: Vec<HashValue>,
-    // ) -> Result<Vec<HashValue>> {
-    //     let mut absent_children = Vec::new();
-    //     while !dag_ancestors.is_empty() {
-    //         let children = self
-    //             .fetch_dag_block_children(std::mem::take(&mut dag_ancestors))
-    //             .await?;
-    //         for child in children {
-    //             if self.chain.has_dag_block(child)? {
-    //                 if !dag_ancestors.contains(&child) {
-    //                     dag_ancestors.push(child);
-    //                 }
-    //             } else if !absent_children.contains(&child) {
-    //                 absent_children.push(child);
-    //             }
-    //         }
-    //     }
-    //     Ok(absent_children)
-    // }
-
-    // async fn fetch_dag_block_children(
-    //     &self,
-    //     dag_ancestors: Vec<HashValue>,
-    // ) -> Result<Vec<HashValue>> {
-    //     let mut result = vec![];
-    //     for chunk in dag_ancestors.chunks(usize::try_from(MAX_BLOCK_REQUEST_SIZE)?) {
-    //         result.extend(self.fetch_dag_block_children_inner(chunk.to_vec()).await?);
-    //     }
-    //     Ok(result)
-    // }
-
-    // async fn fetch_dag_block_children_inner(
-    //     &self,
-    //     dag_ancestors: Vec<HashValue>,
-    // ) -> Result<Vec<HashValue>> {
-    //     let mut count: i32 = 20;
-    //     while count > 0 {
-    //         info!("fetch block chidlren retry count = {}", count);
-    //         match self
-    //             .fetcher
-    //             .fetch_dag_block_children(dag_ancestors.clone())
-    //             .await
-    //         {
-    //             Ok(result) => {
-    //                 return Ok(result);
-    //             }
-    //             Err(e) => {
-    //                 count = count.saturating_sub(1);
-    //                 if count == 0 {
-    //                     bail!("failed to fetch dag block children due to: {:?}", e);
-    //                 }
-    //                 async_std::task::sleep(Duration::from_secs(1)).await;
-    //             }
-    //         }
-    //     }
-    //     bail!("failed to fetch dag block children");
-    // }
 
     pub fn check_enough_by_info(&self, block_info: BlockInfo) -> Result<CollectorState> {
         if block_info.block_accumulator_info.num_leaves
@@ -871,6 +758,7 @@ where
     }
 
     fn finish(self) -> Result<Self::Output> {
+        self.local_store.delete_all_dag_sync_blocks()?;
         Ok(self.chain)
     }
 }

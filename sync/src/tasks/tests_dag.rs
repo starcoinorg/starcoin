@@ -182,8 +182,6 @@ async fn test_sync_red_blocks_dag() -> Result<()> {
         .expect("failed to produce block");
 
     sync_block_process(target_node, local_node, &test_system.registry).await?;
-    // // genertate the red blocks
-    // Arc::get_mut(&mut target_node).unwrap().produce_block_by_header(dag_genesis_header, 5).expect("failed to produce block");
 
     starcoin_types::block::reset_test_custom_fork_height();
     Ok(())

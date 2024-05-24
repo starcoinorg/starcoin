@@ -265,7 +265,6 @@ where
         let executed_block = self.main.execute(verified_block)?;
         let enacted_blocks = vec![executed_block.block().clone()];
         self.do_new_head(executed_block, 1, enacted_blocks, 0, vec![])?;
-        // bail!("failed to apply for tesing the connection later!");
         Ok(())
     }
 
@@ -296,7 +295,6 @@ where
             self.update_startup_info(self.main.head_block().header())?;
             ctx.broadcast(NewHeadBlock {
                 executed_block: Arc::new(self.main.head_block()),
-                // tips: self.main.status().tips_hash.clone(),
             });
             Ok(())
         } else {
@@ -520,7 +518,6 @@ where
 
         if let Err(e) = self.bus.broadcast(NewHeadBlock {
             executed_block: Arc::new(block),
-            // tips: self.main.status().tips_hash.clone(),
         }) {
             error!("Broadcast NewHeadBlock error: {:?}", e);
         }
