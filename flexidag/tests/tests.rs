@@ -258,7 +258,7 @@ fn test_dag_genesis_fork() {
         let _ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
     }
 
-    // fork, produce a new dag gensis
+    // fork, produce a new dag genesis
     let new_genesis = BlockHeader::dag_genesis_random()
         .as_builder()
         .with_difficulty(0.into())
@@ -313,28 +313,40 @@ fn test_dag_tips_store() {
     let state1 = DagState {
         tips: vec![Hash::random()],
     };
-    let dag_gensis1 = Hash::random();
+    let dag_genesis1 = Hash::random();
     dag.storage
         .state_store
         .write()
+<<<<<<< dag-master-delete-syncblocks
         .insert(dag_gensis1, state1.clone())
+=======
+        .insert(dag_genesis1, state1.clone())
+>>>>>>> dag-master
         .expect("failed to store the dag state");
 
     let state2 = DagState {
         tips: vec![Hash::random()],
     };
-    let dag_gensis2 = Hash::random();
+    let dag_genesis2 = Hash::random();
     dag.storage
         .state_store
         .write()
+<<<<<<< dag-master-delete-syncblocks
         .insert(dag_gensis2, state2.clone())
+=======
+        .insert(dag_genesis2, state2.clone())
+>>>>>>> dag-master
         .expect("failed to store the dag state");
 
     assert_eq!(
         dag.storage
             .state_store
             .read()
+<<<<<<< dag-master-delete-syncblocks
             .get_state(dag_gensis1)
+=======
+            .get_state(dag_genesis1)
+>>>>>>> dag-master
             .expect("failed to get the dag state"),
         state1
     );
@@ -342,7 +354,11 @@ fn test_dag_tips_store() {
         dag.storage
             .state_store
             .read()
+<<<<<<< dag-master-delete-syncblocks
             .get_state(dag_gensis2)
+=======
+            .get_state(dag_genesis2)
+>>>>>>> dag-master
             .expect("failed to get the dag state"),
         state2
     );

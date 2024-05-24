@@ -255,7 +255,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 self.inner.check_dag_type(&header)?
             })),
             ChainRequest::DagForkHeigh => {
-                Ok(ChainResponse::DagForkHeigh(self.inner.dag_fork_heigh()?))
+                Ok(ChainResponse::DagForkHeight(self.inner.dag_fork_height()?))
             }
         }
     }
@@ -477,7 +477,7 @@ impl ReadableChainService for ChainReaderServiceInner {
         self.main.check_dag_type(header)
     }
 
-    fn dag_fork_heigh(&self) -> Result<Option<BlockNumber>> {
+    fn dag_fork_height(&self) -> Result<Option<BlockNumber>> {
         self.main.dag_fork_height()
     }
 }
