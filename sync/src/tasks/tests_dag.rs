@@ -19,8 +19,7 @@ use test_helper::DummyNetworkService;
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_new_node_dag() -> Result<()> {
     starcoin_types::block::set_test_flexidag_fork_height(10);
-    full_sync_new_node()
-        .await?;
+    full_sync_new_node().await?;
     starcoin_types::block::reset_test_custom_fork_height();
     Ok(())
 }
