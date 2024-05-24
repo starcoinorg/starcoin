@@ -317,11 +317,7 @@ fn test_dag_tips_store() {
     dag.storage
         .state_store
         .write()
-<<<<<<< dag-master-delete-syncblocks
-        .insert(dag_gensis1, state1.clone())
-=======
         .insert(dag_genesis1, state1.clone())
->>>>>>> dag-master
         .expect("failed to store the dag state");
 
     let state2 = DagState {
@@ -331,22 +327,14 @@ fn test_dag_tips_store() {
     dag.storage
         .state_store
         .write()
-<<<<<<< dag-master-delete-syncblocks
-        .insert(dag_gensis2, state2.clone())
-=======
         .insert(dag_genesis2, state2.clone())
->>>>>>> dag-master
         .expect("failed to store the dag state");
 
     assert_eq!(
         dag.storage
             .state_store
             .read()
-<<<<<<< dag-master-delete-syncblocks
-            .get_state(dag_gensis1)
-=======
             .get_state(dag_genesis1)
->>>>>>> dag-master
             .expect("failed to get the dag state"),
         state1
     );
@@ -354,51 +342,11 @@ fn test_dag_tips_store() {
         dag.storage
             .state_store
             .read()
-<<<<<<< dag-master-delete-syncblocks
-            .get_state(dag_gensis2)
-=======
             .get_state(dag_genesis2)
->>>>>>> dag-master
             .expect("failed to get the dag state"),
         state2
     );
 }
-
-// #[test]
-// fn test_dag_multiple_commits() {
-//     // initialzie the dag firstly
-//     let dag = BlockDAG::create_for_testing().unwrap();
-
-//     let genesis = BlockHeader::dag_genesis_random()
-//         .as_builder()
-//         .with_difficulty(0.into())
-//         .build();
-//     dag.init_with_genesis(genesis.clone()).unwrap();
-
-//     // normally add the dag blocks
-//     let mut headers = vec![];
-//     let mut parents_hash = vec![genesis.id()];
-//     let mut parent_hash = genesis.id();
-//     for _ in 0..100 {
-//         let header_builder = BlockHeaderBuilder::random();
-//         let header = header_builder
-//         .with_parent_hash(parent_hash)
-//             .with_parents_hash(Some(parents_hash.clone()))
-//             .build();
-//         parents_hash = vec![header.id()];
-//         parent_hash = header.id();
-//         headers.push(header.clone());
-//         dag.commit(header.to_owned()).unwrap();
-//         let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
-//     }
-
-//     for _ in 0..10 {
-//         for header in &headers {
-//             let _ = dag.commit(header.clone());
-//             let _ = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
-//         }
-//     }
-// }
 
 #[test]
 fn test_dag_multiple_commits() -> anyhow::Result<()> {
@@ -762,32 +710,10 @@ fn test_reachability_algorighm() -> anyhow::Result<()> {
     hashes.push(child8);
     print_reachability_data(reachability_store.read().deref(), &hashes);
 
-    // for _i in 7..=31 {
-    //     let s = Hash::random();
-    //     inquirer::add_block(
-    //         &mut reachability_store,
-    //         s,
-    //         child1,
-    //         &mut vec![child1].into_iter(),
-    //     )?;
-    //     hashes.push(s);
-    //     print_reachability_data(&reachability_store, &hashes);
-    // }
-
     assert!(
         dag.check_ancestor_of(origin, vec![child5])?,
         "child 5 must be origin's child"
     );
-
-    // let mut count = 6;
-    // loop {
-    //     let child = Hash::random();
-    //     inquirer::add_block(&mut reachability_store, child, origin, &mut vec![origin].into_iter())?;
-    //     hashes.push(child);
-    //     print!("{count:?}");
-    //     print_reachability_data(&reachability_store, &hashes);
-    //     count += 1;
-    // }
 
     Ok(())
 }

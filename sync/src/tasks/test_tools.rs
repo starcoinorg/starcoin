@@ -20,7 +20,6 @@ use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRe
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
-// use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_dag::blockdag::DEFAULT_GHOSTDAG_K;
 #[cfg(test)]
 use starcoin_txpool_mock_service::MockTxPoolService;
@@ -41,9 +40,6 @@ pub struct SyncTestSystem {
 impl SyncTestSystem {
     pub async fn initialize_sync_system() -> Result<SyncTestSystem> {
         let config = Arc::new(NodeConfig::random_for_test());
-
-        // let (storage, chain_info, _, _) = StarcoinGenesis::init_storage_for_test(config.net())
-        //     .expect("init storage by genesis fail.");
 
         let temp_path = PathBuf::from(starcoin_config::temp_dir().as_ref());
         let storage_path = temp_path.join(Path::new("local/storage"));
@@ -212,12 +208,3 @@ pub async fn full_sync_new_node() -> Result<()> {
 
     Ok(())
 }
-
-// #[cfg(test)]
-// pub async fn generate_red_dag_block() -> Result<Block> {
-//     let net = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-//     let mut node = SyncNodeMocker::new(net, 300, 0)?;
-//     node.produce_block(10)?;
-//     let block = node.produce_block(1)?;
-//     Ok(block)
-// }
