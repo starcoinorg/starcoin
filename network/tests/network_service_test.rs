@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{anyhow, format_err, Ok};
+use anyhow::{anyhow, bail, format_err, Ok};
 use futures::stream::StreamExt;
 use futures_timer::Delay;
 use network_api::messages::{
@@ -191,9 +191,12 @@ async fn test_event_notify_receive_repeat_block() -> anyhow::Result<()> {
     assert_eq!(msg_send1.notification, msg_receive1.notification);
 
     //repeat message is filter, so expect timeout error.
-    async_std::future::timeout(Duration::from_secs(50), receiver.next()).await.map_err(|e| format_err!("erorr occured: {:?}", e))?;
-
-    Ok(())
+    let result = async_std::future::timeout(Duration::from_secs(1), receiver.next()).await;
+    if result.is_err() {
+        Ok(())
+    } else {
+        bail!("expect timeout error, but receive message.")
+    }
 }
 
 #[stest::test]
@@ -239,9 +242,12 @@ async fn test_event_notify_receive_repeat_transaction() -> anyhow::Result<()> {
     );
 
     //msg3 is empty after filter, so expect timeout error.
-    async_std::future::timeout(Duration::from_secs(50), receiver.next()).await.map_err(|e| format_err!("erorr occured: {:?}", e))?;
-
-    Ok(())
+    let result = async_std::future::timeout(Duration::from_secs(1), receiver.next()).await;
+    if result.is_err() {
+        Ok(())
+    } else {
+        bail!("expect timeout error, but receive message.")
+    }
 }
 
 fn mock_block_info(total_difficulty: U256) -> BlockInfo {
@@ -281,9 +287,15 @@ async fn test_event_broadcast() -> anyhow::Result<()> {
     //repeat broadcast
     node2.service_ref.broadcast(notification.clone());
 
-    let _msg_receive1 = async_std::future::timeout(Duration::from_secs(50), receiver1.next()).await.map_err(|e| format_err!("in receive1, erorr occured: {:?}", e))?;
+    let msg_receive1 = async_std::future::timeout(Duration::from_secs(1), receiver1.next()).await;
+    if msg_receive1.is_ok() {
+        bail!("expect timeout error, but receive message.")
+    }
 
-    let _msg_receive3 = async_std::future::timeout(Duration::from_secs(50), receiver3.next()).await.map_err(|e| format_err!("in receive1, erorr occured: {:?}", e))?;
+    let msg_receive3 = async_std::future::timeout(Duration::from_secs(1), receiver3.next()).await;
+    if msg_receive3.is_ok() {
+        bail!("expect timeout error, but receive message.")
+    }
 
     print!("{:?}", node1.config.metrics.registry().unwrap().gather());
 
