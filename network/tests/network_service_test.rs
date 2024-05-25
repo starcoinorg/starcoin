@@ -149,7 +149,10 @@ async fn test_event_notify_receive() -> anyhow::Result<()> {
     );
     let mut receiver = network2.message_handler.channel();
     network1.service_ref.send_peer_message(msg_send.clone());
-    let msg_receive = receiver.next().await.ok_or_else(|| format_err!("in network1, receive message timeout or return none"))?;
+    let msg_receive = receiver
+        .next()
+        .await
+        .ok_or_else(|| format_err!("in network1, receive message timeout or return none"))?;
     assert_eq!(msg_send.notification, msg_receive.notification);
 
     //block
@@ -162,7 +165,10 @@ async fn test_event_notify_receive() -> anyhow::Result<()> {
     );
     let mut receiver = network2.message_handler.channel();
     network1.service_ref.send_peer_message(msg_send.clone());
-    let msg_receive = receiver.next().await.ok_or_else(|| format_err!("in network2, receive message timeout or return none"))?;
+    let msg_receive = receiver
+        .next()
+        .await
+        .ok_or_else(|| format_err!("in network2, receive message timeout or return none"))?;
     assert_eq!(msg_send.notification, msg_receive.notification);
 
     Ok(())
@@ -278,10 +284,16 @@ async fn test_event_broadcast() -> anyhow::Result<()> {
     )));
     node1.service_ref.broadcast(notification.clone());
 
-    let msg_receive2 = receiver2.next().await.ok_or_else(|| format_err!("in receive2, receive message timeout or return none"))?;
+    let msg_receive2 = receiver2
+        .next()
+        .await
+        .ok_or_else(|| format_err!("in receive2, receive message timeout or return none"))?;
     assert_eq!(notification, msg_receive2.notification);
 
-    let msg_receive3 = receiver3.next().await.ok_or_else(|| format_err!("in receive3, receive message timeout or return none"))?;
+    let msg_receive3 = receiver3
+        .next()
+        .await
+        .ok_or_else(|| format_err!("in receive3, receive message timeout or return none"))?;
     assert_eq!(notification, msg_receive3.notification);
 
     //repeat broadcast
