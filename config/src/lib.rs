@@ -484,15 +484,6 @@ impl NodeConfig {
         Self::load_with_opt(&opt).expect("Auto generate test config should success.")
     }
 
-    pub fn proxima_for_test(dir: PathBuf) -> Self {
-        let opt = StarcoinOpt {
-            net: Some(BuiltinNetworkID::Proxima.into()),
-            base_data_dir: Some(dir),
-            ..StarcoinOpt::default()
-        };
-        Self::load_with_opt(&opt).expect("Auto generate proxima config should success.")
-    }
-
     pub fn customize_for_test() -> Self {
         let opt = StarcoinOpt {
             net: Some(BuiltinNetworkID::Test.into()),

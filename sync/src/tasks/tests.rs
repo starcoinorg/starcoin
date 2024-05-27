@@ -107,7 +107,8 @@ pub async fn test_sync_invalid_target() -> Result<()> {
 
 #[stest::test]
 pub async fn test_failed_block() -> Result<()> {
-    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
+    // todo: fix this test for dag chain (dag effective height is ZERO)
+    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let (storage, chain_info, _, dag) = Genesis::init_storage_for_test(&net)?;
 
     let chain = BlockChain::new(

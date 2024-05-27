@@ -49,10 +49,7 @@ fn main() -> anyhow::Result<()> {
     let _logger = starcoin_logger::init();
     let opts: ReplayOpt = ReplayOpt::parse();
 
-    let network = match opts.net {
-        Some(network) => network,
-        None => BuiltinNetworkID::Proxima,
-    };
+    let network = opts.net.unwrap_or(BuiltinNetworkID::Proxima);
     let net = ChainNetwork::new_builtin(network);
 
     let from_dir = opts.from;
