@@ -286,6 +286,10 @@ impl SyncNodeMocker {
         self.chain_mocker.produce_and_apply_times(times)
     }
 
+    pub fn produce_fork_chain(&mut self, one_count: u64, two_count: u64) -> Result<()> {
+        self.chain_mocker.produce_fork_chain(one_count, two_count)
+    }
+
     pub fn select_head(&mut self, block: Block) -> Result<()> {
         self.chain_mocker.select_head(block)
     }

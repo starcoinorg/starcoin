@@ -14,6 +14,7 @@ use starcoin_storage::Storage;
 use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
+use std::vec;
 
 pub struct MockChain {
     net: ChainNetwork,
@@ -175,6 +176,24 @@ impl MockChain {
             .create_block(template, self.net.time_service().as_ref())
     }
 
+    pub fn produce_block_by_tips(
+        &mut self,
+        parent_header: BlockHeader,
+        tips: Vec<HashValue>,
+    ) -> Result<Block> {
+        let (template, _) = self.head.create_block_template_by_header(
+            *self.miner.address(),
+            parent_header,
+            vec![],
+            vec![],
+            None,
+            Some(tips),
+        )?;
+        self.head
+            .consensus()
+            .create_block(template, self.net.time_service().as_ref())
+    }
+
     pub fn apply(&mut self, block: Block) -> Result<()> {
         self.head.apply(block)?;
         Ok(())
@@ -191,6 +210,35 @@ impl MockChain {
         for _i in 0..times {
             self.produce_and_apply()?;
         }
+        Ok(())
+    }
+
+    pub fn produce_fork_chain(&mut self, one_count: u64, two_count: u64) -> Result<()> {
+        let start_header = self.head.current_header();
+
+        let mut parent_one = start_header.clone();
+        for _i in 0..one_count {
+            let new_block =
+                self.produce_block_by_tips(parent_one.clone(), vec![parent_one.id()])?;
+            parent_one = new_block.header().clone();
+            self.apply(new_block)?;
+        }
+
+        let mut parent_two = start_header.clone();
+        for _i in 0..two_count {
+            let new_block =
+                self.produce_block_by_tips(parent_two.clone(), vec![parent_two.id()])?;
+            parent_two = new_block.header().clone();
+            self.apply(new_block)?;
+        }
+
+        let meetup_block =
+            self.produce_block_by_tips(parent_one.clone(), vec![parent_one.id(), parent_two.id()])?;
+        let new_header_id = meetup_block.header().id();
+        self.apply(meetup_block)?;
+
+        assert_eq!(self.head().current_header().id(), new_header_id);
+
         Ok(())
     }
 
