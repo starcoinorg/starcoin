@@ -292,6 +292,7 @@ pub trait BlockStore {
 
     fn save_dag_sync_block(&self, block: DagSyncBlock) -> Result<()>;
     fn delete_dag_sync_block(&self, block_id: HashValue) -> Result<()>;
+    fn delete_all_dag_sync_blocks(&self) -> Result<()>;
     fn get_dag_sync_block(&self, block_id: HashValue) -> Result<Option<DagSyncBlock>>;
 }
 
@@ -546,6 +547,10 @@ impl BlockStore for Storage {
 
     fn delete_dag_sync_block(&self, block_id: HashValue) -> Result<()> {
         self.block_storage.delete_dag_sync_block(block_id)
+    }
+
+    fn delete_all_dag_sync_blocks(&self) -> Result<()> {
+        self.block_storage.delete_all_dag_sync_blocks()
     }
 
     fn get_dag_sync_block(&self, block_id: HashValue) -> Result<Option<DagSyncBlock>> {

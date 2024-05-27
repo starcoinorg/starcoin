@@ -76,10 +76,6 @@ pub fn generate_block(handle: &NodeHandle, count: usize) -> Result<()> {
 
 #[allow(unused)]
 pub fn generate_dag_fork_number(handle: &NodeHandle) -> Result<()> {
-    // for _i in 0..G_TEST_DAG_FORK_HEIGHT - 3 {
-    //     let (_block, _is_dag) = handle.generate_block()?;
-    // }
-
     block_on(async move {
         let current_header = handle
             .registry()
@@ -87,14 +83,7 @@ pub fn generate_dag_fork_number(handle: &NodeHandle) -> Result<()> {
             .await?
             .main_head_header()
             .await?;
-        // let block_info = handle.storage().get_block_info(current_header.id())?.expect("failed to get the block info");
-
-        // let accumulator = MerkleAccumulator::new_with_info(block_info.block_accumulator_info, handle.storage().get_accumulator_store(AccumulatorStoreType::Block));
-        // let dag_genesis = accumulator.get_leaf(G_TEST_DAG_FORK_HEIGHT)?.expect("failed to get the dag genesis");
-        // let dag_genesis_header = handle.storage().get_block(dag_genesis)?.expect("failed to get the dag genesis header");
         let mut dag = handle.registry().get_shared::<BlockDAG>().await?;
-        // dag.init_with_genesis(dag_genesis_header.header().clone()).expect("failed to initialize dag");
-        // Ok(())
         dag.save_dag_state(*G_TEST_DAG_FORK_STATE_KEY, DagState { tips: vec![] })
     })
 }

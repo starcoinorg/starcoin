@@ -408,6 +408,10 @@ impl BlockStorage {
         self.dag_sync_block_storage.remove(block_id)
     }
 
+    pub fn delete_all_dag_sync_blocks(&self) -> Result<()> {
+        self.dag_sync_block_storage.remove_all()
+    }
+
     pub fn get_dag_sync_block(&self, block_id: HashValue) -> Result<Option<DagSyncBlock>> {
         self.dag_sync_block_storage.get(block_id)
     }

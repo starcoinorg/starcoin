@@ -13,7 +13,6 @@ fn test_verified_client_for_dag() {
     let (local_handle, target_handle, target_peer_id) = common_test_sync_libs::init_two_node()
         .expect("failed to initalize the local and target node");
 
-    // common_test_sync_libs::execute_dag_poll_block(target_handle.registry().clone(), 20).expect("failed to execute the dag poll block");
     common_test_sync_libs::generate_dag_fork_number(&target_handle)
         .expect("failed to execute the dag fork number");
 
