@@ -36,7 +36,6 @@ toml = { features = ["default"], workspace = true }
 
 [features]
 default = []
-dag-dev-network = []
 
 [package]
 authors = { workspace = true }

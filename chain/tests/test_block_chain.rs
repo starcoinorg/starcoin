@@ -145,20 +145,21 @@ fn test_block_chain() -> Result<()> {
 }
 
 #[stest::test(timeout = 480)]
-fn test_halley_consensus() {
-    let mut mock_chain =
-        MockChain::new(ChainNetwork::new_builtin(BuiltinNetworkID::Halley)).unwrap();
+fn test_halley_consensus() -> Result<()> {
+    let mut mock_chain = MockChain::new(ChainNetwork::new_builtin(BuiltinNetworkID::Halley))?;
     let times = 20;
-    mock_chain.produce_and_apply_times(times).unwrap();
+    mock_chain.produce_and_apply_times(times)?;
     assert_eq!(mock_chain.head().current_header().number(), times);
+    Ok(())
 }
 
 #[stest::test(timeout = 240)]
-fn test_dev_consensus() {
-    let mut mock_chain = MockChain::new(ChainNetwork::new_builtin(BuiltinNetworkID::Dev)).unwrap();
+fn test_dev_consensus() -> Result<()> {
+    let mut mock_chain = MockChain::new(ChainNetwork::new_builtin(BuiltinNetworkID::Dev))?;
     let times = 20;
-    mock_chain.produce_and_apply_times(times).unwrap();
+    mock_chain.produce_and_apply_times(times)?;
     assert_eq!(mock_chain.head().current_header().number(), times);
+    Ok(())
 }
 
 #[stest::test]

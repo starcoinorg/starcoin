@@ -60,9 +60,8 @@ stest = { workspace = true }
 test-helper = { workspace = true }
 
 [features]
-default = ["dag-dev-network"]
+default = []
 force-deploy = ["starcoin-node/force-deploy"]
-dag-dev-network = ["starcoin-config/dag-dev-network"]
 
 [package]
 authors = { workspace = true }
