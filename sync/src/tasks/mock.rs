@@ -350,6 +350,12 @@ impl BlockFetcher for SyncNodeMocker {
             .map(|block_id| {
                 if let Some(block) = self.chain().get_block(block_id)? {
                     Ok((block, Some(PeerId::random())))
+                } else if !self.chain().head_block().block().header().is_single() {
+                    if let Some(block) = self.chain().get_storage().get_block(block_id)? {
+                        Ok((block, Some(PeerId::random())))
+                    } else {
+                        Err(format_err!("Cannot find block by id: {}", block_id))
+                    }
                 } else {
                     Err(format_err!("Can not find block by id: {}", block_id))
                 }

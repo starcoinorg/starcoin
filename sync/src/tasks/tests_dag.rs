@@ -190,7 +190,9 @@ async fn test_sync_red_blocks_dag() -> Result<()> {
             );
             assert_eq!(
                 chain_status.head.number(),
-                G_TEST_DAG_FORK_HEIGHT + dag_block_count
+                G_TEST_DAG_FORK_HEIGHT
+                    .checked_add(dag_block_count)
+                    .ok_or_else(|| format_err!("overflow"))?,
             );
         }
         _ => {
@@ -205,9 +207,6 @@ async fn test_sync_red_blocks_dag() -> Result<()> {
     Arc::get_mut(&mut target_node).unwrap().produce_block(3)?;
 
     sync_block_process(target_node, local_node, &test_system.registry).await?;
-
-    // // genertate the red blocks
-    // Arc::get_mut(&mut target_node).unwrap().produce_block_by_header(dag_genesis_header, 5).expect("failed to produce block");
 
     Ok(())
 }
