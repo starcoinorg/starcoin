@@ -49,10 +49,10 @@ starcoin-network-rpc-api = { workspace = true }
 starcoin-force-upgrade = { workspace = true }
 
 [features]
-default = ["sync-dag-test"]
+default = ["dag-chain"]
 fuzzing = ["proptest", "proptest-derive", "starcoin-types/fuzzing"]
 force-deploy = ["starcoin-vm-runtime/force-deploy", "starcoin-vm-runtime", "starcoin-executor/force-deploy"]
-sync-dag-test = []
+dag-chain = []
 
 [package]
 authors = { workspace = true }

@@ -811,7 +811,8 @@ impl BlockChain {
         let final_block_gas_limit = block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
-        let tips_hash = if current_number <= self.dag_fork_height()?.unwrap_or(u64::MAX) {
+        let dag_fork_height = self.dag_fork_height()?;
+        let tips_hash = if current_number <= dag_fork_height.unwrap_or(u64::MAX) {
             None
         } else if tips.is_some() {
             tips
@@ -854,8 +855,8 @@ impl BlockChain {
             }
         };
         debug!(
-            "current_number: {}, Blue blocks:{:?} tips_hash {:?} in chain/create_block_template_by_header",
-            current_number, blue_blocks, tips_hash
+            "current_number: {}/{:?}, Blue blocks:{:?} tips_hash {:?} in chain/create_block_template_by_header",
+            current_number, dag_fork_height, blue_blocks, tips_hash
         );
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),
@@ -978,7 +979,7 @@ impl BlockChain {
 
         let results = header.parents_hash().ok_or_else(|| anyhow!("dag block has no parents."))?.into_iter().map(|parent_hash| {
             let header = self.storage.get_block_header_by_hash(parent_hash)?.ok_or_else(|| anyhow!("failed to find the block header in the block storage when checking the dag block exists, block hash: {:?}, number: {:?}", header.id(), header.number()))?;
-            let dag_genesis_hash = self.get_block_dag_genesis(&header)?;
+            let dag_genesis_hash = self.genesis_hash;
             let dag_genesis = self.storage.get_block_header_by_hash(dag_genesis_hash)?.ok_or_else(|| anyhow!("failed to find the block header in the block storage when checking the dag block exists, block hash: {:?}, number: {:?}", header.id(), header.number()))?;
             Ok(dag_genesis.parent_hash())
         }).collect::<Result<HashSet<_>>>()?;
@@ -1675,27 +1676,11 @@ impl BlockChain {
     }
 
     pub fn get_block_dag_genesis(&self, header: &BlockHeader) -> Result<HashValue> {
-        let dag_fork_height = self
-            .dag_fork_height()?
-            .ok_or_else(|| anyhow!("unset dag fork height"))?;
-        let block_info = self
-            .storage
-            .get_block_info(header.id())?
-            .ok_or_else(|| anyhow!("Cannot find block info by hash {:?}", header.id()))?;
-        let block_accumulator = MerkleAccumulator::new_with_info(
-            block_info.get_block_accumulator_info().clone(),
-            self.storage
-                .get_accumulator_store(AccumulatorStoreType::Block),
-        );
-        let dag_genesis = block_accumulator
-            .get_leaf(dag_fork_height)?
-            .ok_or_else(|| anyhow!("failed to get the dag genesis"))?;
-
-        Ok(dag_genesis)
+        Ok(self.genesis_hash)
     }
 
     pub fn get_block_dag_origin(&self) -> Result<HashValue> {
-        let dag_genesis = self.get_block_dag_genesis(&self.current_header())?;
+        let dag_genesis = self.genesis_hash;
         let block_header = self
             .storage
             .get_block_header_by_hash(dag_genesis)?
@@ -1707,7 +1692,7 @@ impl BlockChain {
     }
 
     pub fn get_dag_state_by_block(&self, header: &BlockHeader) -> Result<(HashValue, DagState)> {
-        let dag_genesis = self.get_block_dag_genesis(header)?;
+        let dag_genesis = self.genesis_hash;
         Ok((dag_genesis, self.dag.get_dag_state(dag_genesis)?))
     }
 
@@ -2293,7 +2278,7 @@ impl BlockChain {
             .block
             .header
             .parents_hash()
-            .expect("Dag parents need exist");
+            .expect("Dag parents must exist");
         if !tips.contains(&new_tip_block.id()) {
             for hash in parents {
                 tips.retain(|x| *x != hash);
@@ -2351,7 +2336,7 @@ impl BlockChain {
     // todo: please remove me.
     // Try to set custom dag_effective_height for `test` network for different test cases,
     // or using different features to set the height.
-    #[cfg(feature = "sync-dag-test")]
+    #[cfg(not(feature = "dag-chain"))]
     pub fn dag_fork_height(&self) -> Result<Option<BlockNumber>> {
         use starcoin_config::genesis_config::{G_TEST_DAG_FORK_HEIGHT, G_TEST_DAG_FORK_STATE_KEY};
         let chain_id = self.status().head().chain_id();
@@ -2373,12 +2358,9 @@ impl BlockChain {
         }
     }
 
-    #[cfg(not(feature = "sync-dag-test"))]
+    #[cfg(feature = "dag-chain")]
     pub fn dag_fork_height(&self) -> Result<Option<BlockNumber>> {
-        Ok(self
-            .statedb
-            .get_on_chain_config::<FlexiDagConfig>()?
-            .map(|c| c.effective_height))
+        Ok(Some(0))
     }
 }
 
