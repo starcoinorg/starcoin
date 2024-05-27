@@ -503,7 +503,8 @@ where
 
                             self.execute_if_parent_ready(executed_block.block.id())?;
 
-                            self.local_store.delete_dag_sync_block(executed_block.block.id())?;
+                            self.local_store
+                                .delete_dag_sync_block(executed_block.block.id())?;
 
                             self.notify_connected_block(
                                 executed_block.block,
