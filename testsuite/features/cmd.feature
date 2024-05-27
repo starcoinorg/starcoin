@@ -184,19 +184,6 @@ Feature: cmd integration test
     Examples:
       |  |
 
-  #StarcoinFramework checkpoint
-  Scenario Outline: [ignore] starcoin-framework checkpoint
-    Then cmd: "dev get-coin"
-    Then cmd: "account unlock"
-    Then cmd: "account execute-function --function 0x1::Block::checkpoint_entry -b"
-    Then cmd: "dev call-api chain.get_block_by_number [1,{\"raw\":true}]"
-    Then cmd: "account execute-function --function 0x1::Block::update_state_root_entry --arg {{$.dev[1].ok.raw.header}} -b"
-    Then cmd: "dev call --function 0x1::Block::latest_state_root"
-    Then assert: "{{$.dev[2].ok[1]}} == {{$.dev[1].ok.header.state_root}}"
-
-    Examples:
-      |  |
-
   #flexidagconfig dao testing
   Scenario Outline: [cmd] starcoin flexidagconfig dao
     # 1. deposit to default account which is a proposer
