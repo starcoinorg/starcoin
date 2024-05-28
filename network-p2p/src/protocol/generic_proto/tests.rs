@@ -20,6 +20,7 @@
 
 use crate::protocol::generic_proto::{GenericProto, GenericProtoOut};
 
+use anyhow::{bail, format_err, Ok};
 use futures::prelude::*;
 use libp2p::core::{connection::ConnectionId, transport::MemoryTransport, upgrade};
 use libp2p::swarm::behaviour::FromSwarm;
@@ -179,7 +180,7 @@ impl NetworkBehaviour for CustomProtoWithAddr {
 }
 
 #[test]
-fn reconnect_after_disconnect() {
+fn reconnect_after_disconnect() -> anyhow::Result<()> {
     // We connect two nodes together, then force a disconnect (through the API of the `Service`),
     // check that the disconnect worked, and finally check whether they successfully reconnect.
 
@@ -223,7 +224,7 @@ fn reconnect_after_disconnect() {
                         }
                     }
                     ServiceState::Disconnected => service1_state = ServiceState::ConnectedAgain,
-                    ServiceState::FirstConnec | ServiceState::ConnectedAgain => panic!(),
+                    ServiceState::FirstConnec | ServiceState::ConnectedAgain => bail!("unexpected"),
                 },
                 future::Either::Left(SwarmEvent::Behaviour(
                     GenericProtoOut::CustomProtocolClosed { .. },
@@ -231,7 +232,7 @@ fn reconnect_after_disconnect() {
                     ServiceState::FirstConnec => service1_state = ServiceState::Disconnected,
                     ServiceState::ConnectedAgain
                     | ServiceState::NotConnected
-                    | ServiceState::Disconnected => panic!(),
+                    | ServiceState::Disconnected => bail!("unexpected"),
                 },
                 future::Either::Right(SwarmEvent::Behaviour(
                     GenericProtoOut::CustomProtocolOpen { .. },
@@ -246,7 +247,7 @@ fn reconnect_after_disconnect() {
                         }
                     }
                     ServiceState::Disconnected => service2_state = ServiceState::ConnectedAgain,
-                    ServiceState::FirstConnec | ServiceState::ConnectedAgain => panic!(),
+                    ServiceState::FirstConnec | ServiceState::ConnectedAgain => bail!("unexpected"),
                 },
                 future::Either::Right(SwarmEvent::Behaviour(
                     GenericProtoOut::CustomProtocolClosed { .. },
@@ -254,7 +255,7 @@ fn reconnect_after_disconnect() {
                     ServiceState::FirstConnec => service2_state = ServiceState::Disconnected,
                     ServiceState::ConnectedAgain
                     | ServiceState::NotConnected
-                    | ServiceState::Disconnected => panic!(),
+                    | ServiceState::Disconnected => bail!("unexpected"),
                 },
                 _ => {}
             }
@@ -268,7 +269,7 @@ fn reconnect_after_disconnect() {
 
         // Now that the two services have disconnected and reconnected, wait for 3 seconds and
         // check whether they're still connected.
-        let mut delay = futures_timer::Delay::new(Duration::from_secs(3));
+        let mut delay = futures_timer::Delay::new(Duration::from_secs(20));
 
         loop {
             // Grab next event from services.
@@ -285,9 +286,16 @@ fn reconnect_after_disconnect() {
 
             match event {
                 SwarmEvent::Behaviour(GenericProtoOut::CustomProtocolOpen { .. })
-                | SwarmEvent::Behaviour(GenericProtoOut::CustomProtocolClosed { .. }) => panic!(),
+                | SwarmEvent::Behaviour(GenericProtoOut::CustomProtocolClosed { .. }) => {
+                    bail!("unexpected event: {:?}", event)
+                }
                 _ => {}
             }
         }
-    });
+
+        anyhow::Result::Ok(())
+    })
+    .map_err(|e| format_err!("{:?}", e))?;
+
+    Ok(())
 }
