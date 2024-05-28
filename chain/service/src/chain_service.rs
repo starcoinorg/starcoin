@@ -466,7 +466,7 @@ impl ReadableChainService for ChainReaderServiceInner {
                 head.number(),
             );
         }
-        let (dag_genesis, state) = self.main.get_dag_state_by_block(&head)?;
+        let (dag_genesis, state) = self.main.get_dag_state()?;
         Ok(DagStateView {
             dag_genesis,
             tips: state.tips,

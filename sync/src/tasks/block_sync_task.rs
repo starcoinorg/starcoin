@@ -734,9 +734,6 @@ where
 
         let (block_info, action) = match block_info {
             Some(block_info) => {
-                //If block_info exists, it means that this block was already executed and try to connect in the previous sync, but the sync task was interrupted.
-                //So, we need make sure the dag genesis is initialized properly, then update chain and continue
-                self.chain.init_dag_with_genesis(block.header().clone())?;
                 self.chain.connect(ExecutedBlock {
                     block: block.clone(),
                     block_info: block_info.clone(),
