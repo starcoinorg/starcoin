@@ -11,6 +11,7 @@ use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
+use anyhow::format_err;
 use bcs_ext::Sample;
 use lazy_static::lazy_static;
 pub use legacy::{
@@ -52,12 +53,6 @@ pub fn get_test_flexidag_fork_height() -> BlockNumber {
 
 pub fn get_custom_flexidag_fork_height() -> BlockNumber {
     *CUSTOM_FLEXIDAG_FORK_HEIGHT.lock().unwrap()
-}
-
-// TODO: support a macro such as #[cfg(test:consensus=dag)] to set fork height for testing customly and reset after executing.
-pub fn set_test_flexidag_fork_height(value: BlockNumber) {
-    let mut num = TEST_FLEXIDAG_FORK_HEIGHT.lock().unwrap();
-    *num = value;
 }
 
 pub fn set_customm_flexidag_fork_height(value: BlockNumber) {
@@ -402,21 +397,25 @@ impl BlockHeader {
     }
 
     //for test
-    pub fn dag_genesis_random() -> Self {
+    pub fn dag_genesis_random(dag_genesis_number: BlockNumber) -> Self {
         let mut header = Self::random();
         header.parents_hash = None;
-        header.number = get_test_flexidag_fork_height();
+        header.number = dag_genesis_number;
         header
     }
 
     //for test
-    pub fn dag_genesis_random_with_parent(parent: BlockHeader) -> Self {
+    pub fn dag_genesis_random_with_parent(parent: BlockHeader) -> anyhow::Result<Self> {
         let header_builder = BlockHeaderBuilder::random();
-        header_builder
-            .with_parent_hash(parent.id())
-            .with_parents_hash(None)
-            .with_number(get_test_flexidag_fork_height())
-            .build()
+        anyhow::Result::Ok(
+            header_builder
+                .with_parent_hash(parent.id())
+                .with_parents_hash(None)
+                .with_number(parent.number().checked_add(1).ok_or_else(|| {
+                    format_err!("overflow in calulation of the dag genesis number")
+                })?)
+                .build(),
+        )
     }
 
     // Create a random compatible block header whose

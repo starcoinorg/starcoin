@@ -5,7 +5,6 @@ use crate::{
 use std::sync::Arc;
 
 use super::mock::SyncNodeMocker;
-use super::test_tools::full_sync_new_node;
 use anyhow::{format_err, Result};
 use futures::channel::mpsc::unbounded;
 use starcoin_account_api::AccountInfo;
@@ -17,14 +16,6 @@ use starcoin_logger::prelude::*;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_txpool_mock_service::MockTxPoolService;
 use test_helper::DummyNetworkService;
-
-#[stest::test(timeout = 120)]
-pub async fn test_full_sync_new_node_dag() -> Result<()> {
-    starcoin_types::block::set_test_flexidag_fork_height(10);
-    full_sync_new_node().await?;
-    starcoin_types::block::reset_test_custom_fork_height();
-    Ok(())
-}
 
 async fn sync_block_process(
     target_node: Arc<SyncNodeMocker>,
@@ -90,35 +81,8 @@ async fn sync_block_process(
     Ok((local_node, target_node))
 }
 
-async fn sync_block_in_block_connection_service_mock(
-    mut target_node: Arc<SyncNodeMocker>,
-    local_node: Arc<SyncNodeMocker>,
-    registry: &ServiceRef<RegistryService>,
-    block_count: u64,
-) -> Result<(Arc<SyncNodeMocker>, Arc<SyncNodeMocker>)> {
-    Arc::get_mut(&mut target_node)
-        .unwrap()
-        .produce_block(block_count)?;
-    sync_block_process(target_node, local_node, registry).await
-}
-
 #[stest::test(timeout = 600)]
-async fn test_sync_single_chain_to_dag_chain() -> Result<()> {
-    starcoin_types::block::set_test_flexidag_fork_height(10);
-    let test_system = super::test_tools::SyncTestSystem::initialize_sync_system().await?;
-    let (_local_node, _target_node) = sync_block_in_block_connection_service_mock(
-        Arc::new(test_system.target_node),
-        Arc::new(test_system.local_node),
-        &test_system.registry,
-        40,
-    )
-    .await?;
-    starcoin_types::block::reset_test_custom_fork_height();
-    Ok(())
-}
-
-#[stest::test(timeout = 600)]
-async fn test_sync_red_blocks_dag() -> Result<()> {
+async fn test_sync_dag_blocks() -> Result<()> {
     let test_system = super::test_tools::SyncTestSystem::initialize_sync_system()
         .await
         .expect("failed to init system");

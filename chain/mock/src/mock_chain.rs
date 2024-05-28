@@ -232,8 +232,11 @@ impl MockChain {
             self.apply(new_block)?;
         }
 
-        let meetup_block =
-            self.produce_block_by_tips(parent_two.clone(), vec![parent_one.id(), parent_two.id()])?;
+        let meetup_block = if one_count < two_count {
+            self.produce_block_by_tips(parent_two.clone(), vec![parent_one.id(), parent_two.id()])?
+        } else {
+            self.produce_block_by_tips(parent_one.clone(), vec![parent_one.id(), parent_two.id()])?
+        };
         let new_header_id = meetup_block.header().id();
         self.apply(meetup_block)?;
 

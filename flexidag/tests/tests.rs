@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{bail, Ok};
+use anyhow::{bail, format_err, Ok, Result};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_dag::{
     blockdag::BlockDAG,
@@ -16,9 +16,7 @@ use starcoin_dag::{
     types::interval::Interval,
 };
 use starcoin_logger::prelude::debug;
-use starcoin_types::block::{
-    set_test_flexidag_fork_height, BlockHeader, BlockHeaderBuilder, BlockNumber,
-};
+use starcoin_types::block::{BlockHeader, BlockHeaderBuilder, BlockNumber};
 
 use std::{
     ops::{Deref, DerefMut},
@@ -27,15 +25,15 @@ use std::{
 };
 
 #[test]
-fn test_dag_0() {
+fn test_dag_commit() -> Result<()> {
     let mut dag = BlockDAG::create_for_testing().unwrap();
-    let genesis = BlockHeader::dag_genesis_random()
+    let genesis = BlockHeader::dag_genesis_random(0)
         .as_builder()
         .with_difficulty(0.into())
         .build();
 
     let mut parents_hash = vec![genesis.id()];
-    dag.init_with_genesis(genesis.clone()).unwrap();
+    let origin = dag.init_with_genesis(genesis.clone())?;
 
     for _ in 0..10 {
         let header_builder = BlockHeaderBuilder::random();
@@ -43,16 +41,17 @@ fn test_dag_0() {
             .with_parents_hash(Some(parents_hash.clone()))
             .build();
         parents_hash = vec![header.id()];
-        dag.commit(header.to_owned(), genesis.parent_hash())
-            .unwrap();
+        dag.commit(header.to_owned(), origin)?;
         let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
         println!("{:?},{:?}", header, ghostdata);
     }
+
+    Ok(())
 }
 
 #[test]
-fn test_dag_1() {
-    let genesis = BlockHeader::dag_genesis_random()
+fn test_dag_1() -> Result<()> {
+    let genesis = BlockHeader::dag_genesis_random(0)
         .as_builder()
         .with_difficulty(0.into())
         .build();
@@ -88,28 +87,32 @@ fn test_dag_1() {
     let genesis_id = genesis.id();
     let mut dag = BlockDAG::create_for_testing().unwrap();
     let expect_selected_parented = [block5.id(), block3.id(), block3_1.id(), genesis_id];
-    dag.init_with_genesis(genesis.clone()).unwrap();
+    let origin = dag.init_with_genesis(genesis.clone()).unwrap();
 
-    dag.commit(block1, genesis.parent_hash()).unwrap();
-    dag.commit(block2, genesis.parent_hash()).unwrap();
-    dag.commit(block3_1, genesis.parent_hash()).unwrap();
-    dag.commit(block3, genesis.parent_hash()).unwrap();
-    dag.commit(block4, genesis.parent_hash()).unwrap();
-    dag.commit(block5, genesis.parent_hash()).unwrap();
-    dag.commit(block6, genesis.parent_hash()).unwrap();
+    dag.commit(block1, origin)?;
+    dag.commit(block2, origin)?;
+    dag.commit(block3_1, origin)?;
+    dag.commit(block3, origin)?;
+    dag.commit(block4, origin)?;
+    dag.commit(block5, origin)?;
+    dag.commit(block6, origin)?;
     let mut count = 0;
     while latest_id != genesis_id && count < 4 {
-        let ghostdata = dag.ghostdata_by_hash(latest_id).unwrap().unwrap();
+        let ghostdata = dag
+            .ghostdata_by_hash(latest_id)?
+            .ok_or_else(|| format_err!("Failed to get ghostdata"))?;
         latest_id = ghostdata.selected_parent;
         assert_eq!(expect_selected_parented[count], latest_id);
         count += 1;
     }
+
+    Ok(())
 }
 
 #[tokio::test]
 async fn test_with_spawn() {
     use starcoin_types::block::{BlockHeader, BlockHeaderBuilder};
-    let genesis = BlockHeader::dag_genesis_random()
+    let genesis = BlockHeader::dag_genesis_random(0)
         .as_builder()
         .with_difficulty(0.into())
         .build();
@@ -165,7 +168,7 @@ async fn test_with_spawn() {
 #[test]
 fn test_write_asynchronization() -> anyhow::Result<()> {
     let mut dag = BlockDAG::create_for_testing()?;
-    let genesis = BlockHeader::dag_genesis_random()
+    let genesis = BlockHeader::dag_genesis_random(0)
         .as_builder()
         .with_difficulty(0.into())
         .build();
@@ -239,7 +242,7 @@ fn test_dag_genesis_fork() {
     // initialzie the dag firstly
     let mut dag = BlockDAG::create_for_testing().unwrap();
 
-    let genesis = BlockHeader::dag_genesis_random()
+    let genesis = BlockHeader::dag_genesis_random(0)
         .as_builder()
         .with_difficulty(0.into())
         .build();
@@ -259,7 +262,7 @@ fn test_dag_genesis_fork() {
     }
 
     // fork, produce a new dag genesis
-    let new_genesis = BlockHeader::dag_genesis_random()
+    let new_genesis = BlockHeader::dag_genesis_random(0)
         .as_builder()
         .with_difficulty(0.into())
         .build();
@@ -350,12 +353,11 @@ fn test_dag_tips_store() {
 
 #[test]
 fn test_dag_multiple_commits() -> anyhow::Result<()> {
-    set_test_flexidag_fork_height(1);
     // initialzie the dag firstly
     let mut dag = BlockDAG::create_for_testing().unwrap();
 
     let origin = BlockHeaderBuilder::random().with_number(0).build();
-    let genesis = BlockHeader::dag_genesis_random_with_parent(origin);
+    let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
 
     dag.init_with_genesis(genesis.clone()).unwrap();
 
@@ -742,12 +744,11 @@ fn add_and_print(
 
 #[test]
 fn test_dag_mergeset() -> anyhow::Result<()> {
-    set_test_flexidag_fork_height(1);
     // initialzie the dag firstly
     let mut dag = BlockDAG::create_for_testing().unwrap();
 
     let origin = BlockHeaderBuilder::random().with_number(0).build();
-    let genesis = BlockHeader::dag_genesis_random_with_parent(origin);
+    let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
 
     dag.init_with_genesis(genesis.clone()).unwrap();
 
