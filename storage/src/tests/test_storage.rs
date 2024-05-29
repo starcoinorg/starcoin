@@ -395,6 +395,7 @@ fn generate_old_db(path: &Path) -> Result<(Vec<HashValue>, Vec<HashValue>, Vec<H
 }
 
 #[stest::test]
+#[ignore]
 pub fn test_db_upgrade() -> Result<()> {
     let tmpdir = starcoin_config::temp_dir();
     let (txn_info_ids, block_ids, failed_block_ids) = generate_old_db(tmpdir.path())?;

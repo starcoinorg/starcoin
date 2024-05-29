@@ -9,9 +9,7 @@ use starcoin_chain_api::{
 use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_logger::prelude::debug;
 use starcoin_open_block::AddressFilter;
-use starcoin_types::block::{
-    Block, BlockHeader, DagHeaderType, LegacyBlockBody, ALLOWED_FUTURE_BLOCKTIME,
-};
+use starcoin_types::block::{Block, BlockHeader, DagHeaderType, ALLOWED_FUTURE_BLOCKTIME};
 use std::{collections::HashSet, str::FromStr};
 
 #[derive(Debug, Clone)]
@@ -47,11 +45,7 @@ pub struct StaticVerifier;
 impl StaticVerifier {
     pub fn verify_body_hash(block: &Block) -> Result<()> {
         // verify body
-        let body_hash = if block.header().is_legacy() {
-            LegacyBlockBody::from(block.body.clone()).hash()
-        } else {
-            block.body.hash()
-        };
+        let body_hash = block.body.hash();
         verify_block!(
             VerifyBlockField::Body,
             body_hash == block.header().body_hash(),
