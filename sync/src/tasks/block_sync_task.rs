@@ -558,6 +558,79 @@ where
         Ok(result)
     }
 
+    fn execute_if_parent_ready_norecursion(&mut self, parent_id: HashValue) -> Result<()> {
+        let mut parent_block_ids = vec![parent_id];
+
+        while !parent_block_ids.is_empty() {
+            let mut next_parent_blocks = vec![];
+            for parent_block_id in parent_block_ids {
+                let mut parent_block = self.local_store
+                .get_dag_sync_block(parent_block_id)?
+                .ok_or_else(|| {
+                    anyhow!(
+                        "the dag block should exist in local store, parent child block id: {:?}",
+                        parent_id,
+                    )
+                })?;
+                let mut executed_children = vec![];
+                for child in &parent_block.children {
+                    let child_block = self
+                        .local_store
+                        .get_dag_sync_block(*child)?
+                        .ok_or_else(|| {
+                            anyhow!(
+                                "the dag block should exist in local store, child block id: {:?}",
+                                child
+                            )
+                        })?;
+                    if child_block
+                        .block
+                        .header()
+                        .parents_hash()
+                        .ok_or_else(|| anyhow!("the dag block's parents should exist"))?
+                        .iter()
+                        .all(|parent| match self.chain.has_dag_block(*parent) {
+                            Ok(has) => has,
+                            Err(e) => {
+                                error!(
+                                    "failed to get the block from the chain, block id: {:?}, error: {:?}",
+                                    *parent, e
+                                );
+                                false
+                            }
+                        })
+                    {
+                        let executed_block = self
+                            .chain
+                            .apply_with_verifier::<DagBasicVerifier>(child_block.block.clone())?;
+                        info!(
+                            "succeed to apply a dag block: {:?}, number: {:?}",
+                            executed_block.block.id(),
+                            executed_block.block.header().number()
+                        );
+                        executed_children.push(*child);
+                        self.notify_connected_block(
+                            executed_block.block,
+                            executed_block.block_info.clone(),
+                            BlockConnectAction::ConnectNewBlock,
+                            self.check_enough_by_info(executed_block.block_info)?,
+                        )?;
+                        next_parent_blocks.push(*child);
+                        self.local_store.delete_dag_sync_block(*child)?;
+                    }
+                }
+                parent_block
+                    .children
+                    .retain(|child| !executed_children.contains(child));
+                self.local_store.save_dag_sync_block(parent_block)?;
+            }
+
+            parent_block_ids = next_parent_blocks;
+        }
+
+        Ok(())
+    }
+
     fn execute_if_parent_ready(&mut self, parent_id: HashValue) -> Result<()> {
         let mut parent_block =
             self.local_store
