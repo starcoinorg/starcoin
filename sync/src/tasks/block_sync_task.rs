@@ -403,7 +403,7 @@ where
             if absent_blocks.is_empty() {
                 return Ok(absent_blocks_map.into_values().collect());
             }
-            let remote_absent_blocks = self.fetch_block(absent_blocks).await?;
+            let remote_absent_blocks = self.fetch_blocks(absent_blocks).await?;
             block_headers = remote_absent_blocks
                 .iter()
                 .map(|block| block.header().clone())
@@ -532,7 +532,7 @@ where
         async_std::task::block_on(fut)
     }
 
-    async fn fetch_block(&self, mut block_ids: Vec<HashValue>) -> Result<Vec<Block>> {
+    async fn fetch_blocks(&self, mut block_ids: Vec<HashValue>) -> Result<Vec<Block>> {
         let mut result = vec![];
         block_ids.retain(|id| {
             match self.local_store.get_dag_sync_block(*id) {
