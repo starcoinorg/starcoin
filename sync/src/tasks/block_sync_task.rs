@@ -364,7 +364,6 @@ where
     fn find_absent_parent_dag_blocks(
         &self,
         block_header: BlockHeader,
-        // ancestors: &mut Vec<HashValue>,
         absent_blocks: &mut Vec<HashValue>,
     ) -> Result<()> {
         let parents = block_header.parents_hash().unwrap_or_default();
@@ -407,10 +406,10 @@ where
             let remote_absent_blocks = self.fetch_block(absent_blocks).await?;
             block_headers = remote_absent_blocks
                 .iter()
-                .map(|(_, block)| block.header().clone())
+                .map(|block| block.header().clone())
                 .collect();
 
-            remote_absent_blocks.into_iter().for_each(|(_id, block)| {
+            remote_absent_blocks.into_iter().for_each(|block| {
                 absent_blocks_map.insert(block.id(), block);
             });
         }
@@ -533,13 +532,13 @@ where
         async_std::task::block_on(fut)
     }
 
-    async fn fetch_block(&self, mut block_ids: Vec<HashValue>) -> Result<Vec<(HashValue, Block)>> {
-        let mut result: Vec<(HashValue, Block)> = vec![];
+    async fn fetch_block(&self, mut block_ids: Vec<HashValue>) -> Result<Vec<Block>> {
+        let mut result = vec![];
         block_ids.retain(|id| {
             match self.local_store.get_dag_sync_block(*id) {
                 Ok(op_dag_sync_block) => {
                     if let Some(dag_sync_block) = op_dag_sync_block {
-                        result.push((dag_sync_block.block.id(), dag_sync_block.block));
+                        result.push(dag_sync_block.block);
                         false // read from local store, remove from p2p request
                     } else {
                         true // need retaining
@@ -555,7 +554,7 @@ where
                     block: block.clone(),
                     children: vec![],
                 })?;
-                result.push((block.id(), block));
+                result.push(block);
             }
         }
         Ok(result)
