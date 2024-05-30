@@ -358,10 +358,6 @@ impl BlockHeader {
         self.number == 0
     }
 
-    pub fn is_legacy(&self) -> bool {
-        self.parents_hash.is_none()
-    }
-
     pub fn is_single(&self) -> bool {
         self.parents_hash
             .as_ref()
@@ -855,33 +851,20 @@ impl Block {
             .map(|uncles| uncles.len() as u64)
             .unwrap_or(0);
 
-        if !self.header.is_legacy() {
-            BlockMetadata::new_with_parents(
-                self.header.parent_hash(),
-                self.header.timestamp,
-                self.header.author,
-                self.header.author_auth_key,
-                uncles,
-                self.header.number,
-                self.header.chain_id,
-                parent_gas_used,
-                self.header
-                    .parents_hash
-                    .clone()
-                    .expect("Parents must exist"),
-            )
-        } else {
-            BlockMetadata::new(
-                self.header.parent_hash(),
-                self.header.timestamp,
-                self.header.author,
-                self.header.author_auth_key,
-                uncles,
-                self.header.number,
-                self.header.chain_id,
-                parent_gas_used,
-            )
-        }
+        BlockMetadata::new_with_parents(
+            self.header.parent_hash(),
+            self.header.timestamp,
+            self.header.author,
+            self.header.author_auth_key,
+            uncles,
+            self.header.number,
+            self.header.chain_id,
+            parent_gas_used,
+            self.header
+                .parents_hash
+                .clone()
+                .expect("Parents must exist"),
+        )
     }
 
     pub fn random() -> Self {
