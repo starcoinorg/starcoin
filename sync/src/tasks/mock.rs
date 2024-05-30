@@ -286,6 +286,10 @@ impl SyncNodeMocker {
         self.chain_mocker.produce_and_apply_times(times)
     }
 
+    pub fn produce_fork_chain(&mut self, one_count: u64, two_count: u64) -> Result<()> {
+        self.chain_mocker.produce_fork_chain(one_count, two_count)
+    }
+
     pub fn select_head(&mut self, block: Block) -> Result<()> {
         self.chain_mocker.select_head(block)
     }
@@ -346,6 +350,12 @@ impl BlockFetcher for SyncNodeMocker {
             .map(|block_id| {
                 if let Some(block) = self.chain().get_block(block_id)? {
                     Ok((block, Some(PeerId::random())))
+                } else if !self.chain().head_block().block().header().is_single() {
+                    if let Some(block) = self.chain().get_storage().get_block(block_id)? {
+                        Ok((block, Some(PeerId::random())))
+                    } else {
+                        Err(format_err!("Cannot find block by id: {}", block_id))
+                    }
                 } else {
                     Err(format_err!("Can not find block by id: {}", block_id))
                 }
