@@ -2,11 +2,11 @@ use std::collections::HashMap;
 use Vec;
 
 use anyhow;
-use dagre_rust::{GraphConfig, GraphEdge, GraphNode, layout};
+use dagre_rust::{layout, GraphConfig, GraphEdge, GraphNode};
 use eframe::egui;
 use eframe::epaint::Color32;
-use egui::{FontId, Pos2, Rounding, Stroke, Vec2};
 use egui::emath::Rect;
+use egui::{FontId, Pos2, Rounding, Stroke, Vec2};
 use graphlib_rust::{Graph, GraphOption};
 
 /// The `DagNode` struct represents a node in a directed acyclic graph (DAG).
@@ -22,12 +22,18 @@ pub struct DagNode {
 }
 
 impl DagNode {
-    pub fn new(name: &str, parent_node: &Vec<String>) -> Self {
+    pub fn new(
+        name: &str,
+        parent_node: &Vec<String>,
+        block_number: Option<u64>,
+        timestamp: Option<u64>,
+        block_creator: Option<String>,
+    ) -> Self {
         Self {
             block_hash: name.to_string(),
-            block_number: None,
-            timestamp: None,
-            block_creator: None,
+            block_number,
+            timestamp,
+            block_creator,
             parent_nodes: parent_node.clone(),
         }
     }

@@ -12050,6 +12050,12 @@ dependencies = [
  "eframe",
  "egui",
  "graphlib_rust",
+ "starcoin-chain",
+ "starcoin-config",
+ "starcoin-dag",
+ "starcoin-genesis",
+ "starcoin-storage",
+ "starcoin-types",
 ]
 
 [[package]]
