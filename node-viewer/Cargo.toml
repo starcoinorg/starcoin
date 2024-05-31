@@ -15,6 +15,7 @@ eframe = "0.27.2"
 anyhow = "1.0.86"
 dagre_rust = "0.0.5"
 graphlib_rust = "0.0.2"
+dirs = "5.0.1"
 starcoin-config = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-dag = { workspace = true }

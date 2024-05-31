@@ -54,7 +54,13 @@ pub fn load_blocks_from_db(
     )
     .expect("create block chain should success.");
     let cur_num = chain.status().head().number();
-    let start_num = start.unwrap_or_else(|| cur_num - DEFAULT_BLOCK_GAP);
+    let start_num = start.unwrap_or_else(|| {
+        if cur_num > DEFAULT_BLOCK_GAP {
+            cur_num - DEFAULT_BLOCK_GAP
+        } else {
+            1
+        }
+    });
     let end_num = end.unwrap_or_else(|| cur_num);
     if start_num > end_num {
         return Err(format_err!("start number should less than end number"));

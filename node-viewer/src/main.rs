@@ -58,8 +58,8 @@ fn main() {
     //     // DagNode::new("I", &vec!["H".to_string()]),
     //     // DagNode::new("J", &vec!["I".to_string()]),
     // ];
-    let root_path = PathBuf::from("~/.starcoin/halley");
-    let nodes = load_blocks_from_db(BuiltinNetworkID::Halley, None, None, &root_path).expect("Load node failed");
+    let root_path = dirs::home_dir().unwrap().join(".starcoin/proxima");
+    let nodes = load_blocks_from_db(BuiltinNetworkID::Proxima, None, None, &root_path).expect("Load node failed");
     let mut viewer = dagre_dag_viewer::DagViewer::new(nodes, 0.0, 15.0, 0.0, 0.0);
     viewer.set_need_layout();
     eframe::run_native("DAG Viewer", options, Box::new(|_cc| Box::new(viewer)))
