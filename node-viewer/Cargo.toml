@@ -1,0 +1,17 @@
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-node-viewer"
+publish = { workspace = true }
+version = "2.0.0-alpha"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+egui = "0.27.2"
+eframe = "0.27.2"
+anyhow = "1.0.86"
+dagre_rust = "0.0.5"
+graphlib_rust = "0.0.2"
