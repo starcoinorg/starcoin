@@ -2360,15 +2360,10 @@ impl BlockChain {
             if result.is_ok() {
                 Ok(Some(G_TEST_DAG_FORK_HEIGHT))
             } else {
-                let result = self.dag.get_dag_state(self.current_header().id());
-                if result.is_ok() {
-                    Ok(Some(G_TEST_DAG_FORK_HEIGHT))
-                } else {
-                    Ok(self
-                        .statedb
-                        .get_on_chain_config::<FlexiDagConfig>()?
-                        .map(|c| c.effective_height))
-                }
+                Ok(self
+                    .statedb
+                    .get_on_chain_config::<FlexiDagConfig>()?
+                    .map(|c| c.effective_height))
             }
         } else {
             Ok(self
