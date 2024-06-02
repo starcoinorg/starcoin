@@ -1096,7 +1096,7 @@ impl StarcoinVM {
                                 );
                             }
                             // Push write set to write set
-                            data_cache.push_write_set(output.write_set())
+                            data_cache.push_write_set(output.write_set());
                         }
                         // TODO load config by config change event
                         self.check_reconfigure(&data_cache, &output)
@@ -1148,7 +1148,7 @@ impl StarcoinVM {
                             "Block metadata transaction keep status must been Executed."
                         );
                         // Push write set to write set
-                        data_cache.push_write_set(output.write_set())
+                        data_cache.push_write_set(output.write_set());
                     }
                     #[cfg(feature = "metrics")]
                     if let Some(timer) = timer {
