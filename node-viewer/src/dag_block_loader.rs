@@ -12,6 +12,7 @@ use starcoin_storage::{
     StorageVersion,
 };
 use starcoin_types::{block::Block};
+use starcoin_types::consensus_header::ConsensusHeader;
 
 use crate::dagre_dag_viewer::DagNode;
 
@@ -80,12 +81,14 @@ pub fn load_blocks_from_db(
     let mut nodes = vec![];
     for block in block_list {
         let header = block.header();
+        println!("header.parents() : {:?}", header.parents());
         let parents = header
             .parents_hash()
             .unwrap()
             .iter()
             .map(|h| h.to_hex_literal())
             .collect::<Vec<String>>();
+
         nodes.push(DagNode::new(
             header.id().to_hex_literal().as_str(),
             &parents,

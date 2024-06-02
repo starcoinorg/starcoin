@@ -276,7 +276,13 @@ impl DagViewer {
             .open(&mut open)
             .show(ui.ctx(), |ui| {
                 let node_key = self.selected_node.as_ref().unwrap();
+                // println!("Open node: {:?}", node_key);
+
                 ui.label(format!("BlockHash: {}", node_key.as_str()));
+                let node = self.dag_node_datas.get(node_key);
+                if node.is_none() {
+                    return;
+                }
 
                 let node = self.dag_node_datas.get(node_key).unwrap();
 

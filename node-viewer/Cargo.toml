@@ -1,13 +1,22 @@
 [package]
-authors = { workspace = true }
-edition = { workspace = true }
-license = { workspace = true }
+#authors = { workspace = true }
+#edition = { workspace = true }
+#license = { workspace = true }
+#name = "starcoin-node-viewer"
+#publish = { workspace = true }
+#version = "2.0.0-alpha"
+#homepage = { workspace = true }
+#repository = { workspace = true }
+#rust-version = { workspace = true }
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+edition = "2021"
+homepage = "https://starcoin.org"
+license = "Apache-2.0"
+publish = false
+repository = "https://github.com/starcoinorg/starcoin"
 name = "starcoin-node-viewer"
-publish = { workspace = true }
 version = "2.0.0-alpha"
-homepage = { workspace = true }
-repository = { workspace = true }
-rust-version = { workspace = true }
+description = "Starcoin Node Viewer"
 
 [dependencies]
 egui = "0.27.2"
@@ -22,3 +31,12 @@ starcoin-dag = { workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-chain = { workspace = true }
 starcoin-types = { workspace = true }
+
+[profile.release]
+opt-level = "z"
+lto = true
+
+[package.metadata.bundle]
+maintainer = "BobOng <libo.weng@gmail.com>"
+description = "Starcoin MagicBox"
+depends = "libc6 (>= 2.27)"
