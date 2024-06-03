@@ -3,7 +3,7 @@ use rand::Rng;
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain_api::{ChainReader, ChainWriter};
-use starcoin_config::NodeConfig;
+use starcoin_config::{BuiltinNetworkID, ChainNetwork, NodeConfig};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::debug;
@@ -43,8 +43,8 @@ pub fn gen_txns(seq_num: &mut u64) -> Result<Vec<SignedUserTransaction>> {
 
 #[stest::test(timeout = 480)]
 fn test_transaction_info_and_proof_1() -> Result<()> {
-    let config = Arc::new(NodeConfig::random_for_test());
-    let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
+    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Dev);
+    let mut block_chain = test_helper::gen_blockchain_for_test(&net)?;
     let test_dag_fork_height = block_chain.dag_fork_height()?.unwrap();
 
     let _current_header = block_chain.current_header();
@@ -61,7 +61,7 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
             .unwrap();
         let block = block_chain
             .consensus()
-            .create_block(template, config.net().time_service().as_ref())
+            .create_block(template, net.time_service().as_ref())
             .unwrap();
         debug!("apply block:{:?}", &block);
         block_chain.apply(block).unwrap();
@@ -87,7 +87,7 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
         .unwrap();
     let block = fork_chain
         .consensus()
-        .create_block(template, config.net().time_service().as_ref())
+        .create_block(template, net.time_service().as_ref())
         .unwrap();
     debug!("Apply block:{:?}", &block);
     fork_chain.apply(block).unwrap();
@@ -112,7 +112,7 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
         .unwrap();
     let block = block_chain
         .consensus()
-        .create_block(template, config.net().time_service().as_ref())
+        .create_block(template, net.time_service().as_ref())
         .unwrap();
     debug!("Apply latest block:{:?}", &block);
     block_chain.apply(block).unwrap();
