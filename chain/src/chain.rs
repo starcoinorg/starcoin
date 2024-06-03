@@ -2334,10 +2334,7 @@ impl BlockChain {
             if result.is_ok() {
                 Ok(Some(G_TEST_DAG_FORK_HEIGHT))
             } else {
-                Ok(self
-                    .statedb
-                    .get_on_chain_config::<FlexiDagConfig>()?
-                    .map(|c| c.effective_height))
+                Ok(Some(u64::MAX))
             }
         } else {
             Ok(self
