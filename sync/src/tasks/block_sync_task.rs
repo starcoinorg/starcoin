@@ -564,25 +564,26 @@ where
         while !parent_block_ids.is_empty() {
             let mut next_parent_blocks = vec![];
             for parent_block_id in parent_block_ids {
-                let mut parent_block = self.local_store
-                .get_dag_sync_block(parent_block_id)?
-                .ok_or_else(|| {
-                    anyhow!(
+                let mut parent_block = self
+                    .local_store
+                    .get_dag_sync_block(parent_block_id)?
+                    .ok_or_else(|| {
+                        anyhow!(
                         "the dag block should exist in local store, parent child block id: {:?}",
                         parent_id,
                     )
-                })?;
+                    })?;
                 let mut executed_children = vec![];
                 for child in &parent_block.children {
-                    let child_block = self
-                        .local_store
-                        .get_dag_sync_block(*child)?
-                        .ok_or_else(|| {
-                            anyhow!(
+                    let child_block =
+                        self.local_store
+                            .get_dag_sync_block(*child)?
+                            .ok_or_else(|| {
+                                anyhow!(
                                 "the dag block should exist in local store, child block id: {:?}",
                                 child
                             )
-                        })?;
+                            })?;
                     if child_block
                         .block
                         .header()
