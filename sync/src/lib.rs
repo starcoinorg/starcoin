@@ -10,3 +10,5 @@ pub mod tasks;
 pub mod txn_sync;
 
 pub mod verified_rpc_client;
+
+pub mod store;
