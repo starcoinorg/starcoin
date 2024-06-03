@@ -617,13 +617,9 @@ where
                             self.check_enough_by_info(executed_block.block_info)?,
                         )?;
                         next_parent_blocks.push(*child);
-                        self.local_store.delete_dag_sync_block(*child)?;
                     }
                 }
-                parent_block
-                    .children
-                    .retain(|child| !executed_children.contains(child));
-                self.local_store.save_dag_sync_block(parent_block)?;
+                self.local_store.delete_dag_sync_block(parent_block_id)?;
             }
 
             parent_block_ids = next_parent_blocks;
@@ -686,7 +682,7 @@ where
                     BlockConnectAction::ConnectNewBlock,
                     self.check_enough_by_info(executed_block.block_info)?,
                 )?;
-                self.execute_if_parent_ready(*child)?;
+                self.execute_if_parent_ready_norecursion(*child)?;
                 self.local_store.delete_dag_sync_block(*child)?;
             }
         }
