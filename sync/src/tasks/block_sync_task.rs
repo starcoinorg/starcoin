@@ -564,7 +564,7 @@ where
         while !parent_block_ids.is_empty() {
             let mut next_parent_blocks = vec![];
             for parent_block_id in parent_block_ids {
-                let mut parent_block = self
+                let parent_block = self
                     .local_store
                     .get_dag_sync_block(parent_block_id)?
                     .ok_or_else(|| {
