@@ -60,6 +60,7 @@ use starcoin_vm_types::{
     parser::parse_struct_tag,
     transaction::{ScriptFunction, SignedUserTransaction, TransactionPayload},
 };
+use std::collections::HashSet;
 use std::{
     collections::HashMap,
     fmt::{Debug, Formatter},
@@ -828,8 +829,24 @@ pub fn export_block_range(
         ProgressStyle::default_bar()
             .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
     );
+    let mut set = HashSet::new();
     for block in block_list {
         writeln!(file, "{}", serde_json::to_string(&block)?)?;
+        set.insert(block.id());
+        let parents = block.header().parents_hash();
+        if let Some(parents) = parents {
+            for parent in parents {
+                if !set.contains(&parent) {
+                    set.insert(parent);
+                    let block_parent = chain.get_block(parent)?.unwrap();
+                    writeln!(file, "{}", serde_json::to_string(&block_parent)?)?;
+                    bar.set_message(format!(
+                        "write parent block {}",
+                        block_parent.header().number()
+                    ));
+                }
+            }
+        }
         bar.set_message(format!("write block {}", block.header().number()));
         bar.inc(1);
     }
