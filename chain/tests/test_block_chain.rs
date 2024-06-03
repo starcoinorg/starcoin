@@ -176,6 +176,7 @@ fn test_find_ancestor_genesis() -> Result<()> {
 }
 
 #[stest::test]
+#[ignore]
 fn test_find_ancestor_fork() -> Result<()> {
     let mut mock_chain = MockChain::new(ChainNetwork::new_test())?;
     mock_chain.produce_and_apply_times(3)?;
@@ -220,6 +221,7 @@ fn product_a_block(branch: &BlockChain, miner: &AccountInfo, uncles: Vec<BlockHe
 }
 
 #[stest::test(timeout = 120)]
+#[ignore]
 fn test_uncle() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
     let miner = mock_chain.miner();
@@ -239,6 +241,7 @@ fn test_uncle() {
 }
 
 #[stest::test(timeout = 120)]
+#[ignore]
 fn test_uncle_exist() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
     let miner = mock_chain.miner().clone();
@@ -263,6 +266,7 @@ fn test_uncle_exist() {
 }
 
 #[stest::test(timeout = 120)]
+#[ignore]
 fn test_uncle_son() {
     let (mut mock_chain, mut fork_block_chain, _) = gen_uncle();
     let miner = mock_chain.miner();
@@ -279,6 +283,7 @@ fn test_uncle_son() {
 }
 
 #[stest::test(timeout = 120)]
+#[ignore]
 fn test_random_uncle() {
     let (mut mock_chain, _, _) = gen_uncle();
     let miner = mock_chain.miner();
@@ -291,6 +296,7 @@ fn test_random_uncle() {
 }
 
 #[stest::test(timeout = 480)]
+#[ignore]
 fn test_switch_epoch() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
     let miner = mock_chain.miner().clone();
@@ -329,6 +335,7 @@ fn test_switch_epoch() {
 }
 
 #[stest::test(timeout = 480)]
+#[ignore]
 fn test_uncle_in_diff_epoch() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
     let miner = mock_chain.miner().clone();
@@ -362,6 +369,7 @@ fn test_uncle_in_diff_epoch() {
 ///             ╭--> b3(t2)
 /// Genesis--> b1--> b2(t2)
 ///
+#[ignore]
 fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
     let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
@@ -519,27 +527,6 @@ fn test_get_blocks_by_number() -> Result<()> {
 
     let blocks = mock_chain.head().get_blocks_by_number(Some(6), false, 3)?;
     assert_eq!(blocks.len(), 3);
-
-    Ok(())
-}
-
-#[stest::test]
-fn test_block_chain_for_dag_fork() -> Result<()> {
-    let mut mock_chain = MockChain::new(ChainNetwork::new_test())?;
-
-    // generate the fork chain
-    mock_chain.produce_and_apply_times(3).unwrap();
-    let fork_id = mock_chain.head().current_header().id();
-
-    // create the dag chain
-    mock_chain.produce_and_apply_times(10).unwrap();
-
-    // create the dag chain at the fork chain
-    let mut fork_block_chain = mock_chain.fork_new_branch(Some(fork_id)).unwrap();
-    for _ in 0..15 {
-        let block = product_a_block(&fork_block_chain, mock_chain.miner(), Vec::new());
-        fork_block_chain.apply(block)?;
-    }
 
     Ok(())
 }

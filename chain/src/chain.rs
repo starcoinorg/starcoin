@@ -2322,9 +2322,12 @@ impl BlockChain {
     // todo: please remove me.
     // Try to set custom dag_effective_height for `test` network for different test cases,
     // or using different features to set the height.
-    #[cfg(not(feature = "dag-chain"))]
+    #[cfg(feature = "sync-dag-test")]
     pub fn dag_fork_height(&self) -> Result<Option<BlockNumber>> {
         use starcoin_config::genesis_config::{G_TEST_DAG_FORK_HEIGHT, G_TEST_DAG_FORK_STATE_KEY};
+        use starcoin_state_api::StateReaderExt;
+        use starcoin_vm_types::on_chain_config::FlexiDagConfig;
+
         let chain_id = self.status().head().chain_id();
         if chain_id.is_test() {
             let result = self.dag.get_dag_state(*G_TEST_DAG_FORK_STATE_KEY);
@@ -2344,7 +2347,7 @@ impl BlockChain {
         }
     }
 
-    #[cfg(feature = "dag-chain")]
+    #[cfg(not(feature = "sync-dag-test"))]
     pub fn dag_fork_height(&self) -> Result<Option<BlockNumber>> {
         Ok(Some(0))
     }

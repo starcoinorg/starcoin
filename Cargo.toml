@@ -437,7 +437,7 @@ starcoin-account-provider = { path = "account/provider" }
 starcoin-account-service = { path = "account/service" }
 starcoin-accumulator = { path = "commons/accumulator", package = "starcoin-accumulator" }
 starcoin-block-relayer = { path = "block-relayer" }
-starcoin-chain = { path = "chain", features = ["dag-chain"] }
+starcoin-chain = { path = "chain" }
 starcoin-chain-api = { path = "chain/api" }
 starcoin-chain-mock = { path = "chain/mock" }
 starcoin-chain-notify = { path = "chain/chain-notify" }

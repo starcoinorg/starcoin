@@ -31,6 +31,7 @@ proptest-derive = { workspace = true }
 [features]
 default = []
 fuzzing = ["proptest", "proptest-derive", "starcoin-types/fuzzing"]
+sync-dag-test = ["starcoin-chain/sync-dag-test"]
 
 [package]
 authors = { workspace = true }
