@@ -2336,11 +2336,13 @@ impl BlockChain {
             } else {
                 Ok(Some(u64::MAX))
             }
-        } else {
+        } else if chain_id.is_dev() {
             Ok(self
                 .statedb
                 .get_on_chain_config::<FlexiDagConfig>()?
                 .map(|c| c.effective_height))
+        } else {
+            Ok(Some(u64::MAX))
         }
     }
 
