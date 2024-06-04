@@ -681,9 +681,11 @@ impl BlockChain {
         storage: Arc<dyn Store>,
         genesis_epoch: Epoch,
         genesis_block: Block,
-        mut dag: BlockDAG,
+        #[cfg(not(feature = "sync-dag-test"))] mut dag: BlockDAG,
+        #[cfg(feature = "sync-dag-test")] dag: BlockDAG,
     ) -> Result<Self> {
         debug_assert!(genesis_block.header().is_genesis());
+        #[cfg(not(feature = "sync-dag-test"))]
         let genesis_header = genesis_block.header().clone();
         let txn_accumulator = MerkleAccumulator::new_empty(
             storage.get_accumulator_store(AccumulatorStoreType::Transaction),
@@ -704,6 +706,8 @@ impl BlockChain {
             &chain_id,
             None,
         )?;
+
+        #[cfg(not(feature = "sync-dag-test"))]
         if dag.load_dag_genesis()?.is_none() {
             dag.init_with_genesis(genesis_header)?;
         }
@@ -2368,7 +2372,15 @@ impl BlockChain {
             if result.is_ok() {
                 Ok(Some(G_TEST_DAG_FORK_HEIGHT))
             } else {
-                Ok(Some(u64::MAX))
+                let height = self
+                    .statedb
+                    .get_on_chain_config::<FlexiDagConfig>()?
+                    .map(|c| c.effective_height);
+
+                Ok(Some(match height {
+                    Some(h) if h != 0 => h,
+                    _ => u64::MAX,
+                }))
             }
         } else if chain_id.is_dev() {
             Ok(self

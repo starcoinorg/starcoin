@@ -18,6 +18,7 @@ use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::startup_info::StartupInfo;
 use std::sync::Arc;
 
+#[allow(unused)]
 pub async fn create_writeable_dag_block_chain(
     dag_fork_number: BlockNumber,
 ) -> (
