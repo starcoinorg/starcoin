@@ -765,6 +765,30 @@ impl BlockChain {
         Ok(uncles)
     }
 
+    fn get_dag_previous_header(
+        &self,
+        previous_header: BlockHeader,
+        selected_parent: HashValue,
+    ) -> Result<BlockHeader> {
+        if previous_header.id() == selected_parent {
+            return Ok(previous_header);
+        }
+
+        if self
+            .dag()
+            .check_ancestor_of(previous_header.id(), vec![selected_parent])?
+        {
+            return self
+                .storage
+                .get_block_header_by_hash(selected_parent)?
+                .ok_or_else(|| {
+                    format_err!("BlockHeader should exist by hash: {}", selected_parent)
+                });
+        }
+
+        Ok(previous_header)
+    }
+
     pub fn create_block_template(
         &self,
         author: AccountAddress,
@@ -797,7 +821,7 @@ impl BlockChain {
     pub fn create_block_template_by_header(
         &self,
         author: AccountAddress,
-        previous_header: BlockHeader,
+        mut previous_header: BlockHeader,
         user_txns: Vec<SignedUserTransaction>,
         uncles: Vec<BlockHeader>,
         block_gas_limit: Option<u64>,
@@ -829,7 +853,9 @@ impl BlockChain {
                         &tips_hash, blues
                     );
                     let mut blue_blocks = vec![];
-                    let _selected_parent = blues.remove(0);
+                    let selected_parent = blues.remove(0);
+                    previous_header =
+                        self.get_dag_previous_header(previous_header, selected_parent)?;
                     for blue in &blues {
                         let block = self
                             .storage
@@ -1659,14 +1685,7 @@ impl BlockChain {
 
     pub fn init_dag_with_genesis(&mut self, genesis: BlockHeader) -> Result<()> {
         assert_eq!(self.genesis_hash, genesis.id());
-        if self.check_dag_type(&genesis)? == DagHeaderType::Genesis {
-            let dag_genesis_id = genesis.id();
-            info!(
-                "Init dag genesis {dag_genesis_id} height {}",
-                genesis.number()
-            );
-            self.dag.init_with_genesis(genesis)?;
-        }
+        self.dag.init_with_genesis(genesis)?;
         Ok(())
     }
 

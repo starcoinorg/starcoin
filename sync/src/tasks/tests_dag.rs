@@ -10,7 +10,7 @@ use futures::channel::mpsc::unbounded;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain_api::{message::ChainResponse, ChainReader};
 use starcoin_chain_service::ChainReaderService;
-use starcoin_config::genesis_config::{G_TEST_DAG_FORK_HEIGHT, G_TEST_DAG_FORK_STATE_KEY};
+use starcoin_config::genesis_config::G_TEST_DAG_FORK_STATE_KEY;
 use starcoin_dag::consensusdb::consenses_state::DagState;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
@@ -98,16 +98,19 @@ async fn test_sync_dag_blocks() -> Result<()> {
         .dag()
         .save_dag_state(*G_TEST_DAG_FORK_STATE_KEY, DagState { tips: vec![] })?;
 
+    let count = 10;
+
     let mut target_node = Arc::new(test_system.target_node);
     let local_node = Arc::new(test_system.local_node);
     Arc::get_mut(&mut target_node)
         .unwrap()
-        .produce_block(G_TEST_DAG_FORK_HEIGHT)
+        .produce_block(count)
         .expect("failed to produce block");
     let dag_genesis_header = target_node.chain().status().head;
     assert!(
-        dag_genesis_header.number() == G_TEST_DAG_FORK_HEIGHT,
-        "dag genesis header number should be 10, but {}",
+        dag_genesis_header.number() == count,
+        "dag genesis header number should be {}, but {}",
+        count,
         dag_genesis_header.number()
     );
 
@@ -154,7 +157,7 @@ async fn test_sync_dag_blocks() -> Result<()> {
             );
             assert_eq!(
                 chain_status.head.number(),
-                G_TEST_DAG_FORK_HEIGHT
+                count
                     .checked_add(dag_block_count)
                     .ok_or_else(|| format_err!("overflow"))?,
             );
