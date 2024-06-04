@@ -326,9 +326,12 @@ impl NodeService {
             KType::try_from(G_BASE_MAX_UNCLES_PER_BLOCK)?,
             dag_storage.clone(),
         );
-        registry.put_shared(dag.clone()).await?;
-        let (chain_info, genesis) =
-            Genesis::init_and_check_storage(config.net(), storage.clone(), dag, config.data_dir())?;
+        let (chain_info, genesis) = Genesis::init_and_check_storage(
+            config.net(),
+            storage.clone(),
+            dag.clone(),
+            config.data_dir(),
+        )?;
         info!(
             "Start node with chain info: {}, number {}, dragon fork disabled, upgrade_time cost {} secs, ",
             chain_info,
@@ -337,6 +340,7 @@ impl NodeService {
         );
 
         registry.put_shared(genesis).await?;
+        registry.put_shared(dag).await?;
 
         let node_service = registry.register::<NodeService>().await?;
 

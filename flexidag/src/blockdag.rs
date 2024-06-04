@@ -12,8 +12,9 @@ use crate::consensusdb::{
 };
 use crate::ghostdag::protocol::GhostdagManager;
 use crate::{process_key_already_error, reachability};
-use anyhow::{bail, Ok};
+use anyhow::{anyhow, bail, Ok};
 use bcs_ext::BCSCodec;
+use starcoin_config::genesis_config::G_TEST_DAG_FORK_STATE_KEY;
 use starcoin_config::{temp_dir, RocksdbConfig};
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::info;
@@ -266,5 +267,38 @@ impl BlockDAG {
     pub fn save_dag_state(&self, hash: Hash, state: DagState) -> anyhow::Result<()> {
         self.storage.state_store.write().insert(hash, state)?;
         Ok(())
+    }
+
+    pub fn load_dag_sate(&self) -> anyhow::Result<Option<(HashValue, DagState)>> {
+        let state = self
+            .storage
+            .state_store
+            .read()
+            .iter()?
+            .flatten()
+            .take(3)
+            .collect::<Vec<_>>();
+
+        match state.len() {
+            0 => Ok(None),
+            1 => {
+                let state = state.first().unwrap().clone();
+                if state.0 == *G_TEST_DAG_FORK_STATE_KEY {
+                    Ok(None)
+                } else {
+                    Ok(Some(state))
+                }
+            }
+            2 if state.iter().any(|s| s.0 == *G_TEST_DAG_FORK_STATE_KEY) => {
+                let first = state.first().unwrap().clone();
+                let second = state.last().unwrap().clone();
+                if first.0 == *G_TEST_DAG_FORK_STATE_KEY {
+                    Ok(Some(second))
+                } else {
+                    Ok(Some(first))
+                }
+            }
+            _ => Err(anyhow!("more thane one dag genesis found")),
+        }
     }
 }

@@ -334,14 +334,11 @@ where
         }
         let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
         let tips_hash = if current_number > self.chain.dag_fork_height()?.unwrap_or(u64::MAX) {
-            let (_dag_genesis, tips_hash) = self
-                .chain
-                .current_tips_hash(&previous_header)?
-                .ok_or_else(|| {
-                    anyhow!(
+            let (_dag_genesis, tips_hash) = self.chain.current_tips_hash()?.ok_or_else(|| {
+                anyhow!(
                     "the number of the block is larger than the dag fork number but no dag state!"
                 )
-                })?;
+            })?;
             Some(tips_hash)
         } else {
             None

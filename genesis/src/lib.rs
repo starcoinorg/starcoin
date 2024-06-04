@@ -266,6 +266,7 @@ impl Genesis {
             self.block.clone(),
             dag,
         )?;
+
         let startup_info = StartupInfo::new(genesis_chain.current_header().id());
         storage.save_startup_info(startup_info)?;
         storage
