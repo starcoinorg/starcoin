@@ -831,8 +831,6 @@ pub fn export_block_range(
     );
     let mut set = HashSet::new();
     for block in block_list {
-        writeln!(file, "{}", serde_json::to_string(&block)?)?;
-        set.insert(block.id());
         let parents = block.header().parents_hash();
         if let Some(parents) = parents {
             for parent in parents {
@@ -847,6 +845,8 @@ pub fn export_block_range(
                 }
             }
         }
+        writeln!(file, "{}", serde_json::to_string(&block)?)?;
+        set.insert(block.id());
         bar.set_message(format!("write block {}", block.header().number()));
         bar.inc(1);
     }
