@@ -4,6 +4,7 @@ use crate::define_schema;
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue as Hash;
+use std::error::Error;
 use std::sync::Arc;
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug, Default)]
@@ -55,6 +56,13 @@ impl DbDagStateStore {
             db: Arc::clone(&db),
             dag_state_access: CachedDbAccess::new(db.clone(), cache_size),
         }
+    }
+
+    pub fn iter(
+        &self,
+    ) -> Result<impl Iterator<Item = Result<(Hash, DagState), Box<dyn Error>>> + '_, StoreError>
+    {
+        self.dag_state_access.iterator()
     }
 }
 

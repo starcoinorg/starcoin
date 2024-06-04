@@ -65,7 +65,7 @@ where
 
     pub fn iterator(
         &self,
-    ) -> Result<impl Iterator<Item = Result<(Box<[u8]>, S::Value), Box<dyn Error>>> + '_, StoreError>
+    ) -> Result<impl Iterator<Item = Result<(S::Key, S::Value), Box<dyn Error>>> + '_, StoreError>
     {
         let db_iterator = self
             .db
@@ -77,9 +77,13 @@ where
             .map_err(|e| StoreError::CFNotExist(e.to_string()))?;
 
         Ok(db_iterator.map(|iter_result| match iter_result {
-            Ok((key, data_bytes)) => match S::Value::decode_value(&data_bytes) {
-                Ok(data) => Ok((key, data)),
-                Err(e) => Err(e.into()),
+            Ok((key, data_bytes)) => match (
+                S::Key::decode_key(&key),
+                S::Value::decode_value(&data_bytes),
+            ) {
+                (Ok(key), Ok(data)) => Ok((key, data)),
+                (Err(e), _) => Err(e.into()),
+                (_, Err(e)) => Err(e.into()),
             },
             Err(e) => Err(e.into()),
         }))

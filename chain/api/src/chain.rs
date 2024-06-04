@@ -102,10 +102,7 @@ pub trait ChainReader {
         access_path: Option<AccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>>;
 
-    fn current_tips_hash(
-        &self,
-        header: &BlockHeader,
-    ) -> Result<Option<(HashValue, Vec<HashValue>)>>;
+    fn current_tips_hash(&self) -> Result<Option<(HashValue, Vec<HashValue>)>>;
     fn has_dag_block(&self, header_id: HashValue) -> Result<bool>;
     fn check_dag_type(&self, header: &BlockHeader) -> Result<DagHeaderType>;
 }

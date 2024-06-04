@@ -12,7 +12,7 @@ use crate::consensusdb::{
 };
 use crate::ghostdag::protocol::GhostdagManager;
 use crate::{process_key_already_error, reachability};
-use anyhow::{bail, Ok};
+use anyhow::{anyhow, bail, Ok};
 use bcs_ext::BCSCodec;
 use starcoin_config::{temp_dir, RocksdbConfig};
 use starcoin_crypto::{HashValue as Hash, HashValue};
@@ -266,5 +266,23 @@ impl BlockDAG {
     pub fn save_dag_state(&self, hash: Hash, state: DagState) -> anyhow::Result<()> {
         self.storage.state_store.write().insert(hash, state)?;
         Ok(())
+    }
+
+    pub fn load_dag_genesis(&self) -> anyhow::Result<Option<HashValue>> {
+        let state = self
+            .storage
+            .state_store
+            .read()
+            .iter()?
+            .flatten()
+            .take(2)
+            .map(|(hash, _)| hash)
+            .collect::<Vec<_>>();
+
+        match state.len() {
+            0 => Ok(None),
+            1 => Ok(Some(*state.first().unwrap())),
+            _ => Err(anyhow!("more thane one dag genesis found")),
+        }
     }
 }
