@@ -428,16 +428,6 @@ impl BlockVerifier for DagVerifier {
 //TODO: Implement it.
 pub struct DagBasicVerifier;
 impl BlockVerifier for DagBasicVerifier {
-    fn verify_uncles<R>(
-        _current_chain: &R,
-        _uncles: &[BlockHeader],
-        _header: &BlockHeader,
-    ) -> Result<()>
-    where
-        R: ChainReader,
-    {
-        Ok(())
-    }
     fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
     where
         R: ChainReader,
@@ -467,5 +457,15 @@ impl BlockVerifier for DagBasicVerifier {
 
         Ok(())
         // ConsensusVerifier::verify_header(current_chain, new_block_header)
+    }
+    fn verify_uncles<R>(
+        _current_chain: &R,
+        _uncles: &[BlockHeader],
+        _header: &BlockHeader,
+    ) -> Result<()>
+    where
+        R: ChainReader,
+    {
+        Ok(())
     }
 }

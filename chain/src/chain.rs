@@ -811,7 +811,8 @@ impl BlockChain {
         let final_block_gas_limit = block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
-        let tips_hash = if current_number <= self.dag_fork_height()?.unwrap_or(u64::MAX) {
+        let dag_fork_height = self.dag_fork_height()?;
+        let tips_hash = if current_number <= dag_fork_height.unwrap_or(u64::MAX) {
             None
         } else if tips.is_some() {
             tips
@@ -854,8 +855,8 @@ impl BlockChain {
             }
         };
         debug!(
-            "current_number: {}, Blue blocks:{:?} tips_hash {:?} in chain/create_block_template_by_header",
-            current_number, blue_blocks, tips_hash
+            "current_number: {}/{:?}, Blue blocks:{:?} tips_hash {:?} in chain/create_block_template_by_header",
+            current_number, dag_fork_height, blue_blocks, tips_hash
         );
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),
