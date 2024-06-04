@@ -18,8 +18,7 @@ use starcoin_types::block::Block;
 use starcoin_types::startup_info::StartupInfo;
 use std::sync::Arc;
 
-pub async fn create_writeable_dag_block_chain(
-) -> (
+pub async fn create_writeable_dag_block_chain() -> (
     WriteBlockChainService<MockTxPoolService>,
     Arc<NodeConfig>,
     Arc<dyn Store>,

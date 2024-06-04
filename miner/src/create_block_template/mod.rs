@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::create_block_template::metrics::BlockBuilderMetrics;
-use anyhow::{format_err, Ok, Result};
+use anyhow::{anyhow, format_err, Ok, Result};
 use futures::executor::block_on;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_account_service::AccountService;
