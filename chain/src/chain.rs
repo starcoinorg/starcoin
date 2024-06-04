@@ -45,9 +45,7 @@ use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_numbe
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
-use starcoin_vm_types::on_chain_config::FlexiDagConfig;
 use starcoin_vm_types::on_chain_resource::Epoch;
-use starcoin_vm_types::state_view::StateReaderExt;
 use std::cmp::min;
 use std::collections::HashSet;
 use std::iter::Extend;
@@ -2378,10 +2376,7 @@ impl BlockChain {
 
     #[cfg(not(feature = "sync-dag-test"))]
     pub fn dag_fork_height(&self) -> Result<Option<BlockNumber>> {
-        Ok(self
-            .statedb
-            .get_on_chain_config::<FlexiDagConfig>()?
-            .map(|c| c.effective_height))
+        Ok(Some(0))
     }
 }
 
