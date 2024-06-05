@@ -125,19 +125,15 @@ impl AbsentDagBlockStoreReader for SyncAbsentBlockStore {
 
 impl AbsentDagBlockStoreWriter for SyncAbsentBlockStore {
     fn delete_absent_block(&mut self, hash: HashValue) -> anyhow::Result<()> {
-        let db = Arc::get_mut(&mut self.db)
-            .ok_or_else(|| format_err!("failed to get mut db storage in delete absent block"))?;
         self.cache_access
-            .delete(DirectDbWriter::new(db), hash)
+            .delete(DirectDbWriter::new(&self.db), hash)
             .map_err(|e| format_err!("failed to delete absent block: {:?}", e))
     }
 
     fn save_absent_block(&mut self, blocks: Vec<DagSyncBlock>) -> anyhow::Result<()> {
-        let db = Arc::get_mut(&mut self.db)
-            .ok_or_else(|| format_err!("failed to get mut db storage in delete absent block"))?;
         for block in blocks {
             self.cache_access.write(
-                DirectDbWriter::new(db),
+                DirectDbWriter::new(&self.db),
                 block
                     .block
                     .as_ref()
