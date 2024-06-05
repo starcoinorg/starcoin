@@ -3,7 +3,7 @@ use rand::Rng;
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain_api::{ChainReader, ChainWriter};
-use starcoin_config::genesis_config::{G_TEST_DAG_FORK_HEIGHT, G_TEST_DAG_FORK_STATE_KEY};
+use starcoin_config::genesis_config::G_TEST_DAG_FORK_STATE_KEY;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
@@ -48,7 +48,6 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
     let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
 
-    // set the flexidag fork height to G_TEST_DAG_FORK_HEIGHT
     block_chain
         .dag()
         .save_dag_state(*G_TEST_DAG_FORK_STATE_KEY, DagState { tips: vec![] })?;
@@ -56,10 +55,8 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
     let _current_header = block_chain.current_header();
     let miner_account = AccountInfo::random();
     let mut seq_num = 0;
-    // generate G_TEST_DAG_FORK_HEIGHT + 5 blocks
-    let block_count = G_TEST_DAG_FORK_HEIGHT
-        .checked_add(5)
-        .ok_or_else(|| format_err!("overflow in calculation of the block count"))?;
+    // generate 5 blocks
+    let block_count = 5;
     (0..block_count).for_each(|_| {
         let txns = gen_txns(&mut seq_num).unwrap();
         let (template, _) = block_chain
@@ -72,10 +69,7 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
         debug!("apply block:{:?}", &block);
         block_chain.apply(block).unwrap();
     });
-    // fork from G_TEST_DAG_FORK_HEIGHT + 3 block
-    let fork_count = G_TEST_DAG_FORK_HEIGHT
-        .checked_add(3)
-        .ok_or_else(|| format_err!("overflow in calculation of the fork count"))?;
+    let fork_count = 3;
     let fork_point = block_chain
         .get_block_by_number(fork_count)
         .unwrap()
@@ -102,15 +96,7 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
     fork_chain.apply(block).unwrap();
     assert_eq!(
         block_chain.current_header().id(),
-        block_chain
-            .get_block_by_number(
-                G_TEST_DAG_FORK_HEIGHT
-                    .checked_add(5)
-                    .ok_or_else(|| format_err!("failed add the block number for overflow"))?
-            )
-            .unwrap()
-            .unwrap()
-            .id()
+        block_chain.get_block_by_number(5).unwrap().unwrap().id()
     );
     // create latest block
     let account_reader = block_chain.chain_state_reader();
@@ -127,15 +113,7 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
     block_chain.apply(block).unwrap();
     assert_eq!(
         block_chain.current_header().id(),
-        block_chain
-            .get_block_by_number(
-                G_TEST_DAG_FORK_HEIGHT
-                    .checked_add(6)
-                    .ok_or_else(|| format_err!("overflow in calulation of the latest number"))?
-            )
-            .unwrap()
-            .unwrap()
-            .id()
+        block_chain.get_block_by_number(6).unwrap().unwrap().id()
     );
     Ok(())
 }

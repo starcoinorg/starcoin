@@ -29,7 +29,7 @@ pub fn gen_dag_blocks(
             println!("try_connect result: {:?}", e);
             assert!(e.is_ok());
             if (i + 1) % 3 == 0 {
-                writeable_block_chain_service.time_sleep(5000000);
+                writeable_block_chain_service.time_sleep(5000);
             }
         }
         Ok(last_block_hash.ok_or_else(|| anyhow::anyhow!("last block hash is none"))?)

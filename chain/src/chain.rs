@@ -681,7 +681,7 @@ impl BlockChain {
         storage: Arc<dyn Store>,
         genesis_epoch: Epoch,
         genesis_block: Block,
-        dag: BlockDAG,
+        mut dag: BlockDAG,
     ) -> Result<Self> {
         debug_assert!(genesis_block.header().is_genesis());
         let txn_accumulator = MerkleAccumulator::new_empty(
@@ -691,6 +691,7 @@ impl BlockChain {
             storage.get_accumulator_store(AccumulatorStoreType::Block),
         );
         let chain_id = genesis_block.header().chain_id();
+        let genesis_header = genesis_block.header().clone();
         let statedb = ChainStateDB::new(storage.clone().into_super_arc(), None);
         let executed_block = Self::execute_block_and_save(
             storage.as_ref(),
@@ -703,7 +704,23 @@ impl BlockChain {
             &chain_id,
             None,
         )?;
+        dag = Self::init_dag(dag, genesis_header)?;
         Self::new(time_service, executed_block.block.id(), storage, None, dag)
+    }
+
+    fn init_dag(mut dag: BlockDAG, genesis_header: BlockHeader) -> Result<BlockDAG> {
+        match dag.get_dag_state(genesis_header.id()) {
+            anyhow::Result::Ok(_dag_state) => (),
+            Err(e) => match e.downcast::<StoreError>()? {
+                StoreError::KeyNotFound(_) => {
+                    dag.init_with_genesis(genesis_header)?;
+                }
+                e => {
+                    return Err(e.into());
+                }
+            },
+        }
+        Ok(dag)
     }
 
     pub fn current_epoch_uncles_size(&self) -> u64 {
