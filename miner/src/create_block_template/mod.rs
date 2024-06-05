@@ -306,6 +306,31 @@ where
         }
     }
 
+    fn get_dag_previous_header(
+        &self,
+        previous_header: BlockHeader,
+        selected_parent: HashValue,
+    ) -> Result<BlockHeader> {
+        if previous_header.id() == selected_parent {
+            return Ok(previous_header);
+        }
+
+        if self
+            .chain
+            .dag()
+            .check_ancestor_of(previous_header.id(), vec![selected_parent])?
+        {
+            return self
+                .storage
+                .get_block_header_by_hash(selected_parent)?
+                .ok_or_else(|| {
+                    format_err!("BlockHeader should exist by hash: {}", selected_parent)
+                });
+        }
+
+        Ok(previous_header)
+    }
+
     pub fn create_block_template(&self) -> Result<BlockTemplateResponse> {
         let on_chain_block_gas_limit = self.chain.epoch().block_gas_limit();
         let block_gas_limit = self
@@ -319,7 +344,7 @@ where
 
         let txns = self.tx_provider.get_txns(max_txns);
         let author = *self.miner_account.address();
-        let previous_header = self.chain.current_header();
+        let mut previous_header = self.chain.current_header();
         let current_number = previous_header.number().saturating_add(1);
         let epoch = self.chain.epoch();
         let strategy = epoch.strategy();
@@ -362,7 +387,9 @@ where
                     );
                     let mut blue_blocks = vec![];
 
-                    let __selected_parent = blues.remove(0);
+                    let selected_parent = blues.remove(0);
+                    previous_header =
+                        self.get_dag_previous_header(previous_header, selected_parent)?;
                     for blue in &blues {
                         // todo: make sure blue block has been executed successfully
                         let block = self
