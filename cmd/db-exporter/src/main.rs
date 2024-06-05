@@ -888,7 +888,7 @@ pub fn apply_block(
         chain_info.head().id(),
         storage.clone(),
         None,
-        dag,
+        dag.clone(),
     )
     .expect("create block chain should success.");
     let start_time = SystemTime::now();
@@ -928,6 +928,14 @@ pub fn apply_block(
     for block in blocks {
         let block_hash = block.header().id();
         let block_number = block.header().number();
+        chain = BlockChain::new(
+            net.time_service(),
+            block.header.parent_hash(),
+            storage.clone(),
+            None,
+            dag.clone(),
+        )
+        .expect("create block chain should success.");
         match verifier {
             Verifier::Basic => chain.apply_with_verifier::<BasicVerifier>(block)?,
             Verifier::Consensus => chain.apply_with_verifier::<ConsensusVerifier>(block)?,
