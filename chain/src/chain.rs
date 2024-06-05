@@ -681,11 +681,9 @@ impl BlockChain {
         storage: Arc<dyn Store>,
         genesis_epoch: Epoch,
         genesis_block: Block,
-        #[cfg(not(feature = "sync-dag-test"))] mut dag: BlockDAG,
-        #[cfg(feature = "sync-dag-test")] dag: BlockDAG,
+        mut dag: BlockDAG,
     ) -> Result<Self> {
         debug_assert!(genesis_block.header().is_genesis());
-        #[cfg(not(feature = "sync-dag-test"))]
         let genesis_header = genesis_block.header().clone();
         let txn_accumulator = MerkleAccumulator::new_empty(
             storage.get_accumulator_store(AccumulatorStoreType::Transaction),
@@ -707,8 +705,12 @@ impl BlockChain {
             None,
         )?;
 
+        #[cfg(feature = "sync-dag-test")]
+        let need_init = chain_id.is_dev();
         #[cfg(not(feature = "sync-dag-test"))]
-        if dag.load_dag_genesis()?.is_none() {
+        let need_init = true;
+
+        if need_init && dag.load_dag_genesis()?.is_none() {
             dag.init_with_genesis(genesis_header)?;
         }
         Self::new(time_service, executed_block.block.id(), storage, None, dag)
