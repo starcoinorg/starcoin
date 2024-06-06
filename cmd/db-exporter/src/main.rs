@@ -780,7 +780,7 @@ pub fn export_block_range(
     let chain = BlockChain::new(
         net.time_service(),
         chain_info.head().id(),
-        storage,
+        storage.clone(),
         None,
         dag,
     )
@@ -836,7 +836,7 @@ pub fn export_block_range(
             for parent in parents {
                 if !set.contains(&parent) {
                     set.insert(parent);
-                    let block_parent = chain.get_block(parent)?.unwrap();
+                    let block_parent = storage.clone().get_block(parent)?.unwrap();
                     writeln!(file, "{}", serde_json::to_string(&block_parent)?)?;
                     bar.set_message(format!(
                         "write parent block {}",
