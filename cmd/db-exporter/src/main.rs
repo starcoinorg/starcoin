@@ -830,23 +830,47 @@ pub fn export_block_range(
             .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
     );
     let mut set = HashSet::new();
+    for block in &block_list {
+        set.insert(block.id());
+    }
     for block in block_list {
         let parents = block.header().parents_hash();
         if let Some(parents) = parents {
+            let mut stk = vec![];
+            let mut list2 = vec![];
             for parent in parents {
                 if !set.contains(&parent) {
                     set.insert(parent);
                     let block_parent = storage.clone().get_block(parent)?.unwrap();
-                    writeln!(file, "{}", serde_json::to_string(&block_parent)?)?;
-                    bar.set_message(format!(
-                        "write parent block {}",
-                        block_parent.header().number()
-                    ));
+                    list2.push(parent);
+                    stk.push(block_parent);
                 }
+            }
+            while !stk.is_empty() {
+                let mut stk2 = vec![];
+                for block2 in stk {
+                    let parents2 = block2.header().parents_hash();
+                    if let Some(parents2) = parents2 {
+                        for parent in parents2 {
+                            if !set.contains(&parent) {
+                                set.insert(parent);
+                                let block_parent = storage.clone().get_block(parent)?.unwrap();
+                                list2.push(parent);
+                                stk2.push(block_parent);
+                            }
+                        }
+                    }
+                }
+                stk = stk2;
+            }
+            list2.reverse();
+            for parent in list2 {
+                let block2 = storage.clone().get_block(parent)?.unwrap();
+                writeln!(file, "{}", serde_json::to_string(&block2)?)?;
+                bar.set_message(format!("write parent block {}", block2.header().number()));
             }
         }
         writeln!(file, "{}", serde_json::to_string(&block)?)?;
-        set.insert(block.id());
         bar.set_message(format!("write block {}", block.header().number()));
         bar.inc(1);
     }
@@ -866,7 +890,7 @@ pub fn apply_block(
     to_dir: PathBuf,
     input_path: PathBuf,
     network: BuiltinNetworkID,
-    verifier: Verifier,
+    _verifier: Verifier,
 ) -> anyhow::Result<()> {
     ::starcoin_logger::init();
     let net = ChainNetwork::new_builtin(network);
@@ -880,7 +904,7 @@ pub fn apply_block(
         FlexiDagStorageConfig::new(),
     )?;
     let dag = starcoin_dag::blockdag::BlockDAG::new(DEFAULT_GHOSTDAG_K, dag_storage);
-    StarcoinVM::set_concurrency_level_once(num_cpus::get());
+    // StarcoinVM::set_concurrency_level_once(num_cpus::get());
     let (chain_info, _) =
         Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), to_dir.as_ref())?;
     let mut chain = BlockChain::new(
@@ -893,6 +917,7 @@ pub fn apply_block(
     .expect("create block chain should success.");
     let start_time = SystemTime::now();
     let cur_num = chain.status().head().number();
+    println!("YSG cur_num {}", cur_num);
     let file_name = input_path.display().to_string();
     let reader = BufReader::new(File::open(input_path)?);
     let mut blocks = vec![];
@@ -936,12 +961,9 @@ pub fn apply_block(
             dag.clone(),
         )
         .expect("create block chain should success.");
-        match verifier {
-            Verifier::Basic => chain.apply_with_verifier::<BasicVerifier>(block)?,
-            Verifier::Consensus => chain.apply_with_verifier::<ConsensusVerifier>(block)?,
-            Verifier::Full => chain.apply_with_verifier::<FullVerifier>(block)?,
-            Verifier::None => chain.apply_with_verifier::<NoneVerifier>(block)?,
-        };
+
+        chain.apply(block)?;
+
         // apply block then flush startup_info for breakpoint resume
         let startup_info = StartupInfo::new(block_hash);
         storage.save_startup_info(startup_info)?;
