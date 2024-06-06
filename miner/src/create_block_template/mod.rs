@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::create_block_template::metrics::BlockBuilderMetrics;
-use anyhow::{anyhow, format_err, Result};
+use anyhow::{anyhow, bail, format_err, Result};
 use futures::executor::block_on;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_account_service::AccountService;
@@ -381,6 +381,9 @@ where
                 None => (self.find_uncles(), None),
                 Some(tips) => {
                     let mut blues = self.dag.ghostdata(tips)?.mergeset_blues.to_vec();
+                    if blues.is_empty() {
+                        bail!("The count of ghostdata returns mergeset blues is empty");
+                    }
                     info!(
                         "create block template with tips:{:?},ghostdata blues:{:?}",
                         &tips_hash, blues
