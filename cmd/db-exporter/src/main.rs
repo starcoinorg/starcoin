@@ -828,42 +828,42 @@ pub fn export_block_range(
         ProgressStyle::default_bar()
             .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
     );
-    let mut set = HashSet::new();
+    let mut visit = HashSet::new();
     for block in &block_list {
-        set.insert(block.id());
+        visit.insert(block.id());
     }
     for block in block_list {
         let parents = block.header().parents_hash();
         if let Some(parents) = parents {
-            let mut stk = vec![];
-            let mut list2 = vec![];
+            let mut stack = vec![];
+            let mut block_ids = vec![];
             for parent in parents {
-                if !set.contains(&parent) {
-                    set.insert(parent);
+                if !visit.contains(&parent) {
+                    visit.insert(parent);
                     let block_parent = storage.clone().get_block(parent)?.unwrap();
-                    list2.push(parent);
-                    stk.push(block_parent);
+                    block_ids.push(parent);
+                    stack.push(block_parent);
                 }
             }
-            while !stk.is_empty() {
-                let mut stk2 = vec![];
-                for block2 in stk {
+            while !stack.is_empty() {
+                let mut stack2 = vec![];
+                for block2 in stack {
                     let parents2 = block2.header().parents_hash();
                     if let Some(parents2) = parents2 {
                         for parent in parents2 {
-                            if !set.contains(&parent) {
-                                set.insert(parent);
+                            if !visit.contains(&parent) {
+                                visit.insert(parent);
                                 let block_parent = storage.clone().get_block(parent)?.unwrap();
-                                list2.push(parent);
-                                stk2.push(block_parent);
+                                block_ids.push(parent);
+                                stack2.push(block_parent);
                             }
                         }
                     }
                 }
-                stk = stk2;
+                stack = stack2;
             }
-            list2.reverse();
-            for parent in list2 {
+            block_ids.reverse();
+            for parent in block_ids {
                 let block2 = storage.clone().get_block(parent)?.unwrap();
                 writeln!(file, "{}", serde_json::to_string(&block2)?)?;
                 bar.set_message(format!("write parent block {}", block2.header().number()));
