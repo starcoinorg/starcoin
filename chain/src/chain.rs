@@ -868,6 +868,9 @@ impl BlockChain {
                 None => (uncles, None),
                 Some(tips) => {
                     let mut blues = self.dag.ghostdata(tips)?.mergeset_blues.to_vec();
+                    if blues.is_empty() {
+                        bail!("The count of ghostdata returns mergeset blues is empty");
+                    }
                     info!(
                         "create block template with tips:{:?}, ghostdata blues:{:?}",
                         &tips_hash, blues
