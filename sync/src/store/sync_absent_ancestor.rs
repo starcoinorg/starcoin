@@ -117,6 +117,7 @@ impl AbsentDagBlockStoreReader for SyncAbsentBlockStore {
     }
 
     fn get_absent_block_by_id(&self, hash: HashValue) -> anyhow::Result<DagSyncBlock> {
+        println!("jacktest: get absent block by id: {:?}", hash);
         self.cache_access
             .read(hash)
             .map_err(|e| format_err!("failed to get absent block by id: {:?}", e))
@@ -132,6 +133,7 @@ impl AbsentDagBlockStoreWriter for SyncAbsentBlockStore {
 
     fn save_absent_block(&mut self, blocks: Vec<DagSyncBlock>) -> anyhow::Result<()> {
         for block in blocks {
+            println!("jacktest: save block by id: {:?}", block.block.as_ref().unwrap().header().id());
             self.cache_access.write(
                 DirectDbWriter::new(&self.db),
                 block
@@ -140,7 +142,7 @@ impl AbsentDagBlockStoreWriter for SyncAbsentBlockStore {
                     .ok_or_else(|| format_err!("block in sync dag block should not be none!"))?
                     .header()
                     .id(),
-                block,
+                block.clone(),
             )?;
         }
         Ok(())
