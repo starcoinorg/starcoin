@@ -60,9 +60,8 @@ use starcoin_vm_types::{
     parser::parse_struct_tag,
     transaction::{ScriptFunction, SignedUserTransaction, TransactionPayload},
 };
-use std::collections::HashSet;
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fmt::{Debug, Formatter},
     fs::{File, OpenOptions},
     io::{BufRead, BufReader, Write},
@@ -917,7 +916,6 @@ pub fn apply_block(
     .expect("create block chain should success.");
     let start_time = SystemTime::now();
     let cur_num = chain.status().head().number();
-    println!("YSG cur_num {}", cur_num);
     let file_name = input_path.display().to_string();
     let reader = BufReader::new(File::open(input_path)?);
     let mut blocks = vec![];
