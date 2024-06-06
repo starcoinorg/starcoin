@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::format_err;
+use bcs_ext::BCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_dag::{
@@ -50,21 +51,29 @@ define_schema!(
 
 impl KeyCodec<SyncAbsentBlock> for HashValue {
     fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
-        Ok(self.to_vec())
+        Ok(self.encode().map_err(|e| StoreError::EncodeError(e.to_string()))?)
     }
 
     fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
-        HashValue::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+        // HashValue::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+        let s = HashValue::decode(data).map_err(|e| StoreError::DecodeError(e.to_string()))?;
+        Ok(s) 
     }
 }
 
 impl ValueCodec<SyncAbsentBlock> for DagSyncBlock {
     fn encode_value(&self) -> Result<Vec<u8>, StoreError> {
-        bcs_ext::to_bytes(self).map_err(|e| StoreError::EncodeError(e.to_string()))
+        let s = bcs_ext::to_bytes(self).map_err(|e| StoreError::EncodeError(e.to_string()))?;
+        println!("jacktest: sync-absent-block data, encode value: {:?}", self.block.as_ref().unwrap().header().id());
+        let obj: DagSyncBlock = bcs_ext::from_bytes(&s.clone()).map_err(|e| StoreError::DecodeError(e.to_string()))?;
+        assert_eq!(self.clone(), obj);
+        Ok(s)
     }
 
     fn decode_value(data: &[u8]) -> Result<Self, StoreError> {
-        bcs_ext::from_bytes(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+        let s: DagSyncBlock = bcs_ext::from_bytes(data).map_err(|e| StoreError::DecodeError(e.to_string()))?;
+        println!("jacktest: sync-absent-block data, decode value: {:?}", s.block.as_ref().unwrap().header().id());
+        Ok(s)
     }
 }
 
