@@ -835,19 +835,19 @@ pub fn export_block_range(
     for block in block_list {
         let parents = block.header().parents_hash();
         if let Some(parents) = parents {
-            let mut stack = vec![];
+            let mut queue = vec![];
             let mut block_ids = vec![];
             for parent in parents {
                 if !visit.contains(&parent) {
                     visit.insert(parent);
                     let block_parent = storage.clone().get_block(parent)?.unwrap();
                     block_ids.push(parent);
-                    stack.push(block_parent);
+                    queue.push(block_parent);
                 }
             }
-            while !stack.is_empty() {
-                let mut stack2 = vec![];
-                for block2 in stack {
+            while !queue.is_empty() {
+                let mut queue2 = vec![];
+                for block2 in queue {
                     let parents2 = block2.header().parents_hash();
                     if let Some(parents2) = parents2 {
                         for parent in parents2 {
@@ -855,12 +855,12 @@ pub fn export_block_range(
                                 visit.insert(parent);
                                 let block_parent = storage.clone().get_block(parent)?.unwrap();
                                 block_ids.push(parent);
-                                stack2.push(block_parent);
+                                queue2.push(block_parent);
                             }
                         }
                     }
                 }
-                stack = stack2;
+                queue = queue2;
             }
             block_ids.reverse();
             for parent in block_ids {
