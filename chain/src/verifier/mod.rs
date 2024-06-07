@@ -364,12 +364,6 @@ impl BlockVerifier for DagVerifier {
             new_block_header.number(),
         );
 
-        println!(
-            "jacktest: parents_hash_to_check {:?}, number: {:?}",
-            parents_hash_to_check,
-            new_block_header.number()
-        );
-
         verify_block!(
             VerifyBlockField::Header,
             parents_hash_to_check.contains(&new_block_header.parent_hash())
