@@ -359,9 +359,15 @@ impl BlockVerifier for DagVerifier {
         verify_block!(
             VerifyBlockField::Header,
             !parents_hash_to_check.is_empty() && parents_hash.len() == parents_hash_to_check.len(),
-            "Invalid parents_hash {:?} for a dag block {}",
+            "Invalid parents_hash in dag verifier {:?} for a dag block {}",
             new_block_header.parents_hash(),
             new_block_header.number(),
+        );
+
+        println!(
+            "jacktest: parents_hash_to_check {:?}, number: {:?}",
+            parents_hash_to_check,
+            new_block_header.number()
         );
 
         verify_block!(
@@ -450,7 +456,7 @@ impl BlockVerifier for DagBasicVerifier {
         verify_block!(
             VerifyBlockField::Header,
             !parents_hash_to_check.is_empty() && parents_hash.len() == parents_hash_to_check.len(),
-            "Invalid parents_hash {:?} for a dag block {}",
+            "Invalid parents_hash in dag basic verifier {:?} for a dag block {}",
             new_block_header.parents_hash(),
             new_block_header.number(),
         );
