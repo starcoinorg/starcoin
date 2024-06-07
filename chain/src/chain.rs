@@ -849,14 +849,28 @@ impl BlockChain {
         let final_block_gas_limit = block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
-        let (_, tips_hash) = if self.check_dag_type()? == DagHeaderType::Single {
-            (None, None)
-        } else if tips.is_some() {
-            (Some(self.get_block_dag_genesis(&previous_header)?), tips)
-        } else {
-            let result = self.current_tips_hash(&previous_header)?.expect("the block number is larger than the dag fork number but the state data doese not exis");
-            (Some(result.0), Some(result.1))
+        let tips_hash = match self.check_dag_type()? {
+            DagHeaderType::Single => None,
+            DagHeaderType::Genesis | DagHeaderType::Normal => {
+                if tips.is_some() {
+                    tips
+                } else {
+                    let (_dag_genesis, tips_hash) = self
+                        .current_tips_hash(&previous_header)?
+                        .ok_or_else(|| {
+                            anyhow!(
+                            "the number of the block is larger than the dag fork number but no dag state!"
+                        )
+                        })?;
+                    Some(tips_hash)
+                }
+            }
         };
+        println!(
+            "jacktest: current block:{} tips(dag state):{:?}",
+            self.current_header().number(),
+            &tips_hash,
+        );
         let strategy = epoch.strategy();
         let difficulty = strategy.calculate_next_difficulty(self)?;
         let (uncles, blue_blocks) = {
@@ -873,8 +887,16 @@ impl BlockChain {
                     );
                     let mut blue_blocks = vec![];
                     let selected_parent = blues.remove(0);
+                    println!(
+                        "jacktest: selected parent: {:?} and pre {:?}",
+                        selected_parent, previous_header
+                    );
                     previous_header =
                         self.get_dag_previous_header(previous_header, selected_parent)?;
+                    println!(
+                        "jacktest: 2selected parent: {:?} and pre {:?}",
+                        selected_parent, previous_header
+                    );
                     for blue in &blues {
                         let block = self
                             .storage
@@ -2194,6 +2216,8 @@ impl ChainReader for BlockChain {
         let header = self.status().head().clone();
         let net: BuiltinNetworkID = header.chain_id().try_into()?;
         let dag_fork_height = net.genesis_config().dag_effective_height;
+        println!("jacktest: dag fork height: {:?}", dag_fork_height);
+        println!("jacktest: header: {:?}", header.number());
         match header.number() {
             _ if header.number() < dag_fork_height => Ok(DagHeaderType::Single),
             _ if header.number() > dag_fork_height => Ok(DagHeaderType::Normal),
@@ -2365,6 +2389,7 @@ impl BlockChain {
         if self.epoch.end_block_number() == block.header().number() {
             self.epoch = get_epoch_from_statedb(&self.statedb)?;
         }
+        println!("jacktest: save dag state {:?}, {:?}", dag_genesis, tips);
         self.dag.save_dag_state(dag_genesis, DagState { tips })?;
         Ok(executed_block)
     }
@@ -2376,13 +2401,16 @@ impl ChainWriter for BlockChain {
     }
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
-        if self.check_dag_type()? == DagHeaderType::Normal {
-            info!(
-                "connect a dag block, {:?}, number: {:?}",
-                executed_block.block.id(),
-                executed_block.block.header().number(),
-            );
-            return self.connect_dag(executed_block);
+        match self.check_dag_type()? {
+            DagHeaderType::Single => (),
+            DagHeaderType::Normal | DagHeaderType::Genesis => {
+                info!(
+                    "connect a dag block, {:?}, number: {:?}",
+                    executed_block.block.id(),
+                    executed_block.block.header().number(),
+                );
+                return self.connect_dag(executed_block);
+            }
         }
         let (block, block_info) = (executed_block.block(), executed_block.block_info());
         //TODO try reuse accumulator and state db.
@@ -2418,9 +2446,11 @@ impl ChainWriter for BlockChain {
     }
 
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock> {
-        if self.check_dag_type()? != DagHeaderType::Normal {
+        if self.check_dag_type()? == DagHeaderType::Single {
+            println!("jacktest: 1");
             self.apply_with_verifier::<FullVerifier>(block)
         } else {
+            println!("jacktest: 2");
             self.apply_with_verifier::<DagVerifier>(block)
         }
     }
