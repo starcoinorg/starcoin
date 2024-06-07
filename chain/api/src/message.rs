@@ -66,8 +66,7 @@ pub enum ChainRequest {
         block_ids: Vec<HashValue>,
     },
     GetDagStateView,
-    CheckDagType(HashValue),
-    DagForkHeigh,
+    CheckDagType,
 }
 
 impl ServiceRequest for ChainRequest {
@@ -98,5 +97,4 @@ pub enum ChainResponse {
     BlockInfoVec(Box<Vec<Option<BlockInfo>>>),
     DagStateView(Box<DagStateView>),
     CheckDagType(DagHeaderType),
-    DagForkHeight(Option<BlockNumber>),
 }

@@ -778,7 +778,7 @@ where
                 break;
             }
             if latest_block_chain
-                .check_dag_type(&latest_status.head)
+                .check_dag_type()
                 .map_err(TaskError::BreakError)?
                 == DagHeaderType::Normal
                 && latest_status.info().get_total_difficulty()

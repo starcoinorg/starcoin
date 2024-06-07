@@ -84,7 +84,7 @@ impl Genesis {
     /// Load pre generated genesis.
     pub fn load_or_build(net: &ChainNetwork) -> Result<Self> {
         // test and dev always use Fresh genesis.
-        if net.is_test() || net.is_dev() {
+        if net.is_test() || net.is_dev() || net.is_dag_test() {
             Self::build(net)
         } else {
             match Self::load(net)? {
@@ -149,7 +149,7 @@ impl Genesis {
     pub fn build_genesis_transaction(net: &ChainNetwork) -> Result<SignedUserTransaction> {
         let package = build_stdlib_package(
             net,
-            if net.is_test() {
+            if net.is_test() || net.is_dag_test() {
                 StdLibOptions::Fresh
             } else {
                 StdLibOptions::Compiled(net.stdlib_version())
