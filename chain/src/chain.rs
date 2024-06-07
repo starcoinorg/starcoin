@@ -866,11 +866,6 @@ impl BlockChain {
                 }
             }
         };
-        println!(
-            "jacktest: current block:{} tips(dag state):{:?}",
-            self.current_header().number(),
-            &tips_hash,
-        );
         let strategy = epoch.strategy();
         let difficulty = strategy.calculate_next_difficulty(self)?;
         let (uncles, blue_blocks) = {
@@ -887,16 +882,8 @@ impl BlockChain {
                     );
                     let mut blue_blocks = vec![];
                     let selected_parent = blues.remove(0);
-                    println!(
-                        "jacktest: selected parent: {:?} and pre {:?}",
-                        selected_parent, previous_header
-                    );
                     previous_header =
                         self.get_dag_previous_header(previous_header, selected_parent)?;
-                    println!(
-                        "jacktest: 2selected parent: {:?} and pre {:?}",
-                        selected_parent, previous_header
-                    );
                     for blue in &blues {
                         let block = self
                             .storage
@@ -2216,8 +2203,6 @@ impl ChainReader for BlockChain {
         let header = self.status().head().clone();
         let net: BuiltinNetworkID = header.chain_id().try_into()?;
         let dag_fork_height = net.genesis_config().dag_effective_height;
-        println!("jacktest: dag fork height: {:?}", dag_fork_height);
-        println!("jacktest: header: {:?}", header.number());
         match header.number() {
             _ if header.number() < dag_fork_height => Ok(DagHeaderType::Single),
             _ if header.number() > dag_fork_height => Ok(DagHeaderType::Normal),
@@ -2357,11 +2342,10 @@ impl BlockChain {
             let block = self
                 .storage
                 .get_block(block_hash)?
-                .expect("Dag block should exist");
-            let block_info = self
-                .storage
-                .get_block_info(block_hash)?
-                .expect("Dag block info should exist");
+                .ok_or_else(|| format_err!("Dag block should exist, block id: {:?}", block_hash))?;
+            let block_info = self.storage.get_block_info(block_hash)?.ok_or_else(|| {
+                format_err!("Dag block info should exist, block id: {:?}", block_hash)
+            })?;
             (block, block_info)
         };
 
@@ -2389,7 +2373,6 @@ impl BlockChain {
         if self.epoch.end_block_number() == block.header().number() {
             self.epoch = get_epoch_from_statedb(&self.statedb)?;
         }
-        println!("jacktest: save dag state {:?}, {:?}", dag_genesis, tips);
         self.dag.save_dag_state(dag_genesis, DagState { tips })?;
         Ok(executed_block)
     }
@@ -2447,10 +2430,8 @@ impl ChainWriter for BlockChain {
 
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock> {
         if self.check_dag_type()? == DagHeaderType::Single {
-            println!("jacktest: 1");
             self.apply_with_verifier::<FullVerifier>(block)
         } else {
-            println!("jacktest: 2");
             self.apply_with_verifier::<DagVerifier>(block)
         }
     }

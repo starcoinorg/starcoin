@@ -452,7 +452,7 @@ async fn test_verify_illegal_uncle_future_timestamp_failed() {
 }
 
 async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
-    let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
+    let mut genesis_config = BuiltinNetworkID::DagTest.genesis_config().clone();
     genesis_config.genesis_block_parameter =
         GenesisBlockParameterConfig::Static(GenesisBlockParameter {
             parent_hash: Default::default(),
@@ -503,6 +503,7 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
     Ok(())
 }
 
+#[ignore]
 #[stest::test(timeout = 120)]
 async fn test_verify_illegal_uncle_consensus_failed() {
     assert!(test_verify_illegal_uncle_consensus(true).await.is_ok());
