@@ -346,7 +346,6 @@ where
         let txns = self.tx_provider.get_txns(max_txns);
         let author = *self.miner_account.address();
         let mut previous_header = self.chain.current_header();
-        let current_number = previous_header.number().saturating_add(1);
         let epoch = self.chain.epoch();
         let strategy = epoch.strategy();
 

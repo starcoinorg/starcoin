@@ -8,8 +8,6 @@ use super::mock::SyncNodeMocker;
 use anyhow::{format_err, Result};
 use futures::channel::mpsc::unbounded;
 use starcoin_chain_api::ChainReader;
-use starcoin_config::genesis_config::G_TEST_DAG_FORK_STATE_KEY;
-use starcoin_dag::consensusdb::consenses_state::DagState;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_txpool_mock_service::MockTxPoolService;
@@ -35,7 +33,7 @@ async fn sync_block_process(
         let block_chain_service = async_std::task::block_on(
             registry.service_ref::<BlockConnectorService<MockTxPoolService>>(),
         )?;
-        let dag_fork_height = local_node.chain().dag_fork_height()?.unwrap_or(u64::MAX);
+        let dag_fork_height = local_node.dag_fork_number()?;
 
         let (sync_task, _task_handle, task_event_counter) = full_sync_task(
             current_block_id,
@@ -84,17 +82,6 @@ async fn test_sync_dag_blocks() -> Result<()> {
     let test_system = super::test_tools::SyncTestSystem::initialize_sync_system()
         .await
         .expect("failed to init system");
-
-    test_system
-        .target_node
-        .chain()
-        .dag()
-        .save_dag_state(*G_TEST_DAG_FORK_STATE_KEY, DagState { tips: vec![] })?;
-    test_system
-        .local_node
-        .chain()
-        .dag()
-        .save_dag_state(*G_TEST_DAG_FORK_STATE_KEY, DagState { tips: vec![] })?;
 
     let count = 10;
 

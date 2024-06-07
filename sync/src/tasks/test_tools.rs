@@ -127,20 +127,20 @@ impl SyncTestSystem {
 
 #[cfg(test)]
 pub async fn full_sync_new_node() -> Result<()> {
-    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::DagTest);
     let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
     node1.produce_block(10)?;
 
     let mut arc_node1 = Arc::new(node1);
 
-    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::DagTest);
 
     let node2 = SyncNodeMocker::new(net2.clone(), 300, 0)?;
 
     let target = arc_node1.sync_target();
 
     let current_block_header = node2.chain().current_header();
-    let dag_fork_height = node2.chain().dag_fork_height()?.unwrap_or(u64::MAX);
+    let dag_fork_height = net2.genesis_config().dag_effective_height;
     let storage = node2.chain().get_storage();
     let dag = node2.chain().dag();
     let (sender_1, receiver_1) = unbounded();
@@ -173,7 +173,6 @@ pub async fn full_sync_new_node() -> Result<()> {
         .for_each(|report| debug!("reports: {}", report));
 
     Arc::get_mut(&mut arc_node1).unwrap().produce_block(20)?;
-    let dag_fork_height = node2.chain().dag_fork_height()?.unwrap_or(u64::MAX);
     let (sender_1, receiver_1) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
     //sync again
