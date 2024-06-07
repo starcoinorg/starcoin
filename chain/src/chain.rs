@@ -661,7 +661,6 @@ impl BlockChain {
             vm_metrics,
             dag: dag.clone(),
         };
-        let current_header = chain.current_header();
         if chain.check_dag_type()? != DagHeaderType::Single {
             dag.set_reindex_root(chain.get_block_dag_origin()?)?;
         }
@@ -845,7 +844,6 @@ impl BlockChain {
         block_gas_limit: Option<u64>,
         tips: Option<Vec<HashValue>>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
-        let current_number = previous_header.number().saturating_add(1);
         let epoch = self.epoch();
         let on_chain_block_gas_limit = epoch.block_gas_limit();
         let final_block_gas_limit = block_gas_limit
@@ -2196,12 +2194,10 @@ impl ChainReader for BlockChain {
         let header = self.status().head().clone();
         let net: BuiltinNetworkID = header.chain_id().try_into()?;
         let dag_fork_height = net.genesis_config().dag_effective_height;
-        if header.number() < dag_fork_height {
-            Ok(DagHeaderType::Single)
-        } else if header.number() > dag_fork_height {
-            Ok(DagHeaderType::Normal)
-        } else {
-            Ok(DagHeaderType::Genesis)
+        match header.number() {
+            _ if header.number() < dag_fork_height => Ok(DagHeaderType::Single),
+            _ if header.number() > dag_fork_height => Ok(DagHeaderType::Normal),
+            _ => Ok(DagHeaderType::Genesis),
         }
     }
 }

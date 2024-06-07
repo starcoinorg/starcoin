@@ -4,9 +4,9 @@ use network_api::PeerId;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainAsyncService, ChainReader};
 use starcoin_chain_service::ChainReaderService;
-use starcoin_config::{genesis_config::G_TEST_DAG_FORK_STATE_KEY, *};
+use starcoin_config::{temp_dir, NetworkConfig, NodeConfig};
 use starcoin_crypto::HashValue;
-use starcoin_dag::{blockdag::BlockDAG, consensusdb::consenses_state::DagState};
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
 use starcoin_miner::MinedBlock;
 use starcoin_node::NodeHandle;
@@ -72,20 +72,6 @@ pub fn generate_block(handle: &NodeHandle, count: usize) -> Result<()> {
         let _ = handle.generate_block()?;
     }
     Ok(())
-}
-
-#[allow(unused)]
-pub fn generate_dag_fork_number(handle: &NodeHandle) -> Result<()> {
-    block_on(async move {
-        let current_header = handle
-            .registry()
-            .service_ref::<ChainReaderService>()
-            .await?
-            .main_head_header()
-            .await?;
-        let mut dag = handle.registry().get_shared::<BlockDAG>().await?;
-        dag.save_dag_state(*G_TEST_DAG_FORK_STATE_KEY, DagState { tips: vec![] })
-    })
 }
 
 #[allow(unused)]

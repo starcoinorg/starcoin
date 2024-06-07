@@ -48,37 +48,6 @@ pub fn new_dag_block(
         None => AccountInfo::random(),
     };
     let miner_address = *miner.address();
-    let dag_fork_height = writeable_block_chain_service
-        .get_main()
-        .dag_fork_height()?
-        .ok_or_else(|| anyhow::anyhow!("dag fork height is none, can not create dag block"))?;
-
-    if writeable_block_chain_service
-        .get_main()
-        .current_header()
-        .number()
-        < dag_fork_height
-    {
-        let gap = dag_fork_height.saturating_sub(
-            writeable_block_chain_service
-                .get_main()
-                .current_header()
-                .number(),
-        );
-        for _i in 0..gap {
-            let block_chain = writeable_block_chain_service.get_main();
-            let block_template = block_chain
-                .create_block_template(miner_address, None, Vec::new(), vec![], None, None)
-                .unwrap()
-                .0;
-            let block = block_chain
-                .consensus()
-                .create_block(block_template, net.time_service().as_ref())
-                .unwrap();
-            writeable_block_chain_service.execute(block.clone())?;
-            writeable_block_chain_service.try_connect(block)?;
-        }
-    }
 
     let block_chain = writeable_block_chain_service.get_main();
     let (_dag_genesis, tips) = block_chain

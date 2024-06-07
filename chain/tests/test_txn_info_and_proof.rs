@@ -3,11 +3,9 @@ use rand::Rng;
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain_api::{ChainReader, ChainWriter};
-use starcoin_config::genesis_config::G_TEST_DAG_FORK_STATE_KEY;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::consenses_state::DagState;
 use starcoin_logger::prelude::debug;
 use starcoin_transaction_builder::{peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::account_config;
@@ -45,12 +43,8 @@ pub fn gen_txns(seq_num: &mut u64) -> Result<Vec<SignedUserTransaction>> {
 
 #[stest::test(timeout = 480)]
 fn test_transaction_info_and_proof_1() -> Result<()> {
-    let config = Arc::new(NodeConfig::random_for_test());
+    let config = Arc::new(NodeConfig::random_for_dag_test());
     let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
-
-    block_chain
-        .dag()
-        .save_dag_state(*G_TEST_DAG_FORK_STATE_KEY, DagState { tips: vec![] })?;
 
     let _current_header = block_chain.current_header();
     let miner_account = AccountInfo::random();

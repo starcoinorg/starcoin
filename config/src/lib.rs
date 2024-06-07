@@ -472,6 +472,14 @@ impl NodeConfig {
         Self::load_with_opt(&opt).expect("Auto generate test config should success.")
     }
 
+    pub fn random_for_dag_test() -> Self {
+        let opt = StarcoinOpt {
+            net: Some(BuiltinNetworkID::DagTest.into()),
+            ..StarcoinOpt::default()
+        };
+        Self::load_with_opt(&opt).expect("Auto generate dag test config should success.")
+    }
+
     pub fn random_for_test_disable_miner(disable_mint: bool) -> Self {
         let mut miner_config = MinerConfig::default();
         miner_config.disable_miner_client = Some(disable_mint);

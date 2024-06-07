@@ -150,11 +150,6 @@ where
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
     ) -> Result<Self> {
-        use starcoin_config::genesis_config::G_TEST_DAG_FORK_STATE_KEY;
-        use starcoin_dag::consensusdb::consenses_state::DagState;
-
-        dag.save_dag_state(*G_TEST_DAG_FORK_STATE_KEY, DagState { tips: vec![] })?;
-
         let this: WriteBlockChainService<TransactionPoolServiceT> = Self::new(
             config.clone(),
             startup_info,
