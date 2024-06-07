@@ -416,7 +416,7 @@ where
     }
 
     pub fn ensure_dag_parent_blocks_exist(&mut self, block_header: BlockHeader) -> Result<()> {
-        if self.chain.check_dag_type(&block_header)? != DagHeaderType::Normal {
+        if self.chain.check_dag_type()? != DagHeaderType::Normal {
             info!(
                 "the block is not a dag block, skipping, its id: {:?}, its number {:?}",
                 block_header.id(),
@@ -722,7 +722,7 @@ where
 
         let timestamp = block.header().timestamp();
 
-        let block_info = if self.chain.check_dag_type(block.header())? == DagHeaderType::Normal {
+        let block_info = if self.chain.check_dag_type()? == DagHeaderType::Normal {
             if self.chain.has_dag_block(block.header().id())? {
                 block_info
             } else {

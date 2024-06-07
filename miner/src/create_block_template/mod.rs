@@ -22,6 +22,7 @@ use starcoin_service_registry::{
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_types::block::DagHeaderType;
 use starcoin_types::{
     block::{BlockHeader, BlockTemplate, ExecutedBlock},
     system_events::{NewBranch, NewHeadBlock},
@@ -358,7 +359,7 @@ where
             now_millis = previous_header.timestamp() + 1;
         }
         let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
-        let tips_hash = if current_number > self.chain.dag_fork_height()?.unwrap_or(u64::MAX) {
+        let tips_hash = if self.chain.check_dag_type()? == DagHeaderType::Normal {
             let (_dag_genesis, tips_hash) = self
                 .chain
                 .current_tips_hash(&previous_header)?

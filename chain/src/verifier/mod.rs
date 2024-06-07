@@ -267,7 +267,7 @@ impl BlockVerifier for BasicVerifier {
 
         verify_block!(
             VerifyBlockField::Header,
-            current_chain.check_dag_type(new_block_header)? != DagHeaderType::Normal
+            current_chain.check_dag_type()? != DagHeaderType::Normal
                 && new_block_header
                     .parents_hash()
                     .unwrap_or_default()

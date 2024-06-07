@@ -248,12 +248,8 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetDagStateView => Ok(ChainResponse::DagStateView(Box::new(
                 self.inner.get_dag_state()?,
             ))),
-            ChainRequest::CheckDagType(id) => Ok(ChainResponse::CheckDagType({
-                let header = self
-                    .inner
-                    .get_header_by_hash(id)?
-                    .ok_or_else(|| format_err!("non-existent block header"))?;
-                self.inner.check_dag_type(&header)?
+            ChainRequest::CheckDagType => Ok(ChainResponse::CheckDagType({
+                self.inner.check_dag_type()?
             })),
             ChainRequest::DagForkHeigh => {
                 Ok(ChainResponse::DagForkHeight(self.inner.dag_fork_height()?))
@@ -463,12 +459,8 @@ impl ReadableChainService for ChainReaderServiceInner {
 
     fn get_dag_state(&self) -> Result<DagStateView> {
         let head = self.main.current_header();
-        if self.main.check_dag_type(&head)? != DagHeaderType::Normal {
-            bail!(
-                "The chain is still not a dag and its dag fork number is {:?} and the current block's header number is {:?}.",
-                self.main.dag_fork_height()?,
-                head.number(),
-            );
+        if self.main.check_dag_type()? != DagHeaderType::Normal {
+            bail!("The current chain is not a dag chain.");
         }
         let (dag_genesis, state) = self.main.get_dag_state_by_block(&head)?;
         Ok(DagStateView {
@@ -477,12 +469,8 @@ impl ReadableChainService for ChainReaderServiceInner {
         })
     }
 
-    fn check_dag_type(&self, header: &BlockHeader) -> Result<DagHeaderType> {
-        self.main.check_dag_type(header)
-    }
-
-    fn dag_fork_height(&self) -> Result<Option<BlockNumber>> {
-        self.main.dag_fork_height()
+    fn check_dag_type(&self) -> Result<DagHeaderType> {
+        self.main.check_dag_type()
     }
     fn get_ghostdagdata(&self, id: HashValue) -> Result<Option<GhostdagData>> {
         self.dag

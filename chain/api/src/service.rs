@@ -470,8 +470,8 @@ where
         }
     }
 
-    async fn check_dag_type(&self, id: HashValue) -> Result<DagHeaderType> {
-        let response = self.send(ChainRequest::CheckDagType(id)).await??;
+    async fn check_dag_type(&self) -> Result<DagHeaderType> {
+        let response = self.send(ChainRequest::CheckDagType).await??;
         if let ChainResponse::CheckDagType(dag_type) = response {
             Ok(dag_type)
         } else {

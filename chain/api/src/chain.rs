@@ -107,7 +107,7 @@ pub trait ChainReader {
         header: &BlockHeader,
     ) -> Result<Option<(HashValue, Vec<HashValue>)>>;
     fn has_dag_block(&self, header_id: HashValue) -> Result<bool>;
-    fn check_dag_type(&self, header: &BlockHeader) -> Result<DagHeaderType>;
+    fn check_dag_type(&self) -> Result<DagHeaderType>;
 }
 
 pub trait ChainWriter {

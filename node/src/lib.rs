@@ -211,7 +211,7 @@ impl NodeHandle {
                     bail!("Wait timeout for generate_block")
                 }
             };
-            let dag_type = chain_service.check_dag_type(block.id()).await?;
+            let dag_type = chain_service.check_dag_type().await?;
             Ok((block, dag_type == DagHeaderType::Normal))
         })
     }
