@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::{BlockHeader, BlockInfo, BlockNumber, LegacyBlockHeader};
+use crate::block::{BlockHeader, BlockInfo, BlockNumber};
 use anyhow::Result;
 use bcs_ext::{BCSCodec, Sample};
 use schemars::JsonSchema;
@@ -96,47 +96,6 @@ pub struct ChainStatus {
     pub head: BlockHeader,
     /// Chain block info
     pub info: BlockInfo,
-}
-#[derive(Deserialize, Serialize)]
-#[serde(rename = "ChainInfo")]
-pub struct OldChainInfo {
-    chain_id: ChainId,
-    genesis_hash: HashValue,
-    status: OldChainStatus,
-}
-
-impl From<OldChainInfo> for ChainInfo {
-    fn from(value: OldChainInfo) -> Self {
-        Self {
-            chain_id: value.chain_id,
-            genesis_hash: value.genesis_hash,
-            status: value.status.into(),
-        }
-    }
-}
-#[derive(Deserialize, Serialize)]
-#[serde(rename = "ChainStatus")]
-pub struct OldChainStatus {
-    pub head: LegacyBlockHeader,
-    pub info: BlockInfo,
-}
-
-impl From<ChainStatus> for OldChainStatus {
-    fn from(value: ChainStatus) -> Self {
-        Self {
-            head: value.head.into(),
-            info: value.info,
-        }
-    }
-}
-
-impl From<OldChainStatus> for ChainStatus {
-    fn from(value: OldChainStatus) -> Self {
-        Self {
-            head: value.head.into(),
-            info: value.info,
-        }
-    }
 }
 
 impl ChainStatus {

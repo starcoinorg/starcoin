@@ -280,12 +280,6 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         &self,
         peer_id: PeerId,
         ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<Option<starcoin_types::block::LegacyBlock>>>>;
-
-    fn get_blocks_v1(
-        &self,
-        peer_id: PeerId,
-        ids: Vec<HashValue>,
     ) -> BoxFuture<Result<Vec<Option<starcoin_types::block::Block>>>>;
 
     fn get_state_with_table_item_proof(

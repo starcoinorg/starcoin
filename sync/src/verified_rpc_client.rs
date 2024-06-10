@@ -16,7 +16,7 @@ use starcoin_network_rpc_api::{
     GetBlockIds, GetTxnsWithHash, RawRpcClient,
 };
 use starcoin_state_tree::StateNode;
-use starcoin_types::block::{Block, LegacyBlock};
+use starcoin_types::block::Block;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction};
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
@@ -706,46 +706,10 @@ impl VerifiedRpcClient {
         &self,
         peer_id: PeerId,
         ids: Vec<HashValue>,
-    ) -> Result<Vec<Option<LegacyBlock>>> {
-        let mut count = 0;
-        while count < G_RPC_RETRY_COUNT {
-            match self.client.get_blocks(peer_id.clone(), ids.clone()).await {
-                Ok(result) => return Ok(result),
-                Err(e) => {
-                    count = count.saturating_add(1);
-                    if count == G_RPC_RETRY_COUNT {
-                        return Err(RpcVerifyError::new(
-                            peer_id.clone(),
-                            format!(
-                                "failed to get legacy blocks from peer : {:?}. error: {:?}",
-                                peer_id, e
-                            ),
-                        )
-                        .into());
-                    }
-                    continue;
-                }
-            }
-        }
-        Err(RpcVerifyError::new(
-            peer_id.clone(),
-            format!("failed to get legacy blocks from peer : {:?}.", peer_id),
-        )
-        .into())
-    }
-
-    async fn get_blocks_v1_inner(
-        &self,
-        peer_id: PeerId,
-        ids: Vec<HashValue>,
     ) -> Result<Vec<Option<Block>>> {
         let mut count = 0;
         while count < G_RPC_RETRY_COUNT {
-            match self
-                .client
-                .get_blocks_v1(peer_id.clone(), ids.clone())
-                .await
-            {
+            match self.client.get_blocks(peer_id.clone(), ids.clone()).await {
                 Ok(result) => return Ok(result),
                 Err(e) => {
                     count = count.saturating_add(1);
@@ -776,7 +740,7 @@ impl VerifiedRpcClient {
     ) -> Result<Vec<Option<(Block, Option<PeerId>)>>> {
         let peer_id = self.select_a_peer()?;
         let start_time = Instant::now();
-        let blocks = match self.get_blocks_v1_inner(peer_id.clone(), ids.clone()).await {
+        let blocks = match self.get_blocks_inner(peer_id.clone(), ids.clone()).await {
             Ok(blocks) => blocks,
             Err(err) => {
                 warn!("get blocks failed:{}, call get blocks legacy", err);
