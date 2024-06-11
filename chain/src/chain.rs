@@ -3,7 +3,6 @@
 
 use crate::verifier::{BlockVerifier, DagBasicVerifier, DagVerifier, FullVerifier};
 use anyhow::{anyhow, bail, ensure, format_err, Ok, Result};
-use bcs_ext::BCSCodec;
 use once_cell::sync::Lazy;
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
@@ -48,7 +47,6 @@ use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_vm_types::on_chain_resource::Epoch;
 use std::cmp::min;
-use std::collections::HashSet;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -856,7 +854,7 @@ impl BlockChain {
                     tips
                 } else {
                     let (_dag_genesis, tips_hash) = self
-                        .current_tips_hash(&previous_header)?
+                        .current_tips_hash()?
                         .ok_or_else(|| {
                             anyhow!(
                             "the number of the block is larger than the dag fork number but no dag state!"
@@ -984,10 +982,11 @@ impl BlockChain {
             self.vm_metrics.clone(),
             self.dag.clone(),
         )?;
-        if selected_chain.check_dag_type()? == DagHeaderType::Normal {
-            V::verify_block(&selected_chain, block)
-        } else {
-            V::verify_block(self, block)
+        match selected_chain.check_dag_type()? {
+            DagHeaderType::Single => V::verify_block(self, block),
+            DagHeaderType::Genesis | DagHeaderType::Normal => {
+                V::verify_block(&selected_chain, block)
+            }
         }
     }
 
@@ -1020,30 +1019,7 @@ impl BlockChain {
         self.connect(ExecutedBlock { block, block_info })
     }
 
-    fn check_parents_coherent(&self, header: &BlockHeader) -> Result<HashValue> {
-        if self.check_dag_type()? != DagHeaderType::Normal {
-            bail!("Block is not a dag block.");
-        }
-
-        let results = header.parents_hash().ok_or_else(|| anyhow!("dag block has no parents."))?.into_iter().map(|parent_hash| {
-            let header = self.storage.get_block_header_by_hash(parent_hash)?.ok_or_else(|| anyhow!("failed to find the block header in the block storage when checking the dag block exists, block hash: {:?}, number: {:?}", header.id(), header.number()))?;
-            let dag_genesis_hash = self.get_block_dag_genesis(&header)?;
-            let dag_genesis = self.storage.get_block_header_by_hash(dag_genesis_hash)?.ok_or_else(|| anyhow!("failed to find the block header in the block storage when checking the dag block exists, block hash: {:?}, number: {:?}", header.id(), header.number()))?;
-            Ok(dag_genesis.parent_hash())
-        }).collect::<Result<HashSet<_>>>()?;
-
-        if results.len() == 1 {
-            Ok(results
-                .into_iter()
-                .next()
-                .expect("the len of the results is larger than 1 but no the first elemen!"))
-        } else {
-            bail!("dag block: {:?}, number: {:?} has multiple parents whose dags are not the same one! Their dag genesis are: {:?}", header.id(), header.number(), results);
-        }
-    }
-
     fn execute_dag_block(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
-        let origin = self.check_parents_coherent(verified_block.0.header())?;
         info!("execute dag block:{:?}", verified_block.0);
         let block = verified_block.0;
         let selected_parent = block.parent_hash();
@@ -1239,7 +1215,9 @@ impl BlockChain {
         self.storage.save_block_info(block_info.clone())?;
 
         self.storage.save_table_infos(txn_table_infos)?;
-        let result = self.dag.commit(header.to_owned(), origin);
+        let result = self
+            .dag
+            .commit(header.to_owned(), self.get_block_dag_origin()?);
         match result {
             anyhow::Result::Ok(_) => (),
             Err(e) => {
@@ -1723,7 +1701,8 @@ impl BlockChain {
         Ok(())
     }
 
-    pub fn get_block_dag_genesis(&self, header: &BlockHeader) -> Result<HashValue> {
+    pub fn get_block_dag_genesis(&self) -> Result<HashValue> {
+        let header = self.status().head().clone();
         let net: BuiltinNetworkID = header.chain_id().try_into()?;
         let dag_fork_height = net.genesis_config().dag_effective_height;
         if header.number() < dag_fork_height {
@@ -1746,19 +1725,16 @@ impl BlockChain {
     }
 
     pub fn get_block_dag_origin(&self) -> Result<HashValue> {
-        let dag_genesis = self.get_block_dag_genesis(&self.current_header())?;
+        let dag_genesis = self.get_block_dag_genesis()?;
         let block_header = self
             .storage
             .get_block_header_by_hash(dag_genesis)?
             .ok_or_else(|| anyhow!("Cannot find block by hash {:?}", dag_genesis))?;
-
-        Ok(HashValue::sha3_256_of(
-            &[block_header.parent_hash(), block_header.id()].encode()?,
-        ))
+        Ok(block_header.parent_hash())
     }
 
-    pub fn get_dag_state_by_block(&self, header: &BlockHeader) -> Result<(HashValue, DagState)> {
-        let dag_genesis = self.get_block_dag_genesis(header)?;
+    pub fn get_dag_state_by_block(&self) -> Result<(HashValue, DagState)> {
+        let dag_genesis = self.get_block_dag_genesis()?;
         Ok((dag_genesis, self.dag.get_dag_state(dag_genesis)?))
     }
 }
@@ -1992,11 +1968,12 @@ impl ChainReader for BlockChain {
     }
 
     fn verify(&self, block: Block) -> Result<VerifiedBlock> {
-        if self.check_dag_type()? == DagHeaderType::Normal {
-            DagBasicVerifier::verify_header(self, block.header())?;
-            Ok(VerifiedBlock(block))
-        } else {
-            FullVerifier::verify_block(self, block)
+        match self.check_dag_type()? {
+            DagHeaderType::Single => FullVerifier::verify_block(self, block),
+            DagHeaderType::Genesis | DagHeaderType::Normal => {
+                DagBasicVerifier::verify_header(self, block.header())?;
+                Ok(VerifiedBlock(block))
+            }
         }
     }
 
@@ -2146,11 +2123,8 @@ impl ChainReader for BlockChain {
         }))
     }
 
-    fn current_tips_hash(
-        &self,
-        header: &BlockHeader,
-    ) -> Result<Option<(HashValue, Vec<HashValue>)>> {
-        let (dag_genesis, dag_state) = self.get_dag_state_by_block(header)?;
+    fn current_tips_hash(&self) -> Result<Option<(HashValue, Vec<HashValue>)>> {
+        let (dag_genesis, dag_state) = self.get_dag_state_by_block()?;
         Ok(Some((dag_genesis, dag_state.tips)))
     }
 
@@ -2317,7 +2291,7 @@ impl BlockChain {
         let dag = self.dag.clone();
         let (new_tip_block, _) = (executed_block.block(), executed_block.block_info());
         let (dag_genesis, mut tips) = self
-            .current_tips_hash(new_tip_block.header())?
+            .current_tips_hash()?
             .expect("tips should exists in dag");
         let parents = executed_block
             .block
@@ -2429,10 +2403,11 @@ impl ChainWriter for BlockChain {
     }
 
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock> {
-        if self.check_dag_type()? == DagHeaderType::Single {
-            self.apply_with_verifier::<FullVerifier>(block)
-        } else {
-            self.apply_with_verifier::<DagVerifier>(block)
+        match self.check_dag_type()? {
+            DagHeaderType::Single => self.apply_with_verifier::<FullVerifier>(block),
+            DagHeaderType::Genesis | DagHeaderType::Normal => {
+                self.apply_with_verifier::<DagVerifier>(block)
+            }
         }
     }
 

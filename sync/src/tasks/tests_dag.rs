@@ -10,6 +10,7 @@ use futures::channel::mpsc::unbounded;
 use starcoin_chain_api::ChainReader;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
+use starcoin_storage::BlockStore;
 use starcoin_txpool_mock_service::MockTxPoolService;
 use test_helper::DummyNetworkService;
 
@@ -91,11 +92,14 @@ async fn test_sync_dag_blocks() -> Result<()> {
         .unwrap()
         .produce_block(count)
         .expect("failed to produce block");
-    let dag_genesis_header = target_node.chain().status().head;
+    let dag_genesis_header_id = target_node.chain().get_block_dag_genesis()?;
+    let dag_genesis_header = target_node
+        .get_storage()
+        .get_block_header_by_hash(dag_genesis_header_id)?
+        .ok_or_else(|| format_err!("dag genesis header should exist."))?;
     assert!(
-        dag_genesis_header.number() == count,
-        "dag genesis header number should be {}, but {}",
-        count,
+        dag_genesis_header.number() == 0,
+        "dag genesis header number should be 0, but {:?}",
         dag_genesis_header.number()
     );
 

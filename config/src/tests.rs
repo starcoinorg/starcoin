@@ -153,7 +153,7 @@ fn test_example_config_compact() -> Result<()> {
 #[test]
 fn test_genesis_config_security() {
     for net in BuiltinNetworkID::networks() {
-        if net.is_dev() || net.is_test() {
+        if net.is_dev() || net.is_test() || net.is_dag_test() {
             continue;
         }
         let genesis_config = net.genesis_config().clone();

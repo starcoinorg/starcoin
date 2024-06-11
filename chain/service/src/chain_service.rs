@@ -451,11 +451,10 @@ impl ReadableChainService for ChainReaderServiceInner {
     }
 
     fn get_dag_state(&self) -> Result<DagStateView> {
-        let head = self.main.current_header();
         if self.main.check_dag_type()? != DagHeaderType::Normal {
-            bail!("The current chain is not a dag chain.");
+            bail!("The dag block is not built yet.");
         }
-        let (dag_genesis, state) = self.main.get_dag_state_by_block(&head)?;
+        let (dag_genesis, state) = self.main.get_dag_state_by_block()?;
         Ok(DagStateView {
             dag_genesis,
             tips: state.tips,
