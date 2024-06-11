@@ -116,7 +116,10 @@ impl SyncService {
 
         loop {
             if peer_set.is_empty() || peer_set.len() < (config.net().min_peers() as usize) {
-                let level = if config.net().is_dev() || config.net().is_test() {
+                let level = if config.net().is_dev()
+                    || config.net().is_test()
+                    || config.net().is_dag_test()
+                {
                     Level::Debug
                 } else {
                     Level::Info

@@ -8,7 +8,7 @@ use starcoin_vm_types::genesis_config::ChainId;
 pub const FORCE_UPGRADE_BLOCK_NUMBER: u64 = 17500000;
 
 pub fn get_force_upgrade_block_number(chain_id: &ChainId) -> u64 {
-    if chain_id.is_test() {
+    if chain_id.is_test() || chain_id.is_dag_test() {
         50
     } else if chain_id.is_dev() {
         60
