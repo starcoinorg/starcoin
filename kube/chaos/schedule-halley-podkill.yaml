@@ -1,0 +1,20 @@
+kind: Schedule
+apiVersion: chaos-mesh.org/v1alpha1
+metadata:
+  namespace: starcoin-halley
+  name: podkill
+spec:
+  schedule: '* */1 * * *'
+  startingDeadlineSeconds: null
+  concurrencyPolicy: Forbid
+  historyLimit: 1
+  type: PodChaos
+  podChaos:
+    selector:
+      namespaces:
+        - starcoin-halley
+      pods:
+        starcoin-halley:
+          - starcoin-1
+    mode: all
+    action: pod-kill
