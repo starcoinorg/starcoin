@@ -71,7 +71,12 @@ fn test_example_config_compact() -> Result<()> {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let example_dir = path.join("example");
     for net in BuiltinNetworkID::networks() {
-        if net.is_dev() || net.is_test() || net.is_dag_test() || net.is_halley() || !net.genesis_config().is_ready() {
+        if net.is_dev()
+            || net.is_test()
+            || net.is_dag_test()
+            || net.is_halley()
+            || !net.genesis_config().is_ready()
+        {
             continue;
         }
         let net = net.to_string();
