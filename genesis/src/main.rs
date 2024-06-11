@@ -25,7 +25,7 @@ fn main() {
     };
     for id in networks {
         // skip test && dev network generate.
-        if id.is_test() || id.is_dev() {
+        if id.is_test() || id.is_dev() || id.is_dag_test() {
             continue;
         }
         if !id.genesis_config().is_ready() {
