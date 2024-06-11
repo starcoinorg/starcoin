@@ -2178,8 +2178,11 @@ impl ChainReader for BlockChain {
 
     fn check_dag_type(&self) -> Result<DagHeaderType> {
         let header = self.status().head().clone();
-        let net: BuiltinNetworkID = header.chain_id().try_into()?;
-        let dag_fork_height = net.genesis_config().dag_effective_height;
+        let result_net: Result<BuiltinNetworkID> = header.chain_id().try_into();
+        let dag_fork_height = match result_net {
+            anyhow::Result::Ok(net) => net.genesis_config().dag_effective_height,
+            Err(_) => BlockNumber::MAX,
+        };
         match header.number() {
             _ if header.number() < dag_fork_height => Ok(DagHeaderType::Single),
             _ if header.number() > dag_fork_height => Ok(DagHeaderType::Normal),
