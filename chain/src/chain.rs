@@ -1690,7 +1690,10 @@ impl BlockChain {
     }
 
     pub fn init_dag_with_genesis(&mut self, genesis: BlockHeader) -> Result<()> {
-        if self.check_dag_type()? == DagHeaderType::Genesis {
+        let header = self.status().head().clone();
+        let net: BuiltinNetworkID = header.chain_id().try_into()?;
+        let dag_fork_height = net.genesis_config().dag_effective_height;
+        if genesis.number() == dag_fork_height {
             let dag_genesis_id = genesis.id();
             info!(
                 "Init dag genesis {dag_genesis_id} height {}",
@@ -1979,7 +1982,7 @@ impl ChainReader for BlockChain {
 
     fn execute(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
         let header = verified_block.0.header().clone();
-        if self.check_dag_type()? != DagHeaderType::Normal {
+        if self.check_dag_type()? == DagHeaderType::Single {
             let executed = if let Some((executed_data, block_info)) =
                 MAIN_DIRECT_SAVE_BLOCK_HASH_MAP.get(&verified_block.0.header.id())
             {

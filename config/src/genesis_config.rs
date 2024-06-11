@@ -950,7 +950,7 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
-        dag_effective_height: 0,
+        dag_effective_height: 1,
     }
 });
 
