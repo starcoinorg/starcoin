@@ -165,6 +165,10 @@ impl BuiltinNetworkID {
         matches!(self, BuiltinNetworkID::Halley)
     }
 
+    pub fn is_dag_test(self) -> bool {
+        matches!(self, BuiltinNetworkID::DagTest)
+    }
+
     pub fn networks() -> Vec<BuiltinNetworkID> {
         vec![
             BuiltinNetworkID::Test,

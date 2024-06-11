@@ -243,14 +243,22 @@ where
 
     #[cfg(test)]
     pub fn apply_failed(&mut self, block: Block) -> Result<()> {
-        use starcoin_chain::verifier::FullVerifier;
+        use anyhow::bail;
+        use starcoin_chain::verifier::{DagBasicVerifier, FullVerifier};
 
-        // apply but no connection
-        let verified_block = self.main.verify_with_verifier::<FullVerifier>(block)?;
-        let executed_block = self.main.execute(verified_block)?;
-        let enacted_blocks = vec![executed_block.block().clone()];
-        self.do_new_head(executed_block, 1, enacted_blocks, 0, vec![])?;
-        Ok(())
+        let verified_block = match self.main.check_dag_type()? {
+            starcoin_types::block::DagHeaderType::Single => {
+                // apply but no connection
+                self.main.verify_with_verifier::<FullVerifier>(block)?
+            }
+            starcoin_types::block::DagHeaderType::Genesis
+            | starcoin_types::block::DagHeaderType::Normal => {
+                // apply but no connection
+                self.main.verify_with_verifier::<DagBasicVerifier>(block)?
+            }
+        };
+        let _executed_block = self.main.execute(verified_block)?;
+        bail!("In test case, return a failure intentionally to force sync to reconnect the block");
     }
 
     // for sync task to connect to its chain, if chain's total difficulties is larger than the main
