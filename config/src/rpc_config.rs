@@ -458,7 +458,7 @@ impl RpcConfig {
 
     fn generate_address(&mut self) {
         let base = self.base();
-        let (http_port, tcp_port, ws_port) = if base.net().is_test() {
+        let (http_port, tcp_port, ws_port) = if base.net().is_test() || base.net().is_dag_test() {
             let ports = get_random_available_ports(3);
             (
                 self.http.port.unwrap_or(ports[0]),

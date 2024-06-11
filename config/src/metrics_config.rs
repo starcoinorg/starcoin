@@ -126,7 +126,7 @@ impl MetricsConfig {
                 self.address.unwrap_or(G_DEFAULT_METRIC_SERVER_ADDRESS),
                 self.port.unwrap_or_else(|| {
                     let base = self.base();
-                    if base.net.is_test() {
+                    if base.net.is_test() || base.net.is_dag_test() {
                         get_random_available_port()
                     } else if base.net.is_dev() {
                         get_available_port_from(G_DEFAULT_METRIC_SERVER_PORT)

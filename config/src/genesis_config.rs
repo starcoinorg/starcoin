@@ -511,7 +511,7 @@ impl ChainNetwork {
     }
 
     pub fn is_dag_test(&self) -> bool {
-        self.id.is_custom()
+        self.id.is_dag_test()
     }
 
     pub fn is_main(&self) -> bool {
