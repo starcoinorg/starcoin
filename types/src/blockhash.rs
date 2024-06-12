@@ -69,3 +69,54 @@ pub struct ChainPath {
 }
 
 pub type BlockLevel = u8;
+
+pub trait BlockHashIteratorExtensions: Iterator<Item = HashValue> {
+    /// Copy of itertools::unique, adapted for block hashes (uses `BlockHashSet` under the hood)
+    ///
+    /// Returns an iterator adaptor that filters out hashes that have
+    /// already been produced once during the iteration.
+    ///
+    /// Clones of visited elements are stored in a hash set in the
+    /// iterator.
+    ///
+    /// The iterator is stable, returning the non-duplicate items in the order
+    /// in which they occur in the adapted iterator. In a set of duplicate
+    /// items, the first item encountered is the item retained.
+    ///
+    /// NOTE: currently usages are expected to contain no duplicates, hence we alloc the expected capacity
+    fn block_unique(self) -> BlockUnique<Self>
+    where
+        Self: Sized,
+    {
+        let (lower, _) = self.size_hint();
+        BlockUnique {
+            iter: self,
+            seen: BlockHashSet::with_capacity(lower),
+        }
+    }
+}
+
+impl<T: ?Sized> BlockHashIteratorExtensions for T where T: Iterator<Item = HashValue> {}
+
+#[derive(Clone)]
+pub struct BlockUnique<I: Iterator<Item = HashValue>> {
+    iter: I,
+    seen: BlockHashSet,
+}
+
+impl<I> Iterator for BlockUnique<I>
+where
+    I: Iterator<Item = HashValue>,
+{
+    type Item = I::Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.by_ref().find(|&hash| self.seen.insert(hash))
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (low, hi) = self.iter.size_hint();
+        ((low > 0 && self.seen.is_empty()) as usize, hi)
+    }
+}
