@@ -828,10 +828,7 @@ pub fn export_block_range(
         ProgressStyle::default_bar()
             .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
     );
-    let mut visit = HashSet::new();
-    for block in &block_list {
-        visit.insert(block.id());
-    }
+    let mut visit: HashSet<HashValue> = block_list.iter().map(|block| block.id()).collect();
     for block in block_list {
         let parents = block.header().parents_hash();
         if let Some(parents) = parents {
