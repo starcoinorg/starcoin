@@ -61,7 +61,7 @@ use starcoin_vm_types::{
     transaction::{ScriptFunction, SignedUserTransaction, TransactionPayload},
 };
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fmt::{Debug, Formatter},
     fs::{File, OpenOptions},
     io::{BufRead, BufReader, Write},
@@ -779,7 +779,7 @@ pub fn export_block_range(
     let chain = BlockChain::new(
         net.time_service(),
         chain_info.head().id(),
-        storage,
+        storage.clone(),
         None,
         dag,
     )
@@ -828,7 +828,44 @@ pub fn export_block_range(
         ProgressStyle::default_bar()
             .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
     );
+    let mut visit: HashSet<HashValue> = block_list.iter().map(|block| block.id()).collect();
     for block in block_list {
+        let parents = block.header().parents_hash();
+        if let Some(parents) = parents {
+            let mut queue = vec![];
+            let mut block_ids = vec![];
+            for parent in parents {
+                if !visit.contains(&parent) {
+                    visit.insert(parent);
+                    let block_parent = storage.clone().get_block(parent)?.unwrap();
+                    block_ids.push(parent);
+                    queue.push(block_parent);
+                }
+            }
+            while !queue.is_empty() {
+                let mut queue2 = vec![];
+                for block2 in queue {
+                    let parents2 = block2.header().parents_hash();
+                    if let Some(parents2) = parents2 {
+                        for parent in parents2 {
+                            if !visit.contains(&parent) {
+                                visit.insert(parent);
+                                let block_parent = storage.clone().get_block(parent)?.unwrap();
+                                block_ids.push(parent);
+                                queue2.push(block_parent);
+                            }
+                        }
+                    }
+                }
+                queue = queue2;
+            }
+            block_ids.reverse();
+            for parent in block_ids {
+                let block2 = storage.clone().get_block(parent)?.unwrap();
+                writeln!(file, "{}", serde_json::to_string(&block2)?)?;
+                bar.set_message(format!("write parent block {}", block2.header().number()));
+            }
+        }
         writeln!(file, "{}", serde_json::to_string(&block)?)?;
         bar.set_message(format!("write block {}", block.header().number()));
         bar.inc(1);
@@ -849,7 +886,7 @@ pub fn apply_block(
     to_dir: PathBuf,
     input_path: PathBuf,
     network: BuiltinNetworkID,
-    verifier: Verifier,
+    _verifier: Verifier,
 ) -> anyhow::Result<()> {
     ::starcoin_logger::init();
     let net = ChainNetwork::new_builtin(network);
@@ -863,7 +900,7 @@ pub fn apply_block(
         FlexiDagStorageConfig::new(),
     )?;
     let dag = starcoin_dag::blockdag::BlockDAG::new(DEFAULT_GHOSTDAG_K, dag_storage);
-    StarcoinVM::set_concurrency_level_once(num_cpus::get());
+    // StarcoinVM::set_concurrency_level_once(num_cpus::get());
     let (chain_info, _) =
         Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), to_dir.as_ref())?;
     let mut chain = BlockChain::new(
@@ -871,7 +908,7 @@ pub fn apply_block(
         chain_info.head().id(),
         storage.clone(),
         None,
-        dag,
+        dag.clone(),
     )
     .expect("create block chain should success.");
     let start_time = SystemTime::now();
@@ -911,12 +948,17 @@ pub fn apply_block(
     for block in blocks {
         let block_hash = block.header().id();
         let block_number = block.header().number();
-        match verifier {
-            Verifier::Basic => chain.apply_with_verifier::<BasicVerifier>(block)?,
-            Verifier::Consensus => chain.apply_with_verifier::<ConsensusVerifier>(block)?,
-            Verifier::Full => chain.apply_with_verifier::<FullVerifier>(block)?,
-            Verifier::None => chain.apply_with_verifier::<NoneVerifier>(block)?,
-        };
+        chain = BlockChain::new(
+            net.time_service(),
+            block.header.parent_hash(),
+            storage.clone(),
+            None,
+            dag.clone(),
+        )
+        .expect("create block chain should success.");
+
+        chain.apply(block)?;
+
         // apply block then flush startup_info for breakpoint resume
         let startup_info = StartupInfo::new(block_hash);
         storage.save_startup_info(startup_info)?;
