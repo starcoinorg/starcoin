@@ -266,7 +266,7 @@ impl BlockHeader {
             parents_hash,
         };
         header.id = Some(if header.parents_hash.is_none() {
-            println!("jacktest: go to legacy block header");
+            println!("jacktest: go to legacy block header: {:?}", header);
             LegacyBlockHeader::from(header.clone()).crypto_hash()
         } else {
             println!("jacktest: Do not go to legacy block header");
@@ -867,8 +867,7 @@ impl Block {
 
     pub fn random() -> Self {
         let body = BlockBody::sample();
-        let mut header = BlockHeader::random();
-        header.body_hash = body.hash();
+        let header = BlockHeader::random();
 
         Self { header, body }
     }
