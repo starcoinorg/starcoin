@@ -92,10 +92,14 @@ async fn test_sync_dag_blocks() -> Result<()> {
         .unwrap()
         .produce_block(count)
         .expect("failed to produce block");
-    let dag_genesis_header_id = target_node.chain().get_block_dag_genesis()?;
+    let target_dag_genesis_header_id = target_node.chain().get_block_dag_genesis()?;
+    let local_dag_genesis_header_id = local_node.chain().get_block_dag_genesis()?;
+
+    assert_eq!(target_dag_genesis_header_id, local_dag_genesis_header_id);
+
     let dag_genesis_header = target_node
         .get_storage()
-        .get_block_header_by_hash(dag_genesis_header_id)?
+        .get_block_header_by_hash(target_dag_genesis_header_id)?
         .ok_or_else(|| format_err!("dag genesis header should exist."))?;
     assert!(
         dag_genesis_header.number() == 0,
