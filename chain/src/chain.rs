@@ -1054,7 +1054,7 @@ impl BlockChain {
             let blue_block = self
                 .storage
                 .get_block_by_hash(blue)?
-                .expect("block blue need exist");
+                .ok_or_else(|| format_err!("failed to get blue block: {:?}", blue))?;
             transactions.extend(
                 blue_block
                     .transactions()
