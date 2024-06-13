@@ -264,6 +264,7 @@ impl Genesis {
             storage.clone(),
             net.genesis_epoch(),
             self.block.clone(),
+            net.genesis_config().dag_effective_height,
             dag,
         )?;
 

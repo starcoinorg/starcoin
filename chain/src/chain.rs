@@ -684,6 +684,7 @@ impl BlockChain {
         storage: Arc<dyn Store>,
         genesis_epoch: Epoch,
         genesis_block: Block,
+        dag_effective_height: u64,
         mut dag: BlockDAG,
     ) -> Result<Self> {
         debug_assert!(genesis_block.header().is_genesis());
@@ -707,20 +708,10 @@ impl BlockChain {
             &chain_id,
             None,
         )?;
-        {
-            let need_init = {
-                let statedb = ChainStateDB::new(storage.clone().into_super_arc(), None);
-                statedb
-                    .get_on_chain_config::<FlexiDagConfig>()?
-                    .map(|c| c.effective_height)
-                    .unwrap_or(u64::MAX)
-                    == 0
-            };
-            if need_init {
-                assert!(dag.load_dag_sate()?.is_none());
-                info!("init dag when executing genesis block");
-                dag.init_with_genesis(genesis_header)?;
-            }
+        if dag_effective_height == 0 {
+            assert!(dag.load_dag_sate()?.is_none());
+            info!("init dag when executing genesis block");
+            dag.init_with_genesis(genesis_header)?;
         }
         Self::new(time_service, executed_block.block.id(), storage, None, dag)
     }
