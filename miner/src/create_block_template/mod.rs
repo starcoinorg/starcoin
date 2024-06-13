@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::create_block_template::metrics::BlockBuilderMetrics;
-use anyhow::{anyhow, format_err, Result};
+use anyhow::{format_err, Result};
 use futures::executor::block_on;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_account_service::AccountService;
@@ -334,11 +334,7 @@ where
         }
         let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
         let tips_hash = if current_number > self.chain.dag_fork_height()?.unwrap_or(u64::MAX) {
-            let (_dag_genesis, tips_hash) = self.chain.current_tips_hash()?.ok_or_else(|| {
-                anyhow!(
-                    "the number of the block is larger than the dag fork number but no dag state!"
-                )
-            })?;
+            let (_dag_genesis, tips_hash) = self.chain.current_tips_hash()?;
             Some(tips_hash)
         } else {
             None

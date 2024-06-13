@@ -827,11 +827,7 @@ impl BlockChain {
         } else if tips.is_some() {
             tips
         } else {
-            Some(
-                self.current_tips_hash()?
-                    .map(|r| r.1)
-                    .expect("Creating a Dag block but tips don't exist"),
-            )
+            Some(self.current_tips_hash()?.1)
         };
         let strategy = epoch.strategy();
         let difficulty = strategy.calculate_next_difficulty(self)?;
@@ -2146,9 +2142,9 @@ impl ChainReader for BlockChain {
         }))
     }
 
-    fn current_tips_hash(&self) -> Result<Option<(HashValue, Vec<HashValue>)>> {
+    fn current_tips_hash(&self) -> Result<(HashValue, Vec<HashValue>)> {
         let (dag_genesis, dag_state) = self.get_dag_state()?;
-        Ok(Some((dag_genesis, dag_state.tips)))
+        Ok((dag_genesis, dag_state.tips))
     }
 
     fn has_dag_block(&self, header_id: HashValue) -> Result<bool> {
@@ -2305,9 +2301,7 @@ impl BlockChain {
     fn connect_dag(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
         let dag = self.dag.clone();
         let (new_tip_block, _) = (executed_block.block(), executed_block.block_info());
-        let (dag_genesis, mut tips) = self
-            .current_tips_hash()?
-            .expect("tips should exists in dag");
+        let (dag_genesis, mut tips) = self.current_tips_hash()?;
         let parents = executed_block
             .block
             .header

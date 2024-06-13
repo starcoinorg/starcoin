@@ -81,9 +81,7 @@ pub fn new_dag_block(
     }
 
     let block_chain = writeable_block_chain_service.get_main();
-    let (_dag_genesis, tips) = block_chain
-        .current_tips_hash()?
-        .expect("failed to get the tip and dag genesis");
+    let (_dag_genesis, tips) = block_chain.current_tips_hash()?;
     let (block_template, _) = block_chain
         .create_block_template(
             miner_address,
