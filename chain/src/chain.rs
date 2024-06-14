@@ -1690,10 +1690,7 @@ impl BlockChain {
     }
 
     pub fn init_dag_with_genesis(&mut self, genesis: BlockHeader) -> Result<()> {
-        let header = self.status().head().clone();
-        let net: BuiltinNetworkID = header.chain_id().try_into()?;
-        let dag_fork_height = net.genesis_config().dag_effective_height;
-        if genesis.number() == dag_fork_height {
+        if genesis.number() == self.get_dag_effective_height()? {
             let dag_genesis_id = genesis.id();
             info!(
                 "Init dag genesis {dag_genesis_id} height {}",
@@ -1705,9 +1702,8 @@ impl BlockChain {
     }
 
     pub fn get_block_dag_genesis(&self) -> Result<HashValue> {
+        let dag_fork_height = self.get_dag_effective_height()?;
         let header = self.status().head().clone();
-        let net: BuiltinNetworkID = header.chain_id().try_into()?;
-        let dag_fork_height = net.genesis_config().dag_effective_height;
         if header.number() < dag_fork_height {
             bail!("The chain is not a dag chain.");
         }
@@ -1739,6 +1735,15 @@ impl BlockChain {
     pub fn get_dag_state_by_block(&self) -> Result<(HashValue, DagState)> {
         let dag_genesis = self.get_block_dag_genesis()?;
         Ok((dag_genesis, self.dag.get_dag_state(dag_genesis)?))
+    }
+
+    pub fn get_dag_effective_height(&self) -> Result<BlockNumber> {
+        let header = self.status().head().clone();
+        let result_net: Result<BuiltinNetworkID> = header.chain_id().try_into();
+        Ok(match result_net {
+            anyhow::Result::Ok(net) => net.genesis_config().dag_effective_height,
+            Err(_) => 0,
+        })
     }
 }
 
@@ -2132,15 +2137,14 @@ impl ChainReader for BlockChain {
     }
 
     fn has_dag_block(&self, header_id: HashValue) -> Result<bool> {
-        let net: BuiltinNetworkID = self.current_header().chain_id().try_into()?;
-        let genesis_config = net.genesis_config();
+        let dag_effective_height = self.get_dag_effective_height()?;
 
         let header = match self.storage.get_block_header_by_hash(header_id)? {
             Some(header) => header,
             None => return Ok(false),
         };
 
-        if header.number() < genesis_config.dag_effective_height {
+        if header.number() < dag_effective_height {
             return Ok(false);
         }
 
@@ -2153,7 +2157,7 @@ impl ChainReader for BlockChain {
             self.storage
                 .get_accumulator_store(AccumulatorStoreType::Block),
         );
-        let dag_genesis = match block_accumulator.get_leaf(genesis_config.dag_effective_height)? {
+        let dag_genesis = match block_accumulator.get_leaf(dag_effective_height)? {
             Some(dag_genesis) => dag_genesis,
             None => return Ok(false),
         };
@@ -2164,7 +2168,7 @@ impl ChainReader for BlockChain {
                 .get_accumulator_store(AccumulatorStoreType::Block),
         );
         let current_chain_dag_genesis =
-            match current_chain_block_accumulator.get_leaf(genesis_config.dag_effective_height)? {
+            match current_chain_block_accumulator.get_leaf(dag_effective_height)? {
                 Some(dag_genesis) => dag_genesis,
                 None => return Ok(false),
             };
@@ -2177,15 +2181,11 @@ impl ChainReader for BlockChain {
     }
 
     fn check_dag_type(&self) -> Result<DagHeaderType> {
-        let header = self.status().head().clone();
-        let result_net: Result<BuiltinNetworkID> = header.chain_id().try_into();
-        let dag_fork_height = match result_net {
-            anyhow::Result::Ok(net) => net.genesis_config().dag_effective_height,
-            Err(_) => BlockNumber::MAX,
-        };
-        match header.number() {
-            _ if header.number() < dag_fork_height => Ok(DagHeaderType::Single),
-            _ if header.number() > dag_fork_height => Ok(DagHeaderType::Normal),
+        let dag_effective_height = self.get_dag_effective_height()?;
+        let current_number = self.status().head().number();
+        match current_number {
+            _ if current_number < dag_effective_height => Ok(DagHeaderType::Single),
+            _ if current_number > dag_effective_height => Ok(DagHeaderType::Normal),
             _ => Ok(DagHeaderType::Genesis),
         }
     }

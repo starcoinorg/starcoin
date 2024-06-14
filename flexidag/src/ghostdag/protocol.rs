@@ -3,7 +3,6 @@ use crate::consensusdb::schemadb::{GhostdagStoreReader, HeaderStoreReader, Relat
 use crate::reachability::reachability_service::ReachabilityService;
 use crate::types::{ghostdata::GhostdagData, ordering::*};
 use anyhow::{Context, Result};
-use bcs_ext::BCSCodec;
 use parking_lot::RwLock;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_logger::prelude::*;
@@ -52,11 +51,7 @@ impl<
         GhostdagData::new(
             0,
             genesis.difficulty(),
-            Hash::sha3_256_of(
-                &[genesis.parent_hash(), genesis.id()]
-                    .encode()
-                    .expect("failed to encode hash for dag genesis and its parent"),
-            ),
+            genesis.parent_hash(),
             BlockHashes::new(vec![]),
             BlockHashes::new(Vec::new()),
             HashKTypeMap::new(BlockHashMap::new()),

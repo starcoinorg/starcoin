@@ -358,15 +358,16 @@ where
             now_millis = previous_header.timestamp() + 1;
         }
         let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
-        let tips_hash = if self.chain.check_dag_type()? == DagHeaderType::Normal {
-            let (_dag_genesis, tips_hash) = self.chain.current_tips_hash()?.ok_or_else(|| {
-                anyhow!(
-                    "the number of the block is larger than the dag fork number but no dag state!"
-                )
-            })?;
-            Some(tips_hash)
-        } else {
-            None
+        let tips_hash = match self.chain.check_dag_type()? {
+            DagHeaderType::Single => None,
+            DagHeaderType::Genesis | DagHeaderType::Normal => {
+                let (_dag_genesis, tips_hash) = self.chain.current_tips_hash()?.ok_or_else(|| {
+                    anyhow!(
+                        "the number of the block is larger than the dag fork number but no dag state!"
+                    )
+                })?;
+                Some(tips_hash)
+            }
         };
         info!(
             "block:{} tips(dag state):{:?}",
