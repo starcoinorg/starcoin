@@ -1,10 +1,12 @@
+use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::blockhash::{BlockHashMap, BlockHashes, BlueWorkType, HashKTypeMap, KType};
 
-#[derive(Clone, Serialize, Deserialize, Default, Debug)]
+#[derive(Clone, Serialize, Deserialize, Default, Debug, JsonSchema)]
 pub struct GhostdagData {
     pub blue_score: u64,
+    #[schemars(with = "String")]
     pub blue_work: BlueWorkType,
     pub selected_parent: Hash,
     pub mergeset_blues: BlockHashes,

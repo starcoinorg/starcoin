@@ -8,6 +8,7 @@ use starcoin_chain_service::ChainAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::consenses_state::DagStateView;
+use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_logger::prelude::*;
 use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_rpc_api::chain::{
@@ -476,6 +477,12 @@ where
         let service = self.service.clone();
         let fut = async move { service.get_dag_state().await }.map_err(map_err);
 
+        Box::pin(fut.boxed())
+    }
+
+    fn get_ghostdagdata(&self, block_hash: HashValue) -> FutureResult<Option<GhostdagData>> {
+        let service = self.service.clone();
+        let fut = async move { service.get_ghostdagdata(block_hash).await }.map_err(map_err);
         Box::pin(fut.boxed())
     }
 }

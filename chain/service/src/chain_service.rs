@@ -11,6 +11,7 @@ use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::consensusdb::consenses_state::DagStateView;
+use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
@@ -257,6 +258,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::DagForkHeigh => {
                 Ok(ChainResponse::DagForkHeight(self.inner.dag_fork_height()?))
             }
+            ChainRequest::GetGhostdagData(id) => Ok(ChainResponse::GhostdagDataOption(Box::new(
+                self.inner.get_ghostdagdata(id)?,
+            ))),
         }
     }
 }
@@ -479,6 +483,15 @@ impl ReadableChainService for ChainReaderServiceInner {
 
     fn dag_fork_height(&self) -> Result<Option<BlockNumber>> {
         self.main.dag_fork_height()
+    }
+    fn get_ghostdagdata(&self, id: HashValue) -> Result<Option<GhostdagData>> {
+        self.dag
+            .ghostdata_by_hash(id)
+            .map(|option_arc_ghostdagdata| {
+                option_arc_ghostdagdata.map(|arc_ghostdagdata| {
+                    Arc::try_unwrap(arc_ghostdagdata).unwrap_or_else(|arc| (*arc).clone())
+                })
+            })
     }
 }
 

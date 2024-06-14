@@ -14,6 +14,7 @@ use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::consenses_state::DagStateView;
+use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_types::block::BlockNumber;
 use starcoin_vm_types::access_path::AccessPath;
 
@@ -127,6 +128,10 @@ pub trait ChainApi {
     /// Get the state of a dag.
     #[rpc(name = "chain.get_dag_state")]
     fn get_dag_state(&self) -> FutureResult<DagStateView>;
+
+    /// Get block ghostdag data
+    #[rpc(name = "chain.get_ghostdagdata")]
+    fn get_ghostdagdata(&self, block_hash: HashValue) -> FutureResult<Option<GhostdagData>>;
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]
