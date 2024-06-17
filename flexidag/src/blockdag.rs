@@ -86,9 +86,6 @@ impl BlockDAG {
         let genesis_id = genesis.id();
         let origin = genesis.parent_hash();
 
-        if self.storage.relations_store.read().has(origin)? {
-            return Ok(origin);
-        }
         inquirer::init(self.storage.reachability_store.write().deref_mut(), origin)?;
 
         self.storage

@@ -1689,18 +1689,6 @@ impl BlockChain {
         &self.block_accumulator
     }
 
-    pub fn init_dag_with_genesis(&mut self, genesis: BlockHeader) -> Result<()> {
-        if genesis.number() == self.get_dag_effective_height()? {
-            let dag_genesis_id = genesis.id();
-            info!(
-                "Init dag genesis {dag_genesis_id} height {}",
-                genesis.number()
-            );
-            self.dag.init_with_genesis(genesis)?;
-        }
-        Ok(())
-    }
-
     pub fn get_block_dag_genesis(&self) -> Result<HashValue> {
         let dag_fork_height = self.get_dag_effective_height()?;
         let header = self.status().head().clone();
@@ -2014,7 +2002,6 @@ impl ChainReader for BlockChain {
                     self.vm_metrics.clone(),
                 )?
             };
-            self.init_dag_with_genesis(header)?;
             Ok(executed)
         } else {
             self.execute_dag_block(verified_block)
