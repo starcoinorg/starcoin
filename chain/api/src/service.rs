@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2
 
 use crate::message::{ChainRequest, ChainResponse};
-use crate::TransactionInfoWithProof;
+use crate::{ChainType, TransactionInfoWithProof};
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::consenses_state::DagStateView;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
-use starcoin_types::block::DagHeaderType;
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainStatus;
@@ -470,12 +469,12 @@ where
         }
     }
 
-    async fn check_dag_type(&self) -> Result<DagHeaderType> {
-        let response = self.send(ChainRequest::CheckDagType).await??;
-        if let ChainResponse::CheckDagType(dag_type) = response {
+    async fn check_chain_type(&self) -> Result<ChainType> {
+        let response = self.send(ChainRequest::CheckChainType).await??;
+        if let ChainResponse::CheckChainType(dag_type) = response {
             Ok(dag_type)
         } else {
-            bail!("check dag type error")
+            bail!("check chain type error")
         }
     }
     async fn dag_fork_height(&self) -> Result<Option<BlockNumber>> {

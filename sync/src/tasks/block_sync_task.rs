@@ -11,7 +11,7 @@ use network_api::PeerProvider;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::verifier::DagBasicVerifier;
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
-use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
+use starcoin_chain_api::{ChainReader, ChainType, ChainWriter, ConnectBlockError, ExecutedBlock};
 use starcoin_config::G_CRATE_VERSION;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
@@ -19,9 +19,7 @@ use starcoin_network_rpc_api::MAX_BLOCK_REQUEST_SIZE;
 use starcoin_storage::block::DagSyncBlock;
 use starcoin_storage::{Store, BARNARD_HARD_FORK_HASH};
 use starcoin_sync_api::SyncTarget;
-use starcoin_types::block::{
-    Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber, DagHeaderType,
-};
+use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -416,7 +414,7 @@ where
     }
 
     pub fn ensure_dag_parent_blocks_exist(&mut self, block_header: BlockHeader) -> Result<()> {
-        if self.chain.check_dag_type()? == DagHeaderType::Single {
+        if self.chain.check_chain_type()? == ChainType::Single {
             info!(
                 "the block is not a dag block, skipping, its id: {:?}, its number {:?}",
                 block_header.id(),
@@ -722,7 +720,7 @@ where
 
         let timestamp = block.header().timestamp();
 
-        let block_info = if self.chain.check_dag_type()? == DagHeaderType::Normal {
+        let block_info = if self.chain.check_chain_type()? == ChainType::Dag {
             if self.chain.has_dag_block(block.header().id())? {
                 block_info
             } else {

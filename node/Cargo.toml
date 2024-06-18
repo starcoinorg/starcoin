@@ -15,6 +15,7 @@ starcoin-account-api = { workspace = true }
 starcoin-account-service = { workspace = true }
 starcoin-block-relayer = { workspace = true }
 starcoin-chain-notify = { workspace = true }
+starcoin-chain-api = { workspace = true }
 starcoin-chain-service = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-consensus = { workspace = true }

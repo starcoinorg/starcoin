@@ -27,6 +27,12 @@ use starcoin_crypto::HashValue;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::contract_event::ContractEvent;
 
+#[derive(PartialEq, Eq, Debug)]
+pub enum ChainType {
+    Single, // Single chain
+    Dag,    // Dag chain
+}
+
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct EventWithProof {
     pub event: ContractEvent,

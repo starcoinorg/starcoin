@@ -34,12 +34,7 @@ use std::sync::Mutex;
 
 /// Type for block number.
 pub type BlockNumber = u64;
-#[derive(PartialEq, Eq, Debug)]
-pub enum DagHeaderType {
-    Single,  // Legacy block
-    Genesis, // GhostDag genesis block
-    Normal,  // GhostDag Normal block
-}
+
 pub type ParentsHash = Option<Vec<HashValue>>;
 
 lazy_static! {
