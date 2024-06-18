@@ -267,7 +267,14 @@ where
         debug!("try connect mined block: {}", id);
 
         match self.chain_service.try_connect(new_block.as_ref().clone()) {
-            std::result::Result::Ok(()) => debug!("Process mined block {} success.", id),
+            std::result::Result::Ok(()) => {
+                debug!("Process mined block {} success.", id);
+
+                match self.chain_service.broadcast_new_dag_block(id) {
+                    std::result::Result::Ok(_) => (),
+                    Err(e) => warn!("Process mined block {} fail, error: {:?}", id, e),
+                }
+            }
             Err(e) => {
                 warn!("Process mined block {} fail, error: {:?}", id, e);
             }
