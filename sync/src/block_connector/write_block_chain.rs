@@ -223,6 +223,7 @@ where
         &self.main
     }
 
+    //todo: return a reference
     pub fn get_dag(&self) -> BlockDAG {
         self.dag.clone()
     }

@@ -10,16 +10,17 @@ use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_config::ChainNetwork;
 use starcoin_config::NodeConfig;
-use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
+    ServiceRequest,
 };
 use starcoin_storage::{BlockStore, Storage, Store};
+use starcoin_sync::block_connector::{BlockConnectorService, MinerRequest, MinerResponse};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::{
@@ -55,7 +56,7 @@ pub struct BlockTemplateResponse {
 }
 
 pub struct BlockBuilderService {
-    inner: Inner<TxPoolService>,
+    inner: Inner<TxPoolService, TxPoolService>,
 }
 
 impl BlockBuilderService {}
@@ -67,6 +68,9 @@ impl ServiceFactory<Self> for BlockBuilderService {
         let startup_info = storage
             .get_startup_info()?
             .expect("Startup info should exist when service start.");
+        let connector_service = ctx
+            .service_ref::<BlockConnectorService<TxPoolService>>()?
+            .clone();
         //TODO support get service ref by AsyncAPI;
         let account_service = ctx.service_ref::<AccountService>()?;
         let miner_account = block_on(async { account_service.get_default_account().await })?
@@ -84,6 +88,7 @@ impl ServiceFactory<Self> for BlockBuilderService {
 
         let inner = Inner::new(
             config.net(),
+            connector_service,
             storage,
             startup_info.main,
             txpool,
@@ -185,9 +190,10 @@ impl TemplateTxProvider for TxPoolService {
     }
 }
 
-pub struct Inner<P> {
+pub struct Inner<P, T: TxPoolSyncService + 'static> {
     storage: Arc<dyn Store>,
     chain: BlockChain,
+    block_connector_service: ServiceRef<BlockConnectorService<T>>,
     tx_provider: P,
     parent_uncle: HashMap<HashValue, Vec<HashValue>>,
     uncles: HashMap<HashValue, BlockHeader>,
@@ -198,12 +204,14 @@ pub struct Inner<P> {
     dag: BlockDAG,
 }
 
-impl<P> Inner<P>
+impl<P, T> Inner<P, T>
 where
     P: TemplateTxProvider,
+    T: TxPoolSyncService,
 {
     pub fn new(
         net: &ChainNetwork,
+        block_connector_service: ServiceRef<BlockConnectorService<T>>,
         storage: Arc<dyn Store>,
         block_id: HashValue,
         tx_provider: P,
@@ -224,6 +232,7 @@ where
         Ok(Inner {
             storage,
             chain,
+            block_connector_service,
             tx_provider,
             parent_uncle: HashMap::new(),
             uncles: HashMap::new(),
@@ -273,6 +282,7 @@ where
         Ok(())
     }
 
+    #[allow(unused)]
     pub fn find_uncles(&self) -> Vec<BlockHeader> {
         let mut new_uncle = Vec::new();
         let epoch = self.chain.epoch();
@@ -307,7 +317,16 @@ where
     }
 
     pub fn create_block_template(&self) -> Result<BlockTemplateResponse> {
-        let on_chain_block_gas_limit = self.chain.epoch().block_gas_limit();
+        let MinerResponse {
+            chain_header: previous_header,
+            tips_hash: tips,
+            blues_hash: mut blues,
+            strategy,
+            on_chain_block_gas_limit,
+            next_difficulty: difficulty,
+            now_milliseconds: mut now_millis,
+        } = *block_on(self.block_connector_service.send(MinerRequest {}))??;
+
         let block_gas_limit = self
             .local_block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
@@ -319,12 +338,8 @@ where
 
         let txns = self.tx_provider.get_txns(max_txns);
         let author = *self.miner_account.address();
-        let previous_header = self.chain.current_header();
         let current_number = previous_header.number().saturating_add(1);
-        let epoch = self.chain.epoch();
-        let strategy = epoch.strategy();
 
-        let mut now_millis = self.chain.time_service().now_millis();
         if now_millis <= previous_header.timestamp() {
             info!(
                 "Adjust new block timestamp by parent timestamp, parent.timestamp: {}, now: {}, gap: {}",
@@ -332,48 +347,31 @@ where
             );
             now_millis = previous_header.timestamp() + 1;
         }
-        let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
-        let tips_hash = if current_number > self.chain.dag_fork_height()?.unwrap_or(u64::MAX) {
-            let (_dag_genesis, tips_hash) = self.chain.current_tips_hash()?;
-            Some(tips_hash)
-        } else {
-            None
-        };
-        info!(
-            "block:{} tips(dag state):{:?}",
-            self.chain.current_header().number(),
-            &tips_hash,
-        );
-        let (uncles, blue_blocks) = {
-            match &tips_hash {
-                None => (self.find_uncles(), None),
-                Some(tips) => {
-                    let mut blues = self.dag.ghostdata(tips)?.mergeset_blues.to_vec();
-                    info!(
-                        "create block template with tips:{:?},ghostdata blues:{:?}",
-                        &tips_hash, blues
-                    );
-                    let mut blue_blocks = vec![];
 
-                    let __selected_parent = blues.remove(0);
-                    for blue in &blues {
-                        // todo: make sure blue block has been executed successfully
-                        let block = self
-                            .storage
-                            .get_block_by_hash(blue.to_owned())?
-                            .expect("Block should exist");
-                        blue_blocks.push(block);
-                    }
-                    (
-                        blue_blocks
-                            .as_slice()
-                            .iter()
-                            .map(|b| b.header.clone())
-                            .collect(),
-                        Some(blue_blocks),
-                    )
-                }
+        let (uncles, blue_blocks) = {
+            info!(
+                "create block template {} with tips:{:?},ghostdata blues:{:?}",
+                current_number, &tips, blues
+            );
+            let mut blue_blocks = vec![];
+
+            let __selected_parent = blues.remove(0);
+            for blue in &blues {
+                // todo: make sure blue block has been executed successfully
+                let block = self
+                    .storage
+                    .get_block_by_hash(blue.to_owned())?
+                    .expect("Block should exist");
+                blue_blocks.push(block);
             }
+            (
+                blue_blocks
+                    .as_slice()
+                    .iter()
+                    .map(|b| b.header.clone())
+                    .collect::<Vec<_>>(),
+                Some(blue_blocks),
+            )
         };
         info!(
             "[CreateBlockTemplate] previous_header: {:?}, block_gas_limit: {}, max_txns: {}, txn len: {}, uncles len: {}, timestamp: {}",
@@ -395,7 +393,7 @@ where
             difficulty,
             strategy,
             self.vm_metrics.clone(),
-            Some(tips_hash.unwrap_or_default()),
+            Some(tips),
             blue_blocks,
         )?;
 

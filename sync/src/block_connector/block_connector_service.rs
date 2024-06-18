@@ -7,7 +7,9 @@ use super::CheckBlockConnectorHashValue;
 use super::CreateBlockRequest;
 #[cfg(test)]
 use super::CreateBlockResponse;
-use crate::block_connector::{ExecuteRequest, ResetRequest, WriteBlockChainService};
+use crate::block_connector::{
+    ExecuteRequest, MinerRequest, MinerResponse, ResetRequest, WriteBlockChainService,
+};
 use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskCheckEvent};
 #[cfg(test)]
@@ -16,13 +18,15 @@ use anyhow::{format_err, Ok, Result};
 use network_api::PeerProvider;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
+use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
+
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
 use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
 };
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::PeerNewBlock;
@@ -30,9 +34,11 @@ use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 #[cfg(test)]
 use starcoin_txpool_mock_service::MockTxPoolService;
-use starcoin_types::block::ExecutedBlock;
+use starcoin_types::block::{ExecutedBlock};
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
+
+
 use std::sync::Arc;
 use sysinfo::{DiskExt, System, SystemExt};
 
@@ -382,6 +388,38 @@ where
         _ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
     ) -> Result<ExecutedBlock> {
         self.chain_service.execute(msg.block)
+    }
+}
+
+impl<T> ServiceHandler<Self, MinerRequest> for BlockConnectorService<T>
+where
+    T: TxPoolSyncService + 'static,
+{
+    fn handle(
+        &mut self,
+        _msg: MinerRequest,
+        _ctx: &mut ServiceContext<Self>,
+    ) -> <MinerRequest as ServiceRequest>::Response {
+        let main = self.chain_service.get_main();
+        let dag = self.chain_service.get_dag();
+        let epoch = main.epoch().clone();
+        let strategy = epoch.strategy();
+        let on_chain_block_gas_limit = epoch.block_gas_limit();
+        let (_, tips_hash) = main.current_tips_hash()?;
+        let blues_hash = dag.ghostdata(tips_hash.as_ref())?.mergeset_blues.to_vec();
+        let chain_header = main.status().head().clone();
+        let next_difficulty = epoch.strategy().calculate_next_difficulty(main)?;
+        let now_milliseconds = main.time_service().now_millis();
+
+        Ok(Box::new(MinerResponse {
+            chain_header,
+            on_chain_block_gas_limit,
+            tips_hash,
+            blues_hash,
+            strategy,
+            next_difficulty,
+            now_milliseconds,
+        }))
     }
 }
 
