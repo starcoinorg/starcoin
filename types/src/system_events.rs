@@ -12,7 +12,11 @@ use std::sync::Arc;
 #[derive(Clone, Debug)]
 pub struct NewHeadBlock {
     pub executed_block: Arc<ExecutedBlock>,
-    // pub tips: Option<Vec<HashValue>>,
+}
+
+#[derive(Clone, Debug)]
+pub struct NewDagBlock {
+    pub executed_block: Arc<ExecutedBlock>,
 }
 
 /// may be uncle block

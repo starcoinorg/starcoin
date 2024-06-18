@@ -22,7 +22,7 @@ use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
-use starcoin_types::system_events::{NewBranch, SyncStatusChangeEvent};
+use starcoin_types::system_events::{NewBranch, NewDagBlock, SyncStatusChangeEvent};
 use starcoin_types::{
     block::{Block, BlockBody},
     compact_block::{CompactBlock, ShortId},
@@ -279,6 +279,23 @@ impl EventHandler<Self, NewHeadBlock> for BlockRelayer {
     fn handle_event(&mut self, event: NewHeadBlock, ctx: &mut ServiceContext<BlockRelayer>) {
         debug!(
             "[block-relay] Handle new head block event, block_id: {:?}",
+            event.executed_block.block().id()
+        );
+        let network = match ctx.get_shared::<NetworkServiceRef>() {
+            Ok(network) => network,
+            Err(e) => {
+                error!("Get network service error: {:?}", e);
+                return;
+            }
+        };
+        self.broadcast_compact_block(network, event.executed_block);
+    }
+}
+
+impl EventHandler<Self, NewDagBlock> for BlockRelayer {
+    fn handle_event(&mut self, event: NewDagBlock, ctx: &mut ServiceContext<BlockRelayer>) {
+        debug!(
+            "[block-relay] Handle new dag block event, block_id: {:?}",
             event.executed_block.block().id()
         );
         let network = match ctx.get_shared::<NetworkServiceRef>() {
