@@ -10,8 +10,9 @@ use starcoin_accumulator::{
     accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator, MerkleAccumulator,
 };
 use starcoin_chain_api::{
-    verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
-    ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
+    verify_block, ChainReader, ChainType, ChainWriter, ConnectBlockError, EventWithProof,
+    ExcludedTxns, ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock,
+    VerifyBlockField,
 };
 use starcoin_config::BuiltinNetworkID;
 use starcoin_consensus::Consensus;
@@ -27,7 +28,7 @@ use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter}
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
-use starcoin_types::block::{BlockIdAndNumber, DagHeaderType};
+use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
@@ -659,7 +660,7 @@ impl BlockChain {
             vm_metrics,
             dag: dag.clone(),
         };
-        if chain.check_dag_type()? != DagHeaderType::Single {
+        if chain.check_chain_type()? == ChainType::Dag {
             dag.set_reindex_root(chain.get_block_dag_origin()?)?;
         }
         watch(CHAIN_WATCH_NAME, "n1251");
@@ -847,9 +848,9 @@ impl BlockChain {
         let final_block_gas_limit = block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
-        let tips_hash = match self.check_dag_type()? {
-            DagHeaderType::Single => None,
-            DagHeaderType::Genesis | DagHeaderType::Normal => {
+        let tips_hash = match self.check_chain_type()? {
+            ChainType::Single => None,
+            ChainType::Dag => {
                 if tips.is_some() {
                     tips
                 } else {
@@ -982,11 +983,9 @@ impl BlockChain {
             self.vm_metrics.clone(),
             self.dag.clone(),
         )?;
-        match selected_chain.check_dag_type()? {
-            DagHeaderType::Single => V::verify_block(self, block),
-            DagHeaderType::Genesis | DagHeaderType::Normal => {
-                V::verify_block(&selected_chain, block)
-            }
+        match selected_chain.check_chain_type()? {
+            ChainType::Single => V::verify_block(self, block),
+            ChainType::Dag => V::verify_block(&selected_chain, block),
         }
     }
 
@@ -1964,9 +1963,9 @@ impl ChainReader for BlockChain {
     }
 
     fn verify(&self, block: Block) -> Result<VerifiedBlock> {
-        match self.check_dag_type()? {
-            DagHeaderType::Single => FullVerifier::verify_block(self, block),
-            DagHeaderType::Genesis | DagHeaderType::Normal => {
+        match self.check_chain_type()? {
+            ChainType::Single => FullVerifier::verify_block(self, block),
+            ChainType::Dag => {
                 DagBasicVerifier::verify_header(self, block.header())?;
                 Ok(VerifiedBlock(block))
             }
@@ -1975,7 +1974,7 @@ impl ChainReader for BlockChain {
 
     fn execute(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
         let header = verified_block.0.header().clone();
-        if self.check_dag_type()? == DagHeaderType::Single {
+        if self.check_chain_type()? == ChainType::Single {
             let executed = if let Some((executed_data, block_info)) =
                 MAIN_DIRECT_SAVE_BLOCK_HASH_MAP.get(&verified_block.0.header.id())
             {
@@ -2167,13 +2166,13 @@ impl ChainReader for BlockChain {
         self.dag.has_dag_block(header.id())
     }
 
-    fn check_dag_type(&self) -> Result<DagHeaderType> {
+    fn check_chain_type(&self) -> Result<ChainType> {
         let dag_effective_height = self.get_dag_effective_height()?;
         let current_number = self.status().head().number();
         match current_number {
-            _ if current_number < dag_effective_height => Ok(DagHeaderType::Single),
-            _ if current_number > dag_effective_height => Ok(DagHeaderType::Normal),
-            _ => Ok(DagHeaderType::Genesis),
+            _ if current_number < dag_effective_height => Ok(ChainType::Single),
+            _ if current_number > dag_effective_height => Ok(ChainType::Dag),
+            _ => Ok(ChainType::Dag),
         }
     }
 }
@@ -2351,9 +2350,9 @@ impl ChainWriter for BlockChain {
     }
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
-        match self.check_dag_type()? {
-            DagHeaderType::Single => (),
-            DagHeaderType::Normal | DagHeaderType::Genesis => {
+        match self.check_chain_type()? {
+            ChainType::Single => (),
+            ChainType::Dag => {
                 info!(
                     "connect a dag block, {:?}, number: {:?}",
                     executed_block.block.id(),
@@ -2396,11 +2395,9 @@ impl ChainWriter for BlockChain {
     }
 
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock> {
-        match self.check_dag_type()? {
-            DagHeaderType::Single => self.apply_with_verifier::<FullVerifier>(block),
-            DagHeaderType::Genesis | DagHeaderType::Normal => {
-                self.apply_with_verifier::<DagVerifier>(block)
-            }
+        match self.check_chain_type()? {
+            ChainType::Single => self.apply_with_verifier::<FullVerifier>(block),
+            ChainType::Dag => self.apply_with_verifier::<DagVerifier>(block),
         }
     }
 

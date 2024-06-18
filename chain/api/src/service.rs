@@ -2,12 +2,11 @@
 // SPDX-License-Identifier: Apache-2
 
 use crate::message::{ChainRequest, ChainResponse};
-use crate::TransactionInfoWithProof;
+use crate::{ChainType, TransactionInfoWithProof};
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::consenses_state::DagStateView;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
-use starcoin_types::block::DagHeaderType;
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainStatus;
@@ -76,7 +75,7 @@ pub trait ReadableChainService {
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
     fn get_dag_block_children(&self, ids: Vec<HashValue>) -> Result<Vec<HashValue>>;
     fn get_dag_state(&self) -> Result<DagStateView>;
-    fn check_dag_type(&self) -> Result<DagHeaderType>;
+    fn check_chain_type(&self) -> Result<ChainType>;
 }
 
 /// Writeable block chain service trait
@@ -146,7 +145,7 @@ pub trait ChainAsyncService:
     async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
     async fn get_dag_block_children(&self, hashes: Vec<HashValue>) -> Result<Vec<HashValue>>;
     async fn get_dag_state(&self) -> Result<DagStateView>;
-    async fn check_dag_type(&self) -> Result<DagHeaderType>;
+    async fn check_chain_type(&self) -> Result<ChainType>;
 }
 
 #[async_trait::async_trait]
@@ -465,12 +464,12 @@ where
         }
     }
 
-    async fn check_dag_type(&self) -> Result<DagHeaderType> {
-        let response = self.send(ChainRequest::CheckDagType).await??;
-        if let ChainResponse::CheckDagType(dag_type) = response {
+    async fn check_chain_type(&self) -> Result<ChainType> {
+        let response = self.send(ChainRequest::CheckChainType).await??;
+        if let ChainResponse::CheckChainType(dag_type) = response {
             Ok(dag_type)
         } else {
-            bail!("check dag type error")
+            bail!("check chain type error")
         }
     }
 }

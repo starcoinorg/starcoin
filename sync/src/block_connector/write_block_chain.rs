@@ -242,14 +242,14 @@ where
     pub fn apply_failed(&mut self, block: Block) -> Result<()> {
         use anyhow::bail;
         use starcoin_chain::verifier::{DagBasicVerifier, FullVerifier};
+        use starcoin_chain_api::ChainType;
 
-        let verified_block = match self.main.check_dag_type()? {
-            starcoin_types::block::DagHeaderType::Single => {
+        let verified_block = match self.main.check_chain_type()? {
+            ChainType::Single => {
                 // apply but no connection
                 self.main.verify_with_verifier::<FullVerifier>(block)?
             }
-            starcoin_types::block::DagHeaderType::Genesis
-            | starcoin_types::block::DagHeaderType::Normal => {
+            ChainType::Dag => {
                 // apply but no connection
                 self.main.verify_with_verifier::<DagBasicVerifier>(block)?
             }

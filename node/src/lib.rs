@@ -6,6 +6,7 @@ use crate::node::NodeService;
 use anyhow::{bail, format_err, Result};
 use futures::executor::block_on;
 use futures_timer::Delay;
+use starcoin_chain_api::ChainType;
 use starcoin_chain_service::{ChainAsyncService, ChainReaderService};
 use starcoin_config::{BaseConfig, NodeConfig, StarcoinOpt};
 use starcoin_dag::blockdag::BlockDAG;
@@ -21,7 +22,7 @@ use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceIn
 use starcoin_storage::Storage;
 use starcoin_sync::sync::{CheckSyncEvent, SyncService};
 use starcoin_txpool::TxPoolService;
-use starcoin_types::block::{Block, DagHeaderType};
+use starcoin_types::block::Block;
 use starcoin_types::system_events::{GenerateBlockEvent, NewHeadBlock};
 use std::sync::Arc;
 use std::time::Duration;
@@ -211,8 +212,8 @@ impl NodeHandle {
                     bail!("Wait timeout for generate_block")
                 }
             };
-            let dag_type = chain_service.check_dag_type().await?;
-            Ok((block, dag_type == DagHeaderType::Normal))
+            let dag_type = chain_service.check_chain_type().await?;
+            Ok((block, dag_type == ChainType::Dag))
         })
     }
 

@@ -8,6 +8,7 @@ use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChang
 use starcoin_account_service::AccountService;
 use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
+use starcoin_chain_api::ChainType;
 use starcoin_config::ChainNetwork;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
@@ -22,7 +23,6 @@ use starcoin_service_registry::{
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::block::DagHeaderType;
 use starcoin_types::{
     block::{BlockHeader, BlockTemplate, ExecutedBlock},
     system_events::{NewBranch, NewHeadBlock},
@@ -358,9 +358,9 @@ where
             now_millis = previous_header.timestamp() + 1;
         }
         let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
-        let tips_hash = match self.chain.check_dag_type()? {
-            DagHeaderType::Single => None,
-            DagHeaderType::Genesis | DagHeaderType::Normal => {
+        let tips_hash = match self.chain.check_chain_type()? {
+            ChainType::Single => None,
+            ChainType::Dag => {
                 let (_dag_genesis, tips_hash) = self.chain.current_tips_hash()?.ok_or_else(|| {
                     anyhow!(
                         "the number of the block is larger than the dag fork number but no dag state!"

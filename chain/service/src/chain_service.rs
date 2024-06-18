@@ -5,7 +5,7 @@ use anyhow::{bail, format_err, Error, Result};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::{
-    ChainReader, ChainWriter, ReadableChainService, TransactionInfoWithProof,
+    ChainReader, ChainType, ChainWriter, ReadableChainService, TransactionInfoWithProof,
 };
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
@@ -16,7 +16,7 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::{BlockStore, Storage, Store};
-use starcoin_types::block::{DagHeaderType, ExecutedBlock};
+use starcoin_types::block::ExecutedBlock;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::system_events::NewHeadBlock;
@@ -247,8 +247,8 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetDagStateView => Ok(ChainResponse::DagStateView(Box::new(
                 self.inner.get_dag_state()?,
             ))),
-            ChainRequest::CheckDagType => Ok(ChainResponse::CheckDagType({
-                self.inner.check_dag_type()?
+            ChainRequest::CheckChainType => Ok(ChainResponse::CheckChainType({
+                self.inner.check_chain_type()?
             })),
         }
     }
@@ -451,7 +451,7 @@ impl ReadableChainService for ChainReaderServiceInner {
     }
 
     fn get_dag_state(&self) -> Result<DagStateView> {
-        if self.main.check_dag_type()? != DagHeaderType::Normal {
+        if self.main.check_chain_type()? != ChainType::Dag {
             bail!("The dag block is not built yet.");
         }
         let (dag_genesis, state) = self.main.get_dag_state_by_block()?;
@@ -461,8 +461,8 @@ impl ReadableChainService for ChainReaderServiceInner {
         })
     }
 
-    fn check_dag_type(&self) -> Result<DagHeaderType> {
-        self.main.check_dag_type()
+    fn check_chain_type(&self) -> Result<ChainType> {
+        self.main.check_chain_type()
     }
 }
 

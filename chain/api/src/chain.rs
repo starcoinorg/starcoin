@@ -10,14 +10,14 @@ use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, DagHeaderType},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber},
     transaction::Transaction,
     U256,
 };
 use starcoin_vm_types::on_chain_resource::Epoch;
 use std::collections::HashMap;
 
-use crate::TransactionInfoWithProof;
+use crate::{ChainType, TransactionInfoWithProof};
 pub use starcoin_types::block::ExecutedBlock;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::contract_event::ContractEvent;
@@ -104,7 +104,7 @@ pub trait ChainReader {
 
     fn current_tips_hash(&self) -> Result<Option<(HashValue, Vec<HashValue>)>>;
     fn has_dag_block(&self, header_id: HashValue) -> Result<bool>;
-    fn check_dag_type(&self) -> Result<DagHeaderType>;
+    fn check_chain_type(&self) -> Result<ChainType>;
 }
 
 pub trait ChainWriter {

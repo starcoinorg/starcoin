@@ -14,6 +14,7 @@ use network_p2p_core::{NetRpcError, RpcErrorCode};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::MerkleAccumulator;
 use starcoin_chain::{BlockChain, ChainReader};
+use starcoin_chain_api::ChainType;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
@@ -24,9 +25,7 @@ use starcoin_time_service::TimeService;
 use starcoin_txpool::TxPoolService;
 #[cfg(test)]
 use starcoin_txpool_mock_service::MockTxPoolService;
-use starcoin_types::block::{
-    Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber, DagHeaderType,
-};
+use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::U256;
 use std::str::FromStr;
@@ -778,9 +777,9 @@ where
                 break;
             }
             if latest_block_chain
-                .check_dag_type()
+                .check_chain_type()
                 .map_err(TaskError::BreakError)?
-                == DagHeaderType::Normal
+                == ChainType::Dag
                 && latest_status.info().get_total_difficulty()
                     >= target.block_info.get_total_difficulty()
             {
