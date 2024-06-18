@@ -6,6 +6,7 @@ use crate::TransactionInfoWithProof;
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::consenses_state::DagStateView;
+use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::block::DagHeaderType;
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
@@ -78,6 +79,7 @@ pub trait ReadableChainService {
     fn get_dag_state(&self) -> Result<DagStateView>;
     fn check_dag_type(&self, header: &BlockHeader) -> Result<DagHeaderType>;
     fn dag_fork_height(&self) -> Result<Option<BlockNumber>>;
+    fn get_ghostdagdata(&self, id: HashValue) -> Result<Option<GhostdagData>>;
 }
 
 /// Writeable block chain service trait
@@ -149,6 +151,7 @@ pub trait ChainAsyncService:
     async fn get_dag_state(&self) -> Result<DagStateView>;
     async fn check_dag_type(&self, id: HashValue) -> Result<DagHeaderType>;
     async fn dag_fork_height(&self) -> Result<Option<BlockNumber>>;
+    async fn get_ghostdagdata(&self, id: HashValue) -> Result<Option<GhostdagData>>;
 }
 
 #[async_trait::async_trait]
@@ -481,6 +484,17 @@ where
             Ok(dag_fork_height)
         } else {
             bail!("failed to get dag fork height")
+        }
+    }
+
+    async fn get_ghostdagdata(&self, block_hash: HashValue) -> Result<Option<GhostdagData>> {
+        let response = self
+            .send(ChainRequest::GetGhostdagData(block_hash))
+            .await??;
+        if let ChainResponse::GhostdagDataOption(ghostdag_data) = response {
+            Ok(*ghostdag_data)
+        } else {
+            bail!("failed to get ghostdag data")
         }
     }
 }

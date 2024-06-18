@@ -12,6 +12,7 @@ use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumu
 use starcoin_config::{BuiltinNetworkID, ChainNetworkID};
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::consenses_state::DagStateView;
+use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_rpc_api::chain::{ChainApi, GetBlockOption};
 use starcoin_rpc_api::chain::{ChainApiClient, GetBlocksOption};
 use starcoin_rpc_api::types::{
@@ -34,7 +35,6 @@ use starcoin_vm_types::access_path::AccessPath;
 use std::hash::Hash;
 use std::option::Option::{None, Some};
 use std::sync::{Arc, Mutex};
-
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
@@ -500,6 +500,10 @@ impl ChainApi for MockChainApi {
     #[doc = r" Get the state of a dag."]
     fn get_dag_state(&self) -> FutureResult<DagStateView> {
         todo!("not implement yet")
+    }
+
+    fn get_ghostdagdata(&self, _block_hash: HashValue) -> FutureResult<Option<GhostdagData>> {
+        unimplemented!()
     }
 }
 
