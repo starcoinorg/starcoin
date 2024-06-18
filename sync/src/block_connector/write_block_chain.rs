@@ -4,7 +4,9 @@
 use crate::block_connector::metrics::ChainMetrics;
 use anyhow::{format_err, Ok, Result};
 use starcoin_chain::BlockChain;
-use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
+use starcoin_chain_api::{
+    ChainReader, ChainType, ChainWriter, ConnectBlockError, WriteableChainService,
+};
 use starcoin_config::NodeConfig;
 #[cfg(test)]
 use starcoin_consensus::Consensus;
@@ -16,10 +18,8 @@ use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{ServiceContext, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::block::{BlockInfo, DagHeaderType};
+use starcoin_types::block::BlockInfo;
 use starcoin_types::system_events::NewDagBlock;
-#[cfg(test)]
-use starcoin_types::{account::Account, block::BlockNumber};
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
@@ -245,7 +245,6 @@ where
     pub fn apply_failed(&mut self, block: Block) -> Result<()> {
         use anyhow::bail;
         use starcoin_chain::verifier::{DagBasicVerifier, FullVerifier};
-        use starcoin_chain_api::ChainType;
 
         let verified_block = match self.main.check_chain_type()? {
             ChainType::Single => {
@@ -535,7 +534,7 @@ where
         }
 
         // the single chain no need to broadcast the block, it is only for dag
-        if chain.check_dag_type(chain.status().head())? == DagHeaderType::Single {
+        if chain.check_chain_type()? == ChainType::Single {
             return Ok(());
         }
 
