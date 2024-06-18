@@ -66,8 +66,7 @@ pub enum ChainRequest {
         block_ids: Vec<HashValue>,
     },
     GetDagStateView,
-    CheckDagType(HashValue),
-    DagForkHeigh,
+    CheckChainType,
     GetGhostdagData(HashValue),
 }
 
@@ -98,7 +97,6 @@ pub enum ChainResponse {
     TransactionProof(Box<Option<TransactionInfoWithProof>>),
     BlockInfoVec(Box<Vec<Option<BlockInfo>>>),
     DagStateView(Box<DagStateView>),
-    CheckDagType(DagHeaderType),
-    DagForkHeight(Option<BlockNumber>),
+    CheckChainType(ChainType),
     GhostdagDataOption(Box<Option<GhostdagData>>),
 }

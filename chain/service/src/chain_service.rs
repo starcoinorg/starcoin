@@ -251,9 +251,6 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::CheckChainType => Ok(ChainResponse::CheckChainType({
                 self.inner.check_chain_type()?
             })),
-            ChainRequest::DagForkHeigh => {
-                Ok(ChainResponse::DagForkHeight(self.inner.dag_fork_height()?))
-            }
             ChainRequest::GetGhostdagData(id) => Ok(ChainResponse::GhostdagDataOption(Box::new(
                 self.inner.get_ghostdagdata(id)?,
             ))),
