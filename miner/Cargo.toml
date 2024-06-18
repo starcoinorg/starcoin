@@ -27,8 +27,9 @@ starcoin-txpool = { workspace = true }
 starcoin-txpool-api = { workspace = true }
 starcoin-vm-types = { workspace = true }
 tokio = { features = ["full"], workspace = true }
-starcoin-dag = { workspace =true }
+starcoin-dag = { workspace = true }
 starcoin-types = { workspace = true }
+starcoin-sync = { workspace = true }
 
 [dev-dependencies]
 starcoin-network-rpc = { workspace = true }

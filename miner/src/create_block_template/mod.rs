@@ -2,25 +2,25 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::create_block_template::metrics::BlockBuilderMetrics;
-use anyhow::{anyhow, bail, format_err, Result};
+use anyhow::{format_err, Result};
 use futures::executor::block_on;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_account_service::AccountService;
 use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
-use starcoin_chain_api::ChainType;
 use starcoin_config::ChainNetwork;
 use starcoin_config::NodeConfig;
-use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
+    ServiceRequest,
 };
 use starcoin_storage::{BlockStore, Storage, Store};
+use starcoin_sync::block_connector::{BlockConnectorService, MinerRequest, MinerResponse};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::{
@@ -56,7 +56,7 @@ pub struct BlockTemplateResponse {
 }
 
 pub struct BlockBuilderService {
-    inner: Inner<TxPoolService>,
+    inner: Inner<TxPoolService, TxPoolService>,
 }
 
 impl BlockBuilderService {}
@@ -68,6 +68,9 @@ impl ServiceFactory<Self> for BlockBuilderService {
         let startup_info = storage
             .get_startup_info()?
             .expect("Startup info should exist when service start.");
+        let connector_service = ctx
+            .service_ref::<BlockConnectorService<TxPoolService>>()?
+            .clone();
         //TODO support get service ref by AsyncAPI;
         let account_service = ctx.service_ref::<AccountService>()?;
         let miner_account = block_on(async { account_service.get_default_account().await })?
@@ -85,6 +88,7 @@ impl ServiceFactory<Self> for BlockBuilderService {
 
         let inner = Inner::new(
             config.net(),
+            connector_service,
             storage,
             startup_info.main,
             txpool,
@@ -186,9 +190,10 @@ impl TemplateTxProvider for TxPoolService {
     }
 }
 
-pub struct Inner<P> {
+pub struct Inner<P, T: TxPoolSyncService + 'static> {
     storage: Arc<dyn Store>,
     chain: BlockChain,
+    block_connector_service: ServiceRef<BlockConnectorService<T>>,
     tx_provider: P,
     parent_uncle: HashMap<HashValue, Vec<HashValue>>,
     uncles: HashMap<HashValue, BlockHeader>,
@@ -199,12 +204,14 @@ pub struct Inner<P> {
     dag: BlockDAG,
 }
 
-impl<P> Inner<P>
+impl<P, T> Inner<P, T>
 where
     P: TemplateTxProvider,
+    T: TxPoolSyncService,
 {
     pub fn new(
         net: &ChainNetwork,
+        block_connector_service: ServiceRef<BlockConnectorService<T>>,
         storage: Arc<dyn Store>,
         block_id: HashValue,
         tx_provider: P,
@@ -225,6 +232,7 @@ where
         Ok(Inner {
             storage,
             chain,
+            block_connector_service,
             tx_provider,
             parent_uncle: HashMap::new(),
             uncles: HashMap::new(),
@@ -274,6 +282,7 @@ where
         Ok(())
     }
 
+    #[allow(unused)]
     pub fn find_uncles(&self) -> Vec<BlockHeader> {
         let mut new_uncle = Vec::new();
         let epoch = self.chain.epoch();
@@ -307,33 +316,17 @@ where
         }
     }
 
-    fn get_dag_previous_header(
-        &self,
-        previous_header: BlockHeader,
-        selected_parent: HashValue,
-    ) -> Result<BlockHeader> {
-        if previous_header.id() == selected_parent {
-            return Ok(previous_header);
-        }
-
-        if self
-            .chain
-            .dag()
-            .check_ancestor_of(previous_header.id(), vec![selected_parent])?
-        {
-            return self
-                .storage
-                .get_block_header_by_hash(selected_parent)?
-                .ok_or_else(|| {
-                    format_err!("BlockHeader should exist by hash: {}", selected_parent)
-                });
-        }
-
-        Ok(previous_header)
-    }
-
     pub fn create_block_template(&self) -> Result<BlockTemplateResponse> {
-        let on_chain_block_gas_limit = self.chain.epoch().block_gas_limit();
+        let MinerResponse {
+            previous_header,
+            tips_hash,
+            blues_hash: blues,
+            strategy,
+            on_chain_block_gas_limit,
+            next_difficulty: difficulty,
+            now_milliseconds: mut now_millis,
+        } = *block_on(self.block_connector_service.send(MinerRequest {}))??;
+
         let block_gas_limit = self
             .local_block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
@@ -345,11 +338,7 @@ where
 
         let txns = self.tx_provider.get_txns(max_txns);
         let author = *self.miner_account.address();
-        let mut previous_header = self.chain.current_header();
-        let epoch = self.chain.epoch();
-        let strategy = epoch.strategy();
 
-        let mut now_millis = self.chain.time_service().now_millis();
         if now_millis <= previous_header.timestamp() {
             info!(
                 "Adjust new block timestamp by parent timestamp, parent.timestamp: {}, now: {}, gap: {}",
@@ -357,18 +346,6 @@ where
             );
             now_millis = previous_header.timestamp() + 1;
         }
-        let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
-        let tips_hash = match self.chain.check_chain_type()? {
-            ChainType::Single => None,
-            ChainType::Dag => {
-                let (_dag_genesis, tips_hash) = self.chain.current_tips_hash()?.ok_or_else(|| {
-                    anyhow!(
-                        "the number of the block is larger than the dag fork number but no dag state!"
-                    )
-                })?;
-                Some(tips_hash)
-            }
-        };
         info!(
             "block:{} tips(dag state):{:?}",
             self.chain.current_header().number(),
@@ -378,20 +355,12 @@ where
             match &tips_hash {
                 None => (self.find_uncles(), None),
                 Some(tips) => {
-                    let mut blues = self.dag.ghostdata(tips)?.mergeset_blues.to_vec();
-                    if blues.is_empty() {
-                        bail!("The count of ghostdata returns mergeset blues is empty");
-                    }
                     info!(
                         "create block template with tips:{:?},ghostdata blues:{:?}",
-                        &tips_hash, blues
+                        tips, blues
                     );
                     let mut blue_blocks = vec![];
-
-                    let selected_parent = blues.remove(0);
-                    previous_header =
-                        self.get_dag_previous_header(previous_header, selected_parent)?;
-                    for blue in &blues {
+                    for blue in blues.iter().skip(1) {
                         // todo: make sure blue block has been executed successfully
                         let block = self
                             .storage
@@ -410,6 +379,7 @@ where
                 }
             }
         };
+
         info!(
             "[CreateBlockTemplate] previous_header: {:?}, block_gas_limit: {}, max_txns: {}, txn len: {}, uncles len: {}, timestamp: {}",
             previous_header,

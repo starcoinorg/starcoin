@@ -16,20 +16,18 @@ mod test_write_dag_block_chain;
 mod write_block_chain;
 
 pub use block_connector_service::BlockConnectorService;
-#[cfg(test)]
 use starcoin_types::block::BlockHeader;
-#[cfg(test)]
-use starcoin_types::transaction::SignedUserTransaction;
-#[cfg(test)]
-use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_types::U256;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 pub use write_block_chain::WriteBlockChainService;
+#[cfg(test)]
+use {
+    starcoin_types::transaction::SignedUserTransaction,
+    starcoin_vm_types::account_address::AccountAddress,
+};
 
 #[cfg(test)]
-pub use test_write_block_chain::create_writeable_block_chain;
-#[cfg(test)]
-pub use test_write_block_chain::gen_blocks;
-#[cfg(test)]
-pub use test_write_block_chain::new_block;
+pub use test_write_block_chain::{create_writeable_block_chain, gen_blocks, new_block};
 
 #[derive(Debug, Clone)]
 pub struct ResetRequest {
@@ -47,6 +45,24 @@ pub struct ExecuteRequest {
 
 impl ServiceRequest for ExecuteRequest {
     type Response = anyhow::Result<ExecutedBlock>;
+}
+
+#[derive(Clone, Debug)]
+pub struct MinerRequest {}
+
+#[derive(Clone, Debug)]
+pub struct MinerResponse {
+    pub previous_header: BlockHeader,
+    pub tips_hash: Option<Vec<HashValue>>,
+    pub blues_hash: Vec<HashValue>,
+    pub strategy: ConsensusStrategy,
+    pub on_chain_block_gas_limit: u64,
+    pub next_difficulty: U256,
+    pub now_milliseconds: u64,
+}
+
+impl ServiceRequest for MinerRequest {
+    type Response = anyhow::Result<Box<MinerResponse>>;
 }
 
 #[cfg(test)]
