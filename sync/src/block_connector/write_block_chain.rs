@@ -16,7 +16,10 @@ use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{ServiceContext, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::block::BlockInfo;
+use starcoin_types::block::{BlockInfo, DagHeaderType};
+use starcoin_types::system_events::NewDagBlock;
+#[cfg(test)]
+use starcoin_types::{account::Account, block::BlockNumber};
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
@@ -498,7 +501,7 @@ where
         Ok(blocks)
     }
 
-    fn broadcast_new_head(&self, block: ExecutedBlock) {
+    pub fn broadcast_new_head(&self, block: ExecutedBlock) {
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
                 .chain_select_head_total
@@ -511,6 +514,49 @@ where
         }) {
             error!("Broadcast NewHeadBlock error: {:?}", e);
         }
+    }
+
+    // In dag chain, the new block minted by the node itself may have the less total difficulty than other nodes'.
+    // Hence, the new block may not be the new head of the chain.
+    // But it still needs to be broadcasted to other nodes.
+    pub fn broadcast_new_dag_block(&self, block_id: HashValue) -> Result<()> {
+        if let Some(metrics) = self.metrics.as_ref() {
+            metrics
+                .chain_select_head_total
+                .with_label_values(&["new_head"])
+                .inc()
+        }
+
+        let chain = self.get_main();
+
+        // the execution process broadcast the block already
+        if chain.current_header().id() == block_id {
+            return Ok(());
+        }
+
+        // the single chain no need to broadcast the block, it is only for dag
+        if chain.check_dag_type(chain.status().head())? == DagHeaderType::Single {
+            return Ok(());
+        }
+
+        let block = chain.get_block(block_id)?.ok_or_else(|| {
+            format_err!(
+                "failed to get the block after executing the block: {:?}",
+                block_id
+            )
+        })?;
+        let block_info = chain.get_block_info(Some(block_id))?.ok_or_else(|| {
+            format_err!(
+                "failed to get the block info after executing the block: {:?}",
+                block_id
+            )
+        })?;
+
+        self.bus
+            .broadcast(NewDagBlock {
+                executed_block: Arc::new(ExecutedBlock { block, block_info }),
+            })
+            .map_err(|e| format_err!("Broadcast NewDagBlock error: {:?}", e))
     }
 
     fn broadcast_new_branch(&self, block: ExecutedBlock) {

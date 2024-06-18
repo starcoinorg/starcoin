@@ -4018,6 +4018,75 @@
           }
         }
       }
+    },
+    {
+      "name": "chain.get_ghostdagdata",
+      "params": [
+        {
+          "name": "block_hash",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "type": "string",
+            "format": "HashValue"
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < GhostdagData >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_GhostdagData",
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "blue_score",
+            "blue_work",
+            "blues_anticone_sizes",
+            "mergeset_blues",
+            "mergeset_reds",
+            "selected_parent"
+          ],
+          "properties": {
+            "blue_score": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "blue_work": {
+              "type": "string"
+            },
+            "blues_anticone_sizes": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer",
+                "format": "uint16",
+                "minimum": 0.0
+              }
+            },
+            "mergeset_blues": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "HashValue"
+              }
+            },
+            "mergeset_reds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "HashValue"
+              }
+            },
+            "selected_parent": {
+              "type": "string",
+              "format": "HashValue"
+            }
+          }
+        }
+      }
     }
   ]
 }

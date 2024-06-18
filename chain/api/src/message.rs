@@ -5,6 +5,7 @@ use crate::{ChainType, TransactionInfoWithProof};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::consenses_state::DagStateView;
+use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
@@ -66,6 +67,7 @@ pub enum ChainRequest {
     },
     GetDagStateView,
     CheckChainType,
+    GetGhostdagData(HashValue),
 }
 
 impl ServiceRequest for ChainRequest {
@@ -96,4 +98,5 @@ pub enum ChainResponse {
     BlockInfoVec(Box<Vec<Option<BlockInfo>>>),
     DagStateView(Box<DagStateView>),
     CheckChainType(ChainType),
+    GhostdagDataOption(Box<Option<GhostdagData>>),
 }

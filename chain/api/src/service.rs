@@ -6,6 +6,7 @@ use crate::{ChainType, TransactionInfoWithProof};
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::consenses_state::DagStateView;
+use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
@@ -76,6 +77,7 @@ pub trait ReadableChainService {
     fn get_dag_block_children(&self, ids: Vec<HashValue>) -> Result<Vec<HashValue>>;
     fn get_dag_state(&self) -> Result<DagStateView>;
     fn check_chain_type(&self) -> Result<ChainType>;
+    fn get_ghostdagdata(&self, id: HashValue) -> Result<Option<GhostdagData>>;
 }
 
 /// Writeable block chain service trait
@@ -146,6 +148,7 @@ pub trait ChainAsyncService:
     async fn get_dag_block_children(&self, hashes: Vec<HashValue>) -> Result<Vec<HashValue>>;
     async fn get_dag_state(&self) -> Result<DagStateView>;
     async fn check_chain_type(&self) -> Result<ChainType>;
+    async fn get_ghostdagdata(&self, id: HashValue) -> Result<Option<GhostdagData>>;
 }
 
 #[async_trait::async_trait]
@@ -470,6 +473,17 @@ where
             Ok(dag_type)
         } else {
             bail!("check chain type error")
+        }
+    }
+
+    async fn get_ghostdagdata(&self, block_hash: HashValue) -> Result<Option<GhostdagData>> {
+        let response = self
+            .send(ChainRequest::GetGhostdagData(block_hash))
+            .await??;
+        if let ChainResponse::GhostdagDataOption(ghostdag_data) = response {
+            Ok(*ghostdag_data)
+        } else {
+            bail!("failed to get ghostdag data")
         }
     }
 }
