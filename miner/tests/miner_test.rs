@@ -10,6 +10,7 @@ use starcoin_miner::{
 };
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::BlockStore;
+use starcoin_sync::block_connector::BlockConnectorService;
 use starcoin_txpool::TxPoolService;
 use starcoin_types::{system_events::GenerateBlockEvent, U256};
 use std::sync::Arc;
@@ -38,6 +39,11 @@ async fn test_miner_service() {
     registry.put_shared(txpool).await.unwrap();
     registry
         .register_mocker(AccountService::mock().unwrap())
+        .await
+        .unwrap();
+
+    registry
+        .register::<BlockConnectorService<TxPoolService>>()
         .await
         .unwrap();
 
