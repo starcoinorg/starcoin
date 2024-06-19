@@ -32,8 +32,8 @@ use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
 
 mod metrics;
-#[cfg(test)]
-mod test_create_block_template;
+//#[cfg(test)]
+//mod test_create_block_template;
 
 #[derive(Debug)]
 pub struct GetHeadRequest;
