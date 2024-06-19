@@ -597,7 +597,10 @@ where
                 .iter()
                 .all(|parent_hash| self.main.dag().has_dag_block(*parent_hash).unwrap_or(false))
         {
-            debug!("block: {:?} is a future dag block, trigger sync to pull other dag blocks", block_id);
+            debug!(
+                "block: {:?} is a future dag block, trigger sync to pull other dag blocks",
+                block_id
+            );
             return Err(ConnectBlockError::FutureBlock(Box::new(block)).into());
         }
 
