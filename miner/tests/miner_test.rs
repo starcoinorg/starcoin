@@ -19,7 +19,7 @@ use tokio::time::sleep;
 
 #[stest::test]
 async fn test_miner_service() {
-    let mut config = NodeConfig::random_for_test();
+    let mut config = NodeConfig::random_for_dag_test();
     config.miner.disable_mint_empty_block = Some(false);
     let registry = RegistryService::launch();
     let node_config = Arc::new(config.clone());
