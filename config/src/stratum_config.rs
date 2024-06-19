@@ -44,7 +44,7 @@ impl StratumConfig {
         let base = self.base();
         let address = self.address.unwrap_or(DEFAULT_STRATUM_ADDRESS).to_string();
         let port = self.port.unwrap_or_else(|| {
-            if base.net().is_test() {
+            if base.net().is_test() || base.net().is_dag_test() {
                 get_random_available_port()
             } else if base.net().is_dev() {
                 get_available_port_from(DEFAULT_STRATUM_PORT)

@@ -2,14 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::metrics::ChainMetrics;
-#[cfg(test)]
-use ::test_helper::dao::{
-    execute_script_on_chain_config, modify_on_chain_config_by_dao_block, on_chain_config_type_tag,
-    vote_flexi_dag_config,
-};
 use anyhow::{format_err, Ok, Result};
 use starcoin_chain::BlockChain;
-use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
+use starcoin_chain_api::{
+    ChainReader, ChainType, ChainWriter, ConnectBlockError, WriteableChainService,
+};
 use starcoin_config::NodeConfig;
 #[cfg(test)]
 use starcoin_consensus::Consensus;
@@ -21,17 +18,13 @@ use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{ServiceContext, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::block::{BlockInfo, DagHeaderType};
+use starcoin_types::block::BlockInfo;
 use starcoin_types::system_events::NewDagBlock;
-#[cfg(test)]
-use starcoin_types::{account::Account, block::BlockNumber};
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
     system_events::{NewBranch, NewHeadBlock},
 };
-#[cfg(test)]
-use starcoin_vm_types::on_chain_config::FlexiDagConfig;
 #[cfg(test)]
 use starcoin_vm_types::{account_address::AccountAddress, transaction::SignedUserTransaction};
 use std::{fmt::Formatter, sync::Arc};
@@ -159,9 +152,8 @@ where
         bus: ServiceRef<BusService>,
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
-        fork_number: BlockNumber,
     ) -> Result<Self> {
-        let mut this: WriteBlockChainService<TransactionPoolServiceT> = Self::new(
+        let this: WriteBlockChainService<TransactionPoolServiceT> = Self::new(
             config.clone(),
             startup_info,
             storage,
@@ -169,14 +161,6 @@ where
             bus,
             vm_metrics,
             dag,
-        )?;
-        this.main = modify_on_chain_config_by_dao_block(
-            Account::new(),
-            this.main,
-            config.net(),
-            vote_flexi_dag_config(config.net(), fork_number),
-            on_chain_config_type_tag(FlexiDagConfig::type_tag()),
-            execute_script_on_chain_config(config.net(), FlexiDagConfig::type_tag(), 0u64),
         )?;
         Ok(this)
     }
@@ -259,14 +243,21 @@ where
 
     #[cfg(test)]
     pub fn apply_failed(&mut self, block: Block) -> Result<()> {
-        use starcoin_chain::verifier::FullVerifier;
+        use anyhow::bail;
+        use starcoin_chain::verifier::{DagBasicVerifier, FullVerifier};
 
-        // apply but no connection
-        let verified_block = self.main.verify_with_verifier::<FullVerifier>(block)?;
-        let executed_block = self.main.execute(verified_block)?;
-        let enacted_blocks = vec![executed_block.block().clone()];
-        self.do_new_head(executed_block, 1, enacted_blocks, 0, vec![])?;
-        Ok(())
+        let verified_block = match self.main.check_chain_type()? {
+            ChainType::Single => {
+                // apply but no connection
+                self.main.verify_with_verifier::<FullVerifier>(block)?
+            }
+            ChainType::Dag => {
+                // apply but no connection
+                self.main.verify_with_verifier::<DagBasicVerifier>(block)?
+            }
+        };
+        let _executed_block = self.main.execute(verified_block)?;
+        bail!("In test case, return a failure intentionally to force sync to reconnect the block");
     }
 
     // for sync task to connect to its chain, if chain's total difficulties is larger than the main
@@ -543,7 +534,7 @@ where
         }
 
         // the single chain no need to broadcast the block, it is only for dag
-        if chain.check_dag_type(chain.status().head())? == DagHeaderType::Single {
+        if chain.check_chain_type()? == ChainType::Single {
             return Ok(());
         }
 

@@ -7,7 +7,7 @@ use anyhow::{bail, Ok};
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_chain_service::WriteableChainService;
-use starcoin_config::{genesis_config::G_TEST_DAG_FORK_HEIGHT, ChainNetwork, NodeConfig};
+use starcoin_config::{ChainNetwork, NodeConfig};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_txpool_mock_service::MockTxPoolService;
@@ -29,7 +29,7 @@ pub fn gen_dag_blocks(
             println!("try_connect result: {:?}", e);
             assert!(e.is_ok());
             if (i + 1) % 3 == 0 {
-                writeable_block_chain_service.time_sleep(5000000);
+                writeable_block_chain_service.time_sleep(5000);
             }
         }
         Ok(last_block_hash.ok_or_else(|| anyhow::anyhow!("last block hash is none"))?)
@@ -48,41 +48,10 @@ pub fn new_dag_block(
         None => AccountInfo::random(),
     };
     let miner_address = *miner.address();
-    let dag_fork_height = writeable_block_chain_service
-        .get_main()
-        .dag_fork_height()?
-        .ok_or_else(|| anyhow::anyhow!("dag fork height is none, can not create dag block"))?;
-
-    if writeable_block_chain_service
-        .get_main()
-        .current_header()
-        .number()
-        < dag_fork_height
-    {
-        let gap = dag_fork_height.saturating_sub(
-            writeable_block_chain_service
-                .get_main()
-                .current_header()
-                .number(),
-        );
-        for _i in 0..gap {
-            let block_chain = writeable_block_chain_service.get_main();
-            let block_template = block_chain
-                .create_block_template(miner_address, None, Vec::new(), vec![], None, None)
-                .unwrap()
-                .0;
-            let block = block_chain
-                .consensus()
-                .create_block(block_template, net.time_service().as_ref())
-                .unwrap();
-            writeable_block_chain_service.execute(block.clone())?;
-            writeable_block_chain_service.try_connect(block)?;
-        }
-    }
 
     let block_chain = writeable_block_chain_service.get_main();
     let (_dag_genesis, tips) = block_chain
-        .current_tips_hash(&block_chain.current_header())
+        .current_tips_hash()
         .expect("failed to get tips")
         .expect("failed to get the tip and dag genesis");
     let (block_template, _) = block_chain
@@ -104,7 +73,7 @@ pub fn new_dag_block(
 async fn test_dag_block_chain_apply() {
     let times = 12;
     let (mut writeable_block_chain_service, node_config, _) =
-        create_writeable_dag_block_chain(G_TEST_DAG_FORK_HEIGHT).await;
+        create_writeable_dag_block_chain().await;
     let net = node_config.net();
     let last_header_id = gen_dag_blocks(times, &mut writeable_block_chain_service, net);
     assert_eq!(
@@ -168,7 +137,7 @@ fn gen_fork_dag_block_chain(
 async fn test_block_dag_chain_switch_main() -> anyhow::Result<()> {
     let times = 12;
     let (mut writeable_block_chain_service, node_config, _) =
-        create_writeable_dag_block_chain(G_TEST_DAG_FORK_HEIGHT).await;
+        create_writeable_dag_block_chain().await;
     let net = node_config.net();
     let mut last_block = gen_dag_blocks(times, &mut writeable_block_chain_service, net)?;
     assert_eq!(
@@ -202,7 +171,7 @@ async fn test_block_dag_chain_switch_main() -> anyhow::Result<()> {
 async fn test_block_chain_reset() -> anyhow::Result<()> {
     let times = 10;
     let (mut writeable_block_chain_service, node_config, _) =
-        create_writeable_dag_block_chain(G_TEST_DAG_FORK_HEIGHT).await;
+        create_writeable_dag_block_chain().await;
     let net = node_config.net();
     let last_block = gen_dag_blocks(times, &mut writeable_block_chain_service, net)?;
     assert_eq!(

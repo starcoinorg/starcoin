@@ -4,12 +4,12 @@
 use anyhow::{format_err, Result};
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_chain_api::{
-    verify_block, ChainReader, ConnectBlockError, VerifiedBlock, VerifyBlockField,
+    verify_block, ChainReader, ChainType, ConnectBlockError, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_logger::prelude::debug;
 use starcoin_open_block::AddressFilter;
-use starcoin_types::block::{Block, BlockHeader, DagHeaderType, ALLOWED_FUTURE_BLOCKTIME};
+use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
 use std::{collections::HashSet, str::FromStr};
 
 #[derive(Debug, Clone)]
@@ -267,7 +267,7 @@ impl BlockVerifier for BasicVerifier {
 
         verify_block!(
             VerifyBlockField::Header,
-            current_chain.check_dag_type(new_block_header)? != DagHeaderType::Normal
+            current_chain.check_chain_type()? == ChainType::Single
                 && new_block_header
                     .parents_hash()
                     .unwrap_or_default()
@@ -359,7 +359,7 @@ impl BlockVerifier for DagVerifier {
         verify_block!(
             VerifyBlockField::Header,
             !parents_hash_to_check.is_empty() && parents_hash.len() == parents_hash_to_check.len(),
-            "Invalid parents_hash {:?} for a dag block {}",
+            "Invalid parents_hash in dag verifier {:?} for a dag block {}",
             new_block_header.parents_hash(),
             new_block_header.number(),
         );
@@ -450,7 +450,7 @@ impl BlockVerifier for DagBasicVerifier {
         verify_block!(
             VerifyBlockField::Header,
             !parents_hash_to_check.is_empty() && parents_hash.len() == parents_hash_to_check.len(),
-            "Invalid parents_hash {:?} for a dag block {}",
+            "Invalid parents_hash in dag basic verifier {:?} for a dag block {}",
             new_block_header.parents_hash(),
             new_block_header.number(),
         );

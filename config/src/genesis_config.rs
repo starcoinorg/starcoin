@@ -17,7 +17,6 @@ use starcoin_crypto::{
 use starcoin_gas::StarcoinGasParameters;
 use starcoin_gas_algebra_ext::{CostTable, FromOnChainGasSchedule};
 use starcoin_time_service::{TimeService, TimeServiceType};
-use starcoin_types::block::BlockNumber;
 use starcoin_uint::U256;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::event::EventHandle;
@@ -77,6 +76,8 @@ pub enum BuiltinNetworkID {
     /// Starcoin permanent test network,
     /// Barnard's Star is a red dwarf about six light-years away from Earth in the constellation of Ophiuchus.
     Barnard = 251,
+    /// A ephemeral dag-related network just for developer test.
+    DagTest = 250,
     /// Starcoin main net.
     #[default]
     Main = 1,
@@ -91,6 +92,7 @@ impl Display for BuiltinNetworkID {
             BuiltinNetworkID::Proxima => write!(f, "proxima"),
             BuiltinNetworkID::Barnard => write!(f, "barnard"),
             BuiltinNetworkID::Main => write!(f, "main"),
+            BuiltinNetworkID::DagTest => write!(f, "dagtest"),
         }
     }
 }
@@ -106,6 +108,7 @@ impl FromStr for BuiltinNetworkID {
             "proxima" => Ok(BuiltinNetworkID::Proxima),
             "barnard" => Ok(BuiltinNetworkID::Barnard),
             "main" => Ok(BuiltinNetworkID::Main),
+            "dagtest" => Ok(BuiltinNetworkID::DagTest),
             s => Err(format_err!("Unknown network: {}", s)),
         }
     }
@@ -119,6 +122,7 @@ impl TryFrom<ChainId> for BuiltinNetworkID {
             253 => Self::Halley,
             252 => Self::Proxima,
             251 => Self::Barnard,
+            250 => Self::DagTest,
             1 => Self::Main,
             id => bail!("{} is not a builtin chain id", id),
         })
@@ -161,6 +165,10 @@ impl BuiltinNetworkID {
         matches!(self, BuiltinNetworkID::Halley)
     }
 
+    pub fn is_dag_test(self) -> bool {
+        matches!(self, BuiltinNetworkID::DagTest)
+    }
+
     pub fn networks() -> Vec<BuiltinNetworkID> {
         vec![
             BuiltinNetworkID::Test,
@@ -169,6 +177,7 @@ impl BuiltinNetworkID {
             BuiltinNetworkID::Proxima,
             BuiltinNetworkID::Barnard,
             BuiltinNetworkID::Main,
+            BuiltinNetworkID::DagTest,
         ]
     }
 
@@ -180,6 +189,7 @@ impl BuiltinNetworkID {
             BuiltinNetworkID::Proxima => &G_PROXIMA_CONFIG,
             BuiltinNetworkID::Barnard => &G_BARNARD_CONFIG,
             BuiltinNetworkID::Main => &G_MAIN_CONFIG,
+            BuiltinNetworkID::DagTest => &G_DAG_TEST_CONFIG,
         }
     }
 
@@ -191,12 +201,15 @@ impl BuiltinNetworkID {
             BuiltinNetworkID::Proxima => G_PROXIMA_BOOT_NODES.as_slice(),
             BuiltinNetworkID::Barnard => G_BARNARD_BOOT_NODES.as_slice(),
             BuiltinNetworkID::Main => G_MAIN_BOOT_NODES.as_slice(),
+            BuiltinNetworkID::DagTest => G_EMPTY_BOOT_NODES.as_slice(),
         }
     }
 
     pub fn boot_nodes_domain(self) -> String {
         match self {
-            BuiltinNetworkID::Test | BuiltinNetworkID::Dev => "localhost".to_string(),
+            BuiltinNetworkID::Test | BuiltinNetworkID::Dev | BuiltinNetworkID::DagTest => {
+                "localhost".to_string()
+            }
             _ => format!("{}.seed.starcoin.org", self),
         }
     }
@@ -315,6 +328,7 @@ impl ChainNetworkID {
     pub const PROXIMA: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::Proxima);
     pub const BARNARD: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::Barnard);
     pub const MAIN: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::Main);
+    pub const DAGTEST: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::DagTest);
 
     pub fn new_builtin(network: BuiltinNetworkID) -> Self {
         Self::Builtin(network)
@@ -346,7 +360,11 @@ impl ChainNetworkID {
     }
 
     pub fn is_test_or_dev(&self) -> bool {
-        self.is_test() || self.is_dev()
+        self.is_test() || self.is_dev() || self.is_dag_test()
+    }
+
+    pub fn is_dag_test(&self) -> bool {
+        matches!(self, Self::Builtin(BuiltinNetworkID::DagTest))
     }
 
     pub fn is_test(&self) -> bool {
@@ -490,6 +508,10 @@ impl ChainNetwork {
 
     pub fn is_halley(&self) -> bool {
         self.id.is_halley()
+    }
+
+    pub fn is_dag_test(&self) -> bool {
+        self.id.is_dag_test()
     }
 
     pub fn is_main(&self) -> bool {
@@ -717,9 +739,56 @@ pub static G_BASE_BLOCK_GAS_LIMIT: u64 = 50_000_000; //must big than maximum_num
 static G_EMPTY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(Vec::new);
 const ONE_DAY: u64 = 86400;
 
-// for test
-pub static G_TEST_DAG_FORK_HEIGHT: BlockNumber = 20;
-pub static G_TEST_DAG_FORK_STATE_KEY: Lazy<HashValue> = Lazy::new(|| 0.into());
+pub static G_DAG_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
+    let (association_private_key, association_public_key) = genesis_multi_key_pair();
+    let (genesis_private_key, genesis_public_key) = genesis_key_pair();
+
+    GenesisConfig {
+        genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
+            parent_hash: HashValue::sha3_256_of(b"starcoin_dag_test"),
+            //Test timestamp set to 0 for mock time.
+            timestamp: 0,
+            difficulty: 1.into(),
+        }),
+        version: Version { major: 1 },
+        reward_delay: 1,
+        pre_mine_amount: G_DEFAULT_PRE_MINT_AMOUNT.scaling(),
+        time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
+        time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD,
+        vm_config: VMConfig {
+            gas_schedule: latest_cost_table(G_TEST_GAS_CONSTANTS.clone()),
+        },
+        publishing_option: TransactionPublishOption::open(),
+        consensus_config: ConsensusConfig {
+            uncle_rate_target: G_UNCLE_RATE_TARGET,
+            base_block_time_target: G_DEFAULT_BASE_BLOCK_TIME_TARGET,
+            base_reward_per_block: G_DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
+            epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 2,
+            base_block_difficulty_window: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW,
+            base_reward_per_uncle_percent: G_BASE_REWARD_PER_UNCLE_PERCENT,
+            min_block_time_target: G_MIN_BLOCK_TIME_TARGET,
+            max_block_time_target: G_MAX_BLOCK_TIME_TARGET,
+            base_max_uncles_per_block: G_BASE_MAX_UNCLES_PER_BLOCK,
+            base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT * 10,
+            strategy: ConsensusStrategy::Dummy.value(),
+        },
+        association_key_pair: (
+            Some(Arc::new(association_private_key)),
+            association_public_key,
+        ),
+        genesis_key_pair: Some((Arc::new(genesis_private_key), genesis_public_key)),
+        time_service_type: TimeServiceType::MockTimeService,
+        stdlib_version: StdlibVersion::Latest,
+        dao_config: DaoConfig {
+            voting_delay: 60_000,          // 1min
+            voting_period: 60 * 60 * 1000, // 1h
+            voting_quorum_rate: 4,
+            min_action_delay: 60 * 60 * 1000, // 1h
+        },
+        transaction_timeout: ONE_DAY,
+        dag_effective_height: 0,
+    }
+});
 
 pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_multi_key_pair();
@@ -881,8 +950,7 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
-        // todo: rollback it to zero and initialize BlockDag properly
-        dag_effective_height: 1u64,
+        dag_effective_height: 0,
     }
 });
 

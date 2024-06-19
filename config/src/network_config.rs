@@ -362,7 +362,7 @@ impl NetworkConfig {
             self.generate_listen = self.listen.clone();
         } else {
             let base = self.base();
-            let port = if base.net().is_test() {
+            let port = if base.net().is_test() || base.net().is_dag_test() {
                 get_random_available_port()
             } else if base.net().is_dev() {
                 get_available_port_from(G_DEFAULT_NETWORK_PORT)
@@ -371,7 +371,7 @@ impl NetworkConfig {
             };
 
             //test env use in memory transport.
-            let listen = if base.net().is_test() {
+            let listen = if base.net().is_test() || base.net().is_dag_test() {
                 memory_addr(port as u64)
             } else {
                 format!("/ip4/0.0.0.0/tcp/{}", port)

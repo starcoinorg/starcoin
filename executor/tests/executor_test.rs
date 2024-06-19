@@ -123,7 +123,7 @@ fn test_flexidag_config_get_for_halley() {
         vm.get_flexidag_config().unwrap().effective_height
     };
 
-    assert_eq!(version, 1);
+    assert_eq!(version, 0);
 }
 
 #[stest::test]

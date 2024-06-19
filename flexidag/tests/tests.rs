@@ -726,7 +726,7 @@ fn add_and_print(
     parents: Vec<Hash>,
     origin: Hash,
     dag: &mut BlockDAG,
-) -> anyhow::Result<Hash> {
+) -> anyhow::Result<BlockHeader> {
     let header_builder = BlockHeaderBuilder::random();
     let header = header_builder
         .with_parent_hash(parent)
@@ -739,7 +739,7 @@ fn add_and_print(
         "add a header: {:?}, blue set: {:?}, red set: {:?}, blue anticone size: {:?}",
         header, ghostdata.mergeset_blues, ghostdata.mergeset_reds, ghostdata.blues_anticone_sizes
     );
-    Ok(header.id())
+    Ok(header)
 }
 
 #[test]
@@ -764,8 +764,9 @@ fn test_dag_mergeset() -> anyhow::Result<()> {
         parents_hash,
         genesis.parent_hash(),
         &mut dag,
-    )?;
-    let red = add_and_print(3, header, vec![header], genesis.parent_hash(), &mut dag)?;
+    )?
+    .id();
+    let red = add_and_print(3, header, vec![header], genesis.parent_hash(), &mut dag)?.id();
 
     parents_hash = vec![genesis.id()];
     parent_hash = genesis.id();
@@ -776,12 +777,13 @@ fn test_dag_mergeset() -> anyhow::Result<()> {
         parents_hash,
         genesis.parent_hash(),
         &mut dag,
-    )?;
-    header = add_and_print(3, header, vec![header], genesis.parent_hash(), &mut dag)?;
-    header = add_and_print(4, header, vec![header], genesis.parent_hash(), &mut dag)?;
+    )?
+    .id();
+    header = add_and_print(3, header, vec![header], genesis.parent_hash(), &mut dag)?.id();
+    header = add_and_print(4, header, vec![header], genesis.parent_hash(), &mut dag)?.id();
     let blue = header;
 
-    header = add_and_print(5, blue, vec![blue, red], genesis.parent_hash(), &mut dag)?;
+    header = add_and_print(5, blue, vec![blue, red], genesis.parent_hash(), &mut dag)?.id();
 
     let ghostdata = dag.ghostdata(&[header, red])?;
     println!(

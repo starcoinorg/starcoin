@@ -57,7 +57,7 @@ impl LoggerConfig {
 
     pub fn disable_file(&self) -> bool {
         self.disable_file
-            .unwrap_or_else(|| self.base().net().is_test())
+            .unwrap_or_else(|| self.base().net().is_test() || self.base().net().is_dag_test())
     }
 
     pub fn disable_stderr(&self) -> bool {
@@ -67,7 +67,7 @@ impl LoggerConfig {
     pub fn max_file_size(&self) -> u64 {
         self.max_file_size.unwrap_or_else(|| {
             let base = self.base();
-            if base.net().is_test() || base.net().is_dev() {
+            if base.net().is_test() || base.net().is_dev() || base.net().is_dag_test() {
                 MAX_FILE_SIZE_FOR_TEST
             } else {
                 DEFAULT_MAX_FILE_SIZE
@@ -78,7 +78,7 @@ impl LoggerConfig {
     pub fn max_backup(&self) -> u32 {
         self.max_backup.unwrap_or_else(|| {
             let base = self.base();
-            if base.net().is_test() {
+            if base.net().is_test() || base.net().is_dag_test() {
                 1
             } else if base.net().is_dev() {
                 2

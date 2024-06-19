@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::create_block_template::metrics::BlockBuilderMetrics;
-use anyhow::{anyhow, format_err, Result};
+use anyhow::{anyhow, bail, format_err, Result};
 use futures::executor::block_on;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_account_service::AccountService;
 use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
+use starcoin_chain_api::ChainType;
 use starcoin_config::ChainNetwork;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
@@ -306,6 +307,31 @@ where
         }
     }
 
+    fn get_dag_previous_header(
+        &self,
+        previous_header: BlockHeader,
+        selected_parent: HashValue,
+    ) -> Result<BlockHeader> {
+        if previous_header.id() == selected_parent {
+            return Ok(previous_header);
+        }
+
+        if self
+            .chain
+            .dag()
+            .check_ancestor_of(previous_header.id(), vec![selected_parent])?
+        {
+            return self
+                .storage
+                .get_block_header_by_hash(selected_parent)?
+                .ok_or_else(|| {
+                    format_err!("BlockHeader should exist by hash: {}", selected_parent)
+                });
+        }
+
+        Ok(previous_header)
+    }
+
     pub fn create_block_template(&self) -> Result<BlockTemplateResponse> {
         let on_chain_block_gas_limit = self.chain.epoch().block_gas_limit();
         let block_gas_limit = self
@@ -319,8 +345,7 @@ where
 
         let txns = self.tx_provider.get_txns(max_txns);
         let author = *self.miner_account.address();
-        let previous_header = self.chain.current_header();
-        let current_number = previous_header.number().saturating_add(1);
+        let mut previous_header = self.chain.current_header();
         let epoch = self.chain.epoch();
         let strategy = epoch.strategy();
 
@@ -333,18 +358,16 @@ where
             now_millis = previous_header.timestamp() + 1;
         }
         let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
-        let tips_hash = if current_number > self.chain.dag_fork_height()?.unwrap_or(u64::MAX) {
-            let (_dag_genesis, tips_hash) = self
-                .chain
-                .current_tips_hash(&previous_header)?
-                .ok_or_else(|| {
+        let tips_hash = match self.chain.check_chain_type()? {
+            ChainType::Single => None,
+            ChainType::Dag => {
+                let (_dag_genesis, tips_hash) = self.chain.current_tips_hash()?.ok_or_else(|| {
                     anyhow!(
-                    "the number of the block is larger than the dag fork number but no dag state!"
-                )
+                        "the number of the block is larger than the dag fork number but no dag state!"
+                    )
                 })?;
-            Some(tips_hash)
-        } else {
-            None
+                Some(tips_hash)
+            }
         };
         info!(
             "block:{} tips(dag state):{:?}",
@@ -356,13 +379,18 @@ where
                 None => (self.find_uncles(), None),
                 Some(tips) => {
                     let mut blues = self.dag.ghostdata(tips)?.mergeset_blues.to_vec();
+                    if blues.is_empty() {
+                        bail!("The count of ghostdata returns mergeset blues is empty");
+                    }
                     info!(
                         "create block template with tips:{:?},ghostdata blues:{:?}",
                         &tips_hash, blues
                     );
                     let mut blue_blocks = vec![];
 
-                    let __selected_parent = blues.remove(0);
+                    let selected_parent = blues.remove(0);
+                    previous_header =
+                        self.get_dag_previous_header(previous_header, selected_parent)?;
                     for blue in &blues {
                         // todo: make sure blue block has been executed successfully
                         let block = self

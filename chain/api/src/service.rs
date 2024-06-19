@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2
 
 use crate::message::{ChainRequest, ChainResponse};
-use crate::TransactionInfoWithProof;
+use crate::{ChainType, TransactionInfoWithProof};
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::consenses_state::DagStateView;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
-use starcoin_types::block::DagHeaderType;
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainStatus;
@@ -77,8 +76,7 @@ pub trait ReadableChainService {
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
     fn get_dag_block_children(&self, ids: Vec<HashValue>) -> Result<Vec<HashValue>>;
     fn get_dag_state(&self) -> Result<DagStateView>;
-    fn check_dag_type(&self, header: &BlockHeader) -> Result<DagHeaderType>;
-    fn dag_fork_height(&self) -> Result<Option<BlockNumber>>;
+    fn check_chain_type(&self) -> Result<ChainType>;
     fn get_ghostdagdata(&self, id: HashValue) -> Result<Option<GhostdagData>>;
 }
 
@@ -149,8 +147,7 @@ pub trait ChainAsyncService:
     async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
     async fn get_dag_block_children(&self, hashes: Vec<HashValue>) -> Result<Vec<HashValue>>;
     async fn get_dag_state(&self) -> Result<DagStateView>;
-    async fn check_dag_type(&self, id: HashValue) -> Result<DagHeaderType>;
-    async fn dag_fork_height(&self) -> Result<Option<BlockNumber>>;
+    async fn check_chain_type(&self) -> Result<ChainType>;
     async fn get_ghostdagdata(&self, id: HashValue) -> Result<Option<GhostdagData>>;
 }
 
@@ -470,20 +467,12 @@ where
         }
     }
 
-    async fn check_dag_type(&self, id: HashValue) -> Result<DagHeaderType> {
-        let response = self.send(ChainRequest::CheckDagType(id)).await??;
-        if let ChainResponse::CheckDagType(dag_type) = response {
+    async fn check_chain_type(&self) -> Result<ChainType> {
+        let response = self.send(ChainRequest::CheckChainType).await??;
+        if let ChainResponse::CheckChainType(dag_type) = response {
             Ok(dag_type)
         } else {
-            bail!("check dag type error")
-        }
-    }
-    async fn dag_fork_height(&self) -> Result<Option<BlockNumber>> {
-        let response = self.send(ChainRequest::DagForkHeigh).await??;
-        if let ChainResponse::DagForkHeight(dag_fork_height) = response {
-            Ok(dag_fork_height)
-        } else {
-            bail!("failed to get dag fork height")
+            bail!("check chain type error")
         }
     }
 

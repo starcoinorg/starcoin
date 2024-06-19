@@ -160,8 +160,6 @@ fn test_multiple_node_sync() -> Result<()> {
         .expect("failed to initialize multiple nodes");
 
     let main_node = nodes.first().expect("failed to get main node");
-    common_test_sync_libs::generate_dag_fork_number(main_node)
-        .expect("failed to generate dag block");
 
     let main_node_chain_service = main_node
         .chain_service()

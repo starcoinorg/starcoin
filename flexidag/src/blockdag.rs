@@ -13,7 +13,6 @@ use crate::consensusdb::{
 use crate::ghostdag::protocol::GhostdagManager;
 use crate::{process_key_already_error, reachability};
 use anyhow::{bail, Ok};
-use bcs_ext::BCSCodec;
 use starcoin_config::{temp_dir, RocksdbConfig};
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::info;
@@ -87,29 +86,21 @@ impl BlockDAG {
         let genesis_id = genesis.id();
         let origin = genesis.parent_hash();
 
-        let real_origin = Hash::sha3_256_of(&[origin, genesis_id].encode()?);
-
-        if self.storage.relations_store.read().has(real_origin)? {
-            return Ok(real_origin);
-        }
-        inquirer::init(
-            self.storage.reachability_store.write().deref_mut(),
-            real_origin,
-        )?;
+        inquirer::init(self.storage.reachability_store.write().deref_mut(), origin)?;
 
         self.storage
             .relations_store
             .write()
-            .insert(real_origin, BlockHashes::new(vec![]))?;
+            .insert(origin, BlockHashes::new(vec![]))?;
 
-        self.commit(genesis, real_origin)?;
+        self.commit(genesis, origin)?;
         self.save_dag_state(
             genesis_id,
             DagState {
                 tips: vec![genesis_id],
             },
         )?;
-        Ok(real_origin)
+        Ok(origin)
     }
     pub fn ghostdata(&self, parents: &[HashValue]) -> anyhow::Result<GhostdagData> {
         self.ghostdag_manager.ghostdag(parents)
@@ -216,13 +207,11 @@ impl BlockDAG {
         // store relations
         // It must be the dag genesis if header is a format for a single chain
         if header.is_single() {
-            let origin = header.parent_hash();
-            let real_origin = Hash::sha3_256_of(&[origin, header.id()].encode()?);
             process_key_already_error(
                 self.storage
                     .relations_store
                     .write()
-                    .insert(header.id(), BlockHashes::new(vec![real_origin])),
+                    .insert(header.id(), BlockHashes::new(vec![origin])),
             )?;
         } else {
             process_key_already_error(

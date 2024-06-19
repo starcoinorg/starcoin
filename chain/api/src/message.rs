@@ -1,13 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::TransactionInfoWithProof;
+use crate::{ChainType, TransactionInfoWithProof};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::consenses_state::DagStateView;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_service_registry::ServiceRequest;
-use starcoin_types::block::DagHeaderType;
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
@@ -67,8 +66,7 @@ pub enum ChainRequest {
         block_ids: Vec<HashValue>,
     },
     GetDagStateView,
-    CheckDagType(HashValue),
-    DagForkHeigh,
+    CheckChainType,
     GetGhostdagData(HashValue),
 }
 
@@ -99,7 +97,6 @@ pub enum ChainResponse {
     TransactionProof(Box<Option<TransactionInfoWithProof>>),
     BlockInfoVec(Box<Vec<Option<BlockInfo>>>),
     DagStateView(Box<DagStateView>),
-    CheckDagType(DagHeaderType),
-    DagForkHeight(Option<BlockNumber>),
+    CheckChainType(ChainType),
     GhostdagDataOption(Box<Option<GhostdagData>>),
 }

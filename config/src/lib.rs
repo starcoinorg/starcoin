@@ -290,7 +290,7 @@ impl BaseConfig {
         let base_data_dir = match opt.base_data_dir.clone() {
             Some(base_data_dir) if base_data_dir.to_str() == Some("TMP") => temp_dir(),
             Some(base_data_dir) => DataDirPath::PathBuf(base_data_dir),
-            None if id.is_test() => temp_dir(),
+            None if id.is_test() || id.is_dag_test() => temp_dir(),
             None => DataDirPath::PathBuf(G_DEFAULT_BASE_DATA_DIR.to_path_buf()),
         };
 
@@ -470,6 +470,14 @@ impl NodeConfig {
             ..StarcoinOpt::default()
         };
         Self::load_with_opt(&opt).expect("Auto generate test config should success.")
+    }
+
+    pub fn random_for_dag_test() -> Self {
+        let opt = StarcoinOpt {
+            net: Some(BuiltinNetworkID::DagTest.into()),
+            ..StarcoinOpt::default()
+        };
+        Self::load_with_opt(&opt).expect("Auto generate dag test config should success.")
     }
 
     pub fn random_for_test_disable_miner(disable_mint: bool) -> Self {
