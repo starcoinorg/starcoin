@@ -538,18 +538,24 @@ where
             return Ok(());
         }
 
-        let block = chain.get_block(block_id)?.ok_or_else(|| {
-            format_err!(
-                "failed to get the block after executing the block: {:?}",
-                block_id
-            )
-        })?;
-        let block_info = chain.get_block_info(Some(block_id))?.ok_or_else(|| {
-            format_err!(
-                "failed to get the block info after executing the block: {:?}",
-                block_id
-            )
-        })?;
+        let block = chain
+            .get_storage()
+            .get_block_by_hash(block_id)?
+            .ok_or_else(|| {
+                format_err!(
+                    "failed to get the block after executing the block: {:?}",
+                    block_id
+                )
+            })?;
+        let block_info = chain
+            .get_storage()
+            .get_block_info(block_id)?
+            .ok_or_else(|| {
+                format_err!(
+                    "failed to get the block info after executing the block: {:?}",
+                    block_id
+                )
+            })?;
 
         self.bus
             .broadcast(NewDagBlock {
