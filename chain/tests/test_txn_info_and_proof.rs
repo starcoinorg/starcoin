@@ -3,11 +3,9 @@ use rand::Rng;
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain_api::{ChainReader, ChainWriter};
-use starcoin_config::genesis_config::{G_TEST_DAG_FORK_HEIGHT, G_TEST_DAG_FORK_STATE_KEY};
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::consenses_state::DagState;
 use starcoin_logger::prelude::debug;
 use starcoin_transaction_builder::{peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::account_config;
@@ -92,15 +90,7 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
     fork_chain.apply(block).unwrap();
     assert_eq!(
         block_chain.current_header().id(),
-        block_chain
-            .get_block_by_number(
-                G_TEST_DAG_FORK_HEIGHT
-                    .checked_add(5)
-                    .ok_or_else(|| format_err!("failed add the block number for overflow"))?
-            )
-            .unwrap()
-            .unwrap()
-            .id()
+        block_chain.get_block_by_number(5).unwrap().unwrap().id()
     );
     // create latest block
     let account_reader = block_chain.chain_state_reader();
@@ -117,15 +107,7 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
     block_chain.apply(block).unwrap();
     assert_eq!(
         block_chain.current_header().id(),
-        block_chain
-            .get_block_by_number(
-                G_TEST_DAG_FORK_HEIGHT
-                    .checked_add(6)
-                    .ok_or_else(|| format_err!("overflow in calulation of the latest number"))?
-            )
-            .unwrap()
-            .unwrap()
-            .id()
+        block_chain.get_block_by_number(6).unwrap().unwrap().id()
     );
     Ok(())
 }
