@@ -1,0 +1,9 @@
+[bundle]
+name = "Starcoin Node Viewer"
+authors = "Starcoin Core Devs"
+identifier = "org.starcoin.magixbox"
+version = "0.0.1"
+#icon = "path/to/icon.icns"
+
+[bundle.mac]
+frameworks = []
