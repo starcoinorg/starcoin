@@ -2,38 +2,33 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::create_block_template::metrics::BlockBuilderMetrics;
-use anyhow::{anyhow, bail, format_err, Result};
+use anyhow::{format_err, Result};
 use futures::executor::block_on;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_account_service::AccountService;
-use starcoin_chain::BlockChain;
-use starcoin_chain::{ChainReader, ChainWriter};
-use starcoin_chain_api::ChainType;
-use starcoin_config::ChainNetwork;
+
 use starcoin_config::NodeConfig;
-use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::HashValue;
-use starcoin_dag::blockdag::BlockDAG;
+
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
+    ServiceRequest,
 };
-use starcoin_storage::{BlockStore, Storage, Store};
+use starcoin_storage::{Storage, Store};
+use starcoin_sync::block_connector::{BlockConnectorService, MinerRequest, MinerResponse};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::{
-    block::{BlockHeader, BlockTemplate, ExecutedBlock},
-    system_events::{NewBranch, NewHeadBlock},
-};
+use starcoin_types::block::{BlockHeader, BlockTemplate};
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::cmp::min;
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 mod metrics;
-#[cfg(test)]
-mod test_create_block_template;
+//#[cfg(test)]
+//mod test_create_block_template;
 
 #[derive(Debug)]
 pub struct GetHeadRequest;
@@ -56,7 +51,7 @@ pub struct BlockTemplateResponse {
 }
 
 pub struct BlockBuilderService {
-    inner: Inner<TxPoolService>,
+    inner: Inner<TxPoolService, TxPoolService>,
 }
 
 impl BlockBuilderService {}
@@ -65,9 +60,9 @@ impl ServiceFactory<Self> for BlockBuilderService {
     fn create(ctx: &mut ServiceContext<BlockBuilderService>) -> Result<BlockBuilderService> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
-        let startup_info = storage
-            .get_startup_info()?
-            .expect("Startup info should exist when service start.");
+        let connector_service = ctx
+            .service_ref::<BlockConnectorService<TxPoolService>>()?
+            .clone();
         //TODO support get service ref by AsyncAPI;
         let account_service = ctx.service_ref::<AccountService>()?;
         let miner_account = block_on(async { account_service.get_default_account().await })?
@@ -81,18 +76,15 @@ impl ServiceFactory<Self> for BlockBuilderService {
             .and_then(|registry| BlockBuilderMetrics::register(registry).ok());
 
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        let dag = ctx.get_shared::<BlockDAG>()?;
 
         let inner = Inner::new(
-            config.net(),
+            connector_service,
             storage,
-            startup_info.main,
             txpool,
             config.miner.block_gas_limit,
             miner_account,
             metrics,
             vm_metrics,
-            dag,
         )?;
         Ok(Self { inner })
     }
@@ -100,31 +92,13 @@ impl ServiceFactory<Self> for BlockBuilderService {
 
 impl ActorService for BlockBuilderService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.subscribe::<NewHeadBlock>();
-        ctx.subscribe::<NewBranch>();
         ctx.subscribe::<DefaultAccountChangeEvent>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.unsubscribe::<NewHeadBlock>();
-        ctx.unsubscribe::<NewBranch>();
         ctx.unsubscribe::<DefaultAccountChangeEvent>();
         Ok(())
-    }
-}
-
-impl EventHandler<Self, NewHeadBlock> for BlockBuilderService {
-    fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<BlockBuilderService>) {
-        if let Err(e) = self.inner.update_chain(msg.executed_block.as_ref().clone()) {
-            error!("err : {:?}", e)
-        }
-    }
-}
-
-impl EventHandler<Self, NewBranch> for BlockBuilderService {
-    fn handle_event(&mut self, msg: NewBranch, _ctx: &mut ServiceContext<BlockBuilderService>) {
-        self.inner.insert_uncle(msg.0.block.header().clone());
     }
 }
 
@@ -145,19 +119,7 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
         _msg: BlockTemplateRequest,
         _ctx: &mut ServiceContext<BlockBuilderService>,
     ) -> Result<BlockTemplateResponse> {
-        let template = self.inner.create_block_template();
-        self.inner.uncles_prune();
-        template
-    }
-}
-
-impl ServiceHandler<Self, GetHeadRequest> for BlockBuilderService {
-    fn handle(
-        &mut self,
-        _msg: GetHeadRequest,
-        _ctx: &mut ServiceContext<BlockBuilderService>,
-    ) -> HashValue {
-        self.inner.chain.current_header().id()
+        self.inner.create_block_template()
     }
 }
 
@@ -186,154 +148,53 @@ impl TemplateTxProvider for TxPoolService {
     }
 }
 
-pub struct Inner<P> {
+pub struct Inner<P, T: TxPoolSyncService + 'static> {
     storage: Arc<dyn Store>,
-    chain: BlockChain,
+    block_connector_service: ServiceRef<BlockConnectorService<T>>,
     tx_provider: P,
-    parent_uncle: HashMap<HashValue, Vec<HashValue>>,
-    uncles: HashMap<HashValue, BlockHeader>,
     local_block_gas_limit: Option<u64>,
     miner_account: AccountInfo,
+    #[allow(unused)]
     metrics: Option<BlockBuilderMetrics>,
     vm_metrics: Option<VMMetrics>,
-    dag: BlockDAG,
 }
 
-impl<P> Inner<P>
+impl<P, T> Inner<P, T>
 where
     P: TemplateTxProvider,
+    T: TxPoolSyncService,
 {
     pub fn new(
-        net: &ChainNetwork,
+        block_connector_service: ServiceRef<BlockConnectorService<T>>,
         storage: Arc<dyn Store>,
-        block_id: HashValue,
         tx_provider: P,
         local_block_gas_limit: Option<u64>,
         miner_account: AccountInfo,
         metrics: Option<BlockBuilderMetrics>,
         vm_metrics: Option<VMMetrics>,
-        dag: BlockDAG,
     ) -> Result<Self> {
-        let chain = BlockChain::new(
-            net.time_service(),
-            block_id,
-            storage.clone(),
-            vm_metrics.clone(),
-            dag.clone(),
-        )?;
-
         Ok(Inner {
             storage,
-            chain,
+            block_connector_service,
             tx_provider,
-            parent_uncle: HashMap::new(),
-            uncles: HashMap::new(),
             local_block_gas_limit,
             miner_account,
             metrics,
             vm_metrics,
-            dag,
         })
     }
 
-    pub fn insert_uncle(&mut self, uncle: BlockHeader) {
-        self.parent_uncle
-            .entry(uncle.parent_hash())
-            .or_default()
-            .push(uncle.id());
-        self.uncles.insert(uncle.id(), uncle);
-        if let Some(metrics) = self.metrics.as_ref() {
-            metrics
-                .current_epoch_maybe_uncles
-                .set(self.uncles.len() as u64);
-        }
-    }
-
-    pub fn update_chain(&mut self, block: ExecutedBlock) -> Result<()> {
-        let current_header = self.chain.current_header();
-        let current_id = current_header.id();
-        if self.chain.can_connect(&block) {
-            self.chain.connect(block)?;
-        } else {
-            self.chain = BlockChain::new(
-                self.chain.time_service(),
-                block.header().id(),
-                self.storage.clone(),
-                self.vm_metrics.clone(),
-                self.dag.clone(),
-            )?;
-            //current block possible be uncle.
-            self.uncles.insert(current_id, current_header);
-
-            if let Some(metrics) = self.metrics.as_ref() {
-                metrics
-                    .current_epoch_maybe_uncles
-                    .set(self.uncles.len() as u64);
-            }
-        }
-        Ok(())
-    }
-
-    pub fn find_uncles(&self) -> Vec<BlockHeader> {
-        let mut new_uncle = Vec::new();
-        let epoch = self.chain.epoch();
-        if epoch.end_block_number() != (self.chain.current_header().number() + 1) {
-            for maybe_uncle in self.uncles.values() {
-                if new_uncle.len() as u64 >= epoch.max_uncles_per_block() {
-                    break;
-                }
-                if self.chain.can_be_uncle(maybe_uncle).unwrap_or_default() {
-                    new_uncle.push(maybe_uncle.clone())
-                }
-            }
-        }
-
-        new_uncle
-    }
-
-    fn uncles_prune(&mut self) {
-        if !self.uncles.is_empty() {
-            let epoch = self.chain.epoch();
-            // epoch的end_number是开区间，当前块已经生成但还没有apply，所以应该在epoch（最终状态）
-            // 的倒数第二块处理时清理uncles
-            if epoch.end_block_number() == (self.chain.current_header().number() + 2) {
-                self.uncles.clear();
-            }
-        }
-        if let Some(metrics) = self.metrics.as_ref() {
-            metrics
-                .current_epoch_maybe_uncles
-                .set(self.uncles.len() as u64);
-        }
-    }
-
-    fn get_dag_previous_header(
-        &self,
-        previous_header: BlockHeader,
-        selected_parent: HashValue,
-    ) -> Result<BlockHeader> {
-        if previous_header.id() == selected_parent {
-            return Ok(previous_header);
-        }
-
-        if self
-            .chain
-            .dag()
-            .check_ancestor_of(previous_header.id(), vec![selected_parent])?
-        {
-            return self
-                .storage
-                .get_block_header_by_hash(selected_parent)?
-                .ok_or_else(|| {
-                    format_err!("BlockHeader should exist by hash: {}", selected_parent)
-                });
-        }
-
-        Ok(previous_header)
-    }
-
     pub fn create_block_template(&self) -> Result<BlockTemplateResponse> {
-        let on_chain_block_gas_limit = self.chain.epoch().block_gas_limit();
+        let MinerResponse {
+            previous_header,
+            tips_hash,
+            blues_hash: blues,
+            strategy,
+            on_chain_block_gas_limit,
+            next_difficulty: difficulty,
+            now_milliseconds: mut now_millis,
+        } = *block_on(self.block_connector_service.send(MinerRequest {}))??;
+
         let block_gas_limit = self
             .local_block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
@@ -345,11 +206,8 @@ where
 
         let txns = self.tx_provider.get_txns(max_txns);
         let author = *self.miner_account.address();
-        let mut previous_header = self.chain.current_header();
-        let epoch = self.chain.epoch();
-        let strategy = epoch.strategy();
+        let current_number = previous_header.number().saturating_add(1);
 
-        let mut now_millis = self.chain.time_service().now_millis();
         if now_millis <= previous_header.timestamp() {
             info!(
                 "Adjust new block timestamp by parent timestamp, parent.timestamp: {}, now: {}, gap: {}",
@@ -357,41 +215,18 @@ where
             );
             now_millis = previous_header.timestamp() + 1;
         }
-        let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
-        let tips_hash = match self.chain.check_chain_type()? {
-            ChainType::Single => None,
-            ChainType::Dag => {
-                let (_dag_genesis, tips_hash) = self.chain.current_tips_hash()?.ok_or_else(|| {
-                    anyhow!(
-                        "the number of the block is larger than the dag fork number but no dag state!"
-                    )
-                })?;
-                Some(tips_hash)
-            }
-        };
-        info!(
-            "block:{} tips(dag state):{:?}",
-            self.chain.current_header().number(),
-            &tips_hash,
-        );
+        info!("block:{} tips(dag state):{:?}", current_number, &tips_hash,);
         let (uncles, blue_blocks) = {
             match &tips_hash {
-                None => (self.find_uncles(), None),
+                // fixme: remove this branch when single chain logic is removed
+                None => (vec![], None),
                 Some(tips) => {
-                    let mut blues = self.dag.ghostdata(tips)?.mergeset_blues.to_vec();
-                    if blues.is_empty() {
-                        bail!("The count of ghostdata returns mergeset blues is empty");
-                    }
                     info!(
                         "create block template with tips:{:?},ghostdata blues:{:?}",
-                        &tips_hash, blues
+                        tips, blues
                     );
                     let mut blue_blocks = vec![];
-
-                    let selected_parent = blues.remove(0);
-                    previous_header =
-                        self.get_dag_previous_header(previous_header, selected_parent)?;
-                    for blue in &blues {
+                    for blue in blues.iter().skip(1) {
                         // todo: make sure blue block has been executed successfully
                         let block = self
                             .storage
@@ -410,6 +245,7 @@ where
                 }
             }
         };
+
         info!(
             "[CreateBlockTemplate] previous_header: {:?}, block_gas_limit: {}, max_txns: {}, txn len: {}, uncles len: {}, timestamp: {}",
             previous_header,

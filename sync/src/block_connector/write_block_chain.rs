@@ -207,6 +207,7 @@ where
         &self.main
     }
 
+    //todo: return a reference
     pub fn get_dag(&self) -> BlockDAG {
         self.dag.clone()
     }
@@ -588,6 +589,22 @@ where
             debug!("Repeat connect, current header is {} already.", block_id);
             return Ok(ConnectOk::Duplicate);
         }
+
+        if self.main.check_chain_type()? == ChainType::Dag
+            && !block
+                .header()
+                .parents_hash()
+                .ok_or_else(|| format_err!("Dag block's parents hash is none, id: {:?}", block_id))?
+                .iter()
+                .all(|parent_hash| self.main.dag().has_dag_block(*parent_hash).unwrap_or(false))
+        {
+            debug!(
+                "block: {:?} is a future dag block, trigger sync to pull other dag blocks",
+                block_id
+            );
+            return Err(ConnectBlockError::FutureBlock(Box::new(block)).into());
+        }
+
         if self.main.current_header().id() == block.header().parent_hash()
             && !self.block_exist(block_id)?
         {
