@@ -1743,6 +1743,7 @@ impl ChainReader for BlockChain {
         )
     }
 
+    //todo: return status as reference
     fn status(&self) -> ChainStatus {
         self.status.status.clone()
     }

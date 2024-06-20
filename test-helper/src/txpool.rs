@@ -10,9 +10,11 @@ use starcoin_miner::{BlockBuilderService, MinerService};
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_storage::Storage;
+use starcoin_sync::block_connector::BlockConnectorService;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
 use std::sync::Arc;
 use std::time::Duration;
+
 pub async fn start_txpool_with_size(
     pool_size: u64,
 ) -> (
@@ -62,6 +64,10 @@ pub async fn start_txpool_with_miner(
     registry.register::<AccountService>().await.unwrap();
 
     if enable_miner {
+        registry
+            .register::<BlockConnectorService<TxPoolService>>()
+            .await
+            .unwrap();
         registry.register::<BlockBuilderService>().await.unwrap();
         registry.register::<MinerService>().await.unwrap();
     }
