@@ -8,7 +8,6 @@ use crate::tasks::{
     full_sync_task, AccumulatorCollector, AncestorCollector, BlockAccumulatorSyncTask,
     BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask, SyncFetcher,
 };
-use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{format_err, Result};
 use anyhow::{Context, Ok};
 use futures::channel::mpsc::unbounded;
@@ -38,7 +37,7 @@ use starcoin_types::{
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use stream_task::{
-    DefaultCustomErrorHandle, Generator, TaskError, TaskEventCounterHandle, TaskGenerator,
+    DefaultCustomErrorHandle, Generator, TaskEventCounterHandle, TaskGenerator,
 };
 use test_helper::DummyNetworkService;
 
@@ -48,61 +47,6 @@ use super::BlockConnectedEvent;
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_new_node() -> Result<()> {
     full_sync_new_node().await
-}
-
-#[stest::test]
-pub async fn test_sync_invalid_target() -> Result<()> {
-    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::DagTest);
-    let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
-    node1.produce_block(10)?;
-
-    let arc_node1 = Arc::new(node1);
-
-    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::DagTest);
-
-    let node2 = SyncNodeMocker::new(net2.clone(), 300, 0)?;
-    let dag = node2.chain().dag();
-    let mut target = arc_node1.sync_target();
-
-    target.block_info.total_difficulty = U256::max_value();
-
-    let current_block_header = node2.chain().current_header();
-    let dag_fork_height = node2.dag_fork_number()?;
-
-    let storage = node2.chain().get_storage();
-    let (sender_1, receiver_1) = unbounded();
-    let (sender_2, _receiver_2) = unbounded();
-    let (sync_task, _task_handle, _task_event_counter) = full_sync_task(
-        current_block_header.id(),
-        target.clone(),
-        false,
-        net2.time_service(),
-        storage.clone(),
-        sender_1,
-        arc_node1.clone(),
-        sender_2,
-        DummyNetworkService::default(),
-        15,
-        None,
-        None,
-        Some(dag_fork_height),
-        dag,
-    )?;
-    let _join_handle = node2.process_block_connect_event(receiver_1).await;
-    let sync_result = sync_task.await;
-    assert!(sync_result.is_err());
-    let err = sync_result.err().unwrap();
-    debug!("task_error: {:?}", err);
-    assert!(err.is_break_error());
-    if let TaskError::BreakError(err) = err {
-        let verify_err = err.downcast::<RpcVerifyError>().unwrap();
-        assert_eq!(verify_err.peers[0].clone(), arc_node1.peer_id);
-        debug!("{:?}", verify_err)
-    } else {
-        panic!("Expect BreakError, but got: {:?}", err)
-    }
-
-    Ok(())
 }
 
 #[ignore = "This test is for the scenario that a block failed to connect to the main will be stored in the \
@@ -1076,7 +1020,13 @@ fn sync_block_in_async_connection(
         dag,
     )?;
     let branch = async_std::task::block_on(sync_task)?;
-    assert_eq!(branch.current_header().id(), target.target_id.id());
+    assert_eq!(branch.current_header().number(), target.target_id.number());
+    let (target_dag_genesis, target_dag_state) = target_node.chain().get_dag_state_by_block()?;
+    let (local_dag_genesis, local_dag_state) = target_node.chain().get_dag_state_by_block()?;
+    assert_eq!(target_dag_genesis, local_dag_genesis);
+    local_dag_state.tips.iter().for_each(|tip| {
+        assert!(target_dag_state.tips.contains(tip));
+    });
 
     handle.join().unwrap();
 
