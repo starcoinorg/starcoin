@@ -723,15 +723,17 @@ where
         if block_info.block_accumulator_info.num_leaves
             == self.target.block_info.block_accumulator_info.num_leaves
         {
-            if block_info != self.target.block_info {
+            if self.chain.check_chain_type()? == ChainType::Dag {
+                Ok(CollectorState::Enough)
+            } else if block_info != self.target.block_info {
                 Err(TaskError::BreakError(
                     RpcVerifyError::new_with_peers(
                         self.target.peers.clone(),
                         format!(
-                "Verify target error, expect target: {:?}, collect target block_info:{:?}",
-                self.target.block_info,
-                block_info
-            ),
+                    "Verify target error, expect target: {:?}, collect target block_info:{:?}",
+                    self.target.block_info,
+                    block_info
+                ),
                     )
                     .into(),
                 )
