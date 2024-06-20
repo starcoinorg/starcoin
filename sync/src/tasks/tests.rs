@@ -36,9 +36,7 @@ use starcoin_types::{
 };
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use stream_task::{
-    DefaultCustomErrorHandle, Generator, TaskEventCounterHandle, TaskGenerator,
-};
+use stream_task::{DefaultCustomErrorHandle, Generator, TaskEventCounterHandle, TaskGenerator};
 use test_helper::DummyNetworkService;
 
 use super::test_tools::{full_sync_new_node, SyncTestSystem};
