@@ -6,7 +6,6 @@ use anyhow::{format_err, Result};
 use futures::executor::block_on;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_account_service::AccountService;
-
 use starcoin_config::NodeConfig;
 use starcoin_crypto::hash::HashValue;
 
