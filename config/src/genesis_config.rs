@@ -1097,10 +1097,10 @@ pub static G_MAIN_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 });
 pub static G_VEGA_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
     vec![
-    "/dns4/vega1.seed.starcoin.org/tcp/9840/p2p/12D3KooWSW8t32L6VyjPZxxe3VSD7H6Ffgh69eCaDnDyab2M6tfK".parse().expect("parse multi addr should be ok"),
-    "/dns4/vega2.seed.starcoin.org/tcp/9840/p2p/12D3KooWBWsibdKdogDpFUfSVejPdK6t4s1eEvcqjuPVJ3gSpypx".parse().expect("parse multi addr should be ok"),
-    "/dns4/vega3.seed.starcoin.org/tcp/9840/p2p/12D3KooWB9vGtpgqyD2cG4PTEU1SHSuWV6PErMPJFbbi5vYpkj3H".parse().expect("parse multi addr should be ok"),
-    "/dns4/vega4.seed.starcoin.org/tcp/9840/p2p/12D3KooWKqZ2k2qQWY1khPH6WV2qFD5X2TZrpRMj75MHxCd8VH5r".parse().expect("parse multi addr should be ok"),
+    "/dns4/vega1.seed.starcoin.org/tcp/9840/p2p/12D3KooWE41rox2ErznPf7iGgnLaU24sm4yHfagxwz7gUqgt8y6B".parse().expect("parse multi addr should be ok"),
+    "/dns4/vega2.seed.starcoin.org/tcp/9840/p2p/12D3KooWK11Dxx97igwPoVoUkDPUsbdaeXgJjxWzaX1NW4Beci9U".parse().expect("parse multi addr should be ok"),
+    "/dns4/vega3.seed.starcoin.org/tcp/9840/p2p/12D3KooWM5GVvUPxqJXkoxjPoiPbBk8jCSwCmKF78N42aV97zuZy".parse().expect("parse multi addr should be ok"),
+    "/dns4/vega4.seed.starcoin.org/tcp/9840/p2p/12D3KooWAr8PQGBJSvjNp7L93VJGXZKwLXjryHBbrswgxbRxvgES".parse().expect("parse multi addr should be ok"),
 ]
 });
 pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {

@@ -1,0 +1,182 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: starcoin-svc
+  namespace: starcoin-vega
+spec:
+  selector:
+    app: starcoin
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 9850
+      name: http-rpc-80
+    - protocol: TCP
+      port: 9850
+      targetPort: 9850
+      name: http-rpc
+    - protocol: TCP
+      port: 9870
+      targetPort: 9870
+      name: ws-rpc
+    - port: 9101
+      name: metrics
+      protocol: TCP
+      targetPort: 9101
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: starcoin
+    network: vega
+    statefulset.kubernetes.io/pod-name: starcoin-0
+  annotations:
+    service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
+  name: starcoin-0
+  namespace: starcoin-vega
+spec:
+  ports:
+    - port: 9840
+      name: node
+      protocol: TCP
+      targetPort: 9840
+    - port: 9850
+      name: http-rpc
+      protocol: TCP
+      targetPort: 9850
+    - port: 9860
+      name: tcp-rpc
+      protocol: TCP
+      targetPort: 9860
+    - port: 9870
+      name: ws-rpc
+      protocol: TCP
+      targetPort: 9870
+    - port: 9101
+      name: metrics
+      protocol: TCP
+      targetPort: 9101
+  selector:
+    app: starcoin
+    network: vega
+    statefulset.kubernetes.io/pod-name: starcoin-0
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: starcoin
+    network: vega
+    statefulset.kubernetes.io/pod-name: starcoin-1
+  annotations:
+    service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
+  name: starcoin-1
+  namespace: starcoin-vega
+spec:
+  ports:
+    - port: 9840
+      name: node
+      protocol: TCP
+      targetPort: 9840
+    - port: 9850
+      name: http-rpc
+      protocol: TCP
+      targetPort: 9850
+    - port: 9860
+      name: tcp-rpc
+      protocol: TCP
+      targetPort: 9860
+    - port: 9870
+      name: ws-rpc
+      protocol: TCP
+      targetPort: 9870
+    - port: 9101
+      name: metrics
+      protocol: TCP
+      targetPort: 9101
+  selector:
+    app: starcoin
+    network: vega
+    statefulset.kubernetes.io/pod-name: starcoin-1
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: starcoin
+    network: vega
+    statefulset.kubernetes.io/pod-name: starcoin-2
+  annotations:
+    service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
+  name: starcoin-2
+  namespace: starcoin-vega
+spec:
+  ports:
+    - port: 9840
+      name: node
+      protocol: TCP
+      targetPort: 9840
+    - port: 9850
+      name: http-rpc
+      protocol: TCP
+      targetPort: 9850
+    - port: 9860
+      name: tcp-rpc
+      protocol: TCP
+      targetPort: 9860
+    - port: 9870
+      name: ws-rpc
+      protocol: TCP
+      targetPort: 9870
+    - port: 9101
+      name: metrics
+      protocol: TCP
+      targetPort: 9101
+  selector:
+    app: starcoin
+    network: vega
+    statefulset.kubernetes.io/pod-name: starcoin-2
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: starcoin
+    network: vega
+    statefulset.kubernetes.io/pod-name: starcoin-3
+  annotations:
+    service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
+  name: starcoin-3
+  namespace: starcoin-vega
+spec:
+  ports:
+    - port: 9840
+      name: node
+      protocol: TCP
+      targetPort: 9840
+    - port: 9850
+      name: http-rpc
+      protocol: TCP
+      targetPort: 9850
+    - port: 9860
+      name: tcp-rpc
+      protocol: TCP
+      targetPort: 9860
+    - port: 9870
+      name: ws-rpc
+      protocol: TCP
+      targetPort: 9870
+    - port: 9101
+      name: metrics
+      protocol: TCP
+      targetPort: 9101
+  selector:
+    app: starcoin
+    network: vega
+    statefulset.kubernetes.io/pod-name: starcoin-3
+  type: LoadBalancer

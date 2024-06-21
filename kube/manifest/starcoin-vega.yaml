@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: starcoin
+  namespace: starcoin-vega
+  labels:
+    app: starcoin
+    network: vega
+spec:
+  selector:
+    matchLabels:
+      app: starcoin
+  serviceName: starcoin-svc
+  replicas: 4
+  template:
+    metadata:
+      name: starcoin
+      labels:
+        app: starcoin
+        network: vega
+    spec:
+      nodeSelector:
+        starcoin/node-pool: seed-pool
+      containers:
+      - name: starcoin
+        image: ghcr.io/starcoinorg/starcoin:v2.0.0
+        imagePullPolicy: Always
+        command:
+          - bash
+          - -c
+        args:
+          -
+            rm -rf /sc-data/vega/starcoin.ipc /sc-data/vega/starcoindb/db/starcoindb/LOCK;
+            id=$(echo -e $POD_NAME|awk -F'-' '{print $2}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
+            node_key=${node_keys[$id]};
+            if [ ! -z $node_key ]; then
+              node_key_flag="--node-key ${node_key}";
+            fi;
+            /starcoin/starcoin -n vega --discover-local true --disable-miner-client false --p2prpc-default-global-api-quota 9000/s --p2prpc-custom-user-api-quota get_header_by_hash=9000/s --p2prpc-custom-user-api-quota get_headers_by_hash=9000/s --p2prpc-custom-user-api-quota info=9000/s --p2prpc-custom-user-api-quota get_block_by_hash=9000/s --p2prpc-custom-user-api-quota get_block_ids=9000/s --p2prpc-custom-user-api-quota get_blocks=9000/s --jsonrpc-default-global-api-quota 9000/s --jsonrpc-custom-user-api-quota chain.get_headers_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.get_header_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.info=9000/s --jsonrpc-custom-user-api-quota chain.get_block_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.get_block_ids=9000/s --jsonrpc-custom-user-api-quota chain.get_blocks=9000/s --min-peers-to-propagate 512 --max-peers-to-propagate 1024 --max-outgoing-peers 512 --max-incoming-peers 512 -d /sc-data $node_key_flag;
+        ports:
+          - containerPort: 9840
+            hostPort: 9840
+        volumeMounts:
+        - name: starcoin-volume
+          mountPath: /sc-data
+        env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: NODE_KEYS
+            valueFrom:
+              secretKeyRef:
+                name: node-keys
+                key: node-keys
+        livenessProbe:
+          tcpSocket:
+            port: 9840
+          initialDelaySeconds: 20
+          periodSeconds: 5
+          timeoutSeconds: 2
+          failureThreshold: 4
+          successThreshold: 1
+        readinessProbe:
+          exec:
+            command:
+              - sh
+              - -c
+              - >-
+                 /starcoin/starcoin -n vega -d /sc-data node sync status|grep Synchronized
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 2
+          failureThreshold: 3
+          successThreshold: 1
+  volumeClaimTemplates:
+  - metadata:
+      name: starcoin-volume
+      namespace: starcoin-vega
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 500Gi
