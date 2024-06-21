@@ -79,8 +79,10 @@ pub enum BuiltinNetworkID {
     /// A ephemeral dag-related network just for developer test.
     DagTest = 250,
     /// Starcoin main net.
-    #[default]
     Main = 1,
+    #[default]
+    /// Starcoin dag net
+    Vega = 2,
 }
 
 impl Display for BuiltinNetworkID {
@@ -93,6 +95,7 @@ impl Display for BuiltinNetworkID {
             BuiltinNetworkID::Barnard => write!(f, "barnard"),
             BuiltinNetworkID::Main => write!(f, "main"),
             BuiltinNetworkID::DagTest => write!(f, "dagtest"),
+            BuiltinNetworkID::Vega=>write!(f,"vega"),
         }
     }
 }
@@ -109,6 +112,7 @@ impl FromStr for BuiltinNetworkID {
             "barnard" => Ok(BuiltinNetworkID::Barnard),
             "main" => Ok(BuiltinNetworkID::Main),
             "dagtest" => Ok(BuiltinNetworkID::DagTest),
+            "vega" => Ok(BuiltinNetworkID::Vega),
             s => Err(format_err!("Unknown network: {}", s)),
         }
     }
@@ -123,6 +127,7 @@ impl TryFrom<ChainId> for BuiltinNetworkID {
             252 => Self::Proxima,
             251 => Self::Barnard,
             250 => Self::DagTest,
+            2 => Self::Vega,
             1 => Self::Main,
             id => bail!("{} is not a builtin chain id", id),
         })
@@ -168,7 +173,9 @@ impl BuiltinNetworkID {
     pub fn is_dag_test(self) -> bool {
         matches!(self, BuiltinNetworkID::DagTest)
     }
-
+    pub fn is_vega(self)->bool{
+        matches!(self,BuiltinNetworkID::Vega)
+    }
     pub fn networks() -> Vec<BuiltinNetworkID> {
         vec![
             BuiltinNetworkID::Test,
@@ -178,6 +185,7 @@ impl BuiltinNetworkID {
             BuiltinNetworkID::Barnard,
             BuiltinNetworkID::Main,
             BuiltinNetworkID::DagTest,
+            BuiltinNetworkID::Vega,
         ]
     }
 
@@ -190,6 +198,7 @@ impl BuiltinNetworkID {
             BuiltinNetworkID::Barnard => &G_BARNARD_CONFIG,
             BuiltinNetworkID::Main => &G_MAIN_CONFIG,
             BuiltinNetworkID::DagTest => &G_DAG_TEST_CONFIG,
+            BuiltinNetworkID::Vega=>&G_VEGA_CONFIG,
         }
     }
 
@@ -202,6 +211,7 @@ impl BuiltinNetworkID {
             BuiltinNetworkID::Barnard => G_BARNARD_BOOT_NODES.as_slice(),
             BuiltinNetworkID::Main => G_MAIN_BOOT_NODES.as_slice(),
             BuiltinNetworkID::DagTest => G_EMPTY_BOOT_NODES.as_slice(),
+            BuiltinNetworkID::Vega=>G_VEGA_BOOT_NODES.as_slice(),
         }
     }
 
@@ -1140,6 +1150,57 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 pub static G_LATEST_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
     let gas_schedule = GasSchedule::from(&G_LATEST_GAS_COST_TABLE.clone());
     StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map()).unwrap()
+});
+
+
+pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
+    let stdlib_version = StdlibVersion::Version(12);
+    let publishing_option = TransactionPublishOption::locked();
+    GenesisConfig {
+        genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter{
+            parent_hash: HashValue::from_hex_literal("0xb82a2c11f2df62bf87c2933d0281e5fe47ea94d5f0049eec1485b682df29529a").unwrap(),
+            timestamp: 1621311100863,
+            difficulty: 0xb1ec37.into(),
+        }),
+        version: Version { major: 1 },
+        reward_delay: 7,
+        pre_mine_amount: G_DEFAULT_PRE_MINT_AMOUNT.scaling(),
+        time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
+        time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD,
+        vm_config: VMConfig {
+            gas_schedule: CostTable {
+                instruction_table: instruction_table_v1(),
+                native_table: native_table_v2(),
+                gas_constants: G_GAS_CONSTANTS_V2.clone(),
+            },
+        },
+        publishing_option,
+        consensus_config: ConsensusConfig {
+            uncle_rate_target: G_UNCLE_RATE_TARGET,
+            base_block_time_target: G_DEFAULT_BASE_BLOCK_TIME_TARGET,
+            base_reward_per_block: G_DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
+            epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
+            base_block_difficulty_window: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW,
+            base_reward_per_uncle_percent: G_BASE_REWARD_PER_UNCLE_PERCENT,
+            min_block_time_target: G_MIN_BLOCK_TIME_TARGET,
+            max_block_time_target: G_MAX_BLOCK_TIME_TARGET,
+            base_max_uncles_per_block: G_BASE_MAX_UNCLES_PER_BLOCK,
+            base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT,
+            strategy: ConsensusStrategy::Argon.value(),
+        },
+        association_key_pair: (None,  MultiEd25519PublicKey::from_encoded_string("810a82a896a4f8fd065bcab8b06588fe1afdbb3d3830693c65a73d31ee1e482d85a40286b624b8481b05d9ed748e7c051b63ed36ce952cbc48bb0de4bfc6ec5888feded087075af9585a83c777ba52da1ab3aef139764a0de5fbc2d8aa8d380b02")
+            .expect("create multi public key must success.")),
+        genesis_key_pair: None,
+        time_service_type: TimeServiceType::RealTimeService,
+        stdlib_version,
+        dao_config: DaoConfig {
+            voting_delay: 60 * 60 * 1000,           // 1h
+            voting_period: 60 * 60 * 24 * 7 * 1000, // 7d
+            voting_quorum_rate: 4,
+            min_action_delay: 60 * 60 * 24 * 1000, // 1d
+        },
+        transaction_timeout: ONE_DAY,
+        dag_effective_height: 0,
 });
 
 #[cfg(test)]
