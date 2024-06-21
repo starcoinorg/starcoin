@@ -374,6 +374,26 @@ impl BlockVerifier for DagVerifier {
             new_block_header.parent_hash()
         );
 
+        parents_hash_to_check.iter().try_for_each(|parent_hash| {
+            verify_block!(
+                VerifyBlockField::Header,
+                current_chain.has_dag_block(*parent_hash).map_err(|e| {
+                    ConnectBlockError::VerifyBlockFailed(
+                        VerifyBlockField::Header,
+                        anyhow::anyhow!(
+                            "failed to get the block: {:?} 's parent: {:?} from db, error: {:?}",
+                            new_block_header.id(),
+                            parent_hash,
+                            e
+                        ),
+                    )
+                })?,
+                "Invalid block: parent {} might not exist.",
+                parent_hash
+            );
+            Ok::<(), ConnectBlockError>(())
+        })?;
+
         ConsensusVerifier::verify_header(current_chain, new_block_header)
     }
 
@@ -422,50 +442,5 @@ impl BlockVerifier for DagVerifier {
         // }
 
         Ok(())
-    }
-}
-
-//TODO: Implement it.
-pub struct DagBasicVerifier;
-impl BlockVerifier for DagBasicVerifier {
-    fn verify_uncles<R>(
-        _current_chain: &R,
-        _uncles: &[BlockHeader],
-        _header: &BlockHeader,
-    ) -> Result<()>
-    where
-        R: ChainReader,
-    {
-        Ok(())
-    }
-    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
-    where
-        R: ChainReader,
-    {
-        let parents_hash = new_block_header.parents_hash().unwrap_or_default();
-        let mut parents_hash_to_check = parents_hash.clone();
-        parents_hash_to_check.sort();
-        parents_hash_to_check.dedup();
-
-        verify_block!(
-            VerifyBlockField::Header,
-            !parents_hash_to_check.is_empty() && parents_hash.len() == parents_hash_to_check.len(),
-            "Invalid parents_hash in dag basic verifier {:?} for a dag block {}",
-            new_block_header.parents_hash(),
-            new_block_header.number(),
-        );
-
-        verify_block!(
-            VerifyBlockField::Header,
-            parents_hash_to_check.contains(&new_block_header.parent_hash())
-                && current_chain
-                    .get_block_info(Some(new_block_header.parent_hash()))?
-                    .is_some(),
-            "Invalid block: parent {} might not exist.",
-            new_block_header.parent_hash()
-        );
-
-        Ok(())
-        // ConsensusVerifier::verify_header(current_chain, new_block_header)
     }
 }
