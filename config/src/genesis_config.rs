@@ -1132,7 +1132,7 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
             base_block_difficulty_window: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW,
             base_reward_per_uncle_percent: G_BASE_REWARD_PER_UNCLE_PERCENT,
-            min_block_time_target: G_MIN_BLOCK_TIME_TARGET,
+            min_block_time_target: 5000,
             max_block_time_target: G_MAX_BLOCK_TIME_TARGET,
             base_max_uncles_per_block: G_BASE_MAX_UNCLES_PER_BLOCK,
             base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT,
