@@ -9,7 +9,7 @@ use futures::FutureExt;
 use network_api::PeerId;
 use network_api::PeerProvider;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
-use starcoin_chain::verifier::DagBasicVerifier;
+use starcoin_chain::verifier::DagVerifier;
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainType, ChainWriter, ConnectBlockError, ExecutedBlock};
 use starcoin_config::G_CRATE_VERSION;
@@ -489,7 +489,7 @@ where
                         } else {
                             let executed_block = self
                                 .chain
-                                .apply_with_verifier::<DagBasicVerifier>(block.clone())?;
+                                .apply_with_verifier::<DagVerifier>(block.clone())?;
                             info!(
                                 "succeed to apply a dag block: {:?}, number: {:?}",
                                 executed_block.block.id(),
@@ -603,7 +603,7 @@ where
                     {
                         let executed_block = self
                             .chain
-                            .apply_with_verifier::<DagBasicVerifier>(child_block.block.clone())?;
+                            .apply_with_verifier::<DagVerifier>(child_block.block.clone())?;
                         info!(
                             "succeed to apply a dag block: {:?}, number: {:?}",
                             executed_block.block.id(),
@@ -669,7 +669,7 @@ where
             {
                 let executed_block = self
                     .chain
-                    .apply_with_verifier::<DagBasicVerifier>(child_block.block.clone())?;
+                    .apply_with_verifier::<DagVerifier>(child_block.block.clone())?;
                 info!(
                     "succeed to apply a dag block: {:?}, number: {:?}",
                     executed_block.block.id(),

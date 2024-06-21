@@ -245,7 +245,7 @@ where
     #[cfg(test)]
     pub fn apply_failed(&mut self, block: Block) -> Result<()> {
         use anyhow::bail;
-        use starcoin_chain::verifier::{DagBasicVerifier, FullVerifier};
+        use starcoin_chain::verifier::{DagVerifier, FullVerifier};
 
         let verified_block = match self.main.check_chain_type()? {
             ChainType::Single => {
@@ -254,7 +254,7 @@ where
             }
             ChainType::Dag => {
                 // apply but no connection
-                self.main.verify_with_verifier::<DagBasicVerifier>(block)?
+                self.main.verify_with_verifier::<DagVerifier>(block)?
             }
         };
         let _executed_block = self.main.execute(verified_block)?;
