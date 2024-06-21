@@ -266,13 +266,10 @@ impl BlockHeader {
             parents_hash,
         };
         header.id = Some(if header.parents_hash.is_none() {
-            println!("jacktest: go to legacy block header: {:?}", header);
             LegacyBlockHeader::from(header.clone()).crypto_hash()
         } else {
-            println!("jacktest: Do not go to legacy block header");
             header.crypto_hash()
         });
-        println!("jacktest: in header decode, id = {:?}", header.id);
         header
     }
 

@@ -11,7 +11,7 @@ use starcoin_dag::{
     },
     define_schema,
 };
-use starcoin_storage::{db_storage::DBStorage, storage};
+use starcoin_storage::{db_storage::{DBStorage, SchemaIterator}, storage};
 use starcoin_types::block::Block;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -32,7 +32,8 @@ impl Default for DagSyncBlock {
 /// Reader API for `AbsentDagBlockStoreReader`.
 pub trait AbsentDagBlockStoreReader {
     fn get_absent_block(&self, count: usize) -> anyhow::Result<Vec<DagSyncBlock>>;
-    fn get_absent_block_by_id(&self, hash: HashValue) -> anyhow::Result<DagSyncBlock>;
+    fn get_absent_block_by_id(&self, hash: HashValue) -> anyhow::Result<DagSyncBlock, StoreError>;
+    fn iter_at_first(&self) -> anyhow::Result<SchemaIterator<HashValue, DagSyncBlock>>;
 }
 
 pub trait AbsentDagBlockStoreWriter {
@@ -64,7 +65,6 @@ impl KeyCodec<SyncAbsentBlock> for HashValue {
 impl ValueCodec<SyncAbsentBlock> for DagSyncBlock {
     fn encode_value(&self) -> Result<Vec<u8>, StoreError> {
         let s = bcs_ext::to_bytes(self).map_err(|e| StoreError::EncodeError(e.to_string()))?;
-        println!("jacktest: sync-absent-block data, encode value: {:?}", self.block.as_ref().unwrap().header().id());
         let obj: DagSyncBlock = bcs_ext::from_bytes(&s.clone()).map_err(|e| StoreError::DecodeError(e.to_string()))?;
         assert_eq!(self.clone(), obj);
         Ok(s)
@@ -72,7 +72,6 @@ impl ValueCodec<SyncAbsentBlock> for DagSyncBlock {
 
     fn decode_value(data: &[u8]) -> Result<Self, StoreError> {
         let s: DagSyncBlock = bcs_ext::from_bytes(data).map_err(|e| StoreError::DecodeError(e.to_string()))?;
-        println!("jacktest: sync-absent-block data, decode value: {:?}", s.block.as_ref().unwrap().header().id());
         Ok(s)
     }
 }
@@ -125,11 +124,15 @@ impl AbsentDagBlockStoreReader for SyncAbsentBlockStore {
         anyhow::Result::Ok(blocks)
     }
 
-    fn get_absent_block_by_id(&self, hash: HashValue) -> anyhow::Result<DagSyncBlock> {
-        println!("jacktest: get absent block by id: {:?}", hash);
+    fn get_absent_block_by_id(&self, hash: HashValue) -> anyhow::Result<DagSyncBlock, StoreError> {
         self.cache_access
             .read(hash)
-            .map_err(|e| format_err!("failed to get absent block by id: {:?}", e))
+    }
+    
+    fn iter_at_first(&self) -> anyhow::Result<SchemaIterator<HashValue, DagSyncBlock>> {
+        let mut iter = self.db.iter::<HashValue, DagSyncBlock>(SYNC_ABSENT_BLOCK_CF)?;
+        iter.seek_to_first();
+        Ok(iter)
     }
 }
 
@@ -142,7 +145,6 @@ impl AbsentDagBlockStoreWriter for SyncAbsentBlockStore {
 
     fn save_absent_block(&mut self, blocks: Vec<DagSyncBlock>) -> anyhow::Result<()> {
         for block in blocks {
-            println!("jacktest: save block by id: {:?}", block.block.as_ref().unwrap().header().id());
             self.cache_access.write(
                 DirectDbWriter::new(&self.db),
                 block

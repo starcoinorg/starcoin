@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::store::sync_absent_ancestor;
+use crate::store::sync_dag_store::SyncDagStore;
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{anyhow, bail, format_err, Result};
@@ -196,6 +198,7 @@ pub struct BlockCollector<N, H> {
     skip_pow_verify: bool,
     local_store: Arc<dyn Store>,
     fetcher: Arc<dyn BlockFetcher>,
+    sync_dag_store: SyncDagStore,
 }
 
 impl<N, H> BlockCollector<N, H>
@@ -212,6 +215,7 @@ where
         skip_pow_verify: bool,
         local_store: Arc<dyn Store>,
         fetcher: Arc<dyn BlockFetcher>,
+        sync_dag_store: SyncDagStore,
     ) -> Self {
         Self {
             current_block_info,
@@ -222,6 +226,7 @@ where
             skip_pow_verify,
             local_store,
             fetcher,
+            sync_dag_store,
         }
     }
 
@@ -393,13 +398,13 @@ where
     async fn find_absent_ancestor(
         &self,
         mut block_headers: Vec<BlockHeader>,
-    ) -> Result<Vec<Block>> {
-        let mut absent_blocks_map = HashMap::new();
+    ) -> Result<()> {
+        // let mut absent_blocks_map = HashMap::new();
         loop {
             let mut absent_blocks = vec![];
             self.find_absent_parent_dag_blocks_for_blocks(block_headers, &mut absent_blocks)?;
             if absent_blocks.is_empty() {
-                return Ok(absent_blocks_map.into_values().collect());
+                return Ok(());
             }
             let remote_absent_blocks = self.fetch_blocks(absent_blocks).await?;
             block_headers = remote_absent_blocks
@@ -408,7 +413,7 @@ where
                 .collect();
 
             remote_absent_blocks.into_iter().for_each(|block| {
-                absent_blocks_map.insert(block.id(), block);
+                self.sync_dag_store.save_block(block)?;
             });
         }
     }
@@ -437,22 +442,66 @@ where
             block_header.parents_hash()
         );
         let fut = async {
-            let mut absent_ancestor = self
+            self
                 .find_absent_ancestor(vec![block_header.clone()])
                 .await?;
 
-            if absent_ancestor.is_empty() {
-                return Ok(());
-            }
-
-            absent_ancestor.sort_by_key(|a| a.header().number());
-            info!(
-                "now apply absent ancestors count: {:?}",
-                absent_ancestor.len()
-            );
-
-            let mut process_dag_ancestors = HashMap::new();
+            // let mut process_dag_ancestors = HashMap::new();
             loop {
+                let sync_dag_iter = self.sync_dag_store.iter_at_first()?;
+                let mut next_sync_dag_block = sync_dag_iter.next();
+                if next_sync_dag_block.is_none() {
+                    break;
+                }
+                while let Some(result_sync_dag_block) = next_sync_dag_block {
+                    match result_sync_dag_block {
+                        Ok((block_id, sync_dag_block)) => {
+                            let block = sync_dag_block.block.ok_or_else(|| format_err!("failed to get the block since it none in sync dag block", block_id))?;
+                            info!(
+                                "now apply for sync after fetching a dag block: {:?}, number: {:?}",
+                                block.id(),
+                                block.header().number()
+                            );
+
+                            if !self.check_parents_exist(block.header())? {
+                                debug!("block: {:?} waiting for parents executed", block.id());
+                                continue;
+                            } else {
+                                let executed_block = self
+                                    .chain
+                                    .apply_with_verifier::<DagBasicVerifier>(block.clone())?;
+                                info!(
+                                    "succeed to apply a dag block: {:?}, number: {:?}",
+                                    executed_block.block.id(),
+                                    executed_block.block.header().number()
+                                );
+                                if executed_block.block().id() != block_id {
+                                    bail!("The executed block's id: {:?} is different from syn dag block: {:?}!", executed_block.block().id(), block_id);
+                                }
+                                self.execute_if_parent_ready(sync_dag_block.children.clone())?;
+
+                                self.sync_dag_store
+                                    .delete_dag_sync_block(executed_block.block.id())?;
+
+                                self.notify_connected_block(
+                                    executed_block.block,
+                                    executed_block.block_info.clone(),
+                                    BlockConnectAction::ConnectNewBlock,
+                                    self.check_enough_by_info(executed_block.block_info)?,
+                                )?;
+
+                                break; // to refresh the iterator
+                            }
+                        }
+                        Err(e) => {
+
+                        }
+                    }
+
+                    next_sync_dag_block = 
+                }
+
+                ///////// line 
                 for ancestor_block_headers in absent_ancestor.chunks(20) {
                     let mut blocks = ancestor_block_headers.to_vec();
                     blocks.retain(|block| {
@@ -565,27 +614,15 @@ where
             let mut next_parent_blocks = vec![];
             for parent_block_id in parent_block_ids {
                 let parent_block = self
-                    .local_store
-                    .get_dag_sync_block(parent_block_id)?
-                    .ok_or_else(|| {
-                        anyhow!(
-                        "the dag block should exist in local store, parent child block id: {:?}",
-                        parent_id,
-                    )
-                    })?;
+                    .sync_dag_store
+                    .get_dag_sync_block(parent_block_id)?;
                 let mut executed_children = vec![];
                 for child in &parent_block.children {
                     let child_block =
-                        self.local_store
-                            .get_dag_sync_block(*child)?
-                            .ok_or_else(|| {
-                                anyhow!(
-                                "the dag block should exist in local store, child block id: {:?}",
-                                child
-                            )
-                            })?;
-                    if child_block
-                        .block
+                        self.sync_dag_store
+                            .get_dag_sync_block(*child)?;
+                    let block_to_execute = child_block.block.ok_or_else(|| format_err!("none block when executing a sync dag block: {:?}", child))?;
+                    if block_to_execute
                         .header()
                         .parents_hash()
                         .ok_or_else(|| anyhow!("the dag block's parents should exist"))?
@@ -628,30 +665,15 @@ where
         Ok(())
     }
 
-    fn execute_if_parent_ready(&mut self, parent_id: HashValue) -> Result<()> {
-        let mut parent_block =
-            self.local_store
-                .get_dag_sync_block(parent_id)?
-                .ok_or_else(|| {
-                    anyhow!(
-                        "the dag block should exist in local store, parent child block id: {:?}",
-                        parent_id,
-                    )
-                })?;
-
+    fn execute_if_parent_ready(&mut self, children: Vec<HashValue>) -> Result<()> {
         let mut executed_children = vec![];
-        for child in &parent_block.children {
+        for child in &children {
             let child_block = self
-                .local_store
-                .get_dag_sync_block(*child)?
-                .ok_or_else(|| {
-                    anyhow!(
-                        "the dag block should exist in local store, child block id: {:?}",
-                        child
-                    )
-                })?;
-            if child_block
-                .block
+                .sync_dag_store
+                .get_dag_sync_block(*child)?;
+            let block_to_execute = child_block
+                .block.ok_or_else(|| format_err!("The sync dag block's block: {:?} is none", child))?;
+            if block_to_execute
                 .header()
                 .parents_hash()
                 .ok_or_else(|| anyhow!("the dag block's parents should exist"))?
@@ -683,13 +705,9 @@ where
                     self.check_enough_by_info(executed_block.block_info)?,
                 )?;
                 self.execute_if_parent_ready_norecursion(*child)?;
-                self.local_store.delete_dag_sync_block(*child)?;
+                self.sync_dag_store.delete_dag_sync_block(*child)?;
             }
         }
-        parent_block
-            .children
-            .retain(|child| !executed_children.contains(child));
-        self.local_store.save_dag_sync_block(parent_block)?;
         Ok(())
     }
 

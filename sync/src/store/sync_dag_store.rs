@@ -1,9 +1,13 @@
-use std::{path::Path, sync::Arc};
+use std::{any, path::Path, sync::Arc};
 
+use anyhow::format_err;
 use starcoin_config::{temp_dir, RocksdbConfig, StorageConfig};
-use starcoin_storage::db_storage::DBStorage;
+use starcoin_crypto::HashValue;
+use starcoin_dag::consensusdb::prelude::StoreError;
+use starcoin_storage::db_storage::{DBStorage, SchemaIterator};
+use starcoin_types::block::Block;
 
-use super::sync_absent_ancestor::{SyncAbsentBlockStore, SYNC_ABSENT_BLOCK_CF};
+use super::sync_absent_ancestor::{AbsentDagBlockStoreReader, AbsentDagBlockStoreWriter, DagSyncBlock, SyncAbsentBlockStore, SYNC_ABSENT_BLOCK_CF};
 
 #[derive(Clone)]
 pub struct SyncDagStore {
@@ -68,5 +72,41 @@ impl SyncDagStore {
 
     pub fn create_for_testing() -> anyhow::Result<Self> {
         SyncDagStore::create_from_path(temp_dir(), SyncDagStoreConfig::default())
+    }
+    
+    pub fn save_block(&self, block: Block) -> anyhow::Result<()> {
+        match self.absent_dag_store.get_absent_block_by_id(block.id()) {
+            Ok(sync_dag_block) => {
+                if sync_dag_block.block.ok_or_else(|| format_err!("The sync dag block:{:?} is in sync dag block store but block is None.", block.id()))?.header().id() == block.id() {
+                    return Ok(());
+                } else {
+                    return Err(format_err!("The sync dag block:{:?} is in sync dag block store but block is not equal.", block.id()));
+                }
+            }
+            Err(e) => {
+                match e {
+                    StoreError::KeyNotFound(_) => {
+                        self.absent_dag_store.save_absent_block(vec![DagSyncBlock {
+                            block: Some(block.clone()),
+                            children: vec![],
+                        }])?;
+                        return Ok(());
+                    }
+                    _ => return Err(format_err!("Failed to save block:{:?} into sync dag store. db error: {:?}", block.id(), e)),
+                }
+            }
+        }
+    }
+    
+    pub fn iter_at_first(&self) -> anyhow::Result<SchemaIterator<HashValue, DagSyncBlock>> {
+        self.absent_dag_store.iter_at_first()
+    }
+    
+    pub fn delete_dag_sync_block(&self, id: HashValue) -> anyhow::Result<()> {
+        self.absent_dag_store.delete_absent_block(id)
+    }
+    
+    pub fn get_dag_sync_block(&self, child: HashValue) -> anyhow::Result<DagSyncBlock, StoreError> {
+        self.absent_dag_store.get_absent_block_by_id(child)
     }
 }

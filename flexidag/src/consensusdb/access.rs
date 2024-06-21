@@ -47,9 +47,7 @@ where
     }
 
     pub fn read(&self, key: S::Key) -> Result<S::Value, StoreError> {
-        println!("jacktest: read from cache: {:?}, {:?}", key, S::COLUMN_FAMILY);
         if let Some(data) = self.cache.get(&key) {
-            println!("jacktest: read from cache: {:?}", key);
             Ok(data)
         } else if let Some(slice) = self
             .db
