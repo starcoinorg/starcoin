@@ -197,6 +197,10 @@ impl ChainId {
     pub fn is_dag_test(self) -> bool {
         self.id == 250
     }
+
+    pub fn is_vega(self) -> bool {
+        self.id == 2
+    }
 }
 
 impl fmt::Display for ChainId {

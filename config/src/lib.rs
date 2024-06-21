@@ -56,6 +56,7 @@ pub use genesis_config::{
     BuiltinNetworkID, ChainNetwork, ChainNetworkID, FutureBlockParameter,
     FutureBlockParameterResolver, GenesisBlockParameter, GenesisBlockParameterConfig,
     GenesisConfig, G_DEV_CONFIG, G_HALLEY_CONFIG, G_MAIN_CONFIG, G_PROXIMA_CONFIG, G_TEST_CONFIG,
+    G_VEGA_CONFIG,
 };
 pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;
@@ -165,7 +166,7 @@ impl FromStr for Connect {
 }
 
 static G_OPT_NET_HELP: &str = r#"Chain Network
-    Builtin network: test,dev,halley,proxima,barnard,main
+    Builtin network: test,dev,halley,proxima,barnard,main,vega
     Custom network format: chain_name:chain_id
     Such as:
     my_chain:123 will init a new chain with id `123`.

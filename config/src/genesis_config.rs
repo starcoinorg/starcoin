@@ -95,7 +95,7 @@ impl Display for BuiltinNetworkID {
             BuiltinNetworkID::Barnard => write!(f, "barnard"),
             BuiltinNetworkID::Main => write!(f, "main"),
             BuiltinNetworkID::DagTest => write!(f, "dagtest"),
-            BuiltinNetworkID::Vega=>write!(f,"vega"),
+            BuiltinNetworkID::Vega => write!(f, "vega"),
         }
     }
 }
@@ -173,8 +173,8 @@ impl BuiltinNetworkID {
     pub fn is_dag_test(self) -> bool {
         matches!(self, BuiltinNetworkID::DagTest)
     }
-    pub fn is_vega(self)->bool{
-        matches!(self,BuiltinNetworkID::Vega)
+    pub fn is_vega(self) -> bool {
+        matches!(self, BuiltinNetworkID::Vega)
     }
     pub fn networks() -> Vec<BuiltinNetworkID> {
         vec![
@@ -198,7 +198,7 @@ impl BuiltinNetworkID {
             BuiltinNetworkID::Barnard => &G_BARNARD_CONFIG,
             BuiltinNetworkID::Main => &G_MAIN_CONFIG,
             BuiltinNetworkID::DagTest => &G_DAG_TEST_CONFIG,
-            BuiltinNetworkID::Vega=>&G_VEGA_CONFIG,
+            BuiltinNetworkID::Vega => &G_VEGA_CONFIG,
         }
     }
 
@@ -211,7 +211,7 @@ impl BuiltinNetworkID {
             BuiltinNetworkID::Barnard => G_BARNARD_BOOT_NODES.as_slice(),
             BuiltinNetworkID::Main => G_MAIN_BOOT_NODES.as_slice(),
             BuiltinNetworkID::DagTest => G_EMPTY_BOOT_NODES.as_slice(),
-            BuiltinNetworkID::Vega=>G_VEGA_BOOT_NODES.as_slice(),
+            BuiltinNetworkID::Vega => G_VEGA_BOOT_NODES.as_slice(),
         }
     }
 
@@ -723,7 +723,7 @@ static G_UNCLE_RATE_TARGET: u64 = 240;
 static G_DEFAULT_BASE_BLOCK_TIME_TARGET: u64 = 10000;
 static G_DEFAULT_BASE_BLOCK_DIFF_WINDOW: u64 = 24;
 static G_BASE_REWARD_PER_UNCLE_PERCENT: u64 = 10;
-static G_MIN_BLOCK_TIME_TARGET: u64 = 5000;
+static G_MIN_BLOCK_TIME_TARGET: u64 = 2000;
 static G_MAX_BLOCK_TIME_TARGET: u64 = 60000;
 pub static G_BASE_MAX_UNCLES_PER_BLOCK: u64 = 2;
 
@@ -1095,7 +1095,14 @@ pub static G_MAIN_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
     "/dns4/main9.seed.starcoin.org/tcp/9840/p2p/12D3KooWLKo5X7yntEaAhUTh62ksD8pwsSu7CyTgZ76bRcStHF7x".parse().expect("parse multi addr should be ok"),
 ]
 });
-
+pub static G_VEGA_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
+    vec![
+    "/dns4/vega1.seed.starcoin.org/tcp/9840/p2p/12D3KooWSW8t32L6VyjPZxxe3VSD7H6Ffgh69eCaDnDyab2M6tfK".parse().expect("parse multi addr should be ok"),
+    "/dns4/vega2.seed.starcoin.org/tcp/9840/p2p/12D3KooWBWsibdKdogDpFUfSVejPdK6t4s1eEvcqjuPVJ3gSpypx".parse().expect("parse multi addr should be ok"),
+    "/dns4/vega3.seed.starcoin.org/tcp/9840/p2p/12D3KooWB9vGtpgqyD2cG4PTEU1SHSuWV6PErMPJFbbi5vYpkj3H".parse().expect("parse multi addr should be ok"),
+    "/dns4/vega4.seed.starcoin.org/tcp/9840/p2p/12D3KooWKqZ2k2qQWY1khPH6WV2qFD5X2TZrpRMj75MHxCd8VH5r".parse().expect("parse multi addr should be ok"),
+]
+});
 pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let stdlib_version = StdlibVersion::Version(4);
     let publishing_option = TransactionPublishOption::locked();
@@ -1152,15 +1159,14 @@ pub static G_LATEST_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
     StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map()).unwrap()
 });
 
-
 pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let stdlib_version = StdlibVersion::Version(12);
     let publishing_option = TransactionPublishOption::locked();
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter{
-            parent_hash: HashValue::from_hex_literal("0xb82a2c11f2df62bf87c2933d0281e5fe47ea94d5f0049eec1485b682df29529a").unwrap(),
-            timestamp: 1621311100863,
-            difficulty: 0xb1ec37.into(),
+            parent_hash: HashValue::from_hex_literal("0x9c1d2feee27125518498fa6bfae233a44c6838bd67c6c50bff02ab4f91837e3a").unwrap(),
+            timestamp: 1718943459997,
+            difficulty: 0x5f.into(),
         }),
         version: Version { major: 1 },
         reward_delay: 7,
@@ -1201,6 +1207,7 @@ pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         transaction_timeout: ONE_DAY,
         dag_effective_height: 0,
+    }
 });
 
 #[cfg(test)]
