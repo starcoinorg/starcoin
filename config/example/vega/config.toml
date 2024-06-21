@@ -1,0 +1,52 @@
+[account_provider]
+from_env = false
+
+[logger]
+max_backup = 100
+
+[metrics]
+address = "127.0.0.1"
+
+[metrics.push_config]
+interval = 0
+
+[miner]
+miner_thread = 3
+
+[network]
+max_incoming_peers = 25
+max_outgoing_peers = 75
+node_name = "alice-node1"
+seeds = ["/ip4/1.2.3.3/tcp/9840/p2p/QmRZ6ZwVzhJ6xpVV1CEve2RKiUzK4y2pSx3eg2cvQMsT4f", "/ip4/1.2.3.4/tcp/9840/p2p/12D3KooWCfUex27aoqaKScponiLB4N4FWbgmbHYjVoRebGrQaRYk"]
+
+[network.network_rpc_quotas]
+default_global_api_quota = "2000/s"
+[rpc.api_quotas]
+custom_user_api_quota = [["chain.info", "100/s"], ["chain.get_block_by_hash", "100/s"]]
+default_global_api_quota = "2000/s"
+
+[rpc.http]
+apis = "chain,miner,node,state,txpool,contract"
+
+[rpc.ipc]
+apis = "account,chain,debug,miner,network_manager,node_manager,node,pubsub,state,sync_manager,txpool,contract"
+
+[rpc.tcp]
+apis = "chain,miner,node,state,txpool,contract"
+
+[rpc.ws]
+apis = "chain,miner,node,pubsub,state,txpool,contract"
+
+[storage]
+max_open_files = 40960
+
+[stratum]
+port = 8090
+
+[sync]
+
+[tx_pool]
+max_count = 8192
+
+[vault]
+dir = "/data/my_starcoin_vault"

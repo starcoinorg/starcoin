@@ -18,7 +18,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "network-p2p-core"
 publish = { workspace = true }
-version = "2.0.0-alpha"
+version = "2.0.0"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }

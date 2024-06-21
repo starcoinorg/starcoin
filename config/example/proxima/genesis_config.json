@@ -505,7 +505,7 @@
     "base_reward_per_uncle_percent": 10,
     "epoch_block_count": 240,
     "base_block_difficulty_window": 24,
-    "min_block_time_target": 5000,
+    "min_block_time_target": 2000,
     "max_block_time_target": 60000,
     "base_max_uncles_per_block": 2,
     "base_block_gas_limit": 50000000,
