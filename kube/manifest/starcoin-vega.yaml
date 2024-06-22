@@ -19,8 +19,6 @@ spec:
         app: starcoin
         network: vega
     spec:
-      nodeSelector:
-        starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
         image: ghcr.io/starcoinorg/starcoin:v2.0.0
@@ -60,18 +58,6 @@ spec:
           periodSeconds: 5
           timeoutSeconds: 2
           failureThreshold: 4
-          successThreshold: 1
-        readinessProbe:
-          exec:
-            command:
-              - sh
-              - -c
-              - >-
-                 /starcoin/starcoin -n vega -d /sc-data node sync status|grep Synchronized
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 2
-          failureThreshold: 3
           successThreshold: 1
   volumeClaimTemplates:
   - metadata:
