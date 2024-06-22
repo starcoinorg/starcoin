@@ -48,10 +48,13 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args:  --manifest-path=./cmd/starcoin/Cargo.toml --release
+          args: --release
 
       - name: build starcoin release asset
         run: bash ./scripts/release.sh ${{ matrix.platform }}
+
+      - name: build mpm release asset
+        run: bash ./scripts/release_mpm.sh ${{ matrix.platform }}
 
       - name: upload artifact asset
         uses: actions/upload-artifact@v2
