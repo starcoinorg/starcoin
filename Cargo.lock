@@ -756,7 +756,7 @@ dependencies = [
  "clang-sys",
  "clap 2.34.0",
  "env_logger",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "lazycell",
  "log 0.4.17",
  "peeking_take_while",
@@ -777,7 +777,7 @@ dependencies = [
  "bitflags",
  "cexpr",
  "clang-sys",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "lazycell",
  "peeking_take_while",
  "prettyplease 0.2.6",
@@ -949,7 +949,7 @@ version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba3569f383e8f1598449f1a423e72e99569137b47740b1da11ef19af3d5c3223"
 dependencies = [
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "memchr",
  "regex-automata",
 ]
@@ -1335,7 +1335,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3616f750b84d8f0de8a58bda93e08e2a81ad3f523089b05f1dffecab48c6cbd"
 dependencies = [
  "atty",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "winapi 0.3.9",
 ]
 
@@ -1364,7 +1364,7 @@ version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b1b9d958c2b1368a663f05538fc1b5975adce1e19f435acceae987aceeeb369"
 dependencies = [
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "nom 5.1.2",
  "rust-ini",
  "serde 1.0.152",
@@ -1381,7 +1381,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3d79fbe8970a77e3e34151cc13d3b3e248aa0faaecb9f6091fa07ebefe5ad60"
 dependencies = [
  "encode_unicode",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "libc",
  "windows-sys 0.42.0",
 ]
@@ -1512,7 +1512,7 @@ dependencies = [
  "criterion-plot",
  "csv",
  "itertools",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "num-traits 0.2.15",
  "oorandom",
  "plotters",
@@ -1612,7 +1612,7 @@ checksum = "c3c7c73a2d1e9fc0886a08b93e98eb643461230d5f1925e4036204d5f2e261a8"
 dependencies = [
  "autocfg 1.1.0",
  "cfg-if 0.1.10",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
 ]
 
 [[package]]
@@ -2539,7 +2539,7 @@ dependencies = [
  "base64 0.11.0",
  "bytes 1.4.0",
  "dyn-clone",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "percent-encoding 2.2.0",
  "reqwest",
  "rustc_version 0.2.3",
@@ -2713,7 +2713,7 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3be3c61c59fdc91f5dbc3ea31ee8623122ce80057058be560654c5d410d181a6"
 dependencies = [
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "log 0.4.17",
  "rand 0.7.3",
 ]
@@ -2767,7 +2767,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40b9e59cd0f7e0806cca4be089683ecb6434e602038df21fe6bf6711b2f07f64"
 dependencies = [
  "cc",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "libc",
  "winapi 0.3.9",
 ]
@@ -3647,7 +3647,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dbe7873dab538a9a44ad79ede1faf5f30d49f9a5c883ddbab48bce81b64b7492"
 dependencies = [
  "globset",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "log 0.4.17",
  "memchr",
  "regex",
@@ -3759,7 +3759,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d207dc617c7a380ab07ff572a6e52fa202a2a8f355860ac9c38e23f8196be1b"
 dependencies = [
  "console",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "number_prefix",
  "regex",
 ]
@@ -4095,7 +4095,7 @@ checksum = "240f87695e6c6f62fb37f05c02c04953cf68d6408b8c1c89de85c7a0125b1011"
 dependencies = [
  "futures 0.3.26",
  "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "log 0.4.17",
  "parking_lot 0.11.2",
  "rand 0.7.3",
@@ -4109,7 +4109,7 @@ source = "git+https://github.com/starcoinorg/jsonrpc?rev=e895b6cc5897f3813a953a9
 dependencies = [
  "futures 0.3.26",
  "jsonrpc-core 18.0.0 (git+https://github.com/starcoinorg/jsonrpc?rev=e895b6cc5897f3813a953a9a6bb4718b4856ab19)",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "log 0.4.17",
  "parking_lot 0.11.2",
  "rand 0.7.3",
@@ -4127,7 +4127,7 @@ dependencies = [
  "futures 0.3.26",
  "globset",
  "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "log 0.4.17",
  "tokio",
  "tokio-stream",
@@ -4144,7 +4144,7 @@ dependencies = [
  "futures 0.3.26",
  "globset",
  "jsonrpc-core 18.0.0 (git+https://github.com/starcoinorg/jsonrpc?rev=e895b6cc5897f3813a953a9a6bb4718b4856ab19)",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "log 0.4.17",
  "tokio",
  "tokio-stream",
@@ -4234,9 +4234,9 @@ checksum = "76f033c7ad61445c5b347c7382dd1237847eb1bce590fe50365dcb33d546be73"
 
 [[package]]
 name = "lazy_static"
-version = "1.4.0"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
+checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "lazycell"
@@ -6007,7 +6007,7 @@ version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07226173c32f2926027b63cce4bcd8076c3552846cbe7925f3aaffeac0a3b92e"
 dependencies = [
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "libc",
  "log 0.4.17",
  "openssl",
@@ -7273,7 +7273,7 @@ dependencies = [
  "atty",
  "csv",
  "encode_unicode",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "term 0.5.2",
  "unicode-width",
 ]
@@ -7378,7 +7378,7 @@ checksum = "449811d15fbdf5ceb5c1144416066429cf82316e2ec8ce0c1f6f8a02e7bbcf8c"
 dependencies = [
  "cfg-if 1.0.0",
  "fnv",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "libc",
  "memchr",
  "parking_lot 0.12.1",
@@ -7419,7 +7419,7 @@ dependencies = [
  "bit-set",
  "bitflags",
  "byteorder",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "num-traits 0.2.15",
  "quick-error 2.0.1",
  "rand 0.8.5",
@@ -7461,7 +7461,7 @@ dependencies = [
  "bytes 1.4.0",
  "heck 0.4.1",
  "itertools",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "log 0.4.17",
  "multimap",
  "petgraph 0.6.3",
@@ -8685,7 +8685,7 @@ version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a3a4e0ea8a88553209f6cc6cfe8724ecad22e1acf372793c27d995290fe74f8"
 dependencies = [
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "num-traits 0.1.43",
  "regex",
  "serde 0.8.23",
@@ -9152,7 +9152,7 @@ version = "2.0.0"
 dependencies = [
  "futures 0.3.26",
  "futures-core",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "once_cell",
  "parking_lot 0.12.1",
  "prometheus",
@@ -10021,7 +10021,7 @@ dependencies = [
  "anyhow",
  "arc-swap",
  "chrono",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "log 0.4.17",
  "log4rs",
  "once_cell",
@@ -11179,7 +11179,7 @@ dependencies = [
  "bytes 1.4.0",
  "forkable-jellyfish-merkle",
  "hex",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "num_enum",
  "proptest",
  "proptest-derive",
@@ -11407,7 +11407,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c6b5c64445ba8094a6ab0c3cd2ad323e07171012d9c98b0b15651daf1787a10"
 dependencies = [
  "clap 2.34.0",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "structopt-derive 0.4.18",
 ]
 
@@ -11444,7 +11444,7 @@ checksum = "a7e94b1ec00bad60e6410e058b52f1c66de3dc5fe4d62d09b3e52bb7d3b73e25"
 dependencies = [
  "base64 0.13.1",
  "crc",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "md-5",
  "rand 0.8.5",
  "ring",
@@ -11602,7 +11602,7 @@ checksum = "91a3cae256f8af5246c2daad51ff29c32de4b4b0b0222063920af445fa3e12ab"
 dependencies = [
  "bytesize",
  "chrono",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "libc",
  "nom 7.1.3",
  "winapi 0.3.9",
@@ -11644,7 +11644,7 @@ dependencies = [
  "chrono-tz",
  "globwalk 0.8.1",
  "humansize",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "percent-encoding 2.2.0",
  "pest 2.5.5",
  "pest_derive 2.5.5",
@@ -12031,7 +12031,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ee9ceecf69145923834ea73f32ba40c790fd877b74a7817dd0b089f1eb9c7c8"
 dependencies = [
  "futures-util-preview",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "tokio-sync 0.2.0-alpha.6",
 ]
 
@@ -12075,7 +12075,7 @@ checksum = "09bc590ec4ba8ba87652da2068d150dcada2cfa2e07faae270a5e0409aa51351"
 dependencies = [
  "crossbeam-utils 0.7.2",
  "futures 0.1.31",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "log 0.4.17",
  "mio 0.6.23",
  "num_cpus",
@@ -12291,7 +12291,7 @@ dependencies = [
  "futures-util",
  "idna 0.2.3",
  "ipnet",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "rand 0.8.5",
  "smallvec 1.10.0",
  "socket2",
@@ -12311,7 +12311,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "futures-util",
  "ipconfig",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "lru-cache",
  "parking_lot 0.12.1",
  "resolv-conf",
@@ -12902,7 +12902,7 @@ dependencies = [
  "bytes 1.4.0",
  "hex",
  "interceptor",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "log 0.4.17",
  "rand 0.8.5",
  "rcgen 0.9.3",
@@ -13093,7 +13093,7 @@ dependencies = [
  "bytes 1.4.0",
  "cc",
  "ipnet",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "libc",
  "log 0.4.17",
  "nix 0.24.3",
@@ -13481,7 +13481,7 @@ dependencies = [
  "base64 0.13.1",
  "data-encoding",
  "der-parser 7.0.0",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "nom 7.1.3",
  "oid-registry 0.4.0",
  "ring",
@@ -13500,7 +13500,7 @@ dependencies = [
  "base64 0.13.1",
  "data-encoding",
  "der-parser 8.1.0",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "nom 7.1.3",
  "oid-registry 0.6.1",
  "rusticata-macros",
