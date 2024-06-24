@@ -49,6 +49,7 @@ use starcoin_stratum::service::{StratumService, StratumServiceFactory};
 use starcoin_stratum::stratum::{Stratum, StratumFactory};
 use starcoin_sync::announcement::AnnouncementService;
 use starcoin_sync::block_connector::{BlockConnectorService, ExecuteRequest, ResetRequest};
+use starcoin_sync::store::sync_dag_store::{SyncDagStore, SyncDagStoreConfig};
 use starcoin_sync::sync::SyncService;
 use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
@@ -327,6 +328,8 @@ impl NodeService {
             dag_storage.clone(),
         );
         registry.put_shared(dag.clone()).await?;
+        let sync_dag_store = SyncDagStore::create_from_path(config.storage.sync_dir(), SyncDagStoreConfig::default())?;
+        registry.put_shared(sync_dag_store).await?;
         let (chain_info, genesis) =
             Genesis::init_and_check_storage(config.net(), storage.clone(), dag, config.data_dir())?;
         info!(

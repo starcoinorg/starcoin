@@ -37,8 +37,8 @@ pub trait AbsentDagBlockStoreReader {
 }
 
 pub trait AbsentDagBlockStoreWriter {
-    fn save_absent_block(&mut self, blocks: Vec<DagSyncBlock>) -> anyhow::Result<()>;
-    fn delete_absent_block(&mut self, hash: HashValue) -> anyhow::Result<()>;
+    fn save_absent_block(&self, blocks: Vec<DagSyncBlock>) -> anyhow::Result<()>;
+    fn delete_absent_block(&self, hash: HashValue) -> anyhow::Result<()>;
 }
 
 pub(crate) const SYNC_ABSENT_BLOCK_CF: &str = "sync-absent-block";
@@ -137,13 +137,13 @@ impl AbsentDagBlockStoreReader for SyncAbsentBlockStore {
 }
 
 impl AbsentDagBlockStoreWriter for SyncAbsentBlockStore {
-    fn delete_absent_block(&mut self, hash: HashValue) -> anyhow::Result<()> {
+    fn delete_absent_block(&self, hash: HashValue) -> anyhow::Result<()> {
         self.cache_access
             .delete(DirectDbWriter::new(&self.db), hash)
             .map_err(|e| format_err!("failed to delete absent block: {:?}", e))
     }
 
-    fn save_absent_block(&mut self, blocks: Vec<DagSyncBlock>) -> anyhow::Result<()> {
+    fn save_absent_block(&self, blocks: Vec<DagSyncBlock>) -> anyhow::Result<()> {
         for block in blocks {
             self.cache_access.write(
                 DirectDbWriter::new(&self.db),

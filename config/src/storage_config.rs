@@ -76,7 +76,9 @@ impl Default for RocksdbConfig {
 
 static G_DEFAULT_DB_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("starcoindb/db"));
 static G_DEFAULT_DAG_DB_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("dag/db"));
+static G_DEFAULT_SYNC_DB_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("sync/db"));
 pub const DEFAULT_CACHE_SIZE: usize = 20000;
+pub const DEFAULT_SYNC_DAG_BLOCK_CACHE_SIZE: usize = 2000;
 
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
@@ -120,6 +122,14 @@ pub struct StorageConfig {
         help = "rocksdb background threads"
     )]
     pub parallelism: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(
+        name = "sync-dag-block-cache-sizes",
+        long,
+        help = "Max number of blocks in sync dag block cache."
+    )]
+    pub sync_dag_block_cache_size: Option<usize>,
 }
 
 impl StorageConfig {
@@ -132,6 +142,9 @@ impl StorageConfig {
     }
     pub fn dag_dir(&self) -> PathBuf {
         self.base().data_dir().join(G_DEFAULT_DAG_DB_DIR.as_path())
+    }
+    pub fn sync_dir(&self) -> PathBuf {
+        self.base().data_dir().join(G_DEFAULT_SYNC_DB_DIR.as_path())
     }
     pub fn rocksdb_config(&self) -> RocksdbConfig {
         let default = RocksdbConfig::default();
@@ -149,6 +162,10 @@ impl StorageConfig {
     }
     pub fn cache_size(&self) -> usize {
         self.cache_size.unwrap_or(DEFAULT_CACHE_SIZE)
+    }
+
+    pub fn sync_dag_block_cache_size(&self) -> usize {
+        self.sync_dag_block_cache_size.unwrap_or(DEFAULT_SYNC_DAG_BLOCK_CACHE_SIZE)
     }
 }
 

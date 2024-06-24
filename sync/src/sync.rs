@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::BlockConnectorService;
+use crate::store::sync_dag_store::SyncDagStore;
 use crate::sync_metrics::SyncMetrics;
 use crate::tasks::{full_sync_task, AncestorEvent, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
@@ -225,6 +226,7 @@ impl SyncService {
         let sync_metrics = self.metrics.clone();
         let vm_metrics = self.vm_metrics.clone();
         let dag = ctx.get_shared::<BlockDAG>()?;
+        let sync_dag_store = ctx.get_shared::<SyncDagStore>()?;
         let fut = async move {
             let startup_info = storage
                 .get_startup_info()?
@@ -263,6 +265,7 @@ impl SyncService {
                     vm_metrics.clone(),
                     dag_fork_height,
                     dag,
+                    sync_dag_store,
                 )?;
 
                 self_ref.notify(SyncBeginEvent {

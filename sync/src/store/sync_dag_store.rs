@@ -1,4 +1,4 @@
-use std::{any, path::Path, sync::Arc};
+use std::{path::Path, sync::Arc};
 
 use anyhow::format_err;
 use starcoin_config::{temp_dir, RocksdbConfig, StorageConfig};
@@ -45,7 +45,7 @@ impl SyncDagStoreConfig {
 impl From<StorageConfig> for SyncDagStoreConfig {
     fn from(value: StorageConfig) -> Self {
         Self {
-            cache_size: value.cache_size(),
+            cache_size: value.sync_dag_block_cache_size(),
             rocksdb_config: value.rocksdb_config(),
         }
     }
@@ -108,5 +108,15 @@ impl SyncDagStore {
     
     pub fn get_dag_sync_block(&self, child: HashValue) -> anyhow::Result<DagSyncBlock, StoreError> {
         self.absent_dag_store.get_absent_block_by_id(child)
+    }
+    
+    pub fn update_children(&self, parent_id: HashValue, child_id: HashValue) -> anyhow::Result<()> {
+        let mut syn_dag = self.get_dag_sync_block(parent_id)?;
+        if syn_dag.children.contains(&child_id) {
+            return Ok(());
+        }
+        syn_dag.children.push(child_id);
+        self.absent_dag_store.save_absent_block(vec![syn_dag])?;
+        Ok(())
     }
 }
