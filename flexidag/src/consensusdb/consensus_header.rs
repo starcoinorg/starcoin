@@ -19,10 +19,7 @@ use std::sync::Arc;
 pub trait HeaderStoreReader {
     fn get_daa_score(&self, hash: Hash) -> Result<u64, StoreError>;
     fn get_blue_score(&self, hash: Hash) -> Result<u64, StoreError>;
-    fn get_timestamp(&self, hash: Hash) -> Result<u64, StoreError>;
     fn get_difficulty(&self, hash: Hash) -> Result<U256, StoreError>;
-    fn get_header(&self, hash: Hash) -> Result<Arc<BlockHeader>, StoreError>;
-    fn get_header_with_block_level(&self, hash: Hash) -> Result<HeaderWithBlockLevel, StoreError>;
     fn get_compact_header_data(&self, hash: Hash) -> Result<CompactHeaderData, StoreError>;
 }
 
@@ -109,11 +106,6 @@ impl DbHeadersStore {
         self.headers_access.has(hash)
     }
 
-    pub fn get_header(&self, hash: Hash) -> Result<BlockHeader, StoreError> {
-        let result = self.headers_access.read(hash)?;
-        Ok((*result.header).clone())
-    }
-
     pub fn insert_batch(
         &self,
         batch: &mut WriteBatch,
@@ -153,26 +145,11 @@ impl HeaderStoreReader for DbHeadersStore {
         unimplemented!()
     }
 
-    fn get_timestamp(&self, hash: Hash) -> Result<u64, StoreError> {
-        if let Some(header_with_block_level) = self.headers_access.read_from_cache(hash) {
-            return Ok(header_with_block_level.header.timestamp());
-        }
-        Ok(self.compact_headers_access.read(hash)?.timestamp)
-    }
-
     fn get_difficulty(&self, hash: Hash) -> Result<U256, StoreError> {
         if let Some(header_with_block_level) = self.headers_access.read_from_cache(hash) {
             return Ok(header_with_block_level.header.difficulty());
         }
         Ok(self.compact_headers_access.read(hash)?.difficulty)
-    }
-
-    fn get_header(&self, hash: Hash) -> Result<Arc<BlockHeader>, StoreError> {
-        Ok(self.headers_access.read(hash)?.header)
-    }
-
-    fn get_header_with_block_level(&self, hash: Hash) -> Result<HeaderWithBlockLevel, StoreError> {
-        self.headers_access.read(hash)
     }
 
     fn get_compact_header_data(&self, hash: Hash) -> Result<CompactHeaderData, StoreError> {
