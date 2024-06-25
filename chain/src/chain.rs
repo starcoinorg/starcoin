@@ -706,7 +706,7 @@ impl BlockChain {
 
     fn init_dag(mut dag: BlockDAG, genesis_header: BlockHeader) -> Result<BlockDAG> {
         match dag.get_dag_state(genesis_header.id()) {
-            anyhow::Result::Ok(_dag_state) => (),
+            anyhow::Result::Ok(_dag_state) => panic!("Unclean data base"),
             Err(e) => match e.downcast::<StoreError>()? {
                 StoreError::KeyNotFound(_) => {
                     dag.init_with_genesis(genesis_header)?;

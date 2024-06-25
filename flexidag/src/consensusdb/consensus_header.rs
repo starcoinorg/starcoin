@@ -20,7 +20,6 @@ pub trait HeaderStoreReader {
     fn get_daa_score(&self, hash: Hash) -> Result<u64, StoreError>;
     fn get_blue_score(&self, hash: Hash) -> Result<u64, StoreError>;
     fn get_difficulty(&self, hash: Hash) -> Result<U256, StoreError>;
-    fn get_compact_header_data(&self, hash: Hash) -> Result<CompactHeaderData, StoreError>;
 }
 
 pub trait HeaderStore: HeaderStoreReader {
@@ -85,7 +84,6 @@ impl ValueCodec<CompactBlockHeader> for CompactHeaderData {
 #[derive(Clone)]
 pub struct DbHeadersStore {
     db: Arc<DBStorage>,
-    headers_access: CachedDbAccess<DagHeader>,
     compact_headers_access: CachedDbAccess<CompactBlockHeader>,
 }
 
@@ -93,7 +91,6 @@ impl DbHeadersStore {
     pub fn new(db: Arc<DBStorage>, cache_size: usize) -> Self {
         Self {
             db: Arc::clone(&db),
-            headers_access: CachedDbAccess::new(db.clone(), cache_size),
             compact_headers_access: CachedDbAccess::new(db, cache_size),
         }
     }
@@ -103,7 +100,7 @@ impl DbHeadersStore {
     }
 
     pub fn has(&self, hash: Hash) -> StoreResult<bool> {
-        self.headers_access.has(hash)
+        self.compact_headers_access.has(hash)
     }
 
     pub fn insert_batch(
@@ -111,19 +108,11 @@ impl DbHeadersStore {
         batch: &mut WriteBatch,
         hash: Hash,
         header: Arc<BlockHeader>,
-        block_level: BlockLevel,
+        _block_level: BlockLevel,
     ) -> Result<(), StoreError> {
-        if self.headers_access.has(hash)? {
+        if self.compact_headers_access.has(hash)? {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }
-        self.headers_access.write(
-            BatchDbWriter::new(batch),
-            hash,
-            HeaderWithBlockLevel {
-                header: header.clone(),
-                block_level,
-            },
-        )?;
         self.compact_headers_access.write(
             BatchDbWriter::new(batch),
             hash,
@@ -131,8 +120,7 @@ impl DbHeadersStore {
                 timestamp: header.timestamp(),
                 difficulty: header.difficulty(),
             },
-        )?;
-        Ok(())
+        )
     }
 }
 
@@ -146,20 +134,7 @@ impl HeaderStoreReader for DbHeadersStore {
     }
 
     fn get_difficulty(&self, hash: Hash) -> Result<U256, StoreError> {
-        if let Some(header_with_block_level) = self.headers_access.read_from_cache(hash) {
-            return Ok(header_with_block_level.header.difficulty());
-        }
         Ok(self.compact_headers_access.read(hash)?.difficulty)
-    }
-
-    fn get_compact_header_data(&self, hash: Hash) -> Result<CompactHeaderData, StoreError> {
-        if let Some(header_with_block_level) = self.headers_access.read_from_cache(hash) {
-            return Ok(CompactHeaderData {
-                timestamp: header_with_block_level.header.timestamp(),
-                difficulty: header_with_block_level.header.difficulty(),
-            });
-        }
-        self.compact_headers_access.read(hash)
     }
 }
 
@@ -168,9 +143,9 @@ impl HeaderStore for DbHeadersStore {
         &self,
         hash: Hash,
         header: Arc<BlockHeader>,
-        block_level: u8,
+        _block_level: u8,
     ) -> Result<(), StoreError> {
-        if self.headers_access.has(hash)? {
+        if self.compact_headers_access.has(hash)? {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }
         self.compact_headers_access.write(
@@ -180,15 +155,6 @@ impl HeaderStore for DbHeadersStore {
                 timestamp: header.timestamp(),
                 difficulty: header.difficulty(),
             },
-        )?;
-        self.headers_access.write(
-            DirectDbWriter::new(&self.db),
-            hash,
-            HeaderWithBlockLevel {
-                header,
-                block_level,
-            },
-        )?;
-        Ok(())
+        )
     }
 }
