@@ -32,9 +32,6 @@ pub trait GhostdagStoreReader {
 
     /// Returns full block data for the requested hash
     fn get_data(&self, hash: Hash) -> Result<Arc<GhostdagData>, StoreError>;
-
-    fn get_compact_data(&self, hash: Hash) -> Result<CompactGhostdagData, StoreError>;
-
     /// Check if the store contains data for the requested hash
     fn has(&self, hash: Hash) -> Result<bool, StoreError>;
 }
@@ -204,7 +201,6 @@ pub struct DbGhostdagStore {
     db: Arc<DBStorage>,
     level: BlockLevel,
     access: CachedDbAccess<GhostDag>,
-    compact_access: CachedDbAccess<CompactGhostDag>,
 }
 
 impl DbGhostdagStore {
@@ -213,7 +209,6 @@ impl DbGhostdagStore {
             db: Arc::clone(&db),
             level,
             access: CachedDbAccess::new(db.clone(), cache_size),
-            compact_access: CachedDbAccess::new(db, cache_size),
         }
     }
 
@@ -232,15 +227,6 @@ impl DbGhostdagStore {
         }
         self.access
             .write(BatchDbWriter::new(batch), hash, data.clone())?;
-        self.compact_access.write(
-            BatchDbWriter::new(batch),
-            hash,
-            CompactGhostdagData {
-                blue_score: data.blue_score,
-                blue_work: data.blue_work,
-                selected_parent: data.selected_parent,
-            },
-        )?;
         Ok(())
     }
 }
@@ -278,10 +264,6 @@ impl GhostdagStoreReader for DbGhostdagStore {
         self.access.read(hash)
     }
 
-    fn get_compact_data(&self, hash: Hash) -> Result<CompactGhostdagData, StoreError> {
-        self.compact_access.read(hash)
-    }
-
     fn has(&self, hash: Hash) -> Result<bool, StoreError> {
         self.access.has(hash)
     }
@@ -294,18 +276,6 @@ impl GhostdagStore for DbGhostdagStore {
         }
         self.access
             .write(DirectDbWriter::new(&self.db), hash, data.clone())?;
-        if self.compact_access.has(hash)? {
-            return Err(StoreError::KeyAlreadyExists(hash.to_string()));
-        }
-        self.compact_access.write(
-            DirectDbWriter::new(&self.db),
-            hash,
-            CompactGhostdagData {
-                blue_score: data.blue_score,
-                blue_work: data.blue_work,
-                selected_parent: data.selected_parent,
-            },
-        )?;
         Ok(())
     }
 }
@@ -421,10 +391,6 @@ impl GhostdagStoreReader for MemoryGhostdagStore {
             self.mergeset_reds_map.borrow()[&hash].clone(),
             self.blues_anticone_sizes_map.borrow()[&hash].clone(),
         )))
-    }
-
-    fn get_compact_data(&self, hash: Hash) -> Result<CompactGhostdagData, StoreError> {
-        Ok(self.get_data(hash)?.to_compact())
     }
 
     fn has(&self, hash: Hash) -> Result<bool, StoreError> {

@@ -30,7 +30,10 @@ impl Default for FlexiDagStorageConfig {
     fn default() -> Self {
         Self {
             cache_size: 1,
-            rocksdb_config: Default::default(),
+            rocksdb_config: RocksdbConfig {
+                max_total_wal_size: 1 << 27,
+                ..Default::default()
+            },
         }
     }
 }
