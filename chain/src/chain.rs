@@ -706,17 +706,15 @@ impl BlockChain {
 
     fn init_dag(mut dag: BlockDAG, genesis_header: BlockHeader) -> Result<BlockDAG> {
         match dag.get_dag_state(genesis_header.id()) {
-            anyhow::Result::Ok(_dag_state) => panic!("Unclean data base"),
+            anyhow::Result::Ok(_dag_state) => Err(anyhow!("Unclean data base")),
             Err(e) => match e.downcast::<StoreError>()? {
                 StoreError::KeyNotFound(_) => {
                     dag.init_with_genesis(genesis_header)?;
+                    Ok(dag)
                 }
-                e => {
-                    return Err(e.into());
-                }
+                e => Err(e.into()),
             },
         }
-        Ok(dag)
     }
 
     pub fn current_epoch_uncles_size(&self) -> u64 {
