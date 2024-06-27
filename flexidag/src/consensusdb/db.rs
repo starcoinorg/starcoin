@@ -120,4 +120,11 @@ impl FlexiDagStorage {
             .raw_write_batch_opt(batch, opts)
             .map_err(|e| DBIoError(e.to_string()))
     }
+
+    pub fn flush_opt(&self, wait: bool) -> Result<(), StoreError> {
+        self.db
+            .flush_opt(wait)
+            .map_err(|e| DBIoError(e.to_string()))?;
+        Ok(())
+    }
 }
