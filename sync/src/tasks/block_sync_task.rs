@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::store::sync_dag_store::SyncDagStore;
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{anyhow, bail, format_err, Result};
@@ -196,6 +197,7 @@ pub struct BlockCollector<N, H> {
     skip_pow_verify: bool,
     local_store: Arc<dyn Store>,
     fetcher: Arc<dyn BlockFetcher>,
+    sync_dag_store: SyncDagStore,
 }
 
 impl<N, H> BlockCollector<N, H>
@@ -212,6 +214,7 @@ where
         skip_pow_verify: bool,
         local_store: Arc<dyn Store>,
         fetcher: Arc<dyn BlockFetcher>,
+        sync_dag_store: SyncDagStore,
     ) -> Self {
         Self {
             current_block_info,
@@ -222,6 +225,7 @@ where
             skip_pow_verify,
             local_store,
             fetcher,
+            sync_dag_store,
         }
     }
 
@@ -552,6 +556,9 @@ where
                     block: block.clone(),
                     children: vec![],
                 })?;
+
+                self.sync_dag_store.save_block(block.clone())?;
+
                 result.push(block);
             }
         }

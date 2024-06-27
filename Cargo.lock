@@ -10915,6 +10915,7 @@ dependencies = [
  "pin-project 0.4.30",
  "pin-utils",
  "rand 0.8.5",
+ "serde 1.0.152",
  "starcoin-account-api",
  "starcoin-accumulator",
  "starcoin-block-relayer",

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::BlockConnectorService;
+use crate::store::sync_dag_store::SyncDagStore;
 use crate::tasks::block_sync_task::SyncBlockData;
 use crate::tasks::inner_sync_task::InnerSyncTask;
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
@@ -620,6 +621,7 @@ pub fn full_sync_task<H, A, F, N>(
     vm_metrics: Option<VMMetrics>,
     dag_fork_number: Option<BlockNumber>,
     dag: BlockDAG,
+    sync_dag_store: SyncDagStore,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
@@ -733,6 +735,7 @@ where
                 ext_error_handle.clone(),
                 dag_fork_number,
                 dag.clone(),
+                sync_dag_store.clone(),
             );
             let start_now = Instant::now();
             let (block_chain, _) = inner
