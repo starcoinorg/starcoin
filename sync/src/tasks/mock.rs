@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::store::sync_dag_store::SyncDagStore;
 use crate::tasks::{
     BlockConnectedEvent, BlockFetcher, BlockIdFetcher, BlockInfoFetcher, PeerOperator, SyncFetcher,
 };
@@ -134,6 +135,7 @@ pub struct SyncNodeMocker {
     pub peer_id: PeerId,
     pub chain_mocker: MockChain,
     pub err_mocker: ErrorMocker,
+    pub sync_dag_store: SyncDagStore,
     peer_selector: PeerSelector,
 }
 
@@ -153,12 +155,14 @@ impl SyncNodeMocker {
             None,
         );
         let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default(), None);
+        let sync_dag_store = SyncDagStore::create_for_testing()?;
         Ok(Self::new_inner(
             peer_id,
             chain,
             ErrorStrategy::Timeout(delay_milliseconds),
             random_error_percent,
             peer_selector,
+            sync_dag_store,
         ))
     }
 
@@ -181,12 +185,14 @@ impl SyncNodeMocker {
             None,
         );
         let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default(), None);
+        let sync_dag_store = SyncDagStore::create_for_testing()?;
         Ok(Self::new_inner(
             peer_id,
             chain,
             ErrorStrategy::Timeout(delay_milliseconds),
             random_error_percent,
             peer_selector,
+            sync_dag_store,
         ))
     }
 
@@ -199,12 +205,14 @@ impl SyncNodeMocker {
         let peer_id = PeerId::random();
         let peer_info = PeerInfo::new(peer_id.clone(), chain.chain_info(), vec![], vec![], None);
         let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default(), None);
+        let sync_dag_store = SyncDagStore::create_for_testing()?;
         Ok(Self::new_inner(
             peer_id,
             chain,
             error_strategy,
             random_error_percent,
             peer_selector,
+            sync_dag_store,
         ))
     }
 
@@ -214,6 +222,7 @@ impl SyncNodeMocker {
         delay_milliseconds: u64,
         random_error_percent: u32,
         peer_selector: PeerSelector,
+        sync_dag_store: SyncDagStore,
     ) -> Self {
         Self::new_inner(
             peer_id,
@@ -221,6 +230,7 @@ impl SyncNodeMocker {
             ErrorStrategy::Timeout(delay_milliseconds),
             random_error_percent,
             peer_selector,
+            sync_dag_store,
         )
     }
 
@@ -230,12 +240,14 @@ impl SyncNodeMocker {
         error_strategy: ErrorStrategy,
         random_error_percent: u32,
         peer_selector: PeerSelector,
+        sync_dag_store: SyncDagStore,
     ) -> Self {
         Self {
             peer_id: peer_id.clone(),
             chain_mocker: chain,
             err_mocker: ErrorMocker::new(error_strategy, random_error_percent, peer_id),
             peer_selector,
+            sync_dag_store,
         }
     }
 
