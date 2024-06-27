@@ -10,8 +10,8 @@ use crate::{
 };
 use anyhow::{ensure, format_err, Error, Result};
 use rocksdb::{
-    DBIterator, DBPinnableSlice, IteratorMode, Options, ReadOptions, WriteBatch as DBWriteBatch,
-    WriteOptions, DB,
+    DBIterator, DBPinnableSlice, FlushOptions, IteratorMode, Options, ReadOptions,
+    WriteBatch as DBWriteBatch, WriteOptions, DB,
 };
 use starcoin_config::{check_open_fds_limit, RocksdbConfig};
 use std::{collections::HashSet, iter, marker::PhantomData, path::Path};
@@ -511,6 +511,13 @@ impl DBStorage {
 
     pub fn raw_write_batch_opt(&self, batch: DBWriteBatch, opt: &WriteOptions) -> Result<()> {
         self.db.write_opt(batch, opt)?;
+        Ok(())
+    }
+
+    pub fn flush_opt(&self, wait: bool) -> Result<()> {
+        let mut opt = FlushOptions::default();
+        opt.set_wait(wait);
+        self.db.flush_opt(&opt)?;
         Ok(())
     }
 }
