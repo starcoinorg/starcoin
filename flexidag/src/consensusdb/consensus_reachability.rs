@@ -3,7 +3,6 @@ use super::{
     prelude::{BatchDbWriter, CachedDbAccess, CachedDbItem, DirectDbWriter, StoreError},
 };
 use starcoin_crypto::HashValue as Hash;
-use starcoin_storage::storage::RawDBStorage;
 
 use crate::{
     consensusdb::schema::{KeyCodec, ValueCodec},

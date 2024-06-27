@@ -7,13 +7,16 @@ use super::{
         HEADERS_STORE_CF, PARENTS_CF, REACHABILITY_DATA_CF,
     },
 };
+use crate::consensusdb::error::StoreError::DBIoError;
 use parking_lot::RwLock;
+use rocksdb::{WriteBatch, WriteOptions};
 use starcoin_config::{RocksdbConfig, StorageConfig};
 pub(crate) use starcoin_storage::db_storage::DBStorage;
 use std::{path::Path, sync::Arc};
 
 #[derive(Clone)]
 pub struct FlexiDagStorage {
+    db: Arc<DBStorage>,
     pub ghost_dag_store: DbGhostdagStore,
     pub header_store: DbHeadersStore,
     pub reachability_store: Arc<RwLock<DbReachabilityStore>>,
@@ -80,6 +83,7 @@ impl FlexiDagStorage {
         );
 
         Ok(Self {
+            db: db.clone(),
             ghost_dag_store: DbGhostdagStore::new(db.clone(), 1, config.cache_size),
 
             header_store: DbHeadersStore::new(db.clone(), config.cache_size),
@@ -94,5 +98,19 @@ impl FlexiDagStorage {
             ))),
             state_store: Arc::new(RwLock::new(DbDagStateStore::new(db, config.cache_size))),
         })
+    }
+
+    pub fn write_batch(&self, batch: WriteBatch) -> Result<(), StoreError> {
+        self.write_batch_opt(batch, &WriteOptions::default())
+    }
+
+    pub fn write_batch_opt(
+        &self,
+        batch: WriteBatch,
+        opts: &WriteOptions,
+    ) -> Result<(), StoreError> {
+        self.db
+            .raw_write_batch_opt(batch, opts)
+            .map_err(|e| DBIoError(e.to_string()))
     }
 }

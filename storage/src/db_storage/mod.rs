@@ -5,7 +5,7 @@ use crate::{
     batch::WriteBatch,
     errors::StorageInitError,
     metrics::{record_metrics, StorageMetrics},
-    storage::{ColumnFamilyName, InnerStore, KeyCodec, RawDBStorage, ValueCodec, WriteOp},
+    storage::{ColumnFamilyName, InnerStore, KeyCodec, ValueCodec, WriteOp},
     StorageVersion, DEFAULT_PREFIX_NAME,
 };
 use anyhow::{ensure, format_err, Error, Result};
@@ -476,8 +476,23 @@ impl InnerStore for DBStorage {
     }
 }
 
-impl RawDBStorage for DBStorage {
-    fn raw_get_pinned_cf<K: AsRef<[u8]>>(
+// Raw Db Operations
+impl DBStorage {
+    pub fn raw_iterator_cf_opt(
+        &self,
+        prefix_name: &str,
+        mode: IteratorMode,
+        readopts: ReadOptions,
+    ) -> Result<DBIterator> {
+        let cf_handle = self.get_cf_handle(prefix_name)?;
+        Ok(self.db.iterator_cf_opt(cf_handle, readopts, mode))
+    }
+
+    pub fn raw_iterator_opt(&self, mode: IteratorMode, readopts: ReadOptions) -> DBIterator {
+        self.db.iterator_opt(mode, readopts)
+    }
+
+    pub fn raw_get_pinned_cf<K: AsRef<[u8]>>(
         &self,
         prefix: &str,
         key: K,
@@ -489,8 +504,13 @@ impl RawDBStorage for DBStorage {
         Ok(res)
     }
 
-    fn raw_write_batch(&self, batch: DBWriteBatch) -> Result<()> {
-        self.db.write(batch)?;
+    pub fn raw_write_batch(&self, batch: DBWriteBatch) -> Result<()> {
+        self.raw_write_batch_opt(batch, &WriteOptions::default())?;
+        Ok(())
+    }
+
+    pub fn raw_write_batch_opt(&self, batch: DBWriteBatch, opt: &WriteOptions) -> Result<()> {
+        self.db.write_opt(batch, opt)?;
         Ok(())
     }
 }
