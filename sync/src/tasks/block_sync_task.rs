@@ -490,7 +490,9 @@ where
 
             // self.execute_absent_blocks(absent_ancestor)?;
             let local_store = self.local_store.clone();
-            let mut execute_absent_block = ContinueExecuteAbsentBlock::new(self, local_store)?;
+            let sync_dag_store = self.sync_dag_store.clone();
+            let mut execute_absent_block =
+                ContinueExecuteAbsentBlock::new(self, local_store, sync_dag_store)?;
             execute_absent_block.execute_absent_blocks(absent_ancestor)?;
             Ok(())
         };
