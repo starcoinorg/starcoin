@@ -1,6 +1,6 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
-use anyhow::{anyhow, bail};
+use anyhow::anyhow;
 use starcoin_chain_api::ExecutedBlock;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::{error, info};
@@ -130,75 +130,61 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
         &'a mut self,
         absent_ancestor: &mut Vec<Block>,
     ) -> anyhow::Result<()> {
-        let mut process_dag_ancestors = HashMap::new();
+        if absent_ancestor.is_empty() {
+            return anyhow::Result::Ok(());
+        }
+        // let mut process_dag_ancestors = HashMap::new();
+        let mut max_loop_count = absent_ancestor.len();
         loop {
-            for ancestor_block_headers in absent_ancestor.chunks(20) {
-                let mut blocks = ancestor_block_headers.to_vec();
-                blocks.retain(|block| {
-                    match self.operator.has_dag_block(block.header().id()) {
-                        Ok(has) => {
-                            if has {
-                                info!("{:?} was already applied", block.header().id());
-                                process_dag_ancestors
-                                    .insert(block.header().id(), block.header().clone());
-                                false // remove the executed block
-                            } else {
-                                true // retain the un-executed block
-                            }
+            absent_ancestor.retain(|block| {
+                match self.operator.has_dag_block(block.header().id()) {
+                    Ok(has) => {
+                        if has {
+                            info!("{:?} was already applied", block.header().id());
+                            false // remove the executed block
+                        } else {
+                            true // retain the un-executed block
                         }
-                        Err(_) => true, // retain the un-executed block
                     }
-                });
-                for block in blocks {
+                    Err(_) => true, // retain the un-executed block
+                }
+            });
+
+            let result: anyhow::Result<()> = absent_ancestor.iter().try_for_each(|block| {
+                if self.check_parents_exist(block.header())? {
                     info!(
                         "now apply for sync after fetching a dag block: {:?}, number: {:?}",
                         block.id(),
                         block.header().number()
                     );
+                    let executed_block = self.operator.apply(block.clone())?;
+                    info!(
+                        "succeed to apply a dag block: {:?}, number: {:?}",
+                        executed_block.block.id(),
+                        executed_block.block.header().number()
+                    );
 
-                    if !self.check_parents_exist(block.header())? {
-                        info!(
-                            "block: {:?}, number: {:?}, its parent still dose not exist, waiting for next round",
-                            block.header().id(),
-                            block.header().number()
-                        );
-                        process_dag_ancestors.insert(block.header().id(), block.header().clone());
-                        continue;
-                    } else {
-                        let executed_block = self.operator.apply(block.clone())?;
-                        info!(
-                            "succeed to apply a dag block: {:?}, number: {:?}",
-                            executed_block.block.id(),
-                            executed_block.block.header().number()
-                        );
-                        process_dag_ancestors.insert(block.header().id(), block.header().clone());
+                    self.execute_if_parent_ready_norecursion(executed_block.block.id())?;
 
-                        self.execute_if_parent_ready_norecursion(executed_block.block.id())?;
+                    self.local_store
+                        .delete_dag_sync_block(executed_block.block.id())?;
 
-                        self.local_store
-                            .delete_dag_sync_block(executed_block.block.id())?;
+                    self.sync_dag_store.delete_dag_sync_block(
+                        executed_block.block.header().number(),
+                        executed_block.block.id(),
+                    )?;
 
-                        self.sync_dag_store.delete_dag_sync_block(
-                            executed_block.block.header().number(),
-                            executed_block.block.id(),
-                        )?;
-
-                        self.operator.notify(executed_block)?;
-                    }
+                    self.operator.notify(executed_block)?;
                 }
-            }
+                anyhow::Result::Ok(())
+            });
+            result?;
 
-            if process_dag_ancestors.is_empty() {
-                bail!("no absent ancestor block is executed!");
-            } else {
-                absent_ancestor.retain(|header| !process_dag_ancestors.contains_key(&header.id()));
-            }
-
-            if absent_ancestor.is_empty() {
+            max_loop_count = max_loop_count.saturating_sub(1);
+            if max_loop_count == 0 {
                 break;
             }
         }
-
         Ok(())
     }
 }
