@@ -128,7 +128,7 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
 
     pub fn execute_absent_blocks(
         &'a mut self,
-        mut absent_ancestor: Vec<Block>,
+        absent_ancestor: &mut Vec<Block>,
     ) -> anyhow::Result<()> {
         let mut process_dag_ancestors = HashMap::new();
         loop {
