@@ -1,11 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::store::sync_absent_ancestor::DagSyncBlock;
 use crate::store::sync_dag_store::SyncDagStore;
 use crate::tasks::continue_execute_absent_block::ContinueExecuteAbsentBlock;
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{format_err, Result};
+use bcs_ext::BCSCodec;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use network_api::PeerId;
@@ -17,7 +19,7 @@ use starcoin_config::G_CRATE_VERSION;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::MAX_BLOCK_REQUEST_SIZE;
-use starcoin_storage::block::DagSyncBlock;
+use starcoin_storage::db_storage::SchemaIterator;
 use starcoin_storage::{Store, BARNARD_HARD_FORK_HASH};
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
@@ -427,26 +429,18 @@ where
         Ok(())
     }
 
-    async fn find_absent_ancestor(
-        &self,
-        mut block_headers: Vec<BlockHeader>,
-    ) -> Result<Vec<Block>> {
-        let mut absent_blocks_map = HashMap::new();
+    async fn find_absent_ancestor(&self, mut block_headers: Vec<BlockHeader>) -> Result<()> {
         loop {
             let mut absent_blocks = vec![];
             self.find_absent_parent_dag_blocks_for_blocks(block_headers, &mut absent_blocks)?;
             if absent_blocks.is_empty() {
-                return Ok(absent_blocks_map.into_values().collect());
+                return Ok(());
             }
             let remote_absent_blocks = self.fetch_blocks(absent_blocks).await?;
             block_headers = remote_absent_blocks
                 .iter()
                 .map(|block| block.header().clone())
                 .collect();
-
-            remote_absent_blocks.into_iter().for_each(|block| {
-                absent_blocks_map.insert(block.id(), block);
-            });
         }
     }
 
@@ -474,29 +468,61 @@ where
             block_header.parents_hash()
         );
         let fut = async {
-            let mut absent_ancestor = self
-                .find_absent_ancestor(vec![block_header.clone()])
+            self.find_absent_ancestor(vec![block_header.clone()])
                 .await?;
 
-            if absent_ancestor.is_empty() {
-                return Ok(());
+            let mut absent_ancestor = vec![];
+            let sync_dag_store = self.sync_dag_store.clone();
+            let mut absent_block_iter = sync_dag_store.iter_at_first()?;
+            loop {
+                let mut local_absent_block = vec![];
+                match self.read_local_absent_block(&mut absent_block_iter, &mut local_absent_block)
+                {
+                    anyhow::Result::Ok(_) => {
+                        if local_absent_block.is_empty() {
+                            info!("absent block is empty, continue to sync");
+                            break;
+                        }
+                        absent_ancestor.extend(local_absent_block);
+                        self.execute_absent_block(&mut absent_ancestor)?;
+                    }
+                    Err(e) => {
+                        error!("failed to read local absent block, error: {:?}", e);
+                        return Err(e);
+                    }
+                }
             }
 
-            absent_ancestor.sort_by_key(|a| a.header().number());
-            info!(
-                "now apply absent ancestors count: {:?}",
-                absent_ancestor.len()
-            );
-
-            // self.execute_absent_blocks(absent_ancestor)?;
-            let local_store = self.local_store.clone();
-            let sync_dag_store = self.sync_dag_store.clone();
-            let mut execute_absent_block =
-                ContinueExecuteAbsentBlock::new(self, local_store, sync_dag_store)?;
-            execute_absent_block.execute_absent_blocks(absent_ancestor)?;
+            self.execute_absent_block(&mut absent_ancestor)?;
             Ok(())
         };
         async_std::task::block_on(fut)
+    }
+
+    pub fn read_local_absent_block(
+        &self,
+        iter: &mut SchemaIterator<Vec<u8>, Vec<u8>>,
+        absent_ancestor: &mut Vec<Block>,
+    ) -> anyhow::Result<()> {
+        let results = iter
+            .take(720)
+            .map(|result_block| match result_block {
+                anyhow::Result::Ok((_, data_raw)) => {
+                    let dag_sync_block = DagSyncBlock::decode(&data_raw)?;
+                    Ok(dag_sync_block.block.ok_or_else(|| {
+                        format_err!("block in sync dag block should not be none!")
+                    })?)
+                }
+                Err(e) => Err(e),
+            })
+            .collect::<Vec<_>>();
+        for result_block in results {
+            match result_block {
+                anyhow::Result::Ok(block) => absent_ancestor.push(block),
+                Err(e) => return Err(e),
+            }
+        }
+        anyhow::Result::Ok(())
     }
 
     async fn fetch_blocks(&self, mut block_ids: Vec<HashValue>) -> Result<Vec<Block>> {
@@ -517,13 +543,11 @@ where
         for chunk in block_ids.chunks(usize::try_from(MAX_BLOCK_REQUEST_SIZE)?) {
             let remote_dag_sync_blocks = self.fetcher.fetch_blocks(chunk.to_vec()).await?;
             for (block, _) in remote_dag_sync_blocks {
-                self.local_store.save_dag_sync_block(DagSyncBlock {
-                    block: block.clone(),
-                    children: vec![],
-                })?;
-
-                self.sync_dag_store.save_block(block.clone())?;
-
+                self.local_store
+                    .save_dag_sync_block(starcoin_storage::block::DagSyncBlock {
+                        block: block.clone(),
+                        children: vec![],
+                    })?;
                 result.push(block);
             }
         }
@@ -566,6 +590,14 @@ where
         } else {
             Ok(CollectorState::Need)
         }
+    }
+
+    pub fn execute_absent_block(&mut self, absent_ancestor: &mut Vec<Block>) -> Result<()> {
+        let local_store = self.local_store.clone();
+        let sync_dag_store = self.sync_dag_store.clone();
+        let mut execute_absent_block =
+            ContinueExecuteAbsentBlock::new(self, local_store, sync_dag_store)?;
+        execute_absent_block.execute_absent_blocks(absent_ancestor)
     }
 }
 

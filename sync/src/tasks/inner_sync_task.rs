@@ -1,9 +1,10 @@
-use anyhow::format_err;
+use anyhow::{format_err, Ok};
 use network_api::PeerProvider;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
+use starcoin_logger::prelude::{error, info};
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
 use starcoin_time_service::TimeService;
@@ -148,7 +149,7 @@ where
                 vm_metrics,
                 self.dag.clone(),
             )?;
-            let block_collector = BlockCollector::new_with_handle(
+            let mut block_collector = BlockCollector::new_with_handle(
                 current_block_info.clone(),
                 self.target.clone(),
                 chain,
@@ -159,6 +160,29 @@ where
                 self.fetcher.clone(),
                 self.sync_dag_store.clone(),
             );
+
+            let mut absent_ancestor = vec![];
+            let mut absent_block_iter = self.sync_dag_store.iter_at_first()?;
+            loop {
+                let mut local_absent_block = vec![];
+                match block_collector
+                    .read_local_absent_block(&mut absent_block_iter, &mut local_absent_block)
+                {
+                    anyhow::Result::Ok(_) => {
+                        if local_absent_block.is_empty() {
+                            info!("absent block is empty, continue to sync");
+                            break;
+                        }
+                        absent_ancestor.extend(local_absent_block);
+                        block_collector.execute_absent_block(&mut absent_ancestor)?;
+                    }
+                    Err(e) => {
+                        error!("failed to read local absent block, error: {:?}", e);
+                        return Err(e);
+                    }
+                }
+            }
+
             Ok(TaskGenerator::new(
                 block_sync_task,
                 buffer_size,
@@ -174,6 +198,6 @@ where
         let (fut, handle) = sub_accumulator_task.with_handle();
         let block_chain = fut.await?;
 
-        Ok((block_chain, handle))
+        anyhow::Result::Ok((block_chain, handle))
     }
 }
