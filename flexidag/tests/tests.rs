@@ -19,9 +19,7 @@ use starcoin_logger::prelude::debug;
 use starcoin_types::block::{BlockHeader, BlockHeaderBuilder, BlockNumber};
 
 use std::{
-    ops::{Deref, DerefMut},
-    sync::Arc,
-    vec,
+    ops::{Deref, DerefMut}, sync::Arc, time::Instant, vec
 };
 
 #[test]
@@ -733,12 +731,15 @@ fn add_and_print(
         .with_parents_hash(Some(parents))
         .with_number(number)
         .build();
+    let start = Instant::now();
     dag.commit(header.to_owned(), origin)?;
-    let ghostdata = dag.ghostdata(&[header.id()])?;
-    println!(
-        "add a header: {:?}, blue set: {:?}, red set: {:?}, blue anticone size: {:?}",
-        header, ghostdata.mergeset_blues, ghostdata.mergeset_reds, ghostdata.blues_anticone_sizes
-    );
+    let duration = start.elapsed();
+    println!("commit header: {:?}, number: {:?}, duration: {:?}", header.id(), header.number(), duration);
+    let _ghostdata = dag.ghostdata(&[header.id()])?;
+    // println!(
+    //     "add a header: {:?}, blue set: {:?}, red set: {:?}, blue anticone size: {:?}",
+    //     header, ghostdata.mergeset_blues, ghostdata.mergeset_reds, ghostdata.blues_anticone_sizes
+    // );
     Ok(header)
 }
 
@@ -792,4 +793,38 @@ fn test_dag_mergeset() -> anyhow::Result<()> {
     );
 
     Ok(())
+}
+
+
+#[test]
+fn test_big_data_commit() -> anyhow::Result<()> {
+    // initialzie the dag firstly
+    let mut dag = BlockDAG::create_for_testing().unwrap();
+
+    let origin = BlockHeaderBuilder::random().with_number(0).build();
+    let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
+
+    dag.init_with_genesis(genesis.clone()).unwrap();
+
+    let count = 20000;
+
+    // one
+    let mut parent = genesis.clone();
+    for i in 0..count {
+        let new = add_and_print(i + 1, parent.id(), vec![parent.id()], genesis.parent_hash(), &mut dag)?;
+        parent = new;
+    }
+    let last_one = parent;
+
+    // two 
+    let mut parent = genesis.clone();
+    for i in 0..count {
+        let new = add_and_print(i + 1, parent.id(), vec![parent.id()], genesis.parent_hash(), &mut dag)?;
+        parent = new;
+    }
+    let last_two = parent;
+
+    let _new = add_and_print(count + 1, last_one.id(), vec![last_one.id(), last_two.id()], genesis.parent_hash(), &mut dag)?;
+
+    anyhow::Result::Ok(())
 }
