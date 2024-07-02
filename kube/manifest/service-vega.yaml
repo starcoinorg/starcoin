@@ -28,12 +28,6 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  labels:
-    app: starcoin
-    network: vega
-    statefulset.kubernetes.io/pod-name: starcoin-0
-  annotations:
-    service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
   name: starcoin-0
   namespace: starcoin-vega
 spec:
@@ -67,12 +61,6 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  labels:
-    app: starcoin
-    network: vega
-    statefulset.kubernetes.io/pod-name: starcoin-1
-  annotations:
-    service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
   name: starcoin-1
   namespace: starcoin-vega
 spec:
@@ -106,12 +94,6 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  labels:
-    app: starcoin
-    network: vega
-    statefulset.kubernetes.io/pod-name: starcoin-2
-  annotations:
-    service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
   name: starcoin-2
   namespace: starcoin-vega
 spec:
@@ -145,12 +127,6 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  labels:
-    app: starcoin
-    network: vega
-    statefulset.kubernetes.io/pod-name: starcoin-3
-  annotations:
-    service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
   name: starcoin-3
   namespace: starcoin-vega
 spec:
