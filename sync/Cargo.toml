@@ -46,6 +46,7 @@ thiserror = { workspace = true }
 starcoin-consensus = { workspace = true }
 timeout-join-handler = { workspace = true }
 starcoin-dag = { workspace = true }
+serde = { workspace = true }
 
 [dev-dependencies]
 hex = { workspace = true }

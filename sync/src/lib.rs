@@ -4,6 +4,7 @@
 #![deny(clippy::arithmetic_side_effects)]
 pub mod announcement;
 pub mod block_connector;
+pub mod store;
 pub mod sync;
 pub mod sync_metrics;
 pub mod tasks;
