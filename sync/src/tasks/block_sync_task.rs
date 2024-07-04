@@ -467,7 +467,6 @@ where
             self.find_absent_ancestor(vec![block_header.clone()])
                 .await?;
 
-            let mut absent_ancestor = vec![];
             let sync_dag_store = self.sync_dag_store.clone();
             let mut absent_block_iter = sync_dag_store.iter_at_first()?;
             loop {
@@ -479,8 +478,7 @@ where
                             info!("absent block is empty, continue to sync");
                             break;
                         }
-                        absent_ancestor.extend(local_absent_block);
-                        self.execute_absent_block(&mut absent_ancestor)?;
+                        self.execute_absent_block(&mut local_absent_block)?;
                     }
                     Err(e) => {
                         error!("failed to read local absent block, error: {:?}", e);

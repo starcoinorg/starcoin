@@ -171,6 +171,11 @@ impl BlockDAG {
                     header.id(),
                     reachability::ReachabilityError::DataInconsistency
                 );
+                self.set_reindex_root(origin)?;
+                bail!(
+                    "failed to add a block: {:?} when committing for data inconsistency.",
+                    header.id()
+                );
             }
             Err(reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(msg))) => {
                 if msg == *REINDEX_ROOT_KEY.to_string() {

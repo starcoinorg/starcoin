@@ -50,7 +50,6 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
                         parent_id,
                     )
                     })?;
-                let mut executed_children = vec![];
                 for child in &parent_block.children {
                     let child_block =
                         self.local_store
@@ -84,7 +83,6 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
                             executed_block.block.id(),
                             executed_block.block.header().number()
                         );
-                        executed_children.push(*child);
                         self.operator.notify(executed_block)?;
                         next_parent_blocks.push(*child);
                     }
@@ -133,58 +131,48 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
         if absent_ancestor.is_empty() {
             return anyhow::Result::Ok(());
         }
-        // let mut process_dag_ancestors = HashMap::new();
-        let mut max_loop_count = absent_ancestor.len();
-        loop {
-            absent_ancestor.retain(|block| {
-                match self.operator.has_dag_block(block.header().id()) {
-                    Ok(has) => {
-                        if has {
-                            info!("{:?} was already applied", block.header().id());
-                            false // remove the executed block
-                        } else {
-                            true // retain the un-executed block
-                        }
+        absent_ancestor.retain(|block| {
+            match self.operator.has_dag_block(block.header().id()) {
+                Ok(has) => {
+                    if has {
+                        info!("{:?} was already applied", block.header().id());
+                        false // remove the executed block
+                    } else {
+                        true // retain the un-executed block
                     }
-                    Err(_) => true, // retain the un-executed block
                 }
-            });
-
-            let result: anyhow::Result<()> = absent_ancestor.iter().try_for_each(|block| {
-                if self.check_parents_exist(block.header())? {
-                    info!(
-                        "now apply for sync after fetching a dag block: {:?}, number: {:?}",
-                        block.id(),
-                        block.header().number()
-                    );
-                    let executed_block = self.operator.apply(block.clone())?;
-                    info!(
-                        "succeed to apply a dag block: {:?}, number: {:?}",
-                        executed_block.block.id(),
-                        executed_block.block.header().number()
-                    );
-
-                    self.execute_if_parent_ready_norecursion(executed_block.block.id())?;
-
-                    self.local_store
-                        .delete_dag_sync_block(executed_block.block.id())?;
-
-                    self.sync_dag_store.delete_dag_sync_block(
-                        executed_block.block.header().number(),
-                        executed_block.block.id(),
-                    )?;
-
-                    self.operator.notify(executed_block)?;
-                }
-                anyhow::Result::Ok(())
-            });
-            result?;
-
-            max_loop_count = max_loop_count.saturating_sub(1);
-            if max_loop_count == 0 {
-                break;
+                Err(_) => true, // retain the un-executed block
             }
-        }
-        Ok(())
+        });
+
+        let result: anyhow::Result<()> = absent_ancestor.iter().try_for_each(|block| {
+            if self.check_parents_exist(block.header())? {
+                info!(
+                    "now apply for sync after fetching a dag block: {:?}, number: {:?}",
+                    block.id(),
+                    block.header().number()
+                );
+                let executed_block = self.operator.apply(block.clone())?;
+                info!(
+                    "succeed to apply a dag block: {:?}, number: {:?}",
+                    executed_block.block.id(),
+                    executed_block.block.header().number()
+                );
+
+                self.execute_if_parent_ready_norecursion(executed_block.block.id())?;
+
+                self.local_store
+                    .delete_dag_sync_block(executed_block.block.id())?;
+
+                self.sync_dag_store.delete_dag_sync_block(
+                    executed_block.block.header().number(),
+                    executed_block.block.id(),
+                )?;
+
+                self.operator.notify(executed_block)?;
+            }
+            anyhow::Result::Ok(())
+        });
+        result
     }
 }
