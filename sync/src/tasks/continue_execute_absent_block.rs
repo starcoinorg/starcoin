@@ -88,8 +88,6 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
                     }
                 }
                 self.local_store.delete_dag_sync_block(parent_block_id)?;
-                self.sync_dag_store
-                    .delete_dag_sync_block(parent_block.block.header().number(), parent_block_id)?;
             }
 
             parent_block_ids = next_parent_blocks;
@@ -116,8 +114,10 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
                         block_header.number()
                     )
                 })?;
-                parent_block.children.push(block_header.id());
-                self.local_store.save_dag_sync_block(parent_block)?;
+                if !parent_block.children.contains(&block_header.id()) {
+                    parent_block.children.push(block_header.id());
+                    self.local_store.save_dag_sync_block(parent_block)?;
+                }
                 result = Ok(false);
             }
         }
@@ -146,7 +146,9 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
         });
 
         let result: anyhow::Result<()> = absent_ancestor.iter().try_for_each(|block| {
-            if self.check_parents_exist(block.header())? {
+            if self.check_parents_exist(block.header())?
+                && !self.operator.has_dag_block(block.id())?
+            {
                 info!(
                     "now apply for sync after fetching a dag block: {:?}, number: {:?}",
                     block.id(),
@@ -164,13 +166,11 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
                 self.local_store
                     .delete_dag_sync_block(executed_block.block.id())?;
 
-                self.sync_dag_store.delete_dag_sync_block(
-                    executed_block.block.header().number(),
-                    executed_block.block.id(),
-                )?;
-
                 self.operator.notify(executed_block)?;
             }
+            // delete the block anyway
+            self.sync_dag_store
+                .delete_dag_sync_block(block.header().number(), block.id())?;
             anyhow::Result::Ok(())
         });
         result

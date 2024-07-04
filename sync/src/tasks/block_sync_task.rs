@@ -20,7 +20,7 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::MAX_BLOCK_REQUEST_SIZE;
 use starcoin_storage::db_storage::SchemaIterator;
-use starcoin_storage::{Store, BARNARD_HARD_FORK_HASH};
+use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
 use std::collections::HashMap;
@@ -333,32 +333,6 @@ where
     }
 
     fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>) -> Result<()> {
-        if let Some((_failed_block, pre_peer_id, err, version)) = self
-            .chain
-            .get_storage()
-            .get_failed_block_by_id(block.id())?
-        {
-            if version == *G_CRATE_VERSION {
-                warn!(
-                    "[sync] apply a previous failed block: {}, previous_peer_id:{:?}, err: {}",
-                    block.id(),
-                    pre_peer_id,
-                    err
-                );
-                if let Some(peer) = peer_id {
-                    self.peer_provider
-                        .report_peer(peer, ConnectBlockError::REP_VERIFY_BLOCK_FAILED);
-                }
-                return Err(format_err!("collect previous failed block:{}", block.id()));
-            }
-        }
-        if block.id() == *BARNARD_HARD_FORK_HASH {
-            if let Some(peer) = peer_id {
-                warn!("[barnard hard fork] ban peer {}", peer);
-                self.peer_provider.ban_peer(peer, true);
-            }
-            return Err(format_err!("reject barnard hard fork block:{}", block.id()));
-        }
         let apply_result = if self.skip_pow_verify {
             self.chain
                 .apply_with_verifier::<BasicVerifier>(block.clone())
@@ -524,8 +498,16 @@ where
             match self.local_store.get_dag_sync_block(*id) {
                 Ok(op_dag_sync_block) => {
                     if let Some(dag_sync_block) = op_dag_sync_block {
-                        result.push(dag_sync_block.block.header().clone());
-                        false // read from local store, remove from p2p request
+                        match self.sync_dag_store.save_block(dag_sync_block.block.clone()) {
+                            Ok(_) => {
+                                result.push(dag_sync_block.block.header().clone());
+                                false // read from local store, remove from p2p request
+                            }
+                            Err(e) => {
+                                debug!("failed to save block for: {:?}", e);
+                                true // need retaining
+                            }
+                        }
                     } else {
                         true // need retaining
                     }
