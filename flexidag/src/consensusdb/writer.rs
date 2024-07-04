@@ -8,6 +8,11 @@ use super::{db::DBStorage, error::StoreError};
 pub trait DbWriter {
     fn put<S: Schema>(&mut self, key: &S::Key, value: &S::Value) -> Result<(), StoreError>;
     fn delete<S: Schema>(&mut self, key: &S::Key) -> Result<(), StoreError>;
+    fn put_inner<S: Schema>(
+        &mut self,
+        key: &dyn AsRef<[u8]>,
+        value: &dyn AsRef<[u8]>,
+    ) -> Result<(), StoreError>;
 }
 
 pub struct DirectDbWriter<'a> {
@@ -33,6 +38,20 @@ impl DbWriter for DirectDbWriter<'_> {
         let key = key.encode_key()?;
         self.db
             .remove(S::COLUMN_FAMILY, key)
+            .map_err(|e| StoreError::DBIoError(e.to_string()))
+    }
+
+    fn put_inner<S: Schema>(
+        &mut self,
+        key: &dyn AsRef<[u8]>,
+        value: &dyn AsRef<[u8]>,
+    ) -> Result<(), StoreError> {
+        self.db
+            .put(
+                S::COLUMN_FAMILY,
+                key.as_ref().to_vec(),
+                value.as_ref().to_vec(),
+            )
             .map_err(|e| StoreError::DBIoError(e.to_string()))
     }
 }
@@ -63,6 +82,15 @@ impl DbWriter for BatchDbWriter<'_> {
         self.batch.delete_cf(cf_handle, key);
         Ok(())
     }
+
+    fn put_inner<S: Schema>(
+        &mut self,
+        key: &dyn AsRef<[u8]>,
+        value: &dyn AsRef<[u8]>,
+    ) -> Result<(), StoreError> {
+        self.batch.put(key, value);
+        Ok(())
+    }
 }
 
 impl<T: DbWriter> DbWriter for &mut T {
@@ -74,5 +102,14 @@ impl<T: DbWriter> DbWriter for &mut T {
     #[inline]
     fn delete<S: Schema>(&mut self, key: &S::Key) -> Result<(), StoreError> {
         (*self).delete::<S>(key)
+    }
+
+    #[inline]
+    fn put_inner<S: Schema>(
+        &mut self,
+        key: &dyn AsRef<[u8]>,
+        value: &dyn AsRef<[u8]>,
+    ) -> Result<(), StoreError> {
+        (*self).put_inner::<S>(key, value)
     }
 }

@@ -9,6 +9,7 @@ mod db;
 mod error;
 mod item;
 pub mod schema;
+mod set_access;
 mod writer;
 
 pub mod prelude {
