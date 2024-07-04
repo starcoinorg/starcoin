@@ -3,7 +3,9 @@ use super::{
     db::DBStorage,
     prelude::{BatchDbWriter, CachedDbAccess, DirectDbWriter, StoreError},
 };
+use crate::consensusdb::set_access::CachedDbSetAccess;
 use crate::define_schema;
+use itertools::Itertools;
 use rocksdb::WriteBatch;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::blockhash::{BlockHashes, BlockLevel};
@@ -28,7 +30,8 @@ pub(crate) const PARENTS_CF: &str = "block-parents";
 pub(crate) const CHILDREN_CF: &str = "block-children";
 
 define_schema!(RelationParent, Hash, Arc<Vec<Hash>>, PARENTS_CF);
-define_schema!(RelationChildren, Hash, Arc<Vec<Hash>>, CHILDREN_CF);
+//define_schema!(LegacyRelationChildren, Hash, Arc<Vec<Hash>>, CHILDREN_CF);
+define_schema!(RelationChildren, Hash, Hash, CHILDREN_CF);
 
 impl KeyCodec<RelationParent> for Hash {
     fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
@@ -58,13 +61,13 @@ impl KeyCodec<RelationChildren> for Hash {
     }
 }
 
-impl ValueCodec<RelationChildren> for Arc<Vec<Hash>> {
+impl ValueCodec<RelationChildren> for Hash {
     fn encode_value(&self) -> Result<Vec<u8>, StoreError> {
-        bcs_ext::to_bytes(self).map_err(|e| StoreError::EncodeError(e.to_string()))
+        Ok(self.to_vec())
     }
 
     fn decode_value(data: &[u8]) -> Result<Self, StoreError> {
-        bcs_ext::from_bytes(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
     }
 }
 
@@ -74,7 +77,7 @@ pub struct DbRelationsStore {
     db: Arc<DBStorage>,
     level: BlockLevel,
     parents_access: CachedDbAccess<RelationParent>,
-    children_access: CachedDbAccess<RelationChildren>,
+    children_access: CachedDbSetAccess<RelationChildren>,
 }
 
 impl DbRelationsStore {
@@ -83,7 +86,7 @@ impl DbRelationsStore {
             db: Arc::clone(&db),
             level,
             parents_access: CachedDbAccess::new(Arc::clone(&db), cache_size),
-            children_access: CachedDbAccess::new(db, cache_size),
+            children_access: CachedDbSetAccess::new(db, cache_size),
         }
     }
 
@@ -105,22 +108,13 @@ impl DbRelationsStore {
         self.parents_access
             .write(BatchDbWriter::new(batch), hash, parents.clone())?;
 
-        // The new hash has no children yet
-        self.children_access.write(
-            BatchDbWriter::new(batch),
-            hash,
-            BlockHashes::new(Vec::new()),
-        )?;
+        // Mark empty children for `hash`, no writing happened.
+        self.children_access.initialize(hash);
 
         // Update `children` for each parent
         for parent in parents.iter().cloned() {
-            let mut children = (*self.get_children(parent)?).clone();
-            children.push(hash);
-            self.children_access.write(
-                BatchDbWriter::new(batch),
-                parent,
-                BlockHashes::new(children),
-            )?;
+            self.children_access
+                .write(BatchDbWriter::new(batch), parent, hash)?;
         }
 
         Ok(())
@@ -132,17 +126,20 @@ impl RelationsStoreReader for DbRelationsStore {
         self.parents_access.read(hash)
     }
 
+    // todo: use a more efficient way to get children
     fn get_children(&self, hash: Hash) -> Result<BlockHashes, StoreError> {
-        self.children_access.read(hash)
+        Ok(Arc::new(
+            self.children_access
+                .read(hash)?
+                .read()
+                .iter()
+                .cloned()
+                .collect_vec(),
+        ))
     }
 
     fn has(&self, hash: Hash) -> Result<bool, StoreError> {
-        if self.parents_access.has(hash)? {
-            debug_assert!(self.children_access.has(hash)?);
-            Ok(true)
-        } else {
-            Ok(false)
-        }
+        self.parents_access.has(hash)
     }
 }
 
@@ -158,22 +155,13 @@ impl RelationsStore for DbRelationsStore {
         self.parents_access
             .write(DirectDbWriter::new(&self.db), hash, parents.clone())?;
 
-        // The new hash has no children yet
-        self.children_access.write(
-            DirectDbWriter::new(&self.db),
-            hash,
-            BlockHashes::new(Vec::new()),
-        )?;
+        // Mark empty children for `hash`, no writing happened.
+        self.children_access.initialize(hash);
 
         // Update `children` for each parent
         for parent in parents.iter().cloned() {
-            let mut children = (*self.get_children(parent)?).clone();
-            children.push(hash);
-            self.children_access.write(
-                DirectDbWriter::new(&self.db),
-                parent,
-                BlockHashes::new(children),
-            )?;
+            self.children_access
+                .write(DirectDbWriter::new(&self.db), parent, hash)?;
         }
 
         Ok(())
