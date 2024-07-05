@@ -7,7 +7,6 @@ use crate::tasks::continue_execute_absent_block::ContinueExecuteAbsentBlock;
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{format_err, Context, Result};
-use bcs_ext::BCSCodec;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use network_api::PeerId;
@@ -17,6 +16,7 @@ use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainType, ChainWriter, ConnectBlockError, ExecutedBlock};
 use starcoin_config::G_CRATE_VERSION;
 use starcoin_crypto::HashValue;
+use starcoin_dag::consensusdb::schema::ValueCodec;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::MAX_BLOCK_REQUEST_SIZE;
 use starcoin_storage::db_storage::SchemaIterator;
@@ -483,7 +483,7 @@ where
             .take(720)
             .map(|result_block| match result_block {
                 anyhow::Result::Ok((_, data_raw)) => {
-                    let dag_sync_block = DagSyncBlock::decode(&data_raw)?;
+                    let dag_sync_block = DagSyncBlock::decode_value(&data_raw)?;
                     Ok(dag_sync_block.block.ok_or_else(|| {
                         format_err!("block in sync dag block should not be none!")
                     })?)
