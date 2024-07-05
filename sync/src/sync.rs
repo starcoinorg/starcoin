@@ -14,7 +14,6 @@ use network_api::{PeerId, PeerProvider, PeerSelector, PeerStrategy, ReputationCh
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_config::{NodeConfig, RocksdbConfig};
-use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
@@ -30,7 +29,7 @@ use starcoin_sync_api::{
     SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
 use starcoin_txpool::TxPoolService;
-use starcoin_types::block::{Block, BlockIdAndNumber, BlockNumber};
+use starcoin_types::block::{Block, BlockIdAndNumber};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
@@ -635,22 +634,6 @@ impl EventHandler<Self, SaveSyncBlock> for SyncService {
         if let Err(e) = self.sync_dag_store.save_block(block) {
             error!("[sync] Save absent block error: {:?}", e);
         }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct UpdateSyncBlock {
-    pub parent_number: BlockNumber,
-    pub parent_id: HashValue,
-    pub child: HashValue,
-}
-
-impl EventHandler<Self, UpdateSyncBlock> for SyncService {
-    fn handle_event(&mut self, msg: UpdateSyncBlock, _ctx: &mut ServiceContext<Self>) {
-        self.sync_dag_store
-            .update_children(msg.parent_number, msg.parent_id, msg.child)
-            .map_err(|e| error!("[sync] Update sync block error: {:?}", e))
-            .ok();
     }
 }
 

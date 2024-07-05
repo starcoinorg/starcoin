@@ -10903,6 +10903,7 @@ dependencies = [
  "async-std",
  "async-trait",
  "bcs-ext",
+ "byteorder",
  "forkable-jellyfish-merkle",
  "futures 0.3.26",
  "futures-retry",

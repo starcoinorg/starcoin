@@ -109,7 +109,6 @@ impl SyncDagStore {
                     self.absent_dag_store
                         .save_absent_block(vec![DagSyncBlock {
                             block: Some(block.clone()),
-                            children: vec![],
                         }])
                         .map_err(|e| format_err!("Failed to save absent block: {:?}", e))?;
                     Ok(())
@@ -149,24 +148,5 @@ impl SyncDagStore {
                 );
                 e
             })
-    }
-
-    pub fn update_children(
-        &self,
-        parent_number: BlockNumber,
-        parent_id: HashValue,
-        child_id: HashValue,
-    ) -> anyhow::Result<()> {
-        let mut syn_dag = self
-            .get_dag_sync_block(parent_number, parent_id)
-            .map_err(|e| format_err!("Failed to get DAG sync block for update: {:?}", e))?;
-        if syn_dag.children.contains(&child_id) {
-            return Ok(());
-        }
-        syn_dag.children.push(child_id);
-        self.absent_dag_store
-            .save_absent_block(vec![syn_dag])
-            .map_err(|e| format_err!("Failed to save updated DAG sync block: {:?}", e))?;
-        Ok(())
     }
 }

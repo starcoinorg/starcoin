@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::format_err;
 use bcs_ext::BCSCodec;
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_dag::{
@@ -20,7 +21,6 @@ use starcoin_types::block::{Block, BlockNumber};
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, Default)]
 pub struct DagSyncBlock {
     pub block: Option<Block>,
-    pub children: Vec<HashValue>,
 }
 
 #[derive(
@@ -58,12 +58,32 @@ define_schema!(
 
 impl KeyCodec<SyncAbsentBlock> for DagSyncBlockKey {
     fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
-        self.encode()
-            .map_err(|e| StoreError::EncodeError(e.to_string()))
+        let mut buf = Vec::new();
+        buf.write_u64::<BigEndian>(self.number).map_err(|e| {
+            StoreError::EncodeError(format!(
+                "failed to encode block number:{:?} for {:?}",
+                self.number, e
+            ))
+        })?;
+        buf.extend(self.block_id.encode().map_err(|e| {
+            StoreError::EncodeError(format!(
+                "failed to encode block id:{:?} for {:?}",
+                self.block_id, e
+            ))
+        })?);
+        Ok(buf)
     }
 
     fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
-        DagSyncBlockKey::decode(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+        let (number_bytes, id_bytes) = data.split_at(8);
+        let number = &mut &number_bytes[..];
+        let number = number.read_u64::<BigEndian>().map_err(|e| {
+            StoreError::DecodeError(format!("failed to decode block number for {:?}", e))
+        })?;
+        let block_id = HashValue::decode(id_bytes).map_err(|e| {
+            StoreError::DecodeError(format!("failed to decode block id for {:?}", e))
+        })?;
+        Ok(Self { number, block_id })
     }
 }
 

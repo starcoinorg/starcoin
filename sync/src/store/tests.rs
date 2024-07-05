@@ -1,5 +1,6 @@
 use anyhow::Ok;
-use bcs_ext::{BCSCodec, Sample};
+use bcs_ext::Sample;
+use starcoin_dag::consensusdb::schema::{KeyCodec, ValueCodec};
 use starcoin_types::block::{Block, BlockBody, BlockHeaderBuilder};
 
 use crate::store::sync_absent_ancestor::DagSyncBlockKey;
@@ -16,19 +17,17 @@ fn test_sync_dag_absent_store() -> anyhow::Result<()> {
     // write and read
     let one = DagSyncBlock {
         block: Some(Block::random()),
-        children: vec![0.into()],
     };
     sync_dag_store
         .absent_dag_store
         .save_absent_block(vec![one.clone()])?;
-    let mut read_one = sync_dag_store.absent_dag_store.get_absent_block_by_id(
+    let read_one = sync_dag_store.absent_dag_store.get_absent_block_by_id(
         one.block.as_ref().unwrap().header().number(),
         one.block.as_ref().unwrap().header().id(),
     )?;
     assert_eq!(one, read_one);
 
     // update
-    read_one.children.push(1.into());
     sync_dag_store
         .absent_dag_store
         .save_absent_block(vec![read_one.clone()])?;
@@ -53,11 +52,9 @@ fn test_sync_dag_absent_store() -> anyhow::Result<()> {
     // append new absent blocks
     let two = DagSyncBlock {
         block: Some(Block::random()),
-        children: vec![2.into(), 3.into()],
     };
     let three = DagSyncBlock {
         block: Some(Block::random()),
-        children: vec![4.into(), 5.into()],
     };
     sync_dag_store.absent_dag_store.save_absent_block(vec![
         one.clone(),
@@ -140,12 +137,11 @@ fn test_write_read_in_order() -> anyhow::Result<()> {
     sync_dag_store.save_block(four.clone())?;
     sync_dag_store.save_block(two_again.clone())?;
 
-    sync_dag_store.update_children(one.header().number(), one.id(), two.id())?;
-    sync_dag_store.update_children(two.header().number(), two.id(), three.id())?;
-    sync_dag_store.update_children(three.header().number(), three.id(), four.id())?;
-    sync_dag_store.update_children(one.header().number(), one.id(), two_again.id())?;
-
-    let mut iter = sync_dag_store.iter_at_first()?;
+    let mut iter = sync_dag_store
+        .iter_at_first()?
+        .take(10)
+        .collect::<Vec<_>>()
+        .into_iter();
 
     let mut expect_order = vec![one, two, three, four, two_again];
     expect_order.sort_by(|first, second| {
@@ -167,8 +163,8 @@ fn test_write_read_in_order() -> anyhow::Result<()> {
         while let Some(next) = op_next {
             match next {
                 std::result::Result::Ok((id_raw, data_raw)) => {
-                    let key = DagSyncBlockKey::decode(&id_raw)?;
-                    let dag_sync_block = DagSyncBlock::decode(&data_raw)?;
+                    let key = DagSyncBlockKey::decode_key(&id_raw)?;
+                    let dag_sync_block = DagSyncBlock::decode_value(&data_raw)?;
                     println!(
                         "id: {:?}, id in data: {:?}, number: {:?}",
                         key,
