@@ -15,7 +15,7 @@ use crate::{process_key_already_error, reachability};
 use anyhow::{bail, Ok};
 use starcoin_config::{temp_dir, RocksdbConfig};
 use starcoin_crypto::{HashValue as Hash, HashValue};
-use starcoin_logger::prelude::info;
+use starcoin_logger::prelude::{debug, info};
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
@@ -123,8 +123,18 @@ impl BlockDAG {
     }
 
     pub fn commit(&mut self, header: BlockHeader, origin: HashValue) -> anyhow::Result<()> {
+        info!(
+            "start to commit header: {:?}, number: {:?}",
+            header.id(),
+            header.number()
+        );
         // Generate ghostdag data
         let parents = header.parents();
+        debug!(
+            "start to get the ghost data from block: {:?}, number: {:?}",
+            header.id(),
+            header.number()
+        );
         let ghostdata = match self.ghostdata_by_hash(header.id())? {
             None => {
                 // It must be the dag genesis if header is a format for a single chain
@@ -145,6 +155,11 @@ impl BlockDAG {
         )?;
 
         // Update reachability store
+        debug!(
+            "start to update reachability data for block: {:?}, number: {:?}",
+            header.id(),
+            header.number()
+        );
         let reachability_store = self.storage.reachability_store.clone();
         let mut merge_set = ghostdata
             .unordered_mergeset_without_selected_parent()

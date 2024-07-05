@@ -6,7 +6,7 @@ use crate::store::sync_dag_store::SyncDagStore;
 use crate::tasks::continue_execute_absent_block::ContinueExecuteAbsentBlock;
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
-use anyhow::{format_err, Result};
+use anyhow::{format_err, Context, Result};
 use bcs_ext::BCSCodec;
 use futures::future::BoxFuture;
 use futures::FutureExt;
@@ -210,7 +210,10 @@ where
     H: BlockConnectedEventHandle + 'static,
 {
     fn has_dag_block(&self, block_id: HashValue) -> anyhow::Result<bool> {
-        self.chain.dag().has_dag_block(block_id)
+        self.chain
+            .dag()
+            .has_dag_block(block_id)
+            .context("Failed to check if DAG block exists")
     }
 
     fn apply(&mut self, block: Block) -> anyhow::Result<ExecutedBlock> {
@@ -230,6 +233,7 @@ where
             BlockConnectAction::ConnectNewBlock,
             self.check_enough_by_info(block_info)?,
         )
+        .context("Failed to notify connected block")
     }
 }
 
@@ -442,8 +446,11 @@ where
                 .await?;
 
             let sync_dag_store = self.sync_dag_store.clone();
-            let mut absent_block_iter = sync_dag_store.iter_at_first()?;
+            let mut absent_block_iter = sync_dag_store
+                .iter_at_first()
+                .context("Failed to create iterator for sync_dag_store")?;
             loop {
+                debug!("start to read local absent block and try to execute the dag if its parents are ready.");
                 let mut local_absent_block = vec![];
                 match self.read_local_absent_block(&mut absent_block_iter, &mut local_absent_block)
                 {
@@ -452,7 +459,8 @@ where
                             info!("absent block is empty, continue to sync");
                             break;
                         }
-                        self.execute_absent_block(&mut local_absent_block)?;
+                        self.execute_absent_block(&mut local_absent_block)
+                            .context("Failed to execute absent block")?;
                     }
                     Err(e) => {
                         error!("failed to read local absent block, error: {:?}", e);

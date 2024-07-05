@@ -864,8 +864,7 @@ impl Block {
 
     pub fn random() -> Self {
         let body = BlockBody::sample();
-        let mut header = BlockHeader::random();
-        header.body_hash = body.hash();
+        let header = BlockHeader::random();
 
         Self { header, body }
     }

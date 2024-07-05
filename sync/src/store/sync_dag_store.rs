@@ -4,6 +4,7 @@ use anyhow::format_err;
 use starcoin_config::{temp_dir, RocksdbConfig, StorageConfig};
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::prelude::StoreError;
+use starcoin_logger::prelude::error;
 use starcoin_storage::db_storage::{DBStorage, SchemaIterator};
 use starcoin_types::block::{Block, BlockNumber};
 
@@ -60,13 +61,16 @@ impl SyncDagStore {
         db_path: P,
         config: SyncDagStoreConfig,
     ) -> anyhow::Result<Self> {
-        let db = Arc::new(DBStorage::open_with_cfs(
-            db_path,
-            vec![SYNC_ABSENT_BLOCK_CF],
-            false,
-            config.rocksdb_config,
-            None,
-        )?);
+        let db = Arc::new(
+            DBStorage::open_with_cfs(
+                db_path,
+                vec![SYNC_ABSENT_BLOCK_CF],
+                false,
+                config.rocksdb_config,
+                None,
+            )
+            .map_err(|e| format_err!("Failed to open database: {:?}", e))?,
+        );
 
         Ok(Self {
             absent_dag_store: SyncAbsentBlockStore::new(db, config.cache_size),
@@ -102,10 +106,12 @@ impl SyncDagStore {
             }
             Err(e) => match e {
                 StoreError::KeyNotFound(_) => {
-                    self.absent_dag_store.save_absent_block(vec![DagSyncBlock {
-                        block: Some(block.clone()),
-                        children: vec![],
-                    }])?;
+                    self.absent_dag_store
+                        .save_absent_block(vec![DagSyncBlock {
+                            block: Some(block.clone()),
+                            children: vec![],
+                        }])
+                        .map_err(|e| format_err!("Failed to save absent block: {:?}", e))?;
                     Ok(())
                 }
                 _ => Err(format_err!(
@@ -136,6 +142,13 @@ impl SyncDagStore {
     ) -> anyhow::Result<DagSyncBlock, StoreError> {
         self.absent_dag_store
             .get_absent_block_by_id(number, block_id)
+            .map_err(|e| {
+                error!(
+                    "Failed to get DAG sync block with number: {}, block_id: {}. Error: {:?}",
+                    number, block_id, e
+                );
+                e
+            })
     }
 
     pub fn update_children(
@@ -144,12 +157,16 @@ impl SyncDagStore {
         parent_id: HashValue,
         child_id: HashValue,
     ) -> anyhow::Result<()> {
-        let mut syn_dag = self.get_dag_sync_block(parent_number, parent_id)?;
+        let mut syn_dag = self
+            .get_dag_sync_block(parent_number, parent_id)
+            .map_err(|e| format_err!("Failed to get DAG sync block for update: {:?}", e))?;
         if syn_dag.children.contains(&child_id) {
             return Ok(());
         }
         syn_dag.children.push(child_id);
-        self.absent_dag_store.save_absent_block(vec![syn_dag])?;
+        self.absent_dag_store
+            .save_absent_block(vec![syn_dag])
+            .map_err(|e| format_err!("Failed to save updated DAG sync block: {:?}", e))?;
         Ok(())
     }
 }

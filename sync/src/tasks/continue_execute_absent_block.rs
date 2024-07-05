@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::anyhow;
 use starcoin_chain_api::ExecutedBlock;
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::{error, info};
+use starcoin_logger::prelude::{debug, error, info};
 use starcoin_storage::Store;
 use starcoin_types::block::{Block, BlockHeader};
 use stream_task::CollectorState;
@@ -135,7 +135,6 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
             match self.operator.has_dag_block(block.header().id()) {
                 Ok(has) => {
                     if has {
-                        info!("{:?} was already applied", block.header().id());
                         false // remove the executed block
                     } else {
                         true // retain the un-executed block
@@ -161,12 +160,21 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
                     executed_block.block.header().number()
                 );
 
-                self.execute_if_parent_ready_norecursion(executed_block.block.id())?;
+                let block_id = executed_block.block.id();
+                let block_number = executed_block.block.header().number();
 
+                debug!("start to execute the children blocks if the parent: {:?}, number: {:?} was executed.", block_id, block_number);
+                self.execute_if_parent_ready_norecursion(executed_block.block.id())?;
+                debug!("finish to execute the children blocks if the parent: {:?}, number: {:?} was executed.", block_id, block_number);
+
+                debug!("delete from the local store after the block was executed: {:?}, number: {:?}", block_id, block_number);
                 self.local_store
                     .delete_dag_sync_block(executed_block.block.id())?;
 
+                debug!("notify the collector after the block was executed: {:?}, number: {:?}", block_id, block_number);
                 self.operator.notify(executed_block)?;
+
+                debug!("finish to process the block: {:?}, number: {:?}", block_id, block_number);
             }
             // delete the block anyway
             self.sync_dag_store
