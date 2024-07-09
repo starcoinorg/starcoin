@@ -172,11 +172,17 @@ where
                             info!("absent block is empty, continue to sync");
                             break;
                         }
-                        block_collector.execute_absent_block(&mut local_absent_block)?;
+                        match block_collector.execute_absent_block(&mut local_absent_block) {
+                            anyhow::Result::Ok(_) => (),
+                            Err(e) => {
+                                error!("failed to execute absent block, error: {:?}, break from the continuing block execution", e);
+                                break;
+                            }
+                        }
                     }
                     Err(e) => {
-                        error!("failed to read local absent block, error: {:?}", e);
-                        return Err(e);
+                        error!("failed to read local absent block, error: {:?}, break from the continuing block execution", e);
+                        break;
                     }
                 }
             }
