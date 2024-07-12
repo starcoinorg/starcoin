@@ -5,7 +5,6 @@ use super::{
 };
 use crate::consensusdb::set_access::CachedDbSetAccess;
 use crate::define_schema;
-use itertools::Itertools;
 use rocksdb::WriteBatch;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::blockhash::{BlockHashes, BlockLevel};
@@ -129,15 +128,7 @@ impl RelationsStoreReader for DbRelationsStore {
     // todo: use a more efficient way to get children
     fn get_children(&self, hash: Hash) -> Result<BlockHashes, StoreError> {
         Ok(Arc::new({
-            let children = self
-                .children_access
-                .read(hash)?
-                .read()
-                .iter()
-                .cloned()
-                .collect_vec();
-            println!("{children:?}");
-            children
+            self.children_access.read(hash)?.read().clone()
         }))
     }
 

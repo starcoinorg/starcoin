@@ -3,7 +3,6 @@ use crate::consensusdb::{cache::DagCache, error::StoreError, schema::Schema, wri
 use parking_lot::RwLock;
 use rocksdb::{IteratorMode, ReadOptions};
 use starcoin_storage::db_storage::DBStorage;
-use std::collections::HashSet;
 use std::error::Error;
 use std::{collections::hash_map::RandomState, marker::PhantomData, sync::Arc};
 
@@ -21,12 +20,9 @@ impl<S: Schema> DbSetAccess<S> {
         }
     }
 
-    pub fn read(&self, key: S::Key) -> Result<HashSet<S::Value>, StoreError>
-    where
-        S::Value: std::cmp::Eq + std::hash::Hash,
-    {
+    pub fn read(&self, key: S::Key) -> Result<Vec<S::Value>, StoreError> {
         self.seek_iterator(key, usize::MAX, false)
-            .map(|iter| iter.filter_map(Result::ok).collect::<HashSet<S::Value>>())
+            .map(|iter| iter.filter_map(Result::ok).collect::<Vec<S::Value>>())
             .map_err(Into::into)
     }
 
@@ -35,10 +31,7 @@ impl<S: Schema> DbSetAccess<S> {
         mut writer: impl DbWriter,
         key: S::Key,
         value: S::Value,
-    ) -> Result<(), StoreError>
-    where
-        S::Value: std::cmp::Eq + std::hash::Hash,
-    {
+    ) -> Result<(), StoreError> {
         let db_key = key
             .encode_key()?
             .iter()
@@ -80,7 +73,7 @@ impl<S: Schema> DbSetAccess<S> {
 #[derive(Clone)]
 pub struct CachedDbSetAccess<S: Schema, R = RandomState> {
     inner: DbSetAccess<S, R>,
-    cache: DagCache<S::Key, Arc<RwLock<HashSet<S::Value>>>>,
+    cache: DagCache<S::Key, Arc<RwLock<Vec<S::Value>>>>,
 }
 impl<S: Schema> CachedDbSetAccess<S> {
     pub fn new(db: Arc<DBStorage>, cache_size: usize) -> Self {
@@ -92,14 +85,10 @@ impl<S: Schema> CachedDbSetAccess<S> {
 
     // Mark the key has been initialized in memory to speed up the read operation.
     pub fn initialize(&self, key: S::Key) {
-        self.cache
-            .insert(key, Arc::new(RwLock::new(HashSet::new())));
+        self.cache.insert(key, Arc::new(RwLock::new(Vec::new())));
     }
 
-    pub fn read(&self, key: S::Key) -> Result<Arc<RwLock<HashSet<S::Value>>>, StoreError>
-    where
-        S::Value: std::cmp::Eq + std::hash::Hash,
-    {
+    pub fn read(&self, key: S::Key) -> Result<Arc<RwLock<Vec<S::Value>>>, StoreError> {
         self.cache.get(&key).map_or_else(
             || {
                 self.inner.read(key.clone()).map(|v| {
@@ -119,11 +108,15 @@ impl<S: Schema> CachedDbSetAccess<S> {
         value: S::Value,
     ) -> Result<(), StoreError>
     where
-        S::Value: std::cmp::Eq + std::hash::Hash,
+        S::Value: std::cmp::PartialEq,
     {
         let data = self.read(key.clone())?;
-        self.inner.write(writer, key, value.clone())?;
-        data.write().insert(value);
+        let mut data_writer = data.write();
+        // acquire exclusive write lock before checking the existence of the value
+        if !data_writer.contains(&value) {
+            self.inner.write(writer, key, value.clone())?;
+            data_writer.push(value);
+        }
         Ok(())
     }
 }
