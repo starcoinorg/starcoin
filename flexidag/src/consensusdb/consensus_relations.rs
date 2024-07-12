@@ -128,14 +128,17 @@ impl RelationsStoreReader for DbRelationsStore {
 
     // todo: use a more efficient way to get children
     fn get_children(&self, hash: Hash) -> Result<BlockHashes, StoreError> {
-        Ok(Arc::new(
-            self.children_access
+        Ok(Arc::new({
+            let children = self
+                .children_access
                 .read(hash)?
                 .read()
                 .iter()
                 .cloned()
-                .collect_vec(),
-        ))
+                .collect_vec();
+            println!("{children:?}");
+            children
+        }))
     }
 
     fn has(&self, hash: Hash) -> Result<bool, StoreError> {
