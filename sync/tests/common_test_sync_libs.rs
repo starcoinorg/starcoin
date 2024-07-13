@@ -1,9 +1,5 @@
 use anyhow::{Ok, Result};
 
-
-
-
-
 use starcoin_config::{temp_dir, NetworkConfig, NodeConfig};
 use starcoin_crypto::HashValue;
 
@@ -11,11 +7,9 @@ use starcoin_logger::prelude::*;
 
 use starcoin_node::NodeHandle;
 
+use starcoin_types::block::BlockHeader;
 
-use starcoin_types::block::{BlockHeader};
-
-use std::{sync::Arc};
-
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct DagBlockInfo {
