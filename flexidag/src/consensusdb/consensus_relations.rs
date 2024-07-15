@@ -5,15 +5,16 @@ use super::{
 };
 use crate::consensusdb::set_access::CachedDbSetAccess;
 use crate::define_schema;
+use parking_lot::RwLock;
 use rocksdb::WriteBatch;
-use starcoin_crypto::HashValue as Hash;
+use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_types::blockhash::{BlockHashes, BlockLevel};
 use std::sync::Arc;
 
 /// Reader API for `RelationsStore`.
 pub trait RelationsStoreReader {
     fn get_parents(&self, hash: Hash) -> Result<BlockHashes, StoreError>;
-    fn get_children(&self, hash: Hash) -> Result<BlockHashes, StoreError>;
+    fn get_children(&self, hash: Hash) -> Result<Arc<RwLock<Vec<HashValue>>>, StoreError>;
     fn has(&self, hash: Hash) -> Result<bool, StoreError>;
 }
 
@@ -125,11 +126,8 @@ impl RelationsStoreReader for DbRelationsStore {
         self.parents_access.read(hash)
     }
 
-    // todo: use a more efficient way to get children
-    fn get_children(&self, hash: Hash) -> Result<BlockHashes, StoreError> {
-        Ok(Arc::new({
-            self.children_access.read(hash)?.read().clone()
-        }))
+    fn get_children(&self, hash: Hash) -> Result<Arc<RwLock<Vec<HashValue>>>, StoreError> {
+        self.children_access.read(hash)
     }
 
     fn has(&self, hash: Hash) -> Result<bool, StoreError> {
@@ -207,6 +205,7 @@ mod tests {
             assert!(store
                 .get_children(i.into())
                 .unwrap()
+                .read()
                 .iter()
                 .copied()
                 .eq(vec.iter().copied().map(Hash::from)));

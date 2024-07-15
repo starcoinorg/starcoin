@@ -13,6 +13,7 @@ use crate::consensusdb::{
 use crate::ghostdag::protocol::GhostdagManager;
 use crate::{process_key_already_error, reachability};
 use anyhow::{bail, Ok};
+use parking_lot::RwLock;
 use starcoin_config::{temp_dir, RocksdbConfig};
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::{debug, info};
@@ -254,13 +255,12 @@ impl BlockDAG {
         }
     }
 
-    pub fn get_children(&self, hash: Hash) -> anyhow::Result<Vec<Hash>> {
-        match self.storage.relations_store.read().get_children(hash) {
-            anyhow::Result::Ok(children) => anyhow::Result::Ok((*children).clone()),
-            Err(error) => {
-                bail!("failed to get parents by hash: {}", error);
-            }
-        }
+    pub fn get_children(&self, hash: Hash) -> anyhow::Result<Arc<RwLock<Vec<HashValue>>>> {
+        self.storage
+            .relations_store
+            .read()
+            .get_children(hash)
+            .map_err(Into::into)
     }
 
     pub fn get_dag_state(&self, hash: Hash) -> anyhow::Result<DagState> {

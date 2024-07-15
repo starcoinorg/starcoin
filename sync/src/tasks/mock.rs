@@ -410,7 +410,7 @@ impl BlockFetcher for SyncNodeMocker {
             let blocks = self.fetch_blocks(block_ids).await?;
             let mut result = vec![];
             for block in blocks {
-                result.extend(self.chain().dag().get_children(block.0.id())?);
+                result.extend(self.chain().dag().get_children(block.0.id())?.read().iter());
             }
             Ok(result)
         }
