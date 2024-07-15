@@ -448,7 +448,7 @@ impl ReadableChainService for ChainReaderServiceInner {
     fn get_dag_block_children(&self, ids: Vec<HashValue>) -> Result<Vec<HashValue>> {
         ids.into_iter().try_fold(vec![], |mut result, id| {
             self.dag.get_children(id).map(|children| {
-                result.extend(children);
+                result.extend(children.read().iter());
                 result
             })
         })

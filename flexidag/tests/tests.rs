@@ -160,7 +160,7 @@ async fn test_with_spawn() {
     for handle in handles {
         handle.await.unwrap();
     }
-    let mut child = dag.get_children(block1.id()).unwrap();
+    let mut child = dag.get_children(block1.id()).unwrap().read().clone();
     assert_eq!(child.pop().unwrap(), block3.id());
     assert_eq!(child.len(), 0);
 }
@@ -221,18 +221,16 @@ fn test_write_asynchronization() -> anyhow::Result<()> {
     handle1.join().expect("failed to join handle1");
     handle2.join().expect("failed to join handle2");
 
-    assert!(dag
+    let childrens = dag
         .storage
         .relations_store
         .read()
         .get_children(parent.id())?
-        .contains(&one.id()));
-    assert!(dag
-        .storage
-        .relations_store
         .read()
-        .get_children(parent.id())?
-        .contains(&two.id()));
+        .clone();
+
+    assert!(childrens.contains(&one.id()));
+    assert!(childrens.contains(&two.id()));
 
     Ok(())
 }
