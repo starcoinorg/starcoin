@@ -119,4 +119,16 @@ impl<S: Schema> CachedDbSetAccess<S> {
         }
         Ok(())
     }
+
+    pub fn write_without_cache(
+        &self,
+        writer: impl DbWriter,
+        key: S::Key,
+        value: S::Value,
+    ) -> Result<(), StoreError>
+    where
+        S::Value: std::cmp::PartialEq,
+    {
+        self.inner.write(writer, key, value)
+    }
 }
