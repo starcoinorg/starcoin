@@ -8,6 +8,7 @@ use super::{
     },
 };
 use crate::consensusdb::error::StoreError::DBIoError;
+use crate::consensusdb::schemadb::{REACHABILITY_FCS_DATA_CF, REACHABILITY_SET_DATA_CF};
 use parking_lot::RwLock;
 use rocksdb::{WriteBatch, WriteOptions};
 use starcoin_config::{RocksdbConfig, StorageConfig};
@@ -70,6 +71,8 @@ impl FlexiDagStorage {
                     CHILDREN_CF,
                     // consensus reachability
                     REACHABILITY_DATA_CF,
+                    REACHABILITY_SET_DATA_CF,
+                    REACHABILITY_FCS_DATA_CF,
                     // consensus ghostdag
                     GHOST_DAG_STORE_CF,
                     COMPACT_GHOST_DAG_STORE_CF,
