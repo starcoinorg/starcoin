@@ -276,7 +276,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
 
     // the dag in node 2 has two chains: one's current header is 7, the other's current header is 5.
     // As the dag ghost consent rule, the chain with 7 will be the main chain.
-    assert_eq!(branch.current_header().id(), current_block_header.id());
+    assert_eq!(branch.current_header().id(), target.block_info.block_id);
     let current_block_header = node2.chain().current_header();
     let dag_fork_height = node2.dag_fork_number()?;
     // node2's main chain not change.

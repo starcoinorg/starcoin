@@ -52,7 +52,7 @@ pub async fn create_writeable_block_chain() -> (
     Arc<NodeConfig>,
     Arc<dyn Store>,
 ) {
-    let node_config = NodeConfig::random_for_test();
+    let node_config = NodeConfig::random_for_dag_test();
     let node_config = Arc::new(node_config);
 
     let (storage, chain_info, _, dag) = StarcoinGenesis::init_storage_for_test(node_config.net())
@@ -164,7 +164,7 @@ fn gen_fork_block_chain(
                     Vec::new(),
                     vec![],
                     None,
-                    None,
+                    Some(vec![parent_id]),
                 )
                 .unwrap();
             let block = block_chain
