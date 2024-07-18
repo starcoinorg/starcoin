@@ -11,7 +11,9 @@ use crate::{
 };
 use starcoin_types::blockhash::{self, BlockHashMap, BlockHashes};
 
-use crate::consensusdb::set_access::CachedDbSetAccess;
+use crate::consensusdb::prelude::DagCache;
+use crate::consensusdb::schema::Schema;
+use crate::consensusdb::set_access::DbSetAccess;
 use parking_lot::{RwLockUpgradableReadGuard, RwLockWriteGuard};
 use rocksdb::WriteBatch;
 use std::{collections::hash_map::Entry::Vacant, sync::Arc};
@@ -139,14 +141,52 @@ impl ValueCodec<ReachabilityFcs> for Hash {
         Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
     }
 }
+
+#[derive(Clone)]
+struct DbReachabilitySet<S: Schema> {
+    access: DbSetAccess<S>,
+    cache: DagCache<S::Key, Arc<Vec<S::Value>>>,
+}
+
+impl<S: Schema> DbReachabilitySet<S> {
+    fn new(db: Arc<DBStorage>, cache_size: usize) -> Self {
+        Self {
+            access: DbSetAccess::new(db),
+            cache: DagCache::new_with_capacity(cache_size),
+        }
+    }
+
+    fn read<K, F>(&self, key: S::Key, f: F) -> Result<Arc<Vec<S::Value>>, StoreError>
+    where
+        F: FnMut(&S::Value) -> K,
+        K: Ord,
+    {
+        self.cache.get(&key).map_or_else(
+            || {
+                self.access.read(key.clone()).map(|mut v| {
+                    v.sort_by_cached_key(f);
+                    let v = Arc::new(v);
+                    self.cache.insert(key, v.clone());
+                    v
+                })
+            },
+            Ok,
+        )
+    }
+
+    fn initialize(&self, key: S::Key) {
+        self.cache.insert(key, Arc::new(Vec::new()));
+    }
+}
+
 /// A DB + cache implementation of `ReachabilityStore` trait, with concurrent readers support.
 #[derive(Clone)]
 pub struct DbReachabilityStore {
     db: Arc<DBStorage>,
     access: CachedDbAccess<Reachability>,
-    children_acess: CachedDbSetAccess<ReachabilityChildren>,
+    children_store: DbReachabilitySet<ReachabilityChildren>,
     // future_covering_set
-    fcs_access: CachedDbSetAccess<ReachabilityFcs>,
+    fcs_store: DbReachabilitySet<ReachabilityFcs>,
     reindex_root: CachedDbItem<ReachabilityCache>,
 }
 
@@ -155,8 +195,8 @@ impl DbReachabilityStore {
         Self {
             db: Arc::clone(&db),
             access: CachedDbAccess::new(Arc::clone(&db), cache_size),
-            children_acess: CachedDbSetAccess::new(db.clone(), cache_size),
-            fcs_access: CachedDbSetAccess::new(db.clone(), cache_size),
+            children_store: DbReachabilitySet::new(db.clone(), cache_size),
+            fcs_store: DbReachabilitySet::new(db.clone(), cache_size),
             reindex_root: CachedDbItem::new(db, REINDEX_ROOT_KEY.as_bytes().to_vec()),
         }
     }
@@ -184,8 +224,8 @@ impl ReachabilityStore for DbReachabilityStore {
             .raw_write_batch(batch)
             .map_err(|e| StoreError::DBIoError(e.to_string()))?;
 
-        self.children_acess.initialize(origin);
-        self.fcs_access.initialize(origin);
+        self.children_store.initialize(origin);
+        self.fcs_store.initialize(origin);
 
         Ok(())
     }
@@ -204,8 +244,8 @@ impl ReachabilityStore for DbReachabilityStore {
         self.access
             .write(DirectDbWriter::new(&self.db), hash, data)?;
 
-        self.children_acess.initialize(hash);
-        self.fcs_access.initialize(hash);
+        self.children_store.initialize(hash);
+        self.fcs_store.initialize(hash);
 
         Ok(())
     }
@@ -219,9 +259,14 @@ impl ReachabilityStore for DbReachabilityStore {
     }
 
     fn append_child(&mut self, hash: Hash, child: Hash) -> Result<u64, StoreError> {
-        self.children_acess
+        let mut data = self
+            .children_store
+            .read(hash, |&h| self.access.read(h).unwrap().interval)?;
+        let data_mut = Arc::make_mut(&mut data);
+        data_mut.push(child);
+        self.children_store
+            .access
             .write(DirectDbWriter::new(&self.db), hash, child)?;
-
         self.get_height(hash)
     }
 
@@ -231,11 +276,14 @@ impl ReachabilityStore for DbReachabilityStore {
         fci: Hash,
         insertion_index: usize,
     ) -> Result<(), StoreError> {
-        let data = self.fcs_access.read(hash)?;
-        data.write().insert(insertion_index, fci);
-        // todo: need to keep the subindex?
-        self.fcs_access
-            .write_without_cache(DirectDbWriter::new(&self.db), hash, fci)?;
+        let mut data = self
+            .fcs_store
+            .read(hash, |&h| self.access.read(h).unwrap().interval)?;
+        let data_mut = Arc::make_mut(&mut data);
+        data_mut.insert(insertion_index, fci);
+        self.fcs_store
+            .access
+            .write(DirectDbWriter::new(&self.db), hash, fci)?;
         Ok(())
     }
 
@@ -267,13 +315,17 @@ impl ReachabilityStoreReader for DbReachabilityStore {
     }
 
     fn get_children(&self, hash: Hash) -> Result<BlockHashes, StoreError> {
-        // todo: remove clone
-        Ok(Arc::new(self.children_acess.read(hash)?.read().clone()))
+        Ok(self
+            .children_store
+            .read(hash, |&h| self.access.read(h).unwrap().interval)?
+            .clone())
     }
 
     fn get_future_covering_set(&self, hash: Hash) -> Result<BlockHashes, StoreError> {
-        // todo: remove clone
-        Ok(Arc::new(self.fcs_access.read(hash)?.read().clone()))
+        Ok(self
+            .fcs_store
+            .read(hash, |&h| self.access.read(h).unwrap().interval)?
+            .clone())
     }
 }
 
@@ -364,10 +416,13 @@ impl ReachabilityStore for StagingReachabilityStore<'_> {
             return Ok(height);
         }
 
-        let mut data = (*self.store_read.children_acess.read(hash)?).read().clone();
+        let mut data = self
+            .store_read
+            .children_store
+            .read(hash, |&h| self.get_interval(h).unwrap())?;
         if !data.contains(&child) {
-            data.push(child);
-            self.staging_children.insert(hash, Arc::new(data));
+            Arc::make_mut(&mut data).push(child);
+            self.staging_children.insert(hash, data);
         }
 
         Ok(height)
@@ -385,9 +440,13 @@ impl ReachabilityStore for StagingReachabilityStore<'_> {
             return Ok(());
         }
 
-        let mut data = (*self.store_read.fcs_access.read(hash)?).read().clone();
-        data.insert(insertion_index, fci);
-        self.staging_fcs.insert(hash, Arc::new(data));
+        let mut data = self
+            .store_read
+            .fcs_store
+            .read(hash, |&h| self.get_interval(h).unwrap())?;
+        let data_mut = Arc::make_mut(&mut data);
+        data_mut.insert(insertion_index, fci);
+        self.staging_fcs.insert(hash, Arc::clone(&data));
 
         Ok(())
     }
@@ -440,9 +499,9 @@ impl ReachabilityStoreReader for StagingReachabilityStore<'_> {
             Ok(BlockHashes::clone(data))
         } else {
             // todo: update staging_children?
-            Ok(BlockHashes::new(
-                self.store_read.children_acess.read(hash)?.read().clone(),
-            ))
+            self.store_read
+                .children_store
+                .read(hash, |&h| self.get_interval(h).unwrap())
         }
     }
 
@@ -451,9 +510,9 @@ impl ReachabilityStoreReader for StagingReachabilityStore<'_> {
             Ok(BlockHashes::clone(data))
         } else {
             // todo: need to update staging_fcs?
-            Ok(BlockHashes::new(
-                self.store_read.fcs_access.read(hash)?.read().clone(),
-            ))
+            self.store_read
+                .fcs_store
+                .read(hash, |&h| self.get_interval(h).unwrap())
         }
     }
 }

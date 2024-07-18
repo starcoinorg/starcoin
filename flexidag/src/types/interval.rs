@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Default, PartialEq, PartialOrd, Ord, Eq, Clone, Copy, Serialize, Deserialize)]
 pub struct Interval {
     pub start: u64,
     pub end: u64,
