@@ -16,6 +16,7 @@ use crate::consensusdb::schema::Schema;
 use crate::consensusdb::set_access::DbSetAccess;
 use parking_lot::{RwLockUpgradableReadGuard, RwLockWriteGuard};
 use rocksdb::WriteBatch;
+use std::collections::HashMap;
 use std::{collections::hash_map::Entry::Vacant, sync::Arc};
 
 /// Reader API for `ReachabilityStore`.
@@ -53,7 +54,7 @@ pub trait ReachabilityStore: ReachabilityStoreReader {
 
 pub const REINDEX_ROOT_KEY: &str = "reachability-reindex-root";
 pub(crate) const REACHABILITY_DATA_CF: &str = "reachability-data";
-pub(crate) const REACHABILITY_SET_DATA_CF: &str = "reachability-set-data";
+pub(crate) const REACHABILITY_CHILDREN_DATA_CF: &str = "reachability-children-data";
 pub(crate) const REACHABILITY_FCS_DATA_CF: &str = "reachability-fcs-data";
 // TODO: explore perf to see if using fixed-length constants for store prefixes is preferable
 
@@ -64,8 +65,6 @@ define_schema!(
     REACHABILITY_DATA_CF
 );
 define_schema!(ReachabilityCache, Vec<u8>, Hash, REACHABILITY_DATA_CF);
-define_schema!(ReachabilityChildren, Hash, Hash, REACHABILITY_SET_DATA_CF);
-define_schema!(ReachabilityFcs, Hash, Hash, REACHABILITY_FCS_DATA_CF);
 
 impl KeyCodec<Reachability> for Hash {
     fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
@@ -104,68 +103,40 @@ impl ValueCodec<ReachabilityCache> for Hash {
     }
 }
 
-impl KeyCodec<ReachabilityChildren> for Hash {
-    fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
-        Ok(self.to_vec())
-    }
-
-    fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
-        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
-    }
-}
-impl ValueCodec<ReachabilityChildren> for Hash {
-    fn encode_value(&self) -> Result<Vec<u8>, StoreError> {
-        Ok(self.to_vec())
-    }
-
-    fn decode_value(data: &[u8]) -> Result<Self, StoreError> {
-        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
-    }
-}
-
-impl KeyCodec<ReachabilityFcs> for Hash {
-    fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
-        Ok(self.to_vec())
-    }
-
-    fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
-        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
-    }
-}
-impl ValueCodec<ReachabilityFcs> for Hash {
-    fn encode_value(&self) -> Result<Vec<u8>, StoreError> {
-        Ok(self.to_vec())
-    }
-
-    fn decode_value(data: &[u8]) -> Result<Self, StoreError> {
-        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
-    }
-}
-
 #[derive(Clone)]
-struct DbReachabilitySet<S: Schema> {
-    access: DbSetAccess<S>,
-    cache: DagCache<S::Key, Arc<Vec<S::Value>>>,
+struct DbReachabilitySet {
+    cf: &'static str,
+    access: DbSetAccess<Hash, Vec<u8>>,
+    cache: DagCache<Hash, Arc<Vec<Hash>>>,
 }
 
-impl<S: Schema> DbReachabilitySet<S> {
-    fn new(db: Arc<DBStorage>, cache_size: usize) -> Self {
+impl DbReachabilitySet {
+    fn new(db: Arc<DBStorage>, cache_size: usize, cf: &'static str) -> Self {
         Self {
-            access: DbSetAccess::new(db),
+            cf,
+            access: DbSetAccess::new(db, cf),
             cache: DagCache::new_with_capacity(cache_size),
         }
     }
 
-    fn read<K, F>(&self, key: S::Key, f: F) -> Result<Arc<Vec<S::Value>>, StoreError>
+    fn read<K, F>(&self, key: Hash, f: F) -> Result<Arc<Vec<Hash>>, StoreError>
     where
-        F: FnMut(&S::Value) -> K,
+        F: FnMut(&Hash) -> K,
         K: Ord,
     {
         self.cache.get(&key).map_or_else(
             || {
-                self.access.read(key.clone()).map(|mut v| {
-                    v.sort_by_cached_key(f);
-                    let v = Arc::new(v);
+                self.access.read(key).map(|mut v| {
+                    let v_map = v
+                        .into_iter()
+                        .map(|raw| {
+                            (
+                                u64::from_le_bytes(raw[..8].try_into().unwrap()) as usize,
+                                bcs_ext::from_bytes::<Hash>(&raw[8..]).unwrap(),
+                            )
+                        })
+                        .collect::<HashMap<usize, Hash>>();
+                    let v = Arc::new(v_map.into_values().collect::<Vec<_>>());
                     self.cache.insert(key, v.clone());
                     v
                 })
@@ -174,7 +145,7 @@ impl<S: Schema> DbReachabilitySet<S> {
         )
     }
 
-    fn initialize(&self, key: S::Key) {
+    fn initialize(&self, key: Hash) {
         self.cache.insert(key, Arc::new(Vec::new()));
     }
 }
@@ -184,9 +155,9 @@ impl<S: Schema> DbReachabilitySet<S> {
 pub struct DbReachabilityStore {
     db: Arc<DBStorage>,
     access: CachedDbAccess<Reachability>,
-    children_store: DbReachabilitySet<ReachabilityChildren>,
+    children_store: DbReachabilitySet,
     // future_covering_set
-    fcs_store: DbReachabilitySet<ReachabilityFcs>,
+    fcs_store: DbReachabilitySet,
     reindex_root: CachedDbItem<ReachabilityCache>,
 }
 
@@ -195,8 +166,12 @@ impl DbReachabilityStore {
         Self {
             db: Arc::clone(&db),
             access: CachedDbAccess::new(Arc::clone(&db), cache_size),
-            children_store: DbReachabilitySet::new(db.clone(), cache_size),
-            fcs_store: DbReachabilitySet::new(db.clone(), cache_size),
+            children_store: DbReachabilitySet::new(
+                db.clone(),
+                cache_size,
+                REACHABILITY_CHILDREN_DATA_CF,
+            ),
+            fcs_store: DbReachabilitySet::new(db.clone(), cache_size, REACHABILITY_FCS_DATA_CF),
             reindex_root: CachedDbItem::new(db, REINDEX_ROOT_KEY.as_bytes().to_vec()),
         }
     }
@@ -262,11 +237,18 @@ impl ReachabilityStore for DbReachabilityStore {
         let mut data = self
             .children_store
             .read(hash, |&h| self.access.read(h).unwrap().interval)?;
-        let data_mut = Arc::make_mut(&mut data);
-        data_mut.push(child);
+        Arc::make_mut(&mut data).push(child);
+
+        let new_data = {
+            let idx = data.len() as u64 - 1;
+            let mut new_data = idx.to_le_bytes().to_vec();
+            new_data.extend(bincode::serialize(&data).unwrap().iter());
+            new_data
+        };
+
         self.children_store
             .access
-            .write(DirectDbWriter::new(&self.db), hash, child)?;
+            .write(DirectDbWriter::new(&self.db), hash, new_data)?;
         self.get_height(hash)
     }
 
@@ -279,11 +261,18 @@ impl ReachabilityStore for DbReachabilityStore {
         let mut data = self
             .fcs_store
             .read(hash, |&h| self.access.read(h).unwrap().interval)?;
-        let data_mut = Arc::make_mut(&mut data);
-        data_mut.insert(insertion_index, fci);
+        Arc::make_mut(&mut data).insert(insertion_index, fci);
+
+        let new_data = {
+            let idx = insertion_index as u64;
+            let mut new_data = idx.to_le_bytes().to_vec();
+            new_data.extend(bincode::serialize(&fci).unwrap().iter());
+            new_data
+        };
+
         self.fcs_store
             .access
-            .write(DirectDbWriter::new(&self.db), hash, fci)?;
+            .write(DirectDbWriter::new(&self.db), hash, new_data)?;
         Ok(())
     }
 
