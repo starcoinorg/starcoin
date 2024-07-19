@@ -1905,7 +1905,7 @@ impl ChainReader for BlockChain {
     fn fork(&self, block_id: HashValue) -> Result<Self> {
         ensure!(
             self.has_dag_block(block_id)?,
-            "Block with id{} do not exists in current chain.",
+            "Block with id {} do not exists in current chain.",
             block_id
         );
         let head = self
