@@ -8,10 +8,11 @@ use super::{db::DBStorage, error::StoreError};
 pub trait DbWriter {
     fn put<S: Schema>(&mut self, key: &S::Key, value: &S::Value) -> Result<(), StoreError>;
     fn delete<S: Schema>(&mut self, key: &S::Key) -> Result<(), StoreError>;
-    fn put_inner<S: Schema>(
+    fn put_inner(
         &mut self,
         key: &dyn AsRef<[u8]>,
         value: &dyn AsRef<[u8]>,
+        cf: &'static str,
     ) -> Result<(), StoreError>;
 }
 
@@ -41,17 +42,14 @@ impl DbWriter for DirectDbWriter<'_> {
             .map_err(|e| StoreError::DBIoError(e.to_string()))
     }
 
-    fn put_inner<S: Schema>(
+    fn put_inner(
         &mut self,
         key: &dyn AsRef<[u8]>,
         value: &dyn AsRef<[u8]>,
+        cf: &'static str,
     ) -> Result<(), StoreError> {
         self.db
-            .put(
-                S::COLUMN_FAMILY,
-                key.as_ref().to_vec(),
-                value.as_ref().to_vec(),
-            )
+            .put(cf, key.as_ref().to_vec(), value.as_ref().to_vec())
             .map_err(|e| StoreError::DBIoError(e.to_string()))
     }
 }
@@ -80,10 +78,11 @@ impl DbWriter for BatchDbWriter<'_> {
         Ok(())
     }
 
-    fn put_inner<S: Schema>(
+    fn put_inner(
         &mut self,
         key: &dyn AsRef<[u8]>,
         value: &dyn AsRef<[u8]>,
+        _cf: &'static str,
     ) -> Result<(), StoreError> {
         self.batch.put(key, value);
         Ok(())
@@ -102,11 +101,12 @@ impl<T: DbWriter> DbWriter for &mut T {
     }
 
     #[inline]
-    fn put_inner<S: Schema>(
+    fn put_inner(
         &mut self,
         key: &dyn AsRef<[u8]>,
         value: &dyn AsRef<[u8]>,
+        cf: &'static str,
     ) -> Result<(), StoreError> {
-        (*self).put_inner::<S>(key, value)
+        (*self).put_inner(key, value, cf)
     }
 }

@@ -28,6 +28,7 @@ starcoin-config = { workspace = true }
 bcs-ext = { workspace = true }
 starcoin-accumulator = { workspace = true }
 schemars = { workspace = true }
+smallvec = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

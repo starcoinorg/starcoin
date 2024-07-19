@@ -9698,6 +9698,7 @@ dependencies = [
  "schemars",
  "serde 1.0.152",
  "sha3",
+ "smallvec 1.10.0",
  "starcoin-accumulator",
  "starcoin-config",
  "starcoin-crypto",
