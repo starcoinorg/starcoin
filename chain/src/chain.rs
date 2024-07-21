@@ -1904,8 +1904,8 @@ impl ChainReader for BlockChain {
 
     fn fork(&self, block_id: HashValue) -> Result<Self> {
         ensure!(
-            self.exist_block(block_id)?,
-            "Block with id{} do not exists in current chain.",
+            self.has_dag_block(block_id)?,
+            "Block with id {} do not exists in current chain.",
             block_id
         );
         let head = self
@@ -2124,43 +2124,12 @@ impl ChainReader for BlockChain {
     }
 
     fn has_dag_block(&self, header_id: HashValue) -> Result<bool> {
-        let dag_effective_height = self.get_dag_effective_height()?;
-
         let header = match self.storage.get_block_header_by_hash(header_id)? {
             Some(header) => header,
             None => return Ok(false),
         };
 
-        if header.number() < dag_effective_height {
-            return Ok(false);
-        }
-
-        let block_info = match self.storage.get_block_info(header.id())? {
-            Some(block_info) => block_info,
-            None => return Ok(false),
-        };
-        let block_accumulator = MerkleAccumulator::new_with_info(
-            block_info.get_block_accumulator_info().clone(),
-            self.storage
-                .get_accumulator_store(AccumulatorStoreType::Block),
-        );
-        let dag_genesis = match block_accumulator.get_leaf(dag_effective_height)? {
-            Some(dag_genesis) => dag_genesis,
-            None => return Ok(false),
-        };
-
-        let current_chain_block_accumulator = MerkleAccumulator::new_with_info(
-            self.status.status.info.get_block_accumulator_info().clone(),
-            self.storage
-                .get_accumulator_store(AccumulatorStoreType::Block),
-        );
-        let current_chain_dag_genesis =
-            match current_chain_block_accumulator.get_leaf(dag_effective_height)? {
-                Some(dag_genesis) => dag_genesis,
-                None => return Ok(false),
-            };
-
-        if current_chain_dag_genesis != dag_genesis {
+        if self.storage.get_block_info(header.id())?.is_none() {
             return Ok(false);
         }
 

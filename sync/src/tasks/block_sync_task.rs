@@ -196,6 +196,7 @@ pub struct BlockCollector<N, H> {
     skip_pow_verify: bool,
     local_store: Arc<dyn Store>,
     fetcher: Arc<dyn BlockFetcher>,
+    latest_block_id: HashValue,
 }
 
 impl<N, H> BlockCollector<N, H>
@@ -213,6 +214,7 @@ where
         local_store: Arc<dyn Store>,
         fetcher: Arc<dyn BlockFetcher>,
     ) -> Self {
+        let latest_block_id = chain.current_header().id();
         Self {
             current_block_info,
             target,
@@ -222,6 +224,7 @@ where
             skip_pow_verify,
             local_store,
             fetcher,
+            latest_block_id,
         }
     }
 
@@ -774,19 +777,22 @@ where
         self.ensure_dag_parent_blocks_exist(block.header().clone())?;
         let state = self.check_enough();
         if let anyhow::Result::Ok(CollectorState::Enough) = &state {
-            let current_header = self.chain.current_header();
-            let current_block = self
-                .local_store
-                .get_block(current_header.id())?
-                .expect("failed to get the current block which should exist");
-            return self.notify_connected_block(
-                current_block,
-                self.local_store
-                    .get_block_info(current_header.id())?
-                    .expect("block info should exist"),
-                BlockConnectAction::ConnectExecutedBlock,
-                state?,
-            );
+            if self.chain.has_dag_block(block.header().id())? {
+                let current_header = self.chain.current_header();
+                let current_block = self
+                    .local_store
+                    .get_block(current_header.id())?
+                    .expect("failed to get the current block which should exist");
+                self.latest_block_id = block.header().id();
+                return self.notify_connected_block(
+                    current_block,
+                    self.local_store
+                        .get_block_info(current_header.id())?
+                        .expect("block info should exist"),
+                    BlockConnectAction::ConnectExecutedBlock,
+                    state?,
+                );
+            }
         }
         info!("successfully ensure block's parents exist");
 
@@ -819,6 +825,7 @@ where
                 )
             }
         };
+        self.latest_block_id = block.header().id();
 
         //verify target
         let state: Result<CollectorState, anyhow::Error> =
@@ -829,6 +836,6 @@ where
 
     fn finish(self) -> Result<Self::Output> {
         self.local_store.delete_all_dag_sync_blocks()?;
-        Ok(self.chain)
+        self.chain.fork(self.latest_block_id)
     }
 }
