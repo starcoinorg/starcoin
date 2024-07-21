@@ -24,7 +24,7 @@ use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_service_registry::ServiceRequest;
 use starcoin_state_api::{StateProof, StateWithProof, StateWithTableItemProof};
 use starcoin_types::block::{
-    Block, BlockBody, BlockHeader, BlockHeaderExtra, BlockInfo, BlockNumber, ParentsHash,
+    Block, BlockBody, BlockHeader, BlockHeaderExtra, BlockInfo, BlockNumber, ParentsHash, Version,
 };
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::event::EventKey;
@@ -435,6 +435,10 @@ pub struct BlockHeaderView {
     pub extra: BlockHeaderExtra,
     /// block parents
     pub parents_hash: ParentsHash,
+    /// version
+    pub version: Version,
+    /// pruning point
+    pub pruning_point: HashValue,
 }
 
 impl From<BlockHeader> for BlockHeaderView {
@@ -456,6 +460,8 @@ impl From<BlockHeader> for BlockHeaderView {
             nonce: origin.nonce(),
             extra: *origin.extra(),
             parents_hash: origin.parents_hash(),
+            version: origin.version(),
+            pruning_point: origin.pruning_point(),
         }
     }
 }
@@ -477,6 +483,8 @@ impl From<BlockHeaderView> for BlockHeader {
             header_view.nonce,
             header_view.extra,
             header_view.parents_hash,
+            header_view.version,
+            header_view.pruning_point,
         )
     }
 }
@@ -666,7 +674,7 @@ pub struct BlockMetadataView {
     pub number: StrView<BlockNumber>,
     pub chain_id: u8,
     pub parent_gas_used: StrView<u64>,
-    pub parents_hash: Option<Vec<HashValue>>,
+    pub parents_hash: Vec<HashValue>,
 }
 
 impl From<BlockMetadata> for BlockMetadataView {
@@ -719,7 +727,7 @@ impl Into<BlockMetadata> for BlockMetadataView {
             number.0,
             genesis_config::ChainId::new(chain_id),
             parent_gas_used.0,
-            parents_hash.unwrap_or_default(),
+            parents_hash,
         )
     }
 }

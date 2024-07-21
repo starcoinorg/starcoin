@@ -111,7 +111,7 @@ impl BlockMetadata {
         u64,
         ChainId,
         u64,
-        Option<Vec<HashValue>>,
+        Vec<HashValue>,
     ) {
         (
             self.parent_hash,
@@ -122,7 +122,7 @@ impl BlockMetadata {
             self.number,
             self.chain_id,
             self.parent_gas_used,
-            self.parents_hash,
+            self.parents_hash.map_or(vec![], |value| value),
         )
     }
 

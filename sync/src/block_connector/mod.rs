@@ -27,7 +27,7 @@ use {
 };
 
 #[cfg(test)]
-pub use test_write_block_chain::{create_writeable_block_chain, gen_blocks, new_block};
+pub use test_write_block_chain::create_writeable_block_chain;
 
 #[derive(Debug, Clone)]
 pub struct ResetRequest {
@@ -53,12 +53,13 @@ pub struct MinerRequest {}
 #[derive(Clone, Debug)]
 pub struct MinerResponse {
     pub previous_header: BlockHeader,
-    pub tips_hash: Option<Vec<HashValue>>,
+    pub tips_hash: Vec<HashValue>,
     pub blues_hash: Vec<HashValue>,
     pub strategy: ConsensusStrategy,
     pub on_chain_block_gas_limit: u64,
     pub next_difficulty: U256,
     pub now_milliseconds: u64,
+    pub pruning_point: HashValue,
 }
 
 impl ServiceRequest for MinerRequest {
@@ -74,7 +75,7 @@ pub struct CreateBlockRequest {
     pub user_txns: Vec<SignedUserTransaction>,
     pub uncles: Vec<BlockHeader>,
     pub block_gas_limit: Option<u64>,
-    pub tips: Option<Vec<HashValue>>,
+    pub tips: Vec<HashValue>,
 }
 
 #[cfg(test)]

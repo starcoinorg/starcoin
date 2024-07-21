@@ -644,13 +644,11 @@ impl BlockFetcher for MockBlockFetcher {
         let mut result = vec![];
         block_ids.iter().for_each(|block_id| {
             if let Some(block) = blocks.get(block_id).cloned() {
-                while let Some(hashes) = block.header().parents_hash() {
-                    for hash in hashes {
-                        if result.contains(&hash) {
-                            continue;
-                        }
-                        result.push(hash);
+                for hash in block.header().parents_hash() {
+                    if result.contains(&hash) {
+                        continue;
                     }
+                    result.push(hash);
                 }
             } else {
                 info!("Can not find block by id: {:?}", block_id)
@@ -1031,9 +1029,8 @@ fn sync_block_in_async_connection(
     )?;
     let branch = async_std::task::block_on(sync_task)?;
     assert_eq!(branch.current_header().number(), target.target_id.number());
-    let (target_dag_genesis, target_dag_state) = target_node.chain().get_dag_state_by_block()?;
-    let (local_dag_genesis, local_dag_state) = target_node.chain().get_dag_state_by_block()?;
-    assert_eq!(target_dag_genesis, local_dag_genesis);
+    let target_dag_state = target_node.chain().get_dag_state()?;
+    let local_dag_state = target_node.chain().get_dag_state()?;
     local_dag_state.tips.iter().for_each(|tip| {
         assert!(target_dag_state.tips.contains(tip));
     });

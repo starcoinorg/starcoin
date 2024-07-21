@@ -381,7 +381,7 @@ where
         block_header: BlockHeader,
         absent_blocks: &mut Vec<HashValue>,
     ) -> Result<()> {
-        let parents = block_header.parents_hash().unwrap_or_default();
+        let parents = block_header.parents_hash();
         if parents.is_empty() {
             return Ok(());
         }

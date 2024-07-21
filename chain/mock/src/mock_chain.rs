@@ -155,7 +155,8 @@ impl MockChain {
             vec![],
             vec![],
             None,
-            None,
+            vec![],
+            HashValue::zero(),
         )?;
         self.head
             .consensus()
@@ -169,7 +170,8 @@ impl MockChain {
             vec![],
             vec![],
             None,
-            None,
+            vec![],
+            HashValue::zero(),
         )?;
         self.head
             .consensus()
@@ -187,7 +189,8 @@ impl MockChain {
             vec![],
             vec![],
             None,
-            Some(tips),
+            tips,
+            HashValue::zero(),
         )?;
         self.head
             .consensus()

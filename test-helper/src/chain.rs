@@ -11,6 +11,7 @@ use starcoin_chain::ChainWriter;
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_config::ChainNetwork;
 use starcoin_consensus::Consensus;
+use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_types::account::Account;
 use starcoin_types::block::BlockNumber;
@@ -73,7 +74,8 @@ pub fn gen_blockchain_with_blocks_for_test(count: u64, net: &ChainNetwork) -> Re
                 Vec::new(),
                 vec![],
                 None,
-                None,
+                vec![],
+                HashValue::zero(),
             )
             .unwrap();
         let block = block_chain

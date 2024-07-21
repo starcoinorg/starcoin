@@ -2,7 +2,7 @@ use anyhow::Result;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::ChainReader;
 use starcoin_config::NodeConfig;
-use starcoin_crypto::keygen::KeyGen;
+use starcoin_crypto::{keygen::KeyGen, HashValue};
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::StateReaderExt;
@@ -31,8 +31,10 @@ pub fn test_open_block() -> Result<()> {
             U256::from(0),
             chain.consensus(),
             None,
-            None,
-            None,
+            vec![],
+            vec![],
+            0,
+            HashValue::zero(),
         )?
     };
 

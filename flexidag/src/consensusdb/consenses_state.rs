@@ -9,6 +9,7 @@ use std::sync::Arc;
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug, Default)]
 pub struct DagState {
     pub tips: Vec<Hash>,
+    pub pruning_point: Hash,
 }
 
 pub(crate) const DAG_STATE_STORE_CF: &str = "dag-state-store";
@@ -34,12 +35,12 @@ impl ValueCodec<DagStateData> for DagState {
 }
 
 pub trait DagStateReader {
-    fn get_state(&self, dag_genesis: Hash) -> Result<DagState, StoreError>;
+    fn get_state(&self) -> Result<DagState, StoreError>;
 }
 
 pub trait DagStateStore: DagStateReader {
     // This is append only
-    fn insert(&self, dag_genesis: Hash, state: DagState) -> Result<(), StoreError>;
+    fn insert(&self, state: DagState) -> Result<(), StoreError>;
 }
 
 /// A DB + cache implementation of `HeaderStore` trait, with concurrency support.
@@ -59,28 +60,31 @@ impl DbDagStateStore {
 }
 
 impl DagStateReader for DbDagStateStore {
-    fn get_state(&self, dag_genesis: Hash) -> Result<DagState, StoreError> {
-        let result = self.dag_state_access.read(dag_genesis)?;
+    fn get_state(&self) -> Result<DagState, StoreError> {
+        let result = self.dag_state_access.read(0.into())?;
         Ok(result)
     }
 }
 
 impl DagStateStore for DbDagStateStore {
-    fn insert(&self, dag_genesis: Hash, state: DagState) -> Result<(), StoreError> {
+    fn insert(&self, state: DagState) -> Result<(), StoreError> {
         self.dag_state_access
-            .write(DirectDbWriter::new(&self.db), dag_genesis, state)?;
+            .write(DirectDbWriter::new(&self.db), 0.into(), state)?;
         Ok(())
     }
 }
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 pub struct DagStateView {
-    pub dag_genesis: Hash,
     pub tips: Vec<Hash>,
+    pub pruning_point: Hash,
 }
 
 impl DagStateView {
     pub fn into_state(self) -> DagState {
-        DagState { tips: self.tips }
+        DagState {
+            tips: self.tips,
+            pruning_point: self.pruning_point,
+        }
     }
 }

@@ -167,6 +167,13 @@ impl ChainId {
         Self::new(255)
     }
 
+    pub fn dag_test() -> Self {
+        ChainId::new(250)
+    }
+    pub fn vega() -> Self {
+        ChainId::new(2)
+    }
+
     pub fn is_main(self) -> bool {
         //TODO find way share the id define with BuiltinNetworkID
         self.id == 1
