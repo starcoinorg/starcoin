@@ -93,6 +93,14 @@ impl BlockDAG {
         Ok(Self::new(k, dag_storage))
     }
 
+    pub fn new_by_config(db_path: &Path) -> anyhow::Result<BlockDAG> {
+        let config = FlexiDagStorageConfig::create_with_params(1, RocksdbConfig::default());
+        let db = FlexiDagStorage::create_from_path(db_path, config)?;
+        let dag = Self::new(DEFAULT_GHOSTDAG_K, db);
+        Ok(dag)
+>>>>>>> 2ba8ddcfe (add pruning logic and compatible logic)
+    }
+
     pub fn has_dag_block(&self, hash: Hash) -> anyhow::Result<bool> {
         Ok(self.storage.header_store.has(hash)?)
     }
@@ -116,6 +124,7 @@ impl BlockDAG {
         self.commit(genesis, origin)?;
         self.save_dag_state(DagState {
             tips: vec![genesis_id],
+            pruning_point: genesis_id,
         })?;
         Ok(origin)
     }
@@ -443,7 +452,6 @@ impl BlockDAG {
     ) -> anyhow::Result<MineNewDagBlockInfo> {
         let dag_state = self.get_dag_state()?;
         let ghostdata = self.ghost_dag_manager().ghostdag(&dag_state.tips)?;
-
         anyhow::Ok(MineNewDagBlockInfo {
             tips: dag_state.tips,
             blue_blocks: (*ghostdata.mergeset_blues).clone(),
@@ -486,9 +494,13 @@ impl BlockDAG {
         block_header: &BlockHeader,
         genesis_id: HashValue,
     ) -> anyhow::Result<()> {
+        let dag_state = DagState {
+            tips: block_header.parents(),
+            pruning_point: block_header.pruning_point(),
+        };
         let ghostdata = self.ghost_dag_manager().ghostdag(&block_header.parents())?;
         let next_pruning_point = self.pruning_point_manager().next_pruning_point(
-            block_header.pruning_point(),
+            &dag_state,
             &ghostdata,
             pruning_depth,
             pruning_finality,

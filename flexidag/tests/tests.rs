@@ -319,6 +319,7 @@ fn test_dag_tips_store() {
 
     let state = DagState {
         tips: vec![Hash::random()],
+        pruning_point: Hash::random(),
     };
     dag.storage
         .state_store
@@ -869,7 +870,6 @@ fn test_big_data_commit() -> anyhow::Result<()> {
     anyhow::Result::Ok(())
 }
 
-#[ignore = "pruning will be tested in next release"]
 #[test]
 fn test_prune() -> anyhow::Result<()> {
     // initialzie the dag firstly
@@ -969,6 +969,7 @@ fn test_prune() -> anyhow::Result<()> {
     // prunning process begins
     dag.save_dag_state(DagState {
         tips: vec![block_red_3.id(), block_main_5.id()],
+        pruning_point: genesis.id(),
     })?;
 
     let MineNewDagBlockInfo {

@@ -654,13 +654,10 @@ pub struct GenesisConfig {
     pub time_service_type: TimeServiceType,
     /// transaction timeout
     pub transaction_timeout: u64,
-
     /// pruning depth
     pub pruning_depth: u64,
-
     /// pruning finality
     pub pruning_finality: u64,
-
     /// block header version
     pub block_header_version: starcoin_types::block::Version,
 }

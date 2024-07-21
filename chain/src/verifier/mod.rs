@@ -347,7 +347,6 @@ impl BasicDagVerifier {
         R: ChainReader,
     {
         let parents_hash = new_block_header.parents_hash();
-
         verify_block!(
             VerifyBlockField::Header,
             parents_hash.len() == parents_hash.iter().collect::<HashSet<_>>().len(),
@@ -363,6 +362,7 @@ impl BasicDagVerifier {
             parents_hash,
             new_block_header.parent_hash()
         );
+
         parents_hash.iter().try_for_each(|parent_hash| {
             verify_block!(
                 VerifyBlockField::Header,

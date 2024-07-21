@@ -12,6 +12,8 @@ use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::startup_info::StartupInfo;
 use std::sync::Arc;
 
+use super::test_write_dag_block_chain::new_dag_block;
+
 pub async fn create_writeable_dag_block_chain() -> (
     WriteBlockChainService<MockTxPoolService>,
     Arc<NodeConfig>,

@@ -1519,7 +1519,10 @@ impl BlockChain {
         if self.epoch.end_block_number() == block.header().number() {
             self.epoch = get_epoch_from_statedb(&self.statedb)?;
         }
-        self.dag.save_dag_state(DagState { tips })?;
+        self.dag.save_dag_state(DagState {
+            tips,
+            pruning_point: block.header().pruning_point(),
+        })?;
         Ok(executed_block)
     }
 }

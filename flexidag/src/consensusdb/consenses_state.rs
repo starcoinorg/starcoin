@@ -9,6 +9,7 @@ use std::sync::Arc;
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug, Default)]
 pub struct DagState {
     pub tips: Vec<Hash>,
+    pub pruning_point: Hash,
 }
 
 pub(crate) const DAG_STATE_STORE_CF: &str = "dag-state-store";
@@ -87,6 +88,9 @@ pub struct DagStateView {
 
 impl DagStateView {
     pub fn into_state(self) -> DagState {
-        DagState { tips: self.tips }
+        DagState {
+            tips: self.tips,
+            pruning_point: self.pruning_point,
+        }
     }
 }

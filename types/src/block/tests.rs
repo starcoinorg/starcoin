@@ -258,7 +258,52 @@ fn test_header_with_dag_but_pruning_adaptable() -> anyhow::Result<()> {
 
 #[test]
 fn test_block_compatible_for_vega() -> anyhow::Result<()> {
-    let latest_block = crate::block::Block::rational_random();
+    let uncle1 = crate::block::BlockHeaderBuilder::new()
+        .with_chain_id(ChainId::vega())
+        .with_number(512)
+        .with_parent_hash(HashValue::random())
+        .with_parents_hash(vec![
+            HashValue::random(),
+            HashValue::random(),
+            HashValue::random(),
+        ])
+        .build();
+
+    let uncle2 = crate::block::BlockHeaderBuilder::new()
+        .with_number(128)
+        .with_chain_id(ChainId::vega())
+        .with_parent_hash(HashValue::random())
+        .with_parents_hash(vec![
+            HashValue::random(),
+            HashValue::random(),
+            HashValue::random(),
+        ])
+        .build();
+    let body = crate::block::BlockBody {
+        transactions: vec![
+            SignedUserTransaction::sample(),
+            SignedUserTransaction::sample(),
+            SignedUserTransaction::sample(),
+        ],
+        uncles: Some(vec![uncle1, uncle2]),
+    };
+
+    let header = crate::block::BlockHeaderBuilder::new()
+        .with_number(1024)
+        .with_chain_id(ChainId::vega())
+        .with_parent_hash(HashValue::random())
+        .with_parents_hash(vec![
+            HashValue::random(),
+            HashValue::random(),
+            HashValue::random(),
+        ])
+        .with_body_hash(body.hash())
+        .build();
+
+    let latest_block = crate::block::Block {
+        header: header.clone(),
+        body,
+    };
 
     let deserilized_block = crate::block::Block::decode(&latest_block.encode()?)?;
 
