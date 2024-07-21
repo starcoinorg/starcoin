@@ -736,7 +736,8 @@ pub fn modify_on_chain_config_by_dao_block(
             )?,
             vec![],
             None,
-            None,
+            vec![],
+            HashValue::zero(),
         )?;
         let block1 = chain
             .consensus()

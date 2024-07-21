@@ -4,7 +4,7 @@
 use anyhow::{format_err, Result};
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_chain_api::{
-    verify_block, ChainReader, ChainType, ConnectBlockError, VerifiedBlock, VerifyBlockField,
+    verify_block, ChainReader, ConnectBlockError, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_logger::prelude::debug;
@@ -265,17 +265,6 @@ impl BlockVerifier for BasicVerifier {
             new_block_header.block_accumulator_root(),
         );
 
-        verify_block!(
-            VerifyBlockField::Header,
-            current_chain.check_chain_type()? == ChainType::Single
-                && new_block_header
-                    .parents_hash()
-                    .unwrap_or_default()
-                    .is_empty(),
-            "Single chain block is invalid: number {} parents_hash len {:?}",
-            new_block_header.number(),
-            new_block_header.parents_hash().map(|p| p.len())
-        );
         Ok(())
     }
 }
@@ -351,7 +340,7 @@ impl BlockVerifier for DagVerifier {
     where
         R: ChainReader,
     {
-        let parents_hash = new_block_header.parents_hash().unwrap_or_default();
+        let parents_hash = new_block_header.parents_hash();
         let mut parents_hash_to_check = parents_hash.clone();
         parents_hash_to_check.sort();
         parents_hash_to_check.dedup();
@@ -366,11 +355,10 @@ impl BlockVerifier for DagVerifier {
 
         verify_block!(
             VerifyBlockField::Header,
-            parents_hash_to_check.contains(&new_block_header.parent_hash())
-                && current_chain
-                    .get_block_info(Some(new_block_header.parent_hash()))?
-                    .is_some(),
-            "Invalid block: parent {} might not exist.",
+            parents_hash_to_check.contains(&new_block_header.parent_hash()),
+            "header: {:?}, tips {:?} do not contain the selected parent {:?}",
+            new_block_header,
+            new_block_header.parent_hash(),
             new_block_header.parent_hash()
         );
 

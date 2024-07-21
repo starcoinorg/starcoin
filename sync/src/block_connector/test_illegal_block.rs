@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #![allow(clippy::arithmetic_side_effects)]
 use crate::block_connector::{
-    create_writeable_block_chain, gen_blocks, new_block, WriteBlockChainService,
+    create_writeable_block_chain, WriteBlockChainService,
 };
 use anyhow::Result;
 use starcoin_account_api::AccountInfo;
@@ -27,6 +27,8 @@ use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use super::test_write_dag_block_chain::{gen_dag_blocks, new_dag_block};
+
 async fn new_block_and_main_with_halley() -> (Block, MockChain) {
     let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
     let mut mock_chain = MockChain::new(net).unwrap();
@@ -41,22 +43,22 @@ async fn new_block_and_main() -> (Block, BlockChain) {
     let (mut writeable_block_chain_service, node_config, storage) =
         create_writeable_block_chain().await;
     let net = node_config.net();
-    gen_blocks(
+    gen_dag_blocks(
         times,
         &mut writeable_block_chain_service,
-        net.time_service().as_ref(),
-    );
+        net,
+    ).expect("Failed to create writeable block chain");
     let head_id = writeable_block_chain_service
         .get_main()
         .current_header()
         .id();
     let dag = writeable_block_chain_service.get_main().dag();
     let main = BlockChain::new(net.time_service(), head_id, storage, None, dag).unwrap();
-    let new_block = new_block(
+    let new_block = new_dag_block(
         None,
         &mut writeable_block_chain_service,
-        net.time_service().as_ref(),
-    );
+        net,
+    ).expect("failed to create new block");
     (new_block, main)
 }
 
@@ -73,10 +75,10 @@ async fn uncle_block_and_writeable_block_chain(
     let (mut writeable_block_chain_service, node_config, storage) =
         create_writeable_block_chain().await;
     let net = node_config.net();
-    gen_blocks(
+    gen_dag_blocks(
         count,
         &mut writeable_block_chain_service,
-        net.time_service().as_ref(),
+        net,
     );
 
     // 2. new branch and uncle block
@@ -97,7 +99,8 @@ async fn uncle_block_and_writeable_block_chain(
             Vec::new(),
             vec![],
             None,
-            None,
+            vec![],
+            HashValue::zero(),
         )
         .unwrap();
     let new_block = writeable_block_chain_service
@@ -129,7 +132,8 @@ fn apply_with_illegal_uncle(
             Vec::new(),
             uncles,
             None,
-            None,
+            vec![],
+            HashValue::zero(),
         )?;
     let consensus_strategy = writeable_block_chain_service.get_main().consensus();
     let new_block = consensus_strategy.create_block(block_template, net.time_service().as_ref())?;
@@ -158,7 +162,8 @@ fn apply_legal_block(
             Vec::new(),
             uncles,
             None,
-            None,
+            vec![],
+            HashValue::zero(),
         )
         .unwrap();
     let new_block = consensus_strategy
@@ -340,10 +345,10 @@ async fn test_verify_can_not_be_uncle_is_member_failed() {
     let (mut writeable_block_chain_service, node_config, storage) =
         create_writeable_block_chain().await;
     let net = node_config.net();
-    gen_blocks(
+    gen_dag_blocks(
         times,
         &mut writeable_block_chain_service,
-        net.time_service().as_ref(),
+        net,
     );
 
     let uncle_header = writeable_block_chain_service
@@ -372,10 +377,10 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
     let (mut writeable_block_chain_service, node_config, storage) =
         create_writeable_block_chain().await;
     let net = node_config.net();
-    gen_blocks(
+    gen_dag_blocks(
         times,
         &mut writeable_block_chain_service,
-        net.time_service().as_ref(),
+        net,
     );
 
     // 2. new branch
@@ -398,7 +403,8 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
                 Vec::new(),
                 vec![],
                 None,
-                None,
+                vec![],
+                HashValue::zero(),
             )
             .unwrap();
         let new_block = new_branch
@@ -480,7 +486,15 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
     let fork_block_chain = mock_chain.fork_new_branch(Some(fork_id)).unwrap();
     let miner = mock_chain.miner();
     let (block_template, _) = fork_block_chain
-        .create_block_template(*miner.address(), None, Vec::new(), Vec::new(), None, None)
+        .create_block_template(
+            *miner.address(),
+            None,
+            Vec::new(),
+            Vec::new(),
+            None,
+            vec![],
+            HashValue::zero(),
+        )
         .unwrap();
     let uncle_block = fork_block_chain
         .consensus()
@@ -496,7 +510,15 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
     let uncles = vec![uncle_block_header];
     let mut main_block_chain = mock_chain.fork_new_branch(None).unwrap();
     let (block_template, _) = main_block_chain
-        .create_block_template(*miner.address(), None, Vec::new(), uncles, None, None)
+        .create_block_template(
+            *miner.address(),
+            None,
+            Vec::new(),
+            uncles,
+            None,
+            vec![],
+            HashValue::zero(),
+        )
         .unwrap();
     let new_block = main_block_chain
         .consensus()
@@ -801,7 +823,8 @@ async fn test_verify_uncles_uncle_exist_failed() {
             Vec::new(),
             uncles.clone(),
             None,
-            None,
+            vec![],
+            HashValue::zero(),
         )
         .unwrap();
     let new_block = writeable_block_chain_service
@@ -880,7 +903,8 @@ async fn test_verify_uncle_and_parent_number_failed() {
             Vec::new(),
             Vec::new(),
             None,
-            None,
+            vec![],
+            HashValue::zero(),
         )
         .unwrap();
     let new_block = writeable_block_chain_service

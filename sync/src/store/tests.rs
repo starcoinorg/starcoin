@@ -1,7 +1,9 @@
 use anyhow::Ok;
 use bcs_ext::Sample;
+use rand::random;
+use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::schema::{KeyCodec, ValueCodec};
-use starcoin_types::block::{Block, BlockBody, BlockHeaderBuilder};
+use starcoin_types::{account_address::AccountAddress, block::{Block, BlockBody, BlockHeader, BlockHeaderBuilder, BlockHeaderExtra, BlockNumber}, genesis_config::ChainId, transaction::{authenticator::AuthenticationKey, SignedUserTransaction}, U256};
 
 use crate::store::sync_absent_ancestor::DagSyncBlockKey;
 
@@ -10,14 +12,53 @@ use super::{
     sync_dag_store::SyncDagStore,
 };
 
+fn build_body_with_uncles(uncles: Vec<BlockHeader>) -> BlockBody {
+    BlockBody::new(vec![SignedUserTransaction::mock()], Some(uncles))
+}
+
+fn build_version_0_block_header(body: HashValue, number: BlockNumber) -> BlockHeader {
+    BlockHeaderBuilder::new()
+    .with_parent_hash(HashValue::random())
+    .with_timestamp(rand::random())
+    .with_number(1024)
+    .with_author(AccountAddress::random())
+    .with_author_auth_key(Some(AuthenticationKey::random()))
+    .with_accumulator_root(HashValue::random())
+    .with_parent_block_accumulator_root(HashValue::random())
+    .with_state_root(HashValue::random())
+    .with_gas_used(rand::random())
+    .with_difficulty(U256::from(rand::random::<u64>()))
+    .with_body_hash(body)
+    .with_chain_id(ChainId::vega())
+    .with_nonce(rand::random())
+    .with_extra(BlockHeaderExtra::new([rand::random::<u8>(), rand::random::<u8>(), rand::random::<u8>(), rand::random::<u8>()]))
+    .with_parents_hash(vec![HashValue::random(), HashValue::random(), HashValue::random(), HashValue::random()])
+    .with_version(0)
+    .with_pruning_point(HashValue::zero())
+    .build()
+}
+
+fn build_version_0_block(number: BlockNumber) -> Block {
+    let body_without_uncle1 = build_body_with_uncles(vec![]);
+    let body_without_uncle2 = build_body_with_uncles(vec![]);
+    let header_without_uncle1 = build_version_0_block_header(body_without_uncle1.hash(), rand::random());
+    let header_without_uncle2 = build_version_0_block_header(body_without_uncle2.hash(), rand::random());
+
+    let body = build_body_with_uncles(vec![header_without_uncle1, header_without_uncle2]);
+    let header = build_version_0_block_header(body.hash(), number);
+
+    Block::new(header, body)
+}
+
 #[test]
 fn test_sync_dag_absent_store() -> anyhow::Result<()> {
     let sync_dag_store = SyncDagStore::create_for_testing()?;
 
     // write and read
     let one = DagSyncBlock {
-        block: Some(Block::random()),
+        block: Some(build_version_0_block(rand::random()))
     };
+
     sync_dag_store
         .absent_dag_store
         .save_absent_block(vec![one.clone()])?;
@@ -51,10 +92,10 @@ fn test_sync_dag_absent_store() -> anyhow::Result<()> {
 
     // append new absent blocks
     let two = DagSyncBlock {
-        block: Some(Block::random()),
+        block: Some(build_version_0_block(rand::random())),
     };
     let three = DagSyncBlock {
-        block: Some(Block::random()),
+        block: Some(build_version_0_block(rand::random())),
     };
     sync_dag_store.absent_dag_store.save_absent_block(vec![
         one.clone(),
@@ -85,51 +126,19 @@ fn test_write_read_in_order() -> anyhow::Result<()> {
     let sync_dag_store = SyncDagStore::create_for_testing()?;
 
     // write and read
-    let one = Block::new(
-        BlockHeaderBuilder::new()
-            .with_number(1)
-            .with_parents_hash(Some(vec![]))
-            .build(),
-        BlockBody::sample(),
-    );
+    let one = build_version_0_block(1);
 
     // // write and read
-    let two = Block::new(
-        BlockHeaderBuilder::new()
-            .with_number(2)
-            .with_nonce(109)
-            .with_parents_hash(Some(vec![]))
-            .build(),
-        BlockBody::sample(),
-    );
+    let two = build_version_0_block(2);
 
     // write and read
-    let three = Block::new(
-        BlockHeaderBuilder::new()
-            .with_number(3)
-            .with_parents_hash(Some(vec![]))
-            .build(),
-        BlockBody::sample(),
-    );
+    let three = build_version_0_block(3);
 
     // write and read
-    let four = Block::new(
-        BlockHeaderBuilder::new()
-            .with_number(4)
-            .with_parents_hash(Some(vec![]))
-            .build(),
-        BlockBody::sample(),
-    );
+    let four = build_version_0_block(4);
 
     // write and read
-    let two_again = Block::new(
-        BlockHeaderBuilder::new()
-            .with_number(2)
-            .with_nonce(101)
-            .with_parents_hash(Some(vec![]))
-            .build(),
-        BlockBody::sample(),
-    );
+    let two_again = build_version_0_block(2);
 
     sync_dag_store.save_block(one.clone())?;
     sync_dag_store.save_block(two.clone())?;

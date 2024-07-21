@@ -9,6 +9,7 @@ use network_api::PeerId;
 use parking_lot::RwLock;
 use starcoin_config::{MetricsConfig, NodeConfig};
 use starcoin_crypto::keygen::KeyGen;
+use starcoin_crypto::HashValue;
 // use starcoin_executor::{
 //     create_signed_txn_with_association_account, encode_transfer_script_function,
 //     DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
@@ -225,8 +226,10 @@ async fn test_rollback() -> Result<()> {
             U256::from(1024u64),
             config.net().genesis_config().consensus(),
             None,
-            None,
-            None,
+            vec![],
+            vec![],
+            0,
+            HashValue::zero(),
         )?;
         let excluded_txns = open_block.push_txns(vec![txn])?;
         assert_eq!(excluded_txns.discarded_txns.len(), 0);

@@ -28,6 +28,7 @@ pub struct Epoch {
 }
 
 impl Epoch {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         number: u64,
         start_time: u64,

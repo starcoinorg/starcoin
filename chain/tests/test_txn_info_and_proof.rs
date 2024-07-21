@@ -54,7 +54,15 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
     (0..block_count).for_each(|_| {
         let txns = gen_txns(&mut seq_num).unwrap();
         let (template, _) = block_chain
-            .create_block_template(*miner_account.address(), None, txns, vec![], None, None)
+            .create_block_template(
+                *miner_account.address(),
+                None,
+                txns,
+                vec![],
+                None,
+                vec![],
+                HashValue::zero(),
+            )
             .unwrap();
         let block = block_chain
             .consensus()
@@ -79,7 +87,8 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
             vec![],
             vec![],
             None,
-            Some(vec![fork_point.id()]),
+            vec![fork_point.id()],
+            HashValue::zero(),
         )
         .unwrap();
     let block = fork_chain
@@ -97,7 +106,15 @@ fn test_transaction_info_and_proof_1() -> Result<()> {
     seq_num = account_reader.get_sequence_number(account_config::association_address())?;
     let _txns = gen_txns(&mut seq_num).unwrap();
     let (template, _) = block_chain
-        .create_block_template(*miner_account.address(), None, vec![], vec![], None, None)
+        .create_block_template(
+            *miner_account.address(),
+            None,
+            vec![],
+            vec![],
+            None,
+            vec![],
+            HashValue::zero(),
+        )
         .unwrap();
     let block = block_chain
         .consensus()
@@ -159,7 +176,8 @@ fn test_transaction_info_and_proof() -> Result<()> {
                 txns.clone(),
                 vec![],
                 None,
-                None,
+                vec![],
+                HashValue::zero(),
             )
             .unwrap();
 

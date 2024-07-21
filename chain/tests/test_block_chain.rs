@@ -11,6 +11,7 @@ use starcoin_chain_mock::MockChain;
 use starcoin_config::NodeConfig;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_consensus::Consensus;
+use starcoin_crypto::HashValue;
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
 use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::account_address;
@@ -210,7 +211,15 @@ fn gen_uncle() -> (MockChain, BlockChain, BlockHeader) {
 
 fn product_a_block(branch: &BlockChain, miner: &AccountInfo, uncles: Vec<BlockHeader>) -> Block {
     let (block_template, _) = branch
-        .create_block_template(*miner.address(), None, Vec::new(), uncles, None, None)
+        .create_block_template(
+            *miner.address(),
+            None,
+            Vec::new(),
+            uncles,
+            None,
+            vec![],
+            HashValue::zero(),
+        )
         .unwrap();
 
     branch
@@ -380,7 +389,8 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![],
         vec![],
         None,
-        None,
+        vec![],
+        HashValue::zero(),
     )?;
 
     let block_b1 = block_chain
@@ -411,7 +421,8 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![signed_txn_t2.clone()],
         vec![],
         None,
-        None,
+        vec![],
+        HashValue::zero(),
     )?;
     assert!(excluded.discarded_txns.is_empty(), "txn is discarded.");
     let block_b2 = block_chain
@@ -425,7 +436,8 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![signed_txn_t2],
         vec![],
         None,
-        None,
+        vec![],
+        HashValue::zero(),
     )?;
     assert!(excluded.discarded_txns.is_empty(), "txn is discarded.");
     let block_b3 = block_chain2

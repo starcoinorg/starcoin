@@ -10,7 +10,7 @@ use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
-use starcoin_types::block::{Block, BlockNumber};
+use starcoin_types::block::{Block, BlockNumber, Version};
 use starcoin_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_types::{
@@ -58,7 +58,9 @@ pub struct OpenedBlock {
     difficulty: U256,
     strategy: ConsensusStrategy,
     vm_metrics: Option<VMMetrics>,
-    blue_blocks: Option<Vec<Block>>,
+    blue_blocks: Vec<Block>,
+    version: Version,
+    pruning_point: HashValue,
 }
 
 impl OpenedBlock {
@@ -72,8 +74,10 @@ impl OpenedBlock {
         difficulty: U256,
         strategy: ConsensusStrategy,
         vm_metrics: Option<VMMetrics>,
-        tips_hash: Option<Vec<HashValue>>,
-        blue_blocks: Option<Vec<Block>>,
+        tips_hash: Vec<HashValue>,
+        blue_blocks: Vec<Block>,
+        version: Version,
+        pruning_point: HashValue,
     ) -> Result<Self> {
         let previous_block_id = previous_header.id();
         let block_info = storage
@@ -97,7 +101,7 @@ impl OpenedBlock {
             previous_header.number() + 1,
             chain_id,
             previous_header.gas_used(),
-            tips_hash.unwrap_or_default(),
+            tips_hash,
         );
         let mut opened_block = Self {
             previous_block_info: block_info,
@@ -113,6 +117,8 @@ impl OpenedBlock {
             strategy,
             vm_metrics,
             blue_blocks,
+            version,
+            pruning_point,
         };
 
         opened_block.initialize()?;
@@ -165,7 +171,7 @@ impl OpenedBlock {
     /// TODO: make the function can be called again even last call returns error.  
     pub fn push_txns(&mut self, user_txns: Vec<SignedUserTransaction>) -> Result<ExcludedTxns> {
         let mut txns = vec![];
-        for block in self.blue_blocks.as_ref().unwrap_or(&vec![]) {
+        for block in &self.blue_blocks {
             txns.extend(
                 block
                     .transactions()
@@ -362,6 +368,8 @@ impl OpenedBlock {
             self.difficulty,
             self.strategy,
             self.block_meta,
+            self.version,
+            self.pruning_point,
         );
         Ok(block_template)
     }

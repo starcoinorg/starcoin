@@ -220,7 +220,7 @@ where
         user_txns: Vec<SignedUserTransaction>,
         uncles: Vec<BlockHeader>,
         block_gas_limit: Option<u64>,
-        tips: Option<Vec<HashValue>>,
+        tips: Vec<HashValue>,
     ) -> Result<Block> {
         let (block_template, _transactions) = self.main.create_block_template(
             author,
@@ -229,6 +229,7 @@ where
             uncles,
             block_gas_limit,
             tips,
+            HashValue::zero(),
         )?;
         Ok(self
             .main

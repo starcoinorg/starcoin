@@ -21,7 +21,7 @@ use starcoin_storage::{Storage, Store};
 use starcoin_sync::block_connector::{BlockConnectorService, MinerRequest, MinerResponse};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::block::{BlockHeader, BlockTemplate};
+use starcoin_types::block::{Block, BlockHeader, BlockTemplate};
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::cmp::min;
 use std::sync::Arc;
@@ -182,6 +182,7 @@ where
             on_chain_block_gas_limit,
             next_difficulty: difficulty,
             now_milliseconds: mut now_millis,
+            pruning_point,
         } = *block_on(self.block_connector_service.send(MinerRequest {}))??;
 
         let block_gas_limit = self
@@ -195,7 +196,6 @@ where
 
         let txns = self.tx_provider.get_txns(max_txns);
         let author = *self.miner_account.address();
-        let current_number = previous_header.number().saturating_add(1);
 
         if now_millis <= previous_header.timestamp() {
             info!(
@@ -204,36 +204,21 @@ where
             );
             now_millis = previous_header.timestamp() + 1;
         }
-        info!("block:{} tips(dag state):{:?}", current_number, &tips_hash,);
-        let (uncles, blue_blocks) = {
-            match &tips_hash {
-                // fixme: remove this branch when single chain logic is removed
-                None => (vec![], None),
-                Some(tips) => {
-                    info!(
-                        "create block template with tips:{:?},ghostdata blues:{:?}",
-                        tips, blues
-                    );
-                    let mut blue_blocks = vec![];
-                    for blue in blues.iter().skip(1) {
-                        // todo: make sure blue block has been executed successfully
-                        let block = self
-                            .storage
-                            .get_block_by_hash(blue.to_owned())?
-                            .expect("Block should exist");
-                        blue_blocks.push(block);
-                    }
-                    (
-                        blue_blocks
-                            .as_slice()
-                            .iter()
-                            .map(|b| b.header.clone())
-                            .collect(),
-                        Some(blue_blocks),
-                    )
-                }
-            }
-        };
+
+        let blue_blocks = blues
+            .into_iter()
+            .map(|hash| self.storage.get_block_by_hash(hash))
+            .collect::<Result<Vec<Option<Block>>>>()?
+            .into_iter()
+            .map(|op_block_header| {
+                op_block_header.ok_or_else(|| format_err!("uncle block header not found."))
+            })
+            .collect::<Result<Vec<Block>>>()?;
+
+        let uncles = blue_blocks
+            .iter()
+            .map(|block| block.header().clone())
+            .collect::<Vec<_>>();
 
         info!(
             "[CreateBlockTemplate] previous_header: {:?}, block_gas_limit: {}, max_txns: {}, txn len: {}, uncles len: {}, timestamp: {}",
@@ -255,8 +240,10 @@ where
             difficulty,
             strategy,
             self.vm_metrics.clone(),
-            Some(tips_hash.unwrap_or_default()),
+            tips_hash,
             blue_blocks,
+            0,
+            pruning_point,
         )?;
 
         let excluded_txns = opened_block.push_txns(txns)?;

@@ -10,9 +10,8 @@ use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_time_service::{duration_since_epoch, MockTimeService, TimeService, TimeServiceType};
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::block::{
-    Block, BlockHeader, BlockHeaderBuilder, BlockHeaderExtra, RawBlockHeader,
-};
+use starcoin_types::block::raw_block_header::RawBlockHeader;
+use starcoin_types::block::{Block, BlockHeader, BlockHeaderBuilder, BlockHeaderExtra};
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ChainId;
 use std::collections::VecDeque;
@@ -91,7 +90,9 @@ fn verify_header_test_barnard_block3_ubuntu22() {
         ChainId::new(251),
         2894404328,
         BlockHeaderExtra::new([0u8; 4]),
-        None,
+        vec![],
+        0,
+        HashValue::zero(),
     );
     G_CRYPTONIGHT
         .verify_header_difficulty(header.difficulty(), &header)

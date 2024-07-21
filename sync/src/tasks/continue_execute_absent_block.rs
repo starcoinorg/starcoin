@@ -64,7 +64,6 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
                         .block
                         .header()
                         .parents_hash()
-                        .ok_or_else(|| anyhow!("the dag block's parents should exist"))?
                         .iter()
                         .all(|parent| match self.operator.has_dag_block(*parent) {
                             Ok(has) => has,
@@ -98,13 +97,7 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
 
     fn check_parents_exist(&self, block_header: &BlockHeader) -> anyhow::Result<bool> {
         let mut result = Ok(true);
-        for parent in block_header.parents_hash().ok_or_else(|| {
-            anyhow!(
-                "the dag block's parents should exist, block id: {:?}, number: {:?}",
-                block_header.id(),
-                block_header.number()
-            )
-        })? {
+        for parent in block_header.parents_hash() {
             if !self.operator.has_dag_block(parent)? {
                 info!("block: {:?}, number: {:?}, its parent({:?}) still dose not exist, waiting for next round", block_header.id(), block_header.number(), parent);
                 let mut parent_block = self.local_store.get_dag_sync_block(parent)?.ok_or_else(|| {

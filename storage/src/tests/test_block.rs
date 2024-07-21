@@ -3,6 +3,8 @@
 
 extern crate chrono;
 
+use std::vec;
+
 use anyhow::Ok;
 use bcs_ext::BCSCodec;
 use chrono::prelude::*;
@@ -44,7 +46,9 @@ fn test_block() {
         ChainId::test(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
-        None,
+        vec![],
+        rand::random(),
+        HashValue::random(),
     );
     storage
         .block_storage
@@ -104,7 +108,9 @@ fn test_block_number() {
         ChainId::test(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
-        None,
+        vec![],
+        rand::random(),
+        HashValue::random(),
     );
     storage
         .block_storage
@@ -152,7 +158,9 @@ fn test_old_failed_block_decode() {
         ChainId::test(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
-        None,
+        vec![],
+        rand::random(),
+        HashValue::random(),
     );
     let block_body = BlockBody::new(vec![SignedUserTransaction::mock()], None);
 
@@ -189,7 +197,9 @@ fn test_save_failed_block() {
         ChainId::test(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
-        None,
+        vec![],
+        rand::random(),
+        HashValue::random(),
     );
 
     let block_body = BlockBody::new(vec![SignedUserTransaction::mock()], None);
@@ -250,7 +260,9 @@ fn new_dag_sync_block(children: Vec<HashValue>) -> anyhow::Result<DagSyncBlock> 
         ChainId::test(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
-        None,
+        vec![],
+        rand::random(),
+        HashValue::random(),
     );
 
     let block_body = BlockBody::new(vec![SignedUserTransaction::mock()], None);

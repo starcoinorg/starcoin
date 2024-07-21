@@ -50,10 +50,7 @@ pub fn new_dag_block(
     let miner_address = *miner.address();
 
     let block_chain = writeable_block_chain_service.get_main();
-    let (_dag_genesis, tips) = block_chain
-        .current_tips_hash()
-        .expect("failed to get tips")
-        .expect("failed to get the tip and dag genesis");
+    let tips = block_chain.current_tips_hash().expect("failed to get tips");
     let (block_template, _) = block_chain
         .create_block_template(
             miner_address,
@@ -61,7 +58,8 @@ pub fn new_dag_block(
             Vec::new(),
             vec![],
             None,
-            Some(tips),
+            tips,
+            HashValue::zero(),
         )
         .unwrap();
     block_chain
@@ -116,7 +114,8 @@ fn gen_fork_dag_block_chain(
                     Vec::new(),
                     vec![],
                     None,
-                    None,
+                    vec![parent_id],
+                    HashValue::zero(),
                 )
                 .unwrap();
             let block = block_chain

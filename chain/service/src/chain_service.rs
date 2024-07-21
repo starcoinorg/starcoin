@@ -458,10 +458,10 @@ impl ReadableChainService for ChainReaderServiceInner {
         if self.main.check_chain_type()? != ChainType::Dag {
             bail!("The dag block is not built yet.");
         }
-        let (dag_genesis, state) = self.main.get_dag_state_by_block()?;
+        let state = self.main.get_dag_state()?;
         Ok(DagStateView {
-            dag_genesis,
             tips: state.tips,
+            pruning_point: state.pruning_point,
         })
     }
 

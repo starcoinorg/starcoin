@@ -971,7 +971,7 @@ impl StarcoinVM {
         if let Some(version) = stdlib_version {
             if version >= StdlibVersion::Version(FLEXI_DAG_UPGRADE_VERSION_MARK) {
                 args_vec.push(MoveValue::vector_u8(
-                    bcs_ext::to_bytes(&parents_hash.unwrap_or_default())
+                    bcs_ext::to_bytes(&parents_hash)
                         .or(Err(VMStatus::Error(VALUE_SERIALIZATION_ERROR)))?,
                 ));
                 function_name = &account_config::G_BLOCK_PROLOGUE_V2_NAME;

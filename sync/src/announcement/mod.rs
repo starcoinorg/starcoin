@@ -113,7 +113,7 @@ mod tests {
 
     #[stest::test]
     fn test_get_txns_with_hash_from_pool() {
-        let mut config_1 = NodeConfig::random_for_test();
+        let mut config_1 = NodeConfig::random_for_dag_test();
         config_1.miner.disable_miner_client = Some(true);
         let config_1 = Arc::new(config_1);
         let service1 = test_helper::run_node_by_config(config_1.clone()).unwrap();
@@ -126,7 +126,7 @@ mod tests {
             config_1.network.listen(),
             peer_1.clone().into(),
         )];
-        let mut config_2 = NodeConfig::random_for_test();
+        let mut config_2 = NodeConfig::random_for_dag_test();
         config_2.network.seeds = nodes.into();
         config_2.network.unsupported_protocols = Some(vec![TXN_PROTOCOL_NAME.to_string()]);
         config_2.miner.disable_miner_client = Some(true);
