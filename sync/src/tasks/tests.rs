@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #![allow(clippy::arithmetic_side_effects)]
+use crate::store::sync_dag_store::SyncDagStore;
 use crate::tasks::block_sync_task::SyncBlockData;
 use crate::tasks::mock::{ErrorStrategy, MockBlockIdFetcher, SyncNodeMocker};
 use crate::tasks::{
@@ -54,6 +55,7 @@ which is no longer suitable for the dag"]
 pub async fn test_failed_block() -> Result<()> {
     let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
     let (storage, chain_info, _, dag) = Genesis::init_storage_for_test(&net)?;
+    let sync_dag_store = SyncDagStore::create_for_testing()?;
 
     let chain = BlockChain::new(
         net.time_service(),
@@ -79,6 +81,7 @@ pub async fn test_failed_block() -> Result<()> {
         true,
         storage.clone(),
         Arc::new(fetcher),
+        sync_dag_store,
     );
     let header = BlockHeaderBuilder::random().with_number(1).build();
     let body = BlockBody::new(Vec::new(), None);
@@ -127,6 +130,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         None,
         Some(dag_fork_height),
         dag.clone(),
+        node2.sync_dag_store.clone(),
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -163,6 +167,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         None,
         Some(dag_fork_height),
         dag,
+        node2.sync_dag_store.clone(),
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -215,6 +220,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
         None,
         Some(dag_fork_height),
         dag,
+        node2.sync_dag_store.clone(),
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -269,6 +275,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         None,
         Some(dag_fork_height),
         dag.clone(),
+        node2.sync_dag_store.clone(),
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -309,6 +316,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         None,
         Some(dag_fork_height),
         dag,
+        node2.sync_dag_store.clone(),
     )?;
 
     let join_handle = node2.process_block_connect_event(receiver).await;
@@ -364,6 +372,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
         None,
         Some(dag_fork_height),
         dag,
+        node2.sync_dag_store.clone(),
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let sync_join_handle = tokio::task::spawn(sync_task);
@@ -865,6 +874,7 @@ async fn test_net_rpc_err() -> Result<()> {
         None,
         Some(dag_fork_height),
         dag,
+        node2.sync_dag_store.clone(),
     )?;
     let _join_handle = node2.process_block_connect_event(receiver).await;
     let sync_join_handle = tokio::task::spawn(sync_task);
@@ -930,6 +940,7 @@ async fn test_sync_target() {
         300,
         0,
         peer_selector,
+        SyncDagStore::create_for_testing().expect("failed to create the sync dag store"),
     ));
     let full_target = node2
         .get_best_target(genesis_chain_info.total_difficulty())
@@ -1016,6 +1027,7 @@ fn sync_block_in_async_connection(
         None,
         Some(dag_fork_height),
         dag,
+        local_node.sync_dag_store.clone(),
     )?;
     let branch = async_std::task::block_on(sync_task)?;
     assert_eq!(branch.current_header().number(), target.target_id.number());

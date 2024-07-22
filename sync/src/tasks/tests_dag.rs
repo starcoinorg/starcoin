@@ -51,6 +51,7 @@ async fn sync_block_process(
             None,
             Some(dag_fork_height),
             local_node.chain().dag().clone(),
+            local_node.sync_dag_store.clone(),
         )?;
         let branch = sync_task.await?;
         info!("checking branch in sync service is the same as target's branch");
@@ -92,6 +93,52 @@ async fn test_sync_dag_blocks() -> Result<()> {
         .unwrap()
         .produce_block(count)
         .expect("failed to produce block");
+    let target_dag_genesis_header_id = target_node.chain().get_block_dag_genesis()?;
+    let local_dag_genesis_header_id = local_node.chain().get_block_dag_genesis()?;
+
+    assert_eq!(target_dag_genesis_header_id, local_dag_genesis_header_id);
+
+    let dag_genesis_header = target_node
+        .get_storage()
+        .get_block_header_by_hash(target_dag_genesis_header_id)?
+        .ok_or_else(|| format_err!("dag genesis header should exist."))?;
+    assert!(
+        dag_genesis_header.number() == 0,
+        "dag genesis header number should be 0, but {:?}",
+        dag_genesis_header.number()
+    );
+
+    // sync, the local and target will be a single chain to be a dag chain
+    let (local_node, mut target_node) =
+        sync_block_process(target_node, local_node, &test_system.registry).await?;
+
+    Arc::get_mut(&mut target_node)
+        .unwrap()
+        .produce_fork_chain(20, 25)?;
+
+    Arc::get_mut(&mut target_node).unwrap().produce_block(3)?;
+
+    sync_block_process(target_node, local_node, &test_system.registry).await?;
+
+    Ok(())
+}
+
+#[stest::test(timeout = 600)]
+async fn test_continue_sync_dag_blocks() -> Result<()> {
+    let test_system = super::test_tools::SyncTestSystem::initialize_sync_system()
+        .await
+        .expect("failed to init system");
+
+    let one_fork_count = 30;
+    let two_fork_count = 20;
+
+    let mut target_node = Arc::new(test_system.target_node);
+    let local_node = Arc::new(test_system.local_node);
+    Arc::get_mut(&mut target_node)
+        .unwrap()
+        .produce_fork_chain(one_fork_count, two_fork_count)?;
+
+    /////
     let target_dag_genesis_header_id = target_node.chain().get_block_dag_genesis()?;
     let local_dag_genesis_header_id = local_node.chain().get_block_dag_genesis()?;
 

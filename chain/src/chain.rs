@@ -1218,7 +1218,7 @@ impl BlockChain {
             .dag
             .commit(header.to_owned(), self.get_block_dag_origin()?);
         match result {
-            anyhow::Result::Ok(_) => (),
+            anyhow::Result::Ok(_) => info!("finish to commit dag block: {:?}", block_id),
             Err(e) => {
                 if let Some(StoreError::KeyAlreadyExists(_)) = e.downcast_ref::<StoreError>() {
                     info!("dag block already exist, ignore");

@@ -1,9 +1,10 @@
-use anyhow::format_err;
+use anyhow::{format_err, Ok};
 use network_api::PeerProvider;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
+use starcoin_logger::prelude::{error, info};
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
 use starcoin_time_service::TimeService;
@@ -13,6 +14,8 @@ use std::sync::Arc;
 use stream_task::{
     CustomErrorHandle, Generator, TaskError, TaskEventHandle, TaskGenerator, TaskHandle, TaskState,
 };
+
+use crate::store::sync_dag_store::SyncDagStore;
 
 use super::{
     AccumulatorCollector, BlockAccumulatorSyncTask, BlockCollector, BlockConnectedEventHandle,
@@ -36,6 +39,7 @@ where
     custom_error_handle: Arc<dyn CustomErrorHandle>,
     dag: BlockDAG,
     dag_fork_heigh: Option<BlockNumber>,
+    sync_dag_store: SyncDagStore,
 }
 
 impl<H, F, N> InnerSyncTask<H, F, N>
@@ -56,6 +60,7 @@ where
         custom_error_handle: Arc<dyn CustomErrorHandle>,
         dag_fork_heigh: Option<BlockNumber>,
         dag: BlockDAG,
+        sync_dag_store: SyncDagStore,
     ) -> Self {
         Self {
             ancestor,
@@ -69,6 +74,7 @@ where
             custom_error_handle,
             dag,
             dag_fork_heigh,
+            sync_dag_store,
         }
     }
 
@@ -143,7 +149,7 @@ where
                 vm_metrics,
                 self.dag.clone(),
             )?;
-            let block_collector = BlockCollector::new_with_handle(
+            let mut block_collector = BlockCollector::new_with_handle(
                 current_block_info.clone(),
                 self.target.clone(),
                 chain,
@@ -152,7 +158,35 @@ where
                 skip_pow_verify_when_sync,
                 self.storage.clone(),
                 self.fetcher.clone(),
+                self.sync_dag_store.clone(),
             );
+
+            let mut absent_block_iter = self.sync_dag_store.iter_at_first()?;
+            loop {
+                let mut local_absent_block = vec![];
+                match block_collector
+                    .read_local_absent_block(&mut absent_block_iter, &mut local_absent_block)
+                {
+                    anyhow::Result::Ok(_) => {
+                        if local_absent_block.is_empty() {
+                            info!("absent block is empty, continue to sync");
+                            break;
+                        }
+                        match block_collector.execute_absent_block(&mut local_absent_block) {
+                            anyhow::Result::Ok(_) => (),
+                            Err(e) => {
+                                error!("failed to execute absent block, error: {:?}, break from the continuing block execution", e);
+                                break;
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        error!("failed to read local absent block, error: {:?}, break from the continuing block execution", e);
+                        break;
+                    }
+                }
+            }
+
             Ok(TaskGenerator::new(
                 block_sync_task,
                 buffer_size,
@@ -168,6 +202,6 @@ where
         let (fut, handle) = sub_accumulator_task.with_handle();
         let block_chain = fut.await?;
 
-        Ok((block_chain, handle))
+        anyhow::Result::Ok((block_chain, handle))
     }
 }
