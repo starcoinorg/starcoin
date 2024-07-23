@@ -14,6 +14,7 @@ use starcoin_types::system_events::MintBlockEvent;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::sync::atomic;
+use std::time::Duration;
 
 pub struct Stratum {
     uid: atomic::AtomicU32,
@@ -35,12 +36,37 @@ impl Stratum {
         self.uid.fetch_add(1, atomic::Ordering::SeqCst)
     }
 
-    fn sync_upstream_job(&mut self) -> Result<Option<MintBlockEvent>> {
+    fn sync_upstream_job(&mut self) -> Result<MintBlockEvent> {
         let service = self.miner_service.clone();
         let subscribers_num = self.mint_block_subscribers.len() as u32;
-        futures::executor::block_on(service.send(UpdateSubscriberNumRequest {
-            number: Some(subscribers_num),
-        }))
+        let timeout_duration = Duration::from_secs(300);
+        futures::executor::block_on(async {
+            let start_time = std::time::Instant::now();
+            loop {
+                if start_time.elapsed() > timeout_duration {
+                    anyhow::bail!("stratum sync upstream job timeout")
+                }
+                match service
+                    .send(UpdateSubscriberNumRequest {
+                        number: Some(subscribers_num),
+                    })
+                    .await
+                {
+                    Ok(Some(event)) => return Ok(event),
+                    Ok(None) => {
+                        // Retry after a delay
+                        futures_timer::Delay::new(Duration::from_secs(1)).await;
+                    }
+                    Err(err) => {
+                        error!(
+                            "Failed to send NewMinerClientRequest to miner service: {}",
+                            err
+                        );
+                        return Err(err);
+                    }
+                }
+            }
+        })
     }
 
     fn get_downstream_job(
@@ -129,7 +155,7 @@ impl ServiceHandler<Self, SubscribeJobEvent> for Stratum {
                 error!(target: "stratum", "Subscriber assign is failed");
             }
         });
-        if let Ok(Some(event)) = self.sync_upstream_job() {
+        if let Ok(event) = self.sync_upstream_job() {
             let miner_worker = MinerWorker::new(sub_id, login);
             let downstream_job = Self::get_downstream_job(&miner_worker, true, &event);
             self.mint_block_subscribers
@@ -141,7 +167,7 @@ impl ServiceHandler<Self, SubscribeJobEvent> for Stratum {
                 }
             });
         } else {
-            warn!(target: "stratum", "current mint job is empty");
+            error!(target: "stratum", "get current mint job is failed");
         }
     }
 }
@@ -149,27 +175,26 @@ impl ServiceHandler<Self, SubscribeJobEvent> for Stratum {
 impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
     fn handle(&mut self, msg: SubmitShareEvent, _ctx: &mut ServiceContext<Self>) -> Result<()> {
         info!(target: "stratum", "received submit share event:{:?}", &msg.0);
-        if let Some(current_mint_event) = self.sync_upstream_job()? {
-            let worker_id = WorkerId::from_hex(msg.0.id.clone())?;
-            if let Some((_job_sender, worker)) = self.mint_block_subscribers.get(&worker_id) {
-                let _updated_diff = worker
-                    .diff_manager()
-                    .write()
-                    .unwrap()
-                    .try_update(worker.base_info.login.clone());
-            };
-            let job_id = JobId::new(&msg.0.job_id)?;
-            let submit_job_id = JobId::from_bob(&current_mint_event.minting_blob);
-            if job_id != submit_job_id {
-                warn!(target: "stratum", "received job mismatch with current job,{:?},{:?}",job_id, submit_job_id);
-                return Ok(());
-            };
+        let current_mint_event = self.sync_upstream_job()?;
+        let worker_id = WorkerId::from_hex(msg.0.id.clone())?;
+        if let Some((_job_sender, worker)) = self.mint_block_subscribers.get(&worker_id) {
+            let _updated_diff = worker
+                .diff_manager()
+                .write()
+                .unwrap()
+                .try_update(worker.base_info.login.clone());
+        };
+        let job_id = JobId::new(&msg.0.job_id)?;
+        let submit_job_id = JobId::from_bob(&current_mint_event.minting_blob);
+        if job_id != submit_job_id {
+            warn!(target: "stratum", "received job mismatch with current job,{:?},{:?}",job_id, submit_job_id);
+            return Ok(());
+        };
 
-            let mut seal: MinerSubmitSealRequest = msg.0.try_into()?;
+        let mut seal: MinerSubmitSealRequest = msg.0.try_into()?;
 
-            seal.minting_blob = current_mint_event.minting_blob;
-            self.miner_service.try_send(seal)?;
-        }
+        seal.minting_blob = current_mint_event.minting_blob;
+        self.miner_service.try_send(seal)?;
         Ok(())
     }
 }

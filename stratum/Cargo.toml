@@ -16,6 +16,7 @@ starcoin-logger = { workspace = true }
 starcoin-miner = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-types = { workspace = true }
+futures-timer = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }
