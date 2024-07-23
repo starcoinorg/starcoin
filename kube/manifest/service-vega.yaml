@@ -85,6 +85,10 @@ spec:
       name: metrics
       protocol: TCP
       targetPort: 9101
+    - port: 9880
+      name: stratum
+      protocol: TCP
+      targetPort: 9880
   selector:
     app: starcoin
     network: vega
@@ -114,10 +118,10 @@ spec:
       name: ws-rpc
       protocol: TCP
       targetPort: 9870
-    - port: 9101
-      name: metrics
+    - port: 9880
+      name: stratum
       protocol: TCP
-      targetPort: 9101
+      targetPort: 9880
   selector:
     app: starcoin
     network: vega
@@ -147,10 +151,10 @@ spec:
       name: ws-rpc
       protocol: TCP
       targetPort: 9870
-    - port: 9101
-      name: metrics
+    - port: 9880
+      name: stratum
       protocol: TCP
-      targetPort: 9101
+      targetPort: 9880
   selector:
     app: starcoin
     network: vega
