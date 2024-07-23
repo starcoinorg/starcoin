@@ -10878,6 +10878,7 @@ dependencies = [
  "anyhow",
  "byteorder",
  "futures 0.3.26",
+ "futures-timer",
  "hex",
  "jsonrpc-core 18.0.0 (git+https://github.com/starcoinorg/jsonrpc?rev=e895b6cc5897f3813a953a9a6bb4718b4856ab19)",
  "jsonrpc-core-client 18.0.0 (git+https://github.com/starcoinorg/jsonrpc?rev=e895b6cc5897f3813a953a9a6bb4718b4856ab19)",
