@@ -69,7 +69,7 @@ starcoin-genesis = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 name = "starcoin-sync"
-version = "2.0.0"
+version = "2.0.1"
 homepage = { workspace = true }
 license = { workspace = true }
 publish = { workspace = true }

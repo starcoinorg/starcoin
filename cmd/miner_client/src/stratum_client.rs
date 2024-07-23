@@ -43,7 +43,7 @@ impl JobClient for StratumJobClient {
     async fn subscribe(&self) -> Result<BoxStream<'static, MintBlockEvent>> {
         let srv = self.stratum_cli_srv.clone();
         let login = self.login.clone();
-        let strategy = self.strategy.clone();
+        let strategy = self.strategy;
         let fut = async move {
             let stream = srv
                 .send(login)
