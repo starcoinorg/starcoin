@@ -9,6 +9,7 @@ use starcoin_miner_client::stratum_client::StratumJobClient;
 use starcoin_miner_client::stratum_client_service::{
     StratumClientService, StratumClientServiceServiceFactory,
 };
+use starcoin_miner_client::ConsensusStrategy;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_stratum::rpc::LoginRequest;
 use starcoin_time_service::RealTimeService;
@@ -25,11 +26,14 @@ pub struct StarcoinOpt {
     pub thread_num: u16,
     #[clap(long, short = 'p')]
     pub plugin_path: Option<String>,
+    #[clap(long, short = 'g', default_value_t = ConsensusStrategy::Argon)]
+    pub algo: ConsensusStrategy,
 }
 
 fn main() {
     let _logger_handle = starcoin_logger::init();
     let opts: StarcoinOpt = StarcoinOpt::parse();
+    let algo = opts.algo;
     let config = {
         MinerClientConfig {
             server: Some(opts.server.clone()),
@@ -61,7 +65,7 @@ fn main() {
             algo: None,
         };
 
-        let stratum_job_client = StratumJobClient::new(stratum_cli_srv, time_srv, login);
+        let stratum_job_client = StratumJobClient::new(stratum_cli_srv, time_srv, login, algo);
         registry.put_shared(stratum_job_client).await?;
         registry
             .register::<MinerClientService<StratumJobClient>>()

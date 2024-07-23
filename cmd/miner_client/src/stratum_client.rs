@@ -19,6 +19,7 @@ pub struct StratumJobClient {
     stratum_cli_srv: ServiceRef<StratumClientService>,
     time_service: Arc<dyn TimeService>,
     login: LoginRequest,
+    strategy: ConsensusStrategy,
 }
 
 impl StratumJobClient {
@@ -26,11 +27,13 @@ impl StratumJobClient {
         stratum_cli_srv: ServiceRef<StratumClientService>,
         time_service: Arc<dyn TimeService>,
         login: LoginRequest,
+        strategy: ConsensusStrategy,
     ) -> Self {
         Self {
             stratum_cli_srv,
             time_service,
             login,
+            strategy,
         }
     }
 }
@@ -40,21 +43,22 @@ impl JobClient for StratumJobClient {
     async fn subscribe(&self) -> Result<BoxStream<'static, MintBlockEvent>> {
         let srv = self.stratum_cli_srv.clone();
         let login = self.login.clone();
+        let strategy = self.strategy.clone();
         let fut = async move {
             let stream = srv
                 .send(login)
                 .await?
                 .await
                 .map_err(|e| anyhow::anyhow!(format!("{}", e)))
-                .map(|s| {
-                    s.filter_map(|job| {
+                .map(move |s| {
+                    s.filter_map(move |job| {
                         let blob = hex::decode(&job.blob);
                         let diff = target_hex_to_difficulty(&job.target);
                         let extra = job.get_extra();
                         let event = if let (Ok(blob), Ok(diff), Ok(extra)) = (blob, diff, extra) {
                             Some(MintBlockEvent {
                                 parent_hash: Default::default(),
-                                strategy: ConsensusStrategy::CryptoNight,
+                                strategy,
                                 minting_blob: blob,
                                 difficulty: diff,
                                 block_number: job.height,
