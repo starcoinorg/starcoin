@@ -4,7 +4,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "starcoin-system"
 publish = false
-version = "2.0.0"
+version = "2.0.1"
 
 [dependencies]
 anyhow = { workspace = true }
