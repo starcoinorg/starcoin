@@ -39,7 +39,6 @@ move-disassembler = { workspace = true }
 move-errmapgen = { workspace = true }
 move-model = { workspace = true }
 move-package = { workspace = true }
-move-stackless-bytecode = { workspace = true }
 move-unit-test = { workspace = true }
 move-vm-runtime = { workspace = true }
 starcoin-account-provider = { workspace = true }
