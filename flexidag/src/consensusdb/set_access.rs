@@ -2,7 +2,7 @@ use crate::consensusdb::{cache::DagCache, error::StoreError, schema::Schema, wri
 use parking_lot::RwLock;
 use rocksdb::{IteratorMode, ReadOptions};
 use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use starcoin_storage::db_storage::DBStorage;
 use std::error::Error;
 use std::{collections::hash_map::RandomState, marker::PhantomData, sync::Arc};
@@ -23,6 +23,7 @@ impl<TKey, TData> DbSetAccess<TKey, TData> {
         }
     }
 
+    // todo: change return value to HashMap
     pub fn read(&self, key: TKey) -> Result<Vec<TData>, StoreError>
     where
         TKey: AsRef<[u8]>,
