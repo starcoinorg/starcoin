@@ -305,7 +305,7 @@ impl FunctionParameterABI {
     pub fn doc(&self) -> &str {
         &self.doc
     }
-    pub fn subst(&self, ty_args: &[TypeInstantiation]) -> Result<FunctionParameterABI> {
+    pub fn subst(&self, ty_args: &[TypeInstantiation]) -> Result<Self> {
         let mut this = self.clone();
         this.type_tag = this.type_tag.subst(ty_args)?;
         Ok(this)
@@ -514,7 +514,7 @@ impl StructInstantiation {
     }
 
     /// Substitute all the type parameter in this type instantiation with given `ty_args`
-    pub fn subst(&self, ty_args: &[TypeInstantiation]) -> Result<StructInstantiation> {
+    pub fn subst(&self, ty_args: &[TypeInstantiation]) -> Result<Self> {
         Ok(Self {
             name: self.name.clone(),
             module_name: self.module_name.clone(),
@@ -558,7 +558,7 @@ impl FieldABI {
         &self.type_abi
     }
     /// passing by the type arguments of StructDefinition or FunctionDefinition
-    pub fn subst(&self, ty_args: &[TypeInstantiation]) -> Result<FieldABI> {
+    pub fn subst(&self, ty_args: &[TypeInstantiation]) -> Result<Self> {
         Ok(Self {
             name: self.name.clone(),
             doc: self.doc.clone(),
@@ -586,7 +586,7 @@ pub enum TypeInstantiation {
     U256,
 }
 impl TypeInstantiation {
-    pub fn new_vector(subtype: TypeInstantiation) -> Self {
+    pub fn new_vector(subtype: Self) -> Self {
         Self::Vector(Box::new(subtype))
     }
     pub fn new_struct_instantiation(s: StructInstantiation) -> Self {
@@ -629,10 +629,9 @@ impl TypeInstantiation {
             Self::U256 => TypeTag::U256,
         })
     }
-    pub fn subst(&self, ty_args: &[TypeInstantiation]) -> Result<TypeInstantiation> {
-        use TypeInstantiation as T;
+    pub fn subst(&self, ty_args: &[Self]) -> Result<Self> {
         Ok(match self {
-            T::TypeParameter(idx) => match ty_args.get(*idx) {
+            Self::TypeParameter(idx) => match ty_args.get(*idx) {
                 Some(ty) => ty.clone(),
                 None => anyhow::bail!(
                     "type abi substitution failed: index out of bounds -- len {} got {}",
@@ -640,9 +639,9 @@ impl TypeInstantiation {
                     idx
                 ),
             },
-            T::Vector(ty) => T::Vector(Box::new(ty.subst(ty_args)?)),
-            T::Struct(struct_ty) => T::Struct(Box::new(struct_ty.subst(ty_args)?)),
-            T::Reference(mutable, ty) => T::Reference(*mutable, Box::new(ty.subst(ty_args)?)),
+            Self::Vector(ty) => Self::Vector(Box::new(ty.subst(ty_args)?)),
+            Self::Struct(struct_ty) => Self::Struct(Box::new(struct_ty.subst(ty_args)?)),
+            Self::Reference(mutable, ty) => Self::Reference(*mutable, Box::new(ty.subst(ty_args)?)),
             _ => self.clone(),
         })
     }
@@ -771,8 +770,8 @@ impl<'de> Deserialize<'de> for WrappedAbilitySet {
         D: Deserializer<'de>,
     {
         let byte = u8::deserialize(deserializer)?;
-        Ok(WrappedAbilitySet(AbilitySet::from_u8(byte).ok_or_else(
-            || serde::de::Error::custom(format!("Invalid ability set: {:X}", byte)),
-        )?))
+        Ok(Self(AbilitySet::from_u8(byte).ok_or_else(|| {
+            serde::de::Error::custom(format!("Invalid ability set: {:X}", byte))
+        })?))
     }
 }

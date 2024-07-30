@@ -32,13 +32,13 @@ impl AsRef<[u8]> for Blob {
 }
 
 impl From<Blob> for Vec<u8> {
-    fn from(blob: Blob) -> Vec<u8> {
+    fn from(blob: Blob) -> Self {
         blob.blob
     }
 }
 
 impl From<Vec<u8>> for Blob {
-    fn from(blob: Vec<u8>) -> Blob {
-        Blob { blob }
+    fn from(blob: Vec<u8>) -> Self {
+        Self { blob }
     }
 }

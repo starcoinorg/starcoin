@@ -73,7 +73,7 @@ pub enum AnnouncementType {
 impl Into<u8> for AnnouncementType {
     fn into(self) -> u8 {
         match self {
-            AnnouncementType::Txn => 1,
+            Self::Txn => 1,
         }
     }
 }
@@ -83,7 +83,7 @@ impl TryFrom<u8> for AnnouncementType {
 
     fn try_from(value: u8) -> Result<Self> {
         if value == 1 {
-            return Ok(AnnouncementType::Txn);
+            return Ok(Self::Txn);
         }
         Err(format_err!("Wrong announcement type : {:?}", value))
     }
@@ -128,15 +128,11 @@ pub enum NotificationMessage {
 impl NotificationMessage {
     pub fn decode_notification(protocol_name: &str, bytes: &[u8]) -> Result<Self> {
         Ok(match protocol_name {
-            TXN_PROTOCOL_NAME => {
-                NotificationMessage::Transactions(TransactionsMessage::decode(bytes)?)
-            }
+            TXN_PROTOCOL_NAME => Self::Transactions(TransactionsMessage::decode(bytes)?),
             BLOCK_PROTOCOL_NAME => {
-                NotificationMessage::CompactBlock(Box::new(CompactBlockMessage::decode(bytes)?))
+                Self::CompactBlock(Box::new(CompactBlockMessage::decode(bytes)?))
             }
-            ANNOUNCEMENT_PROTOCOL_NAME => {
-                NotificationMessage::Announcement(Announcement::decode(bytes)?)
-            }
+            ANNOUNCEMENT_PROTOCOL_NAME => Self::Announcement(Announcement::decode(bytes)?),
             unknown_protocol => bail!(
                 "Unknown protocol {}'s message: {}",
                 unknown_protocol,
@@ -147,11 +143,9 @@ impl NotificationMessage {
 
     pub fn encode_notification(&self) -> Result<(Cow<'static, str>, Vec<u8>)> {
         Ok(match self {
-            NotificationMessage::Transactions(msg) => (TXN_PROTOCOL_NAME.into(), msg.encode()?),
-            NotificationMessage::CompactBlock(msg) => (BLOCK_PROTOCOL_NAME.into(), msg.encode()?),
-            NotificationMessage::Announcement(msg) => {
-                (ANNOUNCEMENT_PROTOCOL_NAME.into(), msg.encode()?)
-            }
+            Self::Transactions(msg) => (TXN_PROTOCOL_NAME.into(), msg.encode()?),
+            Self::CompactBlock(msg) => (BLOCK_PROTOCOL_NAME.into(), msg.encode()?),
+            Self::Announcement(msg) => (ANNOUNCEMENT_PROTOCOL_NAME.into(), msg.encode()?),
         })
     }
 
@@ -174,21 +168,21 @@ impl NotificationMessage {
 
     pub fn into_transactions(self) -> Option<TransactionsMessage> {
         match self {
-            NotificationMessage::Transactions(message) => Some(message),
+            Self::Transactions(message) => Some(message),
             _ => None,
         }
     }
 
     pub fn into_compact_block(self) -> Option<CompactBlockMessage> {
         match self {
-            NotificationMessage::CompactBlock(message) => Some(*message),
+            Self::CompactBlock(message) => Some(*message),
             _ => None,
         }
     }
 
     pub fn into_announcement(self) -> Option<Announcement> {
         match self {
-            NotificationMessage::Announcement(message) => Some(message),
+            Self::Announcement(message) => Some(message),
             _ => None,
         }
     }

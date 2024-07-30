@@ -70,8 +70,8 @@ where
 {
     fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
         match self {
-            SelectableStateView::A(a) => a.get_state_value(state_key),
-            SelectableStateView::B(b) => b.get_state_value(state_key),
+            Self::A(a) => a.get_state_value(state_key),
+            Self::B(b) => b.get_state_value(state_key),
         }
     }
 
@@ -86,43 +86,43 @@ where
 {
     fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()> {
         match self {
-            SelectableStateView::A(a) => a.set(access_path, value),
-            SelectableStateView::B(b) => b.set(access_path, value),
+            Self::A(a) => a.set(access_path, value),
+            Self::B(b) => b.set(access_path, value),
         }
     }
 
     fn remove(&self, access_path: &AccessPath) -> Result<()> {
         match self {
-            SelectableStateView::A(a) => a.remove(access_path),
-            SelectableStateView::B(b) => b.remove(access_path),
+            Self::A(a) => a.remove(access_path),
+            Self::B(b) => b.remove(access_path),
         }
     }
 
     fn apply(&self, state_set: ChainStateSet) -> Result<()> {
         match self {
-            SelectableStateView::A(a) => a.apply(state_set),
-            SelectableStateView::B(b) => b.apply(state_set),
+            Self::A(a) => a.apply(state_set),
+            Self::B(b) => b.apply(state_set),
         }
     }
 
     fn apply_write_set(&self, write_set: WriteSet) -> Result<()> {
         match self {
-            SelectableStateView::A(a) => a.apply_write_set(write_set),
-            SelectableStateView::B(b) => b.apply_write_set(write_set),
+            Self::A(a) => a.apply_write_set(write_set),
+            Self::B(b) => b.apply_write_set(write_set),
         }
     }
 
     fn commit(&self) -> Result<HashValue> {
         match self {
-            SelectableStateView::A(a) => a.commit(),
-            SelectableStateView::B(b) => b.commit(),
+            Self::A(a) => a.commit(),
+            Self::B(b) => b.commit(),
         }
     }
 
     fn flush(&self) -> Result<()> {
         match self {
-            SelectableStateView::A(a) => a.flush(),
-            SelectableStateView::B(b) => b.flush(),
+            Self::A(a) => a.flush(),
+            Self::B(b) => b.flush(),
         }
     }
 }

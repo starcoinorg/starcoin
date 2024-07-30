@@ -198,11 +198,11 @@ mod inner {
         type Error = SendError;
 
         fn poll_ready(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-            TracingUnboundedSender::poll_ready(&*self, cx)
+            Self::poll_ready(&*self, cx)
         }
 
         fn start_send(mut self: Pin<&mut Self>, msg: T) -> Result<(), Self::Error> {
-            TracingUnboundedSender::start_send(&mut *self, msg)
+            Self::start_send(&mut *self, msg)
         }
 
         fn poll_flush(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {

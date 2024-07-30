@@ -27,7 +27,7 @@ pub struct VerifyModuleError {
 
 pub struct VerifyModulesType;
 
-impl BatchCmdExec<VerifyModulesType, Block, VerifyModuleError> for Block {
+impl BatchCmdExec<VerifyModulesType, Self, VerifyModuleError> for Block {
     fn execute(&self) -> (usize, Vec<VerifyModuleError>) {
         let mut errors = vec![];
         let mut success_modules = 0;

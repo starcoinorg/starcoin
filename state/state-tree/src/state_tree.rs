@@ -95,7 +95,7 @@ where
     K: RawKey,
 {
     fn clone(&self) -> Self {
-        StateTree::new(self.storage.clone(), Some(*self.storage_root_hash.read()))
+        Self::new(self.storage.clone(), Some(*self.storage_root_hash.read()))
     }
 }
 

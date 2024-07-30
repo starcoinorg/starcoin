@@ -106,8 +106,8 @@ struct Node {
 }
 
 impl Node {
-    fn new(num_sets: usize) -> Node {
-        Node {
+    fn new(num_sets: usize) -> Self {
+        Self {
             sets: (0..num_sets).map(|_| MembershipState::NotMember).collect(),
             reputation: 0,
         }
@@ -135,10 +135,10 @@ impl MembershipState {
     /// Returns `true` for `In` and `Out`.
     fn is_connected(self) -> bool {
         match self {
-            MembershipState::NotMember => false,
-            MembershipState::In => true,
-            MembershipState::Out => true,
-            MembershipState::NotConnected { .. } => false,
+            Self::NotMember => false,
+            Self::In => true,
+            Self::Out => true,
+            Self::NotConnected { .. } => false,
         }
     }
 }
@@ -146,7 +146,7 @@ impl MembershipState {
 impl PeersState {
     /// Builds a new empty `PeersState`.
     pub fn new(sets: impl IntoIterator<Item = SetConfig>) -> Self {
-        PeersState {
+        Self {
             nodes: HashMap::new(),
             sets: sets
                 .into_iter()

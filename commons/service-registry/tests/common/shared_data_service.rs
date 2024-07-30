@@ -31,7 +31,7 @@ pub struct GetService {
 impl ActorService for GetService {}
 
 impl ServiceFactory<Self> for GetService {
-    fn create(ctx: &mut ServiceContext<GetService>) -> Result<GetService> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         Ok(Self {
             db: ctx.get_shared::<Arc<DB>>()?,
         })
@@ -54,7 +54,7 @@ impl ServiceRequest for GetRequest {
 }
 
 impl ServiceHandler<Self, GetRequest> for GetService {
-    fn handle(&mut self, msg: GetRequest, _ctx: &mut ServiceContext<GetService>) -> Option<String> {
+    fn handle(&mut self, msg: GetRequest, _ctx: &mut ServiceContext<Self>) -> Option<String> {
         self.db.get(msg.key.as_str())
     }
 }
@@ -66,7 +66,7 @@ pub struct PutService {
 impl ActorService for PutService {}
 
 impl ServiceFactory<Self> for PutService {
-    fn create(ctx: &mut ServiceContext<PutService>) -> Result<PutService> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         Ok(Self {
             db: ctx.get_shared::<Arc<DB>>()?,
         })
@@ -90,7 +90,7 @@ impl ServiceRequest for PutRequest {
 }
 
 impl ServiceHandler<Self, PutRequest> for PutService {
-    fn handle(&mut self, msg: PutRequest, _ctx: &mut ServiceContext<PutService>) {
+    fn handle(&mut self, msg: PutRequest, _ctx: &mut ServiceContext<Self>) {
         self.db.insert(msg.key, msg.value);
     }
 }

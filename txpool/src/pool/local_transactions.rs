@@ -44,7 +44,7 @@ pub enum Status {
 
 impl Status {
     fn is_pending(&self) -> bool {
-        matches!(self, Status::Pending(_))
+        matches!(self, Self::Pending(_))
     }
 }
 
@@ -76,7 +76,7 @@ impl Default for LocalTransactionsList {
 impl LocalTransactionsList {
     /// Create a new list of local transactions.
     pub fn new(max_old: usize) -> Self {
-        LocalTransactionsList {
+        Self {
             max_old,
             transactions: Default::default(),
             pending: 0,

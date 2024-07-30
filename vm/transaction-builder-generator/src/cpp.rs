@@ -348,7 +348,7 @@ pub struct Installer {
 
 impl Installer {
     pub fn new(install_dir: PathBuf) -> Self {
-        Installer { install_dir }
+        Self { install_dir }
     }
 }
 

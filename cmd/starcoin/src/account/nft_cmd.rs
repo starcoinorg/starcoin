@@ -55,7 +55,7 @@ pub struct NFTView {
 impl From<NFT> for NFTView {
     fn from(nft: NFT) -> Self {
         let uuid = nft.uuid();
-        NFTView { uuid, nft }
+        Self { uuid, nft }
     }
 }
 

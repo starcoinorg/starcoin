@@ -24,7 +24,7 @@ pub struct PendingTransaction {
 impl PendingTransaction {
     /// Create a new pending transaction from signed transaction.
     pub fn new(signed: SignedUserTransaction, condition: Option<Condition>) -> Self {
-        PendingTransaction {
+        Self {
             transaction: signed,
             condition,
         }
@@ -41,7 +41,7 @@ impl Deref for PendingTransaction {
 
 impl From<SignedUserTransaction> for PendingTransaction {
     fn from(t: SignedUserTransaction) -> Self {
-        PendingTransaction {
+        Self {
             transaction: t,
             condition: None,
         }

@@ -402,7 +402,7 @@ impl SyncService {
 }
 
 impl ServiceFactory<Self> for SyncService {
-    fn create(ctx: &mut ServiceContext<Self>) -> Result<SyncService> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
@@ -428,7 +428,7 @@ impl ActorService for SyncService {
 }
 
 impl EventHandler<Self, AncestorEvent> for SyncService {
-    fn handle_event(&mut self, msg: AncestorEvent, _ctx: &mut ServiceContext<SyncService>) {
+    fn handle_event(&mut self, msg: AncestorEvent, _ctx: &mut ServiceContext<Self>) {
         match &mut self.stage {
             SyncStage::Synchronizing(handle) => {
                 handle.task_begin = Some(msg.ancestor);
@@ -638,11 +638,7 @@ impl EventHandler<Self, SaveSyncBlock> for SyncService {
 }
 
 impl ServiceHandler<Self, SyncStatusRequest> for SyncService {
-    fn handle(
-        &mut self,
-        _msg: SyncStatusRequest,
-        _ctx: &mut ServiceContext<SyncService>,
-    ) -> SyncStatus {
+    fn handle(&mut self, _msg: SyncStatusRequest, _ctx: &mut ServiceContext<Self>) -> SyncStatus {
         self.sync_status.clone()
     }
 }
@@ -651,7 +647,7 @@ impl ServiceHandler<Self, PeerScoreRequest> for SyncService {
     fn handle(
         &mut self,
         _msg: PeerScoreRequest,
-        _ctx: &mut ServiceContext<SyncService>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> PeerScoreResponse {
         let resp = match &mut self.stage {
             SyncStage::Synchronizing(handle) => Some(handle.peer_selector.scores()),
@@ -665,7 +661,7 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService {
     fn handle(
         &mut self,
         _msg: SyncProgressRequest,
-        _ctx: &mut ServiceContext<SyncService>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> Option<SyncProgressReport> {
         self.task_handle().and_then(|handle| {
             handle.task_event_handle.total_report().map(|mut report| {
@@ -696,17 +692,13 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService {
 }
 
 impl ServiceHandler<Self, SyncCancelRequest> for SyncService {
-    fn handle(&mut self, _msg: SyncCancelRequest, _ctx: &mut ServiceContext<SyncService>) {
+    fn handle(&mut self, _msg: SyncCancelRequest, _ctx: &mut ServiceContext<Self>) {
         self.cancel_task();
     }
 }
 
 impl ServiceHandler<Self, SyncStartRequest> for SyncService {
-    fn handle(
-        &mut self,
-        msg: SyncStartRequest,
-        ctx: &mut ServiceContext<SyncService>,
-    ) -> Result<()> {
+    fn handle(&mut self, msg: SyncStartRequest, ctx: &mut ServiceContext<Self>) -> Result<()> {
         if msg.force {
             info!("[sync] Try to cancel previous sync task, because receive force sync request.");
             self.cancel_task();

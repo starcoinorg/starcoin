@@ -167,7 +167,7 @@ fn greater_barnard_fork_version(ver_str: &str) -> bool {
 }
 
 impl EventHandler<Self, Event> for NetworkActorService {
-    fn handle_event(&mut self, event: Event, ctx: &mut ServiceContext<NetworkActorService>) {
+    fn handle_event(&mut self, event: Event, ctx: &mut ServiceContext<Self>) {
         match event {
             Event::Dht(_) => {
                 debug!("ignore dht event");
@@ -239,11 +239,7 @@ impl EventHandler<Self, Event> for NetworkActorService {
 }
 
 impl EventHandler<Self, ReportReputation> for NetworkActorService {
-    fn handle_event(
-        &mut self,
-        msg: ReportReputation,
-        _ctx: &mut ServiceContext<NetworkActorService>,
-    ) {
+    fn handle_event(&mut self, msg: ReportReputation, _ctx: &mut ServiceContext<Self>) {
         self.inner
             .network_service
             .report_peer(msg.peer_id.into(), msg.change);
@@ -251,7 +247,7 @@ impl EventHandler<Self, ReportReputation> for NetworkActorService {
 }
 
 impl EventHandler<Self, BanPeer> for NetworkActorService {
-    fn handle_event(&mut self, msg: BanPeer, _ctx: &mut ServiceContext<NetworkActorService>) {
+    fn handle_event(&mut self, msg: BanPeer, _ctx: &mut ServiceContext<Self>) {
         self.inner
             .network_service
             .ban_peer(msg.peer_id.into(), msg.ban);
@@ -259,11 +255,7 @@ impl EventHandler<Self, BanPeer> for NetworkActorService {
 }
 
 impl EventHandler<Self, NotificationMessage> for NetworkActorService {
-    fn handle_event(
-        &mut self,
-        msg: NotificationMessage,
-        ctx: &mut ServiceContext<NetworkActorService>,
-    ) {
+    fn handle_event(&mut self, msg: NotificationMessage, ctx: &mut ServiceContext<Self>) {
         let prepared_to_broadcast = self.inner.prepare_broadcast(msg);
         let network_service = self.network_service();
         let metrics = self.inner.metrics.clone();
@@ -303,7 +295,7 @@ impl EventHandler<Self, NotificationMessage> for NetworkActorService {
 }
 
 impl EventHandler<Self, PeerMessage> for NetworkActorService {
-    fn handle_event(&mut self, msg: PeerMessage, ctx: &mut ServiceContext<NetworkActorService>) {
+    fn handle_event(&mut self, msg: PeerMessage, ctx: &mut ServiceContext<Self>) {
         let network_service = self.network_service();
         let peer_id = msg.peer_id;
         let notification = msg.notification;
@@ -330,11 +322,7 @@ impl EventHandler<Self, PeerMessage> for NetworkActorService {
 
 // handle txn relayer
 impl EventHandler<Self, PropagateTransactions> for NetworkActorService {
-    fn handle_event(
-        &mut self,
-        msg: PropagateTransactions,
-        ctx: &mut ServiceContext<NetworkActorService>,
-    ) {
+    fn handle_event(&mut self, msg: PropagateTransactions, ctx: &mut ServiceContext<Self>) {
         let txns = msg.transaction_to_propagate();
         if txns.is_empty() {
             return;
@@ -352,7 +340,7 @@ impl ServiceHandler<Self, GetPeerSet> for NetworkActorService {
     fn handle(
         &mut self,
         _msg: GetPeerSet,
-        _ctx: &mut ServiceContext<NetworkActorService>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> <GetPeerSet as ServiceRequest>::Response {
         self.inner
             .peers
@@ -366,7 +354,7 @@ impl ServiceHandler<Self, PeerReputations> for NetworkActorService {
     fn handle(
         &mut self,
         msg: PeerReputations,
-        ctx: &mut ServiceContext<NetworkActorService>,
+        ctx: &mut ServiceContext<Self>,
     ) -> <PeerReputations as ServiceRequest>::Response {
         let rx = self.inner.network_service.reputations(msg.threshold);
         let fut = async move {
@@ -389,7 +377,7 @@ impl ServiceHandler<Self, GetPeerById> for NetworkActorService {
     fn handle(
         &mut self,
         msg: GetPeerById,
-        _ctx: &mut ServiceContext<NetworkActorService>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> <GetPeerById as ServiceRequest>::Response {
         self.inner
             .peers
@@ -402,7 +390,7 @@ impl ServiceHandler<Self, GetSelfPeer> for NetworkActorService {
     fn handle(
         &mut self,
         _msg: GetSelfPeer,
-        _ctx: &mut ServiceContext<NetworkActorService>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> <GetSelfPeer as ServiceRequest>::Response {
         self.inner.self_peer.get_peer_info().clone()
     }
@@ -464,7 +452,7 @@ impl Inner {
         self_info: PeerInfo,
         network_service: Arc<network_p2p::NetworkService>,
         peer_message_handler: H,
-    ) -> Result<Inner>
+    ) -> Result<Self>
     where
         H: PeerMessageHandler + 'static,
     {
@@ -473,7 +461,7 @@ impl Inner {
             .registry()
             .and_then(|registry| NetworkMetrics::register(registry).ok());
 
-        Ok(Inner {
+        Ok(Self {
             config,
             network_service,
             self_peer: Peer::new(self_info),

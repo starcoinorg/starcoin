@@ -53,7 +53,7 @@ impl KeyCodec<DagHeader> for Hash {
     }
 
     fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
-        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+        Self::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
     }
 }
 impl ValueCodec<DagHeader> for HeaderWithBlockLevel {
@@ -71,7 +71,7 @@ impl KeyCodec<CompactBlockHeader> for Hash {
     }
 
     fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
-        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+        Self::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
     }
 }
 impl ValueCodec<CompactBlockHeader> for CompactHeaderData {

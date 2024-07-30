@@ -62,10 +62,10 @@ pub enum ConnectOk {
 impl std::fmt::Display for ConnectOk {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            ConnectOk::Duplicate => "Duplicate",
-            ConnectOk::ExeConnectMain => "ExeConnectMain",
-            ConnectOk::ExeConnectBranch => "ExeConnectBranch",
-            ConnectOk::Connect => "Connect",
+            Self::Duplicate => "Duplicate",
+            Self::ExeConnectMain => "ExeConnectMain",
+            Self::ExeConnectBranch => "ExeConnectBranch",
+            Self::Connect => "Connect",
         };
         write!(f, "{}", s)
     }
@@ -153,7 +153,7 @@ where
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
     ) -> Result<Self> {
-        let this: WriteBlockChainService<TransactionPoolServiceT> = Self::new(
+        let this: Self = Self::new(
             config.clone(),
             startup_info,
             storage,

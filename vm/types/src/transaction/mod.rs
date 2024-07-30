@@ -107,7 +107,7 @@ impl RawUserTransaction {
         chain_id: ChainId,
         gas_token_code: String,
     ) -> Self {
-        RawUserTransaction {
+        Self {
             sender,
             sequence_number,
             payload,
@@ -128,7 +128,7 @@ impl RawUserTransaction {
         expiration_timestamp_secs: u64,
         chain_id: ChainId,
     ) -> Self {
-        RawUserTransaction {
+        Self {
             sender,
             sequence_number,
             payload,
@@ -152,7 +152,7 @@ impl RawUserTransaction {
         expiration_timestamp_secs: u64,
         chain_id: ChainId,
     ) -> Self {
-        RawUserTransaction {
+        Self {
             sender,
             sequence_number,
             payload: TransactionPayload::Script(script),
@@ -176,7 +176,7 @@ impl RawUserTransaction {
         expiration_timestamp_secs: u64,
         chain_id: ChainId,
     ) -> Self {
-        RawUserTransaction {
+        Self {
             sender,
             sequence_number,
             payload: TransactionPayload::ScriptFunction(script_function),
@@ -198,7 +198,7 @@ impl RawUserTransaction {
         expiration_timestamp_secs: u64,
         chain_id: ChainId,
     ) -> Self {
-        RawUserTransaction {
+        Self {
             sender,
             sequence_number,
             payload: TransactionPayload::Package(package),
@@ -391,9 +391,9 @@ pub enum TransactionPayloadType {
 impl TransactionPayload {
     pub fn payload_type(&self) -> TransactionPayloadType {
         match self {
-            TransactionPayload::Script(_) => TransactionPayloadType::Script,
-            TransactionPayload::Package(_) => TransactionPayloadType::Package,
-            TransactionPayload::ScriptFunction(_) => TransactionPayloadType::ScriptFunction,
+            Self::Script(_) => TransactionPayloadType::Script,
+            Self::Package(_) => TransactionPayloadType::Package,
+            Self::ScriptFunction(_) => TransactionPayloadType::ScriptFunction,
         }
     }
 }
@@ -403,8 +403,8 @@ impl TryFrom<u8> for TransactionPayloadType {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            0 => Ok(TransactionPayloadType::Script),
-            1 => Ok(TransactionPayloadType::Package),
+            0 => Ok(Self::Script),
+            1 => Ok(Self::Package),
             _ => Err(format_err!("invalid PayloadType")),
         }
     }
@@ -412,7 +412,7 @@ impl TryFrom<u8> for TransactionPayloadType {
 
 impl From<TransactionPayloadType> for u8 {
     fn from(t: TransactionPayloadType) -> Self {
-        t as u8
+        t as Self
     }
 }
 
@@ -484,10 +484,7 @@ impl fmt::Debug for SignedUserTransaction {
 }
 
 impl SignedUserTransaction {
-    pub fn new(
-        raw_txn: RawUserTransaction,
-        authenticator: TransactionAuthenticator,
-    ) -> SignedUserTransaction {
+    pub fn new(raw_txn: RawUserTransaction, authenticator: TransactionAuthenticator) -> Self {
         let mut txn = Self {
             id: None,
             raw_txn,
@@ -501,7 +498,7 @@ impl SignedUserTransaction {
         raw_txn: RawUserTransaction,
         public_key: Ed25519PublicKey,
         signature: Ed25519Signature,
-    ) -> SignedUserTransaction {
+    ) -> Self {
         let authenticator = TransactionAuthenticator::ed25519(public_key, signature);
         Self::new(raw_txn, authenticator)
     }
@@ -510,7 +507,7 @@ impl SignedUserTransaction {
         raw_txn: RawUserTransaction,
         public_key: MultiEd25519PublicKey,
         signature: MultiEd25519Signature,
-    ) -> SignedUserTransaction {
+    ) -> Self {
         let authenticator = TransactionAuthenticator::multi_ed25519(public_key, signature);
         Self::new(raw_txn, authenticator)
     }
@@ -626,17 +623,17 @@ pub enum TransactionStatus {
 impl TransactionStatus {
     pub fn status(&self) -> Result<KeptVMStatus, StatusCode> {
         match self {
-            TransactionStatus::Keep(status) => Ok(status.clone()),
-            TransactionStatus::Discard(code) => Err(*code),
-            TransactionStatus::Retry => Err(StatusCode::UNKNOWN_VALIDATION_STATUS),
+            Self::Keep(status) => Ok(status.clone()),
+            Self::Discard(code) => Err(*code),
+            Self::Retry => Err(StatusCode::UNKNOWN_VALIDATION_STATUS),
         }
     }
 
     pub fn is_discarded(&self) -> bool {
         match self {
-            TransactionStatus::Discard(_) => true,
-            TransactionStatus::Keep(_) => false,
-            TransactionStatus::Retry => true,
+            Self::Discard(_) => true,
+            Self::Keep(_) => false,
+            Self::Retry => true,
         }
     }
 }
@@ -644,8 +641,8 @@ impl TransactionStatus {
 impl From<VMStatus> for TransactionStatus {
     fn from(vm_status: VMStatus) -> Self {
         match vm_status.keep_or_discard() {
-            Ok(recorded) => TransactionStatus::Keep(recorded),
-            Err(code) => TransactionStatus::Discard(code),
+            Ok(recorded) => Self::Keep(recorded),
+            Err(code) => Self::Discard(code),
         }
     }
 }
@@ -675,7 +672,7 @@ impl TransactionOutput {
         gas_used: u64,
         status: TransactionStatus,
     ) -> Self {
-        TransactionOutput {
+        Self {
             table_infos,
             write_set,
             events,
@@ -765,11 +762,11 @@ impl TransactionInfo {
         events: &[ContractEvent],
         gas_used: u64,
         status: KeptVMStatus,
-    ) -> TransactionInfo {
+    ) -> Self {
         let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
         let events_accumulator_hash =
             InMemoryAccumulator::from_leaves(event_hashes.as_slice()).root_hash();
-        TransactionInfo {
+        Self {
             transaction_hash,
             state_root_hash,
             event_root_hash: events_accumulator_hash,
@@ -913,15 +910,15 @@ impl From<LegacyTransaction> for Transaction {
 impl Transaction {
     pub fn as_signed_user_txn(&self) -> Result<&SignedUserTransaction> {
         match self {
-            Transaction::UserTransaction(txn) => Ok(txn),
+            Self::UserTransaction(txn) => Ok(txn),
             _ => Err(format_err!("Not a user transaction.")),
         }
     }
 
     pub fn id(&self) -> HashValue {
         match self {
-            Transaction::UserTransaction(signed) => signed.id(),
-            Transaction::BlockMetadata(block_metadata) => block_metadata.id(),
+            Self::UserTransaction(signed) => signed.id(),
+            Self::BlockMetadata(block_metadata) => block_metadata.id(),
         }
     }
 }
@@ -958,12 +955,12 @@ pub enum TxStatus {
 impl std::fmt::Display for TxStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            TxStatus::Added => "added",
-            TxStatus::Rejected => "rejected",
-            TxStatus::Dropped => "dropped",
-            TxStatus::Invalid => "invalid",
-            TxStatus::Canceled => "canceled",
-            TxStatus::Culled => "culled",
+            Self::Added => "added",
+            Self::Rejected => "rejected",
+            Self::Dropped => "dropped",
+            Self::Invalid => "invalid",
+            Self::Canceled => "canceled",
+            Self::Culled => "culled",
         };
         write!(f, "{}", s)
     }

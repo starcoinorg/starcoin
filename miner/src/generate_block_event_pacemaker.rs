@@ -19,7 +19,7 @@ pub struct GenerateBlockEventPacemaker {
 }
 
 impl ServiceFactory<Self> for GenerateBlockEventPacemaker {
-    fn create(ctx: &mut ServiceContext<GenerateBlockEventPacemaker>) -> Result<Self> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         Ok(Self {
             config: ctx.get_shared::<Arc<NodeConfig>>()?,
             sync_status: None,
@@ -62,11 +62,7 @@ impl ActorService for GenerateBlockEventPacemaker {
 }
 
 impl EventHandler<Self, NewHeadBlock> for GenerateBlockEventPacemaker {
-    fn handle_event(
-        &mut self,
-        _msg: NewHeadBlock,
-        ctx: &mut ServiceContext<GenerateBlockEventPacemaker>,
-    ) {
+    fn handle_event(&mut self, _msg: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
         if self.is_synced() {
             self.send_event(true, ctx)
         } else {

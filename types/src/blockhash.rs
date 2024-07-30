@@ -29,15 +29,15 @@ pub trait BlockHashExtensions {
 
 impl BlockHashExtensions for HashValue {
     fn is_none(&self) -> bool {
-        self.eq(&HashValue::new(NONE))
+        self.eq(&Self::new(NONE))
     }
 
     fn is_virtual(&self) -> bool {
-        self.eq(&HashValue::new(VIRTUAL))
+        self.eq(&Self::new(VIRTUAL))
     }
 
     fn is_origin(&self) -> bool {
-        self.eq(&HashValue::new(ORIGIN))
+        self.eq(&Self::new(ORIGIN))
     }
 }
 

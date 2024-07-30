@@ -34,8 +34,8 @@ impl ServiceRequest for BatchAddRequest {
 
 impl ActorService for AdvanceCalService {}
 
-impl ServiceFactory<AdvanceCalService> for AdvanceCalService {
-    fn create(ctx: &mut ServiceContext<AdvanceCalService>) -> Result<AdvanceCalService> {
+impl ServiceFactory<Self> for AdvanceCalService {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         Ok(Self {
             cal_service: ctx.service_ref::<CalService>()?.clone(),
         })
@@ -43,11 +43,7 @@ impl ServiceFactory<AdvanceCalService> for AdvanceCalService {
 }
 
 impl ServiceHandler<Self, BatchAddRequest> for AdvanceCalService {
-    fn handle(
-        &mut self,
-        msg: BatchAddRequest,
-        _ctx: &mut ServiceContext<AdvanceCalService>,
-    ) -> u64 {
+    fn handle(&mut self, msg: BatchAddRequest, _ctx: &mut ServiceContext<Self>) -> u64 {
         let mut result = 0;
         for v in msg.values {
             result = block_on(async { self.cal_service.add(v).await.unwrap() });

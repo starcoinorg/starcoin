@@ -23,7 +23,7 @@ impl NetworkRpcServer {
     {
         let mut methods: HashMap<Cow<'static, str>, Arc<dyn RpcMethod>> = Default::default();
         methods.extend(rpc_methods);
-        NetworkRpcServer { methods }
+        Self { methods }
     }
 
     pub async fn handle_request_async(

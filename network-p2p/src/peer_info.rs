@@ -77,7 +77,7 @@ impl NodeInfo {
     fn new(endpoint: ConnectedPoint) -> Self {
         let mut endpoints = SmallVec::new();
         endpoints.push(endpoint);
-        NodeInfo {
+        Self {
             info_expire: None,
             endpoints,
             client_version: None,
@@ -96,7 +96,7 @@ impl PeerInfoBehaviour {
             Identify::new(identify_config)
         };
 
-        PeerInfoBehaviour {
+        Self {
             ping: Ping::new(PingConfig::new()),
             identify,
             nodes_info: FnvHashMap::default(),

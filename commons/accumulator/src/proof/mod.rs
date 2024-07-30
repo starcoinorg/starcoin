@@ -18,7 +18,7 @@ pub struct AccumulatorProof {
 impl AccumulatorProof {
     /// Constructs a new `AccumulatorProof` using a list of siblings.
     pub fn new(siblings: Vec<HashValue>) -> Self {
-        AccumulatorProof { siblings }
+        Self { siblings }
     }
 
     /// Returns the list of siblings in this proof.

@@ -88,14 +88,14 @@ pub enum BuiltinNetworkID {
 impl Display for BuiltinNetworkID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            BuiltinNetworkID::Test => write!(f, "test"),
-            BuiltinNetworkID::Dev => write!(f, "dev"),
-            BuiltinNetworkID::Halley => write!(f, "halley"),
-            BuiltinNetworkID::Proxima => write!(f, "proxima"),
-            BuiltinNetworkID::Barnard => write!(f, "barnard"),
-            BuiltinNetworkID::Main => write!(f, "main"),
-            BuiltinNetworkID::DagTest => write!(f, "dagtest"),
-            BuiltinNetworkID::Vega => write!(f, "vega"),
+            Self::Test => write!(f, "test"),
+            Self::Dev => write!(f, "dev"),
+            Self::Halley => write!(f, "halley"),
+            Self::Proxima => write!(f, "proxima"),
+            Self::Barnard => write!(f, "barnard"),
+            Self::Main => write!(f, "main"),
+            Self::DagTest => write!(f, "dagtest"),
+            Self::Vega => write!(f, "vega"),
         }
     }
 }
@@ -105,14 +105,14 @@ impl FromStr for BuiltinNetworkID {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "test" => Ok(BuiltinNetworkID::Test),
-            "dev" => Ok(BuiltinNetworkID::Dev),
-            "halley" => Ok(BuiltinNetworkID::Halley),
-            "proxima" => Ok(BuiltinNetworkID::Proxima),
-            "barnard" => Ok(BuiltinNetworkID::Barnard),
-            "main" => Ok(BuiltinNetworkID::Main),
-            "dagtest" => Ok(BuiltinNetworkID::DagTest),
-            "vega" => Ok(BuiltinNetworkID::Vega),
+            "test" => Ok(Self::Test),
+            "dev" => Ok(Self::Dev),
+            "halley" => Ok(Self::Halley),
+            "proxima" => Ok(Self::Proxima),
+            "barnard" => Ok(Self::Barnard),
+            "main" => Ok(Self::Main),
+            "dagtest" => Ok(Self::DagTest),
+            "vega" => Ok(Self::Vega),
             s => Err(format_err!("Unknown network: {}", s)),
         }
     }
@@ -151,75 +151,73 @@ impl BuiltinNetworkID {
     }
 
     pub fn is_test_or_dev(self) -> bool {
-        matches!(self, BuiltinNetworkID::Test | BuiltinNetworkID::Dev)
+        matches!(self, Self::Test | Self::Dev)
     }
 
     pub fn is_test(self) -> bool {
-        matches!(self, BuiltinNetworkID::Test)
+        matches!(self, Self::Test)
     }
 
     pub fn is_dev(self) -> bool {
-        matches!(self, BuiltinNetworkID::Dev)
+        matches!(self, Self::Dev)
     }
 
     pub fn is_main(self) -> bool {
-        matches!(self, BuiltinNetworkID::Main)
+        matches!(self, Self::Main)
     }
 
     pub fn is_halley(self) -> bool {
-        matches!(self, BuiltinNetworkID::Halley)
+        matches!(self, Self::Halley)
     }
 
     pub fn is_dag_test(self) -> bool {
-        matches!(self, BuiltinNetworkID::DagTest)
+        matches!(self, Self::DagTest)
     }
     pub fn is_vega(self) -> bool {
-        matches!(self, BuiltinNetworkID::Vega)
+        matches!(self, Self::Vega)
     }
-    pub fn networks() -> Vec<BuiltinNetworkID> {
+    pub fn networks() -> Vec<Self> {
         vec![
-            BuiltinNetworkID::Test,
-            BuiltinNetworkID::Dev,
-            BuiltinNetworkID::Halley,
-            BuiltinNetworkID::Proxima,
-            BuiltinNetworkID::Barnard,
-            BuiltinNetworkID::Main,
-            BuiltinNetworkID::DagTest,
-            BuiltinNetworkID::Vega,
+            Self::Test,
+            Self::Dev,
+            Self::Halley,
+            Self::Proxima,
+            Self::Barnard,
+            Self::Main,
+            Self::DagTest,
+            Self::Vega,
         ]
     }
 
     pub fn genesis_config(self) -> &'static GenesisConfig {
         match self {
-            BuiltinNetworkID::Test => &G_TEST_CONFIG,
-            BuiltinNetworkID::Dev => &G_DEV_CONFIG,
-            BuiltinNetworkID::Halley => &G_HALLEY_CONFIG,
-            BuiltinNetworkID::Proxima => &G_PROXIMA_CONFIG,
-            BuiltinNetworkID::Barnard => &G_BARNARD_CONFIG,
-            BuiltinNetworkID::Main => &G_MAIN_CONFIG,
-            BuiltinNetworkID::DagTest => &G_DAG_TEST_CONFIG,
-            BuiltinNetworkID::Vega => &G_VEGA_CONFIG,
+            Self::Test => &G_TEST_CONFIG,
+            Self::Dev => &G_DEV_CONFIG,
+            Self::Halley => &G_HALLEY_CONFIG,
+            Self::Proxima => &G_PROXIMA_CONFIG,
+            Self::Barnard => &G_BARNARD_CONFIG,
+            Self::Main => &G_MAIN_CONFIG,
+            Self::DagTest => &G_DAG_TEST_CONFIG,
+            Self::Vega => &G_VEGA_CONFIG,
         }
     }
 
     pub fn boot_nodes(self) -> &'static [MultiaddrWithPeerId] {
         match self {
-            BuiltinNetworkID::Test => G_EMPTY_BOOT_NODES.as_slice(),
-            BuiltinNetworkID::Dev => G_EMPTY_BOOT_NODES.as_slice(),
-            BuiltinNetworkID::Halley => G_HALLEY_BOOT_NODES.as_slice(),
-            BuiltinNetworkID::Proxima => G_PROXIMA_BOOT_NODES.as_slice(),
-            BuiltinNetworkID::Barnard => G_BARNARD_BOOT_NODES.as_slice(),
-            BuiltinNetworkID::Main => G_MAIN_BOOT_NODES.as_slice(),
-            BuiltinNetworkID::DagTest => G_EMPTY_BOOT_NODES.as_slice(),
-            BuiltinNetworkID::Vega => G_VEGA_BOOT_NODES.as_slice(),
+            Self::Test => G_EMPTY_BOOT_NODES.as_slice(),
+            Self::Dev => G_EMPTY_BOOT_NODES.as_slice(),
+            Self::Halley => G_HALLEY_BOOT_NODES.as_slice(),
+            Self::Proxima => G_PROXIMA_BOOT_NODES.as_slice(),
+            Self::Barnard => G_BARNARD_BOOT_NODES.as_slice(),
+            Self::Main => G_MAIN_BOOT_NODES.as_slice(),
+            Self::DagTest => G_EMPTY_BOOT_NODES.as_slice(),
+            Self::Vega => G_VEGA_BOOT_NODES.as_slice(),
         }
     }
 
     pub fn boot_nodes_domain(self) -> String {
         match self {
-            BuiltinNetworkID::Test | BuiltinNetworkID::Dev | BuiltinNetworkID::DagTest => {
-                "localhost".to_string()
-            }
+            Self::Test | Self::Dev | Self::DagTest => "localhost".to_string(),
             _ => format!("{}.seed.starcoin.org", self),
         }
     }
@@ -227,7 +225,7 @@ impl BuiltinNetworkID {
 
 impl From<BuiltinNetworkID> for ChainNetwork {
     fn from(network: BuiltinNetworkID) -> Self {
-        ChainNetwork::new(
+        Self::new(
             ChainNetworkID::Builtin(network),
             network.genesis_config().clone(),
         )
@@ -297,7 +295,7 @@ impl Display for ChainNetworkID {
 
 impl From<BuiltinNetworkID> for ChainNetworkID {
     fn from(network: BuiltinNetworkID) -> Self {
-        ChainNetworkID::Builtin(network)
+        Self::Builtin(network)
     }
 }
 
@@ -332,13 +330,13 @@ impl<'de> Deserialize<'de> for ChainNetworkID {
 }
 
 impl ChainNetworkID {
-    pub const TEST: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::Test);
-    pub const DEV: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::Dev);
-    pub const HALLEY: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::Halley);
-    pub const PROXIMA: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::Proxima);
-    pub const BARNARD: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::Barnard);
-    pub const MAIN: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::Main);
-    pub const DAGTEST: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::DagTest);
+    pub const TEST: Self = Self::Builtin(BuiltinNetworkID::Test);
+    pub const DEV: Self = Self::Builtin(BuiltinNetworkID::Dev);
+    pub const HALLEY: Self = Self::Builtin(BuiltinNetworkID::Halley);
+    pub const PROXIMA: Self = Self::Builtin(BuiltinNetworkID::Proxima);
+    pub const BARNARD: Self = Self::Builtin(BuiltinNetworkID::Barnard);
+    pub const MAIN: Self = Self::Builtin(BuiltinNetworkID::Main);
+    pub const DAGTEST: Self = Self::Builtin(BuiltinNetworkID::DagTest);
 
     pub fn new_builtin(network: BuiltinNetworkID) -> Self {
         Self::Builtin(network)
@@ -436,7 +434,7 @@ impl ChainNetworkID {
 
 impl Default for ChainNetworkID {
     fn default() -> Self {
-        ChainNetworkID::Builtin(BuiltinNetworkID::default())
+        Self::Builtin(BuiltinNetworkID::default())
     }
 }
 
@@ -693,7 +691,7 @@ impl GenesisConfig {
         }
     }
 
-    pub fn load<P>(path: P) -> Result<GenesisConfig>
+    pub fn load<P>(path: P) -> Result<Self>
     where
         P: AsRef<Path>,
     {

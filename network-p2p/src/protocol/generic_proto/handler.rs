@@ -469,7 +469,7 @@ impl NotifsHandlerProto {
             })
             .collect();
 
-        NotifsHandlerProto { protocols }
+        Self { protocols }
     }
 }
 

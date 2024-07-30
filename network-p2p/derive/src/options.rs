@@ -12,7 +12,7 @@ pub struct DeriveOptions {
 
 impl DeriveOptions {
     pub fn new(args: syn::AttributeArgs) -> Self {
-        let mut options = DeriveOptions {
+        let mut options = Self {
             enable_client: false,
             enable_server: false,
         };

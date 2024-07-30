@@ -26,14 +26,14 @@ where
 {
     pub fn get_subscription_id(&self) -> String {
         match self {
-            SubscriptionRecord::Channel(s) => format!("{:p}::{}::Channel", s, type_name::<M>()),
-            SubscriptionRecord::Notifier(s) => format!(
+            Self::Channel(s) => format!("{:p}::{}::Channel", s, type_name::<M>()),
+            Self::Notifier(s) => format!(
                 "{:p}::{}::Notifier({})",
                 s,
                 type_name::<M>(),
                 s.target_service()
             ),
-            SubscriptionRecord::Oneshot(s) => format!("{:p}::{}::Oneshot", s, type_name::<M>()),
+            Self::Oneshot(s) => format!("{:p}::{}::Oneshot", s, type_name::<M>()),
         }
     }
 }

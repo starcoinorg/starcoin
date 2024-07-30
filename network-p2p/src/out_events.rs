@@ -156,7 +156,7 @@ impl OutChannels {
             None
         };
 
-        Ok(OutChannels {
+        Ok(Self {
             event_streams: Vec::new(),
             metrics: Arc::new(metrics),
         })

@@ -27,26 +27,26 @@ pub enum AccumulatorNode {
 
 impl AccumulatorNode {
     pub fn new_internal(index: NodeIndex, left: HashValue, right: HashValue) -> Self {
-        AccumulatorNode::Internal(InternalNode::new(index, left, right))
+        Self::Internal(InternalNode::new(index, left, right))
     }
 
     pub fn new_leaf(index: NodeIndex, value: HashValue) -> Self {
-        AccumulatorNode::Leaf(LeafNode::new(index, value))
+        Self::Leaf(LeafNode::new(index, value))
     }
 
     pub fn hash(&self) -> HashValue {
         match self {
-            AccumulatorNode::Internal(internal) => internal.hash(),
-            AccumulatorNode::Leaf(leaf) => leaf.value(),
-            AccumulatorNode::Empty => *ACCUMULATOR_PLACEHOLDER_HASH,
+            Self::Internal(internal) => internal.hash(),
+            Self::Leaf(leaf) => leaf.value(),
+            Self::Empty => *ACCUMULATOR_PLACEHOLDER_HASH,
         }
     }
 
     pub fn index(&self) -> NodeIndex {
         match self {
-            AccumulatorNode::Internal(internal) => internal.index(),
-            AccumulatorNode::Leaf(leaf) => leaf.index(),
-            AccumulatorNode::Empty => {
+            Self::Internal(internal) => internal.index(),
+            Self::Leaf(leaf) => leaf.index(),
+            Self::Empty => {
                 // bail!("error for get index");
                 *G_NODE_ERROR_INDEX
             }
@@ -55,7 +55,7 @@ impl AccumulatorNode {
 
     pub fn frozen(&mut self) -> Result<()> {
         let _node = match self {
-            AccumulatorNode::Internal(internal) => internal.set_frozen(),
+            Self::Internal(internal) => internal.set_frozen(),
             _ => Ok(()),
         };
         Ok(())
@@ -63,9 +63,9 @@ impl AccumulatorNode {
 
     pub fn is_frozen(&self) -> bool {
         match self {
-            AccumulatorNode::Internal(internal) => internal.is_frozen,
-            AccumulatorNode::Leaf(_) => true,
-            AccumulatorNode::Empty => false,
+            Self::Internal(internal) => internal.is_frozen,
+            Self::Leaf(_) => true,
+            Self::Empty => false,
         }
     }
 }
@@ -81,7 +81,7 @@ pub struct InternalNode {
 
 impl InternalNode {
     pub fn new(index: NodeIndex, left: HashValue, right: HashValue) -> Self {
-        InternalNode {
+        Self {
             index,
             left,
             right,
@@ -119,7 +119,7 @@ pub struct LeafNode {
 
 impl LeafNode {
     pub fn new(index: NodeIndex, hash: HashValue) -> Self {
-        LeafNode { index, hash }
+        Self { index, hash }
     }
 
     pub fn value(&self) -> HashValue {

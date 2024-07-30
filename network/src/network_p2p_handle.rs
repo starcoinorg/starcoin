@@ -45,7 +45,7 @@ impl Networkp2pHandle {
             rpc_protocols: [].to_vec(),
             info: chain_info,
         };
-        Networkp2pHandle { status }
+        Self { status }
     }
 }
 

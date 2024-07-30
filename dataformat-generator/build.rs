@@ -37,7 +37,7 @@ struct DummyObj(Vec<u8>);
 
 impl Default for DummyObj {
     fn default() -> Self {
-        DummyObj(vec![0; 32])
+        Self(vec![0; 32])
     }
 }
 

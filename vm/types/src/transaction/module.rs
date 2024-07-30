@@ -17,8 +17,8 @@ impl From<Module> for Vec<u8> {
     }
 }
 impl Module {
-    pub fn new(code: Vec<u8>) -> Module {
-        Module { code }
+    pub fn new(code: Vec<u8>) -> Self {
+        Self { code }
     }
 
     pub fn code(&self) -> &[u8] {

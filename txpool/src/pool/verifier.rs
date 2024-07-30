@@ -43,7 +43,7 @@ impl<C, S, V> Verifier<C, S, V> {
         id: Arc<AtomicUsize>,
         transaction_to_replace: Option<(S, Arc<V>)>,
     ) -> Self {
-        Verifier {
+        Self {
             client,
             options,
             id,

@@ -223,6 +223,9 @@ default-members = [
     "flexidag",
 ]
 
+[workspace.lints.clippy]
+use_self = "warn"
+
 [profile.dev]
 panic = "unwind"
 

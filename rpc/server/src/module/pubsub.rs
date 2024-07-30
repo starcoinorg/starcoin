@@ -248,23 +248,19 @@ impl ActorService for PubSubService {
 }
 
 impl ActorEventHandler<Self, NewHeadNotification> for PubSubService {
-    fn handle_event(&mut self, msg: NewHeadNotification, _ctx: &mut ServiceContext<PubSubService>) {
+    fn handle_event(&mut self, msg: NewHeadNotification, _ctx: &mut ServiceContext<Self>) {
         send_to_all(&mut self.new_header_subscribers, msg);
     }
 }
 
 impl ActorEventHandler<Self, ContractEventNotification> for PubSubService {
-    fn handle_event(
-        &mut self,
-        msg: ContractEventNotification,
-        _ctx: &mut ServiceContext<PubSubService>,
-    ) {
+    fn handle_event(&mut self, msg: ContractEventNotification, _ctx: &mut ServiceContext<Self>) {
         send_to_all(&mut self.new_event_subscribers, msg);
     }
 }
 
 impl ActorEventHandler<Self, MintBlockEvent> for PubSubService {
-    fn handle_event(&mut self, msg: MintBlockEvent, _ctx: &mut ServiceContext<PubSubService>) {
+    fn handle_event(&mut self, msg: MintBlockEvent, _ctx: &mut ServiceContext<Self>) {
         send_to_all(&mut self.mint_block_subscribers, msg);
     }
 }

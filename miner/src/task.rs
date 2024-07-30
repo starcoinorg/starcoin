@@ -27,12 +27,12 @@ impl std::fmt::Debug for MintTask {
 }
 
 impl MintTask {
-    pub fn new(block_template: BlockTemplate, metrics: Option<MinerMetrics>) -> MintTask {
+    pub fn new(block_template: BlockTemplate, metrics: Option<MinerMetrics>) -> Self {
         let minting_blob = block_template.as_pow_header_blob();
         let metrics_timer = metrics
             .as_ref()
             .map(|metrics| metrics.block_mint_time.start_timer());
-        MintTask {
+        Self {
             minting_blob,
             block_template,
             metrics_timer,

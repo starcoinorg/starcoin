@@ -43,7 +43,7 @@ impl ChainStateService {
 }
 
 impl ServiceFactory<Self> for ChainStateService {
-    fn create(ctx: &mut ServiceContext<ChainStateService>) -> Result<ChainStateService> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let startup_info = storage
@@ -77,7 +77,7 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
     fn handle(
         &mut self,
         msg: StateRequest,
-        _ctx: &mut ServiceContext<ChainStateService>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> Result<StateResponse> {
         let response = match msg {
             StateRequest::Get(access_path) => StateResponse::State(
@@ -130,7 +130,7 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
 }
 
 impl EventHandler<Self, NewHeadBlock> for ChainStateService {
-    fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<ChainStateService>) {
+    fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<Self>) {
         let state_root = msg.executed_block.header().state_root();
         debug!("ChainStateActor change StateRoot to : {:?}", state_root);
         self.service.change_root(state_root);

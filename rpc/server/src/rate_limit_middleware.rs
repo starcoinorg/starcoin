@@ -19,7 +19,7 @@ impl From<ApiQuotaConfig> for QuotaWrapper {
             QuotaDuration::Minute => Quota::per_minute(c.max_burst),
             QuotaDuration::Hour => Quota::per_hour(c.max_burst),
         };
-        QuotaWrapper(q)
+        Self(q)
     }
 }
 

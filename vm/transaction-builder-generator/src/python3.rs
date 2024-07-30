@@ -566,7 +566,7 @@ impl Installer {
         serde_package_name: Option<String>,
         starcoin_package_name: Option<String>,
     ) -> Self {
-        Installer {
+        Self {
             install_dir,
             serde_package_name,
             starcoin_package_name,

@@ -30,15 +30,15 @@ impl BalanceResource {
     pub fn struct_tag_for_token(token_type_tag: StructTag) -> StructTag {
         StructTag {
             address: CORE_CODE_ADDRESS,
-            name: BalanceResource::struct_identifier(),
-            module: BalanceResource::module_identifier(),
+            name: Self::struct_identifier(),
+            module: Self::module_identifier(),
             type_params: vec![TypeTag::Struct(Box::new(token_type_tag))],
         }
     }
 
     // TODO: remove this once the MoveResource trait allows type arguments to `resource_path`.
     pub fn access_path_for(token_type_tag: StructTag) -> DataPath {
-        AccessPath::resource_data_path(BalanceResource::struct_tag_for_token(token_type_tag))
+        AccessPath::resource_data_path(Self::struct_tag_for_token(token_type_tag))
     }
 
     /// Get token code from Balance StructTag, return None if struct tag is not a valid Balance StructTag

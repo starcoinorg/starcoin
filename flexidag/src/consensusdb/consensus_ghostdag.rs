@@ -166,7 +166,7 @@ impl KeyCodec<GhostDag> for Hash {
     }
 
     fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
-        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+        Self::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
     }
 }
 impl ValueCodec<GhostDag> for Arc<GhostdagData> {
@@ -185,7 +185,7 @@ impl KeyCodec<CompactGhostDag> for Hash {
     }
 
     fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
-        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+        Self::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
     }
 }
 impl ValueCodec<CompactGhostDag> for CompactGhostdagData {

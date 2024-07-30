@@ -52,7 +52,7 @@ pub struct GetBlockHeadersByNumber {
 
 impl GetBlockHeadersByNumber {
     pub fn new(number: BlockNumber, step: u64, max_size: u64) -> Self {
-        GetBlockHeadersByNumber {
+        Self {
             number,
             max_size,
             step,

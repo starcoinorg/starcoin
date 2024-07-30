@@ -61,31 +61,26 @@ impl Default for STCUnit {
 }
 
 impl STCUnit {
-    pub fn parse_value(value: &str) -> Result<TokenValue<STCUnit>> {
-        TokenValue::<STCUnit>::from_str(value)
+    pub fn parse_value(value: &str) -> Result<TokenValue<Self>> {
+        TokenValue::<Self>::from_str(value)
     }
 
-    pub fn value_of(self, value: u128) -> TokenValue<STCUnit> {
+    pub fn value_of(self, value: u128) -> TokenValue<Self> {
         TokenValue::new(value, self)
     }
 
-    pub fn units() -> Vec<STCUnit> {
-        vec![
-            STCUnit::NanoSTC,
-            STCUnit::MicroSTC,
-            STCUnit::MilliSTC,
-            STCUnit::STC,
-        ]
+    pub fn units() -> Vec<Self> {
+        vec![Self::NanoSTC, Self::MicroSTC, Self::MilliSTC, Self::STC]
     }
 
-    fn strip_unit_suffix(value: &str) -> (String, STCUnit) {
+    fn strip_unit_suffix(value: &str) -> (String, Self) {
         let value_lower = value.trim().to_lowercase();
-        for unit in STCUnit::units() {
+        for unit in Self::units() {
             if let Some(v) = value_lower.strip_suffix(unit.symbol_lowercase()) {
                 return (v.trim().to_string(), unit);
             }
         }
-        (value_lower, STCUnit::default())
+        (value_lower, Self::default())
     }
 }
 
@@ -123,7 +118,7 @@ impl FromStr for STCUnit {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.trim();
-        for unit in STCUnit::units() {
+        for unit in Self::units() {
             if unit.symbol().eq_ignore_ascii_case(s) {
                 return Ok(unit);
             }

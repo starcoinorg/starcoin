@@ -186,7 +186,7 @@ impl TryFrom<Vec<u8>> for StartupInfo {
     type Error = anyhow::Error;
 
     fn try_from(value: Vec<u8>) -> Result<Self> {
-        StartupInfo::decode(value.as_slice())
+        Self::decode(value.as_slice())
     }
 }
 
@@ -235,7 +235,7 @@ impl TryFrom<Vec<u8>> for SnapshotRange {
     type Error = anyhow::Error;
 
     fn try_from(value: Vec<u8>) -> Result<Self> {
-        SnapshotRange::decode(value.as_slice())
+        Self::decode(value.as_slice())
     }
 }
 
@@ -272,7 +272,7 @@ impl TryFrom<Vec<u8>> for BarnardHardFork {
     type Error = anyhow::Error;
 
     fn try_from(value: Vec<u8>) -> Result<Self> {
-        BarnardHardFork::decode(value.as_slice())
+        Self::decode(value.as_slice())
     }
 }
 
@@ -309,7 +309,7 @@ impl TryFrom<Vec<u8>> for DragonHardFork {
     type Error = anyhow::Error;
 
     fn try_from(value: Vec<u8>) -> Result<Self> {
-        DragonHardFork::decode(value.as_slice())
+        Self::decode(value.as_slice())
     }
 }
 

@@ -52,14 +52,14 @@ impl NodeIndex {
         assume!(1u64 << level > 0); // bitwise and integer operations don't mix.
         let level_one_bits = (1u64 << level as u64) - 1;
         let shifted_pos = pos << (level + 1) as u64;
-        NodeIndex(shifted_pos | level_one_bits)
+        Self(shifted_pos | level_one_bits)
     }
     pub fn from_leaf_index(leaf_index: u64) -> Self {
         Self::from_level_and_pos(0, leaf_index)
     }
 
     pub fn from_inorder_index(index: u64) -> Self {
-        NodeIndex(index)
+        Self(index)
     }
 
     // Given a leaf index, calculate the position of a minimum root which contains this leaf

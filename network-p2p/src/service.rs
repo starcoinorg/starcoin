@@ -94,7 +94,7 @@ pub struct ReportHandle {
 
 impl From<PeersetHandle> for ReportHandle {
     fn from(peerset_handle: PeersetHandle) -> Self {
-        ReportHandle {
+        Self {
             inner: peerset_handle,
         }
     }
@@ -131,7 +131,7 @@ impl<T: BusinessLayerHandle + Send> NetworkWorker<T> {
     /// Returns a `NetworkWorker` that implements `Future` and must be regularly polled in order
     /// for the network processing to advance. From it, you can extract a `NetworkService` using
     /// `worker.service()`. The `NetworkService` can be shared through the codebase.
-    pub fn new(params: Params<T>) -> errors::Result<NetworkWorker<T>> {
+    pub fn new(params: Params<T>) -> errors::Result<Self> {
         // Ensure the listen addresses are consistent with the transport.
         ensure_addresses_consistent_with_transport(
             params.network_config.listen_addresses.iter(),
@@ -345,7 +345,7 @@ impl<T: BusinessLayerHandle + Send> NetworkWorker<T> {
                 .map(|metrics| metrics.notifications_sizes.clone()),
         });
 
-        Ok(NetworkWorker {
+        Ok(Self {
             network_service: swarm,
             service,
             from_worker,

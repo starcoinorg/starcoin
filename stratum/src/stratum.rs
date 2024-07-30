@@ -123,7 +123,7 @@ impl ActorService for Stratum {
 }
 
 impl EventHandler<Self, MintBlockEvent> for Stratum {
-    fn handle_event(&mut self, event: MintBlockEvent, _ctx: &mut ServiceContext<Stratum>) {
+    fn handle_event(&mut self, event: MintBlockEvent, _ctx: &mut ServiceContext<Self>) {
         self.dispatch_job_to_clients(event);
     }
 }

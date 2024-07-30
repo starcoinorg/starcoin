@@ -304,7 +304,7 @@ impl RequestResponsesBehaviour {
         &mut self,
         protocol: String,
         handler: RequestResponseHandler<GenericCodec>,
-    ) -> <RequestResponsesBehaviour as NetworkBehaviour>::ConnectionHandler {
+    ) -> <Self as NetworkBehaviour>::ConnectionHandler {
         let mut handlers: HashMap<_, _> = self
             .protocols
             .iter_mut()

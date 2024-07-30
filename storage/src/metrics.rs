@@ -73,10 +73,10 @@ pub enum ResultType {
 impl ResultType {
     pub fn into_str(self) -> &'static str {
         match self {
-            ResultType::NONE => "none",
-            ResultType::ERROR => "error",
-            ResultType::OK => "ok",
-            ResultType::SOME => "some",
+            Self::NONE => "none",
+            Self::ERROR => "error",
+            Self::OK => "ok",
+            Self::SOME => "some",
         }
     }
 }

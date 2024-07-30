@@ -23,7 +23,7 @@ pub struct CpuSolver {
 }
 
 impl CpuSolver {
-    pub fn new(config: MinerClientConfig, time_service: Arc<dyn TimeService>) -> CpuSolver {
+    pub fn new(config: MinerClientConfig, time_service: Arc<dyn TimeService>) -> Self {
         Self {
             config,
             time_service,

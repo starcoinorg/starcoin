@@ -169,7 +169,7 @@ impl WorkerId {
             .map_err(|_| anyhow::anyhow!("Decode worker id failed"))?
             .try_into()
             .map_err(|_| anyhow::anyhow!("Invalid length of worker id"))?;
-        Ok(WorkerId { buff: worker_id })
+        Ok(Self { buff: worker_id })
     }
     pub fn to_hex(&self) -> String {
         hex::encode(self.buff)
@@ -244,7 +244,7 @@ pub struct JobId {
     pub job_id: [u8; 8],
 }
 impl JobId {
-    pub fn from_bob(minting_bob: &[u8]) -> JobId {
+    pub fn from_bob(minting_bob: &[u8]) -> Self {
         let mut job_id = [0u8; 8];
         job_id.copy_from_slice(&minting_bob[0..8]);
         Self { job_id }

@@ -27,7 +27,7 @@ pub struct PeerNewBlock {
 
 impl PeerNewBlock {
     pub fn new(peer_id: PeerId, new_block: Block) -> Self {
-        PeerNewBlock { peer_id, new_block }
+        Self { peer_id, new_block }
     }
 
     pub fn get_peer_id(&self) -> PeerId {

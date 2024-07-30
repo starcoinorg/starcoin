@@ -31,7 +31,7 @@ impl<D> RuntimeLevelFilter<D> {
     pub fn new(drain: D, level: slog::Level) -> Self {
         let mut s = G_SLOG_LEVEL.lock().unwrap();
         *s = level;
-        RuntimeLevelFilter {
+        Self {
             drain,
             level: G_SLOG_LEVEL.clone(),
         }

@@ -77,7 +77,7 @@ impl TxPoolService {
         self.inner.storage.clone()
     }
 
-    pub(crate) fn from_inner(inner: Inner) -> TxPoolService {
+    pub(crate) fn from_inner(inner: Inner) -> Self {
         Self { inner }
     }
     pub(crate) fn get_inner(&self) -> Inner {

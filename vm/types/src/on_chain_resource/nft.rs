@@ -37,7 +37,7 @@ impl FromStr for NFTType {
         );
         let meta_type = parse_type_tag(parts[0])?;
         let body_type = parse_type_tag(parts[1])?;
-        Ok(NFTType {
+        Ok(Self {
             meta_type,
             body_type,
         })
@@ -51,7 +51,7 @@ impl<'de> Deserialize<'de> for NFTType {
     {
         if deserializer.is_human_readable() {
             let s = <String>::deserialize(deserializer)?;
-            NFTType::from_str(&s).map_err(D::Error::custom)
+            Self::from_str(&s).map_err(D::Error::custom)
         } else {
             // In order to preserve the Serde data model and help analysis tools,
             // make sure to wrap our value in a container with the same name
@@ -64,7 +64,7 @@ impl<'de> Deserialize<'de> for NFTType {
             }
 
             let value = Value::deserialize(deserializer)?;
-            Ok(NFTType {
+            Ok(Self {
                 meta_type: value.meta_type,
                 body_type: value.body_type,
             })
@@ -112,7 +112,7 @@ impl FromStr for NFTUUID {
         let (nft_type_str, id_str) = s.split_at(idx);
         let nft_type = NFTType::from_str(nft_type_str)?;
         let id = id_str.strip_prefix('/').unwrap_or(id_str).parse()?;
-        Ok(NFTUUID { nft_type, id })
+        Ok(Self { nft_type, id })
     }
 }
 
@@ -123,7 +123,7 @@ impl<'de> Deserialize<'de> for NFTUUID {
     {
         if deserializer.is_human_readable() {
             let s = <String>::deserialize(deserializer)?;
-            NFTUUID::from_str(&s).map_err(D::Error::custom)
+            Self::from_str(&s).map_err(D::Error::custom)
         } else {
             // In order to preserve the Serde data model and help analysis tools,
             // make sure to wrap our value in a container with the same name
@@ -136,7 +136,7 @@ impl<'de> Deserialize<'de> for NFTUUID {
             }
 
             let value = Value::deserialize(deserializer)?;
-            Ok(NFTUUID {
+            Ok(Self {
                 nft_type: value.nft_type,
                 id: value.id,
             })
@@ -170,7 +170,7 @@ pub struct Metadata {
 }
 
 impl Metadata {
-    pub fn from_json(json_value: serde_json::Value) -> Result<Metadata> {
+    pub fn from_json(json_value: serde_json::Value) -> Result<Self> {
         let meta_json = json_value
             .as_object()
             .ok_or_else(|| format_err!("expect a json object, but got : {:?}", json_value))?;
@@ -236,7 +236,7 @@ pub struct NFT {
 }
 
 impl NFT {
-    pub fn from_json(nft_type: NFTType, json_value: serde_json::Value) -> Result<NFT> {
+    pub fn from_json(nft_type: NFTType, json_value: serde_json::Value) -> Result<Self> {
         let nft_json = json_value
             .as_object()
             .ok_or_else(|| format_err!("expect a json object, but got : {:?}", json_value))?;
@@ -309,7 +309,7 @@ impl NFTGallery {
         }
     }
 
-    pub fn from_json(nft_type: NFTType, json_value: serde_json::Value) -> Result<NFTGallery> {
+    pub fn from_json(nft_type: NFTType, json_value: serde_json::Value) -> Result<Self> {
         let gallery_json = json_value
             .as_object()
             .ok_or_else(|| format_err!("expect a json object, but got : {:?}", json_value))?;
@@ -321,7 +321,7 @@ impl NFTGallery {
             .into_iter()
             .map(|item| NFT::from_json(nft_type.clone(), item))
             .collect();
-        Ok(NFTGallery { items: items? })
+        Ok(Self { items: items? })
     }
 }
 
@@ -361,7 +361,7 @@ impl IdentifierNFT {
         }
     }
 
-    pub fn from_json(nft_type: NFTType, json_value: serde_json::Value) -> Result<IdentifierNFT> {
+    pub fn from_json(nft_type: NFTType, json_value: serde_json::Value) -> Result<Self> {
         let ident_json = json_value
             .as_object()
             .ok_or_else(|| format_err!("expect a json object, but got : {:?}", json_value))?;
@@ -385,7 +385,7 @@ impl IdentifierNFT {
             .map(|nft_value| NFT::from_json(nft_type.clone(), nft_value))
             .transpose()?;
 
-        Ok(IdentifierNFT { nft_type, nft })
+        Ok(Self { nft_type, nft })
     }
 }
 

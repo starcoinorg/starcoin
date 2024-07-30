@@ -30,7 +30,7 @@ pub struct SparseMerkleProof {
 impl SparseMerkleProof {
     /// Constructs a new `SparseMerkleProof` using leaf and a list of siblings.
     pub fn new(leaf: Option<(HashValue, HashValue)>, siblings: Vec<HashValue>) -> Self {
-        SparseMerkleProof { leaf, siblings }
+        Self { leaf, siblings }
     }
 
     /// Returns the leaf node in this proof.

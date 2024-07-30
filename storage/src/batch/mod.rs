@@ -53,6 +53,6 @@ where
             .into_iter()
             .map(|(key, op)| Ok((KeyCodec::encode_key(&key)?, op.into_raw_op()?)))
             .collect();
-        Ok(WriteBatch::new_with_rows(rows?))
+        Ok(Self::new_with_rows(rows?))
     }
 }

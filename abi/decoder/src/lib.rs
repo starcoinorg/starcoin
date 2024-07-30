@@ -97,12 +97,12 @@ fn value_to_json(origin: AnnotatedMoveValue) -> serde_json::Value {
 }
 impl From<AnnotatedMoveStruct> for DecodedMoveValue {
     fn from(origin: AnnotatedMoveStruct) -> Self {
-        DecodedMoveValue(struct_to_json(origin))
+        Self(struct_to_json(origin))
     }
 }
 impl From<AnnotatedMoveValue> for DecodedMoveValue {
     fn from(origin: AnnotatedMoveValue) -> Self {
-        DecodedMoveValue(value_to_json(origin))
+        Self(value_to_json(origin))
     }
 }
 

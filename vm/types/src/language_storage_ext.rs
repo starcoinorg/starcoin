@@ -25,7 +25,7 @@ impl FromStr for FunctionId {
         }
         let module_id = parse_module_id(splits[1])?;
         let function = Identifier::new(splits[0])?;
-        Ok(FunctionId {
+        Ok(Self {
             module: module_id,
             function,
         })

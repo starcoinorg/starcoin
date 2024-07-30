@@ -32,11 +32,11 @@ impl FromStr for Language {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "python3" => Ok(Language::Python3),
-            "rust" => Ok(Language::Rust),
-            "cpp" => Ok(Language::Cpp),
-            "java" => Ok(Language::Java),
-            "dart" => Ok(Language::Dart),
+            "python3" => Ok(Self::Python3),
+            "rust" => Ok(Self::Rust),
+            "cpp" => Ok(Self::Cpp),
+            "java" => Ok(Self::Java),
+            "dart" => Ok(Self::Dart),
             _ => Err(format!("Unsupported language: {}", s)),
         }
     }

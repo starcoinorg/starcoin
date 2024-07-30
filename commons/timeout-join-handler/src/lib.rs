@@ -20,9 +20,9 @@ pub enum ThreadJoinError<T> {
 impl<T> std::fmt::Debug for ThreadJoinError<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let msg = match self {
-            ThreadJoinError::Timeout(_) => "timeout".to_string(),
-            ThreadJoinError::Panic(msg) => format!("panic({})", msg),
-            ThreadJoinError::Unknown(_) => "unknown".to_string(),
+            Self::Timeout(_) => "timeout".to_string(),
+            Self::Panic(msg) => format!("panic({})", msg),
+            Self::Unknown(_) => "unknown".to_string(),
         };
         write!(f, "ThreadJoinError({})", msg)
     }
@@ -30,15 +30,15 @@ impl<T> std::fmt::Debug for ThreadJoinError<T> {
 
 impl<T> ThreadJoinError<T> {
     pub fn is_timeout(&self) -> bool {
-        matches!(self, ThreadJoinError::Timeout(_))
+        matches!(self, Self::Timeout(_))
     }
 
     pub fn is_panic(&self) -> bool {
-        matches!(self, ThreadJoinError::Panic(_))
+        matches!(self, Self::Panic(_))
     }
 
     pub fn into_handle(self) -> Option<TimeoutJoinHandle<T>> {
-        if let ThreadJoinError::Timeout(handle) = self {
+        if let Self::Timeout(handle) = self {
             Some(handle)
         } else {
             None
@@ -46,7 +46,7 @@ impl<T> ThreadJoinError<T> {
     }
 
     pub fn panic_message(&self) -> Option<&'static str> {
-        if let ThreadJoinError::Panic(msg) = self {
+        if let Self::Panic(msg) = self {
             Some(msg)
         } else {
             None

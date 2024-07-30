@@ -76,9 +76,9 @@ impl FromStr for FilePathOrHex {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Some(hex) = s.strip_prefix("0x") {
-            Ok(FilePathOrHex::Hex(hex::decode(hex)?))
+            Ok(Self::Hex(hex::decode(hex)?))
         } else {
-            Ok(FilePathOrHex::Path(PathBuf::from(s)))
+            Ok(Self::Path(PathBuf::from(s)))
         }
     }
 }
@@ -86,9 +86,9 @@ impl FromStr for FilePathOrHex {
 impl FilePathOrHex {
     pub fn as_bytes(&self) -> anyhow::Result<Vec<u8>> {
         Ok(match self {
-            FilePathOrHex::Path(path) => std::fs::read(path.as_path())
+            Self::Path(path) => std::fs::read(path.as_path())
                 .map_err(|e| format_err!("read file {:?} error:{:?}", path, e))?,
-            FilePathOrHex::Hex(bytes) => bytes.clone(),
+            Self::Hex(bytes) => bytes.clone(),
         })
     }
 }
@@ -175,7 +175,7 @@ impl EventDataView {
     pub fn new(event_type_tag: &TypeTag, event_data: &[u8]) -> anyhow::Result<Self> {
         if event_type_tag == &TypeTag::Struct(Box::new(DepositEvent::struct_tag())) {
             if let Ok(received_event) = DepositEvent::try_from_bytes(event_data) {
-                Ok(EventDataView::ReceivedPayment {
+                Ok(Self::ReceivedPayment {
                     amount: received_event.amount(),
                     token_code: received_event.token_code().to_string(),
                     metadata: StrView(received_event.metadata().clone()),
@@ -185,7 +185,7 @@ impl EventDataView {
             }
         } else if event_type_tag == &TypeTag::Struct(Box::new(WithdrawEvent::struct_tag())) {
             if let Ok(sent_event) = WithdrawEvent::try_from_bytes(event_data) {
-                Ok(EventDataView::SentPayment {
+                Ok(Self::SentPayment {
                     amount: sent_event.amount(),
                     token_code: sent_event.token_code().to_string(),
                     metadata: StrView(sent_event.metadata().clone()),
@@ -195,7 +195,7 @@ impl EventDataView {
             }
         } else if event_type_tag == &TypeTag::Struct(Box::new(MintEvent::struct_tag())) {
             if let Ok(mint_event) = MintEvent::try_from_bytes(event_data) {
-                Ok(EventDataView::Mint {
+                Ok(Self::Mint {
                     amount: mint_event.amount(),
                     token_code: mint_event.token_code().to_string(),
                 })
@@ -204,7 +204,7 @@ impl EventDataView {
             }
         } else if event_type_tag == &TypeTag::Struct(Box::new(ProposalCreatedEvent::struct_tag())) {
             if let Ok(event) = ProposalCreatedEvent::try_from_bytes(event_data) {
-                Ok(EventDataView::ProposalCreated {
+                Ok(Self::ProposalCreated {
                     proposal_id: event.proposal_id,
                     proposer: format!("{}", event.proposer),
                 })
@@ -213,7 +213,7 @@ impl EventDataView {
             }
         } else if event_type_tag == &TypeTag::Struct(Box::new(VoteChangedEvent::struct_tag())) {
             if let Ok(event) = VoteChangedEvent::try_from_bytes(event_data) {
-                Ok(EventDataView::VoteChanged {
+                Ok(Self::VoteChanged {
                     proposal_id: event.proposal_id,
                     proposer: format!("{}", event.proposer),
                     voter: format!("{}", event.voter),
@@ -225,7 +225,7 @@ impl EventDataView {
             }
         } else if event_type_tag == &TypeTag::Struct(Box::new(AcceptTokenEvent::struct_tag())) {
             if let Ok(event) = AcceptTokenEvent::try_from_bytes(event_data) {
-                Ok(EventDataView::AcceptToken {
+                Ok(Self::AcceptToken {
                     token_code: event.token_code().to_string(),
                 })
             } else {
@@ -236,7 +236,7 @@ impl EventDataView {
                 .map_err(|_| format_err!("Unable to parse {}", BlockRewardEvent::struct_tag()))?
                 .into())
         } else {
-            Ok(EventDataView::Unknown {
+            Ok(Self::Unknown {
                 type_tag: event_type_tag.clone().into(),
                 data: event_data.to_vec(),
             })
@@ -245,7 +245,7 @@ impl EventDataView {
 }
 impl From<BlockRewardEvent> for EventDataView {
     fn from(event: BlockRewardEvent) -> Self {
-        EventDataView::BlockReward {
+        Self::BlockReward {
             block_number: event.block_number,
 
             block_reward: event.block_reward,
@@ -256,7 +256,7 @@ impl From<BlockRewardEvent> for EventDataView {
 }
 impl From<TransactionEventView> for EventView {
     fn from(event_view: TransactionEventView) -> Self {
-        EventView {
+        Self {
             key: event_view.event_key,
             sequence_number: event_view.event_seq_number.0,
             data: EventDataView::new(&event_view.type_tag.0, &event_view.data.0).unwrap_or({
@@ -271,9 +271,9 @@ impl From<TransactionEventView> for EventView {
 
 impl From<ContractEvent> for EventView {
     /// Tries to convert the provided byte array into Event Key.
-    fn from(event: ContractEvent) -> EventView {
+    fn from(event: ContractEvent) -> Self {
         let event_data = EventDataView::new(event.type_tag(), event.event_data());
-        EventView {
+        Self {
             key: *event.key(),
             sequence_number: event.sequence_number(),
             data: event_data.unwrap_or(EventDataView::Unknown {

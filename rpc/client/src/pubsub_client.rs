@@ -23,7 +23,7 @@ impl std::fmt::Debug for PubSubClient {
 
 impl From<RpcChannel> for PubSubClient {
     fn from(channel: RpcChannel) -> Self {
-        PubSubClient {
+        Self {
             client: channel.into(),
         }
     }

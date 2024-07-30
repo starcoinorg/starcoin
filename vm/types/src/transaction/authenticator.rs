@@ -48,8 +48,8 @@ pub enum Scheme {
 impl fmt::Display for Scheme {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let display = match self {
-            Scheme::Ed25519 => "Ed25519",
-            Scheme::MultiEd25519 => "MultiEd25519",
+            Self::Ed25519 => "Ed25519",
+            Self::MultiEd25519 => "MultiEd25519",
         };
         write!(f, "Scheme::{}", display)
     }
@@ -189,15 +189,15 @@ impl AuthenticationKey {
     /// The number of bytes in an authentication key.
     pub const LENGTH: usize = 32;
 
-    pub const DUMMY_KEY: [u8; AuthenticationKey::LENGTH] = [0; AuthenticationKey::LENGTH];
+    pub const DUMMY_KEY: [u8; Self::LENGTH] = [0; Self::LENGTH];
 
     /// Create an authentication key from a preimage by taking its sha3 hash
-    pub fn from_preimage(preimage: &AuthenticationKeyPreimage) -> AuthenticationKey {
-        AuthenticationKey::new(*HashValue::sha3_256_of(&preimage.0).as_ref())
+    pub fn from_preimage(preimage: &AuthenticationKeyPreimage) -> Self {
+        Self::new(*HashValue::sha3_256_of(&preimage.0).as_ref())
     }
 
     /// Create an authentication key from an Ed25519 public key
-    pub fn ed25519(public_key: &Ed25519PublicKey) -> AuthenticationKey {
+    pub fn ed25519(public_key: &Ed25519PublicKey) -> Self {
         Self::from_preimage(&AuthenticationKeyPreimage::ed25519(public_key))
     }
 
@@ -231,7 +231,7 @@ impl AuthenticationKey {
     pub fn random() -> Self {
         let mut rng = OsRng;
         let buf: [u8; Self::LENGTH] = rng.gen();
-        AuthenticationKey::new(buf)
+        Self::new(buf)
     }
 
     /// Check the auth key is dummy empty key
@@ -257,12 +257,12 @@ impl AuthenticationKeyPreimage {
     }
 
     /// Construct a preimage from an Ed25519 public key
-    pub fn ed25519(public_key: &Ed25519PublicKey) -> AuthenticationKeyPreimage {
+    pub fn ed25519(public_key: &Ed25519PublicKey) -> Self {
         Self::new(public_key.to_bytes().to_vec(), Scheme::Ed25519)
     }
 
     /// Construct a preimage from a MultiEd25519 public key
-    pub fn multi_ed25519(public_key: &MultiEd25519PublicKey) -> AuthenticationKeyPreimage {
+    pub fn multi_ed25519(public_key: &MultiEd25519PublicKey) -> Self {
         Self::new(public_key.to_bytes(), Scheme::MultiEd25519)
     }
 
@@ -287,21 +287,21 @@ impl fmt::Display for TransactionAuthenticator {
 impl TryFrom<&[u8]> for AuthenticationKey {
     type Error = CryptoMaterialError;
 
-    fn try_from(bytes: &[u8]) -> std::result::Result<AuthenticationKey, CryptoMaterialError> {
+    fn try_from(bytes: &[u8]) -> std::result::Result<Self, CryptoMaterialError> {
         if bytes.len() != Self::LENGTH {
             return Err(CryptoMaterialError::WrongLengthError);
         }
         let mut addr = [0u8; Self::LENGTH];
         addr.copy_from_slice(bytes);
-        Ok(AuthenticationKey(addr))
+        Ok(Self(addr))
     }
 }
 
 impl TryFrom<Vec<u8>> for AuthenticationKey {
     type Error = CryptoMaterialError;
 
-    fn try_from(bytes: Vec<u8>) -> std::result::Result<AuthenticationKey, CryptoMaterialError> {
-        AuthenticationKey::try_from(&bytes[..])
+    fn try_from(bytes: Vec<u8>) -> std::result::Result<Self, CryptoMaterialError> {
+        Self::try_from(&bytes[..])
     }
 }
 
@@ -313,7 +313,7 @@ impl FromStr for AuthenticationKey {
             !s.is_empty(),
             "authentication key string should not be empty.",
         );
-        Ok(AuthenticationKey::from_encoded_string(s)?)
+        Ok(Self::from_encoded_string(s)?)
     }
 }
 
@@ -361,11 +361,11 @@ impl ValidCryptoMaterial for AccountPublicKey {
 
 impl AccountPublicKey {
     pub fn single(public_key: Ed25519PublicKey) -> Self {
-        AccountPublicKey::Single(public_key)
+        Self::Single(public_key)
     }
 
     pub fn multi(public_keys: Vec<Ed25519PublicKey>, threshold: u8) -> Result<Self> {
-        Ok(AccountPublicKey::Multi(MultiEd25519PublicKey::new(
+        Ok(Self::Multi(MultiEd25519PublicKey::new(
             public_keys,
             threshold,
         )?))

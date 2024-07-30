@@ -155,7 +155,7 @@ impl<T: BusinessLayerHandle + Send> Behaviour<T> {
         disco_config: DiscoveryConfig,
         request_response_protocols: Vec<request_responses::ProtocolConfig>,
     ) -> Result<Self, request_responses::RegisterError> {
-        Ok(Behaviour {
+        Ok(Self {
             protocol,
             // debug_info: debug_info::DebugInfoBehaviour::new(user_agent, local_public_key),
             peer_info: peer_info::PeerInfoBehaviour::new(user_agent, local_public_key),
@@ -268,7 +268,7 @@ impl From<CustomMessageOutcome> for BehaviourOut {
                 generic_data,
                 notif_protocols,
                 rpc_protocols,
-            } => BehaviourOut::NotificationStreamOpened {
+            } => Self::NotificationStreamOpened {
                 remote,
                 protocol,
                 notifications_sink,
@@ -280,20 +280,20 @@ impl From<CustomMessageOutcome> for BehaviourOut {
                 remote,
                 protocol,
                 notifications_sink,
-            } => BehaviourOut::NotificationStreamReplaced {
+            } => Self::NotificationStreamReplaced {
                 remote,
                 protocol,
                 notifications_sink,
             },
             CustomMessageOutcome::NotificationStreamClosed { remote, protocol } => {
-                BehaviourOut::NotificationStreamClosed { remote, protocol }
+                Self::NotificationStreamClosed { remote, protocol }
             }
             CustomMessageOutcome::NotificationsReceived { remote, messages } => {
-                BehaviourOut::NotificationsReceived { remote, messages }
+                Self::NotificationsReceived { remote, messages }
             }
-            CustomMessageOutcome::None => BehaviourOut::None,
+            CustomMessageOutcome::None => Self::None,
             CustomMessageOutcome::Banned(peer_id, duration) => {
-                BehaviourOut::BannedRequest(peer_id, duration)
+                Self::BannedRequest(peer_id, duration)
             }
         }
     }
@@ -306,7 +306,7 @@ impl From<Event> for BehaviourOut {
                 peer,
                 protocol,
                 result,
-            } => BehaviourOut::InboundRequest {
+            } => Self::InboundRequest {
                 peer,
                 protocol,
                 result,
@@ -316,22 +316,20 @@ impl From<Event> for BehaviourOut {
                 protocol,
                 duration,
                 result,
-            } => BehaviourOut::RequestFinished {
+            } => Self::RequestFinished {
                 peer,
                 protocol,
                 duration,
                 result,
             },
-            Event::ReputationChanges { peer, changes } => {
-                BehaviourOut::ReputationChanges { peer, changes }
-            }
+            Event::ReputationChanges { peer, changes } => Self::ReputationChanges { peer, changes },
         }
     }
 }
 impl From<peer_info::PeerInfoEvent> for BehaviourOut {
     fn from(event: peer_info::PeerInfoEvent) -> Self {
         let peer_info::PeerInfoEvent::Identified { peer_id, info } = event;
-        BehaviourOut::PeerIdentify { peer_id, info }
+        Self::PeerIdentify { peer_id, info }
     }
 }
 
@@ -343,22 +341,20 @@ impl From<DiscoveryOut> for BehaviourOut {
                 // to Kademlia is handled by the `Identify` protocol, part of the
                 // `PeerInfoBehaviour`. See the `NetworkBehaviourEventProcess`
                 // implementation for `PeerInfoEvent`.
-                BehaviourOut::None
+                Self::None
             }
-            DiscoveryOut::Discovered(peer_id) => BehaviourOut::Discovered(peer_id),
+            DiscoveryOut::Discovered(peer_id) => Self::Discovered(peer_id),
             DiscoveryOut::ValueFound(results, duration) => {
-                BehaviourOut::Dht(DhtEvent::ValueFound(results), duration)
+                Self::Dht(DhtEvent::ValueFound(results), duration)
             }
             DiscoveryOut::ValueNotFound(key, duration) => {
-                BehaviourOut::Dht(DhtEvent::ValueNotFound(key), duration)
+                Self::Dht(DhtEvent::ValueNotFound(key), duration)
             }
-            DiscoveryOut::ValuePut(key, duration) => {
-                BehaviourOut::Dht(DhtEvent::ValuePut(key), duration)
-            }
+            DiscoveryOut::ValuePut(key, duration) => Self::Dht(DhtEvent::ValuePut(key), duration),
             DiscoveryOut::ValuePutFailed(key, duration) => {
-                BehaviourOut::Dht(DhtEvent::ValuePutFailed(key), duration)
+                Self::Dht(DhtEvent::ValuePutFailed(key), duration)
             }
-            DiscoveryOut::RandomKademliaStarted => BehaviourOut::RandomKademliaStarted,
+            DiscoveryOut::RandomKademliaStarted => Self::RandomKademliaStarted,
         }
     }
 }

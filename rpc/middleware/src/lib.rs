@@ -24,9 +24,9 @@ enum CallType {
 impl fmt::Display for CallType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let call_type = match self {
-            CallType::MethodCall => "method",
-            CallType::Notification => "notification",
-            CallType::Invalid => "invalid",
+            Self::MethodCall => "method",
+            Self::Notification => "notification",
+            Self::Invalid => "invalid",
         };
         write!(f, "{}", call_type)
     }
@@ -43,20 +43,20 @@ struct RpcCallRecord {
 impl RpcCallRecord {
     pub fn with_call(call: &Call) -> Self {
         match call {
-            Call::MethodCall(method_call) => RpcCallRecord::new(
+            Call::MethodCall(method_call) => Self::new(
                 id_to_string(&method_call.id),
                 Some(method_call.method.clone()),
                 CallType::MethodCall,
                 method_call.params.clone(),
             ),
-            Call::Notification(notification) => RpcCallRecord::new(
+            Call::Notification(notification) => Self::new(
                 "0".to_owned(),
                 Some(notification.method.clone()),
                 CallType::Notification,
                 notification.params.clone(),
             ),
             Call::Invalid { id } => {
-                RpcCallRecord::new(id_to_string(id), None, CallType::Invalid, Params::None)
+                Self::new(id_to_string(id), None, CallType::Invalid, Params::None)
             }
         }
     }

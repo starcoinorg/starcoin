@@ -35,8 +35,8 @@ impl TokenInfo {
     pub fn struct_tag_for(token_type_tag: StructTag) -> StructTag {
         StructTag {
             address: CORE_CODE_ADDRESS,
-            module: TokenInfo::module_identifier(),
-            name: TokenInfo::struct_identifier(),
+            module: Self::module_identifier(),
+            name: Self::struct_identifier(),
             type_params: vec![TypeTag::Struct(Box::new(token_type_tag))],
         }
     }
@@ -44,12 +44,12 @@ impl TokenInfo {
     pub fn resource_path_for(token_type_tag: StructTag) -> AccessPath {
         AccessPath::resource_access_path(
             token_type_tag.address,
-            TokenInfo::struct_tag_for(token_type_tag),
+            Self::struct_tag_for(token_type_tag),
         )
     }
 
     pub fn data_path_for(token_type_tag: StructTag) -> DataPath {
-        AccessPath::resource_data_path(TokenInfo::struct_tag_for(token_type_tag))
+        AccessPath::resource_data_path(Self::struct_tag_for(token_type_tag))
     }
 
     pub fn try_from_bytes(bytes: &[u8]) -> Result<Self> {

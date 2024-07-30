@@ -24,7 +24,7 @@ pub struct LoopTaskService {
 }
 
 impl ServiceFactory<Self> for LoopTaskService {
-    fn create(ctx: &mut ServiceContext<LoopTaskService>) -> Result<LoopTaskService> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         Ok(Self {
             cal_service: ctx.service_ref::<CalService>()?.clone(),
             task_status: None,
@@ -40,7 +40,7 @@ pub struct StartTaskEvent {
 }
 
 impl EventHandler<Self, StartTaskEvent> for LoopTaskService {
-    fn handle_event(&mut self, msg: StartTaskEvent, ctx: &mut ServiceContext<LoopTaskService>) {
+    fn handle_event(&mut self, msg: StartTaskEvent, ctx: &mut ServiceContext<Self>) {
         if self.task_status.is_some() {
             error!("Exist a running task.");
             return;
@@ -81,11 +81,7 @@ pub struct TaskStatusUpdateEvent {
 }
 
 impl EventHandler<Self, TaskStatusUpdateEvent> for LoopTaskService {
-    fn handle_event(
-        &mut self,
-        msg: TaskStatusUpdateEvent,
-        _ctx: &mut ServiceContext<LoopTaskService>,
-    ) {
+    fn handle_event(&mut self, msg: TaskStatusUpdateEvent, _ctx: &mut ServiceContext<Self>) {
         if let Some(task_status) = self.task_status.as_mut() {
             task_status.finished_number = Some(msg.finished_number);
             if task_status.target_number == msg.finished_number {
@@ -107,7 +103,7 @@ impl ServiceHandler<Self, GetTaskStatus> for LoopTaskService {
     fn handle(
         &mut self,
         _msg: GetTaskStatus,
-        _ctx: &mut ServiceContext<LoopTaskService>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> Option<TaskStatus> {
         self.task_status.clone()
     }

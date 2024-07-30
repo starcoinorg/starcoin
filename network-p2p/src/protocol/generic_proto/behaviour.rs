@@ -230,34 +230,34 @@ impl PeerState {
     /// that is open for custom protocol traffic.
     fn get_open(&self) -> Option<&NotificationsSink> {
         match self {
-            PeerState::Enabled { connections, .. } => connections
+            Self::Enabled { connections, .. } => connections
                 .iter()
                 .filter_map(|(_, s)| match s {
                     ConnectionState::Open(s) => Some(s),
                     _ => None,
                 })
                 .next(),
-            PeerState::Poisoned => None,
-            PeerState::Backoff { .. } => None,
-            PeerState::PendingRequest { .. } => None,
-            PeerState::Requested => None,
-            PeerState::Disabled { .. } => None,
-            PeerState::DisabledPendingEnable { .. } => None,
-            PeerState::Incoming { .. } => None,
+            Self::Poisoned => None,
+            Self::Backoff { .. } => None,
+            Self::PendingRequest { .. } => None,
+            Self::Requested => None,
+            Self::Disabled { .. } => None,
+            Self::DisabledPendingEnable { .. } => None,
+            Self::Incoming { .. } => None,
         }
     }
 
     /// True if that node has been requested by the PSM.
     fn is_requested(&self) -> bool {
         match self {
-            PeerState::Poisoned => false,
-            PeerState::Backoff { .. } => false,
-            PeerState::PendingRequest { .. } => true,
-            PeerState::Requested => true,
-            PeerState::Disabled { .. } => false,
-            PeerState::DisabledPendingEnable { .. } => true,
-            PeerState::Enabled { .. } => true,
-            PeerState::Incoming { .. } => false,
+            Self::Poisoned => false,
+            Self::Backoff { .. } => false,
+            Self::PendingRequest { .. } => true,
+            Self::Requested => true,
+            Self::Disabled { .. } => false,
+            Self::DisabledPendingEnable { .. } => true,
+            Self::Enabled { .. } => true,
+            Self::Incoming { .. } => false,
         }
     }
 }
@@ -372,7 +372,7 @@ impl GenericProto {
 
         assert!(!notif_protocols.is_empty());
 
-        GenericProto {
+        Self {
             notif_protocols,
             peerset,
             peers: FnvHashMap::default(),

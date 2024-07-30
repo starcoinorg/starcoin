@@ -26,7 +26,7 @@ pub struct EventKey(#[schemars(with = "String")] [u8; EventKey::LENGTH]);
 impl EventKey {
     /// Construct a new EventKey from a byte array slice.
     pub fn new(key: [u8; Self::LENGTH]) -> Self {
-        EventKey(key)
+        Self(key)
     }
 
     /// The number of bytes in an EventKey.
@@ -45,7 +45,7 @@ impl EventKey {
     /// Get the account address part in this event key
     pub fn get_creator_address(&self) -> AccountAddress {
         let mut arr = [0u8; AccountAddress::LENGTH];
-        arr.copy_from_slice(&self.0[EventKey::LENGTH - AccountAddress::LENGTH..]);
+        arr.copy_from_slice(&self.0[Self::LENGTH - AccountAddress::LENGTH..]);
 
         AccountAddress::new(arr)
     }
@@ -60,7 +60,7 @@ impl EventKey {
     pub fn random() -> Self {
         let mut rng = OsRng;
         let salt = rng.next_u64();
-        EventKey::new_from_address(&AccountAddress::random(), salt)
+        Self::new_from_address(&AccountAddress::random(), salt)
     }
 
     /// Create a unique handle by using an AccountAddress and a counter.
@@ -69,7 +69,7 @@ impl EventKey {
         let (lhs, rhs) = output.split_at_mut(8);
         lhs.copy_from_slice(&salt.to_le_bytes());
         rhs.copy_from_slice(addr.as_ref());
-        EventKey(output)
+        Self(output)
     }
 }
 
@@ -125,7 +125,7 @@ impl TryFrom<&[u8]> for EventKey {
     type Error = Error;
 
     /// Tries to convert the provided byte array into Event Key.
-    fn try_from(bytes: &[u8]) -> Result<EventKey> {
+    fn try_from(bytes: &[u8]) -> Result<Self> {
         ensure!(
             bytes.len() == Self::LENGTH,
             "The Event Key {:?} is of invalid length",
@@ -133,7 +133,7 @@ impl TryFrom<&[u8]> for EventKey {
         );
         let mut addr = [0u8; Self::LENGTH];
         addr.copy_from_slice(bytes);
-        Ok(EventKey(addr))
+        Ok(Self(addr))
     }
 }
 
@@ -159,7 +159,7 @@ pub struct EventHandle {
 impl EventHandle {
     /// Constructs a new Event Handle
     pub fn new(key: EventKey, count: u64) -> Self {
-        EventHandle { key, count }
+        Self { key, count }
     }
 
     /// Return the key to where this event is stored in EventStore.
