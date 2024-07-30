@@ -24,6 +24,8 @@ use starcoin_logger::prelude::*;
 use std::collections::BTreeMap;
 
 use move_binary_format::file_format_common::Opcodes;
+use move_core_types::account_address::AccountAddress;
+use move_core_types::identifier::IdentStr;
 use starcoin_gas_algebra_ext::InstructionGasParameters;
 use starcoin_gas_algebra_ext::TransactionGasParameters;
 
@@ -793,6 +795,17 @@ impl GasMeter for StarcoinGasMeter {
     fn charge_drop_frame(
         &mut self,
         _locals: impl Iterator<Item = impl ValueView>,
+    ) -> PartialVMResult<()> {
+        Ok(())
+    }
+
+    // see StandardGasMeter in `aptos-core`
+    fn charge_dependency(
+        &mut self,
+        _is_new: bool,
+        _addr: &AccountAddress,
+        _name: &IdentStr,
+        _size: NumBytes,
     ) -> PartialVMResult<()> {
         Ok(())
     }
