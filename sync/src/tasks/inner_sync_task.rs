@@ -186,6 +186,8 @@ where
                     }
                 }
             }
+            // clear the dag sync if fork happened
+            self.sync_dag_store.delete_all_dag_sync_block()?;
 
             Ok(TaskGenerator::new(
                 block_sync_task,
