@@ -19,6 +19,7 @@ use starcoin_vm_types::transaction::{
     Package, Script, ScriptFunction, TransactionPayload, TransactionStatus,
 };
 use starcoin_vm_types::vm_status::KeptVMStatus;
+use std::ops::Sub;
 use test_helper::executor::{
     compile_ir_script, compile_modules_with_address, compile_script, execute_and_apply,
     prepare_genesis,
@@ -388,7 +389,7 @@ fn test_struct_republish_backward_incompatible() -> Result<()> {
 
 #[stest::test]
 fn test_transaction_arg_verify() -> Result<()> {
-    let (initial_amount, max_gas_amount) = (5_000_000u128, 1000_000u64);
+    let (initial_amount, gas_amount) = (5_000_000u128, 600u64);
     let (chain_state, net) = prepare_genesis();
     let account1 = Account::new();
     let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
@@ -419,16 +420,19 @@ fn test_transaction_arg_verify() -> Result<()> {
         *account1.address(),
         TransactionPayload::Package(package),
         0,
-        max_gas_amount,
+        gas_amount,
         1,
         1,
         net.chain_id(),
     ));
     let output = execute_and_apply(&chain_state, txn1);
-    assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());
+    assert_eq!(
+        KeptVMStatus::MiscellaneousError,
+        output.status().status().unwrap()
+    );
 
     let balance = chain_state.get_balance(*account1.address())?;
-    println!("balance: {balance:?}");
+    assert_eq!(balance, Some(initial_amount.sub(u128::from(gas_amount))));
 
     let money = 100_000;
     let num: u128 = 50_000_000;
