@@ -52,7 +52,7 @@ impl ChainReaderService {
 }
 
 impl ServiceFactory<Self> for ChainReaderService {
-    fn create(ctx: &mut ServiceContext<ChainReaderService>) -> Result<ChainReaderService> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let startup_info = storage
@@ -77,7 +77,7 @@ impl ActorService for ChainReaderService {
 }
 
 impl EventHandler<Self, NewHeadBlock> for ChainReaderService {
-    fn handle_event(&mut self, event: NewHeadBlock, _ctx: &mut ServiceContext<ChainReaderService>) {
+    fn handle_event(&mut self, event: NewHeadBlock, _ctx: &mut ServiceContext<Self>) {
         let new_head = event.executed_block.block().header().clone();
         if let Err(e) = if self
             .inner
@@ -98,7 +98,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
     fn handle(
         &mut self,
         msg: ChainRequest,
-        _ctx: &mut ServiceContext<ChainReaderService>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> Result<ChainResponse> {
         match msg {
             ChainRequest::CurrentHeader() => Ok(ChainResponse::BlockHeader(Box::new(

@@ -24,7 +24,7 @@ impl MockTxPoolService {
     }
 
     pub fn new_with_txns(txns: Vec<SignedUserTransaction>) -> Self {
-        MockTxPoolService {
+        Self {
             pool: Arc::new(Mutex::new(txns)),
         }
     }

@@ -30,16 +30,12 @@ impl AccountService {
     }
 }
 
-impl MockHandler<AccountService> for AccountService {
-    fn handle(
-        &mut self,
-        r: Box<dyn Any>,
-        ctx: &mut ServiceContext<AccountService>,
-    ) -> Box<dyn Any> {
+impl MockHandler<Self> for AccountService {
+    fn handle(&mut self, r: Box<dyn Any>, ctx: &mut ServiceContext<Self>) -> Box<dyn Any> {
         let request = r
             .downcast::<AccountRequest>()
             .expect("Downcast to AccountRequest fail.");
-        let result = ServiceHandler::<AccountService, AccountRequest>::handle(self, *request, ctx);
+        let result = ServiceHandler::<Self, AccountRequest>::handle(self, *request, ctx);
         Box::new(result)
     }
 }
@@ -89,8 +85,8 @@ impl ActorService for AccountService {
     }
 }
 
-impl ServiceFactory<AccountService> for AccountService {
-    fn create(ctx: &mut ServiceContext<AccountService>) -> Result<AccountService> {
+impl ServiceFactory<Self> for AccountService {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let account_storage = ctx.get_shared::<AccountStorage>()?;
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let manager = AccountManager::new(account_storage, config.net().chain_id())?;
@@ -98,7 +94,7 @@ impl ServiceFactory<AccountService> for AccountService {
     }
 }
 
-impl ServiceHandler<AccountService, AccountRequest> for AccountService {
+impl ServiceHandler<Self, AccountRequest> for AccountService {
     fn handle(
         &mut self,
         msg: AccountRequest,

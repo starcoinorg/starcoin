@@ -36,9 +36,9 @@ impl<'de> Deserialize<'de> for WrappedAbilitySet {
         D: Deserializer<'de>,
     {
         let byte = u8::deserialize(deserializer)?;
-        Ok(WrappedAbilitySet(AbilitySet::from_u8(byte).ok_or_else(
-            || serde::de::Error::custom(format!("Invalid ability set: {:X}", byte)),
-        )?))
+        Ok(Self(AbilitySet::from_u8(byte).ok_or_else(|| {
+            serde::de::Error::custom(format!("Invalid ability set: {:X}", byte))
+        })?))
     }
 }
 
@@ -73,7 +73,7 @@ pub(crate) enum FatType {
 }
 
 impl FatStructType {
-    pub fn subst(&self, ty_args: &[FatType]) -> PartialVMResult<FatStructType> {
+    pub fn subst(&self, ty_args: &[FatType]) -> PartialVMResult<Self> {
         Ok(Self {
             address: self.address,
             module: self.module.clone(),
@@ -108,7 +108,7 @@ impl FatStructType {
 }
 
 impl FatType {
-    pub fn subst(&self, ty_args: &[FatType]) -> PartialVMResult<FatType> {
+    pub fn subst(&self, ty_args: &[Self]) -> PartialVMResult<Self> {
         use FatType::*;
 
         let res = match self {

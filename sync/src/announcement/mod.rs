@@ -21,14 +21,14 @@ pub struct AnnouncementService {
 
 impl AnnouncementService {
     fn new(storage: Arc<Storage>, txpool: TxPoolService) -> Self {
-        AnnouncementService { storage, txpool }
+        Self { storage, txpool }
     }
 }
 
 impl ActorService for AnnouncementService {}
 
 impl ServiceFactory<Self> for AnnouncementService {
-    fn create(ctx: &mut ServiceContext<Self>) -> Result<AnnouncementService> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let txpool_service = ctx.get_shared::<TxPoolService>()?;
 
@@ -40,7 +40,7 @@ impl EventHandler<Self, PeerAnnouncementMessage> for AnnouncementService {
     fn handle_event(
         &mut self,
         announcement_msg: PeerAnnouncementMessage,
-        ctx: &mut ServiceContext<AnnouncementService>,
+        ctx: &mut ServiceContext<Self>,
     ) {
         let txpool = self.txpool.clone();
         let storage = self.storage.clone();

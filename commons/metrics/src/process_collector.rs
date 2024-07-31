@@ -23,7 +23,7 @@ impl ProcessCollector {
         Self::new(pid)
     }
     #[allow(dead_code)]
-    pub fn new(pid: u32) -> Result<ProcessCollector> {
+    pub fn new(pid: u32) -> Result<Self> {
         let vsize = Gauge::with_opts(Opts::new(
             "process_virtual_memory_bytes",
             "Virtual memory size in bytes.",
@@ -48,7 +48,7 @@ impl ProcessCollector {
             Ok(p) => p,
         };
 
-        Ok(ProcessCollector {
+        Ok(Self {
             pid,
             descs,
             process: Mutex::new(process),

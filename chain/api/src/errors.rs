@@ -44,11 +44,11 @@ pub enum VerifyBlockField {
 impl Display for VerifyBlockField {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            VerifyBlockField::Body => write!(f, "body"),
-            VerifyBlockField::Header => write!(f, "header"),
-            VerifyBlockField::Uncle => write!(f, "uncle"),
-            VerifyBlockField::Consensus => write!(f, "consensus"),
-            VerifyBlockField::State => write!(f, "state"),
+            Self::Body => write!(f, "body"),
+            Self::Header => write!(f, "header"),
+            Self::Uncle => write!(f, "uncle"),
+            Self::Consensus => write!(f, "consensus"),
+            Self::State => write!(f, "state"),
         }
     }
 }
@@ -77,21 +77,19 @@ impl ConnectBlockError {
 
     pub fn reason(&self) -> &str {
         match self {
-            ConnectBlockError::FutureBlock(_) => "FutureBlock",
-            ConnectBlockError::ParentNotExist(_) => "ParentNotExist",
-            ConnectBlockError::VerifyBlockFailed(_, _) => "VerifyBlockFailed",
-            ConnectBlockError::BarnardHardFork(_) => "BarnardHardFork",
+            Self::FutureBlock(_) => "FutureBlock",
+            Self::ParentNotExist(_) => "ParentNotExist",
+            Self::VerifyBlockFailed(_, _) => "VerifyBlockFailed",
+            Self::BarnardHardFork(_) => "BarnardHardFork",
         }
     }
 
     pub fn reputation(&self) -> ReputationChange {
         match self {
-            ConnectBlockError::FutureBlock(_) => ConnectBlockError::REP_FUTURE_BLOCK,
-            ConnectBlockError::ParentNotExist(_) => ConnectBlockError::REP_PARENT_NOT_EXIST,
-            ConnectBlockError::VerifyBlockFailed(_, _) => {
-                ConnectBlockError::REP_VERIFY_BLOCK_FAILED
-            }
-            ConnectBlockError::BarnardHardFork(_) => ConnectBlockError::REP_BARNARD_HARD_FORK,
+            Self::FutureBlock(_) => Self::REP_FUTURE_BLOCK,
+            Self::ParentNotExist(_) => Self::REP_PARENT_NOT_EXIST,
+            Self::VerifyBlockFailed(_, _) => Self::REP_VERIFY_BLOCK_FAILED,
+            Self::BarnardHardFork(_) => Self::REP_BARNARD_HARD_FORK,
         }
     }
 }

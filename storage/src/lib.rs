@@ -215,17 +215,17 @@ pub enum StorageVersion {
 }
 
 impl StorageVersion {
-    pub fn current_version() -> StorageVersion {
-        StorageVersion::V5
+    pub fn current_version() -> Self {
+        Self::V5
     }
 
     pub fn get_column_family_names(&self) -> &'static [ColumnFamilyName] {
         match self {
-            StorageVersion::V1 => &VEC_PREFIX_NAME_V1,
-            StorageVersion::V2 => &VEC_PREFIX_NAME_V2,
-            StorageVersion::V3 => &VEC_PREFIX_NAME_V3,
-            StorageVersion::V4 => &VEC_PREFIX_NAME_V4,
-            StorageVersion::V5 => &VEC_PREFIX_NAME_V5,
+            Self::V1 => &VEC_PREFIX_NAME_V1,
+            Self::V2 => &VEC_PREFIX_NAME_V2,
+            Self::V3 => &VEC_PREFIX_NAME_V3,
+            Self::V4 => &VEC_PREFIX_NAME_V4,
+            Self::V5 => &VEC_PREFIX_NAME_V5,
         }
     }
 }

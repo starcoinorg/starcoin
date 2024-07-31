@@ -28,9 +28,9 @@ impl FromStr for StateRootOption {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Ok(number) = s.parse::<u64>() {
-            Ok(StateRootOption::BlockNumber(number))
+            Ok(Self::BlockNumber(number))
         } else {
-            Ok(StateRootOption::BlockHash(HashValue::from_str(s)?))
+            Ok(Self::BlockHash(HashValue::from_str(s)?))
         }
     }
 }

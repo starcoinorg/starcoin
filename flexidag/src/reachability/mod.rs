@@ -34,7 +34,7 @@ pub enum ReachabilityError {
 
 impl ReachabilityError {
     pub fn is_key_not_found(&self) -> bool {
-        matches!(self, ReachabilityError::StoreError(e) if matches!(e, StoreError::KeyNotFound(_)))
+        matches!(self, Self::StoreError(e) if matches!(e, StoreError::KeyNotFound(_)))
     }
 }
 

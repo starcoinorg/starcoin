@@ -65,7 +65,7 @@ impl CliState {
         watch_timeout: Option<Duration>,
         node_handle: Option<NodeHandle>,
         account_client: Box<dyn AccountProvider>,
-    ) -> CliState {
+    ) -> Self {
         let data_dir = starcoin_config::G_DEFAULT_BASE_DATA_DIR
             .clone()
             .join("cli")

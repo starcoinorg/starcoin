@@ -156,12 +156,12 @@ impl DbSchema {
 
     pub fn get_fields(&self) -> Vec<String> {
         let sample_json = match self {
-            DbSchema::Block => {
+            Self::Block => {
                 serde_json::to_value(Block::sample()).expect("block to json should success")
             }
-            DbSchema::BlockHeader => serde_json::to_value(BlockHeader::sample())
+            Self::BlockHeader => serde_json::to_value(BlockHeader::sample())
                 .expect("block header to json should success"),
-            DbSchema::FailedBlock => serde_json::to_value(FailedBlock::sample())
+            Self::FailedBlock => serde_json::to_value(FailedBlock::sample())
                 .expect("block header to json should success"),
         };
         sample_json
@@ -174,15 +174,15 @@ impl DbSchema {
 
     pub fn get_value_codec(&self) -> Box<dyn Fn(Vec<u8>) -> Result<serde_json::Value>> {
         Box::new(match self {
-            DbSchema::Block => |arg| -> Result<serde_json::Value> {
+            Self::Block => |arg| -> Result<serde_json::Value> {
                 Ok(serde_json::to_value(Block::decode_value(arg.as_slice())?)?)
             },
-            DbSchema::BlockHeader => |arg| -> Result<serde_json::Value> {
+            Self::BlockHeader => |arg| -> Result<serde_json::Value> {
                 Ok(serde_json::to_value(BlockHeader::decode_value(
                     arg.as_slice(),
                 )?)?)
             },
-            DbSchema::FailedBlock => |arg| -> Result<serde_json::Value> {
+            Self::FailedBlock => |arg| -> Result<serde_json::Value> {
                 Ok(serde_json::to_value(FailedBlock::decode_value(
                     arg.as_slice(),
                 )?)?)
@@ -192,9 +192,9 @@ impl DbSchema {
 
     pub fn name(&self) -> &'static str {
         match self {
-            DbSchema::Block => BLOCK_PREFIX_NAME,
-            DbSchema::BlockHeader => BLOCK_HEADER_PREFIX_NAME,
-            DbSchema::FailedBlock => FAILED_BLOCK_PREFIX_NAME,
+            Self::Block => BLOCK_PREFIX_NAME,
+            Self::BlockHeader => BLOCK_HEADER_PREFIX_NAME,
+            Self::FailedBlock => FAILED_BLOCK_PREFIX_NAME,
         }
     }
 }
@@ -210,9 +210,9 @@ impl FromStr for DbSchema {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let schema = match s {
-            BLOCK_PREFIX_NAME => DbSchema::Block,
-            BLOCK_HEADER_PREFIX_NAME => DbSchema::BlockHeader,
-            FAILED_BLOCK_PREFIX_NAME => DbSchema::FailedBlock,
+            BLOCK_PREFIX_NAME => Self::Block,
+            BLOCK_HEADER_PREFIX_NAME => Self::BlockHeader,
+            FAILED_BLOCK_PREFIX_NAME => Self::FailedBlock,
             _ => {
                 bail!("Unsupported schema: {}", s)
             }
@@ -342,9 +342,9 @@ impl FromStr for Txntype {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let txn_type = match s {
-            "CreateAccount" => Txntype::CreateAccount,
-            "FixAccount" => Txntype::FixAccount,
-            "EmptyTxn" => Txntype::EmptyTxn,
+            "CreateAccount" => Self::CreateAccount,
+            "FixAccount" => Self::FixAccount,
+            "EmptyTxn" => Self::EmptyTxn,
             _ => {
                 bail!("Unsupported TxnType: {}", s)
             }

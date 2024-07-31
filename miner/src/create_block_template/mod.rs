@@ -57,7 +57,7 @@ pub struct BlockBuilderService {
 impl BlockBuilderService {}
 
 impl ServiceFactory<Self> for BlockBuilderService {
-    fn create(ctx: &mut ServiceContext<BlockBuilderService>) -> Result<BlockBuilderService> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let connector_service = ctx
@@ -103,11 +103,7 @@ impl ActorService for BlockBuilderService {
 }
 
 impl EventHandler<Self, DefaultAccountChangeEvent> for BlockBuilderService {
-    fn handle_event(
-        &mut self,
-        msg: DefaultAccountChangeEvent,
-        _ctx: &mut ServiceContext<BlockBuilderService>,
-    ) {
+    fn handle_event(&mut self, msg: DefaultAccountChangeEvent, _ctx: &mut ServiceContext<Self>) {
         info!("Miner account change to {}", msg.new_account.address);
         self.inner.miner_account = msg.new_account;
     }
@@ -117,7 +113,7 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
     fn handle(
         &mut self,
         _msg: BlockTemplateRequest,
-        _ctx: &mut ServiceContext<BlockBuilderService>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> Result<BlockTemplateResponse> {
         self.inner.create_block_template()
     }
@@ -173,7 +169,7 @@ where
         metrics: Option<BlockBuilderMetrics>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
-        Ok(Inner {
+        Ok(Self {
             storage,
             block_connector_service,
             tx_provider,

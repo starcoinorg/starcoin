@@ -111,7 +111,7 @@ struct CachedPending {
 impl CachedPending {
     /// Creates new `CachedPending` without cached set.
     pub fn none() -> Self {
-        CachedPending {
+        Self {
             block_number: 0,
             current_timestamp: 0,
             has_local_pending: false,
@@ -174,7 +174,7 @@ struct RecentlyRejected {
 
 impl RecentlyRejected {
     fn new(limit: usize) -> Self {
-        RecentlyRejected {
+        Self {
             limit,
             inner: RwLock::new(HashMap::with_capacity(MIN_REJECTED_CACHE_SIZE)),
         }
@@ -233,7 +233,7 @@ impl TransactionQueue {
         strategy: PrioritizationStrategy,
     ) -> Self {
         let max_count = limits.max_count;
-        TransactionQueue {
+        Self {
             insertion_id: Default::default(),
             pool: RwLock::new(tx_pool::Pool::new(
                 Default::default(),

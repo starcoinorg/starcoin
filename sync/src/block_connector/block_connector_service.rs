@@ -153,9 +153,7 @@ impl<TransactionPoolServiceT> ServiceFactory<Self>
 where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
-    fn create(
-        ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
-    ) -> Result<BlockConnectorService<TransactionPoolServiceT>> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let bus = ctx.bus_ref().clone();
         let txpool = ctx.get_shared::<TransactionPoolServiceT>()?;
@@ -208,11 +206,7 @@ impl<TransactionPoolServiceT> EventHandler<Self, BlockDiskCheckEvent>
 where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
-    fn handle_event(
-        &mut self,
-        _: BlockDiskCheckEvent,
-        ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
-    ) {
+    fn handle_event(&mut self, _: BlockDiskCheckEvent, ctx: &mut ServiceContext<Self>) {
         if let Some(res) = self.check_disk_space() {
             match res {
                 std::result::Result::Ok(available_space) => {
@@ -228,11 +222,7 @@ where
 }
 
 impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<TxPoolService> {
-    fn handle_event(
-        &mut self,
-        msg: BlockConnectedEvent,
-        ctx: &mut ServiceContext<BlockConnectorService<TxPoolService>>,
-    ) {
+    fn handle_event(&mut self, msg: BlockConnectedEvent, ctx: &mut ServiceContext<Self>) {
         //because this block has execute at sync task, so just try connect to select head chain.
         //TODO refactor connect and execute
         let block = msg.block;
@@ -257,11 +247,7 @@ impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<TxPoolSer
 
 #[cfg(test)]
 impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<MockTxPoolService> {
-    fn handle_event(
-        &mut self,
-        msg: BlockConnectedEvent,
-        ctx: &mut ServiceContext<BlockConnectorService<MockTxPoolService>>,
-    ) {
+    fn handle_event(&mut self, msg: BlockConnectedEvent, ctx: &mut ServiceContext<Self>) {
         //because this block has execute at sync task, so just try connect to select head chain.
         //TODO refactor connect and execute
         let block = msg.block;
@@ -390,11 +376,7 @@ impl<TransactionPoolServiceT> ServiceHandler<Self, ResetRequest>
 where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
-    fn handle(
-        &mut self,
-        msg: ResetRequest,
-        _ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
-    ) -> Result<()> {
+    fn handle(&mut self, msg: ResetRequest, _ctx: &mut ServiceContext<Self>) -> Result<()> {
         self.chain_service.reset(msg.block_hash)
     }
 }
@@ -407,7 +389,7 @@ where
     fn handle(
         &mut self,
         msg: ExecuteRequest,
-        _ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> Result<ExecutedBlock> {
         self.chain_service.execute(msg.block)
     }
@@ -498,7 +480,7 @@ where
     fn handle(
         &mut self,
         msg: CheckBlockConnectorHashValue,
-        _ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> Result<()> {
         if self.chain_service.get_main().status().head().id() == msg.head_hash {
             info!("the branch in chain service is the same as target's branch");

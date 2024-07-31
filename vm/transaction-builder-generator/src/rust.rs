@@ -815,7 +815,7 @@ pub struct Installer {
 
 impl Installer {
     pub fn new(install_dir: PathBuf, starcoin_types_version: String) -> Self {
-        Installer {
+        Self {
             install_dir,
             starcoin_types_version,
         }

@@ -137,7 +137,7 @@ impl Arbitrary for InternalNode {
                     !(children.len() == 1 && children.values().next().expect("Must exist.").is_leaf)
                 },
             )
-            .prop_map(InternalNode::new)
+            .prop_map(Self::new)
             .boxed()
     }
 
@@ -529,7 +529,7 @@ where
     K: RawKey,
 {
     fn from(node: InternalNode) -> Self {
-        Node::Internal(node)
+        Self::Internal(node)
     }
 }
 
@@ -544,7 +544,7 @@ where
     K: RawKey,
 {
     fn from(node: LeafNode<K>) -> Self {
-        Node::Leaf(node)
+        Self::Leaf(node)
     }
 }
 
@@ -554,36 +554,36 @@ where
 {
     /// Creates the [`Null`](Node::Null) variant.
     pub fn new_null() -> Self {
-        Node::Null
+        Self::Null
     }
 
     /// Creates the [`Internal`](Node::Internal) variant.
     pub fn new_internal(children: Children) -> Self {
-        Node::Internal(InternalNode::new(children))
+        Self::Internal(InternalNode::new(children))
     }
 
     /// Creates the [`Leaf`](Node::Leaf) variant.
     pub fn new_leaf(raw_key: K, blob: Blob) -> Self {
-        Node::Leaf(LeafNode::new(raw_key, blob))
+        Self::Leaf(LeafNode::new(raw_key, blob))
     }
 
     /// Returns `true` if the node is a leaf node.
     pub fn is_leaf(&self) -> bool {
-        matches!(self, Node::Leaf(_))
+        matches!(self, Self::Leaf(_))
     }
 
     /// Serializes to bytes for physical storage.
     pub fn encode(&self) -> Result<Vec<u8>> {
         let mut out = vec![];
         match self {
-            Node::Null => {
+            Self::Null => {
                 out.push(NodeTag::Null as u8);
             }
-            Node::Internal(internal_node) => {
+            Self::Internal(internal_node) => {
                 out.push(NodeTag::Internal as u8);
                 internal_node.serialize(&mut out)?;
             }
-            Node::Leaf(leaf_node) => {
+            Self::Leaf(leaf_node) => {
                 out.push(NodeTag::Leaf as u8);
                 leaf_node.serialize(&mut out)?;
             }
@@ -594,23 +594,23 @@ where
     /// Computes the hash of nodes.
     pub fn hash(&self) -> HashValue {
         match self {
-            Node::Null => *SPARSE_MERKLE_PLACEHOLDER_HASH,
-            Node::Internal(internal_node) => internal_node.cached_hash(),
-            Node::Leaf(leaf_node) => leaf_node.cached_hash(),
+            Self::Null => *SPARSE_MERKLE_PLACEHOLDER_HASH,
+            Self::Internal(internal_node) => internal_node.cached_hash(),
+            Self::Leaf(leaf_node) => leaf_node.cached_hash(),
         }
     }
 
     /// Recovers from serialized bytes in physical storage.
-    pub fn decode(val: &[u8]) -> Result<Node<K>> {
+    pub fn decode(val: &[u8]) -> Result<Self> {
         if val.is_empty() {
             return Err(NodeDecodeError::EmptyInput.into());
         }
         let tag = val[0];
         let node_tag = NodeTag::from_u8(tag);
         match node_tag {
-            Some(NodeTag::Null) => Ok(Node::Null),
-            Some(NodeTag::Internal) => Ok(Node::Internal(InternalNode::deserialize(&val[1..])?)),
-            Some(NodeTag::Leaf) => Ok(Node::Leaf(LeafNode::deserialize(&val[1..])?)),
+            Some(NodeTag::Null) => Ok(Self::Null),
+            Some(NodeTag::Internal) => Ok(Self::Internal(InternalNode::deserialize(&val[1..])?)),
+            Some(NodeTag::Leaf) => Ok(Self::Leaf(LeafNode::deserialize(&val[1..])?)),
             None => Err(NodeDecodeError::UnknownTag { unknown_tag: tag }.into()),
         }
     }
@@ -639,7 +639,7 @@ pub struct SparseMerkleLeafNode {
 
 impl SparseMerkleLeafNode {
     pub fn new(key: HashValue, value_hash: HashValue) -> Self {
-        SparseMerkleLeafNode { key, value_hash }
+        Self { key, value_hash }
     }
 }
 

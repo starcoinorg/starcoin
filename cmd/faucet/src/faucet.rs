@@ -31,7 +31,7 @@ impl Faucet {
         faucet_account_password: String,
         max_amount_pre_request: TokenValue<STCUnit>,
     ) -> Self {
-        Faucet {
+        Self {
             client,
             faucet_account,
             faucet_account_password,

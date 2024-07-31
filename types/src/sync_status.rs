@@ -22,15 +22,15 @@ pub enum SyncState {
 
 impl SyncState {
     pub fn is_prepare(&self) -> bool {
-        matches!(self, SyncState::Prepare)
+        matches!(self, Self::Prepare)
     }
 
     pub fn is_syncing(&self) -> bool {
-        matches!(self, SyncState::Synchronizing { .. })
+        matches!(self, Self::Synchronizing { .. })
     }
 
     pub fn is_synced(&self) -> bool {
-        matches!(self, SyncState::Synchronized)
+        matches!(self, Self::Synchronized)
     }
 }
 

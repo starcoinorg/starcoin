@@ -31,8 +31,8 @@ impl DaoGlobalInfo {
     pub fn struct_tag_for(token_type_tag: StructTag) -> StructTag {
         StructTag {
             address: CORE_CODE_ADDRESS,
-            module: DaoGlobalInfo::module_identifier(),
-            name: DaoGlobalInfo::struct_identifier(),
+            module: Self::module_identifier(),
+            name: Self::struct_identifier(),
             type_params: vec![TypeTag::Struct(Box::new(token_type_tag))],
         }
     }
@@ -40,7 +40,7 @@ impl DaoGlobalInfo {
     pub fn resource_path_for(token_type_tag: StructTag) -> AccessPath {
         AccessPath::resource_access_path(
             token_type_tag.address,
-            DaoGlobalInfo::struct_tag_for(token_type_tag),
+            Self::struct_tag_for(token_type_tag),
         )
     }
 }

@@ -90,7 +90,7 @@ impl ServiceHandler<Self, UpdateSubscriberNumRequest> for MinerService {
     fn handle(
         &mut self,
         req: UpdateSubscriberNumRequest,
-        _ctx: &mut ServiceContext<MinerService>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> Option<MintBlockEvent> {
         if let Some(num) = req.number {
             self.client_subscribers_num = num;
@@ -106,15 +106,15 @@ impl ServiceHandler<Self, UpdateSubscriberNumRequest> for MinerService {
     }
 }
 
-impl ServiceFactory<MinerService> for MinerService {
-    fn create(ctx: &mut ServiceContext<MinerService>) -> Result<MinerService> {
+impl ServiceFactory<Self> for MinerService {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let create_block_template_service = ctx.service_ref::<BlockBuilderService>()?.clone();
         let metrics = config
             .metrics
             .registry()
             .and_then(|registry| MinerMetrics::register(registry).ok());
-        Ok(MinerService {
+        Ok(Self {
             config,
             current_task: None,
             create_block_template_service,
@@ -140,7 +140,7 @@ impl ServiceHandler<Self, SubmitSealRequest> for MinerService {
     fn handle(
         &mut self,
         req: SubmitSealRequest,
-        ctx: &mut ServiceContext<MinerService>,
+        ctx: &mut ServiceContext<Self>,
     ) -> Result<HashValue> {
         self.finish_task(req.nonce, req.extra, req.minting_blob.clone(), ctx)
             .map_err(|e| {
@@ -156,7 +156,7 @@ const MAX_BLOCK_TIME_GAP: u64 = 3600 * 1000;
 impl MinerService {
     pub fn dispatch_task(
         &mut self,
-        ctx: &mut ServiceContext<MinerService>,
+        ctx: &mut ServiceContext<Self>,
         event: GenerateBlockEvent,
     ) -> Result<()> {
         //create block template should block_on for avoid mint same block template.
@@ -182,7 +182,7 @@ impl MinerService {
         }
     }
 
-    pub fn dispatch_sleep_task(&mut self, ctx: &mut ServiceContext<MinerService>) -> Result<()> {
+    pub fn dispatch_sleep_task(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         //create block template should block_on for avoid mint same block template.
         let response = block_on(async {
             self.create_block_template_service
@@ -194,7 +194,7 @@ impl MinerService {
 
     fn dispatch_mint_block_event(
         &mut self,
-        ctx: &mut ServiceContext<MinerService>,
+        ctx: &mut ServiceContext<Self>,
         block_template: BlockTemplate,
     ) -> Result<()> {
         debug!("Mint block template: {:?}", block_template);
@@ -227,7 +227,7 @@ impl MinerService {
         nonce: u32,
         extra: BlockHeaderExtra,
         minting_blob: Vec<u8>,
-        ctx: &mut ServiceContext<MinerService>,
+        ctx: &mut ServiceContext<Self>,
     ) -> Result<HashValue> {
         match self.current_task.as_ref() {
             Some(task) => {
@@ -270,7 +270,7 @@ impl MinerService {
 }
 
 impl EventHandler<Self, GenerateBlockEvent> for MinerService {
-    fn handle_event(&mut self, event: GenerateBlockEvent, ctx: &mut ServiceContext<MinerService>) {
+    fn handle_event(&mut self, event: GenerateBlockEvent, ctx: &mut ServiceContext<Self>) {
         debug!("Handle GenerateBlockEvent:{:?}", event);
         if !event.break_current_task && self.is_minting() {
             debug!("Miner has mint job so just ignore this event.");

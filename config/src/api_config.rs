@@ -34,7 +34,7 @@ impl<'de> Deserialize<'de> for Api {
         D: Deserializer<'de>,
     {
         let s = <String>::deserialize(deserializer)?;
-        Api::from_str(&s).map_err(D::Error::custom)
+        Self::from_str(&s).map_err(D::Error::custom)
     }
 }
 
@@ -130,17 +130,17 @@ impl FromStr for ApiSet {
         for api in s.split(',') {
             match api {
                 "all" => {
-                    apis.extend(ApiSet::All.list_apis());
+                    apis.extend(Self::All.list_apis());
                 }
                 "safe" => {
                     // Safe APIs are those that are safe even in UnsafeContext.
-                    apis.extend(ApiSet::UnsafeContext.list_apis());
+                    apis.extend(Self::UnsafeContext.list_apis());
                 }
                 "ipc" => {
-                    apis.extend(ApiSet::IpcContext.list_apis());
+                    apis.extend(Self::IpcContext.list_apis());
                 }
                 "pubsub" => {
-                    apis.extend(ApiSet::PubSub.list_apis());
+                    apis.extend(Self::PubSub.list_apis());
                 }
                 // Remove the API
                 api if api.starts_with('-') => {
@@ -154,7 +154,7 @@ impl FromStr for ApiSet {
             }
         }
 
-        Ok(ApiSet::List(apis))
+        Ok(Self::List(apis))
     }
 }
 
@@ -173,7 +173,7 @@ impl<'de> Deserialize<'de> for ApiSet {
         D: Deserializer<'de>,
     {
         let s = <String>::deserialize(deserializer)?;
-        ApiSet::from_str(&s).map_err(D::Error::custom)
+        Self::from_str(&s).map_err(D::Error::custom)
     }
 }
 
@@ -192,10 +192,10 @@ impl ApiSet {
         .collect();
 
         match *self {
-            ApiSet::UnsafeContext => public_list,
-            ApiSet::List(ref apis) => apis.iter().cloned().collect(),
+            Self::UnsafeContext => public_list,
+            Self::List(ref apis) => apis.iter().cloned().collect(),
 
-            ApiSet::IpcContext | ApiSet::All => {
+            Self::IpcContext | Self::All => {
                 public_list.insert(Api::PubSub);
                 public_list.insert(Api::Debug);
                 public_list.insert(Api::Account);
@@ -205,7 +205,7 @@ impl ApiSet {
                 public_list
             }
 
-            ApiSet::PubSub => {
+            Self::PubSub => {
                 public_list.insert(Api::PubSub);
                 public_list
             }

@@ -44,7 +44,7 @@ where
     T: Send + Sync + 'static,
 {
     pub fn new(delegate: Arc<T>) -> Self {
-        IoDelegate {
+        Self {
             delegate,
             methods: Default::default(),
         }

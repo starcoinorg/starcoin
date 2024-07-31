@@ -85,13 +85,13 @@ pub struct SetId(usize);
 
 impl SetId {
     pub const fn from(id: usize) -> Self {
-        SetId(id)
+        Self(id)
     }
 }
 
 impl From<usize> for SetId {
     fn from(id: usize) -> Self {
-        SetId(id)
+        Self(id)
     }
 }
 
@@ -112,13 +112,13 @@ pub struct ReputationChange {
 
 impl ReputationChange {
     /// New reputation change with given delta and reason.
-    pub const fn new(value: i32, reason: &'static str) -> ReputationChange {
-        ReputationChange { value, reason }
+    pub const fn new(value: i32, reason: &'static str) -> Self {
+        Self { value, reason }
     }
 
     /// New reputation change that forces minimum possible reputation.
-    pub const fn new_fatal(reason: &'static str) -> ReputationChange {
-        ReputationChange {
+    pub const fn new_fatal(reason: &'static str) -> Self {
+        Self {
             value: i32::min_value(),
             reason,
         }
@@ -232,8 +232,8 @@ pub enum Message {
 pub struct IncomingIndex(pub u64);
 
 impl From<u64> for IncomingIndex {
-    fn from(val: u64) -> IncomingIndex {
-        IncomingIndex(val)
+    fn from(val: u64) -> Self {
+        Self(val)
     }
 }
 
@@ -295,7 +295,7 @@ pub struct Peerset {
 
 impl Peerset {
     /// Builds a new peerset from the given configuration.
-    pub fn from_config(config: PeersetConfig) -> (Peerset, PeersetHandle) {
+    pub fn from_config(config: PeersetConfig) -> (Self, PeersetHandle) {
         let (tx, rx) = tracing_unbounded("mpsc_peerset_messages");
 
         let handle = PeersetHandle { tx: tx.clone() };
@@ -303,7 +303,7 @@ impl Peerset {
         let mut peerset = {
             let now = Instant::now();
 
-            Peerset {
+            Self {
                 data: peersstate::PeersState::new(config.sets.iter().map(|set| {
                     peersstate::SetConfig {
                         in_peers: set.in_peers,

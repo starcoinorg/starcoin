@@ -234,7 +234,7 @@ impl Genesis {
         let mut genesis_file = File::open(genesis_file_path)?;
         let mut content = vec![];
         genesis_file.read_to_end(&mut content)?;
-        let genesis = bcs_ext::from_bytes::<Genesis>(&content)?;
+        let genesis = bcs_ext::from_bytes::<Self>(&content)?;
         Ok(Some(genesis))
     }
 
@@ -247,7 +247,7 @@ impl Genesis {
 
     pub fn load_generated(net: BuiltinNetworkID) -> Result<Option<Self>> {
         match Self::genesis_bytes(net) {
-            Some(bytes) => Ok(Some(bcs_ext::from_bytes::<Genesis>(bytes)?)),
+            Some(bytes) => Ok(Some(bcs_ext::from_bytes::<Self>(bytes)?)),
             None => Ok(None),
         }
     }
@@ -283,15 +283,15 @@ impl Genesis {
         }
         let genesis_file = data_dir.join(Self::GENESIS_FILE_NAME);
         let mut file = File::create(genesis_file)?;
-        let contents = bcs_ext::to_bytes::<Genesis>(self)?;
+        let contents = bcs_ext::to_bytes::<Self>(self)?;
         file.write_all(&contents)?;
         Ok(())
     }
 
-    fn load_and_check_genesis(net: &ChainNetwork, data_dir: &Path, init: bool) -> Result<Genesis> {
-        let genesis = match Genesis::load_from_dir(data_dir) {
+    fn load_and_check_genesis(net: &ChainNetwork, data_dir: &Path, init: bool) -> Result<Self> {
+        let genesis = match Self::load_from_dir(data_dir) {
             Ok(Some(genesis)) => {
-                let expect_genesis = Genesis::load_or_build(net)?;
+                let expect_genesis = Self::load_or_build(net)?;
                 if genesis.block().header().id() != expect_genesis.block().header().id() {
                     return Err(GenesisError::GenesisVersionMismatch {
                         expect: expect_genesis.block.header.id(),
@@ -304,7 +304,7 @@ impl Genesis {
             Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
             Ok(None) => {
                 if init {
-                    let genesis = Genesis::load_or_build(net)?;
+                    let genesis = Self::load_or_build(net)?;
                     genesis.save(data_dir)?;
                     info!("Build and save new genesis: {}", genesis);
                     genesis
@@ -321,7 +321,7 @@ impl Genesis {
         storage: Arc<Storage>,
         dag: BlockDAG,
         data_dir: &Path,
-    ) -> Result<(ChainInfo, Genesis)> {
+    ) -> Result<(ChainInfo, Self)> {
         debug!("load startup_info.");
         let (chain_info, genesis) = match storage.get_chain_info() {
             Ok(Some(chain_info)) => {
@@ -360,10 +360,10 @@ impl Genesis {
 
     pub fn init_storage_for_test(
         net: &ChainNetwork,
-    ) -> Result<(Arc<Storage>, ChainInfo, Genesis, BlockDAG)> {
+    ) -> Result<(Arc<Storage>, ChainInfo, Self, BlockDAG)> {
         debug!("init storage by genesis for test. {net:?}");
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
-        let genesis = Genesis::load_or_build(net)?;
+        let genesis = Self::load_or_build(net)?;
         let dag = BlockDAG::create_for_testing()?;
         let chain_info = genesis.execute_genesis_block(net, storage.clone(), dag.clone())?;
         Ok((storage, chain_info, genesis, dag))

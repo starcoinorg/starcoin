@@ -35,7 +35,7 @@ impl Default for SyncDagStoreConfig {
 
 impl SyncDagStoreConfig {
     pub fn new() -> Self {
-        SyncDagStoreConfig::default()
+        Self::default()
     }
 
     pub fn create_with_params(cache_size: usize, rocksdb_config: RocksdbConfig) -> Self {
@@ -78,7 +78,7 @@ impl SyncDagStore {
     }
 
     pub fn create_for_testing() -> anyhow::Result<Self> {
-        SyncDagStore::create_from_path(temp_dir(), SyncDagStoreConfig::default())
+        Self::create_from_path(temp_dir(), SyncDagStoreConfig::default())
     }
 
     pub fn save_block(&self, block: Block) -> anyhow::Result<()> {

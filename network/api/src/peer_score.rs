@@ -134,7 +134,7 @@ pub struct PeerScoreMetrics {
 }
 
 impl PeerScoreMetrics {
-    pub fn register(registry: &Registry) -> Result<PeerScoreMetrics> {
+    pub fn register(registry: &Registry) -> Result<Self> {
         let peer_score = UIntGaugeVec::new(
             Opts::new("peer_score", "peer sync score".to_string()),
             &["peer"],

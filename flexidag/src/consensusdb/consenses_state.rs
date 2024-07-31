@@ -20,7 +20,7 @@ impl KeyCodec<DagStateData> for Hash {
     }
 
     fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
-        Hash::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+        Self::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
     }
 }
 impl ValueCodec<DagStateData> for DagState {

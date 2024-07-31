@@ -69,7 +69,7 @@ impl Account {
         addr: Option<AccountAddress>,
     ) -> Self {
         let addr = addr.unwrap_or_else(|| pubkey.derived_address());
-        Account {
+        Self {
             addr,
             private_key: Arc::new(privkey),
         }
@@ -81,7 +81,7 @@ impl Account {
     /// the account will use ChainNetwork::genesis_key_pair() as its keypair.
     pub fn new_genesis_account(address: AccountAddress) -> Self {
         let (privkey, _pubkey) = genesis_key_pair();
-        Account {
+        Self {
             addr: address,
             private_key: Arc::new(AccountPrivateKey::Single(privkey)),
         }
@@ -93,7 +93,7 @@ impl Account {
     /// the account will use [`GENESIS_KEYPAIR`][struct@GENESIS_KEYPAIR] as its keypair.
     pub fn new_association() -> Self {
         let (privkey, _pubkey) = genesis_multi_key_pair();
-        Account {
+        Self {
             addr: account_config::association_address(),
             private_key: Arc::new(AccountPrivateKey::Multi(privkey)),
         }
@@ -557,7 +557,7 @@ impl AccountData {
         let account = account_blob
             .value_as::<Struct>()
             .unwrap()
-            .simple_serialize(&AccountData::layout())
+            .simple_serialize(&Self::layout())
             .unwrap();
         write_set.push((
             StateKey::AccessPath(self.make_account_access_path()),

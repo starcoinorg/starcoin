@@ -220,7 +220,7 @@ impl Arbitrary for AccountInfoUniverse {
                     .into_iter()
                     .map(|k| (k.private_key, k.public_key))
                     .collect();
-                AccountInfoUniverse::new(kps, /* epoch = */ 0)
+                Self::new(kps, /* epoch = */ 0)
             })
             .boxed()
     }
@@ -290,7 +290,7 @@ impl RawUserTransaction {
                     gas_unit_price,
                     expiration_time_secs,
                 )| {
-                    RawUserTransaction::new_with_default_gas_token(
+                    Self::new_with_default_gas_token(
                         sender,
                         sequence_number,
                         payload,
@@ -439,7 +439,7 @@ impl Arbitrary for Script {
             vec(any::<TypeTag>(), 0..4),
             vec(any::<Vec<u8>>(), 0..10),
         )
-            .prop_map(|(code, ty_args, args)| Script::new(code, ty_args, args))
+            .prop_map(|(code, ty_args, args)| Self::new(code, ty_args, args))
             .boxed()
     }
 }
@@ -458,7 +458,7 @@ impl Arbitrary for ScriptFunction {
             vec(any::<TransactionArgument>(), 0..10),
         )
             .prop_map(|(module, function, ty_args, args)| {
-                ScriptFunction::new(module, function, ty_args, convert_txn_args(&args))
+                Self::new(module, function, ty_args, convert_txn_args(&args))
             })
             .boxed()
     }
@@ -471,7 +471,7 @@ impl Arbitrary for Module {
     fn arbitrary_with(_args: ()) -> Self::Strategy {
         // XXX How should we generate random modules?
         // The vector sizes are picked out of thin air.
-        vec(any::<u8>(), 0..100).prop_map(Module::new).boxed()
+        vec(any::<u8>(), 0..100).prop_map(Self::new).boxed()
     }
 }
 
@@ -487,7 +487,7 @@ impl Package {
                 .expect("compile module serialize  must success");
             let first_module = Module::new(vec_bytes);
             let module_vec = vec![first_module];
-            Package::new(module_vec, Some(script)).expect("package init error")
+            Self::new(module_vec, Some(script)).expect("package init error")
         })
     }
 }
@@ -529,7 +529,7 @@ impl Arbitrary for BlockMetadata {
                     number,
                     parent_gas_used,
                 )| {
-                    BlockMetadata::new(
+                    Self::new(
                         parent_hash,
                         timestamp,
                         addresses,

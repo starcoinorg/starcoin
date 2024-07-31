@@ -40,8 +40,8 @@ impl Serialize for ViewOrRaw {
         S: serde::Serializer,
     {
         match self {
-            ViewOrRaw::View(v) => v.serialize(serializer),
-            ViewOrRaw::Raw(v) => v.serialize(serializer),
+            Self::View(v) => v.serialize(serializer),
+            Self::Raw(v) => v.serialize(serializer),
         }
     }
 }

@@ -334,7 +334,7 @@ impl EsSinker {
             .send()
             .await?;
 
-        EsSinker::check_status_code(resp).await
+        Self::check_status_code(resp).await
     }
 
     // bulk insert data into es.
@@ -363,7 +363,7 @@ impl EsSinker {
             .send()
             .await?;
 
-        EsSinker::check_status_code(resp).await
+        Self::check_status_code(resp).await
     }
 
     async fn check_status_code(resp: Response) -> anyhow::Result<()> {

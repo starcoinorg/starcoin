@@ -26,9 +26,7 @@ impl ChainNotifyHandlerService {
 }
 
 impl ServiceFactory<Self> for ChainNotifyHandlerService {
-    fn create(
-        ctx: &mut ServiceContext<ChainNotifyHandlerService>,
-    ) -> Result<ChainNotifyHandlerService> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         Ok(Self::new(storage))
     }
@@ -47,11 +45,7 @@ impl ActorService for ChainNotifyHandlerService {
 }
 
 impl EventHandler<Self, NewHeadBlock> for ChainNotifyHandlerService {
-    fn handle_event(
-        &mut self,
-        item: NewHeadBlock,
-        ctx: &mut ServiceContext<ChainNotifyHandlerService>,
-    ) {
+    fn handle_event(&mut self, item: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
         let block = item.executed_block.block();
         // notify header.
         self.notify_new_block(block, ctx);

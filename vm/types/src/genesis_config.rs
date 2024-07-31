@@ -22,34 +22,34 @@ type VersionNumber = u64;
 impl StdlibVersion {
     pub fn new(version: u64) -> Self {
         if version == 0 {
-            StdlibVersion::Latest
+            Self::Latest
         } else {
-            StdlibVersion::Version(version)
+            Self::Version(version)
         }
     }
 
     pub fn as_string(&self) -> String {
         match self {
-            StdlibVersion::Latest => "latest".to_string(),
-            StdlibVersion::Version(version) => format!("{}", version),
+            Self::Latest => "latest".to_string(),
+            Self::Version(version) => format!("{}", version),
         }
     }
 
     pub fn version(&self) -> u64 {
         match self {
-            StdlibVersion::Latest => 0,
-            StdlibVersion::Version(version) => *version,
+            Self::Latest => 0,
+            Self::Version(version) => *version,
         }
     }
 
     pub fn is_latest(&self) -> bool {
-        matches!(self, StdlibVersion::Latest)
+        matches!(self, Self::Latest)
     }
 
-    pub fn compatible_with_previous(version: &StdlibVersion) -> bool {
+    pub fn compatible_with_previous(version: &Self) -> bool {
         // currently only 4 is not compatible with previous version
         // Todo: need a better solution
-        !matches!(version, StdlibVersion::Version(4))
+        !matches!(version, Self::Version(4))
     }
 }
 
@@ -62,12 +62,10 @@ impl PartialOrd for StdlibVersion {
 impl Ord for StdlibVersion {
     fn cmp(&self, other: &Self) -> Ordering {
         match (self, other) {
-            (StdlibVersion::Latest, StdlibVersion::Latest) => Ordering::Equal,
-            (StdlibVersion::Latest, _) => Ordering::Greater,
-            (_, StdlibVersion::Latest) => Ordering::Less,
-            (StdlibVersion::Version(self_v), StdlibVersion::Version(other_v)) => {
-                self_v.cmp(other_v)
-            }
+            (Self::Latest, Self::Latest) => Ordering::Equal,
+            (Self::Latest, _) => Ordering::Greater,
+            (_, Self::Latest) => Ordering::Less,
+            (Self::Version(self_v), Self::Version(other_v)) => self_v.cmp(other_v),
         }
     }
 }
@@ -77,7 +75,7 @@ impl FromStr for StdlibVersion {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "latest" => Ok(StdlibVersion::Latest),
+            "latest" => Ok(Self::Latest),
             s => Ok(Self::new(s.parse()?)),
         }
     }
@@ -86,8 +84,8 @@ impl FromStr for StdlibVersion {
 impl Display for StdlibVersion {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            StdlibVersion::Latest => f.write_str("latest"),
-            StdlibVersion::Version(version) => f.write_str(version.to_string().as_str()),
+            Self::Latest => f.write_str("latest"),
+            Self::Version(version) => f.write_str(version.to_string().as_str()),
         }
     }
 }
@@ -127,10 +125,10 @@ impl ConsensusStrategy {
 impl fmt::Display for ConsensusStrategy {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ConsensusStrategy::Dummy => write!(f, "dummy"),
-            ConsensusStrategy::Argon => write!(f, "argon"),
-            ConsensusStrategy::Keccak => write!(f, "keccak"),
-            ConsensusStrategy::CryptoNight => write!(f, "cryptonight"),
+            Self::Dummy => write!(f, "dummy"),
+            Self::Argon => write!(f, "argon"),
+            Self::Keccak => write!(f, "keccak"),
+            Self::CryptoNight => write!(f, "cryptonight"),
         }
     }
 }
@@ -140,10 +138,10 @@ impl FromStr for ConsensusStrategy {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "dummy" => Ok(ConsensusStrategy::Dummy),
-            "argon" => Ok(ConsensusStrategy::Argon),
-            "keccak" => Ok(ConsensusStrategy::Keccak),
-            "cryptonight" => Ok(ConsensusStrategy::CryptoNight),
+            "dummy" => Ok(Self::Dummy),
+            "argon" => Ok(Self::Argon),
+            "keccak" => Ok(Self::Keccak),
+            "cryptonight" => Ok(Self::CryptoNight),
             s => Err(format_err!("Unknown ConsensusStrategy: {}", s)),
         }
     }
@@ -166,7 +164,7 @@ impl ChainId {
     }
 
     pub fn test() -> Self {
-        ChainId::new(255)
+        Self::new(255)
     }
 
     pub fn is_main(self) -> bool {
@@ -214,7 +212,7 @@ impl FromStr for ChainId {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let id: u8 = s.parse()?;
-        Ok(ChainId::new(id))
+        Ok(Self::new(id))
     }
 }
 

@@ -43,9 +43,7 @@ where
 }
 
 impl AccumulatorStorage<BlockAccumulatorStorage> {
-    pub fn new_block_accumulator_storage(
-        instance: StorageInstance,
-    ) -> AccumulatorStorage<BlockAccumulatorStorage> {
+    pub fn new_block_accumulator_storage(instance: StorageInstance) -> Self {
         Self {
             store: BlockAccumulatorStorage::new(instance),
         }
@@ -53,9 +51,7 @@ impl AccumulatorStorage<BlockAccumulatorStorage> {
 }
 
 impl AccumulatorStorage<TransactionAccumulatorStorage> {
-    pub fn new_transaction_accumulator_storage(
-        instance: StorageInstance,
-    ) -> AccumulatorStorage<TransactionAccumulatorStorage> {
+    pub fn new_transaction_accumulator_storage(instance: StorageInstance) -> Self {
         Self {
             store: TransactionAccumulatorStorage::new(instance),
         }

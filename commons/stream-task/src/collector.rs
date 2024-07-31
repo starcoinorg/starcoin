@@ -126,11 +126,11 @@ pub(crate) enum SinkError {
 }
 
 impl SinkError {
-    pub fn map_result(result: Result<(), SinkError>) -> Result<(), TaskError> {
+    pub fn map_result(result: Result<(), Self>) -> Result<(), TaskError> {
         match result {
             Err(err) => match err {
-                SinkError::StreamTaskError(err) => Err(err),
-                SinkError::CollectorEnough => Ok(()),
+                Self::StreamTaskError(err) => Err(err),
+                Self::CollectorEnough => Ok(()),
             },
             Ok(()) => Ok(()),
         }

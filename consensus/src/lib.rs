@@ -62,10 +62,10 @@ pub static G_CRYPTONIGHT: Lazy<CryptoNightConsensus> = Lazy::new(CryptoNightCons
 impl Consensus for ConsensusStrategy {
     fn calculate_next_difficulty(&self, reader: &dyn ChainReader) -> Result<U256> {
         match self {
-            ConsensusStrategy::Dummy => G_DUMMY.calculate_next_difficulty(reader),
-            ConsensusStrategy::Argon => G_ARGON.calculate_next_difficulty(reader),
-            ConsensusStrategy::Keccak => G_KECCAK.calculate_next_difficulty(reader),
-            ConsensusStrategy::CryptoNight => G_CRYPTONIGHT.calculate_next_difficulty(reader),
+            Self::Dummy => G_DUMMY.calculate_next_difficulty(reader),
+            Self::Argon => G_ARGON.calculate_next_difficulty(reader),
+            Self::Keccak => G_KECCAK.calculate_next_difficulty(reader),
+            Self::CryptoNight => G_CRYPTONIGHT.calculate_next_difficulty(reader),
         }
     }
 
@@ -76,16 +76,10 @@ impl Consensus for ConsensusStrategy {
         time_service: &dyn TimeService,
     ) -> u32 {
         match self {
-            ConsensusStrategy::Dummy => {
-                G_DUMMY.solve_consensus_nonce(mining_hash, difficulty, time_service)
-            }
-            ConsensusStrategy::Argon => {
-                G_ARGON.solve_consensus_nonce(mining_hash, difficulty, time_service)
-            }
-            ConsensusStrategy::Keccak => {
-                G_KECCAK.solve_consensus_nonce(mining_hash, difficulty, time_service)
-            }
-            ConsensusStrategy::CryptoNight => {
+            Self::Dummy => G_DUMMY.solve_consensus_nonce(mining_hash, difficulty, time_service),
+            Self::Argon => G_ARGON.solve_consensus_nonce(mining_hash, difficulty, time_service),
+            Self::Keccak => G_KECCAK.solve_consensus_nonce(mining_hash, difficulty, time_service),
+            Self::CryptoNight => {
                 G_CRYPTONIGHT.solve_consensus_nonce(mining_hash, difficulty, time_service)
             }
         }
@@ -93,10 +87,10 @@ impl Consensus for ConsensusStrategy {
 
     fn verify(&self, reader: &dyn ChainReader, header: &BlockHeader) -> Result<()> {
         match self {
-            ConsensusStrategy::Dummy => G_DUMMY.verify(reader, header),
-            ConsensusStrategy::Argon => G_ARGON.verify(reader, header),
-            ConsensusStrategy::Keccak => G_KECCAK.verify(reader, header),
-            ConsensusStrategy::CryptoNight => G_CRYPTONIGHT.verify(reader, header),
+            Self::Dummy => G_DUMMY.verify(reader, header),
+            Self::Argon => G_ARGON.verify(reader, header),
+            Self::Keccak => G_KECCAK.verify(reader, header),
+            Self::CryptoNight => G_CRYPTONIGHT.verify(reader, header),
         }
     }
 
@@ -107,12 +101,10 @@ impl Consensus for ConsensusStrategy {
         extra: &BlockHeaderExtra,
     ) -> Result<HashValue> {
         match self {
-            ConsensusStrategy::Dummy => G_DUMMY.calculate_pow_hash(mining_hash, nonce, extra),
-            ConsensusStrategy::Argon => G_ARGON.calculate_pow_hash(mining_hash, nonce, extra),
-            ConsensusStrategy::Keccak => G_KECCAK.calculate_pow_hash(mining_hash, nonce, extra),
-            ConsensusStrategy::CryptoNight => {
-                G_CRYPTONIGHT.calculate_pow_hash(mining_hash, nonce, extra)
-            }
+            Self::Dummy => G_DUMMY.calculate_pow_hash(mining_hash, nonce, extra),
+            Self::Argon => G_ARGON.calculate_pow_hash(mining_hash, nonce, extra),
+            Self::Keccak => G_KECCAK.calculate_pow_hash(mining_hash, nonce, extra),
+            Self::CryptoNight => G_CRYPTONIGHT.calculate_pow_hash(mining_hash, nonce, extra),
         }
     }
 }

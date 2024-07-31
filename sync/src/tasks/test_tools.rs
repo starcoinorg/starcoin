@@ -38,7 +38,7 @@ pub struct SyncTestSystem {
 
 #[cfg(test)]
 impl SyncTestSystem {
-    pub async fn initialize_sync_system() -> Result<SyncTestSystem> {
+    pub async fn initialize_sync_system() -> Result<Self> {
         let config = Arc::new(NodeConfig::random_for_dag_test());
 
         let temp_path = PathBuf::from(starcoin_config::temp_dir().as_ref());
@@ -117,7 +117,7 @@ impl SyncTestSystem {
 
         let registry = registry_receiver.recv().await.unwrap();
 
-        Ok(SyncTestSystem {
+        Ok(Self {
             target_node,
             local_node,
             registry,

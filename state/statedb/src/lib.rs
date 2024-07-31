@@ -49,13 +49,13 @@ enum CacheItem {
 
 impl CacheItem {
     fn new(obj: Arc<AccountStateObject>) -> Self {
-        CacheItem::AccountObject(obj)
+        Self::AccountObject(obj)
     }
 
     fn as_object(&self) -> Option<Arc<AccountStateObject>> {
         match self {
-            CacheItem::AccountObject(obj) => Some(obj.clone()),
-            CacheItem::AccountNotExist() => None,
+            Self::AccountObject(obj) => Some(obj.clone()),
+            Self::AccountNotExist() => None,
         }
     }
 }
@@ -235,7 +235,7 @@ impl ChainStateDB {
     }
 
     pub fn new(store: Arc<dyn StateNodeStore>, root_hash: Option<HashValue>) -> Self {
-        let mut chain_statedb = ChainStateDB {
+        let mut chain_statedb = Self {
             store: store.clone(),
             state_tree: StateTree::new(store.clone(), root_hash),
             cache: Mutex::new(LruCache::new(G_DEFAULT_CACHE_SIZE)),

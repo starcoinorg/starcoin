@@ -121,7 +121,7 @@ impl TaskState for MockTaskState {
             None
         } else {
             let next = self.state + self.config.batch_size;
-            Some(MockTaskState {
+            Some(Self {
                 state: next,
                 config: self.config.clone(),
             })

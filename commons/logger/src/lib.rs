@@ -58,9 +58,9 @@ impl FromStr for LogPattern {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s.to_lowercase().as_str() {
-            "default" => LogPattern::Default,
-            "withline" | "with_line" => LogPattern::WithLine,
-            _ => LogPattern::Custom(s.to_owned()),
+            "default" => Self::Default,
+            "withline" | "with_line" => Self::WithLine,
+            _ => Self::Custom(s.to_owned()),
         })
     }
 }
@@ -68,16 +68,16 @@ impl FromStr for LogPattern {
 impl LogPattern {
     pub fn get_pattern(&self) -> String {
         match self {
-            LogPattern::Default => LOG_PATTERN_DEFAULT.to_owned(),
-            LogPattern::WithLine => LOG_PATTERN_WITH_LINE.to_owned(),
-            LogPattern::Custom(pattern) => pattern.clone(),
+            Self::Default => LOG_PATTERN_DEFAULT.to_owned(),
+            Self::WithLine => LOG_PATTERN_WITH_LINE.to_owned(),
+            Self::Custom(pattern) => pattern.clone(),
         }
     }
 
-    pub fn by_level(level: LevelFilter) -> LogPattern {
+    pub fn by_level(level: LevelFilter) -> Self {
         match level {
-            LevelFilter::Trace | LevelFilter::Debug => LogPattern::WithLine,
-            _ => LogPattern::Default,
+            LevelFilter::Trace | LevelFilter::Debug => Self::WithLine,
+            _ => Self::Default,
         }
     }
 }
@@ -85,9 +85,9 @@ impl LogPattern {
 impl std::fmt::Display for LogPattern {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let log_pattern = match self {
-            LogPattern::Default => "default".to_owned(),
-            LogPattern::WithLine => "withline".to_owned(),
-            LogPattern::Custom(p) => format!("custom({})", p),
+            Self::Default => "default".to_owned(),
+            Self::WithLine => "withline".to_owned(),
+            Self::Custom(p) => format!("custom({})", p),
         };
         write!(f, "{}", log_pattern)
     }

@@ -298,7 +298,7 @@ impl ValueCodec for OldFailedBlockV2 {
 
 impl BlockStorage {
     pub fn new(instance: StorageInstance) -> Self {
-        BlockStorage {
+        Self {
             block_store: BlockInnerStorage::new(instance.clone()),
             header_store: BlockHeaderStorage::new(instance.clone()),
             body_store: BlockBodyStorage::new(instance.clone()),

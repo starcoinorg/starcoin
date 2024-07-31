@@ -77,7 +77,7 @@ pub enum Transaction<K, V> {
 
 impl TransactionGenParams {
     pub fn new_dynamic() -> Self {
-        TransactionGenParams {
+        Self {
             write_size: 5,
             read_size: 10,
             read_write_alternatives: 4,
@@ -87,7 +87,7 @@ impl TransactionGenParams {
 
 impl Default for TransactionGenParams {
     fn default() -> Self {
-        TransactionGenParams {
+        Self {
             write_size: 5,
             read_size: 10,
             read_write_alternatives: 2,

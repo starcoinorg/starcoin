@@ -106,15 +106,15 @@ impl Epoch {
     pub fn struct_tag_for_epoch() -> StructTag {
         StructTag {
             address: CORE_CODE_ADDRESS,
-            name: Epoch::struct_identifier(),
-            module: Epoch::module_identifier(),
+            name: Self::struct_identifier(),
+            module: Self::module_identifier(),
             type_params: vec![],
         }
     }
 
     // TODO: remove this once the MoveResource trait allows type arguments to `resource_path`.
     pub fn data_path_for() -> DataPath {
-        AccessPath::resource_data_path(Epoch::struct_tag_for_epoch())
+        AccessPath::resource_data_path(Self::struct_tag_for_epoch())
     }
 }
 
@@ -131,7 +131,7 @@ pub struct EpochInfo {
 
 impl EpochInfo {
     pub fn new(epoch: Epoch, epoch_data: EpochData) -> Self {
-        EpochInfo { epoch, epoch_data }
+        Self { epoch, epoch_data }
     }
 
     pub fn epoch(&self) -> &Epoch {
@@ -218,14 +218,14 @@ impl EpochData {
     pub fn struct_tag_for_epoch() -> StructTag {
         StructTag {
             address: CORE_CODE_ADDRESS,
-            name: EpochData::struct_identifier(),
-            module: EpochData::module_identifier(),
+            name: Self::struct_identifier(),
+            module: Self::module_identifier(),
             type_params: vec![],
         }
     }
 
     // TODO: remove this once the MoveResource trait allows type arguments to `resource_path`.
     pub fn data_path_for() -> DataPath {
-        AccessPath::resource_data_path(EpochData::struct_tag_for_epoch())
+        AccessPath::resource_data_path(Self::struct_tag_for_epoch())
     }
 }

@@ -40,7 +40,7 @@ pub trait StdlibCompat {
 
 impl StdlibCompat for StdlibVersion {
     fn upgrade_module_type_tag(&self) -> TypeTag {
-        let struct_name = if self > &StdlibVersion::Version(2) {
+        let struct_name = if self > &Self::Version(2) {
             "UpgradeModuleV2"
         } else {
             "UpgradeModule"
@@ -63,7 +63,7 @@ impl StdlibCompat for StdlibVersion {
     ) -> ScriptFunction {
         // propose_module_upgrade_v2 is available after v2 upgrade.
         // 'self' is the target stdlib version to be upgraded to.
-        let (function_name, args) = if self > &StdlibVersion::Version(2) {
+        let (function_name, args) = if self > &Self::Version(2) {
             (
                 "propose_module_upgrade_v2",
                 vec![
@@ -110,10 +110,7 @@ impl StdlibCompat for StdlibVersion {
         package_hash: HashValue,
         enforced: bool,
     ) -> ScriptFunction {
-        assert!(
-            self > &StdlibVersion::Version(12),
-            "Expect stdlib version > 12."
-        );
+        assert!(self > &Self::Version(12), "Expect stdlib version > 12.");
 
         let args = vec![
             bcs_ext::to_bytes(title).unwrap(),

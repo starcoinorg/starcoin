@@ -19,7 +19,7 @@ pub struct AccountState {
 }
 
 impl AccountState {
-    pub fn new(code_root: Option<HashValue>, resource_root: HashValue) -> AccountState {
+    pub fn new(code_root: Option<HashValue>, resource_root: HashValue) -> Self {
         let mut storage_roots = vec![None; DataType::LENGTH];
         storage_roots[DataType::CODE.storage_index()] = code_root;
         storage_roots[DataType::RESOURCE.storage_index()] = Some(resource_root);

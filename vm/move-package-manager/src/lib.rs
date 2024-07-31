@@ -71,9 +71,9 @@ enum Format {
 impl Display for Format {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Format::Pretty => write!(f, "pretty"),
-            Format::Terse => write!(f, "terse"),
-            Format::Json => write!(f, "json"),
+            Self::Pretty => write!(f, "pretty"),
+            Self::Terse => write!(f, "terse"),
+            Self::Json => write!(f, "json"),
         }
     }
 }
@@ -87,11 +87,11 @@ impl Format {
 impl FromStr for Format {
     type Err = String;
 
-    fn from_str(s: &str) -> std::result::Result<Format, std::string::String> {
+    fn from_str(s: &str) -> std::result::Result<Self, std::string::String> {
         match s {
-            "pretty" => Ok(Format::Pretty),
-            "terse" => Ok(Format::Terse),
-            "json" => Ok(Format::Json),
+            "pretty" => Ok(Self::Pretty),
+            "terse" => Ok(Self::Terse),
+            "json" => Ok(Self::Json),
             _ => Err(format!("Unsupported format: {}", s)),
         }
     }

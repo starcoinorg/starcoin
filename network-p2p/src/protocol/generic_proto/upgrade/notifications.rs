@@ -112,7 +112,7 @@ pub struct NotificationsOutSubstream<TSubstream> {
 impl NotificationsIn {
     /// Builds a new potential upgrade.
     pub fn new(protocol_name: impl Into<Cow<'static, str>>, max_notification_size: u64) -> Self {
-        NotificationsIn {
+        Self {
             protocol_name: protocol_name.into(),
             max_notification_size,
         }
@@ -324,7 +324,7 @@ impl NotificationsOut {
             error!(target: "sub-libp2p", "Outbound networking handshake is above allowed protocol limit");
         }
 
-        NotificationsOut {
+        Self {
             protocol_name: protocol_name.into(),
             initial_message,
             max_notification_size,
@@ -436,13 +436,11 @@ pub enum NotificationsHandshakeError {
 impl From<unsigned_varint::io::ReadError> for NotificationsHandshakeError {
     fn from(err: unsigned_varint::io::ReadError) -> Self {
         match err {
-            unsigned_varint::io::ReadError::Io(err) => NotificationsHandshakeError::Io(err),
-            unsigned_varint::io::ReadError::Decode(err) => {
-                NotificationsHandshakeError::VarintDecode(err)
-            }
+            unsigned_varint::io::ReadError::Io(err) => Self::Io(err),
+            unsigned_varint::io::ReadError::Decode(err) => Self::VarintDecode(err),
             _ => {
                 log::warn!("Unrecognized varint decoding error");
-                NotificationsHandshakeError::Io(From::from(io::ErrorKind::InvalidData))
+                Self::Io(From::from(io::ErrorKind::InvalidData))
             }
         }
     }

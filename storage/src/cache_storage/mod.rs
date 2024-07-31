@@ -22,13 +22,13 @@ pub struct GCacheStorage<K: Hash + Eq + Default, V: Default> {
 
 impl<K: Hash + Eq + Default, V: Default> GCacheStorage<K, V> {
     pub fn new(metrics: Option<StorageMetrics>) -> Self {
-        GCacheStorage {
+        Self {
             cache: Mutex::new(LruCache::<K, V>::new(DEFAULT_CACHE_SIZE)),
             metrics,
         }
     }
     pub fn new_with_capacity(size: usize, metrics: Option<StorageMetrics>) -> Self {
-        GCacheStorage {
+        Self {
             cache: Mutex::new(LruCache::<K, V>::new(size)),
             metrics,
         }

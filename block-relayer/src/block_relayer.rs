@@ -41,7 +41,7 @@ pub struct BlockRelayer {
 }
 
 impl ServiceFactory<Self> for BlockRelayer {
-    fn create(ctx: &mut ServiceContext<BlockRelayer>) -> Result<BlockRelayer> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let txpool = ctx.get_shared::<TxPoolService>()?;
         let node_config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let time_service = node_config.net().time_service();
@@ -200,7 +200,7 @@ impl BlockRelayer {
     fn handle_block_event(
         &self,
         compact_block_msg: PeerCompactBlockMessage,
-        ctx: &mut ServiceContext<BlockRelayer>,
+        ctx: &mut ServiceContext<Self>,
     ) -> Result<()> {
         let network = ctx.get_shared::<NetworkServiceRef>()?;
         let block_connector_service = ctx
@@ -231,7 +231,7 @@ impl BlockRelayer {
                 let _timer = metrics
                     .as_ref()
                     .map(|metrics| metrics.txns_filled_time.start_timer());
-                let block = BlockRelayer::fill_compact_block(
+                let block = Self::fill_compact_block(
                     txpool.clone(),
                     rpc_client,
                     compact_block,
@@ -278,7 +278,7 @@ impl EventHandler<Self, SyncStatusChangeEvent> for BlockRelayer {
 }
 
 impl EventHandler<Self, NewHeadBlock> for BlockRelayer {
-    fn handle_event(&mut self, event: NewHeadBlock, ctx: &mut ServiceContext<BlockRelayer>) {
+    fn handle_event(&mut self, event: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
         debug!(
             "[block-relay] Handle new head block event, block_id: {:?}",
             event.executed_block.block().id()
@@ -295,7 +295,7 @@ impl EventHandler<Self, NewHeadBlock> for BlockRelayer {
 }
 
 impl EventHandler<Self, NewDagBlock> for BlockRelayer {
-    fn handle_event(&mut self, event: NewDagBlock, ctx: &mut ServiceContext<BlockRelayer>) {
+    fn handle_event(&mut self, event: NewDagBlock, ctx: &mut ServiceContext<Self>) {
         debug!(
             "[block-relay] Handle new dag block event, block_id: {:?}",
             event.executed_block.block().id()
@@ -312,7 +312,7 @@ impl EventHandler<Self, NewDagBlock> for BlockRelayer {
 }
 
 impl EventHandler<Self, NewBranch> for BlockRelayer {
-    fn handle_event(&mut self, event: NewBranch, ctx: &mut ServiceContext<BlockRelayer>) {
+    fn handle_event(&mut self, event: NewBranch, ctx: &mut ServiceContext<Self>) {
         debug!(
             "[block-relay] Handle new branch event, block_id: {:?}",
             event.0.block().id()
@@ -332,7 +332,7 @@ impl EventHandler<Self, PeerCompactBlockMessage> for BlockRelayer {
     fn handle_event(
         &mut self,
         compact_block_msg: PeerCompactBlockMessage,
-        ctx: &mut ServiceContext<BlockRelayer>,
+        ctx: &mut ServiceContext<Self>,
     ) {
         let block_timestamp = compact_block_msg.message.compact_block.header.timestamp();
         let current_timestamp = self.time_service.now_millis();

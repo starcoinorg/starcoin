@@ -19,8 +19,8 @@ impl WriteOp {
     #[inline]
     pub fn is_deletion(&self) -> bool {
         match self {
-            WriteOp::Deletion => true,
-            WriteOp::Value(_) => false,
+            Self::Deletion => true,
+            Self::Value(_) => false,
         }
     }
 }
@@ -28,13 +28,13 @@ impl WriteOp {
 impl std::fmt::Debug for WriteOp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            WriteOp::Value(value) => write!(
+            Self::Value(value) => write!(
                 f,
                 "Value({})",
                 value.iter().fold(String::new(), |acc, byte| acc
                     .add(format!("{:02x}", byte).as_str()))
             ),
-            WriteOp::Deletion => write!(f, "Deletion"),
+            Self::Deletion => write!(f, "Deletion"),
         }
     }
 }

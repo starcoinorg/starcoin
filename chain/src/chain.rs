@@ -1925,7 +1925,7 @@ impl ChainReader for BlockChain {
             None
         };
 
-        BlockChain::new_with_uncles(
+        Self::new_with_uncles(
             self.time_service.clone(),
             head,
             uncles,

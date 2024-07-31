@@ -57,7 +57,7 @@ impl ChainBencher {
         .expect("create block chain should success.");
         let miner_account = AccountInfo::random();
 
-        ChainBencher {
+        Self {
             net,
             chain: Arc::new(RwLock::new(chain)),
             block_num: num.unwrap_or(100),

@@ -102,7 +102,7 @@ impl MerkleAccumulator {
     }
 
     /// Fork a new accumulator base on current accumulator
-    pub fn fork(&self, info: Option<AccumulatorInfo>) -> MerkleAccumulator {
+    pub fn fork(&self, info: Option<AccumulatorInfo>) -> Self {
         Self::new_with_info(
             info.unwrap_or_else(|| self.get_info()),
             self.tree.lock().store.clone(),

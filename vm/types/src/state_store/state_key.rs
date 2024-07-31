@@ -28,6 +28,6 @@ pub enum StateKey {
 
 impl StateKey {
     pub fn table_item(handle: TableHandle, key: Vec<u8>) -> Self {
-        StateKey::TableItem(TableItem { handle, key })
+        Self::TableItem(TableItem { handle, key })
     }
 }

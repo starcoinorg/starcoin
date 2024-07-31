@@ -33,7 +33,7 @@ impl CompactBlock {
             .map(|tx| tx.id())
             .map(ShortId)
             .collect();
-        CompactBlock {
+        Self {
             header,
             short_ids,
             prefilled_txn,
@@ -48,7 +48,7 @@ impl CompactBlock {
 
 impl From<Block> for CompactBlock {
     fn from(block: Block) -> Self {
-        CompactBlock::new(block)
+        Self::new(block)
     }
 }
 

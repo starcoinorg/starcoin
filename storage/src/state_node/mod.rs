@@ -15,6 +15,6 @@ impl ValueCodec for StateNode {
         Ok(self.0.clone())
     }
     fn decode_value(data: &[u8]) -> Result<Self> {
-        Ok(StateNode(data.to_vec()))
+        Ok(Self(data.to_vec()))
     }
 }

@@ -152,19 +152,19 @@ pub enum AnnotatedMoveValueView {
 impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
     fn from(origin: AnnotatedMoveValue) -> Self {
         match origin {
-            AnnotatedMoveValue::U8(u) => AnnotatedMoveValueView::U8(u),
-            AnnotatedMoveValue::U64(u) => AnnotatedMoveValueView::U64(StrView(u)),
-            AnnotatedMoveValue::U128(u) => AnnotatedMoveValueView::U128(StrView(u)),
-            AnnotatedMoveValue::Bool(b) => AnnotatedMoveValueView::Bool(b),
-            AnnotatedMoveValue::Address(data) => AnnotatedMoveValueView::Address(data),
+            AnnotatedMoveValue::U8(u) => Self::U8(u),
+            AnnotatedMoveValue::U64(u) => Self::U64(StrView(u)),
+            AnnotatedMoveValue::U128(u) => Self::U128(StrView(u)),
+            AnnotatedMoveValue::Bool(b) => Self::Bool(b),
+            AnnotatedMoveValue::Address(data) => Self::Address(data),
             AnnotatedMoveValue::Vector(data) => {
-                AnnotatedMoveValueView::Vector(data.into_iter().map(Into::into).collect())
+                Self::Vector(data.into_iter().map(Into::into).collect())
             }
-            AnnotatedMoveValue::Bytes(data) => AnnotatedMoveValueView::Bytes(StrView(data)),
-            AnnotatedMoveValue::Struct(data) => AnnotatedMoveValueView::Struct(data.into()),
-            AnnotatedMoveValue::U16(u) => AnnotatedMoveValueView::U16(StrView(u)),
-            AnnotatedMoveValue::U32(u) => AnnotatedMoveValueView::U32(StrView(u)),
-            AnnotatedMoveValue::U256(u) => AnnotatedMoveValueView::U256(StrView(u)),
+            AnnotatedMoveValue::Bytes(data) => Self::Bytes(StrView(data)),
+            AnnotatedMoveValue::Struct(data) => Self::Struct(data.into()),
+            AnnotatedMoveValue::U16(u) => Self::U16(StrView(u)),
+            AnnotatedMoveValue::U32(u) => Self::U32(StrView(u)),
+            AnnotatedMoveValue::U256(u) => Self::U256(StrView(u)),
         }
     }
 }
@@ -208,7 +208,7 @@ pub struct TransactionRequest {
 
 impl From<RawUserTransaction> for TransactionRequest {
     fn from(raw: RawUserTransaction) -> Self {
-        let mut request = TransactionRequest {
+        let mut request = Self {
             sender: Some(raw.sender()),
             sequence_number: Some(raw.sequence_number()),
             script: None,
@@ -271,7 +271,7 @@ impl<'de> Deserialize<'de> for ArgumentsView {
         D: Deserializer<'de>,
     {
         let args = <Vec<TransactionArgumentView>>::deserialize(deserializer)?;
-        Ok(ArgumentsView::HumanReadable(args))
+        Ok(Self::HumanReadable(args))
     }
 }
 
@@ -343,7 +343,7 @@ impl Into<TransactionPayload> for ScriptData {
 impl From<Script> for ScriptData {
     fn from(s: Script) -> Self {
         let (code, ty_args, args) = s.into_inner();
-        ScriptData {
+        Self {
             code: StrView(ByteCodeOrScriptFunction::ByteCode(code)),
             type_args: ty_args.into_iter().map(TypeTagView::from).collect(),
             args: ArgumentsView::BCS(args.into_iter().map(StrView).collect()),
@@ -354,7 +354,7 @@ impl From<Script> for ScriptData {
 impl From<ScriptFunction> for ScriptData {
     fn from(s: ScriptFunction) -> Self {
         let (module, function, ty_args, args) = s.into_inner();
-        ScriptData {
+        Self {
             code: StrView(ByteCodeOrScriptFunction::ScriptFunction(FunctionId {
                 module,
                 function,
@@ -374,8 +374,8 @@ pub enum ByteCodeOrScriptFunction {
 impl std::fmt::Display for ByteCodeOrScriptFunction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
-            ByteCodeOrScriptFunction::ByteCode(c) => write!(f, "0x{}", hex::encode(c)),
-            ByteCodeOrScriptFunction::ScriptFunction(FunctionId { module, function }) => {
+            Self::ByteCode(c) => write!(f, "0x{}", hex::encode(c)),
+            Self::ScriptFunction(FunctionId { module, function }) => {
                 write!(f, "{}::{}", module, function)
             }
         }
@@ -389,12 +389,12 @@ impl FromStr for ByteCodeOrScriptFunction {
         if splits.len() == 2 {
             let module_id = ModuleIdView::from_str(splits[1])?;
             let function = Identifier::new(splits[0])?;
-            Ok(ByteCodeOrScriptFunction::ScriptFunction(FunctionId {
+            Ok(Self::ScriptFunction(FunctionId {
                 module: module_id.0,
                 function,
             }))
         } else {
-            Ok(ByteCodeOrScriptFunction::ByteCode(hex::decode(
+            Ok(Self::ByteCode(hex::decode(
                 s.strip_prefix("0x").unwrap_or(s),
             )?))
         }
@@ -439,7 +439,7 @@ pub struct BlockHeaderView {
 
 impl From<BlockHeader> for BlockHeaderView {
     fn from(origin: BlockHeader) -> Self {
-        BlockHeaderView {
+        Self {
             block_hash: origin.id(),
             parent_hash: origin.parent_hash(),
             timestamp: origin.timestamp().into(),
@@ -462,7 +462,7 @@ impl From<BlockHeader> for BlockHeaderView {
 
 impl From<BlockHeaderView> for BlockHeader {
     fn from(header_view: BlockHeaderView) -> Self {
-        BlockHeader::new(
+        Self::new(
             header_view.parent_hash,
             header_view.timestamp.0,
             header_view.number.0,
@@ -524,7 +524,7 @@ impl TryFrom<RawUserTransaction> for RawUserTransactionView {
     type Error = anyhow::Error;
 
     fn try_from(origin: RawUserTransaction) -> Result<Self, Self::Error> {
-        Ok(RawUserTransactionView {
+        Ok(Self {
             sender: origin.sender(),
             sequence_number: origin.sequence_number().into(),
             max_gas_amount: origin.max_gas_amount().into(),
@@ -540,7 +540,7 @@ impl TryFrom<RawUserTransaction> for RawUserTransactionView {
 
 impl From<RawUserTransactionView> for RawUserTransaction {
     fn from(transaction_view: RawUserTransactionView) -> Self {
-        RawUserTransaction::new(
+        Self::new(
             transaction_view.sender,
             transaction_view.sequence_number.0,
             TransactionPayload::decode(transaction_view.payload.0.as_slice()).unwrap(),
@@ -566,11 +566,9 @@ pub enum TransactionPayloadView {
 impl From<DecodedTransactionPayload> for TransactionPayloadView {
     fn from(orig: DecodedTransactionPayload) -> Self {
         match orig {
-            DecodedTransactionPayload::Script(s) => TransactionPayloadView::Script(s.into()),
-            DecodedTransactionPayload::Package(p) => TransactionPayloadView::Package(p.into()),
-            DecodedTransactionPayload::ScriptFunction(s) => {
-                TransactionPayloadView::ScriptFunction(s.into())
-            }
+            DecodedTransactionPayload::Script(s) => Self::Script(s.into()),
+            DecodedTransactionPayload::Package(p) => Self::Package(p.into()),
+            DecodedTransactionPayload::ScriptFunction(s) => Self::ScriptFunction(s.into()),
         }
     }
 }
@@ -649,7 +647,7 @@ impl TryFrom<SignedUserTransaction> for SignedUserTransactionView {
     fn try_from(txn: SignedUserTransaction) -> Result<Self, Self::Error> {
         let auth = txn.authenticator();
         let txn_hash = txn.id();
-        Ok(SignedUserTransactionView {
+        Ok(Self {
             transaction_hash: txn_hash,
             raw_txn: txn.into_raw_transaction().try_into()?,
             authenticator: auth,
@@ -684,7 +682,7 @@ impl From<BlockMetadata> for BlockMetadataView {
             parent_gas_used,
             parents_hash,
         ) = origin.into_inner();
-        BlockMetadataView {
+        Self {
             parent_hash,
             timestamp: timestamp.into(),
             author,
@@ -701,7 +699,7 @@ impl From<BlockMetadata> for BlockMetadataView {
 #[allow(clippy::from_over_into)]
 impl Into<BlockMetadata> for BlockMetadataView {
     fn into(self) -> BlockMetadata {
-        let BlockMetadataView {
+        let Self {
             parent_hash,
             timestamp,
             author,
@@ -792,7 +790,7 @@ impl TryFrom<Vec<SignedUserTransaction>> for BlockTransactionsView {
     type Error = anyhow::Error;
 
     fn try_from(txns: Vec<SignedUserTransaction>) -> Result<Self, Self::Error> {
-        Ok(BlockTransactionsView::Full(
+        Ok(Self::Full(
             txns.into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<Vec<_>, _>>()?,
@@ -821,7 +819,7 @@ impl TryFrom<BlockTransactionsView> for Vec<SignedUserTransaction> {
 
 impl From<Vec<HashValue>> for BlockTransactionsView {
     fn from(txns: Vec<HashValue>) -> Self {
-        BlockTransactionsView::Hashes(txns)
+        Self::Hashes(txns)
     }
 }
 
@@ -871,7 +869,7 @@ impl BlockView {
         } else {
             transactions.try_into()?
         };
-        Ok(BlockView {
+        Ok(Self {
             header: header.into(),
             uncles: uncles
                 .unwrap_or_default()
@@ -904,7 +902,7 @@ impl TryFrom<BlockView> for Block {
             .collect();
         let transactions = block_view.body.try_into()?;
 
-        Ok(Block {
+        Ok(Self {
             header: block_header,
             body: BlockBody::new(transactions, Some(uncles)),
         })
@@ -939,7 +937,7 @@ pub struct TransactionInfoView {
 
 impl TransactionInfoView {
     pub fn new(txn_info: RichTransactionInfo) -> Self {
-        TransactionInfoView {
+        Self {
             block_hash: txn_info.block_id,
             block_number: txn_info.block_number.into(),
             transaction_hash: txn_info.transaction_hash,
@@ -955,7 +953,7 @@ impl TransactionInfoView {
 
 impl From<RichTransactionInfo> for TransactionInfoView {
     fn from(txn_info: RichTransactionInfo) -> Self {
-        TransactionInfoView::new(txn_info)
+        Self::new(txn_info)
     }
 }
 
@@ -965,7 +963,7 @@ impl TryFrom<TransactionInfoView> for RichTransactionInfo {
     fn try_from(view: TransactionInfoView) -> Result<Self, Self::Error> {
         let status: TransactionStatus = view.status.clone().into();
         match status {
-            TransactionStatus::Keep(kept_status) => Ok(RichTransactionInfo::new(
+            TransactionStatus::Keep(kept_status) => Ok(Self::new(
                 view.block_hash,
                 view.block_number.0,
                 TransactionInfo {
@@ -1028,9 +1026,9 @@ impl From<TransactionStatus> for TransactionStatusView {
 impl From<KeptVMStatus> for TransactionStatusView {
     fn from(origin: KeptVMStatus) -> Self {
         match origin {
-            KeptVMStatus::Executed => TransactionStatusView::Executed,
-            KeptVMStatus::OutOfGas => TransactionStatusView::OutOfGas,
-            KeptVMStatus::MoveAbort(l, c) => TransactionStatusView::MoveAbort {
+            KeptVMStatus::Executed => Self::Executed,
+            KeptVMStatus::OutOfGas => Self::OutOfGas,
+            KeptVMStatus::MoveAbort(l, c) => Self::MoveAbort {
                 location: l,
                 abort_code: c.into(),
             },
@@ -1038,12 +1036,12 @@ impl From<KeptVMStatus> for TransactionStatusView {
                 location,
                 function,
                 code_offset,
-            } => TransactionStatusView::ExecutionFailure {
+            } => Self::ExecutionFailure {
                 location,
                 function,
                 code_offset,
             },
-            KeptVMStatus::MiscellaneousError => TransactionStatusView::MiscellaneousError,
+            KeptVMStatus::MiscellaneousError => Self::MiscellaneousError,
         }
     }
 }
@@ -1060,20 +1058,20 @@ impl From<DiscardedVMStatus> for TransactionStatusView {
 impl From<TransactionStatusView> for TransactionStatus {
     fn from(value: TransactionStatusView) -> Self {
         match value {
-            TransactionStatusView::Executed => TransactionStatus::Keep(KeptVMStatus::Executed),
-            TransactionStatusView::OutOfGas => TransactionStatus::Keep(KeptVMStatus::OutOfGas),
+            TransactionStatusView::Executed => Self::Keep(KeptVMStatus::Executed),
+            TransactionStatusView::OutOfGas => Self::Keep(KeptVMStatus::OutOfGas),
             TransactionStatusView::MoveAbort {
                 location,
                 abort_code,
-            } => TransactionStatus::Keep(KeptVMStatus::MoveAbort(location, abort_code.0)),
+            } => Self::Keep(KeptVMStatus::MoveAbort(location, abort_code.0)),
             TransactionStatusView::MiscellaneousError => {
-                TransactionStatus::Keep(KeptVMStatus::MiscellaneousError)
+                Self::Keep(KeptVMStatus::MiscellaneousError)
             }
             TransactionStatusView::ExecutionFailure {
                 location,
                 function,
                 code_offset,
-            } => TransactionStatus::Keep(KeptVMStatus::ExecutionFailure {
+            } => Self::Keep(KeptVMStatus::ExecutionFailure {
                 location,
                 function,
                 code_offset,
@@ -1081,14 +1079,14 @@ impl From<TransactionStatusView> for TransactionStatus {
             TransactionStatusView::Discard {
                 status_code,
                 status_code_name: _,
-            } => TransactionStatus::Discard(
+            } => Self::Discard(
                 status_code
                     .0
                     .try_into()
                     .ok()
                     .unwrap_or(StatusCode::UNKNOWN_STATUS),
             ),
-            TransactionStatusView::Retry => TransactionStatus::Retry,
+            TransactionStatusView::Retry => Self::Retry,
         }
     }
 }
@@ -1124,7 +1122,7 @@ pub struct TransactionEventView {
 
 impl From<ContractEventInfo> for TransactionEventView {
     fn from(info: ContractEventInfo) -> Self {
-        TransactionEventView {
+        Self {
             block_hash: Some(info.block_hash),
             block_number: Some(info.block_number.into()),
             transaction_hash: Some(info.transaction_hash),
@@ -1141,7 +1139,7 @@ impl From<ContractEventInfo> for TransactionEventView {
 
 impl From<ContractEvent> for TransactionEventView {
     fn from(event: ContractEvent) -> Self {
-        TransactionEventView {
+        Self {
             block_hash: None,
             block_number: None,
             transaction_hash: None,
@@ -1252,7 +1250,7 @@ impl From<(AccessPath, WriteOp)> for TransactionOutputAction {
             ),
         };
 
-        TransactionOutputAction {
+        Self {
             access_path,
             action,
             value,
@@ -1286,7 +1284,7 @@ impl From<(TableItem, WriteOp)> for TransactionOutputTableItemAction {
             WriteOp::Value(v) => (WriteOpView::Value, Some(StrView(v))),
         };
 
-        TransactionOutputTableItemAction {
+        Self {
             table_item: table_item.into(),
             action,
             value,
@@ -1415,7 +1413,7 @@ impl From<StateWithProofView> for StateWithProof {
             view.account_proof.into(),
             view.account_state_proof.into(),
         );
-        StateWithProof::new(state, proof)
+        Self::new(state, proof)
     }
 }
 
@@ -1466,7 +1464,7 @@ impl From<StateWithTableItemProofView> for StateWithTableItemProof {
             SparseMerkleProof::from(view.key_proof.1),
             view.key_proof.2,
         );
-        StateWithTableItemProof::new(state_proof, table_handle_proof, key_proof)
+        Self::new(state_proof, table_handle_proof, key_proof)
     }
 }
 
@@ -1511,7 +1509,7 @@ impl TryFrom<EventWithProofView> for EventWithProof {
     type Error = anyhow::Error;
 
     fn try_from(value: EventWithProofView) -> Result<Self, Self::Error> {
-        Ok(EventWithProof {
+        Ok(Self {
             event: ContractEvent::decode(value.event.0.as_slice())?,
             proof: value.proof.into(),
         })
@@ -1541,7 +1539,7 @@ impl TryFrom<TransactionInfoWithProofView> for TransactionInfoWithProof {
     type Error = anyhow::Error;
 
     fn try_from(view: TransactionInfoWithProofView) -> Result<Self, Self::Error> {
-        Ok(TransactionInfoWithProof {
+        Ok(Self {
             transaction_info: view.transaction_info.try_into()?,
             proof: view.proof.into(),
             event_proof: view.event_proof.map(TryInto::try_into).transpose()?,
@@ -1596,7 +1594,7 @@ where
     {
         let s = <String>::deserialize(deserializer)?;
 
-        StrView::<T>::from_str(&s).map_err(D::Error::custom)
+        Self::from_str(&s).map_err(D::Error::custom)
     }
 }
 
@@ -1606,7 +1604,7 @@ impl FromStr for SignedMessageView {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(StrView(SignedMessage::from_str(s)?))
+        Ok(Self(SignedMessage::from_str(s)?))
     }
 }
 
@@ -1864,7 +1862,7 @@ impl AccumulatorInfoView {
 
 impl From<AccumulatorInfo> for AccumulatorInfoView {
     fn from(info: AccumulatorInfo) -> Self {
-        AccumulatorInfoView {
+        Self {
             accumulator_root: info.accumulator_root,
             frozen_subtree_roots: info.frozen_subtree_roots.clone(),
             num_leaves: info.num_leaves.into(),
@@ -1899,7 +1897,7 @@ impl BlockInfoView {
 
 impl From<BlockInfo> for BlockInfoView {
     fn from(block_info: BlockInfo) -> Self {
-        BlockInfoView {
+        Self {
             block_hash: block_info.block_id,
             total_difficulty: block_info.total_difficulty,
             txn_accumulator_info: block_info.txn_accumulator_info.into(),

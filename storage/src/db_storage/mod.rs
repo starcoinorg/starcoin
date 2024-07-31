@@ -98,7 +98,7 @@ impl DBStorage {
             Self::open_inner(&rocksdb_opts, path, column_families.clone())?
         };
         check_open_fds_limit(rocksdb_config.max_open_files as u64 + RES_FDS)?;
-        Ok(DBStorage {
+        Ok(Self {
             db,
             cfs: column_families,
             metrics,

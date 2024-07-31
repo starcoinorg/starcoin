@@ -43,7 +43,7 @@ impl GasSchedule {
 
     /// check if there is any one of entry different from the other
     /// if it is, return true otherwise false
-    pub fn is_different(&self, other: &GasSchedule) -> bool {
+    pub fn is_different(&self, other: &Self) -> bool {
         let diff_len = self.entries.len() != other.entries.len();
         if diff_len {
             debug_assert!(
@@ -514,7 +514,7 @@ impl OnChainConfig for GasSchedule {
     const CONF_IDENTIFIER: &'static str = GAS_SCHEDULE_MODULE_NAME;
 
     fn deserialize_into_config(bytes: &[u8]) -> Result<Self> {
-        let raw_gas_schedule = bcs_ext::from_bytes::<GasSchedule>(bytes).map_err(|e| {
+        let raw_gas_schedule = bcs_ext::from_bytes::<Self>(bytes).map_err(|e| {
             format_err!(
                 "Failed first round of deserialization for GasSchedule: {}",
                 e

@@ -31,7 +31,7 @@ impl MoveResource for TokenCode {
 }
 
 impl TokenCode {
-    pub fn new(address: AccountAddress, module: String, name: String) -> TokenCode {
+    pub fn new(address: AccountAddress, module: String, name: String) -> Self {
         Self {
             address,
             module,
@@ -53,7 +53,7 @@ impl TryFrom<TypeTag> for TokenCode {
 
     fn try_from(value: TypeTag) -> Result<Self, Self::Error> {
         match value {
-            TypeTag::Struct(struct_tag) => Ok(TokenCode::from(*struct_tag)),
+            TypeTag::Struct(struct_tag) => Ok(Self::from(*struct_tag)),
             type_tag => bail!("{:?} is not a Token's type tag", type_tag),
         }
     }
@@ -107,7 +107,7 @@ impl<'de> Deserialize<'de> for TokenCode {
     {
         if deserializer.is_human_readable() {
             let s = <String>::deserialize(deserializer)?;
-            TokenCode::from_str(&s).map_err(D::Error::custom)
+            Self::from_str(&s).map_err(D::Error::custom)
         } else {
             // In order to preserve the Serde data model and help analysis tools,
             // make sure to wrap our value in a container with the same name
@@ -121,7 +121,7 @@ impl<'de> Deserialize<'de> for TokenCode {
             }
 
             let value = Value::deserialize(deserializer)?;
-            Ok(TokenCode::new(value.address, value.module, value.name))
+            Ok(Self::new(value.address, value.module, value.name))
         }
     }
 }

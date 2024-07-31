@@ -52,7 +52,7 @@ pub struct BlockExecutedData {
 
 impl Default for BlockExecutedData {
     fn default() -> Self {
-        BlockExecutedData {
+        Self {
             state_root: HashValue::zero(),
             txn_events: vec![],
             txn_infos: vec![],

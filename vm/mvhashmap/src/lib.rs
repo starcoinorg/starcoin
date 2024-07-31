@@ -34,8 +34,8 @@ struct WriteCell<V> {
 }
 
 impl<V> WriteCell<V> {
-    pub fn new_from(flag: usize, incarnation: Incarnation, data: V) -> WriteCell<V> {
-        WriteCell {
+    pub fn new_from(flag: usize, incarnation: Incarnation, data: V) -> Self {
+        Self {
             flag: AtomicUsize::new(flag),
             incarnation,
             data: Arc::new(data),
@@ -66,8 +66,8 @@ pub struct MVHashMap<K, V> {
 #[allow(clippy::new_without_default)]
 #[allow(clippy::or_fun_call)]
 impl<K: Hash + Clone + Eq, V> MVHashMap<K, V> {
-    pub fn new() -> MVHashMap<K, V> {
-        MVHashMap {
+    pub fn new() -> Self {
+        Self {
             data: DashMap::new(),
         }
     }

@@ -25,12 +25,12 @@ pub struct DurationHistogram {
 }
 
 impl DurationHistogram {
-    pub fn new(histogram: Histogram) -> DurationHistogram {
-        DurationHistogram { histogram }
+    pub fn new(histogram: Histogram) -> Self {
+        Self { histogram }
     }
 
     pub fn observe_duration(&self, d: Duration) {
-        // Duration is full seconds + nanos elapsed from the presious full second
+        // Duration is full seconds + nanos elapsed from the previous full second
         let v = d.as_secs() as f64 + f64::from(d.subsec_nanos()) / 1e9;
         self.histogram.observe(v);
     }
@@ -46,9 +46,9 @@ pub struct OpMetrics {
 }
 
 impl OpMetrics {
-    pub fn new<S: Into<String>>(name: S) -> Result<OpMetrics> {
+    pub fn new<S: Into<String>>(name: S) -> Result<Self> {
         let name = name.into();
-        Ok(OpMetrics {
+        Ok(Self {
             module: name.clone(),
             counters: IntCounterVec::new(
                 Opts::new(name.clone(), format!("Counters for {}", name)),
@@ -68,8 +68,8 @@ impl OpMetrics {
         })
     }
 
-    pub fn new_and_registered<S: Into<String>>(name: S) -> Result<OpMetrics> {
-        let op_metrics = OpMetrics::new(name)?;
+    pub fn new_and_registered<S: Into<String>>(name: S) -> Result<Self> {
+        let op_metrics = Self::new(name)?;
         prometheus::register(Box::new(op_metrics.clone()))
             .expect("OpMetrics registration on Prometheus failed.");
         Ok(op_metrics)

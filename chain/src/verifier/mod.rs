@@ -31,10 +31,10 @@ impl FromStr for Verifier {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "basic" => Ok(Verifier::Basic),
-            "consensus" => Ok(Verifier::Consensus),
-            "full" => Ok(Verifier::Full),
-            "none" => Ok(Verifier::None),
+            "basic" => Ok(Self::Basic),
+            "consensus" => Ok(Self::Consensus),
+            "full" => Ok(Self::Full),
+            "none" => Ok(Self::None),
             _ => Err(format!("invalid verifier type: {}", s)),
         }
     }

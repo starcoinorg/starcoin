@@ -82,9 +82,9 @@ enum ConnSource {
 impl std::fmt::Debug for ConnSource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ConnSource::Ipc(path) => write!(f, "Ipc({})", path.as_path().to_string_lossy()),
-            ConnSource::WebSocket(url) => write!(f, "WebSocket({})", url),
-            ConnSource::Local(_) => write!(f, "Local"),
+            Self::Ipc(path) => write!(f, "Ipc({})", path.as_path().to_string_lossy()),
+            Self::WebSocket(url) => write!(f, "WebSocket({})", url),
+            Self::Local(_) => write!(f, "Local"),
         }
     }
 }

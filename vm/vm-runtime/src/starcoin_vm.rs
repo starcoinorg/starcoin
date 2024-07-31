@@ -1395,7 +1395,7 @@ impl StarcoinVM {
         block_gas_limit: Option<u64>,
         metrics: Option<VMMetrics>,
     ) -> Result<Vec<(VMStatus, TransactionOutput)>, VMStatus> {
-        let mut vm = StarcoinVM::new(metrics);
+        let mut vm = Self::new(metrics);
         vm.execute_block_transactions(state_view, txns, block_gas_limit)
     }
 
@@ -1417,8 +1417,8 @@ pub enum TransactionBlock {
 impl TransactionBlock {
     pub fn type_name(&self) -> &str {
         match self {
-            TransactionBlock::UserTransaction(_) => "UserTransaction",
-            TransactionBlock::BlockPrologue(_) => "BlockMetadata",
+            Self::UserTransaction(_) => "UserTransaction",
+            Self::BlockPrologue(_) => "BlockMetadata",
         }
     }
 }

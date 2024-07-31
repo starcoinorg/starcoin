@@ -146,7 +146,7 @@ pub enum Connect {
 
 impl Default for Connect {
     fn default() -> Self {
-        Connect::IPC(None)
+        Self::IPC(None)
     }
 }
 
@@ -158,9 +158,9 @@ impl FromStr for Connect {
             return Ok(Self::default());
         }
         if s.starts_with("ws://") || s.starts_with("wss://") {
-            Ok(Connect::WebSocket(s.to_string()))
+            Ok(Self::WebSocket(s.to_string()))
         } else {
-            Ok(Connect::IPC(Some(PathBuf::from_str(s)?)))
+            Ok(Self::IPC(Some(PathBuf::from_str(s)?)))
         }
     }
 }
@@ -245,10 +245,8 @@ pub enum DataDirPath {
 impl PartialEq for DataDirPath {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (DataDirPath::PathBuf(path1), DataDirPath::PathBuf(path2)) => path1 == path2,
-            (DataDirPath::TempPath(path1), DataDirPath::TempPath(path2)) => {
-                path1.path() == path2.path()
-            }
+            (Self::PathBuf(path1), Self::PathBuf(path2)) => path1 == path2,
+            (Self::TempPath(path1), Self::TempPath(path2)) => path1.path() == path2.path(),
             (_, _) => false,
         }
     }
@@ -259,22 +257,22 @@ impl DataDirPath {
         self.as_ref()
     }
     pub fn is_temp(&self) -> bool {
-        matches!(self, DataDirPath::TempPath(_))
+        matches!(self, Self::TempPath(_))
     }
 }
 
 impl AsRef<Path> for DataDirPath {
     fn as_ref(&self) -> &Path {
         match self {
-            DataDirPath::PathBuf(path) => path.as_ref(),
-            DataDirPath::TempPath(path) => path.as_ref().as_ref(),
+            Self::PathBuf(path) => path.as_ref(),
+            Self::TempPath(path) => path.as_ref().as_ref(),
         }
     }
 }
 
 impl Default for DataDirPath {
     fn default() -> Self {
-        DataDirPath::PathBuf(G_DEFAULT_BASE_DATA_DIR.to_path_buf())
+        Self::PathBuf(G_DEFAULT_BASE_DATA_DIR.to_path_buf())
     }
 }
 

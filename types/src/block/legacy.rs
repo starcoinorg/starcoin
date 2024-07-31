@@ -61,8 +61,8 @@ impl BlockHeader {
         chain_id: ChainId,
         nonce: u32,
         extra: BlockHeaderExtra,
-    ) -> BlockHeader {
-        let mut header = BlockHeader {
+    ) -> Self {
+        let mut header = Self {
             id: None,
             parent_hash,
             block_accumulator_root,

@@ -106,7 +106,7 @@ pub enum Error {
 impl<'a> TryFrom<&'a U512> for U256 {
     type Error = Error;
 
-    fn try_from(value: &'a U512) -> Result<U256, Error> {
+    fn try_from(value: &'a U512) -> Result<Self, Error> {
         let U512(ref arr) = *value;
         if arr[4] | arr[5] | arr[6] | arr[7] != 0 {
             return Err(Error::Overflow);
@@ -116,25 +116,25 @@ impl<'a> TryFrom<&'a U512> for U256 {
         ret[1] = arr[1];
         ret[2] = arr[2];
         ret[3] = arr[3];
-        Ok(U256(ret))
+        Ok(Self(ret))
     }
 }
 
 impl<'a> From<&'a U256> for U512 {
-    fn from(value: &'a U256) -> U512 {
+    fn from(value: &'a U256) -> Self {
         let U256(ref arr) = *value;
         let mut ret = [0; 8];
         ret[0] = arr[0];
         ret[1] = arr[1];
         ret[2] = arr[2];
         ret[3] = arr[3];
-        U512(ret)
+        Self(ret)
     }
 }
 
 impl From<HashValue> for U256 {
-    fn from(hash: HashValue) -> U256 {
-        U256::from(hash.to_vec().as_slice())
+    fn from(hash: HashValue) -> Self {
+        Self::from(hash.to_vec().as_slice())
     }
 }
 
@@ -148,7 +148,7 @@ impl Into<HashValue> for U256 {
 }
 impl Sum for U256 {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        let mut sum = U256::zero();
+        let mut sum = Self::zero();
         for value in iter {
             sum += value;
         }

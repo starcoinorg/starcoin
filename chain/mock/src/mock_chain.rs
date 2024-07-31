@@ -106,7 +106,7 @@ impl MockChain {
         )
     }
 
-    pub fn fork(&self, head_id: Option<HashValue>) -> Result<MockChain> {
+    pub fn fork(&self, head_id: Option<HashValue>) -> Result<Self> {
         let chain = self.fork_new_branch(head_id)?;
         Ok(Self {
             head: chain,

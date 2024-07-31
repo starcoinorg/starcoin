@@ -40,7 +40,7 @@ impl AccountResource {
         withdraw_events: EventHandle,
         accept_token_events: EventHandle,
     ) -> Self {
-        AccountResource {
+        Self {
             sequence_number,
             withdrawal_capability,
             key_rotation_capability,

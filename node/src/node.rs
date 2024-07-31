@@ -64,7 +64,7 @@ pub struct NodeService {
 }
 
 impl ServiceFactory<Self> for NodeService {
-    fn create(ctx: &mut ServiceContext<NodeService>) -> Result<NodeService> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         Ok(Self {
             registry: ctx.registry_ref().clone(),
         })
@@ -90,11 +90,7 @@ impl EventHandler<Self, SystemShutdown> for NodeService {
 }
 
 impl ServiceHandler<Self, NodeRequest> for NodeService {
-    fn handle(
-        &mut self,
-        msg: NodeRequest,
-        ctx: &mut ServiceContext<NodeService>,
-    ) -> Result<NodeResponse> {
+    fn handle(&mut self, msg: NodeRequest, ctx: &mut ServiceContext<Self>) -> Result<NodeResponse> {
         Ok(match msg {
             NodeRequest::ListService => NodeResponse::Services(self.registry.list_service_sync()?),
             NodeRequest::StopService(service_name) => {
@@ -280,7 +276,7 @@ impl NodeService {
     async fn init_system(
         config: Arc<NodeConfig>,
         logger_handle: Arc<LoggerHandle>,
-    ) -> Result<(ServiceRef<RegistryService>, ServiceRef<NodeService>)> {
+    ) -> Result<(ServiceRef<RegistryService>, ServiceRef<Self>)> {
         let registry = RegistryService::launch();
 
         registry.put_shared(config.clone()).await?;
@@ -338,7 +334,7 @@ impl NodeService {
 
         registry.put_shared(genesis).await?;
 
-        let node_service = registry.register::<NodeService>().await?;
+        let node_service = registry.register::<Self>().await?;
 
         registry.register::<ChainStateService>().await?;
 

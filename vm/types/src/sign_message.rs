@@ -48,7 +48,7 @@ impl<'de> Deserialize<'de> for SigningMessage {
     {
         if deserializer.is_human_readable() {
             let s = <String>::deserialize(deserializer)?;
-            SigningMessage::from_str(&s).map_err(D::Error::custom)
+            Self::from_str(&s).map_err(D::Error::custom)
         } else {
             // In order to preserve the Serde data model and help analysis tools,
             // make sure to wrap our value in a container with the same name
@@ -58,7 +58,7 @@ impl<'de> Deserialize<'de> for SigningMessage {
             struct Value(Vec<u8>);
 
             let value = Value::deserialize(deserializer)?;
-            Ok(SigningMessage(value.0))
+            Ok(Self(value.0))
         }
     }
 }

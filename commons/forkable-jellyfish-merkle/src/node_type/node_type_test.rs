@@ -613,12 +613,7 @@ impl BinaryTreeNode {
         })
     }
 
-    fn new_internal(
-        first_child_index: u8,
-        num_children: u8,
-        left: BinaryTreeNode,
-        right: BinaryTreeNode,
-    ) -> Self {
+    fn new_internal(first_child_index: u8, num_children: u8, left: Self, right: Self) -> Self {
         let hash = SparseMerkleInternalNode::new(left.hash(), right.hash()).hash();
 
         Self::Internal(BinaryTreeInternalNode {
@@ -632,9 +627,9 @@ impl BinaryTreeNode {
 
     fn hash(&self) -> HashValue {
         match self {
-            BinaryTreeNode::Internal(node) => node.hash,
-            BinaryTreeNode::Child(node) => node.hash,
-            BinaryTreeNode::Null => *SPARSE_MERKLE_PLACEHOLDER_HASH,
+            Self::Internal(node) => node.hash,
+            Self::Child(node) => node.hash,
+            Self::Null => *SPARSE_MERKLE_PLACEHOLDER_HASH,
         }
     }
 }

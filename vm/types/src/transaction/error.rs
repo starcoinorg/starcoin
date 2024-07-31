@@ -133,7 +133,7 @@ pub enum CallError {
 
 impl From<VMStatus> for CallError {
     fn from(error: VMStatus) -> Self {
-        CallError::ExecutionError(error)
+        Self::ExecutionError(error)
     }
 }
 

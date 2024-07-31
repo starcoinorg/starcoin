@@ -33,7 +33,7 @@ impl StateSet {
 
 impl ::std::iter::FromIterator<(Vec<u8>, Vec<u8>)> for StateSet {
     fn from_iter<I: IntoIterator<Item = (Vec<u8>, Vec<u8>)>>(iter: I) -> Self {
-        let mut s = StateSet::default();
+        let mut s = Self::default();
         for write in iter {
             s.push(write.0, write.1);
         }

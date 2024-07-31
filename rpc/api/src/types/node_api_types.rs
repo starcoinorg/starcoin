@@ -14,11 +14,11 @@ pub struct ChainId {
 impl From<&ChainNetworkID> for ChainId {
     fn from(id: &ChainNetworkID) -> Self {
         match id {
-            ChainNetworkID::Builtin(t) => ChainId {
+            ChainNetworkID::Builtin(t) => Self {
                 name: t.chain_name(),
                 id: t.chain_id().id(),
             },
-            ChainNetworkID::Custom(t) => ChainId {
+            ChainNetworkID::Custom(t) => Self {
                 name: t.chain_name().to_string(),
                 id: t.chain_id().id(),
             },
@@ -37,9 +37,9 @@ impl FromStr for FactoryAction {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s.to_lowercase().as_str() {
-            "stop" => FactoryAction::Stop,
-            "start" => FactoryAction::Start,
-            _ => FactoryAction::Status, //default is status action
+            "stop" => Self::Stop,
+            "start" => Self::Start,
+            _ => Self::Status, //default is status action
         })
     }
 }

@@ -81,7 +81,7 @@ impl Into<jsonrpc_core::Error> for RpcError {
 
 impl From<anyhow::Error> for RpcError {
     fn from(e: Error) -> Self {
-        RpcError(jsonrpc_core::Error {
+        Self(jsonrpc_core::Error {
             code: jsonrpc_core::ErrorCode::InternalError,
             message: e.to_string(),
             data: None,
@@ -106,7 +106,7 @@ impl From<AccountError> for RpcError {
                 data: None,
             },
         };
-        RpcError(rpc_error)
+        Self(rpc_error)
     }
 }
 
@@ -146,7 +146,7 @@ impl From<TransactionError> for RpcError {
                 ),
             },
         };
-        RpcError(jsonrpc_core::Error {
+        Self(jsonrpc_core::Error {
             code: err_code,
             message: err_message,
             data: err_data,
@@ -156,7 +156,7 @@ impl From<TransactionError> for RpcError {
 
 impl From<hex::FromHexError> for RpcError {
     fn from(err: FromHexError) -> Self {
-        RpcError(jsonrpc_core::Error {
+        Self(jsonrpc_core::Error {
             code: ErrorCode::InvalidParams,
             message: err.to_string(),
             data: None,
@@ -165,7 +165,7 @@ impl From<hex::FromHexError> for RpcError {
 }
 impl From<bcs_ext::Error> for RpcError {
     fn from(err: bcs_ext::Error) -> Self {
-        RpcError(jsonrpc_core::Error {
+        Self(jsonrpc_core::Error {
             code: ErrorCode::InvalidParams,
             message: err.to_string(),
             data: None,
@@ -175,7 +175,7 @@ impl From<bcs_ext::Error> for RpcError {
 
 impl From<MailboxError> for RpcError {
     fn from(err: MailboxError) -> Self {
-        RpcError(jsonrpc_core::Error {
+        Self(jsonrpc_core::Error {
             code: ErrorCode::InternalError,
             message: err.to_string(),
             data: None,
@@ -185,7 +185,7 @@ impl From<MailboxError> for RpcError {
 
 impl From<VMStatus> for RpcError {
     fn from(vm_status: VMStatus) -> Self {
-        RpcError(jsonrpc_core::Error {
+        Self(jsonrpc_core::Error {
             code: ErrorCode::InvalidParams,
             message: vm_status.to_string(),
             data: Some(

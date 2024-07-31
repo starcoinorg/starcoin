@@ -139,7 +139,7 @@ where
         if self.unit.scale() == unit.scale() {
             self
         } else {
-            TokenValue::new(self.scaling(), unit)
+            Self::new(self.scaling(), unit)
         }
     }
 }

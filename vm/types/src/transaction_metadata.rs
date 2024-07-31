@@ -27,9 +27,9 @@ pub enum TransactionPayloadMetadata {
 impl TransactionPayloadMetadata {
     pub fn payload_type(&self) -> TransactionPayloadType {
         match self {
-            TransactionPayloadMetadata::Script(_) => TransactionPayloadType::Script,
-            TransactionPayloadMetadata::Package(_, _) => TransactionPayloadType::Package,
-            TransactionPayloadMetadata::ScriptFunction => TransactionPayloadType::ScriptFunction,
+            Self::Script(_) => TransactionPayloadType::Script,
+            Self::Package(_, _) => TransactionPayloadType::Package,
+            Self::ScriptFunction => TransactionPayloadType::ScriptFunction,
         }
     }
 }

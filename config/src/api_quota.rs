@@ -25,7 +25,7 @@ impl FromStr for ApiQuotaConfig {
         }
         let max_burst = parts[0].parse::<NonZeroU32>()?;
         let quota_duration = parts[1].parse::<QuotaDuration>()?;
-        Ok(ApiQuotaConfig {
+        Ok(Self {
             max_burst,
             duration: quota_duration,
         })
@@ -46,7 +46,7 @@ impl<'de> Deserialize<'de> for ApiQuotaConfig {
         D: Deserializer<'de>,
     {
         let s = <String>::deserialize(deserializer)?;
-        s.parse::<ApiQuotaConfig>().map_err(D::Error::custom)
+        s.parse::<Self>().map_err(D::Error::custom)
     }
 }
 
@@ -60,9 +60,9 @@ pub enum QuotaDuration {
 impl std::fmt::Display for QuotaDuration {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            QuotaDuration::Second => "s",
-            QuotaDuration::Minute => "m",
-            QuotaDuration::Hour => "h",
+            Self::Second => "s",
+            Self::Minute => "m",
+            Self::Hour => "h",
         };
         write!(f, "{}", s)
     }
@@ -71,9 +71,9 @@ impl FromStr for QuotaDuration {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let quota_duration = match s {
-            "s" => QuotaDuration::Second,
-            "m" => QuotaDuration::Minute,
-            "h" => QuotaDuration::Hour,
+            "s" => Self::Second,
+            "m" => Self::Minute,
+            "h" => Self::Hour,
             _ => bail!("invalid quota duration"),
         };
         Ok(quota_duration)

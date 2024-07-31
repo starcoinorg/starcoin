@@ -55,7 +55,7 @@ struct TestChainInfoHandle {
 
 impl TestChainInfoHandle {
     pub fn new(status: Status) -> Self {
-        TestChainInfoHandle { status }
+        Self { status }
     }
 }
 

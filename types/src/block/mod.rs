@@ -99,13 +99,13 @@ impl<'de> Deserialize<'de> for BlockHeaderExtra {
             }
             let mut extra = [0u8; 4];
             extra.copy_from_slice(&result);
-            Ok(BlockHeaderExtra::new(extra))
+            Ok(Self::new(extra))
         } else {
             #[derive(::serde::Deserialize)]
             #[serde(rename = "BlockHeaderExtra")]
             struct Value([u8; 4]);
             let value = Value::deserialize(deserializer)?;
-            Ok(BlockHeaderExtra::new(value.0))
+            Ok(Self::new(value.0))
         }
     }
 }
@@ -209,7 +209,7 @@ impl BlockHeader {
         nonce: u32,
         extra: BlockHeaderExtra,
         parents_hash: ParentsHash,
-    ) -> BlockHeader {
+    ) -> Self {
         Self::new_with_auth_key(
             parent_hash,
             timestamp,
@@ -246,8 +246,8 @@ impl BlockHeader {
         nonce: u32,
         extra: BlockHeaderExtra,
         parents_hash: ParentsHash,
-    ) -> BlockHeader {
-        let mut header = BlockHeader {
+    ) -> Self {
+        let mut header = Self {
             id: None,
             parent_hash,
             block_accumulator_root,
@@ -396,7 +396,7 @@ impl BlockHeader {
     }
 
     //for test
-    pub fn dag_genesis_random_with_parent(parent: BlockHeader) -> anyhow::Result<Self> {
+    pub fn dag_genesis_random_with_parent(parent: Self) -> anyhow::Result<Self> {
         let header_builder = BlockHeaderBuilder::random();
         anyhow::Result::Ok(
             header_builder
@@ -724,8 +724,8 @@ impl BlockBody {
     }
 
     /// Just for test
-    pub fn new_empty() -> BlockBody {
-        BlockBody {
+    pub fn new_empty() -> Self {
+        Self {
             transactions: Vec::new(),
             uncles: None,
         }
@@ -776,7 +776,7 @@ impl Block {
     where
         B: Into<BlockBody>,
     {
-        Block {
+        Self {
             header,
             body: body.into(),
         }
@@ -1096,7 +1096,7 @@ pub struct ExecutedBlock {
 
 impl ExecutedBlock {
     pub fn new(block: Block, block_info: BlockInfo) -> Self {
-        ExecutedBlock { block, block_info }
+        Self { block, block_info }
     }
 
     pub fn total_difficulty(&self) -> U256 {

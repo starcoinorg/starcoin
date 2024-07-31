@@ -22,7 +22,7 @@ impl From<Interval> for (u64, u64) {
 impl Interval {
     pub fn new(start: u64, end: u64) -> Self {
         debug_assert!(start > 0 && end < u64::MAX && end >= start.checked_sub(1).unwrap()); // TODO: make sure this is actually debug-only
-        Interval { start, end }
+        Self { start, end }
     }
 
     pub fn empty() -> Self {

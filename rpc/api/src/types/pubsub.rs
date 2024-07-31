@@ -49,10 +49,10 @@ impl Serialize for Result {
         S: Serializer,
     {
         match *self {
-            Result::Block(ref header) => header.serialize(serializer),
-            Result::Event(ref evt) => evt.serialize(serializer),
-            Result::TransactionHash(ref hash) => hash.serialize(serializer),
-            Result::MintBlock(ref block) => block.serialize(serializer), // Result::SyncState(ref sync) => sync.serialize(serializer),
+            Self::Block(ref header) => header.serialize(serializer),
+            Self::Event(ref evt) => evt.serialize(serializer),
+            Self::TransactionHash(ref hash) => hash.serialize(serializer),
+            Self::MintBlock(ref block) => block.serialize(serializer), // Result::SyncState(ref sync) => sync.serialize(serializer),
         }
     }
 }
@@ -68,18 +68,18 @@ pub enum Params {
 }
 
 impl<'a> Deserialize<'a> for Params {
-    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Params, D::Error>
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
     where
         D: Deserializer<'a>,
     {
         let v: Value = Deserialize::deserialize(deserializer)?;
 
         if v.is_null() {
-            return Ok(Params::None);
+            return Ok(Self::None);
         }
         // Err(D::Error::custom("Invalid Pub-Sub parameters"));
         from_value(v)
-            .map(Params::Events)
+            .map(Self::Events)
             .map_err(|e| D::Error::custom(format!("Invalid Pub-Sub parameters: {}", e)))
     }
 }

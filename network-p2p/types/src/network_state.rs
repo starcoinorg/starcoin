@@ -97,11 +97,11 @@ impl From<ConnectedPoint> for PeerEndpoint {
             ConnectedPoint::Dialer {
                 address,
                 role_override: _,
-            } => PeerEndpoint::Dialing(address),
+            } => Self::Dialing(address),
             ConnectedPoint::Listener {
                 local_addr,
                 send_back_addr,
-            } => PeerEndpoint::Listening {
+            } => Self::Listening {
                 local_addr,
                 send_back_addr,
             },

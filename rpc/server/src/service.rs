@@ -268,7 +268,7 @@ pub fn connect_local(
 }
 
 impl ServiceHandler<Self, ConnectLocal> for RpcService {
-    fn handle(&mut self, _msg: ConnectLocal, ctx: &mut ServiceContext<RpcService>) -> RpcChannel {
+    fn handle(&mut self, _msg: ConnectLocal, ctx: &mut ServiceContext<Self>) -> RpcChannel {
         let apis = ApiSet::All.list_apis();
         let io_handler = self.api_registry.get_apis(apis);
         //remove middleware.

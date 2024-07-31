@@ -330,7 +330,7 @@ impl<T: 'static + BusinessLayerHandle + Send> Protocol<T> {
         boot_node_ids: Arc<HashSet<PeerId>>,
         notif_protocols: Vec<Cow<'static, str>>,
         rpc_protocols: Vec<Cow<'static, str>>,
-    ) -> errors::Result<(Protocol<T>, sc_peerset::PeersetHandle)> {
+    ) -> errors::Result<(Self, sc_peerset::PeersetHandle)> {
         let mut important_peers = HashSet::new();
         important_peers.extend(boot_node_ids.iter());
         for peer_set in peerset_config.sets.iter() {
@@ -357,7 +357,7 @@ impl<T: 'static + BusinessLayerHandle + Send> Protocol<T> {
             GenericProto::new(peerset, notif_protocol_wth_handshake)
         };
 
-        let protocol = Protocol {
+        let protocol = Self {
             tick_timeout: Box::pin(interval(TICK_TIMEOUT)),
             important_peers,
             peerset_handle: peerset_handle.clone(),
