@@ -231,7 +231,7 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
                 let old_module_ref = self.inner.load_module(&module_id)?;
                 let old_module = old_module_ref.module();
                 let old_m = normalized::Module::new(old_module);
-                let new_m = normalized::Module::new(&module);
+                let new_m = normalized::Module::new(module);
                 if Compatibility::new(true, true, false)
                     .check(&old_m, &new_m)
                     .is_err()
@@ -306,7 +306,7 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
 
     //ensure the script function not return value
     pub(crate) fn check_script_return(return_: Vec<Type>) -> VMResult<()> {
-        return if !return_.is_empty() {
+        if !return_.is_empty() {
             Err(PartialVMError::new(StatusCode::RET_TYPE_MISMATCH_ERROR)
                 .with_message(format!(
                     "Expected script function should not return value, but got {:?}",
@@ -315,7 +315,7 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
                 .finish(Location::Undefined))
         } else {
             Ok(())
-        };
+        }
     }
 
     fn check_script_signer_and_build_args(

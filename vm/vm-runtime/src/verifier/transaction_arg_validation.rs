@@ -108,7 +108,7 @@ pub(crate) fn validate_combine_singer_and_args<S: MoveResolverExt>(
     // Need to keep this here to ensure we return the historic correct error code for replay
     for ty in func.parameters[signer_param_cnt..].iter() {
         let valid = is_valid_txn_arg(
-            &session,
+            session,
             &ty.subst(&func.type_arguments).unwrap(),
             allowed_structs,
         );
