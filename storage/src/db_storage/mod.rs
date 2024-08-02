@@ -44,6 +44,7 @@ impl DBStorage {
         )
     }
 
+    #[allow(clippy::unnecessary_to_owned)]
     pub fn open_with_cfs(
         root_path: impl AsRef<Path>,
         column_families: Vec<ColumnFamilyName>,

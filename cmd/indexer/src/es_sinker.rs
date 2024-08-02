@@ -106,7 +106,7 @@ impl EsSinker {
         self.create_index_if_not_exists(txn_event_index).await?;
         self.create_index_if_not_exists(pending_txn_index).await?;
         let tip = self.get_remote_tip_header().await?;
-        self.state.write().await.tip = tip.clone();
+        self.state.write().await.tip.clone_from(&tip);
         if let Some(tip_info) = tip {
             info!(
                 "remote tips: {}, {}",

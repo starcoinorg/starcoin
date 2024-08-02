@@ -12,6 +12,7 @@ use anyhow::{Ok, Result};
 use bcs_ext::BCSCodec;
 use futures::{prelude::*, stream::StreamExt};
 use libp2p::PeerId;
+use log::debug;
 use network_p2p_types::MultiaddrWithPeerId;
 use once_cell::sync::Lazy;
 use sc_peerset::ReputationChange;
@@ -159,7 +160,7 @@ fn build_nodes_one_proto() -> (
         listen_addresses: vec![],
         boot_nodes: vec![config::MultiaddrWithPeerId {
             multiaddr: listen_addr,
-            peer_id: node1.local_peer_id(),
+            peer_id: *node1.peer_id(),
         }],
         transport: config::TransportConfig::MemoryOnly,
         ..config::NetworkConfiguration::new_local()
@@ -180,7 +181,7 @@ async fn lots_of_incoming_peers_works() {
         ..config::NetworkConfiguration::new_local()
     });
 
-    let main_node_peer_id = main_node.local_peer_id();
+    let main_node_peer_id = *main_node.peer_id();
 
     // We spawn background tasks and push them in this `Vec`. They will all be waited upon before
     // this test ends.
@@ -240,7 +241,7 @@ async fn notifications_back_pressure() {
     const TOTAL_NOTIFS: usize = 10_000;
 
     let (node1, mut events_stream1, node2, mut events_stream2) = build_nodes_one_proto();
-    let node2_id = node2.local_peer_id();
+    let node2_id = node2.peer_id();
 
     let receiver = tokio::task::spawn(async move {
         let mut received_notifications = 0;
@@ -277,7 +278,7 @@ async fn notifications_back_pressure() {
     debug!("Start sending..");
     for num in 0..TOTAL_NOTIFS {
         let notif = node1
-            .notification_sender(node2_id, From::from(PROTOCOL_NAME))
+            .notification_sender(*node2_id, From::from(PROTOCOL_NAME))
             .unwrap();
         notif
             .ready()
@@ -525,7 +526,7 @@ async fn test_handshake_fail() {
 
     let seed = config::MultiaddrWithPeerId {
         multiaddr: config1.listen_addresses[0].clone(),
-        peer_id: service1.local_peer_id(),
+        peer_id: *service1.peer_id(),
     };
 
     let config2 = generate_config(vec![seed], vec![PROTOCOL_NAME.into()], vec![]);
@@ -624,7 +625,7 @@ async fn test_support_protocol() {
 
     let seed = MultiaddrWithPeerId {
         multiaddr: config1.listen_addresses[0].clone(),
-        peer_id: service1.local_peer_id(),
+        peer_id: *service1.peer_id(),
     };
 
     let config2 = generate_config(vec![seed], vec![block_v1.into()], vec![]);
