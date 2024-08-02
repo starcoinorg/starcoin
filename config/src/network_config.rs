@@ -102,17 +102,17 @@ impl NetworkRpcQuotaConfiguration {
 
     pub fn merge(&mut self, o: &Self) -> Result<()> {
         if o.default_global_api_quota.is_some() {
-            self.default_global_api_quota = o.default_global_api_quota.clone();
+            self.default_global_api_quota.clone_from(&o.default_global_api_quota);
         }
         //TODO should merge two vec?
         if o.custom_global_api_quota.is_some() {
-            self.custom_global_api_quota = o.custom_global_api_quota.clone();
+            self.custom_global_api_quota.clone_from(&o.custom_global_api_quota);
         }
         if o.default_user_api_quota.is_some() {
-            self.default_user_api_quota = o.default_user_api_quota.clone();
+            self.default_user_api_quota.clone_from(&o.default_user_api_quota);
         }
         if o.custom_user_api_quota.is_some() {
-            self.custom_user_api_quota = o.custom_user_api_quota.clone();
+            self.custom_user_api_quota.clone_from(&o.custom_user_api_quota);
         }
         Ok(())
     }
@@ -359,7 +359,7 @@ impl NetworkConfig {
 
     fn generate_listen_address(&mut self) {
         if self.listen.is_some() {
-            self.generate_listen = self.listen.clone();
+            self.generate_listen.clone_from(&self.listen);
         } else {
             let base = self.base();
             let port = if base.net().is_test() || base.net().is_dag_test() {
@@ -411,7 +411,7 @@ impl ConfigModule for NetworkConfig {
             .merge(&opt.network.network_rpc_quotas)?;
 
         if opt.network.node_name.is_some() {
-            self.node_name = opt.network.node_name.clone();
+            self.node_name.clone_from(&opt.network.node_name);
         }
 
         if self.node_name.is_none() {
@@ -419,11 +419,11 @@ impl ConfigModule for NetworkConfig {
         }
 
         if opt.network.node_key.is_some() {
-            self.node_key = opt.network.node_key.clone();
+            self.node_key.clone_from(&opt.network.node_key);
         }
 
         if opt.network.listen.is_some() {
-            self.listen = opt.network.listen.clone();
+            self.listen.clone_from(&opt.network.listen);
         }
         if let Some(m) = opt.network.max_peers_to_propagate {
             self.max_peers_to_propagate = Some(m);

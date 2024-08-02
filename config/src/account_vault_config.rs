@@ -44,7 +44,7 @@ impl ConfigModule for AccountVaultConfig {
     fn merge_with_opt(&mut self, opt: &StarcoinOpt, base: Arc<BaseConfig>) -> Result<()> {
         self.base = Some(base);
         if opt.vault.dir.is_some() {
-            self.dir = opt.vault.dir.clone();
+            self.dir.clone_from(&opt.valut.dir);
         }
         Ok(())
     }
