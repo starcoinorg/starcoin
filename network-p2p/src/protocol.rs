@@ -6,7 +6,7 @@ use crate::protocol::generic_proto::{GenericProto, GenericProtoOut, Notification
 // use crate::protocol::message::generic::Status;
 use crate::business_layer_handle::BusinessLayerHandle;
 use crate::utils::interval;
-use crate::{errors, DiscoveryNetBehaviour, Multiaddr};
+use crate::{errors, Multiaddr};
 use bytes::Bytes;
 use futures::prelude::*;
 use libp2p::core::connection::ConnectionId;
@@ -14,7 +14,7 @@ use libp2p::swarm::behaviour::FromSwarm;
 use libp2p::swarm::{ConnectionHandler, IntoConnectionHandler};
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
-use log::Level;
+use log::{debug, error, log, trace, warn, Level};
 use sc_peerset::{peersstate::PeersState, SetId};
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
@@ -309,6 +309,16 @@ impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
         cx.waker().wake_by_ref();
         Poll::Pending
     }
+}
+
+trait DiscoveryNetBehaviour {
+    /// Notify the protocol that we have learned about the existence of nodes.
+    ///
+    /// Can (or most likely will) be called multiple times with the same `PeerId`s.
+    ///
+    /// Also note that there is no notification for expired nodes. The implementer must add a TTL
+    /// system, or remove nodes that will fail to reach.
+    fn add_discovered_nodes(&mut self, nodes: impl Iterator<Item = PeerId>);
 }
 
 impl<T: BusinessLayerHandle + Send> DiscoveryNetBehaviour for Protocol<T> {

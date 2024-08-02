@@ -1,37 +1,19 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::move_vm_ext::{MoveResolverExt, SessionId};
+use crate::move_vm_ext::MoveResolverExt;
 use anyhow::Result;
 use move_core_types::vm_status::{StatusCode, VMStatus};
-use move_vm_runtime::move_vm_adapter::SessionAdapter;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::{
     block_metadata::BlockMetadata,
-    transaction::{
-        SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionOutput,
-        TransactionStatus,
-    },
+    transaction::{SignedUserTransaction, Transaction, TransactionOutput, TransactionStatus},
     write_set::WriteSet,
 };
 use std::collections::BTreeMap;
 
 /// TODO: bring more of the execution logic in starcoin_vm into this file.
 pub trait VMAdapter {
-    /// Creates a new Session backed by the given storage.
-    /// TODO: this doesn't belong in this trait. We should be able to remove
-    /// this after redesigning cache ownership model.
-    // XXX FIXME YSG, this place we use SessionAdapter, we don't have move_vm_ext::SessionExt
-    fn new_session<'r, R: MoveResolverExt>(
-        &self,
-        remote: &'r R,
-        session_id: SessionId,
-    ) -> SessionAdapter<'r, '_, R>;
-
-    /// Checks the signature of the given signed transaction and returns
-    /// `Ok(SignatureCheckedTransaction)` if the signature is valid.
-    fn check_signature(txn: SignedUserTransaction) -> Result<SignatureCheckedTransaction>;
-
     /// TODO: maybe remove this after more refactoring of execution logic.
     fn should_restart_execution(output: &TransactionOutput) -> bool;
 
