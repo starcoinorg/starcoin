@@ -315,17 +315,21 @@ impl ApiQuotaConfiguration {
 
     pub fn merge(&mut self, o: &Self) -> Result<()> {
         if o.default_global_api_quota.is_some() {
-            self.default_global_api_quota.clone_from(&o.default_global_api_quota);
+            self.default_global_api_quota
+                .clone_from(&o.default_global_api_quota);
         }
         //TODO should merge two vec?
         if o.custom_global_api_quota.is_some() {
-            self.custom_global_api_quota.clone_from(&o.custom_global_api_quota);
+            self.custom_global_api_quota
+                .clone_from(&o.custom_global_api_quota);
         }
         if o.default_user_api_quota.is_some() {
-            self.default_user_api_quota.clone_from(&o.default_user_api_quota);
+            self.default_user_api_quota
+                .clone_from(&o.default_user_api_quota);
         }
         if o.custom_user_api_quota.is_some() {
-            self.custom_user_api_quota.clone_from(&o.custom_user_api_quota);
+            self.custom_user_api_quota
+                .clone_from(&o.custom_user_api_quota);
         }
         Ok(())
     }

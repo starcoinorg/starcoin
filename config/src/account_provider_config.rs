@@ -49,11 +49,12 @@ impl ConfigModule for AccountProviderConfig {
             bail!("Account provider conflicts")
         };
         if opt.account_provider.account_dir.is_some() {
-            self.account_dir.clone_from(&opt.account_provider.account_dir);
-
+            self.account_dir
+                .clone_from(&opt.account_provider.account_dir);
         }
         if opt.account_provider.secret_file.is_some() {
-            self.secret_file.clone_from(&opt.account_provider.secret_file);
+            self.secret_file
+                .clone_from(&opt.account_provider.secret_file);
             self.account_address = opt.account_provider.account_address;
         }
         self.from_env = opt.account_provider.from_env;
