@@ -6,7 +6,6 @@ use crate::{
     config,
     config::RequestResponseConfig,
     protocol::rep,
-    service::NetworkStateInfo,
     Event, NetworkConfiguration, NetworkService, NetworkWorker, Params, ProtocolId,
 };
 use anyhow::{Ok, Result};

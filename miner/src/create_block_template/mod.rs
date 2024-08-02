@@ -31,13 +31,6 @@ mod metrics;
 //mod test_create_block_template;
 
 #[derive(Debug)]
-pub struct GetHeadRequest;
-
-impl ServiceRequest for GetHeadRequest {
-    type Response = HashValue;
-}
-
-#[derive(Debug)]
 pub struct BlockTemplateRequest;
 
 impl ServiceRequest for BlockTemplateRequest {

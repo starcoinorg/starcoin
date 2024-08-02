@@ -311,27 +311,6 @@ impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
     }
 }
 
-trait DiscoveryNetBehaviour {
-    /// Notify the protocol that we have learned about the existence of nodes.
-    ///
-    /// Can (or most likely will) be called multiple times with the same `PeerId`s.
-    ///
-    /// Also note that there is no notification for expired nodes. The implementer must add a TTL
-    /// system, or remove nodes that will fail to reach.
-    fn add_discovered_nodes(&mut self, nodes: impl Iterator<Item = PeerId>);
-}
-
-impl<T: BusinessLayerHandle + Send> DiscoveryNetBehaviour for Protocol<T> {
-    fn add_discovered_nodes(&mut self, peer_ids: impl Iterator<Item = PeerId>) {
-        for peer_id in peer_ids {
-            for (set_id, _) in self.notif_protocols.iter().enumerate() {
-                self.peerset_handle
-                    .add_to_peers_set(SetId::from(set_id), peer_id);
-            }
-        }
-    }
-}
-
 impl<T: 'static + BusinessLayerHandle + Send> Protocol<T> {
     /// Create a new instance.
     pub fn new(

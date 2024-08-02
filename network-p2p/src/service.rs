@@ -98,8 +98,6 @@ impl From<PeersetHandle> for ReportHandle {
 pub struct NetworkService {
     /// Number of peers we're connected to.
     num_connected: Arc<AtomicUsize>,
-    /// The local external addresses.
-    external_addresses: Arc<Mutex<Vec<Multiaddr>>>,
     /// Are we actively catching up with the chain?
     is_major_syncing: Arc<AtomicBool>,
     /// Local copy of the `PeerId` of the local node.
@@ -318,7 +316,6 @@ impl<T: BusinessLayerHandle + Send> NetworkWorker<T> {
             Swarm::add_external_address(&mut swarm, addr.clone(), AddressScore::Infinite);
         }
 
-        let external_addresses = Arc::new(Mutex::new(Vec::new()));
         let peers_notifications_sinks = Arc::new(Mutex::new(HashMap::new()));
 
         let metrics = params
@@ -327,7 +324,6 @@ impl<T: BusinessLayerHandle + Send> NetworkWorker<T> {
             .and_then(|registry| Metrics::register(registry).ok());
         let service = Arc::new(NetworkService {
             bandwidth,
-            external_addresses,
             num_connected,
             is_major_syncing,
             peerset: peerset_handle,
@@ -877,15 +873,6 @@ impl NetworkService {
             .to_worker
             .unbounded_send(ServiceToWorkerMsg::BanPeer(ban, peer_id));
     }
-}
-
-/// Trait for providing information about the local network state
-pub trait NetworkStateInfo {
-    /// Returns the local external addresses.
-    fn external_addresses(&self) -> Vec<Multiaddr>;
-
-    /// Returns the local Peer ID.
-    fn local_peer_id(&self) -> PeerId;
 }
 
 /// A `NotificationSender` allows for sending notifications to a peer with a chosen protocol.

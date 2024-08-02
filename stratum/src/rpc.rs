@@ -117,13 +117,6 @@ pub(crate) struct SubscribeJobEvent(
     pub(crate) LoginRequest,
 );
 
-#[derive(Debug)]
-pub(crate) struct Unsubscribe(pub(crate) SubscriptionId);
-
-impl ServiceRequest for Unsubscribe {
-    type Response = ();
-}
-
 impl ServiceRequest for SubscribeJobEvent {
     type Response = ();
 }
