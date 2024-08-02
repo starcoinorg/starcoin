@@ -90,7 +90,7 @@ impl HttpConfiguration {
             self.disable = true;
         }
         if o.apis.is_some() {
-            self.apis = o.apis.clone();
+            self.apis.clone_from(&o.apis);
         }
         if o.port.is_some() {
             self.port = o.port;
