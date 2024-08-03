@@ -44,7 +44,6 @@ impl DBStorage {
         )
     }
 
-    #[allow(clippy::unnecessary_to_owned)]
     pub fn open_with_cfs(
         root_path: impl AsRef<Path>,
         column_families: Vec<ColumnFamilyName>,
@@ -63,8 +62,8 @@ impl DBStorage {
         }
         if Self::db_exists(path) {
             let cf_vec = Self::list_cf(path)?;
-            let mut db_cfs_set: HashSet<_> = cf_vec.iter().collect();
-            db_cfs_set.remove(&DEFAULT_PREFIX_NAME.to_string());
+            let mut db_cfs_set: HashSet<_> = cf_vec.iter().map(|cf| cf.as_str()).collect();
+            db_cfs_set.remove(DEFAULT_PREFIX_NAME);
             ensure!(
                 db_cfs_set.len() <= cfs_set.len(),
                 StorageInitError::StorageCheckError(format_err!(
@@ -75,8 +74,8 @@ impl DBStorage {
             );
             let mut remove_cf_vec = Vec::new();
             db_cfs_set.iter().for_each(|k| {
-                if !cfs_set.contains(&k.as_str()) {
-                    remove_cf_vec.push(<&std::string::String>::clone(k));
+                if !cfs_set.contains(k) {
+                    remove_cf_vec.push(k);
                 }
             });
             ensure!(
