@@ -149,4 +149,8 @@ impl SyncDagStore {
                 e
             })
     }
+
+    pub(crate) fn delete_all_dag_sync_block(&self) -> anyhow::Result<()> {
+        self.absent_dag_store.delete_all_absent_block()
+    }
 }

@@ -184,5 +184,13 @@ fn test_write_read_in_order() -> anyhow::Result<()> {
 
     assert_eq!(expect_order, db_order);
 
+    let mut iter_to_see_empty = sync_dag_store.iter_at_first()?;
+    assert!(iter_to_see_empty.next().is_some());
+
+    sync_dag_store.delete_all_dag_sync_block()?;
+
+    iter_to_see_empty = sync_dag_store.iter_at_first()?;
+    assert!(iter_to_see_empty.next().is_none());
+
     Ok(())
 }
