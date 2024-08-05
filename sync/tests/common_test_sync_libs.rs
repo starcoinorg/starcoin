@@ -1,32 +1,12 @@
 use anyhow::{Ok, Result};
-
 use starcoin_config::{temp_dir, NetworkConfig, NodeConfig};
-use starcoin_crypto::HashValue;
-
 use starcoin_logger::prelude::*;
-
 use starcoin_node::NodeHandle;
-
-use starcoin_types::block::BlockHeader;
-
 use std::sync::Arc;
 
-#[derive(Debug, Clone)]
-pub struct DagBlockInfo {
-    pub header: BlockHeader,
-    pub children: Vec<HashValue>,
-}
-
 // fixme: remove unused
-#[allow(unused)]
-pub fn gen_chain_env(config: NodeConfig) -> Result<NodeHandle> {
-    test_helper::run_node_by_config(Arc::new(config))
-}
-
-// fixme: remove unused
-#[allow(unused)]
 fn gen_node(seeds: Vec<NetworkConfig>) -> Result<(NodeHandle, NetworkConfig)> {
-    let dir = match temp_dir() {
+    let _dir = match temp_dir() {
         starcoin_config::DataDirPath::PathBuf(path) => path,
         starcoin_config::DataDirPath::TempPath(path) => path.path().to_path_buf(),
     };
@@ -55,12 +35,4 @@ pub fn init_multiple_node(count: usize) -> Result<Vec<NodeHandle>> {
         result.push(gen_node(vec![network_config.clone()])?.0);
     }
     Ok(result)
-}
-
-#[allow(unused)]
-pub fn generate_block(handle: &NodeHandle, count: usize) -> Result<()> {
-    for _i in 0..count {
-        let _ = handle.generate_block()?;
-    }
-    Ok(())
 }
