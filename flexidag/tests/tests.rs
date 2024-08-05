@@ -399,7 +399,9 @@ fn test_reachability_abort_add_block() -> anyhow::Result<()> {
         &mut vec![parent].into_iter(),
     )?;
 
-    for i in 0..70 {
+    let (total, gap) = (70, 10);
+
+    for i in 0..total {
         parent = child;
         child = Hash::random();
 
@@ -409,8 +411,8 @@ fn test_reachability_abort_add_block() -> anyhow::Result<()> {
             parent,
             &mut vec![parent].into_iter(),
         )?;
-        if (61..=69).contains(&i) {
-            for _ in 0..10 {
+        if (total - gap + 1..total).contains(&i) {
+            for _ in 0..gap {
                 inquirer::init(reachability_store.write().deref_mut(), origin)?;
                 let result = inquirer::add_block(
                     reachability_store.write().deref_mut(),
