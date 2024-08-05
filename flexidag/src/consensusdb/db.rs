@@ -38,13 +38,6 @@ impl FlexiDagStorageConfig {
     pub fn new() -> Self {
         Self::default()
     }
-
-    pub fn create_with_params(cache_size: usize, rocksdb_config: RocksdbConfig) -> Self {
-        Self {
-            cache_size,
-            rocksdb_config,
-        }
-    }
 }
 
 impl From<StorageConfig> for FlexiDagStorageConfig {
