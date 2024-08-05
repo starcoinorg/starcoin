@@ -32,7 +32,7 @@ pub enum PreprocessedTransaction {
 }
 
 #[inline]
-pub(crate) fn preprocess_transaction(txn: Transaction) -> PreprocessedTransaction {
+pub fn preprocess_transaction(txn: Transaction) -> PreprocessedTransaction {
     match txn {
         Transaction::BlockMetadata(b) => PreprocessedTransaction::BlockMetadata(b),
         Transaction::UserTransaction(txn) => {

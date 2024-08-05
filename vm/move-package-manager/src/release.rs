@@ -1,7 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::extended_checks;
 use clap::Parser;
+use codespan_reporting::diagnostic::Severity;
+use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use move_binary_format::file_format_common::VERSION_4;
 use move_binary_format::CompiledModule;
 use move_cli::sandbox::utils::PackageContext;
@@ -9,6 +12,7 @@ use move_cli::Move;
 use move_compiler::compiled_unit::{CompiledUnit, NamedCompiledModule};
 use move_core_types::language_storage::TypeTag;
 use move_core_types::transaction_argument::{convert_txn_args, TransactionArgument};
+use move_package::ModelConfig;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_move_compiler::bytecode_transpose::ModuleBytecodeDowngrader;
 use starcoin_types::transaction::parse_transaction_argument;
@@ -65,14 +69,33 @@ pub fn handle_release(
     };
     let pkg_ctx = PackageContext::new(&package_path, &move_args.build_config)?;
     let pkg = pkg_ctx.package();
-    let pkg_version = move_args
+    let resolved_graph = move_args
         .build_config
         .clone()
         .resolution_graph_for_package(package_path.as_ref().unwrap(), &mut std::io::stdout())
-        .unwrap()
-        .root_package
-        .package
-        .version;
+        .unwrap();
+
+    let model = move_args
+        .build_config
+        .clone()
+        .move_model_for_package(
+            package_path.as_ref().unwrap(),
+            ModelConfig {
+                all_files_as_targets: false,
+                target_filter: None,
+            },
+        )
+        .unwrap();
+    extended_checks::run_extended_checks(&model);
+    if model.diag_count(Severity::Warning) > 0 {
+        let mut error_writer = StandardStream::stderr(ColorChoice::Auto);
+        model.report_diag(&mut error_writer, Severity::Warning);
+        if model.has_errors() {
+            panic!("extended checks failed");
+        }
+    }
+
+    let pkg_version = resolved_graph.root_package.package.version;
     let pkg_name = pkg.compiled_package_info.package_name.as_str();
     println!("Packaging Modules:");
     for m in pkg.root_compiled_units.as_slice() {

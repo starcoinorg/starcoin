@@ -27,6 +27,8 @@ starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 move-stdlib = { workspace = true }
 move-table-extension = { workspace = true }
+move-vm-types = { workspace = true }
+move-binary-format = { workspace = true }
 starcoin-metrics = { optional = true, workspace = true }
 starcoin-gas = { workspace = true }
 starcoin-gas-algebra-ext = { workspace = true }
