@@ -52,7 +52,7 @@ fn test_merkle_distributor() -> Result<()> {
         let merkle_root = MoveValue::vector_u8(raw_root);
 
         let rewards_total = MoveValue::U128(proofs.iter().map(|p| p.amount).sum());
-        let leafs = MoveValue::U64(proofs.len() as u64);
+        let leaves = MoveValue::U64(proofs.len() as u64);
 
         let script_function = ScriptFunction::new(
             ModuleId::new(
@@ -64,7 +64,7 @@ fn test_merkle_distributor() -> Result<()> {
             vec![
                 merkle_root.simple_serialize().unwrap(),
                 rewards_total.simple_serialize().unwrap(),
-                leafs.simple_serialize().unwrap(),
+                leaves.simple_serialize().unwrap(),
             ],
         );
 
