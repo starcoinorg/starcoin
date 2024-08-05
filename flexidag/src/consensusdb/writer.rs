@@ -56,11 +56,12 @@ impl DbWriter for DirectDbWriter<'_> {
 
 pub struct BatchDbWriter<'a> {
     batch: &'a mut WriteBatch,
+    db: &'a DBStorage,
 }
 
 impl<'a> BatchDbWriter<'a> {
-    pub fn new(batch: &'a mut WriteBatch) -> Self {
-        Self { batch }
+    pub fn new(batch: &'a mut WriteBatch, db: &'a DBStorage) -> Self {
+        Self { batch, db }
     }
 }
 
@@ -68,13 +69,15 @@ impl DbWriter for BatchDbWriter<'_> {
     fn put<S: Schema>(&mut self, key: &S::Key, value: &S::Value) -> Result<(), StoreError> {
         let key = key.encode_key()?;
         let value = value.encode_value()?;
-        self.batch.put(key, value);
+        let cf_handle = self.db.get_cf_handle(S::COLUMN_FAMILY).unwrap();
+        self.batch.put_cf(cf_handle, key, value);
         Ok(())
     }
 
     fn delete<S: Schema>(&mut self, key: &S::Key) -> Result<(), StoreError> {
         let key = key.encode_key()?;
-        self.batch.delete(key);
+        let cf_handle = self.db.get_cf_handle(S::COLUMN_FAMILY).unwrap();
+        self.batch.delete_cf(cf_handle, key);
         Ok(())
     }
 
@@ -82,9 +85,10 @@ impl DbWriter for BatchDbWriter<'_> {
         &mut self,
         key: &dyn AsRef<[u8]>,
         value: &dyn AsRef<[u8]>,
-        _cf: &'static str,
+        cf: &'static str,
     ) -> Result<(), StoreError> {
-        self.batch.put(key, value);
+        let cf_handle = self.db.get_cf_handle(cf).unwrap();
+        self.batch.put_cf(cf_handle, key, value);
         Ok(())
     }
 }

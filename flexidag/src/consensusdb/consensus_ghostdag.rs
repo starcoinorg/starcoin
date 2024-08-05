@@ -231,9 +231,9 @@ impl DbGhostdagStore {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }
         self.access
-            .write(BatchDbWriter::new(batch), hash, data.clone())?;
+            .write(BatchDbWriter::new(batch, &self.db), hash, data.clone())?;
         self.compact_access.write(
-            BatchDbWriter::new(batch),
+            BatchDbWriter::new(batch, &self.db),
             hash,
             CompactGhostdagData {
                 blue_score: data.blue_score,

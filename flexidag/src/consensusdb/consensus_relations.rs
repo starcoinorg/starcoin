@@ -106,7 +106,7 @@ impl DbRelationsStore {
 
         // Insert a new entry for `hash`
         self.parents_access
-            .write(BatchDbWriter::new(batch), hash, parents.clone())?;
+            .write(BatchDbWriter::new(batch, &self.db), hash, parents.clone())?;
 
         // Mark empty children for `hash`, no writing happened.
         self.children_access.initialize(hash);
@@ -114,7 +114,7 @@ impl DbRelationsStore {
         // Update `children` for each parent
         for parent in parents.iter().cloned() {
             self.children_access
-                .write(BatchDbWriter::new(batch), parent, hash)?;
+                .write(BatchDbWriter::new(batch, &self.db), parent, hash)?;
         }
 
         Ok(())

@@ -615,7 +615,7 @@ fn test_reachability_not_ancestor() -> anyhow::Result<()> {
 }
 
 #[test]
-fn test_reachability_algorighm() -> anyhow::Result<()> {
+fn test_reachability_algorithm() -> anyhow::Result<()> {
     let dag = BlockDAG::create_for_testing().unwrap();
     let reachability_store = dag.storage.reachability_store.clone();
 

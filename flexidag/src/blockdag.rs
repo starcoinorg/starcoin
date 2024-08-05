@@ -14,7 +14,7 @@ use crate::ghostdag::protocol::GhostdagManager;
 use crate::{process_key_already_error, reachability};
 use anyhow::{bail, Ok};
 use parking_lot::RwLock;
-use starcoin_config::{temp_dir, RocksdbConfig};
+use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::{debug, info};
 use starcoin_types::block::BlockHeader;
@@ -23,7 +23,6 @@ use starcoin_types::{
     consensus_header::ConsensusHeader,
 };
 use std::ops::DerefMut;
-use std::path::Path;
 use std::sync::Arc;
 
 pub const DEFAULT_GHOSTDAG_K: KType = 8u16;
@@ -65,13 +64,6 @@ impl BlockDAG {
         let dag_storage =
             FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
         Ok(Self::new(DEFAULT_GHOSTDAG_K, dag_storage))
-    }
-
-    pub fn new_by_config(db_path: &Path) -> anyhow::Result<Self> {
-        let config = FlexiDagStorageConfig::create_with_params(1, RocksdbConfig::default());
-        let db = FlexiDagStorage::create_from_path(db_path, config)?;
-        let dag = Self::new(DEFAULT_GHOSTDAG_K, db);
-        Ok(dag)
     }
 
     pub fn has_dag_block(&self, hash: Hash) -> anyhow::Result<bool> {
