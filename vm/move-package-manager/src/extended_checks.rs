@@ -35,6 +35,8 @@ impl<'a> ExtendedChecker<'a> {
         }
     }
 
+    // see implementation in `aptos-core`
+    // https://github.com/aptos-labs/aptos-core/blob/3af88bc872221c4958e6163660c60bc07bf53d38/aptos-move/framework/src/extended_checks.rs#L123
     fn run(&self) {
         for ref module in self.env.get_modules() {
             if module.is_target() {

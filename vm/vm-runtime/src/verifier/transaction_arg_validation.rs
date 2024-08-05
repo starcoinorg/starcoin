@@ -1,6 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+// see implementation in `aptos-core`
+// https://github.com/aptos-labs/aptos-core/blob/3af88bc872221c4958e6163660c60bc07bf53d38/aptos-move/aptos-vm/src/verifier/transaction_arg_validation.rs#L1
+
 use crate::move_vm_ext::MoveResolverExt;
 use crate::vm_adapter::SessionAdapter;
 use move_binary_format::errors::{Location, PartialVMError, VMError, VMResult};
