@@ -35,7 +35,11 @@ fn native_from_bytes(
 ) -> PartialVMResult<NativeResult> {
     debug_assert_eq!(ty_args.len(), 1);
     debug_assert_eq!(args.len(), 1);
+    // XXX FIXME YSG
+    let cost = gas_params.base;
+    Ok(NativeResult::ok(cost, smallvec![args.pop_front().unwrap()]))
 
+    /*
     let mut cost = gas_params.base;
 
     // TODO(Gas): charge for getting the layout
@@ -55,7 +59,7 @@ fn native_from_bytes(
             return Ok(NativeResult::err(cost, EFROM_BYTES));
         }
     };
-    Ok(NativeResult::ok(cost, smallvec![val]))
+    Ok(NativeResult::ok(cost, smallvec![val])) */
 }
 
 /***************************************************************************************************
