@@ -26,7 +26,7 @@ pub fn stc_type_tag() -> TypeTag {
         address: CORE_CODE_ADDRESS,
         module: G_STC_IDENTIFIER.clone(),
         name: G_STC_IDENTIFIER.clone(),
-        type_params: vec![],
+        type_args: vec![],
     }))
 }
 

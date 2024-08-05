@@ -32,7 +32,7 @@ impl BalanceResource {
             address: CORE_CODE_ADDRESS,
             name: Self::struct_identifier(),
             module: Self::module_identifier(),
-            type_params: vec![TypeTag::Struct(Box::new(token_type_tag))],
+            type_args: vec![TypeTag::Struct(Box::new(token_type_tag))],
         }
     }
 
@@ -47,7 +47,7 @@ impl BalanceResource {
             && struct_tag.module.as_str() == Self::MODULE_NAME
             && struct_tag.name.as_str() == Self::STRUCT_NAME
         {
-            if let Some(TypeTag::Struct(token_tag)) = struct_tag.type_params.first() {
+            if let Some(TypeTag::Struct(token_tag)) = struct_tag.type_args.first() {
                 Some((*(token_tag.clone())).into())
             } else {
                 None

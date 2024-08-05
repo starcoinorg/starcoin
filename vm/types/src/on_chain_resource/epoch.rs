@@ -108,7 +108,7 @@ impl Epoch {
             address: CORE_CODE_ADDRESS,
             name: Self::struct_identifier(),
             module: Self::module_identifier(),
-            type_params: vec![],
+            type_args: vec![],
         }
     }
 
@@ -220,7 +220,7 @@ impl EpochData {
             address: CORE_CODE_ADDRESS,
             name: Self::struct_identifier(),
             module: Self::module_identifier(),
-            type_params: vec![],
+            type_args: vec![],
         }
     }
 

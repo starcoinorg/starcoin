@@ -40,7 +40,7 @@ impl ConsensusConfig {
             address: CORE_CODE_ADDRESS,
             module: G_CONSENSUS_CONFIG_IDENTIFIER.clone(),
             name: G_CONSENSUS_CONFIG_IDENTIFIER.clone(),
-            type_params: vec![],
+            type_args: vec![],
         }))
     }
 }
