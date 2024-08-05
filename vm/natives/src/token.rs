@@ -38,7 +38,7 @@ pub fn native_token_name_of(
     if let TypeTag::Struct(struct_tag) = type_tag {
         let mut name = struct_tag.name.as_bytes().to_vec();
         let type_args_info =
-            format_type_params(&struct_tag.type_params).expect("format should never fail");
+            format_type_params(&struct_tag.type_args).expect("format should never fail");
         name.append(&mut type_args_info.into_bytes());
         Ok(NativeResult::ok(
             cost,
