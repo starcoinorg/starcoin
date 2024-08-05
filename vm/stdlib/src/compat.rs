@@ -49,7 +49,7 @@ impl StdlibCompat for StdlibVersion {
             address: genesis_address(),
             module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
             name: Identifier::new(struct_name).unwrap(),
-            type_params: vec![],
+            type_args: vec![],
         }))
     }
 

@@ -26,6 +26,8 @@ use std::{
     io::{Read, Write},
     path::{Path, PathBuf},
 };
+use move_compiler::Flags;
+use move_compiler::shared::known_attributes::KnownAttribute;
 
 mod compat;
 pub use compat::*;
@@ -170,6 +172,9 @@ pub fn build_stdlib(targets: &[String]) -> BTreeMap<String, CompiledModule> {
             targets.to_vec(),
             vec![],
             starcoin_framework_named_addresses(),
+            Flags::empty()
+                .set_sources_shadow_deps(true),
+            KnownAttribute::get_all_attribute_names(),
         )
         .build()
         .unwrap();
