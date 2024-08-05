@@ -16,10 +16,7 @@ use crate::consensusdb::prelude::DagCache;
 use crate::consensusdb::set_access::DbSetAccess;
 use parking_lot::{RwLockUpgradableReadGuard, RwLockWriteGuard};
 use rocksdb::WriteBatch;
-use std::{
-    collections::{hash_map::Entry::Vacant, HashMap},
-    sync::Arc,
-};
+use std::{collections::hash_map::Entry::Vacant, sync::Arc};
 
 /// Reader API for `ReachabilityStore`.
 pub trait ReachabilityStoreReader {
@@ -123,16 +120,18 @@ impl DbReachabilitySet {
         self.cache.get(&key).map_or_else(
             || {
                 self.access.read(key).map(|v| {
-                    let v_map = v
-                        .into_iter()
-                        .map(|raw| {
-                            (
-                                u64::from_le_bytes(raw[..8].try_into().unwrap()) as usize,
-                                bincode::deserialize::<Hash>(&raw[8..]).unwrap(),
-                            )
-                        })
-                        .collect::<HashMap<usize, Hash>>();
-                    let v = Arc::new(v_map.into_values().collect::<Vec<_>>());
+                    let mut values = Vec::new();
+                    v.into_iter().for_each(|raw| {
+                        let (idx, val) = (
+                            u64::from_le_bytes(raw[..8].try_into().unwrap()) as usize,
+                            bincode::deserialize::<Hash>(&raw[8..]).unwrap(),
+                        );
+                        if values.capacity() <= idx {
+                            values.reserve(idx + 1 - values.capacity());
+                        }
+                        values.insert(idx, val);
+                    });
+                    let v = Arc::new(values);
                     self.cache.insert(key, v.clone());
                     v
                 })
