@@ -89,7 +89,7 @@ impl<'a> Resolver<'a> {
         let struct_def =
             find_struct_def_in_module(module.as_ref(), struct_tag.name.as_ident_str())?;
         let ty_args = struct_tag
-            .type_params
+            .type_args
             .iter()
             .map(|ty| self.resolve_type(ty))
             .collect::<Result<Vec<_>>>()?;
