@@ -6,7 +6,7 @@
 
 use crate::algebra::{FeePerGasUnit, Gas, GasScalingFactor, GasUnit};
 use move_core_types::gas_algebra::{
-    InternalGas, InternalGasPerByte, InternalGasUnit, NumBytes, ToUnitFractionalWithParams,
+    InternalGas, InternalGasPerByte, InternalGasUnit, NumBytes,
     ToUnitWithParams,
 };
 // see starcoin/config/src/genesis_config.rs G_GAS_CONSTANTS_V2
@@ -112,18 +112,8 @@ impl TransactionGasParameters {
     }
 }
 
-impl ToUnitWithParams<InternalGasUnit> for GasUnit {
-    type Params = TransactionGasParameters;
-
-    fn multiplier(params: &Self::Params) -> u64 {
+impl ToUnitWithParams<TransactionGasParameters, InternalGasUnit> for GasUnit {
+    fn multiplier(params: &TransactionGasParameters) -> u64 {
         params.scaling_factor().into()
-    }
-}
-
-impl ToUnitFractionalWithParams<GasUnit> for InternalGasUnit {
-    type Params = TransactionGasParameters;
-
-    fn ratio(params: &Self::Params) -> (u64, u64) {
-        (1, params.scaling_factor().into())
     }
 }

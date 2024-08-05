@@ -10,7 +10,6 @@ use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{
     InternalGas, InternalGasPerAbstractMemoryUnit, InternalGasPerArg, InternalGasPerByte,
 };
-use move_vm_types::gas::SimpleInstruction;
 
 // see starcoin/vm/types/src/on_chain_config/genesis_gas_schedule.rs
 // same order as https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#instruction_schedule
@@ -194,65 +193,3 @@ crate::params::define_gas_parameters!(
         [ld_u256: InternalGas,  "ld_u256", (2 + 1)* MUL],
     ]
 );
-
-impl InstructionGasParameters {
-    pub fn simple_instr_cost(&self, instr: SimpleInstruction) -> PartialVMResult<InternalGas> {
-        Ok(match instr {
-            SimpleInstruction::Nop => self.nop,
-
-            SimpleInstruction::Abort => self.abort,
-            SimpleInstruction::Ret => self.ret,
-
-            SimpleInstruction::BrTrue => self.br_true,
-            SimpleInstruction::BrFalse => self.br_false,
-            SimpleInstruction::Branch => self.branch,
-
-            SimpleInstruction::LdU8 => self.ld_u8,
-            SimpleInstruction::LdU64 => self.ld_u64,
-            SimpleInstruction::LdU128 => self.ld_u128,
-            SimpleInstruction::LdTrue => self.ld_true,
-            SimpleInstruction::LdFalse => self.ld_false,
-
-            SimpleInstruction::ImmBorrowLoc => self.imm_borrow_loc,
-            SimpleInstruction::MutBorrowLoc => self.mut_borrow_loc,
-            SimpleInstruction::ImmBorrowField => self.imm_borrow_field,
-            SimpleInstruction::MutBorrowField => self.mut_borrow_field,
-            SimpleInstruction::ImmBorrowFieldGeneric => self.imm_borrow_field_generic,
-            SimpleInstruction::MutBorrowFieldGeneric => self.mut_borrow_field_generic,
-            SimpleInstruction::FreezeRef => self.freeze_ref,
-
-            SimpleInstruction::CastU8 => self.cast_u8,
-            SimpleInstruction::CastU64 => self.cast_u64,
-            SimpleInstruction::CastU128 => self.cast_u128,
-
-            SimpleInstruction::Add => self.add,
-            SimpleInstruction::Sub => self.sub,
-            SimpleInstruction::Mul => self.mul,
-            SimpleInstruction::Mod => self.mod_,
-            SimpleInstruction::Div => self.div,
-
-            SimpleInstruction::BitOr => self.bit_or,
-            SimpleInstruction::BitAnd => self.bit_and,
-            SimpleInstruction::Xor => self.xor,
-            SimpleInstruction::Shl => self.shl,
-            SimpleInstruction::Shr => self.shr,
-
-            SimpleInstruction::Or => self.or,
-            SimpleInstruction::And => self.and,
-            SimpleInstruction::Not => self.not,
-
-            SimpleInstruction::Lt => self.lt,
-            SimpleInstruction::Gt => self.gt,
-            SimpleInstruction::Le => self.le,
-            SimpleInstruction::Ge => self.ge,
-
-            SimpleInstruction::LdU16 => self.ld_u16,
-            SimpleInstruction::LdU32 => self.ld_u32,
-            SimpleInstruction::LdU256 => self.ld_u256,
-
-            SimpleInstruction::CastU16 => self.cast_u16,
-            SimpleInstruction::CastU32 => self.cast_u32,
-            SimpleInstruction::CastU256 => self.cast_u256,
-        })
-    }
-}
