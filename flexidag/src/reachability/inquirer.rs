@@ -219,6 +219,7 @@ pub(super) fn get_next_chain_ancestor_unchecked(
 
 enum SearchOutput {
     NotFound(usize), // `usize` is the position to insert at
+    #[allow(dead_code)]
     Found(Hash, usize),
 }
 

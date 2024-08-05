@@ -24,7 +24,7 @@
 
 pub use self::behaviour::{GenericProto, GenericProtoOut};
 pub use self::handler::{NotificationsSink, NotifsHandlerError, Ready};
-#[allow(clippy::blocks_in_if_conditions)]
+#[allow(clippy::blocks_in_conditions)]
 mod behaviour;
 mod handler;
 mod tests;

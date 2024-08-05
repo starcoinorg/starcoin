@@ -1574,18 +1574,6 @@ impl VMExecutor for StarcoinVM {
 }
 
 impl VMAdapter for StarcoinVM {
-    fn new_session<'r, R: MoveResolverExt>(
-        &self,
-        remote: &'r R,
-        session_id: SessionId,
-    ) -> SessionAdapter<'r, '_, R> {
-        self.move_vm.new_session(remote, session_id).into()
-    }
-
-    fn check_signature(txn: SignedUserTransaction) -> Result<SignatureCheckedTransaction> {
-        txn.check_signature()
-    }
-
     fn should_restart_execution(output: &TransactionOutput) -> bool {
         // XXX FIXME YSG if GasSchedule.move UpgradeEvent
         for event in output.events() {

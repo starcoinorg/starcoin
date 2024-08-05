@@ -6,7 +6,7 @@ use crate::protocol::generic_proto::{GenericProto, GenericProtoOut, Notification
 // use crate::protocol::message::generic::Status;
 use crate::business_layer_handle::BusinessLayerHandle;
 use crate::utils::interval;
-use crate::{errors, DiscoveryNetBehaviour, Multiaddr};
+use crate::{errors, Multiaddr};
 use bytes::Bytes;
 use futures::prelude::*;
 use libp2p::core::connection::ConnectionId;
@@ -14,7 +14,7 @@ use libp2p::swarm::behaviour::FromSwarm;
 use libp2p::swarm::{ConnectionHandler, IntoConnectionHandler};
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
-use log::Level;
+use log::{debug, error, log, trace, warn, Level};
 use sc_peerset::{peersstate::PeersState, SetId};
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
@@ -308,17 +308,6 @@ impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
         // message from the behaviour, the task is scheduled again.
         cx.waker().wake_by_ref();
         Poll::Pending
-    }
-}
-
-impl<T: BusinessLayerHandle + Send> DiscoveryNetBehaviour for Protocol<T> {
-    fn add_discovered_nodes(&mut self, peer_ids: impl Iterator<Item = PeerId>) {
-        for peer_id in peer_ids {
-            for (set_id, _) in self.notif_protocols.iter().enumerate() {
-                self.peerset_handle
-                    .add_to_peers_set(SetId::from(set_id), peer_id);
-            }
-        }
     }
 }
 

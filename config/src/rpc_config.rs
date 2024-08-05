@@ -90,7 +90,7 @@ impl HttpConfiguration {
             self.disable = true;
         }
         if o.apis.is_some() {
-            self.apis = o.apis.clone();
+            self.apis.clone_from(&o.apis);
         }
         if o.port.is_some() {
             self.port = o.port;
@@ -160,7 +160,7 @@ impl TcpConfiguration {
             self.disable = true;
         }
         if o.apis.is_some() {
-            self.apis = o.apis.clone();
+            self.apis.clone_from(&o.apis);
         }
         if o.port.is_some() {
             self.port = o.port;
@@ -207,7 +207,7 @@ impl WsConfiguration {
             self.disable = true;
         }
         if o.apis.is_some() {
-            self.apis = o.apis.clone();
+            self.apis.clone_from(&o.apis);
         }
         if o.port.is_some() {
             self.port = o.port;
@@ -239,7 +239,7 @@ impl IpcConfiguration {
             self.disable = true;
         }
         if o.apis.is_some() {
-            self.apis = o.apis.clone();
+            self.apis.clone_from(&o.apis);
         }
         Ok(())
     }
@@ -315,17 +315,21 @@ impl ApiQuotaConfiguration {
 
     pub fn merge(&mut self, o: &Self) -> Result<()> {
         if o.default_global_api_quota.is_some() {
-            self.default_global_api_quota = o.default_global_api_quota.clone();
+            self.default_global_api_quota
+                .clone_from(&o.default_global_api_quota);
         }
         //TODO should merge two vec?
         if o.custom_global_api_quota.is_some() {
-            self.custom_global_api_quota = o.custom_global_api_quota.clone();
+            self.custom_global_api_quota
+                .clone_from(&o.custom_global_api_quota);
         }
         if o.default_user_api_quota.is_some() {
-            self.default_user_api_quota = o.default_user_api_quota.clone();
+            self.default_user_api_quota
+                .clone_from(&o.default_user_api_quota);
         }
         if o.custom_user_api_quota.is_some() {
-            self.custom_user_api_quota = o.custom_user_api_quota.clone();
+            self.custom_user_api_quota
+                .clone_from(&o.custom_user_api_quota);
         }
         Ok(())
     }
