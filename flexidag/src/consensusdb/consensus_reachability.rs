@@ -16,8 +16,10 @@ use crate::consensusdb::prelude::DagCache;
 use crate::consensusdb::set_access::DbSetAccess;
 use parking_lot::{RwLockUpgradableReadGuard, RwLockWriteGuard};
 use rocksdb::WriteBatch;
-use std::collections::HashMap;
-use std::{collections::hash_map::Entry::Vacant, sync::Arc};
+use std::{
+    collections::{hash_map::Entry::Vacant, HashMap},
+    sync::Arc,
+};
 
 /// Reader API for `ReachabilityStore`.
 pub trait ReachabilityStoreReader {
@@ -126,7 +128,7 @@ impl DbReachabilitySet {
                         .map(|raw| {
                             (
                                 u64::from_le_bytes(raw[..8].try_into().unwrap()) as usize,
-                                bcs_ext::from_bytes::<Hash>(&raw[8..]).unwrap(),
+                                bincode::deserialize::<Hash>(&raw[8..]).unwrap(),
                             )
                         })
                         .collect::<HashMap<usize, Hash>>();
@@ -234,7 +236,8 @@ impl ReachabilityStore for DbReachabilityStore {
         let new_data = {
             let idx = data.len() as u64 - 1;
             let mut new_data = idx.to_le_bytes().to_vec();
-            new_data.extend(bincode::serialize(&data).unwrap().iter());
+            assert_eq!(new_data.len(), 8);
+            new_data.extend(bincode::serialize(&child).unwrap().iter());
             new_data
         };
 
@@ -256,6 +259,7 @@ impl ReachabilityStore for DbReachabilityStore {
         let new_data = {
             let idx = insertion_index as u64;
             let mut new_data = idx.to_le_bytes().to_vec();
+            assert_eq!(new_data.len(), 8);
             new_data.extend(bincode::serialize(&fci).unwrap().iter());
             new_data
         };
