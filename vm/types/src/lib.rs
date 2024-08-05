@@ -42,16 +42,16 @@ pub mod language_storage {
             return false;
         }
 
-        if filter.type_params.is_empty() {
+        if filter.type_args.is_empty() {
             return true;
         }
 
-        if filter.type_params.len() != target.type_params.len() {
+        if filter.type_args.len() != target.type_args.len() {
             return false;
         }
 
         for (filter_type_tag, target_type_tag) in
-            std::iter::zip(filter.type_params.clone(), target.type_params.clone())
+            std::iter::zip(filter.type_args.clone(), target.type_args.clone())
         {
             if !type_tag_match(&filter_type_tag, &target_type_tag) {
                 return false;
@@ -170,10 +170,6 @@ pub mod loaded_data {
     pub mod runtime_types {
         pub use move_vm_types::loaded_data::runtime_types::{StructType, Type};
     }
-}
-
-pub mod data_store {
-    pub use move_vm_types::data_store::DataStore;
 }
 
 pub mod file_format {

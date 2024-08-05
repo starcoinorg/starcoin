@@ -292,10 +292,10 @@ impl NFTGallery {
             && struct_tag.module.as_str() == Self::MODULE_NAME
             && struct_tag.name.as_str() == Self::STRUCT_NAME
         {
-            if struct_tag.type_params.len() == 2 {
+            if struct_tag.type_args.len() == 2 {
                 let (meta_type, body_type) = (
-                    struct_tag.type_params.first().cloned().unwrap(),
-                    struct_tag.type_params.get(1).cloned().unwrap(),
+                    struct_tag.type_args.first().cloned().unwrap(),
+                    struct_tag.type_args.get(1).cloned().unwrap(),
                 );
                 Some(NFTType {
                     meta_type,
@@ -344,10 +344,10 @@ impl IdentifierNFT {
             && struct_tag.module.as_str() == Self::MODULE_NAME
             && struct_tag.name.as_str() == Self::STRUCT_NAME
         {
-            if struct_tag.type_params.len() == 2 {
+            if struct_tag.type_args.len() == 2 {
                 let (meta_type, body_type) = (
-                    struct_tag.type_params.first().cloned().unwrap(),
-                    struct_tag.type_params.get(1).cloned().unwrap(),
+                    struct_tag.type_args.first().cloned().unwrap(),
+                    struct_tag.type_args.get(1).cloned().unwrap(),
                 );
                 Some(NFTType {
                     meta_type,

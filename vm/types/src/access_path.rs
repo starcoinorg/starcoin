@@ -102,7 +102,7 @@ impl AccessPath {
             address: AccountAddress::random(),
             module: random_identity(),
             name: random_identity(),
-            type_params: vec![],
+            type_args: vec![],
         };
         Self::new(AccountAddress::random(), DataPath::Resource(struct_tag))
     }
@@ -269,7 +269,7 @@ impl Arbitrary for DataPath {
                         address,
                         module,
                         name,
-                        type_params,
+                        type_args: type_params,
                     }
                 )),
         ]
