@@ -72,7 +72,7 @@ impl<'a> ABIResolver<'a> {
 
     pub fn resolve_script(&self, script_code: Vec<u8>) -> Result<TransactionScriptABI> {
         let script = CompiledScript::deserialize(&script_code)?;
-        let script_mod = script_into_module(script);
+        let script_mod = script_into_module(script, "hello_script");
 
         let m = Module::new(&script_mod);
         anyhow::ensure!(
@@ -98,7 +98,7 @@ impl<'a> ABIResolver<'a> {
         let struct_abi =
             self.resolve_struct(&struct_tag.module_id(), struct_tag.name.as_ident_str())?;
         let ty_args = struct_tag
-            .type_params
+            .type_args
             .iter()
             .map(|ty| self.resolve_type_tag(ty))
             .collect::<Result<Vec<_>>>()?;
