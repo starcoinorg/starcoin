@@ -627,8 +627,8 @@ mod tests {
         let height = store.append_child(hash, 31.into()).unwrap();
         assert_eq!(height, 5);
         let children = store.get_children(hash).unwrap();
-        println!("{children:?}");
-        store.get_interval(7.into()).unwrap();
-        println!("{children:?}");
+        assert_eq!(children.as_slice(), [31.into()]);
+        let interval = store.get_interval(hash).unwrap();
+        assert_eq!(interval, Interval::maximal());
     }
 }
