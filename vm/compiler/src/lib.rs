@@ -12,6 +12,7 @@ use anyhow::{bail, ensure, Result};
 use move_binary_format::errors::PartialVMResult;
 use move_compiler::compiled_unit::AnnotatedCompiledUnit;
 use move_compiler::diagnostics::{unwrap_or_report_diagnostics, Diagnostics, FilesSourceText};
+use move_compiler::shared::known_attributes::KnownAttribute;
 use move_compiler::shared::{Flags, NumericalAddress};
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
@@ -188,12 +189,15 @@ pub fn compile_source_string_no_report(
     for dep in deps {
         windows_line_ending_to_unix_in_file(dep)?;
     }
+    let flags = Flags::empty()
+        .set_sources_shadow_deps(true);
     let compiler = move_compiler::Compiler::from_files(
         targets,
         deps.to_vec(),
         starcoin_framework_named_addresses(),
-    )
-    .set_flags(Flags::empty().set_sources_shadow_deps(true));
+        flags,
+        KnownAttribute::get_all_attribute_names(),
+    );
     compiler.build()
 }
 
