@@ -2,9 +2,9 @@ address StarcoinAssociation {
 module MerkleDistributorScripts {
     use StarcoinAssociation::MerkleDistributor;
     use StarcoinFramework::Account;
-    public(script) fun create<T: store>(signer: signer, merkle_root: vector<u8>, token_amounts: u128, leafs: u64) {
+    public(script) fun create<T: store>(signer: signer, merkle_root: vector<u8>, token_amounts: u128, leaves: u64) {
         let tokens = Account::withdraw<T>(&signer, token_amounts);
-        MerkleDistributor::create<T>(&signer, merkle_root, tokens, leafs);
+        MerkleDistributor::create<T>(&signer, merkle_root, tokens, leaves);
     }
 
     public(script) fun claim_for_address<T: store>(distribution_address: address, index: u64, account: address, amount: u128, merkle_proof: vector<vector<u8>>) {
@@ -72,9 +72,9 @@ module MerkleDistributor {
     const ALREADY_CLAIMED: u64 = 2;
 
     /// Initialization.
-    public fun create<T: store>(signer: &signer, merkle_root: vector<u8>, tokens: Token<T>, leafs: u64) {
-        let bitmap_count = leafs / 128;
-        if (bitmap_count * 128 < leafs) {
+    public fun create<T: store>(signer: &signer, merkle_root: vector<u8>, tokens: Token<T>, leaves: u64) {
+        let bitmap_count = leaves / 128;
+        if (bitmap_count * 128 < leaves) {
             bitmap_count = bitmap_count + 1;
         };
         let claimed_bitmap = Vector::empty();
