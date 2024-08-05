@@ -21,22 +21,7 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-
-    let mut location = args.location.trim().split("::");
-    let mut address_literal = location.next().expect("Could not find address").to_string();
-    let module_name = location
-        .next()
-        .expect("Could not find module name")
-        .to_string();
-    if !address_literal.starts_with("0x") {
-        address_literal = format!("0x{}", address_literal);
-    }
-    let module_id = ModuleId::new(
-        AccountAddress::from_hex_literal(&address_literal).expect("Unable to parse module address"),
-        Identifier::new(module_name).expect("Invalid module name encountered"),
-    );
-
-    match starcoin_move_explain::get_explanation(&module_id, args.abort_code) {
+    match starcoin_move_explain::get_explanation(&args.location, args.abort_code) {
         None => println!(
             "Unable to find a description for {}::{}",
             args.location, args.abort_code
