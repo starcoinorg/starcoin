@@ -3,23 +3,14 @@
 #![allow(clippy::arithmetic_side_effects)]
 
 use crate::block_connector::WriteBlockChainService;
-use starcoin_account_api::AccountInfo;
-use starcoin_chain::{BlockChain, ChainReader};
-use starcoin_chain_service::WriteableChainService;
 use starcoin_config::NodeConfig;
-use starcoin_consensus::Consensus;
-use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::Store;
-use starcoin_time_service::TimeService;
 use starcoin_txpool_mock_service::MockTxPoolService;
-use starcoin_types::block::Block;
 use starcoin_types::startup_info::StartupInfo;
 use std::sync::Arc;
-
-use super::test_write_dag_block_chain::new_dag_block;
 
 pub async fn create_writeable_dag_block_chain() -> (
     WriteBlockChainService<MockTxPoolService>,
@@ -78,4 +69,3 @@ pub async fn create_writeable_block_chain() -> (
         storage,
     )
 }
-

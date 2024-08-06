@@ -1,9 +1,13 @@
 use anyhow::Ok;
-use bcs_ext::Sample;
-use rand::random;
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::schema::{KeyCodec, ValueCodec};
-use starcoin_types::{account_address::AccountAddress, block::{Block, BlockBody, BlockHeader, BlockHeaderBuilder, BlockHeaderExtra, BlockNumber}, genesis_config::ChainId, transaction::{authenticator::AuthenticationKey, SignedUserTransaction}, U256};
+use starcoin_types::{
+    account_address::AccountAddress,
+    block::{Block, BlockBody, BlockHeader, BlockHeaderBuilder, BlockHeaderExtra, BlockNumber},
+    genesis_config::ChainId,
+    transaction::{authenticator::AuthenticationKey, SignedUserTransaction},
+    U256,
+};
 
 use crate::store::sync_absent_ancestor::DagSyncBlockKey;
 
@@ -18,31 +22,43 @@ fn build_body_with_uncles(uncles: Vec<BlockHeader>) -> BlockBody {
 
 fn build_version_0_block_header(body: HashValue, number: BlockNumber) -> BlockHeader {
     BlockHeaderBuilder::new()
-    .with_parent_hash(HashValue::random())
-    .with_timestamp(rand::random())
-    .with_number(1024)
-    .with_author(AccountAddress::random())
-    .with_author_auth_key(Some(AuthenticationKey::random()))
-    .with_accumulator_root(HashValue::random())
-    .with_parent_block_accumulator_root(HashValue::random())
-    .with_state_root(HashValue::random())
-    .with_gas_used(rand::random())
-    .with_difficulty(U256::from(rand::random::<u64>()))
-    .with_body_hash(body)
-    .with_chain_id(ChainId::vega())
-    .with_nonce(rand::random())
-    .with_extra(BlockHeaderExtra::new([rand::random::<u8>(), rand::random::<u8>(), rand::random::<u8>(), rand::random::<u8>()]))
-    .with_parents_hash(vec![HashValue::random(), HashValue::random(), HashValue::random(), HashValue::random()])
-    .with_version(0)
-    .with_pruning_point(HashValue::zero())
-    .build()
+        .with_parent_hash(HashValue::random())
+        .with_timestamp(rand::random())
+        .with_number(number)
+        .with_author(AccountAddress::random())
+        .with_author_auth_key(Some(AuthenticationKey::random()))
+        .with_accumulator_root(HashValue::random())
+        .with_parent_block_accumulator_root(HashValue::random())
+        .with_state_root(HashValue::random())
+        .with_gas_used(rand::random())
+        .with_difficulty(U256::from(rand::random::<u64>()))
+        .with_body_hash(body)
+        .with_chain_id(ChainId::vega())
+        .with_nonce(rand::random())
+        .with_extra(BlockHeaderExtra::new([
+            rand::random::<u8>(),
+            rand::random::<u8>(),
+            rand::random::<u8>(),
+            rand::random::<u8>(),
+        ]))
+        .with_parents_hash(vec![
+            HashValue::random(),
+            HashValue::random(),
+            HashValue::random(),
+            HashValue::random(),
+        ])
+        .with_version(0)
+        .with_pruning_point(HashValue::zero())
+        .build()
 }
 
 fn build_version_0_block(number: BlockNumber) -> Block {
     let body_without_uncle1 = build_body_with_uncles(vec![]);
     let body_without_uncle2 = build_body_with_uncles(vec![]);
-    let header_without_uncle1 = build_version_0_block_header(body_without_uncle1.hash(), rand::random());
-    let header_without_uncle2 = build_version_0_block_header(body_without_uncle2.hash(), rand::random());
+    let header_without_uncle1 =
+        build_version_0_block_header(body_without_uncle1.hash(), rand::random());
+    let header_without_uncle2 =
+        build_version_0_block_header(body_without_uncle2.hash(), rand::random());
 
     let body = build_body_with_uncles(vec![header_without_uncle1, header_without_uncle2]);
     let header = build_version_0_block_header(body.hash(), number);
@@ -56,7 +72,7 @@ fn test_sync_dag_absent_store() -> anyhow::Result<()> {
 
     // write and read
     let one = DagSyncBlock {
-        block: Some(build_version_0_block(rand::random()))
+        block: Some(build_version_0_block(rand::random())),
     };
 
     sync_dag_store

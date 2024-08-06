@@ -147,8 +147,16 @@ async fn test_continue_sync_dag_blocks() -> Result<()> {
         .produce_fork_chain(one_fork_count, two_fork_count)?;
 
     /////
-    let target_dag_genesis_header_id = target_node.chain().get_storage().get_genesis()?.ok_or_else(|| format_err!("faield to get the target's genesis id"))?;
-    let local_dag_genesis_header_id = local_node.chain().get_storage().get_genesis()?.ok_or_else(|| format_err!("faield to get the local's genesis id"))?;
+    let target_dag_genesis_header_id = target_node
+        .chain()
+        .get_storage()
+        .get_genesis()?
+        .ok_or_else(|| format_err!("faield to get the target's genesis id"))?;
+    let local_dag_genesis_header_id = local_node
+        .chain()
+        .get_storage()
+        .get_genesis()?
+        .ok_or_else(|| format_err!("faield to get the local's genesis id"))?;
 
     assert_eq!(target_dag_genesis_header_id, local_dag_genesis_header_id);
 
