@@ -96,7 +96,7 @@ impl MockChain {
             Some(id) => id,
             None => self.head.current_header().id(),
         };
-        assert!(self.head.exist_block(block_id)?);
+        assert!(self.head.has_dag_block(block_id)?);
         BlockChain::new(
             self.head.time_service(),
             block_id,
@@ -209,11 +209,31 @@ impl MockChain {
         Ok(header)
     }
 
+    pub fn produce_and_apply_by_tips(&mut self, parent_header: BlockHeader, tips: Vec<HashValue>) -> Result<BlockHeader> {
+        let block = self.produce_block_by_tips(parent_header, tips)?;
+        let header = block.header().clone();
+        self.apply(block)?;
+        Ok(header)
+    }
+
     pub fn produce_and_apply_times(&mut self, times: u64) -> Result<()> {
         for _i in 0..times {
             self.produce_and_apply()?;
         }
         Ok(())
+    }
+
+    pub fn produce_and_apply_times_for_fork(&mut self, fork_point: BlockHeader, times: u64) -> Result<BlockHeader> {
+        let mut parent_header = fork_point;
+        let mut tips = vec![parent_header.id()];
+        let mut last = parent_header.clone();
+        for _i in 0..times {
+            let block_header = self.produce_and_apply_by_tips(parent_header, tips)?;
+            parent_header = block_header.clone();
+            tips = vec![block_header.id()];
+            last = block_header.clone();
+        }
+        Ok(last)
     }
 
     pub fn produce_fork_chain(&mut self, one_count: u64, two_count: u64) -> Result<()> {

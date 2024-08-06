@@ -10,7 +10,7 @@ use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_logger::prelude::debug;
 use starcoin_open_block::AddressFilter;
 use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
-use std::{collections::HashSet, str::FromStr};
+use std::{collections::HashSet, hash::Hash, str::FromStr};
 
 #[derive(Debug, Clone)]
 pub enum Verifier {
@@ -341,28 +341,24 @@ impl BlockVerifier for DagVerifier {
         R: ChainReader,
     {
         let parents_hash = new_block_header.parents_hash();
-        let mut parents_hash_to_check = parents_hash.clone();
-        parents_hash_to_check.sort();
-        parents_hash_to_check.dedup();
 
         verify_block!(
             VerifyBlockField::Header,
-            !parents_hash_to_check.is_empty() && parents_hash.len() == parents_hash_to_check.len(),
-            "Invalid parents_hash in dag verifier {:?} for a dag block {}",
-            new_block_header.parents_hash(),
-            new_block_header.number(),
+            parents_hash.len() == parents_hash.iter().collect::<HashSet<_>>().len(),
+            "The dag block contains repeated hash values, block header: {:?}",
+            new_block_header,
         );
 
         verify_block!(
             VerifyBlockField::Header,
-            parents_hash_to_check.contains(&new_block_header.parent_hash()),
+            parents_hash.contains(&new_block_header.parent_hash()),
             "header: {:?}, tips {:?} do not contain the selected parent {:?}",
             new_block_header,
-            new_block_header.parent_hash(),
+            parents_hash,
             new_block_header.parent_hash()
         );
 
-        parents_hash_to_check.iter().try_for_each(|parent_hash| {
+        parents_hash.iter().try_for_each(|parent_hash| {
             verify_block!(
                 VerifyBlockField::Header,
                 current_chain.has_dag_block(*parent_hash).map_err(|e| {
