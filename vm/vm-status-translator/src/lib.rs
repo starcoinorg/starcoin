@@ -56,7 +56,7 @@ pub fn explain_move_abort(abort_location: AbortLocation, abort_code: u64) -> Mov
 
     let err_description = match abort_location {
         AbortLocation::Module(module_id) => {
-            starcoin_move_explain::get_explanation(&module_id, abort_code)
+            starcoin_move_explain::get_explanation(&module_id.to_string(), abort_code)
         }
         AbortLocation::Script => None,
     };
@@ -129,9 +129,11 @@ impl fmt::Debug for VmStatusExplainView {
             } => fmt::Debug::fmt(
                 &VMStatus::ExecutionFailure {
                     status_code: StatusCode::try_from(*status).unwrap(),
+                    sub_status: None,
                     location: location.clone(),
                     function: *function,
                     code_offset: *code_offset,
+                    message: None,
                 },
                 f,
             ),
@@ -145,17 +147,19 @@ pub fn explain_vm_status(
 ) -> Result<VmStatusExplainView> {
     let vm_status_explain = match &vm_status {
         VMStatus::Executed => VmStatusExplainView::Executed,
-        VMStatus::Error(c) => VmStatusExplainView::Error(format!("{:?}", c)),
+        VMStatus::Error(code,sub_status, message) => VmStatusExplainView::Error(format!("{:?}-{:?}-{:?}", code, sub_status, message)),
         VMStatus::MoveAbort(location, abort_code) => VmStatusExplainView::MoveAbort {
             location: location.clone(),
             abort_code: *abort_code,
             explain: explain_move_abort(location.clone(), *abort_code),
         },
+
+        // TODO(BobOng): [Compiler-v2] to be unpack and display sub status and message
         VMStatus::ExecutionFailure {
             status_code,
             location,
             function,
-            code_offset,
+            code_offset, ..
         } => VmStatusExplainView::ExecutionFailure {
             status_code: format!("{:?}", status_code),
             status: (*status_code).into(),
