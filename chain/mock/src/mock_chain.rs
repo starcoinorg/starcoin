@@ -209,7 +209,11 @@ impl MockChain {
         Ok(header)
     }
 
-    pub fn produce_and_apply_by_tips(&mut self, parent_header: BlockHeader, tips: Vec<HashValue>) -> Result<BlockHeader> {
+    pub fn produce_and_apply_by_tips(
+        &mut self,
+        parent_header: BlockHeader,
+        tips: Vec<HashValue>,
+    ) -> Result<BlockHeader> {
         let block = self.produce_block_by_tips(parent_header, tips)?;
         let header = block.header().clone();
         self.apply(block)?;
@@ -223,7 +227,11 @@ impl MockChain {
         Ok(())
     }
 
-    pub fn produce_and_apply_times_for_fork(&mut self, fork_point: BlockHeader, times: u64) -> Result<BlockHeader> {
+    pub fn produce_and_apply_times_for_fork(
+        &mut self,
+        fork_point: BlockHeader,
+        times: u64,
+    ) -> Result<BlockHeader> {
         let mut parent_header = fork_point;
         let mut tips = vec![parent_header.id()];
         let mut last = parent_header.clone();

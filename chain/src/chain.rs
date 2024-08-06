@@ -273,7 +273,8 @@ impl BlockChain {
         //the timestamp should be an argument, if want to mock an early block.
         let previous_header = match parent_hash {
             Some(hash) => self
-                .get_storage().get_block_header_by_hash(hash)?
+                .get_storage()
+                .get_block_header_by_hash(hash)?
                 .ok_or_else(|| format_err!("Can find block header by {:?}", hash))?,
             None => self.current_header(),
         };
