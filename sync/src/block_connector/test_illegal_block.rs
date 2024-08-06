@@ -1,9 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 #![allow(clippy::arithmetic_side_effects)]
-use crate::block_connector::{
-    create_writeable_block_chain, WriteBlockChainService,
-};
+use crate::block_connector::{create_writeable_block_chain, WriteBlockChainService};
 use anyhow::Result;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::BlockChain;

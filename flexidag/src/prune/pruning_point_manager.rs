@@ -57,7 +57,7 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
                 .collect(),
         )
     }
-    
+
     pub(crate) fn next_pruning_point(
         &self,
         dag_state: &DagState,
