@@ -324,7 +324,6 @@ fn test_block_compatible_for_main() -> anyhow::Result<()> {
         uncles: Some(vec![]),
     };
 
-
     let uncle1 = crate::block::BlockHeaderBuilder::new()
         .with_number(2048)
         .with_chain_id(ChainId::dag_test())

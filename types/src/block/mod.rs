@@ -488,7 +488,7 @@ impl BlockHeader {
         if number == 0 {
             false
         } else if chain_id.is_vega() {
-            number >= 2100000
+            number >= 2300000
         } else if chain_id.is_halley() {
             number >= 2100000
         } else {
@@ -581,11 +581,13 @@ impl<'de> Deserialize<'de> for BlockHeader {
                 let (version, pruning_point) = if !BlockHeader::check_upgrade(number, chain_id) {
                     (0, HashValue::zero())
                 } else {
-                    let version: Version = seq.next_element()?
+                    let version: Version = seq
+                        .next_element()?
                         .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                    let pruning_point: HashValue = seq.next_element().map_or(HashValue::zero(), |value| {
-                        value.map_or(HashValue::zero(), |value| value)
-                    });
+                    let pruning_point: HashValue =
+                        seq.next_element().map_or(HashValue::zero(), |value| {
+                            value.map_or(HashValue::zero(), |value| value)
+                        });
                     (version, pruning_point)
                 };
 
