@@ -1004,6 +1004,7 @@ pub enum TransactionStatusView {
         location: AbortLocation,
         function: u16,
         code_offset: u16,
+        message: Option<String>,
     },
     MiscellaneousError,
     Discard {
@@ -1036,10 +1037,12 @@ impl From<KeptVMStatus> for TransactionStatusView {
                 location,
                 function,
                 code_offset,
+                message,
             } => Self::ExecutionFailure {
                 location,
                 function,
                 code_offset,
+                message,
             },
             KeptVMStatus::MiscellaneousError => Self::MiscellaneousError,
         }
@@ -1071,10 +1074,12 @@ impl From<TransactionStatusView> for TransactionStatus {
                 location,
                 function,
                 code_offset,
+                message,
             } => Self::Keep(KeptVMStatus::ExecutionFailure {
                 location,
                 function,
                 code_offset,
+                message,
             }),
             TransactionStatusView::Discard {
                 status_code,

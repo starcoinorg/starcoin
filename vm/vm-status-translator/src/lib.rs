@@ -101,11 +101,13 @@ pub enum VmStatusExplainView {
         status_code: String,
         /// status_code in u64.
         status: u64,
+        sub_status: Option<u64>,
         #[schemars(with = "String")]
         location: AbortLocation,
         function: u16,
         function_name: Option<String>,
         code_offset: u16,
+        message: Option<String>,
     },
 }
 
@@ -121,19 +123,22 @@ impl fmt::Debug for VmStatusExplainView {
                 ..
             } => fmt::Debug::fmt(&VMStatus::MoveAbort(location.clone(), *abort_code), f),
             Self::ExecutionFailure {
+                status_code: _,
                 status,
+                sub_status,
                 location,
                 function,
+                function_name: _,
                 code_offset,
-                ..
+                message,
             } => fmt::Debug::fmt(
                 &VMStatus::ExecutionFailure {
                     status_code: StatusCode::try_from(*status).unwrap(),
-                    sub_status: None,
+                    sub_status: *sub_status,
                     location: location.clone(),
                     function: *function,
                     code_offset: *code_offset,
-                    message: None,
+                    message: message.clone(),
                 },
                 f,
             ),
@@ -160,20 +165,23 @@ pub fn explain_vm_status(
             explain: explain_move_abort(location.clone(), *abort_code),
         },
 
-        // TODO(BobOng): [Compiler-v2] to be unpack and display sub status and message
         VMStatus::ExecutionFailure {
             status_code,
+            sub_status,
             location,
             function,
-            code_offset, ..
+            code_offset,
+            message,
         } => VmStatusExplainView::ExecutionFailure {
             status_code: format!("{:?}", status_code),
             status: (*status_code).into(),
+            sub_status: *sub_status,
             location: location.clone(),
             function: *function,
             function_name: locate_execution_failure(state_view, location.clone(), *function)?
                 .map(|l| l.1.to_string()),
             code_offset: *code_offset,
+            message: message.clone(),
         },
     };
     Ok(vm_status_explain)

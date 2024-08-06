@@ -109,6 +109,7 @@ pub enum TransactionVMStatusEsView {
         location: AbortLocation,
         function: u16,
         code_offset: u16,
+        message: Option<String>,
     },
     MiscellaneousError,
     Discard {
@@ -133,10 +134,12 @@ impl From<TransactionStatusView> for TransactionVMStatusEsView {
                 location,
                 function,
                 code_offset,
+                message,
             } => Self::ExecutionFailure {
                 location,
                 function,
                 code_offset,
+                message,
             },
             TransactionStatusView::MiscellaneousError => Self::MiscellaneousError,
             TransactionStatusView::Discard {
