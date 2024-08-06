@@ -297,7 +297,10 @@ impl BlockDAG {
     ) -> anyhow::Result<MineNewDagBlockInfo> {
         let dag_state = self.get_dag_state()?;
         let ghostdata = self.ghost_dag_manager().ghostdag(&dag_state.tips)?;
-        println!("jacktest: dag state: {:?}, ghost data: {:?}", dag_state, ghostdata);
+        println!(
+            "jacktest: dag state: {:?}, ghost data: {:?}",
+            dag_state, ghostdata
+        );
         anyhow::Ok(MineNewDagBlockInfo {
             tips: dag_state.tips,
             blue_blocks: (*ghostdata.mergeset_blues).clone(),

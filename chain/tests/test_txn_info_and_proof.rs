@@ -1,7 +1,6 @@
-use anyhow::{format_err, Result};
+use anyhow::Result;
 use rand::Rng;
 use starcoin_account_api::AccountInfo;
-use starcoin_accumulator::Accumulator;
 use starcoin_chain_api::{ChainReader, ChainWriter};
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
@@ -9,13 +8,9 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::debug;
 use starcoin_transaction_builder::{peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::account_config;
-use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config::AccountResource;
-use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_view::StateReaderExt;
-use starcoin_vm_types::transaction::{SignedUserTransaction, Transaction};
-use std::collections::HashMap;
+use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::sync::Arc;
 
 pub fn gen_txns(seq_num: &mut u64) -> Result<Vec<SignedUserTransaction>> {

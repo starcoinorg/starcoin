@@ -10,7 +10,7 @@ use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_logger::prelude::debug;
 use starcoin_open_block::AddressFilter;
 use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
-use std::{collections::HashSet, hash::Hash, str::FromStr};
+use std::{collections::HashSet, str::FromStr};
 
 #[derive(Debug, Clone)]
 pub enum Verifier {

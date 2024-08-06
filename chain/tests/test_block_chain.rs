@@ -215,7 +215,13 @@ fn gen_uncle() -> (MockChain, BlockChain, BlockHeader) {
     (mock_chain, fork_block_chain, uncle_block_header)
 }
 
-fn product_a_block_by_tips(branch: &BlockChain, miner: &AccountInfo, uncles: Vec<BlockHeader>, parent_hash: Option<HashValue>, tips: Vec<HashValue>) -> Block {
+fn product_a_block_by_tips(
+    branch: &BlockChain,
+    miner: &AccountInfo,
+    uncles: Vec<BlockHeader>,
+    parent_hash: Option<HashValue>,
+    tips: Vec<HashValue>,
+) -> Block {
     let (block_template, _) = branch
         .create_block_template(
             *miner.address(),
@@ -567,7 +573,13 @@ fn test_block_chain_for_dag_fork() -> Result<()> {
     let mut fork_block_chain = mock_chain.fork_new_branch(Some(fork_id)).unwrap();
     let mut other_tips = vec![fork_id];
     for _ in 0..15 {
-        let block = product_a_block_by_tips(&fork_block_chain, mock_chain.miner(), Vec::new(), other_tips.first().cloned(), other_tips.clone());
+        let block = product_a_block_by_tips(
+            &fork_block_chain,
+            mock_chain.miner(),
+            Vec::new(),
+            other_tips.first().cloned(),
+            other_tips.clone(),
+        );
         other_tips = vec![block.id()];
         fork_block_chain.apply(block)?;
     }
