@@ -492,6 +492,8 @@ impl BlockHeader {
             number >= 2300000
         } else if chain_id.is_halley() {
             number >= 2100000
+        } else if chain_id.is_proxima() {
+            number >= 2000
         } else {
             true
         }
