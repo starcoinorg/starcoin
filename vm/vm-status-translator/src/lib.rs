@@ -147,7 +147,13 @@ pub fn explain_vm_status(
 ) -> Result<VmStatusExplainView> {
     let vm_status_explain = match &vm_status {
         VMStatus::Executed => VmStatusExplainView::Executed,
-        VMStatus::Error(code,sub_status, message) => VmStatusExplainView::Error(format!("{:?}-{:?}-{:?}", code, sub_status, message)),
+        VMStatus::Error {
+            status_code,
+            sub_status,
+            message
+        } => VmStatusExplainView::Error(
+            format!("{:?}-{:?}-{:?}", status_code, sub_status, message)
+        ),
         VMStatus::MoveAbort(location, abort_code) => VmStatusExplainView::MoveAbort {
             location: location.clone(),
             abort_code: *abort_code,

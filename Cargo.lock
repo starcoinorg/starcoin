@@ -11,7 +11,7 @@ checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
 [[package]]
 name = "abstract-domain-derive"
 version = "0.1.0"
- source = "git+https://github.com/starcoinorg/move?rev=4322183f5713534928c089df896ce235298f93d2#4322183f5713534928c089df896ce235298f93d2"
+source = "git+https://github.com/starcoinorg/move?rev=4322183f5713534928c089df896ce235298f93d2#4322183f5713534928c089df896ce235298f93d2"
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
