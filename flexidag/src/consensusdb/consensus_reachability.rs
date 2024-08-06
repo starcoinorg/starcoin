@@ -156,17 +156,24 @@ pub struct DbReachabilityStore {
     reindex_root: CachedDbItem<ReachabilityCache>,
 }
 
+const SET_CACHE_SIZE: usize = 512;
+
 impl DbReachabilityStore {
     pub fn new(db: Arc<DBStorage>, cache_size: usize) -> Self {
+        let set_cache_size = if cache_size >= SET_CACHE_SIZE {
+            cache_size
+        } else {
+            SET_CACHE_SIZE
+        };
         Self {
             db: Arc::clone(&db),
             access: CachedDbAccess::new(Arc::clone(&db), cache_size),
             children_store: DbReachabilitySet::new(
                 db.clone(),
-                cache_size,
+                set_cache_size,
                 REACHABILITY_CHILDREN_DATA_CF,
             ),
-            fcs_store: DbReachabilitySet::new(db.clone(), cache_size, REACHABILITY_FCS_DATA_CF),
+            fcs_store: DbReachabilitySet::new(db.clone(), set_cache_size, REACHABILITY_FCS_DATA_CF),
             reindex_root: CachedDbItem::new(db, REINDEX_ROOT_KEY.as_bytes().to_vec()),
         }
     }
