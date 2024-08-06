@@ -168,10 +168,10 @@ impl ChainId {
     }
 
     pub fn dag_test() -> Self {
-        ChainId::new(250)
+        Self::new(250)
     }
     pub fn vega() -> Self {
-        ChainId::new(2)
+        Self::new(2)
     }
 
     pub fn is_main(self) -> bool {

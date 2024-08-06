@@ -279,8 +279,6 @@ impl BlockChain {
             None => self.current_header(),
         };
 
-        println!("jacktest: current header: {:?}", previous_header);
-
         self.create_block_template_by_header(
             author,
             previous_header,
