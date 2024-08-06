@@ -23,7 +23,7 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
         reachability_service: MTReachabilityService<T>,
         ghost_dag_store: DbGhostdagStore,
     ) -> Self {
-        PruningPointManagerT {
+        Self {
             reachability_service,
             ghost_dag_store,
         }

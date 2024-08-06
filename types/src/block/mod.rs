@@ -284,7 +284,7 @@ impl BlockHeader {
             version,
             pruning_point,
         };
-        let mut result: BlockHeader = Self {
+        let mut result = Self {
             id: None,
             parent_hash: header.parent_hash,
             timestamp: header.timestamp,
@@ -493,7 +493,7 @@ impl BlockHeader {
         } else if chain_id.is_halley() {
             number >= 2100000
         } else if chain_id.is_proxima() {
-            number >= 2000
+            number >= 200
         } else {
             true
         }
