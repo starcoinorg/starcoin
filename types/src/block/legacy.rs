@@ -145,7 +145,7 @@ impl From<BlockHeader> for crate::block::BlockHeader {
 
 impl From<BlockHeaderDataInVega> for BlockHeader {
     fn from(val: BlockHeaderDataInVega) -> Self {
-        let mut header = BlockHeader {
+        let mut header = Self {
             id: None,
             parent_hash: val.parent_hash,
             timestamp: val.timestamp,

@@ -82,7 +82,7 @@ struct BlockHeaderDataInVegaCrypto {
 
 impl From<BlockHeaderDataLatest> for BlockHeaderDataInVega {
     fn from(val: BlockHeaderDataLatest) -> Self {
-        BlockHeaderDataInVega {
+        Self {
             parent_hash: val.parent_hash,
             timestamp: val.timestamp,
             number: val.number,
@@ -104,7 +104,7 @@ impl From<BlockHeaderDataLatest> for BlockHeaderDataInVega {
 
 impl From<BlockHeader> for BlockHeaderDataLatest {
     fn from(val: BlockHeader) -> Self {
-        BlockHeaderDataLatest {
+        Self {
             parent_hash: val.parent_hash,
             timestamp: val.timestamp,
             number: val.number,
@@ -132,7 +132,7 @@ impl From<BlockHeader> for BlockHeaderDataLatest {
 
 impl From<BlockHeader> for BlockHeaderDataInVega {
     fn from(val: BlockHeader) -> Self {
-        BlockHeaderDataInVega {
+        Self {
             parent_hash: val.parent_hash,
             timestamp: val.timestamp,
             number: val.number,
@@ -158,7 +158,7 @@ impl From<BlockHeader> for BlockHeaderDataInVega {
 
 impl From<BlockHeaderBuilder> for BlockHeaderDataLatest {
     fn from(val: BlockHeaderBuilder) -> Self {
-        BlockHeaderDataLatest {
+        Self {
             parent_hash: val.buffer.parent_hash,
             timestamp: val.buffer.timestamp,
             number: val.buffer.number,
