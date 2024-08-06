@@ -433,8 +433,9 @@ impl BlockHeader {
     //for test
     pub fn dag_genesis_random(dag_genesis_number: BlockNumber) -> Self {
         let mut header = Self::random();
-        header.parents_hash = vec![HashValue::random()];
+        header.parents_hash = vec![];
         header.number = dag_genesis_number;
+        header.id = Some(header.calc_hash());
         header
     }
 

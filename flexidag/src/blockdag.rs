@@ -106,21 +106,26 @@ impl BlockDAG {
     }
 
     pub fn init_with_genesis(&mut self, genesis: BlockHeader) -> anyhow::Result<HashValue> {
+        println!("jacktest: 1");
         let genesis_id = genesis.id();
         let origin = genesis.parent_hash();
 
         inquirer::init(self.storage.reachability_store.write().deref_mut(), origin)?;
+        println!("jacktest: 2");
 
         self.storage
             .relations_store
             .write()
             .insert(origin, BlockHashes::new(vec![]))?;
+        println!("jacktest: 3");
 
         self.commit(genesis, origin)?;
+        println!("jacktest: 4");
         self.save_dag_state(DagState {
             tips: vec![genesis_id],
             pruning_point: genesis_id,
         })?;
+        println!("jacktest: 5");
         Ok(origin)
     }
     pub fn ghostdata(&self, parents: &[HashValue]) -> anyhow::Result<GhostdagData> {
@@ -153,6 +158,12 @@ impl BlockDAG {
             header.id(),
             header.number()
         );
+        println!(
+            "jacktest: start to commit header: {:?}, number: {:?}, origin: {:?}",
+            header,
+            header.number(),
+            origin,
+        );
         // Generate ghostdag data
         let parents = header
             .parents()
@@ -177,20 +188,25 @@ impl BlockDAG {
             None => {
                 // It must be the dag genesis if header is a format for a single chain
                 if header.is_genesis() {
+                    println!("jacktest: commit1");
                     Arc::new(self.ghostdag_manager.genesis_ghostdag_data(&header))
                 } else {
+                    println!("jacktest: commit2");
                     let ghostdata = self.ghostdag_manager.ghostdag(&parents)?;
+                    println!("jacktest: commit3");
                     Arc::new(ghostdata)
                 }
             }
             Some(ghostdata) => ghostdata,
         };
+        println!("jacktest: commit4");
         // Store ghostdata
         process_key_already_error(
             self.storage
                 .ghost_dag_store
                 .insert(header.id(), ghostdata.clone()),
         )?;
+        println!("jacktest: commit5");
 
         // Update reachability store
         debug!(
@@ -199,11 +215,14 @@ impl BlockDAG {
             header.number()
         );
         let reachability_store = self.storage.reachability_store.clone();
+        println!("jacktest: commit6");
+
         let mut merge_set = ghostdata
             .unordered_mergeset_without_selected_parent()
             .filter(|hash| self.storage.reachability_store.read().has(*hash).unwrap())
             .collect::<Vec<_>>()
             .into_iter();
+        println!("jacktest: commit7");
         let add_block_result = {
             let mut reachability_writer = reachability_store.write();
             inquirer::add_block(
@@ -213,9 +232,11 @@ impl BlockDAG {
                 &mut merge_set,
             )
         };
+        println!("jacktest: commit8");
         match add_block_result {
             Result::Ok(_) => (),
             Err(reachability::ReachabilityError::DataInconsistency) => {
+                println!("jacktest: commit9");
                 let _future_covering_set = reachability_store
                     .read()
                     .get_future_covering_set(header.id())?;
@@ -226,6 +247,7 @@ impl BlockDAG {
                 );
             }
             Err(reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(msg))) => {
+                println!("jacktest: commit10");
                 if msg == *REINDEX_ROOT_KEY.to_string() {
                     info!(
                         "the key {:?} was already processed, original error message: {:?}",
@@ -257,18 +279,21 @@ impl BlockDAG {
             }
         }
 
+        println!("jacktest: commit11");
         process_key_already_error(
             self.storage
                 .relations_store
                 .write()
                 .insert(header.id(), BlockHashes::new(parents)),
         )?;
+        println!("jacktest: commit12");
         // Store header store
         process_key_already_error(self.storage.header_store.insert(
             header.id(),
             Arc::new(header),
             1,
         ))?;
+        println!("jacktest: commit13");
         Ok(())
     }
 
