@@ -33,7 +33,7 @@ pub struct FlexiDagStorageConfig {
 impl Default for FlexiDagStorageConfig {
     fn default() -> Self {
         Self {
-            cache_size: 1,
+            cache_size: 512,
             rocksdb_config: Default::default(),
         }
     }

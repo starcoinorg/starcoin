@@ -23,6 +23,7 @@ use starcoin_types::{
     consensus_header::ConsensusHeader,
 };
 use std::ops::DerefMut;
+use std::path::Path;
 use std::sync::Arc;
 
 pub const DEFAULT_GHOSTDAG_K: KType = 8u16;
@@ -61,8 +62,12 @@ impl BlockDAG {
         }
     }
     pub fn create_for_testing() -> anyhow::Result<Self> {
+        Self::create_default_at(temp_dir())
+    }
+
+    pub fn create_default_at<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
         let dag_storage =
-            FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
+            FlexiDagStorage::create_from_path(path, FlexiDagStorageConfig::default())?;
         Ok(Self::new(DEFAULT_GHOSTDAG_K, dag_storage))
     }
 

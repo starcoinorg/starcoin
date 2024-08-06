@@ -18,6 +18,7 @@ use starcoin_dag::{
 use starcoin_logger::prelude::debug;
 use starcoin_types::block::{BlockHeader, BlockHeaderBuilder, BlockNumber};
 
+use starcoin_config::temp_dir;
 use std::{
     ops::{Deref, DerefMut},
     sync::Arc,
@@ -385,7 +386,8 @@ fn test_dag_multiple_commits() -> anyhow::Result<()> {
 
 #[test]
 fn test_reachability_abort_add_block() -> anyhow::Result<()> {
-    let dag = BlockDAG::create_for_testing().unwrap();
+    let data_dir = temp_dir();
+    let dag = BlockDAG::create_default_at(&data_dir).unwrap();
     let reachability_store = dag.storage.reachability_store.clone();
 
     let mut parent = Hash::random();
