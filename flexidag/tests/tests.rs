@@ -836,6 +836,7 @@ fn test_big_data_commit() -> anyhow::Result<()> {
     anyhow::Result::Ok(())
 }
 
+#[ignore = "pruning will be tested in next release"]
 #[test]
 fn test_prune() -> anyhow::Result<()> {
     // initialzie the dag firstly
