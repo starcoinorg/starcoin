@@ -174,7 +174,7 @@ impl DBStorage {
     /// tests.
     pub fn flush_all(&self) -> Result<()> {
         for cf_name in &self.cfs {
-            let cf_handle = self.get_cf_handle(cf_name)?;
+            let cf_handle = self.get_cf_handle(cf_name);
             self.db.flush_cf(cf_handle)?;
         }
         Ok(())
@@ -190,8 +190,8 @@ impl DBStorage {
         rocksdb_current_file.is_file()
     }
 
-    pub fn get_cf_handle(&self, cf_name: &str) -> Result<&rocksdb::ColumnFamily> {
-        self.db.cf_handle(cf_name).ok_or_else(|| {
+    pub fn get_cf_handle(&self, cf_name: &str) -> &rocksdb::ColumnFamily {
+        self.db.cf_handle(cf_name).unwrap_or_else(|| {
             panic!(
                 "DB::cf_handle not found for column family name: {}",
                 cf_name
@@ -232,7 +232,7 @@ impl DBStorage {
         K: KeyCodec,
         V: ValueCodec,
     {
-        let cf_handle = self.get_cf_handle(prefix_name)?;
+        let cf_handle = self.get_cf_handle(prefix_name);
         Ok(SchemaIterator::new(
             self.db
                 .raw_iterator_cf_opt(cf_handle, ReadOptions::default()),
@@ -246,7 +246,7 @@ impl DBStorage {
         mode: IteratorMode,
         readopts: ReadOptions,
     ) -> Result<DBIterator> {
-        let cf_handle = self.get_cf_handle(prefix_name)?;
+        let cf_handle = self.get_cf_handle(prefix_name);
         Ok(self.db.iterator_cf_opt(cf_handle, readopts, mode))
     }
 
@@ -359,7 +359,7 @@ where
 impl InnerStore for DBStorage {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         record_metrics("db", prefix_name, "get", self.metrics.as_ref()).call(|| {
-            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let cf_handle = self.get_cf_handle(prefix_name);
             let result = self.db.get_cf(cf_handle, key.as_slice())?;
             Ok(result)
         })
@@ -374,7 +374,7 @@ impl InnerStore for DBStorage {
         }
 
         record_metrics("db", prefix_name, "put", self.metrics.as_ref()).call(|| {
-            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let cf_handle = self.get_cf_handle(prefix_name);
             self.db
                 .put_cf_opt(cf_handle, &key, &value, &Self::default_write_options())?;
             Ok(())
@@ -391,7 +391,7 @@ impl InnerStore for DBStorage {
     }
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
         record_metrics("db", prefix_name, "remove", self.metrics.as_ref()).call(|| {
-            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let cf_handle = self.get_cf_handle(prefix_name);
             self.db.delete_cf(cf_handle, &key)?;
             Ok(())
         })
@@ -401,7 +401,7 @@ impl InnerStore for DBStorage {
     fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
         record_metrics("db", prefix_name, "write_batch", self.metrics.as_ref()).call(|| {
             let mut db_batch = DBWriteBatch::default();
-            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let cf_handle = self.get_cf_handle(prefix_name);
             for (key, write_op) in &batch.rows {
                 match write_op {
                     WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
@@ -431,7 +431,7 @@ impl InnerStore for DBStorage {
         }
 
         record_metrics("db", prefix_name, "put_sync", self.metrics.as_ref()).call(|| {
-            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let cf_handle = self.get_cf_handle(prefix_name);
             self.db
                 .put_cf_opt(cf_handle, &key, &value, &Self::sync_write_options())?;
             Ok(())
@@ -441,7 +441,7 @@ impl InnerStore for DBStorage {
     fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
         record_metrics("db", prefix_name, "write_batch_sync", self.metrics.as_ref()).call(|| {
             let mut db_batch = DBWriteBatch::default();
-            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let cf_handle = self.get_cf_handle(prefix_name);
             for (key, write_op) in &batch.rows {
                 match write_op {
                     WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
@@ -455,7 +455,7 @@ impl InnerStore for DBStorage {
 
     fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
         record_metrics("db", prefix_name, "multi_get", self.metrics.as_ref()).call(|| {
-            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let cf_handle = self.get_cf_handle(prefix_name);
             let cf_handles = iter::repeat(&cf_handle)
                 .take(keys.len())
                 .collect::<Vec<_>>();
@@ -482,7 +482,7 @@ impl RawDBStorage for DBStorage {
         prefix: &str,
         key: K,
     ) -> Result<Option<DBPinnableSlice>> {
-        let cf = self.get_cf_handle(prefix)?;
+        let cf = self.get_cf_handle(prefix);
         let res = self
             .db
             .get_pinned_cf_opt(cf, key, &ReadOptions::default())?;

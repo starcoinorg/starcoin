@@ -52,16 +52,14 @@ impl DbWriter for BatchDbWriter<'_> {
     fn put<S: Schema>(&mut self, key: &S::Key, value: &S::Value) -> Result<(), StoreError> {
         let key = key.encode_key()?;
         let value = value.encode_value()?;
-        // It's ok to use unwrap here, because if the column family doesn't exist, get_cf_handle will panic.
-        let cf_handle = self.db.get_cf_handle(S::COLUMN_FAMILY).unwrap();
+        let cf_handle = self.db.get_cf_handle(S::COLUMN_FAMILY);
         self.batch.put_cf(cf_handle, key, value);
         Ok(())
     }
 
     fn delete<S: Schema>(&mut self, key: &S::Key) -> Result<(), StoreError> {
         let key = key.encode_key()?;
-        // It's ok to use unwrap here, because if the column family doesn't exist, get_cf_handle will panic.
-        let cf_handle = self.db.get_cf_handle(S::COLUMN_FAMILY).unwrap();
+        let cf_handle = self.db.get_cf_handle(S::COLUMN_FAMILY);
         self.batch.delete_cf(cf_handle, key);
         Ok(())
     }
