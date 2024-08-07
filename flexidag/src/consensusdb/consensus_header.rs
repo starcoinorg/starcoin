@@ -125,7 +125,7 @@ impl DbHeadersStore {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }
         self.headers_access.write(
-            BatchDbWriter::new(batch),
+            BatchDbWriter::new(batch, &self.db),
             hash,
             HeaderWithBlockLevel {
                 header: header.clone(),
@@ -133,7 +133,7 @@ impl DbHeadersStore {
             },
         )?;
         self.compact_headers_access.write(
-            BatchDbWriter::new(batch),
+            BatchDbWriter::new(batch, &self.db),
             hash,
             CompactHeaderData {
                 timestamp: header.timestamp(),

@@ -103,11 +103,11 @@ impl DbRelationsStore {
 
         // Insert a new entry for `hash`
         self.parents_access
-            .write(BatchDbWriter::new(batch), hash, parents.clone())?;
+            .write(BatchDbWriter::new(batch, &self.db), hash, parents.clone())?;
 
         // The new hash has no children yet
         self.children_access.write(
-            BatchDbWriter::new(batch),
+            BatchDbWriter::new(batch, &self.db),
             hash,
             BlockHashes::new(Vec::new()),
         )?;
@@ -117,7 +117,7 @@ impl DbRelationsStore {
             let mut children = (*self.get_children(parent)?).clone();
             children.push(hash);
             self.children_access.write(
-                BatchDbWriter::new(batch),
+                BatchDbWriter::new(batch, &self.db),
                 parent,
                 BlockHashes::new(children),
             )?;

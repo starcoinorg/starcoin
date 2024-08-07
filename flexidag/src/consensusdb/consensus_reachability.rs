@@ -139,9 +139,9 @@ impl ReachabilityStore for DbReachabilityStore {
         ));
         let mut batch = WriteBatch::default();
         self.access
-            .write(BatchDbWriter::new(&mut batch), origin, data)?;
+            .write(BatchDbWriter::new(&mut batch, &self.db), origin, data)?;
         self.reindex_root
-            .write(BatchDbWriter::new(&mut batch), &origin)?;
+            .write(BatchDbWriter::new(&mut batch, &self.db), &origin)?;
         self.db
             .raw_write_batch(batch)
             .map_err(|e| StoreError::DBIoError(e.to_string()))?;
@@ -255,17 +255,18 @@ impl<'a> StagingReachabilityStore<'a> {
         self,
         batch: &mut WriteBatch,
     ) -> Result<RwLockWriteGuard<'a, DbReachabilityStore>, StoreError> {
+        let db = Arc::clone(&self.store_read.db);
         let mut store_write = RwLockUpgradableReadGuard::upgrade(self.store_read);
         for (k, v) in self.staging_writes {
             let data = Arc::new(v);
             store_write
                 .access
-                .write(BatchDbWriter::new(batch), k, data)?
+                .write(BatchDbWriter::new(batch, &db), k, data)?
         }
         if let Some(root) = self.staging_reindex_root {
             store_write
                 .reindex_root
-                .write(BatchDbWriter::new(batch), &root)?;
+                .write(BatchDbWriter::new(batch, &db), &root)?;
         }
         Ok(store_write)
     }
