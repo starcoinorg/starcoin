@@ -425,21 +425,6 @@ pub fn vote_language_version(_net: &ChainNetwork, lang_version: u64) -> ScriptFu
     )
 }
 
-pub fn vote_flexi_dag_config(_net: &ChainNetwork, effective_height: u64) -> ScriptFunction {
-    ScriptFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("OnChainConfigScripts").unwrap(),
-        ),
-        Identifier::new("propose_update_flexi_dag_effective_height").unwrap(),
-        vec![],
-        vec![
-            bcs_ext::to_bytes(&effective_height).unwrap(),
-            bcs_ext::to_bytes(&0u64).unwrap(),
-        ],
-    )
-}
-
 /// execute on chain config scripts
 pub fn execute_script_on_chain_config(
     _net: &ChainNetwork,

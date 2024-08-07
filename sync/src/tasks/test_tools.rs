@@ -140,7 +140,6 @@ pub async fn full_sync_new_node() -> Result<()> {
     let target = arc_node1.sync_target();
 
     let current_block_header = node2.chain().current_header();
-    let dag_fork_height = net2.genesis_config().dag_effective_height;
     let storage = node2.chain().get_storage();
     let dag = node2.chain().dag();
     let (sender_1, receiver_1) = unbounded();
@@ -158,7 +157,6 @@ pub async fn full_sync_new_node() -> Result<()> {
         15,
         None,
         None,
-        Some(dag_fork_height),
         dag.clone(),
         node2.sync_dag_store.clone(),
     )?;
@@ -191,7 +189,6 @@ pub async fn full_sync_new_node() -> Result<()> {
         15,
         None,
         None,
-        Some(dag_fork_height),
         dag,
         node2.sync_dag_store.clone(),
     )?;

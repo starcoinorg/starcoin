@@ -403,5 +403,6 @@
   },
   "time_service_type": "RealTimeService",
   "transaction_timeout": 86400,
-  "dag_effective_height": 0
+  "pruning_depth": 17280,
+  "pruning_finality": 8640
 }
