@@ -89,13 +89,6 @@ impl BlockDAG {
         Ok(Self::new(k, dag_storage))
     }
 
-    pub fn new_by_config(db_path: &Path) -> anyhow::Result<Self> {
-        let config = FlexiDagStorageConfig::create_with_params(1, RocksdbConfig::default());
-        let db = FlexiDagStorage::create_from_path(db_path, config)?;
-        let dag = Self::new(DEFAULT_GHOSTDAG_K, db);
-        Ok(dag)
-    }
-
     pub fn has_dag_block(&self, hash: Hash) -> anyhow::Result<bool> {
         Ok(self.storage.header_store.has(hash)?)
     }
