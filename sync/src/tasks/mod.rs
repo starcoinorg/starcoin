@@ -620,7 +620,6 @@ pub fn full_sync_task<H, A, F, N>(
     max_retry_times: u64,
     sync_metrics: Option<SyncMetrics>,
     vm_metrics: Option<VMMetrics>,
-    dag_fork_number: Option<BlockNumber>,
     dag: BlockDAG,
     sync_dag_store: SyncDagStore,
 ) -> Result<(
@@ -638,9 +637,8 @@ where
         .get_block_header_by_hash(current_block_id)?
         .ok_or_else(|| format_err!("Can not find block header by id: {}", current_block_id))?;
     info!(
-        "start full sync task, current block number: {}, dag fork number: {:?}",
+        "start full sync task, current block number: {}",
         current_block_header.number(),
-        dag_fork_number
     );
     let current_block_number = current_block_header.number();
     let current_block_id = current_block_header.id();
@@ -734,7 +732,6 @@ where
                 time_service.clone(),
                 peer_provider.clone(),
                 ext_error_handle.clone(),
-                dag_fork_number,
                 dag.clone(),
                 sync_dag_store.clone(),
             );

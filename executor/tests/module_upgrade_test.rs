@@ -30,8 +30,7 @@ use std::fs::File;
 use std::io::Read;
 use stdlib::{load_upgrade_package, StdlibCompat, G_STDLIB_VERSIONS};
 use test_helper::dao::{
-    dao_vote_test, execute_script_on_chain_config, on_chain_config_type_tag, vote_flexi_dag_config,
-    vote_language_version,
+    dao_vote_test, execute_script_on_chain_config, on_chain_config_type_tag, vote_language_version,
 };
 use test_helper::executor::*;
 use test_helper::Account;
@@ -234,18 +233,6 @@ fn test_stdlib_upgrade() -> Result<()> {
                 vote_language_version(&net, 6),
                 on_chain_config_type_tag(MoveLanguageVersion::type_tag()),
                 execute_script_on_chain_config(&net, MoveLanguageVersion::type_tag(), proposal_id),
-                proposal_id,
-            )?;
-            proposal_id += 1;
-        }
-        if let StdlibVersion::Version(12) = current_version {
-            dao_vote_test(
-                &alice,
-                &chain_state,
-                &net,
-                vote_flexi_dag_config(&net, 1234567890u64),
-                on_chain_config_type_tag(FlexiDagConfig::type_tag()),
-                execute_script_on_chain_config(&net, FlexiDagConfig::type_tag(), proposal_id),
                 proposal_id,
             )?;
             proposal_id += 1;

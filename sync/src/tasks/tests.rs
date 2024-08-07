@@ -30,7 +30,6 @@ use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::SyncTarget;
-use starcoin_types::block::BlockNumber;
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeaderBuilder, BlockIdAndNumber, BlockInfo},
     U256,
@@ -110,7 +109,6 @@ pub async fn test_full_sync_fork() -> Result<()> {
     let target = arc_node1.sync_target();
 
     let current_block_header = node2.chain().current_header();
-    let dag_fork_height = node2.dag_fork_number()?;
     let dag = node2.chain().dag();
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
@@ -128,7 +126,6 @@ pub async fn test_full_sync_fork() -> Result<()> {
         15,
         None,
         None,
-        Some(dag_fork_height),
         dag.clone(),
         node2.sync_dag_store.clone(),
     )?;
@@ -136,7 +133,6 @@ pub async fn test_full_sync_fork() -> Result<()> {
     let branch = sync_task.await?;
     let mut node2 = join_handle.await;
     let current_block_header = node2.chain().current_header();
-    let dag_fork_height = node2.dag_fork_number()?;
     assert_eq!(branch.current_header().id(), target.target_id.id());
     assert_eq!(target.target_id.id(), current_block_header.id());
     let reports = task_event_counter.get_reports();
@@ -165,7 +161,6 @@ pub async fn test_full_sync_fork() -> Result<()> {
         15,
         None,
         None,
-        Some(dag_fork_height),
         dag,
         node2.sync_dag_store.clone(),
     )?;
@@ -200,7 +195,6 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
     let target = arc_node1.sync_target();
 
     let current_block_header = node2.chain().current_header();
-    let dag_fork_height = node2.dag_fork_number()?;
     let dag = node2.chain().dag();
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
@@ -218,7 +212,6 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
         15,
         None,
         None,
-        Some(dag_fork_height),
         dag,
         node2.sync_dag_store.clone(),
     )?;
@@ -256,7 +249,6 @@ pub async fn test_full_sync_continue() -> Result<()> {
     let target = arc_node1.sync_target_by_number(5).unwrap();
 
     let current_block_header = node2.chain().current_header();
-    let dag_fork_height = node2.dag_fork_number()?;
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
@@ -273,7 +265,6 @@ pub async fn test_full_sync_continue() -> Result<()> {
         15,
         None,
         None,
-        Some(dag_fork_height),
         dag.clone(),
         node2.sync_dag_store.clone(),
     )?;
@@ -285,7 +276,6 @@ pub async fn test_full_sync_continue() -> Result<()> {
     // As the dag ghost consent rule, the chain with 7 will be the main chain.
     assert_eq!(branch.current_header().id(), target.block_info.block_id);
     let current_block_header = node2.chain().current_header();
-    let dag_fork_height = node2.dag_fork_number()?;
     // node2's main chain not change.
     assert_ne!(target.target_id.id(), current_block_header.id());
 
@@ -314,7 +304,6 @@ pub async fn test_full_sync_continue() -> Result<()> {
         15,
         None,
         None,
-        Some(dag_fork_height),
         dag,
         node2.sync_dag_store.clone(),
     )?;
@@ -352,7 +341,6 @@ pub async fn test_full_sync_cancel() -> Result<()> {
     let target = arc_node1.sync_target();
 
     let current_block_header = node2.chain().current_header();
-    let dag_fork_height = node2.dag_fork_number()?;
     let dag = node2.chain().dag();
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
@@ -370,7 +358,6 @@ pub async fn test_full_sync_cancel() -> Result<()> {
         15,
         None,
         None,
-        Some(dag_fork_height),
         dag,
         node2.sync_dag_store.clone(),
     )?;
@@ -423,13 +410,7 @@ async fn test_accumulator_sync_by_stream_task() -> Result<()> {
     let task_state =
         BlockAccumulatorSyncTask::new(info0.num_leaves, info1.clone(), fetcher, 7).unwrap();
     let ancestor = BlockIdAndNumber::new(HashValue::random(), info0.num_leaves - 1);
-    let collector = AccumulatorCollector::new(
-        Arc::new(store2),
-        ancestor,
-        info0,
-        info1.clone(),
-        Some(BlockNumber::MAX),
-    );
+    let collector = AccumulatorCollector::new(Arc::new(store2), ancestor, info0, info1.clone());
     let event_handle = Arc::new(TaskEventCounterHandle::new());
     let sync_task = TaskGenerator::new(
         task_state,
@@ -852,7 +833,6 @@ async fn test_net_rpc_err() -> Result<()> {
     let target = arc_node1.sync_target();
 
     let current_block_header = node2.chain().current_header();
-    let dag_fork_height = node2.dag_fork_number()?;
     let dag = node2.chain().dag();
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
@@ -870,7 +850,6 @@ async fn test_net_rpc_err() -> Result<()> {
         15,
         None,
         None,
-        Some(dag_fork_height),
         dag,
         node2.sync_dag_store.clone(),
     )?;
@@ -1005,7 +984,6 @@ fn sync_block_in_async_connection(
 
     let current_block_header = local_node.chain().current_header();
     let storage = local_node.chain().get_storage();
-    let dag_fork_height = local_node.dag_fork_number()?;
 
     let local_net = local_node.chain_mocker.net();
     let (local_ancestor_sender, _local_ancestor_receiver) = unbounded();
@@ -1023,7 +1001,6 @@ fn sync_block_in_async_connection(
         15,
         None,
         None,
-        Some(dag_fork_height),
         dag,
         local_node.sync_dag_store.clone(),
     )?;

@@ -245,7 +245,6 @@ impl SyncService {
                 storage.get_block_info(current_block_id)?.ok_or_else(|| {
                     format_err!("Can not find block info by id: {}", current_block_id)
                 })?;
-            let dag_fork_height = Some(config.net().genesis_config().dag_effective_height);
             let rpc_client = Self::create_verified_client(
                 network.clone(),
                 config.clone(),
@@ -272,7 +271,6 @@ impl SyncService {
                     config.sync.max_retry_times(),
                     sync_metrics.clone(),
                     vm_metrics.clone(),
-                    dag_fork_height,
                     dag,
                     sync_dag_store,
                 )?;

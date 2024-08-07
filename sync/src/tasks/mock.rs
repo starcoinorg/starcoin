@@ -20,7 +20,7 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
-use starcoin_config::{BuiltinNetworkID, ChainNetwork};
+use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_network_rpc_api::G_RPC_INFO;
@@ -289,12 +289,6 @@ impl SyncNodeMocker {
 
     pub fn chain(&self) -> &BlockChain {
         self.chain_mocker.head()
-    }
-
-    pub fn dag_fork_number(&self) -> Result<BlockNumber> {
-        let header = self.chain_mocker.head().current_header();
-        let net: BuiltinNetworkID = header.chain_id().try_into()?;
-        Ok(net.genesis_config().dag_effective_height)
     }
 
     pub fn get_storage(&self) -> Arc<Storage> {
