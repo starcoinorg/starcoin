@@ -7,7 +7,7 @@
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use move_core_types::gas_algebra::{
     AbstractMemorySize, InternalGasPerAbstractMemoryUnit, InternalGasPerArg, InternalGasPerByte,
-    NumArgs,
+    NumArgs, NumTypeNodes,
 };
 use move_core_types::language_storage::ModuleId;
 use move_core_types::{
@@ -22,6 +22,7 @@ use starcoin_gas_algebra_ext::{
 #[cfg(testing)]
 use starcoin_logger::prelude::*;
 use std::collections::BTreeMap;
+use move_binary_format::file_format::CodeOffset;
 
 use move_binary_format::file_format_common::Opcodes;
 use move_core_types::account_address::AccountAddress;
@@ -229,9 +230,6 @@ fn simple_instr_to_opcode(instr: SimpleInstruction) -> Opcodes {
         SimpleInstruction::Nop => Opcodes::NOP,
         SimpleInstruction::Ret => Opcodes::RET,
 
-        SimpleInstruction::BrTrue => Opcodes::BR_TRUE,
-        SimpleInstruction::BrFalse => Opcodes::BR_FALSE,
-        SimpleInstruction::Branch => Opcodes::BRANCH,
 
         SimpleInstruction::LdU8 => Opcodes::LD_U8,
         SimpleInstruction::LdU64 => Opcodes::LD_U64,
@@ -290,16 +288,21 @@ impl GasMeter for StarcoinGasMeter {
     }
 
     #[inline]
-    fn charge_simple_instr(&mut self, instr: SimpleInstruction) -> PartialVMResult<()> {
-        let cost = self.gas_params.instr.simple_instr_cost(instr)?;
-        #[cfg(testing)]
-        info!(
-            "simple_instr {:#?} cost InternalGasUnits({}) {}",
-            simple_instr_to_opcode(instr),
-            cost,
-            self.charge
-        );
-        self.deduct_gas(cost)
+    fn charge_simple_instr(&mut self, _nstr: SimpleInstruction) -> PartialVMResult<()> {
+        // ref https://github.com/aptos-labs/aptos-core/blob/3af88bc872221c4958e6163660c60bc07bf53d38/aptos-move/aptos-gas-meter/src/meter.rs#L58-L143
+        Ok(())
+    }
+
+    fn charge_br_true(&mut self, _target_offset: Option<CodeOffset>) -> PartialVMResult<()> {
+        Ok(())
+    }
+
+    fn charge_br_false(&mut self, _target_offset: Option<CodeOffset>) -> PartialVMResult<()> {
+        Ok(())
+    }
+
+    fn charge_branch(&mut self, _target_offset: CodeOffset) -> PartialVMResult<()> {
+        Ok(())
     }
 
     fn charge_pop(&mut self, _popped_val: impl ValueView) -> PartialVMResult<()> {
@@ -765,7 +768,10 @@ impl GasMeter for StarcoinGasMeter {
     #[inline]
     fn charge_load_resource(
         &mut self,
-        _loaded: Option<(NumBytes, impl ValueView)>,
+        _addr: AccountAddress,
+        _ty: impl TypeView,
+        _val: Option<impl ValueView>,
+        _bytes_loaded: NumBytes,
     ) -> PartialVMResult<()> {
         Ok(())
     }
@@ -796,6 +802,10 @@ impl GasMeter for StarcoinGasMeter {
         &mut self,
         _locals: impl Iterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
+        Ok(())
+    }
+
+    fn charge_create_ty(&mut self, _num_nodes: NumTypeNodes) -> PartialVMResult<()> {
         Ok(())
     }
 
