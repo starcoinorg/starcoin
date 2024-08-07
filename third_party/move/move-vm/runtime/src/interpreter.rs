@@ -1025,7 +1025,7 @@ fn check_depth_of_type_impl(
         // Even though this is recursive this is OK since the depth of this recursion is
         // bounded by the depth of the type arguments, which we have already checked.
         Type::Vector(ty) => check_depth_of_type_impl(resolver, ty, max_depth, check_depth!(1))?,
-        Type::Reference(ty) | Type::MutableReference(ty)  => {
+        Type::Reference(ty) | Type::MutableReference(ty) => {
             check_depth_of_type_impl(resolver, ty, max_depth, check_depth!(1))?
         }
         Type::Struct(si) => {

@@ -19,7 +19,8 @@ use move_compiler::shared::NumericalAddress;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use simplelog::{
-    CombinedLogger, Config, ConfigBuilder, LevelPadding, SimpleLogger, TermLogger, TerminalMode, ColorChoice,
+    ColorChoice, CombinedLogger, Config, ConfigBuilder, LevelPadding, SimpleLogger, TermLogger,
+    TerminalMode,
 };
 
 use codespan_reporting::diagnostic::Severity;

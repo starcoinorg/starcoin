@@ -26,9 +26,10 @@ pub mod verification;
 
 pub use command_line::{
     compiler::{
-        construct_pre_compiled_lib, construct_pre_compiled_lib_from_compiler, generate_interface_files, output_compiled_units, Compiler,
-        FullyCompiledProgram, SteppedCompiler, PASS_CFGIR, PASS_COMPILATION, PASS_EXPANSION,
-        PASS_HLIR, PASS_NAMING, PASS_PARSER, PASS_TYPING,
+        construct_pre_compiled_lib, construct_pre_compiled_lib_from_compiler,
+        generate_interface_files, output_compiled_units, Compiler, FullyCompiledProgram,
+        SteppedCompiler, PASS_CFGIR, PASS_COMPILATION, PASS_EXPANSION, PASS_HLIR, PASS_NAMING,
+        PASS_PARSER, PASS_TYPING,
     },
     MOVE_COMPILED_INTERFACES_DIR,
 };
