@@ -1,36 +1,24 @@
+---
+id: move-language
+title: Move Language
+custom_edit_url: https://github.com/move-language/move/edit/main/language/README.md
+---
 
-[![License](https://img.shields.io/badge/license-Apache-green.svg)](LICENSE)
-[![Discord chat](https://img.shields.io/discord/903339070925721652.svg?logo=discord&style=flat-square)](https://discord.gg/M95qX3KnG8)
 
+Move is a new programming language developed to provide a safe and programmable foundation for the Diem Blockchain.
 
-# The Move Language
+## Overview
 
-Move is a programming language for writing safe smart contracts originally developed at Facebook to power the Diem blockchain. Move is designed to be a platform-agnostic language to enable common libraries, tooling, and developer communities across diverse blockchains with vastly different data and execution models. Move's ambition is to become the "JavaScript of web3" in terms of ubiquity--when developers want to quickly write safe code involving assets, it should be written in Move.
+The Move language directory consists of four main parts:
 
-This repository is the official home of the Move virtual machine, bytecode verifier, compiler, prover, package manager, and book. For Move code examples and papers, check out [awesome-move](https://github.com/MystenLabs/awesome-move).
+- [virtual machine](move-vm/) (VM) &mdash; contains the bytecode format, a bytecode interpreter, and infrastructure for executing a block of transactions. This directory also contains the infrastructure to generate the genesis block.
 
-## Quickstart
+- [bytecode verifier](move-bytecode-verifier/) &mdash; contains a static analysis tool for rejecting invalid Move bytecode. The virtual machine runs the bytecode verifier on any new Move code it encounters before executing it. The compiler runs the bytecode verifier on its output and surfaces the errors to the programmer.
 
-### Build the [Docker](https://www.docker.com/community/open-source/) Image for the Command Line Tool
+- [move-compiler](move-compiler/) &mdash; contains the Move source language compiler.
 
-```
-docker build -t move/cli -f docker/move-cli/Dockerfile .
-```
+- [standard library](move-stdlib/) &mdash; contains the standard library transaction scripts.
 
-### Build a Test Project
+## Exploring the Move language
 
-```
-cd ./language/documentation/tutorial/step_1/BasicCoin
-docker run -v `pwd`:/project move/cli build
-```
-
-Follow the [language/documentation/tutorial](./language/documentation/tutorial/README.md) to set up move for development.
-
-## Community
-
-* Join us on the [Move Discord](https://discord.gg/cPUmhe24Mz).
-* Browse code and content from the community at [awesome-move](https://github.com/MystenLabs/awesome-move).
-
-## License
-
-Move is licensed as [Apache 2.0](https://github.com/move-language/move/blob/main/LICENSE).
+- You can find many small Move examples in the [tests](move-compiler/tests/move_check/) directory. The easiest way to experiment with Move is to create a new test in this directory and run it with `cargo test`.
