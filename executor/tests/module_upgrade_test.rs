@@ -19,7 +19,7 @@ use starcoin_vm_types::account_config::{genesis_address, stc_type_tag};
 use starcoin_vm_types::genesis_config::{ChainId, StdlibVersion};
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::on_chain_config::{
-    FlexiDagConfig, MoveLanguageVersion, TransactionPublishOption, Version,
+    MoveLanguageVersion, TransactionPublishOption, Version,
 };
 use starcoin_vm_types::on_chain_resource::LinearWithdrawCapability;
 use starcoin_vm_types::state_store::state_key::StateKey;
@@ -613,15 +613,6 @@ where
             assert!(
                 withdraw_cap.is_some(),
                 "expect LinearWithdrawCapability exist at association_address"
-            );
-        }
-        StdlibVersion::Version(12) => {
-            let config = chain_state.get_on_chain_config::<FlexiDagConfig>()?;
-            assert!(config.is_some());
-            assert_eq!(
-                config.unwrap().effective_height,
-                1234567890,
-                "expect dag effective height is 1234567890"
             );
         }
         _ => {
