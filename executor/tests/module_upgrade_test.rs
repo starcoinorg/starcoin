@@ -18,9 +18,7 @@ use starcoin_vm_types::account_config::{association_address, core_code_address, 
 use starcoin_vm_types::account_config::{genesis_address, stc_type_tag};
 use starcoin_vm_types::genesis_config::{ChainId, StdlibVersion};
 use starcoin_vm_types::move_resource::MoveResource;
-use starcoin_vm_types::on_chain_config::{
-    MoveLanguageVersion, TransactionPublishOption, Version,
-};
+use starcoin_vm_types::on_chain_config::{MoveLanguageVersion, TransactionPublishOption, Version};
 use starcoin_vm_types::on_chain_resource::LinearWithdrawCapability;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::token::stc::G_STC_TOKEN_CODE;

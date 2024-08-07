@@ -28,8 +28,8 @@ use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::{transaction::Package, vm_status::StatusCode};
 use test_helper::executor::{
     account_execute, account_execute_should_success, association_execute_should_success,
-    blockmeta_execute, build_raw_txn, current_block_number,
-    TEST_MODULE, TEST_MODULE_1, TEST_MODULE_2,
+    blockmeta_execute, build_raw_txn, current_block_number, TEST_MODULE, TEST_MODULE_1,
+    TEST_MODULE_2,
 };
 
 use test_helper::executor::{
