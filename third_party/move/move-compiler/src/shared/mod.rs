@@ -153,7 +153,7 @@ impl NamedAddressMaps {
         &self.0[idx.0]
     }
 
-    pub fn extend(&mut self, i:&Self) {
+    pub fn extend(&mut self, i: &Self) {
         for j in &i.0 {
             self.insert(j.clone());
         }

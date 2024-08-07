@@ -2,6 +2,7 @@
 // Copyright (c) The Move Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::diagnostics::codes::Severity::NonblockingError;
 use crate::{
     cfgir,
     command_line::{DEFAULT_OUTPUT_DIR, MOVE_COMPILED_INTERFACES_DIR},
@@ -29,7 +30,6 @@ use std::{
     path::{Path, PathBuf},
 };
 use tempfile::NamedTempFile;
-use crate::diagnostics::codes::Severity::{NonblockingError};
 
 //**************************************************************************************************
 // Definitions
@@ -420,10 +420,11 @@ pub fn construct_pre_compiled_lib<Paths: Into<Symbol>, NamedAddress: Into<Symbol
     interface_files_dir_opt: Option<String>,
     flags: Flags,
 ) -> anyhow::Result<Result<FullyCompiledProgram, (FilesSourceText, Diagnostics)>> {
-        let compiler = Compiler::from_package_paths(targets, Vec::<PackagePaths<Paths, NamedAddress>>::new())
+    let compiler =
+        Compiler::from_package_paths(targets, Vec::<PackagePaths<Paths, NamedAddress>>::new())
             .set_interface_files_dir_opt(interface_files_dir_opt)
             .set_flags(flags);
-        construct_pre_compiled_lib_from_compiler(compiler)
+    construct_pre_compiled_lib_from_compiler(compiler)
 }
 
 pub fn construct_pre_compiled_lib_from_compiler(
@@ -432,7 +433,6 @@ pub fn construct_pre_compiled_lib_from_compiler(
     let (files, pprog_and_comments_res) = compiler.run::<PASS_PARSER>()?;
 
     let (_comments, stepped) = match pprog_and_comments_res {
-
         Err(errors) => return Ok(Err((files, errors))),
         Ok(res) => res,
     };
@@ -453,14 +453,20 @@ pub fn construct_pre_compiled_lib_from_compiler(
             parser = Some(prog.clone())
         }
         PassResult::Expansion(eprog) => {
-            if env.check_diags_at_or_above_severity(NonblockingError).is_err(){
+            if env
+                .check_diags_at_or_above_severity(NonblockingError)
+                .is_err()
+            {
                 return;
             }
             assert!(expansion.is_none());
             expansion = Some(eprog.clone())
         }
         PassResult::Naming(nprog) => {
-            if env.check_diags_at_or_above_severity(NonblockingError).is_err(){
+            if env
+                .check_diags_at_or_above_severity(NonblockingError)
+                .is_err()
+            {
                 return;
             }
             assert!(naming.is_none());
@@ -471,7 +477,10 @@ pub fn construct_pre_compiled_lib_from_compiler(
             typing = Some(tprog.clone())
         }
         PassResult::HLIR(hprog) => {
-            if env.check_diags_at_or_above_severity(NonblockingError).is_err(){
+            if env
+                .check_diags_at_or_above_severity(NonblockingError)
+                .is_err()
+            {
                 return;
             }
             assert!(hlir.is_none());
@@ -836,7 +845,6 @@ fn run(
                 PASS_COMPILATION,
                 result_check,
             )
-
         }
         PassResult::Compilation(_, _) => unreachable!("ICE Pass::Compilation is >= all passes"),
     }
