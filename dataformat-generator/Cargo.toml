@@ -4,7 +4,7 @@ starcoin-crypto = { workspace = true }
 starcoin-types = { workspace = true }
 anyhow = { workspace = true }
 bcs-ext = { workspace = true }
-serde = { features = ["derive"], workspace = true }
+serde = { features = ["derive"], version = "=1.0.152" }
 serde_yaml = { workspace = true }
 starcoin-vm-types = { workspace = true }
 
