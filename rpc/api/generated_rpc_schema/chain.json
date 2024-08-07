@@ -156,9 +156,12 @@
                 "nonce",
                 "number",
                 "parent_hash",
+                "parents_hash",
+                "pruning_point",
                 "state_root",
                 "timestamp",
-                "txn_accumulator_root"
+                "txn_accumulator_root",
+                "version"
               ],
               "properties": {
                 "author": {
@@ -222,14 +225,16 @@
                 },
                 "parents_hash": {
                   "description": "block parents",
-                  "type": [
-                    "array",
-                    "null"
-                  ],
+                  "type": "array",
                   "items": {
                     "type": "string",
                     "format": "HashValue"
                   }
+                },
+                "pruning_point": {
+                  "description": "pruning point",
+                  "type": "string",
+                  "format": "HashValue"
                 },
                 "state_root": {
                   "description": "The last transaction state_root of this block after execute.",
@@ -244,6 +249,12 @@
                   "description": "The transaction accumulator root hash after executing this block.",
                   "type": "string",
                   "format": "HashValue"
+                },
+                "version": {
+                  "description": "version",
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0.0
                 }
               }
             }
@@ -599,9 +610,12 @@
                 "nonce",
                 "number",
                 "parent_hash",
+                "parents_hash",
+                "pruning_point",
                 "state_root",
                 "timestamp",
-                "txn_accumulator_root"
+                "txn_accumulator_root",
+                "version"
               ],
               "properties": {
                 "author": {
@@ -665,14 +679,16 @@
                 },
                 "parents_hash": {
                   "description": "block parents",
-                  "type": [
-                    "array",
-                    "null"
-                  ],
+                  "type": "array",
                   "items": {
                     "type": "string",
                     "format": "HashValue"
                   }
+                },
+                "pruning_point": {
+                  "description": "pruning point",
+                  "type": "string",
+                  "format": "HashValue"
                 },
                 "state_root": {
                   "description": "The last transaction state_root of this block after execute.",
@@ -687,6 +703,12 @@
                   "description": "The transaction accumulator root hash after executing this block.",
                   "type": "string",
                   "format": "HashValue"
+                },
+                "version": {
+                  "description": "version",
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0.0
                 }
               }
             },
@@ -727,9 +749,12 @@
                   "nonce",
                   "number",
                   "parent_hash",
+                  "parents_hash",
+                  "pruning_point",
                   "state_root",
                   "timestamp",
-                  "txn_accumulator_root"
+                  "txn_accumulator_root",
+                  "version"
                 ],
                 "properties": {
                   "author": {
@@ -793,14 +818,16 @@
                   },
                   "parents_hash": {
                     "description": "block parents",
-                    "type": [
-                      "array",
-                      "null"
-                    ],
+                    "type": "array",
                     "items": {
                       "type": "string",
                       "format": "HashValue"
                     }
+                  },
+                  "pruning_point": {
+                    "description": "pruning point",
+                    "type": "string",
+                    "format": "HashValue"
                   },
                   "state_root": {
                     "description": "The last transaction state_root of this block after execute.",
@@ -815,6 +842,12 @@
                     "description": "The transaction accumulator root hash after executing this block.",
                     "type": "string",
                     "format": "HashValue"
+                  },
+                  "version": {
+                    "description": "version",
+                    "type": "integer",
+                    "format": "uint32",
+                    "minimum": 0.0
                   }
                 }
               }
@@ -1172,9 +1205,12 @@
                 "nonce",
                 "number",
                 "parent_hash",
+                "parents_hash",
+                "pruning_point",
                 "state_root",
                 "timestamp",
-                "txn_accumulator_root"
+                "txn_accumulator_root",
+                "version"
               ],
               "properties": {
                 "author": {
@@ -1238,14 +1274,16 @@
                 },
                 "parents_hash": {
                   "description": "block parents",
-                  "type": [
-                    "array",
-                    "null"
-                  ],
+                  "type": "array",
                   "items": {
                     "type": "string",
                     "format": "HashValue"
                   }
+                },
+                "pruning_point": {
+                  "description": "pruning point",
+                  "type": "string",
+                  "format": "HashValue"
                 },
                 "state_root": {
                   "description": "The last transaction state_root of this block after execute.",
@@ -1260,6 +1298,12 @@
                   "description": "The transaction accumulator root hash after executing this block.",
                   "type": "string",
                   "format": "HashValue"
+                },
+                "version": {
+                  "description": "version",
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0.0
                 }
               }
             },
@@ -1300,9 +1344,12 @@
                   "nonce",
                   "number",
                   "parent_hash",
+                  "parents_hash",
+                  "pruning_point",
                   "state_root",
                   "timestamp",
-                  "txn_accumulator_root"
+                  "txn_accumulator_root",
+                  "version"
                 ],
                 "properties": {
                   "author": {
@@ -1366,14 +1413,16 @@
                   },
                   "parents_hash": {
                     "description": "block parents",
-                    "type": [
-                      "array",
-                      "null"
-                    ],
+                    "type": "array",
                     "items": {
                       "type": "string",
                       "format": "HashValue"
                     }
+                  },
+                  "pruning_point": {
+                    "description": "pruning point",
+                    "type": "string",
+                    "format": "HashValue"
                   },
                   "state_root": {
                     "description": "The last transaction state_root of this block after execute.",
@@ -1388,6 +1437,12 @@
                     "description": "The transaction accumulator root hash after executing this block.",
                     "type": "string",
                     "format": "HashValue"
+                  },
+                  "version": {
+                    "description": "version",
+                    "type": "integer",
+                    "format": "uint32",
+                    "minimum": 0.0
                   }
                 }
               }
@@ -1753,9 +1808,12 @@
                   "nonce",
                   "number",
                   "parent_hash",
+                  "parents_hash",
+                  "pruning_point",
                   "state_root",
                   "timestamp",
-                  "txn_accumulator_root"
+                  "txn_accumulator_root",
+                  "version"
                 ],
                 "properties": {
                   "author": {
@@ -1819,14 +1877,16 @@
                   },
                   "parents_hash": {
                     "description": "block parents",
-                    "type": [
-                      "array",
-                      "null"
-                    ],
+                    "type": "array",
                     "items": {
                       "type": "string",
                       "format": "HashValue"
                     }
+                  },
+                  "pruning_point": {
+                    "description": "pruning point",
+                    "type": "string",
+                    "format": "HashValue"
                   },
                   "state_root": {
                     "description": "The last transaction state_root of this block after execute.",
@@ -1841,6 +1901,12 @@
                     "description": "The transaction accumulator root hash after executing this block.",
                     "type": "string",
                     "format": "HashValue"
+                  },
+                  "version": {
+                    "description": "version",
+                    "type": "integer",
+                    "format": "uint32",
+                    "minimum": 0.0
                   }
                 }
               },
@@ -1881,9 +1947,12 @@
                     "nonce",
                     "number",
                     "parent_hash",
+                    "parents_hash",
+                    "pruning_point",
                     "state_root",
                     "timestamp",
-                    "txn_accumulator_root"
+                    "txn_accumulator_root",
+                    "version"
                   ],
                   "properties": {
                     "author": {
@@ -1947,14 +2016,16 @@
                     },
                     "parents_hash": {
                       "description": "block parents",
-                      "type": [
-                        "array",
-                        "null"
-                      ],
+                      "type": "array",
                       "items": {
                         "type": "string",
                         "format": "HashValue"
                       }
+                    },
+                    "pruning_point": {
+                      "description": "pruning point",
+                      "type": "string",
+                      "format": "HashValue"
                     },
                     "state_root": {
                       "description": "The last transaction state_root of this block after execute.",
@@ -1969,6 +2040,12 @@
                       "description": "The transaction accumulator root hash after executing this block.",
                       "type": "string",
                       "format": "HashValue"
+                    },
+                    "version": {
+                      "description": "version",
+                      "type": "integer",
+                      "format": "uint32",
+                      "minimum": 0.0
                     }
                   }
                 }
@@ -2148,6 +2225,7 @@
                 "number",
                 "parent_gas_used",
                 "parent_hash",
+                "parents_hash",
                 "timestamp",
                 "uncles"
               ],
@@ -2180,10 +2258,7 @@
                   "format": "HashValue"
                 },
                 "parents_hash": {
-                  "type": [
-                    "array",
-                    "null"
-                  ],
+                  "type": "array",
                   "items": {
                     "type": "string",
                     "format": "HashValue"
@@ -3299,9 +3374,12 @@
               "nonce",
               "number",
               "parent_hash",
+              "parents_hash",
+              "pruning_point",
               "state_root",
               "timestamp",
-              "txn_accumulator_root"
+              "txn_accumulator_root",
+              "version"
             ],
             "properties": {
               "author": {
@@ -3365,14 +3443,16 @@
               },
               "parents_hash": {
                 "description": "block parents",
-                "type": [
-                  "array",
-                  "null"
-                ],
+                "type": "array",
                 "items": {
                   "type": "string",
                   "format": "HashValue"
                 }
+              },
+              "pruning_point": {
+                "description": "pruning point",
+                "type": "string",
+                "format": "HashValue"
               },
               "state_root": {
                 "description": "The last transaction state_root of this block after execute.",
@@ -3387,6 +3467,12 @@
                 "description": "The transaction accumulator root hash after executing this block.",
                 "type": "string",
                 "format": "HashValue"
+              },
+              "version": {
+                "description": "version",
+                "type": "integer",
+                "format": "uint32",
+                "minimum": 0.0
               }
             }
           }
@@ -4000,11 +4086,11 @@
           "title": "DagStateView",
           "type": "object",
           "required": [
-            "dag_genesis",
+            "pruning_point",
             "tips"
           ],
           "properties": {
-            "dag_genesis": {
+            "pruning_point": {
               "type": "string",
               "format": "HashValue"
             },
