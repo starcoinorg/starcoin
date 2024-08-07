@@ -60,8 +60,11 @@ impl BlockDAG {
         }
     }
     pub fn create_for_testing() -> anyhow::Result<Self> {
-        let dag_storage =
-            FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
+        let config = FlexiDagStorageConfig {
+            cache_size: 1024,
+            ..Default::default()
+        };
+        let dag_storage = FlexiDagStorage::create_from_path(temp_dir(), config)?;
         Ok(Self::new(DEFAULT_GHOSTDAG_K, dag_storage))
     }
 
