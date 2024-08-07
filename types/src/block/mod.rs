@@ -472,6 +472,27 @@ impl BlockHeader {
         )
     }
 
+    pub fn rational_random(body_hash: HashValue) -> Self {
+        Self::new(
+            HashValue::random(),
+            rand::random(),
+            rand::random::<u64>(),
+            AccountAddress::random(),
+            HashValue::random(),
+            HashValue::random(),
+            HashValue::random(),
+            rand::random(),
+            rand::random::<u64>().into(),
+            body_hash,
+            ChainId::test(),
+            0,
+            BlockHeaderExtra([0u8; 4]),
+            vec![HashValue::random(), HashValue::random()],
+            rand::random::<Version>(),
+            HashValue::random(),
+        )
+    }
+
     pub fn calc_hash(&self) -> HashValue {
         let latest_data: BlockHeaderDataLatest = self.clone().into();
         latest_data.into_hash()
@@ -1044,6 +1065,52 @@ impl Block {
     pub fn random() -> Self {
         let body = BlockBody::sample();
         let header = BlockHeader::random();
+        Self { header, body }
+    }
+
+    pub fn rational_random() -> Self {
+        let uncle1 = crate::block::BlockHeaderBuilder::new()
+            .with_chain_id(ChainId::vega())
+            .with_number(512)
+            .with_parent_hash(HashValue::random())
+            .with_parents_hash(vec![
+                HashValue::random(),
+                HashValue::random(),
+                HashValue::random(),
+            ])
+            .build();
+
+        let uncle2 = crate::block::BlockHeaderBuilder::new()
+            .with_number(128)
+            .with_chain_id(ChainId::vega())
+            .with_parent_hash(HashValue::random())
+            .with_parents_hash(vec![
+                HashValue::random(),
+                HashValue::random(),
+                HashValue::random(),
+            ])
+            .build();
+        let body = crate::block::BlockBody {
+            transactions: vec![
+                SignedUserTransaction::sample(),
+                SignedUserTransaction::sample(),
+                SignedUserTransaction::sample(),
+            ],
+            uncles: Some(vec![uncle1, uncle2]),
+        };
+
+        let header = crate::block::BlockHeaderBuilder::new()
+            .with_number(1024)
+            .with_chain_id(ChainId::vega())
+            .with_parent_hash(HashValue::random())
+            .with_parents_hash(vec![
+                HashValue::random(),
+                HashValue::random(),
+                HashValue::random(),
+            ])
+            .with_body_hash(body.hash())
+            .build();
+
         Self { header, body }
     }
 }
