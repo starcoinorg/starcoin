@@ -1628,12 +1628,6 @@ impl ModelValue {
     }
 }
 
-/// Represents an expression descriptor.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-struct ExpDescriptor {
-    node_id: NodeId,
-}
-
 /// Represents parser for a boogie model.
 struct ModelParser<'s> {
     input: &'s str,

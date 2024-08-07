@@ -24,7 +24,7 @@ use move_command_line_common::{
     values::{ParsableValue, ParsedValue},
 };
 use move_compiler::{
-    compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum},
+    compiled_unit::AnnotatedCompiledUnit,
     diagnostics::{Diagnostics, FilesSourceText},
     shared::NumericalAddress,
     FullyCompiledProgram,
