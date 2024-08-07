@@ -98,7 +98,6 @@ impl BlockDAG {
         let db = FlexiDagStorage::create_from_path(db_path, config)?;
         let dag = Self::new(DEFAULT_GHOSTDAG_K, db);
         Ok(dag)
->>>>>>> 2ba8ddcfe (add pruning logic and compatible logic)
     }
 
     pub fn has_dag_block(&self, hash: Hash) -> anyhow::Result<bool> {
