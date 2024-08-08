@@ -19,8 +19,12 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::{debug, info, warn};
+<<<<<<< HEAD
 use starcoin_storage::Store;
 use starcoin_types::block::{AccumulatorInfo, BlockHeader};
+=======
+use starcoin_types::block::BlockHeader;
+>>>>>>> 32eccfca1 (add dag db update)
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
