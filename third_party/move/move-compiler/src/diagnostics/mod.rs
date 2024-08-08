@@ -269,7 +269,7 @@ impl Diagnostic {
         secondary_labels: impl IntoIterator<Item = (Loc, impl ToString)>,
         notes: impl IntoIterator<Item = impl ToString>,
     ) -> Self {
-        Diagnostic {
+        Self {
             info: code.into_info(),
             primary_label: (loc, label.to_string()),
             secondary_labels: secondary_labels
@@ -366,6 +366,6 @@ impl From<Vec<Diagnostic>> for Diagnostics {
 
 impl From<Option<Diagnostic>> for Diagnostics {
     fn from(diagnostic_opt: Option<Diagnostic>) -> Self {
-        Diagnostics::from(diagnostic_opt.map_or_else(Vec::new, |diag| vec![diag]))
+        Self::from(diagnostic_opt.map_or_else(Vec::new, |diag| vec![diag]))
     }
 }

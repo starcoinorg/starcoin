@@ -33,11 +33,11 @@ enum ResolvedType {
 impl ResolvedType {
     fn error_msg(&self, n: &Name) -> (Loc, String) {
         match self {
-            ResolvedType::TParam(loc, _) => (
+            Self::TParam(loc, _) => (
                 *loc,
                 format!("But '{}' was declared as a type parameter here", n),
             ),
-            ResolvedType::BuiltinType => (n.loc, format!("But '{}' is a builtin type", n)),
+            Self::BuiltinType => (n.loc, format!("But '{}' is a builtin type", n)),
         }
     }
 }

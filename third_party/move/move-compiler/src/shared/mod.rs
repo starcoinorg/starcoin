@@ -138,6 +138,12 @@ pub struct NamedAddressMapIndex(usize);
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct NamedAddressMaps(Vec<NamedAddressMap>);
 
+impl Default for NamedAddressMaps {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NamedAddressMaps {
     pub fn new() -> Self {
         Self(vec![])
@@ -547,9 +553,9 @@ pub mod known_attributes {
             static EXPECTED_FAILURE_POSITIONS: Lazy<BTreeSet<AttributePosition>> =
                 Lazy::new(|| IntoIterator::into_iter([AttributePosition::Function]).collect());
             match self {
-                TestingAttribute::TestOnly => &TEST_ONLY_POSITIONS,
-                TestingAttribute::Test => &TEST_POSITIONS,
-                TestingAttribute::ExpectedFailure => &EXPECTED_FAILURE_POSITIONS,
+                Self::TestOnly => &TEST_ONLY_POSITIONS,
+                Self::Test => &TEST_POSITIONS,
+                Self::ExpectedFailure => &EXPECTED_FAILURE_POSITIONS,
             }
         }
 
@@ -597,7 +603,7 @@ pub mod known_attributes {
 
         pub const fn name(&self) -> &str {
             match self {
-                NativeAttribute::BytecodeInstruction => Self::BYTECODE_INSTRUCTION,
+                Self::BytecodeInstruction => Self::BYTECODE_INSTRUCTION,
             }
         }
 
@@ -605,7 +611,7 @@ pub mod known_attributes {
             static BYTECODE_INSTRUCTION_POSITIONS: Lazy<BTreeSet<AttributePosition>> =
                 Lazy::new(|| IntoIterator::into_iter([AttributePosition::Function]).collect());
             match self {
-                NativeAttribute::BytecodeInstruction => &BYTECODE_INSTRUCTION_POSITIONS,
+                Self::BytecodeInstruction => &BYTECODE_INSTRUCTION_POSITIONS,
             }
         }
     }

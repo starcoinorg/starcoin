@@ -130,9 +130,9 @@ pub type Attributes = Spanned<Vec<Attribute>>;
 impl Attribute_ {
     pub fn attribute_name(&self) -> &Name {
         match self {
-            Attribute_::Name(nm)
-            | Attribute_::Assigned(nm, _)
-            | Attribute_::Parameterized(nm, _) => nm,
+            Self::Name(nm)
+            | Self::Assigned(nm, _)
+            | Self::Parameterized(nm, _) => nm,
         }
     }
 }
@@ -684,7 +684,7 @@ impl TName for ModuleIdent {
         (self.loc, self.value)
     }
 
-    fn add_loc(loc: Loc, value: ModuleIdent_) -> ModuleIdent {
+    fn add_loc(loc: Loc, value: ModuleIdent_) -> Self {
         sp(loc, value)
     }
 
@@ -730,9 +730,9 @@ impl LeadingNameAccess_ {
 impl Definition {
     pub fn file_hash(&self) -> FileHash {
         match self {
-            Definition::Module(m) => m.loc.file_hash(),
-            Definition::Address(a) => a.loc.file_hash(),
-            Definition::Script(s) => s.loc.file_hash(),
+            Self::Module(m) => m.loc.file_hash(),
+            Self::Address(a) => a.loc.file_hash(),
+            Self::Script(s) => s.loc.file_hash(),
         }
     }
 }
@@ -760,21 +760,21 @@ impl Ability_ {
     /// For a struct with ability `a`, each field needs to have the ability `a.requires()`.
     /// Consider a generic type Foo<t1, ..., tn>, for Foo<t1, ..., tn> to have ability `a`, Foo must
     /// have been declared with `a` and each type argument ti must have the ability `a.requires()`
-    pub fn requires(self) -> Ability_ {
+    pub fn requires(self) -> Self {
         match self {
-            Ability_::Copy => Ability_::Copy,
-            Ability_::Drop => Ability_::Drop,
-            Ability_::Store => Ability_::Store,
-            Ability_::Key => Ability_::Store,
+            Self::Copy => Self::Copy,
+            Self::Drop => Self::Drop,
+            Self::Store => Self::Store,
+            Self::Key => Self::Store,
         }
     }
 
     /// An inverse of `requires`, where x is in a.required_by() iff x.requires() == a
-    pub fn required_by(self) -> Vec<Ability_> {
+    pub fn required_by(self) -> Vec<Self> {
         match self {
-            Self::Copy => vec![Ability_::Copy],
-            Self::Drop => vec![Ability_::Drop],
-            Self::Store => vec![Ability_::Store, Ability_::Key],
+            Self::Copy => vec![Self::Copy],
+            Self::Drop => vec![Self::Drop],
+            Self::Store => vec![Self::Store, Self::Key],
             Self::Key => vec![],
         }
     }
@@ -782,7 +782,7 @@ impl Ability_ {
 
 impl Type_ {
     pub fn unit(loc: Loc) -> Type {
-        sp(loc, Type_::Unit)
+        sp(loc, Self::Unit)
     }
 }
 
@@ -792,14 +792,14 @@ impl UnaryOp_ {
     pub fn symbol(&self) -> &'static str {
         use UnaryOp_ as U;
         match self {
-            U::Not => U::NOT,
+            Self::Not => Self::NOT,
         }
     }
 
     pub fn is_pure(&self) -> bool {
         use UnaryOp_ as U;
         match self {
-            U::Not => true,
+            Self::Not => true,
         }
     }
 }
@@ -830,54 +830,54 @@ impl BinOp_ {
     pub fn symbol(&self) -> &'static str {
         use BinOp_ as B;
         match self {
-            B::Add => B::ADD,
-            B::Sub => B::SUB,
-            B::Mul => B::MUL,
-            B::Mod => B::MOD,
-            B::Div => B::DIV,
-            B::BitOr => B::BIT_OR,
-            B::BitAnd => B::BIT_AND,
-            B::Xor => B::XOR,
-            B::Shl => B::SHL,
-            B::Shr => B::SHR,
-            B::And => B::AND,
-            B::Or => B::OR,
-            B::Eq => B::EQ,
-            B::Neq => B::NEQ,
-            B::Lt => B::LT,
-            B::Gt => B::GT,
-            B::Le => B::LE,
-            B::Ge => B::GE,
-            B::Implies => B::IMPLIES,
-            B::Iff => B::IFF,
-            B::Range => B::RANGE,
+            Self::Add => Self::ADD,
+            Self::Sub => Self::SUB,
+            Self::Mul => Self::MUL,
+            Self::Mod => Self::MOD,
+            Self::Div => Self::DIV,
+            Self::BitOr => Self::BIT_OR,
+            Self::BitAnd => Self::BIT_AND,
+            Self::Xor => Self::XOR,
+            Self::Shl => Self::SHL,
+            Self::Shr => Self::SHR,
+            Self::And => Self::AND,
+            Self::Or => Self::OR,
+            Self::Eq => Self::EQ,
+            Self::Neq => Self::NEQ,
+            Self::Lt => Self::LT,
+            Self::Gt => Self::GT,
+            Self::Le => Self::LE,
+            Self::Ge => Self::GE,
+            Self::Implies => Self::IMPLIES,
+            Self::Iff => Self::IFF,
+            Self::Range => Self::RANGE,
         }
     }
 
     pub fn is_pure(&self) -> bool {
         use BinOp_ as B;
         match self {
-            B::Add | B::Sub | B::Mul | B::Mod | B::Div | B::Shl | B::Shr => false,
-            B::BitOr
-            | B::BitAnd
-            | B::Xor
-            | B::And
-            | B::Or
-            | B::Eq
-            | B::Neq
-            | B::Lt
-            | B::Gt
-            | B::Le
-            | B::Ge
-            | B::Range
-            | B::Implies
-            | B::Iff => true,
+            Self::Add | Self::Sub | Self::Mul | Self::Mod | Self::Div | Self::Shl | Self::Shr => false,
+            Self::BitOr
+            | Self::BitAnd
+            | Self::Xor
+            | Self::And
+            | Self::Or
+            | Self::Eq
+            | Self::Neq
+            | Self::Lt
+            | Self::Gt
+            | Self::Le
+            | Self::Ge
+            | Self::Range
+            | Self::Implies
+            | Self::Iff => true,
         }
     }
 
     pub fn is_spec_only(&self) -> bool {
         use BinOp_ as B;
-        matches!(self, B::Range | B::Implies | B::Iff)
+        matches!(self, Self::Range | Self::Implies | Self::Iff)
     }
 }
 
@@ -889,10 +889,10 @@ impl Visibility {
 
     pub fn loc(&self) -> Option<Loc> {
         match self {
-            Visibility::Public(loc) | Visibility::Script(loc) | Visibility::Friend(loc) => {
+            Self::Public(loc) | Self::Script(loc) | Self::Friend(loc) => {
                 Some(*loc)
             }
-            Visibility::Internal => None,
+            Self::Internal => None,
         }
     }
 }
@@ -919,9 +919,9 @@ impl fmt::Display for ModuleIdent_ {
 impl fmt::Display for NameAccessChain_ {
     fn fmt(&self, f: &mut fmt::Formatter) -> std::fmt::Result {
         match self {
-            NameAccessChain_::One(n) => write!(f, "{}", n),
-            NameAccessChain_::Two(ln, n2) => write!(f, "{}::{}", ln, n2),
-            NameAccessChain_::Three(sp!(_, (ln, n2)), n3) => write!(f, "{}::{}::{}", ln, n2, n3),
+            Self::One(n) => write!(f, "{}", n),
+            Self::Two(ln, n2) => write!(f, "{}::{}", ln, n2),
+            Self::Three(sp!(_, (ln, n2)), n3) => write!(f, "{}::{}::{}", ln, n2, n3),
         }
     }
 }
@@ -944,10 +944,10 @@ impl fmt::Display for Visibility {
             f,
             "{}",
             match &self {
-                Visibility::Public(_) => Visibility::PUBLIC,
-                Visibility::Script(_) => Visibility::SCRIPT,
-                Visibility::Friend(_) => Visibility::FRIEND,
-                Visibility::Internal => Visibility::INTERNAL,
+                Self::Public(_) => Self::PUBLIC,
+                Self::Script(_) => Self::SCRIPT,
+                Self::Friend(_) => Self::FRIEND,
+                Self::Internal => Self::INTERNAL,
             }
         )
     }
@@ -959,10 +959,10 @@ impl fmt::Display for Ability_ {
             f,
             "{}",
             match &self {
-                Ability_::Copy => Ability_::COPY,
-                Ability_::Drop => Ability_::DROP,
-                Ability_::Store => Ability_::STORE,
-                Ability_::Key => Ability_::KEY,
+                Self::Copy => Self::COPY,
+                Self::Drop => Self::DROP,
+                Self::Store => Self::STORE,
+                Self::Key => Self::KEY,
             }
         )
     }
@@ -1021,16 +1021,16 @@ impl AstDebug for NamedAddressMap {
 impl AstDebug for Definition {
     fn ast_debug(&self, w: &mut AstWriter) {
         match self {
-            Definition::Address(a) => a.ast_debug(w),
-            Definition::Module(m) => m.ast_debug(w),
-            Definition::Script(m) => m.ast_debug(w),
+            Self::Address(a) => a.ast_debug(w),
+            Self::Module(m) => m.ast_debug(w),
+            Self::Script(m) => m.ast_debug(w),
         }
     }
 }
 
 impl AstDebug for AddressDefinition {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let AddressDefinition {
+        let Self {
             attributes,
             loc: _loc,
             addr,
@@ -1049,8 +1049,8 @@ impl AstDebug for AddressDefinition {
 impl AstDebug for AttributeValue_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         match self {
-            AttributeValue_::Value(v) => v.ast_debug(w),
-            AttributeValue_::ModuleAccess(n) => n.ast_debug(w),
+            Self::Value(v) => v.ast_debug(w),
+            Self::ModuleAccess(n) => n.ast_debug(w),
         }
     }
 }
@@ -1058,13 +1058,13 @@ impl AstDebug for AttributeValue_ {
 impl AstDebug for Attribute_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         match self {
-            Attribute_::Name(n) => w.write(&format!("{}", n)),
-            Attribute_::Assigned(n, v) => {
+            Self::Name(n) => w.write(&format!("{}", n)),
+            Self::Assigned(n, v) => {
                 w.write(&format!("{}", n));
                 w.write(" = ");
                 v.ast_debug(w);
             }
-            Attribute_::Parameterized(n, inners) => {
+            Self::Parameterized(n, inners) => {
                 w.write(&format!("{}", n));
                 w.write("(");
                 w.list(&inners.value, ", ", |w, inner| {
@@ -1099,7 +1099,7 @@ impl AstDebug for Vec<Attributes> {
 
 impl AstDebug for Script {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let Script {
+        let Self {
             attributes,
             loc: _loc,
             uses,
@@ -1128,7 +1128,7 @@ impl AstDebug for Script {
 
 impl AstDebug for ModuleDefinition {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let ModuleDefinition {
+        let Self {
             attributes,
             loc: _loc,
             address,
@@ -1156,19 +1156,19 @@ impl AstDebug for ModuleDefinition {
 impl AstDebug for ModuleMember {
     fn ast_debug(&self, w: &mut AstWriter) {
         match self {
-            ModuleMember::Function(f) => f.ast_debug(w),
-            ModuleMember::Struct(s) => s.ast_debug(w),
-            ModuleMember::Use(u) => u.ast_debug(w),
-            ModuleMember::Friend(f) => f.ast_debug(w),
-            ModuleMember::Constant(c) => c.ast_debug(w),
-            ModuleMember::Spec(s) => s.ast_debug(w),
+            Self::Function(f) => f.ast_debug(w),
+            Self::Struct(s) => s.ast_debug(w),
+            Self::Use(u) => u.ast_debug(w),
+            Self::Friend(f) => f.ast_debug(w),
+            Self::Constant(c) => c.ast_debug(w),
+            Self::Spec(s) => s.ast_debug(w),
         }
     }
 }
 
 impl AstDebug for UseDecl {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let UseDecl { attributes, use_ } = self;
+        let Self { attributes, use_ } = self;
         attributes.ast_debug(w);
         use_.ast_debug(w);
     }
@@ -1177,13 +1177,13 @@ impl AstDebug for UseDecl {
 impl AstDebug for Use {
     fn ast_debug(&self, w: &mut AstWriter) {
         match self {
-            Use::Module(m, alias_opt) => {
+            Self::Module(m, alias_opt) => {
                 w.write(&format!("use {}", m));
                 if let Some(alias) = alias_opt {
                     w.write(&format!(" as {}", alias))
                 }
             }
-            Use::Members(m, sub_uses) => {
+            Self::Members(m, sub_uses) => {
                 w.write(&format!("use {}::", m));
                 w.block(|w| {
                     w.comma(sub_uses, |w, (n, alias_opt)| {
@@ -1201,7 +1201,7 @@ impl AstDebug for Use {
 
 impl AstDebug for FriendDecl {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let FriendDecl {
+        let Self {
             attributes,
             loc: _,
             friend,
@@ -1213,7 +1213,7 @@ impl AstDebug for FriendDecl {
 
 impl AstDebug for StructDefinition {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let StructDefinition {
+        let Self {
             attributes,
             loc: _loc,
             abilities,
@@ -1258,15 +1258,15 @@ impl AstDebug for SpecBlock_ {
 impl AstDebug for SpecBlockTarget_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         match self {
-            SpecBlockTarget_::Code => {}
-            SpecBlockTarget_::Module => w.write("module "),
-            SpecBlockTarget_::Member(name, sign_opt) => {
+            Self::Code => {}
+            Self::Module => w.write("module "),
+            Self::Member(name, sign_opt) => {
                 w.write(name.value);
                 if let Some(sign) = sign_opt {
                     sign.ast_debug(w);
                 }
             }
-            SpecBlockTarget_::Schema(n, tys) => {
+            Self::Schema(n, tys) => {
                 w.write(&format!("schema {}", n.value));
                 if !tys.is_empty() {
                     w.write("<");
@@ -1317,7 +1317,7 @@ impl AstDebug for SpecConditionKind_ {
 impl AstDebug for SpecBlockMember_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         match self {
-            SpecBlockMember_::Condition {
+            Self::Condition {
                 kind,
                 properties: _,
                 exp,
@@ -1330,7 +1330,7 @@ impl AstDebug for SpecBlockMember_ {
                     true
                 });
             }
-            SpecBlockMember_::Function {
+            Self::Function {
                 uninterpreted,
                 signature,
                 name,
@@ -1349,7 +1349,7 @@ impl AstDebug for SpecBlockMember_ {
                     FunctionBody_::Native => w.writeln(";"),
                 }
             }
-            SpecBlockMember_::Variable {
+            Self::Variable {
                 is_global,
                 name,
                 type_parameters,
@@ -1366,13 +1366,13 @@ impl AstDebug for SpecBlockMember_ {
                 w.write(": ");
                 type_.ast_debug(w);
             }
-            SpecBlockMember_::Update { lhs, rhs } => {
+            Self::Update { lhs, rhs } => {
                 w.write("update ");
                 lhs.ast_debug(w);
                 w.write(" = ");
                 rhs.ast_debug(w);
             }
-            SpecBlockMember_::Let {
+            Self::Let {
                 name,
                 post_state,
                 def,
@@ -1384,11 +1384,11 @@ impl AstDebug for SpecBlockMember_ {
                 ));
                 def.ast_debug(w);
             }
-            SpecBlockMember_::Include { properties: _, exp } => {
+            Self::Include { properties: _, exp } => {
                 w.write("include ");
                 exp.ast_debug(w);
             }
-            SpecBlockMember_::Apply {
+            Self::Apply {
                 exp,
                 patterns,
                 exclusion_patterns,
@@ -1408,7 +1408,7 @@ impl AstDebug for SpecBlockMember_ {
                     });
                 }
             }
-            SpecBlockMember_::Pragma { properties } => {
+            Self::Pragma { properties } => {
                 w.write("pragma ");
                 w.list(properties, ", ", |w, p| {
                     p.ast_debug(w);
@@ -1436,8 +1436,8 @@ impl AstDebug for SpecApplyPattern_ {
 impl AstDebug for SpecApplyFragment_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         match self {
-            SpecApplyFragment_::Wildcard => w.write("*"),
-            SpecApplyFragment_::NamePart(n) => w.write(n.value),
+            Self::Wildcard => w.write("*"),
+            Self::NamePart(n) => w.write(n.value),
         }
     }
 }
@@ -1457,7 +1457,7 @@ impl AstDebug for PragmaProperty_ {
 
 impl AstDebug for Function {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let Function {
+        let Self {
             attributes,
             loc: _loc,
             visibility,
@@ -1497,7 +1497,7 @@ impl AstDebug for Visibility {
 
 impl AstDebug for FunctionSignature {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let FunctionSignature {
+        let Self {
             type_parameters,
             parameters,
             return_type,
@@ -1516,7 +1516,7 @@ impl AstDebug for FunctionSignature {
 
 impl AstDebug for Constant {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let Constant {
+        let Self {
             attributes,
             loc: _loc,
             name,
@@ -1594,13 +1594,13 @@ impl AstDebug for Ability_ {
 impl AstDebug for Type_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         match self {
-            Type_::Unit => w.write("()"),
-            Type_::Multiple(ss) => {
+            Self::Unit => w.write("()"),
+            Self::Multiple(ss) => {
                 w.write("(");
                 ss.ast_debug(w);
                 w.write(")")
             }
-            Type_::Apply(m, ss) => {
+            Self::Apply(m, ss) => {
                 m.ast_debug(w);
                 if !ss.is_empty() {
                     w.write("<");
@@ -1608,14 +1608,14 @@ impl AstDebug for Type_ {
                     w.write(">");
                 }
             }
-            Type_::Ref(mut_, s) => {
+            Self::Ref(mut_, s) => {
                 w.write("&");
                 if *mut_ {
                     w.write("mut ");
                 }
                 s.ast_debug(w)
             }
-            Type_::Fun(args, result) => {
+            Self::Fun(args, result) => {
                 w.write("(");
                 w.comma(args, |w, ty| ty.ast_debug(w));
                 w.write("):");
@@ -1665,15 +1665,15 @@ impl AstDebug for SequenceItem_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         use SequenceItem_ as I;
         match self {
-            I::Seq(e) => e.ast_debug(w),
-            I::Declare(sp!(_, bs), ty_opt) => {
+            Self::Seq(e) => e.ast_debug(w),
+            Self::Declare(sp!(_, bs), ty_opt) => {
                 w.write("let ");
                 bs.ast_debug(w);
                 if let Some(ty) = ty_opt {
                     ty.ast_debug(w)
                 }
             }
-            I::Bind(sp!(_, bs), ty_opt, e) => {
+            Self::Bind(sp!(_, bs), ty_opt, e) => {
                 w.write("let ");
                 bs.ast_debug(w);
                 if let Some(ty) = ty_opt {
@@ -1690,11 +1690,11 @@ impl AstDebug for Exp_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         use Exp_ as E;
         match self {
-            E::Unit => w.write("()"),
-            E::Value(v) => v.ast_debug(w),
-            E::Move(v) => w.write(&format!("move {}", v)),
-            E::Copy(v) => w.write(&format!("copy {}", v)),
-            E::Name(ma, tys_opt) => {
+            Self::Unit => w.write("()"),
+            Self::Value(v) => v.ast_debug(w),
+            Self::Move(v) => w.write(&format!("move {}", v)),
+            Self::Copy(v) => w.write(&format!("copy {}", v)),
+            Self::Name(ma, tys_opt) => {
                 ma.ast_debug(w);
                 if let Some(ss) = tys_opt {
                     w.write("<");
@@ -1702,7 +1702,7 @@ impl AstDebug for Exp_ {
                     w.write(">");
                 }
             }
-            E::Call(ma, is_macro, tys_opt, sp!(_, rhs)) => {
+            Self::Call(ma, is_macro, tys_opt, sp!(_, rhs)) => {
                 ma.ast_debug(w);
                 if *is_macro {
                     w.write("!");
@@ -1716,7 +1716,7 @@ impl AstDebug for Exp_ {
                 w.comma(rhs, |w, e| e.ast_debug(w));
                 w.write(")");
             }
-            E::Pack(ma, tys_opt, fields) => {
+            Self::Pack(ma, tys_opt, fields) => {
                 ma.ast_debug(w);
                 if let Some(ss) = tys_opt {
                     w.write("<");
@@ -1730,7 +1730,7 @@ impl AstDebug for Exp_ {
                 });
                 w.write("}");
             }
-            E::Vector(_loc, tys_opt, sp!(_, elems)) => {
+            Self::Vector(_loc, tys_opt, sp!(_, elems)) => {
                 w.write("vector");
                 if let Some(ss) = tys_opt {
                     w.write("<");
@@ -1741,7 +1741,7 @@ impl AstDebug for Exp_ {
                 w.comma(elems, |w, e| e.ast_debug(w));
                 w.write("]");
             }
-            E::IfElse(b, t, f_opt) => {
+            Self::IfElse(b, t, f_opt) => {
                 w.write("if (");
                 b.ast_debug(w);
                 w.write(") ");
@@ -1751,24 +1751,24 @@ impl AstDebug for Exp_ {
                     f.ast_debug(w);
                 }
             }
-            E::While(b, e) => {
+            Self::While(b, e) => {
                 w.write("while (");
                 b.ast_debug(w);
                 w.write(")");
                 e.ast_debug(w);
             }
-            E::Loop(e) => {
+            Self::Loop(e) => {
                 w.write("loop ");
                 e.ast_debug(w);
             }
-            E::Block(seq) => w.block(|w| seq.ast_debug(w)),
-            E::Lambda(sp!(_, bs), e) => {
+            Self::Block(seq) => w.block(|w| seq.ast_debug(w)),
+            Self::Lambda(sp!(_, bs), e) => {
                 w.write("fun ");
                 bs.ast_debug(w);
                 w.write(" ");
                 e.ast_debug(w);
             }
-            E::Quant(kind, sp!(_, rs), trs, c_opt, e) => {
+            Self::Quant(kind, sp!(_, rs), trs, c_opt, e) => {
                 kind.ast_debug(w);
                 w.write(" ");
                 rs.ast_debug(w);
@@ -1780,82 +1780,82 @@ impl AstDebug for Exp_ {
                 w.write(" : ");
                 e.ast_debug(w);
             }
-            E::ExpList(es) => {
+            Self::ExpList(es) => {
                 w.write("(");
                 w.comma(es, |w, e| e.ast_debug(w));
                 w.write(")");
             }
-            E::Assign(lvalue, rhs) => {
+            Self::Assign(lvalue, rhs) => {
                 lvalue.ast_debug(w);
                 w.write(" = ");
                 rhs.ast_debug(w);
             }
-            E::Return(e) => {
+            Self::Return(e) => {
                 w.write("return");
                 if let Some(v) = e {
                     w.write(" ");
                     v.ast_debug(w);
                 }
             }
-            E::Abort(e) => {
+            Self::Abort(e) => {
                 w.write("abort ");
                 e.ast_debug(w);
             }
-            E::Break => w.write("break"),
-            E::Continue => w.write("continue"),
-            E::Dereference(e) => {
+            Self::Break => w.write("break"),
+            Self::Continue => w.write("continue"),
+            Self::Dereference(e) => {
                 w.write("*");
                 e.ast_debug(w)
             }
-            E::UnaryExp(op, e) => {
+            Self::UnaryExp(op, e) => {
                 op.ast_debug(w);
                 w.write(" ");
                 e.ast_debug(w);
             }
-            E::BinopExp(l, op, r) => {
+            Self::BinopExp(l, op, r) => {
                 l.ast_debug(w);
                 w.write(" ");
                 op.ast_debug(w);
                 w.write(" ");
                 r.ast_debug(w)
             }
-            E::Borrow(mut_, e) => {
+            Self::Borrow(mut_, e) => {
                 w.write("&");
                 if *mut_ {
                     w.write("mut ");
                 }
                 e.ast_debug(w);
             }
-            E::Dot(e, n) => {
+            Self::Dot(e, n) => {
                 e.ast_debug(w);
                 w.write(&format!(".{}", n));
             }
-            E::Cast(e, ty) => {
+            Self::Cast(e, ty) => {
                 w.write("(");
                 e.ast_debug(w);
                 w.write(" as ");
                 ty.ast_debug(w);
                 w.write(")");
             }
-            E::Index(e, i) => {
+            Self::Index(e, i) => {
                 e.ast_debug(w);
                 w.write("[");
                 i.ast_debug(w);
                 w.write("]");
             }
-            E::Annotate(e, ty) => {
+            Self::Annotate(e, ty) => {
                 w.write("(");
                 e.ast_debug(w);
                 w.write(": ");
                 ty.ast_debug(w);
                 w.write(")");
             }
-            E::Spec(s) => {
+            Self::Spec(s) => {
                 w.write("spec {");
                 s.ast_debug(w);
                 w.write("}");
             }
-            E::UnresolvedError => w.write("_|_"),
+            Self::UnresolvedError => w.write("_|_"),
         }
     }
 }
@@ -1875,10 +1875,10 @@ impl AstDebug for UnaryOp_ {
 impl AstDebug for QuantKind_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         match self {
-            QuantKind_::Forall => w.write("forall"),
-            QuantKind_::Exists => w.write("exists"),
-            QuantKind_::Choose => w.write("choose"),
-            QuantKind_::ChooseMin => w.write("min"),
+            Self::Forall => w.write("forall"),
+            Self::Exists => w.write("exists"),
+            Self::Choose => w.write("choose"),
+            Self::ChooseMin => w.write("min"),
         }
     }
 }
@@ -1908,11 +1908,11 @@ impl AstDebug for Value_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         use Value_ as V;
         w.write(&match self {
-            V::Address(addr) => format!("@{}", addr),
-            V::Num(u) => u.to_string(),
-            V::Bool(b) => format!("{}", b),
-            V::HexString(s) => format!("x\"{}\"", s),
-            V::ByteString(s) => format!("b\"{}\"", s),
+            Self::Address(addr) => format!("@{}", addr),
+            Self::Num(u) => u.to_string(),
+            Self::Bool(b) => format!("{}", b),
+            Self::HexString(s) => format!("x\"{}\"", s),
+            Self::ByteString(s) => format!("b\"{}\"", s),
         })
     }
 }
@@ -1944,8 +1944,8 @@ impl AstDebug for Bind_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         use Bind_ as B;
         match self {
-            B::Var(v) => w.write(&format!("{}", v)),
-            B::Unpack(ma, tys_opt, fields) => {
+            Self::Var(v) => w.write(&format!("{}", v)),
+            Self::Unpack(ma, tys_opt, fields) => {
                 ma.ast_debug(w);
                 if let Some(ss) = tys_opt {
                     w.write("<");

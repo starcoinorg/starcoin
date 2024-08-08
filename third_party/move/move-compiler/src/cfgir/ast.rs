@@ -133,8 +133,8 @@ pub enum BlockInfo {
 impl LoopEnd {
     pub fn equals(&self, lbl: Label) -> bool {
         match self {
-            LoopEnd::Unused => false,
-            LoopEnd::Target(t) => *t == lbl,
+            Self::Unused => false,
+            Self::Target(t) => *t == lbl,
         }
     }
 }
@@ -185,7 +185,7 @@ fn remap_labels_cmd(remapping: &BTreeMap<Label, Label>, sp!(_, cmd_): &mut Comma
 
 impl AstDebug for Program {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let Program { modules, scripts } = self;
+        let Self { modules, scripts } = self;
 
         for (m, mdef) in modules.key_cloned_iter() {
             w.write(&format!("module {}", m));
@@ -203,7 +203,7 @@ impl AstDebug for Program {
 
 impl AstDebug for Script {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let Script {
+        let Self {
             package_name,
             attributes,
             loc: _loc,
@@ -225,7 +225,7 @@ impl AstDebug for Script {
 
 impl AstDebug for ModuleDefinition {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let ModuleDefinition {
+        let Self {
             package_name,
             attributes,
             is_source_module,
@@ -291,21 +291,21 @@ impl AstDebug for MoveValue {
     fn ast_debug(&self, w: &mut AstWriter) {
         use MoveValue as V;
         match self {
-            V::U8(u) => w.write(&format!("{}", u)),
-            V::U16(u) => w.write(&format!("{}", u)),
-            V::U32(u) => w.write(&format!("{}", u)),
-            V::U64(u) => w.write(&format!("{}", u)),
-            V::U128(u) => w.write(&format!("{}", u)),
-            V::U256(u) => w.write(&format!("{}", u)),
-            V::Bool(b) => w.write(&format!("{}", b)),
-            V::Address(a) => w.write(&format!("{}", a)),
-            V::Vector(vs) => {
+            Self::U8(u) => w.write(&format!("{}", u)),
+            Self::U16(u) => w.write(&format!("{}", u)),
+            Self::U32(u) => w.write(&format!("{}", u)),
+            Self::U64(u) => w.write(&format!("{}", u)),
+            Self::U128(u) => w.write(&format!("{}", u)),
+            Self::U256(u) => w.write(&format!("{}", u)),
+            Self::Bool(b) => w.write(&format!("{}", b)),
+            Self::Address(a) => w.write(&format!("{}", a)),
+            Self::Vector(vs) => {
                 w.write("vector[");
                 w.comma(vs, |w, v| v.ast_debug(w));
                 w.write("]");
             }
-            V::Struct(_) => panic!("ICE struct constants not supported"),
-            V::Signer(_) => panic!("ICE signer constants not supported"),
+            Self::Struct(_) => panic!("ICE struct constants not supported"),
+            Self::Signer(_) => panic!("ICE signer constants not supported"),
         }
     }
 }

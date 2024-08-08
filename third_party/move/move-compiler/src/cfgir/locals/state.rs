@@ -36,8 +36,8 @@ pub enum LocalState {
 impl LocalState {
     pub fn is_available(&self) -> bool {
         match self {
-            LocalState::Available(_) => true,
-            LocalState::Unavailable(_, _) | LocalState::MaybeUnavailable { .. } => false,
+            Self::Available(_) => true,
+            Self::Unavailable(_, _) | Self::MaybeUnavailable { .. } => false,
         }
     }
 }
@@ -49,7 +49,7 @@ pub struct LocalStates {
 
 impl LocalStates {
     pub fn initial<T>(function_arguments: &[(Var, T)], local_types: &UniqueMap<Var, T>) -> Self {
-        let mut states = LocalStates {
+        let mut states = Self {
             local_states: UniqueMap::new(),
         };
         for (var, _) in local_types.key_cloned_iter() {

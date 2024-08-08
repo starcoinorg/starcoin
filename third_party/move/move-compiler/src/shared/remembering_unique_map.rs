@@ -19,7 +19,7 @@ pub struct RememberingUniqueMap<K: TName + Ord, V> {
 #[allow(clippy::new_without_default)]
 impl<K: TName, V> RememberingUniqueMap<K, V> {
     pub fn new() -> Self {
-        RememberingUniqueMap {
+        Self {
             map: UniqueMap::new(),
             gotten_keys: BTreeSet::new(),
         }
@@ -94,7 +94,7 @@ impl<K: TName, V> RememberingUniqueMap<K, V> {
         V: Clone,
         F: FnMut(&K, &V, &V) -> V,
     {
-        RememberingUniqueMap {
+        Self {
             map: self.map.union_with(&other.map, f),
             gotten_keys: self
                 .gotten_keys
@@ -114,9 +114,9 @@ impl<K: TName, V> RememberingUniqueMap<K, V> {
 
     pub fn maybe_from_opt_iter(
         iter: impl Iterator<Item = Option<(K, V)>>,
-    ) -> Option<Result<RememberingUniqueMap<K, V>, (K::Key, K::Loc, K::Loc)>> {
+    ) -> Option<Result<Self, (K::Key, K::Loc, K::Loc)>> {
         let map_res = UniqueMap::maybe_from_opt_iter(iter)?;
-        Some(map_res.map(|map| RememberingUniqueMap {
+        Some(map_res.map(|map| Self {
             map,
             gotten_keys: BTreeSet::new(),
         }))
@@ -124,9 +124,9 @@ impl<K: TName, V> RememberingUniqueMap<K, V> {
 
     pub fn maybe_from_iter(
         iter: impl Iterator<Item = (K, V)>,
-    ) -> Result<RememberingUniqueMap<K, V>, (K::Key, K::Loc, K::Loc)> {
+    ) -> Result<Self, (K::Key, K::Loc, K::Loc)> {
         let map = UniqueMap::maybe_from_iter(iter)?;
-        Ok(RememberingUniqueMap {
+        Ok(Self {
             map,
             gotten_keys: BTreeSet::new(),
         })
@@ -142,7 +142,7 @@ impl<K: TName, V> RememberingUniqueMap<K, V> {
 }
 
 impl<K: TName, V: PartialEq> PartialEq for RememberingUniqueMap<K, V> {
-    fn eq(&self, other: &RememberingUniqueMap<K, V>) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.map == other.map && self.gotten_keys == other.gotten_keys
     }
 }

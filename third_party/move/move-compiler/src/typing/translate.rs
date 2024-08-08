@@ -605,7 +605,7 @@ enum ParamPos {
 }
 
 impl ParamPos {
-    const FIELD: ParamPos = ParamPos::NonPhantom(NonPhantomPos::FieldType);
+    const FIELD: Self = Self::NonPhantom(NonPhantomPos::FieldType);
 
     /// Returns `true` if the param_pos is [`Phantom`].
     fn is_phantom(&self) -> bool {
@@ -2021,12 +2021,12 @@ impl crate::shared::ast_debug::AstDebug for ExpDotted_ {
     fn ast_debug(&self, w: &mut crate::shared::ast_debug::AstWriter) {
         use ExpDotted_ as D;
         match self {
-            D::Exp(e) => e.ast_debug(w),
-            D::TmpBorrow(e, ty) => {
+            Self::Exp(e) => e.ast_debug(w),
+            Self::TmpBorrow(e, ty) => {
                 w.write("&tmp ");
                 w.annotate(|w| e.ast_debug(w), ty)
             }
-            D::Dot(e, n, ty) => {
+            Self::Dot(e, n, ty) => {
                 e.ast_debug(w);
                 w.write(".");
                 w.annotate(|w| w.write(&format!("{}", n)), ty)

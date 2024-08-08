@@ -69,7 +69,7 @@ impl ModuleTestPlan {
         let addr = AccountAddress::new((*addr).into_bytes());
         let name = Identifier::new(module_name.to_owned()).unwrap();
         let module_id = ModuleId::new(addr, name);
-        ModuleTestPlan { module_id, tests }
+        Self { module_id, tests }
     }
 }
 

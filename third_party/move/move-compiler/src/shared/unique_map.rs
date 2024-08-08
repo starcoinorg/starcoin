@@ -15,7 +15,7 @@ pub struct UniqueMap<K: TName, V>(pub(crate) BTreeMap<K::Key, (K::Loc, V)>);
 
 impl<K: TName, V> UniqueMap<K, V> {
     pub fn new() -> Self {
-        UniqueMap(BTreeMap::new())
+        Self(BTreeMap::new())
     }
 
     pub fn is_empty(&self) -> bool {
@@ -166,7 +166,7 @@ impl<K: TName, V> UniqueMap<K, V> {
 
     pub fn maybe_from_opt_iter(
         iter: impl Iterator<Item = Option<(K, V)>>,
-    ) -> Option<Result<UniqueMap<K, V>, (K::Key, K::Loc, K::Loc)>> {
+    ) -> Option<Result<Self, (K::Key, K::Loc, K::Loc)>> {
         // TODO remove collect in favor of more efficient impl
         Some(Self::maybe_from_iter(
             iter.collect::<Option<Vec<_>>>()?.into_iter(),
@@ -175,7 +175,7 @@ impl<K: TName, V> UniqueMap<K, V> {
 
     pub fn maybe_from_iter(
         iter: impl Iterator<Item = (K, V)>,
-    ) -> Result<UniqueMap<K, V>, (K::Key, K::Loc, K::Loc)> {
+    ) -> Result<Self, (K::Key, K::Loc, K::Loc)> {
         let mut m = Self::new();
         for (k, v) in iter {
             if let Err((k, old_loc)) = m.add(k, v) {
@@ -188,7 +188,7 @@ impl<K: TName, V> UniqueMap<K, V> {
 }
 
 impl<K: TName, V: PartialEq> PartialEq for UniqueMap<K, V> {
-    fn eq(&self, other: &UniqueMap<K, V>) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.iter()
             .all(|(_, k_, v1)| other.get_(k_).map(|v2| v1 == v2).unwrap_or(false))
             && other.iter().all(|(_, k_, _)| self.contains_key_(k_))
@@ -197,7 +197,7 @@ impl<K: TName, V: PartialEq> PartialEq for UniqueMap<K, V> {
 impl<K: TName, V: Eq> Eq for UniqueMap<K, V> {}
 
 impl<K: TName, V: PartialOrd> PartialOrd for UniqueMap<K, V> {
-    fn partial_cmp(&self, other: &UniqueMap<K, V>) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.0
             .iter()
             .map(|(k_, loc_v)| {
@@ -211,7 +211,7 @@ impl<K: TName, V: PartialOrd> PartialOrd for UniqueMap<K, V> {
     }
 }
 impl<K: TName, V: Ord> Ord for UniqueMap<K, V> {
-    fn cmp(&self, other: &UniqueMap<K, V>) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.0
             .iter()
             .map(|(k_, loc_v)| {

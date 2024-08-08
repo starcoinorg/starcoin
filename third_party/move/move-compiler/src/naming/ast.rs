@@ -348,15 +348,15 @@ impl BuiltinTypeName_ {
         &BUILTIN_TYPE_ALL_NAMES
     }
 
-    pub fn numeric() -> &'static BTreeSet<BuiltinTypeName_> {
+    pub fn numeric() -> &'static BTreeSet<Self> {
         &BUILTIN_TYPE_NUMERIC
     }
 
-    pub fn bits() -> &'static BTreeSet<BuiltinTypeName_> {
+    pub fn bits() -> &'static BTreeSet<Self> {
         &BUILTIN_TYPE_BITS
     }
 
-    pub fn ordered() -> &'static BTreeSet<BuiltinTypeName_> {
+    pub fn ordered() -> &'static BTreeSet<Self> {
         &BUILTIN_TYPE_ORDERED
     }
 
@@ -367,16 +367,16 @@ impl BuiltinTypeName_ {
     pub fn resolve(name_str: &str) -> Option<Self> {
         use BuiltinTypeName_ as BT;
         match name_str {
-            BT::ADDRESS => Some(BT::Address),
-            BT::SIGNER => Some(BT::Signer),
-            BT::U_8 => Some(BT::U8),
-            BT::U_16 => Some(BT::U16),
-            BT::U_32 => Some(BT::U32),
-            BT::U_64 => Some(BT::U64),
-            BT::U_128 => Some(BT::U128),
-            BT::U_256 => Some(BT::U256),
-            BT::BOOL => Some(BT::Bool),
-            BT::VECTOR => Some(BT::Vector),
+            Self::ADDRESS => Some(Self::Address),
+            Self::SIGNER => Some(Self::Signer),
+            Self::U_8 => Some(Self::U8),
+            Self::U_16 => Some(Self::U16),
+            Self::U_32 => Some(Self::U32),
+            Self::U_64 => Some(Self::U64),
+            Self::U_128 => Some(Self::U128),
+            Self::U_256 => Some(Self::U256),
+            Self::BOOL => Some(Self::Bool),
+            Self::VECTOR => Some(Self::Vector),
             _ => None,
         }
     }
@@ -385,11 +385,11 @@ impl BuiltinTypeName_ {
         use BuiltinTypeName_ as B;
         // Match here to make sure this function is fixed when collections are added
         match self {
-            B::Address | B::U8 | B::U16 | B::U32 | B::U64 | B::U128 | B::U256 | B::Bool => {
+            Self::Address | Self::U8 | Self::U16 | Self::U32 | Self::U64 | Self::U128 | Self::U256 | Self::Bool => {
                 AbilitySet::primitives(loc)
             }
-            B::Signer => AbilitySet::signer(loc),
-            B::Vector => AbilitySet::collection(loc),
+            Self::Signer => AbilitySet::signer(loc),
+            Self::Vector => AbilitySet::collection(loc),
         }
     }
 
@@ -397,29 +397,29 @@ impl BuiltinTypeName_ {
         use BuiltinTypeName_ as B;
         // Match here to make sure this function is fixed when collections are added
         match self {
-            B::Address
-            | B::Signer
-            | B::U8
-            | B::U16
-            | B::U32
-            | B::U64
-            | B::U128
-            | B::U256
-            | B::Bool => vec![],
-            B::Vector => vec![AbilitySet::empty()],
+            Self::Address
+            | Self::Signer
+            | Self::U8
+            | Self::U16
+            | Self::U32
+            | Self::U64
+            | Self::U128
+            | Self::U256
+            | Self::Bool => vec![],
+            Self::Vector => vec![AbilitySet::empty()],
         }
     }
 }
 
 impl TParamID {
-    pub fn next() -> TParamID {
-        TParamID(Counter::next())
+    pub fn next() -> Self {
+        Self(Counter::next())
     }
 }
 
 impl TVar {
-    pub fn next() -> TVar {
-        TVar(Counter::next())
+    pub fn next() -> Self {
+        Self(Counter::next())
     }
 }
 
@@ -454,12 +454,12 @@ impl BuiltinFunction_ {
     pub fn resolve(name_str: &str, arg: Option<Type>) -> Option<Self> {
         use BuiltinFunction_ as BF;
         match name_str {
-            BF::MOVE_TO => Some(BF::MoveTo(arg)),
-            BF::MOVE_FROM => Some(BF::MoveFrom(arg)),
-            BF::BORROW_GLOBAL => Some(BF::BorrowGlobal(false, arg)),
-            BF::BORROW_GLOBAL_MUT => Some(BF::BorrowGlobal(true, arg)),
-            BF::EXISTS => Some(BF::Exists(arg)),
-            BF::FREEZE => Some(BF::Freeze(arg)),
+            Self::MOVE_TO => Some(Self::MoveTo(arg)),
+            Self::MOVE_FROM => Some(Self::MoveFrom(arg)),
+            Self::BORROW_GLOBAL => Some(Self::BorrowGlobal(false, arg)),
+            Self::BORROW_GLOBAL_MUT => Some(Self::BorrowGlobal(true, arg)),
+            Self::EXISTS => Some(Self::Exists(arg)),
+            Self::FREEZE => Some(Self::Freeze(arg)),
             _ => None,
         }
     }
@@ -467,19 +467,19 @@ impl BuiltinFunction_ {
     pub fn display_name(&self) -> &'static str {
         use BuiltinFunction_ as BF;
         match self {
-            BF::MoveTo(_) => BF::MOVE_TO,
-            BF::MoveFrom(_) => BF::MOVE_FROM,
-            BF::BorrowGlobal(false, _) => BF::BORROW_GLOBAL,
-            BF::BorrowGlobal(true, _) => BF::BORROW_GLOBAL_MUT,
-            BF::Exists(_) => BF::EXISTS,
-            BF::Freeze(_) => BF::FREEZE,
-            BF::Assert(_) => BF::ASSERT_MACRO,
+            Self::MoveTo(_) => Self::MOVE_TO,
+            Self::MoveFrom(_) => Self::MOVE_FROM,
+            Self::BorrowGlobal(false, _) => Self::BORROW_GLOBAL,
+            Self::BorrowGlobal(true, _) => Self::BORROW_GLOBAL_MUT,
+            Self::Exists(_) => Self::EXISTS,
+            Self::Freeze(_) => Self::FREEZE,
+            Self::Assert(_) => Self::ASSERT_MACRO,
         }
     }
 }
 
 impl Type_ {
-    pub fn builtin_(b: BuiltinTypeName, ty_args: Vec<Type>) -> Type_ {
+    pub fn builtin_(b: BuiltinTypeName, ty_args: Vec<Type>) -> Self {
         use BuiltinTypeName_ as B;
         let abilities = match &b.value {
             B::Address | B::U8 | B::U16 | B::U32 | B::U64 | B::U128 | B::U256 | B::Bool => {
@@ -489,7 +489,7 @@ impl Type_ {
             B::Vector => None,
         };
         let n = sp(b.loc, TypeName_::Builtin(b));
-        Type_::Apply(abilities, n, ty_args)
+        Self::Apply(abilities, n, ty_args)
     }
 
     pub fn builtin(loc: Loc, b: BuiltinTypeName, ty_args: Vec<Type>) -> Type {
@@ -540,17 +540,17 @@ impl Type_ {
         sp(loc, Self::multiple_(loc, tys))
     }
 
-    pub fn multiple_(loc: Loc, mut tys: Vec<Type>) -> Type_ {
+    pub fn multiple_(loc: Loc, mut tys: Vec<Type>) -> Self {
         match tys.len() {
-            0 => Type_::Unit,
+            0 => Self::Unit,
             1 => tys.pop().unwrap().value,
-            n => Type_::Apply(None, sp(loc, TypeName_::Multiple(n)), tys),
+            n => Self::Apply(None, sp(loc, TypeName_::Multiple(n)), tys),
         }
     }
 
     pub fn builtin_name(&self) -> Option<&BuiltinTypeName> {
         match self {
-            Type_::Apply(_, sp!(_, TypeName_::Builtin(b)), _) => Some(b),
+            Self::Apply(_, sp!(_, TypeName_::Builtin(b)), _) => Some(b),
             _ => None,
         }
     }
@@ -585,16 +585,16 @@ impl fmt::Display for BuiltinTypeName_ {
             f,
             "{}",
             match self {
-                BT::Address => BT::ADDRESS,
-                BT::Signer => BT::SIGNER,
-                BT::U8 => BT::U_8,
-                BT::U16 => BT::U_16,
-                BT::U32 => BT::U_32,
-                BT::U64 => BT::U_64,
-                BT::U128 => BT::U_128,
-                BT::U256 => BT::U_256,
-                BT::Bool => BT::BOOL,
-                BT::Vector => BT::VECTOR,
+                Self::Address => Self::ADDRESS,
+                Self::Signer => Self::SIGNER,
+                Self::U8 => Self::U_8,
+                Self::U16 => Self::U_16,
+                Self::U32 => Self::U_32,
+                Self::U64 => Self::U_64,
+                Self::U128 => Self::U_128,
+                Self::U256 => Self::U_256,
+                Self::Bool => Self::BOOL,
+                Self::Vector => Self::VECTOR,
             }
         )
     }
@@ -617,7 +617,7 @@ impl fmt::Display for TypeName_ {
 
 impl AstDebug for Program {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let Program { modules, scripts } = self;
+        let Self { modules, scripts } = self;
         for (m, mdef) in modules.key_cloned_iter() {
             w.write(&format!("module {}", m));
             w.block(|w| mdef.ast_debug(w));
@@ -634,7 +634,7 @@ impl AstDebug for Program {
 
 impl AstDebug for Script {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let Script {
+        let Self {
             package_name,
             attributes,
             loc: _loc,
@@ -656,7 +656,7 @@ impl AstDebug for Script {
 
 impl AstDebug for ModuleDefinition {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let ModuleDefinition {
+        let Self {
             package_name,
             attributes,
             is_source_module,
@@ -763,7 +763,7 @@ impl AstDebug for (FunctionName, &Function) {
 
 impl AstDebug for FunctionSignature {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let FunctionSignature {
+        let Self {
             type_parameters,
             parameters,
             return_type,
@@ -828,16 +828,16 @@ impl AstDebug for BuiltinTypeName_ {
 impl AstDebug for TypeName_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         match self {
-            TypeName_::Multiple(len) => w.write(&format!("Multiple({})", len)),
-            TypeName_::Builtin(bt) => bt.ast_debug(w),
-            TypeName_::ModuleType(m, s) => w.write(&format!("{}::{}", m, s)),
+            Self::Multiple(len) => w.write(&format!("Multiple({})", len)),
+            Self::Builtin(bt) => bt.ast_debug(w),
+            Self::ModuleType(m, s) => w.write(&format!("{}::{}", m, s)),
         }
     }
 }
 
 impl AstDebug for TParam {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let TParam {
+        let Self {
             id,
             user_specified_name,
             abilities,
@@ -860,16 +860,16 @@ impl AstDebug for StructTypeParameter {
 impl AstDebug for Type_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         match self {
-            Type_::Unit => w.write("()"),
-            Type_::Ref(mut_, s) => {
+            Self::Unit => w.write("()"),
+            Self::Ref(mut_, s) => {
                 w.write("&");
                 if *mut_ {
                     w.write("mut ");
                 }
                 s.ast_debug(w)
             }
-            Type_::Param(tp) => tp.ast_debug(w),
-            Type_::Apply(abilities_opt, sp!(_, TypeName_::Multiple(_)), ss) => {
+            Self::Param(tp) => tp.ast_debug(w),
+            Self::Apply(abilities_opt, sp!(_, TypeName_::Multiple(_)), ss) => {
                 let w_ty = move |w: &mut AstWriter| {
                     w.write("(");
                     ss.ast_debug(w);
@@ -885,7 +885,7 @@ impl AstDebug for Type_ {
                     }),
                 }
             }
-            Type_::Apply(abilities_opt, m, ss) => {
+            Self::Apply(abilities_opt, m, ss) => {
                 let w_ty = move |w: &mut AstWriter| {
                     m.ast_debug(w);
                     if !ss.is_empty() {
@@ -904,9 +904,9 @@ impl AstDebug for Type_ {
                     }),
                 }
             }
-            Type_::Var(tv) => w.write(&format!("#{}", tv.0)),
-            Type_::Anything => w.write("_"),
-            Type_::UnresolvedError => w.write("_|_"),
+            Self::Var(tv) => w.write(&format!("#{}", tv.0)),
+            Self::Anything => w.write("_"),
+            Self::UnresolvedError => w.write("_|_"),
         }
     }
 }
@@ -927,15 +927,15 @@ impl AstDebug for SequenceItem_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         use SequenceItem_ as I;
         match self {
-            I::Seq(e) => e.ast_debug(w),
-            I::Declare(sp!(_, bs), ty_opt) => {
+            Self::Seq(e) => e.ast_debug(w),
+            Self::Declare(sp!(_, bs), ty_opt) => {
                 w.write("let ");
                 bs.ast_debug(w);
                 if let Some(ty) = ty_opt {
                     ty.ast_debug(w)
                 }
             }
-            I::Bind(sp!(_, bs), e) => {
+            Self::Bind(sp!(_, bs), e) => {
                 w.write("let ");
                 bs.ast_debug(w);
                 w.write(" = ");
@@ -949,17 +949,17 @@ impl AstDebug for Exp_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         use Exp_ as E;
         match self {
-            E::Unit { trailing } if !trailing => w.write("()"),
-            E::Unit {
+            Self::Unit { trailing } if !trailing => w.write("()"),
+            Self::Unit {
                 trailing: _trailing,
             } => w.write("/*()*/"),
-            E::Value(v) => v.ast_debug(w),
-            E::Move(v) => w.write(&format!("move {}", v)),
-            E::Copy(v) => w.write(&format!("copy {}", v)),
-            E::Use(v) => w.write(&format!("{}", v)),
-            E::Constant(None, c) => w.write(&format!("{}", c)),
-            E::Constant(Some(m), c) => w.write(&format!("{}::{}", m, c)),
-            E::ModuleCall(m, f, tys_opt, sp!(_, rhs)) => {
+            Self::Value(v) => v.ast_debug(w),
+            Self::Move(v) => w.write(&format!("move {}", v)),
+            Self::Copy(v) => w.write(&format!("copy {}", v)),
+            Self::Use(v) => w.write(&format!("{}", v)),
+            Self::Constant(None, c) => w.write(&format!("{}", c)),
+            Self::Constant(Some(m), c) => w.write(&format!("{}::{}", m, c)),
+            Self::ModuleCall(m, f, tys_opt, sp!(_, rhs)) => {
                 w.write(&format!("{}::{}", m, f));
                 if let Some(ss) = tys_opt {
                     w.write("<");
@@ -970,13 +970,13 @@ impl AstDebug for Exp_ {
                 w.comma(rhs, |w, e| e.ast_debug(w));
                 w.write(")");
             }
-            E::Builtin(bf, sp!(_, rhs)) => {
+            Self::Builtin(bf, sp!(_, rhs)) => {
                 bf.ast_debug(w);
                 w.write("(");
                 w.comma(rhs, |w, e| e.ast_debug(w));
                 w.write(")");
             }
-            E::Vector(_loc, ty_opt, sp!(_, elems)) => {
+            Self::Vector(_loc, ty_opt, sp!(_, elems)) => {
                 w.write("vector");
                 if let Some(ty) = ty_opt {
                     w.write("<");
@@ -987,7 +987,7 @@ impl AstDebug for Exp_ {
                 w.comma(elems, |w, e| e.ast_debug(w));
                 w.write("]");
             }
-            E::Pack(m, s, tys_opt, fields) => {
+            Self::Pack(m, s, tys_opt, fields) => {
                 w.write(&format!("{}::{}", m, s));
                 if let Some(ss) = tys_opt {
                     w.write("<");
@@ -1002,7 +1002,7 @@ impl AstDebug for Exp_ {
                 });
                 w.write("}");
             }
-            E::IfElse(b, t, f) => {
+            Self::IfElse(b, t, f) => {
                 w.write("if (");
                 b.ast_debug(w);
                 w.write(") ");
@@ -1010,92 +1010,92 @@ impl AstDebug for Exp_ {
                 w.write(" else ");
                 f.ast_debug(w);
             }
-            E::While(b, e) => {
+            Self::While(b, e) => {
                 w.write("while (");
                 b.ast_debug(w);
                 w.write(")");
                 e.ast_debug(w);
             }
-            E::Loop(e) => {
+            Self::Loop(e) => {
                 w.write("loop ");
                 e.ast_debug(w);
             }
-            E::Block(seq) => w.block(|w| seq.ast_debug(w)),
-            E::ExpList(es) => {
+            Self::Block(seq) => w.block(|w| seq.ast_debug(w)),
+            Self::ExpList(es) => {
                 w.write("(");
                 w.comma(es, |w, e| e.ast_debug(w));
                 w.write(")");
             }
 
-            E::Assign(sp!(_, lvalues), rhs) => {
+            Self::Assign(sp!(_, lvalues), rhs) => {
                 lvalues.ast_debug(w);
                 w.write(" = ");
                 rhs.ast_debug(w);
             }
-            E::FieldMutate(ed, rhs) => {
+            Self::FieldMutate(ed, rhs) => {
                 ed.ast_debug(w);
                 w.write(" = ");
                 rhs.ast_debug(w);
             }
-            E::Mutate(lhs, rhs) => {
+            Self::Mutate(lhs, rhs) => {
                 w.write("*");
                 lhs.ast_debug(w);
                 w.write(" = ");
                 rhs.ast_debug(w);
             }
 
-            E::Return(e) => {
+            Self::Return(e) => {
                 w.write("return ");
                 e.ast_debug(w);
             }
-            E::Abort(e) => {
+            Self::Abort(e) => {
                 w.write("abort ");
                 e.ast_debug(w);
             }
-            E::Break => w.write("break"),
-            E::Continue => w.write("continue"),
-            E::Dereference(e) => {
+            Self::Break => w.write("break"),
+            Self::Continue => w.write("continue"),
+            Self::Dereference(e) => {
                 w.write("*");
                 e.ast_debug(w)
             }
-            E::UnaryExp(op, e) => {
+            Self::UnaryExp(op, e) => {
                 op.ast_debug(w);
                 w.write(" ");
                 e.ast_debug(w);
             }
-            E::BinopExp(l, op, r) => {
+            Self::BinopExp(l, op, r) => {
                 l.ast_debug(w);
                 w.write(" ");
                 op.ast_debug(w);
                 w.write(" ");
                 r.ast_debug(w)
             }
-            E::Borrow(mut_, e) => {
+            Self::Borrow(mut_, e) => {
                 w.write("&");
                 if *mut_ {
                     w.write("mut ");
                 }
                 e.ast_debug(w);
             }
-            E::DerefBorrow(ed) => {
+            Self::DerefBorrow(ed) => {
                 w.write("(&*)");
                 ed.ast_debug(w)
             }
-            E::Cast(e, ty) => {
+            Self::Cast(e, ty) => {
                 w.write("(");
                 e.ast_debug(w);
                 w.write(" as ");
                 ty.ast_debug(w);
                 w.write(")");
             }
-            E::Annotate(e, ty) => {
+            Self::Annotate(e, ty) => {
                 w.write("(");
                 e.ast_debug(w);
                 w.write(": ");
                 ty.ast_debug(w);
                 w.write(")");
             }
-            E::Spec(u, used_locals) => {
+            Self::Spec(u, used_locals) => {
                 w.write(&format!("spec #{}", u));
                 if !used_locals.is_empty() {
                     w.write("uses [");
@@ -1103,7 +1103,7 @@ impl AstDebug for Exp_ {
                     w.write("]");
                 }
             }
-            E::UnresolvedError => w.write("_|_"),
+            Self::UnresolvedError => w.write("_|_"),
         }
     }
 }
@@ -1112,13 +1112,13 @@ impl AstDebug for BuiltinFunction_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         use BuiltinFunction_ as F;
         let (n, bt) = match self {
-            F::MoveTo(bt) => (F::MOVE_TO, bt),
-            F::MoveFrom(bt) => (F::MOVE_FROM, bt),
-            F::BorrowGlobal(true, bt) => (F::BORROW_GLOBAL_MUT, bt),
-            F::BorrowGlobal(false, bt) => (F::BORROW_GLOBAL, bt),
-            F::Exists(bt) => (F::EXISTS, bt),
-            F::Freeze(bt) => (F::FREEZE, bt),
-            F::Assert(_) => (F::ASSERT_MACRO, &None),
+            Self::MoveTo(bt) => (Self::MOVE_TO, bt),
+            Self::MoveFrom(bt) => (Self::MOVE_FROM, bt),
+            Self::BorrowGlobal(true, bt) => (Self::BORROW_GLOBAL_MUT, bt),
+            Self::BorrowGlobal(false, bt) => (Self::BORROW_GLOBAL, bt),
+            Self::Exists(bt) => (Self::EXISTS, bt),
+            Self::Freeze(bt) => (Self::FREEZE, bt),
+            Self::Assert(_) => (Self::ASSERT_MACRO, &None),
         };
         w.write(n);
         if let Some(bt) = bt {
@@ -1133,8 +1133,8 @@ impl AstDebug for ExpDotted_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         use ExpDotted_ as D;
         match self {
-            D::Exp(e) => e.ast_debug(w),
-            D::Dot(e, n) => {
+            Self::Exp(e) => e.ast_debug(w),
+            Self::Dot(e, n) => {
                 e.ast_debug(w);
                 w.write(&format!(".{}", n))
             }
@@ -1159,9 +1159,9 @@ impl AstDebug for LValue_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         use LValue_ as L;
         match self {
-            L::Ignore => w.write("_"),
-            L::Var(v) => w.write(&format!("{}", v)),
-            L::Unpack(m, s, tys_opt, fields) => {
+            Self::Ignore => w.write("_"),
+            Self::Var(v) => w.write(&format!("{}", v)),
+            Self::Unpack(m, s, tys_opt, fields) => {
                 w.write(&format!("{}::{}", m, s));
                 if let Some(ss) = tys_opt {
                     w.write("<");

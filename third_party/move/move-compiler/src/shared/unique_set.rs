@@ -9,6 +9,12 @@ use std::{cmp::Ordering, fmt::Debug, iter::IntoIterator};
 #[derive(Clone)]
 pub struct UniqueSet<T: TName>(UniqueMap<T, ()>);
 
+impl<T: TName> Default for UniqueSet<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: TName> UniqueSet<T> {
     pub fn new() -> Self {
         Self(UniqueMap::new())
@@ -111,20 +117,20 @@ impl<T: TName> UniqueSet<T> {
 }
 
 impl<T: TName> PartialEq for UniqueSet<T> {
-    fn eq(&self, other: &UniqueSet<T>) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
     }
 }
 impl<T: TName> Eq for UniqueSet<T> {}
 
 impl<T: TName> PartialOrd for UniqueSet<T> {
-    fn partial_cmp(&self, other: &UniqueSet<T>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         (self.0).0.keys().partial_cmp((other.0).0.keys())
     }
 }
 
 impl<T: TName> Ord for UniqueSet<T> {
-    fn cmp(&self, other: &UniqueSet<T>) -> Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
         (self.0).0.keys().cmp((other.0).0.keys())
     }
 }
