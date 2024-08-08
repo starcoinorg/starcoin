@@ -19,12 +19,8 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::{debug, info, warn};
-<<<<<<< HEAD
 use starcoin_storage::Store;
 use starcoin_types::block::{AccumulatorInfo, BlockHeader};
-=======
-use starcoin_types::block::BlockHeader;
->>>>>>> 32eccfca1 (add dag db update)
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
@@ -566,6 +562,15 @@ impl BlockDAG {
             Err(_) => {
                 warn!("Cannot get the dag state by genesis id. Might be it is a new node. The dag state will be: {:?}", read_guard.get_state()?);
                 None
+=======
+                Err(_) => {
+                    info!("The dag state will be saved as {:?}", dag_state);
+                    self.storage.state_store.write().insert(dag_state)?;
+                }
+            },
+            Err(_) => {
+                warn!("Cannot get the dag state by genesis id. Might be it is a new node. The dag state will be: {:?}", self.storage.state_store.read().get_state()?);
+>>>>>>> e00426dfc (update dag db)
             }
         };
 
@@ -587,12 +592,4 @@ impl BlockDAG {
         self.storage.reachability_store.clone()
     }
 
-    pub fn verify_and_ghostdata(
-        &self,
-        blue_blocks: &[BlockHeader],
-        header: &BlockHeader,
-    ) -> Result<GhostdagData, anyhow::Error> {
-        self.ghost_dag_manager()
-            .verify_and_ghostdata(blue_blocks, header)
-    }
 }
