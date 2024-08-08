@@ -16,7 +16,7 @@ use crate::{process_key_already_error, reachability};
 use anyhow::{bail, Ok};
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
-use starcoin_logger::prelude::{debug, info};
+use starcoin_logger::prelude::{debug, info, warn};
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
@@ -374,5 +374,27 @@ impl BlockDAG {
         genesis_id: HashValue,
     ) -> anyhow::Result<()> {
         self.verify_pruning_point(pruning_depth, pruning_finality, block_header, genesis_id)
+    }
+
+    pub fn check_upgrade(&self, genesis_id: HashValue) -> anyhow::Result<()> {
+        match self
+            .storage
+            .state_store
+            .read()
+            .get_state_by_hash(genesis_id)
+        {
+            anyhow::Result::Ok(dag_state) => match self.storage.state_store.read().get_state() {
+                anyhow::Result::Ok(saved_dag_state) => {
+                    info!("The dag state is {:?}", saved_dag_state);
+                }
+                Err(_) => {
+                    self.storage.state_store.write().insert(dag_state)?;
+                }
+            },
+            Err(_) => {
+                warn!("Cannot get the dag state by genesis id. Might be it is a new node.");
+            }
+        }
+        anyhow::Ok(())
     }
 }

@@ -36,6 +36,7 @@ impl ValueCodec<DagStateData> for DagState {
 
 pub trait DagStateReader {
     fn get_state(&self) -> Result<DagState, StoreError>;
+    fn get_state_by_hash(&self, hash: Hash) -> Result<DagState, StoreError>;
 }
 
 pub trait DagStateStore: DagStateReader {
@@ -62,6 +63,11 @@ impl DbDagStateStore {
 impl DagStateReader for DbDagStateStore {
     fn get_state(&self) -> Result<DagState, StoreError> {
         let result = self.dag_state_access.read(0.into())?;
+        Ok(result)
+    }
+
+    fn get_state_by_hash(&self, hash: Hash) -> Result<DagState, StoreError> {
+        let result = self.dag_state_access.read(hash)?;
         Ok(result)
     }
 }
