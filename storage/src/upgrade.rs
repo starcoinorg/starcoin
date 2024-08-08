@@ -239,6 +239,9 @@ impl DBUpgrade {
             (StorageVersion::V4, StorageVersion::V5) => {
                 Self::db_upgrade_v4_v5(instance)?;
             }
+            (StorageVersion::V5, StorageVersion::V6) => {
+                Self::db_upgrade_v5_v6(instance)?;
+            }
             _ => bail!(
                 "Cannot upgrade db from {:?} to {:?}",
                 version_in_db,
@@ -335,6 +338,10 @@ impl DBUpgrade {
                 chain_info_storage.save_startup_info(StartupInfo::new(*DRAGON_HARD_FORK_HASH))?;
             }
         }
+        Ok(())
+    }
+
+    fn db_upgrade_v5_v6(_instance: &mut StorageInstance) -> Result<()> {
         Ok(())
     }
 }
