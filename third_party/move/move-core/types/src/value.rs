@@ -162,9 +162,7 @@ impl MoveValue {
     pub fn undecorate(self) -> Self {
         match self {
             Self::Struct(s) => Self::Struct(s.undecorate()),
-            Self::Vector(vals) => {
-                Self::Vector(vals.into_iter().map(Self::undecorate).collect())
-            }
+            Self::Vector(vals) => Self::Vector(vals.into_iter().map(Self::undecorate).collect()),
             v => v,
         }
     }
@@ -201,14 +199,12 @@ impl MoveStruct {
 
     pub fn decorate(self, layout: &MoveStructLayout) -> Self {
         match (self, layout) {
-            (Self::Runtime(vals), MoveStructLayout::WithFields(layouts)) => {
-                Self::WithFields(
-                    vals.into_iter()
-                        .zip(layouts)
-                        .map(|(v, l)| (l.name.clone(), v.decorate(&l.layout)))
-                        .collect(),
-                )
-            }
+            (Self::Runtime(vals), MoveStructLayout::WithFields(layouts)) => Self::WithFields(
+                vals.into_iter()
+                    .zip(layouts)
+                    .map(|(v, l)| (l.name.clone(), v.decorate(&l.layout)))
+                    .collect(),
+            ),
             (Self::Runtime(vals), MoveStructLayout::WithTypes { type_, fields }) => {
                 Self::WithTypes {
                     type_: type_.clone(),
