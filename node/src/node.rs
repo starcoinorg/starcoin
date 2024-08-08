@@ -336,7 +336,10 @@ impl NodeService {
             upgrade_time.as_secs()
         );
 
-        dag.check_upgrade(genesis.block().id())?;
+        dag.check_upgrade(
+            chain_info.status().info().block_accumulator_info.clone(),
+            storage.clone(),
+        )?;
 
         registry.put_shared(genesis).await?;
 

@@ -13,11 +13,14 @@ use crate::consensusdb::{
 use crate::ghostdag::protocol::GhostdagManager;
 use crate::prune::pruning_point_manager::PruningPointManagerT;
 use crate::{process_key_already_error, reachability};
-use anyhow::{bail, Ok};
+use anyhow::{bail, format_err, Ok};
+use starcoin_accumulator::node::AccumulatorStoreType;
+use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::{debug, info, warn};
-use starcoin_types::block::BlockHeader;
+use starcoin_storage::Store;
+use starcoin_types::block::{AccumulatorInfo, BlockHeader};
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
@@ -376,23 +379,31 @@ impl BlockDAG {
         self.verify_pruning_point(pruning_depth, pruning_finality, block_header, genesis_id)
     }
 
-    pub fn check_upgrade(&self, genesis_id: HashValue) -> anyhow::Result<()> {
-        match self
-            .storage
-            .state_store
-            .read()
-            .get_state_by_hash(genesis_id)
-        {
+    pub fn check_upgrade(
+        &self,
+        info: AccumulatorInfo,
+        storage: Arc<dyn Store>,
+    ) -> anyhow::Result<()> {
+        let accumulator = MerkleAccumulator::new_with_info(
+            info,
+            storage.get_accumulator_store(AccumulatorStoreType::Block),
+        );
+        match self.storage.state_store.read().get_state_by_hash(
+            accumulator
+                .get_leaf(0)?
+                .ok_or_else(|| format_err!("no leaf when upgrading dag db"))?,
+        ) {
             anyhow::Result::Ok(dag_state) => match self.storage.state_store.read().get_state() {
                 anyhow::Result::Ok(saved_dag_state) => {
                     info!("The dag state is {:?}", saved_dag_state);
                 }
                 Err(_) => {
+                    info!("The dag state will be saved as {:?}", dag_state);
                     self.storage.state_store.write().insert(dag_state)?;
                 }
             },
             Err(_) => {
-                warn!("Cannot get the dag state by genesis id. Might be it is a new node.");
+                warn!("Cannot get the dag state by genesis id. Might be it is a new node. The dag state will be: {:?}", self.storage.state_store.read().get_state()?);
             }
         }
         anyhow::Ok(())
