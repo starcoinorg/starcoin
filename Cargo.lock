@@ -9381,7 +9381,7 @@ dependencies = [
 [[package]]
 name = "serde-generate"
 version = "0.19.1"
-source = "git+https://github.com/starcoinorg/serde-reflection?rev=694048797338ff7385006d968e786b6d9dbdeb8b#694048797338ff7385006d968e786b6d9dbdeb8b"
+source = "git+https://github.com/starcoinorg/serde-reflection?rev=eb95fd4e3b67e08d71432b522c53833a0b855d80#eb95fd4e3b67e08d71432b522c53833a0b855d80"
 dependencies = [
  "bcs",
  "bincode",
@@ -9442,7 +9442,7 @@ dependencies = [
 [[package]]
 name = "serde-reflection"
 version = "0.3.2"
-source = "git+https://github.com/starcoinorg/serde-reflection?rev=694048797338ff7385006d968e786b6d9dbdeb8b#694048797338ff7385006d968e786b6d9dbdeb8b"
+source = "git+https://github.com/starcoinorg/serde-reflection?rev=eb95fd4e3b67e08d71432b522c53833a0b855d80#eb95fd4e3b67e08d71432b522c53833a0b855d80"
 dependencies = [
  "serde 1.0.152",
  "thiserror",
