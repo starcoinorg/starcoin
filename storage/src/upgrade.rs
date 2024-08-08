@@ -265,7 +265,7 @@ impl DBUpgrade {
                 Self::db_upgrade_v5_v6(instance)?;
             }
             _ => bail!(
-                "Can not upgrade db from {:?} to {:?}",
+                "Cannot upgrade db from {:?} to {:?}",
                 version_in_db,
                 version_in_code
             ),
